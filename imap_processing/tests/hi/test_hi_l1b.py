@@ -10,6 +10,7 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.hi_l1b import (
     annotate_direct_events,
+    any_good_direct_events,
     compute_coincidence_type_and_tofs,
     compute_hae_coordinates,
     de_esa_energy_step,
@@ -68,10 +69,33 @@ def test_hi_annotate_direct_events(
     assert len(l1b_datasets[0].data_vars) == 15
 
 
+@pytest.mark.parametrize(
+    "trigger_id_data, fillval, expected_result",
+    [([0], 0, False), ([15, 15], 15, False), ([1], 0, True), ([1, 2, 3], 65536, True)],
+)
+def test_any_good_direct_events(trigger_id_data, fillval, expected_result):
+    """Test coverage for any_good_direct_events()"""
+    ds = xr.Dataset(
+        data_vars={
+            "trigger_id": xr.DataArray(
+                trigger_id_data, name="trigger_id", attrs={"FILLVAL": fillval}
+            )
+        }
+    )
+    assert any_good_direct_events(ds) == expected_result
+
+
 @pytest.mark.external_test_data
+@mock.patch(
+    "imap_processing.spice.spin.get_spacecraft_to_instrument_spin_phase_offset",
+    return_value=0,
+)
 @mock.patch("imap_processing.hi.hi_l1b.instrument_pointing")
 def test_annotate_direct_events_with_hk(
-    mock_instrument_pointing, hi_l1_test_data_path, use_fake_spin_data_for_time
+    mock_instrument_pointing,
+    mock_inst_phase_offset,
+    hi_l1_test_data_path,
+    use_fake_spin_data_for_time,
 ):
     """Test imap_processing.hi_l1b.annotate_direct_events() with a
     coincident de and hk dataset but mocked spice."""
@@ -164,7 +188,10 @@ def synthetic_trigger_id_and_tof_data():
     return synthetic_l1a_ds, expected_histogram
 
 
-def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_data):
+@mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
+def test_compute_coincidence_type_and_time_deltas(
+    mock_any_good_de, synthetic_trigger_id_and_tof_data
+):
     """Test coverage for
     `imap_processing.hi.hi_l1b.compute_coincidence_type_and_time_deltas`."""
     new_vars = compute_coincidence_type_and_tofs(synthetic_trigger_id_and_tof_data[0])
@@ -211,11 +238,15 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
     )
 
 
+@mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
 @mock.patch("imap_processing.hi.hi_l1b.parse_sensor_number", return_value=90)
 @mock.patch("imap_processing.hi.hi_l1b.get_instrument_spin_phase")
 @mock.patch("imap_processing.hi.hi_l1b.get_spacecraft_spin_phase")
 def test_de_nominal_bin_and_spin_phase(
-    spacecraft_phase_moc, instrument_phase_mock, parse_sensor_number_mock
+    spacecraft_phase_moc,
+    instrument_phase_mock,
+    parse_sensor_number_mock,
+    any_good_de_mock,
 ):
     """Test coverage for de_nominal_bin_and_spin_phase."""
     # set the spacecraft_phase_mock to return an array of values between 0 and 1
@@ -259,8 +290,11 @@ def test_de_nominal_bin_and_spin_phase(
 
 
 @pytest.mark.parametrize("sensor_number", [45, 90])
+@mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
 @mock.patch("imap_processing.hi.hi_l1b.instrument_pointing")
-def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
+def test_compute_hae_coordinates(
+    mock_instrument_pointing, mock_any_good_de, sensor_number
+):
     """Test coverage for compute_hae_coordinates function."""
 
     # Mock out the instrument_pointing function to avoid needing kernels
@@ -295,9 +329,10 @@ def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
     np.testing.assert_allclose(new_vars["hae_longitude"].values, sensor_number)
 
 
+@mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
 @mock.patch("imap_processing.hi.hi_l1b.pd.read_csv")
 @mock.patch("imap_processing.hi.hi_l1b.get_esa_to_esa_energy_step_lut")
-def test_de_esa_energy_step(mock_get_esa_lut, mock_read_csv):
+def test_de_esa_energy_step(mock_get_esa_lut, mock_read_csv, mock_any_good_de):
     """Test coverage for de_esa_energy_step function."""
     mock_esa_lut = mock.MagicMock(spec=EsaEnergyStepLookupTable())
     mock_esa_lut.query.side_effect = lambda a, b: np.arange(len(a))[::-1] % 9

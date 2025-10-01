@@ -268,6 +268,9 @@ def calculate_l1b(
         retrieve_matrix_from_single_l1b_calibration(calibration_dataset, is_mago=False)
     )
 
+    logger.info(f"calibration_matrix_mago shape: {calibration_matrix_mago.shape}.")
+    logger.info(f"calibration_matrix_magi shape: {calibration_matrix_magi.shape}.")
+
     # Get time values for each group.
     time_data = get_time(
         grouped_data, group, pkt_counter, time_shift_mago, time_shift_magi
@@ -298,7 +301,6 @@ def calculate_l1b(
 
 def calibrate_and_offset_vectors(
     vectors: np.ndarray,
-    range_vals: np.ndarray,
     calibration: np.ndarray,
     offsets: np.ndarray,
     is_magi: bool = False,
@@ -309,10 +311,7 @@ def calibrate_and_offset_vectors(
     Parameters
     ----------
     vectors : np.ndarray
-        Raw magnetic vectors, shape (n, 3).
-    range_vals : np.ndarray
-        Range indices for each vector, shape (n). Values 0–3.
-        Expected value for mago will be [0,1] and magi will be [2,3].
+        Raw magnetic vectors, shape (n, 4).
     calibration : np.ndarray
         Calibration matrix, shape (3, 3, 4).
     offsets : np.ndarray
@@ -328,11 +327,9 @@ def calibrate_and_offset_vectors(
     calibrated_and_offset_vectors : np.ndarray
         Calibrated and offset vectors, shape (n, 3).
     """
-    # Append range as 4th column
-    vec_plus_range = np.concatenate((vectors, range_vals[:, np.newaxis]), axis=1)
-
     # Apply calibration matrix -> (n,4)
-    calibrated = MagL2L1dBase.apply_calibration(vec_plus_range, calibration)
+    # apply_calibration_offset_single_vector
+    calibrated = MagL2L1dBase.apply_calibration(vectors.reshape(1, 4), calibration)
 
     # Apply offsets per vector
     # vec shape (4)
@@ -348,9 +345,10 @@ def calibrate_and_offset_vectors(
 
 
 def apply_gradiometry_correction(
-    mago_vector_eclipj2000: np.ndarray,
-    magi_vector_eclipj2000: np.ndarray,
-    time_data: dict,
+    mago_vectors_eclipj2000: np.ndarray,
+    mago_time_data: np.ndarray,
+    magi_vectors_eclipj2000: np.ndarray,
+    magi_time_data: np.ndarray,
     gradiometer_factor: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -358,14 +356,16 @@ def apply_gradiometry_correction(
 
     Parameters
     ----------
-    mago_vector_eclipj2000 : np.ndarray
+    mago_vectors_eclipj2000 : np.ndarray
         MAGo vectors in inertial frame, shape (N, 3).
-    magi_vector_eclipj2000 : np.ndarray
+    mago_time_data : np.ndarray
+        Time for primary sensor, shape (N, 3).
+    magi_vectors_eclipj2000 : np.ndarray
         MAGi vectors in inertial frame, shape (M, 3).
-    time_data : dict
-        Coarse and fine time for Primary and Secondary Sensors.
+    magi_time_data : np.ndarray
+        Time for secondary sensor, shape (N, 3).
     gradiometer_factor : np.ndarray
-        3-element vector used to project gradiometry offset, shape (3,).
+        A (3,3) element matrix to scale and rotate the gradiometer offsets.
 
     Returns
     -------
@@ -375,27 +375,28 @@ def apply_gradiometry_correction(
         Magnitude of corrected MAGo vectors, shape (N,).
     """
     gradiometry_offsets = MagL1d.calculate_gradiometry_offsets(
-        mago_vector_eclipj2000,
-        time_data["primary_epoch"],
-        magi_vector_eclipj2000,
-        time_data["secondary_epoch"],
+        mago_vectors_eclipj2000,
+        mago_time_data,
+        magi_vectors_eclipj2000,
+        magi_time_data,
     )
     mago_corrected = MagL1d.apply_gradiometry_offsets(
-        gradiometry_offsets, mago_vector_eclipj2000, gradiometer_factor
+        gradiometry_offsets, mago_vectors_eclipj2000, gradiometer_factor
     )
-    magnitude = np.linalg.norm(mago_corrected, axis=1)
+    magnitude = np.linalg.norm(mago_corrected, axis=-1).squeeze()
 
     return mago_corrected, magnitude
 
 
-def transform_to_frames(
+def transform_to_inertial(
     sc_spin_phase_rad: np.ndarray,
     sc_inertial_right: np.ndarray,
     sc_inertial_decline: np.ndarray,
     attitude_time: np.ndarray,
     target_time: float,
     mag_vector: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    instrument_frame: SpiceFrame,
+) -> np.ndarray:
     """
     Transform vector to ECLIPJ2000.
 
@@ -418,17 +419,13 @@ def transform_to_frames(
         Example: time_data['primary_epoch'].
     mag_vector : numpy.ndarray
         Vector, shape (3).
+    instrument_frame : SpiceFrame
+        SPICE frame of the instrument.
 
     Returns
     -------
     inertial_vector : np.ndarray
         Transformed vector in the ECLIPJ2000 frame, shape (3,).
-    gse_vector : np.ndarray
-        Transformed vector in the GSE frame, shape (3,).
-    gsm_vector : np.ndarray
-        Transformed vector in the GSM frame, shape (3,).
-    rtn_vector : np.ndarray
-        Transformed vector in the RTN frame, shape (3,).
 
     Notes
     -----
@@ -487,8 +484,37 @@ def transform_to_frames(
         np.array([spin_phase_deg]),
         np.array([ra_deg]),
         np.array([dec_deg]),
+        instrument_frame,
     )[0]
 
+    return inertial_vector
+
+
+def transform_to_frames(
+    target_time: np.ndarray,
+    inertial_vector: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Transform vector to different frames.
+
+    Parameters
+    ----------
+    target_time : np.ndarray
+        Time at which to apply the transformation.
+        Will be primary_epoch (mago vector).
+        Example: time_data['primary_epoch'].
+    inertial_vector : np.ndarray
+        Transformed vector in the ECLIPJ2000 frame, shape (3,).
+
+    Returns
+    -------
+    gse_vector : np.ndarray
+        Transformed vector in the GSE frame, shape (3,).
+    gsm_vector : np.ndarray
+        Transformed vector in the GSM frame, shape (3,).
+    rtn_vector : np.ndarray
+        Transformed vector in the RTN frame, shape (3,).
+    """
     et_target_time = ttj2000ns_to_et(target_time)
 
     gse_vector = frame_transform(
@@ -501,12 +527,14 @@ def transform_to_frames(
         et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_RTN
     )
 
-    return inertial_vector, gse_vector, gsm_vector, rtn_vector
+    return gse_vector, gsm_vector, rtn_vector
 
 
 def process_packet(
-    accumulated_data: xr.Dataset, calibration_dataset: xr.Dataset
-) -> tuple[list[dict], list[dict]]:
+    accumulated_data: xr.Dataset,
+    engineering_calibration_dataset: xr.Dataset,
+    l1d_calibration_dataset: xr.Dataset,
+) -> list[dict]:
     """
     Parse the MAG packets.
 
@@ -514,8 +542,10 @@ def process_packet(
     ----------
     accumulated_data : xr.Dataset
         Packets dataset accumulated over 1 min.
-    calibration_dataset : xr.Dataset
-        Calibration dataset.
+    engineering_calibration_dataset : xr.Dataset
+        Engineering calibration dataset.
+    l1d_calibration_dataset : xr.Dataset
+        L1D calibration dataset.
 
     Returns
     -------
@@ -541,8 +571,13 @@ def process_packet(
     grouped_data = find_groups(accumulated_data, (0, 3), "pkt_counter", "met")
 
     unique_groups = np.unique(grouped_data["group"])
-    l1b_data = []
     mag_data = []
+    met_all = []
+    mago_vectors_all = []
+    mago_times_all = []
+    magi_vectors_all = []
+    magi_times_all = []
+    incomplete_groups = []
 
     for group in unique_groups:
         # Get status values for each group.
@@ -554,10 +589,7 @@ def process_packet(
         ]
 
         if not np.array_equal(pkt_counter, np.arange(4)):
-            logger.info(
-                f"Group {group} does not contain all values from 0 to "
-                f"3 without duplicates."
-            )
+            incomplete_groups.append(group)
             continue
 
         # Get decoded status data.
@@ -578,7 +610,7 @@ def process_packet(
             pkt_counter,
             science_data,
             status_data,
-            calibration_dataset,
+            engineering_calibration_dataset,
         )
 
         # Note: primary = MAGo, secondary = MAGi.
@@ -589,41 +621,141 @@ def process_packet(
         if status_data["sec_isvalid"] == 0:
             updated_vector_magi = np.full(4, -32768)
 
-        science_data.update(
-            {
-                "calibrated_pri_x": updated_vector_mago[0],
-                "calibrated_pri_y": updated_vector_mago[1],
-                "calibrated_pri_z": updated_vector_mago[2],
-                "calibrated_sec_x": updated_vector_magi[0],
-                "calibrated_sec_y": updated_vector_magi[1],
-                "calibrated_sec_z": updated_vector_magi[2],
-            }
+        mago_calibration = l1d_calibration_dataset["URFTOORFO"][0]
+        magi_calibration = l1d_calibration_dataset["URFTOORFI"][0]
+        offsets = l1d_calibration_dataset["offsets"][0]
+
+        mago_out = calibrate_and_offset_vectors(
+            updated_vector_mago, mago_calibration, offsets, is_magi=False
+        )
+        magi_out = calibrate_and_offset_vectors(
+            updated_vector_magi, magi_calibration, offsets, is_magi=True
+        )
+        sc_spin_phase_rad = grouped_data["sc_spin_phase"][
+            (grouped_data["group"] == group).values
+        ]
+        sc_inertial_right = grouped_data["sc_inertial_right"][
+            (grouped_data["group"] == group).values
+        ]
+        sc_inertial_decline = grouped_data["sc_inertial_decline"][
+            (grouped_data["group"] == group).values
+        ]
+
+        attitude_time = met_to_ttj2000ns(
+            grouped_data["met"][(grouped_data["group"] == group).values]
         )
 
-        l1b_data.append({**status_data, **science_data, **time_data})
+        # Convert to ECLIPJ2000 frame.
+        mago_inertial_vector = transform_to_inertial(
+            sc_spin_phase_rad.values,
+            sc_inertial_right.values,
+            sc_inertial_decline.values,
+            attitude_time,
+            time_data["primary_epoch"],
+            mago_out,
+            SpiceFrame.IMAP_MAG_O,
+        )
+        magi_inertial_vector = transform_to_inertial(
+            sc_spin_phase_rad.values,
+            sc_inertial_right.values,
+            sc_inertial_decline.values,
+            attitude_time,
+            time_data["secondary_epoch"],
+            magi_out,
+            SpiceFrame.IMAP_MAG_I,
+        )
 
-        # Placeholder for real data.
         met = grouped_data["met"][(grouped_data["group"] == group).values]
+        met_all.append(met.values[0])
+        mago_times_all.append(time_data["primary_epoch"])
+        mago_vectors_all.append(mago_inertial_vector)
+        magi_vectors_all.append(magi_inertial_vector)
+        magi_times_all.append(time_data["secondary_epoch"])
+
+    if incomplete_groups:
+        logger.info(
+            f"The following mag groups were skipped due to "
+            f"missing or duplicate pkt_counter values: "
+            f"{incomplete_groups}"
+        )
+
+    mago_corrected, magnitude = apply_gradiometry_correction(
+        np.array(mago_vectors_all),
+        np.array(mago_times_all),
+        np.array(magi_vectors_all),
+        np.array(magi_times_all),
+        l1d_calibration_dataset["gradiometer_factor"].values.squeeze(),
+    )
+
+    gse_vector, gsm_vector, rtn_vector = transform_to_frames(
+        np.array(mago_times_all), mago_corrected
+    )
+
+    spherical = cartesian_to_spherical(gsm_vector)
+    phi_gsm = spherical[:, 1]
+    theta_gsm = spherical[:, 2]
+
+    spherical = cartesian_to_spherical(gse_vector)
+    phi_gse = spherical[:, 1]
+    theta_gse = spherical[:, 2]
+
+    # Omit the first value since we expect it to be extrapolated.
+    for i in range(len(mago_corrected)):
+        if i == 0:
+            continue
+
         mag_data.append(
             {
                 "apid": 478,
-                "met": int(met.values.min()),
-                "met_in_utc": met_to_utc(met.values.min()).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
-                # TODO: Placeholder for mag_epoch
-                "mag_epoch": int(met.values.min()),
-                "mag_B_GSE": [Decimal("0.0") for _ in range(3)],
-                "mag_B_GSM": [Decimal("0.0") for _ in range(3)],
-                "mag_B_RTN": [Decimal("0.0") for _ in range(3)],
-                "mag_B_magnitude": Decimal("0.0"),
-                "mag_phi_B_GSM": Decimal("0.0"),
-                "mag_theta_B_GSM": Decimal("0.0"),
-                "mag_phi_B_GSE": Decimal("0.0"),
-                "mag_theta_B_GSE": Decimal("0.0"),
+                "met": int(met_all[i]),
+                "met_in_utc": met_to_utc(met_all[i]).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(met_all[i])),
+                "mag_epoch": int(mago_times_all[i]),
+                "mag_B_GSE": [Decimal(str(v)) for v in gse_vector[i]],
+                "mag_B_GSM": [Decimal(str(v)) for v in gsm_vector[i]],
+                "mag_B_RTN": [Decimal(str(v)) for v in rtn_vector[i]],
+                "mag_B_magnitude": Decimal(str(magnitude[i])),
+                "mag_phi_B_GSM": Decimal(str(phi_gsm[i])),
+                "mag_theta_B_GSM": Decimal(str(theta_gsm[i])),
+                "mag_phi_B_GSE": Decimal(str(phi_gse[i])),
+                "mag_theta_B_GSE": Decimal(str(theta_gse[i])),
+                "mag_hk_status": {
+                    "hk1v5_warn": bool(status_data["hk1v5_warn"]),
+                    "hk1v5_danger": bool(status_data["hk1v5_danger"]),
+                    "hk1v5c_warn": bool(status_data["hk1v5c_warn"]),
+                    "hk1v5c_danger": bool(status_data["hk1v5c_danger"]),
+                    "hk1v8_warn": bool(status_data["hk1v8_warn"]),
+                    "hk1v8_danger": bool(status_data["hk1v8_danger"]),
+                    "hk1v8c_warn": bool(status_data["hk1v8c_warn"]),
+                    "hk1v8c_danger": bool(status_data["hk1v8c_danger"]),
+                    "fob_saturated": bool(status_data["fob_saturated"]),
+                    "fib_saturated": bool(status_data["fib_saturated"]),
+                    "mode": int(status_data["mode"]),
+                    "icu_temp": int(status_data["icu_temp"]),
+                    "hk2v5_warn": bool(status_data["hk2v5_warn"]),
+                    "hk2v5_danger": bool(status_data["hk2v5_danger"]),
+                    "hk2v5c_warn": bool(status_data["hk2v5c_warn"]),
+                    "hk2v5c_danger": bool(status_data["hk2v5c_danger"]),
+                    "hk3v3": int(status_data["hk3v3"]),
+                    "hk3v3_current": int(status_data["hk3v3_current"]),
+                    "pri_isvalid": bool(status_data["pri_isvalid"]),
+                    "hkp8v5_warn": bool(status_data["hkp8v5_warn"]),
+                    "hkp8v5_danger": bool(status_data["hkp8v5_danger"]),
+                    "hkp8v5c_warn": bool(status_data["hkp8v5c_warn"]),
+                    "hkp8v5c_danger": bool(status_data["hkp8v5c_danger"]),
+                    "hkn8v5": int(status_data["hkn8v5"]),
+                    "hkn8v5_current": int(status_data["hkn8v5_current"]),
+                    "fob_temp": int(status_data["fob_temp"]),
+                    "fib_temp": int(status_data["fib_temp"]),
+                    "fob_range": int(status_data["fob_range"]),
+                    "fib_range": int(status_data["fib_range"]),
+                    "multbit_errs": bool(status_data["multbit_errs"]),
+                    "sec_isvalid": bool(status_data["sec_isvalid"]),
+                },
             }
         )
 
-    return mag_data, l1b_data
+    return mag_data
 
 
 def retrieve_matrix_from_single_l1b_calibration(

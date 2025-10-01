@@ -109,7 +109,6 @@ def idex_l2b(
         "processed at the same time as L2B datasets because L2C needs no additional "
         "dependencies."
     )
-
     # create the attribute manager for this data level
     idex_l2b_attrs = get_idex_attrs("l2b")
     idex_l2c_attrs = get_idex_attrs("l2c")
@@ -142,9 +141,9 @@ def idex_l2b(
         daily_on_percentage,
     )
     # Create l2b Dataset
-    charge_bins = np.arange(len(CHARGE_BIN_EDGES) - 1)
-    mass_bins = np.arange(len(CHARGE_BIN_EDGES) - 1)
-    spin_phase_bins = np.arange(len(SPIN_PHASE_BIN_EDGES) - 1)
+    charge_bin_means = np.sqrt(CHARGE_BIN_EDGES[:-1] * CHARGE_BIN_EDGES[1:])
+    mass_bin_means = np.sqrt(MASS_BIN_EDGES[:-1] * MASS_BIN_EDGES[1:])
+    spin_phase_means = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) / 2
 
     # Define xarrays that are shared between l2b and l2c
     epoch = xr.DataArray(
@@ -163,7 +162,7 @@ def idex_l2b(
         ),
         "charge_labels": xr.DataArray(
             name="impact_charge_labels",
-            data=charge_bins.astype(str),
+            data=charge_bin_means.astype(str),
             dims="impact_charge",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "charge_labels", check_schema=False
@@ -171,7 +170,7 @@ def idex_l2b(
         ),
         "mass_labels": xr.DataArray(
             name="mass_labels",
-            data=mass_bins.astype(str),
+            data=mass_bin_means.astype(str),
             dims="mass",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "mass_labels", check_schema=False
@@ -179,7 +178,7 @@ def idex_l2b(
         ),
         "impact_charge": xr.DataArray(
             name="impact_charge",
-            data=charge_bins,
+            data=charge_bin_means,
             dims="impact_charge",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "impact_charge", check_schema=False
@@ -187,7 +186,7 @@ def idex_l2b(
         ),
         "mass": xr.DataArray(
             name="mass",
-            data=mass_bins,
+            data=mass_bin_means,
             dims="mass",
             attrs=idex_l2b_attrs.get_variable_attributes("mass", check_schema=False),
         ),
@@ -195,7 +194,7 @@ def idex_l2b(
     l2b_vars = common_vars | {
         "spin_phase": xr.DataArray(
             name="spin_phase",
-            data=spin_phase_bins,
+            data=spin_phase_means,
             dims="spin_phase",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "spin_phase", check_schema=False
@@ -203,7 +202,7 @@ def idex_l2b(
         ),
         "spin_phase_labels": xr.DataArray(
             name="spin_phase_labels",
-            data=spin_phase_bins.astype(str),
+            data=spin_phase_means.astype(str),
             dims="spin_phase",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "spin_phase_labels", check_schema=False
@@ -320,6 +319,7 @@ def idex_l2b(
             attrs=idex_l2c_attrs.get_variable_attributes("rate_by_mass_map"),
         ),
     }
+
     l2b_dataset = xr.Dataset(
         coords={"epoch": epoch},
         data_vars=l2b_vars,
@@ -646,6 +646,12 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
     """
     # Get science acquisition start and stop times
     evt_logs, evt_time, evt_values = get_science_acquisition_timestamps(evt_dataset)
+    if len(evt_time) == 0:
+        logger.warning(
+            "No science acquisition events found in event dataset. Returning empty "
+            "uptime percentages. All rate variables will be set to -1."
+        )
+        return {}
     # Track total and 'on' durations per day
     daily_totals: collections.defaultdict = defaultdict(timedelta)
     daily_on: collections.defaultdict = defaultdict(timedelta)

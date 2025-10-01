@@ -256,8 +256,13 @@ def test_put_data_into_angle_bins():
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+@patch(
+    "imap_processing.spice.spin.get_spacecraft_to_instrument_spin_phase_offset",
+    return_value=153 / 360,
+)
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
 def test_swe_l2_15sec(
+    mock_phase_offset,
     mock_get_file_paths,
     use_fake_spin_data_for_time,
     l2_sector_validation_df,
@@ -360,8 +365,13 @@ def test_swe_l2_15sec(
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+@patch(
+    "imap_processing.spice.spin.get_spacecraft_to_instrument_spin_phase_offset",
+    return_value=153 / 360,
+)
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
 def test_swe_l2_14_6sec(
+    mock_phase_offset,
     mock_get_file_paths,
     use_fake_spin_data_for_time,
     l2_binned_flux_14sec_validation_df,

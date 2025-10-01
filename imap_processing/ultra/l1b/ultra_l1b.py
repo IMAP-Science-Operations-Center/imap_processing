@@ -3,9 +3,9 @@
 import xarray as xr
 
 from imap_processing.ultra.l1b.badtimes import calculate_badtimes
-from imap_processing.ultra.l1b.cullingmask import calculate_cullingmask
 from imap_processing.ultra.l1b.de import calculate_de
 from imap_processing.ultra.l1b.extendedspin import calculate_extendedspin
+from imap_processing.ultra.l1b.goodtimes import calculate_goodtimes
 
 
 def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
@@ -29,7 +29,7 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
     General flow:
     1. l1a data products are created (upstream to this code)
     2. l1b de is created here and dropped in s3 kicking off processing again
-    3. l1b extended, culling, badtimes created here
+    3. l1b extended, goodtimes, badtimes created here
     """
     output_datasets = []
 
@@ -72,22 +72,22 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
             output_datasets.append(extendedspin_dataset)
         elif (
             f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
-            and f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
+            and f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
         ):
             badtimes_dataset = calculate_badtimes(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
-                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"][
+                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"][
                     "spin_number"
                 ].values,
                 f"imap_ultra_l1b_{instrument_id}sensor-badtimes",
             )
             output_datasets.append(badtimes_dataset)
         elif f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict:
-            cullingmask_dataset = calculate_cullingmask(
+            goodtimes_dataset = calculate_goodtimes(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
-                f"imap_ultra_l1b_{instrument_id}sensor-cullingmask",
+                f"imap_ultra_l1b_{instrument_id}sensor-goodtimes",
             )
-            output_datasets.append(cullingmask_dataset)
+            output_datasets.append(goodtimes_dataset)
     if not output_datasets:
         raise ValueError("Data dictionary does not contain the expected keys.")
 

@@ -10,6 +10,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.naming import (
@@ -17,10 +18,10 @@ from imap_processing.ena_maps.utils.naming import (
     MapDescriptor,
     ns_to_duration_months,
 )
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
-logger.info("Importing ultra_l2 module")
 
 # Default properties for the Ultra L2 map
 DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap = (
@@ -55,29 +56,38 @@ REQUIRED_L1C_VARIABLES_PUSH = [
 ]
 REQUIRED_L1C_VARIABLES_PULL = [
     "exposure_factor",
-    "sensitivity",
     "background_rates",
     "obs_date",
 ]
-
+# These variables are expected but not strictly required. In certain test scenarios,
+# they may be missing, in which case we will raise a warning and continue.
+# All psets must be consistent and either have these variables or not.
+EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL = [
+    "geometric_function",
+    "scatter_theta",
+    "scatter_phi",
+    "sensitivity",
+    "efficiency",
+]
 # These variables are projected to the map as the mean of pointing set pixels value,
 # weighted by that pointing set pixel's exposure and solid angle
 VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
     "sensitivity",
     "background_rates",
     "obs_date",
+    "scatter_theta",
+    "scatter_phi",
+    "geometric_function",
+    "efficiency",
 ]
 
 # These variables are dropped after they are used to
 # calculate ena_intensity and its statistical uncertainty
 # They will not be present in the final map
 VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
-    "counts",
-    "background_rates",
     "pointing_set_exposure_times_solid_angle",
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
-    "obs_date_for_std",
     "obs_date_squared_for_std",
 ]
 
@@ -128,6 +138,8 @@ def get_variable_attributes_optional_energy_dependence(
         and (CoordNames.ENERGY_ULTRA_L1C.value not in variable_dims)
     ):
         variable_name = f"{variable_name}_energy_independent"
+    if variable_name == "counts":
+        variable_name = "ena_count"
 
     metadata = cdf_attrs.get_variable_attributes(
         variable_name=variable_name,
@@ -136,7 +148,7 @@ def get_variable_attributes_optional_energy_dependence(
     return metadata
 
 
-def generate_ultra_healpix_skymap(
+def generate_ultra_healpix_skymap(  # noqa: PLR0912
     ultra_l1c_psets: list[str | xr.Dataset],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
@@ -148,7 +160,7 @@ def generate_ultra_healpix_skymap(
     This function combines IMAP Ultra L1C pointing sets into a single L2 HealpixSkyMap.
     It handles the projection of values from pointing sets to the map, applies necessary
     weighting and background subtraction, and calculates ena_intensity
-    and ena_intensity_stat_unc.
+    and ena_intensity_stat_uncert.
 
     Parameters
     ----------
@@ -206,7 +218,7 @@ def generate_ultra_healpix_skymap(
     output_map_structure.values_to_push_project.extend(
         [
             "num_pointing_set_pixel_members",
-            "obs_date_for_std",
+            "obs_date_range",
             "obs_date_squared_for_std",
         ]
     )
@@ -236,6 +248,40 @@ def generate_ultra_healpix_skymap(
             f"PUSH Variables: {output_map_structure.values_to_push_project} \n"
             f"PULL Variables: {output_map_structure.values_to_pull_project}"
         )
+    # TODO remove this in the future once all test data includes these variables
+    # Add expected but not required variables to the pull projection list
+    # Log a warning if they are missing from any PSET but continue processing.
+    expected_present_vars_pointing_ind = []
+    first_pset = (
+        load_cdf(ultra_l1c_psets[0])
+        if isinstance(ultra_l1c_psets[0], (str, Path))
+        else ultra_l1c_psets[0]
+    )
+
+    for var in EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL:
+        if var not in first_pset.variables:
+            logger.warning(
+                f"Expected variable {var} not found in the first L1C PSET. "
+                "This variable will not be projected to the map."
+            )
+        else:
+            expected_present_vars_pointing_ind.append(var)
+
+    # Get existing variables that should be weighted by exposure and solid angle
+    existing_vars_to_weight = []
+    pointing_indep_vars = []
+    for var in VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE:
+        if var in first_pset:
+            existing_vars_to_weight.append(var)
+            if "epoch" not in first_pset[var].dims:
+                pointing_indep_vars.append(var)
+
+    output_map_structure.values_to_pull_project = list(
+        set(
+            output_map_structure.values_to_pull_project
+            + expected_present_vars_pointing_ind
+        )
+    )
 
     all_pset_epochs = []
     for ultra_l1c_pset in ultra_l1c_psets:
@@ -249,9 +295,15 @@ def generate_ultra_healpix_skymap(
             "\nThese values will be pull projected: "
             f">> {output_map_structure.values_to_pull_project}",
         )
+        flags_1d = pointing_set.data["quality_flags"].isel(epoch=0)
+        # This is a good pixel mask where zero is when the earth is not in the FOV.
+        good_pixel_mask = (
+            (flags_1d & ImapPSETUltraFlags.EARTH_FOV.value) == 0
+        ).to_numpy()
 
+        # Only count the number of pointing set pixels which are not flagged.
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
-            np.ones(pointing_set.num_points, dtype=int),
+            good_pixel_mask.astype(int),
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
 
@@ -262,11 +314,11 @@ def generate_ultra_healpix_skymap(
             fill_value=pointing_set.epoch,
             dtype=np.int64,
         )
-        pointing_set.data["obs_date_for_std"] = pointing_set.data["obs_date"].astype(
+        pointing_set.data["obs_date_range"] = pointing_set.data["obs_date"].astype(
             np.float64
         )
         pointing_set.data["obs_date_squared_for_std"] = (
-            pointing_set.data["obs_date_for_std"] ** 2
+            pointing_set.data["obs_date_range"] ** 2
         )
 
         # Add solid_angle * exposure of pointing set as data_var
@@ -274,18 +326,26 @@ def generate_ultra_healpix_skymap(
         pointing_set.data["pointing_set_exposure_times_solid_angle"] = (
             pointing_set.data["exposure_factor"] * pointing_set.solid_angle
         )
-
+        # TODO add generalized code in ena_maps to handle this
+        # if the variable does not have an epoch dimension, add one temporarily
+        # to allow for correct broadcasting during weighting.
+        # Keep track of which variables were modified so we can revert them later.
+        for var in pointing_indep_vars:
+            pointing_set.data[var] = pointing_set.data[var].expand_dims("epoch", axis=0)
         # Initial processing for weighted quantities at PSET level
         # Weight the values by exposure and solid angle
-        pointing_set.data[
-            VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
-        ] *= pointing_set.data["pointing_set_exposure_times_solid_angle"]
+        # Ensure only valid pointing set pixels contribute to the weighted mean.
+        pointing_set.data[existing_vars_to_weight] = (
+            pointing_set.data[existing_vars_to_weight]
+            * pointing_set.data["pointing_set_exposure_times_solid_angle"]
+        ).where(good_pixel_mask)
 
         # Project values such as counts via the PUSH method
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
             value_keys=output_map_structure.values_to_push_project,
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
+            pset_valid_mask=good_pixel_mask,
         )
 
         # Project values such as exposure_factor via the PULL method
@@ -293,12 +353,16 @@ def generate_ultra_healpix_skymap(
             pointing_set=pointing_set,
             value_keys=output_map_structure.values_to_pull_project,
             index_match_method=ena_maps.IndexMatchMethod.PULL,
+            pset_valid_mask=good_pixel_mask,
         )
 
     # Subsequent processing for weighted quantities at SkyMap level
-    skymap.data_1d[VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE] /= (
-        skymap.data_1d["pointing_set_exposure_times_solid_angle"]
-    )
+    skymap.data_1d[existing_vars_to_weight] /= skymap.data_1d[
+        "pointing_set_exposure_times_solid_angle"
+    ]
+    # Revert any pointing independent variables back to their original dims
+    for var in pointing_indep_vars:
+        skymap.data_1d[var] = skymap.data_1d[var].squeeze("epoch", drop=True)
 
     # Background rates must be scaled by the ratio of the solid angles of the
     # map pixel / pointing set pixel
@@ -327,7 +391,7 @@ def generate_ultra_healpix_skymap(
             skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
         )
 
-        skymap.data_1d["ena_intensity_stat_unc"] = (
+        skymap.data_1d["ena_intensity_stat_uncert"] = (
             skymap.data_1d["counts"].astype(float) ** 0.5
         ) / (
             skymap.data_1d["exposure_factor"]
@@ -348,7 +412,7 @@ def generate_ultra_healpix_skymap(
                 )
                 - (
                     (
-                        skymap.data_1d["obs_date_for_std"]
+                        skymap.data_1d["obs_date_range"]
                         / (skymap.data_1d["num_pointing_set_pixel_members"])
                     )
                     ** 2
@@ -361,7 +425,6 @@ def generate_ultra_healpix_skymap(
     skymap.data_1d = skymap.data_1d.drop_vars(
         VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
     )
-
     return skymap, np.array(all_pset_epochs)
 
 
@@ -468,6 +531,7 @@ def ultra_l2(
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
+            "HEALPix_solid_angle": str(healpix_skymap.solid_angle),
             "HEALPix_nside": str(output_map_structure.nside),
             "HEALPix_nest": str(output_map_structure.nested),
         }
@@ -542,6 +606,13 @@ def ultra_l2(
     # to "energy" for all instruments.
     map_dataset = map_dataset.rename({"energy_bin_geometric_mean": "energy"})
 
+    # Rename positional uncertainty variables if present
+    map_dataset = map_dataset.rename({"scatter_theta": "positional_uncert_theta"})
+    map_dataset = map_dataset.rename({"scatter_phi": "positional_uncert_phi"})
+
+    # Rename background rates to be compliant with the l2 map definitions
+    map_dataset = map_dataset.rename({"background_rates": "bg_rate"})
+
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
 
@@ -559,7 +630,7 @@ def ultra_l2(
     # Add systematic error as all zeros with shape matching statistical unc
     # TODO: update once we have information from the instrument team
     map_dataset["ena_intensity_sys_err"] = xr.zeros_like(
-        map_dataset["ena_intensity_stat_unc"],
+        map_dataset["ena_intensity_stat_uncert"],
     )
 
     # Add epoch_delta
@@ -581,7 +652,6 @@ def ultra_l2(
         energy_delta_plus,
         dims=(CoordNames.ENERGY_L2.value,),
     )
-
     # Add variable specific attributes to the map's data_vars and coords
     for variable in map_dataset.data_vars:
         # Skip the subdivision depth variables, as these will only be
@@ -589,14 +659,25 @@ def ultra_l2(
         if "subdivision_depth" in variable:
             continue
 
+        # Support variables do not have epoch as the first dimension
+        # skip schema check for support variables or choords
+        skip_schema_check = not (
+            "epoch" not in map_dataset[variable].dims  # Support data
+            or variable
+            in [
+                "longitude",
+                "latitude",
+                "longitude_delta",
+                "latitude_delta",
+            ]  # Coordinate vars
+        )
         # The longitude and latitude variables will be present only in Healpix tiled
         # map, and, as support_data, should not have schema validation
         map_dataset[variable].attrs.update(
             get_variable_attributes_optional_energy_dependence(
                 cdf_attrs=cdf_attrs,
                 variable_array=map_dataset[variable],
-                check_schema=variable
-                not in ["longitude", "latitude", "longitude_delta", "latitude_delta"],
+                check_schema=skip_schema_check,
             )
         )
     for coord_variable in map_dataset.coords:
@@ -607,6 +688,8 @@ def ultra_l2(
             )
         )
 
-    # Adjust the dtype of obs_date to be int64
+    # Adjust the dtype of obs dates to be int64
     map_dataset["obs_date"] = map_dataset["obs_date"].astype(np.int64)
+    map_dataset["obs_date_range"] = map_dataset["obs_date_range"].astype(np.int64)
+
     return [map_dataset]

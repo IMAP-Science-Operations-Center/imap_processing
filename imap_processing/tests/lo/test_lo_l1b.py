@@ -14,21 +14,22 @@ from imap_processing.lo.l1b.lo_l1b import (
     convert_tofs_to_eu,
     create_datasets,
     get_avg_spin_durations_per_cycle,
-    get_spin_angle,
     get_spin_start_times,
     identify_species,
     initialize_l1b_de,
     lo_l1b,
     set_avg_spin_durations_per_event,
+    set_bad_or_goodtimes,
     set_bad_times,
     set_coincidence_type,
     set_each_event_epoch,
+    set_esa_mode,
     set_event_met,
     set_pointing_bin,
     set_pointing_direction,
-    set_spin_bin,
     set_spin_cycle,
 )
+from imap_processing.lo.lo_ancillary import read_ancillary_file
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
@@ -47,6 +48,20 @@ def dependencies():
 
 
 @pytest.fixture
+def anc_dependencies():
+    return [
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/imap_lo_sweep-table-small_20250101_20260301_v001.csv",
+        ),
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/imap_lo_bad-times-small_20250101_20270101_v001.csv",
+        ),
+    ]
+
+
+@pytest.fixture
 def attr_mgr_l1b():
     attr_mgr_l1b = ImapCdfAttributes()
     attr_mgr_l1b.add_instrument_global_attrs(instrument="lo")
@@ -62,8 +77,26 @@ def attr_mgr_l1a():
     return attr_mgr
 
 
-@patch("imap_processing.lo.l1b.lo_l1b.instrument_pointing")
-def test_lo_l1b(mock_instrument_pointing):
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    return_value=np.zeros((2000, 3)),
+)
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+    return_value=(473389199, 473472001),
+)
+@patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
+    return_value=np.zeros((2000, 3)),
+)
+def test_lo_l1b(
+    mock_instrument_pointing,
+    mocked_get_pointing_times,
+    mock_spin_number,
+    mock_cartesian_to_latitudinal,
+    anc_dependencies,
+):
     # Arrange
     de_file = (
         imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_de_20241022_v002.cdf"
@@ -77,9 +110,9 @@ def test_lo_l1b(mock_instrument_pointing):
         data[dataset.attrs["Logical_source"]] = dataset
 
     expected_logical_source = "imap_lo_l1b_de"
-    mock_instrument_pointing.return_value = np.zeros((2000, 2))
+
     # Act
-    output_file = lo_l1b(data)
+    output_file = lo_l1b(data, anc_dependencies)
 
     # Assert
     assert expected_logical_source == output_file[0].attrs["Logical_source"]
@@ -149,12 +182,50 @@ def test_initialize_dataset(dependencies, attr_mgr_l1b):
     assert len(l1b_de.coords) == 0
     for l1b_name, l1a_name in {
         "pos": "pos",
-        "mode": "mode",
+        "mode_bit": "mode",
         "absent": "coincidence_type",
         "esa_step": "esa_step",
     }.items():
         assert l1b_name in l1b_de.data_vars
         np.testing.assert_array_equal(l1b_de[l1b_name], l1a_de[l1a_name])
+
+
+def test_set_esa_mode(anc_dependencies, attr_mgr_l1b):
+    # Arrange
+    l1b_de = xr.Dataset(
+        {},
+        coords={"epoch": [0, 1, 2, 3, 4]},
+    )
+    pointing_start_met = 473389199
+    pointing_end_met = 473472001
+
+    expected_esa_mode = np.array([0, 0, 0, 0, 0])
+
+    # Act
+    l1b_de = set_esa_mode(
+        pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
+    )
+
+    # Assert
+    np.testing.assert_array_equal(l1b_de["esa_mode"].values, expected_esa_mode)
+
+
+def test_set_esa_mode_error(anc_dependencies, attr_mgr_l1b):
+    # Arrange
+    l1b_de = xr.Dataset(
+        {},
+        coords={"epoch": [0, 1, 2, 3, 4]},
+    )
+    pointing_start_met = 473389199
+    pointing_end_met = 509369021
+
+    # Act / Assert
+    with pytest.raises(
+        ValueError, match="Multiple ESA modes found in sweep table for pointing."
+    ):
+        l1b_de = set_esa_mode(
+            pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
+        )
 
 
 def test_convert_start_end_acq_times():
@@ -207,50 +278,18 @@ def test_get_avg_spin_durations():
     np.testing.assert_array_equal(avg_spin_durations, expected_avg_spin_durations)
 
 
-def test_get_spin_angle():
-    # Arrange
-    de = xr.Dataset(
-        {
-            "de_count": ("epoch", [2, 3]),
-            "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
-        },
-        coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
-    )
-    spin_angle_expected = np.array([0, 87.89, 175.78, 263.67, 351.56])
-
-    # Act
-    spin_angle = get_spin_angle(de)
-
-    # Assert
-    np.testing.assert_allclose(
-        spin_angle,
-        spin_angle_expected,
-        atol=1e-2,
-    )
-
-
-def test_spin_bin():
-    # Arrange
-    l1b_de = xr.Dataset()
-    spin_angle = np.array([0, 50, 150, 250, 365])
-    expected_spin_bins = np.array([0, 8, 25, 41, 60])
-
-    # Act
-    l1b_de = set_spin_bin(l1b_de, spin_angle)
-
-    # Assert
-    np.testing.assert_array_equal(l1b_de["spin_bin"], expected_spin_bins)
-
-
-def test_spin_cycle():
+@patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
+def test_spin_cycle(mock_get_spin_number):
     # Arrange
     de = xr.Dataset(
         {
             "de_count": ("epoch", [2, 3]),
             "esa_step": ("direct_event", [1, 2, 3, 4, 5]),
+            "met": ("epoch", [0, 7]),
         },
         coords={"epoch": [0, 1], "direct_event": [1, 2, 3, 4, 5]},
     )
+    pointing_start_met = 0
 
     # spin_cycle = spin_start + 7 + (esa_step - 1) * 2
     # where spin start is the spin number for the first spin
@@ -260,7 +299,7 @@ def test_spin_cycle():
     spin_cycle_data = xr.Dataset()
 
     # Act
-    spin_cycle_data = set_spin_cycle(de, spin_cycle_data)
+    spin_cycle_data = set_spin_cycle(pointing_start_met, de, spin_cycle_data)
 
     # Assert
     np.testing.assert_array_equal(spin_cycle_data["spin_cycle"], spin_cycle_expected)
@@ -514,71 +553,94 @@ def test_identify_species(attr_mgr_l1b):
     np.testing.assert_array_equal(l1b_de["species"], expected_species)
 
 
-def test_set_bad_times():
+def test_set_bad_times(anc_dependencies):
     # Arrange
     l1b_de = xr.Dataset(
-        {},
+        {
+            "esa_step": ("epoch", [1, 1, 3, 1]),
+            "spin_bin": ("epoch", [1900, 2000, 3000, 2]),
+        },
         coords={
-            "epoch": [0, 1, 2],
+            "epoch": met_to_ttj2000ns([473385599, 473385600, 473385601, 473385602]),
         },
     )
 
-    expected_bad_times = np.array([0, 0, 0])
+    expected_bad_times = np.array([0, 1, 0, 0])
 
     # Act
-    l1b_de = set_bad_times(l1b_de)
+    l1b_de = set_bad_times(l1b_de, anc_dependencies)
 
     # Assert
     np.testing.assert_array_equal(l1b_de["badtimes"], expected_bad_times)
 
 
-@pytest.mark.external_kernel
+def test_set_bad_or_goodtimes(anc_dependencies):
+    # Arrange
+    # badtimes ancillary
+    df = read_ancillary_file(anc_dependencies[1])
+
+    epoch = met_to_ttj2000ns([473385599, 473385600, 473385601, 473385602])
+    esa_step = np.array([1, 1, 3, 1])
+    spin_bin = np.array([1900, 2000, 3000, 2])
+
+    expected_bad_times = np.array([0, 1, 0, 0])
+
+    # Act
+    badtimes = set_bad_or_goodtimes(df, epoch, esa_step, spin_bin)
+
+    # Assert
+    np.testing.assert_array_equal(badtimes, expected_bad_times)
+
+
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    return_value=np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]),
+)
 def test_set_direction(imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
         {},
         coords={
-            "epoch": [
-                7.9794907254e17,
-                # + 1 second. Should be 24deg diff from
-                # previous epoch
-                7.9794907254e17 + 1e9,
-                # + 7.5 seconds. Should be 180deg diff from
-                # first epoch
-                7.9794907254e17 + 7.5e9,
-                # + 15 seconds. Should be 360deg diff from
-                # previous epoch
-                7.9794907254e17 + 15e9,
-            ],
+            "epoch": [0, 1, 2, 3],
         },
     )
     # latitudes are -90 to 90
-    expected_direction_lat = np.array([0, 0, 0, 0])
-    # longitude are -180 to 180
-    expected_direction_lon = np.array([140.5, 164.5, -39.5, 140.5])
+    expected_hae_x = np.array([1, 4, 7, 10])
+    expected_hae_y = np.array([2, 5, 8, 11])
+    expected_hae_z = np.array([3, 6, 9, 12])
 
     # Act
     l1b_de = set_pointing_direction(l1b_de)
 
     # Assert
     np.testing.assert_allclose(
-        l1b_de["direction_lat"].values,
-        expected_direction_lat,
+        l1b_de["hae_x"].values,
+        expected_hae_x,
         atol=1e-1,
     )
     np.testing.assert_allclose(
-        l1b_de["direction_lon"].values,
-        expected_direction_lon,
+        l1b_de["hae_y"].values,
+        expected_hae_y,
+        atol=1e-1,
+    )
+    np.testing.assert_allclose(
+        l1b_de["hae_z"].values,
+        expected_hae_z,
         atol=1e-1,
     )
 
 
-def test_pointing_bins():
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
+    return_value=np.array([[0, -180, -2], [0, 0, 0], [0, 90, 1], [0, 180, 2]]),
+)
+def test_pointing_bins(imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
         {
-            "direction_lat": ("epoch", [0, 0, 0, 0, 0]),
-            "direction_lon": ("epoch", [-180, 91.3, 116.3, 140.5, 180]),
+            "hae_x": ("epoch", [1, 1, 1, 1]),
+            "hae_y": ("epoch", [0, 0, 0, 0]),
+            "hae_z": ("epoch", [0, 0, 0, 0]),
         },
         coords={
             "epoch": [
@@ -586,17 +648,16 @@ def test_pointing_bins():
                 7.9794907153e17,
                 7.9794907254e17,
                 7.9794907354e17,
-                7.9794907454e17,
             ],
         },
     )
 
-    expected_pointing_lats = np.array([20, 20, 20, 20, 20])
-    expected_pointing_lons = np.array([0, 2712, 2962, 3205, 3600])
+    expected_pointing_lats = np.array([0, 20, 30, 40])
+    expected_pointing_lons = np.array([0, 1800, 2700, 3600])
 
     # Act
     l1b_de = set_pointing_bin(l1b_de)
 
     # Assert
-    np.testing.assert_array_equal(l1b_de["pointing_bin_lat"], expected_pointing_lats)
-    np.testing.assert_array_equal(l1b_de["pointing_bin_lon"], expected_pointing_lons)
+    np.testing.assert_array_equal(l1b_de["off_angle_bin"], expected_pointing_lats)
+    np.testing.assert_array_equal(l1b_de["spin_bin"], expected_pointing_lons)

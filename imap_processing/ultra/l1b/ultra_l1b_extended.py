@@ -12,7 +12,9 @@ from numpy import ndarray
 from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
+from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
@@ -29,6 +31,8 @@ from imap_processing.ultra.l1b.lookup_utils import (
 logger = logging.getLogger(__name__)
 
 FILLVAL_UINT8 = 255
+FILLVAL_FLOAT32 = -1.0e31
+FILLVAL_FLOAT64 = -1.0e31
 
 
 class StartType(Enum):
@@ -541,16 +545,16 @@ def get_de_velocity(
     v_y = delta_v[:, 1] / tof * 1e3
     v_z = delta_v[:, 2] / tof * 1e3
 
-    v_x[tof < 0] = np.nan  # used as fillvals
-    v_y[tof < 0] = np.nan
-    v_z[tof < 0] = np.nan
+    v_x[tof < 0] = FILLVAL_FLOAT32  # used as fillvals
+    v_y[tof < 0] = FILLVAL_FLOAT32
+    v_z[tof < 0] = FILLVAL_FLOAT32
 
     velocities = np.vstack((v_x, v_y, v_z)).T
 
     v_hat = velocities / np.linalg.norm(velocities, axis=1)[:, None]
     r_hat = -v_hat
 
-    return velocities, v_hat, r_hat
+    return velocities, -v_hat, -r_hat
 
 
 def get_ssd_tof(
@@ -632,13 +636,17 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
     # Compute the sum of squares.
     v2 = np.sum(vv**2, axis=1)
 
-    index_hydrogen = np.where(species == 1)
-    energy = np.full_like(v2, np.nan)
+    # Only compute where species == 1 and v is valid
+    index_hydrogen = species == 1
+    valid_velocity = np.isfinite(v2)
+    valid_mask = index_hydrogen & valid_velocity
+
+    energy = np.full_like(v2, FILLVAL_FLOAT32)
 
     # TODO: we will calculate the energies of the different species here.
     # 1/2 mv^2 in Joules, convert to keV
-    energy[index_hydrogen] = (
-        0.5 * UltraConstants.MASS_H * v2[index_hydrogen] * UltraConstants.J_KEV
+    energy[valid_mask] = (
+        0.5 * UltraConstants.MASS_H * v2[valid_mask] * UltraConstants.J_KEV
     )
 
     return energy
@@ -831,25 +839,16 @@ def get_ctof(
     return ctof, magnitude_v
 
 
-def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> NDArray:
+def determine_species(e_bin: np.ndarray, type: str) -> NDArray:
     """
     Determine the species for pulse-height events.
 
-    Species is determined from the particle velocity.
-    For velocity, the particle TOF is normalized with respect
-    to a fixed distance dmin between the front and back detectors.
-    The normalized TOF is termed the corrected TOF (ctof).
-    Particle species are determined from ctof using thresholds.
-
-    Further description is available on pages 42-44 of
-    IMAP-Ultra Flight Software Specification document.
+    Species is determined using the computed e_bin.
 
     Parameters
     ----------
-    tof : np.ndarray
-        Time of flight of the SSD event (tenths of a nanosecond).
-    path_length : np.ndarray
-        Path length (r) (hundredths of a millimeter).
+    e_bin : np.ndarray
+        Computed e_bin.
     type : str
         Type of data (PH or SSD).
 
@@ -858,11 +857,17 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     species_bin : np.array
         Species bin.
     """
-    # Event TOF normalization to Z axis
-    ctof, _ = get_ctof(tof, path_length, type)
-    # Assign Species 1 ("H") to bins
-    # TODO: this is a placeholder for future species assignments.
-    species_bin = np.full(len(ctof), 1, dtype=np.uint8)
+    if type == "PH":
+        species_groups = UltraConstants.TOFXPH_SPECIES_GROUPS
+    if type == "SSD":
+        species_groups = UltraConstants.TOFXE_SPECIES_GROUPS
+
+    non_proton_bins = species_groups["non_proton"]
+    proton_bins = species_groups["proton"]
+
+    species_bin = np.full(e_bin.shape, fill_value=2, dtype=int)
+    species_bin[np.isin(e_bin, non_proton_bins)] = 0
+    species_bin[np.isin(e_bin, proton_bins)] = 1
 
     return species_bin
 
@@ -978,9 +983,9 @@ def get_eventtimes(
     Returns
     -------
     event_times : np.ndarray
-        Event times.
+        Event times in et.
     spin_starts : np.ndarray
-        Spin start times.
+        Spin start times in et.
     spin_period_sec : np.ndarray
         Spin period in seconds.
 
@@ -1001,7 +1006,7 @@ def get_eventtimes(
 
     event_times = spin_starts + spin_period_sec * (phase_angle / 720)
 
-    return event_times, spin_starts, spin_period_sec
+    return sct_to_et(event_times), sct_to_et(spin_starts), spin_period_sec
 
 
 def interpolate_fwhm(
@@ -1041,8 +1046,11 @@ def interpolate_fwhm(
     )
 
     # Note: will return nan for those out-of-bounds inputs.
-    phi_interp = interp_phi((energy, phi_inst))
-    theta_interp = interp_theta((energy, theta_inst))
+    phi_vals = interp_phi((energy, phi_inst))
+    theta_vals = interp_theta((energy, theta_inst))
+
+    phi_interp = np.where(np.isnan(phi_vals), FILLVAL_FLOAT32, phi_vals)
+    theta_interp = np.where(np.isnan(theta_vals), FILLVAL_FLOAT32, theta_vals)
 
     return phi_interp, theta_interp
 
@@ -1080,8 +1088,8 @@ def get_fwhm(
     theta_interp : NDArray
         Interpolated theta FWHM values.
     """
-    phi_interp = np.full_like(phi_inst, np.nan, dtype=np.float64)
-    theta_interp = np.full_like(theta_inst, np.nan, dtype=np.float64)
+    phi_interp = np.full_like(phi_inst, FILLVAL_FLOAT64, dtype=np.float64)
+    theta_interp = np.full_like(theta_inst, FILLVAL_FLOAT64, dtype=np.float64)
     lt_table = get_angular_profiles("left", sensor, ancillary_files)
     rt_table = get_angular_profiles("right", sensor, ancillary_files)
 
@@ -1100,20 +1108,12 @@ def get_fwhm(
     return phi_interp, theta_interp
 
 
-def get_efficiency(
-    energy: NDArray, phi_inst: NDArray, theta_inst: NDArray, ancillary_files: dict
-) -> NDArray:
+def get_efficiency_interpolator(ancillary_files: dict) -> RegularGridInterpolator:
     """
-    Interpolate efficiency values for each event.
+    Return a callable function that interpolates efficiency values for each event.
 
     Parameters
     ----------
-    energy : NDArray
-        Energy values for each event.
-    phi_inst : NDArray
-        Instrument-frame azimuth angle for each event.
-    theta_inst : NDArray
-        Instrument-frame elevation angle for each event.
     ancillary_files : dict
         Ancillary files.
 
@@ -1138,8 +1138,43 @@ def get_efficiency(
         (theta_vals, phi_vals, energy_vals),
         efficiency_grid,
         bounds_error=False,
-        fill_value=np.nan,
+        fill_value=FILLVAL_FLOAT32,
     )
+
+    return interpolator
+
+
+def get_efficiency(
+    energy: NDArray,
+    phi_inst: NDArray,
+    theta_inst: NDArray,
+    ancillary_files: dict,
+    interpolator: RegularGridInterpolator = None,
+) -> np.ndarray:
+    """
+    Return interpolated efficiency values for each event.
+
+    Parameters
+    ----------
+    energy : NDArray
+        Energy values for each event.
+    phi_inst : NDArray
+        Instrument-frame azimuth angle for each event.
+    theta_inst : NDArray
+        Instrument-frame elevation angle for each event.
+    ancillary_files : dict
+        Ancillary files.
+    interpolator : RegularGridInterpolator, optional
+        Precomputed interpolator to use for efficiency lookup.
+        If None, a new interpolator will be created from the ancillary files.
+
+    Returns
+    -------
+    efficiency : NDArray
+        Interpolated efficiency values.
+    """
+    if not interpolator:
+        interpolator = get_efficiency_interpolator(ancillary_files)
 
     return interpolator((theta_inst, phi_inst, energy))
 
@@ -1339,54 +1374,91 @@ def is_coin_ph_valid(
     etof: NDArray,
     xc: NDArray,
     xb: NDArray,
+    stop_north_tdc: NDArray,
+    stop_south_tdc: NDArray,
+    stop_east_tdc: NDArray,
+    stop_west_tdc: NDArray,
     sensor: str,
     ancillary_files: dict,
+    quality_flags: NDArray,
 ) -> NDArray:
     """
-    Determine whether Coincidence-PH data are valid.
-
-    This is based on thresholds defined in the IMAP-Ultra Flight Software Specification
-    (see page 36).
+    Determine event validity.
 
     Parameters
     ----------
     etof : NDArray
-        Electron TOF (tenths of a nanosecond).
+        Time for the electrons to travel back to the coincidence
+        anode (tenths of a nanosecond).
     xc : NDArray
-        Coincidence X position (hundredths of a mm).
+        X coincidence position (hundredths of a millimeter).
     xb : NDArray
-        Back X position (hundredths of a mm).
+        Back positions in x direction (hundredths of a millimeter).
+    stop_north_tdc : NDArray
+        Stop North Time to Digital Converter.
+    stop_south_tdc : NDArray
+        Stop South Time to Digital Converter.
+    stop_east_tdc : NDArray
+        Stop East Time to Digital Converter.
+    stop_west_tdc : NDArray
+        Stop West Time to Digital Converter.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
     ancillary_files : dict
         Ancillary files for lookup.
+    quality_flags : NDArray
+        Quality flag to set when there is an outlier.
 
     Returns
     -------
-    valid_mask : NDArray
-        Boolean array indicating Coin-PH validity.
+    combined_mask : NDArray
+        Boolean array indicating whether back TOF is valid.
 
     Notes
     -----
-    Logic derived from page 36 of the IMAP-Ultra Flight Software Specification document.
+    From page 36 of the IMAP-Ultra Flight Software Specification document.
     """
-    etof_min = get_image_params("eTOFMin", sensor, ancillary_files)
-    etof_max = get_image_params("eTOFMax", sensor, ancillary_files)
+    # Make certain etof is within range for tenths of a nanosecond.
+    etof_valid = (etof >= UltraConstants.ETOFMIN_EVENTFILTER) & (
+        etof <= UltraConstants.ETOFMAX_EVENTFILTER
+    )
 
-    etof_valid = (etof >= etof_min) & (etof <= etof_max)
-
+    # Hundredths of a mm.
     diff_x = xc - xb
-    etof_offset1 = get_image_params("eTOFOff1", sensor, ancillary_files)
-    etof_offset2 = get_image_params("eTOFOff2", sensor, ancillary_files)
-    etof_slope1 = get_image_params("eTOFSlope1", sensor, ancillary_files)
-    etof_slope2 = get_image_params("eTOFSlope2", sensor, ancillary_files)
 
-    t1 = (etof - etof_offset1) * etof_slope1 / 1024
-    t2 = (etof - etof_offset2) * etof_slope2 / 1024
+    t1 = (
+        (etof - UltraConstants.ETOFOFF1_EVENTFILTER)
+        * UltraConstants.ETOFSLOPE1_EVENTFILTER
+        / 1024
+    )
+    t2 = (
+        (etof - UltraConstants.ETOFOFF2_EVENTFILTER)
+        * UltraConstants.ETOFSLOPE2_EVENTFILTER
+        / 1024
+    )
 
     condition_1 = (diff_x >= t1) & (diff_x <= t2)
     condition_2 = (diff_x >= -t2) & (diff_x <= -t1)
 
     spatial_valid = condition_1 | condition_2
 
-    return etof_valid & spatial_valid
+    sp_n_norm = get_norm(stop_north_tdc, "SpN", sensor, ancillary_files)
+    sp_s_norm = get_norm(stop_south_tdc, "SpS", sensor, ancillary_files)
+    sp_e_norm = get_norm(stop_east_tdc, "SpE", sensor, ancillary_files)
+    sp_w_norm = get_norm(stop_west_tdc, "SpW", sensor, ancillary_files)
+
+    tofx = sp_n_norm + sp_s_norm
+    tofy = sp_e_norm + sp_w_norm
+
+    # Units in tenths of a nanosecond
+    delta_tof = tofy - tofx
+
+    delta_tof_mask = (delta_tof >= UltraConstants.TOFDIFFTPMIN_EVENTFILTER) & (
+        delta_tof <= UltraConstants.TOFDIFFTPMAX_EVENTFILTER
+    )
+
+    combined_mask = etof_valid & spatial_valid & delta_tof_mask
+
+    quality_flags[~combined_mask] |= ImapDEOutliersUltraFlags.COINPH.value
+
+    return combined_mask

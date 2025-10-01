@@ -19,7 +19,7 @@ are already completed.
 The three repositories are expected to be released at different cadences:
 
 * The ``imap_processing`` repository is released on a monthly cadence (typically the last day of the month, but can
-  vary depending on the availability of developers time to make the release.
+  vary depending on the availability of developers time to make the release), and also release on an as-needed basis.
 * The ``sds_data_manager`` repository is released on a as-needed basis, typically when enough changes have been made
   since the last release to justify a new release.
 * The ``imap-data-access`` repository is released whenever a new feature or bug fix is implemented, since this
@@ -34,13 +34,17 @@ other repositories as well.
 Nominal releases
 """"""""""""""""
 
-#. Make sure the ``dev`` branch is up-to-date with any changes you want included in the release (i.e. merge in any
-   feature branches using the nominal :ref:`git & GitHub Workflow <git-and-github-workflow>`).
+#. Make sure your local ``dev`` branch is up-to-date with any changes you want included in the release (i.e. merge in
+   any feature branches and update the branch against ``upstream`` using the nominal
+   :ref:`git & GitHub Workflow <git-and-github-workflow>`).
 #. Create a new version branch off of ``dev``.  The name of the branch should match the version number to be used for
    the release, which should follow the :ref:`software versioning <versioning>` conventions. The name should be
    prepended with ``v`` (e.g. ``v0.1.0``).
 #. Make any release-specific commits to the new version branch using the nominal ``git add``/``git commit`` cycle. This
-   may include commits that add release notes, or update version numbers in various configurations.
+   may include commits that add release notes, or update version numbers in various configurations. (Currently, the
+   ``imap_processing`` repo does not require any release-specific commits, as the versioning for that repo is fully
+   automated. The ``sds_data_manager`` and ``imap-data-access`` repositories currently require an update to the
+   hard-coded version number in the ``pyproject.toml`` file.)
 #. Push the version branch to the main ``IMAP-Science-Operations-Center`` ``imap_processing`` repo (i.e. ``upstream``).
 #. If there have been release-specific commits, In GitHub, create a pull request that merges the version branch into
    ``dev``. Proceed with the nominal review & merge process described in steps (10) and (11) in the :ref:`git & GitHub
@@ -48,7 +52,8 @@ Nominal releases
 #. Create a `new release <https://github.com/IMAP-Science-Operations-Center/imap_processing/releases>`_. Under "Choose a
    tag", create a new tag with the same name as the version branch (e.g. ``v0.1.0``). For "Release title", also use the
    name of the version branch (e.g. ``v0.1.0``). In the description box, include appropriate highlights and release
-   notes (you can use a previous release for an example of how this should be formatted).
+   notes (you can use a previous release for an example of how this should be formatted), or use the "Generate Release
+   Notes" button.
 
 
 Patches
@@ -73,6 +78,7 @@ which you want to patch (e.g. ``v0.1.x``).
 Deployment
 ^^^^^^^^^^
 
-Once a release is created in GitHub, a SDC dev team member can follow the `CDK deployment steps
-<https://sds-data-manager.readthedocs.io/en/latest/cdk/cdk-deployment.html>`_ to deploy the software to AWS. Once the
-software is deployed, a user should be able to call the APIs.
+Once a release is created in GitHub, a GitHub action workflow is used to automatically deploy the changes. In the case
+of ``sds_data_manager``, a ``Deploy`` workflow is used to deploy the software to AWS. For ``imap_processing`` and
+``imap-data-access``, a ``Build and upload to PyPi`` workflow is used to build the package and upload it to PyPi. The
+person performing the release should check that these workflows succeeded successfully.

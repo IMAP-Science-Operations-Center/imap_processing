@@ -24,8 +24,7 @@ import imap_data_access
 import numpy as np
 import spiceypy
 import xarray as xr
-from imap_data_access import ScienceFilePath
-from imap_data_access.io import download
+from imap_data_access.io import IMAPDataAccessError, download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
     ProcessingInputType,
@@ -52,7 +51,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 #   call cdf.utils.write_cdf
 from imap_processing.codice import codice_l1a, codice_l1b, codice_l2
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
-from imap_processing.glows.l1b.glows_l1b import glows_l1b
+from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l2.glows_l2 import glows_l2
 from imap_processing.hi import hi_l1a, hi_l1b, hi_l1c, hi_l2
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
@@ -407,32 +406,23 @@ class ProcessInstrument(ABC):
             A list of file paths to upload to the SDC.
         """
         if self.upload_to_sdc:
-            # Validate that the files don't already exist
-            for filename in products:
-                file_path = ScienceFilePath(filename)
-                existing_file = imap_data_access.query(
-                    instrument=file_path.instrument,
-                    data_level=file_path.data_level,
-                    descriptor=file_path.descriptor,
-                    start_date=file_path.start_date,
-                    end_date=file_path.start_date,
-                    repointing=file_path.repointing,
-                    version=file_path.version,
-                    extension="cdf",
-                    table="science",
-                )
-                if existing_file:
-                    raise ProcessInstrument.ImapFileExistsError(
-                        f"File {filename} already exists in the IMAP SDC. "
-                        "No files were uploaded."
-                        f"Generated files: {products}."
-                    )
-
-            if len(products) == 0:
+            if not products:
                 logger.info("No files to upload.")
+                return
+
             for filename in products:
-                logger.info(f"Uploading file: {filename}")
-                imap_data_access.upload(filename)
+                try:
+                    logger.info(f"Uploading file: {filename}")
+                    imap_data_access.upload(filename)
+                except IMAPDataAccessError as e:
+                    msg = str(e)
+                    if "FileAlreadyExists" in msg and "409" in msg:
+                        logger.warning("Skipping upload of existing file, %s", filename)
+                        continue
+                    else:
+                        logger.error(f"Upload failed with error: {msg}")
+                except Exception as e:
+                    logger.error(f"Upload failed unknown error: {e}")
 
     @final
     def process(self) -> None:
@@ -676,7 +666,7 @@ class Glows(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         if self.data_level == "l1a":
-            science_files = dependencies.get_file_paths(source="glows")
+            science_files = dependencies.get_file_paths(source="glows", data_type="l0")
             if len(science_files) != 1:
                 raise ValueError(
                     f"GLOWS L1A requires exactly one input science file, received: "
@@ -685,61 +675,67 @@ class Glows(ProcessInstrument):
             datasets = glows_l1a(science_files[0])
 
         if self.data_level == "l1b":
-            science_files = dependencies.get_file_paths(source="glows")
+            science_files = dependencies.get_file_paths(source="glows", data_type="l1a")
             if len(science_files) != 1:
                 raise ValueError(
                     f"GLOWS L1B requires exactly one input science file, received: "
                     f"{science_files}."
                 )
             input_dataset = load_cdf(science_files[0])
-            # TODO: Replace this by reading from AWS/ProcessingInputs
+            if "hist" in self.descriptor:
+                # Create file lists for each ancillary type
+                excluded_regions_files = dependencies.get_processing_inputs(
+                    descriptor="map-of-excluded-regions"
+                )[0]
+                uv_sources_files = dependencies.get_processing_inputs(
+                    descriptor="map-of-uv-sources"
+                )[0]
+                suspected_transients_files = dependencies.get_processing_inputs(
+                    descriptor="suspected-transients"
+                )[0]
+                exclusions_by_instr_team_files = dependencies.get_processing_inputs(
+                    descriptor="exclusions-by-instr-team"
+                )[0]
+                pipeline_settings = dependencies.get_processing_inputs(
+                    descriptor="pipeline-settings"
+                )[0]
 
-            glows_ancillary_dir = Path(__file__).parent / "glows" / "ancillary"
-
-            # Create file lists for each ancillary type
-            excluded_regions_files = [
-                glows_ancillary_dir
-                / "imap_glows_map-of-excluded-regions_20250923_v002.dat"
-            ]
-            uv_sources_files = [
-                glows_ancillary_dir / "imap_glows_map-of-uv-sources_20250923_v002.dat"
-            ]
-            suspected_transients_files = [
-                glows_ancillary_dir
-                / "imap_glows_suspected-transients_20250923_v002.dat"
-            ]
-            exclusions_by_instr_team_files = [
-                glows_ancillary_dir
-                / "imap_glows_exclusions-by-instr-team_20250923_v002.dat"
-            ]
-
-            # Use end date buffer for ancillary data
-            current_day = np.datetime64(
-                f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
-            )
-            day_buffer = current_day + np.timedelta64(3, "D")
-
-            # Create combiners for each ancillary dataset
-            excluded_regions_combiner = GlowsAncillaryCombiner(
-                excluded_regions_files, day_buffer
-            )
-            uv_sources_combiner = GlowsAncillaryCombiner(uv_sources_files, day_buffer)
-            suspected_transients_combiner = GlowsAncillaryCombiner(
-                suspected_transients_files, day_buffer
-            )
-            exclusions_by_instr_team_combiner = GlowsAncillaryCombiner(
-                exclusions_by_instr_team_files, day_buffer
-            )
-
-            datasets = [
-                glows_l1b(
-                    input_dataset,
-                    excluded_regions_combiner.combined_dataset,
-                    uv_sources_combiner.combined_dataset,
-                    suspected_transients_combiner.combined_dataset,
-                    exclusions_by_instr_team_combiner.combined_dataset,
+                # Use end date buffer for ancillary data
+                current_day = np.datetime64(
+                    f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
                 )
-            ]
+                day_buffer = current_day + np.timedelta64(3, "D")
+
+                # Create combiners for each ancillary dataset
+                excluded_regions_combiner = GlowsAncillaryCombiner(
+                    excluded_regions_files, day_buffer
+                )
+                uv_sources_combiner = GlowsAncillaryCombiner(
+                    uv_sources_files, day_buffer
+                )
+                suspected_transients_combiner = GlowsAncillaryCombiner(
+                    suspected_transients_files, day_buffer
+                )
+                exclusions_by_instr_team_combiner = GlowsAncillaryCombiner(
+                    exclusions_by_instr_team_files, day_buffer
+                )
+                pipeline_settings_combiner = GlowsAncillaryCombiner(
+                    pipeline_settings, day_buffer
+                )
+
+                datasets = [
+                    glows_l1b(
+                        input_dataset,
+                        excluded_regions_combiner.combined_dataset,
+                        uv_sources_combiner.combined_dataset,
+                        suspected_transients_combiner.combined_dataset,
+                        exclusions_by_instr_team_combiner.combined_dataset,
+                        pipeline_settings_combiner.combined_dataset,
+                    )
+                ]
+            else:
+                # Direct events
+                datasets = [glows_l1b_de(input_dataset)]
 
         if self.data_level == "l2":
             science_files = dependencies.get_file_paths(source="glows")
@@ -813,13 +809,26 @@ class Hi(ProcessInstrument):
             datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
         elif self.data_level == "l2":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
-            # TODO get ancillary paths
-            geometric_factors_path = ""
-            esa_energies_path = ""
+            anc_dependencies = dependencies.get_processing_inputs(data_type="ancillary")
+            if len(anc_dependencies) != 3:
+                raise ValueError(
+                    f"Expected three ancillary dependencies for L2 processing including"
+                    f"cal-prod, esa-energies, and esa-eta-fit-factors."
+                    f"Got {[anc_dep.descriptor for anc_dep in anc_dependencies]}"
+                    "."
+                )
+            # Get individual L2 ancillary dependencies
+            # Strip the "45sensor" or "90sensor" off the ancillary descriptor and
+            # create a mapping from descriptor to path
+            l2_ancillary_path_dict = {
+                "-".join(dep.descriptor.split("-")[1:]): dep.imap_file_paths[
+                    0
+                ].construct_path()
+                for dep in anc_dependencies
+            }
             datasets = hi_l2.hi_l2(
                 science_paths,
-                geometric_factors_path,
-                esa_energies_path,
+                l2_ancillary_path_dict,
                 self.descriptor,
             )
         else:
@@ -956,14 +965,18 @@ class Idex(ProcessInstrument):
             dependency = load_cdf(science_files[0])
             datasets = [idex_l1b(dependency)]
         elif self.data_level == "l2a":
-            if len(dependency_list) != 1:
+            if len(dependency_list) != 3:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L2A:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"{dependency_list}. Expected three dependencies."
                 )
             science_files = dependencies.get_file_paths(source="idex")
             dependency = load_cdf(science_files[0])
-            datasets = [idex_l2a(dependency)]
+            anc_paths = dependencies.get_file_paths(data_type="ancillary")
+            ancillary_files = {}
+            for path in anc_paths:
+                ancillary_files[path.stem.split("_")[2]] = path
+            datasets = [idex_l2a(dependency, ancillary_files)]
         elif self.data_level == "l2b":
             if len(dependency_list) < 3 or len(dependency_list) > 4:
                 raise ValueError(
@@ -1016,16 +1029,19 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             science_files = dependencies.get_file_paths(source="lo", data_type="l1a")
+            ancillary_files = dependencies.get_file_paths(
+                source="lo", data_type="ancillary"
+            )
             logger.info(f"Science files for L1B: {science_files}")
             for file in science_files:
                 dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = lo_l1b.lo_l1b(data_dict)
+            datasets = lo_l1b.lo_l1b(data_dict, ancillary_files)
 
         elif self.data_level == "l1c":
             data_dict = {}
             anc_dependencies: list = dependencies.get_file_paths(
-                source="lo", descriptor="goodtimes"
+                source="lo", data_type="ancillary"
             )
             science_files = dependencies.get_file_paths(source="lo", descriptor="de")
             for file in science_files:
@@ -1035,13 +1051,11 @@ class Lo(ProcessInstrument):
 
         elif self.data_level == "l2":
             data_dict = {}
-            # TODO: Add ancillary descriptors when maps using them are
-            #  implemented.
-            anc_dependencies = []
             science_files = dependencies.get_file_paths(source="lo", descriptor="pset")
-            psets = []
-            for file in science_files:
-                psets.append(load_cdf(file))
+            anc_dependencies = dependencies.get_file_paths(data_type="ancillary")
+
+            # Load all pset files into datasets
+            psets = [load_cdf(file) for file in science_files]
             data_dict[psets[0].attrs["Logical_source"]] = psets
             datasets = lo_l2.lo_l2(data_dict, anc_dependencies, self.descriptor)
         return datasets
@@ -1123,9 +1137,9 @@ class Mag(ProcessInstrument):
             input_data = [load_cdf(dep) for dep in science_files]
             # Input datasets can be in any order, and are validated within mag_l1c
             if len(input_data) == 1:
-                datasets = [mag_l1c(input_data[0])]
+                datasets = [mag_l1c(input_data[0], current_day)]
             elif len(input_data) == 2:
-                datasets = [mag_l1c(input_data[0], input_data[1])]
+                datasets = [mag_l1c(input_data[0], current_day, input_data[1])]
             else:
                 raise ValueError(
                     f"Invalid dependencies found for MAG L1C:"
@@ -1224,8 +1238,8 @@ class Spacecraft(ProcessInstrument):
             The list of processed products.
         """
         print(f"Processing Spacecraft {self.data_level}")
-
-        if self.data_level == "l1a":
+        processed_dataset = []
+        if self.descriptor == "quaternions":
             # File path is expected output file path
             input_files = dependencies.get_file_paths(source="spacecraft")
             if len(input_files) > 1:
@@ -1234,26 +1248,21 @@ class Spacecraft(ProcessInstrument):
                     f"{input_files}. Expected only one dependency."
                 )
             datasets = list(quaternions.process_quaternions(input_files[0]))
-            return datasets
-        elif self.data_level == "spice":
+            processed_dataset.extend(datasets)
+        elif self.descriptor == "pointing-attitude":
             spice_inputs = dependencies.get_file_paths(
                 data_type=SPICESource.SPICE.value
             )
             ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
-            if len(ah_paths) != 1:
-                raise ValueError(
-                    f"Unexpected spice dependencies found for Spacecraft "
-                    f"pointing_kernel: {ah_paths}. Expected exactly one "
-                    f"attitude history file."
-                )
             pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
-                ah_paths[0]
+                ah_paths[-1]
             )
-            return pointing_kernel_paths
+            processed_dataset.extend(pointing_kernel_paths)
         else:
             raise NotImplementedError(
                 f"Spacecraft processing not implemented for level {self.data_level}"
             )
+        return processed_dataset
 
 
 class Swapi(ProcessInstrument):
@@ -1457,7 +1466,10 @@ class Ultra(ProcessInstrument):
             }
             science_files = dependencies.get_file_paths(source="ultra", data_type="l1b")
             l1b_dict = {
-                dataset.attrs["Logical_source"]: dataset
+                # TODO remove
+                dataset.attrs["Logical_source"].replace(
+                    "cullingmask", "goodtimes"
+                ): dataset
                 for dataset in [load_cdf(sci_file) for sci_file in science_files]
             }
             combined = {**l1a_dict, **l1b_dict}
@@ -1466,11 +1478,12 @@ class Ultra(ProcessInstrument):
             for path in anc_paths:
                 ancillary_files[path.stem.split("_")[2]] = path
             spice_paths = dependencies.get_file_paths(data_type="spice")
-            if spice_paths:
-                has_spice = True
+            # Only the helio pset needs IMAP frames
+            if any("imap_frames" in path.as_posix() for path in spice_paths):
+                imap_frames = True
             else:
-                has_spice = False
-            datasets = ultra_l1c.ultra_l1c(combined, ancillary_files, has_spice)
+                imap_frames = False
+            datasets = ultra_l1c.ultra_l1c(combined, ancillary_files, imap_frames)
         elif self.data_level == "l2":
             all_pset_filepaths = dependencies.get_file_paths(
                 source="ultra", descriptor="pset"

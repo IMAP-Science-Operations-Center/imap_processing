@@ -138,3 +138,19 @@ def test_build_output(furnish_kernels):
                     time_interval,
                 )
             )
+
+
+@pytest.mark.external_kernel
+def test_generate_text_files(furnish_kernels, tmpdir):
+    kernels = [
+        "naif0012.tls",
+        "pck00011.tpc",
+        "de440s.bsp",
+        "imap_spk_demo.bsp",
+        "earth_latest_high_prec.bpc",
+    ]
+    with furnish_kernels(kernels):
+        output = process_ephemeris.generate_text_files(station="Kiel", day="2025-08-15")
+
+    assert output[0] == "Station: Kiel\n"
+    assert "(km/s)\n" in output[7]

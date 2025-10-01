@@ -17,9 +17,23 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
+default_uint16_attrs: &default_uint16
+  <<: *default
+  FILLVAL: 65535
+  FORMAT: I5
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  dtype: uint16
+
+energy_dependent_attrs: &energy_dependent
+  <<: *default_float32
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: pixel_index
+
 latitude:
   <<: *default_float32
   CATDESC: Latitude bin center corresponding to healpix index with range [-90, 90].
+  DEPEND_1: pixel_index
   FIELDNAM: latitude
   LABLAXIS: latitude
   UNITS: degrees
@@ -27,6 +41,7 @@ latitude:
 longitude:
   <<: *default_float32
   CATDESC: Longitude bin center corresponding to healpix index with range [0, 360].
+  DEPEND_1: pixel_index
   FIELDNAM: longitude
   LABLAXIS: longitude
   UNITS: degrees
@@ -39,29 +54,99 @@ species_bin:
   # TODO: come back to format
   UNITS: " "
 
-exposure_factor:
+dead_time_ratio:
   <<: *default_float32
-  CATDESC: Exposure time for a pointing.
+  CATDESC: Dead time correction ratios for each spin phase step (1ms resolution).
+  DEPEND_1: spin_phase_step
+  FIELDNAM: dead_time_ratios
+  LABLAXIS: Dead Time Ratio
+  UNITS: " "
+  VALIDMIN: 0.0
+
+sensitivity:
+  <<: *energy_dependent
+  CATDESC: Averaged instrument sensitive area.
+  FIELDNAM: sensitivity
+  LABLAXIS: sensitivity
+  # TODO: come back to format
+  UNITS: cm^2
+
+geometric_function:
+  <<: *energy_dependent
+  CATDESC: Averaged aperture area as seen by the backstop.
+  FIELDNAM: geometric_function
+  LABLAXIS: Geometric Factor
+  UNITS: cm^2
+  VALIDMIN: 0.0
+
+efficiency:
+  <<: *energy_dependent
+  CATDESC: Efficiency of the instrument in converting ENAs to valid events.
+  FIELDNAM: efficiency
+  LABLAXIS: Efficiency
+  UNITS: " "
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0
+
+exposure_factor:
+  <<: *energy_dependent
+  DEPEND_0: epoch
+  CATDESC: Exposure time with the deadtime correction applied for a pointing.
   FIELDNAM: exposure_factor
   LABLAXIS: exposure factor
   # TODO: come back to format
   UNITS: seconds
 
-sensitivity:
-  <<: *default_float32
-  CATDESC: Calibration/sensitivity factor.
-  FIELDNAM: sensitivity
-  LABLAXIS: sensitivity
+helio_exposure_factor:
+  <<: *energy_dependent
+  CATDESC: Exposure time with the deadtime correction applied for a pointing.
+  FIELDNAM: exposure_factor
+  LABLAXIS: exposure factor
+  DEPEND_0: epoch
   # TODO: come back to format
-  UNITS: counts/second
+  UNITS: seconds
+
+scatter_theta:
+  <<: *energy_dependent
+  CATDESC: Scattering theta values for a pointing (reported as gaussian uncertainty).
+  FIELDNAM: scatter_theta
+  LABLAXIS: scatter theta
+  UNITS: degrees
+
+scatter_phi:
+  <<: *energy_dependent
+  CATDESC: Scattering phi values for a pointing (reported as gaussian uncertainty).
+  FIELDNAM: scatter_phi
+  LABLAXIS: scatter phi
+  UNITS: degrees
+
+scatter_threshold:
+  <<: *energy_dependent
+  CATDESC: Scattering threshold values for each energy bin for a pointing.
+  FIELDNAM: scatter_threshold
+  LABLAXIS: scatter threshold
+  UNITS: degrees
 
 counts:
   <<: *default
   CATDESC: Counts for a spin.
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: pixel_index
   FIELDNAM: counts
   LABLAXIS: counts
   # TODO: come back to format
   UNITS: counts
+
+
+quality_flags:
+  <<: *default_uint16
+  CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_ena_rates
+  LABLAXIS: quality_ena_rates
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  DEPEND_2: energy_bin_geometric_mean
+  UNITS: " "
 
 background_rates:
   <<: *default_float32
@@ -94,3 +179,23 @@ energy_bin_delta:
   FIELDNAM: energy_bin_delta
   LABLAXIS: energy bin delta
   UNITS: keV
+
+energy_delta_minus:
+  <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Difference between the energy bin center and lower edge.
+  LABLAXIS: energy
+  UNITS: KeV
+  FIELDNAM: energy_bin_delta_minus
+  DISPLAY_TYPE: no_plot
+  DEPEND_1: energy_bin_geometric_mean
+
+energy_delta_plus:
+  <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Difference between the energy bin center and upper edge.
+  LABLAXIS: energy
+  UNITS: KeV
+  FIELDNAM: energy_bin_delta_plus
+  DISPLAY_TYPE: no_plot
+  DEPEND_1: energy_bin_geometric_mean

@@ -6,6 +6,7 @@ import spiceypy as spice
 import xarray as xr
 
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.spice.time import str_to_et
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
 
@@ -316,7 +317,8 @@ def mock_l1c_pset_product_healpix(
     counts = counts.astype(int)
     # add an epoch dimension
     counts = np.expand_dims(counts, axis=0)
-    sensitivity = np.ones_like(counts)
+    sensitivity = np.ones_like(counts)[0]  # pointing independent
+    geometric_function = sensitivity  # pointing independent
 
     # Determine the epoch, which is TT time in nanoseconds since J2000 epoch
     tdb_et = str_to_et(timestr)
@@ -351,11 +353,17 @@ def mock_l1c_pset_product_healpix(
             ),
             "sensitivity": (
                 [
-                    CoordNames.TIME.value,
                     CoordNames.ENERGY_ULTRA_L1C.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 sensitivity,
+            ),
+            "geometric_function": (
+                [
+                    CoordNames.ENERGY_ULTRA_L1C.value,
+                    CoordNames.HEALPIX_INDEX.value,
+                ],
+                geometric_function,
             ),
             CoordNames.AZIMUTH_L1C.value: (
                 [CoordNames.HEALPIX_INDEX.value],
@@ -368,6 +376,10 @@ def mock_l1c_pset_product_healpix(
             "energy_bin_delta": (
                 [CoordNames.ENERGY_ULTRA_L1C.value],
                 energy_bin_delta,
+            ),
+            "quality_flags": (
+                [CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value],
+                np.full((1, npix), ImapPSETUltraFlags.NONE.value, dtype=np.uint16),
             ),
         },
         coords={

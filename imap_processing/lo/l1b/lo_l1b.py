@@ -3,33 +3,42 @@
 import logging
 from dataclasses import Field
 from pathlib import Path
-from typing import Any
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.lo import lo_ancillary
 from imap_processing.lo.l1b.tof_conversions import (
     TOF0_CONV,
     TOF1_CONV,
     TOF2_CONV,
     TOF3_CONV,
 )
-from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    cartesian_to_latitudinal,
+    instrument_pointing,
+)
+from imap_processing.spice.repoint import get_pointing_times
+from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def lo_l1b(dependencies: dict) -> list[Path]:
+def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
     """
     Will process IMAP-Lo L1A data into L1B CDF data products.
 
     Parameters
     ----------
-    dependencies : dict
+    sci_dependencies : dict
         Dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    anc_dependencies : list
+        List of ancillary file paths needed for L1B data product creation.
 
     Returns
     -------
@@ -43,30 +52,28 @@ def lo_l1b(dependencies: dict) -> list[Path]:
     # create the attribute manager to access L1A fillval attributes
     attr_mgr_l1a = ImapCdfAttributes()
     attr_mgr_l1a.add_instrument_variable_attrs(instrument="lo", level="l1a")
-    logger.info(f"\n Dependencies: {list(dependencies.keys())}\n")
+    logger.info(f"\n Dependencies: {list(sci_dependencies.keys())}\n")
     # if the dependencies are used to create Annotated Direct Events
-    if "imap_lo_l1a_de" in dependencies and "imap_lo_l1a_spin" in dependencies:
+    if "imap_lo_l1a_de" in sci_dependencies and "imap_lo_l1a_spin" in sci_dependencies:
         logger.info("\nProcessing IMAP-Lo L1B Direct Events...")
         logical_source = "imap_lo_l1b_de"
         # get the dependency dataset for l1b direct events
-        l1a_de = dependencies["imap_lo_l1a_de"]
-        spin_data = dependencies["imap_lo_l1a_spin"]
+        l1a_de = sci_dependencies["imap_lo_l1a_de"]
+        spin_data = sci_dependencies["imap_lo_l1a_spin"]
 
         # Initialize the L1B DE dataset
         l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
+        pointing_start_met, pointing_end_met = get_pointing_times(
+            l1a_de["met"].values[0].item()
+        )
         # Get the start and end times for each spin epoch
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
         avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
             acq_start, acq_end
         )
-        # get spin angle (0 - 360 degrees) for each DE
-        spin_angle = get_spin_angle(l1a_de)
-        # calculate and set the spin bin based on the spin angle
-        # spin bins are 0 - 60 bins
-        l1b_de = set_spin_bin(l1b_de, spin_angle)
         # set the spin cycle for each direct event
-        l1b_de = set_spin_cycle(l1a_de, l1b_de)
+        l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
         # get spin start times for each event
         spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data, acq_end)
         # get the absolute met for each event
@@ -75,6 +82,10 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         )
         # set the epoch for each event
         l1b_de = set_each_event_epoch(l1b_de)
+        # Set the ESA mode for each direct event
+        l1b_de = set_esa_mode(
+            pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
+        )
         # Set the average spin duration for each direct event
         l1b_de = set_avg_spin_durations_per_event(
             l1a_de, l1b_de, avg_spin_durations_per_cycle
@@ -88,13 +99,13 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)
         # set the species for each direct event
         l1b_de = identify_species(l1b_de)
-        # set the badtimes
-        l1b_de = set_bad_times(l1b_de)
         # set the pointing direction for each direct event
         l1b_de = set_pointing_direction(l1b_de)
         # calculate and set the pointing bin based on the spin phase
         # pointing bin is 3600 x 40 bins
         l1b_de = set_pointing_bin(l1b_de)
+        # set the badtimes
+        l1b_de = set_bad_times(l1b_de, anc_dependencies)
 
     return [l1b_de]
 
@@ -133,7 +144,7 @@ def initialize_l1b_de(
         # TODO: Add pos to YAML file
         # attrs=attr_mgr.get_variable_attributes("pos"),
     )
-    l1b_de["mode"] = xr.DataArray(
+    l1b_de["mode_bit"] = xr.DataArray(
         l1a_de["mode"].values,
         dims=["epoch"],
         # TODO: Add mode to YAML file
@@ -150,6 +161,65 @@ def initialize_l1b_de(
         dims=["epoch"],
         # TODO: Add esa_step to YAML file
         # attrs=attr_mgr.get_variable_attributes("esa_step"),
+    )
+
+    return l1b_de
+
+
+def set_esa_mode(
+    pointing_start_met: float,
+    pointing_end_met: float,
+    anc_dependencies: list,
+    l1b_de: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Set the ESA mode for each direct event.
+
+    The ESA mode is determined from the sweep table for the time period of the pointing.
+
+    Parameters
+    ----------
+    pointing_start_met : float
+        Start time for the pointing in MET seconds.
+    pointing_end_met : float
+        End time for the pointing in MET seconds.
+    anc_dependencies : list
+        List of ancillary file paths.
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xr.Dataset
+        The L1B DE dataset with the ESA mode added.
+    """
+    # Read the sweep table from the ancillary files
+    sweep_df = lo_ancillary.read_ancillary_file(
+        next(str(s) for s in anc_dependencies if "sweep-table" in str(s))
+    )
+
+    # Get the sweep table rows that correspond to the time period of the pointing
+    pointing_sweep_df = sweep_df[
+        (sweep_df["GoodTime_start"] >= pointing_start_met)
+        & (sweep_df["GoodTime_start"] <= pointing_end_met)
+    ]
+
+    # Check that there is only one ESA mode in the sweep table for the pointing
+    if len(pointing_sweep_df["ESA_Mode"].unique()) == 1:
+        # Update the ESA mode strings to be 0 for HiRes and 1 for HiThr
+        sweep_df["esa_mode"] = sweep_df["ESA_Mode"].map({"HiRes": 0, "HiThr": 1})
+        # Get the ESA mode for the pointing
+        esa_mode = sweep_df["esa_mode"].values[0]
+        # Repeat the ESA mode for each direct event in the pointing
+        esa_mode_array = np.repeat(esa_mode, len(l1b_de["epoch"]))
+    else:
+        raise ValueError("Multiple ESA modes found in sweep table for pointing.")
+
+    l1b_de["esa_mode"] = xr.DataArray(
+        esa_mode_array,
+        dims=["epoch"],
+        # TODO: Add esa_mode to YAML file
+        # attrs=attr_mgr.get_variable_attributes("esa_mode"),
     )
 
     return l1b_de
@@ -204,55 +274,9 @@ def get_avg_spin_durations_per_cycle(
     return avg_spin_durations_per_cycle
 
 
-def get_spin_angle(l1a_de: xr.Dataset) -> np.ndarray[np.float64] | Any:
-    """
-    Get the spin angle (0 - 360 degrees) for each DE.
-
-    Parameters
-    ----------
-    l1a_de : xarray.Dataset
-        The L1A DE dataset.
-
-    Returns
-    -------
-    spin_angle : np.ndarray
-        The spin angle for each DE.
-    """
-    de_times = l1a_de["de_time"].values
-    # DE Time is 12 bit DN. The max possible value is 4096
-    spin_angle = np.array(de_times / 4096 * 360, dtype=np.float64)
-    return spin_angle
-
-
-def set_spin_bin(l1b_de: xr.Dataset, spin_angle: np.ndarray) -> xr.Dataset:
-    """
-    Set the spin bin (0 - 60 bins) for each Direct Event where each bin is 6 degrees.
-
-    Parameters
-    ----------
-    l1b_de : xarray.Dataset
-        The L1B Direct Event dataset.
-    spin_angle : np.ndarray
-        The spin angle (0-360 degrees) for each Direct Event.
-
-    Returns
-    -------
-    l1b_de : xarray.Dataset
-        The L1B DE dataset with the spin bin added.
-    """
-    # Get the spin bin for each DE
-    # Spin bins are 0 - 60 where each bin is 6 degrees
-    spin_bin = (spin_angle // 6).astype(int)
-    l1b_de["spin_bin"] = xr.DataArray(
-        spin_bin,
-        dims=["epoch"],
-        # TODO: Add spin angle to YAML file
-        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
-    )
-    return l1b_de
-
-
-def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
+def set_spin_cycle(
+    pointing_start_met: float, l1a_de: xr.Dataset, l1b_de: xr.Dataset
+) -> xr.Dataset:
     """
     Set the spin cycle for each direct event.
 
@@ -265,6 +289,8 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
 
     Parameters
     ----------
+    pointing_start_met : float
+        The start time of the pointing in MET seconds.
     l1a_de : xarray.Dataset
         The L1A DE dataset.
     l1b_de : xarray.Dataset
@@ -275,19 +301,18 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         The L1B DE dataset with the spin cycle added for each direct event.
     """
+    spin_start_num = get_spin_number(pointing_start_met)
     counts = l1a_de["de_count"].values
     # split the esa_steps into ASC groups
     de_asc_groups = np.split(l1a_de["esa_step"].values, np.cumsum(counts)[:-1])
     spin_cycle = []
-    for i, esa_asc_group in enumerate(de_asc_groups):
-        # TODO: Spin Number does not reset for each pointing. Need to figure out
-        #  how to retain this information across days
-        # increment the spin_start by 28 after each aggregated science cycle
-        spin_start = i * 28
+    for esa_asc_group in de_asc_groups:
         # calculate the spin cycle for each DE in the ASC group
         # TODO: Add equation number in algorithm document when new version is
-        # available. Add to docstring as well
-        spin_cycle.extend(spin_start + 7 + (esa_asc_group - 1) * 2)
+        #  available. Add to docstring as well
+        spin_cycle.extend(spin_start_num + 7 + (esa_asc_group - 1) * 2)
+        # increment the spin start number by 28 for the next ASC
+        spin_start_num += 28
 
     l1b_de["spin_cycle"] = xr.DataArray(
         spin_cycle,
@@ -660,7 +685,7 @@ def identify_species(l1b_de: xr.Dataset) -> xr.Dataset:
     return l1b_de
 
 
-def set_bad_times(l1b_de: xr.Dataset) -> xr.Dataset:
+def set_bad_times(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     """
     Set the bad times for each direct event.
 
@@ -668,24 +693,92 @@ def set_bad_times(l1b_de: xr.Dataset) -> xr.Dataset:
     ----------
     l1b_de : xarray.Dataset
         The L1B DE dataset.
+    anc_dependencies : list
+        List of ancillary file paths.
 
     Returns
     -------
     l1b_de : xarray.Dataset
         The L1B DE dataset with the bad times added.
     """
-    # Initialize all times as not bad for now
-    # TODO: Update to set badtimes based on criteria that
-    #  will be defined in the algorithm document
+    badtimes_df = lo_ancillary.read_ancillary_file(
+        next(str(s) for s in anc_dependencies if "bad-times" in str(s))
+    )
+
+    esa_steps = l1b_de["esa_step"].values
+    epochs = l1b_de["epoch"].values
+    spin_bins = l1b_de["spin_bin"].values
+
+    badtimes = set_bad_or_goodtimes(badtimes_df, epochs, esa_steps, spin_bins)
+
     # 1 = badtime, 0 = not badtime
     l1b_de["badtimes"] = xr.DataArray(
-        np.zeros(len(l1b_de["epoch"]), dtype=int),
+        badtimes,
         dims=["epoch"],
         # TODO: Add to yaml
         # attrs=attr_mgr.get_variable_attributes("bad_times"),
     )
 
     return l1b_de
+
+
+def set_bad_or_goodtimes(
+    times_df: pd.DataFrame,
+    epochs: np.ndarray,
+    esa_steps: np.ndarray,
+    spin_bins: np.ndarray,
+) -> np.ndarray:
+    """
+    Find the good/bad time flags for each epoch based on the provided times DataFrame.
+
+    Parameters
+    ----------
+    times_df : pd.DataFrame
+        Good or Bad times dataframe containing time ranges and corresponding flags.
+    epochs : np.ndarray
+        Array of epochs in TTJ2000ns format.
+    esa_steps : np.ndarray
+        Array of ESA steps corresponding to each epoch.
+    spin_bins : np.ndarray
+        Array of spin bins corresponding to each epoch.
+
+    Returns
+    -------
+    time_flags : np.ndarray
+        Array of time good or bad time flags for each epoch.
+    """
+    if "BadTime_start" in times_df.columns and "BadTime_end" in times_df.columns:
+        times_start = met_to_ttj2000ns(times_df["BadTime_start"])
+        times_end = met_to_ttj2000ns(times_df["BadTime_end"])
+    elif "GoodTime_start" in times_df.columns and "GoodTime_end" in times_df.columns:
+        times_start = met_to_ttj2000ns(times_df["GoodTime_start"])
+        times_end = met_to_ttj2000ns(times_df["GoodTime_end"])
+    else:
+        raise ValueError("DataFrame must contain either BadTime or GoodTime columns.")
+
+    # Create masks for time and bin ranges using broadcasting
+    # the bin_start and bin_end are 6 degree bins and need to be converted to
+    # 0.1 degree bins to align with the spin_bins, so multiply by 60
+    time_mask = (epochs[:, None] >= times_start) & (epochs[:, None] <= times_end)
+    bin_mask = (spin_bins[:, None] >= times_df["bin_start"].values * 60) & (
+        spin_bins[:, None] <= times_df["bin_end"].values * 60
+    )
+
+    # Combined mask for epochs that fall within the time and bin ranges
+    combined_mask = time_mask & bin_mask
+
+    # Get the time flags for each epoch's esa_step from matching rows
+    time_flags = np.zeros(len(epochs), dtype=int)
+    for epoch_idx in range(len(epochs)):
+        matching_rows = np.where(combined_mask[epoch_idx])[0]
+        if len(matching_rows) > 0:
+            # Use the first matching row
+            row_idx = matching_rows[0]
+            esa_step = esa_steps[epoch_idx]
+            if f"E-Step{esa_step}" in times_df.columns:
+                time_flags[epoch_idx] = times_df[f"E-Step{esa_step}"].iloc[row_idx]
+
+    return time_flags
 
 
 def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
@@ -708,22 +801,31 @@ def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
     """
     # Get the pointing bin for each DE
     et = ttj2000ns_to_et(l1b_de["epoch"])
-
-    direction = instrument_pointing(et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_DPS)
+    # get the direction in HAE coordinates
+    direction = instrument_pointing(
+        et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_HAE, cartesian=True
+    )
     # TODO: Need to ask Lo what to do if a latitude is outside of the
     # +/-2 degree range. Is that possible?
-    l1b_de["direction_lon"] = xr.DataArray(
+    l1b_de["hae_x"] = xr.DataArray(
         direction[:, 0],
         dims=["epoch"],
         # TODO: Add direction_lon to YAML file
-        # attrs=attr_mgr.get_variable_attributes("direction_lon"),
+        # attrs=attr_mgr.get_variable_attributes("hae_x"),
     )
 
-    l1b_de["direction_lat"] = xr.DataArray(
+    l1b_de["hae_y"] = xr.DataArray(
         direction[:, 1],
         dims=["epoch"],
         # TODO: Add direction_lat to YAML file
-        # attrs=attr_mgr.get_variable_attributes("direction_lat"),
+        # attrs=attr_mgr.get_variable_attributes("hae_y"),
+    )
+
+    l1b_de["hae_z"] = xr.DataArray(
+        direction[:, 2],
+        dims=["epoch"],
+        # TODO: Add direction_lat to YAML file
+        # attrs=attr_mgr.get_variable_attributes("hae_z"),
     )
 
     return l1b_de
@@ -733,7 +835,7 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     """
     Set the pointing bin for each direct event.
 
-    The pointing bins are defined as 3600 bins for longitude and 40 bins for latitude.
+    The pointing bins are defined as 3600 bins for spin and 40 bins for off angle.
     Each bin is 0.1 degrees. The bins are defined as follows:
     Longitude bins: -180 to 180 degrees
     Latitude bins: -2 to 2 degrees
@@ -748,10 +850,16 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         The L1B DE dataset with the pointing bins added.
     """
-    # First column: latitudes
-    lats = l1b_de["direction_lat"]
-    # Second column: longitudes
-    lons = l1b_de["direction_lon"]
+    x = l1b_de["hae_x"]
+    y = l1b_de["hae_y"]
+    z = l1b_de["hae_z"]
+    # convert the pointing direction to latitudinal coordinates
+    direction = cartesian_to_latitudinal(np.column_stack((x, y, z)))
+    # first column: radius (Not needed)
+    # second column: longitude
+    lons = direction[:, 1]
+    # third column: latitude
+    lats = direction[:, 2]
 
     # Define bin edges
     # 3600 bins, 0.1° each
@@ -764,18 +872,18 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     lon_bins = np.digitize(lons, lon_bins) - 1
     lat_bins = np.digitize(lats, lat_bins) - 1
 
-    l1b_de["pointing_bin_lon"] = xr.DataArray(
+    l1b_de["spin_bin"] = xr.DataArray(
         lon_bins,
         dims=["epoch"],
         # TODO: Add pointing_bin_lon to YAML file
-        # attrs=attr_mgr.get_variable_attributes("pointing_bin_lon"),
+        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
     )
 
-    l1b_de["pointing_bin_lat"] = xr.DataArray(
+    l1b_de["off_angle_bin"] = xr.DataArray(
         lat_bins,
         dims=["epoch"],
         # TODO: Add point_bin_lat to YAML file
-        # attrs=attr_mgr.get_variable_attributes("pointing_bin_lat"),
+        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
     )
 
     return l1b_de

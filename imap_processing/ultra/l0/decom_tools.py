@@ -157,6 +157,7 @@ def decompress_image(
     pixel0: int,
     binary_data: str,
     packet_props: PacketProperties,
+    planes_per_packet: int = 1,
 ) -> NDArray:
     """
     Will decompress a binary string representing an image into a matrix of pixel values.
@@ -174,11 +175,15 @@ def decompress_image(
     packet_props : PacketProperties
         Properties of the packet, including width bit, mantissa bit length and pixel
         window dimensions.
+    planes_per_packet : int
+        Number of image planes in the packet. Default is 1.
 
     Returns
     -------
-    p_decom : NDArray
-        A 2D numpy array representing pixel values.
+    planes : NDArray
+        A 3D numpy array representing pixel values.
+        The last two dimensions correspond to the image dimensions, and the first
+        is the number of image planes.
         Each pixel is stored as an unsigned 16-bit integer (uint16).
 
     Notes
@@ -199,51 +204,58 @@ def decompress_image(
         )
 
     blocks_per_row = cols // pixels_per_block
-
-    # Compressed pixel matrix
-    p = np.zeros((rows, cols), dtype=np.uint16)
-    # Decompressed pixel matrix
-    p_decom = np.zeros((rows, cols), dtype=np.int16)
-
+    current_pixel0 = pixel0  # Use the parameter for first plane
+    planes = []
+    plane_num = 0
     pos = 0  # Starting position in the binary string
+    while plane_num < planes_per_packet:
+        # Compressed pixel matrix
+        p = np.zeros((rows, cols), dtype=np.uint16)
+        # Decompressed pixel matrix
+        p_decom = np.zeros((rows, cols), dtype=np.int16)
 
-    for i in range(rows):
-        for j in range(blocks_per_row):
-            # Read the width for the block.
-            w, pos = read_and_advance(binary_data, width_bit, pos)
-            for k in range(pixels_per_block):
-                # Handle the special case in which the width is 0
-                if w == 0:
-                    value = 0
-                else:
-                    # Find the value of each pixel in the block
-                    value, pos = read_and_advance(binary_data, w, pos)
+        for i in range(rows):
+            for j in range(blocks_per_row):
+                # Read the width for the block.
+                w, pos = read_and_advance(binary_data, width_bit, pos)
+                for k in range(pixels_per_block):
+                    # Handle the special case in which the width is 0
+                    if w == 0:
+                        value = 0
+                    else:
+                        # Find the value of each pixel in the block
+                        value, pos = read_and_advance(binary_data, w, pos)
 
-                # if the least significant bit of value is set (odd)
-                if value & 0x01:
-                    # value >> 1: shifts bits of value one place to the right
-                    # ~: bitwise NOT operator (flips bits)
-                    delta_f = ~(value >> 1)
-                else:
-                    delta_f = value >> 1
+                    # if the least significant bit of value is set (odd)
+                    if value & 0x01:
+                        # value >> 1: shifts bits of value one place to the right
+                        # ~: bitwise NOT operator (flips bits)
+                        delta_f = ~(value >> 1)
+                    else:
+                        delta_f = value >> 1
 
-                # Calculate the new pixel value and update pixel0
-                column_index = j * pixels_per_block + k
-                # 0xff is the hexadecimal representation of the number 255,
-                # Keeps only the last 8 bits of the result of pixel0 - delta_f
-                # This operation ensures that the result is within the range
-                # of an 8-bit byte (0-255)
-                # Use np.int16 for the arithmetic operation to avoid overflow
-                # Then implicitly cast back to the p's uint16 dtype for storage
-                p[i][column_index] = np.int16(pixel0) - delta_f
-                # Perform logarithmic decompression on the pixel value
-                p_decom[i][column_index] = log_decompression(
-                    p[i][column_index], mantissa_bit_length
-                )
-                pixel0 = p[i][column_index]
-        pixel0 = p[i][0]
+                    # Calculate the new pixel value and update pixel0
+                    column_index = j * pixels_per_block + k
+                    # 0xff is the hexadecimal representation of the number 255,
+                    # Keeps only the last 8 bits of the result of pixel0 - delta_f
+                    # This operation ensures that the result is within the range
+                    # of an 8-bit byte (0-255)
+                    # Use np.int16 for the arithmetic operation to avoid overflow
+                    # Then implicitly cast back to the p's uint16 dtype for storage
+                    p[i][column_index] = np.int16(current_pixel0) - delta_f
+                    # Perform logarithmic decompression on the pixel value
+                    p_decom[i][column_index] = log_decompression(
+                        p[i][column_index], mantissa_bit_length
+                    )
+                    current_pixel0 = p[i][column_index]
+            current_pixel0 = p[i][0]
+        planes.append(p_decom)
+        plane_num += 1
+        # Read P00 for the next plane (if not the last plane)
+        if plane_num < planes_per_packet:
+            current_pixel0, pos = read_and_advance(binary_data, 8, pos)
 
-    return p_decom
+    return np.stack(planes)
 
 
 def read_image_raw_events_binary(

@@ -195,7 +195,7 @@ def calculate_pointing_attitude_segments(
 
     - Latest NAIF leapseconds kernel (naif0012.tls)
     - The latest IMAP sclk (imap_sclk_NNNN.tsc)
-    - The latest IMAP frame kernel (imap_wkcp.tf)
+    - The latest IMAP frame kernel (imap_###.tf)
     - IMAP DPS frame kernel (imap_science_100.tf)
     - IMAP historical attitude kernel from which the pointing frame kernel will
     be generated.
@@ -210,7 +210,9 @@ def calculate_pointing_attitude_segments(
     count = spiceypy.ktotal("ck")
     loaded_ck_kernel, _, _, _ = spiceypy.kdata(count - 1, "ck")
     if str(ck_path) != loaded_ck_kernel:
-        raise ValueError(f"Error: Expected CK kernel {ck_path}")
+        raise ValueError(
+            f"Error: Expected CK kernel {ck_path} but loaded {loaded_ck_kernel}"
+        )
 
     id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
 

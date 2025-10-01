@@ -267,17 +267,19 @@ def test_mag_l1c_validation(test_number, sensor):
     #     / np.timedelta64(1, "ns")
     # ).astype(np.int64)
     # print(f"Time stamp shift: {timestamp }")
-
     source_directory = Path(__file__).parent / "validation" / "L1c" / f"T{test_number}"
     norm_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-in.csv"
     burst_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-burst-in.csv"
 
-    norm = mag_generate_l1b_from_csv(
-        pd.read_csv(norm_in), f"imap_mag_l1b_norm-{sensor}"
-    )
-    burst = mag_generate_l1b_from_csv(
-        pd.read_csv(burst_in), f"imap_mag_l1b_burst-{sensor}"
-    )
+    norm_df = pd.read_csv(norm_in)
+    burst_df = pd.read_csv(burst_in)
+
+    norm = mag_generate_l1b_from_csv(norm_df, f"imap_mag_l1b_norm-{sensor}")
+    burst = mag_generate_l1b_from_csv(burst_df, f"imap_mag_l1b_burst-{sensor}")
+
+    # Extract day_to_process from the first timestamp in the data
+    first_timestamp = pd.to_datetime(norm_df["t"].iloc[0]).normalize()
+    day_to_process = np.datetime64(first_timestamp.date())
 
     # out = np.int64(794968123760272000)
     # print(f"expected out {TTJ2000_EPOCH + out.astype('timedelta64[ns]')}")
@@ -286,7 +288,7 @@ def test_mag_l1c_validation(test_number, sensor):
 
     burst.attrs["vectors_per_second"] = get_vecsec(test_number, sensor, "burst")
 
-    l1c = mag_l1c(norm, burst)
+    l1c = mag_l1c(norm, day_to_process, burst)
     expected_output = pd.read_csv(
         source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-out.csv"
     )
@@ -416,14 +418,23 @@ def get_vecsec(test_number, sensor, mode):
         },
         "015": {
             "mago": {
-                "norm": "794967514703783040:2,794968123760272000:4",
-                "burst": "794966835183206016:64",
+                "norm": "794967519703783040:2,794968128760272000:4",
+                "burst": "794967839890064896:64",
             },
             "magi": {
-                "norm": "794967514703768064:2,794968123760256000:1",
-                "burst": "794967834198914944:64",
+                "norm": "794967519703768064:2,794968128760256000:1",
+                "burst": "794967839890033920:8",
             },
         },
-        "016": {"mago": {"norm": "", "burst": ""}, "magi": {"norm": "", "burst": ""}},
+        "016": {
+            "mago": {
+                "norm": "794968476204568960:4,794969095711198976:2",
+                "burst": "794968751184441984:64",
+            },
+            "magi": {
+                "norm": "794968476204537984:1,794969095711168000:2",
+                "burst": "794968751200051968:8",
+            },
+        },
     }
     return vecsec[test_number][sensor][mode]

@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -30,20 +28,36 @@ def test_extof_high_time_decom(decom_test_data, extof_high_time_test_path):
     decom_ultra = decom_test_data
     df = pd.read_csv(extof_high_time_test_path, index_col="SequenceCount")
 
-    np.testing.assert_array_equal(df.Spin, decom_ultra["spin"].values.flatten())
-    np.testing.assert_array_equal(
-        df.AbortFlag, decom_ultra["abortflag"].values.flatten()
-    )
-    np.testing.assert_array_equal(
-        df.StartDelay, decom_ultra["startdelay"].values.flatten()
+    # Check metadata values
+    # The validation csvs provided only includes the last packet's spin value,
+    # abortflag, and startdelay
+    np.testing.assert_array_equal(df.Spin, decom_ultra["spin"][:, -1])
+    np.testing.assert_array_equal(df.AbortFlag, decom_ultra["abortflag"][:, -1])
+    np.testing.assert_array_equal(df.StartDelay, decom_ultra["startdelay"][:, -1])
+
+    # Validation data from the IT team organizes image data into columns
+    # named UltraImage_Plane_Row_Col, where Plane, Row, and Col are 0-indexed.
+    # Each row corresponds to the epoch dimension.
+    colnames = df.columns.tolist()
+
+    def column_name_sort(name):
+        return (
+            int(name.split("_")[-3]),
+            int(name.split("_")[-2]),
+            int(name.split("_")[-1]),
+        )
+
+    images = sorted(
+        [name for name in colnames if "UltraImage" in name], key=column_name_sort
     )
 
-    for count in df.index.get_level_values("SequenceCount").values:
-        df_data = df[
-            df.index.get_level_values("SequenceCount") == count
-        ].UltraImage.values[0]
-        rows, cols = np.where(decom_ultra["src_seq_ctr"] == count)
-        decom_data = decom_ultra["packetdata"][rows[0]][cols[0]]
-        df_data_array = np.array(json.loads(df_data)[0])
+    epoch = len(df["Epoch"].values)
+    planes = max([int(name.split("_")[-3]) for name in images]) + 1
+    row = max([int(name.split("_")[-2]) for name in images]) + 1
+    col = max([int(name.split("_")[-1]) for name in images]) + 1
+    # Reshape the dataframe data into a 4D numpy array
+    df_data = df[images].to_numpy().reshape(epoch, planes, row, col)
+    # Only check up to the expected number of planes in the decom data
+    df_data = df_data[:, : ULTRA_EXTOF_HIGH_TIME.image_planes, :, :]
 
-        np.testing.assert_array_equal(df_data_array, decom_data)
+    np.testing.assert_array_equal(df_data, decom_ultra["packetdata"])

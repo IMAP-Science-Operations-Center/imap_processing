@@ -8,11 +8,13 @@ Reference: https://spiceypy.readthedocs.io/en/main/documentation.html.
 
 import logging
 import typing
+from datetime import datetime, timedelta
 
 import numpy as np
 import spiceypy
 from numpy import ndarray
 
+from imap_processing.ialirt.constants import STATIONS
 from imap_processing.spice.geometry import SpiceBody, SpiceFrame, imap_state
 from imap_processing.spice.time import et_to_utc, str_to_et
 
@@ -189,7 +191,7 @@ def build_output(
     latitude: float,
     altitude: float,
     time_endpoints: tuple[str, str],
-    time_step: float,
+    time_step: float = 60,
 ) -> dict[str, np.ndarray]:
     """
     Build the output dictionary containing time, azimuth, elevation, and doppler.
@@ -205,7 +207,7 @@ def build_output(
     time_endpoints : tuple[str, str]
         Start and stop times in UTC.
     time_step : float
-        Seconds between data points.
+        Seconds between data points. Default is 60.
 
     Returns
     -------
@@ -225,10 +227,10 @@ def build_output(
     )
 
     output_dict["time"] = et_to_utc(time_range, format_str="ISOC")
-    output_dict["azimuth"] = azimuth
-    output_dict["elevation"] = elevation
-    output_dict["doppler"] = calculate_doppler(
-        longitude, latitude, altitude, time_range
+    output_dict["azimuth"] = np.round(azimuth, 6)
+    output_dict["elevation"] = np.round(elevation, 6)
+    output_dict["doppler"] = np.round(
+        calculate_doppler(longitude, latitude, altitude, time_range), 6
     )
 
     logger.info(
@@ -237,3 +239,62 @@ def build_output(
     )
 
     return output_dict
+
+
+def generate_text_files(station: str, day: str) -> list[str]:
+    """
+    Generate a pointing schedule text file and return it as a list of strings.
+
+    Parameters
+    ----------
+    station : str
+        Station name.
+    day : str
+        The day for which to generate a pointing schedule, in ISO format.
+        Ex: "2025-08-11".
+
+    Returns
+    -------
+    lines : list[str]
+        A list of strings that makeup the lines of a pointing schedule file.
+    """
+    station_properties = STATIONS[station]
+
+    day_as_datetime = datetime.fromisoformat(day)
+    time_endpoints = (
+        datetime.strftime(day_as_datetime, "%Y-%m-%d %H:%M:%S"),
+        datetime.strftime(day_as_datetime + timedelta(days=1), "%Y-%m-%d %H:%M:%S"),
+    )
+    output_dict = build_output(
+        station_properties[0],
+        station_properties[1],
+        station_properties[2],
+        time_endpoints,
+    )
+
+    lines = [
+        f"Station: {station}\n",
+        "Target: IMAP\n",
+        f"Creation date (UTC): {datetime.utcnow()}\n",
+        f"Start time: {time_endpoints[0]}\n",
+        f"End time: {time_endpoints[1]}\n",
+        "Cadence (sec): 60\n\n",
+        "Date/Time"
+        + "Azimuth".rjust(29)
+        + "Elevation".rjust(17)
+        + "Doppler".rjust(15)
+        + "\n",
+        "(UTC)" + "(deg.)".rjust(33) + "(deg.)".rjust(16) + "(km/s)".rjust(16) + "\n",
+    ]
+
+    length = len(output_dict["time"])
+    for i in range(length):
+        lines.append(
+            f"{output_dict['time'][i]}"
+            + f"{output_dict['azimuth'][i]}".rjust(16)
+            + f"{output_dict['elevation'][i]}".rjust(16)
+            + f"{output_dict['doppler'][i]}".rjust(15)
+            + "\n"
+        )
+
+    return lines

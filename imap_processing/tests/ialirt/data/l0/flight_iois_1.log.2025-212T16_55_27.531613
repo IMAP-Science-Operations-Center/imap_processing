@@ -1,0 +1,115 @@
+
+
+
+Thu Jul 31 16:32:38 UTC 2025
+2025/212-16:32:38.239 /app/iois version: iois_1.5, multi-mission OIS version: ois_1.58
+2025/212-16:32:38.240 hostname = ip-10-0-179-228.us-west-2.compute.internal
+2025/212-16:32:38.241 Reading config file: /app/iois_1_config.txt, qualifier: IOIS
+2025/212-16:32:38.242 lock file from I-OIS config file is: /tmp/imap_iois_1_lockfile
+2025/212-16:32:38.242 Opened composite raw record file with frame headers only: iois_1_raw_record_composite_with_headers_only_2025_212_16_32_38.partial
+2025/212-16:32:38.242 Opened packets file for SDC: iois_1_packets_2025_212_16_32_38.partial
+2025/212-16:32:38.242 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_212_16_32_38.partial
+2025/212-16:32:38.242 Opened raw record file for Korea antenna_partner: IOIS_1_raw_record_21_2025_212_16_32_38.partial
+2025/212-16:33:03.247 EnableTCPKeepAlives: TCP_KEEPINTVL=180, TCP_KEEPCNT=3, TCP_KEEPIDLE=20 for Kiel antenna partner connection
+2025/212-16:33:03.247 Kiel antenna partner connection is up.
+2025/212-16:33:04.063 Error: dropout in VCDU counter for VCID=5!  previous: 148, current: 150
+2025/212-16:33:06.070 Error: dropout in VCDU counter for VCID=5!  previous: 155, current: 157
+2025/212-16:33:07.074 Error: dropout in VCDU counter for VCID=5!  previous: 163, current: 165
+2025/212-16:33:09.078 Error: dropout in VCDU counter for VCID=5!  previous: 171, current: 173
+2025/212-16:33:10.079 Error: dropout in VCDU counter for VCID=5!  previous: 179, current: 181
+2025/212-16:33:12.090 Error: dropout in VCDU counter for VCID=5!  previous: 187, current: 189
+2025/212-16:33:13.103 Error: dropout in VCDU counter for VCID=5!  previous: 195, current: 197
+2025/212-16:33:15.099 Error: dropout in VCDU counter for VCID=5!  previous: 203, current: 205
+2025/212-16:33:17.110 Error: dropout in VCDU counter for VCID=5!  previous: 211, current: 213
+2025/212-16:33:18.114 Error: dropout in VCDU counter for VCID=5!  previous: 219, current: 221
+2025/212-16:33:20.118 Error: dropout in VCDU counter for VCID=5!  previous: 227, current: 229
+2025/212-16:33:21.126 Error: dropout in VCDU counter for VCID=5!  previous: 235, current: 237
+2025/212-16:33:23.134 Error: dropout in VCDU counter for VCID=5!  previous: 243, current: 245
+2025/212-16:33:24.138 Error: dropout in VCDU counter for VCID=5!  previous: 250, current: 252
+2025/212-16:33:26.142 Error: dropout in VCDU counter for VCID=5!  previous: 2, current: 4
+2025/212-16:33:27.147 Error: dropout in VCDU counter for VCID=5!  previous: 10, current: 12
+2025/212-16:33:29.150 Error: dropout in VCDU counter for VCID=5!  previous: 18, current: 20
+2025/212-16:33:30.154 Error: dropout in VCDU counter for VCID=5!  previous: 26, current: 28
+2025/212-16:33:32.163 Error: dropout in VCDU counter for VCID=5!  previous: 34, current: 36
+2025/212-16:33:33.166 Error: dropout in VCDU counter for VCID=5!  previous: 42, current: 44
+2025/212-16:33:35.174 Error: dropout in VCDU counter for VCID=5!  previous: 50, current: 52
+2025/212-16:33:37.183 Error: dropout in VCDU counter for VCID=5!  previous: 58, current: 60
+2025/212-16:33:38.187 Error: dropout in VCDU counter for VCID=5!  previous: 66, current: 68
+2025/212-16:33:39.185 Closed packets file for SDC: iois_1_packets_2025_212_16_32_38.partial
+2025/212-16:33:39.186 Renamed iois_1_packets_2025_212_16_32_38.partial to iois_1_packets_2025_212_16_32_38.
+2025/212-16:33:39.186 Spawning: cp
+2025/212-16:33:39.187 Opened packets file for SDC: iois_1_packets_2025_212_16_33_39.partial
+2025/212-16:33:40.189 Kiel antenna partner connection is down!
+2025/212-16:33:40.189 Spawned command succeeded: cp
+2025/212-16:34:40.199 Closed packets file for SDC: iois_1_packets_2025_212_16_33_39.partial
+2025/212-16:34:40.199 Renamed iois_1_packets_2025_212_16_33_39.partial to iois_1_packets_2025_212_16_33_39.
+2025/212-16:34:40.199 Spawning: cp
+2025/212-16:34:40.200 Opened packets file for SDC: iois_1_packets_2025_212_16_34_40.partial
+2025/212-16:34:41.200 Spawned command succeeded: cp
+2025/212-16:35:41.211 Deleting zero-length file: iois_1_packets_2025_212_16_34_40.partial
+2025/212-16:35:41.211 Opened packets file for SDC: iois_1_packets_2025_212_16_35_41.partial
+2025/212-16:36:00.214 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_212_16_32_38.partial
+2025/212-16:36:00.215 Renamed IOIS_1_raw_record_20_2025_212_16_32_38.partial to IOIS_1_raw_record_20_2025_212_16_32_38.
+2025/212-16:36:00.215 Spawning: rsync
+2025/212-16:36:00.215 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_212_16_36_00.partial
+2025/212-16:36:00.215 Deleting zero-length file: IOIS_1_raw_record_21_2025_212_16_32_38.partial
+2025/212-16:36:00.215 Opened raw record file for Korea antenna_partner: IOIS_1_raw_record_21_2025_212_16_36_00.partial
+2025/212-16:36:03.216 Spawned command succeeded: rsync
+2025/212-16:36:42.223 Deleting zero-length file: iois_1_packets_2025_212_16_35_41.partial
+2025/212-16:36:42.223 Opened packets file for SDC: iois_1_packets_2025_212_16_36_42.partial
+2025/212-16:37:43.233 Deleting zero-length file: iois_1_packets_2025_212_16_36_42.partial
+2025/212-16:37:43.233 Opened packets file for SDC: iois_1_packets_2025_212_16_37_43.partial
+2025/212-16:38:44.244 Deleting zero-length file: iois_1_packets_2025_212_16_37_43.partial
+2025/212-16:38:44.245 Opened packets file for SDC: iois_1_packets_2025_212_16_38_44.partial
+2025/212-16:39:45.259 Deleting zero-length file: iois_1_packets_2025_212_16_38_44.partial
+2025/212-16:39:45.259 Opened packets file for SDC: iois_1_packets_2025_212_16_39_45.partial
+2025/212-16:40:46.269 Deleting zero-length file: iois_1_packets_2025_212_16_39_45.partial
+2025/212-16:40:46.269 Opened packets file for SDC: iois_1_packets_2025_212_16_40_46.partial
+2025/212-16:41:00.272 Deleting zero-length file: IOIS_1_raw_record_20_2025_212_16_36_00.partial
+2025/212-16:41:00.272 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_212_16_41_00.partial
+2025/212-16:41:00.272 Deleting zero-length file: IOIS_1_raw_record_21_2025_212_16_36_00.partial
+2025/212-16:41:00.272 Opened raw record file for Korea antenna_partner: IOIS_1_raw_record_21_2025_212_16_41_00.partial
+2025/212-16:41:47.280 Deleting zero-length file: iois_1_packets_2025_212_16_40_46.partial
+2025/212-16:41:47.280 Opened packets file for SDC: iois_1_packets_2025_212_16_41_47.partial
+2025/212-16:42:48.290 Deleting zero-length file: iois_1_packets_2025_212_16_41_47.partial
+2025/212-16:42:48.291 Opened packets file for SDC: iois_1_packets_2025_212_16_42_48.partial
+2025/212-16:43:49.300 Deleting zero-length file: iois_1_packets_2025_212_16_42_48.partial
+2025/212-16:43:49.301 Opened packets file for SDC: iois_1_packets_2025_212_16_43_49.partial
+2025/212-16:44:50.311 Deleting zero-length file: iois_1_packets_2025_212_16_43_49.partial
+2025/212-16:44:50.311 Opened packets file for SDC: iois_1_packets_2025_212_16_44_50.partial
+2025/212-16:45:51.321 Deleting zero-length file: iois_1_packets_2025_212_16_44_50.partial
+2025/212-16:45:51.321 Opened packets file for SDC: iois_1_packets_2025_212_16_45_51.partial
+2025/212-16:46:00.323 Deleting zero-length file: IOIS_1_raw_record_20_2025_212_16_41_00.partial
+2025/212-16:46:00.323 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_212_16_46_00.partial
+2025/212-16:46:00.323 Deleting zero-length file: IOIS_1_raw_record_21_2025_212_16_41_00.partial
+2025/212-16:46:00.323 Opened raw record file for Korea antenna_partner: IOIS_1_raw_record_21_2025_212_16_46_00.partial
+2025/212-16:46:52.332 Deleting zero-length file: iois_1_packets_2025_212_16_45_51.partial
+2025/212-16:46:52.332 Opened packets file for SDC: iois_1_packets_2025_212_16_46_52.partial
+2025/212-16:47:53.342 Deleting zero-length file: iois_1_packets_2025_212_16_46_52.partial
+2025/212-16:47:53.342 Opened packets file for SDC: iois_1_packets_2025_212_16_47_53.partial
+2025/212-16:48:54.353 Deleting zero-length file: iois_1_packets_2025_212_16_47_53.partial
+2025/212-16:48:54.353 Opened packets file for SDC: iois_1_packets_2025_212_16_48_54.partial
+2025/212-16:49:55.363 Deleting zero-length file: iois_1_packets_2025_212_16_48_54.partial
+2025/212-16:49:55.363 Opened packets file for SDC: iois_1_packets_2025_212_16_49_55.partial
+2025/212-16:50:56.373 Deleting zero-length file: iois_1_packets_2025_212_16_49_55.partial
+2025/212-16:50:56.374 Opened packets file for SDC: iois_1_packets_2025_212_16_50_56.partial
+2025/212-16:51:00.374 Deleting zero-length file: IOIS_1_raw_record_20_2025_212_16_46_00.partial
+2025/212-16:51:00.374 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_212_16_51_00.partial
+2025/212-16:51:00.374 Deleting zero-length file: IOIS_1_raw_record_21_2025_212_16_46_00.partial
+2025/212-16:51:00.374 Opened raw record file for Korea antenna_partner: IOIS_1_raw_record_21_2025_212_16_51_00.partial
+2025/212-16:51:57.384 Deleting zero-length file: iois_1_packets_2025_212_16_50_56.partial
+2025/212-16:51:57.384 Opened packets file for SDC: iois_1_packets_2025_212_16_51_57.partial
+2025/212-16:52:58.394 Deleting zero-length file: iois_1_packets_2025_212_16_51_57.partial
+2025/212-16:52:58.394 Opened packets file for SDC: iois_1_packets_2025_212_16_52_58.partial
+2025/212-16:53:59.405 Deleting zero-length file: iois_1_packets_2025_212_16_52_58.partial
+2025/212-16:53:59.405 Opened packets file for SDC: iois_1_packets_2025_212_16_53_59.partial
+2025/212-16:55:00.415 Deleting zero-length file: iois_1_packets_2025_212_16_53_59.partial
+2025/212-16:55:00.415 Opened packets file for SDC: iois_1_packets_2025_212_16_55_00.partial
+2025/212-16:55:27.152 Closed composite raw record file with frame headers only: iois_1_raw_record_composite_with_headers_only_2025_212_16_32_38.partial
+2025/212-16:55:27.152 Renamed iois_1_raw_record_composite_with_headers_only_2025_212_16_32_38.partial to iois_1_raw_record_composite_with_headers_only_2025_212_16_32_38.
+2025/212-16:55:27.152 Spawning: mv
+2025/212-16:55:27.152 Deleting zero-length file: iois_1_packets_2025_212_16_55_00.partial
+2025/212-16:55:27.152 Deleting zero-length file: IOIS_1_raw_record_20_2025_212_16_51_00.partial
+2025/212-16:55:27.152 Deleting zero-length file: IOIS_1_raw_record_21_2025_212_16_51_00.partial
+2025/212-16:55:27.153 SIGKILLHandler: deleting lock file /tmp/imap_iois_1_lockfile.
+2025/212-16:55:27.153 SIGKILLHandler: Exiting iois...

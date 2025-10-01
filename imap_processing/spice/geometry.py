@@ -21,7 +21,7 @@ from numpy.typing import NDArray
 class SpiceBody(IntEnum):
     """Enum containing SPICE IDs for bodies that we use."""
 
-    # A subset of IMAP Specific bodies as defined in imap_wkcp.tf
+    # A subset of IMAP Specific bodies as defined in imap_xxx.tf
     IMAP = -43
     IMAP_SPACECRAFT = -43000
     # IMAP Pointing Frame (Despun) as defined in imap_science_xxx.tf
@@ -33,7 +33,7 @@ class SpiceBody(IntEnum):
 
 
 class SpiceFrame(IntEnum):
-    """SPICE IDs for reference frames in imap_wkcp.tf and imap_science_xxx.tf."""
+    """SPICE IDs for reference frames in imap_###.tf and imap_science_xxx.tf."""
 
     # Standard SPICE Frames
     J2000 = spiceypy.irfnum("J2000")
@@ -41,7 +41,7 @@ class SpiceFrame(IntEnum):
     ITRF93 = 13000
     # IMAP Pointing Frame (Despun) as defined in imap_science_xxx.tf
     IMAP_DPS = -43901
-    # IMAP specific as defined in imap_wkcp.tf
+    # IMAP specific as defined in imap_###.tf
     IMAP_SPACECRAFT = -43000
     IMAP_LO_BASE = -43100
     IMAP_LO_STAR_SENSOR = -43103
@@ -50,7 +50,9 @@ class SpiceFrame(IntEnum):
     IMAP_HI_90 = -43160
     IMAP_ULTRA_45 = -43200
     IMAP_ULTRA_90 = -43210
-    IMAP_MAG = -43250
+    IMAP_MAG_BOOM = -43250
+    IMAP_MAG_I = -43251
+    IMAP_MAG_O = -43252
     IMAP_SWE = -43300
     IMAP_SWAPI = -43350
     IMAP_CODICE = -43400
@@ -83,11 +85,14 @@ class SpiceFrame(IntEnum):
 
 BORESIGHT_LOOKUP = {
     SpiceFrame.IMAP_LO_BASE: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO_STAR_SENSOR: np.array([0, -1, 0]),
     SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
     SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
     SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
     SpiceFrame.IMAP_ULTRA_90: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_MAG: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_MAG_I: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_MAG_O: np.array([0, 0, 1]),
     SpiceFrame.IMAP_SWE: np.array([-1, 0, 0]),
     SpiceFrame.IMAP_SWAPI: np.array([0, 1, 0]),
     SpiceFrame.IMAP_CODICE: np.array([0, 0, 1]),
@@ -132,14 +137,71 @@ def imap_state(
     return np.asarray(state)
 
 
+def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
+    """
+    Calculate the azimuth and elevation angle of instrument mounting.
+
+    Azimuth and elevation to instrument mounting in the spacecraft frame.
+    Azimuth is measured in degrees from the spacecraft x-axis. Elevation is measured
+    in degrees from the spacecraft x-y plane.
+
+    Parameters
+    ----------
+    instrument : SpiceFrame
+        Instrument to get the azimuth and elevation angles for.
+
+    Returns
+    -------
+    instrument_mounting_az_el : np.ndarray
+        2-element array containing azimuth and elevation of the instrument
+        mounting in the spacecraft frame. Azimuth is measured in degrees from
+        the spacecraft x-axis. Elevation is measured in degrees from the
+        spacecraft x-y plane.
+    """
+    # Each instrument can have a unique basis vector in the instrument
+    # frame that is used to compute the s/c to instrument mounting.
+    # Most of these vectors are the same as the instrument boresight vector.
+    mounting_normal_vector = {
+        SpiceFrame.IMAP_LO_BASE: np.array([0, 0, -1]),
+        SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
+        SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
+        SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
+        SpiceFrame.IMAP_ULTRA_90: np.array([0, 0, 1]),
+        SpiceFrame.IMAP_MAG_I: np.array([-1, 0, 0]),
+        SpiceFrame.IMAP_MAG_O: np.array([-1, 0, 0]),
+        SpiceFrame.IMAP_SWE: np.array([-1, 0, 0]),
+        SpiceFrame.IMAP_SWAPI: np.array([0, 0, -1]),
+        SpiceFrame.IMAP_CODICE: np.array([-1, 0, 0]),
+        SpiceFrame.IMAP_HIT: np.array([0, 1, 0]),
+        SpiceFrame.IMAP_IDEX: np.array([0, 1, 0]),
+        SpiceFrame.IMAP_GLOWS: np.array([0, 0, -1]),
+    }
+
+    # Get the instrument mounting normal vector expressed in the spacecraft frame
+    # The reference frames are fixed, so the et argument can be fixed at 0
+    instrument_normal_sc = frame_transform(
+        0, mounting_normal_vector[instrument], instrument, SpiceFrame.IMAP_SPACECRAFT
+    )
+    # Convert the cartesian coordinate to azimuth/elevation angles in degrees
+    return np.rad2deg(
+        spiceypy.recazl(instrument_normal_sc, azccw=True, elplsz=True)[1:]
+    )
+
+
 def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> float:
     """
     Get the spin phase offset from the spacecraft to the instrument.
 
-    For now, the offset is a fixed lookup based on `Table 1: Nominal Instrument
-    to S/C CS Transformations` in document `7516-0011_drw.pdf`. These fixed
-    values will need to be updated based on calibration data or retrieved using
-    SPICE and the latest IMAP frame kernel.
+    Nominal offset values were determined using `Table 1: Nominal Instrument
+    to S/C CS Transformations` in document `7516-0011_drw.pdf`. That Table
+    defines the angle from the spacecraft y-axis. We add 90-degrees and take the
+    modulus with 360 to get the angle from the spacecraft x-axis. This math is
+    shown in the comments after each key value pair in the dictionary defined
+    in code. The true values differ slightly from the nominal values. True
+    values are derived from the frame definitions in the IMAP frames kernel
+    which uses ground calibration measurements to define the as-built mounting
+    of each instrument. The function in this module, `get_instrument_mounting_az_el`,
+    was used to retrieve the true azimuth angles from the IMAP frames kernel.
 
     Parameters
     ----------
@@ -151,22 +213,24 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     spacecraft_to_instrument_spin_phase_offset : float
         The spin phase offset from the spacecraft to the instrument.
     """
-    # TODO: Implement retrieval from SPICE?
-    offset_lookup = {
-        SpiceFrame.IMAP_LO_BASE: 330 / 360,
-        SpiceFrame.IMAP_HI_45: 255 / 360,
-        SpiceFrame.IMAP_HI_90: 285 / 360,
-        SpiceFrame.IMAP_ULTRA_45: 33 / 360,
-        SpiceFrame.IMAP_ULTRA_90: 210 / 360,
-        SpiceFrame.IMAP_SWAPI: 168 / 360,
-        SpiceFrame.IMAP_IDEX: 90 / 360,
-        SpiceFrame.IMAP_CODICE: 136 / 360,
-        SpiceFrame.IMAP_HIT: 30 / 360,
-        SpiceFrame.IMAP_SWE: 153 / 360,
-        SpiceFrame.IMAP_GLOWS: 127 / 360,
-        SpiceFrame.IMAP_MAG: 0 / 360,
+    phase_offset_lookup = {
+        # Phase offset values based on imap_100.tf frame kernel
+        # See docstring notes for details on how these values were determined.
+        SpiceFrame.IMAP_LO: 60 / 360,  # (330 + 90) % 360 = 60
+        SpiceFrame.IMAP_HI_45: 344.8264 / 360,  # 255 + 90 = 345
+        SpiceFrame.IMAP_HI_90: 15.1649 / 360,  # (285 + 90) % 360 = 15
+        SpiceFrame.IMAP_ULTRA_45: 122.8642 / 360,  # 33 + 90 = 123
+        SpiceFrame.IMAP_ULTRA_90: 299.9511 / 360,  # 210 + 90 = 300
+        SpiceFrame.IMAP_SWAPI: 258 / 360,  # 168 + 90 = 258
+        SpiceFrame.IMAP_IDEX: 179.9229 / 360,  # 90 + 90 = 180
+        SpiceFrame.IMAP_CODICE: 225.9086 / 360,  # 136 + 90 = 226
+        SpiceFrame.IMAP_HIT: 119.6452 / 360,  # 30 + 90 = 120
+        SpiceFrame.IMAP_SWE: 243.0155 / 360,  # 153 + 90 = 243
+        SpiceFrame.IMAP_GLOWS: 217.1384 / 360,  # 127 + 90 = 217
+        SpiceFrame.IMAP_MAG_I: 89.9709 / 360,  # 0 + 90 = 90
+        SpiceFrame.IMAP_MAG_O: 89.4077 / 360,  # 0 + 90 = 90
     }
-    return offset_lookup[instrument]
+    return phase_offset_lookup[instrument]
 
 
 def frame_transform(

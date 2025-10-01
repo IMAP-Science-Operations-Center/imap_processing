@@ -28,7 +28,7 @@ impact_charge_base: &impact_charge_base
   DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Current>Qualifier:Derived # TODO quantity should be charge but there is no SPASE charge
 
 mass_estimate_base: &mass_estimate_base
-  UNITS: amu
+  UNITS: Kg
   VALIDMIN: 0.0
   VALIDMAX: *int_maxval
   VAR_TYPE: data
@@ -37,6 +37,17 @@ mass_estimate_base: &mass_estimate_base
   FORMAT: F20.4
   FILLVAL: *double_fillval
   DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Mass>Qualifier:Derived
+
+velocity_estimate_base: &velocity_estimate_base
+  UNITS: km/s
+  VALIDMIN: 0.0
+  VALIDMAX: *int_maxval
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: F20.4
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Velocity>Qualifier:Derived
 
 chi_square_base: &chi_square_base
   UNITS: " "
@@ -116,7 +127,7 @@ target_fit_parameter_index:
 mass_index:
   CATDESC: Mass index values from 1 to 500
   FIELDNAM: Mass Index
-  UNITS: amu
+  UNITS: Kg
   FORMAT: I4
   VAR_TYPE: support_data
   SCALETYP: linear
@@ -146,7 +157,7 @@ tof_snr:
 tof_peak_kappa:
   CATDESC: TOF High spectrum with x-axis converted from time to mass.
   FIELDNAM: Mass Scale
-  UNITS: amu
+  UNITS: Kg
   VALIDMIN: 0.0
   VALIDMAX: 1.0
   VAR_TYPE: data
@@ -208,7 +219,7 @@ tof_peak_reduced_chi_squared:
 mass_scale:
   CATDESC: TOF High spectrum with x-axis converted from time to mass.
   FIELDNAM: Mass Scale
-  UNITS: amu
+  UNITS: Kg
   VALIDMIN: 0.0
   VALIDMAX: *int_maxval
   FILLVAL: *double_fillval
@@ -238,6 +249,12 @@ target_low_dust_mass_estimate:
   LABLAXIS: Target Low Dust Mass Estimate
   CATDESC: Estimated dust mass from Target Low signal based on impact charge.
   FIELDNAM: Estimated Dust Mass (Target Low)
+
+target_low_velocity_estimate:
+  <<: *velocity_estimate_base
+  LABLAXIS: Target Low Velocity Estimate
+  CATDESC: Estimated particle velocity from Target Low signal based on impact charge.
+  FIELDNAM: Estimated Velocity (Target Low)
 
 target_low_chi_squared:
   <<: *chi_square_base
@@ -275,6 +292,12 @@ target_high_dust_mass_estimate:
   CATDESC: Estimated dust mass from Target High signal based on impact charge.
   FIELDNAM: Estimated Dust Mass (Target High)
 
+target_high_velocity_estimate:
+  <<: *velocity_estimate_base
+  LABLAXIS: Target High Velocity Estimate
+  CATDESC: Estimated particle velocity from Target High signal based on impact charge.
+  FIELDNAM: Estimated Velocity (Target High)
+
 target_high_chi_squared:
   <<: *chi_square_base
   LABLAXIS: Target High Chi Square
@@ -310,6 +333,12 @@ ion_grid_dust_mass_estimate:
   LABLAXIS: Ion Grid Dust Mass Estimate
   CATDESC: Estimated dust mass from Ion Grid signal based on impact charge.
   FIELDNAM: Estimated Dust Mass (Ion Grid)
+
+ion_grid_velocity_estimate:
+  <<: *velocity_estimate_base
+  LABLAXIS: Ion Grid Velocity Estimate
+  CATDESC: Estimated particle velocity from Ion Grid signal based on impact charge.
+  FIELDNAM: Estimated Velocity (Ion Grid)
 
 ion_grid_chi_squared:
   <<: *chi_square_base

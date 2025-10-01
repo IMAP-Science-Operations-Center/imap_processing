@@ -133,7 +133,7 @@ def transform_instrument_vectors_to_inertial(
     spin_phase: NDArray,
     sc_inertial_right: NDArray,
     sc_inertial_decline: NDArray,
-    instrument_frame: SpiceFrame = SpiceFrame.IMAP_MAG,
+    instrument_frame: SpiceFrame,
     spacecraft_frame: SpiceFrame = SpiceFrame.IMAP_SPACECRAFT,
 ) -> NDArray:
     """
@@ -177,7 +177,7 @@ def transform_instrument_vectors_to_inertial(
     )
 
     # Get static mount matrix
-    mount_matrix = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
+    mount_matrix = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0).T
 
     # Compute total rotations
     total_rotations = compute_total_rotation(

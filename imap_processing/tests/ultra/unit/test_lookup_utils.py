@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
@@ -16,6 +16,8 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_image_params,
     get_norm,
     get_ph_corrected,
+    get_scattering_coefficients,
+    get_scattering_thresholds,
     get_y_adjust,
 )
 
@@ -122,9 +124,15 @@ def test_get_geometric_function(ancillary_files):
 
     phi = np.array([-65, -64, -39, -1.3, 0, 1.3, 39, 64, 65])
     theta = np.array([-65, -64, -39, -1.3, 0, 1.3, 39, 64, 65])
-    quality_flags = np.full(phi.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    quality_flags = np.full(
+        phi.shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
     gf = get_geometric_factor(
-        ancillary_files, "l1b-sensor-gf-noblades", phi, theta, quality_flags
+        phi,
+        theta,
+        quality_flags,
+        ancillary_files,
+        "l1b-sensor-gf-noblades",
     )
 
     np.testing.assert_array_equal(
@@ -141,7 +149,9 @@ def test_get_ph_corrected(ancillary_files):
     xlut = np.array([0, 10, 31, 32])
     # Should be between 1 and 20 (0 and 19)
     ylut = np.array([3, 10, 19, 32])
-    quality_flags = np.full(xlut.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    quality_flags = np.full(
+        xlut.shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
     ph_correct_top, quality_flags = get_ph_corrected(
         "ultra45", "tp", ancillary_files, xlut, ylut, quality_flags
     )
@@ -166,3 +176,38 @@ def test_get_ebins(ancillary_files):
     ebins = get_ebins("l1b-tofxph", energy, ctof, ebins, ancillary_files)
 
     np.testing.assert_array_equal(ebins, np.array([15, 19]))
+
+
+@pytest.mark.external_test_data
+def test_get_scattering_coefficients(ancillary_files):
+    """Tests function get_scattering_data."""
+
+    theta_coeffs, phi_coeffs = get_scattering_coefficients(
+        np.array([47, 43]),
+        np.array([43, 42]),
+        lookup_tables=None,
+        ancillary_files=ancillary_files,
+        instrument_id=45,
+    )
+    # Test a theta coefficients
+    np.testing.assert_array_equal(theta_coeffs[:, 0], np.array([np.nan, 35.23100]))
+    # Test b theta coefficients
+    np.testing.assert_array_equal(theta_coeffs[:, 1], np.array([np.nan, -0.72148]))
+    # Test a phi coefficients
+    np.testing.assert_array_equal(phi_coeffs[:, 0], np.array([np.nan, 168.3100]))
+    # Test b phi coefficients
+    np.testing.assert_array_equal(phi_coeffs[:, 1], np.array([np.nan, -1.0752]))
+
+
+@pytest.mark.external_test_data
+def test_get_scattering_thresholds(ancillary_files):
+    """Tests function get_scattering_thresholds."""
+
+    thresholds = get_scattering_thresholds(
+        ancillary_files=ancillary_files,
+    )
+    assert thresholds[(1.0, 5.0)] == 12.0
+    assert thresholds[(5.0, 8.0)] == 10.0
+    assert thresholds[(8.0, 10.0)] == 8.0
+    assert thresholds[(10.0, 20.0)] == 6.0
+    assert thresholds[(20.0, np.inf)] == 4.0

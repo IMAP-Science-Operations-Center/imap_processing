@@ -218,11 +218,22 @@ def create_l2_dataset(
         "spacecraft_velocity_std_dev",
     ]
 
+    longitudinal_variables = [
+        "spin_axis_orientation_average",
+        "spin_axis_orientation_std_dev",
+    ]
+
     for key, value in dataclasses.asdict(histogram_l2).items():
         if key in ecliptic_variables:
             output[key] = xr.DataArray(
                 value,
                 dims=["epoch", "ecliptic"],
+                attrs=attrs.get_variable_attributes(key),
+            )
+        elif key in longitudinal_variables:
+            output[key] = xr.DataArray(
+                value,
+                dims=["epoch", "latitudinal"],
                 attrs=attrs.get_variable_attributes(key),
             )
         elif key == "bad_time_flag_occurrences":

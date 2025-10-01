@@ -36,8 +36,8 @@ The general filename convention is as follows::
 
   * CoDICE: ``hskp``, ``lo-counters-aggregated``, ``lo-counters-singles``, ``hi-counters-aggregated``,
     ``hi-counters-singles``, ``hi-priorities``, ``lo-sw-priority``, ``lo-nsw-priority``, ``lo-sw-angular``,
-    ``lo-nsw-angular``, ``lo-pha``, ``hi-pha``, ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``, ``hi-sectored``,
-    ``lo-ialirt``, ``hi-ialirt``
+    ``lo-nsw-angular``, ``lo-direct-events``, ``hi-direct-events``, ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``,
+    ``hi-sectored``, ``lo-ialirt``, ``hi-ialirt``
   * GLOWS: ``hist``, ``de``, ``lightcurve``, ``ionization-rate``, ``survival-probabilities``
   * HIT: TBD
   * IDEX: ``sci``
@@ -65,9 +65,9 @@ Here are a few examples of acceptable filenames:
 
   An IDEX L0 packet file containing data from the single day of ``2026-12-06``
 
-* ``imap_codice_l1a_lo-pha_20261206_v001.cdf``
+* ``imap_codice_l1a_lo-direct-events_20261206_v001.cdf``
 
-  A version ``001`` CoDICE-Lo L1a data product called ``pha`` containing data from ``2026-12-06``
+  A version ``001`` CoDICE-Lo L1a data product called ``direct-events`` containing data from ``2026-12-06``
 
 * ``imap_glows_l1a_counts_20261206-repoint00002_v001.cdf``
 

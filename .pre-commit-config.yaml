@@ -13,7 +13,7 @@ repos:
     - id: detect-private-key
     - id: mixed-line-ending
     - id: trailing-whitespace
-      exclude: ^imap_processing/tests/.*\.dat$
+      exclude: ^imap_processing/tests/.*\.(dat|tf)$
     - id: no-commit-to-branch
       args: [--branch, main, --branch, dev]
   - repo: https://github.com/astral-sh/ruff-pre-commit

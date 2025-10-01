@@ -60,6 +60,7 @@ CODICEAPID_MAPPING = {
 # Numerical constants
 SPIN_PERIOD_CONVERSION = 0.00032
 K_FACTOR = 5.76  # This is used to convert voltages to energies in L2
+HI_ACQUISITION_TIME = 0.59916
 
 # CDF variable names used for lo data products
 LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
@@ -129,31 +130,35 @@ HI_IALIRT_VARIABLE_NAMES = ["h"]
 
 # CDF variable names used for direct event data products
 HI_DE_CDF_FIELDS = [
-    "NumEvents",
-    "DataQuality",
-    "SSDEnergy",
-    "TOF",
-    "SSD_ID",
-    "ERGE",
-    "MultiFlag",
-    "Type",
-    "SpinAngle",
-    "SpinNumber",
+    "num_events",
+    "data_quality",
+    "ssd_energy",
+    "tof",
+    "ssd_id",
+    "gain",
+    "multi_flag",
+    "type",
+    "spin_sector",
+    "spin_number",
 ]
-HI_DE_VARIABLE_NAMES = [f"P{n}_{field}" for n in range(6) for field in HI_DE_CDF_FIELDS]
+HI_DIRECT_EVENTS_VARIABLE_NAMES = [
+    f"p{n}_{field}" for n in range(6) for field in HI_DE_CDF_FIELDS
+]
 LO_DE_CDF_FIELDS = [
-    "NumEvents",
-    "DataQuality",
-    "APDGain",
-    "APD_ID",
-    "APDEnergy",
-    "TOF",
-    "MultiFlag",
-    "PHAType",
-    "SpinAngle",
-    "EnergyStep",
+    "num_events",
+    "data_quality",
+    "gain",
+    "apd_id",
+    "apd_energy",
+    "tof",
+    "multi_flag",
+    "type",
+    "spin_sector",
+    "energy_step",
 ]
-LO_DE_VARIABLE_NAMES = [f"P{n}_{field}" for n in range(8) for field in LO_DE_CDF_FIELDS]
+LO_DIRECT_EVENTS_VARIABLE_NAMES = [
+    f"p{n}_{field}" for n in range(8) for field in LO_DE_CDF_FIELDS
+]
 
 # Final I-ALiRT data product fields
 CODICE_LO_IAL_DATA_FIELDS = [
@@ -168,37 +173,35 @@ CODICE_HI_IAL_DATA_FIELDS = ["h"]
 
 # lo- and hi-counters-aggregated data product variables are dynamically
 # determined based on the number of active counters
-# TODO: Try to convince Joey to move to lower case variable names with
-#       underscores?
 LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
-    "TCR": True,
-    "DCR": True,
-    "TOFPlusAPD": False,
-    "TOFOnly": False,
-    "PositionPlusAPD": False,
-    "PositionOnly": False,
-    "STAorSTBPlusAPD": False,
-    "STAorSTBOnly": False,
-    "Reserved1": False,
-    "Reserved2": False,
-    "SPOnly": False,
-    "APDOnly": False,
-    "LowTOFCutoff": False,
-    "STA": True,
-    "STB": True,
-    "SP": True,
-    "TotalPositionCount": True,
-    "InvalidPositionCount": False,
-    "ASIC1FlagInvalid": False,
-    "ASIC2FlagInvalid": False,
-    "ASIC1ChannelInvalid": False,
-    "ASIC2ChannelInvalid": False,
-    "TEC4TimeoutTOFNoPos": False,
-    "TEC4TimeoutPosNoTOF": False,
-    "TEC4TimeoutNoPosTOF": False,
-    "TEC5TimeoutTOFNoPos": False,
-    "TEC5TimeoutPosNoTOF": False,
-    "TEC5TimeoutNoPosTOF": False,
+    "tcr": True,
+    "dcr": True,
+    "tof_plus_apd": False,
+    "tof_only": False,
+    "position_plus_apd": False,
+    "position_only": False,
+    "sta_or_stb_plus_apd": False,
+    "sta_or_stb_only": False,
+    "reserved1": False,
+    "reserved2": False,
+    "sp_only": False,
+    "apd_only": False,
+    "low_tof_cutoff": False,
+    "sta": True,
+    "stb": True,
+    "sp": True,
+    "total_position_count": True,
+    "invalid_position_count": False,
+    "asic1_flag_invalid": False,
+    "asic2_flag_invalid": False,
+    "asic1_channel_invalid": False,
+    "asic2_channel_invalid": False,
+    "tec4_timeout_tof_no_pos": False,
+    "tec4_timeout_pos_no_tof": False,
+    "tec4_timeout_no_pos_tof": False,
+    "tec5_timeout_tof_no_pos": False,
+    "tec5_timeout_pos_no_tof": False,
+    "tec5_timeout_no_pos_tof": False,
 }
 LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     name
@@ -206,22 +209,22 @@ LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     if is_active
 ]
 HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
-    "DCR": True,
-    "STO": True,
-    "SPO": True,
-    "Reserved1": False,
-    "MST": True,
-    "Reserved2": False,
-    "Reserved3": False,
-    "Reserved4": False,
-    "Reserved5": False,
-    "LowTOFCutoff": False,
-    "Reserved6": False,
-    "Reserved7": False,
-    "ASIC1FlagInvalid": True,
-    "ASIC2FlagInvalid": True,
-    "ASIC1ChannelInvalid": False,
-    "ASIC2ChannelInvalid": False,
+    "dcr": True,
+    "sto": True,
+    "spo": True,
+    "reserved1": False,
+    "mst": True,
+    "ssdo": True,
+    "stssd": True,
+    "reserved4": False,
+    "reserved5": False,
+    "low_tof_cutoff": True,
+    "reserved6": False,
+    "reserved7": False,
+    "asic1_flag_invalid": True,
+    "asic2_flag_invalid": True,
+    "asic1_channel_invalid": True,
+    "asic2_channel_invalid": True,
 }
 HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     name
@@ -434,7 +437,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "instrument": "hi",
         "num_counters": len(
             HI_COUNTERS_AGGREGATED_VARIABLE_NAMES
-        ),  # The number of counters depends on the number of active counters
+        ),  # The number of counters depends on the number of *active* counters
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_COUNTERS_AGGREGATED_VARIABLE_NAMES,
     },
@@ -523,7 +526,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "instrument": "lo",
         "num_counters": len(
             LO_COUNTERS_AGGREGATED_VARIABLE_NAMES
-        ),  # The number of counters depends on the number of active counters
+        ),  # The number of counters depends on the number of *active* counters
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -685,9 +688,9 @@ L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
         "num_spin_sectors": 24,
         "num_spins": 4,
     },
-    "hi-priority": {  # TODO: Ask Joey to define these
-        "num_spin_sectors": 1,
-        "num_spins": 1,
+    "hi-priority": {
+        "num_spin_sectors": 24,
+        "num_spins": 16,
     },
     "hi-sectored": {
         "num_spin_sectors": 2,
@@ -728,42 +731,42 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     CODICEAPID.COD_HI_PHA: {
         "num_priorities": 6,
         "bit_structure": {
-            "SSDEnergy": {
+            "ssd_energy": {
                 "bit_length": 11,
                 "dtype": np.uint16,
                 "fillval": np.iinfo(np.uint16).max,
             },
-            "TOF": {
+            "tof": {
                 "bit_length": 10,
                 "dtype": np.uint16,
                 "fillval": np.iinfo(np.uint16).max,
             },
-            "SSD_ID": {
+            "ssd_id": {
                 "bit_length": 4,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "ERGE": {
+            "gain": {
                 "bit_length": 2,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "MultiFlag": {
+            "multi_flag": {
                 "bit_length": 1,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "Type": {
+            "type": {
                 "bit_length": 2,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "SpinAngle": {
+            "spin_sector": {
                 "bit_length": 5,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "SpinNumber": {
+            "spin_number": {
                 "bit_length": 4,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
@@ -784,47 +787,47 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     CODICEAPID.COD_LO_PHA: {
         "num_priorities": 8,
         "bit_structure": {
-            "APDGain": {
+            "gain": {
                 "bit_length": 1,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "APD_ID": {
+            "apd_id": {
                 "bit_length": 5,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "Position": {
+            "position": {
                 "bit_length": 5,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "APDEnergy": {
+            "apd_energy": {
                 "bit_length": 9,
                 "dtype": np.uint16,
                 "fillval": np.iinfo(np.uint16).max,
             },
-            "TOF": {
+            "tof": {
                 "bit_length": 10,
                 "dtype": np.uint16,
                 "fillval": np.iinfo(np.uint16).max,
             },
-            "MultiFlag": {
+            "multi_flag": {
                 "bit_length": 1,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "PHAType": {
+            "type": {
                 "bit_length": 2,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "SpinAngle": {
+            "spin_sector": {
                 "bit_length": 5,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "EnergyStep": {
+            "energy_step": {
                 "bit_length": 7,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
@@ -845,7 +848,7 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
 }
 
 # Define the packet fields needed to be stored in segmented data and their
-# corresponding bit lengths for direct event data products
+# corresponding bit lengths for I-ALiRT data products
 IAL_BIT_STRUCTURE = {
     "SHCOARSE": 32,
     "PACKET_VERSION": 16,
@@ -958,7 +961,11 @@ ESA_SWEEP_TABLE_ID_LOOKUP = {
 # use. Currently, LO Stepping table 0 is used for every plan_id/plan_step
 # combination, but may change in the future. These are defined in the "Lo
 # Stepping" tab of the "*-SCI-LUT-*.xml" spreadsheet that largely defines CoDICE
-# processing.
+# processing. Eg.
+#   (plan_id, plan_step) -> id of acquisition time
+#   (0, 0) -> 0
+
+
 LO_STEPPING_TABLE_ID_LOOKUP = {
     (0, 0): 0,
     (0, 1): 0,
@@ -1653,6 +1660,8 @@ PIXEL_ORIENTATIONS = {
 # processing. These are taken from the "Acq Time" column in the "Lo Stepping"
 # tab of the "*-SCI-LUT-*.xml" spreadsheet that largely defines CoDICE
 # processing.
+# TODO: Do away with this lookup table and instead calculate the acquisition
+#       times. See GitHub issue #1945.
 ACQUISITION_TIMES = {
     0: [
         578.70833333,
@@ -2174,4 +2183,45 @@ ACQUISITION_TIMES = {
         96.45138889,
         96.45138889,
     ],
+}
+
+# TODO: Update EFFICIENCY value when better information is available.
+# Constant for CoDICE Intensity calculations.
+EFFICIENCY = 1
+
+# Lookup table for mapping half-spin (keys) to esa steps (values)
+# This is used to determine geometry factors L2
+HALF_SPIN_LUT = {
+    0: [0],
+    1: [1],
+    2: [2],
+    3: [3],
+    4: [4, 5],
+    5: [6, 7],
+    6: [8, 9],
+    7: [10, 11],
+    8: [12, 13, 14],
+    9: [15, 16, 17],
+    10: [18, 19, 20],
+    11: [21, 22, 23],
+    12: [24, 25, 26, 27],
+    13: [28, 29, 30, 31],
+    14: [32, 33, 34, 35],
+    15: [36, 37, 38, 39],
+    16: [40, 41, 42, 43, 44],
+    17: [45, 46, 47, 48, 49],
+    18: [50, 51, 52, 53, 54],
+    19: [55, 56, 57, 58, 59],
+    20: [60, 61, 62, 63, 64],
+    21: [65, 66, 67, 68, 69],
+    22: [70, 71, 72, 73, 74],
+    23: [75, 76, 77, 78, 79],
+    24: [80, 81, 82, 83, 84, 85],
+    25: [86, 87, 88, 89, 90, 91],
+    26: [92, 93, 94, 95, 96, 97],
+    27: [98, 99, 100, 101, 102, 103],
+    28: [104, 105, 106, 107, 108, 109],
+    29: [110, 111, 112, 113, 114, 115],
+    30: [116, 117, 118, 119, 120, 121],
+    31: [122, 123, 124, 125, 126, 127],
 }

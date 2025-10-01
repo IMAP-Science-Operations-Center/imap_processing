@@ -127,6 +127,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         Dictionary final data product.
     """
     hit_data = []
+    incomplete_groups = []
 
     # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
     # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
@@ -148,10 +149,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
 
         # Ensure no duplicates and all values from 0 to 59 are present
         if not np.array_equal(subcom_values, np.arange(60)):
-            logger.warning(
-                f"Group {group} does not contain all values from 0 to "
-                f"59 without duplicates."
-            )
+            incomplete_groups.append(group)
             continue
 
         fast_rate_1 = grouped_data["hit_fast_rate_1"][
@@ -185,6 +183,13 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
                 "hit_he_omni_low_en": int(l1["HE4_06_08"]),
                 "hit_he_omni_high_en": int(l1["HE4_15_70"]),
             }
+        )
+
+    if incomplete_groups:
+        logger.info(
+            f"The following hit groups were skipped due to "
+            f"missing or duplicate pkt_counter values: "
+            f"{incomplete_groups}"
         )
 
     return hit_data

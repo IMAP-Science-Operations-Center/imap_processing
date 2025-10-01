@@ -1,0 +1,13 @@
+YYYYDDD,BadTime_start,BadTime_end,bin_start,bin_end,Instrument,E-Step1,E-Step2,E-Step3,E-Step4,E-Step5,E-Step6,E-Step7,Comment
+2025001,473385600,473389200,30,59,Lo,1,0,0,0,0,0,0,#repointing maneuver
+2025001,473407618,473420896,30,59,Lo,0,0,0,0,0,0,0,#high background
+2025002,473472000,473475600,0,59,Lo,0,0,0,0,0,0,0,#repointing maneuver
+2025002,473526046,473528426,0,59,Lo,0,0,0,0,0,0,0,#spin out of sync
+2025003,473558400,473562000,0,59,Lo,0,0,0,0,0,0,0,#repointing maneuver
+2025004,473644800,473648400,0,59,Lo,0,0,0,0,0,0,0,#repointing maneuver
+2025005,473731200,473734800,0,59,Lo,0,0,0,0,0,0,0,#repointing maneuver
+2025006,473817600,473821200,0,59,Lo,0,0,0,0,0,0,0,#repointing maneuver
+2025007,473904000,473907600,0,59,Lo,0,0,0,0,0,0,0,#repointing maneuver
+2025008,473990400,473994000,0,59,Lo,0,0,0,0,0,0,0,#repointing maneuver
+2025008,474050712,474055891,0,59,Lo,0,0,0,0,0,0,0,#spin out of sync
+2025009,474076800,474080400,0,59,Lo,0,0,0,0,0,0,0,#repointing maneuver

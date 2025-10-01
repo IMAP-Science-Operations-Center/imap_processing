@@ -60,7 +60,7 @@ def test_xarray_phxtof_high_angular(ccsds_path_theta_0):
     )
 
     # Spot check metadata data and attributes
-    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
+    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], plane=0)[
         "packetdata"
     ]
     assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
@@ -73,7 +73,7 @@ def test_xarray_phxtof_high_energy(ccsds_path_extra):
     test_data = ultra_l1a(ccsds_path_extra, apid_input=ULTRA_PHXTOF_HIGH_ENERGY.apid[0])
 
     # Spot check metadata data and attributes
-    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
+    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], plane=0)[
         "packetdata"
     ]
     assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
@@ -86,7 +86,7 @@ def test_xarray_phxtof_high_time(ccsds_path_extra):
     test_data = ultra_l1a(ccsds_path_extra, apid_input=ULTRA_PHXTOF_HIGH_TIME.apid[0])
 
     # Spot check metadata data and attributes
-    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
+    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], plane=0)[
         "packetdata"
     ]
     assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
@@ -99,7 +99,7 @@ def test_xarray_extof_high_angular(ccsds_path_extra):
     test_data = ultra_l1a(ccsds_path_extra, apid_input=ULTRA_EXTOF_HIGH_ANGULAR.apid[0])
 
     # Spot check metadata data and attributes
-    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
+    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], plane=0)[
         "packetdata"
     ]
     assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
@@ -112,7 +112,7 @@ def test_xarray_extof_high_energy(ccsds_path_extra):
     test_data = ultra_l1a(ccsds_path_extra, apid_input=ULTRA_EXTOF_HIGH_ENERGY.apid[0])
 
     # Spot check metadata data and attributes
-    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
+    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], plane=0)[
         "packetdata"
     ]
     assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
@@ -125,7 +125,7 @@ def test_xarray_extof_high_time(ccsds_path_extra):
     test_data = ultra_l1a(ccsds_path_extra, apid_input=ULTRA_EXTOF_HIGH_TIME.apid[0])
 
     # Spot check metadata data and attributes
-    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
+    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], plane=0)[
         "packetdata"
     ]
     assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
@@ -284,7 +284,7 @@ def test_cdf_extof_high_time(ccsds_path_extra):
     test_data_path = write_cdf(test_data[0], istp=True)
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-time_"
+        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ion-extof-hi-time_"
         "20240122-repoint99999_v999.cdf"
     )
 
@@ -298,7 +298,7 @@ def test_cdf_extof_high_energy(ccsds_path_extra):
     test_data_path = write_cdf(test_data[0], istp=True)
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-nrg_"
+        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ion-extof-hi-nrg_"
         "20240122-repoint99999_v999.cdf"
     )
 

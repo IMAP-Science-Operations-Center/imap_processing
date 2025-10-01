@@ -15,6 +15,7 @@ def bin_single_array_at_indices(
     projection_grid_shape: tuple[int, ...],
     projection_indices: NDArray,
     input_indices: NDArray | None = None,
+    input_valid_mask: NDArray | None = None,
 ) -> NDArray:
     """
     Bin an array of values at the given indices.
@@ -39,6 +40,9 @@ def bin_single_array_at_indices(
         1 dimensional. May be non-unique, depending on the projection method.
         If None (default), an arange of the same length as the
         final axis of value_array is used.
+    input_valid_mask : NDArray, optional
+        Boolean mask array for valid values in input grid.
+        If None, all pixels are considered valid. Default is None.
 
     Returns
     -------
@@ -55,6 +59,8 @@ def bin_single_array_at_indices(
     """
     if input_indices is None:
         input_indices = np.arange(value_array.shape[-1])
+    if input_valid_mask is None:
+        input_valid_mask = np.ones(value_array.shape[-1], dtype=bool)
 
     # Both sets of indices must be 1D with the same number of elements
     if input_indices.ndim != 1 or projection_indices.ndim != 1:
@@ -69,20 +75,25 @@ def bin_single_array_at_indices(
             " projection indices."
         )
 
+    input_valid_mask = np.asarray(input_valid_mask, dtype=bool)
+    mask_idx = input_valid_mask[input_indices]
+
     num_projection_indices = np.prod(projection_grid_shape)
 
+    # Only valid values are summed into bins.
     if value_array.ndim == 1:
+        values = value_array[input_indices]
         binned_values = np.bincount(
-            projection_indices,
-            weights=value_array[input_indices],
+            projection_indices[mask_idx],
+            weights=values[mask_idx],
             minlength=num_projection_indices,
         )
     elif value_array.ndim >= 2:
         # Apply bincount to each row independently
         binned_values = np.apply_along_axis(
             lambda x: np.bincount(
-                projection_indices,
-                weights=x[..., input_indices],
+                projection_indices[mask_idx],
+                weights=x[..., input_indices][mask_idx],
                 minlength=num_projection_indices,
             ),
             axis=-1,
@@ -96,6 +107,7 @@ def bin_values_at_indices(
     projection_grid_shape: tuple[int, ...],
     projection_indices: NDArray,
     input_indices: NDArray | None = None,
+    input_valid_mask: NDArray | None = None,
 ) -> dict[str, NDArray]:
     """
     Project values from input grid to projection grid based on matched indices.
@@ -118,6 +130,9 @@ def bin_values_at_indices(
         Ordered indices for input grid, corresponding to indices in projection grid.
         1 dimensional. May be non-unique, depending on the projection method.
         If None (default), behavior is determined by bin_single_array_at_indices.
+    input_valid_mask : NDArray, optional
+        Boolean mask array for valid values in input grid.
+        If None, all pixels are considered valid. Default is None.
 
     Returns
     -------
@@ -137,6 +152,7 @@ def bin_values_at_indices(
             projection_grid_shape=projection_grid_shape,
             projection_indices=projection_indices,
             input_indices=input_indices,
+            input_valid_mask=input_valid_mask,
         )
 
     return binned_values_dict

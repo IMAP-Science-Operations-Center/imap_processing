@@ -5,8 +5,10 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
+from imap_processing.spice.time import sct_to_et
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
@@ -283,37 +285,37 @@ def test_get_de_velocity(test_fixture):
     )
     np.testing.assert_allclose(
         vhat[test_tof > 0][:, 0],
-        df_ph["vhatX"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        vhat[test_tof > 0][:, 1],
-        df_ph["vhatY"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        vhat[test_tof > 0][:, 2],
-        df_ph["vhatZ"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        r[test_tof > 0][:, 0],
         -df_ph["vhatX"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
-        r[test_tof > 0][:, 1],
+        vhat[test_tof > 0][:, 1],
         -df_ph["vhatY"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
-        r[test_tof > 0][:, 2],
+        vhat[test_tof > 0][:, 2],
         -df_ph["vhatZ"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 0],
+        df_ph["vhatX"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 1],
+        df_ph["vhatY"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 2],
+        df_ph["vhatZ"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
@@ -340,11 +342,7 @@ def test_get_de_energy_kev(test_fixture):
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     df_ph = df_ph[df_ph["energy_revised"].astype("str") != "FILL"]
 
-    species_bin_ph = determine_species(
-        df_ph["TOF"].astype("float").to_numpy(),
-        df_ph["r"].astype("float").to_numpy(),
-        "PH",
-    )
+    species_bin_ph = np.ones_like(df_ph["Energy"].values, dtype=np.uint8)
     test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
         df_ph[col].astype("float").values
         for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
@@ -394,7 +392,9 @@ def test_get_energy_pulse_height(
 
     test_xb = df_filt["Xb"].astype("float").values
     test_yb = df_filt["Yb"].astype("float").values
-    quality_flags = np.full(test_xb.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    quality_flags = np.full(
+        test_xb.shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
 
     energy, ph_correction = get_energy_pulse_height(
         de_dataset["stop_type"].data,
@@ -410,7 +410,9 @@ def test_get_energy_pulse_height(
 
     np.testing.assert_allclose(test_energy.to_numpy(), energy[ph_indices], atol=1e-2)
 
-    flagged_indices = np.nonzero(quality_flags != ImapDEUltraFlags.NONE.value)[0]
+    flagged_indices = np.nonzero(quality_flags != ImapDEOutliersUltraFlags.NONE.value)[
+        0
+    ]
 
     assert flagged_indices.size == 99
 
@@ -452,28 +454,47 @@ def test_get_ctof(test_fixture):
 
 
 @pytest.mark.external_test_data
-def test_determine_species(test_fixture):
+def test_determine_species():
     """Tests determine_species function."""
-    df_filt, _, _, _ = test_fixture
-    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
-    df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
 
-    species_bin_ph = determine_species(
-        df_ph["TOF"].astype("float").to_numpy(),
-        df_ph["r"].astype("float").to_numpy(),
+    species_bin_ph_proton = determine_species(
+        np.array(UltraConstants.TOFXPH_SPECIES_GROUPS["proton"], dtype=np.uint8),
         "PH",
     )
-    species_bin_ssd = determine_species(
-        df_ssd["TOF"].astype("float").to_numpy(),
-        df_ssd["r"].astype("float").to_numpy(),
+    species_bin_ph_non_proton = determine_species(
+        np.array(UltraConstants.TOFXPH_SPECIES_GROUPS["non_proton"], dtype=np.uint8),
+        "PH",
+    )
+
+    species_bin_ssd_proton = determine_species(
+        np.array(UltraConstants.TOFXE_SPECIES_GROUPS["proton"], dtype=np.uint8),
+        "SSD",
+    )
+
+    species_bin_ssd_non_proton = determine_species(
+        np.array(UltraConstants.TOFXE_SPECIES_GROUPS["non_proton"], dtype=np.uint8),
         "SSD",
     )
 
     np.testing.assert_array_equal(
-        species_bin_ph, np.full(len(df_ph), 1, dtype=np.uint8)
+        species_bin_ph_proton,
+        np.full(len(UltraConstants.TOFXPH_SPECIES_GROUPS["proton"]), 1, dtype=np.uint8),
     )
     np.testing.assert_array_equal(
-        species_bin_ssd, np.full(len(df_ssd), 1, dtype=np.uint8)
+        species_bin_ssd_proton,
+        np.full(len(UltraConstants.TOFXE_SPECIES_GROUPS["proton"]), 1, dtype=np.uint8),
+    )
+    np.testing.assert_array_equal(
+        species_bin_ph_non_proton,
+        np.full(
+            len(UltraConstants.TOFXPH_SPECIES_GROUPS["non_proton"]), 0, dtype=np.uint8
+        ),
+    )
+    np.testing.assert_array_equal(
+        species_bin_ssd_non_proton,
+        np.full(
+            len(UltraConstants.TOFXE_SPECIES_GROUPS["non_proton"]), 0, dtype=np.uint8
+        ),
     )
 
 
@@ -538,8 +559,8 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
         + expected_max_df["spin_start_subsec_sclk"] / 1e6
     )
 
-    assert spin_start_min.values[0] == spin_starts.min()
-    assert spin_start_max.values[0] == spin_starts.max()
+    assert sct_to_et(spin_start_min.values[0]) == spin_starts.min()
+    assert sct_to_et(spin_start_max.values[0]) == spin_starts.max()
 
     event_times_min = spin_start_min.values[0] + spin_period_sec_min * (
         de_dataset["phase_angle"][0] / 720
@@ -548,8 +569,8 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
         de_dataset["phase_angle"][-1] / 720
     )
 
-    assert event_times_min == event_times.min()
-    assert event_times_max == event_times.max()
+    assert sct_to_et(event_times_min) == event_times.min()
+    assert sct_to_et(event_times_max) == event_times.max()
 
 
 @pytest.mark.external_test_data
@@ -725,14 +746,32 @@ def test_is_coin_ph_valid(test_fixture, ancillary_files):
     df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    valid = is_coin_ph_valid(
-        df_ph["eTOF"].astype(float).values,
-        df_ph["Xc"].astype(float).values,
-        df_ph["Xb"].astype(float).values,
+    # Test data
+    ctof = df_ph["cTOF"].astype(float).values
+    etof = df_ph["eTOF"].astype(float).values
+    xc = df_ph["Xc"].astype(float).values
+    xb = df_ph["Xb"].astype(float).values
+    stop_north_tdc = df_ph["StopNorthTDC"].astype(int).values
+    stop_south_tdc = df_ph["StopSouthTDC"].astype(int).values
+    stop_east_tdc = df_ph["StopEastTDC"].astype(int).values
+    stop_west_tdc = df_ph["StopWestTDC"].astype(int).values
+    quality_flags = np.full(
+        len(ctof), ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
+
+    combined_mask = is_coin_ph_valid(
+        etof,
+        xc,
+        xb,
+        stop_north_tdc,
+        stop_south_tdc,
+        stop_east_tdc,
+        stop_west_tdc,
         "ultra45",
         ancillary_files,
+        quality_flags,
     )
-    coin_ph_valid_bool = df_ph["CoinPHValid"].astype(int).astype(bool).values
-    valid = np.asarray(valid, dtype=bool)
 
-    np.testing.assert_equal(coin_ph_valid_bool, valid)
+    assert len(etof) == np.count_nonzero(combined_mask) + np.count_nonzero(
+        quality_flags
+    )

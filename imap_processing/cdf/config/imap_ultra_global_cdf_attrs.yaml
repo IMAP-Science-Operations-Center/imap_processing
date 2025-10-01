@@ -68,28 +68,28 @@ imap_ultra_l1a_90sensor-histogram-ena-extof-hi-ang:
     Logical_source: imap_ultra_l1a_90sensor-histogram-ena-extof-hi-ang
     Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Angular Data.
 
-imap_ultra_l1a_45sensor-histogram-ena-extof-hi-time:
+imap_ultra_l1a_45sensor-histogram-ion-extof-hi-time:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A ExTOF
-    Logical_source: imap_ultra_l1a_45sensor-histogram-ena-extof-hi-time
+    Logical_source: imap_ultra_l1a_45sensor-histogram-ion-extof-hi-time
     Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Time Data.
 
-imap_ultra_l1a_90sensor-histogram-ena-extof-hi-time:
+imap_ultra_l1a_90sensor-histogram-ion-extof-hi-time:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A ExTOF
-    Logical_source: imap_ultra_l1a_90sensor-histogram-ena-extof-hi-time
+    Logical_source: imap_ultra_l1a_90sensor-histogram-ion-extof-hi-time
     Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Time Data.
 
-imap_ultra_l1a_45sensor-histogram-ena-extof-hi-nrg:
+imap_ultra_l1a_45sensor-histogram-ion-extof-hi-nrg:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A ExTOF
-    Logical_source: imap_ultra_l1a_45sensor-histogram-ena-extof-hi-nrg
+    Logical_source: imap_ultra_l1a_45sensor-histogram-ion-extof-hi-nrg
     Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Energy Data.
 
-imap_ultra_l1a_90sensor-histogram-ena-extof-hi-nrg:
+imap_ultra_l1a_90sensor-histogram-ion-extof-hi-nrg:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A ExTOF
-    Logical_source: imap_ultra_l1a_90sensor-histogram-ena-extof-hi-nrg
+    Logical_source: imap_ultra_l1a_90sensor-histogram-ion-extof-hi-nrg
     Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Energy Data.
 
 imap_ultra_l1a_45sensor-rates:
@@ -224,17 +224,17 @@ imap_ultra_l1b_90sensor-extendedspin:
     Logical_source: imap_ultra_l1b_90sensor-extendedspin
     Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
 
-imap_ultra_l1b_45sensor-cullingmask:
+imap_ultra_l1b_45sensor-goodtimes:
     <<: *instrument_base
-    Data_type: L1B_45Sensor-CullingMask>Level-1B Culling Mask for Ultra45
-    Logical_source: imap_ultra_l1b_45sensor-cullingmask
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Culling Mask Data.
+    Data_type: L1B_45Sensor-Goodtimes>Level-1B Goodtimes for Ultra45
+    Logical_source: imap_ultra_l1b_45sensor-goodtimes
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Goodtimes Data.
 
-imap_ultra_l1b_90sensor-cullingmask:
+imap_ultra_l1b_90sensor-goodtimes:
     <<: *instrument_base
-    Data_type: L1B_90Sensor-CullingMask>Level-1B Culling Mask for Ultra90
-    Logical_source: imap_ultra_l1b_90sensor-cullingmask
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Culling Mask Data.
+    Data_type: L1B_90Sensor-Goodtimes>Level-1B Goodtimes for Ultra90
+    Logical_source: imap_ultra_l1b_90sensor-goodtimes
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Goodtimes Data.
 
 imap_ultra_l1b_45sensor-badtimes:
     <<: *instrument_base
@@ -259,6 +259,18 @@ imap_ultra_l1c_90sensor-spacecraftpset:
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-spacecraftpset
     Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid.
+
+imap_ultra_l1c_45sensor-spacecraftpset-nonproton:
+    <<: *instrument_base
+    Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
+    Logical_source: imap_ultra_l1c_45sensor-spacecraftpset-nonproton
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species.
+
+imap_ultra_l1c_90sensor-spacecraftpset-nonproton:
+    <<: *instrument_base
+    Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
+    Logical_source: imap_ultra_l1c_90sensor-spacecraftpset-nonproton
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species.
 
 imap_ultra_l1c_45sensor-heliopset:
     <<: *instrument_base

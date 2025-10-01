@@ -154,7 +154,9 @@ def test_ultra_l1b_extendedspin(
 ):
     """Tests that L1b data is created."""
     use_fake_spin_data_for_time(0, 141 * 15)
-    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset_path = (
+        TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
+    )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
 
     data_dict = {
@@ -180,7 +182,9 @@ def test_ultra_l1b_extendedspin(
 @pytest.mark.external_test_data
 def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     use_fake_spin_data_for_time(0, 141 * 15)
-    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset_path = (
+        TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
+    )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
 
     data_dict = {
@@ -198,7 +202,8 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
     """Tests that CDF file is created and contains same attributes as xarray."""
     l1b_extendedspin_dataset[0].attrs["Data_version"] = "999"
     l1b_extendedspin_dataset[0].attrs["Repointing"] = "repoint99999"
-    test_data_path = write_cdf(l1b_extendedspin_dataset[0], istp=True)
+    l1b_extendedspin_dataset[0].attrs["Start_date"] = "20240207"
+    test_data_path = write_cdf(l1b_extendedspin_dataset[0])
     assert test_data_path.exists()
     assert (
         test_data_path.name
@@ -207,10 +212,12 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
 
 
 @pytest.mark.external_test_data
-def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
+def test_cdf_goodtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
-    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset_path = (
+        TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
+    )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
 
     data_dict = {
@@ -226,17 +233,18 @@ def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_da
     ancillary_files = {}
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
-    cullingmask_dataset = ultra_l1b(
+    goodtimes_dataset = ultra_l1b(
         {"imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0]},
         ancillary_files,
     )
-    cullingmask_dataset[0].attrs["Data_version"] = "999"
-    cullingmask_dataset[0].attrs["Repointing"] = "repoint99999"
-    test_data_path = write_cdf(cullingmask_dataset[0], istp=True)
+    goodtimes_dataset[0].attrs["Data_version"] = "999"
+    goodtimes_dataset[0].attrs["Repointing"] = "repoint99999"
+    goodtimes_dataset[0].attrs["Start_date"] = "20240207"
+    test_data_path = write_cdf(goodtimes_dataset[0])
     assert test_data_path.exists()
     assert (
         test_data_path.name
-        == "imap_ultra_l1b_45sensor-cullingmask_20240207-repoint99999_v999.cdf"
+        == "imap_ultra_l1b_45sensor-goodtimes_20240207-repoint99999_v999.cdf"
     )
 
 
@@ -244,7 +252,9 @@ def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_da
 def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
-    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset_path = (
+        TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999"
+    )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
 
     data_dict = {
@@ -261,7 +271,7 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
     ancillary_files = {}
-    cullingmask_dataset = ultra_l1b(
+    goodtimes_dataset = ultra_l1b(
         {"imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0]},
         ancillary_files,
     )
@@ -269,13 +279,14 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
     l1b_badtimes_dataset = ultra_l1b(
         {
             "imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0],
-            "imap_ultra_l1b_45sensor-cullingmask": cullingmask_dataset[0],
+            "imap_ultra_l1b_45sensor-goodtimes": goodtimes_dataset[0],
         },
         ancillary_files,
     )
     l1b_badtimes_dataset[0].attrs["Data_version"] = "999"
     l1b_badtimes_dataset[0].attrs["Repointing"] = "repoint99999"
-    test_data_path = write_cdf(l1b_badtimes_dataset[0], istp=True)
+    l1b_badtimes_dataset[0].attrs["Start_date"] = "20240207"
+    test_data_path = write_cdf(l1b_badtimes_dataset[0])
     assert test_data_path.exists()
     assert (
         test_data_path.name

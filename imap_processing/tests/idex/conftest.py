@@ -192,3 +192,15 @@ def load_hdf_file(path: str) -> xr.Dataset:
     example_dataset = xr.concat(datasets, dim="event")
 
     return example_dataset
+
+
+@pytest.fixture
+def ancillary_files():
+    """Fixture to return ancillary files."""
+    path = imap_module_directory / "tests" / "idex" / "test_data"
+    return {
+        "l2a-calibration-curve-yield-params": path
+        / "imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv",
+        "l2a-calibration-curve-t-rise": path
+        / "imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv",
+    }

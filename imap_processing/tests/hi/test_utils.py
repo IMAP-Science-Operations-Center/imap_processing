@@ -1,12 +1,15 @@
 """Test coverage for imap_processing.hi.utils.py"""
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
+import imap_processing.hi
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import (
     HIAPID,
+    CalibrationProductConfig,
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
     create_dataset_variables,
@@ -327,3 +330,45 @@ class TestEsaEnergyStepLookupTable:
         result = populated_lookup.query(10.0, 1)
         # Should match both (0.0, 10.0, 1, 100.0) and (10.0, 20.0, 1, 150.0)
         assert result in [100.0, 150.0]
+
+
+class TestCalibrationProductConfig:
+    """
+    All test coverage for the pd.DataFrame accessor extension "cal_prod_config".
+    """
+
+    def test_wrong_columns(self):
+        """Test coverage for a dataframe with the wrong columns."""
+        required_columns = (
+            imap_processing.hi.utils.CalibrationProductConfig.required_columns
+        )
+        for exclude_column_name in required_columns:
+            include_columns = set(required_columns) - {exclude_column_name}
+            df = pd.DataFrame({col: [1, 2, 3] for col in include_columns})
+            with pytest.raises(AttributeError, match="Required column*"):
+                _ = df.cal_prod_config.number_of_products
+
+    def test_from_csv(self, hi_test_cal_prod_config_path):
+        """Test coverage for read_csv function."""
+        df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
+            hi_test_cal_prod_config_path
+        )
+        assert isinstance(df["coincidence_type_list"][0, 1], tuple)
+
+    def test_added_coincidence_type_values_column(self, hi_test_cal_prod_config_path):
+        df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+        assert "coincidence_type_values" in df.columns
+        for _, row in df.iterrows():
+            for detect_string, val in zip(
+                row["coincidence_type_list"],
+                row["coincidence_type_values"],
+                strict=False,
+            ):
+                assert val == CoincidenceBitmap.detector_hit_str_to_int(detect_string)
+
+    def test_number_of_products(self, hi_test_cal_prod_config_path):
+        """Test coverage for number of products accessor."""
+        df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
+            hi_test_cal_prod_config_path
+        )
+        assert df.cal_prod_config.number_of_products == 2

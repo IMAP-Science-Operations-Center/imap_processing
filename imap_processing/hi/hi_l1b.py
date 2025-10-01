@@ -158,6 +158,27 @@ def annotate_direct_events(
     return [l1b_de_dataset]
 
 
+def any_good_direct_events(dataset: xr.Dataset) -> bool:
+    """
+    Test dataset to see if there are any good direct events.
+
+    Datasets can have no good direct events when there were no DEs in a pointing.
+    In this case, due to restrictions with cdflib, we have to write a single
+    bad DE in the CDF.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Run the check on this dataset.
+
+    Returns
+    -------
+    any_good_events : bool
+        True if there is at least one good direct event. False otherwise.
+    """
+    return bool(np.any(dataset["trigger_id"] != dataset["trigger_id"].attrs["FILLVAL"]))
+
+
 def compute_coincidence_type_and_tofs(
     dataset: xr.Dataset,
 ) -> dict[str, xr.DataArray]:
@@ -190,6 +211,9 @@ def compute_coincidence_type_and_tofs(
         len(dataset.event_met),
         att_manager_lookup_str="hi_de_{0}",
     )
+    # Check for no valid direct events.
+    if not any_good_direct_events(dataset):
+        return new_vars
 
     # compute masks needed for coincidence type and ToF calculations
     a_first = dataset.trigger_id.values == TriggerId.A
@@ -301,6 +325,9 @@ def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
         len(dataset.event_met),
         att_manager_lookup_str="hi_de_{0}",
     )
+    # Check for no valid direct events.
+    if not any_good_direct_events(dataset):
+        return new_vars
 
     # nominal_bin is the index number of the 90 4-degree bins that each DE would
     # be binned into in the histogram packet. The Hi histogram data is binned by
@@ -345,6 +372,10 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
         len(dataset.event_met),
         att_manager_lookup_str="hi_de_{0}",
     )
+    # Check for no valid direct events.
+    if not any_good_direct_events(dataset):
+        return new_vars
+
     # Per Section 2.2.5 of Algorithm Document, add 1/2 of tick duration
     # to MET before computing pointing.
     sclk_ticks = met_to_sclkticks(dataset.event_met.values + HALF_CLOCK_TICK_S)
@@ -387,6 +418,9 @@ def de_esa_energy_step(
         len(l1b_de_ds.epoch),
         att_manager_lookup_str="hi_de_{0}",
     )
+    # Check for no valid direct events.
+    if not any_good_direct_events(l1b_de_ds):
+        return new_vars
 
     # Get the LUT object using the HK data and esa-energies ancillary csv
     esa_energies_lut = pd.read_csv(esa_energies_anc, comment="#")

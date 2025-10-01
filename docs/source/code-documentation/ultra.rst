@@ -35,7 +35,7 @@ Level 1B Processing Code:
 
     l1b.ultra_l1b
     l1b.badtimes
-    l1b.cullingmask
+    l1b.goodtimes
     l1b.de
     l1b.extendedspin
 
@@ -47,5 +47,5 @@ Level 1C Processing Code:
     :recursive:
 
     l1c.ultra_l1c
-    l1c.histogram
     l1c.spacecraft_pset
+    l1c.helio_pset

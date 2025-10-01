@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -232,15 +232,12 @@ def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
     return lookup_table
 
 
-def get_geometric_factor(
+def load_geometric_factor_tables(
     ancillary_files: dict,
     filename: str,
-    phi: NDArray,
-    theta: NDArray,
-    quality_flag: NDArray,
-) -> tuple[NDArray, NDArray]:
+) -> dict:
     """
-    Lookup table for geometric factor using nearest neighbor.
+    Lookup tables for geometric factor.
 
     Parameters
     ----------
@@ -248,17 +245,11 @@ def get_geometric_factor(
         Ancillary files.
     filename : str
         Name of the file in ancillary_files to use.
-    phi : NDArray
-        Azimuth angles in degrees.
-    theta : NDArray
-        Elevation angles in degrees.
-    quality_flag : NDArray
-        Quality flag to set when geometric factor is zero.
 
     Returns
     -------
-    geometric_factor : NDArray
-        Geometric factor.
+    geometric_factor_tables : dict
+        Geometric factor lookup tables.
     """
     gf_table = pd.read_csv(
         ancillary_files[filename], header=None, skiprows=6, nrows=301
@@ -270,28 +261,205 @@ def get_geometric_factor(
         ancillary_files[filename], header=None, skiprows=610, nrows=301
     ).to_numpy(dtype=float)
 
+    return {
+        "gf_table": gf_table,
+        "theta_table": theta_table,
+        "phi_table": phi_table,
+    }
+
+
+def get_geometric_factor(
+    phi: NDArray,
+    theta: NDArray,
+    quality_flag: NDArray,
+    ancillary_files: dict | None = None,
+    filename: str | None = None,
+    geometric_factor_tables: dict | None = None,
+) -> tuple[NDArray, NDArray]:
+    """
+    Lookup table for geometric factor using nearest neighbor.
+
+    Parameters
+    ----------
+    phi : NDArray
+        Azimuth angles in degrees.
+    theta : NDArray
+        Elevation angles in degrees.
+    quality_flag : NDArray
+        Quality flag to set when geometric factor is zero.
+    ancillary_files : dict[Path], optional
+        Ancillary files.
+    filename : str, optional
+        Name of the file in ancillary_files to use.
+    geometric_factor_tables : dict, optional
+        Preloaded geometric factor lookup tables. If not provided, will load.
+
+    Returns
+    -------
+    geometric_factor : NDArray
+        Geometric factor.
+    """
+    if geometric_factor_tables is None:
+        if ancillary_files is None or filename is None:
+            raise ValueError(
+                "ancillary_files and filename must be provided if "
+                "geometric_factor_tables is not supplied."
+            )
+        geometric_factor_tables = load_geometric_factor_tables(
+            ancillary_files, filename
+        )
     # Assume uniform grids: extract 1D arrays from first row/col
-    theta_vals = theta_table[0, :]  # columns represent theta
-    phi_vals = phi_table[:, 0]  # rows represent phi
+    theta_vals = geometric_factor_tables["theta_table"][0, :]  # columns represent theta
+    phi_vals = geometric_factor_tables["phi_table"][:, 0]  # rows represent phi
 
     # Find nearest index in table for each input value
     phi_idx = np.abs(phi_vals[:, None] - phi).argmin(axis=0)
     theta_idx = np.abs(theta_vals[:, None] - theta).argmin(axis=0)
 
     # Fetch geometric factor values at nearest (phi, theta) pairs
-    geometric_factor = gf_table[phi_idx, theta_idx]
+    geometric_factor = geometric_factor_tables["gf_table"][phi_idx, theta_idx]
 
-    phi_rad = np.deg2rad(phi)
-    numerator = 5.0 * np.cos(phi_rad)
-    denominator = 1 + 2.80 * np.cos(phi_rad)
-    # Equation 19 in the Ultra Algorithm Document.
-    theta_nom = np.arctan(numerator / denominator)
-    theta_nom = np.rad2deg(theta_nom)
-
-    outside_fov = np.abs(theta) > theta_nom
-    quality_flag[outside_fov] |= ImapDEUltraFlags.FOV.value
+    outside_fov = ~is_inside_fov(np.deg2rad(phi), np.deg2rad(theta))
+    quality_flag[outside_fov] |= ImapDEOutliersUltraFlags.FOV.value
 
     return geometric_factor
+
+
+def load_scattering_lookup_tables(ancillary_files: dict, instrument_id: int) -> dict:
+    """
+    Load scattering coefficient lookup tables for the specified instrument.
+
+    Parameters
+    ----------
+    ancillary_files : dict
+        Ancillary files.
+    instrument_id : int
+        Instrument ID, either 45 or 90.
+
+    Returns
+    -------
+    dict
+        Dictionary containing arrays for theta_grid, phi_grid, a_theta, g_theta,
+         a_phi, g_phi.
+    """
+    # TODO remove the line below when the 45 sensor scattering coefficients are
+    #  delivered.
+    instrument_id = 90
+    descriptor = f"l1b-{instrument_id}sensor-scattering-calibration-data"
+    theta_grid = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=7, nrows=241
+    ).to_numpy(dtype=float)
+    phi_grid = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=249, nrows=241
+    ).to_numpy(dtype=float)
+    a_theta = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=491, nrows=241
+    ).to_numpy(dtype=float)
+    g_theta = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=733, nrows=241
+    ).to_numpy(dtype=float)
+    a_phi = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=975, nrows=241
+    ).to_numpy(dtype=float)
+    g_phi = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=1217, nrows=241
+    ).to_numpy(dtype=float)
+    return {
+        "theta_grid": theta_grid,
+        "phi_grid": phi_grid,
+        "a_theta": a_theta,
+        "g_theta": g_theta,
+        "a_phi": a_phi,
+        "g_phi": g_phi,
+    }
+
+
+def get_scattering_coefficients(
+    theta: NDArray,
+    phi: NDArray,
+    lookup_tables: dict | None = None,
+    ancillary_files: dict | None = None,
+    instrument_id: int | None = None,
+) -> tuple[NDArray, NDArray]:
+    """
+    Get a and g coefficients for theta and phi to compute scattering FWHM.
+
+    Parameters
+    ----------
+    theta : NDArray
+        Elevation angles in degrees.
+    phi : NDArray
+        Azimuth angles in degrees.
+    lookup_tables : dict, optional
+        Preloaded lookup tables. If not provided, will load using ancillary_files and
+         instrument_id.
+    ancillary_files : dict, optional
+        Ancillary files, required if lookup_tables is not provided.
+    instrument_id : int, optional
+        Instrument ID, required if lookup_tables is not provided.
+
+    Returns
+    -------
+    tuple
+        Scattering a and g values corresponding to the given theta and phi values.
+    """
+    if lookup_tables is None:
+        if ancillary_files is None or instrument_id is None:
+            raise ValueError(
+                "ancillary_files and instrument_id must be provided if lookup_tables "
+                "is not supplied."
+            )
+        lookup_tables = load_scattering_lookup_tables(ancillary_files, instrument_id)
+
+    theta_grid = lookup_tables["theta_grid"]
+    phi_grid = lookup_tables["phi_grid"]
+    a_theta = lookup_tables["a_theta"]
+    g_theta = lookup_tables["g_theta"]
+    a_phi = lookup_tables["a_phi"]
+    g_phi = lookup_tables["g_phi"]
+
+    theta_vals = theta_grid[0, :]  # columns represent theta
+    phi_vals = phi_grid[:, 0]  # rows represent phi
+
+    phi_idx = np.abs(phi_vals[:, None] - phi).argmin(axis=0)
+    theta_idx = np.abs(theta_vals[:, None] - theta).argmin(axis=0)
+
+    a_theta_val = a_theta[phi_idx, theta_idx]
+    g_theta_val = g_theta[phi_idx, theta_idx]
+    a_phi_val = a_phi[phi_idx, theta_idx]
+    g_phi_val = g_phi[phi_idx, theta_idx]
+
+    return np.column_stack([a_theta_val, g_theta_val]), np.column_stack(
+        [a_phi_val, g_phi_val]
+    )
+
+
+def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:
+    """
+    Determine angles in the field of view (FOV).
+
+    This function is used in the deadtime correction to determine whether a given
+    (theta, phi) angle is within the instrument's Field of View (FOV).
+    Only pixels inside the FOV are considered for time accumulation. The FOV boundary
+    is defined by equation 19 in the Ultra Algorithm Document.
+
+    Parameters
+    ----------
+    phi : np.ndarray
+        Azimuth angles in radians.
+    theta : np.ndarray
+        Elevation angles in radians.
+
+    Returns
+    -------
+    numpy.ndarray
+        Boolean array indicating if the angle is in the FOV, False otherwise.
+    """
+    numerator = 5.0 * np.cos(phi)
+    denominator = 1 + 2.80 * np.cos(phi)
+    # Equation 19 in the Ultra Algorithm Document.
+    theta_nom = np.arctan(numerator / denominator)
+    return np.abs(theta) <= theta_nom
 
 
 def get_ph_corrected(
@@ -343,7 +511,7 @@ def get_ph_corrected(
 
     # Flag where clamping occurred
     flagged_mask = (xlut != xlut_clamped) | (ylut != ylut_clamped)
-    quality_flag[flagged_mask] |= ImapDEUltraFlags.PHCORR.value
+    quality_flag[flagged_mask] |= ImapDEOutliersUltraFlags.PHCORR.value
 
     ph_correction = ph_correct_array[xlut_clamped, ylut_clamped]
 
@@ -407,3 +575,29 @@ def get_ebins(
         ebins[valid] = lut_array[ctof_lookup[valid], energy_lookup[valid]]
 
     return ebins
+
+
+def get_scattering_thresholds(ancillary_files: dict) -> dict:
+    """
+    Load scattering culling thresholds as a function of energy from a lookup table.
+
+    Parameters
+    ----------
+    ancillary_files : dict[Path]
+        Ancillary files.
+
+    Returns
+    -------
+    threshold_dict
+         Dictionary containing energy ranges and the corresponding scattering culling
+          threshold.
+    """
+    # Culling FWHM Scattering values as a function of energy.
+    thresholds = pd.read_csv(
+        ancillary_files["l1b-scattering-thresholds-per-energy"], header=None, skiprows=1
+    ).to_numpy(dtype=np.float64)
+    # The first two columns represent the energy range (min, max) in keV, and the
+    # value is the FWHM scattering threshold in degrees
+    threshold_dict = {(row[0], row[1]): row[2] for row in thresholds}
+
+    return threshold_dict

@@ -1,16 +1,18 @@
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
-from imap_processing.glows.l1b.glows_l1b import glows_l1b
+from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
     DirectEventL1B,
     HistogramL1B,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
 def test_glows_l1b_ancillary_file():
@@ -79,24 +81,21 @@ def test_glows_l1b_de():
     assert np.allclose(pulse_len, expected_pulse)
 
 
-def test_validation_data_histogram(l1a_dataset, mock_ancillary_exclusions):
-    l1b = [
-        glows_l1b(
-            l1a_dataset[0],
-            mock_ancillary_exclusions.excluded_regions,
-            mock_ancillary_exclusions.uv_sources,
-            mock_ancillary_exclusions.suspected_transients,
-            mock_ancillary_exclusions.exclusions_by_instr_team,
-        ),
-        glows_l1b(
-            l1a_dataset[1],
-            mock_ancillary_exclusions.excluded_regions,
-            mock_ancillary_exclusions.uv_sources,
-            mock_ancillary_exclusions.suspected_transients,
-            mock_ancillary_exclusions.exclusions_by_instr_team,
-        ),
-    ]
-    end_time = l1b[0]["epoch"].data[-1]
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_validation_data_histogram(
+    mock_spice_function, l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+):
+    mock_spice_function.side_effect = mock_update_spice_parameters
+    # Only test with histogram data (l1a_dataset[0])
+    l1b = glows_l1b(
+        l1a_dataset[0],
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
+    )
+    end_time = l1b["epoch"].data[-1]
 
     validation_data = (
         Path(__file__).parent
@@ -142,9 +141,10 @@ def test_validation_data_histogram(l1a_dataset, mock_ancillary_exclusions):
     for validation_output in out["output"]:
         epoch_val = met_to_ttj2000ns(validation_output["imap_start_time"])
 
-        # Validation data spans the two obs days, so this selects the correct output
-        dataset_index = 1 if epoch_val > end_time else 0
-        datapoint = l1b[dataset_index].sel(epoch=epoch_val)
+        # Skip validation data that doesn't match our single dataset timerange
+        if epoch_val > end_time:
+            continue
+        datapoint = l1b.sel(epoch=epoch_val)
 
         assert np.equal(
             validation_output["imap_start_time"],
@@ -161,16 +161,12 @@ def test_validation_data_histogram(l1a_dataset, mock_ancillary_exclusions):
             )
 
 
-def test_validation_data_de(l1a_dataset, mock_ancillary_exclusions):
+def test_validation_data_de(
+    l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+):
     de_data = l1a_dataset[1]
 
-    l1b = glows_l1b(
-        de_data,
-        mock_ancillary_exclusions.excluded_regions,
-        mock_ancillary_exclusions.uv_sources,
-        mock_ancillary_exclusions.suspected_transients,
-        mock_ancillary_exclusions.exclusions_by_instr_team,
-    )
+    l1b = glows_l1b_de(de_data)
     validation_data = (
         Path(__file__).parent / "validation_data" / "imap_glows_l1b_de_output.json"
     )

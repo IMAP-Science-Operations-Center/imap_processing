@@ -124,7 +124,10 @@ def _download_external_data():
                     file.write(response.content)
                 logger.info(f"Downloaded file: {source}")
             else:
-                logger.error(f"Failed to download file: {response.status_code}")
+                logger.error(
+                    f"Failed to download file: {source} "
+                    f"with response: {response.status_code}"
+                )
         else:
             logger.info(f"File already exists: {destination}")
 
@@ -394,9 +397,10 @@ def generate_repoint_data(
         Repoint dataframe with start and end repoint times provided and incrementing
         repoint_ids starting at 1.
     """
-    repoint_start_times = np.array(repoint_start_met)
+    repoint_start_times = np.atleast_1d(repoint_start_met)
     if repoint_end_met is None:
         repoint_end_met = repoint_start_times + 15 * 60
+
     # Calculate UTC times without spice (accepting ~5 second inaccuracy)
     repoint_start_dt64 = TTJ2000_EPOCH + (repoint_start_times * 1e9).astype(
         "timedelta64[ns]"
@@ -470,7 +474,7 @@ def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
         "naif0012.tls",
         "imap_spk_demo.bsp",
         "sim_1yr_imap_attitude.bc",
-        "imap_wkcp.tf",
+        "imap_100.tf",
         "de440s.bsp",
         "imap_science_100.tf",
         "sim_1yr_imap_pointing_frame.bc",
@@ -481,7 +485,7 @@ def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
 
 @pytest.fixture
 def imap_ialirt_sim_metakernel(furnish_kernels):
-    kernels = ["imap_wkcp.tf"]
+    kernels = ["imap_100.tf"]
     with furnish_kernels(kernels) as k:
         yield k
 

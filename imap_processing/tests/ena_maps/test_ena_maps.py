@@ -147,7 +147,7 @@ class TestHiPointingSet:
     def test_init(self, hi_pset_cdf_path):
         """Test coverage for __init__ method."""
         pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds)
+        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
         assert isinstance(hi_pset, ena_maps.HiPointingSet)
         assert hi_pset.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
         assert hi_pset.num_points == 3600
@@ -157,13 +157,35 @@ class TestHiPointingSet:
             assert var_name in hi_pset.data
 
     def test_from_cdf(self, hi_pset_cdf_path):
-        """Test coverage for from_cdf method."""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
+        """Test coverage for instantiating HiPointingSet from cdf."""
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
         assert isinstance(hi_pset, ena_maps.HiPointingSet)
+
+    def test_spin_phase_filtering(self, hi_pset_cdf_path):
+        """Test coverage for filtering pset data by ram or anti-ram directions."""
+        pset_ds = load_cdf(hi_pset_cdf_path)
+
+        # Test ram only direction
+        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="ram")
+        assert hi_pset.num_points == 1800
+        np.testing.assert_array_equal(
+            hi_pset.data["spin_angle_bin"].data, np.arange(1800)
+        )
+
+        # Test anti-ram direction
+        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="anti-ram")
+        assert hi_pset.num_points == 1800
+        np.testing.assert_array_equal(
+            hi_pset.data["spin_angle_bin"].data, np.arange(1800) + 1800
+        )
+
+        # Test value error
+        with pytest.raises(ValueError, match="Unrecognized spin_phase value:"):
+            _ = ena_maps.HiPointingSet(pset_ds, spin_phase="foo-phase")
 
     def test_plays_nice_with_rectangular_sky_map(self, hi_pset_cdf_path):
         """Test that HiPointingSet works with RectangularSkyMap"""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
         rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=2, spice_frame=geometry.SpiceFrame.ECLIPJ2000
         )
@@ -173,40 +195,59 @@ class TestHiPointingSet:
 
 @pytest.fixture
 def lo_pset_ds():
-    h_counts = np.zeros((1, 3600, 40, 7))
+    h_counts = np.zeros((1, 7, 3600, 40))
     h_counts[:, :, 0:10, :] = 1
 
-    exposure_time = np.full((1, 3600, 40, 7), 0.5)
+    exposure_time = np.full((1, 7, 3600, 40), 0.5)
+    lons = np.linspace(0, 359.9, 3600)
+    lats = np.linspace(-2, 2, 40)
+    lons, lats = np.meshgrid(lons, lats, indexing="ij")
+    hae_longitude = np.empty((1, 3600, 40))
+    hae_latitude = np.empty((1, 3600, 40))
+    hae_longitude[0, :, :] = lons
+    hae_latitude[0, :, :] = lats
+
     dataset = xr.Dataset()
     dataset["h_counts"] = xr.DataArray(
         h_counts,
-        dims=("epoch", "longitude", "latitude", "energy"),
+        dims=("epoch", "esa_energy_step", "spin_angle", "off_angle"),
         name="h_counts",
     )
     dataset["exposure_time"] = xr.DataArray(
         exposure_time,
-        dims=("epoch", "longitude", "latitude", "energy"),
+        dims=("epoch", "esa_energy_step", "spin_angle", "off_angle"),
         name="exposure_time",
     )
+    dataset["hae_longitude"] = xr.DataArray(
+        hae_longitude,
+        dims=("epoch", "spin_angle", "off_angle"),
+        name="exposure_time",
+    )
+    dataset["hae_latitude"] = xr.DataArray(
+        hae_latitude,
+        dims=("epoch", "spin_angle", "off_angle"),
+        name="exposure_time",
+    )
+
     dataset.coords["epoch"] = xr.DataArray(
         [8.1794907049e17],
         dims=["epoch"],
         name="epoch",
     )
-    dataset.coords["longitude"] = xr.DataArray(
+    dataset.coords["spin_angle"] = xr.DataArray(
         [i for i in range(3600)],
-        dims=["longitude"],
-        name="longitude",
+        dims=["spin_angle"],
+        name="spin_angle",
     )
-    dataset.coords["latitude"] = xr.DataArray(
+    dataset.coords["off_angle"] = xr.DataArray(
         [i for i in range(40)],
-        dims=["latitude"],
-        name="latitude",
+        dims=["off_angle"],
+        name="off_angle",
     )
-    dataset.coords["energy"] = xr.DataArray(
+    dataset.coords["esa_energy_step"] = xr.DataArray(
         [i for i in range(1, 8)],
-        dims=["energy"],
-        name="energy",
+        dims=["esa_energy_step"],
+        name="esa_energy_step",
     )
 
     attr_mgr = ImapCdfAttributes()
@@ -230,7 +271,7 @@ class TestLoPointingSet:
         """Test coverage for __init__ method."""
         lo_pset = ena_maps.LoPointingSet(lo_pset_ds)
         assert isinstance(lo_pset, ena_maps.LoPointingSet)
-        assert lo_pset.spice_reference_frame == geometry.SpiceFrame.IMAP_DPS
+        assert lo_pset.spice_reference_frame == geometry.SpiceFrame.IMAP_HAE
         assert lo_pset.num_points == 144000
         np.testing.assert_array_equal(lo_pset.az_el_points.shape, (144000, 2))
 
@@ -582,6 +623,13 @@ class TestRectangularSkyMap:
             name="foo_var",
             dims=[k for k in coord_sizes.keys()],
         )
+        # Add required energy delta variables
+        for side in ["minus", "plus"]:
+            mock_dataset[f"{CoordNames.ENERGY_L2.value}_delta_{side}"] = xr.DataArray(
+                np.ones_like(mock_dataset[CoordNames.ENERGY_L2.value].data),
+                name=f"{CoordNames.ENERGY_L2.value}_delta_{side}",
+                dims=[CoordNames.ENERGY_L2.value],
+            )
         return mock_dataset
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
@@ -594,7 +642,7 @@ class TestRectangularSkyMap:
         skymap.min_epoch = 10
         skymap.max_epoch = 15
         cdf_dataset = skymap.build_cdf_dataset(
-            "hi", "l2", "sf", "foo_descriptor", sensor="45"
+            "hi", "l2", "foo_descriptor", sensor="45"
         )
 
         # Check that expected var gets removed
@@ -602,12 +650,17 @@ class TestRectangularSkyMap:
         # Check the epoch values
         assert CoordNames.TIME.value in cdf_dataset
         assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
+        assert (
+            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_PLUS_VAR"] == "epoch_delta"
+        )
+        # Check epoch_delta
         assert f"{CoordNames.TIME.value}_delta" in cdf_dataset
         assert (
             cdf_dataset[f"{CoordNames.TIME.value}_delta"].values[0]
             == skymap.max_epoch - skymap.min_epoch
         )
 
+        # Energy related checks
         assert CoordNames.ENERGY_L2.value in cdf_dataset
         assert f"{CoordNames.ENERGY_L2.value}_delta_plus" in cdf_dataset
         assert f"{CoordNames.ENERGY_L2.value}_delta_minus" in cdf_dataset
@@ -620,6 +673,19 @@ class TestRectangularSkyMap:
         assert CoordNames.ELEVATION_L2.value in cdf_dataset
         assert f"{CoordNames.ELEVATION_L2.value}_delta" in cdf_dataset
         assert f"{CoordNames.ELEVATION_L2.value}_label" in cdf_dataset
+
+        # Check that coordinate variables don't have the following variable attributes
+        not_coord_attrs = ["DEPEND_0", "DISPLAY_TYPE"]
+        for var in [
+            CoordNames.TIME.value,
+            CoordNames.ENERGY_L2.value,
+            CoordNames.AZIMUTH_L2.value,
+            CoordNames.ELEVATION_L2.value,
+        ]:
+            for attr in not_coord_attrs:
+                assert attr not in cdf_dataset[var].attrs, (
+                    f"attr '{attr}' should not be in variable attributes for '{var}'"
+                )
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
     def test_build_cdf_dataset_key_error(
@@ -642,12 +708,29 @@ class TestRectangularSkyMap:
         skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
         skymap.min_epoch = 10
         skymap.max_epoch = 15
+        # Test that variables with no attributes defined raise KeyError
         with pytest.raises(
             KeyError, match="Attributes for variable no_attrs_var not found"
         ):
-            _ = skymap.build_cdf_dataset(
-                "hi", "l2", "sf", "foo_descriptor", sensor="45"
-            )
+            _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
+
+        # Test that missing energy delta variable raise KeyError
+        # Test for missing energy_delta_plus
+        mock_dataset = mock_dataset.drop(["no_attrs_var", "energy_delta_plus"])
+        mock_to_dataset.return_value = mock_dataset
+        with pytest.raises(
+            KeyError,
+            match="Required variable 'energy_delta_plus' not found in cdf Dataset.",
+        ):
+            _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
+        # Test for missing energy_delta_minus
+        mock_dataset = mock_dataset.drop(["energy_delta_minus"])
+        mock_to_dataset.return_value = mock_dataset
+        with pytest.raises(
+            KeyError,
+            match="Required variable 'energy_delta_minus' not found in cdf Dataset.",
+        ):
+            _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
 
 
 class TestHealpixSkyMap:

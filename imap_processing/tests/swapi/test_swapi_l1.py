@@ -84,7 +84,7 @@ def test_decompress_count():
     # compressed + no-overflow, compressed + overflow, no compression
     raw_values = np.array([[12, 0xFFFF, 12]])
     compression_flag = np.array([[1, 1, 0]])
-    expected = np.array([[12 * 16, np.iinfo(np.int32).max, 12]], dtype=np.int32)
+    expected = np.array([[12 * 16, np.iinfo(np.int32).max, 12]], dtype=np.float32)
     returned_value = decompress_count(raw_values, compression_flag)
     np.testing.assert_array_equal(returned_value, expected)
 

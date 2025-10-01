@@ -1,6 +1,5 @@
 """Create dataset."""
 
-import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -32,7 +31,7 @@ def create_dataset(  # noqa: PLR0912
     cdf_manager.add_instrument_global_attrs("ultra")
     cdf_manager.add_instrument_variable_attrs("ultra", level)
 
-    # L1b extended spin, badtimes, and cullingmask data products
+    # L1b extended spin, badtimes, and goodtimes data products
     if "spin_number" in data_dict.keys():
         coords = {
             "spin_number": ("spin_number", data_dict["spin_number"]),
@@ -40,7 +39,6 @@ def create_dataset(  # noqa: PLR0912
                 "energy_bin_geometric_mean",
                 data_dict["energy_bin_geometric_mean"],
             ),
-            "epoch": ("spin_number", np.asarray(data_dict["epoch"])),
         }
         default_dimension = "spin_number"
     # L1c pset data products
@@ -49,6 +47,7 @@ def create_dataset(  # noqa: PLR0912
             "epoch": data_dict["epoch"],
             "pixel_index": data_dict["pixel_index"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
+            "spin_phase_step": data_dict["spin_phase_step"],
         }
         default_dimension = "pixel_index"
     # L1b de data product
@@ -95,7 +94,13 @@ def create_dataset(  # noqa: PLR0912
 
     for key, data in data_dict.items():
         # Skip keys that are coordinates.
-        if key in ["epoch", "spin_number", "energy_bin_geometric_mean", "pixel_index"]:
+        if key in [
+            "epoch",
+            "spin_number",
+            "energy_bin_geometric_mean",
+            "pixel_index",
+            "spin_phase_step",
+        ]:
             continue
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(
@@ -103,7 +108,12 @@ def create_dataset(  # noqa: PLR0912
                 dims=["epoch", "component"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key == "ena_rates_threshold":
+        elif key in [
+            "ena_rates_threshold",
+            "scatter_threshold",
+            "energy_delta_minus",
+            "energy_delta_plus",
+        ]:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean"],
@@ -127,7 +137,7 @@ def create_dataset(  # noqa: PLR0912
                 dims=["energy_bin_geometric_mean", "spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key in {"latitude", "longitude", "exposure_factor"}:
+        elif key in {"quality_flags", "latitude", "longitude"}:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["epoch", "pixel_index"],
@@ -136,12 +146,32 @@ def create_dataset(  # noqa: PLR0912
         elif key in {
             "counts",
             "background_rates",
+            "exposure_factor",
             "helio_exposure_factor",
-            "sensitivity",
         }:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["epoch", "energy_bin_geometric_mean", "pixel_index"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key in {
+            "geometric_function",
+            "scatter_theta",
+            "scatter_phi",
+            "sensitivity",
+            "efficiency",
+        }:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["energy_bin_geometric_mean", "pixel_index"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key in {
+            "dead_time_ratio",
+        }:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["spin_phase_step"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:

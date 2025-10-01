@@ -478,6 +478,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
     grouped_data = find_groups(accumulated_data, (0, 59), "swe_seq", "time_seconds")
     unique_groups = np.unique(grouped_data["group"])
     swe_data: list[dict] = []
+    incomplete_groups = []
 
     for group in unique_groups:
         # Sequence values for the group should be 0-59 with no duplicates.
@@ -485,10 +486,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
 
         # Ensure no duplicates and all values from 0 to 59 are present
         if not np.array_equal(seq_values, np.arange(60)):
-            logger.info(
-                f"Group {group} does not contain all values from 0 to "
-                f"59 without duplicates."
-            )
+            incomplete_groups.append(group)
             continue
         # Prepare raw counts array just for this group
         # (8 energy steps, 7 CEMs, 30 phi bins)
@@ -568,6 +566,13 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
                 "swe_normalized_counts": [int(val) for val in summed_second],
                 "swe_counterstreaming_electrons": bde_second_half,
             },
+        )
+
+    if incomplete_groups:
+        logger.info(
+            f"The following swe groups were skipped due to "
+            f"missing or duplicate pkt_counter values: "
+            f"{incomplete_groups}"
         )
 
     return swe_data

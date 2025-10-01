@@ -3,7 +3,7 @@ import xarray as xr
 
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
 from imap_processing.ultra.l1b.badtimes import calculate_badtimes
-from imap_processing.ultra.l1b.cullingmask import calculate_cullingmask
+from imap_processing.ultra.l1b.goodtimes import calculate_goodtimes
 
 
 def test_calculate_badtimes():
@@ -42,15 +42,15 @@ def test_calculate_badtimes():
         },
     )
 
-    culling_ds = calculate_cullingmask(ds, name="imap_ultra_l1b_45sensor-badtimes")
+    goodtimes_ds = calculate_goodtimes(ds, name="imap_ultra_l1b_45sensor-badtimes")
     badtimes_ds = calculate_badtimes(
         ds,
-        culling_ds["spin_number"].values,
+        goodtimes_ds["spin_number"].values,
         name="imap_ultra_l1b_45sensor-badtimes",
     )
 
     assert not np.any(
-        np.isin(culling_ds["spin_number"].values, badtimes_ds["spin_number"].values)
+        np.isin(goodtimes_ds["spin_number"].values, badtimes_ds["spin_number"].values)
     )
 
 

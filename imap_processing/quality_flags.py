@@ -37,12 +37,13 @@ class ENAFlags(FlagNameMixin):
     BADSPIN = 2**2  # bit 2, Bad spin
 
 
-class ImapDEUltraFlags(FlagNameMixin):
+class ImapDEOutliersUltraFlags(FlagNameMixin):
     """IMAP Ultra flags."""
 
     NONE = CommonFlags.NONE
     FOV = 2**0  # bit 0
     PHCORR = 2**1  # bit 1
+    COINPH = 2**2  # bit 4 # Event validity
 
 
 class ImapHkUltraFlags(FlagNameMixin):
@@ -73,6 +74,21 @@ class ImapRatesUltraFlags(FlagNameMixin):
     FIRSTSPIN = 2**1  # bit 1
     LASTSPIN = 2**2  # bit 2
     PARTIALSPIN = 2**2  # bit 2
+
+
+class ImapDEScatteringUltraFlags(FlagNameMixin):
+    """IMAP Ultra Scattering flags."""
+
+    NONE = CommonFlags.NONE
+    ABOVE_THRESHOLD = 2**0  # bit 0
+    NAN_PHI_OR_THETA = 2**1  # bit 1
+
+
+class ImapPSETUltraFlags(FlagNameMixin):
+    """IMAP Ultra Rates flags."""
+
+    NONE = CommonFlags.NONE
+    EARTH_FOV = 2**0  # bit 0
 
 
 class ImapInstrumentUltraFlags(FlagNameMixin):
@@ -123,3 +139,9 @@ class SWAPIFlags(
     SCEM_V_ST = 2**12  # bit 12
     SCEM_I_ST = 2**13  # bit 13
     SCEM_INT_ST = 2**14  # bit 14
+
+
+class GLOWSL1bFlags(FlagNameMixin):
+    """Glows L1b flags."""
+
+    NONE = CommonFlags.NONE

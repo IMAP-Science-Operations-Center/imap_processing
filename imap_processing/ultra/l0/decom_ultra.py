@@ -81,54 +81,66 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
     decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
     decom_data["packetdata"] = []
     valid_epoch = []
-
     for val, group in ds.groupby("epoch"):
         if set(group["sid"].values) >= set(
             np.arange(0, image_planes, planes_per_packet)
         ):
+            plane_count = 0
             valid_epoch.append(val)
             group.sortby("sid")
 
             for key in scalar_keys:
-                decom_data[key].append(group[key].values)
+                # Repeat the scalar values for each image plane. There may be cases
+                # where the last packet has fewer planes than the planes_per_packet, so
+                # we slice to ensure the correct length.
+                decom_data[key].append(
+                    np.tile(group[key].values, planes_per_packet)[:image_planes]
+                )
 
             image = []
             for i in range(num_image_packets):
                 binary = convert_to_binary_string(group["packetdata"].values[i])
+                # Determine how many planes to decompress in this packet.
+                # the last packet might have fewer planes than planes_per_packet.
+                # Take the minimum of the remaining planes or the max planes per packet
+                # value.
+                planes_in_packet = min(image_planes - plane_count, planes_per_packet)
                 decompressed = decompress_image(
                     group["p00"].values[i],
                     binary,
                     packet_props,
+                    planes_in_packet,
                 )
                 image.append(decompressed)
+                plane_count += planes_in_packet
 
-            decom_data["packetdata"].append(np.stack(image))
+            decom_data["packetdata"].append(np.concatenate(image, axis=0))
 
     for key in scalar_keys:
-        decom_data[key] = np.stack(decom_data[key])
+        decom_data[key] = np.stack(decom_data[key], axis=0)
 
-    decom_data["packetdata"] = np.stack(decom_data["packetdata"])
+    decom_data["packetdata"] = np.stack(decom_data["packetdata"], axis=0)
 
     coords = {
         "epoch": np.array(valid_epoch, dtype=np.uint64),
-        "sid": xr.DataArray(np.arange(num_image_packets), dims=["sid"], name="sid"),
+        "plane": xr.DataArray(np.arange(image_planes), dims=["plane"], name="plane"),
         "row": xr.DataArray(np.arange(rows), dims=["row"], name="row"),
         "column": xr.DataArray(np.arange(cols), dims=["column"], name="column"),
     }
 
     dataset = xr.Dataset(coords=coords)
 
-    # Add scalar keys (2D: epoch x sid)
+    # Add scalar keys (2D: epoch x packets)
     for key in scalar_keys:
         dataset[key] = xr.DataArray(
             decom_data[key],
-            dims=["epoch", "sid"],
+            dims=["epoch", "plane"],
         )
 
     # Add PACKETDATA (4D: epoch x sid x row x column)
     dataset["packetdata"] = xr.DataArray(
         decom_data["packetdata"],
-        dims=["epoch", "sid", "row", "column"],
+        dims=["epoch", "plane", "row", "column"],
     )
 
     return dataset

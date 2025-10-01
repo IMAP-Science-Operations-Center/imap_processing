@@ -592,12 +592,30 @@ class HiPointingSet(PointingSet):
 
     Parameters
     ----------
-    dataset : xarray.Dataset
-        Hi L1C pointing set data loaded in an xarray.DataArray.
+    dataset : xarray.Dataset | str | Path
+        Hi L1C pointing set data loaded in a xarray.DataArray.
+    spin_phase : str
+        Include ENAs from "full", "ram" or "anti-ram" phases of the spin.
     """
 
-    def __init__(self, dataset: xr.Dataset):
+    def __init__(self, dataset: xr.Dataset | str | Path, spin_phase: str):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
+
+        # Filter out ENAs from non-selected portions of the spin.
+        if spin_phase not in ["full", "ram", "anti-ram"]:
+            raise ValueError(f"Unrecognized spin_phase value: {spin_phase}.")
+        # ram only includes spin-phase interval [0, 0.5)
+        # which is the first half of the spin_angle_bins
+        elif spin_phase == "ram":
+            self.data = self.data.isel(
+                spin_angle_bin=slice(0, self.data["spin_angle_bin"].data.size // 2)
+            )
+        # anti-ram includes spin-phase interval [0.5, 1)
+        # which is the second half of the spin_angle_bins
+        elif spin_phase == "anti-ram":
+            self.data = self.data.isel(
+                spin_angle_bin=slice(self.data["spin_angle_bin"].data.size // 2, None)
+            )
 
         # Rename some PSET vars to match L2 variables
         self.data = self.data.rename(
@@ -633,29 +651,16 @@ class LoPointingSet(PointingSet):
     """
 
     def __init__(self, dataset: xr.Dataset):
-        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_DPS)
-        # TODO: Use spatial_utils.az_el_grid instead of
-        #  manually creating the lon/lat values
-        inferred_spacing_deg = 360 / dataset.longitude.size
-        longitude_bin_centers = np.arange(
-            0 + inferred_spacing_deg / 2, 360, inferred_spacing_deg
-        )
-        latitude_bin_centers = np.arange(
-            -2 + inferred_spacing_deg / 2, 2, inferred_spacing_deg
-        )
+        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_HAE)
 
-        # Could be wrong about the order here
-        longitude_grid, latitude_grid = np.meshgrid(
-            longitude_bin_centers,
-            latitude_bin_centers,
-            indexing="ij",
+        # The HAE centers are stored in the pset as (1, 3600, 40) arrays
+        self.az_el_points = np.column_stack(
+            (
+                np.squeeze(self.data["hae_longitude"]).values.ravel(),
+                np.squeeze(self.data["hae_latitude"]).values.ravel(),
+            )
         )
-
-        longitude = longitude_grid.ravel()
-        latitude = latitude_grid.ravel()
-
-        self.az_el_points = np.column_stack((longitude, latitude))
-        self.spatial_coords = ("longitude", "latitude")
+        self.spatial_coords = ("spin_angle", "off_angle")
 
 
 # Define the Map classes
@@ -763,6 +768,7 @@ class AbstractSkyMap(ABC):
         pointing_set: PointingSet,
         value_keys: list[str] | None = None,
         index_match_method: IndexMatchMethod = IndexMatchMethod.PUSH,
+        pset_valid_mask: NDArray | None = None,
     ) -> None:
         """
         Project a pointing set's values to the map grid.
@@ -784,6 +790,10 @@ class AbstractSkyMap(ABC):
         index_match_method : IndexMatchMethod, optional
             The method of index matching to use for all values.
             Default is IndexMatchMethod.PUSH.
+        pset_valid_mask : NDArray, optional
+            A boolean mask of shape (number of pointing set pixels,) indicating
+            which pixels in the pointing set should be considered valid for projection.
+            If None, all pixels are considered valid. Default is None.
 
         Raises
         ------
@@ -795,6 +805,9 @@ class AbstractSkyMap(ABC):
         for value_key in value_keys:
             if value_key not in pointing_set.data.data_vars:
                 raise ValueError(f"Value key {value_key} not found in pointing set.")
+
+        if pset_valid_mask is None:
+            pset_valid_mask = np.ones(pointing_set.num_points, dtype=bool)
 
         if index_match_method is IndexMatchMethod.PUSH:
             # Determine the indices of the sky map grid that correspond to
@@ -855,21 +868,31 @@ class AbstractSkyMap(ABC):
                     value_array=raveled_pset_data,
                     projection_grid_shape=self.binning_grid_shape,
                     projection_indices=matched_indices_push,
+                    input_valid_mask=pset_valid_mask,
                 )
+                # TODO: we may need to allow for unweighted/weighted means here by
+                # dividing pointing_projected_values by some binned weights.
+                # For unweighted means, we could use the number of pointing set pixels
+                # that correspond to each map pixel as the weights.
+                self.data_1d[value_key] += pointing_projected_values
             elif index_match_method is IndexMatchMethod.PULL:
+                valid_map_mask = pset_valid_mask[matched_indices_pull]
                 # We know that there will only be one value per sky map pixel,
                 # so we can use the matched indices directly
-                pointing_projected_values = raveled_pset_data[..., matched_indices_pull]
+                pointing_projected_values = raveled_pset_data[
+                    ..., matched_indices_pull[valid_map_mask]
+                ]
+                # TODO: we may need to allow for unweighted/weighted means here by
+                # dividing pointing_projected_values by some binned weights.
+                # For unweighted means, we could use the number of pointing set pixels
+                # that correspond to each map pixel as the weights.
+                self.data_1d[value_key].values[..., valid_map_mask] += (
+                    pointing_projected_values
+                )
             else:
                 raise NotImplementedError(
                     "Only PUSH and PULL index matching methods are supported."
                 )
-
-            # TODO: we may need to allow for unweighted/weighted means here by
-            # dividing pointing_projected_values by some binned weights.
-            # For unweighted means, we could use the number of pointing set pixels
-            # that correspond to each map pixel as the weights.
-            self.data_1d[value_key] += pointing_projected_values
 
         # TODO: The max epoch needs to include the pset duration. Right now it
         #     is just capturing the start epoch. See issue #1747
@@ -1164,6 +1187,10 @@ class RectangularSkyMap(AbstractSkyMap):
         # Rewrap each data array in the data_1d to the original 2D grid shape
         rewrapped_data = {}
         for key in self.data_1d.data_vars:
+            # Don't rewrap non-spatial variables
+            if CoordNames.GENERIC_PIXEL.value not in self.data_1d[key].coords:
+                rewrapped_data[key] = self.data_1d[key]
+                continue
             # drop pixel dim from the end, and add the spatial coords as dims
             rewrapped_dims = [
                 dim
@@ -1195,7 +1222,6 @@ class RectangularSkyMap(AbstractSkyMap):
         self,
         instrument: str,
         level: str,
-        frame: str,
         descriptor: str,
         sensor: str | None = None,
     ) -> xr.Dataset:
@@ -1208,8 +1234,6 @@ class RectangularSkyMap(AbstractSkyMap):
             Instrument name. "hi", "lo", "ultra".
         level : str
             Product level. "l2" or "l3".
-        frame : str
-            Map frame. "sf", "hf" or "hk".
         descriptor : str
             Descriptor for filename.
         sensor : str, optional
@@ -1269,18 +1293,17 @@ class RectangularSkyMap(AbstractSkyMap):
                     name=f"{coord_name}_delta",
                     dims=[coord_name],
                 )
-            # Add energy delta_minus and delta_plus variables
             elif coord_name == CoordNames.ENERGY_L2.value:
-                cdf_ds[f"{coord_name}_delta_minus"] = xr.DataArray(
-                    xr.full_like(cdf_ds[coord_name], np.nan),
-                    name=f"{coord_name}_delta",
-                    dims=[coord_name],
-                )
-                cdf_ds[f"{coord_name}_delta_plus"] = xr.DataArray(
-                    xr.full_like(cdf_ds[coord_name], np.nan),
-                    name=f"{coord_name}_delta",
-                    dims=[coord_name],
-                )
+                if f"{coord_name}_delta_minus" not in cdf_ds:
+                    raise KeyError(
+                        f"Required variable '{coord_name}_delta_minus' "
+                        f"not found in cdf Dataset."
+                    )
+                if f"{coord_name}_delta_plus" not in cdf_ds:
+                    raise KeyError(
+                        f"Required variable '{coord_name}_delta_plus' "
+                        f"not found in cdf Dataset."
+                    )
 
         # Object which holds CDF attributes for the map
         cdf_attrs = ImapCdfAttributes()
@@ -1292,16 +1315,14 @@ class RectangularSkyMap(AbstractSkyMap):
         )
 
         # Now set global attributes
-        map_attrs = cdf_attrs.get_global_attributes(
-            f"imap_{instrument}_{level}_enamap-{frame}"
-        )
+        map_attrs = cdf_attrs.get_global_attributes(f"imap_{instrument}_{level}_enamap")
         map_attrs["Spacing_degrees"] = str(self.spacing_deg)
         for key in ["Data_type", "Logical_source", "Logical_source_description"]:
             map_attrs[key] = map_attrs[key].format(
                 descriptor=descriptor,
                 sensor=sensor,
             )
-            # Always add the following attributes to the map
+        # Always add the following attributes to the map
         map_attrs.update(
             {
                 "Sky_tiling_type": self.tiling_type.value,
@@ -1310,25 +1331,28 @@ class RectangularSkyMap(AbstractSkyMap):
         )
         cdf_ds.attrs.update(map_attrs)
 
-        # Set the variable attributes
-        for var in [*cdf_ds.data_vars, *cdf_ds.coords]:
+        # Set the variable and coordinate attributes
+        for name, data_array in {**cdf_ds.data_vars, **cdf_ds.coords}.items():
             try:
-                # Don't check schema on label or delta variables
-                ignore_schema_substrings = ["_label", "_delta"]
-                check_schema = (
-                    False if any(s in var for s in ignore_schema_substrings) else True
-                )
+                # We only check the schema on data variables that include "epoch"
+                # in their list of dimensions (But not epoch itself).
+                check_schema = name != "epoch" and "epoch" in data_array.dims
                 var_attrs = cdf_attrs.get_variable_attributes(
-                    variable_name=var,
+                    variable_name=name,
                     check_schema=check_schema,
                 )
             except KeyError as e:
                 raise KeyError(
-                    f"Attributes for variable {var} not found in "
+                    f"Attributes for variable {name} not found in "
                     f"loaded variable attributes."
                 ) from e
 
-            cdf_ds[var].attrs.update(var_attrs)
+            cdf_ds[name].attrs.update(var_attrs)
+
+        # Manually adjust epoch attributes
+        cdf_ds["epoch"].attrs.update(
+            {"DELTA_PLUS_VAR": "epoch_delta", "BIN_LOCATION": 0}
+        )
 
         return cdf_ds
 

@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import spiceypy
 
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.spice.geometry import SpiceBody
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 
@@ -32,11 +33,17 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
     et_end = 817644684.1856259
     step_seconds = 1800  # 30 minutes
     et_steps = np.arange(et_start, et_end, step_seconds)
+    nside = 128
+    npix = hp.nside2npix(nside)
 
-    spiceypy.kclear()
+    spacecraft_pset_quality_flags = np.full(
+        npix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
+    )
 
     with furnish_kernels(kernels):
-        mask, _ = compute_culling_mask(et_steps, keepout_radius_km)
+        mask, _ = compute_culling_mask(
+            et_steps, keepout_radius_km, spacecraft_pset_quality_flags
+        )
 
     assert mask.shape[0] == len(et_steps)
     assert mask.shape[1] == hp.nside2npix(128)
@@ -62,13 +69,37 @@ def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
             "de440s.bsp",
         ]
     ):
-        et = np.array([817561854.185627])
+        et = np.array([817561854.185627, 817561854.185628])
         keepout_radius_km = 6378.1  # Earth radius
         nside = 128
+        npix = hp.nside2npix(nside)
+        spacecraft_pset_quality_flags = np.full(
+            npix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
+        )
 
         # Compute culling mask and IMAP-to-Earth unit vector
         mask, unit_vectors = compute_culling_mask(
-            et, keepout_radius_km, observer=SpiceBody.EARTH, nside=nside
+            et,
+            keepout_radius_km,
+            spacecraft_pset_quality_flags,
+            observer=SpiceBody.EARTH,
+            nside=nside,
+        )
+
+        culled = np.any(~mask, axis=0)
+        # Culled pixels must have the flag set (bitwise check is safest)
+        assert np.all(
+            (spacecraft_pset_quality_flags[culled] & ImapPSETUltraFlags.EARTH_FOV.value)
+            == ImapPSETUltraFlags.EARTH_FOV.value
+        )
+
+        # Non-culled pixels must not have the flag
+        assert np.all(
+            (
+                spacecraft_pset_quality_flags[~culled]
+                & ImapPSETUltraFlags.EARTH_FOV.value
+            )
+            == 0
         )
 
         # Computes the 3D unit vectors pointing to the centers of all HEALPix pixels

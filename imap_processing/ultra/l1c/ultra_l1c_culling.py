@@ -4,6 +4,7 @@ import astropy_healpix.healpy as hp
 import numpy as np
 from numpy.typing import NDArray
 
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
@@ -14,6 +15,7 @@ from imap_processing.spice.geometry import (
 def compute_culling_mask(
     et: NDArray,
     keepout_radius_km: float,
+    pset_quality_flags: NDArray,
     observer: SpiceBody = SpiceBody.EARTH,
     nside: int = 128,
     nested: bool = False,
@@ -27,6 +29,9 @@ def compute_culling_mask(
         Ephemeris times in TDB seconds past J2000.
     keepout_radius_km : float
         Radius (in km) within which HEALPix pixels will be excluded.
+    pset_quality_flags : NDArray,
+        Quality flag to set when HEALPIX pixels are within a
+        keep-out radius of the target body.
     observer : SpiceBody, optional
         Body from which IMAP is observed.
     nside : int, optional
@@ -81,5 +86,7 @@ def compute_culling_mask(
     # Exclude pixels within the keepout angle.
     # mask.shape = (len(et), npix)
     mask = sep_angle > keepout_angle[:, np.newaxis]
+    culled_any_time = np.any(~mask, axis=0)  # shape: (npix,)
+    pset_quality_flags[culled_any_time] |= ImapPSETUltraFlags.EARTH_FOV.value
 
     return mask, unit_target_vecs

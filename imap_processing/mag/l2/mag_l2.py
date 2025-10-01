@@ -90,6 +90,7 @@ def mag_l2(
     )
     # level 2 vectors don't include range
     vectors = cal_vectors[:, :3]
+    instrument_frame = ValidFrames.MAGO if always_output_mago else ValidFrames.MAGI
 
     l2_data = MagL2(
         vectors=vectors,
@@ -101,6 +102,7 @@ def mag_l2(
         data_mode=mode,
         offsets=offsets_dataset["offsets"].data,
         timedelta=offsets_dataset["timedeltas"].data,
+        frame=instrument_frame,
     )
 
     attributes = ImapCdfAttributes()

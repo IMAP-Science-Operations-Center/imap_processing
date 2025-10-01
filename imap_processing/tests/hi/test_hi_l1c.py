@@ -9,17 +9,12 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+import imap_processing.hi.utils
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi import hi_l1c
 from imap_processing.hi.hi_l1a import DE_CLOCK_TICK_S
-from imap_processing.hi.hi_l1c import CalibrationProductConfig
-from imap_processing.hi.utils import HIAPID, CoincidenceBitmap
-
-
-@pytest.fixture(scope="module")
-def hi_test_cal_prod_config_path(hi_l1_test_data_path):
-    return hi_l1_test_data_path / "imap_hi_90sensor-cal-prod_20240101_v001.csv"
+from imap_processing.hi.utils import HIAPID
 
 
 @mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")
@@ -133,7 +128,7 @@ def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
     """Test coverage for pset_counts function."""
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
     l1b_dataset = load_cdf(l1b_de_path)
-    cal_config_df = hi_l1c.CalibrationProductConfig.from_csv(
+    cal_config_df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
     empty_pset = hi_l1c.empty_pset_dataset(
@@ -144,6 +139,27 @@ def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
     )
     counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
     assert "counts" in counts_var
+
+
+@pytest.mark.external_test_data
+def test_pset_counts_empty_l1b(hi_l1_test_data_path, hi_test_cal_prod_config_path):
+    """Test coverage for pset_counts function when the input L1b contains no counts."""
+    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
+    l1b_dataset = load_cdf(l1b_de_path)
+    # remove all but one event and set its trigger_id to zero
+    l1b_dataset = l1b_dataset.isel(event_met=[0])
+    l1b_dataset["trigger_id"].data[0] = 0
+    cal_config_df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
+        hi_test_cal_prod_config_path
+    )
+    empty_pset = hi_l1c.empty_pset_dataset(
+        100,
+        l1b_dataset.esa_energy_step.data,
+        cal_config_df.cal_prod_config.number_of_products,
+        HIAPID.H90_SCI_DE.sensor,
+    )
+    counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
+    assert counts_var["counts"].data.sum() == 0
 
 
 def test_get_tof_window_mask():
@@ -171,20 +187,37 @@ def test_get_tof_window_mask():
         ],
     )
     prod_config_row = Row((1, 0), 0, 1, -1, 2, 1, 5, 4, 6)
-    synth_df = pd.DataFrame(
-        {
-            "tof_ab": np.array(
-                [0, 2, 1, 0, -1, -5, -11], dtype=np.int32
-            ),  # T, F, T, T, F, F, FILL
-            "tof_ac1": np.array(
-                [-1, 2, -2, 0, 3, 0, -12], dtype=np.int32
-            ),  # T, T, F, T, F, T, FILL
-            "tof_bc1": np.array(
-                [1, 5, 3, 0, 6, 2, -13], dtype=np.int32
-            ),  # T, T, T, F, F, T, FILL
-            "tof_c1c2": np.array(
-                [4, 6, 5, 3, 7, -9, -14], dtype=np.int32
-            ),  # T, T, T, F, F, F, FILL
+    synth_df = xr.Dataset(
+        coords={
+            "event_met": xr.DataArray(
+                np.arange(7), name="event_met", dims=["event_met"]
+            )
+        },
+        data_vars={
+            "tof_ab": xr.DataArray(
+                np.array(
+                    [0, 2, 1, 0, -1, -5, -11], dtype=np.int32
+                ),  # T, F, T, T, F, F, FILL
+                dims=["event_met"],
+            ),
+            "tof_ac1": xr.DataArray(
+                np.array(
+                    [-1, 2, -2, 0, 3, 0, -12], dtype=np.int32
+                ),  # T, T, F, T, F, T, FILL
+                dims=["event_met"],
+            ),
+            "tof_bc1": xr.DataArray(
+                np.array(
+                    [1, 5, 3, 0, 6, 2, -13], dtype=np.int32
+                ),  # T, T, T, F, F, T, FILL
+                dims=["event_met"],
+            ),
+            "tof_c1c2": xr.DataArray(
+                np.array(
+                    [4, 6, 5, 3, 7, -9, -14], dtype=np.int32
+                ),  # T, T, T, F, F, F, FILL
+                dims=["event_met"],
+            ),
         },
     )
     expected_mask = np.array([True, False, False, False, False, False, True])
@@ -371,39 +404,3 @@ def test_get_de_clock_ticks_for_esa_step_exceptions(fake_spin_df):
         ValueError, match="Error determining start/end time for exposure time"
     ):
         hi_l1c.get_de_clock_ticks_for_esa_step(bad_ccsds_met, fake_spin_df)
-
-
-class TestCalibrationProductConfig:
-    """
-    All test coverage for the pd.DataFrame accessor extension "cal_prod_config".
-    """
-
-    def test_wrong_columns(self):
-        """Test coverage for a dataframe with the wrong columns."""
-        required_columns = hi_l1c.CalibrationProductConfig.required_columns
-        for exclude_column_name in required_columns:
-            include_columns = set(required_columns) - {exclude_column_name}
-            df = pd.DataFrame({col: [1, 2, 3] for col in include_columns})
-            with pytest.raises(AttributeError, match="Required column*"):
-                _ = df.cal_prod_config.number_of_products
-
-    def test_from_csv(self, hi_test_cal_prod_config_path):
-        """Test coverage for read_csv function."""
-        df = hi_l1c.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
-        assert isinstance(df["coincidence_type_list"][0, 1], tuple)
-
-    def test_added_coincidence_type_values_column(self, hi_test_cal_prod_config_path):
-        df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
-        assert "coincidence_type_values" in df.columns
-        for _, row in df.iterrows():
-            for detect_string, val in zip(
-                row["coincidence_type_list"],
-                row["coincidence_type_values"],
-                strict=False,
-            ):
-                assert val == CoincidenceBitmap.detector_hit_str_to_int(detect_string)
-
-    def test_number_of_products(self, hi_test_cal_prod_config_path):
-        """Test coverage for number of products accessor."""
-        df = hi_l1c.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
-        assert df.cal_prod_config.number_of_products == 2

@@ -8,8 +8,7 @@ CoDICE
 This is the CoDICE (Compact Dual Ion Composition Experiment) Instrument module,
 which contains the code for processing data from the CoDICE instrument.
 
-The processing code to decommutate the CCSDS packets (L0) and create L1a data
-products can be found below:
+The processing code to decommutate the CCSDS packets (L0) and create higher level data products can be found below:
 
 .. autosummary::
     :toctree: generated/
@@ -21,8 +20,8 @@ products can be found below:
     codice_l1b
     codice_l2
 
-The modules below contain various utility classes and functions to support L0
-and L1a processing:
+The modules below contain various utility classes and functions to support L0 to
+L2 processing:
 
 .. autosummary::
     :toctree: generated/

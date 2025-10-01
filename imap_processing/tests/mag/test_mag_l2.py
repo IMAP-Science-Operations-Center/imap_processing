@@ -91,7 +91,6 @@ def test_offset_application(norm_dataset, mag_test_l2_data):
     assert np.allclose(output.epoch, expected_timeshift, atol=1e-9)
 
 
-@pytest.mark.xfail(reason="Error is too strict during testing")
 def test_error_raises(mag_test_l2_data):
     dataset = mag_l1a_dataset_generator(3504)
     with pytest.raises(ValueError, match="same timestamps"):
@@ -331,7 +330,7 @@ def test_spice_returns(norm_dataset):
         timedelta=np.zeros(len(norm_dataset["epoch"].data)),
     )
 
-    assert l2.frame.name == "MAG"
+    assert l2.frame.name == "MAGO"
 
     with patch(
         "imap_processing.mag.l2.mag_l2_data.frame_transform",

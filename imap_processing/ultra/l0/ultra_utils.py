@@ -137,8 +137,8 @@ ULTRA_EXTOF_HIGH_ANGULAR = PacketProperties(
 ULTRA_EXTOF_HIGH_TIME = PacketProperties(
     apid=[888, 952],
     logical_source=[
-        "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-time",
-        "imap_ultra_l1a_90sensor-histogram-ena-extof-hi-time",
+        "imap_ultra_l1a_45sensor-histogram-ion-extof-hi-time",
+        "imap_ultra_l1a_90sensor-histogram-ion-extof-hi-time",
     ],
     addition_to_logical_desc="Energy By Time of Flight High Time Images",
     width=4,
@@ -153,8 +153,8 @@ ULTRA_EXTOF_HIGH_TIME = PacketProperties(
 ULTRA_EXTOF_HIGH_ENERGY = PacketProperties(
     apid=[887, 951],
     logical_source=[
-        "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-nrg",
-        "imap_ultra_l1a_90sensor-histogram-ena-extof-hi-nrg",
+        "imap_ultra_l1a_45sensor-histogram-ion-extof-hi-nrg",
+        "imap_ultra_l1a_90sensor-histogram-ion-extof-hi-nrg",
     ],
     addition_to_logical_desc="Energy By Time of Flight High Energy Images",
     width=4,

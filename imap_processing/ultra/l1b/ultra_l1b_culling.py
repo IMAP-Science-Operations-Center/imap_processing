@@ -1,6 +1,7 @@
 """Culls Events for ULTRA L1b."""
 
 import logging
+from collections import namedtuple
 
 import numpy as np
 import pandas as pd
@@ -9,17 +10,36 @@ from numpy.typing import NDArray
 
 from imap_processing.quality_flags import (
     ImapAttitudeUltraFlags,
+    ImapDEScatteringUltraFlags,
     ImapHkUltraFlags,
     ImapInstrumentUltraFlags,
     ImapRatesUltraFlags,
 )
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import (
+    get_scattering_coefficients,
+    get_scattering_thresholds,
+)
+from imap_processing.ultra.l1b.quality_flag_filters import DE_QUALITY_FLAG_FILTERS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SPIN_DURATION = 15  # Default spin duration in seconds.
+
+RateResult = namedtuple(
+    "RateResult",
+    [
+        "unique_spins",
+        "start_per_spin",
+        "stop_per_spin",
+        "coin_per_spin",
+        "start_pulses",
+        "stop_pulses",
+        "coin_pulses",
+    ],
+)
 
 
 def get_energy_histogram(
@@ -230,8 +250,8 @@ def flag_rates(
         Quality flags.
     spin : NDArray
         Spin data.
-    energy_midpoints : NDArray
-        Energy midpoint data.
+    energy_bin_geometric_mean : NDArray
+        Energy bin geometric mean.
     n_sigma_per_energy_reshape : NDArray
         N sigma per energy.
     """
@@ -245,7 +265,7 @@ def flag_rates(
     threshold = get_n_sigma(count_rates, duration, sigma=sigma)
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
-    energy_midpoints = np.sqrt(bin_edges[:-1] * bin_edges[1:])
+    energy_bin_geometric_mean = np.sqrt(bin_edges[:-1] * bin_edges[1:])
     spin = np.unique(spin_number)
 
     # Indices where the counts exceed the threshold
@@ -256,7 +276,7 @@ def flag_rates(
     quality_flags[:, 0] |= ImapRatesUltraFlags.FIRSTSPIN.value
     quality_flags[:, -1] |= ImapRatesUltraFlags.LASTSPIN.value
 
-    return quality_flags, spin, energy_midpoints, threshold
+    return quality_flags, spin, energy_bin_geometric_mean, threshold
 
 
 def compare_aux_univ_spin_table(
@@ -394,7 +414,7 @@ def get_spin_and_duration(met: NDArray, spin: NDArray) -> tuple[NDArray, NDArray
     return assigned_spin_number, assigned_duration
 
 
-def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
+def get_pulses_per_spin(rates: xr.Dataset) -> RateResult:
     """
     Get the total number of pulses per spin.
 
@@ -405,12 +425,20 @@ def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
 
     Returns
     -------
+    unique_spins : NDArray
+        Unique spin numbers.
     start_per_spin : NDArray
         Total start pulses per spin.
     stop_per_spin : NDArray
         Total stop pulses per spin.
     coin_per_spin : NDArray
         Total coincidence pulses per spin.
+    start_pulses : NDArray
+        Total start pulses.
+    stop_pulses : NDArray
+        Total stop pulses.
+    coin_pulses : NDArray
+        Total coincidence pulses.
     """
     spin_number, duration = get_spin_and_duration(rates["shcoarse"], rates["spin"])
 
@@ -448,4 +476,138 @@ def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
     stop_per_spin = np.bincount(spin_idx, weights=stop_pulses)
     coin_per_spin = np.bincount(spin_idx, weights=coin_pulses)
 
-    return start_per_spin, stop_per_spin, coin_per_spin
+    return RateResult(
+        unique_spins=unique_spins,
+        start_per_spin=start_per_spin,
+        stop_per_spin=stop_per_spin,
+        coin_per_spin=coin_per_spin,
+        start_pulses=start_pulses,
+        stop_pulses=stop_pulses,
+        coin_pulses=coin_pulses,
+    )
+
+
+def flag_scattering(
+    tof_energy: NDArray,
+    theta: NDArray,
+    phi: NDArray,
+    ancillary_files: dict,
+    sensor: str,
+    quality_flags: NDArray,
+) -> None:
+    """
+    Flag events where either theta or phi FWHM exceed the threshold or equal nan.
+
+    Parameters
+    ----------
+    tof_energy : NDArray
+        TOF energy for each event in keV.
+    theta : NDArray
+        Elevation angles in degrees.
+    phi : NDArray
+        Azimuth angles in degrees.
+    ancillary_files : dict[Path]
+        Ancillary files.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    quality_flags : NDArray
+        Quality flags.
+    """
+    scattering_thresholds = get_scattering_thresholds(ancillary_files)
+
+    for (e_min, e_max), threshold in scattering_thresholds.items():
+        event_mask = (tof_energy >= e_min) & (tof_energy < e_max)
+        # Input the theta and phi values for the current energy range.
+        # Returns a_theta_val, g_theta_val, a_phi_val, g_phi_val
+        theta_coeffs, phi_coeffs = get_scattering_coefficients(
+            theta[event_mask],
+            phi[event_mask],
+            lookup_tables=None,
+            ancillary_files=ancillary_files,
+            instrument_id=int(sensor[-2:]),
+        )
+        # FWHM_PHI = A_PHI * E^G_PHI
+        # FWHM_THETA = A_THETA * E^G_THETA
+        fwhm_theta = theta_coeffs[:, 0] * tof_energy[event_mask] ** theta_coeffs[:, 1]
+        fwhm_phi = phi_coeffs[:, 0] * tof_energy[event_mask] ** phi_coeffs[:, 1]
+        is_nan = np.isnan(fwhm_theta) | np.isnan(fwhm_phi)
+        quality_flags[np.where(event_mask)[0][is_nan]] |= (
+            ImapDEScatteringUltraFlags.NAN_PHI_OR_THETA.value
+        )
+
+        theta_exceeds = fwhm_theta > threshold
+        phi_exceeds = fwhm_phi > threshold
+        either_exceeds = theta_exceeds | phi_exceeds
+
+        # Set flags for events where either theta or phi FWHM exceed the threshold
+        quality_flags[np.where(event_mask)[0][either_exceeds]] |= (
+            ImapDEScatteringUltraFlags.ABOVE_THRESHOLD.value
+        )
+
+
+def get_de_rejection_mask(
+    quality_scattering: NDArray, quality_outliers: NDArray
+) -> NDArray:
+    """
+    Create boolean mask where event is rejected due to relevant flags.
+
+    Parameters
+    ----------
+    quality_scattering : NDArray
+        Quality scattering flags.
+    quality_outliers : NDArray
+        Quality outliers flags.
+
+    Returns
+    -------
+    rejected : NDArray
+        Rejected events where True = rejected.
+    """
+    # Bitmasks from the DE_QUALITY_FLAG_FILTERS
+    scattering_mask = sum(
+        flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_scattering"]
+    )
+    outliers_mask = sum(
+        flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_outliers"]
+    )
+
+    # Boolean mask where event is rejected due to relevant flags
+    rejected = ((quality_scattering & scattering_mask) != 0) | (
+        (quality_outliers & outliers_mask) != 0
+    )
+
+    return rejected
+
+
+def count_rejected_events_per_spin(
+    spins: NDArray, quality_scattering: NDArray, quality_outliers: NDArray
+) -> NDArray:
+    """
+    Count rejected events per spin based on DE_QUALITY_FLAG_FILTERS.
+
+    Parameters
+    ----------
+    spins : NDArray
+        Spins in which each direct event is within.
+    quality_scattering : NDArray
+        Quality scattering flags.
+    quality_outliers : NDArray
+        Quality outliers flags.
+
+    Returns
+    -------
+    rejected_counts : NDArray
+        Rejected counts per spin.
+    """
+    # Boolean mask where event is rejected due to relevant flags
+    rejected = get_de_rejection_mask(quality_scattering, quality_outliers)
+
+    # Unique spin numbers
+    unique_spins = np.unique(spins)
+
+    # Count rejected events per spin
+    rejected_counts = np.array(
+        [np.count_nonzero(rejected[spins == spin]) for spin in unique_spins], dtype=int
+    )
+
+    return rejected_counts

@@ -138,7 +138,7 @@ def decompress_count(
 
     # SWAPI suggested using big value to indicate overflow.
     new_count[compressed_indices & (count_data == 0xFFFF)] = np.iinfo(np.int32).max
-    return new_count
+    return (new_count).astype(np.float32)
 
 
 def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
@@ -474,6 +474,12 @@ def process_swapi_science(
     swp_scem_counts = decompress_count(raw_scem_count, scem_compression_flags)
     swp_coin_counts = decompress_count(raw_coin_count, coin_compression_flags)
 
+    # Fill first index of 72 steps with nan value per
+    # SWAPI team's instruction. nan helps with plotting.
+    swp_pcem_counts[:, 0] = np.nan
+    swp_scem_counts[:, 0] = np.nan
+    swp_coin_counts[:, 0] = np.nan
+
     # ====================================================
     # Load the CDF attributes
     # ====================================================
@@ -600,17 +606,17 @@ def process_swapi_science(
     )
 
     dataset["swp_pcem_counts"] = xr.DataArray(
-        np.array(swp_pcem_counts, dtype=np.uint16),
+        swp_pcem_counts,
         dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("pcem_counts"),
     )
     dataset["swp_scem_counts"] = xr.DataArray(
-        np.array(swp_scem_counts, dtype=np.uint16),
+        swp_scem_counts,
         dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("scem_counts"),
     )
     dataset["swp_coin_counts"] = xr.DataArray(
-        np.array(swp_coin_counts, dtype=np.uint16),
+        swp_coin_counts,
         dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("coin_counts"),
     )

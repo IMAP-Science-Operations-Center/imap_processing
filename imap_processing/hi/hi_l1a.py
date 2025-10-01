@@ -53,6 +53,48 @@ LONG_COUNTERS = (
 )
 TOTAL_COUNTERS = ("a_total", "b_total", "c_total", "fee_de_recd", "fee_de_sent")
 
+# MEMDMP Packet definition of uint32 fields
+# This is a mapping of variable name to index when the dump_data in the
+# HVSCI MEMDMP packet is interpreted as an array of uint32 values.
+MEMDMP_DATA_INDS = {
+    "lastbin_shorten": 10,
+    "coinc_length": 60,
+    "de_timetag": 65,
+    "ab_max": 67,
+    "ab_min": 68,
+    "ac_max": 69,
+    "ac_min": 70,
+    "ba_max": 71,
+    "ba_min": 72,
+    "bc_max": 73,
+    "bc_min": 74,
+    "ca_max": 75,
+    "ca_min": 76,
+    "cb_max": 77,
+    "cb_min": 78,
+    "cc_max": 79,
+    "cc_min": 80,
+    "cfd_dac_a": 82,
+    "cfd_dac_b": 83,
+    "cfd_dac_c": 84,
+    "cfd_dac_d": 85,
+    "de_mask": 87,
+    "ab_rnk": 89,
+    "cc_rnk": 90,
+    "ac_rnk": 91,
+    "bc_rnk": 92,
+    "abc_rnk": 93,
+    "acc_rnk": 94,
+    "bcc_rnk": 95,
+    "abcc_rnk": 96,
+    "esa_table": 100,
+    "esa_steps": 101,
+    "sci_cull": 106,
+    "eng_cull": 107,
+    "spins_per_step": 108,
+    "spins_per_de": 109,
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,6 +136,9 @@ def hi_l1a(packet_file_path: str | Path) -> list[xr.Dataset]:
         elif apid_enum in [HIAPID.H45_DIAG_FEE, HIAPID.H90_DIAG_FEE]:
             data = datasets_by_apid[apid]
             gattr_key = "imap_hi_l1a_diagfee_attrs"
+        elif apid_enum in [HIAPID.H45_MEMDMP, HIAPID.H90_MEMDMP]:
+            data = finish_memdmp_dataset(datasets_by_apid[apid])
+            gattr_key = "imap_hi_l1a_memdmp_attrs"
 
         # Update dataset global attributes
         attr_mgr = ImapCdfAttributes()
@@ -219,25 +264,40 @@ def create_de_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         attrs=epoch_attrs,
     )
 
-    event_met_attrs = attr_mgr.get_variable_attributes(
-        "hi_de_event_met", check_schema=False
-    )
-    # For L1A DE, event_met is its own dimension, so we remove the DEPEND_0 attribute
-    _ = event_met_attrs.pop("DEPEND_0")
-
     # Compute the meta-event MET in seconds
     meta_event_met = (
         np.array(de_data_dict["esa_step_seconds"]).astype(np.float64)
         + np.array(de_data_dict["esa_step_milliseconds"]) * MILLISECOND_TO_S
     )
-    # Compute the MET of each event in seconds
-    # event MET = meta_event_met + de_clock
-    # See Hi Algorithm Document section 2.2.5
-    event_met_array = np.array(
-        meta_event_met[de_data_dict["ccsds_index"]]
-        + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_S,
-        dtype=event_met_attrs.pop("dtype"),
+
+    event_met_attrs = attr_mgr.get_variable_attributes(
+        "hi_de_event_met", check_schema=False
     )
+    # For L1A DE, event_met is its own dimension, so we remove the DEPEND_0 attribute
+    _ = event_met_attrs.pop("DEPEND_0")
+    event_met_dtype = event_met_attrs.pop("dtype")
+
+    # If there are no events, add a single event with fill values
+    if len(de_data_dict["de_tag"]) == 0:
+        logger.warning(
+            "No direct events found in SCIDE packets. "
+            "Creating a false DE entry with fill values."
+        )
+        for key in ["de_tag", "trigger_id", "tof_1", "tof_2", "tof_3", "ccsds_index"]:
+            attrs = attr_mgr.get_variable_attributes(f"hi_de_{key}", check_schema=False)
+            de_data_dict[key] = [attrs["FILLVAL"]]
+        event_met_array = np.array([event_met_attrs["FILLVAL"]], dtype=event_met_dtype)
+    else:
+        # Compute the MET of each event in seconds
+        # event MET = meta_event_met + de_clock
+        # See Hi Algorithm Document section 2.2.5
+        event_met_array = np.array(
+            meta_event_met[de_data_dict["ccsds_index"]]
+            + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_S,
+            dtype=event_met_dtype,
+        )
+
+    # Create the event_met coordinate
     event_met = xr.DataArray(
         event_met_array,
         name="event_met",
@@ -245,10 +305,12 @@ def create_de_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         attrs=event_met_attrs,
     )
 
+    # Create a dataset with only coordinates
     dataset = xr.Dataset(
         coords={"epoch": epoch, "event_met": event_met},
     )
 
+    # Add variable to the dataset
     for var_name, data in de_data_dict.items():
         attrs = attr_mgr.get_variable_attributes(
             f"hi_de_{var_name}", check_schema=False
@@ -444,3 +506,83 @@ def unpack_hist_counter(counter_bytes: bytes) -> NDArray[np.uint16]:
     odd_uint12 = ((split_unit8 & (2**4 - 1)) << 8) + lower_uint8
     output_array = np.column_stack((even_uint12, odd_uint12)).reshape(-1, 90)
     return output_array
+
+
+def finish_memdmp_dataset(input_ds: xr.Dataset) -> xr.Dataset:
+    """
+    Create dataset for a number of Hi Memory Dump packets.
+
+    Parameters
+    ----------
+    input_ds : xarray.Dataset
+        Dataset of Hi-45 or Hi-90 MEMDMP packets generated using the
+        `imap_processing.utils.packet_file_to_datasets` function.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing data from only MEMDMP packets generated upon entering
+        HVSCI. Specific memory items have been parsed out of the chunk of dumped
+        memory.
+    """
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hi")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
+
+    # We only care about the MEMDMP packets that are generated upon
+    # entry to HVSCI mode. This is very hacky, but the suggested way
+    # to identify these MEMDMP packets is to check that pktlen == 521
+    # Here, we remove packets where pktlen != 521
+    dataset = input_ds.where(input_ds["pkt_len"] == 521, drop=True)
+    logger.debug(
+        f"After trimming MEMDMP packets with pkt_len != 521,"
+        f"{dataset['epoch'].data.size} packets remain with a set"
+        f"of MEMORY_IDs = {set(dataset['memory_id'].data)}"
+    )
+
+    # Rename shcoarse variable (do this first since it copies the input_ds)
+    dataset = dataset.rename_vars({"shcoarse": "ccsds_met"})
+
+    dataset.epoch.attrs.update(
+        attr_mgr.get_variable_attributes("epoch"),
+    )
+
+    # Update existing variable attributes
+    for var_name in [
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "pkt_apid",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+        "ccsds_met",
+        "cksum",
+    ]:
+        attrs = attr_mgr.get_variable_attributes(f"hi_hist_{var_name}")
+        dataset.data_vars[var_name].attrs.update(attrs)
+
+    new_vars = dict()
+    # Concatenate the dump_data from all packets into a single bytes string and
+    # interpret that bytes string as an array of uint32 values.
+    full_uint32_data = np.frombuffer(dataset["dump_data"].data.sum(), dtype=">u4")
+    # index_stride is the stride to traverse from packet to packet for a given
+    # item in the binary dump data.
+    index_stride = int(dataset["num_bytes"].data[0] // 4)
+    for new_var, offset in MEMDMP_DATA_INDS.items():
+        # The indices for each variable in the dump_data is the starting
+        # offset index with a stride of the number of bytes in the dump
+        # data divided by 4 (32-bit values).
+        new_vars[new_var] = xr.DataArray(
+            data=full_uint32_data[offset::index_stride].astype(np.uint32),
+            dims=["epoch"],
+        )
+        # Need to add one to de_timetag value
+        if new_var == "de_timetag":
+            new_vars[new_var].data += 1
+
+    # Remove binary memory dump data and add parsed variables
+    dataset = dataset.drop("dump_data")
+    dataset.update(new_vars)
+
+    return dataset

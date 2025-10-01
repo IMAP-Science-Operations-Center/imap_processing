@@ -4,12 +4,16 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import (
+    ImapDEOutliersUltraFlags,
+    ImapDEScatteringUltraFlags,
+)
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
+from imap_processing.ultra.l1b.ultra_l1b_culling import flag_scattering
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
     determine_ebin_pulse_height,
@@ -38,6 +42,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 FILLVAL_UINT8 = 255
+FILLVAL_UINT32 = 4294967295
 FILLVAL_FLOAT32 = -1.0e31
 
 
@@ -78,7 +83,6 @@ def calculate_de(
         "event_type",
         "de_event_met",
         "phase_angle",
-        "spin",
     ]
     dataset_keys = [
         "coin_type",
@@ -86,7 +90,6 @@ def calculate_de(
         "stop_type",
         "shcoarse",
         "phase_angle",
-        "spin",
     ]
 
     de_dict.update(
@@ -119,9 +122,11 @@ def calculate_de(
     tof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     etof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     ctof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    tof_energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     magnitude_v = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     e_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
+    e_bin_l1a = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
@@ -130,10 +135,19 @@ def calculate_de(
     sc_dps_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     helio_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    velocities = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    v_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    r_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
 
     start_type = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     quality_flags = np.full(
-        de_dataset["epoch"].shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16
+        de_dataset["epoch"].shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
+
+    scattering_quality_flags = np.full(
+        de_dataset["epoch"].shape,
+        ImapDEScatteringUltraFlags.NONE.value,
+        dtype=np.uint16,
     )
 
     xf[valid_indices] = get_front_x_position(
@@ -183,7 +197,6 @@ def calculate_de(
         (xb[ph_indices], yb[ph_indices]),
         d[ph_indices],
     )
-    species_bin[ph_indices] = determine_species(tof[ph_indices], r[ph_indices], "PH")
     etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
         de_dataset.isel(epoch=ph_indices),
         t2[ph_indices],
@@ -200,8 +213,13 @@ def calculate_de(
         etof[ph_indices],
         xc[ph_indices],
         xb[ph_indices],
+        de_dataset["stop_north_tdc"][ph_indices].values,
+        de_dataset["stop_south_tdc"][ph_indices].values,
+        de_dataset["stop_east_tdc"][ph_indices].values,
+        de_dataset["stop_west_tdc"][ph_indices].values,
         f"ultra{sensor}",
         ancillary_files,
+        quality_flags[ph_indices],
     )
     e_bin[ph_indices] = determine_ebin_pulse_height(
         energy[ph_indices],
@@ -211,6 +229,7 @@ def calculate_de(
         coinphvalid,
         ancillary_files,
     )
+    species_bin[ph_indices] = determine_species(e_bin[ph_indices], "PH")
     ctof[ph_indices], magnitude_v[ph_indices] = get_ctof(
         tof[ph_indices], r[ph_indices], "PH"
     )
@@ -244,9 +263,7 @@ def calculate_de(
         f"ultra{sensor}",
         ancillary_files,
     )
-    species_bin[ssd_indices] = determine_species(
-        tof[ssd_indices], r[ssd_indices], "SSD"
-    )
+    species_bin[ssd_indices] = determine_species(e_bin[ssd_indices], "SSD")
     ctof[ssd_indices], magnitude_v[ssd_indices] = get_ctof(
         tof[ssd_indices], r[ssd_indices], "SSD"
     )
@@ -268,19 +285,26 @@ def calculate_de(
     de_dict["phi"] = phi
     de_dict["theta"] = theta
 
-    v, vhat, r = get_de_velocity(
-        (de_dict["x_front"], de_dict["y_front"]),
-        (de_dict["x_back"], de_dict["y_back"]),
-        de_dict["front_back_distance"],
-        de_dict["tof_start_stop"],
+    velocities[valid_indices], v_hat[valid_indices], r_hat[valid_indices] = (
+        get_de_velocity(
+            (de_dict["x_front"][valid_indices], de_dict["y_front"][valid_indices]),
+            (de_dict["x_back"][valid_indices], de_dict["y_back"][valid_indices]),
+            de_dict["front_back_distance"][valid_indices],
+            de_dict["tof_start_stop"][valid_indices],
+        )
     )
-    de_dict["direct_event_velocity"] = v.astype(np.float32)
-    de_dict["direct_event_unit_velocity"] = vhat.astype(np.float32)
-    de_dict["direct_event_unit_position"] = r.astype(np.float32)
+    de_dict["direct_event_unit_velocity"] = v_hat.astype(np.float32)
+    de_dict["direct_event_unit_position"] = r_hat.astype(np.float32)
 
-    de_dict["tof_energy"] = get_de_energy_kev(v, species_bin)
+    tof_energy[valid_indices] = get_de_energy_kev(
+        velocities[valid_indices], species_bin[valid_indices]
+    )
+    de_dict["tof_energy"] = tof_energy
     de_dict["energy"] = energy
-    de_dict["ebin"] = e_bin
+    de_dict["computed_ebin"] = e_bin
+    valid_ebin = de_dataset["bin"].values != FILLVAL_UINT32
+    e_bin_l1a[valid_ebin] = de_dataset["bin"].values[valid_ebin]
+    de_dict["ebin"] = e_bin_l1a
     de_dict["species"] = species_bin
 
     # Annotated Events.
@@ -295,7 +319,7 @@ def calculate_de(
             helio_velocity[valid_events],
         ) = get_annotated_particle_velocity(
             event_times[valid_events],
-            de_dict["direct_event_velocity"][valid_events],
+            velocities.astype(np.float32)[valid_events],
             ultra_frame,
             SpiceFrame.IMAP_DPS,
             SpiceFrame.IMAP_SPACECRAFT,
@@ -320,20 +344,29 @@ def calculate_de(
         de_dict["tof_energy"], de_dict["phi"], de_dict["theta"], ancillary_files
     )
     de_dict["geometric_factor_blades"] = get_geometric_factor(
+        de_dict["phi"],
+        de_dict["theta"],
+        quality_flags,
         ancillary_files,
         "l1b-sensor-gf-blades",
-        de_dict["phi"],
-        de_dict["theta"],
-        quality_flags,
     )
     de_dict["geometric_factor_noblades"] = get_geometric_factor(
-        ancillary_files,
-        "l1b-sensor-gf-noblades",
         de_dict["phi"],
         de_dict["theta"],
         quality_flags,
+        ancillary_files,
+        "l1b-sensor-gf-noblades",
     )
-    de_dict["quality_fov"] = quality_flags
+    de_dict["quality_outliers"] = quality_flags
+    flag_scattering(
+        de_dict["tof_energy"],
+        de_dict["theta"],
+        de_dict["phi"],
+        ancillary_files,
+        sensor,
+        scattering_quality_flags,
+    )
+    de_dict["quality_scattering"] = scattering_quality_flags
 
     dataset = create_dataset(de_dict, name, "l1b")
 
