@@ -79,8 +79,23 @@ def test_glows_l1b_de():
     assert np.allclose(pulse_len, expected_pulse)
 
 
-def test_validation_data_histogram(l1a_dataset):
-    l1b = [glows_l1b(l1a_dataset[0]), glows_l1b(l1a_dataset[1])]
+def test_validation_data_histogram(l1a_dataset, mock_ancillary_exclusions):
+    l1b = [
+        glows_l1b(
+            l1a_dataset[0],
+            mock_ancillary_exclusions.excluded_regions,
+            mock_ancillary_exclusions.uv_sources,
+            mock_ancillary_exclusions.suspected_transients,
+            mock_ancillary_exclusions.exclusions_by_instr_team,
+        ),
+        glows_l1b(
+            l1a_dataset[1],
+            mock_ancillary_exclusions.excluded_regions,
+            mock_ancillary_exclusions.uv_sources,
+            mock_ancillary_exclusions.suspected_transients,
+            mock_ancillary_exclusions.exclusions_by_instr_team,
+        ),
+    ]
     end_time = l1b[0]["epoch"].data[-1]
 
     validation_data = (
@@ -146,10 +161,16 @@ def test_validation_data_histogram(l1a_dataset):
             )
 
 
-def test_validation_data_de(l1a_dataset):
+def test_validation_data_de(l1a_dataset, mock_ancillary_exclusions):
     de_data = l1a_dataset[1]
 
-    l1b = glows_l1b(de_data)
+    l1b = glows_l1b(
+        de_data,
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
     validation_data = (
         Path(__file__).parent / "validation_data" / "imap_glows_l1b_de_output.json"
     )

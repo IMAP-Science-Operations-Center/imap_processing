@@ -57,8 +57,8 @@ hist_az_60_default: &hist_az_60_default
   <<: *default_uint32
   VAR_TYPE: data
   DEPEND_0: epoch
-  DEPEND_1: azimuth_60
-  DEPEND_2: esa_step
+  DEPEND_1: esa_step
+  DEPEND_2: azimuth_60
   LABL_PTR_1: azimuth_60_label
   LABL_PTR_2: esa_step_label
 
@@ -66,8 +66,8 @@ hist_az_6_default: &hist_az_6_default
   <<: *default_uint32
   VAR_TYPE: data
   DEPEND_0: epoch
-  DEPEND_1: azimuth_6
-  DEPEND_2: esa_step
+  DEPEND_1: esa_step
+  DEPEND_2: azimuth_6
   LABL_PTR_1: azimuth_6_label
   LABL_PTR_2: esa_step_label
 

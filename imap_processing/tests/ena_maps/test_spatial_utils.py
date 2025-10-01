@@ -69,7 +69,8 @@ def test_build_solid_angle_map_equal_at_equal_el(spacing):
 
 
 @pytest.mark.parametrize(
-    "spacing, match_str", zip(invalid_spacings, invalid_spacings_match_str)
+    "spacing, match_str",
+    zip(invalid_spacings, invalid_spacings_match_str, strict=False),
 )
 def test_build_solid_angle_map_invalid_spacing(spacing, match_str):
     """Test build_solid_angle_map function raises error for invalid spacing."""

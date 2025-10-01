@@ -3,7 +3,6 @@
 import collections
 import logging
 from pathlib import Path
-from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -141,7 +140,7 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
     name: str,
     definition: definitions.XtcePacketDefinition,
     use_derived_value: bool = True,
-) -> Optional[str]:
+) -> str | None:
     """
     Get the minimum datatype for a given variable.
 
@@ -209,8 +208,8 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
 
 
 def packet_file_to_datasets(
-    packet_file: Union[str, Path],
-    xtce_packet_definition: Union[str, Path],
+    packet_file: str | Path,
+    xtce_packet_definition: str | Path,
     use_derived_value: bool = False,
 ) -> dict[int, xr.Dataset]:
     """

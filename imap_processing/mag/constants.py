@@ -131,6 +131,7 @@ MAX_FINE_TIME = np.iinfo(np.uint16).max  # maximum 16 bit unsigned int
 AXIS_COUNT = 3
 RANGE_BIT_WIDTH = 2
 MAX_COMPRESSED_VECTOR_BITS = 60
+FILLVAL = -1e31
 
 
 def vectors_per_second_from_string(vecsec_string: str) -> dict:

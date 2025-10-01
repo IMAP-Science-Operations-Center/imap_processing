@@ -37,6 +37,14 @@ class ENAFlags(FlagNameMixin):
     BADSPIN = 2**2  # bit 2, Bad spin
 
 
+class ImapDEUltraFlags(FlagNameMixin):
+    """IMAP Ultra flags."""
+
+    NONE = CommonFlags.NONE
+    FOV = 2**0  # bit 0
+    PHCORR = 2**1  # bit 1
+
+
 class ImapHkUltraFlags(FlagNameMixin):
     """IMAP Ultra flags."""
 
@@ -53,14 +61,24 @@ class ImapAttitudeUltraFlags(FlagNameMixin):
     NONE = CommonFlags.NONE
     SPINRATE = 2**0  # bit 0
     AUXMISMATCH = 2**1  # bit 1 # aux packet does not match Universal Spin Table
+    SPINPHASE = 2**2  # bit 2 # spin phase flagged by Universal Spin Table
+    SPINPERIOD = 2**3  # bit 3 # spin period flagged by Universal Spin Table
 
 
 class ImapRatesUltraFlags(FlagNameMixin):
     """IMAP Ultra Rates flags."""
 
     NONE = CommonFlags.NONE
-    ZEROCOUNTS = 2**0  # bit 0
-    HIGHRATES = 2**1  # bit 1
+    HIGHRATES = 2**0  # bit 0
+    FIRSTSPIN = 2**1  # bit 1
+    LASTSPIN = 2**2  # bit 2
+    PARTIALSPIN = 2**2  # bit 2
+
+
+class ImapInstrumentUltraFlags(FlagNameMixin):
+    """IMAP Ultra flags using other instruments."""
+
+    NONE = CommonFlags.NONE
 
 
 class ImapLoFlags(FlagNameMixin):

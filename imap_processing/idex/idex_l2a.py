@@ -399,7 +399,7 @@ def calculate_kappa(mass_scales: np.ndarray, peaks_2d: list) -> NDArray:
     kappas = np.asarray(
         [
             np.mean(mass_scale[peaks] - np.round(mass_scale[peaks]))
-            for mass_scale, peaks in zip(mass_scales, peaks_2d)
+            for mass_scale, peaks in zip(mass_scales, peaks_2d, strict=False)
         ]
     )
     return kappas

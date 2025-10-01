@@ -542,16 +542,32 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         summed_first = normalized_first_half.sum(axis=(1, 2))
         summed_second = normalized_second_half.sum(axis=(1, 2))
 
+        met_first_half = int(
+            grouped["met"].where(grouped["swe_seq"] == 0, drop=True).values[0]
+        )
+        met_second_half = int(
+            grouped["met"].where(grouped["swe_seq"] == 30, drop=True).values[0]
+        )
+
         swe_data.append(
             {
                 "apid": 478,
-                "met": int(grouped["met"].min()),
-                "met_in_utc": met_to_utc(grouped["met"].min()).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(grouped["met"].min())),
-                "swe_normalized_counts_half_1_esa": [int(val) for val in summed_first],
-                "swe_normalized_counts_half_2_esa": [int(val) for val in summed_second],
-                "swe_counterstreaming_electrons": max(bde_first_half, bde_second_half),
-            }
+                "met": met_first_half,
+                "met_in_utc": met_to_utc(met_first_half).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(met_first_half)),
+                "swe_normalized_counts": [int(val) for val in summed_first],
+                "swe_counterstreaming_electrons": bde_first_half,
+            },
+        )
+        swe_data.append(
+            {
+                "apid": 478,
+                "met": met_second_half,
+                "met_in_utc": met_to_utc(met_second_half).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(met_second_half)),
+                "swe_normalized_counts": [int(val) for val in summed_second],
+                "swe_counterstreaming_electrons": bde_second_half,
+            },
         )
 
     return swe_data

@@ -10,6 +10,7 @@ from imap_processing.ultra.l0.decom_ultra import (
     process_ultra_energy_rates,
     process_ultra_energy_spectra,
     process_ultra_events,
+    process_ultra_macros_checksum,
     process_ultra_rates,
     process_ultra_tof,
 )
@@ -20,12 +21,18 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
+    ULTRA_EXTOF_HIGH_ANGULAR,
+    ULTRA_EXTOF_HIGH_ENERGY,
+    ULTRA_EXTOF_HIGH_TIME,
+    ULTRA_MACROS_CHECKSUM,
+    ULTRA_PHXTOF_HIGH_ANGULAR,
+    ULTRA_PHXTOF_HIGH_ENERGY,
+    ULTRA_PHXTOF_HIGH_TIME,
     ULTRA_PRI_1_EVENTS,
     ULTRA_PRI_2_EVENTS,
     ULTRA_PRI_3_EVENTS,
     ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF,
 )
 from imap_processing.ultra.l1a.ultra_l1a import ultra_l1a
 from imap_processing.utils import packet_file_to_datasets
@@ -85,7 +92,7 @@ def ccsds_path_all_apids():
 
 
 @pytest.fixture
-def ccsds_path_tof():
+def ccsds_path_tof_high_angular():
     """Returns the ccsds directory."""
     return (
         imap_module_directory
@@ -155,6 +162,15 @@ def rates_test_path():
         "20220530T225054.csv"
     )
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def rates_l1_test_path():
+    filename = (
+        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00_"
+        "ULTRA_ImageBasicRates_20240207T102740_.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l1" / filename
 
 
 @pytest.fixture
@@ -234,11 +250,61 @@ def events_test_path():
 
 
 @pytest.fixture
-def tof_test_path():
+def tof_high_angular_test_path():
     """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_"
         "Front212_20240124T063837.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def tof_high_energy_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_enaphxtofhnrgimg_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def tof_high_time_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_ultraenaphxtofhtimeresimg_FM45_UltraFM45Extra_"
+        "TV_Tests_2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def extof_high_angular_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_enaextofhangimg_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def extof_high_time_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_ionexhtimeimg_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def extof_high_energy_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_ionextofhnrgimg_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
     )
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
@@ -254,6 +320,16 @@ def cmd_echo_test_path():
 
 
 @pytest.fixture
+def macrochecksum_test_path():
+    """Returns the xtce auxiliary test data directory."""
+    filename = (
+        "ultra45_raw_hk_macrochecksumrpt_FM45_UltraFM45_Functional_"
+        "2024-01-22T0105_20240122T010548.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
 def decom_test_data(request, xtce_path):
     """Read test data from file"""
     apid = request.param["apid"]
@@ -263,12 +339,52 @@ def decom_test_data(request, xtce_path):
     datasets_by_apid = packet_file_to_datasets(ccsds_path, xtce_path)
 
     strategy_dict = {
-        ULTRA_TOF.apid[0]: lambda ds, apid: process_ultra_tof(ds),
-        ULTRA_TOF.apid[1]: lambda ds, apid: process_ultra_tof(ds),
+        ULTRA_PHXTOF_HIGH_ANGULAR.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_PHXTOF_HIGH_ANGULAR
+        ),
+        ULTRA_PHXTOF_HIGH_ANGULAR.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_PHXTOF_HIGH_ANGULAR
+        ),
+        ULTRA_PHXTOF_HIGH_ENERGY.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_PHXTOF_HIGH_ENERGY
+        ),
+        ULTRA_PHXTOF_HIGH_ENERGY.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_PHXTOF_HIGH_ENERGY
+        ),
+        ULTRA_PHXTOF_HIGH_TIME.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_PHXTOF_HIGH_TIME
+        ),
+        ULTRA_PHXTOF_HIGH_TIME.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_PHXTOF_HIGH_TIME
+        ),
+        ULTRA_EXTOF_HIGH_ANGULAR.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_EXTOF_HIGH_ANGULAR
+        ),
+        ULTRA_EXTOF_HIGH_ANGULAR.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_EXTOF_HIGH_ANGULAR
+        ),
+        ULTRA_EXTOF_HIGH_TIME.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_EXTOF_HIGH_TIME
+        ),
+        ULTRA_EXTOF_HIGH_TIME.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_EXTOF_HIGH_TIME
+        ),
+        ULTRA_EXTOF_HIGH_ENERGY.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_EXTOF_HIGH_ENERGY
+        ),
+        ULTRA_EXTOF_HIGH_ENERGY.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_EXTOF_HIGH_ENERGY
+        ),
         ULTRA_ENERGY_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_ENERGY_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_MACROS_CHECKSUM.apid[0]: lambda ds, apid: process_ultra_macros_checksum(
+            ds
+        ),
+        ULTRA_MACROS_CHECKSUM.apid[1]: lambda ds, apid: process_ultra_macros_checksum(
+            ds
+        ),
         ULTRA_PRI_1_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_PRI_1_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_PRI_2_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
@@ -301,6 +417,16 @@ def events_fsw_comparison_theta_0():
         "BeamCal_LinearScan_phi2850_theta-000_20240207T102740.csv"
     )
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def events_fsw_comparison_theta_0_revised():
+    """FSW test data."""
+    filename = (
+        "ultra45_raw_sc_ultrarawimg_withFSWccs_FM45_40P_Phi28p5_"
+        "BeamCal_LinearScan_phi2850_theta-000_20240207T102740_revised20250724.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l1" / filename
 
 
 @pytest.fixture
@@ -352,3 +478,84 @@ def faux_aux_dataset():
     )
 
     return test_aux_dataset
+
+
+@pytest.fixture
+def ancillary_files():
+    """Fixture to return ancillary files."""
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    return {
+        "l1b-45sensor-logistic-interpolation": path
+        / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
+        "l1b-sensor-gf-noblades": path
+        / "imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv",
+        "l1b-sensor-gf-blades": path
+        / "imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv",
+        "l1b-45sensor-leftslit-lookup": path
+        / "imap_ultra_l1b-45sensor-leftslit-lookup_20250101_v000.csv",
+        "l1b-45sensor-rightslit-lookup": path
+        / "imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv",
+        "l1b-45sensor-imgparams-lookup": path
+        / "imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v001.csv",
+        "l1b-90sensor-imgparams-lookup": path
+        / "imap_ultra_l1b-90sensor-imgparams-lookup_20250101_v001.csv",
+        "l1b-45sensor-tdc-norm-lookup": path
+        / "imap_ultra_l1b-45sensor-tdc-norm-lookup_20250101_v000.csv",
+        "l1b-45sensor-back-pos-lookup": path
+        / "imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv",
+        "l1b-egynorm-lookup": path / "imap_ultra_l1b-egynorm-lookup_20250101_v000.csv",
+        "l1b-yadjust-lookup": path / "imap_ultra_l1b-yadjust-lookup_20250101_v001.csv",
+        "l1b-45sensor-sptpphcorr": path
+        / "imap_ultra_l1b-45sensor-sptpphcorr_20250101_v000.csv",
+        "l1b-45sensor-spbtphcorr": path
+        / "imap_ultra_l1b-45sensor-spbtphcorr_20250101_v000.csv",
+        "l1b-90sensor-sptpphcorr": path
+        / "imap_ultra_l1b-90sensor-sptpphcorr_20250101_v000.csv",
+        "l1b-90sensor-spbtphcorr": path
+        / "imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv",
+        "l1b-45sensor-tofxeflat": path
+        / "imap_ultra_l1b-45sensor-tofxeflat_20250101_v000.pgm",
+        "l1b-45sensor-tofxemedium": path
+        / "imap_ultra_l1b-45sensor-tofxemedium_20250101_v000.pgm",
+        "l1b-45sensor-tofxesteep": path
+        / "imap_ultra_l1b-45sensor-tofxesteep_20250101_v000.pgm",
+        "l1b-90sensor-tofxeflat": path
+        / "imap_ultra_l1b-90sensor-tofxeflat_20250101_v000.pgm",
+        "l1b-90sensor-tofxemediu": path
+        / "imap_ultra_l1b-90sensor-tofxemedium_20250101_v000.pgm",
+        "l1b-90sensor-tofxesteep": path
+        / "imap_ultra_l1b-90sensor-tofxesteep_20250101_v000.pgm",
+        "l1b-tofxph": path / "imap_ultra_l1b-tofxph_20250101_v000.pgm",
+    }
+
+
+@pytest.fixture
+def deadtime_datasets():
+    """Fixture to create params and rates datasets needed to calculate the spacecraft
+    exposure time."""
+    # Simulate a test rates dataset.
+    epoch = 200
+    test_l1a_rates_dataset = xr.Dataset(
+        {
+            "fifo_valid_events": (["epoch"], np.random.randint(100, 200, epoch)),
+            "event_active_time": (["epoch"], np.random.uniform(0, 10, epoch)),
+            "start_pos": (["epoch"], np.random.randint(0, 5, epoch)),
+            "start_rf": (["epoch"], np.random.randint(0, 5, epoch)),
+            "start_lf": (["epoch"], np.random.randint(0, 5, epoch)),
+            "coin_tn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "coin_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "stop_tn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+        }
+    )
+    # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
+    # each time the mode changes, it is recorded in the params packet.
+    # Create a test params dataset that simulates the mode changing to 3, 3 times.
+    modes = np.tile(np.arange(4), 3)
+    test_l1a_params_dataset = xr.Dataset(
+        {
+            "imageratescadence": (["epoch"], modes),
+        },
+        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+    )
+    return {"rates": test_l1a_rates_dataset, "params": test_l1a_params_dataset}

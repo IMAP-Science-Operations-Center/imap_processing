@@ -31,11 +31,13 @@ def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     assert pset.attrs == {}
 
 
-@pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+@pytest.mark.external_test_data
 def test_generate_pset_dataset(
-    hi_l1_test_data_path, hi_test_cal_prod_config_path, use_fake_spin_data_for_time
+    hi_l1_test_data_path,
+    hi_test_cal_prod_config_path,
+    use_fake_spin_data_for_time,
+    imap_ena_sim_metakernel,
 ):
     """Test coverage for generate_pset_dataset function"""
     use_fake_spin_data_for_time(482372987.999)
@@ -395,7 +397,9 @@ class TestCalibrationProductConfig:
         assert "coincidence_type_values" in df.columns
         for _, row in df.iterrows():
             for detect_string, val in zip(
-                row["coincidence_type_list"], row["coincidence_type_values"]
+                row["coincidence_type_list"],
+                row["coincidence_type_values"],
+                strict=False,
             ):
                 assert val == CoincidenceBitmap.detector_hit_str_to_int(detect_string)
 

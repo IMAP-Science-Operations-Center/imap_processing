@@ -151,7 +151,7 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     goodtimes_mask = np.zeros_like(l1b_de["epoch"], dtype=bool)
 
     # Iterate over the good times and create a mask
-    for start, end in zip(goodtimes_start, goodtimes_end):
+    for start, end in zip(goodtimes_start, goodtimes_end, strict=False):
         goodtimes_mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] < end)
 
     # Filter the dataset using the mask

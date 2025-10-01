@@ -24,6 +24,8 @@ from imap_processing.swe.l1b.swe_l1b import (
 )
 from imap_processing.swe.utils import swe_constants
 
+pytestmark = pytest.mark.external_test_data
+
 
 @pytest.fixture(scope="session")
 def l1a_test_data(decom_test_data):

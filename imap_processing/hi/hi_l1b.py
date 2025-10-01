@@ -3,9 +3,9 @@
 import logging
 from enum import IntEnum
 from pathlib import Path
-from typing import Union
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
@@ -15,6 +15,7 @@ from imap_processing.hi.hi_l1a import HALF_CLOCK_TICK_S
 from imap_processing.hi.utils import (
     HIAPID,
     CoincidenceBitmap,
+    EsaEnergyStepLookupTable,
     HiConstants,
     create_dataset_variables,
     parse_sensor_number,
@@ -27,7 +28,7 @@ from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spacecraft_spin_phase,
 )
-from imap_processing.spice.time import met_to_sclkticks, sct_to_et
+from imap_processing.spice.time import met_to_sclkticks, met_to_utc, sct_to_et
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -45,52 +46,7 @@ ATTR_MGR.add_instrument_global_attrs("hi")
 ATTR_MGR.add_instrument_variable_attrs(instrument="hi", level=None)
 
 
-def hi_l1b(dependency: Union[str, Path, xr.Dataset]) -> list[xr.Dataset]:
-    """
-    High level IMAP-HI L1B processing function.
-
-    Parameters
-    ----------
-    dependency : str or xarray.Dataset
-        Path to L0 file or L1A dataset to process.
-
-    Returns
-    -------
-    l1b_dataset : list[xarray.Dataset]
-        Processed xarray datasets.
-    """
-    # Housekeeping processing
-    if isinstance(dependency, (Path, str)):
-        logger.info(f"Running Hi L1B processing on file: {dependency}")
-        l1b_datasets = housekeeping(dependency)
-    elif isinstance(dependency, xr.Dataset):
-        l1a_dataset = dependency
-        logger.info(
-            f"Running Hi L1B processing on dataset: "
-            f"{l1a_dataset.attrs['Logical_source']}"
-        )
-        logical_source_parts = parse_filename_like(l1a_dataset.attrs["Logical_source"])
-        # TODO: apid is not currently stored in all L1A data but should be.
-        #    Use apid to determine what L1B processing function to call
-
-        # DE processing
-        if logical_source_parts["descriptor"].endswith("de"):
-            l1b_datasets = [annotate_direct_events(l1a_dataset)]
-            l1b_datasets[0].attrs["Logical_source"] = (
-                l1b_datasets[0]
-                .attrs["Logical_source"]
-                .format(sensor=logical_source_parts["sensor"])
-            )
-        else:
-            raise NotImplementedError(
-                f"No Hi L1B processing defined for file type: "
-                f"{l1a_dataset.attrs['Logical_source']}"
-            )
-
-    return l1b_datasets
-
-
-def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
+def housekeeping(packet_file_path: str | Path) -> list[xr.Dataset]:
     """
     Will process IMAP raw data to l1b housekeeping dataset.
 
@@ -108,6 +64,7 @@ def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
     processed_data : list[xarray.Dataset]
         Housekeeping datasets with engineering units.
     """
+    logger.info(f"Running Hi L1B processing on file: {packet_file_path}")
     packet_def_file = (
         imap_module_directory / "hi/packet_definitions/TLM_HI_COMBINED_SCI.xml"
     )
@@ -137,33 +94,46 @@ def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
     return datasets
 
 
-def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
+def annotate_direct_events(
+    l1a_de_dataset: xr.Dataset, l1b_hk_dataset: xr.Dataset, esa_energies_anc: Path
+) -> list[xr.Dataset]:
     """
     Perform Hi L1B processing on direct event data.
 
     Parameters
     ----------
-    l1a_dataset : xarray.Dataset
+    l1a_de_dataset : xarray.Dataset
         L1A direct event data.
+    l1b_hk_dataset : xarray.Dataset
+        L1B housekeeping data coincident with the L1A DE data.
+    esa_energies_anc : pathlib.Path
+        Location of the esa-energies ancillary csv file.
 
     Returns
     -------
-    l1b_dataset : xarray.Dataset
-        L1B direct event data.
+    l1b_datasets : list[xarray.Dataset]
+        List containing exactly one L1B direct event dataset.
     """
-    l1b_dataset = l1a_dataset.copy()
-    l1b_dataset.update(de_esa_energy_step(l1b_dataset))
-    l1b_dataset.update(compute_coincidence_type_and_tofs(l1b_dataset))
-    l1b_dataset.update(de_nominal_bin_and_spin_phase(l1b_dataset))
-    l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
-    l1b_dataset.update(
+    logger.info(
+        f"Running Hi L1B processing on dataset: "
+        f"{l1a_de_dataset.attrs['Logical_source']}"
+    )
+
+    l1b_de_dataset = l1a_de_dataset.copy()
+    l1b_de_dataset.update(
+        de_esa_energy_step(l1b_de_dataset, l1b_hk_dataset, esa_energies_anc)
+    )
+    l1b_de_dataset.update(compute_coincidence_type_and_tofs(l1b_de_dataset))
+    l1b_de_dataset.update(de_nominal_bin_and_spin_phase(l1b_de_dataset))
+    l1b_de_dataset.update(compute_hae_coordinates(l1b_de_dataset))
+    l1b_de_dataset.update(
         create_dataset_variables(
             ["quality_flag"],
-            l1b_dataset["event_met"].size,
+            l1b_de_dataset["event_met"].size,
             att_manager_lookup_str="hi_de_{0}",
         )
     )
-    l1b_dataset = l1b_dataset.drop_vars(
+    l1b_de_dataset = l1b_de_dataset.drop_vars(
         [
             "src_seq_ctr",
             "pkt_len",
@@ -179,8 +149,13 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     de_global_attrs = ATTR_MGR.get_global_attributes("imap_hi_l1b_de_attrs")
-    l1b_dataset.attrs.update(**de_global_attrs)
-    return l1b_dataset
+    l1b_de_dataset.attrs.update(**de_global_attrs)
+
+    logical_source_parts = parse_filename_like(l1a_de_dataset.attrs["Logical_source"])
+    l1b_de_dataset.attrs["Logical_source"] = l1b_de_dataset.attrs[
+        "Logical_source"
+    ].format(sensor=logical_source_parts["sensor"])
+    return [l1b_de_dataset]
 
 
 def compute_coincidence_type_and_tofs(
@@ -387,18 +362,20 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     return new_vars
 
 
-def de_esa_energy_step(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+def de_esa_energy_step(
+    l1b_de_ds: xr.Dataset, l1b_hk_ds: xr.Dataset, esa_energies_anc: Path
+) -> dict[str, xr.DataArray]:
     """
     Compute esa_energy_step for each direct event.
 
-    TODO: For now this function just returns the esa_step from the input dataset.
-        Eventually, it will take L1B housekeeping data and determine the esa
-        energy steps from that data.
-
     Parameters
     ----------
-    dataset : xarray.Dataset
+    l1b_de_ds : xarray.Dataset
         The partial L1B dataset.
+    l1b_hk_ds : xarray.Dataset
+        L1B housekeeping data coincident with the L1A DE data.
+    esa_energies_anc : pathlib.Path
+        Location of the esa-energies ancillary csv file.
 
     Returns
     -------
@@ -407,10 +384,116 @@ def de_esa_energy_step(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     """
     new_vars = create_dataset_variables(
         ["esa_energy_step"],
-        len(dataset.epoch),
+        len(l1b_de_ds.epoch),
         att_manager_lookup_str="hi_de_{0}",
     )
-    # TODO: Implement this algorithm
-    new_vars["esa_energy_step"].values = dataset.esa_step.values
+
+    # Get the LUT object using the HK data and esa-energies ancillary csv
+    esa_energies_lut = pd.read_csv(esa_energies_anc, comment="#")
+    esa_to_esa_energy_step_lut = get_esa_to_esa_energy_step_lut(
+        l1b_hk_ds, esa_energies_lut
+    )
+    new_vars["esa_energy_step"].values = esa_to_esa_energy_step_lut.query(
+        l1b_de_ds["ccsds_met"].data, l1b_de_ds["esa_step"].data
+    )
 
     return new_vars
+
+
+def get_esa_to_esa_energy_step_lut(
+    l1b_hk_ds: xr.Dataset, esa_energies_lut: pd.DataFrame
+) -> EsaEnergyStepLookupTable:
+    """
+    Generate a lookup table that associates an esa_step to an esa_energy_step.
+
+    Parameters
+    ----------
+    l1b_hk_ds : xarray.Dataset
+        L1B housekeeping dataset.
+    esa_energies_lut : pandas.DataFrame
+        Esa energies lookup table derived from ancillary file.
+
+    Returns
+    -------
+    esa_energy_step_lut : EsaEnergyStepLookupTable
+        A lookup table object that can be used to query by MET time and esa_step
+        for the associated esa_energy_step values.
+
+    Notes
+    -----
+    Algorithm definition in section 2.1.2 of IMAP Hi Algorithm Document.
+    """
+    # Instantiate a lookup table object
+    esa_energy_step_lut = EsaEnergyStepLookupTable()
+    # Get the set of esa_steps visited
+    esa_steps = list(sorted(set(l1b_hk_ds["sci_esa_step"].data)))
+    # Break into contiguous segments where op_mode == "HVSCI"
+    # Pad the boolean array `op_mode == HVSCI` with False values on each end.
+    # This treats starting or ending in HVSCI mode as a transition in the next
+    # step where np.diff is used to find op_mode transitions into and out of
+    # HVSCI
+    padded_mask = np.pad(
+        l1b_hk_ds["op_mode"].data == "HVSCI", (1, 1), constant_values=False
+    )
+    mode_changes = np.diff(padded_mask.astype(int))
+    hsvsci_starts = np.nonzero(mode_changes == 1)[0]
+    hsvsci_ends = np.nonzero(mode_changes == -1)[0]
+    for i_start, i_end in zip(hsvsci_starts, hsvsci_ends, strict=False):
+        contiguous_hvsci_ds = l1b_hk_ds.isel(dict(epoch=slice(i_start, i_end)))
+        # Find median inner and outer ESA voltages for each ESA step
+        for esa_step in esa_steps:
+            single_esa_ds = contiguous_hvsci_ds.where(
+                contiguous_hvsci_ds["sci_esa_step"] == esa_step, drop=True
+            )
+            if len(single_esa_ds["epoch"].data) == 0:
+                logger.debug(
+                    f"No instances of sci_esa_step == {esa_step} "
+                    f"present in contiguous HVSCI block with interval: "
+                    f"({met_to_utc(contiguous_hvsci_ds['shcoarse'].data[[0, -1]])})"
+                )
+                continue
+            inner_esa_voltage = np.where(
+                single_esa_ds["inner_esa_state"].data == "LO",
+                single_esa_ds["inner_esa_lo"].data,
+                single_esa_ds["inner_esa_hi"].data,
+            )
+            median_inner_esa = np.median(inner_esa_voltage)
+            median_outer_esa = np.median(single_esa_ds["outer_esa"].data)
+            # Match median voltages to ESA Energies LUT
+            inner_voltage_match = (
+                np.abs(median_inner_esa - esa_energies_lut["inner_esa_voltage"])
+                <= esa_energies_lut["inner_esa_delta_v"]
+            )
+            outer_voltage_match = (
+                np.abs(median_outer_esa - esa_energies_lut["outer_esa_voltage"])
+                <= esa_energies_lut["outer_esa_delta_v"]
+            )
+            matching_esa_energy = esa_energies_lut[
+                np.logical_and(inner_voltage_match, outer_voltage_match)
+            ]
+            if len(matching_esa_energy) != 1:
+                if len(matching_esa_energy) == 0:
+                    logger.critical(
+                        f"No esa_energy_step matches found for esa_step "
+                        f"{esa_step} during interval: "
+                        f"({met_to_utc(single_esa_ds['shcoarse'].data[[0, -1]])}) "
+                        f"with median esa voltages: "
+                        f"{median_inner_esa}, {median_outer_esa}."
+                    )
+                if len(matching_esa_energy) > 1:
+                    logger.critical(
+                        f"Multiple esa_energy_step matches found for esa_step "
+                        f"{esa_step} during interval: "
+                        f"({met_to_utc(single_esa_ds['shcoarse'].data[[0, -1]])}) "
+                        f"with median esa voltages: "
+                        f"{median_inner_esa}, {median_outer_esa}."
+                    )
+                continue
+            # Set LUT to matching esa_energy_step for time range
+            esa_energy_step_lut.add_entry(
+                contiguous_hvsci_ds["shcoarse"].data[0],
+                contiguous_hvsci_ds["shcoarse"].data[-1],
+                esa_step,
+                matching_esa_energy["esa_energy_step"].values[0],
+            )
+    return esa_energy_step_lut

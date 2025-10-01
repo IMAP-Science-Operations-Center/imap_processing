@@ -1,7 +1,6 @@
 """Generate ULTRA L1a CDFs."""
 
 import logging
-from typing import Optional
 
 import xarray as xr
 
@@ -12,6 +11,7 @@ from imap_processing.ultra.l0.decom_ultra import (
     process_ultra_energy_rates,
     process_ultra_energy_spectra,
     process_ultra_events,
+    process_ultra_macros_checksum,
     process_ultra_rates,
     process_ultra_tof,
 )
@@ -23,13 +23,19 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
+    ULTRA_EXTOF_HIGH_ANGULAR,
+    ULTRA_EXTOF_HIGH_ENERGY,
+    ULTRA_EXTOF_HIGH_TIME,
     ULTRA_HK,
+    ULTRA_MACROS_CHECKSUM,
+    ULTRA_PHXTOF_HIGH_ANGULAR,
+    ULTRA_PHXTOF_HIGH_ENERGY,
+    ULTRA_PHXTOF_HIGH_TIME,
     ULTRA_PRI_1_EVENTS,
     ULTRA_PRI_2_EVENTS,
     ULTRA_PRI_3_EVENTS,
     ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -37,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 def ultra_l1a(  # noqa: PLR0912
-    packet_file: str, apid_input: Optional[int] = None
+    packet_file: str, apid_input: int | None = None
 ) -> list[xr.Dataset]:
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.
@@ -85,6 +91,19 @@ def ultra_l1a(  # noqa: PLR0912
         for i, apid in enumerate(group.apid)
     }
 
+    all_l1a_image_apids = {
+        apid: group
+        for group in [
+            ULTRA_PHXTOF_HIGH_ANGULAR,
+            ULTRA_PHXTOF_HIGH_ENERGY,
+            ULTRA_PHXTOF_HIGH_TIME,
+            ULTRA_EXTOF_HIGH_ANGULAR,
+            ULTRA_EXTOF_HIGH_TIME,
+            ULTRA_EXTOF_HIGH_ENERGY,
+        ]
+        for apid in group.apid
+    }
+
     # Update dataset global attributes
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("ultra")
@@ -94,9 +113,12 @@ def ultra_l1a(  # noqa: PLR0912
         if apid in ULTRA_AUX.apid:
             decom_ultra_dataset = datasets_by_apid[apid]
             gattr_key = ULTRA_AUX.logical_source[ULTRA_AUX.apid.index(apid)]
-        elif apid in ULTRA_TOF.apid:
-            decom_ultra_dataset = process_ultra_tof(datasets_by_apid[apid])
-            gattr_key = ULTRA_TOF.logical_source[ULTRA_TOF.apid.index(apid)]
+        elif apid in all_l1a_image_apids:
+            packet_props = all_l1a_image_apids[apid]
+            decom_ultra_dataset = process_ultra_tof(
+                datasets_by_apid[apid], packet_props
+            )
+            gattr_key = packet_props.logical_source[packet_props.apid.index(apid)]
         elif apid in ULTRA_RATES.apid:
             decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])
             decom_ultra_dataset = decom_ultra_dataset.drop_vars("fastdata_00")
@@ -118,6 +140,11 @@ def ultra_l1a(  # noqa: PLR0912
             decom_ultra_dataset = decom_ultra_dataset.drop_vars("compdata")
             gattr_key = ULTRA_ENERGY_SPECTRA.logical_source[
                 ULTRA_ENERGY_SPECTRA.apid.index(apid)
+            ]
+        elif apid in ULTRA_MACROS_CHECKSUM.apid:
+            decom_ultra_dataset = process_ultra_macros_checksum(datasets_by_apid[apid])
+            gattr_key = ULTRA_MACROS_CHECKSUM.logical_source[
+                ULTRA_MACROS_CHECKSUM.apid.index(apid)
             ]
         elif apid in ULTRA_HK.apid:
             decom_ultra_dataset = datasets_by_apid[apid]

@@ -51,7 +51,7 @@ def read_swapi_lut_table(file_path: Path) -> pd.DataFrame:
         .astype(str)
         .str.replace(",", "", regex=False)
         .replace("Solve", -1)
-        .astype(np.int64)
+        .astype(np.float64)
     )
 
     return df

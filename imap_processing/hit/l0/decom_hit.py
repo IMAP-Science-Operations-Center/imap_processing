@@ -124,9 +124,9 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         for dim in dims:
             if dim not in sci_dataset.coords:
                 sci_dataset.coords[dim] = xr.DataArray(
-                    np.arange(sci_dataset.sizes[dim], dtype=np.int16)
+                    np.arange(sci_dataset.sizes[dim], dtype=np.uint16)
                     if dim == "gain"
-                    else np.arange(sci_dataset.sizes[dim], dtype=np.int32),
+                    else np.arange(sci_dataset.sizes[dim], dtype=np.uint32),
                     dims=[dim],
                     name=dim,
                 )
@@ -260,12 +260,9 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         height event data per valid science frame added as new
         data variables.
     """
-    # TODO: Figure out how to handle partial science frames at the
-    #  beginning and end of CCSDS files. These science frames are split
-    #  across CCSDS files and still need to be processed with packets
-    #  from the previous file. Only discard incomplete science frames
-    #  in the middle of the CCSDS file. The code currently skips all
-    #  incomplete science frames.
+    # TODO: The code currently skips all incomplete science frames.
+    #  Only discard incomplete science frames in the middle of the CCSDS file or
+    #  use fill values?
 
     # Convert sequence flags and counters to NumPy arrays for vectorized operations
     seq_flgs = sci_dataset.seq_flgs.values

@@ -27,16 +27,16 @@ logger = logging.getLogger(__name__)
 #  - review logging levels to use (debug vs. info)
 
 
-def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Dataset]:
+def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> xr.Dataset:
     """
-    Will process HIT data to L2.
+    Will process HIT L1B data to L2.
 
     Processes dependencies needed to create L2 data products.
 
     Parameters
     ----------
     dependency_sci : xr.Dataset
-        L1B xarray science dataset that is either summed rates
+        L1B dataset that is either summed rates
         standard rates or sector rates.
 
     dependencies_anc : list
@@ -44,8 +44,8 @@ def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Datase
 
     Returns
     -------
-    processed_data : list[xarray.Dataset]
-        List of one L2 dataset.
+    l2_dataset : xarray.Dataset
+        The processed L2 dataset from the dependency dataset provided.
     """
     logger.info("Creating HIT L2 science dataset")
 
@@ -74,7 +74,7 @@ def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Datase
 
         logger.info(f"HIT L2 dataset created for {logical_source}")
 
-    return [l2_dataset]
+    return l2_dataset
 
 
 def add_cdf_attributes(
@@ -95,11 +95,11 @@ def add_cdf_attributes(
 
     Parameters
     ----------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         The dataset to update.
     logical_source : str
         The logical source of the dataset.
-    attr_mgr : AttributeManager
+    attr_mgr : ImapCdfAttributes
         The attribute manager to retrieve attributes.
 
     Returns
@@ -132,12 +132,11 @@ def add_cdf_attributes(
     # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
     for dim in dataset.dims:
         dataset[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
-        # TODO: should labels be added as coordinates? Check with SPDF
         if dim != "epoch":
             label_array = xr.DataArray(
                 dataset[dim].values.astype(str),
                 name=f"{dim}_label",
-                dims=[f"{dim}_label"],
+                dims=[dim],
                 attrs=attr_mgr.get_variable_attributes(
                     f"{dim}_label", check_schema=False
                 ),
@@ -633,7 +632,7 @@ def process_summed_intensity(
             summed_intensity_dataset = add_total_uncertainties(
                 summed_intensity_dataset, var
             )
-            # Expand the variable name to include standard intensity
+            # Expand the variable name to include summed intensity
             summed_intensity_dataset = summed_intensity_dataset.rename(
                 {var: f"{var}_summed_intensity"}
             )

@@ -4,6 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from imap_processing.ultra.l0.ultra_utils import (
+    PacketProperties,
     parse_event,
 )
 from imap_processing.utils import convert_to_binary_string
@@ -155,8 +156,7 @@ def decompress_binary(
 def decompress_image(
     pixel0: int,
     binary_data: str,
-    width_bit: int,
-    mantissa_bit_length: int,
+    packet_props: PacketProperties,
 ) -> NDArray:
     """
     Will decompress a binary string representing an image into a matrix of pixel values.
@@ -171,10 +171,9 @@ def decompress_image(
         The first, unmodified pixel p0,0.
     binary_data : str
         Binary string.
-    width_bit : int
-        The bit width that describes the width of data in the block.
-    mantissa_bit_length : int
-        The bit length of the mantissa.
+    packet_props : PacketProperties
+        Properties of the packet, including width bit, mantissa bit length and pixel
+        window dimensions.
 
     Returns
     -------
@@ -187,9 +186,17 @@ def decompress_image(
     This process is described starting on page 168 in IMAP-Ultra Flight
     Software Specification document.
     """
-    rows = 54
-    cols = 180
+    rows = packet_props.pixel_window_rows
+    cols = packet_props.pixel_window_columns
+    width_bit = packet_props.width
+    mantissa_bit_length = packet_props.mantissa_bit_length
     pixels_per_block = 15
+
+    if width_bit is None or rows is None or cols is None or mantissa_bit_length is None:
+        raise ValueError(
+            "Packet properties must specify pixel window dimensions, "
+            "width bit, and mantissa bit length for this packet type."
+        )
 
     blocks_per_row = cols // pixels_per_block
 

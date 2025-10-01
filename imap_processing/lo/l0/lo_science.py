@@ -37,28 +37,28 @@ HistPacking = namedtuple(
 
 HIST_DATA_META = {
     # field: bit_length, section_length, shape
-    "start_a": HistPacking(12, 504, (6, 7)),
-    "start_c": HistPacking(12, 504, (6, 7)),
-    "stop_b0": HistPacking(12, 504, (6, 7)),
-    "stop_b3": HistPacking(12, 504, (6, 7)),
-    "tof0_count": HistPacking(8, 336, (6, 7)),
-    "tof1_count": HistPacking(8, 336, (6, 7)),
-    "tof2_count": HistPacking(8, 336, (6, 7)),
-    "tof3_count": HistPacking(8, 336, (6, 7)),
-    "tof0_tof1": HistPacking(8, 3360, (60, 7)),
-    "tof0_tof2": HistPacking(8, 3360, (60, 7)),
-    "tof1_tof2": HistPacking(8, 3360, (60, 7)),
-    "silver": HistPacking(8, 3360, (60, 7)),
-    "disc_tof0": HistPacking(8, 336, (6, 7)),
-    "disc_tof1": HistPacking(8, 336, (6, 7)),
-    "disc_tof2": HistPacking(8, 336, (6, 7)),
-    "disc_tof3": HistPacking(8, 336, (6, 7)),
-    "pos0": HistPacking(12, 504, (6, 7)),
-    "pos1": HistPacking(12, 504, (6, 7)),
-    "pos2": HistPacking(12, 504, (6, 7)),
-    "pos3": HistPacking(12, 504, (6, 7)),
-    "hydrogen": HistPacking(8, 3360, (60, 7)),
-    "oxygen": HistPacking(8, 3360, (60, 7)),
+    "start_a": HistPacking(12, 504, (7, 6)),
+    "start_c": HistPacking(12, 504, (7, 6)),
+    "stop_b0": HistPacking(12, 504, (7, 6)),
+    "stop_b3": HistPacking(12, 504, (7, 6)),
+    "tof0_count": HistPacking(8, 336, (7, 6)),
+    "tof1_count": HistPacking(8, 336, (7, 6)),
+    "tof2_count": HistPacking(8, 336, (7, 6)),
+    "tof3_count": HistPacking(8, 336, (7, 6)),
+    "tof0_tof1": HistPacking(8, 3360, (7, 60)),
+    "tof0_tof2": HistPacking(8, 3360, (7, 60)),
+    "tof1_tof2": HistPacking(8, 3360, (7, 60)),
+    "silver": HistPacking(8, 3360, (7, 60)),
+    "disc_tof0": HistPacking(8, 336, (7, 6)),
+    "disc_tof1": HistPacking(8, 336, (7, 6)),
+    "disc_tof2": HistPacking(8, 336, (7, 6)),
+    "disc_tof3": HistPacking(8, 336, (7, 6)),
+    "pos0": HistPacking(12, 504, (7, 6)),
+    "pos1": HistPacking(12, 504, (7, 6)),
+    "pos2": HistPacking(12, 504, (7, 6)),
+    "pos3": HistPacking(12, 504, (7, 6)),
+    "hydrogen": HistPacking(8, 3360, (7, 60)),
+    "oxygen": HistPacking(8, 3360, (7, 60)),
 }
 
 
@@ -399,7 +399,7 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     # Combine the segmented packets into a single binary string
     dataset["events"] = [
         "".join(dataset["data"].values[start : end + 1])
-        for start, end in zip(seg_starts, seg_ends)
+        for start, end in zip(seg_starts, seg_ends, strict=False)
     ]
 
     # drop any group of segmented packets that aren't sequential
@@ -441,7 +441,8 @@ def find_valid_groups(
     """
     # Check if the sequence counters from the CCSDS header are sequential
     grouped_seq_ctrs = [
-        np.array(seq_ctrs[start : end + 1]) for start, end in zip(seg_starts, seg_ends)
+        np.array(seq_ctrs[start : end + 1])
+        for start, end in zip(seg_starts, seg_ends, strict=False)
     ]
     valid_groups = [is_sequential(seq_ctrs) for seq_ctrs in grouped_seq_ctrs]
     return valid_groups

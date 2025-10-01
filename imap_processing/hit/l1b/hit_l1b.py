@@ -17,6 +17,7 @@ from imap_processing.hit.l1b.constants import (
     FILLVAL_FLOAT32,
     FILLVAL_INT64,
     LIVESTIM_PULSES,
+    SECTORS,
     SUMMED_PARTICLE_ENERGY_RANGE_MAPPING,
 )
 
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 
-def hit_l1b(dependencies: dict) -> list[xr.Dataset]:
+def hit_l1b(dependency: str | xr.Dataset, l1b_descriptor: str) -> xr.Dataset:
     """
     Will process HIT data to L1B.
 
@@ -33,54 +34,56 @@ def hit_l1b(dependencies: dict) -> list[xr.Dataset]:
 
     Parameters
     ----------
-    dependencies : dict
-        Dictionary of dependencies that are L1A xarray datasets
-        for science data and a file path string to an L0 file
-        for housekeeping data.
+    dependency : Union[str, xr.Dataset]
+        Dependency is either an L1A xarray dataset to process
+        science data or a file path string to an L0 file to
+        process housekeeping data.
+    l1b_descriptor : str
+        The descriptor for the L1B dataset to create.
 
     Returns
     -------
-    processed_data : list[xarray.Dataset]
-        List of four L1B datasets.
+    l1b_dataset : xarray.Dataset
+        The processed L1B dataset.
     """
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager("l1b")
 
+    l1b_dataset = None
+
     # Create L1B datasets
-    l1b_datasets: list = []
-    if "imap_hit_l0_raw" in dependencies:
+    if l1b_descriptor == "hk":
         # Unpack ccsds file to xarray datasets
-        packet_file = dependencies["imap_hit_l0_raw"]
+        packet_file = dependency
         datasets_by_apid = get_datasets_by_apid(packet_file, derived=True)
-        # TODO: update to raise error after all APIDs are included in the same
-        #  raw files. currently science and housekeeping are in separate files.
         if HitAPID.HIT_HSKP in datasets_by_apid:
             # Process housekeeping to L1B.
-            l1b_datasets.append(
-                process_housekeeping_data(
-                    datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1b_hk"
-                )
+            l1b_dataset = process_housekeeping_data(
+                datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1b_hk"
             )
             logger.info("HIT L1B housekeeping dataset created")
-    if "imap_hit_l1a_counts" in dependencies:
+    elif l1b_descriptor in ["standard-rates", "summed-rates", "sectored-rates"]:
         # Process science data to L1B datasets
-        l1a_counts_dataset = dependencies["imap_hit_l1a_counts"]
-        l1b_datasets.extend(process_science_data(l1a_counts_dataset, attr_mgr))
-        logger.info("HIT L1B science datasets created")
+        l1b_dataset = process_science_data(dependency, l1b_descriptor, attr_mgr)
+        logger.info("HIT L1B science dataset created")
+    else:
+        logger.error(f"Unsupported descriptor for L1B processing: {l1b_descriptor}")
+        raise ValueError(f"Unsupported descriptor: {l1b_descriptor}")
 
-    return l1b_datasets
+    return l1b_dataset
 
 
 def process_science_data(
-    l1a_counts_dataset: xr.Dataset, attr_mgr: ImapCdfAttributes
-) -> list[xr.Dataset]:
+    l1a_counts_dataset: xr.Dataset, descriptor: str, attr_mgr: ImapCdfAttributes
+) -> xr.Dataset:
     """
     Will create L1B science datasets for CDF products.
 
-    Process L1A raw counts data to create L1B science data for
-    CDF creation. This function will create three L1B science
+    This function processes L1A counts data to L1B science
+    data for CDF creation. There are three L1B science
     datasets: standard rates, summed rates, and sectored rates.
-    It will also update dataset attributes, coordinates and
+    This function creates one dataset based on the descriptor
+    provided. It will also update dataset attributes, coordinates and
     data variable dimensions according to specifications in
     a CDF yaml file.
 
@@ -88,45 +91,44 @@ def process_science_data(
     ----------
     l1a_counts_dataset : xr.Dataset
         The L1A counts dataset.
+    descriptor : str
+        The descriptor for the L1B dataset to create
+        (e.g., "standard-rates", "summed-rates", "sectored-rates").
     attr_mgr : AttributeManager
         The attribute manager for the L1B data level.
 
     Returns
     -------
-    dataset : list
-        The processed L1B science datasets as xarray datasets.
+    dataset : xarray.Dataset
+        A processed L1B science dataset.
     """
     logger.info("Creating HIT L1B science datasets")
 
-    # TODO: Write functions to create the following datasets
-    #  Process sectored rates dataset
+    dataset = None
+    logical_source = None
 
     # Calculate fractional livetime from the livetime counter
     livetime = l1a_counts_dataset["livetime_counter"] / LIVESTIM_PULSES
     livetime = livetime.rename("livetime")
 
-    # Process counts data to L1B datasets
-    l1b_datasets: dict = {}
-    l1b_datasets["imap_hit_l1b_standard-rates"] = process_standard_rates_data(
-        l1a_counts_dataset, livetime
-    )
-    l1b_datasets["imap_hit_l1b_summed-rates"] = process_summed_rates_data(
-        l1a_counts_dataset, livetime
-    )
-    l1b_datasets["imap_hit_l1b_sectored-rates"] = process_sectored_rates_data(
-        l1a_counts_dataset, livetime
-    )
+    # Process counts data to an L1B dataset based on the descriptor
+    if descriptor == "standard-rates":
+        dataset = process_standard_rates_data(l1a_counts_dataset, livetime)
+        logical_source = "imap_hit_l1b_standard-rates"
+    elif descriptor == "summed-rates":
+        dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
+        logical_source = "imap_hit_l1b_summed-rates"
+    elif descriptor == "sectored-rates":
+        dataset = process_sectored_rates_data(l1a_counts_dataset, livetime)
+        logical_source = "imap_hit_l1b_sectored-rates"
 
     # Update attributes and dimensions
-    for logical_source, dataset in l1b_datasets.items():
+    if dataset and logical_source:
         dataset.attrs = attr_mgr.get_global_attributes(logical_source)
-
-        # TODO: Add CDF attributes to yaml once they're defined for L1B science data
-        # Assign attributes and dimensions to each data array in the Dataset
+        # TODO: Add CDF attributes to yaml
         for field in dataset.data_vars.keys():
             try:
-                # Create a dict of dimensions using the DEPEND_I keys in the
-                # attributes
+                # Create a dict of dimensions using the DEPEND_I keys in the attributes
                 dims = {
                     key: value
                     for key, value in attr_mgr.get_variable_attributes(field).items()
@@ -135,7 +137,6 @@ def process_science_data(
                 dataset[field].attrs = attr_mgr.get_variable_attributes(field)
                 dataset[field].assign_coords(dims)
             except KeyError:
-                print(f"Field {field} not found in attribute manager.")
                 logger.warning(f"Field {field} not found in attribute manager.")
 
         # Skip schema check for epoch to prevent attr_mgr from adding the
@@ -143,10 +144,9 @@ def process_science_data(
         dataset.epoch.attrs = attr_mgr.get_variable_attributes(
             "epoch", check_schema=False
         )
-
         logger.info(f"HIT L1B dataset created for {logical_source}")
 
-    return list(l1b_datasets.values())
+    return dataset
 
 
 def initialize_l1b_dataset(l1a_counts_dataset: xr.Dataset, coords: list) -> xr.Dataset:
@@ -357,79 +357,11 @@ def process_summed_rates_data(
     return l1b_summed_rates_dataset
 
 
-def subset_data_for_sectored_counts(
-    l1a_counts_dataset: xr.Dataset, livetime: xr.DataArray
-) -> tuple[xr.Dataset, xr.DataArray]:
-    """
-    Subset data for complete sets of sectored counts and corresponding livetime values.
-
-    A set of sectored data starts with hydrogen and ends with iron and correspond to
-    the mod 10 values 0-9. The livetime values from the previous 10 minutes are used
-    to calculate the rates for each set since those counts are transmitted 10 minutes
-    after they were collected. Therefore, only complete sets of sectored counts where
-    livetime from the previous 10 minutes are available are included in the output.
-
-    Parameters
-    ----------
-    l1a_counts_dataset : xr.Dataset
-        The L1A counts dataset.
-    livetime : xr.DataArray
-        1D array of livetime values calculated from the livetime counter.
-
-    Returns
-    -------
-    tuple[xr.Dataset, xr.DataArray]
-        Dataset of complete sectored counts and corresponding livetime values.
-    """
-    # Identify 10-minute intervals of complete sectored counts.
-    bin_size = 10
-    mod_10 = l1a_counts_dataset.hdr_minute_cnt.values % 10
-    pattern = np.arange(bin_size)
-
-    # Use sliding windows to find pattern matches
-    matches = np.all(
-        np.lib.stride_tricks.sliding_window_view(mod_10, bin_size) == pattern, axis=1
-    )
-    start_indices = np.where(matches)[0]
-
-    # Filter out start indices that are less than or equal to the bin size
-    # since the previous 10 minutes are needed for calculating rates
-    if start_indices.size == 0:
-        logger.error(
-            "No data to process - valid start indices not found for "
-            "complete sectored counts."
-        )
-        raise ValueError("No valid start indices found for complete sectored counts.")
-    else:
-        start_indices = start_indices[start_indices >= bin_size]
-
-    # Subset data for complete sets of sectored counts.
-    # Each set of sectored counts is 10 minutes long, so we take the indices
-    # starting from the start indices and extend to the bin size of 10.
-    # This creates a 1D array of indices that correspond to the complete
-    # sets of sectored counts which is used to filter the L1A dataset and
-    # create the L1B sectored rates dataset.
-    data_indices = np.concatenate(
-        [np.arange(idx, idx + bin_size) for idx in start_indices]
-    )
-    l1b_sectored_rates_dataset = l1a_counts_dataset.isel(epoch=data_indices)
-
-    # Subset livetime values corresponding to the previous 10 minutes
-    # for each start index. This ensures the livetime data aligns correctly
-    # with the sectored counts for rate calculations.
-    livetime_indices = np.concatenate(
-        [np.arange(idx - bin_size, idx) for idx in start_indices]
-    )
-    livetime = livetime.isel(epoch=livetime_indices)
-
-    return l1b_sectored_rates_dataset, livetime
-
-
 def process_sectored_rates_data(
     l1a_counts_dataset: xr.Dataset, livetime: xr.DataArray
 ) -> xr.Dataset:
     """
-    Will process L1B sectored rates data from L1A raw counts data.
+    Will process L1A raw counts data into L1B sectored rates.
 
     A complete set of sectored counts is taken over 10 science frames (10 minutes)
     where each science frame contains counts for one species and energy range.
@@ -444,12 +376,18 @@ def process_sectored_rates_data(
 
     Sectored counts data is transmitted 10 minutes after they are collected.
     To calculate rates, the sectored counts over 10 minutes need to be divided by
-    the sum of livetime values from the previous 10 minutes.
+    the sum of livetime values from the previous 10 minutes multiplied by a factor
+    15 to account for the different inclination sectors (a single spacecraft
+    rotation is split into 15 inclination ranges). See equation 11 in the algorithm
+    document.
+
+    NOTE: The L1A counts dataset has complete sets of sectored counts and livetime is
+    already shifted to 10 minutes before the counts. This was handled in L1A processing.
 
     Parameters
     ----------
     l1a_counts_dataset : xr.Dataset
-        The L1A counts dataset.
+        The L1A counts dataset containing sectored counts.
 
     livetime : xr.DataArray
         1D array of livetime values calculated from the livetime counter.
@@ -460,10 +398,7 @@ def process_sectored_rates_data(
     xr.Dataset
         The processed L1B sectored rates dataset.
     """
-    # TODO
-    #  -filter by epoch values in day being processed.
-    #   middle epoch (or mod 5 value for 6th frame)
-    #  -consider refactoring calculate_rates function to handle sectored rates
+    # TODO - consider refactoring calculate_rates function to handle sectored rates
 
     # Define particles and coordinates
     particles = ["h", "he4", "cno", "nemgsi", "fe"]
@@ -474,11 +409,6 @@ def process_sectored_rates_data(
         for var in l1a_counts_dataset.data_vars
         if any(str(var).startswith(f"{p}_") for p in particles)
     ]
-
-    # Subset data for complete sets of sectored counts and corresponding livetime values
-    l1a_counts_dataset, livetime = subset_data_for_sectored_counts(
-        l1a_counts_dataset, livetime
-    )
 
     # Sum livetime over 10 minute intervals
     livetime_10min = sum_livetime_10min(livetime)
@@ -520,7 +450,7 @@ def process_sectored_rates_data(
             rates = xr.DataArray(
                 np.where(
                     counts != FILLVAL_INT64,
-                    (counts / livetime_10min_reshaped).astype(np.float32),
+                    (counts / (SECTORS * livetime_10min_reshaped)).astype(np.float32),
                     FILLVAL_FLOAT32,
                 ),
                 dims=l1a_counts_dataset[var].dims,

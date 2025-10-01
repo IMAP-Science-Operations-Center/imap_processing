@@ -294,6 +294,18 @@ class XTCEGenerator:
             encoding.attrib["sizeInBits"] = str(length_in_bits)
             encoding.attrib["encoding"] = "IEEE-754"
 
+        elif "STRING" in row["dataType"]:
+            parameter_type = Et.SubElement(
+                self._parameter_type_set, "xtce:StringParameterType"
+            )
+            parameter_type.attrib["name"] = name
+
+            encoding = Et.SubElement(parameter_type, "xtce:StringDataEncoding")
+            size_in_bits = Et.SubElement(encoding, "xtce:SizeInBits")
+            fixed = Et.SubElement(size_in_bits, "xtce:Fixed")
+            fixed_value = Et.SubElement(fixed, "xtce:FixedValue")
+            fixed_value.text = str(row["lengthInBits"])
+
         elif "BYTE" in row["dataType"]:
             parameter_type = Et.SubElement(
                 self._parameter_type_set, "xtce:BinaryParameterType"

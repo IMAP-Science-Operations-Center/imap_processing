@@ -6,8 +6,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import DataMode
-from imap_processing.mag.l1b.mag_l1b import calibrate_vector
-from imap_processing.mag.l2.mag_l2_data import MagL2
+from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
 
 
 def mag_l2(
@@ -77,8 +76,8 @@ def mag_l2(
     always_output_mago = configuration.ALWAYS_OUTPUT_MAGO
 
     # TODO Check that the input file matches the offsets file
-    # if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
-    #     raise ValueError("Input file and offsets file must have the same timestamps.")
+    if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
+        raise ValueError("Input file and offsets file must have the same timestamps.")
 
     day: np.datetime64 = day_to_process.astype("datetime64[D]")
 
@@ -86,29 +85,35 @@ def mag_l2(
         calibration_dataset, day, always_output_mago
     )
 
-    vectors = np.apply_along_axis(
-        func1d=calibrate_vector,
-        axis=1,
-        arr=input_data["vectors"].data,
-        calibration_matrix=calibration_matrix,
+    cal_vectors = MagL2.apply_calibration(
+        vectors=input_data["vectors"].data, calibration_matrix=calibration_matrix
     )
+    # level 2 vectors don't include range
+    vectors = cal_vectors[:, :3]
 
-    input_data = MagL2(
-        vectors[:, :3],  # level 2 vectors don't include range
-        input_data["epoch"].data,
-        input_data["vectors"].data[:, 3],
-        {},
-        np.zeros(len(input_data["epoch"].data)),
-        np.zeros(len(input_data["epoch"].data)),
-        mode,
+    l2_data = MagL2(
+        vectors=vectors,
+        epoch=input_data["epoch"].data,
+        range=input_data["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=offsets_dataset["quality_flag"].data,
+        quality_bitmask=offsets_dataset["quality_bitmask"].data,
+        data_mode=mode,
         offsets=offsets_dataset["offsets"].data,
         timedelta=offsets_dataset["timedeltas"].data,
     )
+
     attributes = ImapCdfAttributes()
     attributes.add_instrument_global_attrs("mag")
-    # temporarily point to l1c
     attributes.add_instrument_variable_attrs("mag", "l2")
-    return [input_data.generate_dataset(attributes, day)]
+
+    # Rotate from the MAG frame into the SRF frame
+    l2_data.rotate_frame(ValidFrames.SRF)
+    imap_srf = l2_data.generate_dataset(attributes, day)
+    l2_data.rotate_frame(ValidFrames.DSRF)
+    imap_dsrf = l2_data.generate_dataset(attributes, day)
+
+    return [imap_dsrf, imap_srf]
 
 
 def retrieve_matrix_from_l2_calibration(

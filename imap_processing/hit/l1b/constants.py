@@ -4,6 +4,11 @@
 # This is used to calculate the fractional livetime
 LIVESTIM_PULSES = 270
 
+# A factor used to find the count rate for sectored data that
+# accounts for the fact that a single spacecraft rotation is
+# split into 15 inclination ranges.
+SECTORS = 15
+
 # Fill values for missing data
 FILLVAL_FLOAT32 = -1.00e31
 FILLVAL_INT64 = -9223372036854775808

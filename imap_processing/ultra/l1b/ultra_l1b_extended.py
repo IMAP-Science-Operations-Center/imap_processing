@@ -2,6 +2,7 @@
 
 # TODO: Come back and add in FSW logic.
 import logging
+from collections import namedtuple
 from enum import Enum
 
 import numpy as np
@@ -16,14 +17,18 @@ from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
+    get_ebins,
     get_energy_efficiencies,
     get_energy_norm,
     get_image_params,
     get_norm,
+    get_ph_corrected,
     get_y_adjust,
 )
 
 logger = logging.getLogger(__name__)
+
+FILLVAL_UINT8 = 255
 
 
 class StartType(Enum):
@@ -49,8 +54,11 @@ class CoinType(Enum):
     Bottom = 2
 
 
+PHTOFResult = namedtuple("PHTOFResult", ["tof", "t2", "xb", "yb", "tofx", "tofy"])
+
+
 def get_front_x_position(
-    start_type: ndarray, start_position_tdc: ndarray, sensor: str
+    start_type: ndarray, start_position_tdc: ndarray, sensor: str, ancillary_files: dict
 ) -> ndarray:
     """
     Calculate the front xf position.
@@ -68,6 +76,8 @@ def get_front_x_position(
         Start Position Time to Digital Converter (TDC).
     sensor : str
         Sensor name.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -77,9 +87,9 @@ def get_front_x_position(
     # Left and right start types.
     indices = np.nonzero((start_type == 1) | (start_type == 2))
 
-    xftsc = get_image_params("XFTSC", sensor)
-    xft_lt_off = get_image_params("XFTLTOFF", sensor)
-    xft_rt_off = get_image_params("XFTRTOFF", sensor)
+    xftsc = get_image_params("XFTSC", sensor, ancillary_files)
+    xft_lt_off = get_image_params("XFTLTOFF", sensor, ancillary_files)
+    xft_rt_off = get_image_params("XFTRTOFF", sensor, ancillary_files)
     xft_off = np.where(start_type[indices] == 1, xft_lt_off, xft_rt_off)
 
     # Calculate xf and convert to hundredths of a millimeter
@@ -88,7 +98,9 @@ def get_front_x_position(
     return xf
 
 
-def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, ndarray]:
+def get_front_y_position(
+    start_type: ndarray, yb: ndarray, ancillary_files: dict
+) -> tuple[ndarray, ndarray]:
     """
     Compute the adjustments for the front y position and distance front to back.
 
@@ -102,6 +114,8 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
         Start Type: 1=Left, 2=Right.
     yb : np.array
         Y back position in hundredths of a millimeter.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -125,7 +139,7 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
         + 0.5
     )
     # y adjustment in mm
-    y_adjust_left = get_y_adjust(dy_lut_left) / 100
+    y_adjust_left = get_y_adjust(dy_lut_left, ancillary_files) / 100
     # hundredths of a millimeter
     yf[index_left] = (UltraConstants.YF_ESTIMATE_LEFT - y_adjust_left) * 100
     # distance adjustment in mm
@@ -141,7 +155,7 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
         + 0.5
     )
     # y adjustment in mm
-    y_adjust_right = get_y_adjust(dy_lut_right) / 100
+    y_adjust_right = get_y_adjust(dy_lut_right, ancillary_files) / 100
     # hundredths of a millimeter
     yf[index_right] = (UltraConstants.YF_ESTIMATE_RIGHT + y_adjust_right) * 100
     # distance adjustment in mm
@@ -153,8 +167,8 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
 
 
 def get_ph_tof_and_back_positions(
-    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
+) -> PHTOFResult:
     """
     Calculate back xb, yb position and tof.
 
@@ -176,6 +190,8 @@ def get_ph_tof_and_back_positions(
         Has same length as de_dataset.
     sensor : str
         Sensor name.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -187,6 +203,10 @@ def get_ph_tof_and_back_positions(
         Back positions in x direction (hundredths of a millimeter).
     yb : np.array
         Back positions in y direction (hundredths of a millimeter).
+    tofx : np.array
+        X front position tof offset (tenths of a nanosecond).
+    tofy : np.array
+        Y front position tof offset (tenths of a nanosecond).
     """
     indices = np.nonzero(
         np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
@@ -197,10 +217,18 @@ def get_ph_tof_and_back_positions(
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
-    sp_n_norm = get_norm(de_filtered["stop_north_tdc"].data, "SpN", sensor)
-    sp_s_norm = get_norm(de_filtered["stop_south_tdc"].data, "SpS", sensor)
-    sp_e_norm = get_norm(de_filtered["stop_east_tdc"].data, "SpE", sensor)
-    sp_w_norm = get_norm(de_filtered["stop_west_tdc"].data, "SpW", sensor)
+    sp_n_norm = get_norm(
+        de_filtered["stop_north_tdc"].data, "SpN", sensor, ancillary_files
+    )
+    sp_s_norm = get_norm(
+        de_filtered["stop_south_tdc"].data, "SpS", sensor, ancillary_files
+    )
+    sp_e_norm = get_norm(
+        de_filtered["stop_east_tdc"].data, "SpE", sensor, ancillary_files
+    )
+    sp_w_norm = get_norm(
+        de_filtered["stop_west_tdc"].data, "SpW", sensor, ancillary_files
+    )
 
     # Convert normalized TDC values into units of hundredths of a
     # millimeter using lookup tables.
@@ -227,37 +255,41 @@ def get_ph_tof_and_back_positions(
     # Convert converts normalized TDC values into units of
     # hundredths of a millimeter using lookup tables.
     stop_type_top = de_filtered["stop_type"].data == StopType.Top.value
-    xb[stop_type_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
-    yb[stop_type_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
+    xb[stop_type_top] = get_back_position(
+        xb_index[stop_type_top], "XBkTp", sensor, ancillary_files
+    )
+    yb[stop_type_top] = get_back_position(
+        yb_index[stop_type_top], "YBkTp", sensor, ancillary_files
+    )
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[stop_type_top] = get_image_params("TOFSC", sensor) * t1[
+    t2[stop_type_top] = get_image_params("TOFSC", sensor, ancillary_files) * t1[
         stop_type_top
-    ] + get_image_params("TOFTPOFF", sensor)
+    ] + get_image_params("TOFTPOFF", sensor, ancillary_files)
     # Variable xf_ph divided by 10 to convert to mm.
     tof[stop_type_top] = t2[stop_type_top] + xf_ph[
         stop_type_top
-    ] / 10 * get_image_params("XFTTOF", sensor)
+    ] / 10 * get_image_params("XFTTOF", sensor, ancillary_files)
 
     stop_type_bottom = de_filtered["stop_type"].data == StopType.Bottom.value
     xb[stop_type_bottom] = get_back_position(
-        xb_index[stop_type_bottom], "XBkBt", sensor
+        xb_index[stop_type_bottom], "XBkBt", sensor, ancillary_files
     )
     yb[stop_type_bottom] = get_back_position(
-        yb_index[stop_type_bottom], "YBkBt", sensor
+        yb_index[stop_type_bottom], "YBkBt", sensor, ancillary_files
     )
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[stop_type_bottom] = get_image_params("TOFSC", sensor) * t1[
+    t2[stop_type_bottom] = get_image_params("TOFSC", sensor, ancillary_files) * t1[
         stop_type_bottom
-    ] + get_image_params("TOFBTOFF", sensor)  # 10*ns
+    ] + get_image_params("TOFBTOFF", sensor, ancillary_files)  # 10*ns
 
     # Variable xf_ph divided by 10 to convert to mm.
     tof[stop_type_bottom] = t2[stop_type_bottom] + xf_ph[
         stop_type_bottom
-    ] / 10 * get_image_params("XFTTOF", sensor)
+    ] / 10 * get_image_params("XFTTOF", sensor, ancillary_files)
 
-    return tof, t2, xb, yb
+    return PHTOFResult(tof=tof, t2=t2, xb=xb, yb=yb, tofx=tofx, tofy=tofy)
 
 
 def get_path_length(
@@ -290,7 +322,7 @@ def get_path_length(
 
 
 def get_ssd_back_position_and_tof_offset(
-    de_dataset: xarray.Dataset, sensor: str
+    de_dataset: xarray.Dataset, sensor: str, ancillary_files: dict
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Lookup the Y SSD positions (yb), TOF Offset, and SSD number.
@@ -301,6 +333,8 @@ def get_ssd_back_position_and_tof_offset(
         The input dataset containing STOP_TYPE and SSD_FLAG data.
     sensor : str
         Sensor name.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -326,21 +360,27 @@ def get_ssd_back_position_and_tof_offset(
         ssd_flag_mask = de_filtered[f"ssd_flag_{i}"].data == 1
 
         # Multiply ybs times 100 to convert to hundredths of a millimeter.
-        yb[ssd_flag_mask] = get_image_params(f"YBKSSD{i}", sensor) * 100
+        yb[ssd_flag_mask] = (
+            get_image_params(f"YBKSSD{i}", sensor, ancillary_files) * 100
+        )
         ssd_number[ssd_flag_mask] = i
 
         tof_offset[
             (de_filtered["start_type"] == StartType.Left.value) & ssd_flag_mask
-        ] = get_image_params(f"TOFSSDLTOFF{i}", sensor)
+        ] = get_image_params(f"TOFSSDLTOFF{i}", sensor, ancillary_files)
         tof_offset[
             (de_filtered["start_type"] == StartType.Right.value) & ssd_flag_mask
-        ] = get_image_params(f"TOFSSDRTOFF{i}", sensor)
+        ] = get_image_params(f"TOFSSDRTOFF{i}", sensor, ancillary_files)
 
     return yb, tof_offset, ssd_number
 
 
 def calculate_etof_xc(
-    de_subset: xarray.Dataset, particle_tof: np.ndarray, sensor: str, location: str
+    de_subset: xarray.Dataset,
+    particle_tof: np.ndarray,
+    sensor: str,
+    location: str,
+    ancillary_files: dict,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate the etof and xc values for the given subset.
@@ -355,6 +395,8 @@ def calculate_etof_xc(
         Sensor name.
     location : str
         Location indicator, either 'TP' (Top) or 'BT' (Bottom).
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -365,17 +407,21 @@ def calculate_etof_xc(
         X coincidence position (millimeters).
     """
     # CoinNNorm
-    coin_n_norm = get_norm(de_subset["coin_north_tdc"], "CoinN", sensor)
+    coin_n_norm = get_norm(
+        de_subset["coin_north_tdc"], "CoinN", sensor, ancillary_files
+    )
     # CoinSNorm
-    coin_s_norm = get_norm(de_subset["coin_south_tdc"], "CoinS", sensor)
-    xc = get_image_params(f"XCOIN{location}SC", sensor) * (
+    coin_s_norm = get_norm(
+        de_subset["coin_south_tdc"], "CoinS", sensor, ancillary_files
+    )
+    xc = get_image_params(f"XCOIN{location}SC", sensor, ancillary_files) * (
         coin_s_norm - coin_n_norm
-    ) + get_image_params(f"XCOIN{location}OFF", sensor)  # millimeter
+    ) + get_image_params(f"XCOIN{location}OFF", sensor, ancillary_files)  # millimeter
 
     # Time for the electrons to travel back to coincidence anode.
-    t2 = get_image_params("ETOFSC", sensor) * (
+    t2 = get_image_params("ETOFSC", sensor, ancillary_files) * (
         coin_n_norm + coin_s_norm
-    ) + get_image_params(f"ETOF{location}OFF", sensor)
+    ) + get_image_params(f"ETOF{location}OFF", sensor, ancillary_files)
 
     # Multiply by 10 to convert to tenths of a nanosecond.
     etof = t2 * 10 - particle_tof
@@ -384,7 +430,10 @@ def calculate_etof_xc(
 
 
 def get_coincidence_positions(
-    de_dataset: xarray.Dataset, particle_tof: np.ndarray, sensor: str
+    de_dataset: xarray.Dataset,
+    particle_tof: np.ndarray,
+    sensor: str,
+    ancillary_files: dict,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate coincidence positions.
@@ -408,6 +457,8 @@ def get_coincidence_positions(
         (tenths of a nanosecond).
     sensor : str
         Sensor name.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -431,12 +482,14 @@ def get_coincidence_positions(
     # Normalized TDCs
     # For the stop anode, there are mismatches between the coincidence TDCs,
     # i.e., CoinN and CoinS. They must be normalized via lookup tables.
-    etof_top, xc_top = calculate_etof_xc(de_top, particle_tof[index_top], sensor, "TP")
+    etof_top, xc_top = calculate_etof_xc(
+        de_top, particle_tof[index_top], sensor, "TP", ancillary_files
+    )
     etof[index_top] = etof_top
     xc_array[index_top] = xc_top
 
     etof_bottom, xc_bottom = calculate_etof_xc(
-        de_bottom, particle_tof[index_bottom], sensor, "BT"
+        de_bottom, particle_tof[index_bottom], sensor, "BT", ancillary_files
     )
     etof[index_bottom] = etof_bottom
     xc_array[index_bottom] = xc_bottom
@@ -501,7 +554,7 @@ def get_de_velocity(
 
 
 def get_ssd_tof(
-    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str
+    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
 ) -> NDArray[np.float64]:
     """
     Calculate back xb, yb position for the SSDs.
@@ -527,25 +580,32 @@ def get_ssd_tof(
         Front x position (hundredths of a millimeter).
     sensor : str
         Sensor name.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
     tof : np.ndarray
         Time of flight (tenths of a nanosecond).
     """
-    _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset, sensor)
+    _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(
+        de_dataset, sensor, ancillary_files
+    )
     indices = np.nonzero(np.isin(de_dataset["stop_type"], [StopType.SSD.value]))[0]
 
     de_discrete = de_dataset.isel(epoch=indices)["coin_discrete_tdc"]
 
-    time = get_image_params("TOFSSDSC", sensor) * de_discrete.values + tof_offset
+    time = (
+        get_image_params("TOFSSDSC", sensor, ancillary_files) * de_discrete.values
+        + tof_offset
+    )
 
     # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
     # Convert xf to mm by dividing by 100.
     tof = (
         time
-        + get_image_params("TOFSSDTOTOFF", sensor)
-        + xf[indices] / 100 * get_image_params("XFTTOF", sensor)
+        + get_image_params("TOFSSDTOTOFF", sensor, ancillary_files)
+        + xf[indices] / 100 * get_image_params("XFTTOF", sensor, ancillary_files)
     ) * 10
 
     # Convert TOF to tenths of a nanosecond.
@@ -575,6 +635,7 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
     index_hydrogen = np.where(species == 1)
     energy = np.full_like(v2, np.nan)
 
+    # TODO: we will calculate the energies of the different species here.
     # 1/2 mv^2 in Joules, convert to keV
     energy[index_hydrogen] = (
         0.5 * UltraConstants.MASS_H * v2[index_hydrogen] * UltraConstants.J_KEV
@@ -589,7 +650,9 @@ def get_energy_pulse_height(
     xb: np.ndarray,
     yb: np.ndarray,
     sensor: str,
-) -> NDArray[np.float64]:
+    ancillary_files: dict,
+    quality_flags: NDArray,
+) -> tuple[NDArray, NDArray]:
     """
     Calculate the pulse-height energy.
 
@@ -611,6 +674,10 @@ def get_energy_pulse_height(
         Y back position (hundredths of a millimeter).
     sensor : str
         Sensor name.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
+    quality_flags : NDArray
+        Quality flag to set when there is an outlier.
 
     Returns
     -------
@@ -625,28 +692,59 @@ def get_energy_pulse_height(
     ylut = np.zeros(len(stop_type), dtype=np.float64)
     energy_ph = np.zeros(len(stop_type), dtype=np.float64)
 
+    # Full-length correction arrays
+    ph_correction = np.zeros(len(stop_type), dtype=np.float64)
+
     # Stop type 1
-    xlut[indices_top] = (xb[indices_top] / 100 - 25 / 2) * 20 / 50  # mm
+    xlut[indices_top] = (xb[indices_top] / 100 - 24.5 / 2) * 20 / 50  # mm
     ylut[indices_top] = (yb[indices_top] / 100 + 82 / 2) * 32 / 82  # mm
     # Stop type 2
-    xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 25 / 2) * 20 / 50  # mm
+    xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 24.5 / 2) * 20 / 50  # mm
     ylut[indices_bottom] = (yb[indices_bottom] / 100 + 82 / 2) * 32 / 82  # mm
 
-    # TODO: waiting on these lookup tables: SpTpPHCorr, SpBtPHCorr
-    energy_ph[indices_top] = energy[indices_top] - get_image_params(
-        "SPTPPHOFF", sensor
-    )  # * SpTpPHCorr[
-    # xlut[indices_top], ylut[indices_top]] / 1024
+    ph_correction_top, updated_flags_top = get_ph_corrected(
+        "ultra45",
+        "tp",
+        ancillary_files,
+        np.round(xlut[indices_top]),
+        np.round(ylut[indices_top]),
+        quality_flags[indices_top].copy(),
+    )
+    quality_flags[indices_top] = updated_flags_top
+    ph_correction_bottom, updated_flags_bottom = get_ph_corrected(
+        "ultra45",
+        "bt",
+        ancillary_files,
+        np.round(xlut[indices_bottom]),
+        np.round(ylut[indices_bottom]),
+        quality_flags[indices_bottom].copy(),
+    )
+    quality_flags[indices_bottom] = updated_flags_bottom
 
-    energy_ph[indices_bottom] = energy[indices_bottom] - get_image_params(
-        "SPBTPHOFF", sensor
-    )  # * SpBtPHCorr[
-    # xlut[indices_bottom], ylut[indices_bottom]] / 1024
+    ph_correction[indices_top] = ph_correction_top / 1024
+    ph_correction[indices_bottom] = ph_correction_bottom / 1024
 
-    return energy_ph
+    energy_ph[indices_top] = (
+        (energy[indices_top] - get_image_params("SPTPPHOFF", sensor, ancillary_files))
+        * ph_correction_top
+        / 1024
+    )
+
+    energy_ph[indices_bottom] = (
+        (
+            energy[indices_bottom]
+            - get_image_params("SPBTPHOFF", sensor, ancillary_files)
+        )
+        * ph_correction_bottom
+        / 1024.0
+    )
+
+    return energy_ph, ph_correction
 
 
-def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.float64]:
+def get_energy_ssd(
+    de_dataset: xarray.Dataset, ssd: np.ndarray, ancillary_files: dict
+) -> NDArray[np.float64]:
     """
     Get SSD energy.
 
@@ -664,6 +762,8 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
         Events dataset.
     ssd : np.ndarray
         SSD number.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -685,7 +785,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
         energy < UltraConstants.COMPOSITE_ENERGY_THRESHOLD
     ]
 
-    energy_norm = get_energy_norm(ssd, composite_energy)
+    energy_norm = get_energy_norm(ssd, composite_energy, ancillary_files)
 
     return energy_norm
 
@@ -760,14 +860,9 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     """
     # Event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type)
-    # Initialize bin array
-    species_bin = np.full(len(ctof), 255, dtype=np.uint8)
-
-    # Assign Species 1 ("H") to bins where cTOF is within the specified range
-    species_bin[
-        (ctof > UltraConstants.CTOF_SPECIES_MIN)
-        & (ctof < UltraConstants.CTOF_SPECIES_MAX)
-    ] = 1
+    # Assign Species 1 ("H") to bins
+    # TODO: this is a placeholder for future species assignments.
+    species_bin = np.full(len(ctof), 1, dtype=np.uint8)
 
     return species_bin
 
@@ -803,6 +898,68 @@ def get_phi_theta(
     theta = np.arcsin((front_position[0] - back_position[0]) / path_length)
 
     return np.degrees(phi), np.degrees(theta)
+
+
+def get_spin_number(de_met: NDArray, de_spin: NDArray) -> NDArray:
+    """
+    Get the spin number.
+
+    Parameters
+    ----------
+    de_met : NDArray
+        Mission elapsed time.
+    de_spin : NDArray
+        Spin number 0-255.
+
+    Returns
+    -------
+    assigned_spin_number : NDArray
+        Spin number for DE data product.
+    """
+    # DE packet data.
+    # Since the spin number in the direct events packet
+    # is only 8 bits it goes from 0-255.
+    # Within a pointing that means we will always have duplicate spin numbers.
+    # In other words, different spins will be represented by the same spin number.
+    # Just to make certain that we won't accidentally combine
+    # multiple spins we need to sort by time here.
+    sort_idx = np.argsort(de_met)
+    de_met_sorted = de_met[sort_idx]
+    de_spin_sorted = de_spin[sort_idx]
+    # Here we are finding the start and end indices of each spin in the sorted array.
+    is_new_spin = np.concatenate([[True], de_spin_sorted[1:] != de_spin_sorted[:-1]])
+    spin_start_indices = np.where(is_new_spin)[0]
+    spin_end_indices = np.append(spin_start_indices[1:], len(de_met_sorted))
+
+    # Universal Spin Table.
+    spin_df = get_spin_data()
+    # Retrieve the met values of the start of the spin.
+    spin_start_mets = spin_df["spin_start_met"].values
+    # Retrieve the corresponding spin numbers.
+    spin_numbers = spin_df["spin_number"].values
+    assigned_spin_number_sorted = np.empty(de_spin_sorted.shape, dtype=np.uint32)
+    # These last 8 bits are the same as the spin number in the DE packet.
+    # So this will give us choices of which spins are
+    # available to assign to the DE data.
+    possible_spins = spin_numbers & 0xFF
+
+    # Assign each group based on time.
+    for start, end in zip(spin_start_indices, spin_end_indices, strict=False):
+        # Now that we have the possible spins from the Universal Spin Table,
+        # we match the times of those spins to the nearest times in the DE data.
+        possible_times = spin_start_mets[possible_spins == de_spin_sorted[start]]
+        # Get nearest time for matching spins.
+        nearest_idx = np.abs(possible_times - de_met_sorted[start]).argmin()
+        nearest_value = possible_times[nearest_idx]
+        assigned_spin_number_sorted[start:end] = spin_numbers[
+            spin_start_mets == nearest_value
+        ]
+
+    # Undo the sort to match original order.
+    assigned_spin_number = np.empty_like(assigned_spin_number_sorted)
+    assigned_spin_number[sort_idx] = assigned_spin_number_sorted
+
+    return assigned_spin_number
 
 
 def get_eventtimes(
@@ -896,6 +1053,7 @@ def get_fwhm(
     energy: NDArray,
     phi_inst: NDArray,
     theta_inst: NDArray,
+    ancillary_files: dict,
 ) -> tuple[NDArray, NDArray]:
     """
     Interpolate phi and theta FWHM values for each event based on start type.
@@ -912,6 +1070,8 @@ def get_fwhm(
         Instrument-frame azimuth angle for each event.
     theta_inst : NDArray
         Instrument-frame elevation angle for each event.
+    ancillary_files : dict
+        Ancillary files containing lookup tables for angular profiles.
 
     Returns
     -------
@@ -922,8 +1082,8 @@ def get_fwhm(
     """
     phi_interp = np.full_like(phi_inst, np.nan, dtype=np.float64)
     theta_interp = np.full_like(theta_inst, np.nan, dtype=np.float64)
-    lt_table = get_angular_profiles("left", sensor)
-    rt_table = get_angular_profiles("right", sensor)
+    lt_table = get_angular_profiles("left", sensor, ancillary_files)
+    rt_table = get_angular_profiles("right", sensor, ancillary_files)
 
     # Left start type
     idx_left = start_type == StartType.Left.value
@@ -982,3 +1142,251 @@ def get_efficiency(
     )
 
     return interpolator((theta_inst, phi_inst, energy))
+
+
+def determine_ebin_pulse_height(
+    energy: NDArray,
+    tof: NDArray,
+    path_length: NDArray,
+    backtofvalid: NDArray,
+    coinphvalid: NDArray,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Determine the species for pulse-height events.
+
+    Species is determined from the particle energy and velocity.
+    For velocity, the particle TOF is normalized with respect
+    to a fixed distance dmin between the front and back detectors.
+    The normalized TOF is termed the corrected TOF (ctof).
+    Particle species are determined from
+    the energy and ctof using a lookup table.
+
+    Further description is available on pages 42-44 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    energy : NDArray
+        Energy from the PH event (keV).
+    tof : NDArray
+        Time of flight of the PH event (tenths of a nanosecond).
+    path_length : NDArray
+        Path length (r) (hundredths of a millimeter).
+    backtofvalid : NDArray
+        Boolean array indicating if the back TOF is valid.
+    coinphvalid : NDArray
+        Boolean array indicating if the Coincidence PH is valid.
+    ancillary_files : dict
+        Ancillary files containing the lookup tables.
+
+    Returns
+    -------
+    bin : np.array
+        Species bin.
+    """
+    # PH event TOF normalization to Z axis
+    ctof, _ = get_ctof(tof, path_length, type="PH")
+
+    ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+    valid = backtofvalid & coinphvalid
+    ebins[valid] = get_ebins(
+        "l1b-tofxph", energy[valid], ctof[valid], ebins[valid], ancillary_files
+    )
+
+    return ebins
+
+
+def determine_ebin_ssd(
+    energy: NDArray,
+    tof: NDArray,
+    path_length: NDArray,
+    sensor: str,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Determine the species for SSD events.
+
+    Species is determined from the particle's energy and velocity.
+    For velocity, the particle's TOF is normalized with respect
+    to a fixed distance dmin between the front and back detectors.
+    For SSD events, an adjustment is also made to the path length
+    to account for the shorter distances that such events
+    travel to reach the detector. The normalized TOF is termed
+    the corrected tof (ctof). Particle species are determined from
+    the energy and cTOF using a lookup table.
+
+    Further description is available on pages 42-44 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    energy : NDArray
+        Energy from the SSD event (keV).
+    tof : NDArray
+        Time of flight of the SSD event (tenths of a nanosecond).
+    path_length : NDArray
+        Path length (r) (hundredths of a millimeter).
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files containing the lookup tables.
+
+    Returns
+    -------
+    bin : NDArray
+        Species bin.
+    """
+    # SSD event TOF normalization to Z axis
+    ctof, _ = get_ctof(tof, path_length, type="SSD")
+
+    ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+    steep_path_length = get_image_params("PathSteepThresh", sensor, ancillary_files)
+    medium_path_length = get_image_params("PathMediumThresh", sensor, ancillary_files)
+
+    steep_mask = path_length < steep_path_length
+    medium_mask = (path_length >= steep_path_length) & (
+        path_length < medium_path_length
+    )
+    flat_mask = path_length >= medium_path_length
+
+    ebins[steep_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxesteep",
+        energy[steep_mask],
+        ctof[steep_mask],
+        ebins[steep_mask],
+        ancillary_files,
+    )
+    ebins[medium_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxemedium",
+        energy[medium_mask],
+        ctof[medium_mask],
+        ebins[medium_mask],
+        ancillary_files,
+    )
+    ebins[flat_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxeflat",
+        energy[flat_mask],
+        ctof[flat_mask],
+        ebins[flat_mask],
+        ancillary_files,
+    )
+
+    return ebins
+
+
+def is_back_tof_valid(
+    de_dataset: xarray.Dataset,
+    xf: NDArray,
+    sensor: str,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Determine whether back TOF is valid based on stop type.
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        Data in xarray format.
+    xf : NDArray
+        X front position in (hundredths of a millimeter).
+        Has same length as de_dataset.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files for lookup.
+
+    Returns
+    -------
+    valid_mask : NDArray
+        Boolean array indicating whether back TOF is valid.
+
+    Notes
+    -----
+    From page 33 of the IMAP-Ultra Flight Software Specification document.
+    """
+    _, _, _, _, tofx, tofy = get_ph_tof_and_back_positions(
+        de_dataset, xf, "ultra45", ancillary_files
+    )
+    diff = tofy - tofx
+
+    indices = np.nonzero(
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    de_ph = de_dataset.isel(epoch=indices)
+
+    top_mask = de_ph["stop_type"] == StopType.Top.value
+    bottom_mask = de_ph["stop_type"] == StopType.Bottom.value
+
+    valid = np.zeros_like(diff, dtype=bool)
+
+    diff_tp_min = get_image_params("TOFDiffTpMin", sensor, ancillary_files)
+    diff_tp_max = get_image_params("TOFDiffTpMax", sensor, ancillary_files)
+    diff_bt_min = get_image_params("TOFDiffBtMin", sensor, ancillary_files)
+    diff_bt_max = get_image_params("TOFDiffBtMax", sensor, ancillary_files)
+
+    valid[top_mask] = (diff[top_mask] >= diff_tp_min) & (diff[top_mask] <= diff_tp_max)
+    valid[bottom_mask] = (diff[bottom_mask] >= diff_bt_min) & (
+        diff[bottom_mask] <= diff_bt_max
+    )
+
+    return valid
+
+
+def is_coin_ph_valid(
+    etof: NDArray,
+    xc: NDArray,
+    xb: NDArray,
+    sensor: str,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Determine whether Coincidence-PH data are valid.
+
+    This is based on thresholds defined in the IMAP-Ultra Flight Software Specification
+    (see page 36).
+
+    Parameters
+    ----------
+    etof : NDArray
+        Electron TOF (tenths of a nanosecond).
+    xc : NDArray
+        Coincidence X position (hundredths of a mm).
+    xb : NDArray
+        Back X position (hundredths of a mm).
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files for lookup.
+
+    Returns
+    -------
+    valid_mask : NDArray
+        Boolean array indicating Coin-PH validity.
+
+    Notes
+    -----
+    Logic derived from page 36 of the IMAP-Ultra Flight Software Specification document.
+    """
+    etof_min = get_image_params("eTOFMin", sensor, ancillary_files)
+    etof_max = get_image_params("eTOFMax", sensor, ancillary_files)
+
+    etof_valid = (etof >= etof_min) & (etof <= etof_max)
+
+    diff_x = xc - xb
+    etof_offset1 = get_image_params("eTOFOff1", sensor, ancillary_files)
+    etof_offset2 = get_image_params("eTOFOff2", sensor, ancillary_files)
+    etof_slope1 = get_image_params("eTOFSlope1", sensor, ancillary_files)
+    etof_slope2 = get_image_params("eTOFSlope2", sensor, ancillary_files)
+
+    t1 = (etof - etof_offset1) * etof_slope1 / 1024
+    t2 = (etof - etof_offset2) * etof_slope2 / 1024
+
+    condition_1 = (diff_x >= t1) & (diff_x <= t2)
+    condition_2 = (diff_x >= -t2) & (diff_x <= -t1)
+
+    spatial_valid = condition_1 | condition_2
+
+    return etof_valid & spatial_valid

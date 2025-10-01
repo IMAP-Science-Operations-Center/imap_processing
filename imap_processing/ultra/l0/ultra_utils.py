@@ -1,6 +1,6 @@
 """Contains data classes to support Ultra L0 processing."""
 
-from typing import NamedTuple, Union
+from typing import NamedTuple
 
 
 class PacketProperties(NamedTuple):
@@ -9,16 +9,22 @@ class PacketProperties(NamedTuple):
     apid: list  # List of APIDs
     logical_source: list  # List of logical sources
     addition_to_logical_desc: str  # Description of the logical source
-    width: Union[int, None]  # Width of binary data (could be None).
-    block: Union[int, None]  # Number of values in each block (could be None).
-    # This is important for decompressing the images and
-    # a description is available on page 171 of IMAP-Ultra Flight
-    # Software Specification document (7523-9009_Rev_-.pdf).
-    len_array: Union[
-        int, None
-    ]  # Length of the array to be decompressed (could be None).
-    mantissa_bit_length: Union[int, None]  # used to determine the level of
+    width: int | None  # Width of binary data (could be None).
+    # Block, image_planes, pixel_window_rows, and pixel_window_columns are important for
+    # decompressing the images and a description is available on page 171 of IMAP-Ultra
+    # Flight Software Specification document (7523-9009_Rev_-.pdf).
+    block: int | None  # Number of values in each block (could be None).
+    len_array: int | None  # Length of the array to be decompressed (could be None).
+    mantissa_bit_length: int | None  # used to determine the level of
     # precision that can be recovered from compressed data (could be None).
+    image_planes: int | None = None
+    # number of images. See table 11 in the FSSD.
+    pixel_window_rows: int | None = None
+    # number of rows in each image. See table 49 in the FSSD.
+    pixel_window_columns: int | None = None
+    # number of columns in each image. See table 49 in the FSSD.
+    image_planes_per_packet: int | None = None
+    # number of image planes in each packet. See table 52 in the FSSD.
 
 
 # Define PacketProperties instances directly in the module namespace
@@ -64,15 +70,99 @@ ULTRA_ENERGY_SPECTRA = PacketProperties(
     len_array=1,
     mantissa_bit_length=5,
 )
-ULTRA_TOF = PacketProperties(
+ULTRA_PHXTOF_HIGH_ANGULAR = PacketProperties(
     apid=[883, 947],
     logical_source=[
         "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang",
         "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang",
     ],
-    addition_to_logical_desc="Time of Flight Images",
+    addition_to_logical_desc="Pulse Height Time of Flight High Angular Images",
     width=4,
     block=15,
+    image_planes=8,
+    pixel_window_rows=54,
+    pixel_window_columns=180,
+    image_planes_per_packet=1,
+    len_array=None,
+    mantissa_bit_length=4,
+)
+ULTRA_PHXTOF_HIGH_ENERGY = PacketProperties(
+    apid=[884, 948],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-nrg",
+        "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-nrg",
+    ],
+    addition_to_logical_desc="Pulse Height By Time of Flight High Energy Images",
+    width=4,
+    block=15,
+    image_planes=28,
+    pixel_window_rows=27,
+    pixel_window_columns=90,
+    image_planes_per_packet=1,
+    len_array=None,
+    mantissa_bit_length=4,
+)
+ULTRA_PHXTOF_HIGH_TIME = PacketProperties(
+    apid=[885, 949],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-time",
+        "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-time",
+    ],
+    addition_to_logical_desc="Time of Flight High Time Images",
+    width=4,
+    block=15,
+    image_planes=8,
+    pixel_window_rows=18,
+    pixel_window_columns=60,
+    image_planes_per_packet=2,
+    len_array=None,
+    mantissa_bit_length=4,
+)
+ULTRA_EXTOF_HIGH_ANGULAR = PacketProperties(
+    apid=[886, 950],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-ang",
+        "imap_ultra_l1a_90sensor-histogram-ena-extof-hi-ang",
+    ],
+    addition_to_logical_desc="Energy By Time of Flight High Angular Images",
+    width=4,
+    block=15,
+    image_planes=12,
+    pixel_window_rows=18,
+    pixel_window_columns=60,
+    image_planes_per_packet=2,
+    len_array=None,
+    mantissa_bit_length=4,
+)
+ULTRA_EXTOF_HIGH_TIME = PacketProperties(
+    apid=[888, 952],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-time",
+        "imap_ultra_l1a_90sensor-histogram-ena-extof-hi-time",
+    ],
+    addition_to_logical_desc="Energy By Time of Flight High Time Images",
+    width=4,
+    block=15,
+    image_planes=4,
+    pixel_window_rows=9,
+    pixel_window_columns=30,
+    image_planes_per_packet=8,
+    len_array=None,
+    mantissa_bit_length=4,
+)
+ULTRA_EXTOF_HIGH_ENERGY = PacketProperties(
+    apid=[887, 951],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-nrg",
+        "imap_ultra_l1a_90sensor-histogram-ena-extof-hi-nrg",
+    ],
+    addition_to_logical_desc="Energy By Time of Flight High Energy Images",
+    width=4,
+    block=15,
+    image_planes=44,
+    pixel_window_rows=9,
+    pixel_window_columns=30,
+    image_planes_per_packet=8,
     len_array=None,
     mantissa_bit_length=4,
 )
@@ -92,6 +182,18 @@ ULTRA_ENERGY_EVENTS = PacketProperties(
         "imap_ultra_l1a_90sensor-energy-de",
     ],
     addition_to_logical_desc="Single Energy Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_MACROS_CHECKSUM = PacketProperties(
+    apid=[872, 936],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-macroschecksum",
+        "imap_ultra_l1a_90sensor-macroschecksum",
+    ],
+    addition_to_logical_desc="Macros Checksum",
     width=None,
     block=None,
     len_array=None,

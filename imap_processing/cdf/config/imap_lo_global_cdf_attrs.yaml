@@ -29,6 +29,24 @@ imap_lo_l1a_spin:
   Logical_source: imap_lo_l1a_spin
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
 
+imap_lo_l1a_nhk:
+  <<: *instrument_base
+  Data_type: L1A_star>Level-1A Nominal Housekeeping
+  Logical_source: imap_lo_l1a_nhk
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1a_shk:
+  <<: *instrument_base
+  Data_type: L1A_star>Level-1A Static Housekeeping
+  Logical_source: imap_lo_l1a_shk
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1a_pcc:
+  <<: *instrument_base
+  Data_type: L1A_star>Level-1A Pivot Platform
+  Logical_source: imap_lo_l1a_pcc
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
 imap_lo_l1b_badtimes:
   <<: *instrument_base
   Data_type: L1B_badtimes>Level-1B Badtimes
@@ -63,6 +81,18 @@ imap_lo_l1b_prostar:
   <<: *instrument_base
   Data_type: L1B_prostar>Level-1B Processed Star Sensor
   Logical_source: imap_lo_l1b_prostar
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
+imap_lo_l1b_nhk:
+  <<: *instrument_base
+  Data_type: L1B_star>Level-1B Nominal Housekeeping
+  Logical_source: imap_lo_l1b_nhk
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
+imap_lo_l1b_shk:
+  <<: *instrument_base
+  Data_type: L1B_star>Level-1B Static Housekeeping
+  Logical_source: imap_lo_l1b_shk
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
 
 imap_lo_l1c_goodtimes:

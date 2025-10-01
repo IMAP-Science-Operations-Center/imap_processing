@@ -1,19 +1,24 @@
 "Tests pointing sets"
 
+from unittest import mock
+
 import astropy_healpix.healpy as hp
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
+    get_deadtime_interpolator,
+    get_deadtime_ratios,
     get_energy_delta_minus_plus,
     get_helio_background_rates,
     get_helio_exposure_times,
-    get_helio_histogram,
     get_helio_sensitivity,
+    get_sectored_rates,
     get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
@@ -123,31 +128,6 @@ def mock_imap_state(time, ref_frame):
     return np.array([0, 0, 0, 0, 0, 0])
 
 
-def test_get_helio_histogram(monkeypatch, test_data):
-    """Tests get_helio_histogram function."""
-    v, energy = test_data
-
-    monkeypatch.setattr(ultra_l1c_pset_bins, "imap_state", mock_imap_state)
-
-    energy_bin_edges, _, _ = build_energy_bins()
-    subset_energy_bin_edges = energy_bin_edges[:3]
-
-    start_time = 829485054.185627
-    end_time = 829567884.185627
-
-    mid_time = np.average([start_time, end_time])
-
-    hist_helio, _, _, n_pix = get_helio_histogram(
-        mid_time, v, energy, subset_energy_bin_edges, nside=1
-    )
-
-    hist_sc, _, _, n_pix = get_spacecraft_histogram(
-        v, energy, subset_energy_bin_edges, nside=1
-    )
-
-    assert np.array_equal(hist_helio, hist_sc)
-
-
 def test_get_spacecraft_background_rates():
     """Tests get_background_rates function."""
     background_rates = get_spacecraft_background_rates(nside=128)
@@ -162,14 +142,115 @@ def test_get_helio_background_rates():
     assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
 
 
+def test_get_sectored_rates():
+    """Tests get_sectored_rates function."""
+
+    # Simulate a test rates dataset.
+    epoch = 60
+    test_l1a_rates_dataset = xr.Dataset(
+        {
+            "test_data": (["epoch"], np.arange(epoch)),
+        },
+    )
+    # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
+    # each time the mode changes, it is recorded in the params packet.
+    # Create a test params dataset that simulates the mode changing to 3, 3 times.
+    modes = np.tile(np.array([1, 3]), 3)
+    test_l1a_params_dataset = xr.Dataset(
+        {
+            "imageratescadence": (["epoch"], modes),
+        },
+        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+    )
+    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
+    np.testing.assert_array_equal(
+        sectored_rates["test_data"].data,
+        np.hstack([np.arange(10, 20), np.arange(30, 40), np.arange(50, 60)]),
+    )
+
+    # Test with one mode shift in the middle of the dataset.
+    modes = np.array([1, 3, 1])
+    test_l1a_params_dataset = xr.Dataset(
+        {
+            "imageratescadence": (["epoch"], modes),
+        },
+        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+    )
+    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
+    np.testing.assert_array_equal(sectored_rates["test_data"].data, np.arange(20, 40))
+
+
+def test_get_deadtime_ratios():
+    """Tests get_deadtime_correction_factors function."""
+    # Simulate a test sectored rates dataset.
+    epoch = 10
+    sectored_rates_ds = xr.Dataset(
+        {
+            "fifo_valid_events": (["epoch"], np.random.randint(100, 200, epoch)),
+            "event_active_time": (["epoch"], np.random.uniform(0, 10, epoch)),
+            "start_pos": (["epoch"], np.random.randint(0, 5, epoch)),
+            "start_rf": (["epoch"], np.random.randint(0, 5, epoch)),
+            "start_lf": (["epoch"], np.random.randint(0, 5, epoch)),
+            "coin_tn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "coin_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "stop_tn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+        }
+    )
+    deadtime_correction_factors = get_deadtime_ratios(sectored_rates_ds)
+    assert deadtime_correction_factors.shape == (sectored_rates_ds.sizes["epoch"],)
+    assert np.all(deadtime_correction_factors >= 0)
+
+
+def test_get_deadtime_interpolator():
+    """Tests get_deadtime_correction_factors function."""
+
+    sector_rate_seconds = 20 * 60  # 20 minutes in seconds
+    num_sectors = 3  # Number of sectors per pointing
+    num_spins = sector_rate_seconds * num_sectors / 15  # 15 seconds per spin
+    num_deadtimes = int(
+        num_spins * 15
+    )  # 15 sectors per spin. One deadtime ratio per sector
+
+    deadtime_ratios = xr.DataArray(
+        np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
+    )
+    spin_phases = np.random.random(deadtime_ratios.shape)
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
+    ) as mock_spin_phases:
+        mock_spin_phases.return_value = spin_phases
+        interpolator = get_deadtime_interpolator(
+            deadtime_ratios, np.ones_like(deadtime_ratios)
+        )
+    assert callable(interpolator)
+    deadtime = interpolator(180)
+    assert (deadtime >= 0) & (deadtime < 1)
+
+    # Assert value error is raised for NaN values
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
+    ) as mock_spin_phases:
+        mock_spin_phases.return_value = spin_phases
+        with pytest.raises(
+            ValueError,
+            match="Dead time ratios contain NaN values, cannot create interpolator.",
+        ):
+            get_deadtime_interpolator(
+                np.nan * deadtime_ratios, np.ones_like(deadtime_ratios)
+            )
+
+
 @pytest.mark.external_test_data
-def test_get_spacecraft_exposure_times():
+def test_get_spacecraft_exposure_times(deadtime_datasets):
     """Test get_spacecraft_exposure_times function."""
     constant_exposure = (
         TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
     )
+    rates = deadtime_datasets["rates"]
+    params = deadtime_datasets["params"]
     df_exposure = pd.read_csv(constant_exposure)
-    exposure_pointing = get_spacecraft_exposure_times(df_exposure)
+    exposure_pointing = get_spacecraft_exposure_times(df_exposure, rates, params)
     assert exposure_pointing.shape == (196608,)
 
     np.testing.assert_allclose(
@@ -180,8 +261,7 @@ def test_get_spacecraft_exposure_times():
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_get_helio_exposure_times():
+def test_get_helio_exposure_times(imap_ena_sim_metakernel):
     """Tests get_helio_exposure_times function."""
 
     start_time = 829485054.185627
@@ -200,10 +280,10 @@ def test_get_helio_exposure_times():
 
     nside = 128
     npix = hp.nside2npix(nside)
-    assert helio_exposure.shape == (npix, len(energy_midpoints))
+    assert helio_exposure.shape == (len(energy_midpoints), npix)
 
     total_input = np.sum(df_exposure["Exposure Time"].values)
-    total_output = np.sum(helio_exposure[:, 23])
+    total_output = np.sum(helio_exposure[23, :])
 
     assert np.allclose(total_input, total_output, atol=1e-6)
 
@@ -258,8 +338,7 @@ def test_get_spacecraft_sensitivity():
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_get_helio_sensitivity(monkeypatch):
+def test_get_helio_sensitivity(monkeypatch, imap_ena_sim_metakernel):
     """Test get_helio_sensitivity function."""
 
     # Load test data
@@ -282,7 +361,7 @@ def test_get_helio_sensitivity(monkeypatch):
     for energy in energy_midpoints:
         s = grid_sensitivity(df_efficiencies, df_geometric_function, energy)
         sc_sensitivity.append(s)
-    sc_sensitivity = np.stack(sc_sensitivity, axis=1)  # shape: (npix, n_energy_bins)
+    sc_sensitivity = np.stack(sc_sensitivity, axis=1).T  # shape: (n_energy_bins, npix)
 
     # Compute helio-frame sensitivity
     helio_sensitivity = get_helio_sensitivity(

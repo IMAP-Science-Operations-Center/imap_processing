@@ -185,7 +185,7 @@ def ancillary_dict():
     return dictionary
 
 
-def test_histogram_mapping():
+def test_histogram_mapping(mock_ancillary_exclusions, mock_ancillary_parameters):
     time_val = 1111111.11
     # A = 2.318
     # B = 69.5454
@@ -221,6 +221,8 @@ def test_histogram_mapping():
                 time_val,
                 time_val,
                 time_val,
+                mock_ancillary_exclusions,
+                mock_ancillary_parameters,
             )
         ).values()
     )
@@ -231,7 +233,9 @@ def test_histogram_mapping():
     assert output[10] - expected_temp < 0.1
 
 
-def test_process_histogram(hist_dataset):
+def test_process_histogram(
+    hist_dataset, mock_ancillary_exclusions, mock_ancillary_parameters
+):
     time_val = np.single(1111111.11)
     # A = 2.318
     # B = 69.5454
@@ -264,9 +268,13 @@ def test_process_histogram(hist_dataset):
         time_val,
         time_val,
         time_val,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
     )
 
-    output = process_histogram(hist_dataset)
+    output = process_histogram(
+        hist_dataset, mock_ancillary_exclusions, mock_ancillary_parameters
+    )
     assert len(output) == len(dataclasses.asdict(test_l1b))
 
 
@@ -288,8 +296,14 @@ def test_process_de(de_dataset, ancillary_dict):
     assert np.isclose(output[8].data[0], expected_temp)
 
 
-def test_glows_l1b(de_dataset, hist_dataset):
-    hist_output = glows_l1b(hist_dataset)
+def test_glows_l1b(de_dataset, hist_dataset, mock_ancillary_exclusions):
+    hist_output = glows_l1b(
+        hist_dataset,
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
 
     assert hist_output["histogram"].dims == ("epoch", "bins")
     assert hist_output["histogram"].shape == (20, 3600)
@@ -341,7 +355,13 @@ def test_glows_l1b(de_dataset, hist_dataset):
     for key in expected_hist_data:
         assert key in hist_output
 
-    de_output = glows_l1b(de_dataset)
+    de_output = glows_l1b(
+        de_dataset,
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
 
     # From table 15 in the algorithm document
     expected_de_data = [
@@ -363,15 +383,29 @@ def test_glows_l1b(de_dataset, hist_dataset):
         assert key in de_output
 
 
-def test_generate_histogram_dataset(hist_dataset):
-    l1b_data = glows_l1b(hist_dataset)
+def test_generate_histogram_dataset(hist_dataset, mock_ancillary_exclusions):
+    # Create mock ancillary objects
+
+    l1b_data = glows_l1b(
+        hist_dataset,
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
     output_path = write_cdf(l1b_data)
 
     assert Path.exists(output_path)
 
 
-def test_generate_de_dataset(de_dataset):
-    l1b_data = glows_l1b(de_dataset)
+def test_generate_de_dataset(de_dataset, mock_ancillary_exclusions):
+    l1b_data = glows_l1b(
+        de_dataset,
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
 
     output_path = write_cdf(l1b_data)
 

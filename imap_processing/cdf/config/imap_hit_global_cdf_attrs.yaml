@@ -17,11 +17,17 @@ imap_hit_l1a_hk:
     Logical_source: imap_hit_l1a_hk
     Logical_source_description: IMAP Mission HIT Instrument Level-1A Housekeeping Data.
 
-imap_hit_l1a_counts:
+imap_hit_l1a_counts-standard:
     <<: *instrument_base
-    Data_type: L1A_counts>Level-1A Counts
-    Logical_source: imap_hit_l1a_counts
-    Logical_source_description: IMAP Mission HIT Instrument Level-1A Count Rates Data.
+    Data_type: L1A_counts>Level-1A Standard Counts
+    Logical_source: imap_hit_l1a_counts-standard
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Standard Count Rates Data.
+
+imap_hit_l1a_counts-sectored:
+    <<: *instrument_base
+    Data_type: L1A_counts>Level-1A Sectored Counts
+    Logical_source: imap_hit_l1a_counts-sectored
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Sectored Count Rates Data.
 
 imap_hit_l1a_direct-events:
     <<: *instrument_base

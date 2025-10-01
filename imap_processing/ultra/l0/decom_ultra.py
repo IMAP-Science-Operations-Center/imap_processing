@@ -1,6 +1,7 @@
 """Decommutates Ultra CCSDS packets."""
 
 import logging
+import math
 from collections import defaultdict
 from typing import cast
 
@@ -29,7 +30,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_PRI_3_EVENTS,
     ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF,
+    PacketProperties,
 )
 from imap_processing.utils import convert_to_binary_string
 
@@ -37,7 +38,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
+def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Dataset:
     """
     Unpack and decode Ultra TOF packets.
 
@@ -45,6 +46,9 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
     ----------
     ds : xarray.Dataset
         TOF dataset.
+    packet_props : PacketProperties
+        Information that defines properties of the packet including the pixel window
+        dimensions of images and number of image panes.
 
     Returns
     -------
@@ -53,14 +57,35 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
     """
     scalar_keys = [key for key in ds.data_vars if key not in ("packetdata", "sid")]
 
+    image_planes = packet_props.image_planes
+    rows = packet_props.pixel_window_rows
+    cols = packet_props.pixel_window_columns
+    planes_per_packet = packet_props.image_planes_per_packet
+
+    if (
+        image_planes is None
+        or rows is None
+        or cols is None
+        or planes_per_packet is None
+    ):
+        raise ValueError(
+            "Packet properties must specify pixel window dimensions, "
+            "width bit, image planes, and image planes per packet for this packet type."
+        )
+    # Calculate the number of image packets based on the number of image panes and
+    # planes per packet.
+    # There may be cases where the last packet has fewer planes than the
+    # planes_per_packet, to account for this, we use ceiling division.
+    num_image_packets = math.ceil(image_planes / planes_per_packet)
+
     decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
     decom_data["packetdata"] = []
     valid_epoch = []
-    width = cast(int, ULTRA_TOF.width)
-    mantissa_bit_length = cast(int, ULTRA_TOF.mantissa_bit_length)
 
     for val, group in ds.groupby("epoch"):
-        if set(group["sid"].values) >= set(range(8)):
+        if set(group["sid"].values) >= set(
+            np.arange(0, image_planes, planes_per_packet)
+        ):
             valid_epoch.append(val)
             group.sortby("sid")
 
@@ -68,13 +93,12 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
                 decom_data[key].append(group[key].values)
 
             image = []
-            for i in range(8):
+            for i in range(num_image_packets):
                 binary = convert_to_binary_string(group["packetdata"].values[i])
                 decompressed = decompress_image(
                     group["p00"].values[i],
                     binary,
-                    width,
-                    mantissa_bit_length,
+                    packet_props,
                 )
                 image.append(decompressed)
 
@@ -87,9 +111,9 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
 
     coords = {
         "epoch": np.array(valid_epoch, dtype=np.uint64),
-        "sid": xr.DataArray(np.arange(8), dims=["sid"], name="sid"),
-        "row": xr.DataArray(np.arange(54), dims=["row"], name="row"),
-        "column": xr.DataArray(np.arange(180), dims=["column"], name="column"),
+        "sid": xr.DataArray(np.arange(num_image_packets), dims=["sid"], name="sid"),
+        "row": xr.DataArray(np.arange(rows), dims=["row"], name="row"),
+        "column": xr.DataArray(np.arange(cols), dims=["column"], name="column"),
     }
 
     dataset = xr.Dataset(coords=coords)
@@ -391,5 +415,40 @@ def process_ultra_cmd_echo(ds: xr.Dataset) -> xr.Dataset:
     )
 
     ds = ds.drop_vars(["args", "result"])
+
+    return ds
+
+
+def process_ultra_macros_checksum(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra MACROS CHECKSUM packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Dataset containing macro checksums.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset with unpacked and decoded checksum values.
+    """
+    # big endian uint16
+    packed_dtype = np.dtype(">u2")
+    fill = np.iinfo(packed_dtype).max
+    n_epochs = ds.sizes["epoch"]
+    max_len = 256
+
+    checksum_array = np.full((n_epochs, max_len), fill)
+
+    for i, checksum in enumerate(ds["checksums"]):
+        checksum_array[i, :] = np.frombuffer(checksum.item(), dtype=packed_dtype)
+
+    ds["checksum"] = xr.DataArray(
+        checksum_array,
+        dims=["epoch", "checksum_index"],
+        coords={"epoch": ds["epoch"], "checksum_index": np.arange(max_len)},
+    )
+    ds = ds.drop_vars(["checksums"])
 
     return ds

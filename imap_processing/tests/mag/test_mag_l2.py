@@ -1,36 +1,37 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
-from imap_processing.mag.l2.mag_l2_data import MagL2
-from imap_processing.spice.time import et_to_datetime64, et_to_utc, ttj2000ns_to_et
+from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
+from imap_processing.spice.time import (
+    et_to_datetime64,
+    et_to_ttj2000ns,
+    et_to_utc,
+    str_to_et,
+    ttj2000ns_to_et,
+)
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
-
-
-@pytest.fixture
-def norm_dataset(mag_test_l2_data):
-    offsets = mag_test_l2_data[1]
-    dataset = mag_l1a_dataset_generator(3504)
-    epoch_vals = offsets["epoch"].data
-    vectors_per_second_attr = "0:2,4000000000:4"
-    dataset.attrs["vectors_per_second"] = vectors_per_second_attr
-    dataset["epoch"] = epoch_vals
-    dataset.attrs["Logical_source"] = "imap_mag_l1c_norm-mago"
-    vectors = np.array([[i, i, i, 2] for i in range(1, 3505)])
-    dataset["vectors"].data = vectors
-
-    return dataset
 
 
 def test_mag_l2(norm_dataset, mag_test_l2_data):
     calibration_dataset = mag_test_l2_data[0]
 
     offset_dataset = mag_test_l2_data[1]
-    l2 = mag_l2(
-        calibration_dataset, offset_dataset, norm_dataset, np.datetime64("2025-10-17")
-    )
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        side_effect=lambda *args, **kwargs: args[1],
+    ):
+        l2 = mag_l2(
+            calibration_dataset,
+            offset_dataset,
+            norm_dataset,
+            np.datetime64("2025-10-17"),
+        )
     assert "vectors" in l2[0].data_vars
 
 
@@ -38,13 +39,13 @@ def test_offset_application(norm_dataset, mag_test_l2_data):
     # Test against zeros
     offsets = mag_test_l2_data[1]
     output = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        norm_dataset["epoch"].data,
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        None,
-        None,
-        None,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=norm_dataset["epoch"].data,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=None,
+        quality_bitmask=None,
+        data_mode=DataMode.NORM,
         offsets=offsets["offsets"].data,
         timedelta=offsets["timedeltas"].data,
     )
@@ -70,13 +71,13 @@ def test_offset_application(norm_dataset, mag_test_l2_data):
     expected_timeshift[2] = expected_timeshift[2] + 1
 
     output = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        norm_dataset["epoch"].data,
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        None,
-        None,
-        None,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=norm_dataset["epoch"].data,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=None,
+        quality_bitmask=None,
+        data_mode=None,
         offsets=new_offsets,
         timedelta=new_timeshift,
     )
@@ -111,6 +112,50 @@ def test_error_raises(mag_test_l2_data):
         )
 
 
+def test_midnight_boundary(norm_dataset):
+    day = np.datetime64("2025-10-17").astype("datetime64[D]")
+
+    # Shift timestamps to include midnight in the day and span 2 days
+    shifted_timestamps = norm_dataset["epoch"].data - 1.08e13  # 3 hours in ns
+    shifted_timestamps = shifted_timestamps + 2496981986944
+
+    midnight = et_to_ttj2000ns(str_to_et("2025-10-17T00:00:00"))
+
+    l2 = MagL2(
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=shifted_timestamps,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    l2.truncate_to_24h(day)
+
+    # Midnight should be included in the start of the day
+    assert l2.epoch[0] == midnight
+
+    l2 = MagL2(
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=shifted_timestamps,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    l2.truncate_to_24h(day - 1)
+
+    # midnight not included in previous day
+    assert midnight not in l2.epoch
+
+
 @pytest.mark.parametrize(
     ("time_shift", "start_diff", "end_diff"),
     # 3 hours in ns
@@ -126,16 +171,17 @@ def test_timestamp_truncation(
     day = np.datetime64("2025-10-17").astype("datetime64[D]")
     shifted_timestamps = norm_dataset["epoch"].data + time_shift
     l2 = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        shifted_timestamps,
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        np.zeros(len(norm_dataset["epoch"].data)),
-        np.zeros(len(norm_dataset["epoch"].data)),
-        DataMode.NORM,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=shifted_timestamps,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
         offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
         timedelta=np.zeros(len(norm_dataset["epoch"].data)),
     )
+
     first_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[0]))).astype(
         "datetime64[D]"
     )
@@ -270,3 +316,60 @@ def test_retrieve_matrix_from_l2_calibration(is_mago, data_var):
         example_calibration_dataset.sel(epoch=test_day)[data_var].data,
         calibration_matrix,
     )
+
+
+def test_spice_returns(norm_dataset):
+    l2 = MagL2(
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=norm_dataset["epoch"].data,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    assert l2.frame.name == "MAG"
+
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        return_value=np.full(l2.vectors.shape, [-1, -1, -1]),
+    ):
+        l2.rotate_frame(ValidFrames.DSRF)
+        assert l2.frame.name == "DSRF"
+        assert not np.array_equal(l2.vectors, norm_dataset["vectors"].data[:, :3])
+        assert np.array_equal(l2.vectors[0], [-1, -1, -1])
+
+
+def test_qf(norm_dataset):
+    qf = np.zeros(len(norm_dataset["epoch"].data), dtype=int)
+    qf[1:4] = 1
+
+    qf_bitmask = np.zeros(len(norm_dataset["epoch"].data), dtype=int)
+    qf_bitmask[2] = 1
+    qf_bitmask[5:8] = 2
+    l2 = MagL2(
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=norm_dataset["epoch"],
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=qf,
+        quality_bitmask=qf_bitmask,
+        data_mode=DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    l2.frame = ValidFrames.SRF
+    attributes = ImapCdfAttributes()
+    attributes.add_instrument_global_attrs("mag")
+    attributes.add_instrument_variable_attrs("mag", "l2")
+
+    output = l2.generate_dataset(attributes, np.datetime64("2025-10-17"))
+
+    assert "quality_flags" in output.data_vars
+    assert "quality_bitmask" in output.data_vars
+    assert np.array_equal(output["quality_flags"].data, qf)
+    assert np.array_equal(output["quality_bitmask"].data, qf_bitmask)

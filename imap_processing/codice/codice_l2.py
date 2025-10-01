@@ -45,16 +45,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     # TODO: Could clean this up by using imap-data-access methods?
     dataset_name = l1_dataset.attrs["Logical_source"]
     data_level = dataset_name.removeprefix("imap_codice_").split("_")[0]
-    descriptor = dataset_name.removeprefix(f"imap_codice_{data_level}_")
     dataset_name = dataset_name.replace(data_level, "l2")
-
-    # TODO: Temporary work-around to replace "PHA" naming convention with
-    #       "direct events" This will eventually be changed at the L1 level and
-    #       thus this will eventually be removed.
-    if descriptor == "lo-pha":
-        dataset_name = dataset_name.replace("lo-pha", "lo-direct-events")
-    elif descriptor == "hi-pha":
-        dataset_name = dataset_name.replace("hi-pha", "hi-direct-events")
 
     # Use the L1 data product as a starting point for L2
     l2_dataset = l1_dataset.copy()

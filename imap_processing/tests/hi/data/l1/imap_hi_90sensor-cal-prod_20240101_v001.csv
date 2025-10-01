@@ -6,7 +6,7 @@
 # https://imap-processing.readthedocs.io/en/latest/data-access/calibration-files.html
 #
 # When creating PSET products, the following table will be used to filter the list
-# of DEs into the into calibration product categories at each ESA energy step. Only
+# of DEs into calibration product categories at each ESA energy step. Only
 # DEs with coincidence type contained in the `coincidence_type_list` and time-of-flight
 # values that are in the inclusive range specified by the low and high entries for each
 # energy step are included in the angular pset bins.

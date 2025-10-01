@@ -11,7 +11,6 @@ from imap_processing.ialirt.l0.ialirt_spice import (
     get_z_axis,
     transform_instrument_vectors_to_inertial,
 )
-from imap_processing.spice.kernels import ensure_spice
 
 
 def test_get_z_axis():
@@ -149,11 +148,9 @@ def test_compute_total_rotation():
     np.testing.assert_allclose(output_vector, expected, atol=1e-9)
 
 
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 @pytest.mark.external_kernel
-@ensure_spice
 def test_transform_instrument_vectors_to_inertial(
-    use_test_metakernel, spice_test_data_path
+    imap_ena_sim_metakernel, spice_test_data_path
 ):
     """Test transform_instrument_vectors_to_inertial function."""
 
@@ -218,12 +215,9 @@ def test_transform_instrument_vectors_to_inertial(
     )
 
 
-@pytest.mark.use_test_metakernel("imap_ialirt_sim_metakernel.template")
 @pytest.mark.external_kernel
-@ensure_spice
-def test_no_attitude():
+def test_no_attitude(imap_ialirt_sim_metakernel):
     """Test transform_instrument_vectors_to_inertial function."""
-
     ra = 0.3653037895099079
     dec = 4.440892098775276e-16
 
