@@ -629,10 +629,13 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
         The HAE latitude for each spin and off angle bin.
     """
     et = ttj2000ns_to_et(epoch)
+    # create a meshgrid of spin and off angles using the bin centers
     spin, off = np.meshgrid(
         SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
     )
     dps_az_el = np.stack([spin, off], axis=-1)
+
+    # Transform from DPS Az/El to HAE lon/lat
     hae_az_el = frame_transform_az_el(
         et, dps_az_el, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000, degrees=True
     ).transpose(1, 0, 2)
