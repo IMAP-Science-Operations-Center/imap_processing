@@ -192,7 +192,9 @@ def expected_bg():
 
 @patch("imap_processing.lo.l1c.lo_l1c.set_background_rates")
 @patch("imap_processing.lo.l1c.lo_l1c.filter_goodtimes")
+@patch("imap_processing.lo.l1c.lo_l1c.set_pointing_directions")
 def test_lo_l1c(
+    mock_set_pointing_directions,
     mock_filter_goodtimes,
     mock_set_background_rates,
     l1b_de_spin,
@@ -207,6 +209,10 @@ def test_lo_l1c(
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
     mock_set_background_rates.return_value = (None, None, None)
     mock_filter_goodtimes.return_value = l1b_de_spin
+    mock_set_pointing_directions.return_value = (
+        xr.DataArray(np.zeros((3600, 40)), dims=("spin_angle", "off_angle")),
+        xr.DataArray(np.zeros((3600, 40)), dims=("spin_angle", "off_angle")),
+    )
     expected_logical_source = "imap_lo_l1c_pset"
 
     # Act
