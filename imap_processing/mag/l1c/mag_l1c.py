@@ -63,7 +63,7 @@ def mag_l1c(
     )
 
     interp_function = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
-    if normal_mode_dataset and burst_mode_dataset:
+    if burst_mode_dataset is not None:
         full_interpolated_timeline = process_mag_l1c(
             normal_mode_dataset, burst_mode_dataset, interp_function
         )
@@ -72,41 +72,7 @@ def mag_l1c(
             normal_mode_dataset, normal_mode_dataset["epoch"].data
         )
     else:
-        day_start_ns = et_to_ttj2000ns(
-            str_to_et(
-                str(day_to_process.astype("datetime64[s]") - np.timedelta64(30, "m"))
-            )
-        )
-        day_end_ns = et_to_ttj2000ns(
-            str_to_et(
-                str(
-                    day_to_process.astype("datetime64[s]")
-                    + np.timedelta64(1, "D")
-                    + np.timedelta64(30, "m")
-                )
-            )
-        )
-
-        gaps = np.array(
-            [
-                [
-                    day_start_ns,
-                    day_end_ns,
-                    VecSec.TWO_VECS_PER_S.value,
-                ]
-            ]
-        )
-        norm_epoch = [day_start_ns, day_end_ns]
-
-        new_timeline = generate_timeline(norm_epoch, gaps)
-        norm_filled = fill_normal_data(normal_mode_dataset, new_timeline)
-
-        full_interpolated_timeline = interpolate_gaps(
-            burst_mode_dataset,
-            gaps,
-            norm_filled,
-            interp_function,
-        )
+        raise ValueError("At least one of norm or burst dataset must be provided.")
 
     completed_timeline = remove_missing_data(full_interpolated_timeline)
 
@@ -306,7 +272,7 @@ def select_datasets(
 
 
 def process_mag_l1c(
-    normal_mode_dataset: xr.Dataset,
+    normal_mode_dataset: xr.Dataset | None,
     burst_mode_dataset: xr.Dataset,
     interpolation_function: InterpolationFunction,
     day_to_process: np.datetime64 | None = None,
@@ -346,35 +312,43 @@ def process_mag_l1c(
     np.ndarray
         An (n, 8) shaped array containing the completed timeline.
     """
-    norm_epoch = normal_mode_dataset["epoch"].data
-    if "vectors_per_second" in normal_mode_dataset.attrs:
-        normal_vecsec_dict = vectors_per_second_from_string(
-            normal_mode_dataset.attrs["vectors_per_second"]
-        )
-    else:
-        normal_vecsec_dict = None
-
-    output_dataset = normal_mode_dataset.copy(deep=True)
-    output_dataset["sample_interpolated"] = xr.DataArray(
-        np.zeros(len(normal_mode_dataset))
-    )
     day_start_ns = None
     day_end_ns = None
 
     if day_to_process is not None:
-        day_start = day_to_process.astype("datetime64[s]") - np.timedelta64(15, "m")
+        day_start = day_to_process.astype("datetime64[s]") - np.timedelta64(30, "m")
 
-        # get the end of the day plus 15 minutes
+        # get the end of the day plus 30 minutes
         day_end = (
             day_to_process.astype("datetime64[s]")
             + np.timedelta64(1, "D")
-            + np.timedelta64(15, "m")
+            + np.timedelta64(30, "m")
         )
 
         day_start_ns = et_to_ttj2000ns(str_to_et(str(day_start)))
         day_end_ns = et_to_ttj2000ns(str_to_et(str(day_end)))
 
-    gaps = find_all_gaps(norm_epoch, normal_vecsec_dict, day_start_ns, day_end_ns)
+    if normal_mode_dataset:
+        norm_epoch = normal_mode_dataset["epoch"].data
+        if "vectors_per_second" in normal_mode_dataset.attrs:
+            normal_vecsec_dict = vectors_per_second_from_string(
+                normal_mode_dataset.attrs["vectors_per_second"]
+            )
+        else:
+            normal_vecsec_dict = None
+
+        gaps = find_all_gaps(norm_epoch, normal_vecsec_dict, day_start_ns, day_end_ns)
+    else:
+        norm_epoch = [day_start_ns, day_end_ns]
+        gaps = np.array(
+            [
+                [
+                    day_start_ns,
+                    day_end_ns,
+                    VecSec.TWO_VECS_PER_S.value,
+                ]
+            ]
+        )
 
     new_timeline = generate_timeline(norm_epoch, gaps)
     norm_filled = fill_normal_data(normal_mode_dataset, new_timeline)
@@ -417,7 +391,6 @@ def fill_normal_data(
     # TODO: fill with FILLVAL
     filled_timeline: np.ndarray = np.zeros((len(new_timeline), 8))
     filled_timeline[:, 0] = new_timeline
-    # filled_timeline[:, 1:5] =
     # Flags, will also indicate any missed timestamps
     filled_timeline[:, 5] = ModeFlags.MISSING.value
 
