@@ -65,7 +65,7 @@ def mag_l1c(
     interp_function = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
     if burst_mode_dataset is not None:
         full_interpolated_timeline = process_mag_l1c(
-            normal_mode_dataset, burst_mode_dataset, interp_function
+            normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process
         )
     elif normal_mode_dataset is not None:
         full_interpolated_timeline = fill_normal_data(
