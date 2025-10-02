@@ -74,7 +74,7 @@ def mag_l1c(
     else:
         day_start_ns = et_to_ttj2000ns(
             str_to_et(
-                str(day_to_process.astype("datetime64[s]") - np.timedelta64(15, "m"))
+                str(day_to_process.astype("datetime64[s]") - np.timedelta64(30, "m"))
             )
         )
         day_end_ns = et_to_ttj2000ns(
@@ -82,7 +82,7 @@ def mag_l1c(
                 str(
                     day_to_process.astype("datetime64[s]")
                     + np.timedelta64(1, "D")
-                    + np.timedelta64(15, "m")
+                    + np.timedelta64(30, "m")
                 )
             )
         )
