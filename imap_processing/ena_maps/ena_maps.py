@@ -87,7 +87,7 @@ def match_coords_to_indices(
     This function always "pushes" the pixels of the input object to corresponding pixels
     in the output object's unwrapped rectangular grid or healpix tessellation;
     however, by swapping the input and output objects, one can apply the "pull" method
-    of index  matching.
+    of index matching.
 
     At present, the allowable inputs are either:
     - A PointingSet object and a SkyMap object, in either order of input/output.
@@ -100,8 +100,6 @@ def match_coords_to_indices(
         An object containing spatial pixel centers in azimuth and elevation,
         which will be matched to 1D indices of spatial pixels in the output frame.
         Must contain the Spice frame in which the pixel centers are defined.
-        If the input object has multi-dimensional az_el_points (as xr.DataArray),
-        the dimensions will be preserved in the output indices.
     output_object : PointingSet | AbstractSkyMap
         The object containing a grid or tessellation of spatial pixels
         into which the input spatial pixel centers will 'land', and be matched to
@@ -116,14 +114,13 @@ def match_coords_to_indices(
 
     Returns
     -------
-    flat_indices_input_grid_output_frame : NDArray | xr.DataArray
+    flat_indices_input_grid_output_frame : xr.DataArray
         Array of pixel indices mapping each input object pixel center to a pixel
-        in the output object. If the input object has multi-dimensional coordinates
-        defined (az_el_points is an xr.DataArray), the output will be an xr.DataArray
-        with dimension labels preserved. The shape of the output array is (..., n)
-        where ... matches the non-spatial dimensions of the input object and n is the
-        number of spatial pixels in the input object. Output indices may contain 0, 1,
-        or multiple occurrences of the same output index.
+        in the output object. The output xr.DataArray will have the same leading
+        dimension labels preserved. The shape of the output array is (..., n)
+        where ... matches the non-spatial dimensions of the input object, and n
+        is the number of spatial pixels in the input object. Output indices may
+        contain 0, 1, or multiple occurrences of the same output index.
 
     Raises
     ------
@@ -154,12 +151,6 @@ def match_coords_to_indices(
 
     # Az/El pixel center coords of the input object in its own frame
     input_obj_az_el_input_frame = input_object.az_el_points
-
-    # Check if az_el_points is an xarray.DataArray to preserve dimension information
-    is_xarray = isinstance(input_obj_az_el_input_frame, xr.DataArray)
-    if is_xarray:
-        # Extract dimensions (all but the last az_el_coord dimension)
-        input_dims = input_obj_az_el_input_frame.dims[:-1]
 
     # Transform the input pixel centers to the output frame
     input_obj_az_el_output_frame = geometry.frame_transform_az_el(
@@ -213,13 +204,13 @@ def match_coords_to_indices(
             f"Received: {output_object.tiling_type}"
         )
 
-    # If input was an xarray.DataArray, wrap the output indices in a DataArray
-    # with the same dimensions to preserve broadcasting information
-    if is_xarray:
-        flat_indices_input_grid_output_frame = xr.DataArray(
-            flat_indices_input_grid_output_frame,
-            dims=input_dims,
-        )
+    # Wrap the output indices in a DataArray with the same leading dimensions as
+    # the input object az_el_points to preserve broadcasting information
+    input_dims = input_obj_az_el_input_frame.dims[:-1]
+    flat_indices_input_grid_output_frame = xr.DataArray(
+        flat_indices_input_grid_output_frame,
+        dims=input_dims,
+    )
 
     return flat_indices_input_grid_output_frame
 
@@ -620,30 +611,25 @@ class LoHiBasePointingSet(PointingSet):
 
     tiling_type: SkyTilingType = SkyTilingType.RECTANGULAR
 
-    def update_az_el_points(
-        self, az_variable: xr.DataArray, el_variable: xr.DataArray
-    ) -> None:
+    def update_az_el_points(self) -> None:
         """
         Update the az_el_points instance variable with new az/el coordinates.
 
-        Parameters
-        ----------
-        az_variable : xarray.DataArray
-            Azimuth coordinates with PSET coordinates unchanged. The leading
-            dimensions are the non-spatial dimensions (epoch, energy, etc.), and
-            the final dimension(s) are the spatial dimension(s).
-        el_variable : xarray.DataArray
-            Elevation coordinates with PSET coordinates unchanged. Dimensions
-            match those of az_variable.
+        The values store in the "hae_longitude" and "hae_latitude" variables
+        are used to construct the azimuth and elevation coordinates.
         """
         # Get lon/lat coordinates, squeeze the epoch dimension and stack along
         # the spatial dimensions. xarray.stack() takes possibly multiple spatial
         # dimensions and reshapes those into a single dimension.
-        az_stacked = az_variable.squeeze("epoch").stack(
-            {CoordNames.GENERIC_PIXEL.value: self.spatial_coords}
+        az_stacked = (
+            self.data["hae_longitude"]
+            .squeeze("epoch")
+            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
         )
-        el_stacked = el_variable.squeeze("epoch").stack(
-            {CoordNames.GENERIC_PIXEL.value: self.spatial_coords}
+        el_stacked = (
+            self.data["hae_latitude"]
+            .squeeze("epoch")
+            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
         )
 
         # Stack lon/lat along last axis to create shape (..., 2)
@@ -701,7 +687,7 @@ class HiPointingSet(LoHiBasePointingSet):
         self.spatial_coords = ("spin_angle_bin",)
 
         # Update az_el_points using the base class method
-        self.update_az_el_points(self.data["hae_longitude"], self.data["hae_latitude"])
+        self.update_az_el_points()
 
 
 class LoPointingSet(LoHiBasePointingSet):
@@ -720,7 +706,7 @@ class LoPointingSet(LoHiBasePointingSet):
         self.spatial_coords = ("spin_angle", "off_angle")
 
         # Update az_el_points using the base class method
-        self.update_az_el_points(self.data["hae_longitude"], self.data["hae_latitude"])
+        self.update_az_el_points()
 
 
 # Define the Map classes
@@ -754,10 +740,10 @@ class AbstractSkyMap(ABC):
     max_epoch: int
 
     # ======== Attributes required to be set in a subclass ========
-    # Azimuth and elevation coordinates of each spatial pixel. The ndarray should
-    # have the shape (n, 2) where n is the number of spatial pixels.
+    # Azimuth and elevation coordinates of each spatial pixel. The xarray.DataArray
+    # should have the shape (n, 2) where n is the number of spatial pixels.
     # Always a simple numpy array for maps (no need for multi-dimensional coords).
-    az_el_points: np.ndarray
+    az_el_points: xr.DataArray
     # Type of sky tiling
     tiling_type: SkyTilingType
     # Dictionary of xr.DataArray objects for each non-spatial coordinate in the SkyMap
@@ -1179,7 +1165,10 @@ class RectangularSkyMap(AbstractSkyMap):
         el_points = self.sky_grid.el_grid.ravel()
 
         # Stack so axis 0 is different pixels, and axis 1 is (az, el) of the pixel
-        self.az_el_points = np.column_stack((az_points, el_points))
+        self.az_el_points = xr.DataArray(
+            np.column_stack((az_points, el_points)),
+            dims=[CoordNames.GENERIC_PIXEL.value, "az_el_coord"],
+        )
 
         # Calculate solid angles of each pixel in the map grid in units of steradians
         self.solid_angle_grid = spatial_utils.build_solid_angle_map(
@@ -1490,7 +1479,10 @@ class HealpixSkyMap(AbstractSkyMap):
             nside=nside, ipix=np.arange(hp.nside2npix(nside)), nest=nested, lonlat=True
         )
         # Stack so axis 0 is different pixels, and axis 1 is (az, el) of the pixel
-        self.az_el_points = np.column_stack((pixel_az, pixel_el))
+        self.az_el_points = xr.DataArray(
+            np.column_stack((pixel_az, pixel_el)),
+            dims=[CoordNames.GENERIC_PIXEL.value, "az_el_coord"],
+        )
 
         self.spatial_coords = {
             CoordNames.HEALPIX_INDEX.value: xr.DataArray(
@@ -1826,7 +1818,7 @@ class HealpixSkyMap(AbstractSkyMap):
                     value_array=healpix_values_array,
                     max_subdivision_depth=max_subdivision_depth,
                 )
-                for lon_lat in rect_map.az_el_points
+                for lon_lat in rect_map.az_el_points.values
             ]
 
             # Separate the best value and the recursion depth for each pixel

@@ -294,6 +294,39 @@ class TestLoPointingSet:
 class TestLoHiBasePointingSet:
     """Test suite for LoHiBasePointingSet class and its subclasses."""
 
+    @staticmethod
+    def create_hi_pset_with_multidim_coords(
+        hi_pset_cdf_path: str, shape: tuple[int, int, int] = (1, 9, 3600)
+    ) -> ena_maps.HiPointingSet:
+        """
+        Create a HiPointingSet with multi-dimensional coordinates.
+
+        Parameters
+        ----------
+        hi_pset_cdf_path : str
+            Path to the Hi PSET CDF file.
+        shape : tuple[int, int, int], optional
+            Shape of the coordinates (epoch, hf_energy, spin_angle_bin).
+            Default is (1, 9, 3600).
+
+        Returns
+        -------
+        ena_maps.HiPointingSet
+            HiPointingSet with multi-dimensional az_el_points.
+        """
+        pset_ds = load_cdf(hi_pset_cdf_path)
+        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
+        hi_pset.data["hae_longitude"] = xr.DataArray(
+            np.random.uniform(0, 360, shape),
+            dims=["epoch", "hf_energy", "spin_angle_bin"],
+        )
+        hi_pset.data["hae_latitude"] = xr.DataArray(
+            np.random.uniform(-90, 90, shape),
+            dims=["epoch", "hf_energy", "spin_angle_bin"],
+        )
+        hi_pset.update_az_el_points()
+        return hi_pset
+
     def test_hi_az_el_points_is_dataarray(self, hi_pset_cdf_path):
         """Test that HiPointingSet.az_el_points is an xarray.DataArray."""
         hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
@@ -335,22 +368,7 @@ class TestLoHiBasePointingSet:
 
     def test_update_az_el_points_multidimensional(self, hi_pset_cdf_path):
         """Test update_az_el_points with multi-dimensional coordinates."""
-        pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
-
-        # Create mock multi-dimensional coordinates with an energy dimension
-        # Shape: (epoch, hf_energy, spin_angle_bin) = (1, 9, 3600)
-        mock_lon = xr.DataArray(
-            np.random.uniform(0, 360, (1, 9, 3600)),
-            dims=["epoch", "hf_energy", "spin_angle_bin"],
-        )
-        mock_lat = xr.DataArray(
-            np.random.uniform(-90, 90, (1, 9, 3600)),
-            dims=["epoch", "hf_energy", "spin_angle_bin"],
-        )
-
-        # Update az_el_points with multi-dimensional coordinates
-        hi_pset.update_az_el_points(mock_lon, mock_lat)
+        hi_pset = self.create_hi_pset_with_multidim_coords(hi_pset_cdf_path)
 
         # Verify az_el_points is still a DataArray
         assert isinstance(hi_pset.az_el_points, xr.DataArray)
@@ -371,19 +389,7 @@ class TestLoHiBasePointingSet:
             lambda et, az_el, from_frame, to_frame, degrees: az_el
         )
 
-        pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
-
-        # Create multi-dimensional az_el_points (energy, pixel, az_el_coord)
-        mock_lon = xr.DataArray(
-            np.random.uniform(0, 360, (1, 9, 3600)),
-            dims=["epoch", "hf_energy", "spin_angle_bin"],
-        )
-        mock_lat = xr.DataArray(
-            np.random.uniform(-90, 90, (1, 9, 3600)),
-            dims=["epoch", "hf_energy", "spin_angle_bin"],
-        )
-        hi_pset.update_az_el_points(mock_lon, mock_lat)
+        hi_pset = self.create_hi_pset_with_multidim_coords(hi_pset_cdf_path)
 
         # Create a rectangular map
         rect_map = ena_maps.RectangularSkyMap(
@@ -400,8 +406,7 @@ class TestLoHiBasePointingSet:
 
     def test_broadcasting_with_multidim_pset(self, hi_pset_cdf_path):
         """Test xr broadcasting in project_pset_values_to_map with multi-dim PSET."""
-        pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
+        hi_pset = self.create_hi_pset_with_multidim_coords(hi_pset_cdf_path)
 
         # Add a mock multi-dimensional variable to the PSET
         # Shape: (epoch, hf_energy, spin_angle_bin)
@@ -409,17 +414,6 @@ class TestLoHiBasePointingSet:
             np.random.uniform(0, 100, (1, 9, 3600)),
             dims=["epoch", "hf_energy", "spin_angle_bin"],
         )
-
-        # Create multi-dimensional az_el_points
-        mock_lon = xr.DataArray(
-            np.random.uniform(0, 360, (1, 9, 3600)),
-            dims=["epoch", "hf_energy", "spin_angle_bin"],
-        )
-        mock_lat = xr.DataArray(
-            np.random.uniform(-90, 90, (1, 9, 3600)),
-            dims=["epoch", "hf_energy", "spin_angle_bin"],
-        )
-        hi_pset.update_az_el_points(mock_lon, mock_lat)
 
         # Create a rectangular map
         rect_map = ena_maps.RectangularSkyMap(
@@ -1390,20 +1384,23 @@ class TestIndexMatching:
             self.rectangular_l1c_pset_products[0],
             spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
         )
-        manual_az_el_coords = np.array(
-            [
-                [0, -90],  # always -> RectangularSkyMap pixel 0
-                [0.4999999, -90],
-                [180.5, -89.5],
-                [359.5, -89.5],
-                [0.5, 0],
-                [180.5, 0],
-                [359.5, 0],
-                [0.5, 89.5],
-                [180.5, 89.5],
-                [359.5, 89.5],
-                [359.999999, 89.99999],
-            ]
+        manual_az_el_coords = xr.DataArray(
+            np.array(
+                [
+                    [0, -90],  # always -> RectangularSkyMap pixel 0
+                    [0.4999999, -90],
+                    [180.5, -89.5],
+                    [359.5, -89.5],
+                    [0.5, 0],
+                    [180.5, 0],
+                    [359.5, 0],
+                    [0.5, 89.5],
+                    [180.5, 89.5],
+                    [359.5, 89.5],
+                    [359.999999, 89.99999],
+                ]
+            ),
+            dims=["pixel", "az_el_coords"],
         )
         mock_pset_input_frame.az_el_points = manual_az_el_coords
 
@@ -1458,23 +1455,26 @@ class TestIndexMatching:
             spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
         )
         # Create multi-dimensional az_el coordinates
-        multi_dim_az_el_coords = np.array(
-            [
-                list(
-                    zip(
-                        np.linspace(0, 359.9, 20),
-                        np.linspace(-90, 89.9, 20),
-                        strict=False,
-                    )
-                ),
-                list(
-                    zip(
-                        np.linspace(359.9, 0, 20),
-                        np.linspace(89.9, -90, 20),
-                        strict=False,
-                    )
-                ),
-            ]
+        multi_dim_az_el_coords = xr.DataArray(
+            np.array(
+                [
+                    list(
+                        zip(
+                            np.linspace(0, 359.9, 20),
+                            np.linspace(-90, 89.9, 20),
+                            strict=False,
+                        )
+                    ),
+                    list(
+                        zip(
+                            np.linspace(359.9, 0, 20),
+                            np.linspace(89.9, -90, 20),
+                            strict=False,
+                        )
+                    ),
+                ]
+            ),
+            dims=["energy", "pixel", "az_el_coords"],
         )
         mock_pset_input_frame.az_el_points = multi_dim_az_el_coords
 
@@ -1485,7 +1485,7 @@ class TestIndexMatching:
             [
                 (az // map_spacing_deg) * (180 // map_spacing_deg)
                 + ((90 + el) // map_spacing_deg)
-                for [az, el] in multi_dim_az_el_coords.reshape(-1, 2)
+                for [az, el] in multi_dim_az_el_coords.values.reshape(-1, 2)
             ]
         ).reshape(2, -1)
 
@@ -1510,7 +1510,9 @@ class TestIndexMatching:
         )
         assert healpix_indices.shape == expected_output_pixel.shape
         # indices should be reversed in the second set
-        np.testing.assert_equal(healpix_indices[0, :], healpix_indices[1, ::-1])
+        np.testing.assert_equal(
+            healpix_indices.values[0, :], healpix_indices.values[1, ::-1]
+        )
 
     @pytest.mark.parametrize(
         "nside,degree_tolerance",
