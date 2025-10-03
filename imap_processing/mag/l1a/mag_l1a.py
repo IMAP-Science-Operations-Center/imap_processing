@@ -188,7 +188,7 @@ def process_packets(
             secondary_packet_data.start_time,
         )
 
-        # Sort primary and secondary into MAGo and MAGi by 24 hour chunks
+        # Sort primary and secondary into MAGo and MAGi
 
         if mago is None:
             mago = MagL1a(
