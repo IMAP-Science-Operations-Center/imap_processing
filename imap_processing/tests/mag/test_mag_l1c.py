@@ -564,9 +564,9 @@ def test_gap_detection_timeline_generation_workflow():
         * 1e9
     )
 
-    assert np.array_equal(
-        new_timeline, expected_timeline
-    ), f"Expected timeline {expected_timeline}, got {new_timeline}"
+    assert np.array_equal(new_timeline, expected_timeline), (
+        f"Expected timeline {expected_timeline}, got {new_timeline}"
+    )
 
     # Step 3: Fill the new timeline with normal mode data
     norm_filled = fill_normal_data(dataset, new_timeline)
@@ -574,14 +574,14 @@ def test_gap_detection_timeline_generation_workflow():
     # Verify output shape: (n_timestamps, 8) where 8 = [epoch, x, y, z, range, flag,
     # comp1, comp2]
     expected_shape = (len(new_timeline), 8)
-    assert (
-        norm_filled.shape == expected_shape
-    ), f"Expected shape {expected_shape}, got {norm_filled.shape}"
+    assert norm_filled.shape == expected_shape, (
+        f"Expected shape {expected_shape}, got {norm_filled.shape}"
+    )
 
     # Verify timestamps match new_timeline
-    assert np.array_equal(
-        norm_filled[:, 0], new_timeline
-    ), "Timeline column should match new_timeline"
+    assert np.array_equal(norm_filled[:, 0], new_timeline), (
+        "Timeline column should match new_timeline"
+    )
 
     # Verify original data points are correctly filled
     original_indices = [0, 1, 2, 3, 8, 9, 10, 13, 14]  # Indices of original data in
@@ -604,19 +604,19 @@ def test_gap_detection_timeline_generation_workflow():
     gap_indices = [4, 5, 6, 7, 11, 12]  # Indices of gap-fill timestamps in new timeline
     for gap_idx in gap_indices:
         # Check vectors are zero (no data filled yet)
-        assert np.all(
-            norm_filled[gap_idx, 1:5] == 0
-        ), f"Gap timestamp {gap_idx} should have zero vectors"
+        assert np.all(norm_filled[gap_idx, 1:5] == 0), (
+            f"Gap timestamp {gap_idx} should have zero vectors"
+        )
 
         # Check flag is set to MISSING (-1)
-        assert (
-            norm_filled[gap_idx, 5] == ModeFlags.MISSING.value
-        ), f"Gap timestamp {gap_idx} should have MISSING flag"
+        assert norm_filled[gap_idx, 5] == ModeFlags.MISSING.value, (
+            f"Gap timestamp {gap_idx} should have MISSING flag"
+        )
 
         # Check compression flags are zero
-        assert np.all(
-            norm_filled[gap_idx, 6:8] == 0
-        ), f"Gap timestamp {gap_idx} should have zero compression flags"
+        assert np.all(norm_filled[gap_idx, 6:8] == 0), (
+            f"Gap timestamp {gap_idx} should have zero compression flags"
+        )
 
     # Test with multiple vector rates
     # Create dataset with rate transition at t=3s
@@ -635,9 +635,9 @@ def test_gap_detection_timeline_generation_workflow():
 
     # Verify the workflow completes successfully with multiple rates
     assert norm_filled_multi.shape[1] == 8, "Multi-rate output should have 8 columns"
-    assert len(norm_filled_multi) >= len(
-        original_epoch
-    ), "Multi-rate output should include all original data"
+    assert len(norm_filled_multi) >= len(original_epoch), (
+        "Multi-rate output should include all original data"
+    )
 
 
 def test_fill_normal_data(mag_l1b_dataset):
@@ -793,9 +793,9 @@ def test_cic_filter():
 
     # Test Case 7: Test vector shape preservation (should work with 3-component vectors)
     assert vectors_filtered.shape[1] == 3, "Output vectors should maintain 3 components"
-    assert (
-        vectors_filtered_8hz.shape[1] == 3
-    ), "Output vectors should maintain 3 components"
+    assert vectors_filtered_8hz.shape[1] == 3, (
+        "Output vectors should maintain 3 components"
+    )
 
     # Test Case 8: Test delay compensation consistency
     # The delay should be consistently applied to both timestamps and vectors
@@ -803,9 +803,9 @@ def test_cic_filter():
         # Verify that timestamps are properly aligned with filtered vectors
         original_timestamp_spacing = input_timestamps[1] - input_timestamps[0]
         filtered_timestamp_spacing = timestamps_filtered[1] - timestamps_filtered[0]
-        assert (
-            filtered_timestamp_spacing == original_timestamp_spacing
-        ), "Timestamp spacing should be preserved after filtering"
+        assert filtered_timestamp_spacing == original_timestamp_spacing, (
+            "Timestamp spacing should be preserved after filtering"
+        )
 
 
 def test_estimate_rate():
