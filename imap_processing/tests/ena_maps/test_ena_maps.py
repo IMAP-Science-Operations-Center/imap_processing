@@ -1293,6 +1293,77 @@ class TestIndexMatching:
             atol=map_spacing_deg,
         )
 
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_match_coords_to_indices_multi_dimensional_input(
+        self, mock_frame_transform_az_el
+    ):
+        """Test that match_coords_to_indices works for multi-dimensional arrays."""
+        map_spacing_deg = 6
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        # Mock a PSET, overriding the az/el points
+        mock_pset_input_frame = ena_maps.RectangularPointingSet(
+            self.rectangular_l1c_pset_products[0],
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+        # Create multi-dimensional az_el coordinates
+        multi_dim_az_el_coords = np.array(
+            [
+                list(
+                    zip(
+                        np.linspace(0, 359.9, 20),
+                        np.linspace(-90, 89.9, 20),
+                        strict=False,
+                    )
+                ),
+                list(
+                    zip(
+                        np.linspace(359.9, 0, 20),
+                        np.linspace(89.9, -90, 20),
+                        strict=False,
+                    )
+                ),
+            ]
+        )
+        mock_pset_input_frame.az_el_points = multi_dim_az_el_coords
+
+        # Manually calculate the resulting 1D pixel indices for each az/el pair
+        # (num of pixels in an az row spanning 180 deg of elevation) * (current az row)
+        # + (pixel along in current az row)
+        expected_output_pixel = np.array(
+            [
+                (az // map_spacing_deg) * (180 // map_spacing_deg)
+                + ((90 + el) // map_spacing_deg)
+                for [az, el] in multi_dim_az_el_coords.reshape(-1, 2)
+            ]
+        ).reshape(2, -1)
+
+        # Create the rectangular map and check the output values
+        rect_map = ena_maps.RectangularSkyMap(
+            spacing_deg=map_spacing_deg,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+        flat_indices_input_grid_output_frame = ena_maps.match_coords_to_indices(
+            mock_pset_input_frame, rect_map
+        )
+        np.testing.assert_equal(
+            flat_indices_input_grid_output_frame, expected_output_pixel
+        )
+
+        # Test that healpix binning also works with multi-dimensional input
+        healpix_map = ena_maps.HealpixSkyMap(
+            nside=32, spice_frame=geometry.SpiceFrame.ECLIPJ2000, nested=False
+        )
+        healpix_indices = ena_maps.match_coords_to_indices(
+            mock_pset_input_frame, healpix_map
+        )
+        assert healpix_indices.shape == expected_output_pixel.shape
+        # indices should be reversed in the second set
+        np.testing.assert_equal(healpix_indices[0, :], healpix_indices[1, ::-1])
+
     @pytest.mark.parametrize(
         "nside,degree_tolerance",
         [

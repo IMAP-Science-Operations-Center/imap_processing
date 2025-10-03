@@ -97,7 +97,7 @@ def match_coords_to_indices(
     Parameters
     ----------
     input_object : PointingSet | AbstractSkyMap
-        An object containing 1D spatial pixel centers in azimuth and elevation,
+        An object containing spatial pixel centers in azimuth and elevation,
         which will be matched to 1D indices of spatial pixels in the output frame.
         Must contain the Spice frame in which the pixel centers are defined.
     output_object : PointingSet | AbstractSkyMap
@@ -115,10 +115,13 @@ def match_coords_to_indices(
     Returns
     -------
     flat_indices_input_grid_output_frame : NDArray
-        1D array of pixel indices of the output object corresponding to each pixel in
-        the input object. The length of the array is equal to the number of pixels in
-        the input object, and may contain 0, 1, or multiple occurrences of the same
-        output index.
+        Array of pixel indices mapping each input object pixel center to a pixel
+        in the output object. If the input object has multi-dimensional coordinates
+        defined, the output indices will also be multi-dimensional. The shape of
+        the output array is (..., n) where ... matches the non-spatial dimensions
+        of the input object and n is the number of spatial pixels in the input
+        object. Output indices may contain 0, 1, or multiple occurrences of the
+        same output index.
 
     Raises
     ------
@@ -166,14 +169,14 @@ def match_coords_to_indices(
         # use ravel_multi_index to get the 1D indices of the pixels in the output frame.
         az_indices = (
             np.digitize(
-                input_obj_az_el_output_frame[:, 0],
+                input_obj_az_el_output_frame[..., 0],
                 output_object.sky_grid.az_bin_edges,
             )
             - 1
         )
         el_indices = (
             np.digitize(
-                input_obj_az_el_output_frame[:, 1],
+                input_obj_az_el_output_frame[..., 1],
                 output_object.sky_grid.el_bin_edges,
             )
             - 1
@@ -191,8 +194,8 @@ def match_coords_to_indices(
         # which directly returns the index on the output frame's Healpix tessellation.
         flat_indices_input_grid_output_frame = hp.ang2pix(
             nside=output_object.nside,
-            theta=input_obj_az_el_output_frame[:, 0],  # Lon in degrees
-            phi=input_obj_az_el_output_frame[:, 1],  # Lat in degrees
+            theta=input_obj_az_el_output_frame[..., 0],  # Lon in degrees
+            phi=input_obj_az_el_output_frame[..., 1],  # Lat in degrees
             nest=output_object.nested,
             lonlat=True,
         )

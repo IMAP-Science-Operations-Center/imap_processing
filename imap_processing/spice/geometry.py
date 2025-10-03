@@ -129,7 +129,7 @@ def imap_state(
     -------
     state : np.ndarray
      The Cartesian state vector representing the position and velocity of the
-     IMAP spacecraft.
+     IMAP spacecraft. Units are km and km/s.
     """
     state, _ = spiceypy.spkezr(
         SpiceBody.IMAP.name, et, ref_frame.name, abcorr, observer.name
@@ -323,6 +323,7 @@ def frame_transform_az_el(
         Ephemeris time(s) corresponding to position(s).
     az_el :  np.ndarray
         <azimuth, elevation> vector or array of vectors in reference frame `from_frame`.
+        Azimuth and elevation pairs are always the final dimension of the array.
         There are several possible shapes for the input az_el and et:
         1. A single az_el vector may be provided for multiple `et` query times
         2. A single `et` may be provided for multiple az_el vectors,
@@ -340,15 +341,16 @@ def frame_transform_az_el(
     to_frame_az_el : np.ndarray
         Azimuth/elevation coordinates in reference frame `to_frame`. This
         output coordinate vector will have shape (2,) if a single `az_el` position
-        vector and single `et` time are input. Otherwise, it will have shape (n, 2)
-        where n is the number of input position vector or ephemeris times. The last
-        axis of the output vector contains azimuth in the 0th position and elevation
-        in the 1st position.
+        vector and single `et` time are input. Otherwise, it will have shape (..., 2)
+        where ... matches the leading dimensions of the input position vector or
+        ephemeris times. The last axis of the output vector contains azimuth in
+        the 0th position and elevation in the 1st position.
     """
     # Convert input az/el to Cartesian vectors
-    spherical_coords_in = np.array(
-        [np.ones_like(az_el[..., 0]), az_el[..., 0], az_el[..., 1]]
-    ).T
+    spherical_coords_in = np.stack(
+        [np.ones_like(az_el[..., 0]), az_el[..., 0], az_el[..., 1]],
+        axis=-1,
+    )
     from_frame_cartesian = spherical_to_cartesian(spherical_coords_in)
     # Transform to to_frame
     to_frame_cartesian = frame_transform(et, from_frame_cartesian, from_frame, to_frame)
@@ -531,7 +533,7 @@ def cartesian_to_spherical(
         az = np.degrees(az)
         el = np.degrees(el)
 
-    spherical_coords = np.stack((np.squeeze(magnitude_v), az, el), axis=-1)
+    spherical_coords = np.stack((np.squeeze(magnitude_v, -1), az, el), axis=-1)
 
     return spherical_coords
 

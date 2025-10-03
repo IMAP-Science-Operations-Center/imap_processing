@@ -2001,7 +2001,7 @@ class TestIntegrationWithMocks:
             assert isinstance(result[0], xr.Dataset)
 
             # Mock the rates calculation to return the dataset unchanged
-            mock_calc_rates.side_effect = lambda x: x
+            mock_calc_rates.side_effect = lambda x, **kwargs: x
 
             # Run the function - should not crash
             result = lo_l2(sci_dependencies, anc_dependencies, descriptor)
