@@ -183,16 +183,24 @@ def mag_l1c(
         attrs=attribute_manager.get_variable_attributes("vector_attrs"),
     )
 
-    output_dataset["vector_magnitude"] = xr.apply_ufunc(
-        lambda x: np.linalg.norm(x[:4]),
-        output_dataset["vectors"],
-        input_core_dims=[["direction"]],
-        output_core_dims=[[]],
-        vectorize=True,
-    )
-    output_dataset[
-        "vector_magnitude"
-    ].attrs = attribute_manager.get_variable_attributes("vector_magnitude_attrs")
+    if len(output_dataset["vectors"]) > 0:
+        output_dataset["vector_magnitude"] = xr.apply_ufunc(
+            lambda x: np.linalg.norm(x[:4]),
+            output_dataset["vectors"],
+            input_core_dims=[["direction"]],
+            output_core_dims=[[]],
+            vectorize=True,
+        )
+        output_dataset[
+            "vector_magnitude"
+        ].attrs = attribute_manager.get_variable_attributes("vector_magnitude_attrs")
+    else:
+        output_dataset["vector_magnitude"] = xr.DataArray(
+            np.empty((0, 1)),
+            name="vector_magnitude",
+            dims=["epoch", "vector_magnitude"],
+            attrs=attribute_manager.get_variable_attributes("vector_magnitude_attrs"),
+        )
 
     output_dataset["compression_flags"] = xr.DataArray(
         completed_timeline[:, 6:8],
