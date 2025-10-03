@@ -73,7 +73,7 @@ def match_coords_to_indices(
     input_object: PointingSet | AbstractSkyMap,
     output_object: PointingSet | AbstractSkyMap,
     event_et: float | None = None,
-) -> NDArray:
+) -> NDArray | xr.DataArray:
     """
     Find the output indices corresponding to each input coord between 2 spatial objects.
 
@@ -100,6 +100,8 @@ def match_coords_to_indices(
         An object containing spatial pixel centers in azimuth and elevation,
         which will be matched to 1D indices of spatial pixels in the output frame.
         Must contain the Spice frame in which the pixel centers are defined.
+        If the input object has multi-dimensional az_el_points (as xr.DataArray),
+        the dimensions will be preserved in the output indices.
     output_object : PointingSet | AbstractSkyMap
         The object containing a grid or tessellation of spatial pixels
         into which the input spatial pixel centers will 'land', and be matched to
@@ -114,14 +116,14 @@ def match_coords_to_indices(
 
     Returns
     -------
-    flat_indices_input_grid_output_frame : NDArray
+    flat_indices_input_grid_output_frame : NDArray | xr.DataArray
         Array of pixel indices mapping each input object pixel center to a pixel
         in the output object. If the input object has multi-dimensional coordinates
-        defined, the output indices will also be multi-dimensional. The shape of
-        the output array is (..., n) where ... matches the non-spatial dimensions
-        of the input object and n is the number of spatial pixels in the input
-        object. Output indices may contain 0, 1, or multiple occurrences of the
-        same output index.
+        defined (az_el_points is an xr.DataArray), the output will be an xr.DataArray
+        with dimension labels preserved. The shape of the output array is (..., n)
+        where ... matches the non-spatial dimensions of the input object and n is the
+        number of spatial pixels in the input object. Output indices may contain 0, 1,
+        or multiple occurrences of the same output index.
 
     Raises
     ------
@@ -152,6 +154,12 @@ def match_coords_to_indices(
 
     # Az/El pixel center coords of the input object in its own frame
     input_obj_az_el_input_frame = input_object.az_el_points
+
+    # Check if az_el_points is an xarray.DataArray to preserve dimension information
+    is_xarray = isinstance(input_obj_az_el_input_frame, xr.DataArray)
+    if is_xarray:
+        # Extract dimensions (all but the last az_el_coord dimension)
+        input_dims = input_obj_az_el_input_frame.dims[:-1]
 
     # Transform the input pixel centers to the output frame
     input_obj_az_el_output_frame = geometry.frame_transform_az_el(
@@ -205,6 +213,14 @@ def match_coords_to_indices(
             f"Received: {output_object.tiling_type}"
         )
 
+    # If input was an xarray.DataArray, wrap the output indices in a DataArray
+    # with the same dimensions to preserve broadcasting information
+    if is_xarray:
+        flat_indices_input_grid_output_frame = xr.DataArray(
+            flat_indices_input_grid_output_frame,
+            dims=input_dims,
+        )
+
     return flat_indices_input_grid_output_frame
 
 
@@ -239,9 +255,10 @@ class PointingSet(ABC):
     spice_reference_frame: geometry.SpiceFrame
 
     # ======== Attributes required to be set in a subclass ========
-    # Azimuth and elevation coordinates of each spatial pixel. The ndarray should
-    # have the shape (n, 2) where n is the number of spatial pixels
-    az_el_points: np.ndarray
+    # Azimuth and elevation coordinates of each spatial pixel. Must be an
+    # xr.DataArray with dimensions (..., spatial_dim, az_el_coord) to preserve
+    # dimension labels
+    az_el_points: xr.DataArray
     # Tuple containing the names of each spatial coordinate of the xarray.Dataset
     # stored in the data attribute
     spatial_coords: tuple[str, ...]
@@ -277,7 +294,7 @@ class PointingSet(ABC):
         num_points: int
             The number of spatial pixels in the pointing set.
         """
-        return self.az_el_points.shape[0]
+        return self.az_el_points.shape[-2]
 
     @property
     def epoch(self) -> int:
@@ -433,11 +450,12 @@ class RectangularPointingSet(PointingSet):
         # into shape (number of points in tiling of the sky, 2) where
         # column 0 (az_el_points[:, 0]) is the azimuth of that point and
         # column 1 (az_el_points[:, 1]) is the elevation of that point.
-        self.az_el_points = np.column_stack(
-            (
-                self.sky_grid.az_grid.ravel(),
-                self.sky_grid.el_grid.ravel(),
-            )
+        self.az_el_points = xr.DataArray(
+            np.stack(
+                (self.sky_grid.az_grid.ravel(), self.sky_grid.el_grid.ravel()),
+                axis=-1,
+            ),
+            dims=[CoordNames.GENERIC_PIXEL.value, "az_el_coord"],
         )
 
 
@@ -543,8 +561,9 @@ class UltraPointingSet(HealpixPointingSet):
         # The coordinates of the healpix pixel centers are stored as a 2D array
         # of shape (num_points, 2) where column 0 is the lon/az
         # and column 1 is the lat/el.
-        self.az_el_points = np.column_stack(
-            (azimuth_pixel_center, elevation_pixel_center)
+        self.az_el_points = xr.DataArray(
+            np.stack((azimuth_pixel_center, elevation_pixel_center), axis=-1),
+            dims=[CoordNames.GENERIC_PIXEL.value, "az_el_coord"],
         )
 
     @property
@@ -634,13 +653,25 @@ class HiPointingSet(PointingSet):
             self.data["exposure_factor"], self.data["epoch"].values[0]
         )
 
-        self.az_el_points = np.column_stack(
-            (
-                np.squeeze(self.data["hae_longitude"]),
-                np.squeeze(self.data["hae_latitude"]),
-            )
-        )
         self.spatial_coords = ("spin_angle_bin",)
+
+        # Get lon/lat coordinates and squeeze the epoch dimension
+        hae_lon = (
+            self.data["hae_longitude"]
+            .squeeze("epoch")
+            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
+        )
+        hae_lat = (
+            self.data["hae_latitude"]
+            .squeeze("epoch")
+            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
+        )
+
+        # Stack lon/lat along last axis to create shape (..., 2)
+        self.az_el_points = xr.DataArray(
+            np.stack([hae_lon.values, hae_lat.values], axis=-1),
+            dims=[*hae_lon.dims, "az_el_coord"],
+        )
 
 
 class LoPointingSet(PointingSet):
@@ -656,14 +687,23 @@ class LoPointingSet(PointingSet):
     def __init__(self, dataset: xr.Dataset):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_HAE)
 
-        # The HAE centers are stored in the pset as (1, 3600, 40) arrays
-        self.az_el_points = np.column_stack(
-            (
-                np.squeeze(self.data["hae_longitude"]).values.ravel(),
-                np.squeeze(self.data["hae_latitude"]).values.ravel(),
-            )
-        )
         self.spatial_coords = ("spin_angle", "off_angle")
+
+        # The HAE centers are stored in the pset as (1, 3600, 40) arrays
+        hae_lon = (
+            self.data["hae_longitude"]
+            .squeeze("epoch")
+            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
+        )
+        hae_lat = (
+            self.data["hae_latitude"]
+            .squeeze("epoch")
+            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
+        )
+        self.az_el_points = xr.DataArray(
+            np.stack([hae_lon.values, hae_lat.values], axis=-1),
+            dims=[*hae_lon.dims, "az_el_coord"],
+        )
 
 
 # Define the Map classes
@@ -698,7 +738,8 @@ class AbstractSkyMap(ABC):
 
     # ======== Attributes required to be set in a subclass ========
     # Azimuth and elevation coordinates of each spatial pixel. The ndarray should
-    # have the shape (n, 2) where n is the number of spatial pixels
+    # have the shape (n, 2) where n is the number of spatial pixels.
+    # Always a simple numpy array for maps (no need for multi-dimensional coords).
     az_el_points: np.ndarray
     # Type of sky tiling
     tiling_type: SkyTilingType
@@ -832,19 +873,11 @@ class AbstractSkyMap(ABC):
             )
 
         for value_key in value_keys:
-            pset_values = pointing_set.data[value_key]
-
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
-            non_spatial_axes_shape = tuple(
-                size
-                for key, size in pset_values.sizes.items()
-                if key not in pointing_set.spatial_coords
-            )
-            raveled_pset_data = pset_values.data.reshape(
-                *non_spatial_axes_shape,
-                pointing_set.num_points,
+            raveled_pset_data = pointing_set.data[value_key].stack(
+                {CoordNames.GENERIC_PIXEL.value: pointing_set.spatial_coords}
             )
 
             if value_key not in self.data_1d.data_vars:
@@ -867,10 +900,16 @@ class AbstractSkyMap(ABC):
             if index_match_method is IndexMatchMethod.PUSH:
                 # Bin the values at the matched indices. There may be multiple
                 # pointing set pixels that correspond to the same sky map pixel.
+                # Broadcast all arrays together using xarray dimension alignment
+                data_bc, indices_bc = xr.broadcast(
+                    raveled_pset_data, matched_indices_push
+                )
+
+                # Extract numpy arrays for bincount operation
                 pointing_projected_values = map_utils.bin_single_array_at_indices(
-                    value_array=raveled_pset_data,
+                    value_array=data_bc.values,
                     projection_grid_shape=self.binning_grid_shape,
-                    projection_indices=matched_indices_push,
+                    projection_indices=indices_bc.values,
                     input_valid_mask=pset_valid_mask,
                 )
                 # TODO: we may need to allow for unweighted/weighted means here by
@@ -882,7 +921,7 @@ class AbstractSkyMap(ABC):
                 valid_map_mask = pset_valid_mask[matched_indices_pull]
                 # We know that there will only be one value per sky map pixel,
                 # so we can use the matched indices directly
-                pointing_projected_values = raveled_pset_data[
+                pointing_projected_values = raveled_pset_data.values[
                     ..., matched_indices_pull[valid_map_mask]
                 ]
                 # TODO: we may need to allow for unweighted/weighted means here by
