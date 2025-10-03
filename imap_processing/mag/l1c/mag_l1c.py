@@ -126,20 +126,14 @@ def mag_l1c(
     global_attributes["missing_sequences"] = ""
 
     try:
-        global_attributes["is_mago"] = (
-            normal_mode_dataset or burst_mode_dataset
-        ).attrs["is_mago"]
-        global_attributes["is_active"] = (
-            normal_mode_dataset or burst_mode_dataset
-        ).attrs["is_active"]
+        active_dataset = normal_mode_dataset or burst_mode_dataset
+
+        global_attributes["is_mago"] = active_dataset.attrs["is_mago"]
+        global_attributes["is_active"] = active_dataset.attrs["is_active"]
 
         # Check if all vectors are primary in both normal and burst datasets
-        is_mago = (normal_mode_dataset or burst_mode_dataset).attrs.get(
-            "is_mago", "False"
-        ) == "True"
-        normal_all_primary = (normal_mode_dataset or burst_mode_dataset).attrs.get(
-            "all_vectors_primary", False
-        )
+        is_mago = active_dataset.attrs.get("is_mago", "False") == "True"
+        normal_all_primary = active_dataset.attrs.get("all_vectors_primary", False)
 
         # Default for missing burst dataset: 1 if MAGO (expected primary), 0 if MAGI
         burst_all_primary = is_mago
@@ -153,14 +147,14 @@ def mag_l1c(
             normal_all_primary and burst_all_primary
         )
 
-        global_attributes["missing_sequences"] = (
-            normal_mode_dataset or burst_mode_dataset
-        ).attrs["missing_sequences"]
+        global_attributes["missing_sequences"] = active_dataset.attrs[
+            "missing_sequences"
+        ]
     except KeyError as e:
         logger.info(
             f"Key error when assigning global attributes, attribute not found in "
             f"L1B file with logical source "
-            f"{(normal_mode_dataset or burst_mode_dataset).attrs['Logical_source']}: {e}"
+            f"{active_dataset.attrs['Logical_source']}: {e}"
         )
 
     global_attributes["interpolation_method"] = interp_function.name
