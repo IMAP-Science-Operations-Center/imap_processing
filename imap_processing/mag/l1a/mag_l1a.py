@@ -43,7 +43,7 @@ def mag_l1a(packet_filepath: Path) -> list[xr.Dataset]:
         A list of generated filenames.
     """
     packets = decom_mag.decom_packets(packet_filepath)
-
+    logging.info("Packet decoding complete, beginning L1A processing.")
     norm_data = packets["norm"]
     burst_data = packets["burst"]
 
