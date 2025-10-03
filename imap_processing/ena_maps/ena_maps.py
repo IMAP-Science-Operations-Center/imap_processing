@@ -294,6 +294,8 @@ class PointingSet(ABC):
         num_points: int
             The number of spatial pixels in the pointing set.
         """
+        # Last dimension is az/el vector, the second to last dimension is
+        # the number of pixels.
         return self.az_el_points.shape[-2]
 
     @property
