@@ -610,7 +610,50 @@ class UltraPointingSet(HealpixPointingSet):
         )
 
 
-class HiPointingSet(PointingSet):
+class LoHiBasePointingSet(PointingSet):
+    """
+    Base class for Lo and Hi pointing sets with HAE coordinate data.
+
+    This class provides common functionality for pointing sets that contain
+    hae_longitude and hae_latitude coordinates in the dataset.
+    """
+
+    tiling_type: SkyTilingType = SkyTilingType.RECTANGULAR
+
+    def update_az_el_points(
+        self, az_variable: xr.DataArray, el_variable: xr.DataArray
+    ) -> None:
+        """
+        Update the az_el_points instance variable with new az/el coordinates.
+
+        Parameters
+        ----------
+        az_variable : xarray.DataArray
+            Azimuth coordinates with PSET coordinates unchanged. The leading
+            dimensions are the non-spatial dimensions (epoch, energy, etc.), and
+            the final dimension(s) are the spatial dimension(s).
+        el_variable : xarray.DataArray
+            Elevation coordinates with PSET coordinates unchanged. Dimensions
+            match those of az_variable.
+        """
+        # Get lon/lat coordinates, squeeze the epoch dimension and stack along
+        # the spatial dimensions. xarray.stack() takes possibly multiple spatial
+        # dimensions and reshapes those into a single dimension.
+        az_stacked = az_variable.squeeze("epoch").stack(
+            {CoordNames.GENERIC_PIXEL.value: self.spatial_coords}
+        )
+        el_stacked = el_variable.squeeze("epoch").stack(
+            {CoordNames.GENERIC_PIXEL.value: self.spatial_coords}
+        )
+
+        # Stack lon/lat along last axis to create shape (..., 2)
+        self.az_el_points = xr.DataArray(
+            np.stack([az_stacked.values, el_stacked.values], axis=-1),
+            dims=[*az_stacked.dims, "az_el_coord"],
+        )
+
+
+class HiPointingSet(LoHiBasePointingSet):
     """
     PointingSet object specific to Hi L1C PSet data.
 
@@ -657,26 +700,11 @@ class HiPointingSet(PointingSet):
 
         self.spatial_coords = ("spin_angle_bin",)
 
-        # Get lon/lat coordinates and squeeze the epoch dimension
-        hae_lon = (
-            self.data["hae_longitude"]
-            .squeeze("epoch")
-            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
-        )
-        hae_lat = (
-            self.data["hae_latitude"]
-            .squeeze("epoch")
-            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
-        )
-
-        # Stack lon/lat along last axis to create shape (..., 2)
-        self.az_el_points = xr.DataArray(
-            np.stack([hae_lon.values, hae_lat.values], axis=-1),
-            dims=[*hae_lon.dims, "az_el_coord"],
-        )
+        # Update az_el_points using the base class method
+        self.update_az_el_points(self.data["hae_longitude"], self.data["hae_latitude"])
 
 
-class LoPointingSet(PointingSet):
+class LoPointingSet(LoHiBasePointingSet):
     """
     PointingSet object specific to Lo L1C PSet data.
 
@@ -691,21 +719,8 @@ class LoPointingSet(PointingSet):
 
         self.spatial_coords = ("spin_angle", "off_angle")
 
-        # The HAE centers are stored in the pset as (1, 3600, 40) arrays
-        hae_lon = (
-            self.data["hae_longitude"]
-            .squeeze("epoch")
-            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
-        )
-        hae_lat = (
-            self.data["hae_latitude"]
-            .squeeze("epoch")
-            .stack({CoordNames.GENERIC_PIXEL.value: self.spatial_coords})
-        )
-        self.az_el_points = xr.DataArray(
-            np.stack([hae_lon.values, hae_lat.values], axis=-1),
-            dims=[*hae_lon.dims, "az_el_coord"],
-        )
+        # Update az_el_points using the base class method
+        self.update_az_el_points(self.data["hae_longitude"], self.data["hae_latitude"])
 
 
 # Define the Map classes
