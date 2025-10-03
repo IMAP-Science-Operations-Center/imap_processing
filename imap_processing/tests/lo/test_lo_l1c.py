@@ -367,7 +367,9 @@ def test_set_pointing_directions():
     """Test the set_pointing_directions function."""
     # Mock the external dependencies
     mock_et = 123456789.0
-    mock_hae_az_el = np.full((3600, 40, 2), 1)  # spin_angle x off_angle x 2
+    mock_hae_az_el = np.stack(
+        np.meshgrid(np.arange(3600), np.arange(40), indexing="ij"), axis=-1
+    )  # spin_angle x off_angle x 2
     with (
         patch("imap_processing.lo.l1c.lo_l1c.ttj2000ns_to_et") as mock_ttj2000ns_to_et,
         patch(
@@ -427,7 +429,9 @@ def test_set_pointing_directions_meshgrid():
         ) as mock_frame_transform,
     ):
         mock_ttj2000ns_to_et.return_value = 123456789.0
-        mock_hae_az_el = np.full((3600, 40, 2), 1)  # spin_angle x off_angle x 2
+        mock_hae_az_el = np.stack(
+            np.meshgrid(np.arange(3600), np.arange(40), indexing="ij"), axis=-1
+        )  # spin_angle x off_angle x 2
         mock_frame_transform.return_value.transpose.return_value = mock_hae_az_el
 
         set_pointing_directions(1000000000.0)

@@ -637,7 +637,7 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
 
     # Transform from DPS Az/El to HAE lon/lat
     hae_az_el = frame_transform_az_el(
-        et, dps_az_el, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000, degrees=True
+        et, dps_az_el, SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_HAE, degrees=True
     ).transpose(1, 0, 2)
 
     return xr.DataArray(
