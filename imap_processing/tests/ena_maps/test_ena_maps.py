@@ -335,7 +335,7 @@ class TestLoHiBasePointingSet:
         assert isinstance(hi_pset.az_el_points, xr.DataArray)
 
         # Verify dimensions
-        assert hi_pset.az_el_points.dims == ("pixel", "az_el_coord")
+        assert hi_pset.az_el_points.dims == ("pixel", CoordNames.AZ_EL_VECTOR.value)
 
         # Verify shape
         assert hi_pset.az_el_points.shape == (3600, 2)
@@ -348,7 +348,7 @@ class TestLoHiBasePointingSet:
         assert isinstance(lo_pset.az_el_points, xr.DataArray)
 
         # Verify dimensions
-        assert lo_pset.az_el_points.dims == ("pixel", "az_el_coord")
+        assert lo_pset.az_el_points.dims == ("pixel", CoordNames.AZ_EL_VECTOR.value)
 
         # Verify shape
         assert lo_pset.az_el_points.shape == (144000, 2)
@@ -374,7 +374,11 @@ class TestLoHiBasePointingSet:
         assert isinstance(hi_pset.az_el_points, xr.DataArray)
 
         # Verify dimensions are preserved (epoch squeezed, pixel stacked)
-        assert hi_pset.az_el_points.dims == ("hf_energy", "pixel", "az_el_coord")
+        assert hi_pset.az_el_points.dims == (
+            "hf_energy",
+            "pixel",
+            CoordNames.AZ_EL_VECTOR.value,
+        )
 
         # Verify shape
         assert hi_pset.az_el_points.shape == (9, 3600, 2)

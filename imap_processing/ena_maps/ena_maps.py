@@ -448,7 +448,7 @@ class RectangularPointingSet(PointingSet):
                 (self.sky_grid.az_grid.ravel(), self.sky_grid.el_grid.ravel()),
                 axis=-1,
             ),
-            dims=[CoordNames.GENERIC_PIXEL.value, "az_el_coord"],
+            dims=[CoordNames.GENERIC_PIXEL.value, CoordNames.AZ_EL_VECTOR.value],
         )
 
 
@@ -556,7 +556,7 @@ class UltraPointingSet(HealpixPointingSet):
         # and column 1 is the lat/el.
         self.az_el_points = xr.DataArray(
             np.stack((azimuth_pixel_center, elevation_pixel_center), axis=-1),
-            dims=[CoordNames.GENERIC_PIXEL.value, "az_el_coord"],
+            dims=[CoordNames.GENERIC_PIXEL.value, CoordNames.AZ_EL_VECTOR.value],
         )
 
     @property
@@ -635,7 +635,7 @@ class LoHiBasePointingSet(PointingSet):
         # Stack lon/lat along last axis to create shape (..., 2)
         self.az_el_points = xr.DataArray(
             np.stack([az_stacked.values, el_stacked.values], axis=-1),
-            dims=[*az_stacked.dims, "az_el_coord"],
+            dims=[*az_stacked.dims, CoordNames.AZ_EL_VECTOR.value],
         )
 
 
@@ -1167,7 +1167,7 @@ class RectangularSkyMap(AbstractSkyMap):
         # Stack so axis 0 is different pixels, and axis 1 is (az, el) of the pixel
         self.az_el_points = xr.DataArray(
             np.column_stack((az_points, el_points)),
-            dims=[CoordNames.GENERIC_PIXEL.value, "az_el_coord"],
+            dims=[CoordNames.GENERIC_PIXEL.value, CoordNames.AZ_EL_VECTOR.value],
         )
 
         # Calculate solid angles of each pixel in the map grid in units of steradians
@@ -1481,7 +1481,7 @@ class HealpixSkyMap(AbstractSkyMap):
         # Stack so axis 0 is different pixels, and axis 1 is (az, el) of the pixel
         self.az_el_points = xr.DataArray(
             np.column_stack((pixel_az, pixel_el)),
-            dims=[CoordNames.GENERIC_PIXEL.value, "az_el_coord"],
+            dims=[CoordNames.GENERIC_PIXEL.value, CoordNames.AZ_EL_VECTOR.value],
         )
 
         self.spatial_coords = {

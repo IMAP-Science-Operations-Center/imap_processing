@@ -18,3 +18,6 @@ class CoordNames(Enum):
     ELEVATION_L1C = "latitude"
     AZIMUTH_L2 = "longitude"
     ELEVATION_L2 = "latitude"
+
+    # Common name for dimension along azimuth/elevation vector
+    AZ_EL_VECTOR = "az_el"
