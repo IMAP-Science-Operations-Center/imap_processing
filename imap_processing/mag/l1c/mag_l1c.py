@@ -68,8 +68,16 @@ def mag_l1c(
             normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process
         )
     elif normal_mode_dataset is not None:
-        full_interpolated_timeline = fill_normal_data(
-            normal_mode_dataset, normal_mode_dataset["epoch"].data
+        new_timeline = normal_mode_dataset["epoch"].data
+
+        # TODO: fill with FILLVAL
+        norm_filled: np.ndarray = np.zeros((len(new_timeline), 8))
+        norm_filled[:, 0] = new_timeline
+        # Flags, will also indicate any missed timestamps
+        norm_filled[:, 5] = ModeFlags.MISSING.value
+
+        fill_normal_data(
+            normal_mode_dataset, normal_mode_dataset["epoch"].data, norm_filled
         )
     else:
         raise ValueError("At least one of norm or burst dataset must be provided.")
@@ -353,7 +361,16 @@ def process_mag_l1c(
         )
 
     new_timeline = generate_timeline(norm_epoch, gaps)
-    norm_filled = fill_normal_data(normal_mode_dataset, new_timeline)
+
+    # TODO: fill with FILLVAL
+    norm_filled: np.ndarray = np.zeros((len(new_timeline), 8))
+    norm_filled[:, 0] = new_timeline
+    # Flags, will also indicate any missed timestamps
+    norm_filled[:, 5] = ModeFlags.MISSING.value
+
+    if normal_mode_dataset:
+        fill_normal_data(normal_mode_dataset, new_timeline, norm_filled)
+
     interpolated = interpolate_gaps(
         burst_mode_dataset, gaps, norm_filled, interpolation_function
     )
@@ -362,10 +379,10 @@ def process_mag_l1c(
 
 
 def fill_normal_data(
-    normal_dataset: xr.Dataset | None,
+    normal_dataset: xr.Dataset,
     new_timeline: np.ndarray,
-    day_to_process: np.datetime64 | None = None,
-) -> np.ndarray:
+    filled_timeline: np.ndarray,
+) -> None:
     """
     Fill the new timeline with the normal mode data.
 
@@ -377,35 +394,19 @@ def fill_normal_data(
         The normal mode dataset.
     new_timeline : np.ndarray
         A 1D array of timestamps to fill.
-    day_to_process : np.datetime64, optional
-        The day to process, in np.datetime64[D] format. This is used to fill
-        gaps at the beginning or end of the day if needed. If not included, these
-        gaps will not be filled.
-
-    Returns
-    -------
-    np.ndarray
+    filled_timeline : np.ndarray
         An (n, 8) shaped array containing the timeline filled with normal mode data.
         Gaps are marked as -1 in the generated flag column at index 5.
         Indices: 0 - epoch, 1-4 - vector x, y, z, and range, 5 - generated flag,
         6-7 - compression flags.
     """
-    # TODO: fill with FILLVAL
-    filled_timeline: np.ndarray = np.zeros((len(new_timeline), 8))
-    filled_timeline[:, 0] = new_timeline
-    # Flags, will also indicate any missed timestamps
-    filled_timeline[:, 5] = ModeFlags.MISSING.value
-
-    if normal_dataset:
-        for index, timestamp in enumerate(normal_dataset["epoch"].data):
-            timeline_index = np.searchsorted(new_timeline, timestamp)
-            filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
-            filled_timeline[timeline_index, 5] = ModeFlags.NORM.value
-            filled_timeline[timeline_index, 6:8] = normal_dataset[
-                "compression_flags"
-            ].data[index]
-
-    return filled_timeline
+    for index, timestamp in enumerate(normal_dataset["epoch"].data):
+        timeline_index = np.searchsorted(new_timeline, timestamp)
+        filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
+        filled_timeline[timeline_index, 5] = ModeFlags.NORM.value
+        filled_timeline[timeline_index, 6:8] = normal_dataset["compression_flags"].data[
+            index
+        ]
 
 
 def interpolate_gaps(
@@ -484,7 +485,7 @@ def interpolate_gaps(
         short = (gap_timeline >= burst_epochs[burst_start]) & (
             gap_timeline <= burst_epochs[burst_gap_end]
         )
-        if len(gap_timeline) != (short).sum():
+        if len(gap_timeline) != int(short.sum()):
             print(f"Chopping timeline from {len(gap_timeline)} to {short.sum()}")
 
         # Limit timestamps to only include the areas with burst data
