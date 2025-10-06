@@ -64,8 +64,10 @@ def mag_l1c(
 
     interp_function = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
     if burst_mode_dataset is not None:
+        # Only use day_to_process if there is no norm data
+        day_to_process_arg = day_to_process if normal_mode_dataset is None else None
         full_interpolated_timeline = process_mag_l1c(
-            normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process
+            normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process_arg
         )
     elif normal_mode_dataset is not None:
         new_timeline = normal_mode_dataset["epoch"].data
