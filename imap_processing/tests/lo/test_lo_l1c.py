@@ -378,7 +378,7 @@ def test_set_pointing_directions():
     ):
         # Set up mocks
         mock_ttj2000ns_to_et.return_value = mock_et
-        mock_frame_transform.return_value.transpose.return_value = mock_hae_az_el
+        mock_frame_transform.return_value = mock_hae_az_el
 
         # Test input
         test_epoch = 1000000000.0
@@ -432,7 +432,7 @@ def test_set_pointing_directions_meshgrid():
         mock_hae_az_el = np.stack(
             np.meshgrid(np.arange(3600), np.arange(40), indexing="ij"), axis=-1
         )  # spin_angle x off_angle x 2
-        mock_frame_transform.return_value.transpose.return_value = mock_hae_az_el
+        mock_frame_transform.return_value = mock_hae_az_el
 
         set_pointing_directions(1000000000.0)
 

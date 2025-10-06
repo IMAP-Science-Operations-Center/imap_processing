@@ -581,7 +581,7 @@ def set_background_rates(
             if row["type"] == "rate":
                 bg_rates[esa_step, bin_start:bin_end, :] = value
             elif row["type"] == "sigma":
-                bg_stat_uncert[esa_step, bin_start:bin_end, :] = value
+                bg_sys_err[esa_step, bin_start:bin_end, :] = value
             else:
                 raise ValueError("Unknown background type in ancillary file.")
     # set the background rates, uncertainties, and systematic errors
@@ -628,7 +628,7 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
     hae_latitude : xr.DataArray
         The HAE latitude for each spin and off angle bin.
     """
-    et = ttj2000ns_to_et(epoch)
+    et = ttj2000ns_to_et(epoch) + 1
     # create a meshgrid of spin and off angles using the bin centers
     spin, off = np.meshgrid(
         SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
@@ -638,7 +638,7 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
     # Transform from DPS Az/El to HAE lon/lat
     hae_az_el = frame_transform_az_el(
         et, dps_az_el, SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_HAE, degrees=True
-    ).transpose(1, 0, 2)
+    )
 
     return xr.DataArray(
         data=hae_az_el[:, :, 0].astype(np.float64),
