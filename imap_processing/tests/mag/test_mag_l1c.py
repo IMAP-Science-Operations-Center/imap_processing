@@ -13,6 +13,7 @@ from imap_processing.mag.l1c.mag_l1c import (
     fill_normal_data,
     find_all_gaps,
     find_gaps,
+    generate_empty_norm_array,
     generate_timeline,
     interpolate_gaps,
     mag_l1c,
@@ -154,7 +155,8 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
     # np.array([0, 0.5, 1, 1.5, 2, 4, 4.25, 5.5, 5.75, 6]) * 1e9
     gaps = np.array([[2 * 1e9, 4 * 1e9, 2], [4.25 * 1e9, 5.5 * 1e9, 2]])
     generated_timeline = generate_timeline(norm_dataset["epoch"].data, gaps)
-    norm_timeline = fill_normal_data(norm_dataset, generated_timeline)
+    norm_timeline: np.ndarray = generate_empty_norm_array(generated_timeline)
+    fill_normal_data(norm_dataset, generated_timeline, norm_timeline)
     gaps = np.array([[2 * 1e9, 4 * 1e9, 2]])
     output = interpolate_gaps(
         mag_l1b_dataset, gaps, norm_timeline, InterpolationFunction.linear
@@ -221,7 +223,7 @@ def test_mag_l1c(norm_dataset, burst_dataset):
 
 
 def test_mag_attributes(norm_dataset, burst_dataset):
-    output = mag_l1c(norm_dataset, burst_dataset)
+    output = mag_l1c(norm_dataset, np.datetime64("2025-01-01"), burst_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     expected_attrs = ["missing_sequences", "interpolation_method"]
@@ -231,7 +233,7 @@ def test_mag_attributes(norm_dataset, burst_dataset):
 
 def test_missing_burst_file(norm_dataset, burst_dataset):
     # Should run with only normal mode data or only burst mode data.
-    output = mag_l1c(norm_dataset, None)
+    output = mag_l1c(norm_dataset, np.datetime64("2025-01-01"))
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     # Should pass through normal mode data only
@@ -569,7 +571,8 @@ def test_gap_detection_timeline_generation_workflow():
     )
 
     # Step 3: Fill the new timeline with normal mode data
-    norm_filled = fill_normal_data(dataset, new_timeline)
+    norm_filled: np.ndarray = generate_empty_norm_array(new_timeline)
+    fill_normal_data(dataset, new_timeline, norm_filled)
     print(norm_filled)
     # Verify output shape: (n_timestamps, 8) where 8 = [epoch, x, y, z, range, flag,
     # comp1, comp2]
@@ -631,7 +634,8 @@ def test_gap_detection_timeline_generation_workflow():
 
     # Generate timeline and fill data
     new_timeline_multi = generate_timeline(original_epoch, gaps_multi_rate)
-    norm_filled_multi = fill_normal_data(dataset_multi_rate, new_timeline_multi)
+    norm_filled_multi: np.ndarray = generate_empty_norm_array(new_timeline_multi)
+    fill_normal_data(dataset_multi_rate, new_timeline_multi, norm_filled_multi)
 
     # Verify the workflow completes successfully with multiple rates
     assert norm_filled_multi.shape[1] == 8, "Multi-rate output should have 8 columns"
@@ -642,7 +646,8 @@ def test_gap_detection_timeline_generation_workflow():
 
 def test_fill_normal_data(mag_l1b_dataset):
     output_timeline = np.arange(0.1, 6.1, step=0.5) * 1e9
-    output = fill_normal_data(mag_l1b_dataset, output_timeline)
+    output = generate_empty_norm_array(output_timeline)
+    fill_normal_data(mag_l1b_dataset, output_timeline, output)
 
     assert output.shape == (12, 8)
     # all vectors should be nonzero

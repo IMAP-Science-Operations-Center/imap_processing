@@ -66,20 +66,17 @@ def mag_l1c(
     if burst_mode_dataset is not None:
         # Only use day_to_process if there is no norm data
         day_to_process_arg = day_to_process if normal_mode_dataset is None else None
-        full_interpolated_timeline = process_mag_l1c(
+        full_interpolated_timeline: np.ndarray = process_mag_l1c(
             normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process_arg
         )
     elif normal_mode_dataset is not None:
         new_timeline = normal_mode_dataset["epoch"].data
-
-        # TODO: fill with FILLVAL
-        norm_filled: np.ndarray = np.zeros((len(new_timeline), 8))
-        norm_filled[:, 0] = new_timeline
-        # Flags, will also indicate any missed timestamps
-        norm_filled[:, 5] = ModeFlags.MISSING.value
+        full_interpolated_timeline = generate_empty_norm_array(new_timeline)
 
         fill_normal_data(
-            normal_mode_dataset, normal_mode_dataset["epoch"].data, norm_filled
+            normal_mode_dataset,
+            normal_mode_dataset["epoch"].data,
+            full_interpolated_timeline,
         )
     else:
         raise ValueError("At least one of norm or burst dataset must be provided.")
@@ -364,11 +361,7 @@ def process_mag_l1c(
 
     new_timeline = generate_timeline(norm_epoch, gaps)
 
-    # TODO: fill with FILLVAL
-    norm_filled: np.ndarray = np.zeros((len(new_timeline), 8))
-    norm_filled[:, 0] = new_timeline
-    # Flags, will also indicate any missed timestamps
-    norm_filled[:, 5] = ModeFlags.MISSING.value
+    norm_filled: np.ndarray = generate_empty_norm_array(new_timeline)
 
     if normal_mode_dataset:
         fill_normal_data(normal_mode_dataset, new_timeline, norm_filled)
@@ -378,6 +371,29 @@ def process_mag_l1c(
     )
 
     return interpolated
+
+
+def generate_empty_norm_array(new_timeline: np.ndarray) -> np.ndarray:
+    """
+    Generate an empty Normal mode array with the new timeline.
+
+    Parameters
+    ----------
+    new_timeline : np.ndarray
+        A 1D array of timestamps to fill.
+
+    Returns
+    -------
+    np.ndarray
+        An (n, 8) shaped array containing the timeline filled with `FILLVAL` data.
+    """
+    # TODO: fill with FILLVAL
+    norm_filled: np.ndarray = np.zeros((len(new_timeline), 8))
+    norm_filled[:, 0] = new_timeline
+    # Flags, will also indicate any missed timestamps
+    norm_filled[:, 5] = ModeFlags.MISSING.value
+
+    return norm_filled
 
 
 def fill_normal_data(
@@ -485,7 +501,7 @@ def interpolate_gaps(
         ]
 
         short = (gap_timeline >= burst_epochs[burst_start]) & (
-            gap_timeline <= burst_epochs[burst_gap_end]
+            gap_timeline <= burst_epochs[burst_end]
         )
         if len(gap_timeline) != int(short.sum()):
             print(f"Chopping timeline from {len(gap_timeline)} to {short.sum()}")
@@ -493,7 +509,7 @@ def interpolate_gaps(
         # Limit timestamps to only include the areas with burst data
         gap_timeline = gap_timeline[short]
         # do not include range
-        gap_fill = interpolation_function(
+        adjusted_gap_timeline, gap_fill = interpolation_function(
             burst_vectors[burst_start:burst_end, :3],
             burst_epochs[burst_start:burst_end],
             gap_timeline,
@@ -502,7 +518,7 @@ def interpolate_gaps(
         )
 
         # gaps should not have data in timeline, still check it
-        for index, timestamp in enumerate(gap_timeline):
+        for index, timestamp in enumerate(adjusted_gap_timeline):
             timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
             if sum(
                 filled_norm_timeline[timeline_index, 1:4]
@@ -516,6 +532,20 @@ def interpolate_gaps(
                 filled_norm_timeline[timeline_index, 6:8] = burst_dataset[
                     "compression_flags"
                 ].data[burst_gap_start + index]
+
+        # for any timestamp that was not filled and is still missing, remove it
+        missing_timeline = np.setdiff1d(gap_timeline, adjusted_gap_timeline)
+
+        for timestamp in missing_timeline:
+            timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
+            if (sum(filled_norm_timeline[timeline_index, 1:4]) != 0) or (
+                filled_norm_timeline[timeline_index, 5] != ModeFlags.MISSING.value
+            ):
+                raise RuntimeError(
+                    "Self-inconsistent data. "
+                    "Gaps not included in final timeline should be missing."
+                )
+            np.delete(filled_norm_timeline, timeline_index)
 
     return filled_norm_timeline
 

@@ -310,27 +310,22 @@ def test_mag_l1c_validation(test_number, sensor):
     )
 
     for index in expected_output.index:
-        if index == expected_output.index[-1]:
-            abs_tol = 1e-1  # TODO: solve boundary condition issue
-        else:
-            abs_tol = 1e-4
-
         assert np.allclose(
             expected_output["x"].iloc[index],
             l1c["vectors"].data[index][0],
-            atol=abs_tol,
+            atol=1e-4,
             rtol=0,
         )
         assert np.allclose(
             expected_output["y"].iloc[index],
             l1c["vectors"].data[index][1],
-            atol=abs_tol,
+            atol=1e-4,
             rtol=0,
         )
         assert np.allclose(
             expected_output["z"].iloc[index],
             l1c["vectors"].data[index][2],
-            atol=abs_tol,
+            atol=1e-4,
             rtol=0,
         )
 
