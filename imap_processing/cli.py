@@ -1255,7 +1255,7 @@ class Spacecraft(ProcessInstrument):
             )
             ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
             pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
-                ah_paths[-1]
+                ah_paths
             )
             processed_dataset.extend(pointing_kernel_paths)
         else:
