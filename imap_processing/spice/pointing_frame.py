@@ -200,13 +200,16 @@ def calculate_pointing_attitude_segments(
     - IMAP historical attitude kernel from which the pointing frame kernel will
     be generated.
     """
-    logger.info(f"Extracting mean spin axes from CK kernel {ck_path.name}")
+    logger.info(
+        f"Extracting mean spin axes for all completed Pointings that are"
+        f" at least partially covered by the CK file: {ck_path.name}"
+    )
     # Get IDs.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
     id_imap_sclk = spiceypy.gipool("CK_-43000_SCLK", 0, 1)
 
-    # Check that the last loaded kernel matches it input kernel name. This ensures
-    # that this CK take priority when computing attitude for it's time coverage.
+    # Check that the last loaded kernel matches the input kernel name. This ensures
+    # that this CK takes priority when computing attitude for it's time coverage.
     count = spiceypy.ktotal("ck")
     loaded_ck_kernel, _, _, _ = spiceypy.kdata(count - 1, "ck")
     if str(ck_path) != loaded_ck_kernel:
@@ -216,7 +219,7 @@ def calculate_pointing_attitude_segments(
 
     id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
 
-    # Select only the pointings within the attitude coverage.
+    # Get the coverage of the CK file.
     ck_cover = spiceypy.ckcov(
         str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
     )
@@ -224,12 +227,11 @@ def calculate_pointing_attitude_segments(
     et_start, _ = spiceypy.wnfetd(ck_cover, 0)
     _, et_end = spiceypy.wnfetd(ck_cover, num_intervals - 1)
     logger.info(
-        f"{ck_path.name} contains {num_intervals} intervals with "
-        f"start time: {et_to_utc(et_start)}, and end time: {et_to_utc(et_end)}"
+        f"{ck_path.name} covers time range: ({et_to_utc(et_start)}, "
+        f"{et_to_utc(et_end)}) in {num_intervals} intervals."
     )
 
-    # Get data from the repoint table and filter to only the pointings fully
-    # covered by this attitude kernel
+    # Get data from the repoint table and convert to Pointings
     repoint_df = get_repoint_data()
     repoint_df["repoint_start_et"] = sct_to_et(
         met_to_sclkticks(repoint_df["repoint_start_met"].values)
@@ -237,20 +239,29 @@ def calculate_pointing_attitude_segments(
     repoint_df["repoint_end_et"] = sct_to_et(
         met_to_sclkticks(repoint_df["repoint_end_met"].values)
     )
-    repoint_df = repoint_df[
-        (repoint_df["repoint_end_et"] >= et_start)
-        & (repoint_df["repoint_start_et"] <= et_end)
-    ]
-    n_pointings = len(repoint_df) - 1
+    pointing_ids = repoint_df["repoint_id"].values[:-1]
+    pointing_start_ets = repoint_df["repoint_end_et"].values[:-1]
+    pointing_end_ets = repoint_df["repoint_start_et"].values[1:]
+
+    # Filter for only the pointings partially covered by this attitude kernel
+    # that don't end after the end of the CK file coverage.
+    # Create a mask that selects any pointing partially covered by the CK file.
+    keep_mask = (pointing_end_ets >= et_start) & (pointing_start_ets <= et_end)
+    # Remove any pointings that end after the CK file coverage.
+    keep_mask &= pointing_end_ets <= et_end
+    # Filter the pointing data.
+    pointing_ids = pointing_ids[keep_mask]
+    pointing_start_ets = pointing_start_ets[keep_mask]
+    pointing_end_ets = pointing_end_ets[keep_mask]
+
+    n_pointings = len(pointing_ids)
 
     pointing_segments = np.zeros(n_pointings, dtype=POINTING_SEGMENT_DTYPE)
 
     for i_pointing in range(n_pointings):
-        pointing_segments[i_pointing]["pointing_id"] = repoint_df.iloc[i_pointing][
-            "repoint_id"
-        ]
-        pointing_start_et = repoint_df.iloc[i_pointing]["repoint_end_et"]
-        pointing_end_et = repoint_df.iloc[i_pointing + 1]["repoint_start_et"]
+        pointing_segments[i_pointing]["pointing_id"] = pointing_ids[i_pointing]
+        pointing_start_et = pointing_start_ets[i_pointing]
+        pointing_end_et = pointing_end_ets[i_pointing]
         logger.debug(
             f"Calculating pointing attitude for pointing "
             f"{pointing_segments[i_pointing]['pointing_id']} with time "

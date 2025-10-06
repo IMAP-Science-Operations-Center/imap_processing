@@ -237,18 +237,32 @@ def test_multiple_pointings(
     use_fake_repoint_data_for_time,
 ):
     """Tests create_pointing_frame function with multiple pointing kernels."""
-    # Define 3 repoints:
-    #   1. Starts 10 second before the input CK start, ends one second
+    # Define 4 repoints:
+    #   1. Starts and ends before the input CK start
+    #   2. Starts 10 seconds before the input CK start, ends one second
     #      after the CK start
-    #   2. Starts one hour after CK start, ends 1 second after it starts
-    #   3. Starts one second before the CK ends, ends 10 seconds after the CK ends
+    #   3. Starts one hour after CK start, ends 1-hour + 1-second after it starts
+    #   4. Starts one second before the CK ends, ends 10 seconds after the CK ends
+    #   5. Starts and ends after the CK end
     # Result is 2 pointings
     ck_met_start, ck_met_end = get_ck_met_coverage(furnish_pointing_frame_kernels[-1])
     repoint_start_met = np.array(
-        [ck_met_start - 10, ck_met_start + 60 * 60, ck_met_end - 1]
+        [
+            ck_met_start - 60,
+            ck_met_start - 10,
+            ck_met_start + 60 * 60,
+            ck_met_end - 1,
+            ck_met_end + 10,
+        ]
     )
     repoint_end_met = np.array(
-        [ck_met_start + 1, ck_met_start + 60 * 60 + 1, ck_met_end + 10]
+        [
+            ck_met_start - 30,
+            ck_met_start + 1,
+            ck_met_start + 60 * 60 + 1,
+            ck_met_end + 10,
+            ck_met_end + 20,
+        ]
     )
     use_fake_repoint_data_for_time(repoint_start_met, repoint_end_met)
 
@@ -256,12 +270,12 @@ def test_multiple_pointings(
         spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
     )
 
-    # Pointings are between repoints, so we expect one less than repoints
-    assert len(segment_data["start_sclk_ticks"]) == len(repoint_start_met) - 1
+    # The way we defined the repoints, we expect two pointing segments
+    assert len(segment_data["start_sclk_ticks"]) == 2
 
     np.testing.assert_allclose(
-        segment_data["start_sclk_ticks"], repoint_end_met[:-1] / TICK_DURATION
+        segment_data["start_sclk_ticks"], repoint_end_met[1:3] / TICK_DURATION
     )
     np.testing.assert_allclose(
-        segment_data["end_sclk_ticks"], repoint_start_met[1:] / TICK_DURATION
+        segment_data["end_sclk_ticks"], repoint_start_met[2:4] / TICK_DURATION
     )
