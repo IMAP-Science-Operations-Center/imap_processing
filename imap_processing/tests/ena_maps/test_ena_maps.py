@@ -173,7 +173,7 @@ class TestHiPointingSet:
         )
 
         # Test anti-ram direction
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="anti-ram")
+        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="anti")
         assert hi_pset.num_points == 1800
         np.testing.assert_array_equal(
             hi_pset.data["spin_angle_bin"].data, np.arange(1800) + 1800
