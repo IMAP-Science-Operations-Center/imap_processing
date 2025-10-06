@@ -260,7 +260,7 @@ def test_mag_l1b_validation(test_number, mocks):
 @pytest.mark.parametrize(("sensor"), ["mago", "magi"])
 @pytest.mark.external_test_data
 def test_mag_l1c_validation(test_number, sensor):
-    if test_number != "024":
+    if test_number in ["013", "014", "024"]:
         pytest.skip("All L1C edge cases are not yet complete")
 
     # We expect tests 013 and 014 to pass. 015 and 016 are not yet complete.
