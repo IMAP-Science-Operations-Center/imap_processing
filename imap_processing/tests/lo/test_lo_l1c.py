@@ -171,7 +171,7 @@ def expected_bg():
         dtype=np.float16,
     )
 
-    expected_uncert = np.array(
+    expected_err = np.array(
         [
             np.full((3600, 40), 0.0025),
             np.full((3600, 40), 0.002),
@@ -184,7 +184,7 @@ def expected_bg():
         dtype=np.float16,
     )
 
-    expected_err = np.zeros((7, 3600, 40), dtype=np.float16)
+    expected_uncert = np.zeros((7, 3600, 40), dtype=np.float16)
 
     expected_bg = (expected_rates, expected_uncert, expected_err)
     return expected_bg
