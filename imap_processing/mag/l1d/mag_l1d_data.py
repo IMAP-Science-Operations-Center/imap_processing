@@ -693,10 +693,12 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             - gradiometer_offset_magnitude: magnitude of the offset vector
             - quality_flags: quality flags (1 if magnitude > threshold, 0 otherwise)
         """
-        aligned_magi = linear(
+        # TODO: should this extrapolate or should non-overlapping data be removed?
+        _, aligned_magi = linear(
             magi_vectors,
             magi_epoch,
             mago_epoch,
+            extrapolate=True,
         )
 
         diff = aligned_magi - mago_vectors
