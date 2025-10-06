@@ -214,6 +214,16 @@ class MagL1a:
         The packet properties for the first packet in the day. As an InitVar, this
         cannot be accessed from an instance of the class. Instead, packet_definitions
         should be used.
+    vectors : numpy.ndarray
+        List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
+        where time is numpy.datetime64[ns]. This is a property that concatenates the
+        internal vector list on demand.
+    compression_flags : numpy.ndarray
+        Array of flags to indicate compression and width for all timestamps in the
+        L1A file. Shaped like (n, 2) where n is the number of vectors. First value
+        is a boolean for compressed/uncompressed, second vector is a number between 0-20
+        if the data is compressed, which is the width in bits of the compressed data.
+        This is a property that concatenates the internal compression flags list.
     packet_definitions : dict[numpy.datetime64, MagL1aPacketProperties]
         Dictionary of packet properties for each packet in the day. The key is the start
         time of the packet, and the value is a dataclass of packet properties.
