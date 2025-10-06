@@ -333,9 +333,7 @@ def quadratic_filtered(
     input_filtered, vectors_filtered = cic_filter(
         input_vectors, input_timestamps, output_timestamps, input_rate, output_rate
     )
-    return output_timestamps, quadratic(
-        vectors_filtered, input_filtered, output_timestamps
-    )
+    return quadratic(vectors_filtered, input_filtered, output_timestamps)
 
 
 def cubic_filtered(
@@ -377,7 +375,7 @@ def cubic_filtered(
     input_filtered, vectors_filtered = cic_filter(
         input_vectors, input_timestamps, output_timestamps, input_rate, output_rate
     )
-    return output_timestamps, cubic(vectors_filtered, input_filtered, output_timestamps)
+    return cubic(vectors_filtered, input_filtered, output_timestamps)
 
 
 class InterpolationFunction(Enum):

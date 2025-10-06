@@ -90,21 +90,23 @@ def test_interpolation_methods():
     input_timestamps = np.arange(0, 50, step=0.25) * 1e9
     output_timestamps = np.arange(10, 20, step=0.5) * 1e9
     for method in InterpolationFunction:
-        output = method(
+        adjusted_time, output = method(
             vectors,
             input_timestamps,
             output_timestamps,
             input_rate=VecSec.FOUR_VECS_PER_S,
             output_rate=VecSec.TWO_VECS_PER_S,
         )
+        assert len(adjusted_time) == 20
         assert len(output) == 20
-        output = method(
+        adjusted_time, output = method(
             vectors,
             input_timestamps,
             output_timestamps,
             input_rate=None,
             output_rate=None,
         )
+        assert len(adjusted_time) == 20
         assert len(output) == 20
 
 
