@@ -29,7 +29,7 @@ def load_cdf(
 
     Parameters
     ----------
-    file_path : Path or ImapFilePath or str
+    file_path : pathlib.Path or ImapFilePath or str
         The path to the CDF file or ImapFilePath object.
     remove_xarray_attrs : bool
         Whether to remove the xarray attributes that get injected by the
@@ -98,7 +98,7 @@ def write_cdf(
 
     Returns
     -------
-    file_path : Path
+    file_path : pathlib.Path
         Path to the file created.
     """
     # Create the filename from the global attributes

@@ -22,8 +22,58 @@ def codice_lut_path():
     a list of Paths.
     """
 
-    def _side_effect(descriptor: str) -> list[Path]:  # noqa: PLR0911
-        if descriptor == "l2-hi-omni-efficiency":
+    def _side_effect(descriptor: str, data_type: str = None) -> list[Path]:  # noqa: RUF013, PLR0911
+        # Science data could need to be distinguished by data_type since
+        # there are both L0 and L1A science files for same descriptor.
+        if descriptor == "lo-nsw-species" and data_type == "l1b":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1b_validation"
+                / "imap_codice_l1b_lo-nsw-species_20250814_v006.cdf"
+            ]
+        elif descriptor == "lo-sw-species" and data_type == "l1b":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1b_validation"
+                / "imap_codice_l1b_lo-sw-species_20250814_v006.cdf"
+            ]
+        elif descriptor == "lo-nsw-angular" and data_type == "l1b":
+            return [
+                TEST_DATA_PATH
+                / "l1b_validation"
+                / "imap_codice_l1b_lo-nsw-angular_20250814_v006.cdf"
+            ]
+        elif descriptor == "lo-sw-angular" and data_type == "l1b":
+            return [
+                TEST_DATA_PATH
+                / "l1b_validation"
+                / "imap_codice_l1b_lo-sw-angular_20250814_v006.cdf"
+            ]
+        elif descriptor == "hi-sectored" and data_type == "l1b":
+            return [
+                imap_module_directory
+                / "tests/codice/data/l1b_validation"
+                / "imap_codice_l1b_hi-sectored_20250814_v006.cdf"
+            ]
+        elif descriptor == "hi-omni" and data_type == "l1b":
+            return [
+                imap_module_directory
+                / "tests/codice/data/l1b_validation"
+                / "imap_codice_l1b_hi-omni_20250814_v006.cdf"
+            ]
+        elif descriptor == "l1a-sci-lut":
+            return [
+                TEST_DATA_PATH
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20251007_v001.json"
+            ]
+        elif descriptor == "l2-hi-omni-efficiency":
             return [
                 TEST_DATA_PATH
                 / "l2_lut/imap_codice_l2-hi-omni-efficiency_20251008_v001.csv"
@@ -33,18 +83,6 @@ def codice_lut_path():
                 TEST_DATA_PATH
                 / "l2_lut/imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
             ]
-        elif descriptor == "hi-sectored":
-            return [
-                imap_module_directory
-                / "tests/codice/data/l1b_validation"
-                / "imap_codice_l1b_hi-sectored_20250814_v006.cdf"
-            ]
-        elif descriptor == "hi-omni":
-            return [
-                imap_module_directory
-                / "tests/codice/data/l1b_validation"
-                / "imap_codice_l1b_hi-omni_20250814_v006.cdf"
-            ]
         elif descriptor == "l2-lo-efficiency":
             return [
                 TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251008_v001.csv"
@@ -52,30 +90,6 @@ def codice_lut_path():
         elif descriptor == "l2-lo-gfactor":
             return [
                 TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251008_v001.csv"
-            ]
-        elif descriptor == "lo-nsw-species":
-            return [
-                TEST_DATA_PATH
-                / "l1b_validation"
-                / "imap_codice_l1b_lo-nsw-species_20250814_v006.cdf"
-            ]
-        elif descriptor == "lo-sw-species":
-            return [
-                TEST_DATA_PATH
-                / "l1b_validation"
-                / "imap_codice_l1b_lo-sw-species_20250814_v006.cdf"
-            ]
-        elif descriptor == "lo-nsw-angular":
-            return [
-                TEST_DATA_PATH
-                / "l1b_validation"
-                / "imap_codice_l1b_lo-nsw-angular_20250814_v006.cdf"
-            ]
-        elif descriptor == "lo-sw-angular":
-            return [
-                TEST_DATA_PATH
-                / "l1b_validation"
-                / "imap_codice_l1b_lo-sw-angular_20250814_v006.cdf"
             ]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")

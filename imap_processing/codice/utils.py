@@ -5,7 +5,40 @@ This module contains utility classes and functions that are used by various
 other CoDICE processing modules.
 """
 
+import json
+from dataclasses import dataclass
 from enum import IntEnum
+from pathlib import Path
+
+import numpy as np
+
+from imap_processing.spice.time import met_to_ttj2000ns
+
+
+@dataclass
+class ViewTabInfo:
+    """
+    Class to hold view table information.
+
+    Attributes
+    ----------
+    apid : int
+        The APID for the packet.
+    collapse_table : int
+        Collapse table id used to determine the collapse pattern.
+    sensor : int
+        Sensor id (0 for LO, 1 for HI).
+    three_d_collapsed : int
+        The 3D collapsed value from the LUT.
+    view_id : int
+        The view identifier from the packet.
+    """
+
+    apid: int
+    collapse_table: int
+    sensor: int
+    three_d_collapsed: int
+    view_id: int
 
 
 class CODICEAPID(IntEnum):
@@ -57,3 +90,210 @@ class CoDICECompression(IntEnum):
     LOSSY_A_LOSSLESS = 4
     LOSSY_B_LOSSLESS = 5
     PACK_24_BIT = 6
+
+
+def read_sci_lut(file_path: Path, table_id: str) -> dict:
+    """
+    Read the SCI-LUT JSON file for a specific table ID.
+
+    Parameters
+    ----------
+    file_path : pathlib.Path
+        Path to the SCI-LUT JSON file.
+    table_id : str
+        Table identifier to extract from the JSON.
+
+    Returns
+    -------
+    dict
+        The SCI-LUT data for the specified table id.
+    """
+    sci_lut_data = json.loads(file_path.read_text()).get(f"{table_id}")
+    if sci_lut_data is None:
+        raise ValueError(f"SCI-LUT file does not have data for table ID {table_id}.")
+    return sci_lut_data
+
+
+def get_view_tab_info(json_data: dict, view_id: int, apid: int) -> dict:
+    """
+    Get the view table information for a specific view and APID.
+
+    Parameters
+    ----------
+    json_data : dict
+        The JSON data loaded from the SCI-LUT file.
+    view_id : int
+        The view ID from the packet.
+    apid : int
+        The APID from the packet.
+
+    Returns
+    -------
+    dict
+        The view table information containing details like sensor,
+        collapse_table, data_product, etc.
+    """
+    apid_hex = f"0x{apid:X}"
+    # This is how we get view information that will be used to get
+    # collapse pattern:
+    #  table_id -> view_tab -> (view_id, apid) -> sensor -> collapse_table
+    view_tab = json_data.get("view_tab").get(f"({view_id}, {apid_hex})")
+    return view_tab
+
+
+def get_collapse_pattern_shape(
+    json_data: dict, sensor_id: int, collapse_table_id: int
+) -> tuple[int, ...]:
+    """
+    Get the collapse pattern for a specific sensor id and collapse table id.
+
+    Parameters
+    ----------
+    json_data : dict
+        The JSON data loaded from the SCI-LUT file.
+    sensor_id : int
+        Sensor identifier (0 for LO, 1 for HI).
+    collapse_table_id : int
+        Collapse table id to look up in the SCI-LUT.
+
+    Returns
+    -------
+    tuple[int, ...]
+        The reduced shape describing the collapsed pattern. Examples:
+        ``(1,)`` for a fully collapsed 1-D pattern or ``(N, M)`` for a
+        reduced 2-D pattern.
+    """
+    if sensor_id == 0:
+        # LO sensor
+        collapse_tab = json_data.get("collapse_lo").get(f"{collapse_table_id}")
+    else:
+        # HI sensor
+        collapse_tab = json_data.get("collapse_hi").get(f"{collapse_table_id}")
+
+    # Analyze the collapse pattern matrix to determine its reduced shape.
+    # Steps:
+    # - Extract non-zero elements from the matrix.
+    # - Reshape to group unique non-zero rows and columns.
+    # - If all non-zero values are identical, return (1,) for a fully collapsed pattern.
+    # - Otherwise, compute the number of unique rows and columns to describe the
+    #   reduced shape.
+    collapse_matrix = np.array(collapse_tab["matrix"])
+    non_zero_data = np.where(collapse_matrix != 0)
+    non_zero_reformatted = collapse_matrix[non_zero_data].reshape(
+        np.unique(non_zero_data[0]).size, np.unique(non_zero_data[1]).size
+    )
+
+    if np.unique(non_zero_reformatted).size == 1:
+        # all non-zero values are identical means -> fully collapsed
+        return (1,)
+
+    # If not fully collapsed, find repeated patterns in rows and columns
+    # to reduce shape further.
+    unique_rows = np.unique(non_zero_reformatted, axis=0)
+    unique_columns = np.unique(non_zero_reformatted, axis=1)
+    # Unique spin sectors and instrument azimuths to unpack data
+    unique_spin_sectors = unique_columns.shape[1]
+    unique_inst_azs = unique_rows.shape[0]
+    return (unique_spin_sectors, unique_inst_azs)
+
+
+def get_codice_epoch_time(
+    acq_start_seconds: np.ndarray,
+    acq_start_subseconds: np.ndarray,
+    spin_period: np.ndarray,
+    view_tab_obj: ViewTabInfo,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate center time and delta.
+
+    Parameters
+    ----------
+    acq_start_seconds : np.ndarray
+        Array of acquisition start seconds.
+    acq_start_subseconds : np.ndarray
+        Array of acquisition start subseconds.
+    spin_period : np.ndarray
+        Array of spin periods.
+    view_tab_obj : ViewTabInfo
+        The view table information object. It contains information such as sensor ID
+        and three_d_collapsed value and others.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        (center_times, delta_times).
+    """
+    # If Lo sensor
+    if view_tab_obj.sensor == 0:
+        # Lo sensor, we need to set spins to be constant.
+        # 32 half spins makes full 16 spins for all non direct event products.
+        # But Lo direct event's spins is also 16 spins. Because of that, we can use
+        # the same calculation for all Lo products.
+        num_spins = 16.0
+    # If Hi sensor and Direct Event product
+    elif view_tab_obj.sensor == 1 and view_tab_obj.apid == CODICEAPID.COD_HI_PHA:
+        # Use constant 16 spins for Hi PHA
+        num_spins = 16.0
+    # If Non-Direct Event Hi product
+    else:
+        # Use 3d_collapsed value from LUT for other Hi products
+        num_spins = view_tab_obj.three_d_collapsed
+
+    # Units of 'spin ticks', where one 'spin tick' equals 320 microseconds.
+    # It takes multiple spins to collect data for a view.
+    spin_period_ns = spin_period.astype(np.float64) * 320 * 1e3  # Convert to ns
+    delta_times = (num_spins * spin_period_ns) / 2
+    # subseconds need to converted to seconds using this formula per CoDICE team:
+    #   subseconds / 65536 gives seconds
+    center_times_seconds = (
+        acq_start_seconds + acq_start_subseconds / 65536 + (delta_times / 1e9)
+    )
+
+    return met_to_ttj2000ns(center_times_seconds), delta_times
+
+
+def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
+    """
+    Calculate acquisition time per step from low stepping table.
+
+    Parameters
+    ----------
+    low_stepping_tab : dict
+        The low stepping table from the SCI-LUT JSON.
+
+    Returns
+    -------
+    np.ndarray
+        Array of acquisition times per step of shape (num_esa_steps,).
+    """
+    # These tunable values are used to calculate acquisition time per step
+    tunable_values = low_stepping_tab["tunable_values"]
+
+    # pre-calculate values
+    sector_time = tunable_values["spin_time_ms"] / tunable_values["num_sectors_ms"]
+    sector_margin_ms = tunable_values["sector_margin_ms"]
+    dwell_fraction = tunable_values["dwell_fraction_percentage"]
+    min_hv_settle_ms = tunable_values["min_hv_settle_ms"]
+    max_hv_settle_ms = tunable_values["max_hv_settle_ms"]
+    num_steps_data = np.array(
+        low_stepping_tab["num_steps"].get("data"), dtype=np.float64
+    )
+    # Total non-acquisition time is in column (BD) of science LUT
+    dwell_fraction_percentage = float(sector_time) * (100.0 - dwell_fraction) / 100.0
+
+    # Calculate HV settle time per step not adjusted for Min/Max.
+    # It's in column (BF) of science LUT.
+    non_adjusted_hv_settle_per_step = (
+        dwell_fraction_percentage - sector_margin_ms
+    ) / num_steps_data
+    hv_settle_per_step = np.minimum(
+        np.maximum(non_adjusted_hv_settle_per_step, min_hv_settle_ms), max_hv_settle_ms
+    )
+
+    # acquisition time per step in milliseconds
+    # sector_time - sector_margin_ms / num_steps - hv_settle_per_step
+    acq_time_per_step = (
+        (sector_time - sector_margin_ms) / num_steps_data
+    ) - hv_settle_per_step
+    # Convert to seconds
+    return acq_time_per_step / 1e3
