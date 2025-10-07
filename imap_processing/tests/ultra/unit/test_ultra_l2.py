@@ -524,7 +524,7 @@ class TestUltraL2:
                 assert (
                     ena_intensity_attrs[f"LABL_PTR_{depend_num}"] == f"{depend}_label"
                 )
-        assert ena_intensity_attrs["UNITS"] == "counts/(s * cm^2 * Sr * KeV)"
+        assert ena_intensity_attrs["UNITS"] == "cm -2 s -1 sr -1 keV -1"
 
         exposure_attrs = rect_map_dataset["exposure_factor"].attrs
         assert exposure_attrs["VAR_TYPE"] == "data"
