@@ -269,9 +269,8 @@ def calculate_pointing_attitude_segments(
     n_pointings = len(pointing_ids)
     if n_pointings == 0:
         logger.warning(
-            "No Pointings identified based on coverage of this CK file. Skipping."
+            "No Pointings identified based on coverage of CK files. Skipping."
         )
-        return np.array([], dtype=POINTING_SEGMENT_DTYPE)
 
     pointing_segments = np.zeros(n_pointings, dtype=POINTING_SEGMENT_DTYPE)
 
