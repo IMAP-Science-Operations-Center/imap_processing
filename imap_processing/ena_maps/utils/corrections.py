@@ -4,7 +4,16 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from numpy.polynomial import Polynomial
+
+from imap_processing.ena_maps.ena_maps import LoHiBasePointingSet
+from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.spice import geometry
+
+# Physical constants for Compton-Getting correction
+ERG_PER_EV = 1.6e-12  # erg per eV - unit conversion factor
+PROTON_MASS_GRAMS = 1.67e-24  # proton mass in grams
 
 
 class PowerLawFluxCorrector:
@@ -289,3 +298,227 @@ class PowerLawFluxCorrector:
             )
 
         return corrected_flux, corrected_flux_stat_unc
+
+
+def _add_spacecraft_velocity_to_pset(pset: LoHiBasePointingSet, et: float) -> None:
+    """
+    Calculate and add spacecraft velocity data to pointing set.
+
+    Parameters
+    ----------
+    pset : LoHiBasePointingSet
+        Pointing set object to be updated.
+    et : float
+        Ephemeris time in seconds past J2000.
+
+    Notes
+    -----
+    Adds the following DataArrays to pset.data:
+    - "sc_velocity": Spacecraft velocity vector (km/s) with dims ["x_y_z"]
+    - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
+    """
+    # Get spacecraft state in HAE frame
+    sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
+    sc_velocity_vector = sc_state[3:6]
+
+    # Store spacecraft velocity as DataArray
+    pset.data["sc_velocity"] = xr.DataArray(
+        sc_velocity_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
+    )
+
+    # Calculate spacecraft speed and direction
+    sc_velocity_km_per_sec = np.linalg.norm(
+        pset.data["sc_velocity"], axis=-1, keepdims=True
+    )
+    pset.data["sc_direction_vector"] = pset.data["sc_velocity"] / sc_velocity_km_per_sec
+
+
+def _add_cartesian_look_direction(pset: LoHiBasePointingSet) -> None:
+    """
+    Calculate and add look direction vectors to pointing set.
+
+    Parameters
+    ----------
+    pset : LoHiBasePointingSet
+        Pointing set object to be updated.
+
+    Notes
+    -----
+    Adds the following DataArray to pset.data:
+    - "look_direction": Cartesian unit vectors with dims [...spatial_dims, "x_y_z"]
+    """
+    longitudes = pset.data["hae_longitude"]
+    latitudes = pset.data["hae_latitude"]
+
+    # Stack spherical coordinates (r=1 for unit vectors, azimuth, elevation)
+    spherical_coords = np.stack(
+        [
+            np.ones_like(longitudes),  # r = 1 for unit vectors
+            longitudes,  # azimuth = longitude
+            latitudes,  # elevation = latitude
+        ],
+        axis=-1,
+    )
+
+    # Convert to Cartesian coordinates and store as DataArray
+    pset.data["look_direction"] = xr.DataArray(
+        geometry.spherical_to_cartesian(spherical_coords),
+        dims=[*longitudes.dims, CoordNames.CARTESIAN_VECTOR.value],
+    )
+
+
+def _calculate_compton_getting_transform(
+    pset: LoHiBasePointingSet,
+    energies_hf: xr.DataArray,
+) -> None:
+    """
+    Apply Compton-Getting transformation to compute ENA source directions.
+
+    This implements the Compton-Getting velocity transformation to correct
+    for the motion of the spacecraft through the heliosphere. The transformation
+    accounts for the Doppler shift of ENA energies and the aberration of
+    arrival directions.
+
+    All calculations are performed using xarray DataArrays to preserve
+    dimension information throughout the computation.
+
+    Parameters
+    ----------
+    pset : LoHiBasePointingSet
+        Pointing set object with sc_velocity, sc_direction_vector, and
+        look_direction already added.
+    energies_hf : xr.DataArray
+        ENA energies in the heliosphere frame in eV.
+
+    Notes
+    -----
+    The algorithm is based on the "Appendix A. The IMAP-Lo Mapping Algorithms"
+    document.
+    Adds the following DataArrays to pset.data:
+    - "energy_sc": ENA energies in spacecraft frame (eV)
+    - "ena_source_hae_longitude": ENA source longitudes in heliosphere frame (degrees)
+    - "ena_source_hae_latitude": ENA source latitudes in heliosphere frame (degrees)
+    """
+    # Store heliosphere frame energies
+    pset.data["hf_energy"] = energies_hf
+
+    # Calculate spacecraft speed
+    sc_velocity_km_per_sec = np.linalg.norm(
+        pset.data["sc_velocity"], axis=-1, keepdims=True
+    )
+
+    # Calculate dot product between look directions and spacecraft direction vector
+    # Use Einstein summation for efficient vectorized dot product
+    dot_product = xr.DataArray(
+        np.einsum(
+            "...i,...i->...",
+            pset.data["look_direction"],
+            pset.data["sc_direction_vector"],
+        ),
+        dims=pset.data["look_direction"].dims[:-1],
+    )
+
+    # Calculate the kinetic energy of a hydrogen ENA traveling at spacecraft velocity
+    # E_u = (1/2) * m * U_sc^2 in eV
+    energy_u = (
+        0.5 * PROTON_MASS_GRAMS * (sc_velocity_km_per_sec * 1e5) ** 2 / ERG_PER_EV
+    )
+
+    # Calculate y values for each energy level (Equation 61)
+    # y_k = sqrt(E^h_k / E^u)
+    y = np.sqrt(pset.data["hf_energy"] / energy_u)
+
+    # Velocity magnitude factor calculation (Equation 62)
+    # x_k = (êₛ · û_sc) + sqrt(y² + (êₛ · û_sc)² - 1)
+    x = dot_product + np.sqrt(y**2 + dot_product**2 - 1)
+
+    # Calculate ENA speed in the spacecraft frame
+    # |v⃗_sc| = x_k * U_sc
+    velocity_sc = x * sc_velocity_km_per_sec
+
+    # Calculate the kinetic energy in the spacecraft frame
+    # E_sc = (1/2) * M_p * v_sc² (convert km/s to cm/s with 1.0e5 factor)
+    pset.data["energy_sc"] = (
+        0.5 * PROTON_MASS_GRAMS * (velocity_sc * 1e5) ** 2 / ERG_PER_EV
+    )
+
+    # Calculate the velocity vector in the spacecraft frame
+    # v⃗_sc = |v_sc| * êₛ (velocity direction follows look direction)
+    velocity_vector_sc = velocity_sc * pset.data["look_direction"]
+
+    # Calculate the ENA velocity vector in the heliosphere frame
+    # v⃗_helio = v⃗_sc - U⃗_sc (simple velocity addition)
+    velocity_vector_helio = velocity_vector_sc - pset.data["sc_velocity"]
+
+    # Convert to spherical coordinates to get ENA source directions
+    ena_source_direction_helio = geometry.cartesian_to_spherical(
+        velocity_vector_helio.data
+    )
+
+    # Update the PSET hae_longitude and hae_latitude variables with the new
+    # energy-dependent values.
+    pset.data["hae_longitude"] = (
+        pset.data["energy_sc"].dims,
+        ena_source_direction_helio[..., 1],
+    )
+    pset.data["hae_latitude"] = (
+        pset.data["energy_sc"].dims,
+        ena_source_direction_helio[..., 2],
+    )
+
+
+def apply_compton_getting_correction(
+    pset: LoHiBasePointingSet,
+    et: float,
+    energies_hf: xr.DataArray,
+) -> None:
+    """
+    Apply Compton-Getting correction to a pointing set and update coordinates.
+
+    This function performs the Compton-Getting velocity transformation to correct
+    ENA observations for the motion of the spacecraft through the heliosphere.
+    The corrected coordinates represent the true source directions of the ENAs
+    in the heliosphere frame.
+
+    The pointing set is modified in-place: new variables are added to the dataset
+    for the corrected coordinates and energies, and the az_el_points attribute
+    is updated to use the corrected coordinates for binning.
+
+    All calculations are performed using xarray DataArrays to preserve dimension
+    information throughout the computation.
+
+    Parameters
+    ----------
+    pset : LoHiBasePointingSet
+        Pointing set object containing HAE longitude/latitude coordinates.
+    et : float
+        Ephemeris time in seconds past J2000 for SPICE calculations.
+    energies_hf : xr.DataArray
+        ENA energies in the heliosphere frame in eV. Must be 1D with an
+        energy dimension.
+
+    Notes
+    -----
+    This function adds the following variables to the pointing set dataset:
+    - "sc_velocity": Spacecraft velocity vector (km/s)
+    - "sc_direction_vector": Spacecraft velocity unit vector
+    - "look_direction": Cartesian unit vectors of observation directions
+    - "hf_energy": ENA energies in heliosphere frame (eV)
+    - "energy_sc": ENA energies in spacecraft frame (eV)
+    - "ena_source_hae_longitude": ENA source longitudes in heliosphere frame (degrees)
+    - "ena_source_hae_latitude": ENA source latitudes in heliosphere frame (degrees)
+
+    The az_el_points attribute is updated to use the corrected coordinates,
+    which will be used for subsequent binning operations.
+    """
+    # Step 1: Add spacecraft velocity and direction to pset
+    _add_spacecraft_velocity_to_pset(pset, et)
+
+    # Step 2: Calculate and add look direction vectors to pset
+    _add_cartesian_look_direction(pset)
+
+    # Step 3: Apply Compton-Getting transformation
+    _calculate_compton_getting_transform(pset, energies_hf)
+
+    # Step 4: Update az_el_points to use the corrected coordinates
+    pset.update_az_el_points()

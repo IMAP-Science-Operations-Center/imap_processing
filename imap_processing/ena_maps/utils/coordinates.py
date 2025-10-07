@@ -21,3 +21,5 @@ class CoordNames(Enum):
 
     # Common name for dimension along azimuth/elevation vector
     AZ_EL_VECTOR = "az_el"
+    # Commoon name for dimension along Cartesian vector
+    CARTESIAN_VECTOR = "x_y_z"
