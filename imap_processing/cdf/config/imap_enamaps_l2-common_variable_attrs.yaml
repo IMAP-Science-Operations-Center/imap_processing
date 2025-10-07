@@ -113,37 +113,22 @@ epoch_delta:
 # in the tiling-specific YAML files.
 longitude:
   <<: *default_float32
-  CATDESC: Pixel center longitude
   FIELDNAM: "{frame} Longitude"
-  LABLAXIS: Longitude
-  FORMAT: I3
+  LABLAXIS: "{frame} Longitude"
   UNITS: deg
   VAR_TYPE: support_data
   VALIDMIN: 0
   VALIDMAX: 360
-  LABL_PTR_1: longitude_label
-  SCALETYP: linear
-  MONOTON: INCREASE
-  DELTA_PLUS_VAR: longitude_delta
-  DELTA_MINUS_VAR: longitude_delta
   DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.AzimuthAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 latitude:
   <<: *default_float32
-  CATDESC: Pixel center latitude
   FIELDNAM: "{frame} Latitude"
-  LABLAXIS: Latitude
-  FORMAT: I2
+  LABLAXIS: "{frame} Latitude"
   UNITS: deg
   VAR_TYPE: support_data
   VALIDMIN: -90
   VALIDMAX: 90
-  LABL_PTR_1: latitude_label
-  SCALETYP: linear
-  BIN_LOCATION: 0.5
-  MONOTON: INCREASE
-  DELTA_PLUS_VAR: latitude_delta
-  DELTA_MINUS_VAR: latitude_delta
   DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.ElevationAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 # Define Data variables, but not their pixel-level DEPENDs
@@ -297,7 +282,7 @@ obs_date_range:
   <<: *default_int64
   datatype: int64
   CATDESC: Standard deviation of the observation date.
-  FIELDNAM: J2000 Nanoseconds
+  FIELDNAM: Observation date range
   UNITS: ns
   DEPEND_0: epoch
   VAR_TYPE: support_data
