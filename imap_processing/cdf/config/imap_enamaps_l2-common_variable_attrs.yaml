@@ -81,20 +81,6 @@ energy_delta_plus:
 epoch:
   CATDESC: Map time range start, number of nanoseconds since J2000 with leap seconds included
   FIELDNAM: J2000 Nanoseconds
-  LABLAXIS: epoch
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
-  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-  RESOLUTION: ' '
-  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
   DELTA_PLUS_VAR: epoch_delta
   BIN_LOCATION: 0
 
