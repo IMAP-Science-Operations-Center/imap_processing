@@ -350,6 +350,7 @@ class TestComptonGettingCorrection:
         assert "energy_sc" in mock_hi_pset.data
         assert "hae_longitude" in mock_hi_pset.data
         assert "hae_latitude" in mock_hi_pset.data
+        assert "ram_mask" in mock_hi_pset.data
 
         # Verify hf_energy matches input
         np.testing.assert_array_equal(
@@ -372,6 +373,12 @@ class TestComptonGettingCorrection:
         assert np.all(mock_hi_pset.data["hae_longitude"].values <= 360)
         assert np.all(mock_hi_pset.data["hae_latitude"].values >= -90)
         assert np.all(mock_hi_pset.data["hae_latitude"].values <= 90)
+
+        # Verify ram_mask properties
+        ram_mask = mock_hi_pset.data["ram_mask"]
+        assert isinstance(ram_mask, xr.DataArray)
+        assert ram_mask.dtype == bool
+        assert ram_mask.shape == mock_hi_pset.data["energy_sc"].shape
 
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
     def test_apply_compton_getting_correction(self, mock_imap_state, mock_hi_pset):
@@ -400,6 +407,7 @@ class TestComptonGettingCorrection:
         assert "energy_sc" in mock_hi_pset.data
         assert "hae_longitude" in mock_hi_pset.data
         assert "hae_latitude" in mock_hi_pset.data
+        assert "ram_mask" in mock_hi_pset.data
 
         # Verify update_az_el_points was called
         mock_hi_pset.update_az_el_points.assert_called_once()
@@ -456,6 +464,13 @@ class TestComptonGettingCorrection:
         assert hi_pset.az_el_points is not None
         assert isinstance(hi_pset.az_el_points, xr.DataArray)
 
+        # Verify ram_mask was added and has correct properties
+        assert "ram_mask" in hi_pset.data
+        ram_mask = hi_pset.data["ram_mask"]
+        assert isinstance(ram_mask, xr.DataArray)
+        assert ram_mask.dtype == bool
+        assert ram_mask.shape == hi_pset.data["energy_sc"].shape
+
     def test_compton_getting_physical_consistency(self, mock_hi_pset):
         """Test physical consistency of Compton-Getting correction."""
         # Set up a known spacecraft velocity
@@ -488,3 +503,80 @@ class TestComptonGettingCorrection:
 
         # 4. Energy variation should exist across different look directions
         assert energy_sc.values.std() > 0
+
+    def test_ram_mask_calculation(self):
+        """Test ram_mask correctly identifies ram and anti-ram directions."""
+        # Create a simple mock pset with specific look directions
+        n_directions = 4
+        data = xr.Dataset(
+            {
+                "epoch": (["epoch"], np.array([797949131184000000])),
+                # Set up specific look directions:
+                # 0 degrees lon, 0 lat = +X direction (ram)
+                # 180 degrees lon, 0 lat = -X direction (anti-ram)
+                # 90 degrees lon, 0 lat = +Y direction (perpendicular)
+                # 270 degrees lon, 0 lat = -Y direction (perpendicular)
+                "hae_longitude": (
+                    ["epoch", "direction"],
+                    np.array([[0.0, 180.0, 90.0, 270.0]]),
+                ),
+                "hae_latitude": (
+                    ["epoch", "direction"],
+                    np.array([[0.0, 0.0, 0.0, 0.0]]),
+                ),
+                "direction": (["direction"], np.arange(n_directions)),
+            }
+        ).transpose("epoch", "direction")
+
+        pset = mock.MagicMock(spec=ena_maps.LoHiBasePointingSet)
+        pset.data = data
+        pset.spatial_coords = ("direction",)
+        pset.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
+
+        # Set up spacecraft velocity in +X direction
+        sc_velocity = np.array([30.0, 0.0, 0.0])  # km/s
+        pset.data["sc_velocity"] = xr.DataArray(sc_velocity, dims=["x_y_z"])
+        pset.data["sc_direction_vector"] = xr.DataArray(
+            sc_velocity / np.linalg.norm(sc_velocity), dims=["x_y_z"]
+        )
+
+        # Add look directions
+        _add_cartesian_look_direction(pset)
+
+        # Single energy level
+        energies_hf = xr.DataArray(np.array([1000.0]), dims=["esa_energy_step"])
+
+        # Calculate CG transform
+        _calculate_compton_getting_transform(pset, energies_hf)
+
+        # Verify ram_mask exists
+        assert "ram_mask" in pset.data
+        ram_mask = pset.data["ram_mask"]
+
+        # Verify dimensions
+        assert set(ram_mask.dims) == {"epoch", "esa_energy_step", "direction"}
+
+        # Extract the mask values for easier checking
+        mask_values = ram_mask.values.squeeze()
+
+        # Direction 0 (0 deg lon, 0 lat = +X): Should be ram (True)
+        # Direction 1 (180 deg lon, 0 lat = -X): Should be anti-ram (False)
+        # Directions 2 and 3 (perpendicular): Will always be anti-ram (False)
+
+        # The key test: particles coming from the spacecraft's direction of motion
+        # (opposite to velocity) should be anti-ram (False)
+        assert not mask_values[1], (
+            "Particles from -X (opposite velocity) should be anti-ram"
+        )
+
+        # Particles coming from the direction the spacecraft is moving toward
+        # should be ram (True)
+        assert mask_values[0], "Particles from +X (along velocity) should be ram"
+
+        # Particles coming from the perpendicular direction should always shift
+        # to be coming from a slightly anti-ram direction
+        assert not mask_values[2], "Particles from +Y should be anti-ram"
+        assert not mask_values[3], "Particles from -Y should be anti-ram"
+
+        # Verify all values are boolean
+        assert ram_mask.dtype == bool
