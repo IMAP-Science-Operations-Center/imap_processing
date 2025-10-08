@@ -3,13 +3,23 @@
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.codice_l2 import (
     add_dataset_attributes,
     compute_geometric_factors,
+    get_efficiency_lut,
+    get_geometric_factor_lut,
+    process_lo_species,
+)
+from imap_processing.codice.constants import (
+    LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
+    SW_POSITIONS,
 )
 
 pytestmark = pytest.mark.external_test_data
@@ -18,6 +28,16 @@ EXPECTED_LOGICAL_SOURCES = [
     "imap_codice_l2_hi-direct-events",
     "imap_codice_l2_lo-direct-events",
 ]
+
+
+@pytest.fixture
+def ancillary_files():
+    l2_input_path = imap_module_directory / "tests" / "codice" / "data" / "l2_input"
+    return {
+        "l2-lo-gfactor": l2_input_path / "imap_codice_l2-lo-gfactor_20251002_v001.csv",
+        "l2-lo-efficiency": l2_input_path
+        / "imap_codice_l2-lo-efficiency_20251002_v001.csv",
+    }
 
 
 @pytest.fixture
@@ -55,34 +75,43 @@ def mock_half_spin_lut(monkeypatch):
 def test_compute_geometric_factors_all_full_mode(mock_half_spin_lut):
     # rgfo_half_spin = 3 means all half_spin values (1 or 2) are < rgfo_half_spin
     dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([3, 3]))})
+    geometric_factor_lut = {
+        "full": np.zeros((128, 24)),
+        "reduced": np.ones((128, 24)),
+    }
+    result = compute_geometric_factors(dataset, geometric_factor_lut)
 
-    result = compute_geometric_factors(dataset)
-
-    # Expect 0.75 everywhere
-    expected = np.full((2, 128), 0.75)
+    # Expect "full" values everywhere
+    expected = np.full((2, 128, 24), 0)
     np.testing.assert_array_equal(result, expected)
 
 
 def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_lut):
     # rgfo_half_spin = 0 means all half_spin values (>=1) are >= rgfo_half_spin
     dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([0]))})
+    geometric_factor_lut = {
+        "full": np.zeros((128, 24)),
+        "reduced": np.ones((128, 24)),
+    }
+    result = compute_geometric_factors(dataset, geometric_factor_lut)
 
-    result = compute_geometric_factors(dataset)
-
-    # Expect 0.5 everywhere
-    expected = np.full((1, 128), 0.5)
+    # Expect "reduced" values everywhere
+    expected = np.full((1, 128, 24), 1)
     np.testing.assert_array_equal(result, expected)
 
 
 def test_compute_geometric_factors_mixed(mock_half_spin_lut):
     # rgfo_half_spin = 2
     dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([2]))})
+    geometric_factor_lut = {
+        "full": np.zeros((128, 24)),
+        "reduced": np.ones((128, 24)),
+    }
+    result = compute_geometric_factors(dataset, geometric_factor_lut)
 
-    result = compute_geometric_factors(dataset)
-
-    # ESA steps 0-63 (half_spin=1) -> 1 < 2 → 0.75
-    # ESA steps 64-127 (half_spin=2) -> 2 !< 2 → 0.5
-    expected = np.array([[0.75] * 64 + [0.5] * 64])
+    # ESA steps 0-63 (half_spin=1) -> 1 < 2 → mode=full → 1
+    # ESA steps 64-127 (half_spin=2) -> 2 !< 2 → mode=reduced → 0
+    expected = np.repeat(np.array([[[0]] * 64 + [[1]] * 64]), 24, -1)
     np.testing.assert_array_equal(result, expected)
 
 
@@ -122,4 +151,76 @@ def test_add_dataset_attributes(mock_cdf_attrs):
         # Check logger error call for missing attributes
         mock_logger.error.assert_called_with(
             "Field 'var3' and 'test-product-var3' not found in attribute manager."
+        )
+
+
+@pytest.mark.external_test_data
+def test_get_geometric_factor_lut(ancillary_files):
+    gfactor_lut = get_geometric_factor_lut(ancillary_files)
+
+    # Load the csv files directly to compare
+    geometric_factors = pd.read_csv(ancillary_files["l2-lo-gfactor"])
+    full = (
+        geometric_factors[geometric_factors["mode"] == "full"]
+        .drop(["mode", "esa_step"], axis=1)
+        .to_numpy()
+    )
+    reduced = (
+        geometric_factors[geometric_factors["mode"] == "reduced"]
+        .drop(["mode", "esa_step"], axis=1)
+        .to_numpy()
+    )
+
+    # Test the shape is (modes, esa_steps, positions)
+    np.testing.assert_array_equal(gfactor_lut.shape, (2, 128, 24))
+
+    np.testing.assert_array_equal(gfactor_lut[0], full)
+    np.testing.assert_array_equal(gfactor_lut[1], reduced)
+    modes = np.array([0, 1])
+    np.testing.assert_array_equal(gfactor_lut[modes], gfactor_lut)
+
+
+@pytest.mark.external_test_data
+def test_get_efficiency_lut(ancillary_files):
+    efficiency_lut = get_efficiency_lut(ancillary_files)
+    expected_colnames = ["esa_step", "product", "species"] + [
+        f"position_{x}" for x in range(1, 25)
+    ]
+
+    for col in expected_colnames:
+        assert col in efficiency_lut.columns, f"Missing column {col} in efficiency LUT"
+
+
+def test_process_lo_species(ancillary_files):
+    l1b_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1b_validation"
+        / "imap_codice_l1b_lo-sw-species_20250814211100_v0.0.3.cdf"
+    )
+    l1b_val_data = load_cdf(l1b_val_data)
+    l1b_val_data_processed = l1b_val_data.copy()
+    gf = np.ones((len(l1b_val_data.epoch), 128, 24)) * 2
+    eff_lookup = get_efficiency_lut(ancillary_files)
+    eff = eff_lookup[eff_lookup["product"] == "sw"]
+    process_lo_species(
+        l1b_val_data_processed,
+        LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
+        gf,
+        eff,
+        SW_POSITIONS,
+    )
+
+    for var in LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES:
+        assert var in l1b_val_data_processed, f"Missing variable {var} after processing"
+        # Check that values are non-negative
+        assert np.all(l1b_val_data_processed[var].values >= 0), (
+            f"Variable {var} contains negative values"
+        )
+        # Check that the processed intensity values are less than or equal to the
+        # original count rates
+        assert np.all(l1b_val_data_processed[var].values <= l1b_val_data[var].values), (
+            f"Variable {var} intensity is greater than the original count rates"
         )

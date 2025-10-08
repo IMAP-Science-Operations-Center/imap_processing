@@ -92,6 +92,26 @@ LO_SW_SPECIES_VARIABLE_NAMES = [
     "heplus",
     "cnoplus",
 ]
+LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES = [
+    "hplus",
+    "heplusplus",
+    "cplus4",
+    "cplus5",
+    "cplus6",
+    "oplus5",
+    "oplus6",
+    "oplus7",
+    "oplus8",
+    "ne",
+    "mg",
+    "si",
+    "fe_loq",
+    "fe_hiq",
+]
+LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES = [
+    "heplus",
+    "cnoplus",
+]
 LO_NSW_SPECIES_VARIABLE_NAMES = [
     "hplus",
     "heplusplus",
@@ -2225,3 +2245,7 @@ HALF_SPIN_LUT = {
     30: [116, 117, 118, 119, 120, 121],
     31: [122, 123, 124, 125, 126, 127],
 }
+
+NSW_POSITIONS = [x for x in range(3, 22)]
+SW_POSITIONS = [0]
+PUI_POSITIONS = [0, 1, 2, 22, 23]
