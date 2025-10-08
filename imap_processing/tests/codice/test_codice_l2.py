@@ -1,5 +1,6 @@
 """Tests the L2 processing of CoDICE L1 data"""
 
+from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -9,17 +10,17 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l2 import (
     add_dataset_attributes,
     compute_geometric_factors,
     get_efficiency_lut,
     get_geometric_factor_lut,
+    process_codice_l2,
     process_lo_species,
 )
 from imap_processing.codice.constants import (
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
-    SW_POSITIONS,
 )
 
 pytestmark = pytest.mark.external_test_data
@@ -203,15 +204,18 @@ def test_process_lo_species(ancillary_files):
     l1b_val_data = load_cdf(l1b_val_data)
     l1b_val_data_processed = l1b_val_data.copy()
     gf = np.ones((len(l1b_val_data.epoch), 128, 24)) * 2
-    eff_lookup = get_efficiency_lut(ancillary_files)
-    eff = eff_lookup[eff_lookup["product"] == "sw"]
-    process_lo_species(
-        l1b_val_data_processed,
-        LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
-        gf,
-        eff,
-        SW_POSITIONS,
-    )
+    with mock.patch(
+        "imap_processing.codice.codice_l2.get_species_efficiency",
+        return_value=np.ones((128, 5)) * 2,
+    ):
+        len_pos = 5
+        process_lo_species(
+            l1b_val_data_processed,
+            LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
+            gf,
+            None,
+            list(np.arange(0, len_pos)),
+        )
 
     for var in LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES:
         assert var in l1b_val_data_processed, f"Missing variable {var} after processing"
@@ -219,8 +223,41 @@ def test_process_lo_species(ancillary_files):
         assert np.all(l1b_val_data_processed[var].values >= 0), (
             f"Variable {var} contains negative values"
         )
-        # Check that the processed intensity values are less than or equal to the
-        # original count rates
-        assert np.all(l1b_val_data_processed[var].values <= l1b_val_data[var].values), (
-            f"Variable {var} intensity is greater than the original count rates"
+        # Check that values match expected calculation
+        expected_intensity = (
+            l1b_val_data[var]
+            / (len_pos * 4 * l1b_val_data["energy_table"].data)[
+                np.newaxis, :, np.newaxis
+            ]
         )
+        np.testing.assert_allclose(
+            l1b_val_data_processed[var].values, expected_intensity.values, rtol=1e-5
+        )
+
+
+def test_codice_l2_sw(ancillary_files):
+    l1b_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1b_validation"
+        / "imap_codice_l1b_lo-sw-species_20250814211100_v0.0.3.cdf"
+    )
+    ds = process_codice_l2(l1b_val_data, ancillary_files)
+    ds.attrs["Data_version"] = "001"
+    write_cdf(ds)
+
+
+def test_codice_l2_nsw(ancillary_files):
+    l1b_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1b_validation"
+        / "imap_codice_l1b_lo-nsw-species_20250814211100_v0.0.3.cdf"
+    )
+    ds = process_codice_l2(l1b_val_data, ancillary_files)
+    ds.attrs["Data_version"] = "001"
+    write_cdf(ds)

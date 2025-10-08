@@ -63,10 +63,10 @@ def process_codice_l2(file_path: Path, ancillary_files: dict) -> xr.Dataset:
 
     # Use the L1 data product as a starting point for L2
     l2_dataset = l1_dataset.copy()
-
     # Get the L2 CDF attributes
-    cdf_attrs = ImapCdfAttributes()
-    l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
+    # cdf_attrs = ImapCdfAttributes()
+    # TODO uncomment and update variable attrs
+    # l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
 
     # TODO: update list of datasets that need geometric factors (if needed)
     # Compute geometric factors needed for intensity calculations
@@ -407,6 +407,9 @@ def process_lo_species(
         species_eff = get_species_efficiency(species, efficiency)[
             np.newaxis, :, positions
         ]
+        if species_eff.size == 0:
+            logger.warning("No efficiency data found for species {species}. Skipping.")
+            continue
         # Take the mean efficiency across positions
         species_eff = np.nanmean(species_eff, axis=-1)
         denominator = (
