@@ -174,8 +174,10 @@ def calculate_fwhm_spun_scattering(
         fwhm_phi_sum[:, for_inds] += fwhm_phi.T
         sample_count[:, for_inds] += 1
 
-    fwhm_phi_avg = np.divide(fwhm_theta_sum, sample_count, where=sample_count != 0)
-    fwhm_theta_avg = np.divide(fwhm_theta_sum, sample_count, where=sample_count != 0)
+    fwhm_phi_avg = np.zeros_like(fwhm_phi_sum)
+    fwhm_theta_avg = np.zeros_like(fwhm_theta_sum)
+    np.divide(fwhm_phi_sum, sample_count, out=fwhm_phi_avg, where=sample_count != 0)
+    np.divide(fwhm_theta_sum, sample_count, out=fwhm_theta_avg, where=sample_count != 0)
     return (
         pixels_below_scattering,
         fwhm_theta_avg,

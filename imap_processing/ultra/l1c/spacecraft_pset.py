@@ -77,6 +77,7 @@ def calculate_spacecraft_pset(
 
     # If there are no species return None.
     if indices.size == 0:
+        logger.info(f"No data available for {name}")
         return None
 
     # Before we use the de_dataset to calculate the pointing set grid we need to filter.
@@ -126,7 +127,7 @@ def calculate_spacecraft_pset(
 
     logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
-    efficiencies, geometric_function = get_efficiencies_and_geometric_function(
+    geometric_function, efficiencies = get_efficiencies_and_geometric_function(
         pixels_below_scattering,
         boundary_scale_factors,
         theta_vals,
@@ -136,6 +137,10 @@ def calculate_spacecraft_pset(
     )
     sensitivity = efficiencies * geometric_function
 
+    # Get the start and stop times of the pointing period
+    pointing_start, pointing_stop = get_pointing_times(
+        float(et_to_met(species_dataset["event_times"].data[0]))
+    )
     # Calculate exposure times
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
@@ -143,6 +148,8 @@ def calculate_spacecraft_pset(
         params_dataset,
         pixels_below_scattering,
         boundary_scale_factors,
+        pointing_start,
+        pointing_stop,
         n_pix=n_pix,
     )
     logger.info("Calculating background rates.")
@@ -172,10 +179,7 @@ def calculate_spacecraft_pset(
         spacecraft_pset_quality_flags,
         nside=nside,
     )
-    # Get pointing start and stop times and convert to ttj2000ns
-    pointing_start, pointing_stop = get_pointing_times(
-        float(et_to_met(species_dataset["event_times"].data[0]))
-    )
+    # Convert pointing start time to ttj2000ns
     pointing_start = met_to_ttj2000ns(pointing_start)
     # Epoch should be the start of the pointing
     pset_dict["epoch"] = np.atleast_1d(pointing_start).astype(np.int64)

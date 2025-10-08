@@ -364,9 +364,12 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     for var in pointing_indep_vars:
         skymap.data_1d[var] = skymap.data_1d[var].squeeze("epoch", drop=True)
 
-    # Background rates must be scaled by the ratio of the solid angles of the
-    # map pixel / pointing set pixel
+    # Background rates, sensitivity, and scattering uncertianties must be scaled by
+    # the ratio of the solid angles of the map pixel / pointing set pixel
     skymap.data_1d["background_rates"] *= skymap.solid_angle / pointing_set.solid_angle
+    skymap.data_1d["sensitivity"] *= skymap.solid_angle / pointing_set.solid_angle
+    skymap.data_1d["scatter_theta"] *= skymap.solid_angle / pointing_set.solid_angle
+    skymap.data_1d["scatter_phi"] *= skymap.solid_angle / pointing_set.solid_angle
 
     # Get the energy bin widths from a PointingSet (they will all be the same)
     delta_energy = pointing_set.data["energy_bin_delta"]

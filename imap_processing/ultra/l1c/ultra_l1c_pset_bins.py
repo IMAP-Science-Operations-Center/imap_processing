@@ -13,7 +13,11 @@ from imap_processing.spice.geometry import (
     cartesian_to_spherical,
     imap_state,
 )
-from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
+from imap_processing.spice.spin import (
+    get_spacecraft_spin_phase,
+    get_spin_angle,
+    get_spin_data,
+)
 from imap_processing.spice.time import ttj2000ns_to_met
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -381,7 +385,7 @@ def calculate_exposure_time(
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
     # Exposure time should now be of shape (energy, npix)
-    exposure_pointing = np.zeros((len(energy_bin_geometric_means), n_pix))
+    counts = np.zeros((len(energy_bin_geometric_means), n_pix))
     # nominal spin phase step.
     nominal_ms_step = 15 / len(pixels_below_scattering)  # time step
     # Query the dead-time ratio and apply the nominal exposure time to pixels in the FOR
@@ -396,12 +400,13 @@ def calculate_exposure_time(
                 continue
             # Apply the nominal exposure time (1 ms) scaled by the deadtime ratio to
             # every pixel in the FOR, that is below the FWHM scattering threshold,
-            exposure_pointing[energy_bin_idx, pixels_at_energy_and_spin] += (
-                nominal_ms_step
-                * deadtime_ratios[i]
+            counts[energy_bin_idx, pixels_at_energy_and_spin] += (
+                deadtime_ratios[i]
                 * boundary_scale_factors[pixels_at_energy_and_spin, i]
             )
 
+    # Multiply by the nominal spin step to get the exposure time in ms
+    exposure_pointing = counts * nominal_ms_step
     return exposure_pointing
 
 
@@ -410,6 +415,8 @@ def get_spacecraft_exposure_times(
     params_dataset: xr.Dataset,
     pixels_below_scattering: list[list],
     boundary_scale_factors: NDArray,
+    pointing_start_met: float,
+    pointing_stop_met: float,
     n_pix: int,
 ) -> tuple[NDArray, NDArray]:
     """
@@ -428,6 +435,10 @@ def get_spacecraft_exposure_times(
         below the FWHM scattering threshold.
     boundary_scale_factors : np.ndarray
         Boundary scale factors for each pixel at each spin phase.
+    pointing_start_met : float
+        Start time of the pointing period in mission elapsed time.
+    pointing_stop_met : float
+        Stop time of the pointing period in mission elapsed time.
     n_pix : int
         Number of HEALPix pixels.
 
@@ -440,13 +451,30 @@ def get_spacecraft_exposure_times(
     nominal_deadtime_ratios : np.ndarray
         Deadtime ratios at each spin phase step (1ms res).
     """
-    # TODO: use the universal spin table and
-    #  universal pointing table here to determine actual number of spins
     sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
     nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates)
-    exposure_pointing_adjusted = calculate_exposure_time(
+    exposure_time = calculate_exposure_time(
         nominal_deadtime_ratios, pixels_below_scattering, boundary_scale_factors, n_pix
     )
+    # Use the universal spin table to determine the actual number of spins
+    nominal_spin_seconds = 15.0
+    spin_data = get_spin_data()
+    # Filter for spins only in pointing
+    spin_data = spin_data[
+        (spin_data["spin_start_met"] >= pointing_start_met)
+        & (spin_data["spin_start_met"] <= pointing_stop_met)
+    ]
+    # Get valid spin data only
+    valid_mask = (spin_data["spin_phase_valid"].values == 1) & (
+        spin_data["spin_period_valid"].values == 1
+    )
+    total_spin: float = np.sum(
+        spin_data[valid_mask].spin_period_sec / nominal_spin_seconds
+    )
+    logger.info(
+        f"Calculated total spins universal spin table. Found {total_spin} valid spins."
+    )
+    exposure_pointing_adjusted = total_spin * exposure_time
     return exposure_pointing_adjusted, nominal_deadtime_ratios
 
 
@@ -483,10 +511,12 @@ def get_efficiencies_and_geometric_function(
 
     Returns
     -------
-    gf_summation : np.ndarray
-        Summation of geometric factors for each pixel and energy bin.
-    eff_summation : np.ndarray
-        Summation of efficiencies for each pixel and energy bin.
+    gf_averaged : np.ndarray
+        Averaged geometric factors across all spin phases.
+        Shape = (n_energy_bins, npix).
+    eff_averaged : np.ndarray
+        Averaged efficiencies across all spin phases.
+        Shape = (n_energy_bins, npix).
     """
     # Load callable efficiency interpolator function
     eff_interpolator = get_efficiency_interpolator(ancillary_files)
@@ -518,8 +548,11 @@ def get_efficiencies_and_geometric_function(
             if pixel_inds.size == 0:
                 continue
             energy = energy_bin_geometric_means[energy_bin_idx]
+            # Clip energy to calibrated range
+            energy_clipped = np.clip(energy, 3.0, 80.0)
+
             eff_values = get_efficiency(
-                np.full(phi_at_spin[pixel_inds].shape, energy),
+                np.full(phi_at_spin[pixel_inds].shape, energy_clipped),
                 phi_at_spin[pixel_inds],
                 theta_at_spin[pixel_inds],
                 ancillary_files,
@@ -536,8 +569,10 @@ def get_efficiencies_and_geometric_function(
 
     # return averaged geometric factors and efficiencies across all spin phases
     # These are now energy dependent.
-    gf_averaged = np.divide(gf_summation, sample_count, where=sample_count != 0)
-    eff_averaged = np.divide(eff_summation, sample_count, where=sample_count != 0)
+    gf_averaged = np.zeros_like(gf_summation)
+    eff_averaged = np.zeros_like(eff_summation)
+    np.divide(gf_summation, sample_count, out=gf_averaged, where=sample_count != 0)
+    np.divide(eff_summation, sample_count, out=eff_averaged, where=sample_count != 0)
     return gf_averaged, eff_averaged
 
 
