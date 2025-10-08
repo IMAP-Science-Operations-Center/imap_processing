@@ -192,6 +192,16 @@
         "code",
         "doc"
       ]
+    },
+    {
+      "login": "mfacchinelli",
+      "name": "Michele Facchinelli",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19731497?v=4",
+      "profile": "https://github.com/mfacchinelli",
+      "contributions": [
+        "code",
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7,
