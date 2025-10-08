@@ -429,6 +429,20 @@ def _calculate_compton_getting_transform(
         0.5 * PROTON_MASS_GRAMS * (sc_velocity_km_per_sec * 1e5) ** 2 / ERG_PER_EV
     )
 
+    # Note: Tim thinks that this approach seems backwards. Here, we are assuming
+    #     that ENAs are observed in the heliosphere frame at the ESA energy levels.
+    #     We then calculate the velocity that said ENAs would have in the spacecraft
+    #     frame as well as the CG corrected energy level in the spacecraft frame.
+    #     We then use this velocity to calculate and the velocity of the spacecraft
+    #     to do the vector math which determines the ENA source direction in the
+    #     heliosphere frame.
+    #     The ENAs are in fact observed in the spacecraft frame at a known energy
+    #     level in the spacecraft frame. Why don't we use that energy level to
+    #     calculate the source direction in the spacecraft frame and then do the
+    #     vector math to find the source direction in the heliosphere frame? We
+    #     would also need to calculate the CG corrected ENA energy in the heliosphere
+    #     frame and keep track of that when binning.
+
     # Calculate y values for each energy level (Equation 61)
     # y_k = sqrt(E^h_k / E^u)
     y = np.sqrt(pset.data["energy_hf"] / energy_u)
