@@ -341,24 +341,24 @@ class TestComptonGettingCorrection:
         _add_cartesian_look_direction(mock_hi_pset)
 
         # Create energy array
-        energies_hf = xr.DataArray(
+        energy_hf = xr.DataArray(
             np.array([500.0, 1000.0, 2000.0]),
             dims=["esa_energy_step"],
             coords={"esa_energy_step": [1, 2, 3]},
         )
 
-        _calculate_compton_getting_transform(mock_hi_pset, energies_hf)
+        _calculate_compton_getting_transform(mock_hi_pset, energy_hf)
 
         # Verify required variables were added
-        assert "hf_energy" in mock_hi_pset.data
+        assert "energy_hf" in mock_hi_pset.data
         assert "energy_sc" in mock_hi_pset.data
         assert "hae_longitude" in mock_hi_pset.data
         assert "hae_latitude" in mock_hi_pset.data
         assert "ram_mask" in mock_hi_pset.data
 
-        # Verify hf_energy matches input
+        # Verify energy_hf matches input
         np.testing.assert_array_equal(
-            mock_hi_pset.data["hf_energy"].values, energies_hf.values
+            mock_hi_pset.data["energy_hf"].values, energy_hf.values
         )
 
         # Verify energy_sc has correct shape
@@ -392,20 +392,20 @@ class TestComptonGettingCorrection:
         mock_imap_state.return_value = mock_sc_state
 
         # Create energy array
-        energies_hf = xr.DataArray(
+        energy_hf = xr.DataArray(
             np.array([500.0, 1000.0, 2000.0]),
             dims=["esa_energy_step"],
             coords={"esa_energy_step": [1, 2, 3]},
         )
 
         # Apply the full correction
-        apply_compton_getting_correction(mock_hi_pset, energies_hf)
+        apply_compton_getting_correction(mock_hi_pset, energy_hf)
 
         # Verify all intermediate variables were added
         assert "sc_velocity" in mock_hi_pset.data
         assert "sc_direction_vector" in mock_hi_pset.data
         assert "look_direction" in mock_hi_pset.data
-        assert "hf_energy" in mock_hi_pset.data
+        assert "energy_hf" in mock_hi_pset.data
         assert "energy_sc" in mock_hi_pset.data
         assert "hae_longitude" in mock_hi_pset.data
         assert "hae_latitude" in mock_hi_pset.data
@@ -430,7 +430,7 @@ class TestComptonGettingCorrection:
         mock_imap_state.return_value = mock_sc_state
 
         # Create energy array (Hi has 9 energy steps)
-        energies_hf = xr.DataArray(
+        energy_hf = xr.DataArray(
             np.array(
                 [500.0, 750.0, 1100.0, 1650.0, 2500.0, 3750.0, 5700.0, 8520.0, 12800.0]
             ),
@@ -439,7 +439,7 @@ class TestComptonGettingCorrection:
         )
 
         # Apply correction
-        apply_compton_getting_correction(hi_pset, energies_hf)
+        apply_compton_getting_correction(hi_pset, energy_hf)
 
         # Verify coordinates were modified
         corrected_lon = hi_pset.data["hae_longitude"]
@@ -485,9 +485,9 @@ class TestComptonGettingCorrection:
         _add_cartesian_look_direction(mock_hi_pset)
 
         # Single energy level
-        energies_hf = xr.DataArray(np.array([1000.0]), dims=["esa_energy_step"])
+        energy_hf = xr.DataArray(np.array([1000.0]), dims=["esa_energy_step"])
 
-        _calculate_compton_getting_transform(mock_hi_pset, energies_hf)
+        _calculate_compton_getting_transform(mock_hi_pset, energy_hf)
 
         # Physical checks:
         # 1. Energy in spacecraft frame should be higher for particles coming
@@ -544,10 +544,10 @@ class TestComptonGettingCorrection:
         _add_cartesian_look_direction(pset)
 
         # Single energy level
-        energies_hf = xr.DataArray(np.array([1000.0]), dims=["esa_energy_step"])
+        energy_hf = xr.DataArray(np.array([1000.0]), dims=["esa_energy_step"])
 
         # Calculate CG transform
-        _calculate_compton_getting_transform(pset, energies_hf)
+        _calculate_compton_getting_transform(pset, energy_hf)
 
         # Verify ram_mask exists
         assert "ram_mask" in pset.data

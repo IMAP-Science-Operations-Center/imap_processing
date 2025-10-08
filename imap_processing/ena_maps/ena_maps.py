@@ -1315,7 +1315,7 @@ class RectangularSkyMap(AbstractSkyMap):
             if ("L2" in name)
         ]
         l2_coords.append(CoordNames.TIME.value)
-        for map_coord in cdf_ds.sizes.keys():
+        for map_coord in cdf_ds.dims:
             if map_coord not in l2_coords:
                 cdf_ds = cdf_ds.drop_dims(map_coord)
 

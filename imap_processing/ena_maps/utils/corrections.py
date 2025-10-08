@@ -374,7 +374,7 @@ def _add_cartesian_look_direction(pset: LoHiBasePointingSet) -> None:
 
 def _calculate_compton_getting_transform(
     pset: LoHiBasePointingSet,
-    energies_hf: xr.DataArray,
+    energy_hf: xr.DataArray,
 ) -> None:
     """
     Apply Compton-Getting transformation to compute ENA source directions.
@@ -392,7 +392,7 @@ def _calculate_compton_getting_transform(
     pset : LoHiBasePointingSet
         Pointing set object with sc_velocity, sc_direction_vector, and
         look_direction already added.
-    energies_hf : xr.DataArray
+    energy_hf : xr.DataArray
         ENA energies in the heliosphere frame in eV.
 
     Notes
@@ -405,7 +405,7 @@ def _calculate_compton_getting_transform(
     - "ena_source_hae_latitude": ENA source latitudes in heliosphere frame (degrees)
     """
     # Store heliosphere frame energies
-    pset.data["hf_energy"] = energies_hf
+    pset.data["energy_hf"] = energy_hf
 
     # Calculate spacecraft speed
     sc_velocity_km_per_sec = np.linalg.norm(
@@ -424,14 +424,14 @@ def _calculate_compton_getting_transform(
     )
 
     # Calculate the kinetic energy of a hydrogen ENA traveling at spacecraft velocity
-    # E_u = (1/2) * m * U_sc^2 in eV
+    # E_u = (1/2) * m * U_sc^2 (convert km/s to cm/s with 1.0e5 factor)
     energy_u = (
         0.5 * PROTON_MASS_GRAMS * (sc_velocity_km_per_sec * 1e5) ** 2 / ERG_PER_EV
     )
 
     # Calculate y values for each energy level (Equation 61)
     # y_k = sqrt(E^h_k / E^u)
-    y = np.sqrt(pset.data["hf_energy"] / energy_u)
+    y = np.sqrt(pset.data["energy_hf"] / energy_u)
 
     # Velocity magnitude factor calculation (Equation 62)
     # x_k = (êₛ · û_sc) + sqrt(y² + (êₛ · û_sc)² - 1)
@@ -488,7 +488,7 @@ def _calculate_compton_getting_transform(
 
 def apply_compton_getting_correction(
     pset: LoHiBasePointingSet,
-    energies_hf: xr.DataArray,
+    energy_hf: xr.DataArray,
 ) -> None:
     """
     Apply Compton-Getting correction to a pointing set and update coordinates.
@@ -509,7 +509,7 @@ def apply_compton_getting_correction(
     ----------
     pset : LoHiBasePointingSet
         Pointing set object containing HAE longitude/latitude coordinates.
-    energies_hf : xr.DataArray
+    energy_hf : xr.DataArray
         ENA energies in the heliosphere frame in eV. Must be 1D with an
         energy dimension.
 
@@ -519,7 +519,7 @@ def apply_compton_getting_correction(
     - "sc_velocity": Spacecraft velocity vector (km/s)
     - "sc_direction_vector": Spacecraft velocity unit vector
     - "look_direction": Cartesian unit vectors of observation directions
-    - "hf_energy": ENA energies in heliosphere frame (eV)
+    - "energy_hf": ENA energies in heliosphere frame (eV)
     - "energy_sc": ENA energies in spacecraft frame (eV)
     - "ena_source_hae_longitude": ENA source longitudes in heliosphere frame (degrees)
     - "ena_source_hae_latitude": ENA source latitudes in heliosphere frame (degrees)
@@ -534,7 +534,7 @@ def apply_compton_getting_correction(
     _add_cartesian_look_direction(pset)
 
     # Step 3: Apply Compton-Getting transformation
-    _calculate_compton_getting_transform(pset, energies_hf)
+    _calculate_compton_getting_transform(pset, energy_hf)
 
     # Step 4: Update az_el_points to use the corrected coordinates
     pset.update_az_el_points()
