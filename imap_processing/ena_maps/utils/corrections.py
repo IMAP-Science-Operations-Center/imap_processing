@@ -14,7 +14,12 @@ from imap_processing.spice import geometry
 from imap_processing.spice.time import ttj2000ns_to_et
 
 # Physical constants for Compton-Getting correction
+# Units: electron_volt = [J / eV]
+#        erg = [J / erg]
+# To get [erg / eV], => electron_volt [J / eV] / erg [J / erg] = erg_per_ev [erg / eV]
 ERG_PER_EV = electron_volt / erg  # erg per eV - unit conversion factor
+# Units: proton_mass = [kg]
+# Here, we convert proton_mass to grams
 PROTON_MASS_GRAMS = proton_mass * 1e3  # proton mass in grams
 
 
