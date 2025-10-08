@@ -173,12 +173,10 @@ def test_get_geometric_factor_lut(ancillary_files):
     )
 
     # Test the shape is (modes, esa_steps, positions)
-    np.testing.assert_array_equal(gfactor_lut.shape, (2, 128, 24))
+    np.testing.assert_array_equal(gfactor_lut["full"].shape, (128, 24))
 
-    np.testing.assert_array_equal(gfactor_lut[0], full)
-    np.testing.assert_array_equal(gfactor_lut[1], reduced)
-    modes = np.array([0, 1])
-    np.testing.assert_array_equal(gfactor_lut[modes], gfactor_lut)
+    np.testing.assert_array_equal(gfactor_lut["full"], full)
+    np.testing.assert_array_equal(gfactor_lut["reduced"], reduced)
 
 
 @pytest.mark.external_test_data
