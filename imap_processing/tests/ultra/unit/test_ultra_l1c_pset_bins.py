@@ -270,9 +270,16 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
 
 @pytest.mark.external_test_data
 def test_get_spacecraft_exposure_times(
-    deadtime_datasets, random_spin_data, imap_ena_sim_metakernel, ancillary_files
+    deadtime_datasets,
+    random_spin_data,
+    imap_ena_sim_metakernel,
+    ancillary_files,
+    use_fake_spin_data_for_time,
 ):
     """Test get_spacecraft_exposure_times function."""
+    data_start_time = 453051293.0
+    data_end_time = 453070000.0
+    use_fake_spin_data_for_time(data_start_time, data_end_time)
     steps = 500  # reduced for testing
     rates = deadtime_datasets["rates"]
     params = deadtime_datasets["params"]
@@ -291,7 +298,13 @@ def test_get_spacecraft_exposure_times(
     )
     boundary_sf = np.ones((pix, steps))
     exposure_pointing, deadtimes = get_spacecraft_exposure_times(
-        rates, params, pixels_below_threshold, boundary_sf, pix
+        rates,
+        params,
+        pixels_below_threshold,
+        boundary_sf,
+        data_start_time,
+        data_start_time,
+        pix,
     )
     np.testing.assert_array_equal(exposure_pointing.shape, (24, pix))
     np.testing.assert_array_equal(deadtimes.shape, (15000,))

@@ -276,7 +276,11 @@ def test_calculate_helio_pset_with_cdf(
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
-        "imap_ultra_l1b_45sensor-goodtimes": xr.Dataset(),  # placeholder
+        "imap_ultra_l1b_45sensor-goodtimes": xr.Dataset(
+            {
+                "spin_number": ("epoch", np.zeros(5)),
+            }
+        ),  # placeholder
         "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
         "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
