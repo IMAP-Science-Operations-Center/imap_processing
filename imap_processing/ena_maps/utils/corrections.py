@@ -6,14 +6,16 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.polynomial import Polynomial
+from scipy.constants import electron_volt, erg, proton_mass
 
 from imap_processing.ena_maps.ena_maps import LoHiBasePointingSet
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
+from imap_processing.spice.time import ttj2000ns_to_et
 
 # Physical constants for Compton-Getting correction
-ERG_PER_EV = 1.6e-12  # erg per eV - unit conversion factor
-PROTON_MASS_GRAMS = 1.67e-24  # proton mass in grams
+ERG_PER_EV = electron_volt / erg  # erg per eV - unit conversion factor
+PROTON_MASS_GRAMS = proton_mass * 1e3  # proton mass in grams
 
 
 class PowerLawFluxCorrector:
@@ -300,7 +302,7 @@ class PowerLawFluxCorrector:
         return corrected_flux, corrected_flux_stat_unc
 
 
-def _add_spacecraft_velocity_to_pset(pset: LoHiBasePointingSet, et: float) -> None:
+def _add_spacecraft_velocity_to_pset(pset: LoHiBasePointingSet) -> None:
     """
     Calculate and add spacecraft velocity data to pointing set.
 
@@ -308,8 +310,6 @@ def _add_spacecraft_velocity_to_pset(pset: LoHiBasePointingSet, et: float) -> No
     ----------
     pset : LoHiBasePointingSet
         Pointing set object to be updated.
-    et : float
-        Ephemeris time in seconds past J2000.
 
     Notes
     -----
@@ -317,6 +317,11 @@ def _add_spacecraft_velocity_to_pset(pset: LoHiBasePointingSet, et: float) -> No
     - "sc_velocity": Spacecraft velocity vector (km/s) with dims ["x_y_z"]
     - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
     """
+    # Compute ephemeris time (J2000 seconds) of PSET midpoint time
+    # TODO: Use the Pointing midpoint time. Epoch should be start time
+    #     but use it until we can make Lo and Hi PSETs have a consistent
+    #     variable to hold the midpoint time.
+    et = ttj2000ns_to_et(pset.data["epoch"].values[0])
     # Get spacecraft state in HAE frame
     sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
     sc_velocity_vector = sc_state[3:6]
@@ -483,7 +488,6 @@ def _calculate_compton_getting_transform(
 
 def apply_compton_getting_correction(
     pset: LoHiBasePointingSet,
-    et: float,
     energies_hf: xr.DataArray,
 ) -> None:
     """
@@ -505,8 +509,6 @@ def apply_compton_getting_correction(
     ----------
     pset : LoHiBasePointingSet
         Pointing set object containing HAE longitude/latitude coordinates.
-    et : float
-        Ephemeris time in seconds past J2000 for SPICE calculations.
     energies_hf : xr.DataArray
         ENA energies in the heliosphere frame in eV. Must be 1D with an
         energy dimension.
@@ -526,7 +528,7 @@ def apply_compton_getting_correction(
     which will be used for subsequent binning operations.
     """
     # Step 1: Add spacecraft velocity and direction to pset
-    _add_spacecraft_velocity_to_pset(pset, et)
+    _add_spacecraft_velocity_to_pset(pset)
 
     # Step 2: Calculate and add look direction vectors to pset
     _add_cartesian_look_direction(pset)

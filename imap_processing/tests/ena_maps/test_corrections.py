@@ -280,15 +280,20 @@ def mock_hi_pset():
 class TestComptonGettingCorrection:
     """Test suite for Compton-Getting correction functions."""
 
+    @mock.patch("imap_processing.ena_maps.utils.corrections.ttj2000ns_to_et")
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
-    def test_add_spacecraft_velocity_to_pset(self, mock_imap_state, mock_hi_pset):
+    def test_add_spacecraft_velocity_to_pset(
+        self, mock_imap_state, mock_ttj2000_to_et, mock_hi_pset
+    ):
         """Test that spacecraft velocity is correctly added to pointing set."""
+        # Mock conversion from TTJ2000ns to ET
+        et = 1000.0
+        mock_ttj2000_to_et.return_value = et
         # Mock spacecraft state vector (position + velocity in HAE frame)
         mock_sc_state = np.array([1e8, 2e8, 3e8, 10.0, 20.0, 30.0])  # km and km/s
         mock_imap_state.return_value = mock_sc_state
 
-        et = 1000.0
-        _add_spacecraft_velocity_to_pset(mock_hi_pset, et)
+        _add_spacecraft_velocity_to_pset(mock_hi_pset)
 
         # Verify SPICE was called correctly
         mock_imap_state.assert_called_once_with(
@@ -332,8 +337,7 @@ class TestComptonGettingCorrection:
         mock_sc_state = np.array([1e8, 2e8, 3e8, 10.0, 20.0, 30.0])
         mock_imap_state.return_value = mock_sc_state
 
-        et = 1000.0
-        _add_spacecraft_velocity_to_pset(mock_hi_pset, et)
+        _add_spacecraft_velocity_to_pset(mock_hi_pset)
         _add_cartesian_look_direction(mock_hi_pset)
 
         # Create energy array
@@ -394,10 +398,8 @@ class TestComptonGettingCorrection:
             coords={"esa_energy_step": [1, 2, 3]},
         )
 
-        et = 1000.0
-
         # Apply the full correction
-        apply_compton_getting_correction(mock_hi_pset, et, energies_hf)
+        apply_compton_getting_correction(mock_hi_pset, energies_hf)
 
         # Verify all intermediate variables were added
         assert "sc_velocity" in mock_hi_pset.data
@@ -436,10 +438,8 @@ class TestComptonGettingCorrection:
             coords={"esa_energy_step": np.arange(1, 10)},
         )
 
-        et = 797949131184.0  # Convert from ns to seconds
-
         # Apply correction
-        apply_compton_getting_correction(hi_pset, et, energies_hf)
+        apply_compton_getting_correction(hi_pset, energies_hf)
 
         # Verify coordinates were modified
         corrected_lon = hi_pset.data["hae_longitude"]
