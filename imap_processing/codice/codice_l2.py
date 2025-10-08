@@ -298,7 +298,6 @@ def get_species_efficiency(species: str, efficiency: pd.DataFrame) -> np.ndarray
     efficiency : np.ndarray
         A 2D array of efficiencies with shape (epoch, esa_steps).
     """
-    # Shape: (epoch, esa_steps, positions)
     species_efficiency = efficiency[efficiency["species"] == species].sort_values(
         by="esa_step"
     )
@@ -307,6 +306,7 @@ def get_species_efficiency(species: str, efficiency: pd.DataFrame) -> np.ndarray
         [col for col in species_efficiency if col.startswith("position")],
         key=lambda x: int(x.split("_")[-1]),
     )
+    # Shape: (esa_steps, positions)
     return species_efficiency[position_names_sorted].to_numpy()
 
 
@@ -348,19 +348,20 @@ def compute_geometric_factors(
     half_spin_values = np.array(
         [esa_step_to_half_spin_map[step] for step in range(128)]
     )
-
     # Expand dimensions to compare each rgfo_half_spin value against
     # all half_spin_values
     rgfo_half_spin = dataset.rgfo_half_spin.data[:, np.newaxis]  # Shape: (epoch, 1)
     # Perform the comparison and calculate modes
-    modes = half_spin_values >= rgfo_half_spin  # True = reduced, False = full
+    # Modes will be true (reduced mode) anywhere half_spin >= rgfo_half_spin otherwise
+    # false (full mode)
+    modes = half_spin_values >= rgfo_half_spin
 
-    # Index from geometric_factor_lut
+    # Get the geometric factors based on the modes
     gf = np.where(
-        modes[:, :, np.newaxis],  # Shape (epoch, 128, 1)
-        geometric_factor_lookup["reduced"],  # Shape (1, 128, 24) - reduced mode
-        geometric_factor_lookup["full"],  # Shape (1, 128, 24) - full mode
-    )  # Result shape: (epoch, 128, 24)
+        modes[:, :, np.newaxis],  # Shape (epoch, esa_step, 1)
+        geometric_factor_lookup["reduced"],  # Shape (1, esa_step, 24) - reduced mode
+        geometric_factor_lookup["full"],  # Shape (1, esa_step, 24) - full mode
+    )  # Shape: (epoch, esa_step, positions)
     return gf
 
 
@@ -394,7 +395,6 @@ def process_lo_species(
         The updated L2 dataset with species intensities calculated.
     """
     # Select the relevant positions from the geometric factors
-    # Shape: (epoch, esa_steps, positions)
     geometric_factors = geometric_factors[:, :, positions]
     # take the mean geometric factor across positions
     geometric_factors = np.nanmean(geometric_factors, axis=-1)
