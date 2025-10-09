@@ -70,14 +70,7 @@ def mag_l1c(
             normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process_arg
         )
     elif normal_mode_dataset is not None:
-        new_timeline = normal_mode_dataset["epoch"].data
-        full_interpolated_timeline = generate_empty_norm_array(new_timeline)
-
-        fill_normal_data(
-            normal_mode_dataset,
-            normal_mode_dataset["epoch"].data,
-            full_interpolated_timeline,
-        )
+        full_interpolated_timeline = fill_normal_data(normal_mode_dataset)
     else:
         raise ValueError("At least one of norm or burst dataset must be provided.")
 
@@ -361,10 +354,10 @@ def process_mag_l1c(
 
     new_timeline = generate_timeline(norm_epoch, gaps)
 
-    norm_filled: np.ndarray = generate_empty_norm_array(new_timeline)
-
     if normal_mode_dataset:
-        fill_normal_data(normal_mode_dataset, new_timeline, norm_filled)
+        norm_filled: np.ndarray = fill_normal_data(normal_mode_dataset, new_timeline)
+    else:
+        norm_filled = generate_empty_norm_array(new_timeline)
 
     interpolated = interpolate_gaps(
         burst_mode_dataset, gaps, norm_filled, interpolation_function
@@ -398,9 +391,8 @@ def generate_empty_norm_array(new_timeline: np.ndarray) -> np.ndarray:
 
 def fill_normal_data(
     normal_dataset: xr.Dataset,
-    new_timeline: np.ndarray,
-    filled_timeline: np.ndarray,
-) -> None:
+    new_timeline: np.ndarray | None = None,
+) -> np.ndarray:
     """
     Fill the new timeline with the normal mode data.
 
@@ -410,14 +402,23 @@ def fill_normal_data(
     ----------
     normal_dataset : xr.Dataset
         The normal mode dataset.
-    new_timeline : np.ndarray
-        A 1D array of timestamps to fill.
+    new_timeline : np.ndarray, optional
+        A 1D array of timestamps to fill. If not provided, the normal mode timestamps
+        will be used.
+
+    Returns
+    -------
     filled_timeline : np.ndarray
         An (n, 8) shaped array containing the timeline filled with normal mode data.
         Gaps are marked as -1 in the generated flag column at index 5.
         Indices: 0 - epoch, 1-4 - vector x, y, z, and range, 5 - generated flag,
         6-7 - compression flags.
     """
+    if new_timeline is None:
+        new_timeline = normal_dataset["epoch"].data
+
+    filled_timeline = generate_empty_norm_array(new_timeline)
+
     for index, timestamp in enumerate(normal_dataset["epoch"].data):
         timeline_index = np.searchsorted(new_timeline, timestamp)
         filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
@@ -425,6 +426,8 @@ def fill_normal_data(
         filled_timeline[timeline_index, 6:8] = normal_dataset["compression_flags"].data[
             index
         ]
+
+    return filled_timeline
 
 
 def interpolate_gaps(
@@ -503,8 +506,10 @@ def interpolate_gaps(
         short = (gap_timeline >= burst_epochs[burst_start]) & (
             gap_timeline <= burst_epochs[burst_end]
         )
-        if len(gap_timeline) != int(short.sum()):
-            print(f"Chopping timeline from {len(gap_timeline)} to {short.sum()}")
+        num_short = int(short.sum())
+
+        if len(gap_timeline) != num_short:
+            print(f"Chopping timeline from {len(gap_timeline)} to {num_short}")
 
         # Limit timestamps to only include the areas with burst data
         gap_timeline = gap_timeline[short]
