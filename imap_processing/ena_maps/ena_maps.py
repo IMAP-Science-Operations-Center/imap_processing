@@ -11,7 +11,6 @@ from typing import TypeVar
 
 import astropy_healpix.healpy as hp
 import numpy as np
-import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
@@ -648,21 +647,10 @@ class HiPointingSet(LoHiBasePointingSet):
     ----------
     dataset : xarray.Dataset | str | Path
         Hi L1C pointing set data loaded in a xarray.DataArray.
-    esa_df : pandas.DataFrame
-        Lookup table containing nominal central energy values for each
-        esa_energy_step.
     """
 
-    def __init__(self, dataset: xr.Dataset | str | Path, esa_df: pd.DataFrame):
+    def __init__(self, dataset: xr.Dataset | str | Path):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_HAE)
-
-        # Rename and convert coordinate from esa_energy_step to energy
-        self.data = self.data.rename({"esa_energy_step": "energy"})
-        self.data = self.data.assign_coords(
-            energy=esa_df.loc[self.data["energy"].values][
-                "nominal_central_energy"
-            ].values
-        )
 
         # Naively generate the ram_mask variable assuming spacecraft frame
         # binning. The ram_mask variable gets updated in the CG correction
