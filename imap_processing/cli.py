@@ -1306,7 +1306,7 @@ class Swapi(ProcessInstrument):
                 )
 
             # process science or housekeeping data
-            datasets = swapi_l1(dependencies)
+            datasets = swapi_l1(dependencies, descriptor=self.descriptor)
         elif self.data_level == "l2":
             if len(dependency_list) != 3:
                 raise ValueError(
