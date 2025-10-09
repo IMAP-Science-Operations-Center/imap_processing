@@ -11,6 +11,7 @@ from typing import TypeVar
 
 import astropy_healpix.healpy as hp
 import numpy as np
+import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
@@ -647,28 +648,31 @@ class HiPointingSet(LoHiBasePointingSet):
     ----------
     dataset : xarray.Dataset | str | Path
         Hi L1C pointing set data loaded in a xarray.DataArray.
-    spin_phase : str
-        Include ENAs from "full", "ram" or "anti-ram" phases of the spin.
+    esa_df : pandas.DataFrame
+        Lookup table containing nominal central energy values for each
+        esa_energy_step.
     """
 
-    def __init__(self, dataset: xr.Dataset | str | Path, spin_phase: str):
-        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
+    def __init__(self, dataset: xr.Dataset | str | Path, esa_df: pd.DataFrame):
+        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_HAE)
 
-        # Filter out ENAs from non-selected portions of the spin.
-        if spin_phase not in ["full", "ram", "anti"]:
-            raise ValueError(f"Unrecognized spin_phase value: {spin_phase}.")
+        # Rename and convert coordinate from esa_energy_step to energy
+        self.data = self.data.rename({"esa_energy_step": "energy"})
+        self.data = self.data.assign_coords(
+            energy=esa_df.loc[self.data["energy"].values][
+                "nominal_central_energy"
+            ].values
+        )
+
+        # Naively generate the ram_mask variable assuming spacecraft frame
+        # binning. The ram_mask variable gets updated in the CG correction
+        # code if the CG correction is applied.
+        self.data["ram_mask"] = xr.zeros_like(self.data["spin_angle_bin"], dtype=bool)
         # ram only includes spin-phase interval [0, 0.5)
         # which is the first half of the spin_angle_bins
-        elif spin_phase == "ram":
-            self.data = self.data.isel(
-                spin_angle_bin=slice(0, self.data["spin_angle_bin"].data.size // 2)
-            )
-        # anti-ram includes spin-phase interval [0.5, 1)
-        # which is the second half of the spin_angle_bins
-        elif spin_phase == "anti":
-            self.data = self.data.isel(
-                spin_angle_bin=slice(self.data["spin_angle_bin"].data.size // 2, None)
-            )
+        self.data["ram_mask"][slice(0, self.data["spin_angle_bin"].data.size // 2)] = (
+            True
+        )
 
         # Rename some PSET vars to match L2 variables
         self.data = self.data.rename(

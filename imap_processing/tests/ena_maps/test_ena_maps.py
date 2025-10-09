@@ -10,6 +10,7 @@ from unittest import mock
 
 import astropy_healpix.healpy as hp
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -140,54 +141,59 @@ def hi_pset_cdf_path(imap_tests_path):
     return imap_tests_path / "hi/data/l1/imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
 
+@pytest.fixture(scope="module")
+def hi_esa_energies_df():
+    s = pd.Series(
+        [0.50, 0.75, 1.10, 1.65, 2.50, 3.75, 5.70, 8.52, 12.8], index=np.arange(9) + 1
+    )
+    d = {"nominal_central_energy": s}
+    esa_df = pd.DataFrame(data=d, index=np.arange(9) + 1)
+    return esa_df
+
+
 @pytest.mark.external_test_data
 class TestHiPointingSet:
     """Test suite for HiPointingSet class."""
 
-    def test_init(self, hi_pset_cdf_path):
+    def test_init(self, hi_pset_cdf_path, hi_esa_energies_df):
         """Test coverage for __init__ method."""
         pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
+        hi_pset = ena_maps.HiPointingSet(pset_ds, hi_esa_energies_df)
         assert isinstance(hi_pset, ena_maps.HiPointingSet)
-        assert hi_pset.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
+        assert hi_pset.spice_reference_frame == geometry.SpiceFrame.IMAP_HAE
         assert hi_pset.num_points == 3600
         np.testing.assert_array_equal(hi_pset.az_el_points.shape, (3600, 2))
 
         for var_name in ["exposure_factor", "bg_rates", "bg_rates_unc"]:
             assert var_name in hi_pset.data
 
-    def test_from_cdf(self, hi_pset_cdf_path):
+    def test_from_cdf(self, hi_pset_cdf_path, hi_esa_energies_df):
         """Test coverage for instantiating HiPointingSet from cdf."""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, hi_esa_energies_df)
         assert isinstance(hi_pset, ena_maps.HiPointingSet)
 
-    def test_spin_phase_filtering(self, hi_pset_cdf_path):
+    def test_spin_phase_filtering(self, hi_pset_cdf_path, hi_esa_energies_df):
         """Test coverage for filtering pset data by ram or anti-ram directions."""
         pset_ds = load_cdf(hi_pset_cdf_path)
 
-        # Test ram only direction
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="ram")
-        assert hi_pset.num_points == 1800
+        # Test ram mask is first 1800 elements
+        hi_pset = ena_maps.HiPointingSet(pset_ds, hi_esa_energies_df)
         np.testing.assert_array_equal(
-            hi_pset.data["spin_angle_bin"].data, np.arange(1800)
+            np.nonzero(hi_pset.data["ram_mask"].values)[0], np.arange(1800)
         )
 
         # Test anti-ram direction
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="anti")
-        assert hi_pset.num_points == 1800
         np.testing.assert_array_equal(
-            hi_pset.data["spin_angle_bin"].data, np.arange(1800) + 1800
+            np.nonzero(~hi_pset.data["ram_mask"].values)[0], np.arange(1800) + 1800
         )
 
-        # Test value error
-        with pytest.raises(ValueError, match="Unrecognized spin_phase value:"):
-            _ = ena_maps.HiPointingSet(pset_ds, spin_phase="foo-phase")
-
-    def test_plays_nice_with_rectangular_sky_map(self, hi_pset_cdf_path):
+    def test_plays_nice_with_rectangular_sky_map(
+        self, hi_pset_cdf_path, hi_esa_energies_df
+    ):
         """Test that HiPointingSet works with RectangularSkyMap"""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, hi_esa_energies_df)
         rect_map = ena_maps.RectangularSkyMap(
-            spacing_deg=2, spice_frame=geometry.SpiceFrame.ECLIPJ2000
+            spacing_deg=2, spice_frame=geometry.SpiceFrame.IMAP_HAE
         )
         rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_factor"])
         assert rect_map.data_1d["counts"].max() > 0
@@ -296,7 +302,9 @@ class TestLoHiBasePointingSet:
 
     @staticmethod
     def create_hi_pset_with_multidim_coords(
-        hi_pset_cdf_path: str, shape: tuple[int, int, int] = (1, 9, 3600)
+        hi_pset_cdf_path: str,
+        hi_esa_energies_df,
+        shape: tuple[int, int, int] = (1, 9, 3600),
     ) -> ena_maps.HiPointingSet:
         """
         Create a HiPointingSet with multi-dimensional coordinates.
@@ -315,7 +323,7 @@ class TestLoHiBasePointingSet:
             HiPointingSet with multi-dimensional az_el_points.
         """
         pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
+        hi_pset = ena_maps.HiPointingSet(pset_ds, hi_esa_energies_df)
         hi_pset.data["hae_longitude"] = xr.DataArray(
             np.random.uniform(0, 360, shape),
             dims=["epoch", "hf_energy", "spin_angle_bin"],
@@ -327,9 +335,9 @@ class TestLoHiBasePointingSet:
         hi_pset.update_az_el_points()
         return hi_pset
 
-    def test_hi_az_el_points_is_dataarray(self, hi_pset_cdf_path):
+    def test_hi_az_el_points_is_dataarray(self, hi_pset_cdf_path, hi_esa_energies_df):
         """Test that HiPointingSet.az_el_points is an xarray.DataArray."""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, hi_esa_energies_df)
 
         # Verify az_el_points is a DataArray
         assert isinstance(hi_pset.az_el_points, xr.DataArray)
@@ -353,9 +361,9 @@ class TestLoHiBasePointingSet:
         # Verify shape
         assert lo_pset.az_el_points.shape == (144000, 2)
 
-    def test_inheritance(self, hi_pset_cdf_path, lo_pset_ds):
+    def test_inheritance(self, hi_pset_cdf_path, lo_pset_ds, hi_esa_energies_df):
         """Test that Hi and Lo pointing sets inherit from LoHiBasePointingSet."""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, hi_esa_energies_df)
         lo_pset = ena_maps.LoPointingSet(lo_pset_ds)
 
         # Verify inheritance
@@ -366,9 +374,13 @@ class TestLoHiBasePointingSet:
         assert hi_pset.tiling_type == ena_maps.SkyTilingType.RECTANGULAR
         assert lo_pset.tiling_type == ena_maps.SkyTilingType.RECTANGULAR
 
-    def test_update_az_el_points_multidimensional(self, hi_pset_cdf_path):
+    def test_update_az_el_points_multidimensional(
+        self, hi_pset_cdf_path, hi_esa_energies_df
+    ):
         """Test update_az_el_points with multi-dimensional coordinates."""
-        hi_pset = self.create_hi_pset_with_multidim_coords(hi_pset_cdf_path)
+        hi_pset = self.create_hi_pset_with_multidim_coords(
+            hi_pset_cdf_path, hi_esa_energies_df
+        )
 
         # Verify az_el_points is still a DataArray
         assert isinstance(hi_pset.az_el_points, xr.DataArray)
@@ -385,7 +397,7 @@ class TestLoHiBasePointingSet:
 
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
     def test_multidim_az_el_points_with_match_coords(
-        self, mock_frame_transform, hi_pset_cdf_path
+        self, mock_frame_transform, hi_pset_cdf_path, hi_esa_energies_df
     ):
         """Test multi-dimensional az_el_points with match_coords_to_indices."""
         # Mock frame_transform to return az_el unchanged
@@ -393,7 +405,9 @@ class TestLoHiBasePointingSet:
             lambda et, az_el, from_frame, to_frame, degrees: az_el
         )
 
-        hi_pset = self.create_hi_pset_with_multidim_coords(hi_pset_cdf_path)
+        hi_pset = self.create_hi_pset_with_multidim_coords(
+            hi_pset_cdf_path, hi_esa_energies_df
+        )
 
         # Create a rectangular map
         rect_map = ena_maps.RectangularSkyMap(
@@ -408,9 +422,19 @@ class TestLoHiBasePointingSet:
         assert indices.dims == ("hf_energy", "pixel")
         assert indices.shape == (9, 3600)
 
-    def test_broadcasting_with_multidim_pset(self, hi_pset_cdf_path):
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_broadcasting_with_multidim_pset(
+        self, mock_frame_transform, hi_pset_cdf_path, hi_esa_energies_df
+    ):
         """Test xr broadcasting in project_pset_values_to_map with multi-dim PSET."""
-        hi_pset = self.create_hi_pset_with_multidim_coords(hi_pset_cdf_path)
+        # Mock frame_transform to return az_el unchanged
+        mock_frame_transform.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        hi_pset = self.create_hi_pset_with_multidim_coords(
+            hi_pset_cdf_path, hi_esa_energies_df
+        )
 
         # Add a mock multi-dimensional variable to the PSET
         # Shape: (epoch, hf_energy, spin_angle_bin)
