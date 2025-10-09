@@ -543,9 +543,7 @@ def interpolate_gaps(
 
         for timestamp in missing_timeline:
             timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
-            if (sum(filled_norm_timeline[timeline_index, 1:4]) != 0) or (
-                filled_norm_timeline[timeline_index, 5] != ModeFlags.MISSING.value
-            ):
+            if filled_norm_timeline[timeline_index, 5] != ModeFlags.MISSING.value:
                 raise RuntimeError(
                     "Self-inconsistent data. "
                     "Gaps not included in final timeline should be missing."
