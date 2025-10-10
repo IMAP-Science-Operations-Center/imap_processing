@@ -138,21 +138,36 @@ def process_hi_sectored(
         #       (epoch, 8, 12, 12) -> (time, energy, spin_sector, inst_az)
         #   efficiencies 'h' has shape after reading from CSV:
         #       (8, 12) -> (energy, inst_az)
-        # NOTE: 12 here maps to last 12 in above l1b dimension.
-        species_efficiencies = efficiencies_df[
-            efficiencies_df["species"] == species
-        ].values[:, 2:][:, np.newaxis, :]
+        #       NOTE: 12 here maps to last 12 in above l1b dimension.
+        # Because of this, it's easier to work with the data in xarray.
+        # Xarray automatically aligns dimensions and coordinates, making it easier
+        # to work with multi-dimensional data. Thus, we convert the efficiencies
+        # to xarray.DataArray with dimensions (energy, ssd_index)
+        # TODO: update ssd_index to inst_az when Joey data is updated.
+        species_data = efficiencies_df[efficiencies_df["species"] == species].values
+        species_efficiencies = xr.DataArray(
+            species_data[:, 2:].astype(
+                float
+            ),  # Skip first two columns (species, energy_bin)
+            dims=(f"energy_{species}", "ssd_index"),
+            coords={
+                f"energy_{species}": l2_dataset[f"energy_{species}"],
+                "ssd_index": l2_dataset["ssd_index"],
+            },
+        )
 
         # energy_passbands has shape:
         #   (8,) -> (energy)
-        energy_passbands = (
-            l2_dataset[f"energy_{species}_minus"] + l2_dataset[f"energy_{species}_plus"]
-        ).values[:, np.newaxis, np.newaxis]
+        energy_passbands = xr.DataArray(
+            l2_dataset[f"energy_{species}_minus"]
+            + l2_dataset[f"energy_{species}_plus"],
+            dims=(f"energy_{species}",),
+            coords={f"energy_{species}": l2_dataset[f"energy_{species}"]},
+            name="passband",
+        )
 
-        sectored_intensities = l2_dataset[species].values.astype(float) / (
-            L2_GEOMETRIC_FACTOR
-            * species_efficiencies.astype(float)
-            * energy_passbands.astype(float)
+        sectored_intensities = l2_dataset[species] / (
+            L2_GEOMETRIC_FACTOR * species_efficiencies * energy_passbands
         )
 
         # Replace existing species data with omni-directional intensities
@@ -208,8 +223,8 @@ def process_codice_l2(
     l2_dataset = l1_dataset.copy()
 
     # Get the L2 CDF attributes
-    cdf_attrs = ImapCdfAttributes()
-    l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
+    # cdf_attrs = ImapCdfAttributes()
+    # l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
 
     # TODO: update list of datasets that need geometric factors (if needed)
     # Compute geometric factors needed for intensity calculations
