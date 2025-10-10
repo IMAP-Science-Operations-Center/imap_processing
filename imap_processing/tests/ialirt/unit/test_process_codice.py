@@ -10,8 +10,12 @@ import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.codice.codice_l1a import group_ialirt_data
-from imap_processing.ialirt.l0.process_codice import process_codice
+from imap_processing.ialirt.l0.process_codice import (
+    COD_LO_RANGE,
+    FILLVAL_UINT8,
+    concatenate_bytes,
+    process_codice,
+)
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.utils import packet_file_to_datasets
 
@@ -54,7 +58,9 @@ def cod_lo_test_dataset(cod_lo_test_file):
         imap_module_directory / "ialirt" / "packet_definitions" / "ialirt_codicelo.xml"
     )
 
-    datasets = packet_file_to_datasets(cod_lo_test_file, xtce_packet_definition)
+    datasets = packet_file_to_datasets(
+        cod_lo_test_file, xtce_packet_definition, use_derived_value=True
+    )[1152]
 
     return datasets
 
@@ -66,16 +72,16 @@ def codice_test_data(test_datasets):
 
 @pytest.mark.external_test_data
 def test_group_ialirt_cod_lo(cod_lo_test_dataset):
-    max_valid_counter = 232
-    fill_value = 255
+    "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
 
+    max_valid_counter = 232
     grouped_cod_lo_data = find_groups(
         cod_lo_test_dataset, (0, max_valid_counter), "cod_lo_counter", "cod_lo_acq"
     )
 
     # Verify that we grouped the values properly.
     counter_values = cod_lo_test_dataset["cod_lo_counter"].data
-    valid_values = counter_values[counter_values != fill_value]
+    valid_values = counter_values[counter_values != FILLVAL_UINT8]
     resets = np.where(valid_values == max_valid_counter)
 
     count = increment = 0
@@ -89,7 +95,13 @@ def test_group_ialirt_cod_lo(cod_lo_test_dataset):
 
     assert count == int(grouped_cod_lo_data.group.max())
 
-    grouped_data = group_ialirt_data(grouped_cod_lo_data, range(0, 15), "cod_lo")
+    unique_groups = np.unique(grouped_cod_lo_data["group"])
+
+    for group in unique_groups:
+        grouped_data = concatenate_bytes(grouped_cod_lo_data, group)
+        byte_data = np.frombuffer(grouped_data, dtype=np.uint8)
+        num_bits = byte_data.size * 8
+        assert num_bits == (max_valid_counter + 1) * len(COD_LO_RANGE) * 8
 
 
 def test_process_codice(codice_test_data, caplog):
