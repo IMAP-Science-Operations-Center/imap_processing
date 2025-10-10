@@ -22,7 +22,7 @@ COD_HI_RANGE = range(0, 5)
 
 def concatenate_bytes(grouped_data: xr.Dataset, group: int, sensor: str) -> bytearray:
     """
-    Concatenate all cod_lo_data fields for a specific group into a single bytearray.
+    Concatenate all data fields for a specific group into a single bytearray.
 
     Parameters
     ----------
