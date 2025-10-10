@@ -93,13 +93,13 @@ def process_codice(
         cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
         # Decompress binary stream
-        decompressed_data = decompress._apply_pack_24_bit(cod_lo_data_stream)
+        decompressed_data = decompress._apply_pack_24_bit(bytes(cod_lo_data_stream))
 
     for group in unique_cod_hi_groups:
         cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "lo")
 
         # Decompress binary stream
-        decompressed_data = decompress._apply_loggy_a(cod_hi_data_stream)  # noqa
+        decompressed_data = decompress._apply_loggy_a(bytes(cod_hi_data_stream))  # noqa
 
     # For I-ALiRT SIT, the test data being used has all zeros and thus no
     # groups can be found, thus there is no data to process
