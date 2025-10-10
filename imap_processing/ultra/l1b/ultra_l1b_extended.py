@@ -592,7 +592,7 @@ def get_ssd_tof(
     tof : np.ndarray
         Time of flight (tenths of a nanosecond).
     """
-    _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(
+    _, tof_offset, _ssd_number = get_ssd_back_position_and_tof_offset(
         de_dataset, sensor, ancillary_files
     )
     indices = np.nonzero(np.isin(de_dataset["stop_type"], [StopType.SSD.value]))[0]

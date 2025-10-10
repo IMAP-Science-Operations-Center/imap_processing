@@ -101,13 +101,14 @@ lint.ignore = [
   "RUF002",  # `−` (MINUS SIGN). Did you mean `-` (HYPHEN-MINUS) error
   "RUF200",  # pyproject missing field (poetry doesn't follow the spec)
   "S311",  # suspicious-non-cryptographic-random-usage
-  "UP038", # Deprecated
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# S603 unchecked input in subprocess call is fine in our tests
 # PT006 Wrong type passed to first argument of @pytest.mark.parametrize
-"*/tests/*" = ["D", "S101", "S603", "PT006"]
+# RUF043 pattern match has regex characters like a period (.) that are not escaped
+# RUF059 unused variables unpacked
+# S603 unchecked input in subprocess call is fine in our tests
+"*/tests/*" = ["D", "PT006", "RUF043", "RUF059", "S101", "S603"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

@@ -100,7 +100,7 @@ def calculate_spacecraft_pset(
         for_indices_by_spin_phase,
         theta_vals,
         phi_vals,
-        ra_and_dec,
+        _ra_and_dec,
         boundary_scale_factors,
     ) = get_spacecraft_pointing_lookup_tables(ancillary_files, instrument_id)
 
@@ -173,7 +173,7 @@ def calculate_spacecraft_pset(
         nside=nside,
     )
     # Get pointing start and stop times and convert to ttj2000ns
-    pointing_start, pointing_stop = get_pointing_times(
+    pointing_start, _pointing_stop = get_pointing_times(
         float(et_to_met(species_dataset["event_times"].data[0]))
     )
     pointing_start = met_to_ttj2000ns(pointing_start)

@@ -304,7 +304,7 @@ def create_pset_counts(
     lat_edges = np.arange(41)
     energy_edges = np.arange(8)
 
-    hist, edges = np.histogramdd(
+    hist, _edges = np.histogramdd(
         data,
         bins=[energy_edges, lon_edges, lat_edges],
     )
