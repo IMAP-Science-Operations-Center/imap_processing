@@ -99,7 +99,7 @@ def codice_test_data(test_datasets):
 
 
 @pytest.mark.external_test_data
-def test_group_ialirt_cod_lo(cod_lo_test_dataset):
+def test_group_and_decompress_ialirt_cod_lo(cod_lo_test_dataset):
     "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
 
     grouped_cod_lo_data = find_groups(
@@ -125,15 +125,17 @@ def test_group_ialirt_cod_lo(cod_lo_test_dataset):
     unique_groups = np.unique(grouped_cod_lo_data["group"])
 
     for group in unique_groups:
-        grouped_data = concatenate_bytes(grouped_cod_lo_data, group, "lo")
-        byte_data = np.frombuffer(grouped_data, dtype=np.uint8)
+        compressed_data = concatenate_bytes(grouped_cod_lo_data, group, "lo")
+        byte_data = np.frombuffer(compressed_data, dtype=np.uint8)
         num_bits = byte_data.size * 8
         assert num_bits == (COD_LO_COUNTER + 1) * len(COD_LO_RANGE) * 8
+        # TODO: left off here. Need to validate decompression with test data.
+        # decompressed_data = decompress._apply_pack_24_bit(compressed_data)
 
 
 @pytest.mark.external_test_data
-def test_group_ialirt_cod_hi(cod_hi_test_dataset):
-    "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
+def test_group_and_decompress_ialirt_cod_hi(cod_hi_test_dataset):
+    "Test that I-ALiRT CoDICE-Hi data can be grouped properly."
 
     grouped_cod_hi_data = find_groups(
         cod_hi_test_dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
@@ -158,10 +160,12 @@ def test_group_ialirt_cod_hi(cod_hi_test_dataset):
     unique_groups = np.unique(grouped_cod_hi_data["group"])
 
     for group in unique_groups:
-        grouped_data = concatenate_bytes(grouped_cod_hi_data, group, "hi")
-        byte_data = np.frombuffer(grouped_data, dtype=np.uint8)
+        compressed_data = concatenate_bytes(grouped_cod_hi_data, group, "hi")
+        byte_data = np.frombuffer(compressed_data, dtype=np.uint8)
         num_bits = byte_data.size * 8
         assert num_bits == (COD_HI_COUNTER + 1) * len(COD_HI_RANGE) * 8
+        # TODO: left off here. Need to validate decompression with test data.
+        # decompressed_data = decompress._apply_loggy_a(compressed_data)
 
 
 def test_process_codice(codice_test_data, caplog):

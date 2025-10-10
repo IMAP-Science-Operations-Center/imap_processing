@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 import xarray as xr
 
+from imap_processing.codice import decompress
 from imap_processing.ialirt.utils.grouping import find_groups
 
 logger = logging.getLogger(__name__)
@@ -19,16 +20,14 @@ COD_LO_RANGE = range(0, 15)
 COD_HI_RANGE = range(0, 5)
 
 
-def concatenate_bytes(
-    grouped_cod_lo_data: xr.Dataset, group: int, sensor: str
-) -> bytearray:
+def concatenate_bytes(grouped_data: xr.Dataset, group: int, sensor: str) -> bytearray:
     """
     Concatenate all cod_lo_data fields for a specific group into a single bytearray.
 
     Parameters
     ----------
-    grouped_cod_lo_data : xr.Dataset
-        The grouped CoDICE-Lo dataset containing cod_lo_data_XX variables.
+    grouped_data : xr.Dataset
+        The grouped CoDICE dataset containing cod_{sensor}_data_XX variables.
     group : int
         The group number to extract.
     sensor : str
@@ -36,11 +35,11 @@ def concatenate_bytes(
 
     Returns
     -------
-    bytearray
+    current_data_stream: bytearray
         The concatenated data stream for the selected group.
     """
     current_data_stream = bytearray()
-    group_mask = (grouped_cod_lo_data["group"] == group).values
+    group_mask = (grouped_data["group"] == group).values
 
     cod_ranges = {
         "lo": COD_LO_RANGE,
@@ -49,9 +48,7 @@ def concatenate_bytes(
 
     # Loop through all data fields.
     for field in cod_ranges[sensor]:
-        data_array = grouped_cod_lo_data[f"cod_{sensor}_data_{field:02}"].values[
-            group_mask
-        ]
+        data_array = grouped_data[f"cod_{sensor}_data_{field:02}"].values[group_mask]
 
         # Convert each value to uint8 and extend the byte stream
         current_data_stream.extend(np.uint8(data_array).tobytes())
@@ -95,10 +92,14 @@ def process_codice(
     for group in unique_cod_lo_groups:
         cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
+        # Decompress binary stream
+        decompressed_data = decompress._apply_pack_24_bit(cod_lo_data_stream)
+
     for group in unique_cod_hi_groups:
         cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "lo")
 
-        print("hi")
+        # Decompress binary stream
+        decompressed_data = decompress._apply_loggy_a(cod_hi_data_stream)  # noqa
 
     # For I-ALiRT SIT, the test data being used has all zeros and thus no
     # groups can be found, thus there is no data to process
