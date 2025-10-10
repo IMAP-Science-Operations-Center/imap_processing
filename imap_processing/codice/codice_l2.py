@@ -23,9 +23,9 @@ from imap_processing.codice.constants import (
     HALF_SPIN_LUT,
     HI_OMNI_VARIABLE_NAMES,
     HI_SECTORED_VARIABLE_NAMES,
-    L2_GEOMETRY_FACTORS,
+    L2_GEOMETRIC_FACTOR,
+    L2_HI_NUMBER_OF_SSD,
     L2_HI_SECTORED_ANGLE,
-    L2_NUMBER_OF_SSD,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ logger.setLevel(logging.INFO)
 
 
 def process_hi_omni(
-    l1b_dataset: xr.Dataset, dependencies: ProcessingInputCollection
+    l2_dataset: xr.Dataset, dependencies: ProcessingInputCollection
 ) -> xr.Dataset:
     """
     Process the hi-omni L1B dataset to calculate omni-directional intensities.
@@ -52,8 +52,8 @@ def process_hi_omni(
 
     Parameters
     ----------
-    l1b_dataset : xarray.Dataset
-        The L1B dataset to process.
+    l2_dataset : xarray.Dataset
+        The L2 dataset to process.
     dependencies : ProcessingInputCollection
         The collection of processing input files.
 
@@ -81,24 +81,23 @@ def process_hi_omni(
         species_efficiencies = species_data["average_efficiency"].values[np.newaxis, :]
         # Calculate energy passband from L1B data
         energy_passbands = (
-            l1b_dataset[f"energy_{species}_plus"]
-            + l1b_dataset[f"energy_{species}_minus"]
+            l2_dataset[f"energy_{species}_plus"] + l2_dataset[f"energy_{species}_minus"]
         ).values[np.newaxis, :]
         # Calculate omni-directional intensities
-        omni_direction_intensities = l1b_dataset[species] / (
-            L2_GEOMETRY_FACTORS
-            * L2_NUMBER_OF_SSD
+        omni_direction_intensities = l2_dataset[species] / (
+            L2_GEOMETRIC_FACTOR
+            * L2_HI_NUMBER_OF_SSD
             * species_efficiencies
             * energy_passbands
         )
         # Store by replacing existing species data with omni-directional intensities
-        l1b_dataset[species].values = omni_direction_intensities
+        l2_dataset[species].values = omni_direction_intensities
 
-    return l1b_dataset
+    return l2_dataset
 
 
 def process_hi_sectored(
-    dataset: xr.Dataset, dependencies: ProcessingInputCollection
+    l2_dataset: xr.Dataset, dependencies: ProcessingInputCollection
 ) -> xr.Dataset:
     """
     Process the hi-omni L1B dataset to calculate omni-directional intensities.
@@ -115,7 +114,7 @@ def process_hi_sectored(
 
     Parameters
     ----------
-    dataset : xarray.Dataset
+    l2_dataset : xarray.Dataset
         The L2 dataset to process.
     dependencies : ProcessingInputCollection
         The collection of processing input files.
@@ -147,17 +146,17 @@ def process_hi_sectored(
         # energy_passbands has shape:
         #   (8,) -> (energy)
         energy_passbands = (
-            dataset[f"energy_{species}_minus"] + dataset[f"energy_{species}_plus"]
+            l2_dataset[f"energy_{species}_minus"] + l2_dataset[f"energy_{species}_plus"]
         ).values[:, np.newaxis, np.newaxis]
 
-        sectored_intensities = dataset[species].values.astype(float) / (
-            L2_GEOMETRY_FACTORS
+        sectored_intensities = l2_dataset[species].values.astype(float) / (
+            L2_GEOMETRIC_FACTOR
             * species_efficiencies.astype(float)
             * energy_passbands.astype(float)
         )
 
         # Replace existing species data with omni-directional intensities
-        dataset[species].values = sectored_intensities
+        l2_dataset[species].values = sectored_intensities
 
     # Calculate spin angle
     # Formula:
@@ -168,11 +167,11 @@ def process_hi_sectored(
     # Calculate spin angle by adding a base angle from L2_HI_SECTORED_ANGLE
     # for each SSD index and then adding multiple of 30 degrees for each elevation.
     # Then mod by 360 to keep it within 0-360 range.
-    elevation_angles = np.arange(len(dataset["ssd_index"].values)) * 30.0
+    elevation_angles = np.arange(len(l2_dataset["ssd_index"].values)) * 30.0
     spin_angles = (L2_HI_SECTORED_ANGLE[:, np.newaxis] + elevation_angles) % 360.0
     # TODO: add CDF attrs
-    dataset["spin_angles"] = (("spin_sector", "elevation_angle"), spin_angles)
-    return dataset
+    l2_dataset["spin_angles"] = (("spin_sector", "elevation_angle"), spin_angles)
+    return l2_dataset
 
 
 def process_codice_l2(
