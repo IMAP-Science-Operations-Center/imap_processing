@@ -40,7 +40,8 @@ def process_hi_omni(
 
     See section 11.1.3 of the CoDICE algorithm document for details.
 
-    The formula for omni-directional intensities is:
+    The formula for omni-directional intensities is::
+
         l1B species data / (
             geometric_factor * number_of_ssd * efficiency * energy_passband
         )
@@ -104,7 +105,8 @@ def process_hi_sectored(
 
     See section 11.1.2 of the CoDICE algorithm document for details.
 
-    The formula for omni-directional intensities is:
+    The formula for omni-directional intensities is::
+
         l1b species data / (geometric_factor * efficiency * energy_passband)
 
     Geometric factor is constant for all species and is 0.013.
