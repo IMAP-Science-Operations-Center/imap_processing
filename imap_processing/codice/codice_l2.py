@@ -150,10 +150,7 @@ def process_hi_sectored(
                 float
             ),  # Skip first two columns (species, energy_bin)
             dims=(f"energy_{species}", "ssd_index"),
-            coords={
-                f"energy_{species}": l2_dataset[f"energy_{species}"],
-                "ssd_index": l2_dataset["ssd_index"],
-            },
+            coords=l2_dataset[[f"energy_{species}", "ssd_index"]],
         )
 
         # energy_passbands has shape:
@@ -162,7 +159,7 @@ def process_hi_sectored(
             l2_dataset[f"energy_{species}_minus"]
             + l2_dataset[f"energy_{species}_plus"],
             dims=(f"energy_{species}",),
-            coords={f"energy_{species}": l2_dataset[f"energy_{species}"]},
+            coords=l2_dataset[[f"energy_{species}"]],
             name="passband",
         )
 
