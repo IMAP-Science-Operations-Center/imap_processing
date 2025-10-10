@@ -13,11 +13,15 @@ logger = logging.getLogger(__name__)
 
 FILLVAL_UINT8 = 255
 FILLVAL_FLOAT32 = Decimal(str(-1.0e31))
-COD_LO_COUNTER = np.uint8(232)
+COD_LO_COUNTER = 232
+COD_HI_COUNTER = 197
 COD_LO_RANGE = range(0, 15)
+COD_HI_RANGE = range(0, 5)
 
 
-def concatenate_bytes(grouped_cod_lo_data: xr.Dataset, group: int) -> bytearray:
+def concatenate_bytes(
+    grouped_cod_lo_data: xr.Dataset, group: int, sensor: str
+) -> bytearray:
     """
     Concatenate all cod_lo_data fields for a specific group into a single bytearray.
 
@@ -27,6 +31,8 @@ def concatenate_bytes(grouped_cod_lo_data: xr.Dataset, group: int) -> bytearray:
         The grouped CoDICE-Lo dataset containing cod_lo_data_XX variables.
     group : int
         The group number to extract.
+    sensor : str
+        The sensor type, either 'lo' or 'hi'.
 
     Returns
     -------
@@ -34,13 +40,18 @@ def concatenate_bytes(grouped_cod_lo_data: xr.Dataset, group: int) -> bytearray:
         The concatenated data stream for the selected group.
     """
     current_data_stream = bytearray()
-
-    # Filter to only the rows for this group
     group_mask = (grouped_cod_lo_data["group"] == group).values
 
-    # Loop through all cod_lo_data fields (e.g., cod_lo_data_00 … cod_lo_data_14)
-    for field in COD_LO_RANGE:  # e.g., range(15)
-        data_array = grouped_cod_lo_data[f"cod_lo_data_{field:02}"].values[group_mask]
+    cod_ranges = {
+        "lo": COD_LO_RANGE,
+        "hi": COD_HI_RANGE,
+    }
+
+    # Loop through all data fields.
+    for field in cod_ranges[sensor]:
+        data_array = grouped_cod_lo_data[f"cod_{sensor}_data_{field:02}"].values[
+            group_mask
+        ]
 
         # Convert each value to uint8 and extend the byte stream
         current_data_stream.extend(np.uint8(data_array).tobytes())
@@ -75,10 +86,17 @@ def process_codice(
     grouped_cod_lo_data = find_groups(
         dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
     )
+    grouped_cod_hi_data = find_groups(
+        dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
+    )
     unique_cod_lo_groups = np.unique(grouped_cod_lo_data["group"])
+    unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
 
     for group in unique_cod_lo_groups:
-        current_data_stream = concatenate_bytes(grouped_cod_lo_data, group)
+        cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
+
+    for group in unique_cod_hi_groups:
+        cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "lo")
 
         print("hi")
 

@@ -11,6 +11,9 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_codice import (
+    COD_HI_COUNTER,
+    COD_HI_RANGE,
+    COD_LO_COUNTER,
     COD_LO_RANGE,
     FILLVAL_UINT8,
     concatenate_bytes,
@@ -65,6 +68,31 @@ def cod_lo_test_dataset(cod_lo_test_file):
     return datasets
 
 
+@pytest.fixture(scope="session")
+def cod_hi_test_file():
+    return Path(
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1a_input"
+        / "imap_codice_hi-ialirt_20250814_v001.pkts"
+    )
+
+
+@pytest.fixture(scope="session")
+def cod_hi_test_dataset(cod_hi_test_file):
+    xtce_packet_definition = Path(
+        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt_codicehi.xml"
+    )
+
+    datasets = packet_file_to_datasets(
+        cod_hi_test_file, xtce_packet_definition, use_derived_value=True
+    )[1168]
+
+    return datasets
+
+
 @pytest.fixture
 def codice_test_data(test_datasets):
     return test_datasets[478]
@@ -74,21 +102,20 @@ def codice_test_data(test_datasets):
 def test_group_ialirt_cod_lo(cod_lo_test_dataset):
     "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
 
-    max_valid_counter = 232
     grouped_cod_lo_data = find_groups(
-        cod_lo_test_dataset, (0, max_valid_counter), "cod_lo_counter", "cod_lo_acq"
+        cod_lo_test_dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
     )
 
     # Verify that we grouped the values properly.
     counter_values = cod_lo_test_dataset["cod_lo_counter"].data
     valid_values = counter_values[counter_values != FILLVAL_UINT8]
-    resets = np.where(valid_values == max_valid_counter)
+    resets = np.where(valid_values == COD_LO_COUNTER)
 
     count = increment = 0
     for reset in resets[0]:
         group = valid_values[increment : reset + 1]
         np.testing.assert_array_equal(
-            group, np.arange(0, max_valid_counter + 1, dtype=np.uint8)
+            group, np.arange(0, COD_LO_COUNTER + 1, dtype=np.uint8)
         )
         increment = reset + 1
         count = count + 1
@@ -98,10 +125,43 @@ def test_group_ialirt_cod_lo(cod_lo_test_dataset):
     unique_groups = np.unique(grouped_cod_lo_data["group"])
 
     for group in unique_groups:
-        grouped_data = concatenate_bytes(grouped_cod_lo_data, group)
+        grouped_data = concatenate_bytes(grouped_cod_lo_data, group, "lo")
         byte_data = np.frombuffer(grouped_data, dtype=np.uint8)
         num_bits = byte_data.size * 8
-        assert num_bits == (max_valid_counter + 1) * len(COD_LO_RANGE) * 8
+        assert num_bits == (COD_LO_COUNTER + 1) * len(COD_LO_RANGE) * 8
+
+
+@pytest.mark.external_test_data
+def test_group_ialirt_cod_hi(cod_hi_test_dataset):
+    "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
+
+    grouped_cod_hi_data = find_groups(
+        cod_hi_test_dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
+    )
+
+    # Verify that we grouped the values properly.
+    counter_values = cod_hi_test_dataset["cod_hi_counter"].data
+    valid_values = counter_values[counter_values != FILLVAL_UINT8]
+    resets = np.where(valid_values == COD_HI_COUNTER)
+
+    count = increment = 0
+    for reset in resets[0]:
+        group = valid_values[increment : reset + 1]
+        np.testing.assert_array_equal(
+            group, np.arange(0, COD_HI_COUNTER + 1, dtype=np.uint8)
+        )
+        increment = reset + 1
+        count = count + 1
+
+    assert count == int(grouped_cod_hi_data.group.max())
+
+    unique_groups = np.unique(grouped_cod_hi_data["group"])
+
+    for group in unique_groups:
+        grouped_data = concatenate_bytes(grouped_cod_hi_data, group, "hi")
+        byte_data = np.frombuffer(grouped_data, dtype=np.uint8)
+        num_bits = byte_data.size * 8
+        assert num_bits == (COD_HI_COUNTER + 1) * len(COD_HI_RANGE) * 8
 
 
 def test_process_codice(codice_test_data, caplog):
