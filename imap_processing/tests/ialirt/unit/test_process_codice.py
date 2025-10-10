@@ -6,10 +6,13 @@ code.
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.codice.codice_l1a import group_ialirt_data
 from imap_processing.ialirt.l0.process_codice import process_codice
+from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.utils import packet_file_to_datasets
 
 pytestmark = pytest.mark.external_test_data
@@ -33,9 +36,60 @@ def test_datasets(l0_test_file):
     return datasets
 
 
+@pytest.fixture(scope="session")
+def cod_lo_test_file():
+    return Path(
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1a_input"
+        / "imap_codice_lo-ialirt_20250814_v001.pkts"
+    )
+
+
+@pytest.fixture(scope="session")
+def cod_lo_test_dataset(cod_lo_test_file):
+    xtce_packet_definition = Path(
+        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt_codicelo.xml"
+    )
+
+    datasets = packet_file_to_datasets(cod_lo_test_file, xtce_packet_definition)
+
+    return datasets
+
+
 @pytest.fixture
 def codice_test_data(test_datasets):
     return test_datasets[478]
+
+
+@pytest.mark.external_test_data
+def test_group_ialirt_cod_lo(cod_lo_test_dataset):
+    max_valid_counter = 232
+    fill_value = 255
+
+    grouped_cod_lo_data = find_groups(
+        cod_lo_test_dataset, (0, max_valid_counter), "cod_lo_counter", "cod_lo_acq"
+    )
+
+    # Verify that we grouped the values properly.
+    counter_values = cod_lo_test_dataset["cod_lo_counter"].data
+    valid_values = counter_values[counter_values != fill_value]
+    resets = np.where(valid_values == max_valid_counter)
+
+    count = increment = 0
+    for reset in resets[0]:
+        group = valid_values[increment : reset + 1]
+        np.testing.assert_array_equal(
+            group, np.arange(0, max_valid_counter + 1, dtype=np.uint8)
+        )
+        increment = reset + 1
+        count = count + 1
+
+    assert count == int(grouped_cod_lo_data.group.max())
+
+    grouped_data = group_ialirt_data(grouped_cod_lo_data, range(0, 15), "cod_lo")
 
 
 def test_process_codice(codice_test_data, caplog):

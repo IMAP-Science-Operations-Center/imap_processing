@@ -6,6 +6,8 @@ from typing import Any
 
 import xarray as xr
 
+from imap_processing.ialirt.utils.grouping import find_groups
+
 logger = logging.getLogger(__name__)
 
 FILLVAL_FLOAT32 = Decimal(str(-1.0e31))
@@ -35,6 +37,7 @@ def process_codice(
     - Calculate L2 CoDICE pseudodensities (pg 37 of Algorithm Document)
     - Calculate the public data products
     """
+    grouped_cod_lo_data = find_groups(dataset, (0, 232), "cod_lo_counter", "cod_lo_acq")
     # For I-ALiRT SIT, the test data being used has all zeros and thus no
     # groups can be found, thus there is no data to process
     # TODO: Once I-ALiRT test data is acquired that actually has data in it,
