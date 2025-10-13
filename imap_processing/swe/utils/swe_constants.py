@@ -16,13 +16,13 @@ ENERGY_CONVERSION_FACTOR = 4.75
 # 7 CEMs geometric factors in cm^2 sr eV/eV units.
 GEOMETRIC_FACTORS = np.array(
     [
-        435e-6,
-        599e-6,
-        808e-6,
-        781e-6,
-        876e-6,
-        548e-6,
-        432e-6,
+        424.4e-6,
+        564.5e-6,
+        763.8e-6,
+        916.9e-6,
+        792.0e-6,
+        667.7e-6,
+        425.2e-6,
     ]
 )
 
