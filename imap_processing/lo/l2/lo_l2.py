@@ -75,13 +75,77 @@ def lo_l2(
     dataset = add_geometric_factors(dataset, map_descriptor.species)
 
     logger.info("Step 4: Calculating rates and intensities")
-    dataset = calculate_all_rates_and_intensities(dataset)
+
+    # Determine if corrections are needed and prepare oxygen data if required
+    sputtering_correction, bootstrap_correction, o_map_dataset = _prepare_corrections(
+        map_descriptor, descriptor, sci_dependencies, anc_dependencies
+    )
+
+    dataset = calculate_all_rates_and_intensities(
+        dataset,
+        sputtering_correction=sputtering_correction,
+        bootstrap_correction=bootstrap_correction,
+        o_map_dataset=o_map_dataset,
+    )
 
     logger.info("Step 5: Finalizing dataset with attributes")
     dataset = finalize_dataset(dataset, descriptor)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
     return [dataset]
+
+
+def _prepare_corrections(
+    map_descriptor: MapDescriptor,
+    descriptor: str,
+    sci_dependencies: dict,
+    anc_dependencies: list,
+) -> tuple[bool, bool, xr.Dataset | None]:
+    """
+    Determine what corrections are needed and prepare oxygen dataset if required.
+
+    This helper function encapsulates the logic for determining when sputtering
+    and bootstrap corrections should be applied, and handles the creation of
+    the oxygen dataset needed for sputtering corrections.
+
+    Parameters
+    ----------
+    map_descriptor : MapDescriptor
+        The parsed map descriptor containing species and data type information.
+    descriptor : str
+        The original descriptor string for creating the oxygen variant.
+    sci_dependencies : dict
+        Dictionary of datasets needed for L2 data product creation.
+    anc_dependencies : list
+        List of ancillary file paths.
+
+    Returns
+    -------
+    tuple[bool, bool, xr.Dataset | None]
+        A tuple containing:
+        - sputtering_correction: Whether to apply sputtering corrections
+        - bootstrap_correction: Whether to apply bootstrap corrections
+        - o_map_dataset: Oxygen dataset if needed, None otherwise
+    """
+    # Default values - no corrections needed
+    sputtering_correction = False
+    bootstrap_correction = False
+    o_map_dataset = None
+
+    # Sputtering and bootstrap corrections are only applied to hydrogen ENA data
+    # Guard against recursion: don't process oxygen for oxygen maps
+    if (
+        map_descriptor.species == "h"
+        and map_descriptor.principal_data == "ena"
+        and "-o-" not in descriptor
+    ):  # Safety check to prevent infinite recursion
+        logger.info("Creating map for oxygen for sputtering corrections")
+        o_descriptor = descriptor.replace("-h-", "-o-")
+        o_map_dataset = lo_l2(sci_dependencies, anc_dependencies, o_descriptor)[0]
+        sputtering_correction = True
+        bootstrap_correction = True
+
+    return sputtering_correction, bootstrap_correction, o_map_dataset
 
 
 # =============================================================================
@@ -600,6 +664,7 @@ def calculate_all_rates_and_intensities(
     dataset: xr.Dataset,
     sputtering_correction: bool = False,
     bootstrap_correction: bool = False,
+    o_map_dataset: xr.Dataset | None = None,
 ) -> xr.Dataset:
     """
     Calculate rates and intensities with proper error propagation.
@@ -614,6 +679,8 @@ def calculate_all_rates_and_intensities(
     bootstrap_correction : bool, optional
         Whether to apply bootstrap corrections to intensities.
         Default is False.
+    o_map_dataset : xr.Dataset, optional
+        Dataset specifically for oxygen, needed for sputtering corrections.
 
     Returns
     -------
@@ -632,12 +699,9 @@ def calculate_all_rates_and_intensities(
 
     # Optional Step 4: Calculate sputtering corrections
     if sputtering_correction:
-        # TODO: The second dataset is for Oxygen specifically,
-        #       if we get an H dataset in, we may need to calculate
-        #       the O dataset separately before calling here.
-        dataset = calculate_sputtering_corrections(dataset, dataset)
+        dataset = calculate_sputtering_corrections(dataset, o_map_dataset)
 
-    # Optional Step 5: Clean up intermediate variables
+    # Optional Step 5: Calculate bootstrap corrections
     if bootstrap_correction:
         dataset = calculate_bootstrap_corrections(dataset)
 
@@ -764,7 +828,7 @@ def calculate_sputtering_corrections(
     ----------
     dataset : xr.Dataset
         Dataset with count rates, geometric factors, and center energies.
-        This could be either an H or O dataset.
+        This is an H dataset that we are applying the corrections to.
     o_dataset : xr.Dataset
         Dataset specifically for oxygen, needed to access oxygen intensities
         and uncertainties.
@@ -773,9 +837,9 @@ def calculate_sputtering_corrections(
     -------
     xr.Dataset
         Dataset with calculated sputtering-corrected intensities and their
-        uncertainties for hydrogen and oxygen.
+        uncertainties.
     """
-    logger.info("Applying sputtering corrections to oxygen intensities")
+    logger.info("Applying sputtering corrections to hydrogen intensities")
     # Only apply sputtering correction to esa levels 5 and 6 (indices 4 and 5)
     energy_indices = [4, 5]
     small_dataset = dataset.isel(epoch=0, energy=energy_indices)
@@ -789,6 +853,10 @@ def calculate_sputtering_corrections(
         "bg_rates_stat_uncert"
     ] / (o_small_dataset["geometric_factor"] * o_small_dataset["energy"])
 
+    # We need to align the energy dimensions from the oxygen dataset to the
+    # Hydrogen dataset so the calculations below get aligned by xarray correctly.
+    o_small_dataset["energy"] = small_dataset["energy"]
+
     # Equation 9
     j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset["bg_intensity"]
     j_o_prime.values[j_o_prime.values < 0] = 0  # No negative intensities
@@ -801,10 +869,10 @@ def calculate_sputtering_corrections(
 
     # NOTE: From table 2 of the mapping document, for energy level 5 and 6
     sputter_correction_factor = xr.DataArray(
-        [0.15, 0.01], dims=["energy"], coords={"energy": energy_indices}
+        [0.15, 0.01], dims=["energy"], coords={"energy": small_dataset["energy"]}
     )
     # Equation 11
-    # Remove the sputtered oxygen intensity to correct the original O intensity
+    # Remove the sputtered oxygen intensity to correct the original H intensity
     sputter_corrected_intensity = (
         small_dataset["ena_intensity"] - sputter_correction_factor * j_o_prime
     )

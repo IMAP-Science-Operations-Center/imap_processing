@@ -645,7 +645,7 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
          of year.
     """
     # Get science acquisition start and stop times
-    evt_logs, evt_time, evt_values = get_science_acquisition_timestamps(evt_dataset)
+    _evt_logs, evt_time, evt_values = get_science_acquisition_timestamps(evt_dataset)
     if len(evt_time) == 0:
         logger.warning(
             "No science acquisition events found in event dataset. Returning empty "

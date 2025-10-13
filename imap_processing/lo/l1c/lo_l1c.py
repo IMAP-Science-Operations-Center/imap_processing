@@ -11,9 +11,14 @@ from scipy.stats import binned_statistic_dd
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo import lo_ancillary
 from imap_processing.lo.l1b.lo_l1b import set_bad_or_goodtimes
+from imap_processing.spice.geometry import SpiceFrame, frame_transform_az_el
 from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import get_spin_number
-from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_met
+from imap_processing.spice.time import (
+    met_to_ttj2000ns,
+    ttj2000ns_to_et,
+    ttj2000ns_to_met,
+)
 
 N_ESA_ENERGY_STEPS = 7
 N_SPIN_ANGLE_BINS = 3600
@@ -164,6 +169,10 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             attr_mgr,
         )
 
+        pset["hae_longitude"], pset["hae_latitude"] = set_pointing_directions(
+            pset["epoch"].item()
+        )
+
     pset.attrs = attr_mgr.get_global_attributes(logical_source)
 
     pset = pset.assign_coords(
@@ -295,7 +304,7 @@ def create_pset_counts(
     lat_edges = np.arange(41)
     energy_edges = np.arange(8)
 
-    hist, edges = np.histogramdd(
+    hist, _edges = np.histogramdd(
         data,
         bins=[energy_edges, lon_edges, lat_edges],
     )
@@ -572,7 +581,7 @@ def set_background_rates(
             if row["type"] == "rate":
                 bg_rates[esa_step, bin_start:bin_end, :] = value
             elif row["type"] == "sigma":
-                bg_stat_uncert[esa_step, bin_start:bin_end, :] = value
+                bg_sys_err[esa_step, bin_start:bin_end, :] = value
             else:
                 raise ValueError("Unknown background type in ancillary file.")
     # set the background rates, uncertainties, and systematic errors
@@ -597,3 +606,52 @@ def set_background_rates(
     )
 
     return bg_rates_data, bg_stat_uncert_data, bg_sys_err_data
+
+
+def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
+    """
+    Set the pointing directions for the given epoch.
+
+    The pointing directions are calculated by transforming Spin and off angles
+    to HAE longitude and latitude using SPICE. This returns the HAE longitude and
+    latitude as (3600, 40) arrays for each the latitude and longitude.
+
+    Parameters
+    ----------
+    epoch : float
+        The epoch time in TTJ2000ns.
+
+    Returns
+    -------
+    hae_longitude : xr.DataArray
+        The HAE longitude for each spin and off angle bin.
+    hae_latitude : xr.DataArray
+        The HAE latitude for each spin and off angle bin.
+    """
+    et = ttj2000ns_to_et(epoch)
+    # create a meshgrid of spin and off angles using the bin centers
+    spin, off = np.meshgrid(
+        SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
+    )
+    dps_az_el = np.stack([spin, off], axis=-1)
+
+    # Transform from DPS Az/El to HAE lon/lat
+    hae_az_el = frame_transform_az_el(
+        et, dps_az_el, SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_HAE, degrees=True
+    )
+
+    return xr.DataArray(
+        data=hae_az_el[:, :, 0].astype(np.float64),
+        dims=["spin_angle", "off_angle"],
+        # TODO: Add hae_longitude to yaml
+        # attrs=attr_mgr.get_variable_attributes(
+        #    "hae_longitude"
+        # )
+    ), xr.DataArray(
+        data=hae_az_el[:, :, 1].astype(np.float64),
+        dims=["spin_angle", "off_angle"],
+        # TODO: Add hae_longitude to yaml
+        # attrs=attr_mgr.get_variable_attributes(
+        #    "hae_latitude"
+        # )
+    )

@@ -33,9 +33,11 @@ def remove_invalid_output_timestamps(
     numpy.ndarray
         All valid output timestamps where there exists input data.
     """
-    if input_timestamps[0] > output_timestamps[0]:
-        # Chop data where we don't have input timestamps to interpolate
-        output_timestamps = output_timestamps[output_timestamps >= input_timestamps[0]]
+    # Chop data where we don't have input timestamps to interpolate
+    output_timestamps = output_timestamps[
+        (output_timestamps >= input_timestamps[0])
+        & (output_timestamps <= input_timestamps[-1])
+    ]
     return output_timestamps
 
 
@@ -45,7 +47,8 @@ def linear(
     output_timestamps: np.ndarray,
     input_rate: VecSec | None = None,
     output_rate: VecSec | None = None,
-) -> np.ndarray:
+    extrapolate: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Linear interpolation of input vectors to output timestamps.
 
@@ -63,6 +66,9 @@ def linear(
         Not required for this interpolation method.
     output_rate : VecSec, optional
         Not required for this interpolation method.
+    extrapolate : bool, optional
+        Whether to allow extrapolation of output timestamps outside the range of input
+        timestamps. Default is False.
 
     Returns
     -------
@@ -70,9 +76,12 @@ def linear(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
-    # TODO: Remove invalid timestamps using remove_invalid_output_timestamps
+    if not extrapolate:
+        output_timestamps = remove_invalid_output_timestamps(
+            input_timestamps, output_timestamps
+        )
     spline = make_interp_spline(input_timestamps, input_vectors, k=1)
-    return spline(output_timestamps)
+    return output_timestamps, spline(output_timestamps)
 
 
 def quadratic(
@@ -81,7 +90,7 @@ def quadratic(
     output_timestamps: np.ndarray,
     input_rate: VecSec | None = None,
     output_rate: VecSec | None = None,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Quadratic interpolation of input vectors to output timestamps.
 
@@ -106,8 +115,11 @@ def quadratic(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
+    output_timestamps = remove_invalid_output_timestamps(
+        input_timestamps, output_timestamps
+    )
     spline = make_interp_spline(input_timestamps, input_vectors, k=2)
-    return spline(output_timestamps)
+    return output_timestamps, spline(output_timestamps)
 
 
 def cubic(
@@ -116,7 +128,7 @@ def cubic(
     output_timestamps: np.ndarray,
     input_rate: VecSec | None = None,
     output_rate: VecSec | None = None,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Cubic interpolation of input vectors to output timestamps.
 
@@ -141,8 +153,11 @@ def cubic(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
+    output_timestamps = remove_invalid_output_timestamps(
+        input_timestamps, output_timestamps
+    )
     spline = make_interp_spline(input_timestamps, input_vectors, k=3)
-    return spline(output_timestamps)
+    return output_timestamps, spline(output_timestamps)
 
 
 def estimate_rate(timestamps: np.ndarray) -> VecSec:
@@ -245,7 +260,7 @@ def linear_filtered(
     output_timestamps: np.ndarray,
     input_rate: VecSec | None = None,
     output_rate: VecSec | None = None,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Linear filtered interpolation of input vectors to output timestamps.
 
@@ -290,7 +305,7 @@ def quadratic_filtered(
     output_timestamps: np.ndarray,
     input_rate: VecSec | None = None,
     output_rate: VecSec | None = None,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Quadratic filtered interpolation of input vectors to output timestamps.
 
@@ -317,6 +332,9 @@ def quadratic_filtered(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
+    output_timestamps = remove_invalid_output_timestamps(
+        input_timestamps, output_timestamps
+    )
     input_filtered, vectors_filtered = cic_filter(
         input_vectors, input_timestamps, output_timestamps, input_rate, output_rate
     )
@@ -329,7 +347,7 @@ def cubic_filtered(
     output_timestamps: np.ndarray,
     input_rate: VecSec | None = None,
     output_rate: VecSec | None = None,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Cubic filtered interpolation of input vectors to output timestamps.
 
@@ -356,6 +374,9 @@ def cubic_filtered(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
+    output_timestamps = remove_invalid_output_timestamps(
+        input_timestamps, output_timestamps
+    )
     input_filtered, vectors_filtered = cic_filter(
         input_vectors, input_timestamps, output_timestamps, input_rate, output_rate
     )

@@ -599,7 +599,7 @@ def test_statistical_uncertainty_combination_correctness():
     # Create simple case with known statistical uncertainties
     stat_unc_values = np.array([5.0, 10.0]).reshape(1, 1, 2, 1, 1)
     sys_err_values = np.array([2.0, 4.0]).reshape(1, 1, 2, 1, 1)
-    flux_values = np.array([100.0, 200.0]).reshape(1, 1, 2, 1, 1)
+    flux_values = np.array([90.0, 210.0]).reshape(1, 1, 2, 1, 1)
 
     test_ds = xr.Dataset(
         {
@@ -612,7 +612,7 @@ def test_statistical_uncertainty_combination_correctness():
             ),
             "ena_signal_rates": xr.DataArray(flux_values, dims=list(coords.keys())),
             "bg_rates": xr.DataArray(
-                np.array([1.0, 1.0]).reshape(1, 1, 2, 1, 1), dims=list(coords.keys())
+                np.array([1.0, 2.0]).reshape(1, 1, 2, 1, 1), dims=list(coords.keys())
             ),
             "exposure_factor": xr.DataArray(
                 np.array([1.0, 1.0]).reshape(1, 1, 2, 1, 1), dims=list(coords.keys())
@@ -621,7 +621,7 @@ def test_statistical_uncertainty_combination_correctness():
     )
 
     geom_factors = xr.DataArray(
-        np.array([[1.0, 1.0]]),  # Equal geometric factors for simplicity
+        np.array([[1.0, 2.0]]),
         dims=["esa_energy_step", "calibration_prod"],
     )
 
@@ -632,9 +632,8 @@ def test_statistical_uncertainty_combination_correctness():
     # Manual calculation of expected statistical uncertainty combination
     # stat_weights = 1/σ² = [1/151, 1/151]
     # combined_stat_unc = sqrt(1/sum(stat_weights)) = sqrt(2/151) = sqrt(20) ≈ 4.47
-    stat_weights = 1.0 / (np.array([151, 151]))
-    expected_combined_stat_unc = np.sqrt(1.0 / np.sum(stat_weights))
-    flux_weights = 1.0 / (np.array([151, 151]) + np.array([4, 16]))
+    expected_combined_stat_unc = np.sqrt(np.sum(stat_unc_values**2))
+    flux_weights = 1.0 / (np.array([101, 101]) + np.array([4, 16]))
     expected_flux = np.sum(flux_values.squeeze() * flux_weights) / np.sum(flux_weights)
 
     np.testing.assert_almost_equal(

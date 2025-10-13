@@ -39,10 +39,12 @@ pixel_index_label:
 # (longitude, latitude are not dimension coordinates for healpix tiling, but rather
 # describe the lon/lat coordinate of the Healpix pixel center)
 longitude:
+  CATDESC: "HEALPix Pixel center longitude in {frame} reference frame in the range [0, 360]"
   DEPEND_1: pixel_index
   LABL_PTR_1: pixel_index_label
 
 latitude:
+  CATDESC: "HEALPix Pixel center latitude in {frame} reference frame in the range [-90, 90]"
   DEPEND_1: pixel_index
   LABL_PTR_1: pixel_index_label
 

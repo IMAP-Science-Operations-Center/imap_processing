@@ -14,6 +14,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     filter_goodtimes,
     lo_l1c,
     set_background_rates,
+    set_pointing_directions,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 
@@ -170,7 +171,7 @@ def expected_bg():
         dtype=np.float16,
     )
 
-    expected_uncert = np.array(
+    expected_err = np.array(
         [
             np.full((3600, 40), 0.0025),
             np.full((3600, 40), 0.002),
@@ -183,7 +184,7 @@ def expected_bg():
         dtype=np.float16,
     )
 
-    expected_err = np.zeros((7, 3600, 40), dtype=np.float16)
+    expected_uncert = np.zeros((7, 3600, 40), dtype=np.float16)
 
     expected_bg = (expected_rates, expected_uncert, expected_err)
     return expected_bg
@@ -191,7 +192,9 @@ def expected_bg():
 
 @patch("imap_processing.lo.l1c.lo_l1c.set_background_rates")
 @patch("imap_processing.lo.l1c.lo_l1c.filter_goodtimes")
+@patch("imap_processing.lo.l1c.lo_l1c.set_pointing_directions")
 def test_lo_l1c(
+    mock_set_pointing_directions,
     mock_filter_goodtimes,
     mock_set_background_rates,
     l1b_de_spin,
@@ -206,6 +209,10 @@ def test_lo_l1c(
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
     mock_set_background_rates.return_value = (None, None, None)
     mock_filter_goodtimes.return_value = l1b_de_spin
+    mock_set_pointing_directions.return_value = (
+        xr.DataArray(np.zeros((3600, 40)), dims=("spin_angle", "off_angle")),
+        xr.DataArray(np.zeros((3600, 40)), dims=("spin_angle", "off_angle")),
+    )
     expected_logical_source = "imap_lo_l1c_pset"
 
     # Act
@@ -354,3 +361,95 @@ def test_set_background_rates_species_error(anc_dependencies, attr_mgr):
         rates, uncert, err = set_background_rates(
             pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
         )
+
+
+def test_set_pointing_directions():
+    """Test the set_pointing_directions function."""
+    # Mock the external dependencies
+    mock_et = 123456789.0
+    mock_hae_az_el = np.stack(
+        np.meshgrid(np.arange(3600), np.arange(40), indexing="ij"), axis=-1
+    )  # spin_angle x off_angle x 2
+    with (
+        patch("imap_processing.lo.l1c.lo_l1c.ttj2000ns_to_et") as mock_ttj2000ns_to_et,
+        patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el"
+        ) as mock_frame_transform,
+    ):
+        # Set up mocks
+        mock_ttj2000ns_to_et.return_value = mock_et
+        mock_frame_transform.return_value = mock_hae_az_el
+
+        # Test input
+        test_epoch = 1000000000.0
+
+        # Call the function
+        hae_longitude, hae_latitude = set_pointing_directions(test_epoch)
+
+        # Verify ttj2000ns_to_et was called correctly
+        mock_ttj2000ns_to_et.assert_called_once_with(test_epoch)
+
+        # Verify frame_transform_az_el was called correctly
+        mock_frame_transform.assert_called_once()
+        call_args = mock_frame_transform.call_args
+        assert call_args[0][0] == mock_et  # et parameter
+        assert call_args[1]["degrees"] is True
+        # Verify the shape of dps_az_el
+        dps_az_el = call_args[0][1]
+        assert dps_az_el.shape == (3600, 40, 2)  # spin_angle x off_angle x 2
+
+        # Verify the returned DataArrays
+        assert isinstance(hae_longitude, xr.DataArray)
+        assert isinstance(hae_latitude, xr.DataArray)
+
+        # Check dimensions
+        assert hae_longitude.dims == ("spin_angle", "off_angle")
+        assert hae_latitude.dims == ("spin_angle", "off_angle")
+
+        # Check shapes
+        assert hae_longitude.shape == (3600, 40)  # off_angle x spin_angle
+        assert hae_latitude.shape == (3600, 40)  # off_angle x spin_angle
+
+        # Check data types
+        assert hae_longitude.dtype == np.float64
+        assert hae_latitude.dtype == np.float64
+
+        # Check that longitude uses first component (index 0)
+        # and latitude uses second (index 1)
+        np.testing.assert_array_equal(hae_longitude.values, mock_hae_az_el[:, :, 0])
+        np.testing.assert_array_equal(hae_latitude.values, mock_hae_az_el[:, :, 1])
+
+
+def test_set_pointing_directions_meshgrid():
+    """Test that the meshgrid is created correctly."""
+    with (
+        patch("imap_processing.lo.l1c.lo_l1c.ttj2000ns_to_et") as mock_ttj2000ns_to_et,
+        patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el"
+        ) as mock_frame_transform,
+    ):
+        mock_ttj2000ns_to_et.return_value = 123456789.0
+        mock_hae_az_el = np.stack(
+            np.meshgrid(np.arange(3600), np.arange(40), indexing="ij"), axis=-1
+        )  # spin_angle x off_angle x 2
+        mock_frame_transform.return_value = mock_hae_az_el
+
+        set_pointing_directions(1000000000.0)
+
+        # Get the dps_az_el array that was passed to frame_transform_az_el
+        call_args = mock_frame_transform.call_args
+        dps_az_el = call_args[0][1]
+
+        # Verify the meshgrid was created correctly
+        # The first component should be spin angles repeated for each off angle
+        expected_spin_shape = (3600, 40)
+        assert dps_az_el[:, :, 0].shape == expected_spin_shape
+
+        # The second component should be off angles repeated for each spin angle
+        assert dps_az_el[:, :, 1].shape == expected_spin_shape
+
+        # Check that spin angles vary along the first dimension
+        assert not np.allclose(dps_az_el[0, 0, 0], dps_az_el[1, 0, 0])
+
+        # Check that off angles vary along the second dimension
+        assert not np.allclose(dps_az_el[0, 0, 1], dps_az_el[0, 1, 1])

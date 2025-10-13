@@ -100,7 +100,7 @@ def _get_particle_velocity(
 
     # Spacecraft velocity in the DPS frame wrt the heliosphere
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.spkezr
-    state, lt = spiceypy.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
+    state, _lt = spiceypy.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
 
     # Extract the velocity part of the state vector
     imap_dps_velocity = state[3:6]

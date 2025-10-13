@@ -89,7 +89,7 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def apply_despinning(self) -> None:
+    def apply_despinning(self) -> None:  # noqa: PLR0912 (too many branches)
         """
         Apply the despinning algorithm to lo- angular and priority products.
 
@@ -108,10 +108,10 @@ class CoDICEL1aPipeline:
         # The dimensions are dependent on the specific data product
         if "angular" in self.config["dataset_name"]:
             despun_dims: tuple[int, ...] = (
+                num_counters,
                 num_energies,
                 num_positions,
                 num_spins,
-                num_counters,
             )
         elif "priority" in self.config["dataset_name"]:
             despun_dims = (num_energies, num_spins, num_counters)
@@ -130,23 +130,33 @@ class CoDICEL1aPipeline:
             for energy_index in range(num_energies):
                 pixel_orientation = constants.PIXEL_ORIENTATIONS[energy_index]
                 for spin_sector_index in range(num_spin_sectors):
-                    for azimuth_index in range(num_spins):
-                        if pixel_orientation == "A" and azimuth_index < 12:
+                    for azimuth_index in range(num_positions):
+                        if "-sw-" in self.config["dataset_name"]:
+                            # do something
+                            position_index = constants.SW_INDEX_TO_POSITION[
+                                azimuth_index
+                            ]
+                        elif "-nsw-" in self.config["dataset_name"]:
+                            position_index = constants.NSW_INDEX_TO_POSITION[
+                                azimuth_index
+                            ]
+
+                        if pixel_orientation == "A" and position_index < 12:
                             despun_spin_sector = spin_sector_index
-                        elif pixel_orientation == "A" and azimuth_index >= 12:
+                        elif pixel_orientation == "A" and position_index >= 12:
                             despun_spin_sector = spin_sector_index + 12
-                        elif pixel_orientation == "B" and azimuth_index < 12:
+                        elif pixel_orientation == "B" and position_index < 12:
                             despun_spin_sector = spin_sector_index + 12
-                        elif pixel_orientation == "B" and azimuth_index >= 12:
+                        elif pixel_orientation == "B" and position_index >= 12:
                             despun_spin_sector = spin_sector_index
 
                         if "angular" in self.config["dataset_name"]:
                             spin_data = epoch_data[
-                                energy_index, :, spin_sector_index, :
-                            ]  # (5, 4)
-                            despun_data[i][energy_index, :, despun_spin_sector, :] = (
-                                spin_data
-                            )
+                                :, energy_index, azimuth_index, spin_sector_index
+                            ]
+                            despun_data[i][
+                                :, energy_index, azimuth_index, despun_spin_sector
+                            ] = spin_data
                         elif "priority" in self.config["dataset_name"]:
                             spin_data = epoch_data[energy_index, spin_sector_index, :]
                             despun_data[i][energy_index, despun_spin_sector, :] = (
@@ -327,7 +337,7 @@ class CoDICEL1aPipeline:
         # each counter's data can be placed in a separate CDF data variable.
         # For Lo SW species, all_data has shape (9, 16, 128, 1) -> (epochs,
         # num_counters, num_energy_steps, num_spin_sectors)
-        if self._is_lo_species_dataset():
+        if self._is_different_dimension():
             # For Lo species datasets, counters are the second dimension (index 1)
             num_counters = all_data.shape[1]
         else:
@@ -338,8 +348,10 @@ class CoDICEL1aPipeline:
             range(num_counters), self.config["variable_names"], strict=False
         ):
             # Extract the counter data
-            if self._is_lo_species_dataset():
+            if self._is_different_dimension():
                 counter_data = all_data[:, counter, :, :]
+            elif "sectored" in self.config["dataset_name"]:
+                counter_data = all_data[:, counter, :, :, :]
             else:
                 counter_data = all_data[..., counter]
 
@@ -720,8 +732,14 @@ class CoDICEL1aPipeline:
 
         # Reshape the data based on how it is written to the data array of
         # the packet data. The number of counters is the last dimension / axis.
-        if self._is_lo_species_dataset():
+        if self._is_different_dimension():
             # For Lo species datasets, counters are the first dimension
+            reshape_dims = (
+                self.config["num_counters"],
+                *self.config["dims"].values(),
+            )
+        elif "sectored" in self.config["dataset_name"]:
+            # For sectored datasets, counters are the second dimension
             reshape_dims = (
                 self.config["num_counters"],
                 *self.config["dims"].values(),
@@ -732,6 +750,7 @@ class CoDICEL1aPipeline:
                 *self.config["dims"].values(),
                 self.config["num_counters"],
             )
+
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
                 reshape_dims
@@ -745,7 +764,7 @@ class CoDICEL1aPipeline:
         # No longer need to keep the raw data around
         del self.raw_data
 
-    def _is_lo_species_dataset(self) -> bool:
+    def _is_different_dimension(self) -> bool:
         """
         Check if the current dataset is a Lo species dataset.
 
@@ -761,6 +780,8 @@ class CoDICEL1aPipeline:
         return self.config["dataset_name"] in [
             "imap_codice_l1a_lo-sw-species",
             "imap_codice_l1a_lo-nsw-species",
+            "imap_codice_l1a_lo-sw-angular",
+            "imap_codice_l1a_lo-nsw-angular",
         ]
 
     def set_data_product_config(self, apid: int, dataset: xr.Dataset) -> None:
@@ -1653,23 +1674,23 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         # Housekeeping data
         if apid == CODICEAPID.COD_NHK:
             processed_dataset = create_hskp_dataset(dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # Event data
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_direct_event_dataset(apid, dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # I-ALiRT data
         elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
             processed_dataset = create_ialirt_dataset(apid, dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # hi-omni data
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
             science_values = [packet.data for packet in dataset.data]
             processed_dataset = create_binned_dataset(apid, dataset, science_values)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # Everything else
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
@@ -1687,7 +1708,7 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             pipeline.define_coordinates()
             processed_dataset = pipeline.define_data_variables()
 
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # For APIDs that don't require processing
         else:

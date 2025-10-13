@@ -633,16 +633,12 @@ class Codice(ProcessInstrument):
 
         if self.data_level == "l2":
             science_files = dependencies.get_file_paths(source="codice")
-            ancillary_paths = dependencies.get_file_paths(data_type="ancillary")
-            ancillary_files: dict[str, Path] = {}
-            for path in ancillary_paths:
-                ancillary_files[path.stem.split("_")[2]] = path
-            if len(science_files) != 1:
+            if len(science_files) != 2:
                 raise ValueError(
                     f"CoDICE L2 requires exactly one input science file, received: "
                     f"{science_files}."
                 )
-            datasets = [codice_l2.process_codice_l2(science_files[0], ancillary_files)]
+            datasets = [codice_l2.process_codice_l2(science_files[0], dependencies)]
 
         return datasets
 
@@ -1216,8 +1212,9 @@ class Mag(ProcessInstrument):
             if "raw" not in ds.attrs["Logical_source"] and not np.all(
                 ds["epoch"].values[1:] > ds["epoch"].values[:-1]
             ):
-                raise ValueError(
-                    "Timestamps for output file are not monotonically increasing."
+                logger.warning(
+                    f"Timestamps for output file {ds.attrs['Logical_source']} are not "
+                    f"monotonically increasing."
                 )
         return datasets
 
@@ -1259,7 +1256,7 @@ class Spacecraft(ProcessInstrument):
             )
             ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
             pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
-                ah_paths[-1]
+                ah_paths
             )
             processed_dataset.extend(pointing_kernel_paths)
         else:
@@ -1309,7 +1306,7 @@ class Swapi(ProcessInstrument):
                 )
 
             # process science or housekeeping data
-            datasets = swapi_l1(dependencies)
+            datasets = swapi_l1(dependencies, descriptor=self.descriptor)
         elif self.data_level == "l2":
             if len(dependency_list) != 3:
                 raise ValueError(

@@ -284,6 +284,48 @@ def test_frame_transform_az_el_same_frame(spice_frame):
     np.testing.assert_allclose(result, az_el_points)
 
 
+def test_frame_transform_az_el_3d_input(furnish_kernels):
+    """Test frame_transform_az_el with 3D input array."""
+    kernels = [
+        "naif0012.tls",
+        "imap_001.tf",
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        et = spiceypy.utc2et("2025-06-12T12:00:00.000")
+
+        # Create 3D az_el array with shape (3, 4, 2)
+        # This represents 3 energy bins with 4 az/el positions each
+        az_el_3d = np.array(
+            [
+                [[0, 0], [90, 0], [180, 0], [270, 0]],
+                [[45, 30], [135, 30], [225, 30], [315, 30]],
+                [[0, -45], [90, -45], [180, -45], [270, -45]],
+            ]
+        )
+
+        result = frame_transform_az_el(
+            et, az_el_3d, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_DPS, degrees=True
+        )
+
+        # Check that output shape matches input shape
+        assert result.shape == az_el_3d.shape
+
+        # Verify by comparing against processing each 2D slice independently
+        for i in range(az_el_3d.shape[0]):
+            expected_slice = frame_transform_az_el(
+                et,
+                az_el_3d[i],
+                SpiceFrame.IMAP_SPACECRAFT,
+                SpiceFrame.IMAP_DPS,
+                degrees=True,
+            )
+            np.testing.assert_allclose(result[i], expected_slice, atol=1e-10)
+
+
 @pytest.mark.external_kernel
 def test_get_rotation_matrix(furnish_kernels):
     """Test coverage for get_rotation_matrix()."""

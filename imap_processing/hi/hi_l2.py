@@ -323,20 +323,15 @@ def combine_calibration_products(
     # Perform inverse-variance weighted averaging
     # Handle divide by zero and invalid values
     with np.errstate(divide="ignore", invalid="ignore"):
-        # Calculate weights for statistical variance combination using only
-        # statistical variance
-        stat_weights = 1.0 / improved_stat_variance
-
-        # Combined statistical uncertainty from inverse-variance formula
-        combined_stat_unc = np.sqrt(1.0 / stat_weights.sum(dim="calibration_prod"))
-
         # Use total variance weights for flux combination
         flux_weights = 1.0 / total_variance
         weighted_flux_sum = (ena_flux * flux_weights).sum(dim="calibration_prod")
         combined_flux = weighted_flux_sum / flux_weights.sum(dim="calibration_prod")
 
     map_ds["ena_intensity"] = combined_flux
-    map_ds["ena_intensity_stat_uncert"] = combined_stat_unc
+    map_ds["ena_intensity_stat_uncert"] = np.sqrt(
+        (map_ds["ena_intensity_stat_uncert"] ** 2).sum(dim="calibration_prod")
+    )
     # For systematic error, just do quadrature sum over the systematic error for
     # each calibration product.
     map_ds["ena_intensity_sys_err"] = np.sqrt((sys_err**2).sum(dim="calibration_prod"))

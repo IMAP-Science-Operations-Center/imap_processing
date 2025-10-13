@@ -43,7 +43,7 @@ def mag_l1a(packet_filepath: Path) -> list[xr.Dataset]:
         A list of generated filenames.
     """
     packets = decom_mag.decom_packets(packet_filepath)
-
+    logger.info("Packet decoding complete, beginning L1A processing.")
     norm_data = packets["norm"]
     burst_data = packets["burst"]
 
@@ -188,7 +188,7 @@ def process_packets(
             secondary_packet_data.start_time,
         )
 
-        # Sort primary and secondary into MAGo and MAGi by 24 hour chunks
+        # Sort primary and secondary into MAGo and MAGi
 
         if mago is None:
             mago = MagL1a(

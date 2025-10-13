@@ -82,7 +82,7 @@ def test_swapi_l2_cdf(
         json.dumps(processing_input),
     )
     # Create HK CDF File
-    processed_hk_data = swapi_l1(collection_obj)
+    processed_hk_data = swapi_l1(collection_obj, descriptor="hk")
     hk_cdf_filename = "imap_swapi_l1a_hk_20240924_v999.cdf"
     hk_cdf_path = write_cdf(processed_hk_data[0])
     assert hk_cdf_path.name == hk_cdf_filename
@@ -106,7 +106,7 @@ def test_swapi_l2_cdf(
         json.dumps(processing_input),
     )
     # Create L1 CDF File
-    processed_sci_data = swapi_l1(collection_obj)
+    processed_sci_data = swapi_l1(collection_obj, descriptor="sci")
     cdf_filename = "imap_swapi_l1_sci_20240924_v999.cdf"
     cdf_path = write_cdf(processed_sci_data[0])
     assert cdf_path.name == cdf_filename

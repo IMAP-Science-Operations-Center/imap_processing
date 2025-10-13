@@ -49,14 +49,24 @@ latitude_delta:
 # attributes file, imap_enamaps_l2-common_variable_attrs.yaml
 
 longitude:
+  CATDESC: "Pixel center longitude in {frame} reference frame in the range [0, 360]"
   DELTA_MINUS_VAR: longitude_delta
   DELTA_PLUS_VAR: longitude_delta
-  SCALE_TYP: linear
+  SCALETYP: linear
+  LABL_PTR_1: longitude_label
+  MONOTON: INCREASE
+  FORMAT: I3
+
 
 latitude:
+  CATDESC: "Pixel center latitude in {frame} reference frame in the range [-90, 90]"
   DELTA_MINUS_VAR: latitude_delta
   DELTA_PLUS_VAR: latitude_delta
-  SCALE_TYP: linear
+  SCALETYP: linear
+  LABL_PTR_1: latitude_label
+  MONOTON: INCREASE
+  BIN_LOCATION: 0.5
+  FORMAT: I2
 
 # Define Data variables
 ena_intensity:

@@ -41,7 +41,7 @@ energy:
   LABLAXIS: Energy bin geometric mean
   UNITS: KeV
   VAR_TYPE: support_data
-  SCALE_TYP: linear
+  SCALETYP: linear
   # We might not have these set up yet
   DELTA_MINUS_VAR: energy_delta_minus
   DELTA_PLUS_VAR: energy_delta_plus
@@ -49,8 +49,8 @@ energy:
 
 energy_label:
   VAR_TYPE: metadata
-  CATDESC: Geometric mean of energy bin.
-  FIELDNAM: energy_bin_geometric_mean
+  CATDESC: Label variable for energy coordinate
+  FIELDNAM: energy label
   FORMAT: A16
   DEPEND_1: energy
 
@@ -60,7 +60,7 @@ energy_delta_minus:
   CATDESC: Difference between the energy bin center and lower edge.
   LABLAXIS: energy
   UNITS: KeV
-  FIELDNAM: energy_bin_delta_minus
+  FIELDNAM: energy delta minus
   DISPLAY_TYPE: no_plot
   DEPEND_1: energy
   LABL_PTR_1: energy_label
@@ -72,16 +72,22 @@ energy_delta_plus:
   CATDESC: Difference between the energy bin center and upper edge.
   LABLAXIS: energy
   UNITS: KeV
-  FIELDNAM: energy_bin_delta_plus
+  FIELDNAM: energy delta plus
   DISPLAY_TYPE: no_plot
   DEPEND_1: energy
   LABL_PTR_1: energy_label
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
 
+epoch:
+  CATDESC: Map time range start, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: J2000 Nanoseconds
+  DELTA_PLUS_VAR: epoch_delta
+  BIN_LOCATION: 0
+
 epoch_delta:
   <<: *default_int64
   CATDESC: Number of nanoseconds covered by data included in this map product.
-  FIELDNAM: epoch_delta
+  FIELDNAM: epoch delta
   UNITS: ns
   VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot
@@ -93,10 +99,9 @@ epoch_delta:
 # in the tiling-specific YAML files.
 longitude:
   <<: *default_float32
-  CATDESC: "Pixel center longitude in {frame} reference frame in the range [0, 360]."
   FIELDNAM: "{frame} Longitude"
   LABLAXIS: "{frame} Longitude"
-  UNITS: degrees
+  UNITS: deg
   VAR_TYPE: support_data
   VALIDMIN: 0
   VALIDMAX: 360
@@ -104,10 +109,9 @@ longitude:
 
 latitude:
   <<: *default_float32
-  CATDESC: "Pixel center latitude in {frame} reference frame in the range [-90, 90]."
   FIELDNAM: "{frame} Latitude"
   LABLAXIS: "{frame} Latitude"
-  UNITS: degrees
+  UNITS: deg
   VAR_TYPE: support_data
   VALIDMIN: -90
   VALIDMAX: 90
@@ -120,7 +124,7 @@ ena_intensity:
   <<: *default_float32
   CATDESC: Mono-energetic ENA intensity.
   FIELDNAM: Intensity
-  UNITS: counts/(s * cm^2 * Sr * KeV)
+  UNITS: cm -2 s -1 sr -1 keV -1
   DELTA_MINUS_VAR: ena_intensity_stat_uncert
   DELTA_PLUS_VAR: ena_intensity_stat_uncert
   DEPEND_0: epoch
@@ -133,7 +137,7 @@ ena_intensity_stat_uncert:
   <<: *default_float32
   CATDESC: ENA intensity statistical uncertainty.
   FIELDNAM: Intensity stat unc
-  UNITS: counts/(s * cm^2 * Sr * KeV)
+  UNITS: cm -2 s -1 sr -1 keV -1
   DEPEND_0: epoch
   VAR_TYPE: support_data
   LABLAXIS: Statistical Unc
@@ -144,10 +148,10 @@ ena_intensity_sys_err:
   <<: *default_float32
   CATDESC: ENA intensity non-statistical error.
   FIELDNAM: Intensity non-stat error
-  UNITS: counts/(s * cm^2 * Sr * KeV)
+  UNITS: cm -2 s -1 sr -1 keV -1
   DEPEND_0: epoch
   VAR_TYPE: support_data
-  LABLAXIS: Non-Statistical Err
+  LABLAXIS: Non-statistical Error
   DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
@@ -164,13 +168,14 @@ ena_rate:
 
 bg_rate:
   <<: *default_float32
-  CATDESC: Estimated background count rate.
+  CATDESC: Total background count rate from non-ENA (non-heliospheric) sources, as calculated by ground processing; makes sense only for "uncombined" calibration products.
   FIELDNAM: Background Rate
-  UNITS: counts/s
+  UNITS: count s-1
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Rate
   DISPLAY_TYPE: map_image
+  FORMAT: F6.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 ena_count:
@@ -186,7 +191,7 @@ ena_count:
 
 sensitivity:
   <<: *default_float32
-  CATDESC: Averaged instrument sensitive area.
+  CATDESC: Averaged instrument sensitive area
   FIELDNAM: Sensitivity
   UNITS: cm^2
   VAR_TYPE: support_data
@@ -203,6 +208,8 @@ exposure_factor: &exposure_factor
   VAR_TYPE: data
   LABLAXIS: Exposure
   DISPLAY_TYPE: no_plot
+  FORMAT: F5.2
+  VAR_NOTES: Exact or approximate exposure time over which counts in a pixel are accumulated.  Used as a weighting factor for combining data quantities sensibly.
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 geometric_function:
@@ -217,7 +224,7 @@ geometric_function:
 
 efficiency:
   <<: *default_float32
-  CATDESC: Efficiency of the instrument in converting ENAs to valid events.
+  CATDESC: Efficiency of the instrument in converting ENAs to valid events
   FIELDNAM: Efficiency
   UNITS: " "
   VAR_TYPE: support_data
@@ -227,7 +234,7 @@ efficiency:
 
 positional_uncert_theta:
   <<: *default_float32
-  CATDESC: Averaged position uncertainty along the theta dimension of the instrument.
+  CATDESC: Averaged position uncertainty along the theta dimension of the instrument
   FIELDNAM: Positional Uncertainty Theta
   UNITS: degrees
   VAR_TYPE: support_data
@@ -237,7 +244,7 @@ positional_uncert_theta:
 
 positional_uncert_phi:
   <<: *default_float32
-  CATDESC: Averaged position uncertainty along the phi dimension of the instrument.
+  CATDESC: Averaged position uncertainty along the phi dimension of the instrument
   FIELDNAM: Positional Uncertainty Phi
   UNITS: degrees
   VAR_TYPE: support_data
@@ -248,7 +255,7 @@ positional_uncert_phi:
 obs_date: &obs_date
   <<: *default_int64
   datatype: int64
-  CATDESC: Exposure time weighted mean collection date of data in a pixel.
+  CATDESC: Mean collection date of data in a pixel
   FIELDNAM: J2000 Nanoseconds
   UNITS: ns
   DEPEND_0: epoch

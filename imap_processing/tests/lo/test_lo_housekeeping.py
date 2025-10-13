@@ -41,7 +41,6 @@ def test_housekeeping(housekeeping_datasets):
     # the first 3 and the final value.
     small_ds = ds.isel(epoch=[0, 1, 2, -1])
     for var in validation_data_l1a.columns:
-        print(var)
         if var == "PPM_UPPER_BOUND":
             # This is 65535 in the validation data, but only 4095 in the dataset.
             # This is because it is defined as a 12-bit quantity in the packet

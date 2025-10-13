@@ -205,13 +205,25 @@ class MagL1a:
         1 if the sensor is active, 0 if not
     shcoarse : int
         Mission elapsed time for the first packet, the start time for the whole day
-    vectors : numpy.ndarray
-        List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
-        where time is numpy.datetime64[ns]
+    starting_vectors : InitVar[numpy.ndarray]
+        Initvar to create the first entry in the vector list. This is to preserve the
+        external API of creating the object with the first set of vectors.
+        This cannot be accessed from an instance of the class. Instead, vectors
+        should be used.
     starting_packet : InitVar[MagL1aPacketProperties]
         The packet properties for the first packet in the day. As an InitVar, this
         cannot be accessed from an instance of the class. Instead, packet_definitions
         should be used.
+    vectors : numpy.ndarray
+        List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
+        where time is numpy.datetime64[ns]. This is a property that concatenates the
+        internal vector list on demand.
+    compression_flags : numpy.ndarray
+        Array of flags to indicate compression and width for all timestamps in the
+        L1A file. Shaped like (n, 2) where n is the number of vectors. First value
+        is a boolean for compressed/uncompressed, second vector is a number between 0-20
+        if the data is compressed, which is the width in bits of the compressed data.
+        This is a property that concatenates the internal compression flags list.
     packet_definitions : dict[numpy.datetime64, MagL1aPacketProperties]
         Dictionary of packet properties for each packet in the day. The key is the start
         time of the packet, and the value is a dataclass of packet properties.
@@ -221,11 +233,20 @@ class MagL1a:
         List of missing sequence numbers in the day
     start_time : numpy.int64
         Start time of the day, in ns since J2000 epoch
-    compression_flags : np.ndarray
+    _compression_flags_list : np.ndarray
         Array of flags to indication compression and width for all timestamps in the
         L1A file. Shaped like (n, 2) where n is the number of vectors. First value
         is a boolean for compressed/uncompressed, second vector is a number between 0-20
         if the data is compressed, which is the width in bits of the compressed data.
+        Transformed into a numpy array upon retrieval.
+    _vector_list : list
+        Internal list of vectors, used to build the final vectors attribute.
+        This is a list of numpy arrays, each with shape (n, 5) where n is the
+        number of vectors in that packet, and each vector is (x, y, z, range, time).
+    _vector_cache : numpy.ndarray | None
+        A cache of the concatenated vector list. This is None until the vectors
+        property is accessed, at which point it is created and stored here for future
+        access.
 
     Methods
     -------
@@ -248,29 +269,66 @@ class MagL1a:
     is_mago: bool
     is_active: int
     shcoarse: int
-    vectors: np.ndarray
+    starting_vectors: InitVar[np.ndarray]
     starting_packet: InitVar[MagL1aPacketProperties]
     packet_definitions: dict[np.int64, MagL1aPacketProperties] = field(init=False)
     most_recent_sequence: int = field(init=False)
     missing_sequences: list[int] = field(default_factory=list)
     start_time: np.int64 = field(init=False)
-    compression_flags: np.ndarray | None = field(init=False, default=None)
+    _compression_flags_list: list = field(default_factory=list)
+    _vector_list: list = field(init=False)
+    _vector_cache: np.ndarray | None = field(init=False, default=None)
 
-    def __post_init__(self, starting_packet: MagL1aPacketProperties) -> None:
+    def __post_init__(
+        self, starting_vectors: np.ndarray, starting_packet: MagL1aPacketProperties
+    ) -> None:
         """
-        Initialize the packet_definition dictionary and most_recent_sequence.
+        Initialize the vector list, packet_definition dictionary & most_recent_sequence.
 
         Parameters
         ----------
+        starting_vectors : numpy.ndarray
+            The vectors for the first packet in the day.
         starting_packet : MagL1aPacketProperties
             The packet properties for the first packet in the day, including start time.
         """
+        self._vector_list = [starting_vectors]
         self.start_time = np.int64(met_to_ttj2000ns(starting_packet.shcoarse))
         self.packet_definitions = {self.start_time: starting_packet}
         # most_recent_sequence is the sequence number of the packet used to initialize
         # the object
         self.most_recent_sequence = starting_packet.src_seq_ctr
         self.update_compression_array(starting_packet, self.vectors.shape[0])
+
+    @property
+    def vectors(self) -> np.ndarray:
+        """
+        Concatenate the internal vector list into a numpy array.
+
+        If the array has already been created, return the cached version.
+
+        Returns
+        -------
+        np.ndarray
+            Array of vectors with shape (n, 5) where n is the number of vectors,
+            and each vector is (x, y, z, range, time).
+        """
+        if self._vector_cache is None:
+            self._vector_cache = np.concatenate(self._vector_list, axis=0)
+        return self._vector_cache
+
+    @property
+    def compression_flags(self) -> np.ndarray:
+        """
+        Return the compression flags array.
+
+        Returns
+        -------
+        np.ndarray
+            Array of compression flags with shape (n, 2) where n is the number of
+            vectors, and each entry is (is_compressed, compression_width).
+        """
+        return np.concatenate(self._compression_flags_list, axis=0)
 
     def append_vectors(
         self, additional_vectors: np.ndarray, packet_properties: MagL1aPacketProperties
@@ -285,9 +343,12 @@ class MagL1a:
         packet_properties : MagL1aPacketProperties
             Additional vector definition to add to the l0_packets dictionary.
         """
+        self._vector_list.append(additional_vectors)
+        # Invalidate the cache
+        self._vector_cache = None
+
         vector_sequence = packet_properties.src_seq_ctr
 
-        self.vectors = np.concatenate([self.vectors, additional_vectors])
         start_time = np.int64(met_to_ttj2000ns(packet_properties.shcoarse))
         self.packet_definitions[start_time] = packet_properties
 
@@ -322,10 +383,7 @@ class MagL1a:
             [packet_properties.compression, packet_properties.compression_width],
             dtype=np.int8,
         )
-        if self.compression_flags is None:
-            self.compression_flags = new_flags
-        else:
-            self.compression_flags = np.concatenate([self.compression_flags, new_flags])
+        self._compression_flags_list.append(new_flags)
 
     @staticmethod
     def calculate_vector_time(

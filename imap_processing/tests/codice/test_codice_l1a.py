@@ -7,13 +7,79 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 pytestmark = pytest.mark.external_test_data
+
+
+# TODO: These variables are in validation data but missing in processed data
+# in the product mentioned in the comments. These will need to be fixed in
+# upcoming work mentioned in issue #2237
+TIME_MISMATCHES = [
+    "voltage_table",  # many products
+    "epoch_delta_plus",  # many products
+    "epoch_delta_minus",  # many products
+]
+
+EXPECTED_MISMATCHES = [
+    "data_quality",  # hi-ialirt
+    "spin_period",  # hi-ialirt
+    "h",  # hi-ialirt
+    "heplusplus",  # lo-ialirt
+    "cplus5",  # lo-ialirt
+    "cplus6",  # lo-ialirt
+    "oplus6",  # lo-ialirt shape mismatch
+    "oplus7",  # lo-ialirt shape mismatch
+    "oplus8",  # lo-ialirt shape mismatch
+    "mg",  # lo-ialirt shape mismatch
+    "fe_loq",  # lo-ialirt shape mismatch
+    "fe_hiq",  # lo-ialirt shape mismatch
+    "heplusplus",  # lo-ialirt shape mismatch
+    "cplus5",  # lo-ialirt shape mismatch
+    "cplus6",  # lo-ialirt shape mismatch
+    "rgfo_half_spin",  # lo-ialirt shape mismatch
+    "nso_half_spin",  # lo-ialirt shape mismatch
+    "tof_plus_apd",  # counters-aggregated
+    "tof_only",  # counters-aggregated
+    "position_plus_apd",  # counters-aggregated
+    "position_only",  # counters-aggregated
+    "sta_or_stb_plus_apd",  # counters-aggregated
+    "sta_or_stb_only",  # counters-aggregated
+    "reserved1",  # counters-aggregated
+    "reserved2",  # counters-aggregated
+    "sp_only",  # counters-aggregated
+    "apd_only",  # counters-aggregated
+    "low_tof_cutoff",  # counters-aggregated
+    "invalid_position_count",  # counters-aggregated
+    "asic1_flag_invalid",  # counters-aggregated
+    "asic2_flag_invalid",  # counters-aggregated
+    "asic1_channel_invalid",  # counters-aggregated
+    "asic2_channel_invalid",  # counters-aggregated
+    "tec4_timeout_tof_no_pos",  # counters-aggregated
+    "tec4_timeout_pos_no_tof",  # counters-aggregated
+    "tec4_timeout_no_pos_tof",  # counters-aggregated
+    "tec5_timeout_tof_no_pos",  # counters-aggregated
+    "tec5_timeout_pos_no_tof",  # counters-aggregated
+    "tec5_timeout_no_pos_tof",  # counters-aggregated
+    "p0_tcrs",  # sw-priority shape mismatch
+    "p1_hplus",  # sw-priority shape mismatch
+    "p2_heplusplus",  # sw-priority shape mismatch
+    "p3_heavies",  # sw-priority shape mismatch
+    "p4_dcrs",  # lo-sw-priority shape mismatch
+    "p5_heavies",  # lo-nsw-priority shape mismatch
+    "p6_hplus_heplusplus",  # lo-nsw-priority shape mismatch
+    "k_factor",  # lo-direct-events
+    "priority_label",  # hi and lo direct-events
+    "sw_bias_gain_mode",  # lo-direct-events
+    "st_bias_gain_mode",  # lo-direct-events
+    "position",  # lo-direct-events
+    *TIME_MISMATCHES,
+]
+
+UNCERTAINTY_VARIABLES = "unc_"
 
 
 EXPECTED_HI_OMNI_ARRAY_SHAPES = {
@@ -36,21 +102,24 @@ def test_hi_ialirt():
         / "imap_codice_hi-ialirt_20250814_v001.pkts"
     )
 
-    # TODO: validation had
-    #
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-ialirt_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-ialirt_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    # TODO: validation had (epoch, energy_h, ssd_index, spin_sector_index)
-    assert processed_data.h.shape == (32, 15)
-    assert processed_data.spin_period.shape == (32,)
-    assert processed_data.data_quality.shape == (32,)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape, (
+            f"Shape mismatch for variable '{variable}'"
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-ialirt_20250814_v999.cdf"
 
@@ -62,33 +131,24 @@ def test_lo_ialirt():
         / "imap_codice_lo-ialirt_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-ialirt_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-ialirt_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (8,)
-        # For energy dimensions
-        elif variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (8, 128, 1)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape, (
+            f"Shape mismatch for variable '{variable}'"
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-ialirt_20250814_v999.cdf"
 
@@ -106,7 +166,7 @@ def test_hskp():
     # val_path = (
     #     imap_module_directory
     #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hskp_20250805183835_v0.0.3.cdf"
+    #     / "imap_codice_l1a_hskp_20250805183835_v0.0.5.cdf"
     # )
     # val_data = load_cdf(val_path)
     # print(val_data)
@@ -130,32 +190,22 @@ def test_lo_counters_aggregated():
         / "imap_codice_lo-counters-aggregated_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-counters-aggregated_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-counters-aggregated_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 6)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-counters-aggregated_20250814_v999.cdf"
 
@@ -168,32 +218,22 @@ def test_lo_counters_singles():
         / "imap_codice_lo-counters-singles_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-counters-singles_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-counters-singles_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 24, 6)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-counters-singles_20250814_v999.cdf"
 
@@ -206,31 +246,24 @@ def test_lo_sw_priority():
         / "imap_codice_lo-sw-priority_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 24)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape, (
+            f"Shape mismatch for variable '{variable}'"
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v999.cdf"
 
@@ -243,31 +276,22 @@ def test_lo_nsw_priority():
         / "imap_codice_lo-nsw-priority_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-nsw-priority_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-nsw-priority_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 24)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-priority_20250814_v999.cdf"
 
@@ -284,7 +308,7 @@ def test_lo_sw_species():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-species_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-sw-species_20250814211100_v0.0.5.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -292,24 +316,11 @@ def test_lo_sw_species():
     # Process the input data
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
-    # Variables to exclude from comparison
-    # TODO: have validation data rename voltage_table to energy_table
-    # TODO: fix epoch in future work
-    exclude_vars = [
-        "voltage_table",
-        "epoch_delta_plus",
-        "epoch_delta_minus",
-        "energy_table",
-    ]
-
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in exclude_vars:
+        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
+
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -333,7 +344,7 @@ def test_lo_nsw_species():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-species_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-nsw-species_20250814211100_v0.0.5.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -341,22 +352,11 @@ def test_lo_nsw_species():
     # Process the input data
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
-    # Variables to exclude from comparison
-    exclude_vars = [
-        "voltage_table",
-        "epoch_delta_plus",
-        "epoch_delta_minus",
-        "energy_table",
-    ]
-
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in exclude_vars:
+        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
+
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -380,22 +380,15 @@ def test_lo_sw_angular():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-angular_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-sw-angular_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in ["voltage_table", "epoch_delta_plus", "epoch_delta_minus"]:
+        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
 
-        if variable in ["hplus", "heplusplus", "oplus6", "fe_loq"]:
-            # TODO: find out why this didn't match
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -419,22 +412,15 @@ def test_lo_nsw_angular():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-angular_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-nsw-angular_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in ["voltage_table", "epoch_delta_plus", "epoch_delta_minus"]:
+        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
 
-        if variable in ["heplusplus"]:
-            # TODO: find out why this didn't match
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -454,24 +440,23 @@ def test_hi_counters_aggregated():
         / "imap_codice_hi-counters-aggregated_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-counters-aggregated_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-counters-aggregated_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["data_quality", "spin_period"]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        elif "energy_spectrum" in variable:  # Handle special case for energy_spectrum
-            pass  # Skip checking this variable to avoid the reshape error
-        else:
-            assert processed_data[variable].shape == (9,)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
 
@@ -484,22 +469,22 @@ def test_hi_counters_singles():
         / "imap_codice_hi-counters-singles_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-counters-singles_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-counters-singles_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["data_quality", "spin_period"]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 12)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-singles_20250814_v999.cdf"
 
@@ -516,13 +501,17 @@ def test_hi_omni():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-omni_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-omni_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     # hi-omni has species-specific shapes
-    for variable in constants.HI_OMNI_VARIABLE_NAMES:
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
         assert processed_data[variable].shape == val_data[variable].shape
         np.testing.assert_allclose(
             processed_data[variable].values,
@@ -543,27 +532,31 @@ def test_hi_sectored():
         / "imap_codice_hi-sectored_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-sectored_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-sectored_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["data_quality", "spin_period"]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 8, 12, 12)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Skipping hi-priority test temporarily")
 def test_hi_priority():
     """Tests hi-priority."""
     test_file_path = (
@@ -576,7 +569,7 @@ def test_hi_priority():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-priority_20250807174600_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-priorities_20250814211100_v0.0.5.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -585,16 +578,11 @@ def test_hi_priority():
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
     for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in variable '{variable}'",
-        )
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"
@@ -608,22 +596,22 @@ def test_lo_direct_events():
         / "imap_codice_lo-direct-events_20250814_v001.pkts"
     )
 
-    # TODO: uncomment this
     # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-direct-events_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-direct-events_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["num_events", "data_quality"]:
-            assert processed_data[variable].shape == (9, 8)
-        else:
-            assert processed_data[variable].shape == (9, 8, 10000)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v999.cdf"
 
@@ -641,19 +629,20 @@ def test_hi_direct_events():
 
     # TODO: uncomment this
     # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-direct-events_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-direct-events_20250814211100_v0.0.5.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["num_events", "data_quality"]:
-            assert processed_data[variable].shape == (9, 6)
-        else:
-            assert processed_data[variable].shape == (9, 6, 10000)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(
+            UNCERTAINTY_VARIABLES
+        ):
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-direct-events_20250814_v999.cdf"

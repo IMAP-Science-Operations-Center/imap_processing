@@ -256,11 +256,13 @@ def test_mag_l1b_validation(test_number, mocks):
         assert np.allclose(expected_time, mago_time, atol=1e-6, rtol=0)
 
 
-@pytest.mark.xfail(reason="All L1C edge cases are not yet complete")
-@pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016"])
+@pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016", "024"])
 @pytest.mark.parametrize(("sensor"), ["mago", "magi"])
 @pytest.mark.external_test_data
 def test_mag_l1c_validation(test_number, sensor):
+    if test_number not in ["013", "014", "024"]:
+        pytest.skip("All L1C edge cases are not yet complete")
+
     # We expect tests 013 and 014 to pass. 015 and 016 are not yet complete.
     # timestamp = (
     #     (np.datetime64("2025-03-11T12:22:50.706034") - np.datetime64(TTJ2000_EPOCH))
@@ -271,24 +273,38 @@ def test_mag_l1c_validation(test_number, sensor):
     norm_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-in.csv"
     burst_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-burst-in.csv"
 
-    norm_df = pd.read_csv(norm_in)
+    norm_df = pd.read_csv(norm_in) if norm_in.exists() else None
     burst_df = pd.read_csv(burst_in)
 
-    norm = mag_generate_l1b_from_csv(norm_df, f"imap_mag_l1b_norm-{sensor}")
+    norm = (
+        mag_generate_l1b_from_csv(norm_df, f"imap_mag_l1b_norm-{sensor}")
+        if norm_df is not None
+        else None
+    )
     burst = mag_generate_l1b_from_csv(burst_df, f"imap_mag_l1b_burst-{sensor}")
 
     # Extract day_to_process from the first timestamp in the data
-    first_timestamp = pd.to_datetime(norm_df["t"].iloc[0]).normalize()
+    if norm_df is not None:
+        first_timestamp = pd.to_datetime(norm_df["t"].iloc[0]).normalize()
+    else:
+        first_timestamp = pd.to_datetime(burst_df["t"].iloc[0]).normalize()
+
     day_to_process = np.datetime64(first_timestamp.date())
 
     # out = np.int64(794968123760272000)
     # print(f"expected out {TTJ2000_EPOCH + out.astype('timedelta64[ns]')}")
     # For mago test 013: norm 2, burst 64
-    norm.attrs["vectors_per_second"] = get_vecsec(test_number, sensor, "norm")
+    if norm is not None:
+        norm.attrs["vectors_per_second"] = get_vecsec(test_number, sensor, "norm")
+        first_dataset = norm
+        second_dataset = burst
+    else:
+        first_dataset = burst
+        second_dataset = None
 
     burst.attrs["vectors_per_second"] = get_vecsec(test_number, sensor, "burst")
 
-    l1c = mag_l1c(norm, day_to_process, burst)
+    l1c = mag_l1c(first_dataset, day_to_process, second_dataset)
     expected_output = pd.read_csv(
         source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-out.csv"
     )
@@ -433,6 +449,14 @@ def get_vecsec(test_number, sensor, mode):
             },
             "magi": {
                 "norm": "794968476204537984:1,794969095711168000:2",
+                "burst": "794968751200051968:8",
+            },
+        },
+        "024": {
+            "mago": {
+                "burst": "794968751184441984:64",
+            },
+            "magi": {
                 "burst": "794968751200051968:8",
             },
         },

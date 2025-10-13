@@ -145,7 +145,7 @@ def calculate_helio_pset(
     mid_time = ttj2000ns_to_et(met_to_ttj2000ns((pointing_start + pointing_stop) / 2))
 
     logger.info("Adjusting data for helio frame.")
-    exposure_time, efficiency, geometric_function = get_helio_adjusted_data(
+    exposure_time, _efficiency, geometric_function = get_helio_adjusted_data(
         mid_time,
         exposure_time,
         geometric_function,

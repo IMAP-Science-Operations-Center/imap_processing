@@ -1,5 +1,6 @@
 """Test coverage for imap_processing.spice.repoint.py"""
 
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -55,21 +56,27 @@ def et_times(furnish_pointing_frame_kernels):
     return et_times
 
 
+@mock.patch("imap_processing.spice.pointing_frame.spiceypy.et2datetime")
 @mock.patch(
     "imap_processing.spice.pointing_frame.write_pointing_frame_ck", autospec=True
 )
 @mock.patch(
     "imap_processing.spice.pointing_frame.calculate_pointing_attitude_segments",
     autospec=True,
-    return_value=None,
+    return_value=[{"start_sclk_ticks": 0, "end_sclk_ticks": 1}],
 )
-def test_generate_pointing_attitude_kernel(mock_gen_attitude_segments, mock_write_ck):
+def test_generate_pointing_attitude_kernel(
+    mock_gen_attitude_segments, mock_write_ck, mock_et2datetime
+):
     """Test coverage for generate_pointing_attitude_kernel function."""
     start_date = "2024_111"
     end_date = "2024_222"
     version = "02"
+    mock_et2datetime.side_effect = [
+        datetime.strptime(date_str, "%Y_%j") for date_str in [start_date, end_date]
+    ]
     ck_path = Path(f"/bogus/file/path/imap_{start_date}_{end_date}_{version}.ah.bc")
-    pointing_ck_path = generate_pointing_attitude_kernel(ck_path)[0]
+    pointing_ck_path = generate_pointing_attitude_kernel([ck_path])[0]
     assert pointing_ck_path.name == f"imap_dps_{start_date}_{end_date}_{version}.ah.bc"
     # Verify that file is valid pointing_attitude kernel with imap-data-access
     spice_input = SPICEInput(pointing_ck_path.name)
@@ -207,7 +214,7 @@ def test_calculate_pointing_attitude_segments(
     )
 
     segment_data = calculate_pointing_attitude_segments(
-        spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
+        [spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc"],
     )
 
     # Nick Dutton's MATLAB code result
@@ -224,12 +231,6 @@ def test_calculate_pointing_attitude_segments(
         decimal=4,
     )
 
-    # Tests error handling when incorrect kernel is loaded.
-    with pytest.raises(
-        ValueError, match="Error: Expected CK kernel .*badname_kernel.bc"
-    ):  # Replace match string with expected error message
-        calculate_pointing_attitude_segments(tmp_path / "badname_kernel.bc")
-
 
 def test_multiple_pointings(
     furnish_pointing_frame_kernels,
@@ -237,31 +238,45 @@ def test_multiple_pointings(
     use_fake_repoint_data_for_time,
 ):
     """Tests create_pointing_frame function with multiple pointing kernels."""
-    # Define 3 repoints:
-    #   1. Starts 10 second before the input CK start, ends one second
+    # Define 4 repoints:
+    #   1. Starts and ends before the input CK start
+    #   2. Starts 10 seconds before the input CK start, ends one second
     #      after the CK start
-    #   2. Starts one hour after CK start, ends 1 second after it starts
-    #   3. Starts one second before the CK ends, ends 10 seconds after the CK ends
+    #   3. Starts one hour after CK start, ends 1-hour + 1-second after it starts
+    #   4. Starts one second before the CK ends, ends 10 seconds after the CK ends
+    #   5. Starts and ends after the CK end
     # Result is 2 pointings
     ck_met_start, ck_met_end = get_ck_met_coverage(furnish_pointing_frame_kernels[-1])
     repoint_start_met = np.array(
-        [ck_met_start - 10, ck_met_start + 60 * 60, ck_met_end - 1]
+        [
+            ck_met_start - 60,
+            ck_met_start - 10,
+            ck_met_start + 60 * 60,
+            ck_met_end - 1,
+            ck_met_end + 10,
+        ]
     )
     repoint_end_met = np.array(
-        [ck_met_start + 1, ck_met_start + 60 * 60 + 1, ck_met_end + 10]
+        [
+            ck_met_start - 30,
+            ck_met_start + 1,
+            ck_met_start + 60 * 60 + 1,
+            ck_met_end + 10,
+            ck_met_end + 20,
+        ]
     )
     use_fake_repoint_data_for_time(repoint_start_met, repoint_end_met)
 
     segment_data = calculate_pointing_attitude_segments(
-        spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
+        [spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc"],
     )
 
-    # Pointings are between repoints, so we expect one less than repoints
-    assert len(segment_data["start_sclk_ticks"]) == len(repoint_start_met) - 1
+    # The way we defined the repoints, we expect two pointing segments
+    assert len(segment_data["start_sclk_ticks"]) == 2
 
     np.testing.assert_allclose(
-        segment_data["start_sclk_ticks"], repoint_end_met[:-1] / TICK_DURATION
+        segment_data["start_sclk_ticks"], repoint_end_met[1:3] / TICK_DURATION
     )
     np.testing.assert_allclose(
-        segment_data["end_sclk_ticks"], repoint_start_met[1:] / TICK_DURATION
+        segment_data["end_sclk_ticks"], repoint_start_met[2:4] / TICK_DURATION
     )
