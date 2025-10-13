@@ -24,6 +24,18 @@ from imap_processing.swe.utils import swe_constants
 
 pytestmark = pytest.mark.external_test_data
 
+OLD_GEOMETRIC_FACTORS = np.array(
+    [
+        435e-6,
+        599e-6,
+        808e-6,
+        781e-6,
+        876e-6,
+        548e-6,
+        432e-6,
+    ]
+)
+
 
 @patch(
     "imap_processing.swe.utils.swe_constants.GEOMETRIC_FACTORS",
@@ -255,6 +267,10 @@ def test_put_data_into_angle_bins():
     np.testing.assert_array_equal(even_col_mean_data, expected_mean_data)
 
 
+@patch(
+    "imap_processing.swe.utils.swe_constants.GEOMETRIC_FACTORS",
+    new=OLD_GEOMETRIC_FACTORS,
+)
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 @patch(
     "imap_processing.spice.spin.get_spacecraft_to_instrument_spin_phase_offset",
@@ -364,6 +380,10 @@ def test_swe_l2_15sec(
     np.testing.assert_allclose(bin_psd_data, bin_psd_val, rtol=1e-6)
 
 
+@patch(
+    "imap_processing.swe.utils.swe_constants.GEOMETRIC_FACTORS",
+    new=OLD_GEOMETRIC_FACTORS,
+)
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 @patch(
     "imap_processing.spice.spin.get_spacecraft_to_instrument_spin_phase_offset",
