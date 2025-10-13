@@ -65,5 +65,11 @@ STATIONS = {
         latitude=54.2632,  # degrees North
         altitude=0.1,  # approx 100 meters
         min_elevation_deg=5,  # 5 degrees is the requirement
-    )
+    ),
+    "Manaus": StationProperties(
+        longitude=-59.969334,  # degrees East (negative = West)
+        latitude=-2.891257,  # degrees North (negative = South)
+        altitude=0.1,  # approx 100 meters
+        min_elevation_deg=5,  # 5 degrees is the requirement
+    ),
 }
