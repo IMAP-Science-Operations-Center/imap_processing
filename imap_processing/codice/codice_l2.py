@@ -171,7 +171,7 @@ def compute_geometric_factors(
     return gf
 
 
-def process_lo_species(
+def process_lo_species_intensity(
     dataset: xr.Dataset,
     species_list: list,
     geometric_factors: np.ndarray,
@@ -221,7 +221,13 @@ def process_lo_species(
         denominator = (
             scaler * geometric_factors * species_eff * dataset["energy_table"].data
         )
-        dataset[species] = dataset[species] / denominator[:, :, np.newaxis]
+        if species not in dataset:
+            logger.warning(
+                f"Species {species} not found in dataset. Filling with NaNS."
+            )
+            dataset[species] = np.full(dataset["energy_table"].data.shape, np.nan)
+        else:
+            dataset[species] = dataset[species] / denominator[:, :, np.newaxis]
 
     return dataset
 
@@ -279,7 +285,7 @@ def process_codice_l2(file_path: Path, ancillary_files: dict) -> xr.Dataset:
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
             # Calculate the pickup ion sunward solar wind intensities using equation
             # described in section 11.2.4 of algorithm document.
-            process_lo_species(
+            process_lo_species_intensity(
                 l2_dataset,
                 LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
                 geometric_factors,
@@ -288,7 +294,7 @@ def process_codice_l2(file_path: Path, ancillary_files: dict) -> xr.Dataset:
             )
             # Calculate the sunward solar wind species intensities using equation
             # described in section 11.2.4 of algorithm document.
-            process_lo_species(
+            process_lo_species_intensity(
                 l2_dataset,
                 LO_SW_SPECIES_VARIABLE_NAMES,
                 geometric_factors,
@@ -300,7 +306,7 @@ def process_codice_l2(file_path: Path, ancillary_files: dict) -> xr.Dataset:
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
             # Calculate the non-sunward species intensities using equation
             # described in section 11.2.4 of algorithm document.
-            process_lo_species(
+            process_lo_species_intensity(
                 l2_dataset,
                 LO_NSW_SPECIES_VARIABLE_NAMES,
                 geometric_factors,

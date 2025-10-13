@@ -17,7 +17,7 @@ from imap_processing.codice.codice_l2 import (
     get_efficiency_lut,
     get_geometric_factor_lut,
     process_codice_l2,
-    process_lo_species,
+    process_lo_species_intensity,
 )
 from imap_processing.codice.constants import (
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
@@ -190,7 +190,7 @@ def test_get_efficiency_lut(ancillary_files):
         assert col in efficiency_lut.columns, f"Missing column {col} in efficiency LUT"
 
 
-def test_process_lo_species(ancillary_files):
+def test_process_lo_species_intensity(ancillary_files):
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -207,7 +207,7 @@ def test_process_lo_species(ancillary_files):
         return_value=np.ones((128, 5)) * 2,
     ):
         len_pos = 5
-        process_lo_species(
+        process_lo_species_intensity(
             l1b_val_data_processed,
             LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
             gf,
@@ -233,7 +233,38 @@ def test_process_lo_species(ancillary_files):
         )
 
 
-def test_codice_l2_sw_species(ancillary_files):
+def test_process_lo_missing_species_intensity(ancillary_files):
+    l1b_val_data = xr.Dataset(
+        {
+            "epoch": ("epoch", np.ones(5)),
+            "energy_table": (("esa_step",), np.ones(128) * 10),
+        }
+    )
+
+    l1b_val_data_processed = l1b_val_data.copy()
+    gf = np.ones((len(l1b_val_data.epoch), 128, 24)) * 2
+    with mock.patch(
+        "imap_processing.codice.codice_l2.get_species_efficiency",
+        return_value=np.ones((128, 5)) * 2,
+    ):
+        len_pos = 5
+        process_lo_species_intensity(
+            l1b_val_data_processed,
+            LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
+            gf,
+            None,
+            list(np.arange(0, len_pos)),
+        )
+
+    for var in LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES:
+        assert var in l1b_val_data_processed, f"Missing variable {var} after processing"
+        # Check that all the missing species are filled with NaNs
+        assert not np.any(np.isfinite(l1b_val_data_processed[var].values)), (
+            f"Variable {var} should be all NaNs"
+        )
+
+
+def test_codice_l2_sw_species_intensity(ancillary_files):
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -247,7 +278,7 @@ def test_codice_l2_sw_species(ancillary_files):
     write_cdf(ds)
 
 
-def test_codice_l2_nsw_species(ancillary_files):
+def test_codice_l2_nsw_species_intensity(ancillary_files):
     l1b_val_data = (
         imap_module_directory
         / "tests"
