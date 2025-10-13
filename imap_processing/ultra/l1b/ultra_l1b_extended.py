@@ -1183,7 +1183,7 @@ def get_efficiency(
         Interpolated efficiency values.
     """
     if not interpolator:
-        interpolator = get_efficiency_interpolator(ancillary_files)
+        interpolator, _, _ = get_efficiency_interpolator(ancillary_files)
 
     return interpolator((theta_inst, phi_inst, energy))
 
