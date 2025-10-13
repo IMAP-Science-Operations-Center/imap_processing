@@ -1108,7 +1108,9 @@ def get_fwhm(
     return phi_interp, theta_interp
 
 
-def get_efficiency_interpolator(ancillary_files: dict) -> RegularGridInterpolator:
+def get_efficiency_interpolator(
+    ancillary_files: dict,
+) -> tuple[RegularGridInterpolator, tuple, tuple]:
     """
     Return a callable function that interpolates efficiency values for each event.
 
@@ -1119,8 +1121,12 @@ def get_efficiency_interpolator(ancillary_files: dict) -> RegularGridInterpolato
 
     Returns
     -------
-    efficiency : NDArray
-        Interpolated efficiency values.
+    interpolator : RegularGridInterpolator
+        Callable function to interpolate efficiency values.
+    heta_min_max : tuple
+        Minimum and maximum theta values in the lookup table.
+    phi_min_max : tuple
+        Minimum and maximum phi values in the lookup table.
     """
     lookup_table = get_energy_efficiencies(ancillary_files)
 
@@ -1133,6 +1139,9 @@ def get_efficiency_interpolator(ancillary_files: dict) -> RegularGridInterpolato
     efficiency_grid = efficiency_2d.reshape(
         (len(theta_vals), len(phi_vals), len(energy_vals))
     )
+    # Find the min and max values for theta and phi
+    theta_min_max = (theta_vals.min(), theta_vals.max())
+    phi_min_max = (phi_vals.min(), phi_vals.max())
 
     interpolator = RegularGridInterpolator(
         (theta_vals, phi_vals, energy_vals),
@@ -1141,7 +1150,7 @@ def get_efficiency_interpolator(ancillary_files: dict) -> RegularGridInterpolato
         fill_value=FILLVAL_FLOAT32,
     )
 
-    return interpolator
+    return interpolator, theta_min_max, phi_min_max
 
 
 def get_efficiency(

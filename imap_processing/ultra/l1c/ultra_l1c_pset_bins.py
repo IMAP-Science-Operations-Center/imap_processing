@@ -519,7 +519,9 @@ def get_efficiencies_and_geometric_function(
         Shape = (n_energy_bins, npix).
     """
     # Load callable efficiency interpolator function
-    eff_interpolator = get_efficiency_interpolator(ancillary_files)
+    eff_interpolator, theta_min_max, phi_min_max = get_efficiency_interpolator(
+        ancillary_files
+    )
     # load geometric factor lookup table
     geometric_lookup_table = load_geometric_factor_tables(
         ancillary_files, "l1b-sensor-gf-blades"
@@ -527,6 +529,9 @@ def get_efficiencies_and_geometric_function(
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
     energy_bins = len(energy_bin_geometric_means)
+    # clip arrays to avoid out of bounds errors
+    theta_vals = np.clip(theta_vals, theta_min_max[0], theta_min_max[1])
+    phi_vals = np.clip(phi_vals, phi_min_max[0], phi_min_max[1])
     # Initialize summation arrays for geometric factors and efficiencies
     gf_summation = np.zeros((energy_bins, npix))
     eff_summation = np.zeros((energy_bins, npix))
