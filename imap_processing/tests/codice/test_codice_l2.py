@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from imap_data_access import AncillaryInput, ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -32,13 +33,19 @@ EXPECTED_LOGICAL_SOURCES = [
 
 
 @pytest.fixture
-def ancillary_files():
-    l2_input_path = imap_module_directory / "tests" / "codice" / "data" / "l2_input"
-    return {
-        "l2-lo-gfactor": l2_input_path / "imap_codice_l2-lo-gfactor_20251002_v001.csv",
-        "l2-lo-efficiency": l2_input_path
-        / "imap_codice_l2-lo-efficiency_20251002_v001.csv",
-    }
+def processing_dependencies(codice_lut_path):
+    eff_file = "imap_codice_l2-lo-efficiency_20251008_v001.csv"
+    gf_file = "imap_codice_l2-lo-gfactor_20251008_v001.csv"
+    return ProcessingInputCollection(AncillaryInput(gf_file), AncillaryInput(eff_file))
+
+
+@pytest.fixture
+def mock_get_file_paths(codice_lut_path):
+    with patch(
+        "imap_data_access.processing_input.ProcessingInputCollection.get_file_paths"
+    ) as mock_get_file_paths:
+        mock_get_file_paths.side_effect = codice_lut_path
+        yield mock_get_file_paths
 
 
 @pytest.fixture
@@ -155,12 +162,13 @@ def test_add_dataset_attributes(mock_cdf_attrs):
         )
 
 
-@pytest.mark.external_test_data
-def test_get_geometric_factor_lut(ancillary_files):
-    gfactor_lut = get_geometric_factor_lut(ancillary_files)
+def test_get_geometric_factor_lut(processing_dependencies, mock_get_file_paths):
+    gfactor_lut = get_geometric_factor_lut(processing_dependencies)
 
     # Load the csv files directly to compare
-    geometric_factors = pd.read_csv(ancillary_files["l2-lo-gfactor"])
+    geometric_factors = pd.read_csv(
+        processing_dependencies.get_file_paths("l2-lo-gfactor")[0]
+    )
     full = (
         geometric_factors[geometric_factors["mode"] == "full"]
         .drop(["mode", "esa_step"], axis=1)
@@ -179,9 +187,8 @@ def test_get_geometric_factor_lut(ancillary_files):
     np.testing.assert_array_equal(gfactor_lut["reduced"], reduced)
 
 
-@pytest.mark.external_test_data
-def test_get_efficiency_lut(ancillary_files):
-    efficiency_lut = get_efficiency_lut(ancillary_files)
+def test_get_efficiency_lut(processing_dependencies, mock_get_file_paths):
+    efficiency_lut = get_efficiency_lut(processing_dependencies)
     expected_colnames = ["esa_step", "product", "species"] + [
         f"position_{x}" for x in range(1, 25)
     ]
@@ -190,7 +197,7 @@ def test_get_efficiency_lut(ancillary_files):
         assert col in efficiency_lut.columns, f"Missing column {col} in efficiency LUT"
 
 
-def test_process_lo_species_intensity(ancillary_files):
+def test_process_lo_species_intensity():
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -233,7 +240,7 @@ def test_process_lo_species_intensity(ancillary_files):
         )
 
 
-def test_process_lo_missing_species_intensity(ancillary_files):
+def test_process_lo_missing_species_intensity():
     l1b_val_data = xr.Dataset(
         {
             "epoch": ("epoch", np.ones(5)),
@@ -264,7 +271,7 @@ def test_process_lo_missing_species_intensity(ancillary_files):
         )
 
 
-def test_codice_l2_sw_species_intensity(ancillary_files):
+def test_codice_l2_sw_species_intensity(processing_dependencies, mock_get_file_paths):
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -273,12 +280,12 @@ def test_codice_l2_sw_species_intensity(ancillary_files):
         / "l1b_validation"
         / "imap_codice_l1b_lo-sw-species_20250814211100_v0.0.3.cdf"
     )
-    ds = process_codice_l2(l1b_val_data, ancillary_files)
+    ds = process_codice_l2(l1b_val_data, processing_dependencies)
     ds.attrs["Data_version"] = "001"
     write_cdf(ds)
 
 
-def test_codice_l2_nsw_species_intensity(ancillary_files):
+def test_codice_l2_nsw_species_intensity(processing_dependencies, mock_get_file_paths):
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -287,6 +294,6 @@ def test_codice_l2_nsw_species_intensity(ancillary_files):
         / "l1b_validation"
         / "imap_codice_l1b_lo-nsw-species_20250814211100_v0.0.3.cdf"
     )
-    ds = process_codice_l2(l1b_val_data, ancillary_files)
+    ds = process_codice_l2(l1b_val_data, processing_dependencies)
     ds.attrs["Data_version"] = "001"
     write_cdf(ds)

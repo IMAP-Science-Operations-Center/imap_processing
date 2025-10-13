@@ -21,39 +21,40 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.constants import (
     HALF_SPIN_LUT,
+    HI_OMNI_VARIABLE_NAMES,
+    HI_SECTORED_VARIABLE_NAMES,
+    L2_GEOMETRIC_FACTOR,
+    L2_HI_NUMBER_OF_SSD,
+    L2_HI_SECTORED_ANGLE,
     LO_NSW_SPECIES_VARIABLE_NAMES,
     LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
     LO_SW_SPECIES_VARIABLE_NAMES,
     NSW_POSITIONS,
     PUI_POSITIONS,
     SW_POSITIONS,
-    HI_OMNI_VARIABLE_NAMES,
-    HI_SECTORED_VARIABLE_NAMES,
-    L2_GEOMETRIC_FACTOR,
-    L2_HI_NUMBER_OF_SSD,
-    L2_HI_SECTORED_ANGLE,
 )
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def get_geometric_factor_lut(ancillary_files: dict) -> dict:
+def get_geometric_factor_lut(dependencies: ProcessingInputCollection) -> dict:
     """
     Get the geometric factor lookup table.
 
     Parameters
     ----------
-    ancillary_files : dict
-        Ancillary files needed for processing. The key is the file description and the
-        value is the file path.
+    dependencies : ProcessingInputCollection
+        The collection of processing input files.
 
     Returns
     -------
     geometric_factor_lut : dict
         A dict with a full and reduced mode array with shape (esa_steps, position).
     """
-    geometric_factors = pd.read_csv(ancillary_files["l2-lo-gfactor"])
+    geometric_factors = pd.read_csv(
+        dependencies.get_file_paths(descriptor="l2-lo-gfactor")[0]
+    )
 
     # sort by esa step. They should already be sorted, but just in case
     full = geometric_factors[geometric_factors["mode"] == "full"].sort_values(
@@ -75,15 +76,14 @@ def get_geometric_factor_lut(ancillary_files: dict) -> dict:
     }
 
 
-def get_efficiency_lut(ancillary_files: dict) -> pd.DataFrame:
+def get_efficiency_lut(dependencies: ProcessingInputCollection) -> pd.DataFrame:
     """
     Get the efficiency lookup table.
 
     Parameters
     ----------
-    ancillary_files : dict
-        Ancillary files needed for processing. The key is the file description and the
-        value is the file path.
+    dependencies : ProcessingInputCollection
+        The collection of processing input files.
 
     Returns
     -------
@@ -91,7 +91,7 @@ def get_efficiency_lut(ancillary_files: dict) -> pd.DataFrame:
         Contains the efficiency lookup table. Columns are:
         species, product, esa_step, position_1, position_2, ..., position_24.
     """
-    return pd.read_csv(ancillary_files["l2-lo-efficiency"])
+    return pd.read_csv(dependencies.get_file_paths(descriptor="l2-lo-efficiency")[0])
 
 
 def get_species_efficiency(species: str, efficiency: pd.DataFrame) -> np.ndarray:
@@ -200,7 +200,7 @@ def process_lo_species_intensity(
     positions : list
         A list of position indices to select from the geometric factor and
         efficiency lookup tables.
-        
+
     Returns
     -------
     xarray.Dataset
@@ -326,7 +326,7 @@ def process_hi_sectored(
         The L2 dataset to process.
     dependencies : ProcessingInputCollection
         The collection of processing input files.
-    
+
     Returns
     -------
     xarray.Dataset
@@ -392,8 +392,8 @@ def process_hi_sectored(
     # TODO: add CDF attrs
     l2_dataset["spin_angles"] = (("spin_sector", "elevation_angle"), spin_angles)
     return l2_dataset
-  
-  
+
+
 def process_codice_l2(
     file_path: Path, dependencies: ProcessingInputCollection
 ) -> xr.Dataset:
@@ -438,8 +438,8 @@ def process_codice_l2(
         "imap_codice_l2_lo-sw-species",
         "imap_codice_l2_lo-nsw-species",
     ]:
-        geometric_factor_lookup = get_geometric_factor_lut(ancillary_files)
-        efficiency_lookup = get_efficiency_lut(ancillary_files)
+        geometric_factor_lookup = get_geometric_factor_lut(dependencies)
+        efficiency_lookup = get_efficiency_lut(dependencies)
         geometric_factors = compute_geometric_factors(
             l2_dataset, geometric_factor_lookup
         )

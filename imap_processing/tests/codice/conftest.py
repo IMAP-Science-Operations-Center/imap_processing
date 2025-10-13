@@ -31,6 +31,14 @@ def codice_lut_path():
                 TEST_DATA_PATH
                 / "l2_lut/imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
             ]
+        elif descriptor == "l2-lo-efficiency":
+            return [
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251008_v001.csv"
+            ]
+        elif descriptor == "l2-lo-gfactor":
+            return [
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251008_v001.csv"
+            ]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")
 
