@@ -70,8 +70,8 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l1b_lo-sw-species_20250814211100_v0.0.3.cdf", "codice/data/l1b_validation"),
 
     # l2 lookup tables
-    ("imap_codice_l2-lo-gfactor_20251002_v001.csv", "codice/data/l2_input/"),
-    ("imap_codice_l2-lo-efficiency_20251002_v001.csv", "codice/data/l2_input/"),
+    ("imap_codice_l2-lo-gfactor_20251008_v001.csv", "codice/data/l2_input/"),
+    ("imap_codice_l2-lo-efficiency_20251008_v001.csv", "codice/data/l2_input/"),
 
     # Hi
     ("imap_hi_l1a_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),
