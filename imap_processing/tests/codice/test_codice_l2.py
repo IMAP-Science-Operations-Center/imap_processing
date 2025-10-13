@@ -233,7 +233,7 @@ def test_process_lo_species(ancillary_files):
         )
 
 
-def test_codice_l2_sw(ancillary_files):
+def test_codice_l2_sw_species(ancillary_files):
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -247,7 +247,7 @@ def test_codice_l2_sw(ancillary_files):
     write_cdf(ds)
 
 
-def test_codice_l2_nsw(ancillary_files):
+def test_codice_l2_nsw_species(ancillary_files):
     l1b_val_data = (
         imap_module_directory
         / "tests"

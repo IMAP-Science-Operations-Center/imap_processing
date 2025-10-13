@@ -32,200 +32,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def process_codice_l2(file_path: Path, ancillary_files: dict) -> xr.Dataset:
-    """
-    Will process CoDICE l1 data to create l2 data products.
-
-    Parameters
-    ----------
-    file_path : pathlib.Path
-        Path to the CoDICE L1 file to process.
-    ancillary_files : dict
-        Ancillary files needed for processing. The key is the file description and the
-        value is the file path.
-
-    Returns
-    -------
-    l2_dataset : xarray.Dataset
-        The``xarray`` dataset containing the science data and supporting metadata.
-    """
-    logger.info(f"Processing {file_path}")
-
-    # Open the l1 file
-    l1_dataset = load_cdf(file_path)
-
-    # Use the logical source as a way to distinguish between data products and
-    # set some useful distinguishing variables
-    # TODO: Could clean this up by using imap-data-access methods?
-    dataset_name = l1_dataset.attrs["Logical_source"]
-    data_level = dataset_name.removeprefix("imap_codice_").split("_")[0]
-    dataset_name = dataset_name.replace(data_level, "l2")
-
-    # Use the L1 data product as a starting point for L2
-    l2_dataset = l1_dataset.copy()
-    # Get the L2 CDF attributes
-    # cdf_attrs = ImapCdfAttributes()
-    # TODO uncomment and update variable attrs
-    # l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
-
-    # TODO: update list of datasets that need geometric factors (if needed)
-    # Compute geometric factors needed for intensity calculations
-    if dataset_name in [
-        "imap_codice_l2_lo-sw-species",
-        "imap_codice_l2_lo-nsw-species",
-    ]:
-        geometric_factor_lookup = get_geometric_factor_lut(ancillary_files)
-        efficiency_lookup = get_efficiency_lut(ancillary_files)
-        geometric_factors = compute_geometric_factors(
-            l2_dataset, geometric_factor_lookup
-        )
-
-        if dataset_name == "imap_codice_l2_lo-sw-species":
-            # Filter the efficiency lookup table for solar wind efficiencies
-            efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
-            # Calculate the pickup ion sunward solar wind intensities using equation
-            # described in section 11.2.4 of algorithm document.
-            process_lo_species(
-                l2_dataset,
-                LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
-                geometric_factors,
-                efficiencies,
-                PUI_POSITIONS,
-            )
-            # Calculate the sunward solar wind species intensities using equation
-            # described in section 11.2.4 of algorithm document.
-            process_lo_species(
-                l2_dataset,
-                LO_SW_SPECIES_VARIABLE_NAMES,
-                geometric_factors,
-                efficiencies,
-                SW_POSITIONS,
-            )
-        else:
-            # Filter the efficiency lookup table for non solar wind efficiencies
-            efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
-            # Calculate the non-sunward species intensities using equation
-            # described in section 11.2.4 of algorithm document.
-            process_lo_species(
-                l2_dataset,
-                LO_NSW_SPECIES_VARIABLE_NAMES,
-                geometric_factors,
-                efficiencies,
-                NSW_POSITIONS,
-            )
-
-    if dataset_name in [
-        "imap_codice_l2_hi-counters-singles",
-        "imap_codice_l2_hi-counters-aggregated",
-        "imap_codice_l2_lo-counters-singles",
-        "imap_codice_l2_lo-counters-aggregated",
-        "imap_codice_l2_lo-sw-priority",
-        "imap_codice_l2_lo-nsw-priority",
-    ]:
-        # No changes needed. Just save to an L2 CDF file.
-        # TODO: May not even need L2 files for these products
-        pass
-
-    elif dataset_name == "imap_codice_l2_hi-direct-events":
-        # Convert the following data variables to physical units using
-        # calibration data:
-        #    - ssd_energy
-        #    - tof
-        #    - elevation_angle
-        #    - spin_angle
-        # These converted variables are *in addition* to the existing L1 variables
-        # The other data variables require no changes
-        # See section 11.1.2 of algorithm document
-        pass
-
-    elif dataset_name == "imap_codice_l2_hi-sectored":
-        # Convert the sectored count rates using equation described in section
-        # 11.1.3 of algorithm document.
-        pass
-
-    elif dataset_name == "imap_codice_l2_hi-omni":
-        # Calculate the omni-directional intensity for each species using
-        # equation described in section 11.1.4 of algorithm document
-        # hopefully this can also apply to hi-ialirt
-        pass
-
-    elif dataset_name == "imap_codice_l2_lo-direct-events":
-        # Convert the following data variables to physical units using
-        # calibration data:
-        #    - apd_energy
-        #    - elevation_angle
-        #    - tof
-        #    - spin_sector
-        #    - esa_step
-        # These converted variables are *in addition* to the existing L1 variables
-        # The other data variables require no changes
-        # See section 11.1.2 of algorithm document
-        pass
-
-    elif dataset_name == "imap_codice_l2_lo-sw-angular":
-        # Calculate the sunward angular intensities using equation described in
-        # section 11.2.3 of algorithm document.
-        pass
-
-    elif dataset_name == "imap_codice_l2_lo-nsw-angular":
-        # Calculate the non-sunward angular intensities using equation described
-        # in section 11.2.3 of algorithm document.
-        pass
-
-    logger.info(f"\nFinal data product:\n{l2_dataset}\n")
-
-    return l2_dataset
-
-
-def add_dataset_attributes(
-    dataset: xr.Dataset, dataset_name: str, cdf_attrs: ImapCdfAttributes
-) -> xr.Dataset:
-    """
-    Add the global and variable attributes to the dataset.
-
-    Parameters
-    ----------
-    dataset : xarray.Dataset
-        The dataset to update.
-    dataset_name : str
-        The name of the dataset.
-    cdf_attrs : ImapCdfAttributes
-        The attribute manager for CDF attributes.
-
-    Returns
-    -------
-    xarray.Dataset
-        The updated dataset.
-    """
-    cdf_attrs.add_instrument_global_attrs("codice")
-    cdf_attrs.add_instrument_variable_attrs("codice", "l2")
-
-    # Update the global attributes
-    dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
-
-    # Set the variable attributes
-    for variable_name in dataset.data_vars.keys():
-        try:
-            dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-                variable_name, check_schema=False
-            )
-        except KeyError:
-            # Some variables may have a product descriptor prefix in the
-            # cdf attributes key if they are common to multiple products.
-            descriptor = dataset_name.split("imap_codice_l2_")[-1]
-            cdf_attrs_key = f"{descriptor}-{variable_name}"
-            try:
-                dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-                    f"{cdf_attrs_key}", check_schema=False
-                )
-            except KeyError:
-                logger.error(
-                    f"Field '{variable_name}' and '{cdf_attrs_key}' not found in "
-                    f"attribute manager."
-                )
-    return dataset
-
-
 def get_geometric_factor_lut(ancillary_files: dict) -> dict:
     """
     Get the geometric factor lookup table.
@@ -417,4 +223,198 @@ def process_lo_species(
         )
         dataset[species] = dataset[species] / denominator[:, :, np.newaxis]
 
+    return dataset
+
+
+def process_codice_l2(file_path: Path, ancillary_files: dict) -> xr.Dataset:
+    """
+    Will process CoDICE l1 data to create l2 data products.
+
+    Parameters
+    ----------
+    file_path : pathlib.Path
+        Path to the CoDICE L1 file to process.
+    ancillary_files : dict
+        Ancillary files needed for processing. The key is the file description and the
+        value is the file path.
+
+    Returns
+    -------
+    l2_dataset : xarray.Dataset
+        The``xarray`` dataset containing the science data and supporting metadata.
+    """
+    logger.info(f"Processing {file_path}")
+
+    # Open the l1 file
+    l1_dataset = load_cdf(file_path)
+
+    # Use the logical source as a way to distinguish between data products and
+    # set some useful distinguishing variables
+    # TODO: Could clean this up by using imap-data-access methods?
+    dataset_name = l1_dataset.attrs["Logical_source"]
+    data_level = dataset_name.removeprefix("imap_codice_").split("_")[0]
+    dataset_name = dataset_name.replace(data_level, "l2")
+
+    # Use the L1 data product as a starting point for L2
+    l2_dataset = l1_dataset.copy()
+    # Get the L2 CDF attributes
+    # cdf_attrs = ImapCdfAttributes()
+    # TODO uncomment and update variable attrs
+    # l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
+
+    # TODO: update list of datasets that need geometric factors (if needed)
+    # Compute geometric factors needed for intensity calculations
+    if dataset_name in [
+        "imap_codice_l2_lo-sw-species",
+        "imap_codice_l2_lo-nsw-species",
+    ]:
+        geometric_factor_lookup = get_geometric_factor_lut(ancillary_files)
+        efficiency_lookup = get_efficiency_lut(ancillary_files)
+        geometric_factors = compute_geometric_factors(
+            l2_dataset, geometric_factor_lookup
+        )
+
+        if dataset_name == "imap_codice_l2_lo-sw-species":
+            # Filter the efficiency lookup table for solar wind efficiencies
+            efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
+            # Calculate the pickup ion sunward solar wind intensities using equation
+            # described in section 11.2.4 of algorithm document.
+            process_lo_species(
+                l2_dataset,
+                LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
+                geometric_factors,
+                efficiencies,
+                PUI_POSITIONS,
+            )
+            # Calculate the sunward solar wind species intensities using equation
+            # described in section 11.2.4 of algorithm document.
+            process_lo_species(
+                l2_dataset,
+                LO_SW_SPECIES_VARIABLE_NAMES,
+                geometric_factors,
+                efficiencies,
+                SW_POSITIONS,
+            )
+        else:
+            # Filter the efficiency lookup table for non solar wind efficiencies
+            efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
+            # Calculate the non-sunward species intensities using equation
+            # described in section 11.2.4 of algorithm document.
+            process_lo_species(
+                l2_dataset,
+                LO_NSW_SPECIES_VARIABLE_NAMES,
+                geometric_factors,
+                efficiencies,
+                NSW_POSITIONS,
+            )
+
+    if dataset_name in [
+        "imap_codice_l2_hi-counters-singles",
+        "imap_codice_l2_hi-counters-aggregated",
+        "imap_codice_l2_lo-counters-singles",
+        "imap_codice_l2_lo-counters-aggregated",
+        "imap_codice_l2_lo-sw-priority",
+        "imap_codice_l2_lo-nsw-priority",
+    ]:
+        # No changes needed. Just save to an L2 CDF file.
+        # TODO: May not even need L2 files for these products
+        pass
+
+    elif dataset_name == "imap_codice_l2_hi-direct-events":
+        # Convert the following data variables to physical units using
+        # calibration data:
+        #    - ssd_energy
+        #    - tof
+        #    - elevation_angle
+        #    - spin_angle
+        # These converted variables are *in addition* to the existing L1 variables
+        # The other data variables require no changes
+        # See section 11.1.2 of algorithm document
+        pass
+
+    elif dataset_name == "imap_codice_l2_hi-sectored":
+        # Convert the sectored count rates using equation described in section
+        # 11.1.3 of algorithm document.
+        pass
+
+    elif dataset_name == "imap_codice_l2_hi-omni":
+        # Calculate the omni-directional intensity for each species using
+        # equation described in section 11.1.4 of algorithm document
+        # hopefully this can also apply to hi-ialirt
+        pass
+
+    elif dataset_name == "imap_codice_l2_lo-direct-events":
+        # Convert the following data variables to physical units using
+        # calibration data:
+        #    - apd_energy
+        #    - elevation_angle
+        #    - tof
+        #    - spin_sector
+        #    - esa_step
+        # These converted variables are *in addition* to the existing L1 variables
+        # The other data variables require no changes
+        # See section 11.1.2 of algorithm document
+        pass
+
+    elif dataset_name == "imap_codice_l2_lo-sw-angular":
+        # Calculate the sunward angular intensities using equation described in
+        # section 11.2.3 of algorithm document.
+        pass
+
+    elif dataset_name == "imap_codice_l2_lo-nsw-angular":
+        # Calculate the non-sunward angular intensities using equation described
+        # in section 11.2.3 of algorithm document.
+        pass
+
+    logger.info(f"\nFinal data product:\n{l2_dataset}\n")
+
+    return l2_dataset
+
+
+def add_dataset_attributes(
+    dataset: xr.Dataset, dataset_name: str, cdf_attrs: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Add the global and variable attributes to the dataset.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The dataset to update.
+    dataset_name : str
+        The name of the dataset.
+    cdf_attrs : ImapCdfAttributes
+        The attribute manager for CDF attributes.
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated dataset.
+    """
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2")
+
+    # Update the global attributes
+    dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
+
+    # Set the variable attributes
+    for variable_name in dataset.data_vars.keys():
+        try:
+            dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                variable_name, check_schema=False
+            )
+        except KeyError:
+            # Some variables may have a product descriptor prefix in the
+            # cdf attributes key if they are common to multiple products.
+            descriptor = dataset_name.split("imap_codice_l2_")[-1]
+            cdf_attrs_key = f"{descriptor}-{variable_name}"
+            try:
+                dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                    f"{cdf_attrs_key}", check_schema=False
+                )
+            except KeyError:
+                logger.error(
+                    f"Field '{variable_name}' and '{cdf_attrs_key}' not found in "
+                    f"attribute manager."
+                )
     return dataset
