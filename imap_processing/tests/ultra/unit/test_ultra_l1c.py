@@ -114,7 +114,7 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1c(mock_data_l1b_dict, ancillary_files, imap_frames=False)
+        ultra_l1c(mock_data_l1b_dict, ancillary_files, "45sensor-spacecraftpset")
 
 
 @pytest.mark.external_test_data
@@ -196,7 +196,9 @@ def test_calculate_spacecraft_pset_with_cdf(
             side_effect=lambda x: x,
         ),
     ):
-        output_datasets = ultra_l1c(data_dict, ancillary_files, imap_frames=False)
+        output_datasets = ultra_l1c(
+            data_dict, ancillary_files, "45sensor-spacecraftpset"
+        )
     output_datasets[0].attrs["Data_version"] = "999"
     output_datasets[0].attrs["Repointing"] = f"repoint{pointing + 1:05d}"
     output_datasets[0].attrs["Start_date"] = "20250415"
@@ -295,7 +297,7 @@ def test_calculate_helio_pset_with_cdf(
             side_effect=lambda x: x,
         ),
     ):
-        output_datasets = ultra_l1c(data_dict, ancillary_files, imap_frames=True)
+        output_datasets = ultra_l1c(data_dict, ancillary_files, "45sensor-heliopset")
     output_datasets[0].attrs["Data_version"] = "999"
     output_datasets[0].attrs["Repointing"] = f"repoint{pointing + 1:05d}"
     test_data_path = write_cdf(output_datasets[0], istp=True)
