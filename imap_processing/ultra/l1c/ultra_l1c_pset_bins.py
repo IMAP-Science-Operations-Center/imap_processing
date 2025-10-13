@@ -464,7 +464,7 @@ def get_spacecraft_exposure_times(
         (spin_data["spin_start_met"] >= pointing_start_met)
         & (spin_data["spin_start_met"] <= pointing_stop_met)
     ]
-    # Get valid spin data only
+    # Get only valid spin data
     valid_mask = (spin_data["spin_phase_valid"].values == 1) & (
         spin_data["spin_period_valid"].values == 1
     )
