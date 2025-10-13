@@ -87,7 +87,7 @@ def get_efficiency_lut(dependencies: ProcessingInputCollection) -> pd.DataFrame:
 
     Returns
     -------
-    efficiency_lut : pd.DataFrame
+    efficiency_lut : pandas.DataFrame
         Contains the efficiency lookup table. Columns are:
         species, product, esa_step, position_1, position_2, ..., position_24.
     """
@@ -102,7 +102,7 @@ def get_species_efficiency(species: str, efficiency: pd.DataFrame) -> np.ndarray
     ----------
     species : str
         The species name.
-    efficiency : pd.DataFrame
+    efficiency : pandas.DataFrame
         The efficiency lookup table.
 
     Returns
@@ -195,7 +195,7 @@ def process_lo_species_intensity(
         List of species variable names to calculate intensity.
     geometric_factors : np.ndarray
         The geometric factors array with shape (epoch, esa_steps).
-    efficiency : pd.DataFrame
+    efficiency : pandas.DataFrame
         The efficiency lookup table.
     positions : list
         A list of position indices to select from the geometric factor and
