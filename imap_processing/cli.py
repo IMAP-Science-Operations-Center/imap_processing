@@ -633,12 +633,12 @@ class Codice(ProcessInstrument):
 
         if self.data_level == "l2":
             science_files = dependencies.get_file_paths(source="codice")
-            if len(science_files) != 1:
+            if len(science_files) != 2:
                 raise ValueError(
                     f"CoDICE L2 requires exactly one input science file, received: "
                     f"{science_files}."
                 )
-            datasets = [codice_l2.process_codice_l2(science_files[0])]
+            datasets = [codice_l2.process_codice_l2(science_files[0], dependencies)]
 
         return datasets
 
@@ -1306,7 +1306,7 @@ class Swapi(ProcessInstrument):
                 )
 
             # process science or housekeeping data
-            datasets = swapi_l1(dependencies)
+            datasets = swapi_l1(dependencies, descriptor=self.descriptor)
         elif self.data_level == "l2":
             if len(dependency_list) != 3:
                 raise ValueError(

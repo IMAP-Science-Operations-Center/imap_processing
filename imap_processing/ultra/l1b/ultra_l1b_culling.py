@@ -255,7 +255,7 @@ def flag_rates(
     n_sigma_per_energy_reshape : NDArray
         N sigma per energy.
     """
-    count_rates, spin_edges, counts, duration = get_energy_histogram(
+    count_rates, _spin_edges, _counts, duration = get_energy_histogram(
         spin_number, energy
     )
     quality_flags = np.full(
@@ -440,7 +440,7 @@ def get_pulses_per_spin(rates: xr.Dataset) -> RateResult:
     coin_pulses : NDArray
         Total coincidence pulses.
     """
-    spin_number, duration = get_spin_and_duration(rates["shcoarse"], rates["spin"])
+    spin_number, _duration = get_spin_and_duration(rates["shcoarse"], rates["spin"])
 
     # Top coin pulses
     top_coin_pulses = np.stack(

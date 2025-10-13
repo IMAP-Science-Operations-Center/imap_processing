@@ -203,7 +203,7 @@ def test_swapi_l1_cdf(mock_get_file_paths, swapi_l0_test_data_path):
     collection_obj.deserialize(
         json.dumps(processing_input),
     )
-    processed_data = swapi_l1(collection_obj)
+    processed_data = swapi_l1(collection_obj, descriptor="hk")
     # hk cdf file
     l1a_hk_cdf_filename = "imap_swapi_l1a_hk_20240924_v999.cdf"
     hk_cdf_path = write_cdf(processed_data[0])
@@ -231,7 +231,7 @@ def test_swapi_l1_cdf(mock_get_file_paths, swapi_l0_test_data_path):
         json.dumps(processing_input),
     )
 
-    processed_data = swapi_l1(collection_obj)
+    processed_data = swapi_l1(collection_obj, descriptor="sci")
 
     assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
 

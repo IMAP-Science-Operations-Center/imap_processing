@@ -118,7 +118,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     atomic_masses_path = f"{imap_module_directory}/idex/atomic_masses.csv"
     atomic_masses = pd.read_csv(atomic_masses_path)
     masses = atomic_masses["Mass"]
-    stretches, shifts, mass_scales = time_to_mass(tof_high.data, hs_time.data, masses)
+    _stretches, _shifts, mass_scales = time_to_mass(tof_high.data, hs_time.data, masses)
 
     # TODO use correct fillval
     mass_scales_da = xr.DataArray(
@@ -379,7 +379,7 @@ def log_smooth_powerlaw(log_v: float, log_a: float, params: np.ndarray) -> float
     # segments.
     # vb and vc are the characteristic speeds where the slope transition happens, and k
     # setting the sharpness of the transitions.
-    a1, a2, a3, vb, vc, k, m = params
+    a1, a2, a3, vb, vc, _k, m = params
     v = 10**log_v
     base = log_a + a1 * log_v
     transition1 = (1 + (v / vb) ** m) ** ((a2 - a1) / m)

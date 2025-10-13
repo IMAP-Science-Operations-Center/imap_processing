@@ -727,7 +727,7 @@ def process_swapi_science(
     return dataset
 
 
-def swapi_l1(dependencies: ProcessingInputCollection) -> xr.Dataset:
+def swapi_l1(dependencies: ProcessingInputCollection, descriptor: str) -> xr.Dataset:
     """
     Will process SWAPI level 0 data to level 1.
 
@@ -735,6 +735,9 @@ def swapi_l1(dependencies: ProcessingInputCollection) -> xr.Dataset:
     ----------
     dependencies : ProcessingInputCollection
         Input dependencies needed for L1 processing.
+    descriptor : str
+        Descriptor for the type of data to process.
+        Options are 'hk' or 'sci'.
 
     Returns
     -------
@@ -754,9 +757,11 @@ def swapi_l1(dependencies: ProcessingInputCollection) -> xr.Dataset:
         l0_files[0], xtce_definition, use_derived_value=False
     )
 
-    hk_files = dependencies.get_file_paths(descriptor="hk")
-    if hk_files and l0_unpacked_dict.get(SWAPIAPID.SWP_SCI, None) is not None:
+    if descriptor == "sci":
         logger.info(f"Processing SWAPI science data for {l0_files[0]}.")
+        if SWAPIAPID.SWP_SCI not in l0_unpacked_dict:
+            logger.warning("No SWP_SCI packets found.")
+            return []
         # process science data.
         # First read HK data.
         hk_files = dependencies.get_file_paths(descriptor="hk")
@@ -770,8 +775,11 @@ def swapi_l1(dependencies: ProcessingInputCollection) -> xr.Dataset:
         )
         return [sci_dataset]
 
-    elif l0_unpacked_dict[SWAPIAPID.SWP_HK]:
+    elif descriptor == "hk":
         logger.info(f"Processing HK data for {l0_files[0]}.")
+        if SWAPIAPID.SWP_HK not in l0_unpacked_dict:
+            logger.warning("No SWP_HK packets found.")
+            return []
         # Get L1A and L1B HK data.
         l1a_hk_data = l0_unpacked_dict[SWAPIAPID.SWP_HK]
         l1b_hk_data = packet_file_to_datasets(

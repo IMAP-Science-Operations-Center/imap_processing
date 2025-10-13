@@ -50,7 +50,7 @@ def calculate_extendedspin(
         de_dataset["spin"].values,
         de_dataset["energy"].values,
     )
-    count_rates, _, counts, _ = get_energy_histogram(
+    count_rates, _, _counts, _ = get_energy_histogram(
         de_dataset["spin"].values, de_dataset["energy"].values
     )
     attitude_qf, spin_rates, spin_period, spin_starttime = flag_attitude(

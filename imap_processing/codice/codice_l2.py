@@ -13,17 +13,184 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
+from imap_data_access import ProcessingInputCollection
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.codice.constants import HALF_SPIN_LUT
+from imap_processing.codice.constants import (
+    HALF_SPIN_LUT,
+    HI_OMNI_VARIABLE_NAMES,
+    HI_SECTORED_VARIABLE_NAMES,
+    L2_GEOMETRIC_FACTOR,
+    L2_HI_NUMBER_OF_SSD,
+    L2_HI_SECTORED_ANGLE,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def process_codice_l2(file_path: Path) -> xr.Dataset:
+def process_hi_omni(
+    l2_dataset: xr.Dataset, dependencies: ProcessingInputCollection
+) -> xr.Dataset:
+    """
+    Process the hi-omni L1B dataset to calculate omni-directional intensities.
+
+    See section 11.1.3 of the CoDICE algorithm document for details.
+
+    The formula for omni-directional intensities is::
+
+        l1B species data / (
+            geometric_factor * number_of_ssd * efficiency * energy_passband
+        )
+
+    Geometric factor is constant for all species which is 0.013.
+    Number of SSD is constant for all species which is 12.
+    Efficiency is provided in a CSV file for each species and energy bin.
+    Energy passband is calculated from L1B variables energy_bin_minus + energy_bin_plus
+
+    Parameters
+    ----------
+    l2_dataset : xarray.Dataset
+        The L2 dataset to process.
+    dependencies : ProcessingInputCollection
+        The collection of processing input files.
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated L2 dataset with omni-directional intensities calculated.
+    """
+    # Read the efficiencies data from the CSV file
+    efficiencies_file = dependencies.get_file_paths(descriptor="l2-hi-omni-efficiency")[
+        0
+    ]
+    efficiencies_df = pd.read_csv(efficiencies_file)
+    # Omni product has 8 species and each species has different shape.
+    # Eg.
+    #   h - (epoch, 15)
+    #   c - (epoch, 18)
+    #   uh - (epoch, 5)
+    #   etc.
+    # Because of that, we need to loop over each species and calculate
+    # omni-directional intensities separately.
+    for species in HI_OMNI_VARIABLE_NAMES:
+        species_data = efficiencies_df[efficiencies_df["species"] == species]
+        # Read current species' effificiency
+        species_efficiencies = species_data["average_efficiency"].values[np.newaxis, :]
+        # Calculate energy passband from L1B data
+        energy_passbands = (
+            l2_dataset[f"energy_{species}_plus"] + l2_dataset[f"energy_{species}_minus"]
+        ).values[np.newaxis, :]
+        # Calculate omni-directional intensities
+        omni_direction_intensities = l2_dataset[species] / (
+            L2_GEOMETRIC_FACTOR
+            * L2_HI_NUMBER_OF_SSD
+            * species_efficiencies
+            * energy_passbands
+        )
+        # Store by replacing existing species data with omni-directional intensities
+        l2_dataset[species].values = omni_direction_intensities
+
+    return l2_dataset
+
+
+def process_hi_sectored(
+    l2_dataset: xr.Dataset, dependencies: ProcessingInputCollection
+) -> xr.Dataset:
+    """
+    Process the hi-omni L1B dataset to calculate omni-directional intensities.
+
+    See section 11.1.2 of the CoDICE algorithm document for details.
+
+    The formula for omni-directional intensities is::
+
+        l1b species data / (geometric_factor * efficiency * energy_passband)
+
+    Geometric factor is constant for all species and is 0.013.
+    Efficiency is provided in a CSV file for each species and energy bin and
+    position.
+    Energy passband is calculated from energy_bin_minus + energy_bin_plus
+
+    Parameters
+    ----------
+    l2_dataset : xarray.Dataset
+        The L2 dataset to process.
+    dependencies : ProcessingInputCollection
+        The collection of processing input files.
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated L2 dataset with omni-directional intensities calculated.
+    """
+    efficiencies_file = dependencies.get_file_paths(
+        descriptor="l2-hi-sectored-efficiency"
+    )[0]
+    efficiencies_df = pd.read_csv(efficiencies_file)
+    # Similar to hi-omni, each species has different shape.
+    # Because of that, we need to loop over each species and calculate
+    # sectored intensities separately.
+    for species in HI_SECTORED_VARIABLE_NAMES:
+        # Efficiencies from dataframe maps to different dimension in L1B data.
+        # For example:
+        #   l1b species 'h' has shape:
+        #       (epoch, 8, 12, 12) -> (time, energy, spin_sector, inst_az)
+        #   efficiencies 'h' has shape after reading from CSV:
+        #       (8, 12) -> (energy, inst_az)
+        #       NOTE: 12 here maps to last 12 in above l1b dimension.
+        # Because of this, it's easier to work with the data in xarray.
+        # Xarray automatically aligns dimensions and coordinates, making it easier
+        # to work with multi-dimensional data. Thus, we convert the efficiencies
+        # to xarray.DataArray with dimensions (energy, ssd_index)
+        # TODO: update ssd_index to inst_az when Joey data is updated.
+        species_data = efficiencies_df[efficiencies_df["species"] == species].values
+        species_efficiencies = xr.DataArray(
+            species_data[:, 2:].astype(
+                float
+            ),  # Skip first two columns (species, energy_bin)
+            dims=(f"energy_{species}", "ssd_index"),
+            coords=l2_dataset[[f"energy_{species}", "ssd_index"]],
+        )
+
+        # energy_passbands has shape:
+        #   (8,) -> (energy)
+        energy_passbands = xr.DataArray(
+            l2_dataset[f"energy_{species}_minus"]
+            + l2_dataset[f"energy_{species}_plus"],
+            dims=(f"energy_{species}",),
+            coords=l2_dataset[[f"energy_{species}"]],
+            name="passband",
+        )
+
+        sectored_intensities = l2_dataset[species] / (
+            L2_GEOMETRIC_FACTOR * species_efficiencies * energy_passbands
+        )
+
+        # Replace existing species data with omni-directional intensities
+        l2_dataset[species].values = sectored_intensities
+
+    # Calculate spin angle
+    # Formula:
+    #   θ_(k,n) = (θ_(k,0)+30°* n)  mod 360°
+    # where
+    #   n is size of L2_HI_SECTORED_ANGLE, 0 to 11,
+    #   k is size of ssd_index from l1b, 0 to 11,
+    # Calculate spin angle by adding a base angle from L2_HI_SECTORED_ANGLE
+    # for each SSD index and then adding multiple of 30 degrees for each elevation.
+    # Then mod by 360 to keep it within 0-360 range.
+    elevation_angles = np.arange(len(l2_dataset["ssd_index"].values)) * 30.0
+    spin_angles = (L2_HI_SECTORED_ANGLE[:, np.newaxis] + elevation_angles) % 360.0
+    # TODO: add CDF attrs
+    l2_dataset["spin_angles"] = (("spin_sector", "elevation_angle"), spin_angles)
+    return l2_dataset
+
+
+def process_codice_l2(
+    file_path: Path, dependencies: ProcessingInputCollection
+) -> xr.Dataset:
     """
     Will process CoDICE l1 data to create l2 data products.
 
@@ -31,6 +198,8 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     ----------
     file_path : pathlib.Path
         Path to the CoDICE L1 file to process.
+    dependencies : ProcessingInputCollection
+        Collection of processing inputs such as ancillary data files.
 
     Returns
     -------
@@ -53,8 +222,8 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     l2_dataset = l1_dataset.copy()
 
     # Get the L2 CDF attributes
-    cdf_attrs = ImapCdfAttributes()
-    l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
+    # cdf_attrs = ImapCdfAttributes()
+    # l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
 
     # TODO: update list of datasets that need geometric factors (if needed)
     # Compute geometric factors needed for intensity calculations
@@ -91,13 +260,13 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     elif dataset_name == "imap_codice_l2_hi-sectored":
         # Convert the sectored count rates using equation described in section
         # 11.1.3 of algorithm document.
-        pass
+        process_hi_sectored(l2_dataset, dependencies)
 
     elif dataset_name == "imap_codice_l2_hi-omni":
         # Calculate the omni-directional intensity for each species using
         # equation described in section 11.1.4 of algorithm document
         # hopefully this can also apply to hi-ialirt
-        pass
+        process_hi_omni(l2_dataset, dependencies)
 
     elif dataset_name == "imap_codice_l2_lo-direct-events":
         # Convert the following data variables to physical units using

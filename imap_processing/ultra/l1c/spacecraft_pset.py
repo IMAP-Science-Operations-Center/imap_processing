@@ -101,7 +101,7 @@ def calculate_spacecraft_pset(
         for_indices_by_spin_phase,
         theta_vals,
         phi_vals,
-        ra_and_dec,
+        _ra_and_dec,
         boundary_scale_factors,
     ) = get_spacecraft_pointing_lookup_tables(ancillary_files, instrument_id)
 

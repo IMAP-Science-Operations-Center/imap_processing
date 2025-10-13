@@ -655,7 +655,7 @@ class HiPointingSet(LoHiBasePointingSet):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
 
         # Filter out ENAs from non-selected portions of the spin.
-        if spin_phase not in ["full", "ram", "anti-ram"]:
+        if spin_phase not in ["full", "ram", "anti"]:
             raise ValueError(f"Unrecognized spin_phase value: {spin_phase}.")
         # ram only includes spin-phase interval [0, 0.5)
         # which is the first half of the spin_angle_bins
@@ -665,7 +665,7 @@ class HiPointingSet(LoHiBasePointingSet):
             )
         # anti-ram includes spin-phase interval [0.5, 1)
         # which is the second half of the spin_angle_bins
-        elif spin_phase == "anti-ram":
+        elif spin_phase == "anti":
             self.data = self.data.isel(
                 spin_angle_bin=slice(self.data["spin_angle_bin"].data.size // 2, None)
             )
@@ -1315,7 +1315,7 @@ class RectangularSkyMap(AbstractSkyMap):
             if ("L2" in name)
         ]
         l2_coords.append(CoordNames.TIME.value)
-        for map_coord in cdf_ds.dims.keys():
+        for map_coord in cdf_ds.dims:
             if map_coord not in l2_coords:
                 cdf_ds = cdf_ds.drop_dims(map_coord)
 

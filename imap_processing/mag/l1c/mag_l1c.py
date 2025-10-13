@@ -63,17 +63,16 @@ def mag_l1c(
     )
 
     interp_function = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
-    if normal_mode_dataset and burst_mode_dataset:
-        full_interpolated_timeline = process_mag_l1c(
-            normal_mode_dataset, burst_mode_dataset, interp_function
+    if burst_mode_dataset is not None:
+        # Only use day_to_process if there is no norm data
+        day_to_process_arg = day_to_process if normal_mode_dataset is None else None
+        full_interpolated_timeline: np.ndarray = process_mag_l1c(
+            normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process_arg
         )
     elif normal_mode_dataset is not None:
-        full_interpolated_timeline = fill_normal_data(
-            normal_mode_dataset, normal_mode_dataset["epoch"].data
-        )
+        full_interpolated_timeline = fill_normal_data(normal_mode_dataset)
     else:
-        # TODO: With only burst data, downsample by retrieving the timeline
-        raise NotImplementedError
+        raise ValueError("At least one of norm or burst dataset must be provided.")
 
     completed_timeline = remove_missing_data(full_interpolated_timeline)
 
@@ -127,12 +126,14 @@ def mag_l1c(
     global_attributes["missing_sequences"] = ""
 
     try:
-        global_attributes["is_mago"] = normal_mode_dataset.attrs["is_mago"]
-        global_attributes["is_active"] = normal_mode_dataset.attrs["is_active"]
+        active_dataset = normal_mode_dataset or burst_mode_dataset
+
+        global_attributes["is_mago"] = active_dataset.attrs["is_mago"]
+        global_attributes["is_active"] = active_dataset.attrs["is_active"]
 
         # Check if all vectors are primary in both normal and burst datasets
-        is_mago = normal_mode_dataset.attrs.get("is_mago", "False") == "True"
-        normal_all_primary = normal_mode_dataset.attrs.get("all_vectors_primary", False)
+        is_mago = active_dataset.attrs.get("is_mago", "False") == "True"
+        normal_all_primary = active_dataset.attrs.get("all_vectors_primary", False)
 
         # Default for missing burst dataset: 1 if MAGO (expected primary), 0 if MAGI
         burst_all_primary = is_mago
@@ -146,14 +147,14 @@ def mag_l1c(
             normal_all_primary and burst_all_primary
         )
 
-        global_attributes["missing_sequences"] = normal_mode_dataset.attrs[
+        global_attributes["missing_sequences"] = active_dataset.attrs[
             "missing_sequences"
         ]
     except KeyError as e:
         logger.info(
             f"Key error when assigning global attributes, attribute not found in "
             f"L1B file with logical source "
-            f"{normal_mode_dataset.attrs['Logical_source']}: {e}"
+            f"{active_dataset.attrs['Logical_source']}: {e}"
         )
 
     global_attributes["interpolation_method"] = interp_function.name
@@ -176,16 +177,24 @@ def mag_l1c(
         attrs=attribute_manager.get_variable_attributes("vector_attrs"),
     )
 
-    output_dataset["vector_magnitude"] = xr.apply_ufunc(
-        lambda x: np.linalg.norm(x[:4]),
-        output_dataset["vectors"],
-        input_core_dims=[["direction"]],
-        output_core_dims=[[]],
-        vectorize=True,
-    )
-    output_dataset[
-        "vector_magnitude"
-    ].attrs = attribute_manager.get_variable_attributes("vector_magnitude_attrs")
+    if len(output_dataset["vectors"]) > 0:
+        output_dataset["vector_magnitude"] = xr.apply_ufunc(
+            lambda x: np.linalg.norm(x[:4]),
+            output_dataset["vectors"],
+            input_core_dims=[["direction"]],
+            output_core_dims=[[]],
+            vectorize=True,
+        )
+        output_dataset[
+            "vector_magnitude"
+        ].attrs = attribute_manager.get_variable_attributes("vector_magnitude_attrs")
+    else:
+        output_dataset["vector_magnitude"] = xr.DataArray(
+            np.empty((0, 1)),
+            name="vector_magnitude",
+            dims=["epoch", "vector_magnitude"],
+            attrs=attribute_manager.get_variable_attributes("vector_magnitude_attrs"),
+        )
 
     output_dataset["compression_flags"] = xr.DataArray(
         completed_timeline[:, 6:8],
@@ -265,7 +274,7 @@ def select_datasets(
 
 
 def process_mag_l1c(
-    normal_mode_dataset: xr.Dataset,
+    normal_mode_dataset: xr.Dataset | None,
     burst_mode_dataset: xr.Dataset,
     interpolation_function: InterpolationFunction,
     day_to_process: np.datetime64 | None = None,
@@ -305,38 +314,51 @@ def process_mag_l1c(
     np.ndarray
         An (n, 8) shaped array containing the completed timeline.
     """
-    norm_epoch = normal_mode_dataset["epoch"].data
-    if "vectors_per_second" in normal_mode_dataset.attrs:
-        normal_vecsec_dict = vectors_per_second_from_string(
-            normal_mode_dataset.attrs["vectors_per_second"]
-        )
-    else:
-        normal_vecsec_dict = None
-
-    output_dataset = normal_mode_dataset.copy(deep=True)
-    output_dataset["sample_interpolated"] = xr.DataArray(
-        np.zeros(len(normal_mode_dataset))
-    )
     day_start_ns = None
     day_end_ns = None
 
     if day_to_process is not None:
-        day_start = day_to_process.astype("datetime64[s]") - np.timedelta64(15, "m")
+        day_start = day_to_process.astype("datetime64[s]") - np.timedelta64(30, "m")
 
-        # get the end of the day plus 15 minutes
+        # get the end of the day plus 30 minutes
         day_end = (
             day_to_process.astype("datetime64[s]")
             + np.timedelta64(1, "D")
-            + np.timedelta64(15, "m")
+            + np.timedelta64(30, "m")
         )
 
         day_start_ns = et_to_ttj2000ns(str_to_et(str(day_start)))
         day_end_ns = et_to_ttj2000ns(str_to_et(str(day_end)))
 
-    gaps = find_all_gaps(norm_epoch, normal_vecsec_dict, day_start_ns, day_end_ns)
+    if normal_mode_dataset:
+        norm_epoch = normal_mode_dataset["epoch"].data
+        if "vectors_per_second" in normal_mode_dataset.attrs:
+            normal_vecsec_dict = vectors_per_second_from_string(
+                normal_mode_dataset.attrs["vectors_per_second"]
+            )
+        else:
+            normal_vecsec_dict = None
+
+        gaps = find_all_gaps(norm_epoch, normal_vecsec_dict, day_start_ns, day_end_ns)
+    else:
+        norm_epoch = [day_start_ns, day_end_ns]
+        gaps = np.array(
+            [
+                [
+                    day_start_ns,
+                    day_end_ns,
+                    VecSec.TWO_VECS_PER_S.value,
+                ]
+            ]
+        )
 
     new_timeline = generate_timeline(norm_epoch, gaps)
-    norm_filled = fill_normal_data(normal_mode_dataset, new_timeline)
+
+    if normal_mode_dataset:
+        norm_filled: np.ndarray = fill_normal_data(normal_mode_dataset, new_timeline)
+    else:
+        norm_filled = generate_empty_norm_array(new_timeline)
+
     interpolated = interpolate_gaps(
         burst_mode_dataset, gaps, norm_filled, interpolation_function
     )
@@ -344,10 +366,32 @@ def process_mag_l1c(
     return interpolated
 
 
+def generate_empty_norm_array(new_timeline: np.ndarray) -> np.ndarray:
+    """
+    Generate an empty Normal mode array with the new timeline.
+
+    Parameters
+    ----------
+    new_timeline : np.ndarray
+        A 1D array of timestamps to fill.
+
+    Returns
+    -------
+    np.ndarray
+        An (n, 8) shaped array containing the timeline filled with `FILLVAL` data.
+    """
+    # TODO: fill with FILLVAL
+    norm_filled: np.ndarray = np.zeros((len(new_timeline), 8))
+    norm_filled[:, 0] = new_timeline
+    # Flags, will also indicate any missed timestamps
+    norm_filled[:, 5] = ModeFlags.MISSING.value
+
+    return norm_filled
+
+
 def fill_normal_data(
     normal_dataset: xr.Dataset,
-    new_timeline: np.ndarray,
-    day_to_process: np.datetime64 | None = None,
+    new_timeline: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Fill the new timeline with the normal mode data.
@@ -358,26 +402,23 @@ def fill_normal_data(
     ----------
     normal_dataset : xr.Dataset
         The normal mode dataset.
-    new_timeline : np.ndarray
-        A 1D array of timestamps to fill.
-    day_to_process : np.datetime64, optional
-        The day to process, in np.datetime64[D] format. This is used to fill
-        gaps at the beginning or end of the day if needed. If not included, these
-        gaps will not be filled.
+    new_timeline : np.ndarray, optional
+        A 1D array of timestamps to fill. If not provided, the normal mode timestamps
+        will be used.
 
     Returns
     -------
-    np.ndarray
+    filled_timeline : np.ndarray
         An (n, 8) shaped array containing the timeline filled with normal mode data.
         Gaps are marked as -1 in the generated flag column at index 5.
         Indices: 0 - epoch, 1-4 - vector x, y, z, and range, 5 - generated flag,
         6-7 - compression flags.
     """
-    # TODO: fill with FILLVAL
-    filled_timeline: np.ndarray = np.zeros((len(new_timeline), 8))
-    filled_timeline[:, 0] = new_timeline
-    # Flags, will also indicate any missed timestamps
-    filled_timeline[:, 5] = ModeFlags.MISSING.value
+    if new_timeline is None:
+        new_timeline = normal_dataset["epoch"].data
+
+    filled_timeline = generate_empty_norm_array(new_timeline)
+
     for index, timestamp in enumerate(normal_dataset["epoch"].data):
         timeline_index = np.searchsorted(new_timeline, timestamp)
         filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
@@ -463,20 +504,17 @@ def interpolate_gaps(
         ]
 
         short = (gap_timeline >= burst_epochs[burst_start]) & (
-            gap_timeline <= burst_epochs[burst_gap_end]
+            gap_timeline <= burst_epochs[burst_end]
         )
-        if len(gap_timeline) != (short).sum():
-            print(f"Chopping timeline from {len(gap_timeline)} to {short.sum()}")
+        num_short = int(short.sum())
+
+        if len(gap_timeline) != num_short:
+            print(f"Chopping timeline from {len(gap_timeline)} to {num_short}")
 
         # Limit timestamps to only include the areas with burst data
-        gap_timeline = gap_timeline[
-            (
-                (gap_timeline >= burst_epochs[burst_start])
-                & (gap_timeline <= burst_epochs[burst_gap_end])
-            )
-        ]
+        gap_timeline = gap_timeline[short]
         # do not include range
-        gap_fill = interpolation_function(
+        adjusted_gap_timeline, gap_fill = interpolation_function(
             burst_vectors[burst_start:burst_end, :3],
             burst_epochs[burst_start:burst_end],
             gap_timeline,
@@ -485,7 +523,7 @@ def interpolate_gaps(
         )
 
         # gaps should not have data in timeline, still check it
-        for index, timestamp in enumerate(gap_timeline):
+        for index, timestamp in enumerate(adjusted_gap_timeline):
             timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
             if sum(
                 filled_norm_timeline[timeline_index, 1:4]
@@ -499,6 +537,18 @@ def interpolate_gaps(
                 filled_norm_timeline[timeline_index, 6:8] = burst_dataset[
                     "compression_flags"
                 ].data[burst_gap_start + index]
+
+        # for any timestamp that was not filled and is still missing, remove it
+        missing_timeline = np.setdiff1d(gap_timeline, adjusted_gap_timeline)
+
+        for timestamp in missing_timeline:
+            timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
+            if filled_norm_timeline[timeline_index, 5] != ModeFlags.MISSING.value:
+                raise RuntimeError(
+                    "Self-inconsistent data. "
+                    "Gaps not included in final timeline should be missing."
+                )
+            np.delete(filled_norm_timeline, timeline_index)
 
     return filled_norm_timeline
 

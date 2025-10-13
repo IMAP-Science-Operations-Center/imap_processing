@@ -187,7 +187,7 @@ def test_l1b_hi_omni():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1b_validation/"
-        / "imap_codice_l1b_hi-omni_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1b_hi-omni_20250814211100_v0.0.6.cdf"
     )
     val_data = load_cdf(val_path)
     processed_data = process_codice_l1b(file_path=processed_l1a_file)
@@ -220,7 +220,7 @@ def test_l1b_hi_sectored():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1b_validation/"
-        / "imap_codice_l1b_hi-sectored_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1b_hi-sectored_20250814211100_v0.0.6.cdf"
     )
 
     val_data = load_cdf(val_path)
