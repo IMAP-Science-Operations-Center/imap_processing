@@ -216,7 +216,7 @@ geometric_function:
   <<: *default_float32
   CATDESC: Averaged aperture area as seen by the backstop.
   FIELDNAM: Geometric Function
-  UNITS: cm^2 sr
+  UNITS: cm^2
   VAR_TYPE: support_data
   LABLAXIS: Geometric Function
   DISPLAY_TYPE: no_plot

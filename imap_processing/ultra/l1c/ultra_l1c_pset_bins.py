@@ -738,8 +738,8 @@ def get_spacecraft_background_rates(
     """
     pulses = get_pulses_per_spin(rates_dataset)
     # Pulses for the pointing.
-    etof_min = get_image_params("eTOFMin", sensor, ancillary_files)
-    etof_max = get_image_params("eTOFMax", sensor, ancillary_files)
+    etof_min = get_image_params("eTOFMin", f"ultra{sensor}", ancillary_files)
+    etof_max = get_image_params("eTOFMax", f"ultra{sensor}", ancillary_files)
     spin_number, _ = get_spin_and_duration(
         rates_dataset["shcoarse"], rates_dataset["spin"]
     )
