@@ -22,7 +22,7 @@ def codice_lut_path():
     a list of Paths.
     """
 
-    def _side_effect(descriptor: str) -> list[Path]:
+    def _side_effect(descriptor: str) -> list[Path]:  # noqa: PLR0911
         if descriptor == "l2-hi-omni-efficiency":
             return [
                 TEST_DATA_PATH
@@ -52,6 +52,24 @@ def codice_lut_path():
         elif descriptor == "l2-lo-gfactor":
             return [
                 TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251008_v001.csv"
+            ]
+        elif descriptor == "lo-nsw-species":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1b_validation"
+                / "imap_codice_l1b_lo-nsw-species_20250814_v005.cdf"
+            ]
+        elif descriptor == "lo-sw-species":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1b_validation"
+                / "imap_codice_l1b_lo-sw-species_20250814_v005.cdf"
             ]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")
