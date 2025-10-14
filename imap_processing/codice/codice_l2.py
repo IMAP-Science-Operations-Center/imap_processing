@@ -10,12 +10,11 @@ dataset = process_codice_l2(l1_filename)
 """
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-from imap_data_access import ProcessingInputCollection
+from imap_data_access import ProcessingInputCollection, ScienceFilePath
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
@@ -238,9 +237,7 @@ def process_lo_species_intensity(
     return dataset
 
 
-def process_hi_omni(
-    l2_dataset: xr.Dataset, dependencies: ProcessingInputCollection
-) -> xr.Dataset:
+def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
     """
     Process the hi-omni L1B dataset to calculate omni-directional intensities.
 
@@ -259,8 +256,6 @@ def process_hi_omni(
 
     Parameters
     ----------
-    l2_dataset : xarray.Dataset
-        The L2 dataset to process.
     dependencies : ProcessingInputCollection
         The collection of processing input files.
 
@@ -269,6 +264,9 @@ def process_hi_omni(
     xarray.Dataset
         The updated L2 dataset with omni-directional intensities calculated.
     """
+    l1b_file = dependencies.get_file_paths(descriptor="hi-omni")[0]
+    l1b_dataset = load_cdf(l1b_file)
+
     # Read the efficiencies data from the CSV file
     efficiencies_file = dependencies.get_file_paths(descriptor="l2-hi-omni-efficiency")[
         0
@@ -288,24 +286,128 @@ def process_hi_omni(
         species_efficiencies = species_data["average_efficiency"].values[np.newaxis, :]
         # Calculate energy passband from L1B data
         energy_passbands = (
-            l2_dataset[f"energy_{species}_plus"] + l2_dataset[f"energy_{species}_minus"]
+            l1b_dataset[f"energy_{species}_plus"]
+            + l1b_dataset[f"energy_{species}_minus"]
         ).values[np.newaxis, :]
         # Calculate omni-directional intensities
-        omni_direction_intensities = l2_dataset[species] / (
+        omni_direction_intensities = l1b_dataset[species] / (
             L2_GEOMETRIC_FACTOR
             * L2_HI_NUMBER_OF_SSD
             * species_efficiencies
             * energy_passbands
         )
         # Store by replacing existing species data with omni-directional intensities
-        l2_dataset[species].values = omni_direction_intensities
+        l1b_dataset[species].values = omni_direction_intensities
 
-    return l2_dataset
+    # TODO: this may go away once Joey and I fix L1B CDF
+    # Update global CDF attributes
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi")
+    l1b_dataset.attrs = cdf_attrs.get_global_attributes("imap_codice_l2_hi-omni")
+
+    # TODO: ask Joey to add attrs for epoch_delta_plus and epoch_delta_minus
+    # and update dimension to be 'epoch' in L1B data
+    for variable in l1b_dataset.data_vars:
+        if variable in ["epoch_delta_plus", "epoch_delta_minus"]:
+            l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
+                variable, check_schema=False
+            )
+        elif variable == "data_quality":
+            l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
+                variable, check_schema=False
+            )
+        else:
+            l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
+                f"hi-omni-{variable}", check_schema=False
+            )
+
+    # Add these new coordinates
+    new_coords = {
+        "energy_h": l1b_dataset["energy_h"],
+        "energy_h_label": xr.DataArray(
+            l1b_dataset["energy_h"].values.astype(str),
+            dims=("energy_h",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_h_label", check_schema=False
+            ),
+        ),
+        "energy_he3": l1b_dataset["energy_he3"],
+        "energy_he3_label": xr.DataArray(
+            l1b_dataset["energy_he3"].values.astype(str),
+            dims=("energy_he3",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_he3_label", check_schema=False
+            ),
+        ),
+        "energy_he4": l1b_dataset["energy_he4"],
+        "energy_he4_label": xr.DataArray(
+            l1b_dataset["energy_he4"].values.astype(str),
+            dims=("energy_he4",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_he4_label", check_schema=False
+            ),
+        ),
+        "energy_c": l1b_dataset["energy_c"],
+        "energy_c_label": xr.DataArray(
+            l1b_dataset["energy_c"].values.astype(str),
+            dims=("energy_c",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_c_label", check_schema=False
+            ),
+        ),
+        "energy_o": l1b_dataset["energy_o"],
+        "energy_o_label": xr.DataArray(
+            l1b_dataset["energy_o"].values.astype(str),
+            dims=("energy_o",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_o_label", check_schema=False
+            ),
+        ),
+        "energy_ne_mg_si": l1b_dataset["energy_ne_mg_si"],
+        "energy_ne_mg_si_label": xr.DataArray(
+            l1b_dataset["energy_ne_mg_si"].values.astype(str),
+            dims=("energy_ne_mg_si",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_ne_mg_si_label", check_schema=False
+            ),
+        ),
+        "energy_fe": l1b_dataset["energy_fe"],
+        "energy_fe_label": xr.DataArray(
+            l1b_dataset["energy_fe"].values.astype(str),
+            dims=("energy_fe",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_fe_label", check_schema=False
+            ),
+        ),
+        "energy_uh": l1b_dataset["energy_uh"],
+        "energy_uh_label": xr.DataArray(
+            l1b_dataset["energy_uh"].values.astype(str),
+            dims=("energy_uh",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_uh_label", check_schema=False
+            ),
+        ),
+        "energy_junk": l1b_dataset["energy_junk"],
+        "energy_junk_label": xr.DataArray(
+            l1b_dataset["energy_junk"].values.astype(str),
+            dims=("energy_junk",),
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_junk_label", check_schema=False
+            ),
+        ),
+        "epoch": xr.DataArray(
+            l1b_dataset["epoch"].data,
+            dims=("epoch",),
+            attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
+        ),
+    }
+    l1b_dataset = l1b_dataset.assign_coords(new_coords)
+
+    return l1b_dataset
 
 
-def process_hi_sectored(
-    l2_dataset: xr.Dataset, dependencies: ProcessingInputCollection
-) -> xr.Dataset:
+def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     """
     Process the hi-omni L1B dataset to calculate omni-directional intensities.
 
@@ -322,8 +424,6 @@ def process_hi_sectored(
 
     Parameters
     ----------
-    l2_dataset : xarray.Dataset
-        The L2 dataset to process.
     dependencies : ProcessingInputCollection
         The collection of processing input files.
 
@@ -332,9 +432,81 @@ def process_hi_sectored(
     xarray.Dataset
         The updated L2 dataset with omni-directional intensities calculated.
     """
+    file_path = dependencies.get_file_paths(descriptor="hi-sectored")[0]
+    l1b_dataset = load_cdf(file_path)
+
+    # Update global CDF attributes
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi")
+
+    # Overwrite L1B variable attributes with L2 variable attributes
+    l2_dataset = xr.Dataset(
+        coords={
+            "spin_sector": l1b_dataset["spin_sector"],
+            "spin_sector_label": xr.DataArray(
+                l1b_dataset["spin_sector"].values.astype(str),
+                dims=("spin_sector",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "spin_sector_label", check_schema=False
+                ),
+            ),
+            "energy_h": l1b_dataset["energy_h"],
+            "energy_h_label": xr.DataArray(
+                l1b_dataset["energy_h"].values.astype(str),
+                dims=("energy_h",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "energy_h_label", check_schema=False
+                ),
+            ),
+            "energy_he3he4": l1b_dataset["energy_he3he4"],
+            "energy_he3he4_label": xr.DataArray(
+                l1b_dataset["energy_he3he4"].values.astype(str),
+                dims=("energy_he3he4",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "energy_he3he4_label", check_schema=False
+                ),
+            ),
+            "energy_cno": l1b_dataset["energy_cno"],
+            "energy_cno_label": xr.DataArray(
+                l1b_dataset["energy_cno"].values.astype(str),
+                dims=("energy_cno",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "energy_cno_label", check_schema=False
+                ),
+            ),
+            "energy_fe": l1b_dataset["energy_fe"],
+            "energy_fe_label": xr.DataArray(
+                l1b_dataset["energy_fe"].values.astype(str),
+                dims=("energy_fe",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "energy_fe_label", check_schema=False
+                ),
+            ),
+            "epoch": l1b_dataset["epoch"],
+            "elevation_angle": xr.DataArray(
+                np.arange(12) * 30.0,
+                dims=("elevation_angle",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "elevation_angle", check_schema=False
+                ),
+            ),
+            "elevation_angle_label": xr.DataArray(
+                np.arange(12) * 30.0,
+                dims=("elevation_angle",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "elevation_angle_label", check_schema=False
+                ),
+            ),
+        },
+        attrs=cdf_attrs.get_global_attributes("imap_codice_l2_hi-sectored"),
+    )
+
     efficiencies_file = dependencies.get_file_paths(
         descriptor="l2-hi-sectored-efficiency"
     )[0]
+
+    # Calculate sectored intensities
     efficiencies_df = pd.read_csv(efficiencies_file)
     # Similar to hi-omni, each species has different shape.
     # Because of that, we need to loop over each species and calculate
@@ -358,25 +530,31 @@ def process_hi_sectored(
                 float
             ),  # Skip first two columns (species, energy_bin)
             dims=(f"energy_{species}", "ssd_index"),
-            coords=l2_dataset[[f"energy_{species}", "ssd_index"]],
+            coords=l1b_dataset[[f"energy_{species}", "ssd_index"]],
         )
 
         # energy_passbands has shape:
         #   (8,) -> (energy)
         energy_passbands = xr.DataArray(
-            l2_dataset[f"energy_{species}_minus"]
-            + l2_dataset[f"energy_{species}_plus"],
+            l1b_dataset[f"energy_{species}_minus"]
+            + l1b_dataset[f"energy_{species}_plus"],
             dims=(f"energy_{species}",),
             coords=l2_dataset[[f"energy_{species}"]],
             name="passband",
         )
 
-        sectored_intensities = l2_dataset[species] / (
+        sectored_intensities = l1b_dataset[species] / (
             L2_GEOMETRIC_FACTOR * species_efficiencies * energy_passbands
         )
 
         # Replace existing species data with omni-directional intensities
-        l2_dataset[species].values = sectored_intensities
+        l2_dataset[species] = xr.DataArray(
+            sectored_intensities.data,
+            dims=("epoch", f"energy_{species}", "spin_sector", "elevation_angle"),
+            attrs=cdf_attrs.get_variable_attributes(
+                f"hi-sectored-{species}", check_schema=False
+            ),
+        )
 
     # Calculate spin angle
     # Formula:
@@ -387,23 +565,67 @@ def process_hi_sectored(
     # Calculate spin angle by adding a base angle from L2_HI_SECTORED_ANGLE
     # for each SSD index and then adding multiple of 30 degrees for each elevation.
     # Then mod by 360 to keep it within 0-360 range.
-    elevation_angles = np.arange(len(l2_dataset["ssd_index"].values)) * 30.0
+    elevation_angles = np.arange(len(l2_dataset["elevation_angle"].values)) * 30.0
     spin_angles = (L2_HI_SECTORED_ANGLE[:, np.newaxis] + elevation_angles) % 360.0
-    # TODO: add CDF attrs
+
+    # Add spin angle variable using the new elevation_angle dimension
     l2_dataset["spin_angles"] = (("spin_sector", "elevation_angle"), spin_angles)
+    l2_dataset["spin_angles"].attrs.update(
+        cdf_attrs.get_variable_attributes("hi-sectored-spin_angles", check_schema=False)
+    )
+
+    # Now carry over other variables from L1B to L2 dataset
+    for variable in l1b_dataset.data_vars:
+        if variable.startswith("epoch_") and variable != "epoch":
+            # get attrs with just that name
+            l2_dataset[variable] = xr.DataArray(
+                l1b_dataset[variable].data,
+                dims=("epoch",),
+                attrs=cdf_attrs.get_variable_attributes(variable, check_schema=False),
+            )
+        elif variable.startswith("energy_"):
+            l2_dataset[variable] = xr.DataArray(
+                l1b_dataset[variable].data,
+                dims=(f"energy_{variable.split('_')[1]}",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    f"hi-sectored-{variable}", check_schema=False
+                ),
+            )
+        elif variable.startswith("unc_"):
+            l2_dataset[variable] = xr.DataArray(
+                l1b_dataset[variable].data,
+                dims=(
+                    "epoch",
+                    f"energy_{variable.split('_')[1]}",
+                    "spin_sector",
+                    "elevation_angle",
+                ),
+                attrs=cdf_attrs.get_variable_attributes(
+                    f"hi-sectored-{variable}", check_schema=False
+                ),
+            )
+        elif variable == "data_quality":
+            l2_dataset[variable] = l1b_dataset[variable]
+            l2_dataset[variable].attrs.update(
+                cdf_attrs.get_variable_attributes(variable, check_schema=False)
+            )
+
+    l2_dataset["epoch"].attrs.update(
+        cdf_attrs.get_variable_attributes("epoch", check_schema=False)
+    )
     return l2_dataset
 
 
 def process_codice_l2(
-    file_path: Path, dependencies: ProcessingInputCollection
+    descriptor: str, dependencies: ProcessingInputCollection
 ) -> xr.Dataset:
     """
     Will process CoDICE l1 data to create l2 data products.
 
     Parameters
     ----------
-    file_path : pathlib.Path
-        Path to the CoDICE L1 file to process.
+    descriptor : str
+        The descriptor for the CoDICE L1 file to process.
     dependencies : ProcessingInputCollection
         Collection of processing inputs such as ancillary data files.
 
@@ -412,25 +634,13 @@ def process_codice_l2(
     l2_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
-    logger.info(f"Processing {file_path}")
+    # This should get science files since ancillary or spice doesn't have data_type
+    # as data level.
+    file_path = dependencies.get_file_paths(descriptor=descriptor)[0]
 
-    # Open the l1 file
-    l1_dataset = load_cdf(file_path)
-
-    # Use the logical source as a way to distinguish between data products and
-    # set some useful distinguishing variables
-    # TODO: Could clean this up by using imap-data-access methods?
-    dataset_name = l1_dataset.attrs["Logical_source"]
-    data_level = dataset_name.removeprefix("imap_codice_").split("_")[0]
-    dataset_name = dataset_name.replace(data_level, "l2")
-
-    # Use the L1 data product as a starting point for L2
-    l2_dataset = l1_dataset.copy()
-    # Get the L2 CDF attributes
-    # cdf_attrs = ImapCdfAttributes()
-
-    # TODO uncomment and update variable attrs
-    # l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
+    # Now form product name from descriptor
+    descriptor = ScienceFilePath(file_path).descriptor
+    dataset_name = f"imap_codice_l2_{descriptor}"
 
     # TODO: update list of datasets that need geometric factors (if needed)
     # Compute geometric factors needed for intensity calculations
@@ -438,12 +648,14 @@ def process_codice_l2(
         "imap_codice_l2_lo-sw-species",
         "imap_codice_l2_lo-nsw-species",
     ]:
+        l1_dataset = load_cdf(file_path)
+        l2_dataset = l1_dataset.copy()
+
         geometric_factor_lookup = get_geometric_factor_lut(dependencies)
         efficiency_lookup = get_efficiency_lut(dependencies)
         geometric_factors = compute_geometric_factors(
             l2_dataset, geometric_factor_lookup
         )
-
         if dataset_name == "imap_codice_l2_lo-sw-species":
             # Filter the efficiency lookup table for solar wind efficiencies
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
@@ -505,13 +717,13 @@ def process_codice_l2(
     elif dataset_name == "imap_codice_l2_hi-sectored":
         # Convert the sectored count rates using equation described in section
         # 11.1.3 of algorithm document.
-        process_hi_sectored(l2_dataset, dependencies)
+        l2_dataset = process_hi_sectored(dependencies)
 
     elif dataset_name == "imap_codice_l2_hi-omni":
         # Calculate the omni-directional intensity for each species using
         # equation described in section 11.1.4 of algorithm document
         # hopefully this can also apply to hi-ialirt
-        process_hi_omni(l2_dataset, dependencies)
+        l2_dataset = process_hi_omni(dependencies)
 
     elif dataset_name == "imap_codice_l2_lo-direct-events":
         # Convert the following data variables to physical units using
@@ -536,7 +748,7 @@ def process_codice_l2(
         # in section 11.2.3 of algorithm document.
         pass
 
-    logger.info(f"\nFinal data product:\n{l2_dataset}\n")
+    # logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 
     return l2_dataset
 
