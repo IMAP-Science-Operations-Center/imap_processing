@@ -303,7 +303,7 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # Update global CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
-    cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi-omni")
     l1b_dataset.attrs = cdf_attrs.get_global_attributes("imap_codice_l2_hi-omni")
 
     # TODO: ask Joey to add attrs for epoch_delta_plus and epoch_delta_minus
@@ -438,7 +438,7 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # Update global CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
-    cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi-sectored")
 
     # Overwrite L1B variable attributes with L2 variable attributes
     l2_dataset = xr.Dataset(
@@ -551,9 +551,7 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
         l2_dataset[species] = xr.DataArray(
             sectored_intensities.data,
             dims=("epoch", f"energy_{species}", "spin_sector", "elevation_angle"),
-            attrs=cdf_attrs.get_variable_attributes(
-                f"hi-sectored-{species}", check_schema=False
-            ),
+            attrs=cdf_attrs.get_variable_attributes(species, check_schema=False),
         )
 
     # Calculate spin angle
@@ -570,8 +568,8 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
 
     # Add spin angle variable using the new elevation_angle dimension
     l2_dataset["spin_angles"] = (("spin_sector", "elevation_angle"), spin_angles)
-    l2_dataset["spin_angles"].attrs.update(
-        cdf_attrs.get_variable_attributes("hi-sectored-spin_angles", check_schema=False)
+    l2_dataset["spin_angles"].attrs = cdf_attrs.get_variable_attributes(
+        "spin_angles", check_schema=False
     )
 
     # Now carry over other variables from L1B to L2 dataset
@@ -587,9 +585,7 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
             l2_dataset[variable] = xr.DataArray(
                 l1b_dataset[variable].data,
                 dims=(f"energy_{variable.split('_')[1]}",),
-                attrs=cdf_attrs.get_variable_attributes(
-                    f"hi-sectored-{variable}", check_schema=False
-                ),
+                attrs=cdf_attrs.get_variable_attributes(variable, check_schema=False),
             )
         elif variable.startswith("unc_"):
             l2_dataset[variable] = xr.DataArray(
@@ -600,9 +596,7 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
                     "spin_sector",
                     "elevation_angle",
                 ),
-                attrs=cdf_attrs.get_variable_attributes(
-                    f"hi-sectored-{variable}", check_schema=False
-                ),
+                attrs=cdf_attrs.get_variable_attributes(variable),
             )
         elif variable == "data_quality":
             l2_dataset[variable] = l1b_dataset[variable]
