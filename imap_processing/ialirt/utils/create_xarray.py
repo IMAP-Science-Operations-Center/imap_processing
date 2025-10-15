@@ -155,6 +155,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
                 "sc_velocity_GSM",
                 "sc_velocity_GSE",
                 "mag_hk_status",
+                "spice_kernels",
             ]:
                 continue
             elif key in ["mag_B_GSE", "mag_B_GSM", "mag_B_RTN"]:
