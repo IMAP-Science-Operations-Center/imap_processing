@@ -4,7 +4,6 @@ from unittest import mock
 from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
 import pytest
 import xarray as xr
 
@@ -201,21 +200,24 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     )
 
 
+@pytest.mark.parametrize(
+    "descriptor_str",
+    [
+        "h90-ena-h-sf-nsp-full-gcs-6deg-3mo",
+        "h90-ena-h-sf-nsp-ram-gcs-6deg-3mo",
+        "h90-ena-h-hf-nsp-ram-gcs-6deg-3mo",
+    ],
+)
 @mock.patch("imap_processing.hi.hi_l2.calculate_ena_intensity", autospec=True)
-@mock.patch("imap_processing.hi.hi_l2.esa_energy_df", autospec=True)
 @pytest.mark.external_test_data
 def test_genarate_hi_map(
-    mock_esa_energy_lookup,
     mock_calc_ena_intensity,
     hi_l1_test_data_path,
     anc_path_dict,
     furnish_kernels,
+    descriptor_str,
 ):
     """Test coverage for genarate_hi_map()"""
-
-    mock_esa_energy_lookup.side_effect = lambda x, y: pd.DataFrame(
-        {"nominal_central_energy": y, "bandpass_fwhm": np.ones_like(y)}
-    )
     mock_calc_ena_intensity.side_effect = lambda x, y, z: x
 
     kernels = [
@@ -223,11 +225,11 @@ def test_genarate_hi_map(
         "imap_science_100.tf",
         "naif0012.tls",
         "imap_spk_demo.bsp",
+        "de440s.bsp",
     ]
     with furnish_kernels(kernels):
         pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
-        descriptor_str = "h90-ena-h-sf-nsp-full-gcs-6deg-3mo"
         rect_map = MapDescriptor.from_string(descriptor_str)
         sky_map = generate_hi_map(
             [pset_path],
@@ -245,24 +247,11 @@ def test_genarate_hi_map(
     for var_name in ["counts", "exposure_factor", "obs_date"]:
         assert var_name in sky_map.data_1d.data_vars
         assert np.nanmax(sky_map.data_1d[var_name].data) > 0
-
-
-def test_generate_hi_map_not_implemented():
-    """Test that the generate_hi_map function raises NotImplementedError."""
-    # Test that trying to produce Healpix raises
-    with pytest.raises(
-        NotImplementedError, match="Healpix map output not supported for Hi"
-    ):
-        _ = generate_hi_map(
-            [], {}, MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-nside32-3mo")
-        )
-    # Temporary test for CG correction not implemented
-    with pytest.raises(
-        NotImplementedError, match="CG correction not implemented for Hi"
-    ):
-        _ = generate_hi_map(
-            [], {}, MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
-        )
+    # If the CG correction ran, check that the energy_sc variable is present
+    # in the map
+    if "-hf-" in descriptor_str:
+        assert "energy_sc" in sky_map.data_1d.data_vars
+        assert np.nanmax(sky_map.data_1d["energy_sc"].data) > 0
 
 
 def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):

@@ -11,14 +11,17 @@ from imap_processing.ena_maps.ena_maps import (
     HiPointingSet,
     RectangularSkyMap,
 )
-from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
+from imap_processing.ena_maps.utils.corrections import (
+    PowerLawFluxCorrector,
+    apply_compton_getting_correction,
+)
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.utils import CalibrationProductConfig
 
 logger = logging.getLogger(__name__)
 
 # TODO: is an exposure time weighted average for obs_date appropriate?
-VARS_TO_EXPOSURE_TIME_AVERAGE = ["bg_rates", "bg_rates_unc", "obs_date"]
+VARS_TO_EXPOSURE_TIME_AVERAGE = ["bg_rates", "bg_rates_unc", "obs_date", "energy_sc"]
 
 
 def hi_l2(
@@ -98,34 +101,64 @@ def generate_hi_map(
         The sky map with all the PSET data projected into the map.
     """
     output_map = descriptor.to_empty_map()
+    vars_to_bin = ["counts", "exposure_factor", "bg_rates", "bg_rates_unc", "obs_date"]
+
+    if descriptor.frame_descriptor == "hf":
+        vars_to_bin.append("energy_sc")
 
     if not isinstance(output_map, RectangularSkyMap):
         raise NotImplementedError("Healpix map output not supported for Hi")
 
-    # TODO: Implement Compton-Getting correction
-    if descriptor.frame_descriptor != "sf":
-        raise NotImplementedError("CG correction not implemented for Hi")
+    cached_esa_steps = None
 
     for pset_path in psets:
         logger.info(f"Processing {pset_path}")
-        pset = HiPointingSet(pset_path, spin_phase=descriptor.spin_phase)
+        pset = HiPointingSet(pset_path)
 
-        # Background rate and uncertainty are exposure time weighted means in
-        # the map.
+        # Store the first PSET esa_energy_step values and make sure every PSET
+        # contains the same set of esa_energy_step values.
+        if cached_esa_steps is None:
+            cached_esa_steps = pset.data["esa_energy_step"].values.copy()
+            esa_ds = esa_energy_df(
+                l2_ancillary_path_dict["esa-energies"],
+                pset.data["esa_energy_step"].values,
+            ).to_xarray()
+            energy_kev = esa_ds["nominal_central_energy"]
+        if not np.array_equal(cached_esa_steps, pset.data["esa_energy_step"].values):
+            raise ValueError(
+                "All PSETs must have the same set of esa_energy_step values."
+            )
+
+        if descriptor.frame_descriptor == "hf":
+            # convert esa nominal central energy from keV to eV
+            esa_energy_ev = energy_kev * 1000
+            pset = apply_compton_getting_correction(pset, esa_energy_ev)
+
+        # Multiply variables that need to be exposure time weighted average by
+        # exposure factor.
         for var in VARS_TO_EXPOSURE_TIME_AVERAGE:
-            pset.data[var] *= pset.data["exposure_factor"]
+            if var in pset.data:
+                print(var)
+                pset.data[var] *= pset.data["exposure_factor"]
+
+        # Set the mask used to filter ram/anti-ram pixels
+        pset_valid_mask = None  # Default to no mask (full spin)
+        if descriptor.spin_phase == "ram":
+            pset_valid_mask = pset.data["ram_mask"]
+        elif descriptor.spin_phase == "anti":
+            pset_valid_mask = ~pset.data["ram_mask"]
 
         # Project (bin) the PSET variables into the map pixels
         output_map.project_pset_values_to_map(
-            pset,
-            ["counts", "exposure_factor", "bg_rates", "bg_rates_unc", "obs_date"],
+            pset, vars_to_bin, pset_valid_mask=pset_valid_mask
         )
 
     # Finish the exposure time weighted mean calculation of backgrounds
     # Allow divide by zero to fill set pixels with zero exposure time to NaN
     with np.errstate(divide="ignore"):
         for var in VARS_TO_EXPOSURE_TIME_AVERAGE:
-            output_map.data_1d[var] /= output_map.data_1d["exposure_factor"]
+            if var in output_map.data_1d:
+                output_map.data_1d[var] /= output_map.data_1d["exposure_factor"]
 
     output_map.data_1d.update(calculate_ena_signal_rates(output_map.data_1d))
     output_map.data_1d = calculate_ena_intensity(
@@ -138,27 +171,14 @@ def generate_hi_map(
     # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
     output_map.data_1d["obs_date_range"] = xr.zeros_like(output_map.data_1d["obs_date"])
 
-    # Rename and convert coordinate from esa_energy_step energy
-    esa_df = esa_energy_df(
-        l2_ancillary_path_dict["esa-energies"],
-        output_map.data_1d["esa_energy_step"].data,
-    )
-    output_map.data_1d = output_map.data_1d.rename({"esa_energy_step": "energy"})
-    output_map.data_1d = output_map.data_1d.assign_coords(
-        energy=esa_df["nominal_central_energy"].values
-    )
     # Set the energy_step_delta values to the energy bandpass half-width-half-max
-    energy_delta = esa_df["bandpass_fwhm"].values / 2
-    output_map.data_1d["energy_delta_minus"] = xr.DataArray(
-        energy_delta,
-        name="energy_delta_minus",
-        dims=["energy"],
-    )
-    output_map.data_1d["energy_delta_plus"] = xr.DataArray(
-        energy_delta,
-        name="energy_delta_plus",
-        dims=["energy"],
-    )
+    energy_delta = esa_ds["bandpass_fwhm"] / 2
+    output_map.data_1d["energy_delta_minus"] = energy_delta
+    output_map.data_1d["energy_delta_plus"] = energy_delta
+
+    # Rename and convert coordinate from esa_energy_step energy
+    output_map.data_1d = output_map.data_1d.rename({"esa_energy_step": "energy"})
+    output_map.data_1d = output_map.data_1d.assign_coords(energy=energy_kev.values)
 
     output_map.data_1d = output_map.data_1d.drop("esa_energy_step_label")
 
@@ -420,7 +440,7 @@ def _calculate_improved_stat_variance(
 
 
 def esa_energy_df(
-    esa_energies_path: str | Path, esa_energy_steps: np.ndarray
+    esa_energies_path: str | Path, esa_energy_steps: np.ndarray | None = None
 ) -> pd.DataFrame:
     """
     Lookup the nominal central energy values for given esa energy steps.
@@ -429,8 +449,9 @@ def esa_energy_df(
     ----------
     esa_energies_path : str or pathlib.Path
         Location of the calibration csv file containing the lookup data.
-    esa_energy_steps : numpy.ndarray
-        The ESA energy steps to get energies for.
+    esa_energy_steps : numpy.ndarray, optional
+        The ESA energy steps to get energies for. If not provided, the full
+        dataframe is returned.
 
     Returns
     -------
@@ -441,4 +462,6 @@ def esa_energy_df(
     esa_energies_lut = pd.read_csv(
         esa_energies_path, comment="#", index_col="esa_energy_step"
     )
+    if esa_energy_steps is None:
+        return esa_energies_lut
     return esa_energies_lut.loc[esa_energy_steps]

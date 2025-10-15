@@ -641,6 +641,117 @@ class TestRectangularSkyMap:
                 index_match_method=index_matching_method,
             )
 
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_with_valid_mask_push(self, mock_frame_transform_az_el):
+        """Test projection with pset_valid_mask using PUSH method."""
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        rectangular_map = ena_maps.RectangularSkyMap(
+            spacing_deg=2,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+
+        ultra_pset = self.ultra_psets[0]
+        ultra_pset.data["counts"] = xr.ones_like(ultra_pset.data["counts"])
+
+        # Create a mask that only allows half of the pixels
+        valid_mask = np.zeros(ultra_pset.num_points, dtype=bool)
+        valid_mask[: ultra_pset.num_points // 2] = True
+
+        # Project with mask
+        rectangular_map.project_pset_values_to_map(
+            ultra_pset,
+            value_keys=["counts"],
+            index_match_method=ena_maps.IndexMatchMethod.PUSH,
+            pset_valid_mask=valid_mask,
+        )
+
+        # Total counts in map should be less than total counts in pset
+        map_total_counts = rectangular_map.data_1d["counts"].sum()
+        pset_total_counts = ultra_pset.data["counts"].sum()
+
+        # With mask, map should have approximately half the counts
+        assert map_total_counts < pset_total_counts
+        np.testing.assert_allclose(
+            map_total_counts,
+            pset_total_counts / 2,
+            rtol=0.1,
+        )
+
+    @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_with_dataarray_mask_push(self, mock_frame_transform_az_el):
+        """Test projection with xr.DataArray mask using PUSH method."""
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        rectangular_map = ena_maps.RectangularSkyMap(
+            spacing_deg=10,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+
+        rect_pset = self.rectangular_psets[0]
+
+        # Create a DataArray mask matching the pset spatial dimensions
+        valid_mask = xr.DataArray(
+            np.ones(rect_pset.data["counts"].shape[2:], dtype=bool),
+            dims=rect_pset.spatial_coords,
+        )
+        # Mask out one quadrant
+        # valid_mask[:90, :90] = False
+
+        # Project with DataArray mask
+        rectangular_map.project_pset_values_to_map(
+            rect_pset,
+            value_keys=["counts"],
+            index_match_method=ena_maps.IndexMatchMethod.PUSH,
+            pset_valid_mask=valid_mask,
+        )
+
+        # Map should have data
+        assert "counts" in rectangular_map.data_1d
+        assert rectangular_map.data_1d["counts"].sum() > 0
+
+    @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_with_valid_mask_pull(self, mock_frame_transform_az_el):
+        """Test projection with pset_valid_mask using PULL method."""
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        rectangular_map = ena_maps.RectangularSkyMap(
+            spacing_deg=10,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+
+        rect_pset = self.rectangular_psets[0]
+
+        # Create a mask that masks out some pixels
+        valid_mask = np.ones(rect_pset.num_points, dtype=bool)
+        valid_mask[: rect_pset.num_points // 4] = False
+
+        # Project with mask using PULL method
+        rectangular_map.project_pset_values_to_map(
+            rect_pset,
+            value_keys=["counts"],
+            index_match_method=ena_maps.IndexMatchMethod.PULL,
+            pset_valid_mask=valid_mask,
+        )
+
+        # Map should have data, but some pixels should be zero due to mask
+        assert "counts" in rectangular_map.data_1d
+        assert rectangular_map.data_1d["counts"].sum() > 0
+        # Some pixels should be zero
+        assert (rectangular_map.data_1d["counts"] == 0).any()
+
     @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
     def test_project_rect_pset_values_to_map_pull_method(

@@ -652,15 +652,16 @@ class HiPointingSet(LoHiBasePointingSet):
     def __init__(self, dataset: xr.Dataset | str | Path):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_HAE)
 
+        self.spatial_coords = ("spin_angle_bin",)
+
         # Naively generate the ram_mask variable assuming spacecraft frame
         # binning. The ram_mask variable gets updated in the CG correction
         # code if the CG correction is applied.
-        self.data["ram_mask"] = xr.zeros_like(self.data["spin_angle_bin"], dtype=bool)
+        ram_mask = xr.zeros_like(self.data["spin_angle_bin"], dtype=bool)
         # ram only includes spin-phase interval [0, 0.5)
         # which is the first half of the spin_angle_bins
-        self.data["ram_mask"][slice(0, self.data["spin_angle_bin"].data.size // 2)] = (
-            True
-        )
+        ram_mask[slice(0, self.data["spin_angle_bin"].data.size // 2)] = True
+        self.data["ram_mask"] = ram_mask
 
         # Rename some PSET vars to match L2 variables
         self.data = self.data.rename(
@@ -675,8 +676,6 @@ class HiPointingSet(LoHiBasePointingSet):
         self.data["obs_date"] = xr.full_like(
             self.data["exposure_factor"], self.data["epoch"].values[0]
         )
-
-        self.spatial_coords = ("spin_angle_bin",)
 
         # Update az_el_points using the base class method
         self.update_az_el_points()
@@ -802,12 +801,12 @@ class AbstractSkyMap(ABC):
         """
         return self.az_el_points.shape[0]
 
-    def project_pset_values_to_map(
+    def project_pset_values_to_map(  # noqa: PLR0912
         self,
         pointing_set: PointingSet,
         value_keys: list[str] | None = None,
         index_match_method: IndexMatchMethod = IndexMatchMethod.PUSH,
-        pset_valid_mask: NDArray | None = None,
+        pset_valid_mask: NDArray | xr.DataArray | None = None,
     ) -> None:
         """
         Project a pointing set's values to the map grid.
@@ -829,7 +828,7 @@ class AbstractSkyMap(ABC):
         index_match_method : IndexMatchMethod, optional
             The method of index matching to use for all values.
             Default is IndexMatchMethod.PUSH.
-        pset_valid_mask : NDArray, optional
+        pset_valid_mask : xarray.DataArray or NDArray, optional
             A boolean mask of shape (number of pointing set pixels,) indicating
             which pixels in the pointing set should be considered valid for projection.
             If None, all pixels are considered valid. Default is None.
@@ -896,16 +895,26 @@ class AbstractSkyMap(ABC):
                 # Bin the values at the matched indices. There may be multiple
                 # pointing set pixels that correspond to the same sky map pixel.
                 # Broadcast all arrays together using xarray dimension alignment
-                data_bc, indices_bc = xr.broadcast(
-                    raveled_pset_data, matched_indices_push
-                )
+                (
+                    data_bc,
+                    indices_bc,
+                ) = xr.broadcast(raveled_pset_data, matched_indices_push)
+                # If the valid mask is a xr.DataArray, broadcast it to the same shape
+                if isinstance(pset_valid_mask, xr.DataArray):
+                    stacked_valid_mask = pset_valid_mask.stack(
+                        {CoordNames.GENERIC_PIXEL.value: pointing_set.spatial_coords}
+                    )
+                    pset_valid_mask_bc, _ = xr.broadcast(data_bc, stacked_valid_mask)
+                    pset_valid_mask_values = pset_valid_mask_bc.values
+                else:
+                    pset_valid_mask_values = pset_valid_mask
 
                 # Extract numpy arrays for bincount operation
                 pointing_projected_values = map_utils.bin_single_array_at_indices(
                     value_array=data_bc.values,
                     projection_grid_shape=self.binning_grid_shape,
                     projection_indices=indices_bc.values,
-                    input_valid_mask=pset_valid_mask,
+                    input_valid_mask=pset_valid_mask_values,
                 )
                 # TODO: we may need to allow for unweighted/weighted means here by
                 # dividing pointing_projected_values by some binned weights.

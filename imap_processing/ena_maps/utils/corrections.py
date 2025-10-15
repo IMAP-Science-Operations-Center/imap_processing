@@ -1,6 +1,7 @@
 """L2 corrections common to multiple IMAP ENA instruments."""
 
 from pathlib import Path
+from typing import TypeVar
 
 import numpy as np
 import pandas as pd
@@ -8,10 +9,17 @@ import xarray as xr
 from numpy.polynomial import Polynomial
 from scipy.constants import electron_volt, erg, proton_mass
 
-from imap_processing.ena_maps.ena_maps import LoHiBasePointingSet
+from imap_processing.ena_maps.ena_maps import (
+    LoHiBasePointingSet,
+)
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 from imap_processing.spice.time import ttj2000ns_to_et
+
+# Create a TypeVar to represent the specific class being passed in
+# Bound to LoHiBasePointingSet, meaning it must be LoHiBasePointingSet
+# or a subclass of it
+T = TypeVar("T", bound=LoHiBasePointingSet)
 
 # Physical constants for Compton-Getting correction
 # Units: electron_volt = [J / eV]
@@ -307,7 +315,7 @@ class PowerLawFluxCorrector:
         return corrected_flux, corrected_flux_stat_unc
 
 
-def _add_spacecraft_velocity_to_pset(pset: LoHiBasePointingSet) -> None:
+def _add_spacecraft_velocity_to_pset(pset: T) -> T:
     """
     Calculate and add spacecraft velocity data to pointing set.
 
@@ -315,6 +323,11 @@ def _add_spacecraft_velocity_to_pset(pset: LoHiBasePointingSet) -> None:
     ----------
     pset : LoHiBasePointingSet
         Pointing set object to be updated.
+
+    Returns
+    -------
+    pset : LoHiBasePointingSet
+        Pointing set object with spacecraft velocity data added.
 
     Notes
     -----
@@ -342,8 +355,10 @@ def _add_spacecraft_velocity_to_pset(pset: LoHiBasePointingSet) -> None:
     )
     pset.data["sc_direction_vector"] = pset.data["sc_velocity"] / sc_velocity_km_per_sec
 
+    return pset
 
-def _add_cartesian_look_direction(pset: LoHiBasePointingSet) -> None:
+
+def _add_cartesian_look_direction(pset: T) -> T:
     """
     Calculate and add look direction vectors to pointing set.
 
@@ -351,6 +366,11 @@ def _add_cartesian_look_direction(pset: LoHiBasePointingSet) -> None:
     ----------
     pset : LoHiBasePointingSet
         Pointing set object to be updated.
+
+    Returns
+    -------
+    pset : LoHiBasePointingSet
+        Pointing set object with look direction vectors added.
 
     Notes
     -----
@@ -376,11 +396,13 @@ def _add_cartesian_look_direction(pset: LoHiBasePointingSet) -> None:
         dims=[*longitudes.dims, CoordNames.CARTESIAN_VECTOR.value],
     )
 
+    return pset
+
 
 def _calculate_compton_getting_transform(
-    pset: LoHiBasePointingSet,
+    pset: T,
     energy_hf: xr.DataArray,
-) -> None:
+) -> T:
     """
     Apply Compton-Getting transformation to compute ENA source directions.
 
@@ -400,14 +422,24 @@ def _calculate_compton_getting_transform(
     energy_hf : xr.DataArray
         ENA energies in the heliosphere frame in eV.
 
+    Returns
+    -------
+    pset : LoHiBasePointingSet
+        Pointing set object with Compton-Getting related variables added and
+        updated az_el_points.
+
     Notes
     -----
     The algorithm is based on the "Appendix A. The IMAP-Lo Mapping Algorithms"
     document.
     Adds the following DataArrays to pset.data:
     - "energy_sc": ENA energies in spacecraft frame (eV)
-    - "ena_source_hae_longitude": ENA source longitudes in heliosphere frame (degrees)
-    - "ena_source_hae_latitude": ENA source latitudes in heliosphere frame (degrees)
+    - "energy_hf": ENA energies in the heliosphere frame (eV)
+    - "ram_mask": Mask indicating whether ENA source direction is from the ram
+      direction.
+    Updates the following DataArrays in pset.data:
+    - "hae_longitude": ENA source longitudes in heliosphere frame (degrees)
+    - "hae_latitude": ENA source latitudes in heliosphere frame (degrees)
     """
     # Store heliosphere frame energies
     pset.data["energy_hf"] = energy_hf
@@ -455,6 +487,8 @@ def _calculate_compton_getting_transform(
     # Velocity magnitude factor calculation (Equation 62)
     # x_k = (êₛ · û_sc) + sqrt(y² + (êₛ · û_sc)² - 1)
     x = dot_product + np.sqrt(y**2 + dot_product**2 - 1)
+    # Get the dimensions in the right order so that spatial is last
+    x = x.transpose(dot_product.dims[0], y.dims[0], dot_product.dims[1])
 
     # Calculate ENA speed in the spacecraft frame
     # |v⃗_sc| = x_k * U_sc
@@ -504,11 +538,13 @@ def _calculate_compton_getting_transform(
         dims=velocity_vector_helio.dims[:-1],
     )
 
+    return pset
+
 
 def apply_compton_getting_correction(
-    pset: LoHiBasePointingSet,
+    pset: T,
     energy_hf: xr.DataArray,
-) -> None:
+) -> T:
     """
     Apply Compton-Getting correction to a pointing set and update coordinates.
 
@@ -532,6 +568,11 @@ def apply_compton_getting_correction(
         ENA energies in the heliosphere frame in eV. Must be 1D with an
         energy dimension.
 
+    Returns
+    -------
+    pset : LoHiBasePointingSet
+        Updated pointing set object with Compton-Getting related variables added.
+
     Notes
     -----
     This function adds the following variables to the pointing set dataset:
@@ -540,20 +581,23 @@ def apply_compton_getting_correction(
     - "look_direction": Cartesian unit vectors of observation directions
     - "energy_hf": ENA energies in heliosphere frame (eV)
     - "energy_sc": ENA energies in spacecraft frame (eV)
-    - "ena_source_hae_longitude": ENA source longitudes in heliosphere frame (degrees)
-    - "ena_source_hae_latitude": ENA source latitudes in heliosphere frame (degrees)
+    This function modifies the following variables in the pointing set dataset:
+    - "hae_longitude": ENA source longitudes in heliosphere frame (degrees)
+    - "hae_latitude": ENA source latitudes in heliosphere frame (degrees)
 
     The az_el_points attribute is updated to use the corrected coordinates,
     which will be used for subsequent binning operations.
     """
     # Step 1: Add spacecraft velocity and direction to pset
-    _add_spacecraft_velocity_to_pset(pset)
+    pset = _add_spacecraft_velocity_to_pset(pset)
 
     # Step 2: Calculate and add look direction vectors to pset
-    _add_cartesian_look_direction(pset)
+    pset = _add_cartesian_look_direction(pset)
 
     # Step 3: Apply Compton-Getting transformation
-    _calculate_compton_getting_transform(pset, energy_hf)
+    pset = _calculate_compton_getting_transform(pset, energy_hf)
 
     # Step 4: Update az_el_points to use the corrected coordinates
     pset.update_az_el_points()
+
+    return pset
