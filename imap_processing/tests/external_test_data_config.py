@@ -45,11 +45,10 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l1a_lo-ialirt_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_lo-nsw-angular_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_lo-nsw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-nsw-species_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_lo-sw-angular_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-sw-species_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-
+    ("imap_codice_l1b_lo-nsw-species_20250814_v006.cdf", "codice/data/l1a_validation"),
+    ("imap_codice_l1b_lo-sw-species_20250814_v006.cdf", "codice/data/l1a_validation"),
     # L1B Input data is same as L1A validation data
 
     # L1B validation data
@@ -67,8 +66,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l1b_lo-nsw-species_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
     ("imap_codice_l1b_lo-sw-angular_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
     ("imap_codice_l1b_lo-sw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-sw-species_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-
+    ("imap_codice_l1b_lo-sw-species_20250814_v006.cdf", "codice/data/l1b_validation"),
     # L2 LUT input data
     ("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),

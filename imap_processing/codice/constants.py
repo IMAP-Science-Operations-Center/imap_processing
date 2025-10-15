@@ -2302,3 +2302,21 @@ L2_HI_SECTORED_ANGLE = np.array(
         325.89,
     ]
 )
+
+HI_L2_ELEVATION_ANGLE = np.array(
+    [
+        150.0,
+        138.6,
+        115.7,
+        90.0,
+        64.3,
+        41.4,
+        30.0,
+        41.4,
+        64.3,
+        90.0,
+        115.7,
+        138.6,
+    ],
+    dtype=float,
+)

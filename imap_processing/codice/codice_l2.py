@@ -20,6 +20,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.constants import (
     HALF_SPIN_LUT,
+    HI_L2_ELEVATION_ANGLE,
     HI_OMNI_VARIABLE_NAMES,
     HI_SECTORED_VARIABLE_NAMES,
     L2_GEOMETRIC_FACTOR,
@@ -309,17 +310,13 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # TODO: ask Joey to add attrs for epoch_delta_plus and epoch_delta_minus
     # and update dimension to be 'epoch' in L1B data
     for variable in l1b_dataset.data_vars:
-        if variable in ["epoch_delta_plus", "epoch_delta_minus"]:
-            l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
-                variable, check_schema=False
-            )
-        elif variable == "data_quality":
+        if variable in ["epoch_delta_plus", "epoch_delta_minus", "data_quality"]:
             l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
                 variable, check_schema=False
             )
         else:
             l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
-                f"hi-omni-{variable}", check_schema=False
+                variable, check_schema=False
             )
 
     # Add these new coordinates
@@ -485,14 +482,14 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
             ),
             "epoch": l1b_dataset["epoch"],
             "elevation_angle": xr.DataArray(
-                np.arange(12) * 30.0,
+                HI_L2_ELEVATION_ANGLE,
                 dims=("elevation_angle",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "elevation_angle", check_schema=False
                 ),
             ),
             "elevation_angle_label": xr.DataArray(
-                np.arange(12) * 30.0,
+                HI_L2_ELEVATION_ANGLE.astype(str),
                 dims=("elevation_angle",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "elevation_angle_label", check_schema=False
@@ -522,15 +519,14 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
         # Because of this, it's easier to work with the data in xarray.
         # Xarray automatically aligns dimensions and coordinates, making it easier
         # to work with multi-dimensional data. Thus, we convert the efficiencies
-        # to xarray.DataArray with dimensions (energy, ssd_index)
-        # TODO: update ssd_index to inst_az when Joey data is updated.
+        # to xarray.DataArray with dimensions (energy, inst_az)
         species_data = efficiencies_df[efficiencies_df["species"] == species].values
         species_efficiencies = xr.DataArray(
             species_data[:, 2:].astype(
                 float
             ),  # Skip first two columns (species, energy_bin)
-            dims=(f"energy_{species}", "ssd_index"),
-            coords=l1b_dataset[[f"energy_{species}", "ssd_index"]],
+            dims=(f"energy_{species}", "inst_az"),
+            coords=l1b_dataset[[f"energy_{species}", "inst_az"]],
         )
 
         # energy_passbands has shape:
@@ -559,7 +555,7 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     #   θ_(k,n) = (θ_(k,0)+30°* n)  mod 360°
     # where
     #   n is size of L2_HI_SECTORED_ANGLE, 0 to 11,
-    #   k is size of ssd_index from l1b, 0 to 11,
+    #   k is size of inst_az from l1b, 0 to 11,
     # Calculate spin angle by adding a base angle from L2_HI_SECTORED_ANGLE
     # for each SSD index and then adding multiple of 30 degrees for each elevation.
     # Then mod by 360 to keep it within 0-360 range.
@@ -642,8 +638,7 @@ def process_codice_l2(
         "imap_codice_l2_lo-sw-species",
         "imap_codice_l2_lo-nsw-species",
     ]:
-        l1_dataset = load_cdf(file_path)
-        l2_dataset = l1_dataset.copy()
+        l2_dataset = load_cdf(file_path).copy()
 
         geometric_factor_lookup = get_geometric_factor_lut(dependencies)
         efficiency_lookup = get_efficiency_lut(dependencies)

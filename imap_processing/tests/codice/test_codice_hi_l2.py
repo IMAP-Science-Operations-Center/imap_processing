@@ -29,7 +29,7 @@ def test_l2_hi_omni(mock_get_file_paths, codice_lut_path):
     val_data = (
         imap_module_directory
         / "tests/codice/data/l2_validation"
-        / "imap_codice_l2_hi-omni_20250814211100_v0.0.6.cdf"
+        / "imap_codice_l2_hi-omni_20250814_v006.cdf"
     )
 
     val_data = load_cdf(val_data)
@@ -41,6 +41,19 @@ def test_l2_hi_omni(mock_get_file_paths, codice_lut_path):
             val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
+        )
+
+    # Check coordinates
+    for variable in val_data.coords:
+        np.testing.assert_allclose(
+            processed_l2[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+        # Tests that dimensions match
+        assert processed_l2[variable].dims == val_data[variable].dims, (
+            f"Dimension mismatch in coordinate '{variable}'"
         )
 
     processed_l2.attrs["Data_version"] = "001"
@@ -64,15 +77,14 @@ def test_l2_hi_sectored(mock_get_file_paths, codice_lut_path):
     val_data = (
         imap_module_directory
         / "tests/codice/data/l2_validation"
-        / "imap_codice_l2_hi-sectored_20250814211100_v0.0.6.cdf"
+        / "imap_codice_l2_hi-sectored_20250814_v006.cdf"
     )
 
     val_data = load_cdf(val_data)
 
+    # Check data variables
     for variable in val_data.data_vars:
         if variable.startswith("unc_"):
-            continue
-        if variable == "spin_angles":
             continue
         np.testing.assert_allclose(
             processed_l2[variable].values,
@@ -85,6 +97,19 @@ def test_l2_hi_sectored(mock_get_file_paths, codice_lut_path):
             continue
         assert processed_l2[variable].dims == val_data[variable].dims, (
             f"Dimension mismatch in variable '{variable}'"
+        )
+
+    # Check coordinates
+    for variable in val_data.coords:
+        np.testing.assert_allclose(
+            processed_l2[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+        # Tests that dimensions match
+        assert processed_l2[variable].dims == val_data[variable].dims, (
+            f"Dimension mismatch in coordinate '{variable}'"
         )
 
     processed_l2.attrs["Data_version"] = "001"

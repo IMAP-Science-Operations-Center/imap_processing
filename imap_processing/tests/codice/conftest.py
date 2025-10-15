@@ -59,8 +59,8 @@ def codice_lut_path():
                 / "tests"
                 / "codice"
                 / "data"
-                / "l1b_validation"
-                / "imap_codice_l1b_lo-nsw-species_20250814_v005.cdf"
+                / "l1a_validation"
+                / "imap_codice_l1b_lo-nsw-species_20250814_v006.cdf"
             ]
         elif descriptor == "lo-sw-species":
             return [
@@ -68,8 +68,8 @@ def codice_lut_path():
                 / "tests"
                 / "codice"
                 / "data"
-                / "l1b_validation"
-                / "imap_codice_l1b_lo-sw-species_20250814_v005.cdf"
+                / "l1a_validation"
+                / "imap_codice_l1b_lo-sw-species_20250814_v006.cdf"
             ]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")
