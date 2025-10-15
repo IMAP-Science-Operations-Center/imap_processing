@@ -62,7 +62,10 @@ def test_generate_pset_dataset(
 def test_empty_pset_dataset():
     """Test coverage for empty_pset_dataset function"""
     n_energy_steps = 8
-    l1b_esa_energy_steps = np.arange(n_energy_steps + 1).repeat(2)
+    l1b_esa_energy_steps = xr.DataArray(
+        data=np.concat((np.arange(n_energy_steps + 1).repeat(2), np.array([255, 255]))),
+        attrs={"FILLVAL": 255},
+    )
     n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
     dataset = hi_l1c.empty_pset_dataset(
