@@ -19,9 +19,7 @@ pytestmark = pytest.mark.external_test_data
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_l2_hi_omni(mock_get_file_paths, codice_lut_path):
-    # Ensure mocked ProcessingInputCollection.get_file_paths returns LUT paths
     mock_get_file_paths.side_effect = codice_lut_path
-    # Write new L1B CDF for inspection if needed
     sci_input = ScienceInput("imap_codice_l1b_hi-omni_20250814_v006.cdf")
     anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv")
     dependencies = ProcessingInputCollection(anc_input, sci_input)

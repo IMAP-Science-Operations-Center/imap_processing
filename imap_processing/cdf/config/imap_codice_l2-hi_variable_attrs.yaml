@@ -1,19 +1,10 @@
 # ----------------------------- Useful variables -----------------------------
-int_fillval: &int_fillval -9223372036854775808
 uint8_fillval: &uint8_fillval 255
-uint16_fillval: &uint16_fillval 65535
 uint32_fillval: &uint32_fillval 4294967295
 real_fillval: &real_fillval -1.0e+31
 
 min_int: &min_int -9223372036854775808
-min_epoch: &min_epoch -315575942816000000
-
 max_int: &max_int 9223372036854775807
-max_uint8: &max_uint8 255
-max_uint16: &max_uint16 65535
-max_uint24: &max_uint24 8388607
-max_uint32: &max_uint32 4294967295
-max_epoch: &max_epoch 3155630469184000000
 
 # --------------------------- Default attributes -----------------------------
 energy_attrs: &energy_default
