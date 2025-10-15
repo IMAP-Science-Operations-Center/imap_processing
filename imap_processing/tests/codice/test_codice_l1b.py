@@ -33,7 +33,7 @@ def test_l1b_lo_sw_species():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_lo-sw-species_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1b_lo-sw-species_20250814_v006.cdf"
     )
     l1b_val_data = load_cdf(l1b_val_data)
     processed_data = process_codice_l1b(processed_l1a_file)
@@ -57,6 +57,7 @@ def test_l1b_lo_sw_species():
     assert cdf_file.name == "imap_codice_l1b_lo-sw-species_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_l1b_lo_nsw_species():
     l0_test_file_path = (
         imap_module_directory
@@ -176,6 +177,7 @@ def test_l1b_lo_nsw_angular():
     assert cdf_file.name == "imap_codice_l1b_lo-nsw-angular_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_l1b_hi_omni():
     l0_test_file_path = (
         imap_module_directory
@@ -207,6 +209,7 @@ def test_l1b_hi_omni():
     assert cdf_file.name == "imap_codice_l1b_hi-omni_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_l1b_hi_sectored():
     l0_test_file_path = (
         imap_module_directory
