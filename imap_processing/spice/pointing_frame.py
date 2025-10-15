@@ -51,7 +51,7 @@ def generate_pointing_attitude_kernel(imap_attitude_cks: list[Path]) -> list[Pat
     """
     pointing_segments = calculate_pointing_attitude_segments(imap_attitude_cks)
     if len(pointing_segments) == 0:
-        return []
+        raise ValueError("No Pointings covered by input dependencies.")
 
     # get the start and end yyyy_doy strings
     start_datetime = spiceypy.et2datetime(

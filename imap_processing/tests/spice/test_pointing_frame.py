@@ -83,6 +83,18 @@ def test_generate_pointing_attitude_kernel(
     assert spice_input.source[0] == "pointing_attitude"
 
 
+@mock.patch(
+    "imap_processing.spice.pointing_frame.calculate_pointing_attitude_segments",
+    autospec=True,
+    return_value=[],
+)
+def test_generate_pointing_attitude_kernel_no_pointings(mock_gen_attitude_segments):
+    """Test when no pointings are covered by the input CK."""
+    ck_path = Path("/bogus/file/path/imap_2025_100_2025_101_001.ah.bc")
+    with pytest.raises(ValueError, match="No Pointings covered"):
+        _ = generate_pointing_attitude_kernel([ck_path])[0]
+
+
 @pytest.mark.parametrize(
     "segment_start_offset, segment_end_offset, quaternion, segment_id",
     [
