@@ -342,7 +342,9 @@ class MapDescriptor:
         elif frame_str == "gcs":
             return SpiceFrame.IMAP_GCS
         else:
-            raise NotImplementedError("Coordinate frame is not yet implemented.")
+            raise NotImplementedError(
+                f"Coordinate frame {frame_str} is not yet implemented."
+            )
 
     def to_empty_map(
         self,
