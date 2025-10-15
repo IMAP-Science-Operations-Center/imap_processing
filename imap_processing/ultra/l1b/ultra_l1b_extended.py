@@ -1123,7 +1123,7 @@ def get_efficiency_interpolator(
     -------
     interpolator : RegularGridInterpolator
         Callable function to interpolate efficiency values.
-    heta_min_max : tuple
+    theta_min_max : tuple
         Minimum and maximum theta values in the lookup table.
     phi_min_max : tuple
         Minimum and maximum phi values in the lookup table.

@@ -453,6 +453,10 @@ def get_spacecraft_exposure_times(
     """
     sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
     nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates)
+    # The exposure time will be approximately the same per spin, so to save
+    # computation time, calculate the exposure time for a single spin and then scale it
+    # by the number of spins in the pointing. For more information, see section 3.4.3
+    # of the Ultra Algorithm Document.
     exposure_time = calculate_exposure_time(
         nominal_deadtime_ratios, pixels_below_scattering, boundary_scale_factors, n_pix
     )
@@ -468,13 +472,15 @@ def get_spacecraft_exposure_times(
     valid_mask = (spin_data["spin_phase_valid"].values == 1) & (
         spin_data["spin_period_valid"].values == 1
     )
-    total_spin: float = np.sum(
+    n_spins_in_pointing: float = np.sum(
         spin_data[valid_mask].spin_period_sec / nominal_spin_seconds
     )
     logger.info(
-        f"Calculated total spins universal spin table. Found {total_spin} valid spins."
+        f"Calculated total spins universal spin table. Found {n_spins_in_pointing} "
+        f"valid spins."
     )
-    exposure_pointing_adjusted = total_spin * exposure_time
+    # Adjust exposure time by the actual number of valid spins in the pointing
+    exposure_pointing_adjusted = n_spins_in_pointing * exposure_time
     return exposure_pointing_adjusted, nominal_deadtime_ratios
 
 
@@ -530,8 +536,23 @@ def get_efficiencies_and_geometric_function(
     energy_bin_geometric_means = build_energy_bins()[2]
     energy_bins = len(energy_bin_geometric_means)
     # clip arrays to avoid out of bounds errors
-    theta_vals = np.clip(theta_vals, theta_min_max[0], theta_min_max[1])
-    phi_vals = np.clip(phi_vals, phi_min_max[0], phi_min_max[1])
+    logger.info(
+        "Clipping Theta and Phi values to valid ranges for the efficiency "
+        "interpolation. \n"
+        f"Theta valid range: {theta_min_max}, Phi valid range: {phi_min_max}. \n "
+        f"Found "
+        f"{np.sum((theta_vals < theta_min_max[0]) | (theta_vals > theta_min_max[1]))}"
+        f" Theta values out of range. \n"
+        f"Found "
+        f"{np.sum((phi_vals < phi_min_max[0]) | (phi_vals > phi_min_max[1]))}"
+        f" Phi values out of range. \n"
+        f"Theta min and max values before clipping: "
+        f"{theta_vals.min()}, {theta_vals.max()} \n"
+        f"Phi min and max values before clipping:"
+        f" {phi_vals.min()}, {phi_vals.max()} \n"
+    )
+    theta_vals_clipped = np.clip(theta_vals, theta_min_max[0], theta_min_max[1])
+    phi_vals_clipped = np.clip(phi_vals, phi_min_max[0], phi_min_max[1])
     # Initialize summation arrays for geometric factors and efficiencies
     gf_summation = np.zeros((energy_bins, npix))
     eff_summation = np.zeros((energy_bins, npix))
@@ -542,6 +563,8 @@ def get_efficiencies_and_geometric_function(
         # Compute gf and eff for these theta/phi pairs
         theta_at_spin = theta_vals[:, i]
         phi_at_spin = phi_vals[:, i]
+        theta_at_spin_clipped = theta_vals_clipped[:, i]
+        phi_at_spin_clipped = phi_vals_clipped[:, i]
         gf_values = get_geometric_factor(
             phi=phi_at_spin,
             theta=theta_at_spin,
@@ -555,11 +578,10 @@ def get_efficiencies_and_geometric_function(
             energy = energy_bin_geometric_means[energy_bin_idx]
             # Clip energy to calibrated range
             energy_clipped = np.clip(energy, 3.0, 80.0)
-
             eff_values = get_efficiency(
                 np.full(phi_at_spin[pixel_inds].shape, energy_clipped),
-                phi_at_spin[pixel_inds],
-                theta_at_spin[pixel_inds],
+                phi_at_spin_clipped[pixel_inds],
+                theta_at_spin_clipped[pixel_inds],
                 ancillary_files,
                 interpolator=eff_interpolator,
             )
