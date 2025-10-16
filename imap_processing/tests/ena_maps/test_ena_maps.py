@@ -701,10 +701,13 @@ class TestRectangularSkyMap:
         # Create a DataArray mask matching the pset spatial dimensions
         valid_mask = xr.DataArray(
             np.ones(rect_pset.data["counts"].shape[2:], dtype=bool),
-            dims=rect_pset.spatial_coords,
+            coords={
+                "longitude": rect_pset.data["longitude"],
+                "latitude": rect_pset.data["latitude"],
+            },
         )
         # Mask out one quadrant
-        # valid_mask[:90, :90] = False
+        valid_mask[:90, :90] = False
 
         # Project with DataArray mask
         rectangular_map.project_pset_values_to_map(
