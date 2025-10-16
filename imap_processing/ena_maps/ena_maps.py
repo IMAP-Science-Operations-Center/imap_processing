@@ -801,7 +801,7 @@ class AbstractSkyMap(ABC):
         """
         return self.az_el_points.shape[0]
 
-    def project_pset_values_to_map(  # noqa: PLR0912
+    def project_pset_values_to_map(
         self,
         pointing_set: PointingSet,
         value_keys: list[str] | None = None,
@@ -840,9 +840,6 @@ class AbstractSkyMap(ABC):
         """
         if value_keys is None:
             value_keys = list(pointing_set.data.data_vars.keys())
-        for value_key in value_keys:
-            if value_key not in pointing_set.data.data_vars:
-                raise ValueError(f"Value key {value_key} not found in pointing set.")
 
         if pset_valid_mask is None:
             pset_valid_mask = np.ones(pointing_set.num_points, dtype=bool)
@@ -867,9 +864,12 @@ class AbstractSkyMap(ABC):
             )
 
         for value_key in value_keys:
+            if value_key not in pointing_set.data.data_vars:
+                raise ValueError(f"Value key {value_key} not found in pointing set.")
+
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
-            # flatten them in the values array to match the raveled indices
+            # stack them into a single coordinate to match the raveled indices
             raveled_pset_data = pointing_set.data[value_key].stack(
                 {CoordNames.GENERIC_PIXEL.value: pointing_set.spatial_coords}
             )
@@ -934,10 +934,6 @@ class AbstractSkyMap(ABC):
                 # that correspond to each map pixel as the weights.
                 self.data_1d[value_key].values[..., valid_map_mask] += (
                     pointing_projected_values
-                )
-            else:
-                raise NotImplementedError(
-                    "Only PUSH and PULL index matching methods are supported."
                 )
 
         # TODO: The max epoch needs to include the pset duration. Right now it
