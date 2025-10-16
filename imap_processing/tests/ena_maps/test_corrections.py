@@ -420,7 +420,7 @@ class TestComptonGettingCorrection:
         """Test Compton-Getting correction with real Hi PSET data."""
         # Load real pointing set
         pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
+        hi_pset = ena_maps.HiPointingSet(pset_ds)
 
         # Store original coordinates for comparison
         original_lon = hi_pset.data["hae_longitude"].copy()
