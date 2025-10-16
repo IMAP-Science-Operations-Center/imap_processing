@@ -710,6 +710,7 @@ def process_packet(
                 "met": int(met_all[i]),
                 "met_in_utc": met_to_utc(met_all[i]).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met_all[i])),
+                "instrument": "mag",
                 "mag_epoch": int(mago_times_all[i]),
                 "mag_B_GSE": [Decimal(str(v)) for v in gse_vector[i]],
                 "mag_B_GSM": [Decimal(str(v)) for v in gsm_vector[i]],
