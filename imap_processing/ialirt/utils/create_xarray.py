@@ -149,6 +149,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
                 "met",
                 "met_in_utc",
                 "ttj2000ns",
+                "instrument",
                 "last_modified",
                 "sc_position_GSM",
                 "sc_position_GSE",
