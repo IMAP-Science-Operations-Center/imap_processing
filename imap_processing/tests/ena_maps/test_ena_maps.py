@@ -626,7 +626,13 @@ class TestRectangularSkyMap:
         )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-    def test_project_pset_values_to_map_errors(self):
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_values_to_map_errors(self, mock_frame_transform_az_el):
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
         index_matching_method = ena_maps.IndexMatchMethod.PUSH
         rectangular_map = ena_maps.RectangularSkyMap(
             spacing_deg=1,
