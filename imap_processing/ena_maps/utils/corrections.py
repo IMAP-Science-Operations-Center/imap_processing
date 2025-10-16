@@ -19,7 +19,7 @@ from imap_processing.spice.time import ttj2000ns_to_et
 # Create a TypeVar to represent the specific class being passed in
 # Bound to LoHiBasePointingSet, meaning it must be LoHiBasePointingSet
 # or a subclass of it
-T = TypeVar("T", bound=LoHiBasePointingSet)
+LoHiBasePsetSubclass = TypeVar("LoHiBasePsetSubclass", bound=LoHiBasePointingSet)
 
 # Physical constants for Compton-Getting correction
 # Units: electron_volt = [J / eV]
@@ -315,7 +315,9 @@ class PowerLawFluxCorrector:
         return corrected_flux, corrected_flux_stat_unc
 
 
-def _add_spacecraft_velocity_to_pset(pset: T) -> T:
+def _add_spacecraft_velocity_to_pset(
+    pset: LoHiBasePsetSubclass,
+) -> LoHiBasePsetSubclass:
     """
     Calculate and add spacecraft velocity data to pointing set.
 
@@ -358,7 +360,7 @@ def _add_spacecraft_velocity_to_pset(pset: T) -> T:
     return pset
 
 
-def _add_cartesian_look_direction(pset: T) -> T:
+def _add_cartesian_look_direction(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSubclass:
     """
     Calculate and add look direction vectors to pointing set.
 
@@ -400,9 +402,9 @@ def _add_cartesian_look_direction(pset: T) -> T:
 
 
 def _calculate_compton_getting_transform(
-    pset: T,
+    pset: LoHiBasePsetSubclass,
     energy_hf: xr.DataArray,
-) -> T:
+) -> LoHiBasePsetSubclass:
     """
     Apply Compton-Getting transformation to compute ENA source directions.
 
@@ -542,9 +544,9 @@ def _calculate_compton_getting_transform(
 
 
 def apply_compton_getting_correction(
-    pset: T,
+    pset: LoHiBasePsetSubclass,
     energy_hf: xr.DataArray,
-) -> T:
+) -> LoHiBasePsetSubclass:
     """
     Apply Compton-Getting correction to a pointing set and update coordinates.
 
