@@ -895,10 +895,9 @@ class AbstractSkyMap(ABC):
                 # Bin the values at the matched indices. There may be multiple
                 # pointing set pixels that correspond to the same sky map pixel.
                 # Broadcast all arrays together using xarray dimension alignment
-                (
-                    data_bc,
-                    indices_bc,
-                ) = xr.broadcast(raveled_pset_data, matched_indices_push)
+                data_bc, indices_bc = xr.broadcast(
+                    raveled_pset_data, matched_indices_push
+                )
                 # If the valid mask is a xr.DataArray, broadcast it to the same shape
                 if isinstance(pset_valid_mask, xr.DataArray):
                     stacked_valid_mask = pset_valid_mask.stack(
