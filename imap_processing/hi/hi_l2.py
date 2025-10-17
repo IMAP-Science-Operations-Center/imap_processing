@@ -458,9 +458,9 @@ def esa_energy_df(
     ----------
     esa_energies_path : str or pathlib.Path
         Location of the calibration csv file containing the lookup data.
-    esa_energy_steps : numpy.ndarray or slice, optional
-        The ESA energy steps to get energies for. If not provided, the full
-        dataframe is returned.
+    esa_energy_steps : numpy.ndarray, slice, or None
+        The ESA energy steps to get energies for. If not provided (default is None),
+        the full dataframe is returned.
 
     Returns
     -------
