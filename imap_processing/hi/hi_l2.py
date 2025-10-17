@@ -20,8 +20,16 @@ from imap_processing.hi.utils import CalibrationProductConfig
 
 logger = logging.getLogger(__name__)
 
+SC_FRAME_VARS_TO_PROJECT = {
+    "counts",
+    "exposure_factor",
+    "bg_rates",
+    "bg_rates_unc",
+    "obs_date",
+}
+HELIO_FRAME_VARS_TO_PROJECT = SC_FRAME_VARS_TO_PROJECT | {"energy_sc"}
 # TODO: is an exposure time weighted average for obs_date appropriate?
-VARS_TO_EXPOSURE_TIME_AVERAGE = ["bg_rates", "bg_rates_unc", "obs_date", "energy_sc"]
+FULL_EXPOSURE_TIME_AVERAGE_SET = {"bg_rates", "bg_rates_unc", "obs_date", "energy_sc"}
 
 
 def hi_l2(
@@ -101,10 +109,12 @@ def generate_hi_map(
         The sky map with all the PSET data projected into the map.
     """
     output_map = descriptor.to_empty_map()
-    vars_to_bin = ["counts", "exposure_factor", "bg_rates", "bg_rates_unc", "obs_date"]
-
-    if descriptor.frame_descriptor == "hf":
-        vars_to_bin.append("energy_sc")
+    vars_to_bin = (
+        HELIO_FRAME_VARS_TO_PROJECT
+        if descriptor.frame_descriptor == "hf"
+        else SC_FRAME_VARS_TO_PROJECT
+    )
+    vars_to_exposure_time_average = FULL_EXPOSURE_TIME_AVERAGE_SET & vars_to_bin
 
     if not isinstance(output_map, RectangularSkyMap):
         raise NotImplementedError("Healpix map output not supported for Hi")
@@ -117,6 +127,7 @@ def generate_hi_map(
 
         # Store the first PSET esa_energy_step values and make sure every PSET
         # contains the same set of esa_energy_step values.
+        # TODO: Correctly handle PSETs with different esa_energy_step values.
         if cached_esa_steps is None:
             cached_esa_steps = pset.data["esa_energy_step"].values.copy()
             esa_ds = esa_energy_df(
@@ -136,9 +147,8 @@ def generate_hi_map(
 
         # Multiply variables that need to be exposure time weighted average by
         # exposure factor.
-        for var in VARS_TO_EXPOSURE_TIME_AVERAGE:
+        for var in vars_to_exposure_time_average:
             if var in pset.data:
-                print(var)
                 pset.data[var] *= pset.data["exposure_factor"]
 
         # Set the mask used to filter ram/anti-ram pixels
@@ -150,15 +160,14 @@ def generate_hi_map(
 
         # Project (bin) the PSET variables into the map pixels
         output_map.project_pset_values_to_map(
-            pset, vars_to_bin, pset_valid_mask=pset_valid_mask
+            pset, list(vars_to_bin), pset_valid_mask=pset_valid_mask
         )
 
     # Finish the exposure time weighted mean calculation of backgrounds
     # Allow divide by zero to fill set pixels with zero exposure time to NaN
     with np.errstate(divide="ignore"):
-        for var in VARS_TO_EXPOSURE_TIME_AVERAGE:
-            if var in output_map.data_1d:
-                output_map.data_1d[var] /= output_map.data_1d["exposure_factor"]
+        for var in vars_to_exposure_time_average:
+            output_map.data_1d[var] /= output_map.data_1d["exposure_factor"]
 
     output_map.data_1d.update(calculate_ena_signal_rates(output_map.data_1d))
     output_map.data_1d = calculate_ena_intensity(
@@ -440,7 +449,7 @@ def _calculate_improved_stat_variance(
 
 
 def esa_energy_df(
-    esa_energies_path: str | Path, esa_energy_steps: np.ndarray | None = None
+    esa_energies_path: str | Path, esa_energy_steps: np.ndarray | slice | None = None
 ) -> pd.DataFrame:
     """
     Lookup the nominal central energy values for given esa energy steps.
@@ -449,7 +458,7 @@ def esa_energy_df(
     ----------
     esa_energies_path : str or pathlib.Path
         Location of the calibration csv file containing the lookup data.
-    esa_energy_steps : numpy.ndarray, optional
+    esa_energy_steps : numpy.ndarray or slice, optional
         The ESA energy steps to get energies for. If not provided, the full
         dataframe is returned.
 
@@ -459,9 +468,9 @@ def esa_energy_df(
         Full data frame from the csv file filtered to only include the
         esa_energy_steps input.
     """
+    if esa_energy_steps is None:
+        esa_energy_steps = slice(None)
     esa_energies_lut = pd.read_csv(
         esa_energies_path, comment="#", index_col="esa_energy_step"
     )
-    if esa_energy_steps is None:
-        return esa_energies_lut
     return esa_energies_lut.loc[esa_energy_steps]

@@ -640,7 +640,7 @@ class TestRectangularSkyMap:
         )
 
         # An error should be raised if a key is not found in the PSET
-        with pytest.raises(ValueError, match="Value key invalid not found"):
+        with pytest.raises(KeyError, match="Value keys not found in pointing set:"):
             rectangular_map.project_pset_values_to_map(
                 self.ultra_psets[0],
                 value_keys=["invalid"],

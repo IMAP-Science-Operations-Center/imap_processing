@@ -801,7 +801,7 @@ class AbstractSkyMap(ABC):
         """
         return self.az_el_points.shape[0]
 
-    def project_pset_values_to_map(
+    def project_pset_values_to_map(  # noqa: PLR0912
         self,
         pointing_set: PointingSet,
         value_keys: list[str] | None = None,
@@ -840,6 +840,9 @@ class AbstractSkyMap(ABC):
         """
         if value_keys is None:
             value_keys = list(pointing_set.data.data_vars.keys())
+
+        if missing_keys := set(value_keys) - set(pointing_set.data.data_vars):
+            raise KeyError(f"Value keys not found in pointing set: {missing_keys}")
 
         if pset_valid_mask is None:
             pset_valid_mask = np.ones(pointing_set.num_points, dtype=bool)
