@@ -708,7 +708,7 @@ def process_packet(
             {
                 "apid": 478,
                 "met": int(met_all[i]),
-                "met_in_utc": met_to_utc(met_all[i]).split(".")[0],
+                "met_in_utc": met_to_utc(met_all[i]),
                 "ttj2000ns": int(met_to_ttj2000ns(met_all[i])),
                 "instrument": "mag",
                 "mag_epoch": int(mago_times_all[i]),
