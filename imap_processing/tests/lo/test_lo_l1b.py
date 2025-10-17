@@ -9,6 +9,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.lo.l1b.lo_l1b import (
+    calculate_histogram_rates,
     calculate_tof1_for_golden_triples,
     convert_start_end_acq_times,
     convert_tofs_to_eu,
@@ -19,6 +20,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     identify_species,
     initialize_l1b_de,
     lo_l1b,
+    resweep_histogram_data,
     set_avg_spin_durations_per_event,
     set_bad_or_goodtimes,
     set_bad_times,
@@ -32,7 +34,12 @@ from imap_processing.lo.l1b.lo_l1b import (
 )
 from imap_processing.lo.lo_ancillary import read_ancillary_file
 from imap_processing.spice.spin import get_spin_data
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import (
+    et_to_met,
+    et_to_ttj2000ns,
+    met_to_ttj2000ns,
+    str_to_et,
+)
 
 
 @pytest.fixture
@@ -60,6 +67,9 @@ def anc_dependencies():
             imap_module_directory
             / "tests/lo/test_anc/imap_lo_bad-times-small_20250101_20270101_v001.csv",
         ),
+        str(
+            imap_module_directory / "tests/lo/test_anc/imap_lo_esa-mode-lut_v001.csv",
+        ),
     ]
 
 
@@ -77,6 +87,26 @@ def attr_mgr_l1a():
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
     return attr_mgr
+
+
+@pytest.fixture
+def l1b_histrates():
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
+    )
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+            "o_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "azimuth_6": np.arange(60),
+            "esa_step": np.arange(1, 8),
+        },
+    )
+
+    return l1b_histrates
 
 
 @patch(
@@ -703,3 +733,182 @@ def test_badtimes_with_spin(spice_test_data_path, use_test_spin_data_csv):
         badtimes_ds["BadTime_start"], thruster_df["spin_start_sec_sclk"]
     )
     np.testing.assert_array_equal(badtimes_ds["badtime_flag"], 1)
+
+
+def test_resweep_histogram_success(anc_dependencies):
+    # Arrange
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
+    )
+    l1b_de = xr.Dataset(
+        {
+            "h_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+            "o_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "azimuth_6": np.arange(60),
+            "esa_step": np.arange(1, 8),
+        },
+    )
+
+    l1b_de.h_counts[0, 0, 0] = 5
+    l1b_de.h_counts[0, 0, 1] = 10
+    l1b_de.h_counts[0, 0, 2] = 2
+
+    l1b_de.o_counts[1, 0, 0] = 2
+    l1b_de.o_counts[1, 0, 1] = 3
+    l1b_de.o_counts[1, 0, 2] = 4
+
+    l1b_histrates = resweep_histogram_data(l1b_de, anc_dependencies)
+
+    assert l1b_histrates.h_counts[0, 0, 0] == 15
+    assert l1b_histrates.h_counts[0, 0, 1] == 0
+    assert l1b_histrates.h_counts[0, 0, 2] == 2
+
+    assert l1b_histrates.o_counts[1, 0, 0] == 5
+    assert l1b_histrates.o_counts[1, 0, 1] == 0
+    assert l1b_histrates.o_counts[1, 0, 2] == 4
+
+
+def test_resweep_histogram_no_date(anc_dependencies):
+    # Arrange
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-25T02:00:00", "2025-04-25T03:00:00"])
+    )
+    l1b_de = xr.Dataset(
+        {
+            "h_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+            "o_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "azimuth_6": np.arange(60),
+            "esa_step": np.arange(1, 8),
+        },
+    )
+
+    l1b_de.h_counts[0, 0, 0] = 5
+    l1b_de.h_counts[0, 0, 1] = 10
+    l1b_de.h_counts[0, 0, 2] = 2
+
+    with pytest.raises(
+        ValueError,
+        match="No sweep table entry found for date "
+        "2025-04-25T02:00:00.000 at epoch idx 0",
+    ):
+        resweep_histogram_data(l1b_de, anc_dependencies)
+
+
+def test_resweep_histogram_multiple_lut(anc_dependencies):
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-16T02:00:00", "2025-04-16T03:00:00"])
+    )
+    l1b_de = xr.Dataset(
+        {
+            "h_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+            "o_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "azimuth_6": np.arange(60),
+            "esa_step": np.arange(1, 8),
+        },
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=f"Expected exactly 1 unique LUT_table "
+        f"value for date 2025-04-16, but found 2:{[1, 2]}",
+    ):
+        resweep_histogram_data(l1b_de, anc_dependencies)
+
+
+def test_calculate_histogram_rates(l1b_histrates):
+    acq_start = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-15T01:55:00")),
+            et_to_met(str_to_et("2025-04-15T02:55:00")),
+        ]
+    )
+    acq_end = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-15T02:02:00")),
+            et_to_met(str_to_et("2025-04-15T03:02:00")),
+        ]
+    )
+    avg_spin_durations_per_cycle = xr.DataArray([30, 15])
+
+    l1b_histrates.h_counts[0, 0, 0] = 30
+    l1b_histrates.h_counts[0, 0, 1] = 10
+    l1b_histrates.h_counts[0, 0, 2] = 2
+    l1b_histrates.h_counts[1, 0, 0] = 15
+    l1b_histrates.h_counts[1, 0, 1] = 30
+    l1b_histrates.h_counts[1, 0, 2] = 45
+
+    l1b_histrates.o_counts[0, 0, 0] = 100
+    l1b_histrates.o_counts[0, 0, 1] = 50
+    l1b_histrates.o_counts[0, 0, 2] = 25
+    l1b_histrates.o_counts[1, 0, 0] = 2
+    l1b_histrates.o_counts[1, 0, 1] = 3
+    l1b_histrates.o_counts[1, 0, 2] = 4
+
+    l1b_histrate = calculate_histogram_rates(
+        l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle
+    )
+    np.testing.assert_array_equal(
+        l1b_histrate["h_rates"][0, :, :], l1b_histrates["h_counts"][0, :, :] / 2
+    )
+    np.testing.assert_array_equal(
+        l1b_histrate["h_rates"][1, :, :], l1b_histrates["h_counts"][1, :, :]
+    )
+    np.testing.assert_array_equal(
+        l1b_histrate["o_rates"][0, :, :], l1b_histrates["o_counts"][0, :, :] / 2
+    )
+    np.testing.assert_array_equal(
+        l1b_histrate["o_rates"][1, :, :], l1b_histrates["o_counts"][1, :, :]
+    )
+
+
+def test_calculate_histogram_rates_no_interval_found(l1b_histrates):
+    acq_start = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-30T01:55:00")),
+            et_to_met(str_to_et("2025-04-30T02:55:00")),
+        ]
+    )
+    acq_end = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-30T02:02:00")),
+            et_to_met(str_to_et("2025-04-30T03:02:00")),
+        ]
+    )
+    avg_spin_durations_per_cycle = xr.DataArray([30, 15])
+
+    l1b_histrate = calculate_histogram_rates(
+        l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle
+    )
+
+    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.full((2, 60, 7), np.nan))
+    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.full((2, 60, 7), np.nan))
+
+
+def test_calculate_histogram_rates_zero_exposure_time(l1b_histrates):
+    acq_start = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-15T01:55:00")),
+            et_to_met(str_to_et("2025-04-15T02:55:00")),
+        ]
+    )
+    acq_end = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-15T02:02:00")),
+            et_to_met(str_to_et("2025-04-15T03:02:00")),
+        ]
+    )
+    avg_spin_durations_per_cycle = xr.DataArray([0, 15])
+
+    with pytest.raises(ValueError, match="Zero exposure time at epoch 0"):
+        calculate_histogram_rates(
+            l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle
+        )
