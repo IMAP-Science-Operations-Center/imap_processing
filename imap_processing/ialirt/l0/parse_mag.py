@@ -720,6 +720,15 @@ def process_packet(
                 "mag_theta_B_GSM": Decimal(str(theta_gsm[i])),
                 "mag_phi_B_GSE": Decimal(str(phi_gse[i])),
                 "mag_theta_B_GSE": Decimal(str(theta_gse[i])),
+            }
+        )
+        mag_data.append(
+            {
+                "apid": 478,
+                "met": int(met_all[i]),
+                "met_in_utc": met_to_utc(met_all[i]),
+                "ttj2000ns": int(met_to_ttj2000ns(met_all[i])),
+                "instrument": "mag_hk",
                 "mag_hk_status": {
                     "hk1v5_warn": bool(status_data["hk1v5_warn"]),
                     "hk1v5_danger": bool(status_data["hk1v5_danger"]),
