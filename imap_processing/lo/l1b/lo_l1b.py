@@ -140,6 +140,12 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
             acq_start, acq_end
         )
+        l1b_histrates = calculate_histogram_rates(
+            l1b_histrates,
+            acq_start,
+            acq_end,
+            avg_spin_durations_per_cycle,
+        )
         datasets_to_return.append(l1b_histrates)
 
     return datasets_to_return

@@ -146,7 +146,7 @@ def test_lo_l1b(
         dataset = load_cdf(file)
         data[dataset.attrs["Logical_source"]] = dataset
 
-    expected_logical_source = "imap_lo_l1b_de"
+    expected_logical_source_de = "imap_lo_l1b_de"
 
     # Act
     output_files = lo_l1b(data, anc_dependencies)
