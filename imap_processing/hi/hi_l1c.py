@@ -651,8 +651,10 @@ def get_de_clock_ticks_for_esa_step(
     # ESA step group so this match is the end time. The start time is
     # 8-spins earlier.
     spin_start_mets = spin_df.spin_start_met.to_numpy()
-    # CCSDS MET has one second resolution, add one to it to make sure it is
-    # greater than the spin start time it ended on.
+    # CCSDS MET has one second resolution, add two to it to make sure it is
+    # greater than the spin start time it ended on. Theotretically, adding
+    # one second should be sufficeint, but in practice, with flight data, adding
+    # two seconds was found to be necessary.
     end_time_ind = np.flatnonzero(ccsds_met + 2 >= spin_start_mets).max()
 
     # If the minimum absolute difference is greater than 1/2 the spin-phase
