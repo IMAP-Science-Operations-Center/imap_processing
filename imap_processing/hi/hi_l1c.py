@@ -168,7 +168,7 @@ def empty_pset_dataset(
     # Exclude 0 and FILLVAL
     esa_energy_steps = np.array(
         sorted(
-            set(l1b_energy_steps.values) - {0} - {l1b_energy_steps.attrs["FILLVAL"]}
+            set(l1b_energy_steps.values) - {0, l1b_energy_steps.attrs["FILLVAL"]}
         ),
         dtype=dtype,
     )
