@@ -578,6 +578,13 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     # Get the indices of the packet before each ESA change.
     esa_step = epoch_dataset["esa_step"].values
     esa_energy_step = epoch_dataset["esa_energy_step"].values
+    # A change in esa_step should indicate the location of the second packet in
+    # each pair of DE packets at an esa_energy_step. In practice, during some
+    # calibration activities, it was observed that the esa_energy_step can change
+    # when the esa_step did not. So, we look for either to change and use the
+    # indices of those changes to identify the second packet in each pair. We
+    # also need to add the last packet index and assume an energy step change
+    # occurs after the last packet.
     second_esa_packet_idx = np.append(
         np.flatnonzero((np.diff(esa_step) != 0) | (np.diff(esa_energy_step) != 0)),
         len(esa_step) - 1,
