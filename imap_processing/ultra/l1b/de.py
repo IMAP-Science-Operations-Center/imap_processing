@@ -156,6 +156,14 @@ def calculate_de(
         dtype=np.uint16,
     )
 
+    xf[valid_indices] = get_front_x_position(
+        de_dataset["start_type"].data[valid_indices],
+        de_dataset["start_pos_tdc"].data[valid_indices],
+        f"ultra{sensor}",
+        ancillary_files,
+    )
+    start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
+
     (
         event_times[valid_indices],
         spin_starts[valid_indices],
@@ -164,14 +172,6 @@ def calculate_de(
         de_dict["spin"][valid_indices],
         de_dataset["phase_angle"].data[valid_indices],
     )
-
-    xf[valid_indices] = get_front_x_position(
-        de_dataset["start_type"].data[valid_indices],
-        de_dataset["start_pos_tdc"].data[valid_indices],
-        f"ultra{sensor}",
-        ancillary_files,
-    )
-    start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
 
     # Pulse height
     ph_result = get_ph_tof_and_back_positions(
