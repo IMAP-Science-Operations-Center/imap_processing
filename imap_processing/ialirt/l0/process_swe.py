@@ -551,7 +551,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             {
                 "apid": 478,
                 "met": met_first_half,
-                "met_in_utc": met_to_utc(met_first_half),
+                "met_in_utc": met_to_utc(met_first_half).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met_first_half)),
                 "instrument": "swe",
                 "swe_normalized_counts": [int(val) for val in summed_first],
@@ -562,7 +562,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             {
                 "apid": 478,
                 "met": met_second_half,
-                "met_in_utc": met_to_utc(met_second_half),
+                "met_in_utc": met_to_utc(met_second_half).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met_second_half)),
                 "instrument": "swe",
                 "swe_normalized_counts": [int(val) for val in summed_second],

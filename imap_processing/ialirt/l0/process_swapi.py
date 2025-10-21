@@ -224,7 +224,7 @@ def process_swapi_ialirt(
             {
                 "apid": 478,
                 "met": int(met_values[entry]),
-                "met_in_utc": met_to_utc(met_values[entry]),
+                "met_in_utc": met_to_utc(met_values[entry]).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met_values[entry])),
                 "instrument": "swapi",
                 "swapi_pseudo_proton_speed": Decimal(solution["pseudo_speed"][entry]),
