@@ -4,7 +4,6 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.ialirt.utils.cdf_exclusions import CDF_EXCLUSIONS
 from imap_processing.ialirt.utils.constants import IALIRT_KEYS
 
 
@@ -145,7 +144,19 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     # Populate the dataset variables
     for i, record in enumerate(records):
         for key, val in record.items():
-            if key in CDF_EXCLUSIONS:
+            if key in [
+                "apid",
+                "met",
+                "met_in_utc",
+                "ttj2000ns",
+                "last_modified",
+                "sc_position_GSM",
+                "sc_position_GSE",
+                "sc_velocity_GSM",
+                "sc_velocity_GSE",
+                "mag_hk_status",
+                "instrument",
+            ]:
                 continue
             elif key in ["mag_B_GSE", "mag_B_GSM", "mag_B_RTN"]:
                 dataset[key].data[i, :] = val
