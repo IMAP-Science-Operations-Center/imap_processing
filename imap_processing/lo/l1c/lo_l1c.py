@@ -302,7 +302,7 @@ def create_pset_counts(
     # Create the histogram with 3600 longitude bins, 40 latitude bins, and 7 energy bins
     lon_edges = np.arange(3601)
     lat_edges = np.arange(41)
-    energy_edges = np.arange(8)
+    energy_edges = np.arange(1, 9)
 
     hist, _edges = np.histogramdd(
         data,
