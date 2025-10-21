@@ -120,7 +120,7 @@ def calculate_azimuth_and_elevation(
             elplsz=True,  # Elevation increases from the XY plane toward +Z
             obspos=ground_station_position_ecef,  # observer pos. to center of motion
             obsctr="EARTH",  # Name of the center of motion
-            obsref="IAU_EARTH",  # Body-fixed, body-centered reference frame wrt
+            obsref="ITRF93",  # Body-fixed, body-centered reference frame wrt
             # observer's center
         )
         azimuth.append(np.rad2deg(azel_results[0][1]))
