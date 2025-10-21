@@ -102,7 +102,7 @@ def generate_pset_dataset(
 
     pset_dataset = empty_pset_dataset(
         de_dataset.epoch.data[0],
-        de_dataset.esa_energy_step.data,
+        de_dataset.esa_energy_step,
         config_df.cal_prod_config.number_of_products,
         logical_source_parts["sensor"],
     )
@@ -121,7 +121,7 @@ def generate_pset_dataset(
 
 
 def empty_pset_dataset(
-    epoch_val: int, l1b_energy_steps: np.ndarray, n_cal_prods: int, sensor_str: str
+    epoch_val: int, l1b_energy_steps: xr.DataArray, n_cal_prods: int, sensor_str: str
 ) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
@@ -130,7 +130,7 @@ def empty_pset_dataset(
     ----------
     epoch_val : int
         The starting epoch in J2000 TT nanoseconds for data in the PSET.
-    l1b_energy_steps : np.ndarray
+    l1b_energy_steps : xarray.DataArray
         The array of esa_energy_step data from the L1B DE product.
     n_cal_prods : int
         Number of calibration products to allocate.
@@ -164,8 +164,12 @@ def empty_pset_dataset(
         "hi_pset_esa_energy_step", check_schema=False
     ).copy()
     dtype = attrs.pop("dtype")
-    # Find the unique, non-zero esa_energy_steps from the L1B data
-    esa_energy_steps = np.array(sorted(set(l1b_energy_steps) - {0}), dtype=dtype)
+    # Find the unique esa_energy_steps from the L1B data
+    # Exclude 0 and FILLVAL
+    esa_energy_steps = np.array(
+        sorted(set(l1b_energy_steps.values) - {0, l1b_energy_steps.attrs["FILLVAL"]}),
+        dtype=dtype,
+    )
     coords["esa_energy_step"] = xr.DataArray(
         esa_energy_steps,
         name="esa_energy_step",
@@ -571,11 +575,26 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     # We should get two CCSDS packets per 8-spin ESA step.
     # Get the indices of the packet before each ESA change.
     esa_step = epoch_dataset["esa_step"].values
+    esa_energy_step = epoch_dataset["esa_energy_step"].values
+    # A change in esa_step should indicate the location of the second packet in
+    # each pair of DE packets at an esa_energy_step. In practice, during some
+    # calibration activities, it was observed that the esa_energy_step can change
+    # when the esa_step did not. So, we look for either to change and use the
+    # indices of those changes to identify the second packet in each pair. We
+    # also need to add the last packet index and assume an energy step change
+    # occurs after the last packet.
     second_esa_packet_idx = np.append(
-        np.flatnonzero(np.diff(esa_step) != 0), len(esa_step) - 1
+        np.flatnonzero((np.diff(esa_step) != 0) | (np.diff(esa_energy_step) != 0)),
+        len(esa_step) - 1,
     )
-    # Remove esa steps at 0 - these are calibrations
-    second_esa_packet_idx = second_esa_packet_idx[esa_step[second_esa_packet_idx] != 0]
+    # Remove esa energy steps at 0 - these are calibrations
+    keep_mask = esa_energy_step[second_esa_packet_idx] != 0
+    # Remove esa energy steps at FILLVAL - these are unidentified
+    keep_mask &= (
+        esa_energy_step[second_esa_packet_idx]
+        != l1b_dataset["esa_energy_step"].attrs["FILLVAL"]
+    )
+    second_esa_packet_idx = second_esa_packet_idx[keep_mask]
     # Remove indices where we don't have two consecutive packets at the same ESA
     if second_esa_packet_idx[0] == 0:
         logger.warning(
@@ -584,7 +603,8 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
         )
         second_esa_packet_idx = second_esa_packet_idx[1:]
     missing_esa_pair_mask = (
-        esa_step[second_esa_packet_idx - 1] != esa_step[second_esa_packet_idx]
+        esa_energy_step[second_esa_packet_idx - 1]
+        != esa_energy_step[second_esa_packet_idx]
     )
     if missing_esa_pair_mask.any():
         logger.warning(
@@ -629,9 +649,11 @@ def get_de_clock_ticks_for_esa_step(
     # ESA step group so this match is the end time. The start time is
     # 8-spins earlier.
     spin_start_mets = spin_df.spin_start_met.to_numpy()
-    # CCSDS MET has one second resolution, add one to it to make sure it is
-    # greater than the spin start time it ended on.
-    end_time_ind = np.flatnonzero(ccsds_met + 1 >= spin_start_mets).max()
+    # CCSDS MET has one second resolution, add two to it to make sure it is
+    # greater than the spin start time it ended on. Theotretically, adding
+    # one second should be sufficeint, but in practice, with flight data, adding
+    # two seconds was found to be necessary.
+    end_time_ind = np.flatnonzero(ccsds_met + 2 >= spin_start_mets).max()
 
     # If the minimum absolute difference is greater than 1/2 the spin-phase
     # we have a problem.

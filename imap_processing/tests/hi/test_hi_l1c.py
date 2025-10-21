@@ -62,7 +62,10 @@ def test_generate_pset_dataset(
 def test_empty_pset_dataset():
     """Test coverage for empty_pset_dataset function"""
     n_energy_steps = 8
-    l1b_esa_energy_steps = np.arange(n_energy_steps + 1).repeat(2)
+    l1b_esa_energy_steps = xr.DataArray(
+        data=np.concat((np.arange(n_energy_steps + 1).repeat(2), np.array([255, 255]))),
+        attrs={"FILLVAL": 255},
+    )
     n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
     dataset = hi_l1c.empty_pset_dataset(
@@ -133,7 +136,7 @@ def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
     )
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
-        l1b_dataset.esa_energy_step.data,
+        l1b_dataset.esa_energy_step,
         cal_config_df.cal_prod_config.number_of_products,
         HIAPID.H90_SCI_DE.sensor,
     )
@@ -154,7 +157,7 @@ def test_pset_counts_empty_l1b(hi_l1_test_data_path, hi_test_cal_prod_config_pat
     )
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
-        l1b_dataset.esa_energy_step.data,
+        l1b_dataset.esa_energy_step,
         cal_config_df.cal_prod_config.number_of_products,
         HIAPID.H90_SCI_DE.sensor,
     )
@@ -262,8 +265,12 @@ def test_pset_exposure(
     mock_spin_data,
 ):
     """Test coverage for pset_exposure function"""
+    l1b_energy_steps = xr.DataArray(
+        np.arange(2) + 1,
+        attrs={"FILLVAL": 255},
+    )
     empty_pset = hi_l1c.empty_pset_dataset(
-        100, np.arange(2) + 1, 2, HIAPID.H90_SCI_DE.sensor
+        100, l1b_energy_steps, 2, HIAPID.H90_SCI_DE.sensor
     )
     # Set the mock of find_second_de_packet_data to return a xr.Dataset
     # with some dummy data. ESA 1 will get binned data once, ESA 2 will get
@@ -316,10 +323,18 @@ def test_pset_exposure(
 def test_find_second_de_packet_data():
     """Test coverage for find_second_de_packet_data function"""
     # Create a test l1b_dataset
-    # Expect to remove index 0 and 5 due to missing esa_step pair
-    # Expect to remove index 11 due to 0 being a calibration step
-    # Expect to return indices 2, 4, 7, 9, 13
-    esa_steps = np.array([1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 0, 0, 7, 7])
+    # Indices represent CCSDS packets at various ESA steps
+    # Index:      0  1  2  3  4  5  6  7  8  9 10 11 12 13
+    # esa_step:   1  2  2  2  2  4  5  5  6  6  0  0  7  7
+    # esa_energy: 1  2  2  3  3  4  5  5  6  6  0  0  7  7
+    #
+    # Expected second packet indices from diff logic: [0, 2, 4, 5, 7, 9, 11, 13]
+    # Remove index 0: missing pair (first packet in series)
+    # Remove index 5: esa_energy_step 4 doesn't match previous packet's 3
+    # Remove index 11: esa_energy_step is 0 (calibration)
+    # Expected final indices: [2, 4, 7, 9, 13]
+    esa_steps = np.array([1, 2, 2, 2, 2, 4, 5, 5, 6, 6, 0, 0, 7, 7])
+    esa_energy_steps = np.array([1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 0, 0, 7, 7])
     l1b_dataset = xr.Dataset(
         coords={
             "epoch": xr.DataArray(
@@ -335,6 +350,11 @@ def test_find_second_de_packet_data():
             "esa_step": xr.DataArray(
                 esa_steps,
                 dims=["epoch"],
+            ),
+            "esa_energy_step": xr.DataArray(
+                esa_energy_steps,
+                dims=["epoch"],
+                attrs={"FILLVAL": 255},
             ),
             "coincidence_type": xr.DataArray(
                 np.ones(10),
