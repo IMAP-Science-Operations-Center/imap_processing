@@ -72,6 +72,7 @@ def calculate_azimuth_and_elevation(
     altitude: float,
     observation_time: float | np.ndarray,
     target: str = SpiceBody.IMAP.name,
+    obsref: str = "ITRF93",
 ) -> tuple:
     """
     Calculate azimuth and elevation.
@@ -91,6 +92,9 @@ def calculate_azimuth_and_elevation(
         is to be computed. Expressed as ephemeris time, seconds past J2000 TDB.
     target : str (Optional)
         The target body. Default is "IMAP".
+    obsref : str (Optional)
+        Body-fixed, body-centered reference frame wrt
+        observer's center.
 
     Returns
     -------
@@ -120,7 +124,7 @@ def calculate_azimuth_and_elevation(
             elplsz=True,  # Elevation increases from the XY plane toward +Z
             obspos=ground_station_position_ecef,  # observer pos. to center of motion
             obsctr="EARTH",  # Name of the center of motion
-            obsref="IAU_EARTH",  # Body-fixed, body-centered reference frame wrt
+            obsref=obsref,  # Body-fixed, body-centered reference frame wrt
             # observer's center
         )
         azimuth.append(np.rad2deg(azel_results[0][1]))
@@ -223,7 +227,7 @@ def build_output(
 
     # For now, assume that kernel management will be handled by ensure_spice
     azimuth, elevation = calculate_azimuth_and_elevation(
-        longitude, latitude, altitude, time_range
+        longitude, latitude, altitude, time_range, obsref="ITRF93"
     )
 
     output_dict["time"] = et_to_utc(time_range, format_str="ISOC")
