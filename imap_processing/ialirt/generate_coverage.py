@@ -77,7 +77,9 @@ def generate_coverage(
                 dsn_outage_mask |= (time_range >= start_et) & (time_range <= end_et)
 
     for station_name, (lon, lat, alt, min_elevation) in stations.items():
-        _azimuth, elevation = calculate_azimuth_and_elevation(lon, lat, alt, time_range)
+        _azimuth, elevation = calculate_azimuth_and_elevation(
+            lon, lat, alt, time_range, obsref="IAU_EARTH"
+        )
         visible = elevation > min_elevation
 
         outage_mask = np.zeros(time_range.shape, dtype=bool)

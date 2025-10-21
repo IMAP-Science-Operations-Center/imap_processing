@@ -80,17 +80,18 @@ def test_calculate_azimuth_and_elevation(furnish_kernels):
         "pck00011.tpc",
         "de440s.bsp",
         "imap_spk_demo.bsp",
+        "earth_latest_high_prec.bpc",
     ]
     with furnish_kernels(kernels):
         azimuth_result, elevation_result = (
             process_ephemeris.calculate_azimuth_and_elevation(
-                longitude, latitude, altitude, observation_time
+                longitude, latitude, altitude, observation_time, obsref="ITRF93"
             )
         )
         assert azimuth_result, elevation_result is not None
 
         # test array of observation times
-        time_endpoints = ("2026 SEP 22 00:00:00", "2026 SEP 22 23:59:59")
+        time_endpoints = ("2025 JUL 14 00:00:00", "2025 JUL 14 23:59:59")
         time_interval = int(1e3)  # seconds between data points
         observation_time = np.arange(
             str_to_et(time_endpoints[0]), str_to_et(time_endpoints[1]), time_interval
@@ -98,7 +99,7 @@ def test_calculate_azimuth_and_elevation(furnish_kernels):
     with furnish_kernels(kernels):
         azimuth_result, elevation_result = (
             process_ephemeris.calculate_azimuth_and_elevation(
-                longitude, latitude, altitude, observation_time
+                longitude, latitude, altitude, observation_time, obsref="ITRF93"
             )
         )
     assert len(azimuth_result) == len(observation_time)

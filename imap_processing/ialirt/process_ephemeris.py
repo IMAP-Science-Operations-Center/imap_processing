@@ -72,7 +72,7 @@ def calculate_azimuth_and_elevation(
     altitude: float,
     observation_time: float | np.ndarray,
     target: str = SpiceBody.IMAP.name,
-    obsref: str = "IAU_EARTH",
+    obsref: str = "ITRF93",
 ) -> tuple:
     """
     Calculate azimuth and elevation.
