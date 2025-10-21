@@ -124,35 +124,36 @@ def counts():
     return np.zeros(PSET_SHAPE)
 
 
+# ESA Indices are ESA step - 1
 @pytest.fixture
 def h_counts(counts):
     h = counts.copy()
-    h[0, 1, 20, 20] = 2
-    h[0, 4, 2000, 20] = 1
+    h[0, 0, 20, 20] = 2
+    h[0, 3, 2000, 20] = 1
     return h
 
 
 @pytest.fixture
 def o_counts(counts):
     o = counts.copy()
-    o[0, 5, 3500, 20] = 1
-    o[0, 2, 0, 20] = 1
+    o[0, 4, 3500, 20] = 1
+    o[0, 1, 0, 20] = 1
     return o
 
 
 @pytest.fixture
 def triples_counts(counts):
     triples = counts.copy()
-    triples[0, 1, 20, 20] = 2
-    triples[0, 2, 0, 20] = 1
+    triples[0, 0, 20, 20] = 2
+    triples[0, 1, 0, 20] = 1
     return triples
 
 
 @pytest.fixture
 def doubles_counts(counts):
     doubles = counts.copy()
-    doubles[0, 4, 2000, 20] = 1
-    doubles[0, 5, 3500, 20] = 1
+    doubles[0, 3, 2000, 20] = 1
+    doubles[0, 4, 3500, 20] = 1
     return doubles
 
 
@@ -256,10 +257,11 @@ def test_filter_goodtimes(l1b_de, anc_dependencies):
 def test_create_pset_counts(l1b_de):
     # Arrange
     expected_counts = np.zeros((1, 7, 3600, 40))
-    expected_counts[0, 1, 20, 20] = 2
-    expected_counts[0, 4, 2000, 20] = 1
-    expected_counts[0, 5, 3500, 20] = 1
-    expected_counts[0, 2, 0, 20] = 1
+    # ESA Indices are ESA step - 1
+    expected_counts[0, 0, 20, 20] = 2
+    expected_counts[0, 3, 2000, 20] = 1
+    expected_counts[0, 4, 3500, 20] = 1
+    expected_counts[0, 1, 0, 20] = 1
 
     # Act
     counts = create_pset_counts(l1b_de)
