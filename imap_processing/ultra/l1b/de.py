@@ -9,6 +9,8 @@ from imap_processing.quality_flags import (
     ImapDEScatteringUltraFlags,
 )
 from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.repoint import get_repoint_data
+from imap_processing.spice.time import et_to_met
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
@@ -74,6 +76,10 @@ def calculate_de(
     spin_number = get_spin_number(
         de_dataset["shcoarse"].values, de_dataset["spin"].values
     )
+    repoint_id = de_dataset.attrs.get("Repointing", None)
+    if repoint_id is not None:
+        repoint_id = int(repoint_id.replace("repoint", ""))
+
     de_dict["spin"] = spin_number
 
     # Add already populated fields.
@@ -150,14 +156,6 @@ def calculate_de(
         dtype=np.uint16,
     )
 
-    xf[valid_indices] = get_front_x_position(
-        de_dataset["start_type"].data[valid_indices],
-        de_dataset["start_pos_tdc"].data[valid_indices],
-        f"ultra{sensor}",
-        ancillary_files,
-    )
-    start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
-
     (
         event_times[valid_indices],
         spin_starts[valid_indices],
@@ -166,6 +164,14 @@ def calculate_de(
         de_dict["spin"][valid_indices],
         de_dataset["phase_angle"].data[valid_indices],
     )
+
+    xf[valid_indices] = get_front_x_position(
+        de_dataset["start_type"].data[valid_indices],
+        de_dataset["start_pos_tdc"].data[valid_indices],
+        f"ultra{sensor}",
+        ancillary_files,
+    )
+    start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
 
     # Pulse height
     ph_result = get_ph_tof_and_back_positions(
@@ -312,6 +318,24 @@ def calculate_de(
 
     # Account for counts=0 (event times have FILL value)
     valid_events = event_times != FILLVAL_FLOAT32
+    # TODO - find a better solution than filtering out repointings?
+    if repoint_id is not None:
+        repoint_data = get_repoint_data()
+        repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id]
+        next_repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id + 1]
+        pointing_start_met = repoint_row["repoint_end_met"].values[0]
+        pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
+
+        in_pointing = np.zeros(len(event_times), dtype=bool)
+
+        # Check which events are within the pointing
+        in_pointing[valid_events] = (
+            et_to_met(event_times[valid_events]) >= pointing_start_met
+        ) & (et_to_met(event_times[valid_events]) <= pointing_end_met)
+
+        # Update valid_events to only include times within a pointing
+        valid_events = valid_events & in_pointing
+
     if np.any(valid_events):
         (
             sc_velocity[valid_events],
@@ -369,5 +393,8 @@ def calculate_de(
     de_dict["quality_scattering"] = scattering_quality_flags
 
     dataset = create_dataset(de_dict, name, "l1b")
+    if repoint_id is not None:
+        # filter out the dataset to only include events in pointing
+        dataset = dataset.isel(epoch=in_pointing)
 
     return dataset

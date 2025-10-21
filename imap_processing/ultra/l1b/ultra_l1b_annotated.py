@@ -52,7 +52,7 @@ def get_annotated_particle_velocity(
         from_frame=instrument_frame,
         to_frame=spacecraft_frame,
     )
-
+    # TODO filter for when pointing is valid. use repoint table.
     # Particle velocity in the pointing (DPS) frame wrt spacecraft.
     particle_velocity_dps_spacecraft = frame_transform(
         et=time,
