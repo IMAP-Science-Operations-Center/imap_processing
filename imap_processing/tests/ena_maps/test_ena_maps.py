@@ -885,11 +885,19 @@ class TestRectangularSkyMap:
             name="ena_intesity",
             dims=[k for k in coord_sizes.keys()][:-1],
         )
-        # Add one variable that is expected to get removed
-        mock_dataset["foo_var"] = xr.DataArray(
+        # Add one variable that is expected to get removed because it has a
+        # dimension that is not in the list of `coord_names`
+        mock_dataset["extra_dimension_var"] = xr.DataArray(
             np.ones(tuple(s for s in coord_sizes.values())),
-            name="foo_var",
+            name="extra_dimension_var",
             dims=[k for k in coord_sizes.keys()],
+        )
+        # Add a variable that is expected to get removed because it has no
+        # attributes defined
+        mock_dataset["no_attr_var"] = xr.DataArray(
+            np.ones(tuple(s for s in coord_sizes.values())[:-1]),
+            name="no_attr_var",
+            dims=[k for k in coord_sizes.keys()][:-1],
         )
         # Add required energy delta variables
         for side in ["minus", "plus"]:
@@ -910,11 +918,12 @@ class TestRectangularSkyMap:
         skymap.min_epoch = 10
         skymap.max_epoch = 15
         cdf_dataset = skymap.build_cdf_dataset(
-            "hi", "l2", "foo_descriptor", sensor="45"
+            "hi", "l2", "foo_descriptor", sensor="45", drop_vars_with_no_attributes=True
         )
 
-        # Check that expected var gets removed
-        assert "foo_var" not in cdf_dataset
+        # Check that expected vars gets removed
+        assert "extra_dimension_var" not in cdf_dataset
+        assert "no_attr_var" not in cdf_dataset
         # Check the epoch values
         assert CoordNames.TIME.value in cdf_dataset
         assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
@@ -961,30 +970,15 @@ class TestRectangularSkyMap:
     ):
         """Test build_cdf_dataset raising a KeyError."""
         mock_dataset = mock_data_for_build_cdf_dataset
-        # Add ena intensity variable
-        mock_dataset["no_attrs_var"] = xr.DataArray(
-            np.ones(
-                tuple(s for s in mock_data_for_build_cdf_dataset.coords.sizes.values())[
-                    :-1
-                ]
-            ),
-            name="no_attrs_var",
-            dims=[k for k in mock_data_for_build_cdf_dataset.coords.sizes.keys()][:-1],
-        )
         mock_to_dataset.return_value = mock_dataset
 
         skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
         skymap.min_epoch = 10
         skymap.max_epoch = 15
-        # Test that variables with no attributes defined raise KeyError
-        with pytest.raises(
-            KeyError, match="Attributes for variable no_attrs_var not found"
-        ):
-            _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
 
         # Test that missing energy delta variable raise KeyError
         # Test for missing energy_delta_plus
-        mock_dataset = mock_dataset.drop(["no_attrs_var", "energy_delta_plus"])
+        mock_dataset = mock_dataset.drop(["energy_delta_plus"])
         mock_to_dataset.return_value = mock_dataset
         with pytest.raises(
             KeyError,
@@ -999,6 +993,28 @@ class TestRectangularSkyMap:
             match="Required variable 'energy_delta_minus' not found in cdf Dataset.",
         ):
             _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
+
+    @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
+    def test_keep_vars_with_no_attributes(
+        self, mock_to_dataset, mock_data_for_build_cdf_dataset
+    ):
+        """Test that variables with no attributes are kept when desired."""
+        # Set up the mock
+        mock_to_dataset.return_value = mock_data_for_build_cdf_dataset
+
+        skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
+        skymap.min_epoch = 10
+        skymap.max_epoch = 15
+        cdf_dataset = skymap.build_cdf_dataset(
+            "hi",
+            "l2",
+            "foo_descriptor",
+            sensor="45",
+            drop_vars_with_no_attributes=False,
+        )
+
+        # Check that expected var was not removed
+        assert "no_attr_var" in cdf_dataset
 
 
 class TestHealpixSkyMap:
