@@ -15,6 +15,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l1b import convert_to_rates
+from imap_processing.codice import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_HI_RANGE,
@@ -101,6 +102,30 @@ def cod_hi_test_dataset(cod_hi_test_file):
 @pytest.fixture
 def codice_test_data(test_datasets):
     return test_datasets[478]
+
+
+@pytest.fixture(scope="session")
+def cod_lo_decom_test_file():
+    return Path(
+        imap_module_directory
+        / "tests"
+        / "ialirt"
+        / "data"
+        / "l0"
+        / "imap_codice_l1a_lo-ialirt.pickle"
+    )
+
+
+@pytest.fixture(scope="session")
+def cod_hi_decom_test_file():
+    return Path(
+        imap_module_directory
+        / "tests"
+        / "ialirt"
+        / "data"
+        / "l0"
+        / "imap_codice_l1a_hi-ialirt.pickle"
+    )
 
 
 @pytest.fixture(scope="session")
@@ -248,7 +273,9 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
 
 
 @pytest.mark.external_test_data
-def test_group_and_decompress_ialirt_cod_lo(cod_lo_test_dataset):
+def test_group_and_decompress_ialirt_cod_lo(
+    cod_lo_test_dataset, cod_lo_decom_test_file
+):
     "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
 
     grouped_cod_lo_data = find_groups(
@@ -313,8 +340,8 @@ def test_group_and_decompress_ialirt_cod_hi(cod_hi_test_dataset):
         byte_data = np.frombuffer(compressed_data, dtype=np.uint8)
         num_bits = byte_data.size * 8
         assert num_bits == (COD_HI_COUNTER + 1) * len(COD_HI_RANGE) * 8
-        # TODO: left off here. Need to validate decompression with test data.
-        # decompressed_data = decompress._apply_loggy_a(compressed_data)
+        decompressed_data = decompress._apply_lossy_a(compressed_data)
+        print("hi")
 
 
 def test_process_codice(codice_test_data, caplog):
