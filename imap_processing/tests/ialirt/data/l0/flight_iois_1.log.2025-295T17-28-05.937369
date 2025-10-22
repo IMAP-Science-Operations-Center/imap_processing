@@ -1,0 +1,202 @@
+ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)
+ 2  tlmrelay      295-16:28:03  277-08:58:24    1.5
+10  Kiel          295-13:54:00  295-05:19:13    0.0
+2025/295-16:28:40.308 Closed packets file for SDC: iois_1_packets_2025_295_16_27_39.partial
+2025/295-16:28:40.308 Renamed iois_1_packets_2025_295_16_27_39.partial to iois_1_packets_2025_295_16_27_39.
+2025/295-16:28:40.308 Spawning: mv
+2025/295-16:28:40.308 Opened packets file for SDC: iois_1_packets_2025_295_16_28_40.partial
+2025/295-16:28:41.310 Spawned command succeeded: mv
+2025/295-16:29:41.956 Closed packets file for SDC: iois_1_packets_2025_295_16_28_40.partial
+2025/295-16:29:41.956 Renamed iois_1_packets_2025_295_16_28_40.partial to iois_1_packets_2025_295_16_28_40.
+2025/295-16:29:41.956 Spawning: mv
+2025/295-16:29:41.956 Opened packets file for SDC: iois_1_packets_2025_295_16_29_41.partial
+2025/295-16:29:42.960 Spawned command succeeded: mv
+2025/295-16:30:42.104 Closed packets file for SDC: iois_1_packets_2025_295_16_29_41.partial
+2025/295-16:30:42.104 Renamed iois_1_packets_2025_295_16_29_41.partial to iois_1_packets_2025_295_16_29_41.
+2025/295-16:30:42.104 Spawning: mv
+2025/295-16:30:42.104 Opened packets file for SDC: iois_1_packets_2025_295_16_30_42.partial
+2025/295-16:30:43.093 Spawned command succeeded: mv
+2025/295-16:31:00.161 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_16_26_00.partial
+2025/295-16:31:00.162 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_16_31_00.partial
+2025/295-16:31:43.225 Closed packets file for SDC: iois_1_packets_2025_295_16_30_42.partial
+2025/295-16:31:43.225 Renamed iois_1_packets_2025_295_16_30_42.partial to iois_1_packets_2025_295_16_30_42.
+2025/295-16:31:43.225 Spawning: mv
+2025/295-16:31:43.225 Opened packets file for SDC: iois_1_packets_2025_295_16_31_43.partial
+2025/295-16:31:44.226 Spawned command succeeded: mv
+2025/295-16:32:44.388 Closed packets file for SDC: iois_1_packets_2025_295_16_31_43.partial
+2025/295-16:32:44.389 Renamed iois_1_packets_2025_295_16_31_43.partial to iois_1_packets_2025_295_16_31_43.
+2025/295-16:32:44.389 Spawning: mv
+2025/295-16:32:44.389 Opened packets file for SDC: iois_1_packets_2025_295_16_32_44.partial
+2025/295-16:32:45.392 Spawned command succeeded: mv
+2025/295-16:33:45.043 Closed packets file for SDC: iois_1_packets_2025_295_16_32_44.partial
+2025/295-16:33:45.043 Renamed iois_1_packets_2025_295_16_32_44.partial to iois_1_packets_2025_295_16_32_44.
+2025/295-16:33:45.043 Spawning: mv
+2025/295-16:33:45.043 Opened packets file for SDC: iois_1_packets_2025_295_16_33_45.partial
+2025/295-16:33:46.046 Spawned command succeeded: mv
+2025/295-16:34:46.204 Closed packets file for SDC: iois_1_packets_2025_295_16_33_45.partial
+2025/295-16:34:46.204 Renamed iois_1_packets_2025_295_16_33_45.partial to iois_1_packets_2025_295_16_33_45.
+2025/295-16:34:46.204 Spawning: mv
+2025/295-16:34:46.204 Opened packets file for SDC: iois_1_packets_2025_295_16_34_46.partial
+2025/295-16:34:47.205 Spawned command succeeded: mv
+2025/295-16:35:47.860 Closed packets file for SDC: iois_1_packets_2025_295_16_34_46.partial
+2025/295-16:35:47.860 Renamed iois_1_packets_2025_295_16_34_46.partial to iois_1_packets_2025_295_16_34_46.
+2025/295-16:35:47.860 Spawning: mv
+2025/295-16:35:47.860 Opened packets file for SDC: iois_1_packets_2025_295_16_35_47.partial
+2025/295-16:35:48.862 Spawned command succeeded: mv
+2025/295-16:36:00.891 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_16_31_00.partial
+2025/295-16:36:00.891 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_16_36_00.partial
+2025/295-16:36:48.001 Closed packets file for SDC: iois_1_packets_2025_295_16_35_47.partial
+2025/295-16:36:48.001 Renamed iois_1_packets_2025_295_16_35_47.partial to iois_1_packets_2025_295_16_35_47.
+2025/295-16:36:48.001 Spawning: mv
+2025/295-16:36:48.001 Opened packets file for SDC: iois_1_packets_2025_295_16_36_48.partial
+2025/295-16:36:49.002 Spawned command succeeded: mv
+2025/295-16:37:49.657 Closed packets file for SDC: iois_1_packets_2025_295_16_36_48.partial
+2025/295-16:37:49.657 Renamed iois_1_packets_2025_295_16_36_48.partial to iois_1_packets_2025_295_16_36_48.
+2025/295-16:37:49.657 Spawning: mv
+2025/295-16:37:49.658 Opened packets file for SDC: iois_1_packets_2025_295_16_37_49.partial
+2025/295-16:37:51.645 Spawned command succeeded: mv
+2025/295-16:38:50.308 Closed packets file for SDC: iois_1_packets_2025_295_16_37_49.partial
+2025/295-16:38:50.308 Renamed iois_1_packets_2025_295_16_37_49.partial to iois_1_packets_2025_295_16_37_49.
+2025/295-16:38:50.308 Spawning: mv
+2025/295-16:38:50.308 Opened packets file for SDC: iois_1_packets_2025_295_16_38_50.partial
+2025/295-16:38:51.309 Spawned command succeeded: mv
+2025/295-16:39:51.448 Closed packets file for SDC: iois_1_packets_2025_295_16_38_50.partial
+2025/295-16:39:51.448 Renamed iois_1_packets_2025_295_16_38_50.partial to iois_1_packets_2025_295_16_38_50.
+2025/295-16:39:51.448 Spawning: mv
+2025/295-16:39:51.448 Opened packets file for SDC: iois_1_packets_2025_295_16_39_51.partial
+2025/295-16:39:52.449 Spawned command succeeded: mv
+2025/295-16:40:52.099 Closed packets file for SDC: iois_1_packets_2025_295_16_39_51.partial
+2025/295-16:40:52.099 Renamed iois_1_packets_2025_295_16_39_51.partial to iois_1_packets_2025_295_16_39_51.
+2025/295-16:40:52.099 Spawning: mv
+2025/295-16:40:52.099 Opened packets file for SDC: iois_1_packets_2025_295_16_40_52.partial
+2025/295-16:40:53.101 Spawned command succeeded: mv
+2025/295-16:41:00.120 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_16_36_00.partial
+2025/295-16:41:00.120 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_16_41_00.partial
+2025/295-16:41:53.769 Closed packets file for SDC: iois_1_packets_2025_295_16_40_52.partial
+2025/295-16:41:53.769 Renamed iois_1_packets_2025_295_16_40_52.partial to iois_1_packets_2025_295_16_40_52.
+2025/295-16:41:53.769 Spawning: mv
+2025/295-16:41:53.769 Opened packets file for SDC: iois_1_packets_2025_295_16_41_53.partial
+2025/295-16:41:54.836 Spawned command succeeded: mv
+2025/295-16:42:54.940 Closed packets file for SDC: iois_1_packets_2025_295_16_41_53.partial
+2025/295-16:42:54.940 Renamed iois_1_packets_2025_295_16_41_53.partial to iois_1_packets_2025_295_16_41_53.
+2025/295-16:42:54.940 Spawning: mv
+2025/295-16:42:54.940 Opened packets file for SDC: iois_1_packets_2025_295_16_42_54.partial
+2025/295-16:42:55.940 Spawned command succeeded: mv
+2025/295-16:43:55.098 Closed packets file for SDC: iois_1_packets_2025_295_16_42_54.partial
+2025/295-16:43:55.098 Renamed iois_1_packets_2025_295_16_42_54.partial to iois_1_packets_2025_295_16_42_54.
+2025/295-16:43:55.098 Spawning: mv
+2025/295-16:43:55.098 Opened packets file for SDC: iois_1_packets_2025_295_16_43_55.partial
+2025/295-16:43:56.098 Spawned command succeeded: mv
+2025/295-16:44:56.250 Closed packets file for SDC: iois_1_packets_2025_295_16_43_55.partial
+2025/295-16:44:56.250 Renamed iois_1_packets_2025_295_16_43_55.partial to iois_1_packets_2025_295_16_43_55.
+2025/295-16:44:56.250 Spawning: mv
+2025/295-16:44:56.250 Opened packets file for SDC: iois_1_packets_2025_295_16_44_56.partial
+2025/295-16:44:57.252 Spawned command succeeded: mv
+2025/295-16:45:57.320 Closed packets file for SDC: iois_1_packets_2025_295_16_44_56.partial
+2025/295-16:45:57.320 Renamed iois_1_packets_2025_295_16_44_56.partial to iois_1_packets_2025_295_16_44_56.
+2025/295-16:45:57.320 Spawning: mv
+2025/295-16:45:57.320 Opened packets file for SDC: iois_1_packets_2025_295_16_45_57.partial
+2025/295-16:45:59.323 Spawned command succeeded: mv
+2025/295-16:46:01.325 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_16_41_00.partial
+2025/295-16:46:01.325 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_16_46_01.partial
+2025/295-16:46:59.386 Deleting zero-length file: iois_1_packets_2025_295_16_45_57.partial
+2025/295-16:46:59.386 Opened packets file for SDC: iois_1_packets_2025_295_16_46_59.partial
+2025/295-16:48:01.450 Deleting zero-length file: iois_1_packets_2025_295_16_46_59.partial
+2025/295-16:48:01.450 Opened packets file for SDC: iois_1_packets_2025_295_16_48_01.partial
+2025/295-16:49:03.514 Deleting zero-length file: iois_1_packets_2025_295_16_48_01.partial
+2025/295-16:49:03.514 Opened packets file for SDC: iois_1_packets_2025_295_16_49_03.partial
+2025/295-16:50:05.580 Deleting zero-length file: iois_1_packets_2025_295_16_49_03.partial
+2025/295-16:50:05.580 Opened packets file for SDC: iois_1_packets_2025_295_16_50_05.partial
+2025/295-16:51:01.640 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_16_46_01.partial
+2025/295-16:51:01.640 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_16_51_01.partial
+2025/295-16:51:07.646 Deleting zero-length file: iois_1_packets_2025_295_16_50_05.partial
+2025/295-16:51:07.646 Opened packets file for SDC: iois_1_packets_2025_295_16_51_07.partial
+2025/295-16:52:09.712 Deleting zero-length file: iois_1_packets_2025_295_16_51_07.partial
+2025/295-16:52:09.712 Opened packets file for SDC: iois_1_packets_2025_295_16_52_09.partial
+2025/295-16:53:11.777 Deleting zero-length file: iois_1_packets_2025_295_16_52_09.partial
+2025/295-16:53:11.777 Opened packets file for SDC: iois_1_packets_2025_295_16_53_11.partial
+2025/295-16:54:13.842 Deleting zero-length file: iois_1_packets_2025_295_16_53_11.partial
+2025/295-16:54:13.843 Opened packets file for SDC: iois_1_packets_2025_295_16_54_13.partial
+2025/295-16:55:15.901 Deleting zero-length file: iois_1_packets_2025_295_16_54_13.partial
+2025/295-16:55:15.901 Opened packets file for SDC: iois_1_packets_2025_295_16_55_15.partial
+2025/295-16:56:01.948 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_16_51_01.partial
+2025/295-16:56:01.948 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_16_56_01.partial
+2025/295-16:56:17.965 Deleting zero-length file: iois_1_packets_2025_295_16_55_15.partial
+2025/295-16:56:17.965 Opened packets file for SDC: iois_1_packets_2025_295_16_56_17.partial
+2025/295-16:57:18.027 Deleting zero-length file: iois_1_packets_2025_295_16_56_17.partial
+2025/295-16:57:18.027 Opened packets file for SDC: iois_1_packets_2025_295_16_57_18.partial
+2025/295-16:58:04.075 Periodic status report:
+ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)
+ 2  tlmrelay      295-16:45:03  277-08:58:24    0.0
+10  Kiel          295-13:54:00  295-05:19:13    0.0
+2025/295-16:58:20.092 Deleting zero-length file: iois_1_packets_2025_295_16_57_18.partial
+2025/295-16:58:20.093 Opened packets file for SDC: iois_1_packets_2025_295_16_58_20.partial
+2025/295-16:59:22.156 Deleting zero-length file: iois_1_packets_2025_295_16_58_20.partial
+2025/295-16:59:22.156 Opened packets file for SDC: iois_1_packets_2025_295_16_59_22.partial
+2025/295-17:00:24.221 Deleting zero-length file: iois_1_packets_2025_295_16_59_22.partial
+2025/295-17:00:24.221 Opened packets file for SDC: iois_1_packets_2025_295_17_00_24.partial
+2025/295-17:01:00.258 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_16_56_01.partial
+2025/295-17:01:00.258 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_17_01_00.partial
+2025/295-17:01:26.285 Deleting zero-length file: iois_1_packets_2025_295_17_00_24.partial
+2025/295-17:01:26.285 Opened packets file for SDC: iois_1_packets_2025_295_17_01_26.partial
+2025/295-17:02:28.350 Deleting zero-length file: iois_1_packets_2025_295_17_01_26.partial
+2025/295-17:02:28.350 Opened packets file for SDC: iois_1_packets_2025_295_17_02_28.partial
+2025/295-17:03:30.412 Deleting zero-length file: iois_1_packets_2025_295_17_02_28.partial
+2025/295-17:03:30.412 Opened packets file for SDC: iois_1_packets_2025_295_17_03_30.partial
+2025/295-17:04:32.477 Deleting zero-length file: iois_1_packets_2025_295_17_03_30.partial
+2025/295-17:04:32.477 Opened packets file for SDC: iois_1_packets_2025_295_17_04_32.partial
+2025/295-17:05:34.540 Deleting zero-length file: iois_1_packets_2025_295_17_04_32.partial
+2025/295-17:05:34.540 Opened packets file for SDC: iois_1_packets_2025_295_17_05_34.partial
+2025/295-17:06:00.568 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_17_01_00.partial
+2025/295-17:06:00.568 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_17_06_00.partial
+2025/295-17:06:36.604 Deleting zero-length file: iois_1_packets_2025_295_17_05_34.partial
+2025/295-17:06:36.605 Opened packets file for SDC: iois_1_packets_2025_295_17_06_36.partial
+2025/295-17:07:38.669 Deleting zero-length file: iois_1_packets_2025_295_17_06_36.partial
+2025/295-17:07:38.669 Opened packets file for SDC: iois_1_packets_2025_295_17_07_38.partial
+2025/295-17:08:40.734 Deleting zero-length file: iois_1_packets_2025_295_17_07_38.partial
+2025/295-17:08:40.734 Opened packets file for SDC: iois_1_packets_2025_295_17_08_40.partial
+2025/295-17:09:42.799 Deleting zero-length file: iois_1_packets_2025_295_17_08_40.partial
+2025/295-17:09:42.799 Opened packets file for SDC: iois_1_packets_2025_295_17_09_42.partial
+2025/295-17:10:44.864 Deleting zero-length file: iois_1_packets_2025_295_17_09_42.partial
+2025/295-17:10:44.864 Opened packets file for SDC: iois_1_packets_2025_295_17_10_44.partial
+2025/295-17:11:00.881 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_17_06_00.partial
+2025/295-17:11:00.881 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_17_11_00.partial
+2025/295-17:11:46.930 Deleting zero-length file: iois_1_packets_2025_295_17_10_44.partial
+2025/295-17:11:46.930 Opened packets file for SDC: iois_1_packets_2025_295_17_11_46.partial
+2025/295-17:12:48.994 Deleting zero-length file: iois_1_packets_2025_295_17_11_46.partial
+2025/295-17:12:48.994 Opened packets file for SDC: iois_1_packets_2025_295_17_12_48.partial
+2025/295-17:13:49.056 Deleting zero-length file: iois_1_packets_2025_295_17_12_48.partial
+2025/295-17:13:49.056 Opened packets file for SDC: iois_1_packets_2025_295_17_13_49.partial
+2025/295-17:14:51.122 Deleting zero-length file: iois_1_packets_2025_295_17_13_49.partial
+2025/295-17:14:51.122 Opened packets file for SDC: iois_1_packets_2025_295_17_14_51.partial
+2025/295-17:15:53.186 Deleting zero-length file: iois_1_packets_2025_295_17_14_51.partial
+2025/295-17:15:53.186 Opened packets file for SDC: iois_1_packets_2025_295_17_15_53.partial
+2025/295-17:16:01.195 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_17_11_00.partial
+2025/295-17:16:01.195 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_17_16_01.partial
+2025/295-17:16:55.251 Deleting zero-length file: iois_1_packets_2025_295_17_15_53.partial
+2025/295-17:16:55.251 Opened packets file for SDC: iois_1_packets_2025_295_17_16_55.partial
+2025/295-17:17:57.317 Deleting zero-length file: iois_1_packets_2025_295_17_16_55.partial
+2025/295-17:17:57.317 Opened packets file for SDC: iois_1_packets_2025_295_17_17_57.partial
+2025/295-17:18:59.377 Deleting zero-length file: iois_1_packets_2025_295_17_17_57.partial
+2025/295-17:18:59.377 Opened packets file for SDC: iois_1_packets_2025_295_17_18_59.partial
+2025/295-17:20:01.442 Deleting zero-length file: iois_1_packets_2025_295_17_18_59.partial
+2025/295-17:20:01.442 Opened packets file for SDC: iois_1_packets_2025_295_17_20_01.partial
+2025/295-17:21:01.500 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_17_16_01.partial
+2025/295-17:21:01.500 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_17_21_01.partial
+2025/295-17:21:03.502 Deleting zero-length file: iois_1_packets_2025_295_17_20_01.partial
+2025/295-17:21:03.502 Opened packets file for SDC: iois_1_packets_2025_295_17_21_03.partial
+2025/295-17:22:05.566 Deleting zero-length file: iois_1_packets_2025_295_17_21_03.partial
+2025/295-17:22:05.566 Opened packets file for SDC: iois_1_packets_2025_295_17_22_05.partial
+2025/295-17:23:07.629 Deleting zero-length file: iois_1_packets_2025_295_17_22_05.partial
+2025/295-17:23:07.630 Opened packets file for SDC: iois_1_packets_2025_295_17_23_07.partial
+2025/295-17:24:09.694 Deleting zero-length file: iois_1_packets_2025_295_17_23_07.partial
+2025/295-17:24:09.694 Opened packets file for SDC: iois_1_packets_2025_295_17_24_09.partial
+2025/295-17:25:11.753 Deleting zero-length file: iois_1_packets_2025_295_17_24_09.partial
+2025/295-17:25:11.754 Opened packets file for SDC: iois_1_packets_2025_295_17_25_11.partial
+2025/295-17:26:01.807 Deleting zero-length file: IOIS_1_raw_record_20_2025_295_17_21_01.partial
+2025/295-17:26:01.807 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2025_295_17_26_01.partial
+2025/295-17:26:13.820 Deleting zero-length file: iois_1_packets_2025_295_17_25_11.partial
+2025/295-17:26:13.820 Opened packets file for SDC: iois_1_packets_2025_295_17_26_13.partial
+2025/295-17:27:15.884 Deleting zero-length file: iois_1_packets_2025_295_17_26_13.partial
+2025/295-17:27:15.884 Opened packets file for SDC: iois_1_packets_2025_295_17_27_15.partial
+2025/295-17:28:05.937 Periodic status report:
