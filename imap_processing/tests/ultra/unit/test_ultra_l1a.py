@@ -178,8 +178,13 @@ def test_cdf_rates(ccsds_path_theta_0):
 
 def test_cdf_energy_rates(ccsds_path_functional):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(ccsds_path_functional, apid_input=ULTRA_ENERGY_RATES.apid[0])
-    test_data[0].attrs["Data_version"] = "999"
+    test_data = ultra_l1a(
+        ccsds_path_functional,
+        apid_input=ULTRA_ENERGY_RATES.apid[0],
+        create_derived_l1b=True,
+    )
+    assert len(test_data) == 2  # l1a and l1b
+
     test_data[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(test_data[0], istp=True)
 
@@ -187,6 +192,17 @@ def test_cdf_energy_rates(ccsds_path_functional):
     assert (
         test_data_path.name
         == "imap_ultra_l1a_45sensor-energy-rates_20240122-repoint99999_v999.cdf"
+    )
+
+    # L1b dataset
+    assert "1B" in test_data[1].attrs["Data_type"]
+    test_data[1].attrs["Repointing"] = "repoint99999"
+    test_data_path = write_cdf(test_data[1], istp=True)
+
+    assert test_data_path.exists()
+    assert (
+        test_data_path.name
+        == "imap_ultra_l1b_45sensor-energy-rates_20240122-repoint99999_v999.cdf"
     )
 
 

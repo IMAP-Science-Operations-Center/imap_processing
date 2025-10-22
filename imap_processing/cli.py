@@ -1435,7 +1435,7 @@ class Ultra(ProcessInstrument):
                     f"Unexpected science_files found for ULTRA L1A:"
                     f"{science_files}. Expected only one dependency."
                 )
-            datasets = ultra_l1a.ultra_l1a(science_files[0])
+            datasets = ultra_l1a.ultra_l1a(science_files[0], create_derived_l1b=True)
         elif self.data_level == "l1b":
             science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
             l1a_dict = {
