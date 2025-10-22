@@ -320,24 +320,11 @@ def calculate_de(
     valid_events = event_times != FILLVAL_FLOAT32
     # TODO - find a better solution than filtering out data from repointings?
     if repoint_id is not None:
-        repoint_data = get_repoint_data()
-        # To find the pointing start and stop, get the end of the current repointing
-        # and the start of the next repointing
-        repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id]
-        next_repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id + 1]
-        pointing_start_met = repoint_row["repoint_end_met"].values[0]
-        pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
-
-        # Create a boolean array for events within the pointing
-        in_pointing = np.zeros(len(event_times), dtype=bool)
-
-        # Check which events are within the pointing
-        in_pointing[valid_events] = (
-            et_to_met(event_times[valid_events]) >= pointing_start_met
-        ) & (et_to_met(event_times[valid_events]) <= pointing_end_met)
-
+        in_pointing = calculate_events_in_pointing(
+            repoint_id, event_times, valid_events
+        )
         # Update valid_events to only include times within a pointing
-        valid_events = valid_events & in_pointing
+        valid_events &= in_pointing
 
     if np.any(valid_events):
         (
@@ -401,3 +388,44 @@ def calculate_de(
         dataset = dataset.isel(epoch=in_pointing)
 
     return dataset
+
+
+def calculate_events_in_pointing(
+    repoint_id: int, event_times: np.ndarray, valid_events: np.ndarray
+) -> np.ndarray:
+    """
+    Calculate boolean array of events within a pointing.
+
+    Parameters
+    ----------
+    repoint_id : int
+        The repointing ID.
+    event_times : np.ndarray
+        Array of event times in ET.
+    valid_events : np.ndarray
+        Boolean array indicating valid events.
+
+    Returns
+    -------
+    in_pointing : np.ndarray
+        Boolean array indicating whether each event is within the pointing period
+        combined with the valid_events mask.
+    """
+    # TODO add this as a helper function in repoint.py
+    repoint_data = get_repoint_data()
+    # To find the pointing start and stop, get the end of the current repointing
+    # and the start of the next repointing
+    repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id]
+    next_repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id + 1]
+    pointing_start_met = repoint_row["repoint_end_met"].values[0]
+    pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
+
+    # Create a boolean array for events within the pointing
+    in_pointing = np.zeros(len(event_times), dtype=bool)
+
+    # Check which events are within the pointing
+    in_pointing[valid_events] = (
+        et_to_met(event_times[valid_events]) >= pointing_start_met
+    ) & (et_to_met(event_times[valid_events]) <= pointing_end_met)
+
+    return in_pointing
