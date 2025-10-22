@@ -54,6 +54,40 @@ def test_find_tcp_connections():
     assert test["connection_times"]["Kiel"][0]["end"] == datetime.isoformat(time_1)
 
 
+def test_find_tcp_connections_no_info():
+    """Test the find_tcp_connections function if tcp connection up not present."""
+    filename = "flight_iois_1.log.2025-295T17-28-05.937369"
+    # File creation time minus 1 hr.
+    timestamp_str = filename.split(".")[2]
+    start_of_time = datetime.strptime(timestamp_str, "%Y-%jT%H-%M-%S") - timedelta(
+        hours=1
+    )
+    end_of_time = start_of_time + timedelta(hours=48)
+
+    with open(TEST_PATH / filename, encoding="utf-8") as f:
+        lines = f.readlines()
+
+    formatted: dict[str, Any] = {
+        "summary": "I-ALiRT Real-time Ingest Summary",
+        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "time_format": "UTC (ISOC)",
+        "stations": list(STATIONS),
+        "time_range": [
+            start_of_time.isoformat(),
+            end_of_time.isoformat(),
+        ],  # Overall time range of the data
+        "packet_ingest": [],  # Global packet ingest times
+        "connection_times": {
+            station: [] for station in list(STATIONS)
+        },  # Per-station TCP connection windows
+    }
+
+    test = find_tcp_connections(start_of_time, end_of_time, lines, formatted)
+
+    assert test["connection_times"]["Kiel"][0]["start"] == start_of_time.isoformat()
+    assert test["connection_times"]["Kiel"][0]["end"] == end_of_time.isoformat()
+
+
 def test_packets_created():
     """Test the packets_created function."""
     with open(

@@ -53,16 +53,16 @@ class StationProperties(NamedTuple):
 # Verified by Kiel and KSWC Observatory staff.
 # Notes: the KSWC station is not yet operational,
 # but will have the following properties:
-# "KSWC": StationProperties(
-#     longitude=126.2958,  # degrees East
-#     latitude=33.4273,  # degrees North
-#     altitude=0.1,  # approx 100 meters
-#     min_elevation_deg=5,  # 5 degrees is the requirement
-# ),
 STATIONS = {
     "Kiel": StationProperties(
         longitude=10.1808,  # degrees East
         latitude=54.2632,  # degrees North
+        altitude=0.1,  # approx 100 meters
+        min_elevation_deg=5,  # 5 degrees is the requirement
+    ),
+    "Korea": StationProperties(
+        longitude=126.2958,  # degrees East
+        latitude=33.4273,  # degrees North
         altitude=0.1,  # approx 100 meters
         min_elevation_deg=5,  # 5 degrees is the requirement
     ),

@@ -9,7 +9,7 @@ from imap_processing.ialirt.constants import STATIONS
 logger = logging.getLogger(__name__)
 
 
-def find_tcp_connections(
+def find_tcp_connections(  # noqa: PLR0912
     start_file_creation: datetime,
     end_file_creation: datetime,
     lines: list,
@@ -35,8 +35,16 @@ def find_tcp_connections(
         Output dictionary with tcp connection info.
     """
     current_starts: dict[str, datetime | None] = {}
+    partners_opened = set()
 
     for line in lines:
+        # Note if this line appears.
+        if "Opened raw record file" in line:
+            station = line.split("Opened raw record file for ")[1].split(
+                " antenna_partner"
+            )[0]
+            partners_opened.add(station)
+
         if "antenna partner connection is" not in line:
             continue
 
@@ -80,6 +88,16 @@ def find_tcp_connections(
             realtime_summary["connection_times"][station].append(
                 {
                     "start": datetime.isoformat(start),
+                    "end": datetime.isoformat(end_file_creation),
+                }
+            )
+
+    # Handle stations with only "Opened raw record file" (no up/down)
+    for station in partners_opened:
+        if not realtime_summary["connection_times"][station]:
+            realtime_summary["connection_times"][station].append(
+                {
+                    "start": datetime.isoformat(start_file_creation),
                     "end": datetime.isoformat(end_file_creation),
                 }
             )
