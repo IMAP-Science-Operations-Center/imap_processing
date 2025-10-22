@@ -318,14 +318,17 @@ def calculate_de(
 
     # Account for counts=0 (event times have FILL value)
     valid_events = event_times != FILLVAL_FLOAT32
-    # TODO - find a better solution than filtering out repointings?
+    # TODO - find a better solution than filtering out data from repointings?
     if repoint_id is not None:
         repoint_data = get_repoint_data()
+        # To find the pointing start and stop, get the end of the current repointing
+        # and the start of the next repointing
         repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id]
         next_repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id + 1]
         pointing_start_met = repoint_row["repoint_end_met"].values[0]
         pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
 
+        # Create a boolean array for events within the pointing
         in_pointing = np.zeros(len(event_times), dtype=bool)
 
         # Check which events are within the pointing
