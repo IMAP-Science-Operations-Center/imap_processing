@@ -142,27 +142,34 @@ def sample_map_dataset():
     return test_ds, geometric_factors, esa_energies
 
 
+@pytest.mark.parametrize(
+    "descriptor_str",
+    [
+        "h90-ena-h-sf-nsp-full-hae-4deg-3mo",
+        "h90-ena-h-hf-nsp-ram-gcs-6deg-3mo",
+    ],
+)
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_hi_l2(
+    descriptor_str,
     hi_l1_test_data_path,
     anc_path_dict,
     imap_ena_sim_metakernel,
 ):
     """Integration type test for hi_l2()"""
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
-    descriptor = "h90-ena-h-sf-nsp-full-hae-4deg-3mo"
 
     l2_dataset = hi_l2(
         [pset_path],
         anc_path_dict,
-        "h90-ena-h-sf-nsp-full-hae-4deg-3mo",
+        descriptor_str,
     )[0]
     assert isinstance(l2_dataset, xr.Dataset)
 
     # Check some global attributes
-    assert l2_dataset.attrs["Data_type"].startswith(f"L2_{descriptor}")
-    assert l2_dataset.attrs["Logical_source"] == f"imap_hi_l2_{descriptor}"
+    assert l2_dataset.attrs["Data_type"].startswith(f"L2_{descriptor_str}")
+    assert l2_dataset.attrs["Logical_source"] == f"imap_hi_l2_{descriptor_str}"
     assert "Hi90" in l2_dataset.attrs["Logical_source_description"]
 
     assert len(l2_dataset.data_vars) == 15
@@ -209,8 +216,12 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     ],
 )
 @mock.patch("imap_processing.hi.hi_l2.calculate_ena_intensity", autospec=True)
+@mock.patch(
+    "imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame", autospec=True
+)
 @pytest.mark.external_test_data
 def test_genarate_hi_map(
+    mock_interp_flux,
     mock_calc_ena_intensity,
     hi_l1_test_data_path,
     anc_path_dict,
@@ -219,6 +230,7 @@ def test_genarate_hi_map(
 ):
     """Test coverage for genarate_hi_map()"""
     mock_calc_ena_intensity.side_effect = lambda x, y, z: x
+    mock_interp_flux.side_effect = lambda x, y, z: x
 
     kernels = [
         "imap_sclk_0000.tsc",
@@ -252,6 +264,7 @@ def test_genarate_hi_map(
     if "-hf-" in descriptor_str:
         assert "energy_sc" in sky_map.data_1d.data_vars
         assert np.nanmax(sky_map.data_1d["energy_sc"].data) > 0
+        mock_interp_flux.assert_called_once()
 
 
 def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
