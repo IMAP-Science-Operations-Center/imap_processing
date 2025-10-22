@@ -5,6 +5,7 @@ import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.quality_flags import (
+    ImapAttitudeUltraFlags,
     ImapDEOutliersUltraFlags,
     ImapDEScatteringUltraFlags,
 )
@@ -321,7 +322,7 @@ def calculate_de(
     # TODO - find a better solution than filtering out data from repointings?
     if repoint_id is not None:
         in_pointing = calculate_events_in_pointing(
-            repoint_id, event_times, valid_events
+            repoint_id, event_times, valid_events, quality_flags
         )
         # Update valid_events to only include times within a pointing
         valid_events &= in_pointing
@@ -383,15 +384,15 @@ def calculate_de(
     de_dict["quality_scattering"] = scattering_quality_flags
 
     dataset = create_dataset(de_dict, name, "l1b")
-    if repoint_id is not None:
-        # filter out the dataset to only include events in pointing
-        dataset = dataset.isel(epoch=in_pointing)
 
     return dataset
 
 
 def calculate_events_in_pointing(
-    repoint_id: int, event_times: np.ndarray, valid_events: np.ndarray
+    repoint_id: int,
+    event_times: np.ndarray,
+    valid_events: np.ndarray,
+    quality_flags: np.ndarray,
 ) -> np.ndarray:
     """
     Calculate boolean array of events within a pointing.
@@ -404,6 +405,8 @@ def calculate_events_in_pointing(
         Array of event times in ET.
     valid_events : np.ndarray
         Boolean array indicating valid events.
+    quality_flags : np.ndarray
+        Array of quality flags to be updated.
 
     Returns
     -------
@@ -428,4 +431,5 @@ def calculate_events_in_pointing(
         et_to_met(event_times[valid_events]) >= pointing_start_met
     ) & (et_to_met(event_times[valid_events]) <= pointing_end_met)
 
+    quality_flags[~in_pointing] |= ImapAttitudeUltraFlags.DURINGREPOINT.value
     return in_pointing
