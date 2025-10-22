@@ -1,5 +1,6 @@
 """L2 corrections common to multiple IMAP ENA instruments."""
 
+import logging
 from pathlib import Path
 from typing import TypeVar
 
@@ -15,6 +16,11 @@ from imap_processing.ena_maps.ena_maps import (
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 from imap_processing.spice.time import ttj2000ns_to_et
+
+logger = logging.getLogger(__name__)
+
+# Tell ruff to ignore ambiguous Greek letters in formulas in this file
+# ruff: noqa: RUF003
 
 # Create a TypeVar to represent the specific class being passed in
 # Bound to LoHiBasePointingSet, meaning it must be LoHiBasePointingSet
@@ -603,3 +609,133 @@ def apply_compton_getting_correction(
     pset.update_az_el_points()
 
     return pset
+
+
+def interpolate_map_flux_to_helio_frame(
+    map_ds: xr.Dataset,
+    esa_energies_ev: xr.DataArray,
+    helio_energies_ev: xr.DataArray,
+) -> xr.Dataset:
+    """
+    Interpolate flux from spacecraft frame to heliocentric frame energies.
+
+    This implements the Compton-Getting interpolation step that transforms
+    flux measurements from the spacecraft frame to the heliocentric frame.
+    The algorithm follows these steps:
+    1. For each spatial pixel and energy step, get the spacecraft energy
+    2. Find bounding ESA energy channels for interpolation
+    3. Perform power-law interpolation between bounding channels to spacecraft energy
+    4. Apply energy scaling transformation to heliocentric frame
+
+    Parameters
+    ----------
+    map_ds : xarray.Dataset
+        Map dataset with `energy_sc` data variable containing the spacecraft
+        frame energies for each spatial pixel and ESA energy step.
+    esa_energies_ev : xarray.DataArray
+        The ESA nominal central energies (in eV).
+    helio_energies_ev : xarray.DataArray
+        The heliocentric frame energies to interpolate to (in eV).
+        In practice, these are the same as esa_energies_ev.
+
+    Returns
+    -------
+    map_ds : xarray.Dataset
+        Updated map dataset with interpolated heliocentric frame fluxes.
+    """
+    logger.info("Performing Compton-Getting interpolation to heliocentric frame")
+
+    # Work with xarray DataArrays to handle arbitrary spatial dimensions
+    energy_sc = map_ds["energy_sc"]
+    intensity = map_ds["ena_intensity"]
+    stat_unc = map_ds["ena_intensity_stat_uncert"]
+    sys_err = map_ds["ena_intensity_sys_err"]
+
+    # Step 1: Find bounding ESA energy indices for each position
+    # Use np.searchsorted on flattened array, then reshape back
+    esa_energy_vals = esa_energies_ev.values
+    energy_sc_flat = energy_sc.values.ravel()
+
+    # Find right bound index for each element (vectorized)
+    right_idx_flat = np.searchsorted(esa_energy_vals, energy_sc_flat, side="right")
+    right_idx_flat = np.clip(right_idx_flat, 1, len(esa_energy_vals) - 1)
+    left_idx_flat = right_idx_flat - 1
+
+    # Reshape indices back to match energy_sc shape
+    right_idx = right_idx_flat.reshape(energy_sc.shape)
+    left_idx = left_idx_flat.reshape(energy_sc.shape)
+
+    # Create DataArrays for indices with same dims as energy_sc
+    # Note: we need to avoid coordinate name conflicts when using isel()
+    # The energy dimension should be present in dims but not as a coordinate
+    # since we're using these as indices into the energy dimension
+    # Create coordinates dict without the energy coordinate
+    coords_without_energy = {k: v for k, v in energy_sc.coords.items() if k != "energy"}
+
+    right_idx_da = xr.DataArray(
+        right_idx, dims=energy_sc.dims, coords=coords_without_energy
+    )
+    left_idx_da = xr.DataArray(
+        left_idx, dims=energy_sc.dims, coords=coords_without_energy
+    )
+
+    # Step 2: Extract flux values at bounding energy channels
+    # Use xarray's advanced indexing to get fluxes at left and right indices
+    flux_left = intensity.isel({"energy": left_idx_da})
+    flux_right = intensity.isel({"energy": right_idx_da})
+    stat_unc_left = stat_unc.isel({"energy": left_idx_da})
+    stat_unc_right = stat_unc.isel({"energy": right_idx_da})
+    sys_err_left = sys_err.isel({"energy": left_idx_da})
+
+    # Get energy values at boundaries - select from esa_energies_ev using indices
+    energy_left = esa_energies_ev.isel({"energy": left_idx_da})
+    energy_right = esa_energies_ev.isel({"energy": right_idx_da})
+
+    # Step 3: Perform power-law interpolation to spacecraft energy
+    # slope = log(f_right/f_left) / log(e_right/e_left)
+    # flux_sc = f_left * (energy_sc / e_left)^slope
+    with np.errstate(divide="ignore", invalid="ignore"):
+        # Calculate slope for power-law interpolation
+        slope = np.log(flux_right / flux_left) / np.log(energy_right / energy_left)
+
+        # Interpolate flux using power-law
+        flux_sc = flux_left * ((energy_sc / energy_left) ** slope)
+
+        # Interpolation factor for uncertainty propagation (Equations 75 & 76)
+        unc_factor = np.log(energy_sc / energy_left) / np.log(
+            energy_right / energy_left
+        )
+
+        # Statistical uncertainty propagation (Equation 75):
+        # δJ = J * sqrt((δJ_left/J_left)^2 * (1 + unc_factor^2) + (δJ_right/J_right)^2)
+        stat_unc_sc = flux_sc * np.sqrt(
+            (stat_unc_left / flux_left) ** 2 * (1.0 + unc_factor**2)
+            + (stat_unc_right / flux_right) ** 2
+        )
+
+        # Systematic uncertainty propagation (Equation 76):
+        # σJ^g = σJ^src_kref * (⟨E^s_kref⟩ / E^ESA_kref)^γ_kref * (E^h / ⟨E^s_kref⟩)
+        # Systematic error scales proportionally with flux during power-law
+        # interpolation
+        sys_err_sc = sys_err_left * ((energy_sc / energy_left) ** slope)
+
+    # Step 4: Energy scaling transformation (Liouville theorem)
+    # flux_helio = flux_sc * (helio_energy / energy_sc)
+    # Use xarray broadcasting - helio_energies_ev will broadcast along esa_energy_step
+    with np.errstate(divide="ignore", invalid="ignore"):
+        energy_ratio = helio_energies_ev / energy_sc
+        flux_helio = flux_sc * energy_ratio
+        stat_unc_helio = stat_unc_sc * energy_ratio
+        sys_err_helio = sys_err_sc * energy_ratio
+
+    # Set any location where the value is not finite to NaN (converts +/-inf to NaN)
+    flux_helio = flux_helio.where(np.isfinite(flux_helio), np.nan)
+    stat_unc_helio = stat_unc_helio.where(np.isfinite(stat_unc_helio), np.nan)
+    sys_err_helio = sys_err_helio.where(np.isfinite(sys_err_helio), np.nan)
+
+    # Update the dataset with interpolated values
+    map_ds["ena_intensity"] = flux_helio
+    map_ds["ena_intensity_stat_uncert"] = stat_unc_helio
+    map_ds["ena_intensity_sys_err"] = sys_err_helio
+
+    return map_ds
