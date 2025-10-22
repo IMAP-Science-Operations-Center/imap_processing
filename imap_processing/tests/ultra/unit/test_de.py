@@ -6,7 +6,10 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.spice.repoint import get_repoint_data
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.de import calculate_events_in_pointing
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
@@ -119,3 +122,24 @@ def test_calculate_de(df_filt):
         len(l1b_de_dataset["epoch"]),
         3,
     )
+
+
+def test_calculate_events_in_pointing(use_fake_repoint_data_for_time):
+    """Tests calculate_events_in_pointing function."""
+    use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
+    repoint_id = 1
+    repoint_data = get_repoint_data()
+    pointing_start = repoint_data[repoint_data["repoint_id"] == repoint_id][
+        "repoint_end_met"
+    ].values[0]
+    # Create array of event times that are all within a pointing.
+    event_times = np.arange(pointing_start, pointing_start + 10)
+    # Edit the first event time to be during a repoint.
+    event_times[0] = pointing_start - 1
+    valid_events = np.ones_like(event_times, dtype=bool)
+    in_poiting = calculate_events_in_pointing(
+        repoint_id, ttj2000ns_to_et(met_to_ttj2000ns(event_times)), valid_events
+    )
+    # The first event should be False (not during a pointing), and the rest True.
+    assert np.all(not in_poiting[0])
+    assert np.all(in_poiting[1:])

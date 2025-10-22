@@ -14,7 +14,7 @@ from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
-from imap_processing.spice.time import sct_to_et
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
@@ -996,6 +996,7 @@ def get_eventtimes(
     t_spin_period_sec * phase_angle/720
     """
     spin_df = get_spin_data()
+
     index = np.searchsorted(spin_df["spin_number"].values, spin)
     spin_starts = (
         spin_df["spin_start_sec_sclk"].values[index]
@@ -1003,10 +1004,13 @@ def get_eventtimes(
     )
 
     spin_period_sec = spin_df["spin_period_sec"].values[index]
-
     event_times = spin_starts + spin_period_sec * (phase_angle / 720)
 
-    return sct_to_et(event_times), sct_to_et(spin_starts), spin_period_sec
+    return (
+        ttj2000ns_to_et(met_to_ttj2000ns(event_times)),
+        ttj2000ns_to_et(met_to_ttj2000ns(spin_starts)),
+        spin_period_sec,
+    )
 
 
 def interpolate_fwhm(

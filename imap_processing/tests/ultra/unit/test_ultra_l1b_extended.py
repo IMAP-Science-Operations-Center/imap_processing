@@ -7,7 +7,7 @@ import pytest
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
-from imap_processing.spice.time import sct_to_et
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
@@ -559,8 +559,12 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
         + expected_max_df["spin_start_subsec_sclk"] / 1e6
     )
 
-    assert sct_to_et(spin_start_min.values[0]) == spin_starts.min()
-    assert sct_to_et(spin_start_max.values[0]) == spin_starts.max()
+    assert (
+        ttj2000ns_to_et(met_to_ttj2000ns(spin_start_min.values[0])) == spin_starts.min()
+    )
+    assert (
+        ttj2000ns_to_et(met_to_ttj2000ns(spin_start_max.values[0])) == spin_starts.max()
+    )
 
     event_times_min = spin_start_min.values[0] + spin_period_sec_min * (
         de_dataset["phase_angle"][0] / 720
@@ -569,8 +573,8 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
         de_dataset["phase_angle"][-1] / 720
     )
 
-    assert sct_to_et(event_times_min) == event_times.min()
-    assert sct_to_et(event_times_max) == event_times.max()
+    assert ttj2000ns_to_et(met_to_ttj2000ns(event_times_min)) == event_times.min()
+    assert ttj2000ns_to_et(met_to_ttj2000ns(event_times_max)) == event_times.max()
 
 
 @pytest.mark.external_test_data
