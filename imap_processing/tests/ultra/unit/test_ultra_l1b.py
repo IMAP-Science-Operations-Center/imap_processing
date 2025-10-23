@@ -107,13 +107,16 @@ def test_cdf_de(
     de_dataset,
     use_fake_spin_data_for_time,
     ancillary_files,
+    use_fake_repoint_data_for_time,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
     data_dict = {}
+    de_dataset.attrs["Repointing"] = "repoint00001"
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
     # Create a spin table that cover spin 0-141
-    use_fake_spin_data_for_time(0, 141 * 15)
+    use_fake_spin_data_for_time(511000000, 511000000 + 86400 * 5)
+    use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
 
     # Mock get_annotated_particle_velocity to avoid needing kernels
     def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
@@ -158,7 +161,6 @@ def test_ultra_l1b_extendedspin(
         TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
     )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
-
     data_dict = {
         key: l1b_de_dataset
         for key in [

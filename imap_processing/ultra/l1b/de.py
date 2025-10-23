@@ -321,9 +321,13 @@ def calculate_de(
     valid_events = event_times != FILLVAL_FLOAT32
     # TODO - find a better solution than filtering out data from repointings?
     if repoint_id is not None:
-        in_pointing = calculate_events_in_pointing(repoint_id, event_times)
-        # Update quality flags for events outside pointing
-        quality_flags[~in_pointing] |= ImapAttitudeUltraFlags.DURINGREPOINT.value
+        in_pointing = calculate_events_in_pointing(
+            repoint_id, event_times, valid_events
+        )
+        # Update quality flags for valid events that are not in the pointing
+        quality_flags[valid_events & ~in_pointing] |= (
+            ImapAttitudeUltraFlags.DURINGREPOINT.value
+        )
         # Update valid_events to only include times within a pointing
         valid_events &= in_pointing
 
@@ -391,6 +395,7 @@ def calculate_de(
 def calculate_events_in_pointing(
     repoint_id: int,
     event_times: np.ndarray,
+    valid_events: np.ndarray,
 ) -> np.ndarray:
     """
     Calculate boolean array of events within a pointing.
@@ -401,6 +406,8 @@ def calculate_events_in_pointing(
         The repointing ID.
     event_times : np.ndarray
         Array of event times in ET.
+    valid_events : np.ndarray
+        Boolean array indicating valid event_times.
 
     Returns
     -------
@@ -416,9 +423,9 @@ def calculate_events_in_pointing(
     next_repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id + 1]
     pointing_start_met = repoint_row["repoint_end_met"].values[0]
     pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
-
+    in_pointing = np.zeros(len(event_times), dtype=bool)
     # Check which events are within the pointing
-    in_pointing = (et_to_met(event_times) >= pointing_start_met) & (
-        et_to_met(event_times) <= pointing_end_met
-    )
+    in_pointing[valid_events] = (
+        et_to_met(event_times[valid_events]) >= pointing_start_met
+    ) & (et_to_met(event_times[valid_events]) <= pointing_end_met)
     return in_pointing
