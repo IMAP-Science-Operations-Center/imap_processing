@@ -385,10 +385,9 @@ def test_codice_l2_nsw_angular_intensity(processing_dependencies, mock_get_file_
     ds = process_codice_l2("lo-nsw-angular", processing_dependencies)
     for variable in LO_NSW_ANGULAR_VARIABLE_NAMES:
         # TODO : remove this hack once CODICE team fixes the spin sector index issue.
-        #   And the position index issue.
         np.testing.assert_allclose(
-            ds[variable].values[:, :, 0:10, :-1],
-            l2_val_data[variable].values[:, :, 0:10, :-1],
+            ds[variable].values[:, :, 12:-1, :],
+            l2_val_data[variable].values[:, :, 12:-1, :],
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )

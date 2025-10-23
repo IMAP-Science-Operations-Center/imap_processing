@@ -388,8 +388,8 @@ def process_lo_angular_intensity(
         spin_angle=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
     )
     dataset = dataset.drop_vars(species_list).merge(dataset_converted)
-    # # Positions 0 and 10 only observe half of the 24 spins for each esa step.
-    # # To account for this, we replicate the counts observed in position 0 and 10 for
+    # Positions 0 and 10 only observe half of the 24 spins for each esa step.
+    # To account for this, we replicate the counts observed in position 0 and 10 for
     # each esa step to either spin angles 0-11 or 12-23, depending on the pixel
     # orientation (A/B). See section 11.2.2 of the CoDICE algorithm document
     a_inds = np.array(
@@ -402,10 +402,13 @@ def process_lo_angular_intensity(
     position_index = position_index_to_adjust
     for species in species_list:
         # Determine the correct spin indices based on the position
-        spin_start_1 = np.abs(position_index - 12)
-        spin_start_2 = np.abs(spin_start_1 - 12)
-        spin_inds_1 = np.arange(spin_start_1, spin_start_1 + 12)
-        spin_inds_2 = np.arange(spin_start_2, spin_start_2 + 12)
+        spin_sectors = dataset["spin_sector"].data
+        spin_inds_1 = np.where(spin_sectors >= 12)[0]
+        spin_inds_2 = np.where(spin_sectors < 12)[0]
+        # if position_index is 9, swap the spin indices
+        if position_index == 9:
+            spin_inds_1, spin_inds_2 = spin_inds_2, spin_inds_1
+
         # Assign the values to the correct positions and spin sectors
         dataset[species].values[
             :, a_inds[:, np.newaxis], spin_inds_1, position_index
