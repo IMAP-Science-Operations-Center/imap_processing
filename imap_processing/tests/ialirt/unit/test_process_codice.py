@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
+import pickle
 import pytest
 import xarray as xr
 
@@ -16,6 +17,7 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.codice import decompress
+from imap_processing.codice.codice_l1a import process_ialirt_data_streams, create_ialirt_dataset
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_HI_RANGE,
@@ -274,7 +276,7 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_lo(
-    cod_lo_test_dataset, cod_lo_decom_test_file
+    cod_lo_test_dataset
 ):
     "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
 
@@ -306,7 +308,22 @@ def test_group_and_decompress_ialirt_cod_lo(
         num_bits = byte_data.size * 8
         assert num_bits == (COD_LO_COUNTER + 1) * len(COD_LO_RANGE) * 8
         # TODO: left off here. Need to validate decompression with test data.
-        # decompressed_data = decompress._apply_pack_24_bit(compressed_data)
+        decompressed_data = decompress._apply_pack_24_bit(compressed_data)
+
+
+def test_decompress_ialirt_cod_lo(cod_lo_decom_test_file, cod_lo_test_dataset):
+    "Test that I-ALiRT CoDICE-Lo data can be decompressed properly."
+
+    with open(cod_lo_decom_test_file, 'rb') as handle:
+        data = pickle.load(handle)
+
+    grouped_data = data["grouped_lo_ialirt"]
+    decompressed_data = data["decompressed_lo_ialirt"]
+    decompressed_data_test = decompress._apply_pack_24_bit(grouped_data[0])
+
+    dataset = create_ialirt_dataset(1152, cod_lo_test_dataset)
+
+    print('hi')
 
 
 @pytest.mark.external_test_data
@@ -341,7 +358,6 @@ def test_group_and_decompress_ialirt_cod_hi(cod_hi_test_dataset):
         num_bits = byte_data.size * 8
         assert num_bits == (COD_HI_COUNTER + 1) * len(COD_HI_RANGE) * 8
         decompressed_data = decompress._apply_lossy_a(compressed_data)
-        print("hi")
 
 
 def test_process_codice(codice_test_data, caplog):
