@@ -697,9 +697,29 @@ class TestInterpolateMapFluxToHelioFrame:
             map_ds, esa_energies, helio_energies
         )
 
-        # For a perfect power-law, interpolation should recover exact values
-        # After interpolation to E_sc=750 and scaling back to E_helio=1000,
-        # we can verify the intermediate calculations
+        # For a perfect power-law with flux = E^(-2) * spatial_factor:
+        # With n_spatial=1, spatial_factor = 0.5 (from np.linspace(0.5, 1.5, 1))
+        # The interpolation process does:
+        # 1. Interpolates flux at E_sc=750 from values at 500 and 1000
+        #    Expected: 750^(-2) * 0.5
+        # 2. Scales to E_helio=1000: flux * (1000/750)
+        #    = 750^(-2) * 0.5 * (1000/750)
+
+        # Calculate expected result for middle energy channel
+        e_sc = 750.0
+        e_helio = 1000.0
+        spatial_factor = 0.5  # From create_test_map_dataset with n_spatial=1
+        expected_flux_middle = (
+            (e_sc**power_law_slope) * (e_helio / e_sc) * spatial_factor
+        )
+
+        # Compare interpolated result to expected value
+        # (should be very close for a perfect power-law)
+        np.testing.assert_allclose(
+            result_ds["ena_intensity"].values[1, 0],
+            expected_flux_middle,
+            rtol=1e-10,
+        )
 
         # The flux should be finite and positive
         assert np.all(np.isfinite(result_ds["ena_intensity"].values))
@@ -792,6 +812,7 @@ class TestInterpolateMapFluxToHelioFrame:
         assert np.all(np.isfinite(ratio))
         # Most values should be reasonably close to original
         # (exact match not expected due to interpolation)
+        np.testing.assert_allclose(ratio, 1)
 
     def test_infinite_values_converted_to_nan(self):
         """Test that infinite values are converted to NaN."""
@@ -819,9 +840,6 @@ class TestInterpolateMapFluxToHelioFrame:
         assert not np.any(np.isinf(flux))
         assert not np.any(np.isinf(stat_unc))
         assert not np.any(np.isinf(sys_err))
-
-        # Should have some NaN values from the problematic inputs
-        # (though maybe not, depending on how the algorithm handles edge cases)
 
     def test_multidimensional_spatial_coords(self):
         """Test that interpolation works with multi-dimensional spatial coordinates."""
