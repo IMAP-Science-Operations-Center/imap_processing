@@ -46,12 +46,20 @@ def concatenate_bytes(grouped_data: xr.Dataset, group: int, sensor: str) -> byte
         "hi": COD_HI_RANGE,
     }
 
-    # Loop through all data fields.
-    for field in cod_ranges[sensor]:
-        data_array = grouped_data[f"cod_{sensor}_data_{field:02}"].values[group_mask]
+    # Stack all cod_* fields into a 2D NumPy array [n_rows, n_fields]
+    arrays = [
+        grouped_data[f"cod_{sensor}_data_{field:02}"].values[group_mask]
+        for field in cod_ranges[sensor]
+    ]
 
-        # Convert each value to uint8 and extend the byte stream
-        current_data_stream.extend(np.uint8(data_array).tobytes())
+    # Shape → (n_fields, n_rows)
+    stacked = np.vstack(arrays)
+
+    # Transpose to get (n_rows, n_fields), then flatten row-wise
+    flattened = stacked.T.flatten()
+
+    # Convert to bytes and extend the stream
+    current_data_stream.extend(np.uint8(flattened).tobytes())
 
     return current_data_stream
 
@@ -96,7 +104,7 @@ def process_codice(
         decompressed_data = decompress._apply_pack_24_bit(bytes(cod_lo_data_stream))
 
     for group in unique_cod_hi_groups:
-        cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "lo")
+        cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
 
         # Decompress binary stream
         decompressed_data = decompress._apply_lossy_a(bytes(cod_hi_data_stream))  # noqa
