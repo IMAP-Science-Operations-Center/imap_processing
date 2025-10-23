@@ -23,8 +23,8 @@ from imap_processing.spice.time import met_to_ttj2000ns
 def l1b_de():
     l1b_de = xr.Dataset(
         {
-            "pointing_bin_lon": ("epoch", [20, 0, 20, 2000, 3500]),
-            "pointing_bin_lat": ("epoch", [20, 20, 20, 20, 20]),
+            "spin_bin": ("epoch", [20, 0, 20, 2000, 3500]),
+            "off_angle_bin": ("epoch", [20, 20, 20, 20, 20]),
             "esa_step": ("epoch", [1, 2, 1, 4, 5]),
             "coincidence_type": (
                 "epoch",
@@ -39,7 +39,6 @@ def l1b_de():
             "species": ("epoch", ["H", "O", "H", "H", "O"]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
-            "spin_bin": ("epoch", [1900, 2000, 3000, 3000, 3000]),
         },
         coords={
             "epoch": [
@@ -64,8 +63,8 @@ def repoint_met():
 def l1b_de_spin():
     l1b_de = xr.Dataset(
         {
-            "pointing_bin_lon": ("epoch", [20, 0, 20, 2000, 3500]),
-            "pointing_bin_lat": ("epoch", [20, 20, 20, 20, 20]),
+            "spin_bin": ("epoch", [20, 0, 20, 2000, 3500]),
+            "off_angle_bin": ("epoch", [20, 20, 20, 20, 20]),
             "esa_step": ("epoch", [1, 2, 1, 4, 5]),
             "coincidence_type": (
                 "epoch",
@@ -80,7 +79,6 @@ def l1b_de_spin():
             "species": ("epoch", ["H", "O", "H", "H", "O"]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
-            "spin_bin": ("epoch", [1900, 2000, 3000, 3000, 3000]),
         },
         coords={
             "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 902),

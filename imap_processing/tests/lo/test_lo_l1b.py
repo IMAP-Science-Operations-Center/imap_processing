@@ -78,6 +78,10 @@ def attr_mgr_l1a():
 
 
 @patch(
+    "imap_processing.lo.l1b.lo_l1b.frame_transform",
+    return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
+)
+@patch(
     "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
     return_value=np.zeros((2000, 3)),
 )
@@ -91,6 +95,7 @@ def attr_mgr_l1a():
     return_value=np.zeros((2000, 3)),
 )
 def test_lo_l1b(
+    mock_frame_transform,
     mock_instrument_pointing,
     mocked_get_pointing_times,
     mock_spin_number,
@@ -631,10 +636,14 @@ def test_set_direction(imap_ena_sim_metakernel):
 
 
 @patch(
+    "imap_processing.lo.l1b.lo_l1b.frame_transform",
+    return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
+)
+@patch(
     "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
     return_value=np.array([[0, -180, -2], [0, 0, 0], [0, 90, 1], [0, 180, 2]]),
 )
-def test_pointing_bins(imap_ena_sim_metakernel):
+def test_pointing_bins(mock_cartesian_to_latitudinal, mock_frame_transform):
     # Arrange
     l1b_de = xr.Dataset(
         {

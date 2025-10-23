@@ -628,7 +628,7 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
     hae_latitude : xr.DataArray
         The HAE latitude for each spin and off angle bin.
     """
-    et = ttj2000ns_to_et(epoch) + 1
+    et = ttj2000ns_to_et(epoch)
     # create a meshgrid of spin and off angles using the bin centers
     spin, off = np.meshgrid(
         SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
