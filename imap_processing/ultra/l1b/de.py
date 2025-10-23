@@ -322,7 +322,7 @@ def calculate_de(
     # TODO - find a better solution than filtering out data from repointings?
     if repoint_id is not None:
         in_pointing = calculate_events_in_pointing(
-            repoint_id, event_times, valid_events, quality_flags
+            repoint_id, event_times, quality_flags
         )
         # Update valid_events to only include times within a pointing
         valid_events &= in_pointing
@@ -391,7 +391,6 @@ def calculate_de(
 def calculate_events_in_pointing(
     repoint_id: int,
     event_times: np.ndarray,
-    valid_events: np.ndarray,
     quality_flags: np.ndarray,
 ) -> np.ndarray:
     """
@@ -403,8 +402,6 @@ def calculate_events_in_pointing(
         The repointing ID.
     event_times : np.ndarray
         Array of event times in ET.
-    valid_events : np.ndarray
-        Boolean array indicating valid events.
     quality_flags : np.ndarray
         Array of quality flags to be updated.
 
