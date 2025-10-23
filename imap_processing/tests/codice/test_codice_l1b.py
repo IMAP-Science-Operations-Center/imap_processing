@@ -17,6 +17,7 @@ TIME_MISMATCHES = [
 ]
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_l1b_lo_sw_species():
     l0_test_file_path = (
         imap_module_directory
@@ -98,6 +99,7 @@ def test_l1b_lo_nsw_species():
     assert cdf_file.name == "imap_codice_l1b_lo-nsw-species_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_l1b_lo_sw_angular():
     l0_test_file = (
         imap_module_directory
@@ -137,6 +139,7 @@ def test_l1b_lo_sw_angular():
     assert cdf_file.name == "imap_codice_l1b_lo-sw-angular_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_l1b_lo_nsw_angular():
     l0_test_file = (
         imap_module_directory

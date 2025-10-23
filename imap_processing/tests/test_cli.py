@@ -188,8 +188,8 @@ def test_validate_args(
         _validate_args(args)
 
 
-@mock.patch("imap_processing.cli.codice_l1a.process_codice_l1a")
-def test_codice(mock_codice_l1a, mock_instrument_dependencies):
+@mock.patch("imap_processing.cli.codice_new_l1a.process_l1a")
+def test_codice(mock_process_l1a, mock_instrument_dependencies):
     """Test coverage for cli.CoDICE class"""
 
     test_dataset = xr.Dataset({}, attrs={"cdf_filename": "file0"})
@@ -199,7 +199,7 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "file0"
-    mock_codice_l1a.return_value = [test_dataset]
+    mock_process_l1a.return_value = [test_dataset]
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
     mocks["mock_pre_processing"].return_value = input_collection
 
@@ -210,7 +210,7 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     instrument = Codice("l1a", "hskp", dependency_str, "20230822", None, "v001", False)
 
     instrument.process()
-    assert mock_codice_l1a.call_count == 1
+    assert mock_process_l1a.call_count == 1
     # Assert that write_cdf was called with the expected arguments
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 

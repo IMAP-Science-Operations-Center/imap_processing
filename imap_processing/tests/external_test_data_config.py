@@ -11,24 +11,27 @@ EXTERNAL_TEST_DATA = [
 
     # CoDICE
     # L0 data
-    ("imap_codice_lo-sw-species_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-nsw-species_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-sw-angular_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-nsw-angular_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-nsw-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-sw-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-counters-aggregated_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-counters-singles_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-ialirt_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_lo-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hi-ialirt_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hi-pha_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hi-counters-aggregated_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hi-counters-singles_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hi-omni_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hi-sectored_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hi-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hi-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-sw-species_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-nsw-species_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-sw-angular_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-nsw-angular_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-nsw-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-sw-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-counters-aggregated_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-counters-singles_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-ialirt_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_lo-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hi-ialirt_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hi-pha_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hi-counters-aggregated_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hi-counters-singles_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hi-omni_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hi-sectored_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hi-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hi-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
+
+    # L1A LUT
+    ("imap_codice_l1a-sci-lut_20251007_v001.json", "codice/data/l1a_lut/"),
 
     # L1A validation data
     ("imap_codice_l1a_hi-counters-aggregated_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
@@ -46,8 +49,8 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l1a_lo-nsw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_lo-sw-angular_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1b_lo-nsw-species_20250814_v006.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1b_lo-sw-species_20250814_v006.cdf", "codice/data/l1a_validation"),
+    ("imap_codice_l1a_lo-nsw-species_20250814_v006.cdf", "codice/data/l1a_validation"),
+    ("imap_codice_l1a_lo-sw-species_20250814_v006.cdf", "codice/data/l1a_validation"),
     # L1B Input data is same as L1A validation data
 
     # L1B validation data

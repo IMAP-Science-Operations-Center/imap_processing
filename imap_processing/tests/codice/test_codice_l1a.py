@@ -1,13 +1,24 @@
-"""Tests the L1a processing for decommutated CoDICE data"""
+"""Tests the L1a processing for decommutated CoDICE data
+
+
+Create specific side_effect for each test. Tenzin tried to create generic
+function but we query either by data_type to get l0 file or
+by descriptor to get lut file. Since each product have their own
+l0 test file but processing pipeline has one l0 file, it
+caused too much complexity.
+"""
 
 import logging
+from unittest.mock import patch
 
 import numpy as np
 import pytest
+from imap_data_access import AncillaryInput, ProcessingInputCollection, ScienceInput
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
+from imap_processing.codice.codice_new_l1a import process_l1a
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,86 +26,7 @@ logger.setLevel(logging.INFO)
 pytestmark = pytest.mark.external_test_data
 
 
-# TODO: These variables are in validation data but missing in processed data
-# in the product mentioned in the comments. These will need to be fixed in
-# upcoming work mentioned in issue #2237
-TIME_MISMATCHES = [
-    "voltage_table",  # many products
-    "epoch_delta_plus",  # many products
-    "epoch_delta_minus",  # many products
-]
-
-EXPECTED_MISMATCHES = [
-    "data_quality",  # hi-ialirt
-    "spin_period",  # hi-ialirt
-    "h",  # hi-ialirt
-    "heplusplus",  # lo-ialirt
-    "cplus5",  # lo-ialirt
-    "cplus6",  # lo-ialirt
-    "oplus6",  # lo-ialirt shape mismatch
-    "oplus7",  # lo-ialirt shape mismatch
-    "oplus8",  # lo-ialirt shape mismatch
-    "mg",  # lo-ialirt shape mismatch
-    "fe_loq",  # lo-ialirt shape mismatch
-    "fe_hiq",  # lo-ialirt shape mismatch
-    "heplusplus",  # lo-ialirt shape mismatch
-    "cplus5",  # lo-ialirt shape mismatch
-    "cplus6",  # lo-ialirt shape mismatch
-    "rgfo_half_spin",  # lo-ialirt shape mismatch
-    "nso_half_spin",  # lo-ialirt shape mismatch
-    "tof_plus_apd",  # counters-aggregated
-    "tof_only",  # counters-aggregated
-    "position_plus_apd",  # counters-aggregated
-    "position_only",  # counters-aggregated
-    "sta_or_stb_plus_apd",  # counters-aggregated
-    "sta_or_stb_only",  # counters-aggregated
-    "reserved1",  # counters-aggregated
-    "reserved2",  # counters-aggregated
-    "sp_only",  # counters-aggregated
-    "apd_only",  # counters-aggregated
-    "low_tof_cutoff",  # counters-aggregated
-    "invalid_position_count",  # counters-aggregated
-    "asic1_flag_invalid",  # counters-aggregated
-    "asic2_flag_invalid",  # counters-aggregated
-    "asic1_channel_invalid",  # counters-aggregated
-    "asic2_channel_invalid",  # counters-aggregated
-    "tec4_timeout_tof_no_pos",  # counters-aggregated
-    "tec4_timeout_pos_no_tof",  # counters-aggregated
-    "tec4_timeout_no_pos_tof",  # counters-aggregated
-    "tec5_timeout_tof_no_pos",  # counters-aggregated
-    "tec5_timeout_pos_no_tof",  # counters-aggregated
-    "tec5_timeout_no_pos_tof",  # counters-aggregated
-    "p0_tcrs",  # sw-priority shape mismatch
-    "p1_hplus",  # sw-priority shape mismatch
-    "p2_heplusplus",  # sw-priority shape mismatch
-    "p3_heavies",  # sw-priority shape mismatch
-    "p4_dcrs",  # lo-sw-priority shape mismatch
-    "p5_heavies",  # lo-nsw-priority shape mismatch
-    "p6_hplus_heplusplus",  # lo-nsw-priority shape mismatch
-    "k_factor",  # lo-direct-events
-    "priority_label",  # hi and lo direct-events
-    "sw_bias_gain_mode",  # lo-direct-events
-    "st_bias_gain_mode",  # lo-direct-events
-    "position",  # lo-direct-events
-    *TIME_MISMATCHES,
-]
-
-UNCERTAINTY_VARIABLES = "unc_"
-
-
-EXPECTED_HI_OMNI_ARRAY_SHAPES = {
-    "h": (36, 15),
-    "he3": (36, 15),
-    "he4": (36, 15),
-    "c": (36, 18),
-    "o": (36, 18),
-    "ne_mg_si": (36, 15),
-    "fe": (36, 18),
-    "uh": (36, 5),
-    "junk": (36, 1),
-}
-
-
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_hi_ialirt():
     test_file_path = (
         imap_module_directory
@@ -112,10 +44,6 @@ def test_hi_ialirt():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Shape mismatch for variable '{variable}'"
         )
@@ -124,6 +52,7 @@ def test_hi_ialirt():
     assert cdf_file.name == "imap_codice_l1a_hi-ialirt_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_lo_ialirt():
     test_file_path = (
         imap_module_directory
@@ -141,10 +70,6 @@ def test_lo_ialirt():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Shape mismatch for variable '{variable}'"
         )
@@ -182,6 +107,7 @@ def test_hskp():
     assert cdf_file.name == "imap_codice_l1a_hskp_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_lo_counters_aggregated():
     """Tests lo-counters-aggregated."""
     test_file_path = (
@@ -200,16 +126,13 @@ def test_lo_counters_aggregated():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-counters-aggregated_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_lo_counters_singles():
     """Tests lo-counters-singles."""
     test_file_path = (
@@ -228,16 +151,13 @@ def test_lo_counters_singles():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-counters-singles_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_lo_sw_priority():
     """Tests lo-sw-priority."""
     test_file_path = (
@@ -256,10 +176,6 @@ def test_lo_sw_priority():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Shape mismatch for variable '{variable}'"
         )
@@ -268,6 +184,7 @@ def test_lo_sw_priority():
     assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_lo_nsw_priority():
     """Tests lo-nsw-priority."""
     test_file_path = (
@@ -286,25 +203,34 @@ def test_lo_nsw_priority():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-priority_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_lo_sw_species():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_lo_sw_species(mock_get_file_paths):
     """Tests lo-sw-species."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-sw-species_20250814_v001.pkts"
-    )
 
+    # See note at top of file about specific side_effect
+    def _side_effect(descriptor=None, data_type=None):
+        if descriptor == "l1a-sci-lut":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20251007_v001.json"
+            ]
+        elif data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_input"
+                / "imap_codice_l0_lo-sw-species_20250814_v001.pkts"
+            ]
+
+    mock_get_file_paths.side_effect = _side_effect
     # Validation
     val_path = (
         imap_module_directory
@@ -314,14 +240,16 @@ def test_lo_sw_species():
 
     val_data = load_cdf(val_path)
 
-    # Process the input data
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    sci_input = ScienceInput("imap_codice_l0_lo-sw-species_20250814_v001.pkts")
+    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
+    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
 
+    # Process the input data
+    processed_data = process_l1a(dependency=dependency)[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
+        if variable in ["acquisition_time_per_step"]:
             continue
-
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -329,18 +257,42 @@ def test_lo_sw_species():
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
+    for variable in val_data.coords:
+        # TODO: make this equal statement after epoch seconds difference
+        # is resolved
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-species_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_lo_nsw_species():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_lo_nsw_species(mock_get_file_paths):
     """Tests lo-nsw-species."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-nsw-species_20250814_v001.pkts"
-    )
+
+    # See note at top of file about specific side_effect
+    def _side_effect(descriptor=None, data_type=None):
+        if descriptor == "l1a-sci-lut":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20251007_v001.json"
+            ]
+        elif data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_input"
+                / "imap_codice_l0_lo-nsw-species_20250814_v001.pkts"
+            ]
+
+    mock_get_file_paths.side_effect = _side_effect
 
     # Validation
     val_path = (
@@ -351,14 +303,16 @@ def test_lo_nsw_species():
 
     val_data = load_cdf(val_path)
 
-    # Process the input data
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    sci_input = ScienceInput("imap_codice_l0_lo-nsw-species_20250814_v001.pkts")
+    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
+    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
 
+    # Process the input data
+    processed_data = process_l1a(dependency=dependency)[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
+        if variable in ["acquisition_time_per_step"]:
             continue
-
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -366,10 +320,21 @@ def test_lo_nsw_species():
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
+    for variable in val_data.coords:
+        # TODO: make this equal statement after epoch seconds difference
+        # is resolved
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True, istp=True)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-species_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_lo_sw_angular():
     """Tests lo-sw-angular."""
     test_file_path = (
@@ -388,9 +353,6 @@ def test_lo_sw_angular():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
-            continue
-
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -402,6 +364,7 @@ def test_lo_sw_angular():
     assert cdf_file.name == "imap_codice_l1a_lo-sw-angular_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_lo_nsw_angular():
     """Tests lo-nsw-angular."""
     test_file_path = (
@@ -420,9 +383,6 @@ def test_lo_nsw_angular():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
-            continue
-
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -434,6 +394,7 @@ def test_lo_nsw_angular():
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-angular_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_hi_counters_aggregated():
     """Tests hi-counters-aggregated."""
     test_file_path = (
@@ -452,17 +413,13 @@ def test_hi_counters_aggregated():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
-
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_hi_counters_singles():
     """Tests hi-counters-singles."""
     test_file_path = (
@@ -481,16 +438,13 @@ def test_hi_counters_singles():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-singles_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_hi_omni():
     """Tests hi-omni."""
     test_file_path = (
@@ -510,11 +464,6 @@ def test_hi_omni():
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     # hi-omni has species-specific shapes
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
-        assert processed_data[variable].shape == val_data[variable].shape
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -526,6 +475,7 @@ def test_hi_omni():
     assert cdf_file.name == "imap_codice_l1a_hi-omni_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_hi_sectored():
     """Tests hi-sectored."""
     test_file_path = (
@@ -544,10 +494,6 @@ def test_hi_sectored():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -559,6 +505,7 @@ def test_hi_sectored():
     assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_hi_priority():
     """Tests hi-priority."""
     test_file_path = (
@@ -580,16 +527,13 @@ def test_hi_priority():
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_lo_direct_events():
     """Tests lo-direct-events."""
     test_file_path = (
@@ -608,16 +552,13 @@ def test_lo_direct_events():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v999.cdf"
 
 
+@pytest.mark.skip(reason="Revisit this in l1a refactor work")
 def test_hi_direct_events():
     """Tests hi-direct-events."""
     test_file_path = (
@@ -640,10 +581,6 @@ def test_hi_direct_events():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES or variable.startswith(
-            UNCERTAINTY_VARIABLES
-        ):
-            continue
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)

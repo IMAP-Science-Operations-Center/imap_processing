@@ -17,9 +17,21 @@ from imap_processing.codice.codice_l2 import (
 pytestmark = pytest.mark.external_test_data
 
 
-@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_l2_hi_omni(mock_get_file_paths, codice_lut_path):
-    mock_get_file_paths.side_effect = codice_lut_path
+@pytest.fixture
+def mock_get_file_paths(codice_lut_path):
+    with patch(
+        "imap_data_access.processing_input.ProcessingInputCollection.get_file_paths"
+    ) as mock_get_file_paths:
+        # Ensure the side effect treats science inputs as L1B for these L2 tests
+        mock_get_file_paths.side_effect = (
+            lambda descriptor, data_type=None: codice_lut_path(
+                descriptor, data_type="l1b"
+            )
+        )
+        yield mock_get_file_paths
+
+
+def test_l2_hi_omni(mock_get_file_paths):
     sci_input = ScienceInput("imap_codice_l1b_hi-omni_20250814_v006.cdf")
     anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv")
     dependencies = ProcessingInputCollection(anc_input, sci_input)
@@ -61,11 +73,7 @@ def test_l2_hi_omni(mock_get_file_paths, codice_lut_path):
     assert omni_cdf_file.name == "imap_codice_l2_hi-omni_20250814_v001.cdf"
 
 
-@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_l2_hi_sectored(mock_get_file_paths, codice_lut_path):
-    # Ensure mocked ProcessingInputCollection.get_file_paths returns LUT paths
-    mock_get_file_paths.side_effect = codice_lut_path
-
+def test_l2_hi_sectored(mock_get_file_paths):
     anc_input = AncillaryInput(
         "imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
     )
