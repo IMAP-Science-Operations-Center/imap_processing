@@ -383,12 +383,12 @@ def test_codice_l2_nsw_angular_intensity(processing_dependencies, mock_get_file_
     sci_input = ScienceInput("imap_codice_l1b_lo-nsw-angular_20250814_v007.cdf")
     processing_dependencies.add(sci_input)
     l2_val_data = (
-        imap_module_directory
-        / "tests"
-        / "codice"
-        / "data"
-        / "l2_validation"
-        / "imap_codice_l2_lo-nsw-angular_20250814_v006.cdf"
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "l2_validation"
+            / "imap_codice_l2_lo-nsw-angular_20250814_v006.cdf"
     )
     l2_val_data = load_cdf(l2_val_data)
     ds = process_codice_l2("lo-nsw-angular", processing_dependencies)
