@@ -57,6 +57,9 @@ def generate_coverage(
 
     stations = {
         "Kiel": STATIONS["Kiel"],
+        "Korea": STATIONS["Korea"],
+        "Manaus": STATIONS["Manaus"],
+        "SANSA": STATIONS["SANSA"],
     }
     coverage_dict = {}
     outage_dict = {}
