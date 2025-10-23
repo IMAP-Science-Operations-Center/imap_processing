@@ -1265,12 +1265,13 @@ class RectangularSkyMap(AbstractSkyMap):
             coords={**self.non_spatial_coords, **self.spatial_coords},
         )
 
-    def build_cdf_dataset(
+    def build_cdf_dataset(  # noqa: PLR0912
         self,
         instrument: str,
         level: str,
         descriptor: str,
         sensor: str | None = None,
+        drop_vars_with_no_attributes: bool = True,
     ) -> xr.Dataset:
         """
         Format the data into a xarray.Dataset and add required CDF variables.
@@ -1285,6 +1286,12 @@ class RectangularSkyMap(AbstractSkyMap):
             Descriptor for filename.
         sensor : str, optional
             Sensor number "45" or "90".
+        drop_vars_with_no_attributes : bool, optional
+            Default behavior is to drop any dataset variables that don't have
+            attributes defined in the CDF attribute manager. This ensures that
+            the output CDF doesn't have any of the intermedeiate variables left
+            over from computations. Sometimes, it is useful to output the
+            intermedeiate variables. To do so, set this to False.
 
         Returns
         -------
@@ -1388,13 +1395,18 @@ class RectangularSkyMap(AbstractSkyMap):
                     variable_name=name,
                     check_schema=check_schema,
                 )
-            except KeyError as e:
-                raise KeyError(
-                    f"Attributes for variable {name} not found in "
-                    f"loaded variable attributes."
-                ) from e
-
-            cdf_ds[name].attrs.update(var_attrs)
+                cdf_ds[name].attrs.update(var_attrs)
+            except KeyError:
+                if drop_vars_with_no_attributes:
+                    logger.debug(
+                        f"Dropping variable '{name}' that has no attributes defined."
+                    )
+                    cdf_ds = cdf_ds.drop_vars(name)
+                else:
+                    logger.debug(
+                        f"Variable '{name}' has no attributes defined. It will "
+                        f"be included in the output dataset with no attributes."
+                    )
 
         # Manually adjust epoch attributes
         cdf_ds["epoch"].attrs.update(
