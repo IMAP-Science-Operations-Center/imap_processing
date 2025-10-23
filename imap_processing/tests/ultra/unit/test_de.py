@@ -136,10 +136,10 @@ def test_calculate_events_in_pointing(use_fake_repoint_data_for_time):
     event_times = np.arange(pointing_start, pointing_start + 10)
     # Edit the first event time to be during a repoint.
     event_times[0] = pointing_start - 1
-    valid_events = np.ones_like(event_times, dtype=bool)
-    in_poiting = calculate_events_in_pointing(
-        repoint_id, ttj2000ns_to_et(met_to_ttj2000ns(event_times)), valid_events
+    in_pointing = calculate_events_in_pointing(
+        repoint_id,
+        ttj2000ns_to_et(met_to_ttj2000ns(event_times)),
     )
     # The first event should be False (not during a pointing), and the rest True.
-    assert np.all(not in_poiting[0])
-    assert np.all(in_poiting[1:])
+    assert np.all(not in_pointing[0])
+    assert np.all(in_pointing[1:])
