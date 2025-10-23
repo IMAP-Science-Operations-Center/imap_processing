@@ -423,13 +423,10 @@ def calculate_events_in_pointing(
     pointing_start_met = repoint_row["repoint_end_met"].values[0]
     pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
 
-    # Create a boolean array for events within the pointing
-    in_pointing = np.zeros(len(event_times), dtype=bool)
-
     # Check which events are within the pointing
-    in_pointing[valid_events] = (
-        et_to_met(event_times[valid_events]) >= pointing_start_met
-    ) & (et_to_met(event_times[valid_events]) <= pointing_end_met)
+    in_pointing = (et_to_met(event_times) >= pointing_start_met) & (
+        et_to_met(event_times) <= pointing_end_met
+    )
 
     quality_flags[~in_pointing] |= ImapAttitudeUltraFlags.DURINGREPOINT.value
     return in_pointing
