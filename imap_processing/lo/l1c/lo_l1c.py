@@ -295,8 +295,8 @@ def create_pset_counts(
     data = np.column_stack(
         (
             de_filtered["esa_step"],
-            de_filtered["pointing_bin_lon"],
-            de_filtered["pointing_bin_lat"],
+            de_filtered["spin_bin"],
+            de_filtered["off_angle_bin"],
         )
     )
     # Create the histogram with 3600 longitude bins, 40 latitude bins, and 7 energy bins
@@ -341,7 +341,7 @@ def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.Dat
         The exposure times for the L1B Direct Event dataset.
     """
     data = np.column_stack(
-        (l1b_de["esa_step"], l1b_de["pointing_bin_lon"], l1b_de["pointing_bin_lat"])
+        (l1b_de["esa_step"], l1b_de["spin_bin"], l1b_de["off_angle_bin"])
     )
 
     result = binned_statistic_dd(
@@ -628,7 +628,7 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
     hae_latitude : xr.DataArray
         The HAE latitude for each spin and off angle bin.
     """
-    et = ttj2000ns_to_et(epoch)
+    et = ttj2000ns_to_et(epoch) + 1
     # create a meshgrid of spin and off angles using the bin centers
     spin, off = np.meshgrid(
         SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"

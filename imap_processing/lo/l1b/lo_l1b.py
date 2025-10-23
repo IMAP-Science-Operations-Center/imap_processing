@@ -19,6 +19,7 @@ from imap_processing.lo.l1b.tof_conversions import (
 from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_latitudinal,
+    frame_transform,
     instrument_pointing,
 )
 from imap_processing.spice.repoint import get_pointing_times
@@ -761,7 +762,7 @@ def set_bad_or_goodtimes(
     # 0.1 degree bins to align with the spin_bins, so multiply by 60
     time_mask = (epochs[:, None] >= times_start) & (epochs[:, None] <= times_end)
     bin_mask = (spin_bins[:, None] >= times_df["bin_start"].values * 60) & (
-        spin_bins[:, None] <= times_df["bin_end"].values * 60
+        spin_bins[:, None] < (times_df["bin_end"].values + 1) * 60
     )
 
     # Combined mask for epochs that fall within the time and bin ranges
@@ -853,8 +854,15 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     x = l1b_de["hae_x"]
     y = l1b_de["hae_y"]
     z = l1b_de["hae_z"]
+    # Convert from HAE to DPS coordinates
+    dps_xyz = frame_transform(
+        ttj2000ns_to_et(l1b_de["epoch"]),
+        np.column_stack((x, y, z)),
+        SpiceFrame.IMAP_HAE,
+        SpiceFrame.IMAP_DPS,
+    )
     # convert the pointing direction to latitudinal coordinates
-    direction = cartesian_to_latitudinal(np.column_stack((x, y, z)))
+    direction = cartesian_to_latitudinal(dps_xyz)
     # first column: radius (Not needed)
     # second column: longitude
     lons = direction[:, 1]
