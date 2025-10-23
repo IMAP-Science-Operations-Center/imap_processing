@@ -321,9 +321,9 @@ def calculate_de(
     valid_events = event_times != FILLVAL_FLOAT32
     # TODO - find a better solution than filtering out data from repointings?
     if repoint_id is not None:
-        in_pointing = calculate_events_in_pointing(
-            repoint_id, event_times, quality_flags
-        )
+        in_pointing = calculate_events_in_pointing(repoint_id, event_times)
+        # Update quality flags for events outside pointing
+        quality_flags[~in_pointing] |= ImapAttitudeUltraFlags.DURINGREPOINT.value
         # Update valid_events to only include times within a pointing
         valid_events &= in_pointing
 
@@ -391,7 +391,6 @@ def calculate_de(
 def calculate_events_in_pointing(
     repoint_id: int,
     event_times: np.ndarray,
-    quality_flags: np.ndarray,
 ) -> np.ndarray:
     """
     Calculate boolean array of events within a pointing.
@@ -402,8 +401,6 @@ def calculate_events_in_pointing(
         The repointing ID.
     event_times : np.ndarray
         Array of event times in ET.
-    quality_flags : np.ndarray
-        Array of quality flags to be updated.
 
     Returns
     -------
@@ -424,6 +421,4 @@ def calculate_events_in_pointing(
     in_pointing = (et_to_met(event_times) >= pointing_start_met) & (
         et_to_met(event_times) <= pointing_end_met
     )
-
-    quality_flags[~in_pointing] |= ImapAttitudeUltraFlags.DURINGREPOINT.value
     return in_pointing
