@@ -197,6 +197,40 @@ def get_collapse_pattern_shape(
     return (unique_spin_sectors, unique_inst_azs)
 
 
+def index_to_position(
+    json_data: dict, sensor_id: int, collapse_table_id: int
+) -> np.ndarray:
+    """
+    Get the indices of non-zero unique rows in the collapse pattern matrix.
+
+    Parameters
+    ----------
+    json_data : dict
+        The JSON data loaded from the SCI-LUT file.
+    sensor_id : int
+        Sensor identifier (0 for LO, 1 for HI).
+    collapse_table_id : int
+        Collapse table id to look up in the SCI-LUT.
+
+    Returns
+    -------
+    np.ndarray
+        Array of indices corresponding to non-zero unique rows.
+    """
+    if sensor_id == 0:
+        collapse_tab = json_data.get("collapse_lo").get(f"{collapse_table_id}")
+    else:
+        collapse_tab = json_data.get("collapse_hi").get(f"{collapse_table_id}")
+
+    collapse_matrix = np.array(collapse_tab["matrix"])
+    # Find unique non-zero rows and their original indices
+    non_zero_row_mask = np.any(collapse_matrix != 0, axis=1)
+    non_zero_rows = collapse_matrix[non_zero_row_mask]
+    _, unique_indices = np.unique(non_zero_rows, axis=0, return_index=True)
+    non_zero_row_indices = np.flatnonzero(non_zero_row_mask)[unique_indices]
+    return non_zero_row_indices
+
+
 def get_codice_epoch_time(
     acq_start_seconds: np.ndarray,
     acq_start_subseconds: np.ndarray,

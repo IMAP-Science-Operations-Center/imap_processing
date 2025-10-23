@@ -168,6 +168,18 @@ ssd_index:
     VALIDMAX: 12
     VAR_TYPE: support_data
 
+k_factor_attrs:
+    CATDESC: K Factor constant that is used to convert voltages to energies
+    DEPEND_1: k_factor
+    FIELDNAM: K Factor
+    FORMAT: F6.2
+    LABLAXIS: K Factor
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 1.0
+    VALIDMAX: 100.0
+    VAR_TYPE: support_data
+
 # <=== Labels ===>
 esa_step_label:
     CATDESC: ESA Step
@@ -298,7 +310,7 @@ voltage_table:
 
 k_factor:
     CATDESC: K Factor constant that is used to convert voltages to energies
-    DEPEND_1: spin_sector
+    DEPEND_1: k_factor
     FIELDNAM: K Factor
     FORMAT: F6.2
     LABLAXIS: K Factor
@@ -1143,61 +1155,42 @@ lo-counters-singles-apd_singles:
     LABL_PTR_2: spin_sector_pairs_label
     LABL_PTR_3: esa_step_label
 
-# lo-sw-angular
-lo-sw-angular-hplus:
-    <<: *counters
-    CATDESC: Sunward H+ Species
-    FIELDNAM: SW - H+
+# lo-angular attribute templates (combined versions of the previous entries)
+lo-angular-attrs:
+    CATDESC: "{species} Sunward {direction} species"
+    DEPEND_0: epoch
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
+    DEPEND_2: spin_sector
+    DEPEND_3: inst_az
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "SW - {species}"
+    FILLVAL: *int_fillval
+    FORMAT: I7
     LABL_PTR_1: esa_step_label
-    LABL_PTR_2: inst_az_label
-    LABL_PTR_3: spin_sector_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: inst_az_label
+    UNITS: counts
+    VALIDMIN: 0
+    VALIDMAX: *max_uint32
+    VAR_TYPE: data
 
-lo-sw-angular-heplusplus:
-    <<: *counters
-    CATDESC: Sunward He++ Species
-    FIELDNAM: SW - He++
+lo-angular-unc-attrs:
+    CATDESC: "{species} Non-sunward {direction} species uncertainty"
+    DEPEND_0: epoch
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
+    DEPEND_2: spin_sector
+    DEPEND_3: inst_az
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "NSW - {species}"
+    FILLVAL: *int_fillval
+    FORMAT: I7
     LABL_PTR_1: esa_step_label
-    LABL_PTR_2: inst_az_label
-    LABL_PTR_3: spin_sector_label
-
-lo-sw-angular-oplus6:
-    <<: *counters
-    CATDESC: Sunward O+6 Species
-    FIELDNAM: SW - O+6
-    DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: inst_az_label
-    LABL_PTR_3: spin_sector_label
-
-lo-sw-angular-fe_loq:
-    <<: *counters
-    CATDESC: Sunward Fe lowQ Species
-    FIELDNAM: SW - Fe lowQ
-    DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: inst_az_label
-    LABL_PTR_3: spin_sector_label
-
-lo-nsw-angular-heplusplus:
-    <<: *counters
-    CATDESC: Non-sunward He++ Species
-    FIELDNAM: NSW - He++
-    DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: inst_az_label
-    LABL_PTR_3: spin_sector_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: inst_az_label
+    UNITS: counts
+    VALIDMIN: 0
+    VALIDMAX: *max_uint32
+    VAR_TYPE: data
 
 # lo-sw-priority
 lo-sw-priority-p0_tcrs:

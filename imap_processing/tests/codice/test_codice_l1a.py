@@ -334,25 +334,47 @@ def test_lo_nsw_species(mock_get_file_paths):
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-species_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_lo_sw_angular():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_lo_sw_angular(mock_get_file_paths):
     """Tests lo-sw-angular."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-sw-angular_20250814_v001.pkts"
-    )
+
+    # See note at top of file about specific side_effect
+    def _side_effect(descriptor=None, data_type=None):
+        if descriptor == "l1a-sci-lut":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20251007_v001.json"
+            ]
+        elif data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_input"
+                / "imap_codice_l0_lo-sw-angular_20250814_v001.pkts"
+            ]
+
+    mock_get_file_paths.side_effect = _side_effect
 
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-angular_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1a_lo-sw-angular_20250814_v006.cdf"
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    sci_input = ScienceInput("imap_codice_l0_lo-sw-angular_20250814_v001.pkts")
+    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
+    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
+
+    # Process the input data
+    processed_data = process_l1a(dependency=dependency)[0]
+    # Compare only the common variables
     for variable in val_data.data_vars:
+        if variable == "acquisition_time_per_step":
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -360,29 +382,58 @@ def test_lo_sw_angular():
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
+    for variable in val_data.coords:
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-angular_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_lo_nsw_angular():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_lo_nsw_angular(mock_get_file_paths):
     """Tests lo-nsw-angular."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-nsw-angular_20250814_v001.pkts"
-    )
+
+    # See note at top of file about specific side_effect
+    def _side_effect(descriptor=None, data_type=None):
+        if descriptor == "l1a-sci-lut":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20251007_v001.json"
+            ]
+        elif data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_input"
+                / "imap_codice_l0_lo-nsw-angular_20250814_v001.pkts"
+            ]
+
+    mock_get_file_paths.side_effect = _side_effect
 
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-angular_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1a_lo-nsw-angular_20250814_v006.cdf"
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    sci_input = ScienceInput("imap_codice_l0_lo-nsw-angular_20250814_v001.pkts")
+    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
+    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
+
+    # Process the input data
+    processed_data = process_l1a(dependency=dependency)[0]
     for variable in val_data.data_vars:
+        if variable == "acquisition_time_per_step":
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -390,7 +441,15 @@ def test_lo_nsw_angular():
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
+    for variable in val_data.coords:
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-angular_20250814_v999.cdf"
 
 
