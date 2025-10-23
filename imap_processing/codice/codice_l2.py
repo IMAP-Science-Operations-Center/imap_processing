@@ -31,8 +31,9 @@ from imap_processing.codice.constants import (
     LO_POSITION_TO_ELEVATION_ANGLE,
     LO_SW_ANGULAR_VARIABLE_NAMES,
     LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
-    LO_SW_SPECIES_VARIABLE_NAMES,
+    LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     NSW_POSITIONS,
+    PIXEL_ORIENTATIONS,
     PUI_POSITIONS,
     SOLAR_WIND_POSITIONS,
     SW_POSITIONS,
@@ -354,11 +355,14 @@ def process_lo_angular_intensity(
         positions,
         average_across_positions=False,
     )
+
     # transform positions to elevation angles
     if positions == SW_POSITIONS:
         pos_to_el = LO_POSITION_TO_ELEVATION_ANGLE["sw"]
+        position_index_to_adjust = 0
     elif positions == NSW_POSITIONS:
         pos_to_el = LO_POSITION_TO_ELEVATION_ANGLE["nsw"]
+        position_index_to_adjust = 9
     else:
         raise ValueError("Unknown positions for elevation angle mapping.")
 
@@ -383,8 +387,38 @@ def process_lo_angular_intensity(
     dataset = dataset.assign_coords(
         spin_angle=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
     )
-
     dataset = dataset.drop_vars(species_list).merge(dataset_converted)
+    # # Positions 0 and 10 only observe half of the 24 spins for each esa step.
+    # # To account for this, we replicate the counts observed in position 0 and 10 for
+    # each esa step to either spin angles 0-11 or 12-23, depending on the pixel
+    # orientation (A/B). See section 11.2.2 of the CoDICE algorithm document
+    a_inds = np.array(
+        [pos for pos, orientation in PIXEL_ORIENTATIONS.items() if orientation == "A"]
+    )
+    b_inds = np.array(
+        [pos for pos, orientation in PIXEL_ORIENTATIONS.items() if orientation == "B"]
+    )
+
+    position_index = position_index_to_adjust
+    for species in species_list:
+        # Determine the correct spin indices based on the position
+        spin_start_1 = np.abs(position_index - 12)
+        spin_start_2 = np.abs(spin_start_1 - 12)
+        spin_inds_1 = np.arange(spin_start_1, spin_start_1 + 12)
+        spin_inds_2 = np.arange(spin_start_2, spin_start_2 + 12)
+        # Assign the values to the correct positions and spin sectors
+        dataset[species].values[
+            :, a_inds[:, np.newaxis], spin_inds_1, position_index
+        ] = dataset[species].values[
+            :, a_inds[:, np.newaxis], spin_inds_2, position_index
+        ]
+
+        dataset[species].values[
+            :, b_inds[:, np.newaxis], spin_inds_2, position_index
+        ] = dataset[species].values[
+            :, b_inds[:, np.newaxis], spin_inds_1, position_index
+        ]
+
     return dataset
 
 
@@ -802,7 +836,7 @@ def process_codice_l2(
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
             # Calculate the pickup ion sunward solar wind intensities using equation
             # described in section 11.2.3 of algorithm document.
-            process_lo_species_intensity(
+            l2_dataset = process_lo_species_intensity(
                 l2_dataset,
                 LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
                 geometric_factors,
@@ -811,9 +845,9 @@ def process_codice_l2(
             )
             # Calculate the sunward solar wind species intensities using equation
             # described in section 11.2.3 of algorithm document.
-            process_lo_species_intensity(
+            l2_dataset = process_lo_species_intensity(
                 l2_dataset,
-                LO_SW_SPECIES_VARIABLE_NAMES,
+                LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
                 geometric_factors,
                 efficiencies,
                 SOLAR_WIND_POSITIONS,
@@ -823,7 +857,7 @@ def process_codice_l2(
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
             # Calculate the non-sunward species intensities using equation
             # described in section 11.2.3 of algorithm document.
-            process_lo_species_intensity(
+            l2_dataset = process_lo_species_intensity(
                 l2_dataset,
                 LO_NSW_SPECIES_VARIABLE_NAMES,
                 geometric_factors,

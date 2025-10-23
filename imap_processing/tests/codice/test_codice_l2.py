@@ -21,7 +21,9 @@ from imap_processing.codice.codice_l2 import (
     process_lo_species_intensity,
 )
 from imap_processing.codice.constants import (
+    LO_NSW_ANGULAR_VARIABLE_NAMES,
     LO_SW_ANGULAR_VARIABLE_NAMES,
+    LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     SW_POSITIONS,
 )
@@ -315,7 +317,31 @@ def test_process_lo_angular_intensity():
 def test_codice_l2_sw_species_intensity(processing_dependencies, mock_get_file_paths):
     sci_input = ScienceInput("imap_codice_l1b_lo-sw-species_20250814_v006.cdf")
     processing_dependencies.add(sci_input)
+
+    l2_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / "imap_codice_l2_lo-sw-species_20250814_v006.cdf"
+    )
+    l2_val_data = load_cdf(l2_val_data)
     ds = process_codice_l2("lo-sw-species", processing_dependencies)
+    species = LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES
+    for variable in l2_val_data.data_vars:
+        # TODO: remove this hack once CODICE team fixes the issue.
+        if variable in species + [f"unc_{var}" for var in species]:
+            # multiply by a factor of 5.
+            processed_val = ds[variable].values * 5
+        else:
+            processed_val = ds[variable].values
+        np.testing.assert_allclose(
+            processed_val,
+            l2_val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
     ds.attrs["Data_version"] = "001"
     write_cdf(ds)
 
@@ -323,7 +349,23 @@ def test_codice_l2_sw_species_intensity(processing_dependencies, mock_get_file_p
 def test_codice_l2_nsw_species_intensity(processing_dependencies, mock_get_file_paths):
     sci_input = ScienceInput("imap_codice_l1b_lo-nsw-species_20250814_v006.cdf")
     processing_dependencies.add(sci_input)
+    l2_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / "imap_codice_l2_lo-nsw-species_20250814_v006.cdf"
+    )
+    l2_val_data = load_cdf(l2_val_data)
     ds = process_codice_l2("lo-nsw-species", processing_dependencies)
+    for variable in l2_val_data.data_vars:
+        np.testing.assert_allclose(
+            ds[variable].values,
+            l2_val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
     ds.attrs["Data_version"] = "001"
     write_cdf(ds)
 
@@ -331,7 +373,25 @@ def test_codice_l2_nsw_species_intensity(processing_dependencies, mock_get_file_
 def test_codice_l2_nsw_angular_intensity(processing_dependencies, mock_get_file_paths):
     sci_input = ScienceInput("imap_codice_l1b_lo-nsw-angular_20250814_v006.cdf")
     processing_dependencies.add(sci_input)
+    l2_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / "imap_codice_l2_lo-nsw-angular_20250814_v006.cdf"
+    )
+    l2_val_data = load_cdf(l2_val_data)
     ds = process_codice_l2("lo-nsw-angular", processing_dependencies)
+    for variable in LO_NSW_ANGULAR_VARIABLE_NAMES:
+        # TODO : remove this hack once CODICE team fixes the spin sector index issue.
+        #   And the position index issue.
+        np.testing.assert_allclose(
+            ds[variable].values[:, :, 0:10, :-1],
+            l2_val_data[variable].values[:, :, 0:10, :-1],
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
     ds.attrs["Data_version"] = "001"
     write_cdf(ds)
 
@@ -339,6 +399,24 @@ def test_codice_l2_nsw_angular_intensity(processing_dependencies, mock_get_file_
 def test_codice_l2_sw_angular_intensity(processing_dependencies, mock_get_file_paths):
     sci_input = ScienceInput("imap_codice_l1b_lo-nsw-angular_20250814_v006.cdf")
     processing_dependencies.add(sci_input)
+    l2_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / "imap_codice_l2_lo-sw-angular_20250814_v006.cdf"
+    )
+    l2_val_data = load_cdf(l2_val_data)
     ds = process_codice_l2("lo-sw-angular", processing_dependencies)
+    for variable in LO_SW_ANGULAR_VARIABLE_NAMES:
+        # TODO : remove this hack once CODICE team fixes the spin sector index issue.
+        np.testing.assert_allclose(
+            ds[variable].values[:, :, 12:-1, :],
+            l2_val_data[variable].values[:, :, 12:-1, :],
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+
     ds.attrs["Data_version"] = "001"
     write_cdf(ds)
