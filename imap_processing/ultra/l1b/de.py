@@ -407,7 +407,7 @@ def calculate_events_in_pointing(
     event_times : np.ndarray
         Array of event times in ET.
     valid_events : np.ndarray
-        Boolean array indicating valid event_times.
+        Boolean array indicating valid events.
 
     Returns
     -------
@@ -423,9 +423,13 @@ def calculate_events_in_pointing(
     next_repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id + 1]
     pointing_start_met = repoint_row["repoint_end_met"].values[0]
     pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
+
+    # Create a boolean array for events within the pointing
     in_pointing = np.zeros(len(event_times), dtype=bool)
+
     # Check which events are within the pointing
     in_pointing[valid_events] = (
         et_to_met(event_times[valid_events]) >= pointing_start_met
     ) & (et_to_met(event_times[valid_events]) <= pointing_end_met)
+
     return in_pointing
