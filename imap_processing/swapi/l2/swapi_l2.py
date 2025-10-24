@@ -72,8 +72,21 @@ def solve_full_sweep_energy(
             (esa_table_df["timestamp"] <= time) & (esa_table_df["Sweep #"] == sweep_id)
         ]
         if subset.empty:
-            first_63_energies.append(np.full(63, np.nan, dtype=np.float64))
-            continue
+            # Get the earliest timestamp available
+            earliest_time = esa_table_df["timestamp"].min()
+
+            # Find the sweep's ESA data for the earliest time and sweep_id
+            earliest_subset = esa_table_df[
+                (esa_table_df["timestamp"] == earliest_time)
+                & (esa_table_df["Sweep #"] == sweep_id)
+            ]
+            if earliest_subset.empty:
+                raise ValueError(
+                    f"No matching ESA table entry found for sweep ID {sweep_id} "
+                    f"at time {time}, and no entries found for earliest time "
+                    f"{earliest_time}."
+                )
+            subset = earliest_subset
 
         # Subset data can contain multiple 72 energy values with last 9 fine energies
         # with 'Solve' value. We need to sort by time and ESA step to maintain correct
