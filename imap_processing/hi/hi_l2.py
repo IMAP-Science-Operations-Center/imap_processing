@@ -14,6 +14,7 @@ from imap_processing.ena_maps.ena_maps import (
 from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
     apply_compton_getting_correction,
+    interpolate_map_flux_to_helio_frame,
 )
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.utils import CalibrationProductConfig
@@ -190,6 +191,16 @@ def generate_hi_map(
     output_map.data_1d = output_map.data_1d.assign_coords(energy=energy_kev.values)
 
     output_map.data_1d = output_map.data_1d.drop("esa_energy_step_label")
+
+    # Apply Compton-Getting interpolation for heliocentric frame maps
+    if descriptor.frame_descriptor == "hf":
+        esa_energy_ev = esa_energy_ev.rename({"esa_energy_step": "energy"})
+        esa_energy_ev = esa_energy_ev.assign_coords(energy=energy_kev.values)
+        output_map.data_1d = interpolate_map_flux_to_helio_frame(
+            output_map.data_1d,
+            output_map.data_1d["energy"] * 1000,  # Convert ESA energies to eV
+            esa_energy_ev,  # heliocentric energies (same as ESA energies)
+        )
 
     return output_map
 

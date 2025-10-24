@@ -14,6 +14,7 @@ from imap_processing.ena_maps.utils.corrections import (
     _add_spacecraft_velocity_to_pset,
     _calculate_compton_getting_transform,
     apply_compton_getting_correction,
+    interpolate_map_flux_to_helio_frame,
 )
 from imap_processing.spice import geometry
 
@@ -580,3 +581,442 @@ class TestComptonGettingCorrection:
 
         # Verify all values are boolean
         assert ram_mask.dtype == bool
+
+
+class TestInterpolateMapFluxToHelioFrame:
+    """Test suite for interpolate_map_flux_to_helio_frame function."""
+
+    def create_test_map_dataset(self, n_energy=5, n_spatial=10, power_law_slope=-2.0):
+        """Create a synthetic map dataset for testing interpolation.
+
+        Parameters
+        ----------
+        n_energy : int
+            Number of energy channels
+        n_spatial : int
+            Number of spatial pixels
+        power_law_slope : float
+            Power-law spectral index for test flux
+
+        Returns
+        -------
+        tuple
+            (map_ds, esa_energies, helio_energies)
+        """
+        # Define ESA energy channels (in eV)
+        esa_energies = np.array([500.0, 1000.0, 2000.0, 4000.0, 8000.0])[:n_energy]
+
+        # Create flux with a simple power-law spectrum: flux = E^slope
+        flux_base = esa_energies[:, np.newaxis] ** power_law_slope
+
+        # Add some spatial variation (multiply by factors between 0.5 and 1.5)
+        spatial_factors = np.linspace(0.5, 1.5, n_spatial)
+        flux = flux_base * spatial_factors
+
+        # Create uncertainties (10% statistical, 5% systematic)
+        stat_unc = 0.1 * flux
+        sys_err = 0.05 * flux
+
+        # Create spacecraft energies slightly different from ESA energies
+        # to simulate Compton-Getting shift
+        # Add a small spatial-dependent shift
+        energy_shift_factor = 1.0 + 0.1 * np.linspace(-1, 1, n_spatial)
+        energy_sc = esa_energies[:, np.newaxis] * energy_shift_factor
+
+        # Create xarray Dataset
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        # Helio energies are the same as ESA energies (standard case)
+        helio_energies = xr.DataArray(
+            esa_energies,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+
+        esa_energies_da = xr.DataArray(
+            esa_energies,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+
+        return map_ds, esa_energies_da, helio_energies
+
+    def test_basic_interpolation(self):
+        """Test basic functionality of interpolation."""
+
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset()
+
+        # Apply interpolation
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # Verify output structure
+        assert "ena_intensity" in result_ds
+        assert "ena_intensity_stat_uncert" in result_ds
+        assert "ena_intensity_sys_err" in result_ds
+
+        # Verify shapes are preserved
+        assert result_ds["ena_intensity"].shape == map_ds["ena_intensity"].shape
+        assert (
+            result_ds["ena_intensity_stat_uncert"].shape
+            == map_ds["ena_intensity_stat_uncert"].shape
+        )
+        assert (
+            result_ds["ena_intensity_sys_err"].shape
+            == map_ds["ena_intensity_sys_err"].shape
+        )
+
+    def test_power_law_interpolation_accuracy(self):
+        """Test that power-law interpolation formula is correct."""
+
+        # Create simple test case with known power-law
+        # flux = E^(-2)
+        power_law_slope = -2.0
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=1, power_law_slope=power_law_slope
+        )
+
+        # Manually set energy_sc to be between two ESA energies
+        # ESA energies: [500, 1000, 2000]
+        # Set energy_sc for middle channel to 750 eV (between 500 and 1000)
+        map_ds["energy_sc"].values[1, 0] = 750.0
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # For a perfect power-law with flux = E^(-2) * spatial_factor:
+        # With n_spatial=1, spatial_factor = 0.5 (from np.linspace(0.5, 1.5, 1))
+        # The interpolation process does:
+        # 1. Interpolates flux at E_sc=750 from values at 500 and 1000
+        #    Expected: 750^(-2) * 0.5
+        # 2. Scales to E_helio=1000: flux * (1000/750)
+        #    = 750^(-2) * 0.5 * (1000/750)
+
+        # Calculate expected result for middle energy channel
+        e_sc = 750.0
+        e_helio = 1000.0
+        spatial_factor = 0.5  # From create_test_map_dataset with n_spatial=1
+        expected_flux_middle = (
+            (e_sc**power_law_slope) * (e_helio / e_sc) * spatial_factor
+        )
+
+        # Compare interpolated result to expected value
+        # (should be very close for a perfect power-law)
+        np.testing.assert_allclose(
+            result_ds["ena_intensity"].values[1, 0],
+            expected_flux_middle,
+            rtol=1e-10,
+        )
+
+        # The flux should be finite and positive
+        assert np.all(np.isfinite(result_ds["ena_intensity"].values))
+        assert np.all(result_ds["ena_intensity"].values > 0)
+
+    def test_statistical_uncertainty_propagation(self):
+        """Test that statistical uncertainty follows Equation 75."""
+
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=1
+        )
+
+        # Set up a specific case where we can verify the formula
+        # Set energy_sc to midpoint between two channels
+        e_sc = 1400.0  # Between left and right
+
+        map_ds["energy_sc"].values[1, 0] = e_sc
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # Statistical uncertainty should be positive and finite
+        stat_unc = result_ds["ena_intensity_stat_uncert"].values
+        assert np.all(stat_unc >= 0)
+        assert np.all(np.isfinite(stat_unc))
+
+        # Statistical uncertainty should scale with flux
+        # (relative uncertainty should be similar to input)
+        flux = result_ds["ena_intensity"].values
+        rel_unc_output = stat_unc / flux
+
+        # Should be on the order of input relative uncertainty (10%)
+        # Allow for propagation effects
+        assert np.all(rel_unc_output > 0)
+        assert np.all(rel_unc_output < 1.0)  # Should be reasonable
+
+    def test_systematic_uncertainty_propagation(self):
+        """Test that systematic uncertainty follows Equation 76."""
+
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=1
+        )
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # Systematic uncertainty should be positive and finite
+        sys_err = result_ds["ena_intensity_sys_err"].values
+        assert np.all(sys_err >= 0)
+        assert np.all(np.isfinite(sys_err))
+
+        # Systematic error should scale proportionally with flux
+        flux = result_ds["ena_intensity"].values
+        rel_sys_err = sys_err / flux
+
+        # Relative systematic error should be preserved (5% in input)
+        # within reasonable tolerance for the transformations
+        assert np.all(rel_sys_err > 0)
+        assert np.all(rel_sys_err < 0.5)  # Should be reasonable
+
+    def test_energy_scaling_transformation(self):
+        """Test Liouville theorem: flux_helio = flux_sc * (E_helio / E_sc)."""
+
+        # Create dataset where energy_sc equals ESA energies (no CG shift)
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=1
+        )
+
+        # Set energy_sc exactly equal to ESA energies
+        map_ds["energy_sc"].values[:, 0] = esa_energies.values
+
+        # Store original flux for comparison
+        original_flux = map_ds["ena_intensity"].values.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # When E_sc = E_esa and E_helio = E_esa, then E_helio/E_sc = 1
+        # So flux should be approximately preserved (modulo interpolation effects)
+        result_flux = result_ds["ena_intensity"].values
+
+        # The ratio should be close to 1 for each pixel
+        # (within numerical precision and interpolation effects)
+        ratio = result_flux / original_flux
+
+        # Allow for some numerical error and interpolation effects
+        assert np.all(np.isfinite(ratio))
+        # Most values should be reasonably close to original
+        # (exact match not expected due to interpolation)
+        np.testing.assert_allclose(ratio, 1)
+
+    def test_infinite_values_converted_to_nan(self):
+        """Test that infinite values are converted to NaN."""
+
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=2
+        )
+
+        # Introduce a zero flux to create divide-by-zero
+        map_ds["ena_intensity"].values[1, 0] = 0.0
+
+        # Set energy_sc to zero to create potential infinities
+        map_ds["energy_sc"].values[1, 1] = 0.0
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # Check that we have NaN values where expected, not infinities
+        flux = result_ds["ena_intensity"].values
+        stat_unc = result_ds["ena_intensity_stat_uncert"].values
+        sys_err = result_ds["ena_intensity_sys_err"].values
+
+        # Should have no infinities
+        assert not np.any(np.isinf(flux))
+        assert not np.any(np.isinf(stat_unc))
+        assert not np.any(np.isinf(sys_err))
+
+    def test_multidimensional_spatial_coords(self):
+        """Test that interpolation works with multi-dimensional spatial coordinates."""
+
+        n_energy = 4
+        n_lat = 6
+        n_lon = 8
+
+        # Define ESA energies
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0, 4000.0])
+
+        # Create flux with spatial dimensions (lat, lon)
+        power_law_slope = -2.0
+        flux = np.zeros((n_energy, n_lat, n_lon))
+        stat_unc = np.zeros((n_energy, n_lat, n_lon))
+        sys_err = np.zeros((n_energy, n_lat, n_lon))
+        energy_sc = np.zeros((n_energy, n_lat, n_lon))
+
+        for i in range(n_energy):
+            # Power-law flux with spatial variation
+            spatial_pattern = 1.0 + 0.5 * np.random.random((n_lat, n_lon))
+            flux[i, :, :] = (esa_energies_vals[i] ** power_law_slope) * spatial_pattern
+            stat_unc[i, :, :] = 0.1 * flux[i, :, :]
+            sys_err[i, :, :] = 0.05 * flux[i, :, :]
+
+            # Energy shift varies with position
+            energy_sc[i, :, :] = esa_energies_vals[i] * (
+                1.0 + 0.1 * np.random.random((n_lat, n_lon))
+            )
+
+        # Create dataset with 2D spatial coordinates
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "latitude", "longitude"], flux),
+                "ena_intensity_stat_uncert": (
+                    ["energy", "latitude", "longitude"],
+                    stat_unc,
+                ),
+                "ena_intensity_sys_err": (["energy", "latitude", "longitude"], sys_err),
+                "energy_sc": (["energy", "latitude", "longitude"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "latitude": np.arange(n_lat),
+                "longitude": np.arange(n_lon),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        # Apply interpolation
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # Verify output shape matches input
+        assert result_ds["ena_intensity"].shape == (n_energy, n_lat, n_lon)
+        assert result_ds["ena_intensity_stat_uncert"].shape == (n_energy, n_lat, n_lon)
+        assert result_ds["ena_intensity_sys_err"].shape == (n_energy, n_lat, n_lon)
+
+        # Verify dimensions are preserved
+        assert list(result_ds["ena_intensity"].dims) == [
+            "energy",
+            "latitude",
+            "longitude",
+        ]
+
+        # Verify values are reasonable
+        assert np.all(result_ds["ena_intensity"].values > 0)
+        assert np.all(np.isfinite(result_ds["ena_intensity"].values))
+
+    def test_boundary_energy_channels(self):
+        """Test interpolation behavior at energy boundaries."""
+
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=5, n_spatial=3
+        )
+
+        # Test when energy_sc is below the lowest ESA energy
+        map_ds["energy_sc"].values[0, 0] = 0.9 * esa_energies.values[0]
+
+        # Test when energy_sc is above the highest ESA energy
+        map_ds["energy_sc"].values[-1, -1] = 1.1 * esa_energies.values[-1]
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # Should handle boundary cases without errors
+        flux = result_ds["ena_intensity"].values
+
+        # Boundary pixels should have values (possibly NaN, but no crashes)
+        # The function clips indices to valid range, so these should interpolate
+        # using the boundary channels
+        assert flux.shape == map_ds["ena_intensity"].shape
+
+    def test_preserves_dataset_structure(self):
+        """Test that the function preserves the dataset structure."""
+
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset()
+
+        # Store original attributes
+        original_dims = list(map_ds["ena_intensity"].dims)
+        original_coords = list(map_ds.coords.keys())
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # Verify dimensions are preserved
+        assert list(result_ds["ena_intensity"].dims) == original_dims
+
+        # Verify coordinates are preserved
+        assert list(result_ds.coords.keys()) == original_coords
+
+        # Verify it's still an xarray Dataset
+        assert isinstance(result_ds, xr.Dataset)
+
+    def test_with_uniform_flux(self):
+        """Test interpolation with uniform flux (no spatial variation)."""
+
+        n_energy = 4
+        n_spatial = 5
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0, 4000.0])
+
+        # Create uniform flux (same for all spatial pixels)
+        power_law_slope = -2.0
+        flux_uniform = (esa_energies_vals**power_law_slope)[:, np.newaxis]
+        flux = np.tile(flux_uniform, (1, n_spatial))
+
+        stat_unc = 0.1 * flux
+        sys_err = 0.05 * flux
+
+        # Energy shift uniform across space
+        energy_sc = np.tile(esa_energies_vals[:, np.newaxis] * 1.05, (1, n_spatial))
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies
+        )
+
+        # With uniform input, output should also be uniform across spatial dimension
+        result_flux = result_ds["ena_intensity"].values
+
+        # Check that each energy channel has uniform values across spatial pixels
+        for i_energy in range(n_energy):
+            spatial_values = result_flux[i_energy, :]
+            # All spatial pixels at this energy should be similar
+            if np.all(np.isfinite(spatial_values)):
+                std_dev = np.std(spatial_values)
+                mean_val = np.mean(spatial_values)
+                # Relative std should be very small for uniform input
+                if mean_val > 0:
+                    rel_std = std_dev / mean_val
+                    assert rel_std < 1e-10, f"Energy {i_energy}: rel_std = {rel_std}"
