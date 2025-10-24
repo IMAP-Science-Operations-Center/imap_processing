@@ -711,7 +711,7 @@ def get_energy_pulse_height(
     ylut[indices_bottom] = (yb[indices_bottom] / 100 + 82 / 2) * 32 / 82  # mm
 
     ph_correction_top, updated_flags_top = get_ph_corrected(
-        "ultra45",
+        sensor,
         "tp",
         ancillary_files,
         np.round(xlut[indices_top]),
@@ -720,7 +720,7 @@ def get_energy_pulse_height(
     )
     quality_flags[indices_top] = updated_flags_top
     ph_correction_bottom, updated_flags_bottom = get_ph_corrected(
-        "ultra45",
+        sensor,
         "bt",
         ancillary_files,
         np.round(xlut[indices_bottom]),
@@ -1356,7 +1356,7 @@ def is_back_tof_valid(
     From page 33 of the IMAP-Ultra Flight Software Specification document.
     """
     _, _, _, _, tofx, tofy = get_ph_tof_and_back_positions(
-        de_dataset, xf, "ultra45", ancillary_files
+        de_dataset, xf, sensor, ancillary_files
     )
     diff = tofy - tofx
 
