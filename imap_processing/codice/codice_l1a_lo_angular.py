@@ -281,6 +281,11 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         attrs=cdf_attrs.get_global_attributes(logical_source_id),
     )
     # Add first few unique variables
+    l1a_dataset["k_factor"] = xr.DataArray(
+        np.array([constants.K_FACTOR]),
+        dims=("k_factor",),
+        attrs=cdf_attrs.get_variable_attributes("k_factor_attrs", check_schema=False),
+    )
     l1a_dataset["spin_period"] = xr.DataArray(
         unpacked_dataset["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
         dims=("epoch",),
