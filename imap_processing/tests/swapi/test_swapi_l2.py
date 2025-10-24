@@ -112,6 +112,12 @@ def test_swapi_l2_cdf(
     assert cdf_path.name == cdf_filename
 
     l1_dataset = load_cdf(cdf_path)
+    # Since L2 data's date is before any date supported by ESA unit conversion LUT
+    # and earliest date doesn't have energy data besides 'Sweep #' 0,
+    # we need to update sweep_id to be 0 instead of 1 to get valid energy values.
+    l1_dataset["sweep_table"].values[:] = 0
+
+    # Create L2 CDF File
     l2_dataset = swapi_l2(
         l1_dataset,
         esa_table_df=esa_unit_conversion_table,
@@ -125,9 +131,6 @@ def test_swapi_l2_cdf(
         l2_dataset["swp_pcem_rate_stat_uncert_plus"],
         l1_dataset["swp_pcem_counts_stat_uncert_plus"] / SWAPI_LIVETIME,
     )
-    # Since L2 data's date is before any date in ESA unit conversion table,
-    # check that it returns nan in first 63 energy steps
-    assert np.isnan(l2_dataset["swp_esa_energy"].values[0, :63]).all()
     # Check fine steps
     fine_energies = [
         4290.0,

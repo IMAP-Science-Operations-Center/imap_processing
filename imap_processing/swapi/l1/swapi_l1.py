@@ -12,6 +12,8 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.quality_flags import SWAPIFlags
+from imap_processing.spice.time import met_to_utc, ttj2000ns_to_met
+from imap_processing.swapi.constants import NUM_ENERGY_STEPS, NUM_PACKETS_PER_SWEEP
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
@@ -41,10 +43,10 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     """
     # PLAN_ID for current sweep should all be one value and
     # SWEEP_TABLE should all be one value.
-    plan_id = full_sweep_sci["plan_id"].data.reshape(-1, 12)
-    sweep_table = full_sweep_sci["sweep_table"].data.reshape(-1, 12)
+    plan_id = full_sweep_sci["plan_id"].data.reshape(-1, NUM_PACKETS_PER_SWEEP)
+    sweep_table = full_sweep_sci["sweep_table"].data.reshape(-1, NUM_PACKETS_PER_SWEEP)
 
-    mode = full_sweep_sci["mode"].data.reshape(-1, 12)
+    mode = full_sweep_sci["mode"].data.reshape(-1, NUM_PACKETS_PER_SWEEP)
 
     sweep_indices = (sweep_table == sweep_table[:, 0, None]).all(axis=1)
     plan_id_indices = (plan_id == plan_id[:, 0, None]).all(axis=1)
@@ -62,10 +64,10 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     # From this: [0 24]
     # To this: [[ 0  1  2  3  4  5  6  7  8  9 10 11]
     # [24 25 26 27 28 29 30 31 32 33 34 35]]
-    cycle_start_indices = np.where(bad_data_indices == 0)[0] * 12
-    bad_cycle_indices = cycle_start_indices[..., None] + np.arange(12)[
-        None, ...
-    ].reshape(-1)
+    cycle_start_indices = np.where(bad_data_indices == 0)[0] * NUM_PACKETS_PER_SWEEP
+    bad_cycle_indices = cycle_start_indices[..., None] + np.arange(
+        NUM_PACKETS_PER_SWEEP
+    )[None, ...].reshape(-1)
 
     logger.debug("Cycle data was bad due to one of below reasons:")
     logger.debug(
@@ -162,7 +164,7 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     indices_start : numpy.ndarray
         Array of indices of start cycle.
     """
-    if packets["shcoarse"].size < 12:
+    if packets["shcoarse"].size < NUM_PACKETS_PER_SWEEP:
         return np.array([], np.int64)
 
     # calculate time difference between consecutive sweep
@@ -387,7 +389,7 @@ def process_sweep_data(full_sweep_sci: xr.Dataset, cem_prefix: str) -> xr.Datase
     # [ 2  3  4  5  6  7  8  9  10  11  12  13]]]
     # In other word, we grouped each cem's
     # data by full sweep.
-    current_cem_counts = current_cem_counts.reshape(6, -1, 12)
+    current_cem_counts = current_cem_counts.reshape(6, -1, NUM_PACKETS_PER_SWEEP)
 
     # Then, we go from above to
     # to this final output:
@@ -421,7 +423,7 @@ def process_sweep_data(full_sweep_sci: xr.Dataset, cem_prefix: str) -> xr.Datase
     all_cem_data = np.stack(current_cem_counts, axis=-1)
     # This line just flatten the inner most array to
     # (total_full_sweeps x 72)
-    all_cem_data = all_cem_data.reshape(-1, 72)
+    all_cem_data = all_cem_data.reshape(-1, NUM_ENERGY_STEPS)
     return all_cem_data
 
 
@@ -490,7 +492,9 @@ def process_swapi_science(
     # ===================================================================
     # Quality flags
     # ===================================================================
-    quality_flags_data = np.zeros((total_full_sweeps, 72), dtype=np.uint16)
+    quality_flags_data = np.zeros(
+        (total_full_sweeps, NUM_ENERGY_STEPS), dtype=np.uint16
+    )
 
     # Add science data quality flags
     # Have to match datatype to bitwise OR
@@ -547,7 +551,7 @@ def process_swapi_science(
 
     for flag_name in hk_flags_name:
         current_flag = np.repeat(good_sweep_hk_data[flag_name.lower()].data, 6).reshape(
-            -1, 72
+            -1, NUM_ENERGY_STEPS
         )
         # Use getattr to dynamically access the flag in SWAPIFlags class
         flag_to_set = getattr(SWAPIFlags, flag_name)
@@ -568,7 +572,9 @@ def process_swapi_science(
     # Use center time for epoch to line up with mission requests. Center time
     # of SWAPI is time of 7th packet(aka SEQ_NUMBER == 6) creation time at the
     # beginning of 7th packet.
-    epoch_values = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 6]
+    epoch_values = good_sweep_sci["epoch"].data.reshape(
+        total_full_sweeps, NUM_PACKETS_PER_SWEEP
+    )[:, 6]
 
     epoch_time = xr.DataArray(
         epoch_values,
@@ -626,20 +632,33 @@ def process_swapi_science(
 
     # Add other support data
     dataset["sweep_table"] = xr.DataArray(
-        good_sweep_sci["sweep_table"].data.reshape(total_full_sweeps, 12)[:, 0],
+        good_sweep_sci["sweep_table"].data.reshape(
+            total_full_sweeps, NUM_PACKETS_PER_SWEEP
+        )[:, 0],
         name="sweep_table",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("sweep_table"),
     )
     dataset["plan_id"] = xr.DataArray(
-        good_sweep_sci["plan_id"].data.reshape(total_full_sweeps, 12)[:, 0],
+        good_sweep_sci["plan_id"].data.reshape(
+            total_full_sweeps, NUM_PACKETS_PER_SWEEP
+        )[:, 0],
         name="plan_id",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("plan_id"),
     )
     # Store start time for L3 purposes per SWAPI requests
+    # Per SWAPI request, convert start time of sweep to UTC time.
+    sci_start_time = met_to_utc(
+        ttj2000ns_to_met(
+            good_sweep_sci["epoch"].data.reshape(
+                total_full_sweeps, NUM_PACKETS_PER_SWEEP
+            )[:, 0]
+        ),
+        precision=0,
+    )
     dataset["sci_start_time"] = xr.DataArray(
-        good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0],
+        sci_start_time,
         name="sci_start_time",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("sci_start_time"),
@@ -650,7 +669,9 @@ def process_swapi_science(
     # updated every 6th step. This is used in L2 to calculate last 9 fine
     # energy steps.
     dataset["esa_lvl5"] = xr.DataArray(
-        good_sweep_sci["esa_lvl5"].data.reshape(total_full_sweeps, 12)[:, 11],
+        good_sweep_sci["esa_lvl5"].data.reshape(
+            total_full_sweeps, NUM_PACKETS_PER_SWEEP
+        )[:, 11],
         name="esa_lvl5",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("esa_lvl5"),
@@ -661,19 +682,25 @@ def process_swapi_science(
     #   SWP_HK.FPGA_TYPE - Type number of the FPGA
     #   SWP_HK.FPGA_REV - Revision number of the FPGA
     dataset["lut_choice"] = xr.DataArray(
-        good_sweep_hk_data["lut_choice"].data.reshape(total_full_sweeps, 12)[:, 0],
+        good_sweep_hk_data["lut_choice"].data.reshape(
+            total_full_sweeps, NUM_PACKETS_PER_SWEEP
+        )[:, 0],
         name="lut_choice",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("lut_choice"),
     )
     dataset["fpga_type"] = xr.DataArray(
-        good_sweep_hk_data["fpga_type"].data.reshape(total_full_sweeps, 12)[:, 0],
+        good_sweep_hk_data["fpga_type"].data.reshape(
+            total_full_sweeps, NUM_PACKETS_PER_SWEEP
+        )[:, 0],
         name="fpga_type",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("fpga_type"),
     )
     dataset["fpga_rev"] = xr.DataArray(
-        good_sweep_hk_data["fpga_rev"].data.reshape(total_full_sweeps, 12)[:, 0],
+        good_sweep_hk_data["fpga_rev"].data.reshape(
+            total_full_sweeps, NUM_PACKETS_PER_SWEEP
+        )[:, 0],
         name="fpga_rev",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("fpga_rev"),
