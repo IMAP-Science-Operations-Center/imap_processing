@@ -1,4 +1,4 @@
-"""CoDICE Lo Species L1A processing functions."""
+"""CoDICE Lo Angular L1A processing functions."""
 
 import logging
 from pathlib import Path
@@ -16,13 +16,84 @@ from imap_processing.codice.utils import (
     get_codice_epoch_time,
     get_collapse_pattern_shape,
     get_view_tab_info,
+    index_to_position,
     read_sci_lut,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def _despin_species_data(
+    species_data: np.ndarray, sci_lut_data: dict, view_tab_obj: ViewTabInfo
+) -> np.ndarray:
+    """
+    Apply despinning mapping for angular products.
+
+    Despinned data shape is (num_packets, num_species, 24, inst_az) where
+    we expand spin_sector to 24 by filling with zeros in 12 to 24 or 0 to 11
+    based on pixel orientation.
+
+    Parameters
+    ----------
+    species_data : np.ndarray
+        The species data array to be despun.
+    sci_lut_data : dict
+        The science LUT data used for despinning.
+    view_tab_obj : ViewTabInfo
+        The view table information object.
+
+    Returns
+    -------
+    np.ndarray
+        The despun species data array in
+        (num_packets, num_species, esa_steps, 24, inst_az).
+    """
+    # species_data shape: (num_packets, num_species, esa_steps, *collapsed_dims)
+    num_packets, num_species, esa_steps = species_data.shape[:3]
+    collapsed_dims = species_data.shape[3:]
+    inst_az_dim = collapsed_dims[-1]
+
+    # Prepare despinning output: (num_packets, num_species, esa_steps, 24, inst_az_dim)
+    # 24 is derived by multiplying spin sector dim from collapse table by 2
+    spin_sector_len = constants.LO_DESPIN_SPIN_SECTORS
+    despun_shape = (num_packets, num_species, esa_steps, spin_sector_len, inst_az_dim)
+    despun_data = np.full(despun_shape, 0)
+
+    # Pixel orientation array and mapping positions
+    pixel_orientation = np.array(
+        sci_lut_data["lo_stepping_tab"]["pixel_orientation"]["data"]
+    )
+    # index_to_position gets the position from collapse table. Eg.
+    #   [1, 2, 3, 23, 24] for SW angular
+    angular_position = index_to_position(sci_lut_data, 0, view_tab_obj.collapse_table)
+    orientation_a = pixel_orientation == "A"
+    orientation_b = pixel_orientation == "B"
+
+    # Despin data based on orientation and angular position
+    for pos_idx, position in enumerate(angular_position):
+        if position <= 12:
+            # Case 1: position 0-12, orientation A, append to first half
+            despun_data[:, :, orientation_a, :12, pos_idx] = species_data[
+                :, :, orientation_a, :, pos_idx
+            ]
+            # Case 2: position 12-24, orientation B, append to second half
+            despun_data[:, :, orientation_b, 12:, pos_idx] = species_data[
+                :, :, orientation_b, :, pos_idx
+            ]
+        else:
+            # Case 3: position 12-24, orientation A, append to second half
+            despun_data[:, :, orientation_a, 12:, pos_idx] = species_data[
+                :, :, orientation_a, :, pos_idx
+            ]
+            # Case 4: position 0-12, orientation B, append to first half
+            despun_data[:, :, orientation_b, :12, pos_idx] = species_data[
+                :, :, orientation_b, :, pos_idx
+            ]
+
+    return despun_data
+
+
+def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     """
     L1A processing code.
 
@@ -47,7 +118,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     plan_step = unpacked_dataset["plan_step"].values[0]
 
     logger.info(
-        f"Processing species with - APID: {apid}, View ID: {view_id}, "
+        f"Processing angular with - APID: 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
 
@@ -65,20 +136,20 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     if view_tab_obj.sensor != 0:
-        raise ValueError("Unsupported sensor ID for Lo species processing.")
+        raise ValueError("Unsupported sensor ID for Lo angular processing.")
 
     # ========= Decompress and Reshape Data ===========
     # Lookup SW or NSW species based on APID
-    if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"]["sw"][
+    if view_tab_obj.apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
+        species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"]["sw"][
             "species_names"
         ]
-        logical_source_id = "imap_codice_l1a_lo-sw-species"
-    elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"]["nsw"][
+        logical_source_id = "imap_codice_l1a_lo-sw-angular"
+    elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
+        species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"]["nsw"][
             "species_names"
         ]
-        logical_source_id = "imap_codice_l1a_lo-nsw-species"
+        logical_source_id = "imap_codice_l1a_lo-nsw-angular"
     else:
         raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
 
@@ -99,20 +170,24 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     ]
 
     # Look up collapse pattern using LUT table. This should return collapsed shape.
-    # For Lo species, it will be (1,)
     collapsed_shape = get_collapse_pattern_shape(
         sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
     )
 
     # Reshape decompressed data to:
-    #   (num_packets, num_species, esa_steps, *collapsed_shape)
-    # where collapsed_shape is usually (1,) for Lo species.
+    #   (num_packets, num_species, esa_steps, 12, 5)
+    # 24 includes despinning spin sector. Then at later steps,
+    # we handle despinning.
     num_packets = len(binary_data_list)
-    num_species = len(species_names)
     esa_steps = constants.NUM_ESA_STEPS
+    num_species = len(species_names)
     species_data = np.array(decompressed_data).reshape(
         num_packets, num_species, esa_steps, *collapsed_shape
     )
+
+    # Despinning
+    # ----------------
+    species_data = _despin_species_data(species_data, sci_lut_data, view_tab_obj)
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
@@ -169,22 +244,34 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                     "esa_step_label", check_schema=False
                 ),
             ),
+            "inst_az": xr.DataArray(
+                index_to_position(sci_lut_data, 0, view_tab_obj.collapse_table),
+                dims=("inst_az",),
+                attrs=cdf_attrs.get_variable_attributes("inst_az", check_schema=False),
+            ),
+            "inst_az_label": xr.DataArray(
+                index_to_position(sci_lut_data, 0, view_tab_obj.collapse_table).astype(
+                    str
+                ),
+                dims=("inst_az",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "inst_az_label", check_schema=False
+                ),
+            ),
             "k_factor": xr.DataArray(
                 np.array([constants.K_FACTOR]),
                 dims=("k_factor",),
-                attrs=cdf_attrs.get_variable_attributes(
-                    "k_factor_attrs", check_schema=False
-                ),
+                attrs=cdf_attrs.get_variable_attributes("k_factor", check_schema=False),
             ),
             "spin_sector": xr.DataArray(
-                np.array([0], dtype=np.uint8),
+                np.arange(24, dtype=np.uint8),
                 dims=("spin_sector",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "spin_sector", check_schema=False
                 ),
             ),
             "spin_sector_label": xr.DataArray(
-                np.array(["0"]).astype(str),
+                np.arange(24).astype(str),
                 dims=("spin_sector",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "spin_sector_label", check_schema=False
@@ -194,15 +281,15 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         attrs=cdf_attrs.get_global_attributes(logical_source_id),
     )
     # Add first few unique variables
-    l1a_dataset["spin_period"] = xr.DataArray(
-        unpacked_dataset["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
-        dims=("epoch",),
-        attrs=cdf_attrs.get_variable_attributes("spin_period"),
-    )
     l1a_dataset["k_factor"] = xr.DataArray(
         np.array([constants.K_FACTOR]),
         dims=("k_factor",),
         attrs=cdf_attrs.get_variable_attributes("k_factor_attrs", check_schema=False),
+    )
+    l1a_dataset["spin_period"] = xr.DataArray(
+        unpacked_dataset["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
+        dims=("epoch",),
+        attrs=cdf_attrs.get_variable_attributes("spin_period"),
     )
     l1a_dataset["voltage_table"] = xr.DataArray(
         np.array(voltage_data),
@@ -238,20 +325,13 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         )
 
     # Finally, add species data variables and their uncertainties
-    for idx, species in enumerate(species_names):
-        if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS and species in [
-            "heplus",
-            "cnoplus",
-        ]:
-            species_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-attrs")
-            unc_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-unc-attrs")
-        else:
-            species_attrs = cdf_attrs.get_variable_attributes("lo-species-attrs")
-            unc_attrs = cdf_attrs.get_variable_attributes("lo-species-unc-attrs")
+    for species_data_idx, species in enumerate(species_names):
+        species_attrs = cdf_attrs.get_variable_attributes("lo-angular-attrs")
+        unc_attrs = cdf_attrs.get_variable_attributes("lo-angular-unc-attrs")
 
         direction = (
             "Sunward"
-            if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS
+            if view_tab_obj.apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS
             else "Non-Sunward"
         )
         # Replace {species} and {direction} in attrs
@@ -262,8 +342,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             species=species, direction=direction
         )
         l1a_dataset[species] = xr.DataArray(
-            species_data[:, idx, :, :],
-            dims=("epoch", "esa_step", "spin_sector"),
+            species_data[:, species_data_idx, :, :, :],
+            dims=("epoch", "esa_step", "spin_sector", "inst_az"),
             attrs=species_attrs,
         )
         # Uncertainty data
@@ -274,8 +354,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             species=species, direction=direction
         )
         l1a_dataset[f"unc_{species}"] = xr.DataArray(
-            np.sqrt(species_data[:, idx, :, :]),
-            dims=("epoch", "esa_step", "spin_sector"),
+            np.sqrt(species_data[:, species_data_idx, :, :, :]),
+            dims=("epoch", "esa_step", "spin_sector", "inst_az"),
             attrs=unc_attrs,
         )
 

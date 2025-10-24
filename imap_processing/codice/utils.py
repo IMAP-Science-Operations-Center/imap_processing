@@ -163,12 +163,10 @@ def get_collapse_pattern_shape(
         ``(1,)`` for a fully collapsed 1-D pattern or ``(N, M)`` for a
         reduced 2-D pattern.
     """
-    if sensor_id == 0:
-        # LO sensor
-        collapse_tab = json_data.get("collapse_lo").get(f"{collapse_table_id}")
-    else:
-        # HI sensor
-        collapse_tab = json_data.get("collapse_hi").get(f"{collapse_table_id}")
+    sensor = "lo" if sensor_id == 0 else "hi"
+    collapse_matrix = np.array(
+        json_data[f"collapse_{sensor}"][f"{collapse_table_id}"]["matrix"]
+    )
 
     # Analyze the collapse pattern matrix to determine its reduced shape.
     # Steps:
@@ -177,7 +175,6 @@ def get_collapse_pattern_shape(
     # - If all non-zero values are identical, return (1,) for a fully collapsed pattern.
     # - Otherwise, compute the number of unique rows and columns to describe the
     #   reduced shape.
-    collapse_matrix = np.array(collapse_tab["matrix"])
     non_zero_data = np.where(collapse_matrix != 0)
     non_zero_reformatted = collapse_matrix[non_zero_data].reshape(
         np.unique(non_zero_data[0]).size, np.unique(non_zero_data[1]).size
@@ -195,6 +192,39 @@ def get_collapse_pattern_shape(
     unique_spin_sectors = unique_columns.shape[1]
     unique_inst_azs = unique_rows.shape[0]
     return (unique_spin_sectors, unique_inst_azs)
+
+
+def index_to_position(
+    json_data: dict, sensor_id: int, collapse_table_id: int
+) -> np.ndarray:
+    """
+    Get the indices of non-zero unique rows in the collapse pattern matrix.
+
+    Parameters
+    ----------
+    json_data : dict
+        The JSON data loaded from the SCI-LUT file.
+    sensor_id : int
+        Sensor identifier (0 for LO, 1 for HI).
+    collapse_table_id : int
+        Collapse table id to look up in the SCI-LUT.
+
+    Returns
+    -------
+    np.ndarray
+        Array of indices corresponding to non-zero unique rows.
+    """
+    sensor = "lo" if sensor_id == 0 else "hi"
+    collapse_matrix = np.array(
+        json_data[f"collapse_{sensor}"][f"{collapse_table_id}"]["matrix"]
+    )
+
+    # Find unique non-zero rows and their original indices
+    non_zero_row_mask = np.any(collapse_matrix != 0, axis=1)
+    non_zero_rows = collapse_matrix[non_zero_row_mask]
+    _, unique_indices = np.unique(non_zero_rows, axis=0, return_index=True)
+    non_zero_row_indices = np.flatnonzero(non_zero_row_mask)[unique_indices]
+    return non_zero_row_indices
 
 
 def get_codice_epoch_time(
