@@ -12,6 +12,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.quality_flags import SWAPIFlags
+from imap_processing.spice.time import met_to_utc, ttj2000ns_to_met
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
@@ -638,8 +639,14 @@ def process_swapi_science(
         attrs=cdf_manager.get_variable_attributes("plan_id"),
     )
     # Store start time for L3 purposes per SWAPI requests
+    # Per SWAPI request, convert start time of sweep to UTC time.
+    sci_start_time = met_to_utc(
+        ttj2000ns_to_met(
+            good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
+        )
+    )
     dataset["sci_start_time"] = xr.DataArray(
-        good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0],
+        sci_start_time,
         name="sci_start_time",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("sci_start_time"),

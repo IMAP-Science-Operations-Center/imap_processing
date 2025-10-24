@@ -129,22 +129,11 @@ metadata_default: &metadata_default
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 sci_start_time:
-  CATDESC: Start time of sweep
+  CATDESC: Start time of sweep in UTC
   DEPEND_0: epoch
   FIELDNAM: Science Start time
-  LABLAXIS: sci_start_time
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  UNITS: ns
+  FORMAT: " "
   VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-  RESOLUTION: ' '
   DICT_KEY: "SPASE>Support>SupportQantity:Temporal"
 
 # Minimum attrs setting for HK data

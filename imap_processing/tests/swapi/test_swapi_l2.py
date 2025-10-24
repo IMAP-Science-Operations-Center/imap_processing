@@ -144,7 +144,6 @@ def test_swapi_l2_cdf(
         3608.0,
     ]
     assert np.all(l2_dataset["swp_esa_energy"].values[0, -9:] == fine_energies)
-    l2_cdf.rename("imap_swapi_l2_sci_20240924_v001.cdf")
 
 
 def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
