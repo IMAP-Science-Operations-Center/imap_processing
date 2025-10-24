@@ -55,13 +55,13 @@ def _despin_species_data(
 
     # Prepare despinning output: (num_packets, num_species, esa_steps, 24, inst_az_dim)
     # 24 is derived by multiplying spin sector dim from collapse table by 2
-    spin_sector_len = collapsed_dims[-2] * 2
+    spin_sector_len = constants.LO_DESPIN_SPIN_SECTORS
     despun_shape = (num_packets, num_species, esa_steps, spin_sector_len, inst_az_dim)
     despun_data = np.full(despun_shape, 0)
 
     # Pixel orientation array and mapping positions
     pixel_orientation = np.array(
-        sci_lut_data["lo_stepping_tab"].get("pixel_orientation").get("data")
+        sci_lut_data["lo_stepping_tab"]["pixel_orientation"]["data"]
     )
     # index_to_position gets the position from collapse table. Eg.
     #   [1, 2, 3, 23, 24] for SW angular
@@ -72,17 +72,20 @@ def _despin_species_data(
     # Despin data based on orientation and angular position
     for pos_idx, position in enumerate(angular_position):
         if position <= 12:
+            # Case 1: position 0-12, orientation A, append to first half
             despun_data[:, :, orientation_a, :12, pos_idx] = species_data[
                 :, :, orientation_a, :, pos_idx
             ]
+            # Case 2: position 12-24, orientation B, append to second half
             despun_data[:, :, orientation_b, 12:, pos_idx] = species_data[
                 :, :, orientation_b, :, pos_idx
             ]
         else:
-            # A → last 12, B → first 12
+            # Case 3: position 12-24, orientation A, append to second half
             despun_data[:, :, orientation_a, 12:, pos_idx] = species_data[
                 :, :, orientation_a, :, pos_idx
             ]
+            # Case 4: position 0-12, orientation B, append to first half
             despun_data[:, :, orientation_b, :12, pos_idx] = species_data[
                 :, :, orientation_b, :, pos_idx
             ]
@@ -189,10 +192,10 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
     # Voltage data is (128,)
-    esa_table_number = (
-        sci_lut_data["plan_tab"].get(f"({plan_id}, {plan_step})").get("lo_stepping")
-    )
-    voltage_data = sci_lut_data["esa_sweep_tab"].get(f"{esa_table_number}")
+    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
+        "lo_stepping"
+    ]
+    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta

@@ -117,10 +117,10 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
     # Voltage data is (128,)
-    esa_table_number = (
-        sci_lut_data["plan_tab"].get(f"({plan_id}, {plan_step})").get("lo_stepping")
-    )
-    voltage_data = sci_lut_data["esa_sweep_tab"].get(f"{esa_table_number}")
+    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
+        "lo_stepping"
+    ]
+    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
