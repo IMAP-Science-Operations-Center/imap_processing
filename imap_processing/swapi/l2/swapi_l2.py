@@ -8,6 +8,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.swapi.constants import NUM_ENERGY_STEPS
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ def solve_full_sweep_energy(
         # order. Then take the last group of 72 steps values and select first 63
         # values only.
         subset = subset.sort_values(["timestamp", "ESA Step #"])
-        grouped = subset["Energy"].values.reshape(-1, 72)
+        grouped = subset["Energy"].values.reshape(-1, NUM_ENERGY_STEPS)
         first_63 = grouped[-1, :63]
         first_63_energies.append(first_63)
 
