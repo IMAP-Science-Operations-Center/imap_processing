@@ -286,11 +286,6 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("spin_period"),
     )
-    l1a_dataset["k_factor"] = xr.DataArray(
-        np.array([constants.K_FACTOR]),
-        dims=("k_factor",),
-        attrs=cdf_attrs.get_variable_attributes("k_factor_attrs", check_schema=False),
-    )
     l1a_dataset["voltage_table"] = xr.DataArray(
         np.array(voltage_data),
         dims=("esa_step",),

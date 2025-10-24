@@ -168,18 +168,6 @@ ssd_index:
     VALIDMAX: 12
     VAR_TYPE: support_data
 
-k_factor_attrs:
-    CATDESC: K Factor constant that is used to convert voltages to energies
-    DEPEND_1: k_factor
-    FIELDNAM: K Factor
-    FORMAT: F6.2
-    LABLAXIS: K Factor
-    SCALETYP: linear
-    UNITS: " "
-    VALIDMIN: 1.0
-    VALIDMAX: 100.0
-    VAR_TYPE: support_data
-
 # <=== Labels ===>
 esa_step_label:
     CATDESC: ESA Step
