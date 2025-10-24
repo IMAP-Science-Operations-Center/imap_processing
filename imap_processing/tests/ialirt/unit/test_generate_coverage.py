@@ -122,4 +122,4 @@ def test_dsn(furnish_kernels):
         )
 
         assert "I-ALiRT Coverage Summary" in output["summary"]
-        assert 37.5 == output["total_coverage_percent"]
+        assert 91.7 == output["total_coverage_percent"]
