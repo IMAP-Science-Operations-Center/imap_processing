@@ -938,8 +938,10 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
         bootstrap_factor_array,
         dims=["energy_i", "energy_k"],
         coords={
-            "energy_i": list(range(7)),
-            "energy_k": list(range(8)),  # Include virtual channel 7 (index 7)
+            "energy_i": dataset["energy"].values,
+            # Add an extra coordinate for the virtual E8 channel, unused
+            # in the broadcasting calculations
+            "energy_k": np.concatenate([dataset["energy"].values, [np.nan]]),
         },
     )
 
@@ -1001,7 +1003,7 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
         # NOTE: The paper uses 1-based indexing and we use 0-based indexing
         #       so there is an off-by-one difference in the indices.
         bootstrap_intensity_i[:] = (
-            j_c_prime_i - bootstrap_factor.sel(energy_i=i, energy_k=7) * j_8_b[0, ...]
+            j_c_prime_i - bootstrap_factor.isel(energy_i=i, energy_k=7) * j_8_b[0, ...]
         )
         # NOTE: We will square root at the end to get the uncertainty, but
         #       all equations are with variances
@@ -1013,7 +1015,7 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
 
         # Get bootstrap factors for this i and the relevant k values
         # Rename energy_k dimension to energy for alignment with intensity
-        bootstrap_factors_k = bootstrap_factor.sel(
+        bootstrap_factors_k = bootstrap_factor.isel(
             energy_i=i, energy_k=k_indices
         ).rename({"energy_k": "energy"})
 
