@@ -1231,25 +1231,21 @@ def resweep_histogram_data(
     # Convert sweep table dates to ttj2000ns for direct comparison with epochs
     sweep_dates = sweep_df["Date"].astype(str)
 
-    # Create mapping from date to LUT table for faster lookup
-    date_to_lut = dict(zip(sweep_dates, sweep_df["LUT_table"], strict=False))
-
     # Get epoch values
     epochs = l1b_histrates["epoch"].values
 
     # Initialize corrected data arrays
     h_counts_reswept = np.zeros_like(l1b_histrates["h_counts"].values)
     o_counts_reswept = np.zeros_like(l1b_histrates["o_counts"].values)
-
+    epoch_utc = et_to_utc(ttj2000ns_to_et(epochs))
     # Process each epoch
-    for epoch_idx, epoch_value in enumerate(epochs):
-        epoch_date = et_to_utc(ttj2000ns_to_et(epoch_value))
-        epoch_date_only = epoch_date.split("T")[0]
+    for epoch_idx, epoch in enumerate(epoch_utc):
+        epoch_date_only = epoch.split("T")[0]
         # Find matching LUT table for this date
-        if epoch_date_only not in date_to_lut:
+        if epoch_date_only not in sweep_dates.values:
             raise ValueError(
                 f"No sweep table entry found for date "
-                f"{epoch_date} at epoch idx {epoch_idx}"
+                f"{epoch} at epoch idx {epoch_idx}"
             )
 
         # Get all LUT table values for this date to check uniqueness
@@ -1299,6 +1295,17 @@ def resweep_histogram_data(
             # Group counts by actual energy level
             energy_level_counts_h = {}
             energy_level_counts_o = {}
+
+            for orig_idx, true_esa_step in energy_step_mapping.items():
+                if orig_idx < len(h_original):  # Ensure index is valid
+                    if true_esa_step not in energy_level_counts_h:
+                        energy_level_counts_h[true_esa_step] = 0
+                        energy_level_counts_o[true_esa_step] = 0
+
+                    h_counts_reswept[epoch_idx, az_idx, true_esa_step - 1] += h_original[
+                        orig_idx]
+                    o_counts_reswept[epoch_idx, az_idx, true_esa_step - 1] += o_original[
+                        orig_idx]
 
             for orig_idx, true_esa_step in energy_step_mapping.items():
                 if orig_idx < len(h_original):  # Ensure index is valid
