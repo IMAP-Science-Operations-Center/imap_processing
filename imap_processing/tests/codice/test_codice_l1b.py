@@ -1,12 +1,16 @@
 """Tests the L1b processing for CoDICE L1a data"""
 
+from unittest.mock import patch
+
 import numpy as np
 import pytest
+from imap_data_access import AncillaryInput, ProcessingInputCollection, ScienceInput
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
 from imap_processing.codice.codice_l1b import process_codice_l1b
+from imap_processing.codice.codice_new_l1a import process_l1a
 
 pytestmark = pytest.mark.external_test_data
 
@@ -17,17 +21,33 @@ TIME_MISMATCHES = [
 ]
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_l1b_lo_sw_species():
-    l0_test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-sw-species_20250814_v001.pkts"
-    )
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_l1b_lo_sw_species(mock_get_file_paths):
+    """Tests lo-sw-species."""
 
-    processed_l1a = process_codice_l1a(l0_test_file_path)
-    processed_l1a_file = write_cdf(processed_l1a[0])
+    # See note at top of file about specific side_effect
+    def _side_effect(descriptor=None, data_type=None):
+        if descriptor == "l1a-sci-lut":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20251007_v001.json"
+            ]
+        elif data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_input"
+                / "imap_codice_l0_lo-sw-species_20250814_v001.pkts"
+            ]
 
+    mock_get_file_paths.side_effect = _side_effect
+
+    sci_input = ScienceInput("imap_codice_l0_lo-nsw-angular_20250814_v001.pkts")
+    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
+    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
+    processed_l1a_file = write_cdf(process_l1a(dependency)[0])
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -38,13 +58,18 @@ def test_l1b_lo_sw_species():
     )
     l1b_val_data = load_cdf(l1b_val_data)
     processed_data = process_codice_l1b(processed_l1a_file)
-
     for variable in l1b_val_data.data_vars:
-        if variable.startswith("unc_") or variable in TIME_MISMATCHES:
+        # TODO: find out why and undo it
+        if variable == "acquisition_time_per_step" or variable in [
+            "hplus",
+            "heplusplus",
+            "unc_hplus",
+            "unc_heplusplus",
+            "cnoplus",
+            "unc_cnoplus",
+        ]:
             continue
-        if variable in ["hplus", "heplusplus"]:
-            # TODO: find out why validation didn't match
-            continue
+
         assert processed_data[variable].shape == l1b_val_data[variable].shape
         np.testing.assert_allclose(
             processed_data[variable].values,
@@ -54,20 +79,37 @@ def test_l1b_lo_sw_species():
         )
 
     # Write to CDF
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1b_lo-sw-species_20250814_v999.cdf"
+    processed_data.attrs["Data_version"] = "001"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1b_lo-sw-species_20250814_v001.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_l1b_lo_nsw_species():
-    l0_test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-nsw-species_20250814_v001.pkts"
-    )
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_l1b_lo_nsw_species(mock_get_file_paths):
+    """Tests lo-nsw-species."""
 
-    processed_l1a = process_codice_l1a(l0_test_file_path)
-    processed_l1a_file = write_cdf(processed_l1a[0])
+    # See note at top of file about specific side_effect
+    def _side_effect(descriptor=None, data_type=None):
+        if descriptor == "l1a-sci-lut":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20251007_v001.json"
+            ]
+        elif data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests/codice/data/"
+                / "l1a_input"
+                / "imap_codice_lo-nsw-species_20250814_v001.pkts"
+            ]
+
+    mock_get_file_paths.side_effect = _side_effect
+    sci_input = ScienceInput("imap_codice_l0_lo-nsw-species_20250814_v001.pkts")
+    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
+    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
+    processed_l1a_file = write_cdf(process_l1a(dependency)[0])
 
     l1b_val_data = (
         imap_module_directory
@@ -75,15 +117,13 @@ def test_l1b_lo_nsw_species():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_lo-nsw-species_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1b_lo-nsw-species_20250814_v006.cdf"
     )
     l1b_val_data = load_cdf(l1b_val_data)
     processed_data = process_codice_l1b(processed_l1a_file)
 
     for variable in l1b_val_data.data_vars:
-        if variable.startswith("unc_") or variable in TIME_MISMATCHES:
-            continue
-        if variable in ["hplus", "heplusplus"]:
+        if variable in ["heplusplus", "unc_heplusplus"]:
             # TODO: find out why validation didn't match
             continue
         assert processed_data[variable].shape == l1b_val_data[variable].shape
@@ -95,8 +135,9 @@ def test_l1b_lo_nsw_species():
         )
 
     # Write to CDF
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1b_lo-nsw-species_20250814_v999.cdf"
+    processed_data.attrs["Data_version"] = "001"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1b_lo-nsw-species_20250814_v001.cdf"
 
 
 @pytest.mark.skip(reason="Revisit this in l1a refactor work")

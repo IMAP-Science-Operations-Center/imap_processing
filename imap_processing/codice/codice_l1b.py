@@ -15,20 +15,15 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
-from imap_processing.codice.utils import CODICEAPID
-from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def convert_to_rates(
-    dataset: xr.Dataset, descriptor: str, variable_name: str
-) -> np.ndarray:
+def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     """
     Apply a conversion from counts to rates.
 
@@ -41,14 +36,17 @@ def convert_to_rates(
         The L1b dataset containing the data to convert.
     descriptor : str
         The descriptor of the data product of interest.
-    variable_name : str
-        The variable name to apply the conversion to.
 
     Returns
     -------
     rates_data : np.ndarray
         The converted data array.
     """
+    # Variables to convert based on descriptor
+    variables_to_convert = getattr(
+        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    )
+
     if descriptor in [
         "lo-counters-aggregated",
         "lo-counters-singles",
@@ -58,41 +56,49 @@ def convert_to_rates(
         "lo-sw-priority",
         "lo-ialirt",
     ]:
-        # Applying rate calculation described in section 10.2 of the algorithm
-        # document
-        # In order to divide by acquisition times, we must reshape the acq
-        # time data array to match the data variable shape
-        dims = [1] * dataset[variable_name].data.ndim
-        dims[1] = 128
-        acq_times = dataset.acquisition_time_per_step.data.reshape(dims)  # (128)
-        # Now perform the calculation
-        rates_data = dataset[variable_name].data / (
-            acq_times
-            * 1e-3  # Converting from milliseconds to seconds
+        # Denominator to convert counts to rates
+        denominator = (
+            dataset.acquisition_time_per_step
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
         )
+
+        # Do not carry these variable attributes from L1a to L1b for above products
+        drop_variables = [
+            "k_factor",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "spin_period",
+        ]
+        dataset = dataset.drop_vars(drop_variables)
     elif descriptor in [
         "lo-nsw-species",
         "lo-sw-species",
     ]:
-        # Applying rate calculation described in section 10.2 of the algorithm
-        # document
-        # In order to divide by acquisition times, we must reshape the acq
-        # time data array to match the data variable shape (epoch, esa_step, sector)
-        dims = [1] * dataset[variable_name].data.ndim
-        dims[1] = 128
-        acq_times = dataset.acquisition_time_per_step.data.reshape(dims)  # (128)
-        # acquisition time have an array of shape (128,). We match n_sector to that.
+        # Create n_sector with 'esa_step' dimension. This is done by xr.full_like
+        # with input dataset.acquisition_time_per_step. This ensures that the resulting
+        # n_sector has the same dimensions as acquisition_time_per_step.
         # Per CoDICE, fill first 127 with default value of 12. Then fill last with 11.
-        n_sector = np.full(128, 12, dtype=int)
-        n_sector[-1] = 11
-
-        # Now perform the calculation
-        rates_data = dataset[variable_name].data / (
-            acq_times
-            * 1e-3  # Converting from milliseconds to seconds
-            * n_sector[:, np.newaxis]  # Spin sectors
+        n_sector = xr.full_like(
+            dataset.acquisition_time_per_step, 12.0, dtype=np.float64
         )
+        n_sector[-1] = 11.0
+
+        # Denominator to convert counts to rates
+        denominator = dataset.acquisition_time_per_step * n_sector
+
+        # Do not carry these variable attributes from L1a to L1b for above products
+        drop_variables = [
+            "k_factor",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "spin_period",
+            "voltage_table",
+            "acquisition_time_per_step",
+        ]
+        dataset = dataset.drop_vars(drop_variables)
+
     elif descriptor in [
         "hi-counters-aggregated",
         "hi-counters-singles",
@@ -101,15 +107,27 @@ def convert_to_rates(
         "hi-sectored",
         "hi-ialirt",
     ]:
-        # Applying rate calculation described in section 10.1 of the algorithm
-        # document
-        rates_data = dataset[variable_name].data / (
+        # Denominator to convert counts to rates
+        denominator = (
             constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spins"]
             * constants.HI_ACQUISITION_TIME
         )
 
-    return rates_data
+    # For each variable, convert counts and uncertainty to rates
+    for variable in variables_to_convert:
+        dataset[variable].data = dataset[variable].astype(np.float64) / denominator
+        # Carry over attrs and update as needed
+        dataset[variable].attrs["UNITS"] = "counts/s"
+
+        # Uncertainty calculation
+        unc_variable = f"unc_{variable}"
+        dataset[unc_variable].data = (
+            dataset[unc_variable].astype(np.float64) / denominator
+        )
+        dataset[unc_variable].attrs["UNITS"] = "1/s"
+
+    return dataset
 
 
 def process_codice_l1b(file_path: Path) -> xr.Dataset:
@@ -136,70 +154,17 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     dataset_name = l1a_dataset.attrs["Logical_source"].replace("_l1a_", "_l1b_")
     descriptor = dataset_name.removeprefix("imap_codice_l1b_")
 
-    # Direct event data products do not have a level L1B
-    if descriptor in ["lo-direct-events", "hi-direct-events"]:
-        logger.warning("Encountered direct event data product. Skipping L1b processing")
-        return None
-
     # Get the L1b CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
 
     # Use the L1a data product as a starting point for L1b
-    l1b_dataset = l1a_dataset.copy()
+    l1b_dataset = l1a_dataset.copy(deep=True)
 
     # Update the global attributes
     l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
-
-    # TODO: This was thrown together quickly and should be double-checked
-    if descriptor == "hskp":
-        xtce_filename = "codice_packet_definition.xml"
-        xtce_packet_definition = Path(
-            f"{imap_module_directory}/codice/packet_definitions/{xtce_filename}"
-        )
-        packet_file = (
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l0_raw_20241110_v001.pkts"
-        )
-        datasets: dict[int, xr.Dataset] = packet_file_to_datasets(
-            packet_file, xtce_packet_definition, use_derived_value=True
-        )
-        l1b_dataset = datasets[CODICEAPID.COD_NHK]
-
-        # TODO: Drop the same variables as we do in L1a? (see line 1103 in
-        #       codice_l1a.py
-
-    else:
-        variables_to_convert = getattr(
-            constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
-        )
-
-        # Apply the conversion to rates
-        for variable_name in variables_to_convert:
-            l1b_dataset[variable_name].data = convert_to_rates(
-                l1b_dataset, descriptor, variable_name
-            )
-            # Set the variable attributes
-            cdf_attrs_key = f"{descriptor}-{variable_name}"
-            l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-                cdf_attrs_key, check_schema=False
-            )
-
-        if descriptor in ["lo-sw-species", "lo-nsw-species"]:
-            # Do not carry these variable attributes from L1a to L1b
-            drop_variables = [
-                "k_factor",
-                "nso_half_spin",
-                "sw_bias_gain_mode",
-                "st_bias_gain_mode",
-                "spin_period",
-            ]
-            l1b_dataset = l1b_dataset.drop_vars(drop_variables)
-
-    logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
-
-    return l1b_dataset
+    return convert_to_rates(
+        l1b_dataset,
+        descriptor,
+    )
