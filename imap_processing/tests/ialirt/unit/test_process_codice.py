@@ -302,26 +302,28 @@ def test_group_and_decompress_ialirt_cod_lo(
 
     # Test data.
     with open(cod_lo_decom_test_file, "rb") as handle:
-        data = pickle.load(handle)
+        data = pickle.load(handle)  # noqa: S301
     test_grouped_data = data["grouped_lo_ialirt"]
 
-    HEADER_LEN = 6  # Test data header at start of block
-    CHECKSUM_LEN = 6  # Test data checksum at end of block
-    DATA_LEN = 3480  # 232 packets * 15 bytes/packet
-    BLOCK_SIZE = HEADER_LEN + DATA_LEN + CHECKSUM_LEN
+    header_len = 6  # Test data header at start of block
+    checksum_len = 30  # Test data checksum at end of block
+    data_len = 3456  # Data length in decompressed packet
+    block_size = header_len + data_len + checksum_len
 
     for i, group in enumerate(unique_groups):
         compressed_data = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
-        start = HEADER_LEN + i * BLOCK_SIZE
-        end = start + DATA_LEN
+        start = header_len + i * block_size
+        end = start + data_len
         expected_slice = test_grouped_data[0][start:end]
 
-        assert expected_slice == compressed_data[:DATA_LEN]
+        assert expected_slice == compressed_data[:data_len]
 
 
 @pytest.mark.external_test_data
-def test_group_and_decompress_ialirt_cod_hi(cod_hi_test_dataset):
+def test_group_and_decompress_ialirt_cod_hi(
+    cod_hi_test_dataset, cod_hi_decom_test_file
+):
     "Test that I-ALiRT CoDICE-Hi data can be grouped properly."
 
     grouped_cod_hi_data = find_groups(
@@ -346,12 +348,24 @@ def test_group_and_decompress_ialirt_cod_hi(cod_hi_test_dataset):
 
     unique_groups = np.unique(grouped_cod_hi_data["group"])
 
-    for group in unique_groups:
+    # Test data.
+    with open(cod_hi_decom_test_file, "rb") as handle:
+        data = pickle.load(handle)  # noqa: S301
+    test_grouped_data = data["grouped_hi_ialirt"]
+
+    header_len = 6  # Test data header at start of block
+    checksum_len = 30  # Test data checksum at end of block
+    data_len = 960  # Data length in decompressed packet
+    block_size = header_len + data_len + checksum_len
+
+    for i, group in enumerate(unique_groups):
         compressed_data = concatenate_bytes(grouped_cod_hi_data, group, "hi")
-        byte_data = np.frombuffer(compressed_data, dtype=np.uint8)
-        num_bits = byte_data.size * 8
-        assert num_bits == (COD_HI_COUNTER + 1) * len(COD_HI_RANGE) * 8
-        decompressed_data = decompress._apply_lossy_a(compressed_data)
+
+        start = header_len + i * block_size
+        end = start + data_len
+        expected_slice = test_grouped_data[0][start:end]
+
+        assert expected_slice == compressed_data[:data_len]
 
 
 def test_process_codice(codice_test_data, caplog):
