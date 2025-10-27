@@ -17,6 +17,8 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.codice import decompress
+from imap_processing.codice.codice_l1a import process_ialirt_data_streams
+from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_HI_RANGE,
@@ -303,21 +305,42 @@ def test_group_and_decompress_ialirt_cod_lo(
     # Test data.
     with open(cod_lo_decom_test_file, "rb") as handle:
         data = pickle.load(handle)  # noqa: S301
-    test_grouped_data = data["grouped_lo_ialirt"]
+    test_grouped_data = data["grouped_lo_ialirt"][0]
+    test_decom_data = data["decompressed_lo_ialirt"][0]
 
     header_len = 6  # Test data header at start of block
     checksum_len = 30  # Test data checksum at end of block
     data_len = 3456  # Data length in decompressed packet
     block_size = header_len + data_len + checksum_len
 
+    test_grouped_data_array = []
+
     for i, group in enumerate(unique_groups):
         compressed_data = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
         start = header_len + i * block_size
         end = start + data_len
-        expected_slice = test_grouped_data[0][start:end]
+        expected_slice = test_grouped_data[start:end]
+
+        test_grouped_data_array.append(expected_slice)
 
         assert expected_slice == compressed_data[:data_len]
+
+    science_values, metadata_values = process_ialirt_data_streams(
+        test_grouped_data_array
+    )
+
+    for i in range(len(science_values)):
+        values = int(science_values[i], 2).to_bytes(
+            len(science_values[i]) // 8, byteorder="big"
+        )
+
+        decompressed_values = decompress(values, 0)
+        test_decom_data_array = test_decom_data[i]
+
+        np.testing.assert_array_equal(
+            decompressed_values, test_decom_data_array[0:3428]
+        )
 
 
 @pytest.mark.external_test_data
