@@ -373,11 +373,14 @@ def test_group_and_decompress_ialirt_cod_hi(
     with open(cod_hi_decom_test_file, "rb") as handle:
         data = pickle.load(handle)  # noqa: S301
     test_grouped_data = data["grouped_hi_ialirt"]
+    test_decom_data = data["decompressed_hi_ialirt"][0]
 
     header_len = 6  # Test data header at start of block
-    checksum_len = 30  # Test data checksum at end of block
-    data_len = 960  # Data length in decompressed packet
+    checksum_len = 2  # Test data checksum at end of block
+    data_len = 988  # Data length in decompressed packet
     block_size = header_len + data_len + checksum_len
+
+    test_grouped_data_array = []
 
     for i, group in enumerate(unique_groups):
         compressed_data = concatenate_bytes(grouped_cod_hi_data, group, "hi")
@@ -386,7 +389,23 @@ def test_group_and_decompress_ialirt_cod_hi(
         end = start + data_len
         expected_slice = test_grouped_data[0][start:end]
 
+        test_grouped_data_array.append(expected_slice)
+
         assert expected_slice == compressed_data[:data_len]
+
+    science_values, metadata_values = process_ialirt_data_streams(
+        test_grouped_data_array
+    )
+
+    for i in range(len(science_values)):
+        values = int(science_values[i], 2).to_bytes(
+            len(science_values[i]) // 8, byteorder="big"
+        )
+
+        decompressed_values = decompress(values, 0)
+        test_decom_data_array = test_decom_data[i]
+
+        np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
 
 def test_process_codice(codice_test_data, caplog):
