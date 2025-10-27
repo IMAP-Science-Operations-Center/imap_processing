@@ -309,8 +309,8 @@ def test_group_and_decompress_ialirt_cod_lo(
     test_decom_data = data["decompressed_lo_ialirt"][0]
 
     header_len = 6  # Test data header at start of block
-    checksum_len = 30  # Test data checksum at end of block
-    data_len = 3456  # Data length in decompressed packet
+    checksum_len = 2  # Test data checksum at end of block
+    data_len = 3484  # Data length in decompressed packet
     block_size = header_len + data_len + checksum_len
 
     test_grouped_data_array = []
@@ -338,9 +338,7 @@ def test_group_and_decompress_ialirt_cod_lo(
         decompressed_values = decompress(values, 0)
         test_decom_data_array = test_decom_data[i]
 
-        np.testing.assert_array_equal(
-            decompressed_values, test_decom_data_array[0:3428]
-        )
+        np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
 
 @pytest.mark.external_test_data
