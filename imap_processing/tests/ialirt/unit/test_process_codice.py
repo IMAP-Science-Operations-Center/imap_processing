@@ -4,11 +4,11 @@ See tests.codice.test_codice_l[1a|1b|2] for more unit tests related to this
 code.
 """
 
+import pickle
 from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-import pickle
 import pytest
 import xarray as xr
 
@@ -17,12 +17,10 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.codice import decompress
-from imap_processing.codice.codice_l1a import process_ialirt_data_streams, create_ialirt_dataset
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_HI_RANGE,
     COD_LO_COUNTER,
-    COD_LO_RANGE,
     FILLVAL_UINT8,
     concatenate_bytes,
     process_codice,
@@ -276,7 +274,7 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_lo(
-    cod_lo_test_dataset
+    cod_lo_test_dataset, cod_lo_decom_test_file
 ):
     "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
 
@@ -302,28 +300,24 @@ def test_group_and_decompress_ialirt_cod_lo(
 
     unique_groups = np.unique(grouped_cod_lo_data["group"])
 
-    for group in unique_groups:
-        compressed_data = concatenate_bytes(grouped_cod_lo_data, group, "lo")
-        byte_data = np.frombuffer(compressed_data, dtype=np.uint8)
-        num_bits = byte_data.size * 8
-        assert num_bits == (COD_LO_COUNTER + 1) * len(COD_LO_RANGE) * 8
-        # TODO: left off here. Need to validate decompression with test data.
-        decompressed_data = decompress._apply_pack_24_bit(compressed_data)
-
-
-def test_decompress_ialirt_cod_lo(cod_lo_decom_test_file, cod_lo_test_dataset):
-    "Test that I-ALiRT CoDICE-Lo data can be decompressed properly."
-
-    with open(cod_lo_decom_test_file, 'rb') as handle:
+    # Test data.
+    with open(cod_lo_decom_test_file, "rb") as handle:
         data = pickle.load(handle)
+    test_grouped_data = data["grouped_lo_ialirt"]
 
-    grouped_data = data["grouped_lo_ialirt"]
-    decompressed_data = data["decompressed_lo_ialirt"]
-    decompressed_data_test = decompress._apply_pack_24_bit(grouped_data[0])
+    HEADER_LEN = 6  # Test data header at start of block
+    CHECKSUM_LEN = 6  # Test data checksum at end of block
+    DATA_LEN = 3480  # 232 packets * 15 bytes/packet
+    BLOCK_SIZE = HEADER_LEN + DATA_LEN + CHECKSUM_LEN
 
-    dataset = create_ialirt_dataset(1152, cod_lo_test_dataset)
+    for i, group in enumerate(unique_groups):
+        compressed_data = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
-    print('hi')
+        start = HEADER_LEN + i * BLOCK_SIZE
+        end = start + DATA_LEN
+        expected_slice = test_grouped_data[0][start:end]
+
+        assert expected_slice == compressed_data[:DATA_LEN]
 
 
 @pytest.mark.external_test_data
