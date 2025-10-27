@@ -56,17 +56,9 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         "lo-sw-priority",
         "lo-ialirt",
     ]:
-        # Solve denominator, Acquisition times, of above products. Acquisition times
-        # must reshape to match the data variable shape, (epoch, esa_step, sector)
-        acq_times = dataset.acquisition_time_per_step.expand_dims(
-            {
-                "epoch": dataset.sizes["epoch"],
-                "spin_sector": dataset.sizes["spin_sector"],
-            }
-        ).transpose("epoch", "esa_step", "spin_sector")
         # Denominator to convert counts to rates
         denominator = (
-            acq_times
+            dataset.acquisition_time_per_step
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
         )
 
@@ -83,31 +75,17 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         "lo-nsw-species",
         "lo-sw-species",
     ]:
-        # Solve denominator, Acquisition times, of above products. Acquisition times
-        # must reshape to match the data variable shape, (epoch, esa_step, sector)
-        acq_times = dataset.acquisition_time_per_step.expand_dims(
-            {
-                "epoch": dataset.sizes["epoch"],
-                "spin_sector": dataset.sizes["spin_sector"],
-            }
-        ).transpose("epoch", "esa_step", "spin_sector")
-        # Create n_sector with same shape as data.
+        # Create n_sector with 'esa_step' dimension. This is done by xr.full_like
+        # with input dataset.acquisition_time_per_step. This ensures that the resulting
+        # n_sector has the same dimensions as acquisition_time_per_step.
         # Per CoDICE, fill first 127 with default value of 12. Then fill last with 11.
         n_sector = xr.full_like(
             dataset.acquisition_time_per_step, 12.0, dtype=np.float64
         )
         n_sector[-1] = 11.0
-        n_sector = n_sector.expand_dims(
-            {
-                "epoch": dataset.sizes["epoch"],
-                "spin_sector": dataset.sizes["spin_sector"],
-            }
-        ).transpose("epoch", "esa_step", "spin_sector")
 
         # Denominator to convert counts to rates
-        denominator = (
-            acq_times * n_sector  # Spin sectors
-        )
+        denominator = dataset.acquisition_time_per_step * n_sector
 
         # Do not carry these variable attributes from L1a to L1b for above products
         drop_variables = [
@@ -147,7 +125,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         dataset[unc_variable].data = (
             dataset[unc_variable].astype(np.float64) / denominator
         )
-        dataset[unc_variable].attrs["UNITS"] = "sqrt(counts)/s"
+        dataset[unc_variable].attrs["UNITS"] = "1/s"
 
     return dataset
 
