@@ -18,6 +18,7 @@ from imap_processing.codice.utils import (
     get_view_tab_info,
     read_sci_lut,
 )
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +146,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     l1a_dataset = xr.Dataset(
         coords={
             "epoch": xr.DataArray(
-                epoch_center,
+                met_to_ttj2000ns(epoch_center),
                 dims=("epoch",),
                 attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
             ),

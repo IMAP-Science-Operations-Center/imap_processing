@@ -19,6 +19,7 @@ from imap_processing.codice.utils import (
     index_to_position,
     read_sci_lut,
 )
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -76,12 +77,12 @@ def _despin_species_data(
             despun_data[:, :, orientation_a, :12, pos_idx] = species_data[
                 :, :, orientation_a, :, pos_idx
             ]
-            # Case 2: position 12-24, orientation B, append to second half
+            # Case 2: position 13-24, orientation B, append to second half
             despun_data[:, :, orientation_b, 12:, pos_idx] = species_data[
                 :, :, orientation_b, :, pos_idx
             ]
         else:
-            # Case 3: position 12-24, orientation A, append to second half
+            # Case 3: position 13-24, orientation A, append to second half
             despun_data[:, :, orientation_a, 12:, pos_idx] = species_data[
                 :, :, orientation_a, :, pos_idx
             ]
@@ -214,7 +215,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     l1a_dataset = xr.Dataset(
         coords={
             "epoch": xr.DataArray(
-                epoch_center,
+                met_to_ttj2000ns(epoch_center),
                 dims=("epoch",),
                 attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
             ),

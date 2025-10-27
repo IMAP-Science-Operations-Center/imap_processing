@@ -12,8 +12,6 @@ from pathlib import Path
 
 import numpy as np
 
-from imap_processing.spice.time import met_to_ttj2000ns
-
 
 @dataclass
 class ViewTabInfo:
@@ -280,7 +278,7 @@ def get_codice_epoch_time(
         acq_start_seconds + acq_start_subseconds / 65536 + (delta_times / 1e9)
     )
 
-    return met_to_ttj2000ns(center_times_seconds), delta_times
+    return center_times_seconds, delta_times / 1e9
 
 
 def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
@@ -328,3 +326,76 @@ def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
     ) - hv_settle_per_step
     # Convert to seconds
     return acq_time_per_step / 1e3
+
+
+def get_energy_info(
+    energy_table: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculate energy bin centers and deltas from energy table.
+
+    Parameters
+    ----------
+    energy_table : np.ndarray
+        The species plus and minus energy array.
+
+    Returns
+    -------
+    centers : np.ndarray
+        The geometric centers of the energy bins.
+    deltas_minus : np.ndarray
+        The delta minus values of the energy bins.
+    deltas_plus : np.ndarray
+        The delta plus values of the energy bins.
+    """
+    # Find the geometric centers and deltas of the energy bins
+    # The delta minus is the difference between the center of the bin
+    # and the 'left edge' of the bin. The delta plus is the difference
+    # between the 'right edge' of the bin and the center of the bin
+    # print("Energy min before reading it in np", energy_table["min_energy"])
+    min_energy = np.array(energy_table["min_energy"], dtype=np.float64)
+    max_energy = np.array(energy_table["max_energy"], dtype=np.float64)
+    # print(f"Min energy: {min_energy}, Max energy: {max_energy}")
+    centers = np.sqrt(min_energy * max_energy)
+    deltas_minus = centers - min_energy
+    deltas_plus = max_energy - centers
+
+    return centers, deltas_minus, deltas_plus
+
+
+def apply_replacements_to_attrs(attrs: dict, replacements: dict) -> dict:
+    """
+    Return a shallow-copied attrs dict with placeholders replaced.
+
+    This helper replaces occurrences of placeholders like '{species}' and
+    '{direction}' in string values using simple str.replace calls. It does
+    not use str.format to avoid errors when templates contain braces for
+    other reasons.
+
+    Parameters
+    ----------
+    attrs : dict
+        The attributes dictionary to process (string values may contain
+        placeholders).
+    replacements : dict
+        Mapping of placeholder names (without braces) to replacement values.
+
+    Returns
+    -------
+    dict
+        New attributes dict with replacements applied to string values.
+    """
+    if not isinstance(attrs, dict):
+        return attrs
+    new = {}
+    for k, v in attrs.items():
+        if isinstance(v, str):
+            s = v
+            for name, val in replacements.items():
+                if val is None:
+                    continue
+                s = s.replace(f"{{{name}}}", str(val))
+            new[k] = s
+        else:
+            new[k] = v
+    return new

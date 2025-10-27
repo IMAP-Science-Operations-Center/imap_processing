@@ -6,6 +6,7 @@ import xarray as xr
 from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
+from imap_processing.codice.codice_l1a_hi_omni import l1a_hi_omni
 from imap_processing.codice.codice_l1a_lo_angular import l1a_lo_angular
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.utils import (
@@ -60,5 +61,7 @@ def process_l1a(dependency: ProcessingInputCollection) -> list[xr.Dataset]:
         elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
             logger.info("Processing Lo NSW Angular Counts")
             datasets.append(l1a_lo_angular(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
+            datasets.append(l1a_hi_omni(datasets_by_apid[apid], lut_file))
 
     return datasets
