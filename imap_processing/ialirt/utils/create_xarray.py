@@ -52,7 +52,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ["radial", "tangential", "normal"],
         name="RTN_component",
         dims=["RTN_component"],
-        attrs=cdf_manager.get_variable_attributes("RTN_componentt", check_schema=False),
+        attrs=cdf_manager.get_variable_attributes("RTN_component", check_schema=False),
     )
 
     esa_step = xr.DataArray(
@@ -85,7 +85,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         name="codice_hi_h_spin_angle",
         dims=["codice_hi_h_spin_angle"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_spin_anglen", check_schema=False
+            "codice_hi_h_spin_angle", check_schema=False
         ),
     )
 
@@ -156,6 +156,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
                 "sc_velocity_GSE",
                 "mag_hk_status",
                 "spice_kernels",
+                "instrument",
             ]:
                 continue
             elif key in ["mag_B_GSE", "mag_B_GSM", "mag_B_RTN"]:
