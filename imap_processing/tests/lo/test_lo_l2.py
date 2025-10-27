@@ -1543,6 +1543,11 @@ class TestCalculateBootstrapCorrections:
                 <= original_intensity[0, energy_idx, :, :].values
             ), f"Bootstrap should reduce intensity at energy index {energy_idx}"
 
+        # This is a spot check value to ensure we are getting actual
+        # corrected intensities. Previously we were missing the application
+        # of the lower energy channels in the summation.
+        np.testing.assert_allclose(corrected_intensity[0, 5, 0, 0], [895.96302438])
+
     def test_calculate_bootstrap_corrections_equations(
         self, sample_dataset_with_bootstrap_data
     ):
