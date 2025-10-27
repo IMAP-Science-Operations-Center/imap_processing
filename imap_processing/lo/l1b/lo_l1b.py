@@ -1244,8 +1244,7 @@ def resweep_histogram_data(
         # Find matching LUT table for this date
         if epoch_date_only not in sweep_dates.values:
             raise ValueError(
-                f"No sweep table entry found for date "
-                f"{epoch} at epoch idx {epoch_idx}"
+                f"No sweep table entry found for date {epoch} at epoch idx {epoch_idx}"
             )
 
         # Get all LUT table values for this date to check uniqueness
@@ -1302,10 +1301,12 @@ def resweep_histogram_data(
                         energy_level_counts_h[true_esa_step] = 0
                         energy_level_counts_o[true_esa_step] = 0
 
-                    h_counts_reswept[epoch_idx, az_idx, true_esa_step - 1] += h_original[
-                        orig_idx]
-                    o_counts_reswept[epoch_idx, az_idx, true_esa_step - 1] += o_original[
-                        orig_idx]
+                    h_counts_reswept[epoch_idx, az_idx, true_esa_step - 1] += (
+                        h_original[orig_idx]
+                    )
+                    o_counts_reswept[epoch_idx, az_idx, true_esa_step - 1] += (
+                        o_original[orig_idx]
+                    )
 
             for orig_idx, true_esa_step in energy_step_mapping.items():
                 if orig_idx < len(h_original):  # Ensure index is valid
