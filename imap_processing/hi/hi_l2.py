@@ -379,8 +379,9 @@ def combine_calibration_products(
         combined_flux = weighted_flux_sum / flux_weights.sum(dim="calibration_prod")
 
     map_ds["ena_intensity"] = combined_flux
+    # Statistical uncertainty
     map_ds["ena_intensity_stat_uncert"] = np.sqrt(
-        (map_ds["ena_intensity_stat_uncert"] ** 2).sum(dim="calibration_prod")
+        1 / (1 / (map_ds["ena_intensity_stat_uncert"] ** 2)).sum(dim="calibration_prod")
     )
     # For systematic error, just do quadrature sum over the systematic error for
     # each calibration product.

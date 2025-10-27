@@ -632,9 +632,8 @@ def test_statistical_uncertainty_combination_correctness():
     result_ds = combine_calibration_products(test_ds, geom_factors, esa_energies)
 
     # Manual calculation of expected statistical uncertainty combination
-    # stat_weights = 1/σ² = [1/151, 1/151]
-    # combined_stat_unc = sqrt(1/sum(stat_weights)) = sqrt(2/151) = sqrt(20) ≈ 4.47
-    expected_combined_stat_unc = np.sqrt(np.sum(stat_unc_values**2))
+    # combined_stat_unc = sqrt(1/sum(1 / stat_unc**2))
+    expected_combined_stat_unc = np.sqrt(1 / np.sum(1 / stat_unc_values**2))
     flux_weights = 1.0 / (np.array([101, 101]) + np.array([4, 16]))
     expected_flux = np.sum(flux_values.squeeze() * flux_weights) / np.sum(flux_weights)
 
