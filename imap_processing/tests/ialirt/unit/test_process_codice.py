@@ -335,7 +335,7 @@ def test_group_and_decompress_ialirt_cod_lo(
             len(science_values[i]) // 8, byteorder="big"
         )
 
-        decompressed_values = decompress(values, 0)
+        decompressed_values = decompress(values, metadata_values["VIEW_ID"][0])
         test_decom_data_array = test_decom_data[i]
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
@@ -402,7 +402,7 @@ def test_group_and_decompress_ialirt_cod_hi(
             len(science_values[i]) // 8, byteorder="big"
         )
 
-        decompressed_values = decompress(values, 0)
+        decompressed_values = decompress(values, metadata_values["VIEW_ID"][0])
         test_decom_data_array = test_decom_data[i]
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
