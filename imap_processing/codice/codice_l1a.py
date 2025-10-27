@@ -27,7 +27,6 @@ from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 from imap_processing.spice.time import met_to_ttj2000ns
-from imap_processing.codice.decompress import _apply_pack_24_bit
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -181,6 +180,11 @@ class CoDICEL1aPipeline:
             A list of byte strings (or bit strings, in the case of I-ALiRT)
             representing the science values of the data for each packet.
         """
+        # The compression algorithm depends on the instrument and view ID
+        if self.config["instrument"] == "lo":
+            compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
+        elif self.config["instrument"] == "hi":
+            compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[self.view_id]
 
         self.raw_data = []
 
@@ -192,7 +196,7 @@ class CoDICEL1aPipeline:
                 values = int(packet_data, 2).to_bytes(
                     len(packet_data) // 8, byteorder="big"
                 )
-                decompressed_values = _apply_pack_24_bit(values)
+                decompressed_values = decompress(values, compression_algorithm)
                 self.raw_data.append(decompressed_values)
 
         else:
@@ -1224,23 +1228,6 @@ def create_ialirt_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
 
     # Group together packets of I-ALiRT data to form complete data sets
     grouped_data = group_ialirt_data(packets, data_field_range, prefix)
-
-    ###########
-    import pickle
-    path = Path(
-        imap_module_directory
-        / "tests"
-        / "ialirt"
-        / "data"
-        / "l0"
-        / "imap_codice_l1a_lo-ialirt.pickle"
-    )
-
-    with open(path, 'rb') as handle:
-        data = pickle.load(handle)
-
-    grouped_data = data["grouped_lo_ialirt"]
-    #############
 
     if grouped_data:
         # Process each group to get the science data and corresponding metadata
