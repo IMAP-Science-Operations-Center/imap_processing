@@ -57,14 +57,20 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         "lo-ialirt",
     ]:
         # Solve denominator, Acquisition times, of above products. Acquisition times
-        # must reshape to match the data variable shape
-        acq_times = dataset.acquisition_time_per_step.data[np.newaxis, :, np.newaxis]
+        # must reshape to match the data variable shape, (epoch, esa_step, sector)
+        acq_times = dataset.acquisition_time_per_step.expand_dims(
+            {
+                "epoch": dataset.sizes["epoch"],
+                "spin_sector": dataset.sizes["spin_sector"],
+            }
+        ).transpose("epoch", "esa_step", "spin_sector")
+        # Denominator to convert counts to rates
         denominator = (
             acq_times
-            * 1e-3  # Converting from milliseconds to seconds
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
         )
-        # Do not carry these variable attributes from L1a to L1b
+
+        # Do not carry these variable attributes from L1a to L1b for above products
         drop_variables = [
             "k_factor",
             "nso_half_spin",
@@ -79,18 +85,41 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     ]:
         # Solve denominator, Acquisition times, of above products. Acquisition times
         # must reshape to match the data variable shape, (epoch, esa_step, sector)
-        acq_times = dataset.acquisition_time_per_step.data[np.newaxis, :, np.newaxis]
-        # acquisition time have an array of shape (128,). We match n_sector to that.
+        acq_times = dataset.acquisition_time_per_step.expand_dims(
+            {
+                "epoch": dataset.sizes["epoch"],
+                "spin_sector": dataset.sizes["spin_sector"],
+            }
+        ).transpose("epoch", "esa_step", "spin_sector")
+        # Create n_sector with same shape as data.
         # Per CoDICE, fill first 127 with default value of 12. Then fill last with 11.
-        n_sector = np.full(constants.NUM_ESA_STEPS, 12, dtype=int)
-        n_sector[-1] = 11
-
-        # Convert counts to rates
-        denominator = (
-            acq_times
-            * 1e-3  # Converting from milliseconds to seconds
-            * n_sector[:, np.newaxis]  # Spin sectors
+        n_sector = xr.full_like(
+            dataset.acquisition_time_per_step, 12.0, dtype=np.float64
         )
+        n_sector[-1] = 11.0
+        n_sector = n_sector.expand_dims(
+            {
+                "epoch": dataset.sizes["epoch"],
+                "spin_sector": dataset.sizes["spin_sector"],
+            }
+        ).transpose("epoch", "esa_step", "spin_sector")
+
+        # Denominator to convert counts to rates
+        denominator = (
+            acq_times * n_sector  # Spin sectors
+        )
+
+        # Do not carry these variable attributes from L1a to L1b for above products
+        drop_variables = [
+            "k_factor",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "spin_period",
+            "voltage_table",
+            "acquisition_time_per_step",
+        ]
+        dataset = dataset.drop_vars(drop_variables)
 
     elif descriptor in [
         "hi-counters-aggregated",
@@ -100,6 +129,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         "hi-sectored",
         "hi-ialirt",
     ]:
+        # Denominator to convert counts to rates
         denominator = (
             constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spins"]
@@ -108,10 +138,16 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
 
     # For each variable, convert counts and uncertainty to rates
     for variable in variables_to_convert:
-        dataset[variable].data = dataset[variable].data / denominator
+        dataset[variable].data = dataset[variable].astype(np.float64) / denominator
+        # Carry over attrs and update as needed
+        dataset[variable].attrs["UNITS"] = "counts/s"
+
         # Uncertainty calculation
         unc_variable = f"unc_{variable}"
-        dataset[unc_variable].data = dataset[unc_variable].data / denominator
+        dataset[unc_variable].data = (
+            dataset[unc_variable].astype(np.float64) / denominator
+        )
+        dataset[unc_variable].attrs["UNITS"] = "sqrt(counts)/s"
 
     return dataset
 
@@ -150,8 +186,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
 
     # Update the global attributes
     l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
-    l1b_dataset = convert_to_rates(
+    return convert_to_rates(
         l1b_dataset,
         descriptor,
     )
-    return l1b_dataset
