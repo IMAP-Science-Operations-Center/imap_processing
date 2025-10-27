@@ -372,7 +372,7 @@ def test_group_and_decompress_ialirt_cod_hi(
     # Test data.
     with open(cod_hi_decom_test_file, "rb") as handle:
         data = pickle.load(handle)  # noqa: S301
-    test_grouped_data = data["grouped_hi_ialirt"]
+    test_grouped_data = data["grouped_hi_ialirt"][0]
     test_decom_data = data["decompressed_hi_ialirt"][0]
 
     header_len = 6  # Test data header at start of block
@@ -387,7 +387,7 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         start = header_len + i * block_size
         end = start + data_len
-        expected_slice = test_grouped_data[0][start:end]
+        expected_slice = test_grouped_data[start:end]
 
         test_grouped_data_array.append(expected_slice)
 
