@@ -79,9 +79,9 @@ def test_l1b_lo_sw_species(mock_get_file_paths):
         )
 
     # Write to CDF
-    processed_data.attrs["Data_version"] = "001"
+    processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1b_lo-sw-species_20250814_v001.cdf"
+    assert cdf_file.name == "imap_codice_l1b_lo-sw-species_20250814_v002.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -135,9 +135,9 @@ def test_l1b_lo_nsw_species(mock_get_file_paths):
         )
 
     # Write to CDF
-    processed_data.attrs["Data_version"] = "001"
+    processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1b_lo-nsw-species_20250814_v001.cdf"
+    assert cdf_file.name == "imap_codice_l1b_lo-nsw-species_20250814_v002.cdf"
 
 
 @pytest.mark.skip(reason="Revisit this in l1a refactor work")

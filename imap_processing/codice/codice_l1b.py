@@ -47,6 +47,21 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
     )
 
+    if descriptor.startswith("lo-"):
+        # Calculate energy_table using voltage_table and k_factor
+        energy_attrs = dataset["voltage_table"].attrs
+        energy_attrs["UNITS"] = "keV/e"
+        energy_attrs["LABLAXIS"] = "E/q"
+        energy_attrs["CATDESC"] = "Energy per charge"
+        energy_attrs["FEILDNAM"] = "Energy per charge"
+        dataset["energy_table"] = xr.DataArray(
+            dataset["voltage_table"].values * dataset["k_factor"].values * 1e-3,
+            dims=[
+                "esa_step",
+            ],
+            attrs=energy_attrs,
+        )
+
     if descriptor in [
         "lo-counters-aggregated",
         "lo-counters-singles",
@@ -86,7 +101,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
 
         # Denominator to convert counts to rates
         denominator = dataset.acquisition_time_per_step * n_sector
-
         # Do not carry these variable attributes from L1a to L1b for above products
         drop_variables = [
             "k_factor",
