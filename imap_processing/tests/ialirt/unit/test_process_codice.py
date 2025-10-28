@@ -18,6 +18,7 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.codice import decompress
 from imap_processing.codice.codice_l1a import process_ialirt_data_streams
+from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
@@ -25,6 +26,7 @@ from imap_processing.ialirt.l0.process_codice import (
     COD_LO_COUNTER,
     FILLVAL_UINT8,
     concatenate_bytes,
+    create_xarray_dataset,
     process_codice,
 )
 from imap_processing.ialirt.utils.grouping import find_groups
@@ -329,6 +331,9 @@ def test_group_and_decompress_ialirt_cod_lo(
     science_values, metadata_values = process_ialirt_data_streams(
         test_grouped_data_array
     )
+    dataset = create_xarray_dataset(science_values, metadata_values, "lo")
+    lut_path = imap_module_directory / "tests" / "codice" / "data" / "l1a_lut"/ "imap_codice_l1a-sci-lut_20251007_v001.json"
+    result = l1a_lo_species(dataset, lut_path)
 
     for i in range(len(science_values)):
         values = int(science_values[i], 2).to_bytes(

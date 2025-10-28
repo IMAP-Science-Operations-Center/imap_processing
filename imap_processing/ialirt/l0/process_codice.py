@@ -9,6 +9,8 @@ import xarray as xr
 
 from imap_processing.codice import decompress
 from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,65 @@ def concatenate_bytes(grouped_data: xr.Dataset, group: int, sensor: str) -> byte
     current_data_stream.extend(np.uint8(flattened).tobytes())
 
     return current_data_stream
+
+
+def create_xarray_dataset(science_values, metadata_values, sensor) -> xr.Dataset:
+    """
+    Create an xarray Dataset from science and metadata values.
+
+    Parameters
+    ----------
+    science_values : list[int]
+        List of decompressed science values.
+    metadata_values : dict[str, list[Any]]
+        Dictionary of metadata values.
+    sensor : str
+        The sensor type, either 'lo' or 'hi'.
+
+    Returns
+    -------
+    xr.Dataset
+        The constructed xarray Dataset.
+    """
+    apid = {"lo": 1152, "hi": 1168}
+
+    science_byte_values = []
+    # Placeholder for epoch dimension that will not be used.
+    epoch = np.arange(len(science_values))
+
+    epoch_time = xr.DataArray(
+        epoch,
+        name="epoch",
+        dims=["epoch"],
+    )
+    dataset = xr.Dataset(
+        coords={"epoch": epoch_time},
+    )
+
+    for key in metadata_values.keys():
+        data = np.array(metadata_values[key])
+        dataset[key.lower()] = xr.DataArray(
+            data,
+            dims=["epoch"],
+        )
+
+    for i in range(len(science_values)):
+        values = int(science_values[i], 2).to_bytes(
+            len(science_values[i]) // 8, byteorder="big"
+        )
+        science_byte_values.append(values)
+
+    dataset["data"] = xr.DataArray(
+        science_byte_values,
+        dims=["epoch"],
+    )
+
+    dataset["pkt_apid"] = xr.DataArray(
+        np.array([apid[sensor]] * 9),
+        dims=["epoch"],
+    )
+
+    return dataset
 
 
 def process_codice(
