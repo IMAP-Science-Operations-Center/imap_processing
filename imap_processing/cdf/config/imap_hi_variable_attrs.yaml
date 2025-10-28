@@ -432,8 +432,18 @@ hi_de_nominal_bin:
 
 # Define override values for epoch as defined in imap_constant_attrs.yaml
 hi_pset_epoch:
-  CATDESC: Midpoint time of pointing, number of nanoseconds since J2000 with leap seconds included
-  BIN_LOCATION: 0.5
+  CATDESC: Start time of pointing, number of nanoseconds since J2000 with leap seconds included
+  DELTA_PLUS_VAR: epoch_delta
+  BIN_LOCATION: 0
+
+epoch_delta:
+  <<: *default_int64
+  CATDESC: Number of nanoseconds in spacecraft pointing covered by this pointing set product
+  FIELDNAM: epoch delta
+  UNITS: ns
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  TIME_SCALE: Terrestrial Time
 
 hi_pset_esa_energy_step:
   <<: *default_esa_energy_step

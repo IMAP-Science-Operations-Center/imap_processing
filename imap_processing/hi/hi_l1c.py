@@ -29,11 +29,12 @@ from imap_processing.spice.geometry import (
     frame_transform,
     frame_transform_az_el,
 )
+from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spin_data,
 )
-from imap_processing.spice.time import ttj2000ns_to_et
+from imap_processing.spice.time import et_to_met, met_to_ttj2000ns, ttj2000ns_to_et
 
 N_SPIN_BINS = 3600
 SPIN_PHASE_BIN_EDGES = np.linspace(0, 1, N_SPIN_BINS + 1)
@@ -106,9 +107,9 @@ def generate_pset_dataset(
         config_df.cal_prod_config.number_of_products,
         logical_source_parts["sensor"],
     )
-    pset_et = ttj2000ns_to_et(pset_dataset.epoch.data[0])
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
     # the pset_dataset
+    pset_et = ttj2000ns_to_et(pset_dataset.epoch.data[0])
     pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
     # Bin the counts into the spin-bins
     pset_dataset.update(pset_counts(pset_dataset.coords, config_df, de_dataset))
@@ -121,15 +122,16 @@ def generate_pset_dataset(
 
 
 def empty_pset_dataset(
-    epoch_val: int, l1b_energy_steps: xr.DataArray, n_cal_prods: int, sensor_str: str
+    l1b_epoch: int, l1b_energy_steps: xr.DataArray, n_cal_prods: int, sensor_str: str
 ) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
 
     Parameters
     ----------
-    epoch_val : int
-        The starting epoch in J2000 TT nanoseconds for data in the PSET.
+    l1b_epoch : int
+        The epoch from the input L1B DE dataset. This is used to query the
+        repoint-table data to get the start and end times of the pointing.
     l1b_energy_steps : xarray.DataArray
         The array of esa_energy_step data from the L1B DE product.
     n_cal_prods : int
@@ -148,13 +150,18 @@ def empty_pset_dataset(
 
     # preallocate coordinates xr.DataArrays
     coords = dict()
+
+    # Get the Pointing start and end times
+    pointing_mets = get_pointing_times(et_to_met(ttj2000ns_to_et(l1b_epoch)))
+    epochs = met_to_ttj2000ns(np.asarray(pointing_mets))
+
     # epoch coordinate has only 1 entry for pointing set
     epoch_attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
     epoch_attrs.update(
         attr_mgr.get_variable_attributes("hi_pset_epoch", check_schema=False)
     )
     coords["epoch"] = xr.DataArray(
-        np.array([epoch_val], dtype=np.int64),  # TODO: get dtype from cdf attrs?
+        np.array([epochs[0]], dtype=np.int64),
         name="epoch",
         dims=["epoch"],
         attrs=epoch_attrs,
@@ -201,6 +208,15 @@ def empty_pset_dataset(
 
     # Allocate the coordinate label variables
     data_vars = dict()
+    # Generate the epoch_delta variable
+    data_vars["epoch_delta"] = xr.DataArray(
+        np.diff(epochs),
+        name="epoch_delta",
+        dims=["epoch"],
+        attrs=attr_mgr.get_variable_attributes(
+            "hi_pset_epoch_delta", check_schema=False
+        ),
+    )
     # Generate label variables
     data_vars["esa_energy_step_label"] = xr.DataArray(
         coords["esa_energy_step"].values.astype(str),
@@ -257,7 +273,7 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     Returns
     -------
     geometry_vars : dict[str, xarray.DataArray]
-        Keys are variable names and values are data arrays.
+        Keys are variable names, and values are data arrays.
     """
     geometry_vars = create_dataset_variables(
         ["despun_z"], (1, 3), att_manager_lookup_str="hi_pset_{0}"

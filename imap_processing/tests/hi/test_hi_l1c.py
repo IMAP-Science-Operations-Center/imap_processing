@@ -15,6 +15,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi import hi_l1c
 from imap_processing.hi.hi_l1a import DE_CLOCK_TICK_S
 from imap_processing.hi.utils import HIAPID
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")
@@ -32,17 +33,26 @@ def test_generate_pset_dataset(
     hi_l1_test_data_path,
     hi_test_cal_prod_config_path,
     use_fake_spin_data_for_time,
+    use_fake_repoint_data_for_time,
     imap_ena_sim_metakernel,
 ):
     """Test coverage for generate_pset_dataset function"""
     use_fake_spin_data_for_time(482372987.999)
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
     l1b_dataset = load_cdf(l1b_de_path)
+    l1b_met = l1b_dataset["ccsds_met"].values[0]
+    # Set repoint start and end times.
+    seconds_per_day = 24 * 60 * 60
+    use_fake_repoint_data_for_time(
+        np.asarray([l1b_met - 15 * 60, l1b_met + seconds_per_day]),
+        np.asarray([l1b_met, l1b_met + seconds_per_day + 1]),
+    )
     l1c_dataset = hi_l1c.generate_pset_dataset(
         l1b_dataset, hi_test_cal_prod_config_path
     )
 
     assert l1c_dataset.epoch.data[0] == l1b_dataset.epoch.data[0].astype(np.int64)
+    assert l1c_dataset.epoch_delta.data[0] == seconds_per_day * 1e9
 
     np.testing.assert_array_equal(l1c_dataset.despun_z.data.shape, (1, 3))
     np.testing.assert_array_equal(l1c_dataset.hae_latitude.data.shape, (1, 3600))
@@ -59,7 +69,7 @@ def test_generate_pset_dataset(
     write_cdf(l1c_dataset)
 
 
-def test_empty_pset_dataset():
+def test_empty_pset_dataset(use_fake_repoint_data_for_time):
     """Test coverage for empty_pset_dataset function"""
     n_energy_steps = 8
     l1b_esa_energy_steps = xr.DataArray(
@@ -68,11 +78,18 @@ def test_empty_pset_dataset():
     )
     n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
+    l1b_met = 482373065
+    l1b_epoch = met_to_ttj2000ns(l1b_met)
+    use_fake_repoint_data_for_time(
+        np.asarray([l1b_met - 15 * 60, l1b_met + 24 * 60 * 60])
+    )
+
     dataset = hi_l1c.empty_pset_dataset(
-        100, l1b_esa_energy_steps, n_calibration_prods, sensor_str
+        l1b_epoch, l1b_esa_energy_steps, n_calibration_prods, sensor_str
     )
 
     assert dataset.epoch.size == 1
+    assert dataset.epoch_delta.size == 1
     assert dataset.spin_angle_bin.size == 3600
     assert dataset.esa_energy_step.size == n_energy_steps
     np.testing.assert_array_equal(
@@ -127,7 +144,14 @@ def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_s
 
 
 @pytest.mark.external_test_data
-def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
+@mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
+@mock.patch("imap_processing.hi.hi_l1c.et_to_met")
+def test_pset_counts(
+    mock_et_to_met,
+    mock_pointing_times,
+    hi_l1_test_data_path,
+    hi_test_cal_prod_config_path,
+):
     """Test coverage for pset_counts function."""
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
     l1b_dataset = load_cdf(l1b_de_path)
@@ -145,7 +169,14 @@ def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
 
 
 @pytest.mark.external_test_data
-def test_pset_counts_empty_l1b(hi_l1_test_data_path, hi_test_cal_prod_config_path):
+@mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
+@mock.patch("imap_processing.hi.hi_l1c.et_to_met")
+def test_pset_counts_empty_l1b(
+    mock_et_to_met,
+    mock_pointing_times,
+    hi_l1_test_data_path,
+    hi_test_cal_prod_config_path,
+):
     """Test coverage for pset_counts function when the input L1b contains no counts."""
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
     l1b_dataset = load_cdf(l1b_de_path)
@@ -254,6 +285,8 @@ def test_pset_backgrounds():
     )
 
 
+@mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
+@mock.patch("imap_processing.hi.hi_l1c.et_to_met")
 @mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)
 @mock.patch("imap_processing.hi.hi_l1c.get_instrument_spin_phase")
 @mock.patch("imap_processing.hi.hi_l1c.get_de_clock_ticks_for_esa_step")
@@ -263,6 +296,8 @@ def test_pset_exposure(
     mock_de_clock_ticks,
     mock_spin_phase,
     mock_spin_data,
+    mock_et_to_met,
+    mock_pointing_times,
 ):
     """Test coverage for pset_exposure function"""
     l1b_energy_steps = xr.DataArray(
