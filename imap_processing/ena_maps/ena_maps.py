@@ -656,6 +656,11 @@ class LoHiBasePointingSet(PointingSet):
             Units don't matter because only the unit direction vector is used
             to calculate the RAM mask.
         """
+        logger.info(
+            f"Calculating the RAM mask using input spacecraft velocity"
+            f"vector: {spacecraft_vel_vec} and hae coordinates in the"
+            f"dataset hae_longitude and hae_latitude variables."
+        )
         longitude = self.data["hae_longitude"]
         latitude = self.data["hae_latitude"]
         spacecraft_direction_vec = spacecraft_vel_vec / np.linalg.norm(
