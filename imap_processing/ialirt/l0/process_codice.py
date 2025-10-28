@@ -154,32 +154,34 @@ def process_codice(
     cod_hi_grouped = []
 
     # Processing for l1a.
-    for group in unique_cod_lo_groups:
-        cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
+    if unique_cod_lo_groups.size > 0:
+        for group in unique_cod_lo_groups:
+            cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
-        # Decompress binary stream
-        cod_lo_grouped.append(cod_lo_data_stream)
+            # Decompress binary stream
+            cod_lo_grouped.append(cod_lo_data_stream)
 
-    cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
-        cod_lo_grouped
-    )
-    cod_lo_dataset = create_xarray_dataset(
-        cod_lo_science_values, cod_lo_metadata_values, "lo"
-    )
-    result = l1a_lo_species(cod_lo_dataset, lut_path)  # noqa
+        cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
+            cod_lo_grouped
+        )
+        cod_lo_dataset = create_xarray_dataset(
+            cod_lo_science_values, cod_lo_metadata_values, "lo"
+        )
+        result = l1a_lo_species(cod_lo_dataset, lut_path)  # noqa
 
-    for group in unique_cod_hi_groups:
-        cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
+    if unique_cod_hi_groups.size > 0:
+        for group in unique_cod_hi_groups:
+            cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
 
-        # Decompress binary stream
-        cod_hi_grouped.append(cod_hi_data_stream)
+            # Decompress binary stream
+            cod_hi_grouped.append(cod_hi_data_stream)
 
-    cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
-        cod_hi_grouped
-    )
-    cod_hi_dataset = create_xarray_dataset(  # noqa
-        cod_hi_science_values, cod_hi_metadata_values, "hi"
-    )
+        cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
+            cod_hi_grouped
+        )
+        cod_hi_dataset = create_xarray_dataset(  # noqa
+            cod_hi_science_values, cod_hi_metadata_values, "hi"
+        )
 
     # TODO: calculate rates
     #       This will be done in codice.codice_l1b
