@@ -742,6 +742,8 @@ def calculate_all_rates_and_intensities(
 
     # Optional Step 6: Calculate flux corrections
     if flux_correction:
+        if flux_factors is None:
+            raise ValueError("Flux factors file must be provided for flux corrections")
         dataset = calculate_flux_corrections(dataset, flux_factors)
 
     # Step 7: Clean up intermediate variables
@@ -1121,9 +1123,7 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
-def calculate_flux_corrections(
-    dataset: xr.Dataset, flux_factors: Path | None
-) -> xr.Dataset:
+def calculate_flux_corrections(dataset: xr.Dataset, flux_factors: Path) -> xr.Dataset:
     """
     Calculate flux corrections for intensities.
 
