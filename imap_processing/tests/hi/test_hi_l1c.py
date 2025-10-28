@@ -15,7 +15,6 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi import hi_l1c
 from imap_processing.hi.hi_l1a import DE_CLOCK_TICK_S
 from imap_processing.hi.utils import HIAPID
-from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")
@@ -79,13 +78,12 @@ def test_empty_pset_dataset(use_fake_repoint_data_for_time):
     n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
     l1b_met = 482373065
-    l1b_epoch = met_to_ttj2000ns(l1b_met)
     use_fake_repoint_data_for_time(
         np.asarray([l1b_met - 15 * 60, l1b_met + 24 * 60 * 60])
     )
 
     dataset = hi_l1c.empty_pset_dataset(
-        l1b_epoch, l1b_esa_energy_steps, n_calibration_prods, sensor_str
+        l1b_met, l1b_esa_energy_steps, n_calibration_prods, sensor_str
     )
 
     assert dataset.epoch.size == 1

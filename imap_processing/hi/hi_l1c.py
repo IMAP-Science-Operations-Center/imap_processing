@@ -34,7 +34,7 @@ from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spin_data,
 )
-from imap_processing.spice.time import et_to_met, met_to_ttj2000ns, ttj2000ns_to_et
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 N_SPIN_BINS = 3600
 SPIN_PHASE_BIN_EDGES = np.linspace(0, 1, N_SPIN_BINS + 1)
@@ -102,7 +102,7 @@ def generate_pset_dataset(
     config_df = CalibrationProductConfig.from_csv(calibration_prod_config_path)
 
     pset_dataset = empty_pset_dataset(
-        de_dataset.epoch.data[0],
+        de_dataset.ccsds_met.data.mean(),
         de_dataset.esa_energy_step,
         config_df.cal_prod_config.number_of_products,
         logical_source_parts["sensor"],
@@ -122,15 +122,15 @@ def generate_pset_dataset(
 
 
 def empty_pset_dataset(
-    l1b_epoch: int, l1b_energy_steps: xr.DataArray, n_cal_prods: int, sensor_str: str
+    l1b_met: float, l1b_energy_steps: xr.DataArray, n_cal_prods: int, sensor_str: str
 ) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
 
     Parameters
     ----------
-    l1b_epoch : int
-        The epoch from the input L1B DE dataset. This is used to query the
+    l1b_met : float
+        Any met from the input L1B DE dataset. This is used to query the
         repoint-table data to get the start and end times of the pointing.
     l1b_energy_steps : xarray.DataArray
         The array of esa_energy_step data from the L1B DE product.
@@ -152,7 +152,7 @@ def empty_pset_dataset(
     coords = dict()
 
     # Get the Pointing start and end times
-    pointing_mets = get_pointing_times(et_to_met(ttj2000ns_to_et(l1b_epoch)))
+    pointing_mets = get_pointing_times(l1b_met)
     epochs = met_to_ttj2000ns(np.asarray(pointing_mets))
 
     # epoch coordinate has only 1 entry for pointing set
