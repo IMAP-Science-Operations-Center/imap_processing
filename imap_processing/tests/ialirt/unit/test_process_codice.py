@@ -331,9 +331,6 @@ def test_group_and_decompress_ialirt_cod_lo(
     science_values, metadata_values = process_ialirt_data_streams(
         test_grouped_data_array
     )
-    dataset = create_xarray_dataset(science_values, metadata_values, "lo")
-    lut_path = imap_module_directory / "tests" / "codice" / "data" / "l1a_lut"/ "imap_codice_l1a-sci-lut_20251007_v001.json"
-    result = l1a_lo_species(dataset, lut_path)
 
     for i in range(len(science_values)):
         values = int(science_values[i], 2).to_bytes(
@@ -344,6 +341,35 @@ def test_group_and_decompress_ialirt_cod_lo(
         test_decom_data_array = test_decom_data[i]
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
+
+    dataset = create_xarray_dataset(science_values, metadata_values, "lo")
+    lut_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1a_lut"
+        / "imap_codice_l1a-sci-lut_20251007_v001.json"
+    )
+    result = l1a_lo_species(dataset, lut_path)
+
+    expected_species = [
+        "heplusplus",
+        "cplus5",
+        "cplus6",
+        "oplus6",
+        "oplus7",
+        "oplus8",
+        "mg",
+        "fe_loq",
+        "fe_hiq",
+    ]
+
+    # Returns data for all expected species at 128 esa steps.
+    for species in expected_species:
+        flat = result[species].values.flatten()
+        assert len(flat) == 128
+    # TODO: I need test results for each species here.
 
 
 @pytest.mark.external_test_data
