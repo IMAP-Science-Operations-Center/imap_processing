@@ -49,11 +49,12 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
 
     if descriptor.startswith("lo-"):
         # Calculate energy_table using voltage_table and k_factor
-        energy_attrs = dataset["voltage_table"].attrs
-        energy_attrs["UNITS"] = "keV/e"
-        energy_attrs["LABLAXIS"] = "E/q"
-        energy_attrs["CATDESC"] = "Energy per charge"
-        energy_attrs["FEILDNAM"] = "Energy per charge"
+        energy_attrs = dataset["voltage_table"].attrs | {
+            "UNITS": "keV/e",
+            "LABLAXIS": "E/q",
+            "CATDESC": "Energy per charge",
+            "FIELDNAM": "Energy per charge",
+        }
         dataset["energy_table"] = xr.DataArray(
             dataset["voltage_table"].values * dataset["k_factor"].values * 1e-3,
             dims=[

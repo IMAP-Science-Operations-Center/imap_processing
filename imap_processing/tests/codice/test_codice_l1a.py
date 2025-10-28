@@ -235,7 +235,7 @@ def test_lo_sw_species(mock_get_file_paths):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-species_20250814_v006.cdf"
+        / "imap_codice_l1a_lo-sw-species_20250814_v007.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -248,8 +248,6 @@ def test_lo_sw_species(mock_get_file_paths):
     processed_data = process_l1a(dependency=dependency)[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in ["acquisition_time_per_step"]:
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -266,9 +264,9 @@ def test_lo_sw_species(mock_get_file_paths):
             rtol=1e-5,
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
-
+    processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-sw-species_20250814_v999.cdf"
+    assert cdf_file.name == "imap_codice_l1a_lo-sw-species_20250814_v002.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -298,7 +296,7 @@ def test_lo_nsw_species(mock_get_file_paths):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-species_20250814_v006.cdf"
+        / "imap_codice_l1a_lo-nsw-species_20250814_v007.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -311,8 +309,6 @@ def test_lo_nsw_species(mock_get_file_paths):
     processed_data = process_l1a(dependency=dependency)[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in ["acquisition_time_per_step"]:
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -330,8 +326,9 @@ def test_lo_nsw_species(mock_get_file_paths):
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
 
+    processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True, istp=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-nsw-species_20250814_v999.cdf"
+    assert cdf_file.name == "imap_codice_l1a_lo-nsw-species_20250814_v002.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -361,7 +358,7 @@ def test_lo_sw_angular(mock_get_file_paths):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-angular_20250814_v006.cdf"
+        / "imap_codice_l1a_lo-sw-angular_20250814_v007.cdf"
     )
     val_data = load_cdf(val_path)
 
@@ -373,8 +370,6 @@ def test_lo_sw_angular(mock_get_file_paths):
     processed_data = process_l1a(dependency=dependency)[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable == "acquisition_time_per_step":
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -390,8 +385,9 @@ def test_lo_sw_angular(mock_get_file_paths):
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
 
+    processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-sw-angular_20250814_v999.cdf"
+    assert cdf_file.name == "imap_codice_l1a_lo-sw-angular_20250814_v002.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -421,7 +417,7 @@ def test_lo_nsw_angular(mock_get_file_paths):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-angular_20250814_v006.cdf"
+        / "imap_codice_l1a_lo-nsw-angular_20250814_v007.cdf"
     )
     val_data = load_cdf(val_path)
 
@@ -432,8 +428,6 @@ def test_lo_nsw_angular(mock_get_file_paths):
     # Process the input data
     processed_data = process_l1a(dependency=dependency)[0]
     for variable in val_data.data_vars:
-        if variable == "acquisition_time_per_step":
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -449,8 +443,9 @@ def test_lo_nsw_angular(mock_get_file_paths):
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
 
+    processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-nsw-angular_20250814_v999.cdf"
+    assert cdf_file.name == "imap_codice_l1a_lo-nsw-angular_20250814_v002.cdf"
 
 
 @pytest.mark.skip(reason="Revisit this in l1a refactor work")
