@@ -291,6 +291,30 @@ def lut_path():
     return lut_path
 
 
+def test_create_xarray_dataset_basic():
+    """Test create_xarray_dataset function."""
+
+    science_values = ["0000000100100011", "1111000011110000"]
+    metadata_values = {
+        "VIEW_ID": [1],
+        "PACKET_COUNT": [42],
+        "SENSOR_TEMP": [123.4],
+        "SHCOARSE": [1234567890],
+    }
+
+    ds = create_xarray_dataset(science_values, metadata_values, "lo")
+
+    for key in metadata_values:
+        assert key.lower() in ds.variables
+
+    assert ds["pkt_apid"].item() == 1152
+
+    combined_bytes = b"".join(
+        int(val, 2).to_bytes(len(val) // 8, byteorder="big") for val in science_values
+    )
+    assert ds["data"].item() == combined_bytes
+
+
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_lo(
     cod_lo_test_dataset, cod_lo_decom_test_file, lut_path
@@ -445,7 +469,7 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "hi")
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi")  # noqa
     # TODO: add function l1a_hi_species
 
 
