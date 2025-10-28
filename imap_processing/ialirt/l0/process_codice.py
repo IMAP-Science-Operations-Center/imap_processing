@@ -72,8 +72,8 @@ def create_xarray_dataset(science_values, metadata_values, sensor) -> xr.Dataset
 
     Parameters
     ----------
-    science_values : list[int]
-        List of decompressed science values.
+    science_values : list[str]
+        List of binary strings (bit representations) for each species.
     metadata_values : dict[str, list[Any]]
         Dictionary of metadata values.
     sensor : str
@@ -82,45 +82,32 @@ def create_xarray_dataset(science_values, metadata_values, sensor) -> xr.Dataset
     Returns
     -------
     xr.Dataset
-        The constructed xarray Dataset.
+        The constructed xarray Dataset compatible with l1a_lo_species().
     """
     apid = {"lo": 1152, "hi": 1168}
 
-    science_byte_values = []
-    # Placeholder for epoch dimension that will not be used.
-    epoch = np.arange(len(science_values))
-
-    epoch_time = xr.DataArray(
-        epoch,
-        name="epoch",
-        dims=["epoch"],
-    )
-    dataset = xr.Dataset(
-        coords={"epoch": epoch_time},
+    # --- Combine all species into one full packet ---
+    packet_bytes = b"".join(
+        int(val, 2).to_bytes(len(val) // 8, byteorder="big") for val in science_values
     )
 
+    # --- Create dataset with one epoch (packet) ---
+    epoch_time = xr.DataArray(np.arange(1), name="epoch", dims=["epoch"])
+    dataset = xr.Dataset(coords={"epoch": epoch_time})
+
+    # --- Use only the first metadata value for each field (1 per packet) ---
     for key in metadata_values.keys():
         data = np.array(metadata_values[key])
-        dataset[key.lower()] = xr.DataArray(
-            data,
-            dims=["epoch"],
-        )
+        # if metadata has multiple entries, keep just the first one
+        if data.size > 1:
+            data = data[:1]
+        dataset[key.lower()] = xr.DataArray(data, dims=["epoch"])
 
-    for i in range(len(science_values)):
-        values = int(science_values[i], 2).to_bytes(
-            len(science_values[i]) // 8, byteorder="big"
-        )
-        science_byte_values.append(values)
+    # --- Add the combined science packet ---
+    dataset["data"] = xr.DataArray([packet_bytes], dims=["epoch"])
 
-    dataset["data"] = xr.DataArray(
-        science_byte_values,
-        dims=["epoch"],
-    )
-
-    dataset["pkt_apid"] = xr.DataArray(
-        np.array([apid[sensor]] * 9),
-        dims=["epoch"],
-    )
+    # --- Add APID ---
+    dataset["pkt_apid"] = xr.DataArray([apid[sensor]], dims=["epoch"])
 
     return dataset
 
