@@ -280,7 +280,7 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
 def test_group_and_decompress_ialirt_cod_lo(
     cod_lo_test_dataset, cod_lo_decom_test_file
 ):
-    "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
+    "Test that I-ALiRT CoDICE-Lo data can be grouped and decompressed properly."
 
     grouped_cod_lo_data = find_groups(
         cod_lo_test_dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
@@ -376,7 +376,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 def test_group_and_decompress_ialirt_cod_hi(
     cod_hi_test_dataset, cod_hi_decom_test_file
 ):
-    "Test that I-ALiRT CoDICE-Hi data can be grouped properly."
+    "Test that I-ALiRT CoDICE-Hi data can be grouped and decompressed properly."
 
     grouped_cod_hi_data = find_groups(
         cod_hi_test_dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
