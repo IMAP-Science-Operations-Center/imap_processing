@@ -297,9 +297,9 @@ direct_events_attrs: &direct_events
     VALIDMAX: 10000
 
 voltage_table:
-    CATDESC: ElectroStatic Analyzer Energy Values
+    CATDESC: ElectroStatic Analyzer Voltage Values
     DEPEND_1: esa_step
-    FIELDNAM: Energy Table
+    FIELDNAM: Voltage Table
     FORMAT: F12.6
     LABLAXIS: eV
     SCALETYP: log
