@@ -276,9 +276,24 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
         np.testing.assert_allclose(actual, expected, atol=1e-5)
 
 
+@pytest.fixture
+def lut_path():
+    """Returns the calibration data."""
+    lut_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1a_lut"
+        / "imap_codice_l1a-sci-lut_20251007_v001.json"
+    )
+
+    return lut_path
+
+
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_lo(
-    cod_lo_test_dataset, cod_lo_decom_test_file
+    cod_lo_test_dataset, cod_lo_decom_test_file, lut_path
 ):
     "Test that I-ALiRT CoDICE-Lo data can be grouped and decompressed properly."
 
@@ -343,14 +358,6 @@ def test_group_and_decompress_ialirt_cod_lo(
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
     dataset = create_xarray_dataset(science_values, metadata_values, "lo")
-    lut_path = (
-        imap_module_directory
-        / "tests"
-        / "codice"
-        / "data"
-        / "l1a_lut"
-        / "imap_codice_l1a-sci-lut_20251007_v001.json"
-    )
     result = l1a_lo_species(dataset, lut_path)
 
     expected_species = [
@@ -438,8 +445,12 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi")
+    # TODO: add function l1a_hi_species
 
-def test_process_codice(codice_test_data, caplog):
+
+@pytest.mark.external_test_data
+def test_process_codice(codice_test_data, caplog, lut_path):
     """Ensure that the ``process_codice`` function creates a dataset
 
     Here we just need to make sure the function is returning the expected data.
@@ -448,7 +459,7 @@ def test_process_codice(codice_test_data, caplog):
     """
 
     with caplog.at_level("WARNING"):
-        cod_lo_data, cod_hi_data = process_codice(codice_test_data)
+        cod_lo_data, cod_hi_data = process_codice(codice_test_data, lut_path)
 
     assert isinstance(cod_lo_data, list)
     assert all(isinstance(item, dict) for item in cod_lo_data)

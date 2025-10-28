@@ -1,16 +1,16 @@
 """Functions to support I-ALiRT CoDICE processing."""
 
 import logging
+import pathlib
 from decimal import Decimal
 from typing import Any
 
 import numpy as np
 import xarray as xr
 
-from imap_processing.codice import decompress
+from imap_processing.codice.codice_l1a import process_ialirt_data_streams
+from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.ialirt.utils.grouping import find_groups
-from imap_processing.spice.time import met_to_ttj2000ns
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,9 @@ def concatenate_bytes(grouped_data: xr.Dataset, group: int, sensor: str) -> byte
     return current_data_stream
 
 
-def create_xarray_dataset(science_values, metadata_values, sensor) -> xr.Dataset:
+def create_xarray_dataset(
+    science_values: list, metadata_values: dict, sensor: str
+) -> xr.Dataset:
     """
     Create an xarray Dataset from science and metadata values.
 
@@ -114,6 +116,7 @@ def create_xarray_dataset(science_values, metadata_values, sensor) -> xr.Dataset
 
 def process_codice(
     dataset: xr.Dataset,
+    lut_path: pathlib.Path,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """
     Create final data products.
@@ -122,6 +125,8 @@ def process_codice(
     ----------
     dataset : xr.Dataset
         Decommed L0 data.
+    lut_path : pathlib.Path
+        L1A LUT path.
 
     Returns
     -------
@@ -145,24 +150,36 @@ def process_codice(
     unique_cod_lo_groups = np.unique(grouped_cod_lo_data["group"])
     unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
 
+    cod_lo_grouped = []
+    cod_hi_grouped = []
+
+    # Processing for l1a.
     for group in unique_cod_lo_groups:
         cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
         # Decompress binary stream
-        decompressed_data = decompress._apply_pack_24_bit(bytes(cod_lo_data_stream))
+        cod_lo_grouped.append(cod_lo_data_stream)
+
+    cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
+        cod_lo_grouped
+    )
+    cod_lo_dataset = create_xarray_dataset(
+        cod_lo_science_values, cod_lo_metadata_values, "lo"
+    )
+    result = l1a_lo_species(cod_lo_dataset, lut_path)  # noqa
 
     for group in unique_cod_hi_groups:
         cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
 
         # Decompress binary stream
-        decompressed_data = decompress._apply_lossy_a(bytes(cod_hi_data_stream))  # noqa
+        cod_hi_grouped.append(cod_hi_data_stream)
 
-    # For I-ALiRT SIT, the test data being used has all zeros and thus no
-    # groups can be found, thus there is no data to process
-    # TODO: Once I-ALiRT test data is acquired that actually has data in it,
-    #       this can be turned back on
-    # codicelo_data = create_ialirt_dataset(CODICEAPID.COD_LO_IAL, dataset)
-    # codicehi_data = create_ialirt_dataset(CODICEAPID.COD_HI_IAL, dataset)
+    cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
+        cod_hi_grouped
+    )
+    cod_hi_dataset = create_xarray_dataset(  # noqa
+        cod_hi_science_values, cod_hi_metadata_values, "hi"
+    )
 
     # TODO: calculate rates
     #       This will be done in codice.codice_l1b
