@@ -10,6 +10,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.ena_maps import AbstractSkyMap, RectangularSkyMap
+from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo import lo_ancillary
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
@@ -77,7 +78,13 @@ def lo_l2(
     logger.info("Step 4: Calculating rates and intensities")
 
     # Determine if corrections are needed and prepare oxygen data if required
-    sputtering_correction, bootstrap_correction, o_map_dataset = _prepare_corrections(
+    (
+        sputtering_correction,
+        bootstrap_correction,
+        flux_correction,
+        o_map_dataset,
+        flux_factors,
+    ) = _prepare_corrections(
         map_descriptor, descriptor, sci_dependencies, anc_dependencies
     )
 
@@ -85,7 +92,9 @@ def lo_l2(
         dataset,
         sputtering_correction=sputtering_correction,
         bootstrap_correction=bootstrap_correction,
+        flux_correction=flux_correction,
         o_map_dataset=o_map_dataset,
+        flux_factors=flux_factors,
     )
 
     logger.info("Step 5: Finalizing dataset with attributes")
@@ -100,7 +109,7 @@ def _prepare_corrections(
     descriptor: str,
     sci_dependencies: dict,
     anc_dependencies: list,
-) -> tuple[bool, bool, xr.Dataset | None]:
+) -> tuple[bool, bool, bool, xr.Dataset | None, Path | None]:
     """
     Determine what corrections are needed and prepare oxygen dataset if required.
 
@@ -130,7 +139,9 @@ def _prepare_corrections(
     # Default values - no corrections needed
     sputtering_correction = False
     bootstrap_correction = False
+    flux_correction = False
     o_map_dataset = None
+    flux_factors: None | Path = None
 
     # Sputtering and bootstrap corrections are only applied to hydrogen ENA data
     # Guard against recursion: don't process oxygen for oxygen maps
@@ -145,7 +156,24 @@ def _prepare_corrections(
         sputtering_correction = True
         bootstrap_correction = True
 
-    return sputtering_correction, bootstrap_correction, o_map_dataset
+    if "raw" not in map_descriptor.principal_data:
+        flux_correction = True
+        try:
+            flux_factors = next(
+                x for x in anc_dependencies if "esa-eta-fit-factors" in str(x)
+            )
+        except StopIteration:
+            raise ValueError(
+                "No flux correction factor file found in ancillary dependencies"
+            ) from None
+
+    return (
+        sputtering_correction,
+        bootstrap_correction,
+        flux_correction,
+        o_map_dataset,
+        flux_factors,
+    )
 
 
 # =============================================================================
@@ -664,7 +692,9 @@ def calculate_all_rates_and_intensities(
     dataset: xr.Dataset,
     sputtering_correction: bool = False,
     bootstrap_correction: bool = False,
+    flux_correction: bool = False,
     o_map_dataset: xr.Dataset | None = None,
+    flux_factors: Path | None = None,
 ) -> xr.Dataset:
     """
     Calculate rates and intensities with proper error propagation.
@@ -679,8 +709,13 @@ def calculate_all_rates_and_intensities(
     bootstrap_correction : bool, optional
         Whether to apply bootstrap corrections to intensities.
         Default is False.
+    flux_correction : bool, optional
+        Whether to apply flux corrections to intensities.
+        Default is False.
     o_map_dataset : xr.Dataset, optional
         Dataset specifically for oxygen, needed for sputtering corrections.
+    flux_factors : Path, optional
+        Path to flux factor file for flux corrections.
 
     Returns
     -------
@@ -705,7 +740,13 @@ def calculate_all_rates_and_intensities(
     if bootstrap_correction:
         dataset = calculate_bootstrap_corrections(dataset)
 
-    # Step 6: Clean up intermediate variables
+    # Optional Step 6: Calculate flux corrections
+    if flux_correction:
+        if flux_factors is None:
+            raise ValueError("Flux factors file must be provided for flux corrections")
+        dataset = calculate_flux_corrections(dataset, flux_factors)
+
+    # Step 7: Clean up intermediate variables
     dataset = cleanup_intermediate_variables(dataset)
 
     return dataset
@@ -1080,6 +1121,56 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
             "bootstrap_intensity_sys_err",
         ]
     )
+
+    return dataset
+
+
+def calculate_flux_corrections(dataset: xr.Dataset, flux_factors: Path) -> xr.Dataset:
+    """
+    Calculate flux corrections for intensities.
+
+    Uses the shared ena maps ``PowerLawFluxCorrector`` class to do the
+    correction calculations.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Dataset with count rates, geometric factors, and center energies.
+    flux_factors : Path
+        Path to the eta flux factor file to use for corrections. Read in as
+        an ancillary file in the preprocessing step.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with calculated flux-corrected intensities and their
+        uncertainties for the specified species.
+    """
+    logger.info("Applying flux corrections")
+
+    # Flux correction
+    corrector = PowerLawFluxCorrector(flux_factors)
+    # FluxCorrector works on (energy, :) arrays, so we need to flatten the map
+    # spatial dimensions for the correction and then reshape back after.
+    input_shape = dataset["ena_intensity"].shape[1:]  # Exclude epoch dimension
+    intensity = dataset["ena_intensity"].values[0].reshape(len(dataset["energy"]), -1)
+    stat_uncert = (
+        dataset["ena_intensity_stat_uncert"]
+        .values[0]
+        .reshape(len(dataset["energy"]), -1)
+    )
+    corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
+        intensity,
+        stat_uncert,
+        dataset["energy"].data,
+    )
+    # Add the size 1 epoch dimension back in to the corrected fluxes.
+    dataset["ena_intensity"].data = corrected_intensity.reshape(input_shape)[
+        np.newaxis, ...
+    ]
+    dataset["ena_intensity_stat_uncert"].data = corrected_stat_unc.reshape(input_shape)[
+        np.newaxis, ...
+    ]
 
     return dataset
 

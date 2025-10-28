@@ -1,5 +1,6 @@
 """Comprehensive test suite for IMAP-Lo L2 data processing."""
 
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -23,6 +24,7 @@ from imap_processing.lo.l2.lo_l2 import (
     calculate_backgrounds,
     calculate_bootstrap_corrections,
     calculate_efficiency_corrected_quantities,
+    calculate_flux_corrections,
     calculate_intensities,
     calculate_rates,
     calculate_sputtering_corrections,
@@ -532,6 +534,56 @@ def sample_dataset_with_bootstrap_data():
     return dataset
 
 
+@pytest.fixture
+def lo_flux_factors_file():
+    """Path to the LO flux factors test file."""
+    # Use the actual test data file from the ena_maps test data
+    test_data_path = Path(__file__).parent.parent / "ena_maps" / "data"
+    return test_data_path / "imap_lo_esa-eta-fit-factors_20240101_v001.csv"
+
+
+@pytest.fixture
+def sample_dataset_with_intensities():
+    """Create a dataset with intensities for flux correction testing."""
+    n_energy = 7
+    n_lon, n_lat = 6, 4  # Small for testing
+
+    # Create realistic energy values matching the flux factors file
+    energy_values = np.array([16.35, 30.56, 56.4, 105, 199.8, 407.5, 795.3])
+
+    coords = {
+        "epoch": [8.1794907049e17],
+        "energy": energy_values,
+        "longitude": np.linspace(0, 360, n_lon, endpoint=False),
+        "latitude": np.linspace(-90, 90, n_lat),
+    }
+
+    # Create intensity values with some spatial and energy structure
+    intensity_values = np.ones((1, n_energy, n_lon, n_lat))
+    for i in range(n_energy):
+        # Power law: I = I0 * (E/E0)^(-2.0)
+        intensity_values[0, i, :, :] = 1e6 * (energy_values[i] / 100.0) ** (-2.0)
+
+    # Add some spatial structure
+    for j in range(n_lon):
+        for k in range(n_lat):
+            intensity_values[0, :, j, k] *= 1.0 + 0.1 * np.sin(j) * np.cos(k)
+
+    dataset = xr.Dataset(coords=coords)
+    dataset["ena_intensity"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        intensity_values,
+    )
+
+    # Add statistical uncertainties (10% of intensity)
+    dataset["ena_intensity_stat_uncert"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        intensity_values * 0.1,
+    )
+
+    return dataset
+
+
 # =============================================================================
 # UNIT TESTS FOR INDIVIDUAL FUNCTIONS
 # =============================================================================
@@ -1000,6 +1052,129 @@ class TestCalculateBackgrounds:
         # Results should be infinite where exposure time is zero
         assert np.all(np.isinf(result["bg_rates"].values))
         assert np.all(np.isinf(result["bg_rates_stat_uncert"].values))
+
+
+class TestCalculateFluxCorrections:
+    """Tests for the calculate_flux_corrections function."""
+
+    def test_calculate_flux_corrections_basic(
+        self, sample_dataset_with_intensities, lo_flux_factors_file
+    ):
+        """Test basic flux correction calculation."""
+        # Make a copy to avoid modifying the original fixture
+        original_dataset = sample_dataset_with_intensities.copy(deep=True)
+
+        # Run flux correction
+        result = calculate_flux_corrections(original_dataset, lo_flux_factors_file)
+
+        # Verify that the function returns a dataset
+        assert isinstance(result, xr.Dataset)
+
+        # Verify that intensity variables are present
+        assert "ena_intensity" in result.data_vars
+        assert "ena_intensity_stat_uncert" in result.data_vars
+
+        # Verify that data shape is preserved
+        original_shape = sample_dataset_with_intensities["ena_intensity"].shape
+        assert result["ena_intensity"].shape == original_shape
+
+        # Check that corrections were applied by comparing to the original fixture
+        # (not the potentially modified copy)
+        original_intensity = sample_dataset_with_intensities["ena_intensity"].values
+        corrected_intensity = result["ena_intensity"].values
+
+        # Check for meaningful differences
+        relative_diff = np.abs(
+            (corrected_intensity - original_intensity) / original_intensity
+        )
+        max_relative_diff = np.max(relative_diff)
+        # Should have at least 10% change somewhere
+        assert max_relative_diff > 0.1, (
+            f"Max relative difference was only {max_relative_diff}"
+        )
+
+        # Verify that uncertainties were also corrected
+        original_uncert = sample_dataset_with_intensities[
+            "ena_intensity_stat_uncert"
+        ].values
+        corrected_uncert = result["ena_intensity_stat_uncert"].values
+        uncert_relative_diff = np.abs(
+            (corrected_uncert - original_uncert) / original_uncert
+        )
+        max_uncert_diff = np.max(uncert_relative_diff)
+        # Should have at least 10% change in uncertainties too
+        assert max_uncert_diff > 0.1, (
+            f"Max uncertainty relative difference was only {max_uncert_diff}"
+        )
+
+    def test_calculate_flux_corrections_preserves_other_vars(
+        self, sample_dataset_with_intensities, lo_flux_factors_file
+    ):
+        """Test that flux correction preserves other variables in the dataset."""
+        # Add an extra variable to the dataset
+        sample_dataset_with_intensities["extra_var"] = (("energy",), np.ones(7))
+
+        result = calculate_flux_corrections(
+            sample_dataset_with_intensities, lo_flux_factors_file
+        )
+
+        # Verify that other variables are preserved
+        assert "extra_var" in result.data_vars
+        np.testing.assert_array_equal(
+            result["extra_var"].values,
+            sample_dataset_with_intensities["extra_var"].values,
+        )
+
+    def test_calculate_flux_corrections_energy_dimension_handling(
+        self, lo_flux_factors_file
+    ):
+        """Test that flux correction properly handles energy dimension reshaping."""
+        # Create a dataset with different spatial dimensions
+        n_energy = 7
+        n_x, n_y = 12, 8  # Different spatial dimensions
+
+        energy_values = np.array([16.35, 30.56, 56.4, 105, 199.8, 407.5, 795.3])
+
+        coords = {
+            "epoch": [8.1794907049e17],
+            "energy": energy_values,
+            "x": np.arange(n_x),
+            "y": np.arange(n_y),
+        }
+
+        # Create intensity values with energy-dependent structure (power law)
+        intensity_values = np.ones((1, n_energy, n_x, n_y))
+        for i in range(n_energy):
+            intensity_values[0, i, :, :] = 1e6 * (energy_values[i] / 100.0) ** (-2.0)
+        uncert_values = intensity_values * 0.1
+
+        original_dataset = xr.Dataset(coords=coords)
+        original_dataset["ena_intensity"] = (
+            ("epoch", "energy", "x", "y"),
+            intensity_values.copy(),
+        )
+        original_dataset["ena_intensity_stat_uncert"] = (
+            ("epoch", "energy", "x", "y"),
+            uncert_values.copy(),
+        )
+
+        # Run flux correction on a copy
+        dataset_copy = original_dataset.copy(deep=True)
+        result = calculate_flux_corrections(dataset_copy, lo_flux_factors_file)
+
+        # Verify shape is preserved
+        assert result["ena_intensity"].shape == (1, n_energy, n_x, n_y)
+        assert result["ena_intensity_stat_uncert"].shape == (1, n_energy, n_x, n_y)
+
+        # Verify corrections were applied by checking for meaningful differences
+        original_values = original_dataset["ena_intensity"].values
+        corrected_values = result["ena_intensity"].values
+        relative_diff = np.abs((corrected_values - original_values) / original_values)
+        max_relative_diff = np.max(relative_diff)
+        # Should have at least 10% change somewhere (flux corrections are significant)
+        assert max_relative_diff > 0.1, (
+            f"Max relative difference was only {max_relative_diff}"
+        )
 
 
 class TestCalculateSputteringCorrections:
@@ -1970,11 +2145,13 @@ class TestCalculateAllRatesAndIntensities:
 class TestIntegrationWithMocks:
     """Integration tests using mocked external dependencies."""
 
-    def test_lo_l2_integration_minimal(self, minimal_pset_for_species):
+    def test_lo_l2_integration_minimal(
+        self, minimal_pset_for_species, lo_flux_factors_file
+    ):
         """Test the main lo_l2 function with minimal mocking."""
         # Test with hydrogen data
         sci_dependencies = {"imap_lo_l1c_pset": [minimal_pset_for_species]}
-        anc_dependencies = []
+        anc_dependencies = [lo_flux_factors_file]  # Include flux factors file
         descriptor = "l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
 
         # Mock the complex external dependencies to return simple results
