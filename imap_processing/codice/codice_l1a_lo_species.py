@@ -83,6 +83,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
             "species_names"
         ]
+        # Note: ialirt does not produce a cdf for l1a so this is arbitrary.
         logical_source_id = "imap_codice_l1a_lo-sw-species"
     else:
         raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
