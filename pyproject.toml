@@ -70,6 +70,7 @@ map_visualization = ["healpy"]
 
 [project]
 name = "imap-processing"
+dynamic = ["version"]
 
 [project.urls]
 homepage = "https://github.com/IMAP-Science-Operations-Center"
