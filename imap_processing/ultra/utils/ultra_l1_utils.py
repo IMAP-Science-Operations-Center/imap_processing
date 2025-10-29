@@ -93,18 +93,14 @@ def create_dataset(  # noqa: PLR0912
     rates_pulse_keys = {"start_per_spin", "stop_per_spin", "coin_per_spin"}
 
     for key, data in data_dict.items():
-        if key == "epoch":
-            continue
-        elif key in [
+        if key in [
+            "epoch",
             "spin_number",
             "energy_bin_geometric_mean",
             "pixel_index",
             "spin_phase_step",
         ]:
-            # Update attrs
-            dataset[key].attrs = cdf_manager.get_variable_attributes(
-                key, check_schema=False
-            )
+            continue
         elif key == "epoch_delta":
             dataset[key] = xr.DataArray(
                 data,
