@@ -304,8 +304,12 @@ def test_process_lo_angular_intensity():
             .groupby("group")
             .sum()
         )
+        # Skip checking the first elevations. Those get reassigned and will be
+        # validated below.
         np.testing.assert_allclose(
-            l1b_val_data_processed[var].values, expected_intensity.values, rtol=1e-5
+            l1b_val_data_processed[var].values[:, :, :, 1:],
+            expected_intensity.values[:, :, :, 1:],
+            rtol=1e-5,
         )
     # Check coords
     np.testing.assert_allclose(l1b_val_data_processed["elevation_angle"], [0, 15, 30])
