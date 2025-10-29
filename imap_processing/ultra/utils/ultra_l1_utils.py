@@ -93,6 +93,7 @@ def create_dataset(  # noqa: PLR0912
     rates_pulse_keys = {"start_per_spin", "stop_per_spin", "coin_per_spin"}
 
     for key, data in data_dict.items():
+        # Skip keys that are coordinates.
         if key in [
             "epoch",
             "spin_number",
