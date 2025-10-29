@@ -761,6 +761,8 @@ def set_bad_or_goodtimes(
     # the bin_start and bin_end are 6 degree bins and need to be converted to
     # 0.1 degree bins to align with the spin_bins, so multiply by 60
     time_mask = (epochs[:, None] >= times_start) & (epochs[:, None] <= times_end)
+    # The ancillary file binning uses 0-59 for the 6 degree bins, so add 1 to bin_end
+    # so the upper bound is inclusive of the full bin range.
     bin_mask = (spin_bins[:, None] >= times_df["bin_start"].values * 60) & (
         spin_bins[:, None] < (times_df["bin_end"].values + 1) * 60
     )
