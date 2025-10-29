@@ -909,12 +909,6 @@ class AbstractSkyMap(ABC):
                     )
                     _, pset_valid_mask_bc = xr.broadcast(data_bc, stacked_valid_mask)
                     pset_valid_mask_values = pset_valid_mask_bc.values
-                    logger.debug(
-                        f"pset_valid_mask with shape: {pset_valid_mask.shape}"
-                        f"has been broadcasted to shape: {pset_valid_mask_values.shape}"
-                        f"with {np.prod(pset_valid_mask_values.shape)} elements,"
-                        f"{np.sum(pset_valid_mask_values)} of which are true."
-                    )
                 else:
                     pset_valid_mask_values = pset_valid_mask
 

@@ -191,10 +191,6 @@ def bin_single_array_at_indices(
     values = value_array[..., input_indices]
 
     # Apply mask: set invalid values to 0
-    logger.debug(
-        f"input_valid_mask keeps {np.sum(input_valid_mask_bc)} elements"
-        f"of {np.prod(values.shape)} possible values to bin."
-    )
     values_masked = np.where(input_valid_mask_bc, values, 0)
 
     num_projection_indices = int(np.prod(projection_grid_shape))
