@@ -143,9 +143,7 @@ def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_s
 
 @pytest.mark.external_test_data
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
-@mock.patch("imap_processing.hi.hi_l1c.et_to_met")
 def test_pset_counts(
-    mock_et_to_met,
     mock_pointing_times,
     hi_l1_test_data_path,
     hi_test_cal_prod_config_path,
@@ -168,9 +166,7 @@ def test_pset_counts(
 
 @pytest.mark.external_test_data
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
-@mock.patch("imap_processing.hi.hi_l1c.et_to_met")
 def test_pset_counts_empty_l1b(
-    mock_et_to_met,
     mock_pointing_times,
     hi_l1_test_data_path,
     hi_test_cal_prod_config_path,
@@ -284,7 +280,6 @@ def test_pset_backgrounds():
 
 
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
-@mock.patch("imap_processing.hi.hi_l1c.et_to_met")
 @mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)
 @mock.patch("imap_processing.hi.hi_l1c.get_instrument_spin_phase")
 @mock.patch("imap_processing.hi.hi_l1c.get_de_clock_ticks_for_esa_step")
@@ -294,7 +289,6 @@ def test_pset_exposure(
     mock_de_clock_ticks,
     mock_spin_phase,
     mock_spin_data,
-    mock_et_to_met,
     mock_pointing_times,
 ):
     """Test coverage for pset_exposure function"""
