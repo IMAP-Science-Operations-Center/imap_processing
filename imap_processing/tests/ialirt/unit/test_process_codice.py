@@ -317,7 +317,7 @@ def test_create_xarray_dataset_basic():
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_lo(
-    cod_lo_test_dataset, cod_lo_decom_test_file, lut_path
+    cod_lo_test_dataset, cod_lo_decom_test_file, lut_path, cod_lo_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Lo data can be grouped and decompressed properly."
 
@@ -398,9 +398,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
     # Returns data for all expected species at 128 esa steps.
     for species in expected_species:
-        flat = result[species].values.flatten()
-        assert len(flat) == 128
-    # TODO: I need test results for each species here.
+        np.array_equal(result[species].values, cod_lo_l1a_test_data["heplusplus"].data)
 
 
 @pytest.mark.external_test_data
@@ -465,9 +463,8 @@ def test_group_and_decompress_ialirt_cod_hi(
         )
 
         decompressed_values = decompress(values, metadata_values["VIEW_ID"][0])
-        test_decom_data_array = test_decom_data[i]
 
-        np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
+        np.testing.assert_array_equal(decompressed_values, test_decom_data[i])
 
     dataset = create_xarray_dataset(science_values, metadata_values, "hi")  # noqa
     # TODO: add function l1a_hi_species

@@ -89,28 +89,26 @@ def create_xarray_dataset(
     """
     apid = {"lo": 1152, "hi": 1168}
 
-    # Combine all species into one full packet.
-    packet_bytes = b"".join(
-        int(val, 2).to_bytes(len(val) // 8, byteorder="big") for val in science_values
-    )
+    packet_bytes = [
+        int(bits, 2).to_bytes(len(bits) // 8, byteorder="big")
+        for bits in science_values
+    ]
 
-    # Create dataset with one epoch
     # Note that this timestamp does not matter as it is not being used,
     # but is required to create a dataset.
-    epoch = met_to_ttj2000ns(metadata_values["SHCOARSE"][0])
-    epoch_time = xr.DataArray([epoch], name="epoch", dims=["epoch"])
+    epoch = met_to_ttj2000ns(metadata_values["SHCOARSE"])
+    epoch_time = xr.DataArray(epoch, name="epoch", dims=["epoch"])
     dataset = xr.Dataset(coords={"epoch": epoch_time})
 
-    # Use only the first metadata value for each field (1 per packet)
+    # Metadata value for each field
     for key, value in metadata_values.items():
         data = np.array(value)
-        dataset[key.lower()] = xr.DataArray([data[0]], dims=["epoch"])
+        dataset[key.lower()] = xr.DataArray(data, dims=["epoch"])
 
-    # Add combined science packet
-    dataset["data"] = xr.DataArray([packet_bytes], dims=["epoch"])
-
-    # Add apid
-    dataset["pkt_apid"] = xr.DataArray([apid[sensor]], dims=["epoch"])
+    dataset["data"] = xr.DataArray(np.array(packet_bytes, dtype=object), dims=["epoch"])
+    dataset["pkt_apid"] = xr.DataArray(
+        np.full(len(epoch), apid[sensor]), dims=["epoch"]
+    )
 
     return dataset
 
