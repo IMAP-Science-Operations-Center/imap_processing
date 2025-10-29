@@ -415,8 +415,7 @@ def get_spacecraft_exposure_times(
     params_dataset: xr.Dataset,
     pixels_below_scattering: list[list],
     boundary_scale_factors: NDArray,
-    pointing_start_met: float,
-    pointing_stop_met: float,
+    pointing_range_met: tuple[float, float],
     n_pix: int,
 ) -> tuple[NDArray, NDArray]:
     """
@@ -435,10 +434,8 @@ def get_spacecraft_exposure_times(
         below the FWHM scattering threshold.
     boundary_scale_factors : np.ndarray
         Boundary scale factors for each pixel at each spin phase.
-    pointing_start_met : float
-        Start time of the pointing period in mission elapsed time.
-    pointing_stop_met : float
-        Stop time of the pointing period in mission elapsed time.
+    pointing_range_met : tuple
+        Start and stop time of the pointing period in mission elapsed time.
     n_pix : int
         Number of HEALPix pixels.
 
@@ -465,8 +462,8 @@ def get_spacecraft_exposure_times(
     spin_data = get_spin_data()
     # Filter for spins only in pointing
     spin_data = spin_data[
-        (spin_data["spin_start_met"] >= pointing_start_met)
-        & (spin_data["spin_start_met"] <= pointing_stop_met)
+        (spin_data["spin_start_met"] >= pointing_range_met[0])
+        & (spin_data["spin_start_met"] <= pointing_range_met[1])
     ]
     # Get only valid spin data
     valid_mask = (spin_data["spin_phase_valid"].values == 1) & (

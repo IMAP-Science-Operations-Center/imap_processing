@@ -138,7 +138,7 @@ def calculate_spacecraft_pset(
     sensitivity = efficiencies * geometric_function
 
     # Get the start and stop times of the pointing period
-    pointing_start, pointing_stop = get_pointing_times(
+    pointing_range_met = get_pointing_times(
         float(et_to_met(species_dataset["event_times"].data[0]))
     )
     # Calculate exposure times
@@ -148,8 +148,7 @@ def calculate_spacecraft_pset(
         params_dataset,
         pixels_below_scattering,
         boundary_scale_factors,
-        pointing_start,
-        pointing_stop,
+        pointing_range_met,
         n_pix=n_pix,
     )
     logger.info("Calculating background rates.")
@@ -179,10 +178,13 @@ def calculate_spacecraft_pset(
         spacecraft_pset_quality_flags,
         nside=nside,
     )
-    # Convert pointing start time to ttj2000ns
-    pointing_start = met_to_ttj2000ns(pointing_start)
+    # Convert pointing start and end time to ttj2000ns
+    pointing_range_ns = met_to_ttj2000ns(pointing_range_met)
     # Epoch should be the start of the pointing
-    pset_dict["epoch"] = np.atleast_1d(pointing_start).astype(np.int64)
+    pset_dict["epoch"] = np.atleast_1d(pointing_range_ns[0]).astype(np.int64)
+    pset_dict["epoch_delta"] = np.atleast_1d(np.diff(pointing_range_ns)).astype(
+        np.int64
+    )
     pset_dict["counts"] = counts[np.newaxis, ...]
     pset_dict["latitude"] = latitude[np.newaxis, ...]
     pset_dict["longitude"] = longitude[np.newaxis, ...]

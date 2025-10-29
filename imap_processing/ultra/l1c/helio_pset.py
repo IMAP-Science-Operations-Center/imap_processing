@@ -128,7 +128,7 @@ def calculate_helio_pset(
     healpix = np.arange(n_pix)
 
     # Get midpoint timestamp for pointing.
-    pointing_start, pointing_stop = get_pointing_times(
+    pointing_range_met = get_pointing_times(
         et_to_met(species_dataset["event_times"].data[0])
     )
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
@@ -137,8 +137,7 @@ def calculate_helio_pset(
         params_dataset,
         pixels_below_scattering,
         boundary_scale_factors,
-        pointing_start,
-        pointing_stop,
+        pointing_range_met,
         n_pix=n_pix,
     )
     logger.info("Calculating spun efficiencies and geometric function.")
@@ -164,7 +163,7 @@ def calculate_helio_pset(
         nside=nside,
     )
 
-    mid_time = ttj2000ns_to_et(met_to_ttj2000ns((pointing_start + pointing_stop) / 2))
+    mid_time = ttj2000ns_to_et(met_to_ttj2000ns((np.sum(pointing_range_met)) / 2))
 
     logger.info("Adjusting data for helio frame.")
     exposure_time, _efficiency, geometric_function = get_helio_adjusted_data(
@@ -191,9 +190,13 @@ def calculate_helio_pset(
         helio_pset_quality_flags,
         nside=nside,
     )
-    pointing_start = met_to_ttj2000ns(pointing_start)
+    # Convert pointing start and end time to ttj2000ns
+    pointing_range_ns = met_to_ttj2000ns(pointing_range_met)
     # Epoch should be the start of the pointing
-    pset_dict["epoch"] = np.atleast_1d(pointing_start).astype(np.int64)
+    pset_dict["epoch"] = np.atleast_1d(pointing_range_ns[0]).astype(np.int64)
+    pset_dict["epoch_delta"] = np.atleast_1d(np.diff(pointing_range_ns)).astype(
+        np.int64
+    )
     pset_dict["counts"] = counts[np.newaxis, ...]
     pset_dict["latitude"] = latitude[np.newaxis, ...]
     pset_dict["longitude"] = longitude[np.newaxis, ...]
