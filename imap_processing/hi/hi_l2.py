@@ -156,8 +156,18 @@ def generate_hi_map(
         pset_valid_mask = None  # Default to no mask (full spin)
         if descriptor.spin_phase == "ram":
             pset_valid_mask = pset.data["ram_mask"]
+            logger.debug(
+                f"Using ram mask with shape: {pset_valid_mask.shape} "
+                f"containing {np.prod(pset_valid_mask.shape)} pixels,"
+                f"{np.sum(pset_valid_mask)} of which are True."
+            )
         elif descriptor.spin_phase == "anti":
             pset_valid_mask = ~pset.data["ram_mask"]
+            logger.debug(
+                f"Using anti-ram mask with shape: {pset_valid_mask.shape} "
+                f"containing {np.prod(pset_valid_mask.shape)} pixels,"
+                f"{np.sum(pset_valid_mask)} of which are True."
+            )
 
         # Project (bin) the PSET variables into the map pixels
         output_map.project_pset_values_to_map(

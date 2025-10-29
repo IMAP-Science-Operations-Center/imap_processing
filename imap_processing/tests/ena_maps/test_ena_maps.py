@@ -704,6 +704,11 @@ class TestRectangularSkyMap:
 
         rect_pset = self.rectangular_psets[0]
 
+        # Set all counts to a uniform non-zero value
+        rect_pset.data["counts"] = xr.full_like(
+            rect_pset.data["counts"], fill_value=10.0
+        )
+
         # Create a DataArray mask matching the pset spatial dimensions
         valid_mask = xr.DataArray(
             np.ones(rect_pset.data["counts"].shape[2:], dtype=bool),
@@ -713,7 +718,8 @@ class TestRectangularSkyMap:
             },
         )
         # Mask out one quadrant
-        valid_mask[:90, :90] = False
+        valid_mask_shape = valid_mask.shape
+        valid_mask[: valid_mask_shape[0] // 2, : valid_mask_shape[1] // 2] = False
 
         # Project with DataArray mask
         rectangular_map.project_pset_values_to_map(
@@ -726,6 +732,17 @@ class TestRectangularSkyMap:
         # Map should have data
         assert "counts" in rectangular_map.data_1d
         assert rectangular_map.data_1d["counts"].sum() > 0
+
+        # Check that pixel mask reduces total map counts to ~3/4 of pset counts
+        total_pset_counts = rect_pset.data["counts"].sum()
+        expected_map_counts = total_pset_counts * 3 / 4  # Only half should be included
+        actual_map_counts = rectangular_map.data_1d["counts"].sum()
+        np.testing.assert_allclose(
+            actual_map_counts,
+            expected_map_counts,
+            rtol=0.1,
+            err_msg=("Mask filtering failed"),
+        )
 
     @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
