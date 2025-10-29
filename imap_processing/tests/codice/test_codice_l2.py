@@ -174,7 +174,7 @@ def test_process_lo_species_intensity():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_lo-sw-species_20250814_v006.cdf"
+        / "imap_codice_l1b_lo-sw-species_20250814_v007.cdf"
     )
     l1b_val_data = load_cdf(l1b_val_data)
     l1b_val_data_processed = l1b_val_data.copy()
@@ -258,7 +258,7 @@ def test_process_lo_angular_intensity():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_lo-sw-angular_20250814_v006.cdf"
+        / "imap_codice_l1b_lo-sw-angular_20250814_v007.cdf"
     )
     l1b_val_data = load_cdf(l1b_val_data)
     l1b_val_data_processed = l1b_val_data.copy()
@@ -324,7 +324,7 @@ def test_process_lo_angular_intensity():
 
 
 def test_codice_l2_sw_species_intensity(processing_dependencies, mock_get_file_paths):
-    sci_input = ScienceInput("imap_codice_l1b_lo-sw-species_20250814_v006.cdf")
+    sci_input = ScienceInput("imap_codice_l1b_lo-sw-species_20250814_v007.cdf")
     processing_dependencies.add(sci_input)
 
     l2_val_data = (
@@ -352,11 +352,11 @@ def test_codice_l2_sw_species_intensity(processing_dependencies, mock_get_file_p
             err_msg=f"Mismatch in variable '{variable}'",
         )
     ds.attrs["Data_version"] = "001"
-    write_cdf(ds, istp=False)
+    write_cdf(ds)
 
 
 def test_codice_l2_nsw_species_intensity(processing_dependencies, mock_get_file_paths):
-    sci_input = ScienceInput("imap_codice_l1b_lo-nsw-species_20250814_v006.cdf")
+    sci_input = ScienceInput("imap_codice_l1b_lo-nsw-species_20250814_v007.cdf")
     processing_dependencies.add(sci_input)
     l2_val_data = (
         imap_module_directory
@@ -376,11 +376,11 @@ def test_codice_l2_nsw_species_intensity(processing_dependencies, mock_get_file_
             err_msg=f"Mismatch in variable '{variable}'",
         )
     ds.attrs["Data_version"] = "001"
-    write_cdf(ds, istp=False)
+    write_cdf(ds)
 
 
 def test_codice_l2_nsw_angular_intensity(processing_dependencies, mock_get_file_paths):
-    sci_input = ScienceInput("imap_codice_l1b_lo-nsw-angular_20250814_v006.cdf")
+    sci_input = ScienceInput("imap_codice_l1b_lo-nsw-angular_20250814_v007.cdf")
     processing_dependencies.add(sci_input)
     l2_val_data = (
         imap_module_directory
@@ -401,11 +401,11 @@ def test_codice_l2_nsw_angular_intensity(processing_dependencies, mock_get_file_
             err_msg=f"Mismatch in variable '{variable}'",
         )
     ds.attrs["Data_version"] = "001"
-    write_cdf(ds, istp=False)
+    write_cdf(ds)
 
 
 def test_codice_l2_sw_angular_intensity(processing_dependencies, mock_get_file_paths):
-    sci_input = ScienceInput("imap_codice_l1b_lo-sw-angular_20250814_v006.cdf")
+    sci_input = ScienceInput("imap_codice_l1b_lo-sw-angular_20250814_v007.cdf")
     processing_dependencies.add(sci_input)
     l2_val_data = (
         imap_module_directory
@@ -427,4 +427,4 @@ def test_codice_l2_sw_angular_intensity(processing_dependencies, mock_get_file_p
         )
 
     ds.attrs["Data_version"] = "001"
-    write_cdf(ds, istp=False)
+    write_cdf(ds)

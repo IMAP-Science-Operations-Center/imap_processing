@@ -32,7 +32,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1b_validation"
-                / "imap_codice_l1b_lo-nsw-species_20250814_v006.cdf"
+                / "imap_codice_l1b_lo-nsw-species_20250814_v007.cdf"
             ]
         elif descriptor == "lo-sw-species" and data_type == "l1b":
             return [
@@ -41,31 +41,31 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1b_validation"
-                / "imap_codice_l1b_lo-sw-species_20250814_v006.cdf"
+                / "imap_codice_l1b_lo-sw-species_20250814_v007.cdf"
             ]
         elif descriptor == "lo-nsw-angular" and data_type == "l1b":
             return [
                 TEST_DATA_PATH
                 / "l1b_validation"
-                / "imap_codice_l1b_lo-nsw-angular_20250814_v006.cdf"
+                / "imap_codice_l1b_lo-nsw-angular_20250814_v007.cdf"
             ]
         elif descriptor == "lo-sw-angular" and data_type == "l1b":
             return [
                 TEST_DATA_PATH
                 / "l1b_validation"
-                / "imap_codice_l1b_lo-sw-angular_20250814_v006.cdf"
+                / "imap_codice_l1b_lo-sw-angular_20250814_v007.cdf"
             ]
         elif descriptor == "hi-sectored" and data_type == "l1b":
             return [
                 imap_module_directory
                 / "tests/codice/data/l1b_validation"
-                / "imap_codice_l1b_hi-sectored_20250814_v006.cdf"
+                / "imap_codice_l1b_hi-sectored_20250814_v007.cdf"
             ]
         elif descriptor == "hi-omni" and data_type == "l1b":
             return [
                 imap_module_directory
                 / "tests/codice/data/l1b_validation"
-                / "imap_codice_l1b_hi-omni_20250814_v006.cdf"
+                / "imap_codice_l1b_hi-omni_20250814_v007.cdf"
             ]
         elif descriptor == "l1a-sci-lut":
             return [

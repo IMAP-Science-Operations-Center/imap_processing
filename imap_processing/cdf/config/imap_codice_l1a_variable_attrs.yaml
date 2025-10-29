@@ -301,9 +301,9 @@ voltage_table:
     DEPEND_1: esa_step
     FIELDNAM: Voltage Table
     FORMAT: F12.6
-    LABLAXIS: eV
+    LABLAXIS: V
     SCALETYP: log
-    UNITS: eV
+    UNITS: V
     VALIDMIN: 1.0
     VALIDMAX: 14100.0
     VAR_TYPE: support_data
