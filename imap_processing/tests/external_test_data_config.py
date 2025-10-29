@@ -78,12 +78,12 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l2-lo-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
 
     # L2 Validation data
-    ("imap_codice_l2_hi-omni_20250814_v006.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_hi-sectored_20250814_v006.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_lo-nsw-angular_20250814_v006.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_lo-sw-angular_20250814_v006.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_lo-nsw-species_20250814_v006.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_lo-sw-species_20250814_v006.cdf", "codice/data/l2_validation/"),
+    ("imap_codice_l2_hi-omni_20250814_v007.cdf", "codice/data/l2_validation/"),
+    ("imap_codice_l2_hi-sectored_20250814_v007.cdf", "codice/data/l2_validation/"),
+    ("imap_codice_l2_lo-nsw-angular_20250814_v007.cdf", "codice/data/l2_validation/"),
+    ("imap_codice_l2_lo-sw-angular_20250814_v007.cdf", "codice/data/l2_validation/"),
+    ("imap_codice_l2_lo-nsw-species_20250814_v007.cdf", "codice/data/l2_validation/"),
+    ("imap_codice_l2_lo-sw-species_20250814_v007.cdf", "codice/data/l2_validation/"),
 
     # Hi
     ("imap_hi_l1a_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),

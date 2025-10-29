@@ -32,7 +32,7 @@ def mock_get_file_paths(codice_lut_path):
 
 
 def test_l2_hi_omni(mock_get_file_paths):
-    sci_input = ScienceInput("imap_codice_l1b_hi-omni_20250814_v006.cdf")
+    sci_input = ScienceInput("imap_codice_l1b_hi-omni_20250814_v007.cdf")
     anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv")
     dependencies = ProcessingInputCollection(anc_input, sci_input)
 
@@ -41,7 +41,7 @@ def test_l2_hi_omni(mock_get_file_paths):
     val_data = (
         imap_module_directory
         / "tests/codice/data/l2_validation"
-        / "imap_codice_l2_hi-omni_20250814_v006.cdf"
+        / "imap_codice_l2_hi-omni_20250814_v007.cdf"
     )
 
     val_data = load_cdf(val_data)
@@ -77,7 +77,7 @@ def test_l2_hi_sectored(mock_get_file_paths):
     anc_input = AncillaryInput(
         "imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
     )
-    sci_input = ScienceInput("imap_codice_l1b_hi-sectored_20250814_v006.cdf")
+    sci_input = ScienceInput("imap_codice_l1b_hi-sectored_20250814_v007.cdf")
     dependencies = ProcessingInputCollection(anc_input, sci_input)
 
     processed_l2 = process_codice_l2("hi-sectored", dependencies)
@@ -85,7 +85,7 @@ def test_l2_hi_sectored(mock_get_file_paths):
     val_data = (
         imap_module_directory
         / "tests/codice/data/l2_validation"
-        / "imap_codice_l2_hi-sectored_20250814_v006.cdf"
+        / "imap_codice_l2_hi-sectored_20250814_v007.cdf"
     )
 
     val_data = load_cdf(val_data)
