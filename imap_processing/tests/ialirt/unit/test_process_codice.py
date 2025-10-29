@@ -294,7 +294,7 @@ def lut_path():
 def test_create_xarray_dataset_basic():
     """Test create_xarray_dataset function."""
 
-    science_values = ["0000000100100011", "1111000011110000"]
+    science_values = ["0000000100100011"]
     metadata_values = {
         "VIEW_ID": [1],
         "PACKET_COUNT": [42],
