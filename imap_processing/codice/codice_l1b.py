@@ -55,6 +55,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "CATDESC": "Energy per charge",
             "FIELDNAM": "Energy per charge",
         }
+        # 1e3 is to convert eV to keV
         dataset["energy_table"] = xr.DataArray(
             dataset["voltage_table"].values * dataset["k_factor"].values * 1e-3,
             dims=[
@@ -85,6 +86,8 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "sw_bias_gain_mode",
             "st_bias_gain_mode",
             "spin_period",
+            "voltage_table",
+            "acquisition_time_per_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
     elif descriptor in [
