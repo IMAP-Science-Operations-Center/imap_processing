@@ -1,26 +1,20 @@
-float_32_fillval: &float_32_fillval -1.0e31
-min_int: &min_int -9223372036854775808
-max_int: &max_int 9223372036854775807
-min_float: &min_float -3.4028235e+38
-max_float: &max_float 3.4028235e+38
-
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
-  FILLVAL: *min_int
+  FILLVAL: -9223372036854775808
   FORMAT: I12
-  VALIDMIN: *min_int
-  VALIDMAX: *max_int
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
   VAR_TYPE: data
   UNITS: " "
 
 default_float32_attrs: &default_float32
   <<: *default
-  FILLVAL: *float_32_fillval
+  FILLVAL: -1.0e31
   FORMAT: F12.6
-  VALIDMIN: *min_float
-  VALIDMAX: *max_float
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
   dtype: float32
 
 default_uint16_attrs: &default_uint16
@@ -217,4 +211,3 @@ energy_delta_plus:
   FIELDNAM: energy_bin_delta_plus
   DISPLAY_TYPE: no_plot
   DEPEND_1: energy_bin_geometric_mean
-
