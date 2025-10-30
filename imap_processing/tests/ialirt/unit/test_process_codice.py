@@ -116,11 +116,91 @@ def cod_lo_l1a_test_data():
 
     return data
 
+import numpy as np
+import xarray as xr
+
+def make_codice_lo_ialirt_dataset():
+    n_epoch = 9
+    n_esa = 128
+    n_sector = 1
+
+    coords = {
+        "epoch": np.arange(808477836184228864, 808477836184228864 + n_epoch),
+        "esa_step": np.arange(n_esa),
+        "esa_step_label": [str(i) for i in range(n_esa)],
+        "k_factor": [5.76],
+        "spin_sector": [0],
+        "spin_sector_label": ["0"],
+    }
+
+    # --- Data variables ---
+    data_vars = {
+        # simple 1D variables
+        "spin_period": ("epoch", np.full(n_epoch, 15.0)),
+        "voltage_table": ("esa_step", np.linspace(1.41e4, 88.08, n_esa)),
+        "data_quality": ("epoch", np.zeros(n_epoch, dtype=np.int64)),
+        "acquisition_time_per_step": ("esa_step", np.linspace(0.5787, 0.09569, n_esa)),
+        "sw_bias_gain_mode": ("epoch", np.full(n_epoch, 2, dtype=np.int64)),
+        "st_bias_gain_mode": ("epoch", np.full(n_epoch, 2, dtype=np.int64)),
+        "epoch_delta_minus": ("epoch", np.full(n_epoch, 1.2e11)),
+        "epoch_delta_plus": ("epoch", np.full(n_epoch, 1.2e11)),
+
+        # 3D species variables
+        "heplusplus": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_heplusplus": (("epoch", "esa_step", "spin_sector"),
+                           np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "cplus5": (("epoch", "esa_step", "spin_sector"),
+                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_cplus5": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "cplus6": (("epoch", "esa_step", "spin_sector"),
+                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_cplus6": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "oplus6": (("epoch", "esa_step", "spin_sector"),
+                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_oplus6": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "oplus7": (("epoch", "esa_step", "spin_sector"),
+                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_oplus7": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "oplus8": (("epoch", "esa_step", "spin_sector"),
+                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_oplus8": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "mg": (("epoch", "esa_step", "spin_sector"),
+               np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_mg": (("epoch", "esa_step", "spin_sector"),
+                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "fe_loq": (("epoch", "esa_step", "spin_sector"),
+                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_fe_loq": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "fe_hiq": (("epoch", "esa_step", "spin_sector"),
+                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+        "unc_fe_hiq": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+        "nso_half_spin": (("epoch", "esa_step", "spin_sector"),
+                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+    }
+
+    ds = xr.Dataset(data_vars=data_vars, coords=coords)
+    return ds
+
+
+# Example usage
+dataset = make_codice_lo_ialirt_dataset()
+print(dataset)
 
 @pytest.mark.external_test_data
 def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data):
+
+    #dataset = load_cdf("/Users/lasa6858/Desktop/imap_codice_l1a_lo-sw-species_20250814_v999.cdf")
+    ds = make_codice_lo_ialirt_dataset()
     l1b = convert_to_rates(
-        cod_lo_l1a_test_data,
+        ds,
         "lo-ialirt",
     )
     print("hi")
