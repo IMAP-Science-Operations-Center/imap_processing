@@ -3,8 +3,8 @@ double_fillval: &double_fillval -1.0E31
 
 data_min: &data_min 0
 data_max: &data_max 4095
-spice_data_min: -2.0e7
-spice_data_max: 2.0e7
+spice_data_min: &spice_data_min -2.0e7
+spice_data_max: &spice_data_max 2.0e7
 
 # <=== Base Attributes ===>
 string_base_attrs: &string_base
@@ -49,9 +49,8 @@ spice_base: &spice_base
   <<: *l1b_data_base
   VAR_TYPE: data
   DISPLAY_TYPE: time_series
-  UNITS: Degrees
-  VALIDMIN: spice_data_min
-  VALIDMAX: spice_data_max
+  VALIDMIN: *spice_data_min
+  VALIDMAX: *spice_data_max
 
 # <=== Instrument Setting Attributes ===>
 trigger_mode:
@@ -398,33 +397,42 @@ ephemeris_velocity_z:
 longitude:
   <<: *spice_base
   VALIDMIN: 0
+  VALIDMAX: 360
   FIELDNAM: Longitude
   CATDESC: Longitude of the dust event as observed from Earth in the ECLIPJ2000 frame.
   LABLAXIS: Longitude
+  UNITS: Degrees
   DICT_KEY: SPASE>Support>SupportQuantity:Longitude
 
 latitude:
   <<: *spice_base
+  VALIDMIN: -90
+  VALIDMAX: 90
   FIELDNAM: Latitude
   CATDESC: Latitude of the dust event as observed from Earth in the ECLIPJ2000 frame.
   LABLAXIS: Latitude
+  UNITS: Degrees
   DICT_KEY: SPASE>Support>SupportQuantity:Latitude
 
 spin_phase:
   <<: *spice_base
   VALIDMIN: 0
+  VALIDMAX: 360
   FIELDNAM: Spin Phase
   CATDESC: IMAP Spin Phase
   LABLAXIS: Spin Phase
   FORMAT: F12.6
   FILLVAL: *double_fillval
+  UNITS: Degrees
   DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
 
 solar_longitude:
   <<: *spice_base
+  VALIDMIN: -180
   VALIDMAX: 180
   FIELDNAM: Solar Longitude
   CATDESC: Solar Longitude of the IMAP spacecraft
   LABLAXIS: Solar Longitude
+  UNITS: Degrees
   DICT_KEY: SPASE>Support>SupportQuantity:Longitude
 

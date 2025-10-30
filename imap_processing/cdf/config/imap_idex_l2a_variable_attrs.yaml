@@ -244,7 +244,7 @@ target_low_fit_parameters:
 target_low_impact_charge:
   <<: *impact_charge_base
   LABLAXIS: TL Impact Charge
-  CATDESC: Total charge from the dust impact on Target Low channel derived from the fitted curve.
+  CATDESC: Total charge from the dust impact on Target Low (TL) channel derived from the fitted curve.
   FIELDNAM: Target Low Impact Charge
 
 target_low_dust_mass_estimate:
@@ -286,7 +286,7 @@ target_high_fit_parameters:
 target_high_impact_charge:
   <<: *impact_charge_base
   LABLAXIS: TH Impact Charge
-  CATDESC: Charge from the dust impact on Target High derived from the fitted curve.
+  CATDESC: Charge from the dust impact on Target High (TH) derived from the fitted curve.
   FIELDNAM: Target High Impact Charge
 
 target_high_dust_mass_estimate:
@@ -328,7 +328,7 @@ ion_grid_fit_parameters:
 ion_grid_impact_charge:
   <<: *impact_charge_base
   LABLAXIS: IG Impact Charge
-  CATDESC: Charge from the dust impact on Ion Grid channel derived from the fitted curve.
+  CATDESC: Charge from the dust impact on Ion Grid (IG) channel derived from the fitted curve.
   FIELDNAM: Ion Grid Impact Charge
 
 ion_grid_dust_mass_estimate:
