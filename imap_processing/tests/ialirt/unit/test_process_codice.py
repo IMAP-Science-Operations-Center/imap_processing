@@ -119,16 +119,16 @@ def cod_lo_l1a_test_data():
 import numpy as np
 import xarray as xr
 
-def make_codice_lo_ialirt_dataset():
+def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data):
     n_epoch = 9
     n_esa = 128
     n_sector = 1
 
     coords = {
-        "epoch": np.arange(808477836184228864, 808477836184228864 + n_epoch),
-        "esa_step": np.arange(n_esa),
+        "epoch": cod_lo_l1a_test_data["epoch"],
+        "esa_step": cod_lo_l1a_test_data["spin_sector_index"],
         "esa_step_label": [str(i) for i in range(n_esa)],
-        "k_factor": [5.76],
+        "k_factor": cod_lo_l1a_test_data["k_factor"],
         "spin_sector": [0],
         "spin_sector_label": ["0"],
     }
@@ -136,69 +136,70 @@ def make_codice_lo_ialirt_dataset():
     # --- Data variables ---
     data_vars = {
         # simple 1D variables
-        "spin_period": ("epoch", np.full(n_epoch, 15.0)),
-        "voltage_table": ("esa_step", np.linspace(1.41e4, 88.08, n_esa)),
-        "data_quality": ("epoch", np.zeros(n_epoch, dtype=np.int64)),
-        "acquisition_time_per_step": ("esa_step", np.linspace(0.5787, 0.09569, n_esa)),
-        "sw_bias_gain_mode": ("epoch", np.full(n_epoch, 2, dtype=np.int64)),
-        "st_bias_gain_mode": ("epoch", np.full(n_epoch, 2, dtype=np.int64)),
-        "epoch_delta_minus": ("epoch", np.full(n_epoch, 1.2e11)),
-        "epoch_delta_plus": ("epoch", np.full(n_epoch, 1.2e11)),
-
-        # 3D species variables
+        "spin_period": ("epoch",
+                        cod_lo_l1a_test_data["spin_period"].data),
+        "voltage_table": ("esa_step",
+                          cod_lo_l1a_test_data["voltage_table"].data),
+        "data_quality": ("epoch",
+                         cod_lo_l1a_test_data["data_quality"].data),
+        "acquisition_time_per_step": ("esa_step",
+                                      cod_lo_l1a_test_data["acquisition_time_per_step"].data),
+        "sw_bias_gain_mode": ("epoch",
+                              cod_lo_l1a_test_data["sw_bias_gain_mode"].data),
+        "st_bias_gain_mode": ("epoch",
+                              cod_lo_l1a_test_data["st_bias_gain_mode"].data),
+        "epoch_delta_minus": ("epoch",
+                              cod_lo_l1a_test_data["epoch_delta_minus"].data),
+        "epoch_delta_plus": ("epoch",
+                             cod_lo_l1a_test_data["epoch_delta_plus"].data),
         "heplusplus": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["heplusplus"].data),
         "unc_heplusplus": (("epoch", "esa_step", "spin_sector"),
-                           np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_heplusplus"].data),
         "cplus5": (("epoch", "esa_step", "spin_sector"),
-                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["cplus5"].data),
         "unc_cplus5": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_cplus5"].data),
         "cplus6": (("epoch", "esa_step", "spin_sector"),
-                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["cplus6"].data),
         "unc_cplus6": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_cplus6"].data),
         "oplus6": (("epoch", "esa_step", "spin_sector"),
-                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["oplus6"].data),
         "unc_oplus6": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_oplus6"].data),
         "oplus7": (("epoch", "esa_step", "spin_sector"),
-                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["oplus7"].data),
         "unc_oplus7": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_oplus7"].data),
         "oplus8": (("epoch", "esa_step", "spin_sector"),
-                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["oplus8"].data),
         "unc_oplus8": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_oplus8"].data),
         "mg": (("epoch", "esa_step", "spin_sector"),
-               np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["mg"].data),
         "unc_mg": (("epoch", "esa_step", "spin_sector"),
-                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_mg"].data),
         "fe_loq": (("epoch", "esa_step", "spin_sector"),
-                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["fe_loq"].data),
         "unc_fe_loq": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_fe_loq"].data),
         "fe_hiq": (("epoch", "esa_step", "spin_sector"),
-                   np.zeros((n_epoch, n_esa, n_sector), dtype=np.uint32)),
+                       cod_lo_l1a_test_data["fe_hiq"].data),
         "unc_fe_hiq": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
-        "nso_half_spin": (("epoch", "esa_step", "spin_sector"),
-                       np.zeros((n_epoch, n_esa, n_sector), dtype=np.float64)),
+                       cod_lo_l1a_test_data["unc_fe_hiq"].data),
+        "nso_half_spin": (("epoch"),
+                        cod_lo_l1a_test_data["nso_half_spin"].data),
     }
 
     ds = xr.Dataset(data_vars=data_vars, coords=coords)
     return ds
 
-
-# Example usage
-dataset = make_codice_lo_ialirt_dataset()
-print(dataset)
-
 @pytest.mark.external_test_data
 def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data):
 
-    #dataset = load_cdf("/Users/lasa6858/Desktop/imap_codice_l1a_lo-sw-species_20250814_v999.cdf")
-    ds = make_codice_lo_ialirt_dataset()
+    dataset = load_cdf("/Users/lasa6858/Desktop/imap_codice_l1a_lo-sw-species_20250814_v999.cdf")
+    ds = make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data)
     l1b = convert_to_rates(
         ds,
         "lo-ialirt",
