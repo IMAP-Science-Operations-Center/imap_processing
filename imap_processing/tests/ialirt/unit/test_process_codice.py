@@ -8,6 +8,8 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import xarray as xr
+from unittest.mock import patch
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
@@ -116,38 +118,25 @@ def cod_lo_l1a_test_data():
 
     return data
 
-import numpy as np
-import xarray as xr
 
 def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data):
-    n_epoch = 9
-    n_esa = 128
-    n_sector = 1
 
     coords = {
         "epoch": cod_lo_l1a_test_data["epoch"],
         "esa_step": cod_lo_l1a_test_data["spin_sector_index"],
-        "esa_step_label": [str(i) for i in range(n_esa)],
         "k_factor": cod_lo_l1a_test_data["k_factor"],
         "spin_sector": [0],
-        "spin_sector_label": ["0"],
     }
 
     # --- Data variables ---
     data_vars = {
         # simple 1D variables
-        "spin_period": ("epoch",
-                        cod_lo_l1a_test_data["spin_period"].data),
         "voltage_table": ("esa_step",
                           cod_lo_l1a_test_data["voltage_table"].data),
         "data_quality": ("epoch",
                          cod_lo_l1a_test_data["data_quality"].data),
         "acquisition_time_per_step": ("esa_step",
                                       cod_lo_l1a_test_data["acquisition_time_per_step"].data),
-        "sw_bias_gain_mode": ("epoch",
-                              cod_lo_l1a_test_data["sw_bias_gain_mode"].data),
-        "st_bias_gain_mode": ("epoch",
-                              cod_lo_l1a_test_data["st_bias_gain_mode"].data),
         "epoch_delta_minus": ("epoch",
                               cod_lo_l1a_test_data["epoch_delta_minus"].data),
         "epoch_delta_plus": ("epoch",
@@ -188,13 +177,13 @@ def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data):
                        cod_lo_l1a_test_data["fe_hiq"].data),
         "unc_fe_hiq": (("epoch", "esa_step", "spin_sector"),
                        cod_lo_l1a_test_data["unc_fe_hiq"].data),
-        "nso_half_spin": (("epoch"),
-                        cod_lo_l1a_test_data["nso_half_spin"].data),
     }
 
     ds = xr.Dataset(data_vars=data_vars, coords=coords)
     return ds
 
+
+@patch("xarray.Dataset.drop_vars", new=lambda self, *args, **kwargs: self)
 @pytest.mark.external_test_data
 def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data):
 
