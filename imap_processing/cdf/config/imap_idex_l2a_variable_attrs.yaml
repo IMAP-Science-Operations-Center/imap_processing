@@ -205,7 +205,6 @@ tof_peak_area_under_fit:
 tof_peak_chi_squared:
   <<: *chi_square_base
   DEPEND_1: mass_index
-  LABL_PTR_1: mass_labels
   DISPLAY_TYPE: spectrogram
   LABLAXIS: Chi Square (TOF)
   CATDESC: Chi squared value for the TOF peak emg fits.
@@ -214,7 +213,7 @@ tof_peak_chi_squared:
 tof_peak_reduced_chi_squared:
   <<: *chi_square_base
   DEPEND_1: mass_index
-  LABL_PTR_1: mass_labels
+  DISPLAY_TYPE: spectrogram
   LABLAXIS: Red Chi Square (TOF)
   CATDESC: Reduced chi squared value for the TOF peak emg fits.
   FIELDNAM: Reduced Chi Square (TOF peak fits)
