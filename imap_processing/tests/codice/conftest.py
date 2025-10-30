@@ -22,9 +22,45 @@ def codice_lut_path():
     a list of Paths.
     """
 
-    def _side_effect(descriptor: str, data_type: str = None) -> list[Path]:  # noqa: RUF013, PLR0911
+    def _side_effect(descriptor: str = None, data_type: str = None) -> list[Path]:  # noqa: RUF013, PLR0911, PLR0912
         # Science data could need to be distinguished by data_type since
         # there are both L0 and L1A science files for same descriptor.
+        if descriptor == "lo-sw-species" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-sw-species_20250814_v001.pkts"
+            ]
+        elif descriptor == "lo-nsw-species" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-nsw-species_20250814_v001.pkts"
+            ]
+        elif descriptor == "lo-sw-angular" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-sw-angular_20250814_v001.pkts"
+            ]
+        elif descriptor == "lo-nsw-angular" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-nsw-angular_20250814_v001.pkts"
+            ]
         if descriptor == "lo-nsw-species" and data_type == "l1b":
             return [
                 imap_module_directory

@@ -210,27 +210,14 @@ def test_lo_nsw_priority():
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_lo_sw_species(mock_get_file_paths):
+def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
     """Tests lo-sw-species."""
 
-    # See note at top of file about specific side_effect
-    def _side_effect(descriptor=None, data_type=None):
-        if descriptor == "l1a-sci-lut":
-            return [
-                imap_module_directory
-                / "tests/codice/data/"
-                / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v001.json"
-            ]
-        elif data_type == "l0":
-            return [
-                imap_module_directory
-                / "tests/codice/data/"
-                / "l1a_input"
-                / "imap_codice_l0_lo-sw-species_20250814_v001.pkts"
-            ]
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-sw-species", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
 
-    mock_get_file_paths.side_effect = _side_effect
     # Validation
     val_path = (
         imap_module_directory
@@ -270,27 +257,13 @@ def test_lo_sw_species(mock_get_file_paths):
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_lo_nsw_species(mock_get_file_paths):
+def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
     """Tests lo-nsw-species."""
 
-    # See note at top of file about specific side_effect
-    def _side_effect(descriptor=None, data_type=None):
-        if descriptor == "l1a-sci-lut":
-            return [
-                imap_module_directory
-                / "tests/codice/data/"
-                / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v001.json"
-            ]
-        elif data_type == "l0":
-            return [
-                imap_module_directory
-                / "tests/codice/data/"
-                / "l1a_input"
-                / "imap_codice_l0_lo-nsw-species_20250814_v001.pkts"
-            ]
-
-    mock_get_file_paths.side_effect = _side_effect
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-nsw-species", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
 
     # Validation
     val_path = (
@@ -332,27 +305,13 @@ def test_lo_nsw_species(mock_get_file_paths):
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_lo_sw_angular(mock_get_file_paths):
+def test_lo_sw_angular(mock_get_file_paths, codice_lut_path):
     """Tests lo-sw-angular."""
 
-    # See note at top of file about specific side_effect
-    def _side_effect(descriptor=None, data_type=None):
-        if descriptor == "l1a-sci-lut":
-            return [
-                imap_module_directory
-                / "tests/codice/data/"
-                / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v001.json"
-            ]
-        elif data_type == "l0":
-            return [
-                imap_module_directory
-                / "tests/codice/data/"
-                / "l1a_input"
-                / "imap_codice_l0_lo-sw-angular_20250814_v001.pkts"
-            ]
-
-    mock_get_file_paths.side_effect = _side_effect
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-sw-angular", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
 
     # Validation
     val_path = (
@@ -391,27 +350,12 @@ def test_lo_sw_angular(mock_get_file_paths):
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_lo_nsw_angular(mock_get_file_paths):
+def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
     """Tests lo-nsw-angular."""
-
-    # See note at top of file about specific side_effect
-    def _side_effect(descriptor=None, data_type=None):
-        if descriptor == "l1a-sci-lut":
-            return [
-                imap_module_directory
-                / "tests/codice/data/"
-                / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v001.json"
-            ]
-        elif data_type == "l0":
-            return [
-                imap_module_directory
-                / "tests/codice/data/"
-                / "l1a_input"
-                / "imap_codice_l0_lo-nsw-angular_20250814_v001.pkts"
-            ]
-
-    mock_get_file_paths.side_effect = _side_effect
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-nsw-angular", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
 
     # Validation
     val_path = (
