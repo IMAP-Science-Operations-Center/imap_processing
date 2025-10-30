@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from imap_data_access import AncillaryInput, ProcessingInputCollection, ScienceInput
+from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
@@ -30,10 +30,7 @@ def test_l1b_lo_sw_species(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    sci_input = ScienceInput("imap_codice_l0_lo-nsw-angular_20250814_v001.pkts")
-    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
-    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
-    processed_l1a_file = write_cdf(process_l1a(dependency)[0])
+    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -74,10 +71,7 @@ def test_l1b_lo_nsw_species(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    sci_input = ScienceInput("imap_codice_l0_lo-nsw-species_20250814_v001.pkts")
-    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
-    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
-    processed_l1a_file = write_cdf(process_l1a(dependency)[0])
+    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
 
     l1b_val_data = (
         imap_module_directory
@@ -120,10 +114,7 @@ def test_l1b_lo_sw_angular(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    sci_input = ScienceInput("imap_codice_l0_lo-sw-angular_20250814_v001.pkts")
-    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
-    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
-    processed_l1a_file = write_cdf(process_l1a(dependency)[0])
+    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
 
     l1b_val_data = (
         imap_module_directory
@@ -167,10 +158,7 @@ def test_l1b_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    sci_input = ScienceInput("imap_codice_l0_lo-nsw-angular_20250814_v001.pkts")
-    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
-    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
-    processed_l1a_file = write_cdf(process_l1a(dependency)[0])
+    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
 
     l1b_val_data = (
         imap_module_directory

@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from imap_data_access import AncillaryInput, ProcessingInputCollection, ScienceInput
+from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
@@ -227,12 +227,8 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
 
     val_data = load_cdf(val_path)
 
-    sci_input = ScienceInput("imap_codice_l0_lo-sw-species_20250814_v001.pkts")
-    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
-    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
-
     # Process the input data
-    processed_data = process_l1a(dependency=dependency)[0]
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
@@ -274,12 +270,8 @@ def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
 
     val_data = load_cdf(val_path)
 
-    sci_input = ScienceInput("imap_codice_l0_lo-nsw-species_20250814_v001.pkts")
-    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
-    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
-
     # Process the input data
-    processed_data = process_l1a(dependency=dependency)[0]
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
@@ -321,12 +313,8 @@ def test_lo_sw_angular(mock_get_file_paths, codice_lut_path):
     )
     val_data = load_cdf(val_path)
 
-    sci_input = ScienceInput("imap_codice_l0_lo-sw-angular_20250814_v001.pkts")
-    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
-    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
-
     # Process the input data
-    processed_data = process_l1a(dependency=dependency)[0]
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
@@ -365,12 +353,8 @@ def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
     )
     val_data = load_cdf(val_path)
 
-    sci_input = ScienceInput("imap_codice_l0_lo-nsw-angular_20250814_v001.pkts")
-    sci_lut_input = AncillaryInput("imap_codice_l1a-sci-lut_20251007_v001.json")
-    dependency = ProcessingInputCollection(sci_input, sci_lut_input)
-
     # Process the input data
-    processed_data = process_l1a(dependency=dependency)[0]
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
             processed_data[variable].values,
