@@ -139,7 +139,7 @@ def calculate_spacecraft_pset(
 
     # Get the start and stop times of the pointing period
     pointing_range_met = get_pointing_times(
-        float(et_to_met(species_dataset["event_times"].data[0]))
+        float(et_to_met(species_dataset["event_times"].mean()))
     )
     # Calculate exposure times
     logger.info("Calculating spacecraft exposure times with deadtime correction.")

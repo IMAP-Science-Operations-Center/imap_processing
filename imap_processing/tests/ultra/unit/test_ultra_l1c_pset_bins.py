@@ -302,8 +302,10 @@ def test_get_spacecraft_exposure_times(
         params,
         pixels_below_threshold,
         boundary_sf,
-        data_start_time,
-        data_start_time,
+        (
+            data_start_time,
+            data_start_time,
+        ),
         pix,
     )
     np.testing.assert_array_equal(exposure_pointing.shape, (24, pix))

@@ -129,7 +129,7 @@ def calculate_helio_pset(
 
     # Get midpoint timestamp for pointing.
     pointing_range_met = get_pointing_times(
-        et_to_met(species_dataset["event_times"].data[0])
+        et_to_met(species_dataset["event_times"].mean())
     )
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_time, deadtime_ratios = get_spacecraft_exposure_times(
