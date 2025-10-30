@@ -5,14 +5,15 @@ code.
 """
 
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 import xarray as xr
-from unittest.mock import patch
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.codice import constants
 from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
@@ -119,8 +120,24 @@ def cod_lo_l1a_test_data():
     return data
 
 
-def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data):
+@pytest.fixture(scope="session")
+def cod_lo_l1b_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1b_validation"
+        / "imap_codice_l1b_lo-ialirt_20250814211100_v0.0.5.cdf"
+    )
 
+    data = load_cdf(data_path)
+
+    return data
+
+
+def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor):
     coords = {
         "epoch": cod_lo_l1a_test_data["epoch"],
         "esa_step": cod_lo_l1a_test_data["spin_sector_index"],
@@ -128,56 +145,30 @@ def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data):
         "spin_sector": [0],
     }
 
-    # --- Data variables ---
     data_vars = {
-        # simple 1D variables
-        "voltage_table": ("esa_step",
-                          cod_lo_l1a_test_data["voltage_table"].data),
-        "data_quality": ("epoch",
-                         cod_lo_l1a_test_data["data_quality"].data),
-        "acquisition_time_per_step": ("esa_step",
-                                      cod_lo_l1a_test_data["acquisition_time_per_step"].data),
-        "epoch_delta_minus": ("epoch",
-                              cod_lo_l1a_test_data["epoch_delta_minus"].data),
-        "epoch_delta_plus": ("epoch",
-                             cod_lo_l1a_test_data["epoch_delta_plus"].data),
-        "heplusplus": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["heplusplus"].data),
-        "unc_heplusplus": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_heplusplus"].data),
-        "cplus5": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["cplus5"].data),
-        "unc_cplus5": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_cplus5"].data),
-        "cplus6": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["cplus6"].data),
-        "unc_cplus6": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_cplus6"].data),
-        "oplus6": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["oplus6"].data),
-        "unc_oplus6": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_oplus6"].data),
-        "oplus7": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["oplus7"].data),
-        "unc_oplus7": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_oplus7"].data),
-        "oplus8": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["oplus8"].data),
-        "unc_oplus8": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_oplus8"].data),
-        "mg": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["mg"].data),
-        "unc_mg": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_mg"].data),
-        "fe_loq": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["fe_loq"].data),
-        "unc_fe_loq": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_fe_loq"].data),
-        "fe_hiq": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["fe_hiq"].data),
-        "unc_fe_hiq": (("epoch", "esa_step", "spin_sector"),
-                       cod_lo_l1a_test_data["unc_fe_hiq"].data),
+        "voltage_table": ("esa_step", cod_lo_l1a_test_data["voltage_table"].data),
+        "data_quality": ("epoch", cod_lo_l1a_test_data["data_quality"].data),
+        "acquisition_time_per_step": (
+            "esa_step",
+            cod_lo_l1a_test_data["acquisition_time_per_step"].data,
+        ),
+        "epoch_delta_minus": ("epoch", cod_lo_l1a_test_data["epoch_delta_minus"].data),
+        "epoch_delta_plus": ("epoch", cod_lo_l1a_test_data["epoch_delta_plus"].data),
     }
+
+    variables_to_convert = getattr(
+        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    )
+
+    for variable in variables_to_convert:
+        data_vars[variable] = (
+            ("epoch", "esa_step", "spin_sector"),
+            cod_lo_l1a_test_data[variable].data,
+        )
+        data_vars[f"unc_{variable}"] = (
+            ("epoch", "esa_step", "spin_sector"),
+            cod_lo_l1a_test_data[f"unc_{variable}"].data,
+        )
 
     ds = xr.Dataset(data_vars=data_vars, coords=coords)
     return ds
@@ -185,15 +176,22 @@ def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data):
 
 @patch("xarray.Dataset.drop_vars", new=lambda self, *args, **kwargs: self)
 @pytest.mark.external_test_data
-def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data):
-
-    dataset = load_cdf("/Users/lasa6858/Desktop/imap_codice_l1a_lo-sw-species_20250814_v999.cdf")
-    ds = make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data)
+def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data, cod_lo_l1b_test_data):
+    "Test that I-ALiRT CoDICE-Lo l1b data."
+    descriptor = "lo-ialirt"
+    dataset = make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor)
     l1b = convert_to_rates(
-        ds,
-        "lo-ialirt",
+        dataset,
+        descriptor,
     )
-    print("hi")
+    variables_to_convert = getattr(
+        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    )
+    # TODO: Verify why we need to multiply by 1000 here.
+    for variable in variables_to_convert:
+        np.testing.assert_allclose(
+            l1b[variable].data * 1000, cod_lo_l1b_test_data[variable].data, atol=1e-6
+        )
 
 
 @pytest.mark.external_test_data
