@@ -177,7 +177,7 @@ def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor):
 @patch("xarray.Dataset.drop_vars", new=lambda self, *args, **kwargs: self)
 @pytest.mark.external_test_data
 def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data, cod_lo_l1b_test_data):
-    "Test that I-ALiRT CoDICE-Lo l1b data."
+    "Test I-ALiRT CoDICE-Lo l1b data."
     descriptor = "lo-ialirt"
     dataset = make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor)
     l1b = convert_to_rates(
