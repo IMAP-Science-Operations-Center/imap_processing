@@ -381,9 +381,11 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     # These NaNs are not incorrect, so we temporarily ignore numpy div by 0 warnings.
     with np.errstate(divide="ignore"):
         # Get corrected count rate with background subtraction applied
+        # TODO background rates should not be subtracted until the ULTRA IT team
+        #   decides so.
         skymap.data_1d["corrected_count_rate"] = (
             skymap.data_1d["counts"].astype(float) / skymap.data_1d["exposure_factor"]
-        ) - skymap.data_1d["background_rates"]
+        )  # - skymap.data_1d["background_rates"]
 
         # Calculate ena_intensity = corrected_counts / (
         # sensitivity * solid_angle * delta_energy)
