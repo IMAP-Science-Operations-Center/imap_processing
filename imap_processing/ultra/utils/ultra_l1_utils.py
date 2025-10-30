@@ -93,20 +93,25 @@ def create_dataset(  # noqa: PLR0912
     rates_pulse_keys = {"start_per_spin", "stop_per_spin", "coin_per_spin"}
 
     for key, data in data_dict.items():
-        # Skip keys that are coordinates.
-        if key in [
-            "epoch",
+        if key == "epoch":
+            # epoch coordinate already created with correct attrs
+            continue
+        elif key == "epoch_delta":
+            # Create epoch_delta variable
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["epoch"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key in [
             "spin_number",
             "energy_bin_geometric_mean",
             "pixel_index",
             "spin_phase_step",
         ]:
-            continue
-        elif key == "epoch_delta":
-            dataset[key] = xr.DataArray(
-                data,
-                dims=["epoch"],
-                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            # update attrs
+            dataset[key].attrs = cdf_manager.get_variable_attributes(
+                key, check_schema=False
             )
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(

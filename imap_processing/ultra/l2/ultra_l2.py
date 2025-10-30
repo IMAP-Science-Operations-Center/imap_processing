@@ -381,9 +381,11 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     # These NaNs are not incorrect, so we temporarily ignore numpy div by 0 warnings.
     with np.errstate(divide="ignore"):
         # Get corrected count rate with background subtraction applied
+        # TODO background rates should not be subtracted until the ULTRA IT team
+        #   decides so.
         skymap.data_1d["corrected_count_rate"] = (
             skymap.data_1d["counts"].astype(float) / skymap.data_1d["exposure_factor"]
-        ) - skymap.data_1d["background_rates"]
+        )  # - skymap.data_1d["background_rates"]
 
         # Calculate ena_intensity = corrected_counts / (
         # sensitivity * solid_angle * delta_energy)
@@ -566,8 +568,12 @@ def ultra_l2(
         map_dataset = rectangular_skymap.to_dataset()
 
         # Add longitude_delta, latitude_delta to the map dataset
-        map_dataset["longitude_delta"] = rectangular_skymap.spacing_deg / 2
-        map_dataset["latitude_delta"] = rectangular_skymap.spacing_deg / 2
+        map_dataset["longitude_delta"] = np.full(
+            map_dataset["longitude"].shape, rectangular_skymap.spacing_deg / 2
+        )
+        map_dataset["latitude_delta"] = np.full(
+            map_dataset["latitude"].shape, rectangular_skymap.spacing_deg / 2
+        )
 
         map_attrs = {
             "Spacing_degrees": str(output_map_structure.spacing_deg),

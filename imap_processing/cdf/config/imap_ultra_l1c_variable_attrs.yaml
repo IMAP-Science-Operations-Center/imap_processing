@@ -1,20 +1,26 @@
+float_32_fillval: &float_32_fillval -1.0e31
+min_int: &min_int -9223372036854775808
+max_int: &max_int 9223372036854775807
+min_float: &min_float -3.4028235e+38
+max_float: &max_float 3.4028235e+38
+
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
-  FILLVAL: -9223372036854775808
+  FILLVAL: *min_int
   FORMAT: I12
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
+  VALIDMIN: *min_int
+  VALIDMAX: *max_int
   VAR_TYPE: data
   UNITS: " "
 
 default_float32_attrs: &default_float32
   <<: *default
-  FILLVAL: -1.0e31
+  FILLVAL: *float_32_fillval
   FORMAT: F12.6
-  VALIDMIN: -3.4028235e+38
-  VALIDMAX: 3.4028235e+38
+  VALIDMIN: *min_float
+  VALIDMAX: *max_float
   dtype: float32
 
 default_uint16_attrs: &default_uint16
@@ -211,3 +217,41 @@ energy_delta_plus:
   FIELDNAM: energy_bin_delta_plus
   DISPLAY_TYPE: no_plot
   DEPEND_1: energy_bin_geometric_mean
+
+
+# COORDS
+energy_bin_geometric_mean:
+  FILLVAL: *float_32_fillval
+  CATDESC: Geometric mean energy of each energy bin.
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: energy_bin_geometric_mean
+  FORMAT: F12.6
+  LABLAXIS: Energy
+  UNITS: keV
+  VALIDMIN: *min_float
+  VALIDMAX: *max_float
+  VAR_TYPE: support_data
+
+pixel_index:
+  FILLVAL: *min_int
+  CATDESC: HEALPix pixel index.
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: pixel_index
+  FORMAT: I12
+  LABLAXIS: Pixel Index
+  UNITS: " "
+  VALIDMIN: *min_int
+  VALIDMAX: *max_int
+  VAR_TYPE: support_data
+
+spin_phase_step:
+  FILLVAL: *min_int
+  CATDESC: Spin phase step index (1ms resolution).
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: spin_phase_step
+  FORMAT: I12
+  LABLAXIS: Spin Phase Step
+  UNITS: " "
+  VALIDMIN: *min_int
+  VALIDMAX: *max_int
+  VAR_TYPE: support_data
