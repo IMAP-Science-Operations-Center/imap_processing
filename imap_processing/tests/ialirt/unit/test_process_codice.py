@@ -10,6 +10,8 @@ import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
+from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_HI_RANGE,
@@ -96,6 +98,32 @@ def cod_hi_test_dataset(cod_hi_test_file):
 @pytest.fixture
 def codice_test_data(test_datasets):
     return test_datasets[478]
+
+
+@pytest.fixture(scope="session")
+def cod_lo_l1a_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1a_validation"
+        / "imap_codice_l1a_lo-ialirt_20250814211100_v0.0.5.cdf"
+    )
+
+    data = load_cdf(data_path)
+
+    return data
+
+
+@pytest.mark.external_test_data
+def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data):
+    l1b = convert_to_rates(
+        cod_lo_l1a_test_data,
+        "lo-ialirt",
+    )
+    print("hi")
 
 
 @pytest.mark.external_test_data
