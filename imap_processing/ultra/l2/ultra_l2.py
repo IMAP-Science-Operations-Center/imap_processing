@@ -668,7 +668,7 @@ def ultra_l2(
             continue
 
         # Support variables do not have epoch as the first dimension
-        # skip schema check for support variables or choords
+        # skip schema check for support variables or coords
         skip_schema_check = not (
             "epoch" not in map_dataset[variable].dims  # Support data
             or variable

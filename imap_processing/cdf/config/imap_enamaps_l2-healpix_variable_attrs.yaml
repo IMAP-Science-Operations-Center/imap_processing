@@ -49,6 +49,12 @@ latitude:
   LABL_PTR_1: pixel_index_label
 
 # Define Data variables
+ena_count:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
 ena_intensity:
   DEPEND_1: energy
   DEPEND_2: pixel_index
@@ -96,6 +102,12 @@ positional_uncert_phi:
   DEPEND_2: pixel_index
   LABL_PTR_1: energy_label
   LABL_PTR_2: pixel_index_label
+
+bg_rate:
+    DEPEND_1: energy
+    DEPEND_2: pixel_index
+    LABL_PTR_1: energy_label
+    LABL_PTR_2: pixel_index_label
 # These data variables will have an extra (energy) dimension
 # only if the energy dimension is present in the L1C data.
 # The default is energy-independent.
