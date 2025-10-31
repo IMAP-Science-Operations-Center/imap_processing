@@ -118,9 +118,9 @@ def create_xarray_dataset(
     )
 
     epoch, _ = get_codice_epoch_time(
-        metadata_values["ACQ_START_SECONDS"],
-        metadata_values["ACQ_START_SUBSECONDS"],
-        metadata_values["SPIN_PERIOD"],
+        np.array(metadata_values["ACQ_START_SECONDS"]),
+        np.array(metadata_values["ACQ_START_SUBSECONDS"]),
+        np.array(metadata_values["SPIN_PERIOD"]),
         view_tab_obj,
     )
     epoch_time = xr.DataArray(epoch, name="epoch", dims=["epoch"])

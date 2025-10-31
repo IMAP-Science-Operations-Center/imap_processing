@@ -484,7 +484,7 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data[i])
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "hi")  # noqa
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi", lut_path)  # noqa
     # TODO: add function l1a_hi_species
 
 
