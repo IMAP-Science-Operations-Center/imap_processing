@@ -707,10 +707,11 @@ def interpolate_map_flux_to_helio_frame(
         )
 
         # Statistical uncertainty propagation (Equation 75):
-        # δJ = J * sqrt((δJ_left/J_left)^2 * (1 + unc_factor^2) + (δJ_right/J_right)^2)
+        # δJ = J * sqrt((δJ_left/J_left)^2 * (1 + unc_factor^2)
+        #               + unc_factor^2 * (δJ_right/J_right)^2)
         stat_unc_sc = flux_sc * np.sqrt(
             (stat_unc_left / flux_left) ** 2 * (1.0 + unc_factor**2)
-            + (stat_unc_right / flux_right) ** 2
+            + unc_factor**2 * (stat_unc_right / flux_right) ** 2
         )
 
         # Systematic uncertainty propagation (Equation 76):
