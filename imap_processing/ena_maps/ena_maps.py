@@ -1273,6 +1273,7 @@ class RectangularSkyMap(AbstractSkyMap):
         descriptor: str,
         sensor: str | None = None,
         drop_vars_with_no_attributes: bool = True,
+        external_map_dataset: xr.Dataset | None = None,
     ) -> xr.Dataset:
         """
         Format the data into a xarray.Dataset and add required CDF variables.
@@ -1293,6 +1294,12 @@ class RectangularSkyMap(AbstractSkyMap):
             the output CDF doesn't have any of the intermedeiate variables left
             over from computations. Sometimes, it is useful to output the
             intermedeiate variables. To do so, set this to False.
+        external_map_dataset : xarray.Dataset, optional
+            If provided, this dataset will be used as the base dataset to
+            build the CDF dataset from, instead of using the internal map data.
+            This is useful if additional processing has been done to the map data
+            after projection, and those results need to be included in the CDF.
+            Default is None.
 
         Returns
         -------
@@ -1308,7 +1315,10 @@ class RectangularSkyMap(AbstractSkyMap):
 
         logger.info("Building CDF ready dataset from RectangularSkyMap data.")
 
-        cdf_ds = self.to_dataset()
+        if external_map_dataset is not None:
+            cdf_ds = external_map_dataset
+        else:
+            cdf_ds = self.to_dataset()
 
         # Set the value of the epoch coord
         cdf_ds = cdf_ds.assign_coords(**{CoordNames.TIME.value: [self.min_epoch]})

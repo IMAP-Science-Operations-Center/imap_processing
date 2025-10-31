@@ -982,6 +982,30 @@ class TestRectangularSkyMap:
                 )
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
+    def test_build_cdf_dataset_external_dataset(
+        self, mock_to_dataset, mock_data_for_build_cdf_dataset
+    ):
+        """Test coverage for the RectangularSkyMap.build_cdf_dataset method."""
+        # Set up the mock
+        mock_to_dataset.return_value = mock_data_for_build_cdf_dataset
+
+        skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
+        skymap.min_epoch = 10
+        skymap.max_epoch = 15
+        cdf_dataset_standard = skymap.build_cdf_dataset(
+            "hi", "l2", "foo_descriptor", sensor="45", drop_vars_with_no_attributes=True
+        )
+        cdf_dataset_external = skymap.build_cdf_dataset(
+            "hi",
+            "l2",
+            "foo_descriptor",
+            sensor="45",
+            drop_vars_with_no_attributes=True,
+            external_map_dataset=mock_data_for_build_cdf_dataset,
+        )
+        assert cdf_dataset_standard.equals(cdf_dataset_external)
+
+    @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
     def test_build_cdf_dataset_key_error(
         self, mock_to_dataset, mock_data_for_build_cdf_dataset
     ):
@@ -995,7 +1019,7 @@ class TestRectangularSkyMap:
 
         # Test that missing energy delta variable raise KeyError
         # Test for missing energy_delta_plus
-        mock_dataset = mock_dataset.drop(["energy_delta_plus"])
+        mock_dataset = mock_dataset.drop_vars(["energy_delta_plus"])
         mock_to_dataset.return_value = mock_dataset
         with pytest.raises(
             KeyError,
@@ -1003,7 +1027,7 @@ class TestRectangularSkyMap:
         ):
             _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
         # Test for missing energy_delta_minus
-        mock_dataset = mock_dataset.drop(["energy_delta_minus"])
+        mock_dataset = mock_dataset.drop_vars(["energy_delta_minus"])
         mock_to_dataset.return_value = mock_dataset
         with pytest.raises(
             KeyError,

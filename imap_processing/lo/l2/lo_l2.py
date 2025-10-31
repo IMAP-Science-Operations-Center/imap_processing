@@ -98,7 +98,9 @@ def lo_l2(
     )
 
     logger.info("Step 5: Finalizing dataset with attributes")
-    dataset = finalize_dataset(dataset, descriptor)
+    dataset = sky_map.build_cdf_dataset(  # type: ignore[attr-defined]
+        instrument="lo", level="l2", descriptor=descriptor, external_map_dataset=dataset
+    )
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
     return [dataset]
@@ -603,7 +605,8 @@ def initialize_geometric_factor_variables(
     """
     gf_vars = [
         "energy",
-        "energy_stat_uncert",
+        "energy_delta_minus",
+        "energy_delta_plus",
         "geometric_factor",
         "geometric_factor_stat_uncert",
     ]
@@ -649,17 +652,20 @@ def populate_geometric_factors(
     if species == "h":
         gf_vars = {
             "energy": "Cntr_E",
-            "energy_stat_uncert": "Cntr_E_unc",
             "geometric_factor": "GF_Trpl_H",
             "geometric_factor_stat_uncert": "GF_Trpl_H_unc",
         }
+        # NOTE: From an e-mail from Nathan on 2025-09-11
+        energy_delta_hires_values = [5.43, 10.02, 18.61, 33.31, 64.98, 131.64, 262.35]
+        energy_delta_hithr_values = [8.81, 16.04, 28.50, 53.13, 105.60, 219.67, 413.60]
     else:  # species == "o"
         gf_vars = {
             "energy": "Cntr_E",
-            "energy_stat_uncert": "Cntr_E_unc",
             "geometric_factor": "GF_Trpl_O",
             "geometric_factor_stat_uncert": "GF_Trpl_O_unc",
         }
+        energy_delta_hires_values = [5.82, 11.10, 21.78, 41.47, 85.61, 180.67, 361.93]
+        energy_delta_hithr_values = [9.45, 17.84, 33.51, 66.61, 139.95, 302.24, 569.48]
 
     # Get ESA mode from the map (assuming it's constant or we take the first)
     # TODO: Figure out how to handle esa_mode properly
@@ -679,6 +685,14 @@ def populate_geometric_factors(
         # Fill energy step with the geometric factor values
         for var, col in gf_vars.items():
             dataset[var].values[i] = gf_row[col]
+
+    # Update delta_minus and delta_plus based on ESA mode
+    if esa_mode == 0:  # HiRes
+        dataset["energy_delta_minus"].values = energy_delta_hires_values
+        dataset["energy_delta_plus"].values = energy_delta_hires_values
+    else:  # HiThr
+        dataset["energy_delta_minus"].values = energy_delta_hithr_values
+        dataset["energy_delta_plus"].values = energy_delta_hithr_values
 
     return dataset
 
@@ -850,6 +864,19 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
         / dataset["geometric_factor"]
     )
 
+    # Background intensity
+    dataset["bg_intensity"] = dataset["bg_rates"] / (
+        dataset["geometric_factor"] * dataset["energy"]
+    )
+    dataset["bg_intensity_stat_uncert"] = dataset["bg_rates_stat_uncert"] / (
+        dataset["geometric_factor"] * dataset["energy"]
+    )
+    dataset["bg_intensity_sys_err"] = (
+        dataset["bg_intensity"]
+        * dataset["geometric_factor_stat_uncert"]
+        / dataset["geometric_factor"]
+    )
+
     return dataset
 
 
@@ -885,14 +912,6 @@ def calculate_sputtering_corrections(
     energy_indices = [4, 5]
     small_dataset = dataset.isel(epoch=0, energy=energy_indices)
     o_small_dataset = o_dataset.isel(epoch=0, energy=energy_indices)
-
-    # NOTE: We only have background rates, so turn them into intensities
-    o_small_dataset["bg_intensity"] = o_small_dataset["bg_rates"] / (
-        o_small_dataset["geometric_factor"] * o_small_dataset["energy"]
-    )
-    o_small_dataset["bg_intensity_stat_uncert"] = o_small_dataset[
-        "bg_rates_stat_uncert"
-    ] / (o_small_dataset["geometric_factor"] * o_small_dataset["energy"])
 
     # We need to align the energy dimensions from the oxygen dataset to the
     # Hydrogen dataset so the calculations below get aligned by xarray correctly.
@@ -987,10 +1006,7 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     )
 
     # Equation 14
-    bg_intensity = dataset["bg_rates"] / (
-        dataset["geometric_factor"] * dataset["energy"]
-    )
-    j_c_prime = dataset["ena_intensity"] - bg_intensity
+    j_c_prime = dataset["ena_intensity"] - dataset["bg_intensity"]
     j_c_prime.values[j_c_prime.values < 0] = 0
 
     # Equation 15
@@ -1196,6 +1212,8 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
 
     # Only remove variables that exist in the dataset for the specific species
     potential_vars = [
+        "geometric_factor",
+        "geometric_factor_stat_uncert",
         "counts_over_eff",
         "counts_over_eff_squared",
         "bg_rates_exposure_factor",

@@ -99,7 +99,15 @@ ena_intensity_sys_err:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
-ena_rate:
+ena_count_rate:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+ena_count_rate_stat_uncert:
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
@@ -124,6 +132,38 @@ sensitivity:
   LABL_PTR_3: latitude_label
 
 bg_rate:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+bg_rate_uncert:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+bg_intensity:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+bg_intensity_stat_uncert:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+bg_intensity_sys_err:
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude

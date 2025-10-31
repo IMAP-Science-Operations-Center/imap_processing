@@ -1564,7 +1564,8 @@ class TestInitializeGeometricFactorVariables:
 
         # Check that all geometric factor variables were initialized
         expected_vars = [
-            "energy_stat_uncert",
+            "energy_delta_minus",
+            "energy_delta_plus",
             "geometric_factor",
             "geometric_factor_stat_uncert",
         ]
@@ -2169,6 +2170,7 @@ class TestIntegrationWithMocks:
             mock_sky_map = Mock()
             mock_dataset = xr.Dataset({"test_var": (("energy",), np.ones(7))})
             mock_sky_map.to_dataset.return_value = mock_dataset
+            mock_sky_map.build_cdf_dataset.return_value = mock_dataset
             mock_create_map.return_value = mock_sky_map
             mock_add_gf.return_value = mock_dataset
             mock_calc_rates.return_value = mock_dataset

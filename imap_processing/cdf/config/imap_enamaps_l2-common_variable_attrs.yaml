@@ -155,7 +155,7 @@ ena_intensity_sys_err:
   DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-ena_rate:
+ena_count_rate:
   <<: *default_float32
   CATDESC: Mono-energetic ENA Rate.
   FIELDNAM: Rate
@@ -165,6 +165,17 @@ ena_rate:
   LABLAXIS: Rate
   DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+ena_count_rate_stat_uncert:
+  <<: *default_float32
+  CATDESC: ENA Rate statistical uncertainty.
+  FIELDNAM: Rate Uncertainty
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  LABLAXIS: Rate Uncertainty
+  DISPLAY_TYPE: map_image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 bg_rate:
   <<: *default_float32
@@ -177,6 +188,54 @@ bg_rate:
   DISPLAY_TYPE: map_image
   FORMAT: F6.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+bg_rate_uncert:
+  <<: *default_float32
+  CATDESC: Uncertainty in the background count rate from non-ENA (non-heliospheric) sources.
+  FIELDNAM: Background Rate Uncertainty
+  UNITS: count s-1
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  LABLAXIS: Rate Uncertainty
+  DISPLAY_TYPE: map_image
+  FORMAT: F6.3
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+bg_intensity:
+  <<: *default_float32
+  CATDESC: Total background intensity from non-ENA (non-heliospheric) sources
+  FIELDNAM: Background Intensity
+  UNITS: cm -2 s -1 sr -1 keV -1
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Intensity
+  DISPLAY_TYPE: map_image
+  FORMAT: F8.3
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+bg_intensity_stat_uncert:
+  <<: *default_float32
+  CATDESC: Uncertainty in the background intensity from non-ENA (non-heliospheric) sources.
+  FIELDNAM: Background Intensity Statistical Uncertainty
+  UNITS: cm -2 s -1 sr -1 keV -1
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  LABLAXIS: Intensity Uncertainty
+  DISPLAY_TYPE: map_image
+  FORMAT: F8.3
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+bg_intensity_sys_err:
+  <<: *default_float32
+  CATDESC: Non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
+  FIELDNAM: Background Intensity Non-statistical Error
+  UNITS: cm -2 s -1 sr -1 keV -1
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  LABLAXIS: Intensity Non-statistical Error
+  DISPLAY_TYPE: map_image
+  FORMAT: F8.3
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 ena_count:
   <<: *default_float32
