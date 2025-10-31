@@ -712,12 +712,23 @@ class TestInterpolateMapFluxToHelioFrame:
         expected_flux_middle = (
             (e_sc**power_law_slope) * (e_helio / e_sc) * spatial_factor
         )
+        unc_factor = np.log(e_sc / 500) / np.log(1000 / 500)
+        expected_stat_uncert = expected_flux_middle * np.sqrt(
+            0.1**2 * (1 + unc_factor**2) + unc_factor**2 * 0.1**2
+        )
 
         # Compare interpolated result to expected value
         # (should be very close for a perfect power-law)
         np.testing.assert_allclose(
             result_ds["ena_intensity"].values[1, 0],
             expected_flux_middle,
+            rtol=1e-10,
+        )
+
+        # Check expected stat. unc.
+        np.testing.assert_allclose(
+            result_ds["ena_intensity_stat_uncert"].values[1, 0],
+            expected_stat_uncert,
             rtol=1e-10,
         )
 
