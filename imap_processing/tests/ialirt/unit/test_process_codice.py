@@ -421,7 +421,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_hi(
-    cod_hi_test_dataset, cod_hi_decom_test_file
+    cod_hi_test_dataset, cod_hi_decom_test_file, lut_path
 ):
     "Test that I-ALiRT CoDICE-Hi data can be grouped and decompressed properly."
 
