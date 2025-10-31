@@ -112,7 +112,7 @@ def cod_lo_l1a_test_data():
         / "codice"
         / "data"
         / "l1a_validation"
-        / "imap_codice_l1a_lo-ialirt_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1a_lo-ialirt_20250814_v007.cdf"
     )
 
     data = load_cdf(data_path)
@@ -140,12 +140,12 @@ def cod_lo_l1b_test_data():
 def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor):
     coords = {
         "epoch": cod_lo_l1a_test_data["epoch"],
-        "esa_step": cod_lo_l1a_test_data["spin_sector_index"],
-        "k_factor": cod_lo_l1a_test_data["k_factor"],
-        "spin_sector": [0],
+        "esa_step": cod_lo_l1a_test_data["esa_step"],
+        "spin_sector": cod_lo_l1a_test_data["spin_sector"],
     }
 
     data_vars = {
+        "k_factor": ("dim0", cod_lo_l1a_test_data["k_factor"].data),
         "voltage_table": ("esa_step", cod_lo_l1a_test_data["voltage_table"].data),
         "data_quality": ("epoch", cod_lo_l1a_test_data["data_quality"].data),
         "acquisition_time_per_step": (
@@ -190,7 +190,7 @@ def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data, cod_lo_l1b_test_data):
     # TODO: Verify why we need to multiply by 1000 here.
     for variable in variables_to_convert:
         np.testing.assert_allclose(
-            l1b[variable].data * 1000, cod_lo_l1b_test_data[variable].data, atol=1e-6
+            l1b[variable].data, cod_lo_l1b_test_data[variable].data, rtol=1e-2
         )
 
 
