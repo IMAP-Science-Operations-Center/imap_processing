@@ -568,11 +568,13 @@ def ultra_l2(
         map_dataset = rectangular_skymap.to_dataset()
 
         # Add longitude_delta, latitude_delta to the map dataset
-        map_dataset["longitude_delta"] = np.full(
-            map_dataset["longitude"].shape, rectangular_skymap.spacing_deg / 2
+        map_dataset["longitude_delta"] = (
+            "longitude",
+            np.full(map_dataset["longitude"].shape, rectangular_skymap.spacing_deg / 2),
         )
-        map_dataset["latitude_delta"] = np.full(
-            map_dataset["latitude"].shape, rectangular_skymap.spacing_deg / 2
+        map_dataset["latitude_delta"] = (
+            "latitude",
+            np.full(map_dataset["latitude"].shape, rectangular_skymap.spacing_deg / 2),
         )
 
         map_attrs = {
