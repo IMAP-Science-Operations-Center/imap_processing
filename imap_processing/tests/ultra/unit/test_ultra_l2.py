@@ -179,8 +179,8 @@ class TestUltraL2:
 
         # Estimate the expected ena_intensity and its uncertainty
         expected_ena_intensity = (
-            10 * solid_angle_ratio_map_to_pset / 1
-        ) - 1 * solid_angle_ratio_map_to_pset / (1 * hp_skymap.solid_angle * 1)
+            (10 * solid_angle_ratio_map_to_pset / 1) - 1 * solid_angle_ratio_map_to_pset
+        ) / (1 * hp_skymap.solid_angle * 1)
         expected_ena_intensity_unc = (
             (10 * solid_angle_ratio_map_to_pset) ** 0.5 / 1
         ) / (1 * hp_skymap.solid_angle * 1)
@@ -508,12 +508,10 @@ class TestUltraL2:
 
         # The mean ena_intensity should be close between the healpix / rectangular maps
         # Test they agree to within 1% of one another
-        print(rect_map_dataset["ena_intensity"].mean())
-        print(hp_map_dataset["ena_intensity"].mean())
         np.testing.assert_allclose(
             rect_map_dataset["ena_intensity"].mean(),
             hp_map_dataset["ena_intensity"].mean(),
-            rtol=3e-1,
+            rtol=1e-2,
             atol=1e-12,
         )
 
