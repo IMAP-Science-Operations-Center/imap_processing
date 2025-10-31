@@ -5,6 +5,7 @@ import pytest
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     get_scattering_thresholds_for_energy,
     get_spacecraft_pointing_lookup_tables,
+    get_static_deadtime_ratios,
     mask_below_fwhm_scattering_threshold,
 )
 
@@ -92,3 +93,21 @@ def test_get_mask_below_fwhm_scattering_threshold_zero(ancillary_files):
     )
     np.testing.assert_array_equal(pixel_mask.shape, (3, 1))
     np.testing.assert_array_equal(pixel_mask, expected_pixel_mask)
+
+
+@pytest.mark.external_test_data
+def test_get_static_deadtime_ratios(ancillary_files):
+    """Test get_static_deadtime_ratios function."""
+    # test 45
+    spin_phase, dt_ratio = get_static_deadtime_ratios(45, ancillary_files)
+    # Test shape
+    # TODO confirm if the duplicate row in the 45 LUT is a mistake
+    np.testing.assert_array_equal(dt_ratio.shape, (720,))
+    # Test values
+    assert np.all((dt_ratio >= 0.0) & (dt_ratio <= 1.0))
+    # test 90
+    spin_phase, dt_ratio = get_static_deadtime_ratios(90, ancillary_files)
+    # Test shape
+    np.testing.assert_array_equal(dt_ratio.shape, (721,))
+    # Test values
+    assert np.all((dt_ratio >= 0.0) & (dt_ratio <= 1.0))

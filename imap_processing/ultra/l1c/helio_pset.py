@@ -16,12 +16,12 @@ from imap_processing.spice.time import (
 )
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
+    build_energy_bins,
     calculate_fwhm_spun_scattering,
     get_spacecraft_pointing_lookup_tables,
 )
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
-    build_energy_bins,
     get_efficiencies_and_geometric_function,
     get_energy_delta_minus_plus,
     get_helio_adjusted_data,
@@ -71,7 +71,7 @@ def calculate_helio_pset(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
-    sensor = parse_filename_like(name)["sensor"][0:2]
+    sensor_id = int(parse_filename_like(name)["sensor"][0:2])
     pset_dict: dict[str, np.ndarray] = {}
     # Select only the species we are interested in.
     indices = np.where(np.isin(de_dataset["ebin"].values, species_id))[0]
@@ -139,6 +139,8 @@ def calculate_helio_pset(
         boundary_scale_factors,
         pointing_range_met,
         n_pix=n_pix,
+        sensor_id=sensor_id,
+        ancillary_files=ancillary_files,
     )
     logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
@@ -156,7 +158,7 @@ def calculate_helio_pset(
     # Calculate background rates
     background_rates = get_spacecraft_background_rates(
         rates_dataset,
-        sensor,
+        sensor_id,
         ancillary_files,
         intervals,
         goodtimes_dataset["spin_number"].values,

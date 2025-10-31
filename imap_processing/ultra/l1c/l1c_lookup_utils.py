@@ -6,12 +6,12 @@ import numpy as np
 import pandas as pd
 from numpy._typing import NDArray
 
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_scattering_coefficients,
     get_scattering_thresholds,
     load_scattering_lookup_tables,
 )
-from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
 
 logger = logging.getLogger(__name__)
 
@@ -289,3 +289,60 @@ def get_scattering_thresholds_for_energy(
             threshold = 0
         thresholds.append(threshold)
     return np.array(thresholds)
+
+
+def get_static_deadtime_ratios(
+    sensor_id: int, ancillary_files: dict
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Get static deadtime ratios.
+
+    These should only be used when the instrument is operating in a mode that does not
+    produce sectored rates data.
+
+    Parameters
+    ----------
+    sensor_id : int
+        Sensor ID, either 45 or 90.
+    ancillary_files : dict
+        Dictionary containing ancillary files.
+
+    Returns
+    -------
+    np.ndarray
+        Array of static deadtime ratios for each energy bin.
+    """
+    descriptor = f"l1c-{sensor_id}sensor-static-dead-times"
+    df = pd.read_csv(ancillary_files[descriptor])
+    # Drop any rows that are duplicates. We only want unique spin phase and dead time
+    # ratio pairs.
+    df = df.drop_duplicates()
+    return df["Spin Phase (deg)"].to_numpy(dtype=float), df["Dead Time Ratio"].to_numpy(
+        dtype=float
+    )
+
+
+def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarray]:
+    """
+    Build energy bin boundaries.
+
+    Returns
+    -------
+    intervals : list[tuple[float, float]]
+        Energy bins.
+    energy_midpoints : np.ndarray
+        Array of energy bin midpoints.
+    energy_bin_geometric_means : np.ndarray
+        Array of geometric means of energy bins.
+    """
+    # Create energy bins.
+    energy_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)
+    energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
+
+    intervals = [
+        (float(energy_bin_edges[i]), float(energy_bin_edges[i + 1]))
+        for i in range(len(energy_bin_edges) - 1)
+    ]
+    energy_bin_geometric_means = np.sqrt(energy_bin_edges[:-1] * energy_bin_edges[1:])
+
+    return intervals, energy_midpoints, energy_bin_geometric_means

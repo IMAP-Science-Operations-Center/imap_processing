@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from scipy import interpolate
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
@@ -218,8 +219,10 @@ def test_get_deadtime_interpolator(random_spin_data):
         "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
         return_value=deadtime_ratios,
     ):
-        deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates_ds)
-    np.testing.assert_array_equal(deadtime_ratios.shape, (15000))
+        deadtime_ratios = get_deadtime_ratios_by_spin_phase(
+            sectored_rates_ds, spin_steps=num_deadtimes
+        )
+    np.testing.assert_array_equal(deadtime_ratios.shape, (num_deadtimes))
 
     with mock.patch(
         "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
@@ -230,7 +233,35 @@ def test_get_deadtime_interpolator(random_spin_data):
             ValueError,
             match="All dead time ratios are NaN, cannot interpolate",
         ):
-            get_deadtime_ratios_by_spin_phase(sectored_rates_ds)
+            get_deadtime_ratios_by_spin_phase(
+                sectored_rates_ds, spin_steps=num_deadtimes
+            )
+
+
+@pytest.mark.external_test_data
+def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files):
+    """Tests get_deadtime_correction_factors function."""
+
+    num_deadtimes = 15000  # Standard number of spin phases
+    sensor = 45
+    # If the sectored rates dataset is None, the function should use the
+    # static deadtime ratios lookup.
+    dt_ratios = get_deadtime_ratios_by_spin_phase(
+        sectored_rates=None,
+        spin_steps=num_deadtimes,
+        sensor_id=sensor,
+        ancillary_files=ancillary_files,
+    )
+    spin_phase, dts = ultra_l1c_pset_bins.get_static_deadtime_ratios(
+        sensor, ancillary_files
+    )
+    # Calculate the nominal spin phases at the supplied resolution and query the pchip
+    # interpolator to get the deadtime ratios.
+    nominal_spin_phases = np.arange(0, 360, 360 / num_deadtimes)
+    expected_dt_ratios = interpolate.PchipInterpolator(spin_phase, dts)(
+        nominal_spin_phases
+    )
+    np.testing.assert_array_equal(dt_ratios, expected_dt_ratios)
 
 
 @pytest.mark.external_kernel
@@ -309,7 +340,7 @@ def test_get_spacecraft_exposure_times(
         pix,
     )
     np.testing.assert_array_equal(exposure_pointing.shape, (24, pix))
-    np.testing.assert_array_equal(deadtimes.shape, (15000,))
+    np.testing.assert_array_equal(deadtimes.shape, (steps,))
 
 
 @pytest.mark.external_kernel

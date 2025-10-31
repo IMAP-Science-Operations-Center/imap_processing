@@ -33,37 +33,15 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_efficiency,
     get_efficiency_interpolator,
 )
+from imap_processing.ultra.l1c.l1c_lookup_utils import (
+    build_energy_bins,
+    get_static_deadtime_ratios,
+)
 
 # TODO: add species binning.
 FILLVAL_FLOAT32 = -1.0e31
 
 logger = logging.getLogger(__name__)
-
-
-def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarray]:
-    """
-    Build energy bin boundaries.
-
-    Returns
-    -------
-    intervals : list[tuple[float, float]]
-        Energy bins.
-    energy_midpoints : np.ndarray
-        Array of energy bin midpoints.
-    energy_bin_geometric_means : np.ndarray
-        Array of geometric means of energy bins.
-    """
-    # Create energy bins.
-    energy_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)
-    energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
-
-    intervals = [
-        (float(energy_bin_edges[i]), float(energy_bin_edges[i + 1]))
-        for i in range(len(energy_bin_edges) - 1)
-    ]
-    energy_bin_geometric_means = np.sqrt(energy_bin_edges[:-1] * energy_bin_edges[1:])
-
-    return intervals, energy_midpoints, energy_bin_geometric_means
 
 
 def get_energy_delta_minus_plus() -> tuple[NDArray, NDArray]:
@@ -238,7 +216,9 @@ def get_deadtime_ratios(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
     return dead_time_ratios
 
 
-def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Dataset:
+def get_sectored_rates(
+    rates_ds: xr.Dataset, params_ds: xr.Dataset
+) -> xr.Dataset | None:
     """
     Filter rates dataset to only include sector mode data.
 
@@ -251,7 +231,7 @@ def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Datase
 
     Returns
     -------
-    rates : xarray.Dataset
+    rates : xarray.Dataset or None
         Rates dataset with only the sector mode data.
     """
     # Find indices in which the parameters dataset, indicates that ULTRA was in
@@ -264,7 +244,7 @@ def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Datase
 
     sector_mode_start_inds = np.where(params["imageratescadence"] == 3)[0]
     if len(sector_mode_start_inds) == 0:
-        raise ValueError("No sector mode data found in the parameters dataset.")
+        return None
     # get the sector mode start and stop indices
     sector_mode_stop_inds = sector_mode_start_inds + 1
     # get the sector mode start and stop times
@@ -288,46 +268,68 @@ def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Datase
 
 
 def get_deadtime_ratios_by_spin_phase(
-    sectored_rates: xr.Dataset,
+    sectored_rates: xr.Dataset | None,
+    spin_steps: int,
+    sensor_id: int | None = None,
+    ancillary_files: dict | None = None,
 ) -> np.ndarray:
     """
     Calculate nominal deadtime ratios at every spin phase step (1ms res).
 
     Parameters
     ----------
-    sectored_rates : xarray.Dataset
+    sectored_rates : xarray.Dataset, optional
         Dataset containing sector mode image rates data.
+    spin_steps : int
+        Number of spin phase steps (e.g. 15000 for 1ms resolution).
+    sensor_id : int, optional
+        Sensor ID, either 45 or 90.
+    ancillary_files : dict, optional
+        Dictionary containing ancillary files.
 
     Returns
     -------
     numpy.ndarray
-        Nominal deadtime ratios at every spin phase step (1ms res).
+        Nominal deadtime ratios at every spin phase step.
     """
-    deadtime_ratios = get_deadtime_ratios(sectored_rates)
-    # Get the spin phase at the start of each sector rate measurement
-    met_times = ttj2000ns_to_met(sectored_rates.epoch.data)
-    spin_phases = np.asarray(
-        get_spin_angle(get_spacecraft_spin_phase(met_times), degrees=True)
-    )
-    # Assume the sectored rate data is evenly spaced in time, and find the middle spin
-    # phase value for each sector.
-    # The center spin phase is the closest / most accurate spin phase.
-    # There are 24 spin phases per sector so the nominal middle sector spin phases
-    # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
-    spin_phases_centered = (spin_phases[:-1] + spin_phases[1:]) / 2
-    # Assume the last sector is nominal because we dont have enough data to determine
-    # the spin phase at the end of the last sector.
-    # TODO: is this assumption valid?
-    # Add the last spin phase value + half of a nominal sector.
-    spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + 12)
-    # Wrap any spin phases > 360 back to [0, 360]
-    spin_phases_centered = spin_phases_centered % 360
+    if sectored_rates is None:
+        logger.warning(
+            "No sector mode data found in the parameters dataset. Using "
+            "static dead time ratios from an ancillary file."
+        )
+        if sensor_id is None or ancillary_files is None:
+            raise ValueError(
+                "sensor_id and ancillary_files must be provided to "
+                "get static deadtime ratios."
+            )
+        spin_phases_centered, deadtime_ratios = get_static_deadtime_ratios(
+            sensor_id, ancillary_files
+        )
+    else:
+        deadtime_ratios = get_deadtime_ratios(sectored_rates).data
+        # Get the spin phase at the start of each sector rate measurement
+        met_times = ttj2000ns_to_met(sectored_rates.epoch.data)
+        spin_phases = np.asarray(
+            get_spin_angle(get_spacecraft_spin_phase(met_times), degrees=True)
+        )
+        # Assume the sectored rate data is evenly spaced in time, and find the middle
+        # spin phase value for each sector.
+        # The center spin phase is the closest / most accurate spin phase.
+        # There are 24 spin phases per sector so the nominal middle sector spin phases
+        # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
+        spin_phases_centered = (spin_phases[:-1] + spin_phases[1:]) / 2
+        # Assume the last sector is nominal because we dont have enough data to
+        # determine the spin phase at the end of the last sector.
+        # TODO: is this assumption valid?
+        # Add the last spin phase value + half of a nominal sector.
+        spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + 12)
+        # Wrap any spin phases > 360 back to [0, 360]
+        spin_phases_centered = np.array(spin_phases_centered % 360)
+
     # Create a dataset with spin phases and dead time ratios
     deadtime_by_spin_phase = xr.Dataset(
-        {"deadtime_ratio": deadtime_ratios},
-        coords={
-            "spin_phase": xr.DataArray(np.array(spin_phases_centered), dims="epoch")
-        },
+        {"deadtime_ratio": (("spin_phase",), deadtime_ratios)},
+        coords={"spin_phase": xr.DataArray(spin_phases_centered, dims="spin_phase")},
     )
 
     # Sort the dataset by spin phase (ascending order)
@@ -347,11 +349,10 @@ def get_deadtime_ratios_by_spin_phase(
     interpolator = interpolate.PchipInterpolator(
         deadtime_medians["spin_phase"].values, deadtime_medians["deadtime_ratio"].values
     )
-    # Calculate the nominal spin phases at 1 ms resolution and query the pchip
+    # Calculate the nominal spin phases at the supplied resolution and query the pchip
     # interpolator to get the deadtime ratios.
-    steps = 15 * 1000  # 15 seconds at 1 ms resolution
-    nominal_spin_phases_1ms_res = np.arange(0, 360, 360 / steps)
-    return interpolator(nominal_spin_phases_1ms_res)
+    nominal_spin_phases = np.arange(0, 360, 360 / spin_steps)
+    return interpolator(nominal_spin_phases)
 
 
 def calculate_exposure_time(
@@ -417,6 +418,8 @@ def get_spacecraft_exposure_times(
     boundary_scale_factors: NDArray,
     pointing_range_met: tuple[float, float],
     n_pix: int,
+    sensor_id: int | None = None,
+    ancillary_files: dict | None = None,
 ) -> tuple[NDArray, NDArray]:
     """
     Compute exposure times for HEALPix pixels.
@@ -438,6 +441,10 @@ def get_spacecraft_exposure_times(
         Start and stop time of the pointing period in mission elapsed time.
     n_pix : int
         Number of HEALPix pixels.
+    sensor_id : int, optional
+        Sensor ID, either 45 or 90.
+    ancillary_files : dict, optional
+        Dictionary containing ancillary files.
 
     Returns
     -------
@@ -449,7 +456,11 @@ def get_spacecraft_exposure_times(
         Deadtime ratios at each spin phase step (1ms res).
     """
     sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
-    nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates)
+    # Get the number of steps used in the spun pointing lookup tables
+    spin_steps = len(pixels_below_scattering)
+    nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(
+        sectored_rates, spin_steps, sensor_id, ancillary_files
+    )
     # The exposure time will be approximately the same per spin, so to save
     # computation time, calculate the exposure time for a single spin and then scale it
     # by the number of spins in the pointing. For more information, see section 3.4.3
@@ -720,7 +731,7 @@ def get_helio_adjusted_data(
 
 def get_spacecraft_background_rates(
     rates_dataset: xr.Dataset,
-    sensor: str,
+    sensor_id: int,
     ancillary_files: dict,
     energy_bin_edges: list[tuple[float, float]],
     goodtimes_spin_number: NDArray,
@@ -733,8 +744,8 @@ def get_spacecraft_background_rates(
     ----------
     rates_dataset : xr.Dataset
         Rates dataset.
-    sensor : str
-        Sensor name: "ultra45" or "ultra90".
+    sensor_id : int
+        Sensor ID: either 45 or 90.
     ancillary_files : dict[Path]
         Ancillary files containing the lookup tables.
     energy_bin_edges : list[tuple[float, float]]
@@ -757,8 +768,8 @@ def get_spacecraft_background_rates(
     """
     pulses = get_pulses_per_spin(rates_dataset)
     # Pulses for the pointing.
-    etof_min = get_image_params("eTOFMin", f"ultra{sensor}", ancillary_files)
-    etof_max = get_image_params("eTOFMax", f"ultra{sensor}", ancillary_files)
+    etof_min = get_image_params("eTOFMin", f"ultra{sensor_id}", ancillary_files)
+    etof_max = get_image_params("eTOFMax", f"ultra{sensor_id}", ancillary_files)
     spin_number, _ = get_spin_and_duration(
         rates_dataset["shcoarse"], rates_dataset["spin"]
     )

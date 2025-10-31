@@ -15,12 +15,12 @@ from imap_processing.spice.time import (
 )
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
+    build_energy_bins,
     calculate_fwhm_spun_scattering,
     get_spacecraft_pointing_lookup_tables,
 )
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
-    build_energy_bins,
     get_efficiencies_and_geometric_function,
     get_energy_delta_minus_plus,
     get_spacecraft_background_rates,
@@ -71,7 +71,7 @@ def calculate_spacecraft_pset(
     """
     pset_dict: dict[str, np.ndarray] = {}
 
-    sensor = parse_filename_like(name)["sensor"][0:2]
+    sensor_id = int(parse_filename_like(name)["sensor"][0:2])
     indices = np.where(np.isin(de_dataset["ebin"].values, species_id))[0]
     species_dataset = de_dataset.isel(epoch=indices)
 
@@ -124,7 +124,23 @@ def calculate_spacecraft_pset(
         nside=nside,
     )
     healpix = np.arange(n_pix)
+    # Get the start and stop times of the pointing period
+    pointing_range_met = get_pointing_times(
+        float(et_to_met(species_dataset["event_times"].mean()))
+    )
 
+    # Calculate exposure times
+    logger.info("Calculating spacecraft exposure times with deadtime correction.")
+    exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
+        rates_dataset,
+        params_dataset,
+        pixels_below_scattering,
+        boundary_scale_factors,
+        pointing_range_met,
+        n_pix=n_pix,
+        sensor_id=sensor_id,
+        ancillary_files=ancillary_files,
+    )
     logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
     geometric_function, efficiencies = get_efficiencies_and_geometric_function(
@@ -137,25 +153,11 @@ def calculate_spacecraft_pset(
     )
     sensitivity = efficiencies * geometric_function
 
-    # Get the start and stop times of the pointing period
-    pointing_range_met = get_pointing_times(
-        float(et_to_met(species_dataset["event_times"].mean()))
-    )
-    # Calculate exposure times
-    logger.info("Calculating spacecraft exposure times with deadtime correction.")
-    exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
-        rates_dataset,
-        params_dataset,
-        pixels_below_scattering,
-        boundary_scale_factors,
-        pointing_range_met,
-        n_pix=n_pix,
-    )
     logger.info("Calculating background rates.")
     # Calculate background rates
     background_rates = get_spacecraft_background_rates(
         rates_dataset,
-        sensor,
+        sensor_id,
         ancillary_files,
         intervals,
         goodtimes_dataset["spin_number"].values,
