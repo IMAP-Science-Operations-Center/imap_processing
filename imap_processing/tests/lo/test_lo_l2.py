@@ -411,30 +411,21 @@ def sample_dataset_with_sputtering_data():
         ("epoch", "energy", "longitude", "latitude"),
         h_intensity_values,
     )
-
-    # Add hydrogen background rates (lower values)
-    h_bg_rates_values = np.ones((1, n_energy, n_lon, n_lat)) * 0.1e6  # 10% of intensity
-    h_dataset["bg_rates"] = (
-        ("epoch", "energy", "longitude", "latitude"),
-        h_bg_rates_values,
-    )
+    h_dataset["bg_intensity"] = h_dataset["ena_intensity"] * 0.1  # 10% background
 
     # Add statistical uncertainties
     h_dataset["ena_intensity_stat_uncert"] = (
         ("epoch", "energy", "longitude", "latitude"),
         np.sqrt(h_intensity_values) * 0.1,
     )
-
-    h_dataset["bg_rates_stat_uncert"] = (
-        ("epoch", "energy", "longitude", "latitude"),
-        np.sqrt(h_bg_rates_values) * 0.1,
-    )
+    h_dataset["bg_intensity_stat_uncert"] = np.sqrt(h_dataset["bg_intensity"]) * 0.1
 
     # Add systematic error
     h_dataset["ena_intensity_sys_err"] = (
         ("epoch", "energy", "longitude", "latitude"),
         h_intensity_values * 0.05,
     )
+    h_dataset["bg_intensity_sys_err"] = h_dataset["bg_intensity"] * 0.05
 
     # Create oxygen dataset
     o_intensity_values = np.ones((1, n_energy, n_lon, n_lat)) * 1e6  # Base intensity
@@ -446,23 +437,16 @@ def sample_dataset_with_sputtering_data():
         ("epoch", "energy", "longitude", "latitude"),
         o_intensity_values,
     )
-
-    # Add oxygen background rates (lower values)
-    o_bg_rates_values = np.ones((1, n_energy, n_lon, n_lat)) * 0.1e6  # 10% of intensity
-    o_dataset["bg_rates"] = (
-        ("epoch", "energy", "longitude", "latitude"),
-        o_bg_rates_values,
-    )
+    o_dataset["bg_intensity"] = o_dataset["ena_intensity"] * 0.1  # 10% background
+    o_dataset["bg_intensity_stat_uncert"] = np.sqrt(o_dataset["bg_intensity"]) * 0.1
 
     # Add statistical uncertainties
     o_dataset["ena_intensity_stat_uncert"] = (
         ("epoch", "energy", "longitude", "latitude"),
         np.sqrt(o_intensity_values) * 0.1,
     )
-
-    o_dataset["bg_rates_stat_uncert"] = (
-        ("epoch", "energy", "longitude", "latitude"),
-        np.sqrt(o_bg_rates_values) * 0.1,
+    o_dataset["bg_intensity_stat_uncert"] = (
+        np.sqrt(o_dataset["bg_intensity_stat_uncert"]) * 0.1
     )
 
     # Add systematic error
@@ -470,6 +454,7 @@ def sample_dataset_with_sputtering_data():
         ("epoch", "energy", "longitude", "latitude"),
         o_intensity_values * 0.05,
     )
+    o_dataset["bg_intensity_sys_err"] = o_dataset["bg_intensity"] * 0.05
 
     # Add geometric factors for intensity calculations
     o_dataset["geometric_factor"] = (("energy",), np.ones(n_energy))
@@ -513,10 +498,10 @@ def sample_dataset_with_bootstrap_data():
     dataset["geometric_factor"] = (("energy",), np.ones(n_energy))
 
     # Add background rates (much lower values)
-    bg_rates_values = intensity_values * 0.1  # 10% of intensity as background
-    dataset["bg_rates"] = (
-        ("epoch", "energy", "longitude", "latitude"),
-        bg_rates_values,
+    dataset["bg_intensity"] = (
+        dataset["ena_intensity"]
+        * 0.1
+        / (dataset["geometric_factor"] * dataset["energy"])
     )
 
     # Add statistical uncertainties (Poisson-like)
@@ -1264,9 +1249,9 @@ class TestCalculateSputteringCorrections:
         o_small_dataset = o_dataset.isel(epoch=0, energy=[4, 5])
 
         # Calculate expected j_o_prime (Equation 9)
-        expected_j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset[
-            "bg_rates"
-        ] / (o_small_dataset["geometric_factor"] * o_small_dataset["energy"])
+        expected_j_o_prime = (
+            o_small_dataset["ena_intensity"] - o_small_dataset["bg_intensity"]
+        )
         expected_j_o_prime = expected_j_o_prime.where(expected_j_o_prime >= 0, 0)
 
         # Expected correction factors from the mapping document table 2
@@ -1306,19 +1291,11 @@ class TestCalculateSputteringCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 5, 3)) * 1e6,
         )
-        h_dataset["bg_rates"] = (
-            ("epoch", "energy", "longitude", "latitude"),
-            np.ones((1, 7, 5, 3)) * 0.5e6,
-        )
 
         # Add required uncertainty variables for hydrogen
         h_dataset["ena_intensity_stat_uncert"] = (
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 5, 3)) * 0.1e6,
-        )
-        h_dataset["bg_rates_stat_uncert"] = (
-            ("epoch", "energy", "longitude", "latitude"),
-            np.ones((1, 7, 5, 3)) * 0.05e6,
         )
         h_dataset["ena_intensity_sys_err"] = (
             ("epoch", "energy", "longitude", "latitude"),
@@ -1331,7 +1308,7 @@ class TestCalculateSputteringCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 5, 3)) * 1e6,
         )
-        o_dataset["bg_rates"] = (
+        o_dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 5, 3)) * 2e6,  # Higher than signal
         )
@@ -1341,7 +1318,7 @@ class TestCalculateSputteringCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 5, 3)) * 0.1e6,
         )
-        o_dataset["bg_rates_stat_uncert"] = (
+        o_dataset["bg_intensity_stat_uncert"] = (
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 5, 3)) * 0.1e6,
         )
@@ -1418,16 +1395,12 @@ class TestCalculateSputteringCorrections:
         h_small_dataset = h_dataset.isel(epoch=0, energy=[4, 5])
 
         # Manual calculation following equations 10, 12
-        j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset["bg_rates"]
+        j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset["bg_intensity"]
         j_o_prime = j_o_prime.where(j_o_prime >= 0, 0)
 
         j_o_prime_var = (
             o_small_dataset["ena_intensity_stat_uncert"] ** 2
-            + (
-                o_small_dataset["bg_rates_stat_uncert"]
-                / (o_small_dataset["energy"] * o_small_dataset["geometric_factor"])
-            )
-            ** 2
+            + (o_small_dataset["bg_intensity_stat_uncert"]) ** 2
         )
 
         sputter_correction_factor = np.array([0.15, 0.01])[:, np.newaxis, np.newaxis]
@@ -1472,7 +1445,7 @@ class TestCalculateSputteringCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             h_intensity_data,
         )
-        h_dataset["bg_rates"] = (
+        h_dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             h_bg_rates_data,
         )
@@ -1480,7 +1453,7 @@ class TestCalculateSputteringCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 4, 3)) * 100_000,
         )
-        h_dataset["bg_rates_stat_uncert"] = (
+        h_dataset["bg_intensity_stat_uncert"] = (
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 4, 3)) * 10_000,
         )
@@ -1504,7 +1477,7 @@ class TestCalculateSputteringCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             o_intensity_data,
         )
-        o_dataset["bg_rates"] = (
+        o_dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             o_bg_rates_data,
         )
@@ -1512,7 +1485,7 @@ class TestCalculateSputteringCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 4, 3)) * 100_000,
         )
-        o_dataset["bg_rates_stat_uncert"] = (
+        o_dataset["bg_intensity_stat_uncert"] = (
             ("epoch", "energy", "longitude", "latitude"),
             np.ones((1, 7, 4, 3)) * 10_000,
         )
@@ -1731,7 +1704,7 @@ class TestCalculateBootstrapCorrections:
         dataset = sample_dataset_with_bootstrap_data.copy()
 
         # Calculate expected j_c_prime (equation 14)
-        j_c_prime_expected = dataset["ena_intensity"] - dataset["bg_rates"]
+        j_c_prime_expected = dataset["ena_intensity"] - dataset["bg_intensity"]
         j_c_prime_expected = j_c_prime_expected.where(j_c_prime_expected >= 0, 0)
 
         # Apply bootstrap corrections and check the calculation was done correctly
@@ -1762,15 +1735,15 @@ class TestCalculateBootstrapCorrections:
 
         # Create intensities where some background > intensity (negative j_c_prime)
         intensity_values = np.ones((1, 7, 2, 2)) * 1e6
-        bg_rates_values = np.ones((1, 7, 2, 2)) * 1.5e6  # Higher than intensity
+        bg_intensity_values = np.ones((1, 7, 2, 2)) * 1.5e6  # Higher than intensity
 
         dataset["ena_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             intensity_values,
         )
-        dataset["bg_rates"] = (
+        dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
-            bg_rates_values,
+            bg_intensity_values,
         )
         dataset["ena_intensity_stat_uncert"] = (
             ("epoch", "energy", "longitude", "latitude"),
@@ -1817,7 +1790,7 @@ class TestCalculateBootstrapCorrections:
         )
 
         # Low background
-        dataset["bg_rates"] = (
+        dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             intensity_values * 0.01,  # 1% background
         )
@@ -1895,7 +1868,7 @@ class TestCalculateBootstrapCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             intensity_values,
         )
-        dataset["bg_rates"] = (
+        dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             intensity_values * 0.1,  # 10% background
         )
@@ -1957,7 +1930,7 @@ class TestCalculateBootstrapCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             intensity_values,
         )
-        dataset["bg_rates"] = (
+        dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             intensity_values * 0.05,  # 5% background
         )
@@ -1971,7 +1944,7 @@ class TestCalculateBootstrapCorrections:
         )
 
         # Calculate expected E8 and gamma manually
-        j_c_prime = dataset["ena_intensity"] - dataset["bg_rates"]
+        j_c_prime = dataset["ena_intensity"] - dataset["bg_intensity"]
         j_c_prime = j_c_prime.where(j_c_prime >= 0, 0)
 
         result = calculate_bootstrap_corrections(dataset)
@@ -2008,7 +1981,7 @@ class TestCalculateBootstrapCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             intensity_values,
         )
-        dataset["bg_rates"] = (
+        dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             np.zeros((1, 7, 1, 1)),  # No background
         )
@@ -2063,7 +2036,7 @@ class TestCalculateBootstrapCorrections:
             ("epoch", "energy", "longitude", "latitude"),
             intensity_values,
         )
-        dataset["bg_rates"] = (
+        dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
             np.zeros((1, 7, 1, 1)),
         )
