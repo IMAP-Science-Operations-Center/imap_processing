@@ -79,6 +79,23 @@ def cod_lo_test_dataset(cod_lo_test_file):
 
 
 @pytest.fixture(scope="session")
+def cod_lo_l1a_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1a_validation"
+        / "imap_codice_l1a_lo-ialirt_20250814_v007.cdf"
+    )
+
+    data = load_cdf(data_path)
+
+    return data
+
+
+@pytest.fixture(scope="session")
 def cod_hi_test_file():
     return Path(
         imap_module_directory
@@ -291,18 +308,19 @@ def lut_path():
     return lut_path
 
 
-def test_create_xarray_dataset_basic():
+def test_create_xarray_dataset_basic(lut_path):
     """Test create_xarray_dataset function."""
 
     science_values = ["0000000100100011"]
     metadata_values = {
-        "VIEW_ID": [1],
-        "PACKET_COUNT": [42],
-        "SENSOR_TEMP": [123.4],
-        "SHCOARSE": [1234567890],
+        "VIEW_ID": np.array([0]),
+        "TABLE_ID": np.array([3952862729]),
+        "ACQ_START_SECONDS": np.array([1625078400]),
+        "ACQ_START_SUBSECONDS": np.array([0]),
+        "SPIN_PERIOD": np.array([24]),
     }
 
-    ds = create_xarray_dataset(science_values, metadata_values, "lo")
+    ds = create_xarray_dataset(science_values, metadata_values, "lo", lut_path)
 
     for key in metadata_values:
         assert key.lower() in ds.variables
@@ -381,7 +399,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "lo")
+    dataset = create_xarray_dataset(science_values, metadata_values, "lo", lut_path)
     result = l1a_lo_species(dataset, lut_path)
 
     expected_species = [

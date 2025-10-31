@@ -10,8 +10,13 @@ import xarray as xr
 
 from imap_processing.codice.codice_l1a import process_ialirt_data_streams
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
+from imap_processing.codice.utils import (
+    ViewTabInfo,
+    get_codice_epoch_time,
+    get_view_tab_info,
+    read_sci_lut,
+)
 from imap_processing.ialirt.utils.grouping import find_groups
-from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +73,10 @@ def concatenate_bytes(grouped_data: xr.Dataset, group: int, sensor: str) -> byte
 
 
 def create_xarray_dataset(
-    science_values: list, metadata_values: dict, sensor: str
+    science_values: list,
+    metadata_values: dict,
+    sensor: str,
+    lut_file: pathlib.Path,
 ) -> xr.Dataset:
     """
     Create a xarray Dataset from science and metadata values.
@@ -81,6 +89,8 @@ def create_xarray_dataset(
         Dictionary of metadata values.
     sensor : str
         The sensor type, either 'lo' or 'hi'.
+    lut_file : pathlib.Path
+        Path to the LUT file.
 
     Returns
     -------
@@ -94,9 +104,25 @@ def create_xarray_dataset(
         for bits in science_values
     ]
 
-    # Note that this timestamp does not matter as it is not being used,
-    # but is required to create a dataset.
-    epoch = met_to_ttj2000ns(metadata_values["SHCOARSE"])
+    sci_lut_data = read_sci_lut(lut_file, metadata_values["TABLE_ID"][0])
+
+    view_tab_info = get_view_tab_info(
+        sci_lut_data, metadata_values["VIEW_ID"][0], apid[sensor]
+    )
+    view_tab_obj = ViewTabInfo(
+        apid=apid[sensor],
+        view_id=metadata_values["VIEW_ID"][0],
+        sensor=0,
+        three_d_collapsed=view_tab_info["3d_collapse"],
+        collapse_table=view_tab_info["collapse_table"],
+    )
+
+    epoch, _ = get_codice_epoch_time(
+        metadata_values["ACQ_START_SECONDS"],
+        metadata_values["ACQ_START_SUBSECONDS"],
+        metadata_values["SPIN_PERIOD"],
+        view_tab_obj,
+    )
     epoch_time = xr.DataArray(epoch, name="epoch", dims=["epoch"])
     dataset = xr.Dataset(coords={"epoch": epoch_time})
 
@@ -164,7 +190,7 @@ def process_codice(
             cod_lo_grouped
         )
         cod_lo_dataset = create_xarray_dataset(
-            cod_lo_science_values, cod_lo_metadata_values, "lo"
+            cod_lo_science_values, cod_lo_metadata_values, "lo", lut_path
         )
         result = l1a_lo_species(cod_lo_dataset, lut_path)  # noqa
 
@@ -179,7 +205,7 @@ def process_codice(
             cod_hi_grouped
         )
         cod_hi_dataset = create_xarray_dataset(  # noqa
-            cod_hi_science_values, cod_hi_metadata_values, "hi"
+            cod_hi_science_values, cod_hi_metadata_values, "hi", lut_path
         )
 
     # TODO: calculate rates

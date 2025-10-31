@@ -137,6 +137,7 @@ def get_view_tab_info(json_data: dict, view_id: int, apid: int) -> dict:
     # This is how we get view information that will be used to get
     # collapse pattern:
     #  table_id -> view_tab -> (view_id, apid) -> sensor -> collapse_table
+    # 'view_tab': {'(0, 0x480)': {'collapse_table': 0, '3d_collapse': 1, 'sensor': 0}
     view_tab = json_data.get("view_tab").get(f"({view_id}, {apid_hex})")
     return view_tab
 
