@@ -56,7 +56,7 @@ def cod_lo_test_file():
         / "codice"
         / "data"
         / "l1a_input"
-        / "imap_codice_lo-ialirt_20250814_v001.pkts"
+        / "imap_codice_l0_lo-ialirt_20250814_v001.pkts"
     )
 
 
@@ -81,7 +81,7 @@ def cod_hi_test_file():
         / "codice"
         / "data"
         / "l1a_input"
-        / "imap_codice_hi-ialirt_20250814_v001.pkts"
+        / "imap_codice_l0_hi-ialirt_20250814_v001.pkts"
     )
 
 
