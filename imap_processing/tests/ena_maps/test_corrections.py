@@ -8,7 +8,6 @@ import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps import ena_maps
-from imap_processing.ena_maps.ena_maps import LoHiBasePointingSet
 from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
     _add_cartesian_look_direction,
@@ -277,12 +276,7 @@ def mock_hi_pset():
     pset.data = data
     pset.spatial_coords = ("spin_angle_bin",)
     pset.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
-    # Bind the real update_ram_mask method to the mock
-    pset.update_ram_mask = (
-        lambda spacecraft_vel_vec: LoHiBasePointingSet.update_ram_mask(
-            pset, spacecraft_vel_vec
-        )
-    )
+
     return pset
 
 
@@ -541,12 +535,6 @@ class TestComptonGettingCorrection:
         pset.data = data
         pset.spatial_coords = ("direction",)
         pset.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
-        # Bind the real update_ram_mask method to the mock
-        pset.update_ram_mask = (
-            lambda spacecraft_vel_vec: LoHiBasePointingSet.update_ram_mask(
-                pset, spacecraft_vel_vec
-            )
-        )
 
         # Set up spacecraft velocity in +X direction
         sc_velocity = np.array([30.0, 0.0, 0.0])  # km/s

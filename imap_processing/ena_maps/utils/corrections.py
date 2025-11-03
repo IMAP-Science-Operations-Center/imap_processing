@@ -531,9 +531,7 @@ def _calculate_compton_getting_transform(
         ena_source_direction_helio[..., 2],
     )
 
-    # Update the PSET ram mask. Ram mask calculation uses the sign of the scalar
-    # projection of the ENA source direction onto the spacecraft velocity vector.
-    # ram_mask = (v⃗_helio · û_sc) >= 0
+    # Update the PSET ram mask.
     pset = calculate_ram_mask(pset)
 
     return pset
@@ -578,8 +576,9 @@ def calculate_ram_mask(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSubclass:
         dims=[*longitude.dims, CoordNames.CARTESIAN_VECTOR.value],
     )
     # For ram/anti-ram filtering we can use the sign of the scalar projection
-    # of the ENA source direction onto the spacecraft velocity vector.
-    # ram_mask = (v⃗_source · û_sc) >= 0
+    # of the ENA source direction vector (-v⃗_ena) onto the spacecraft velocity
+    # vector.
+    # ram_mask = (-v⃗_ena · û_sc) >= 0
     # Use Einstein summation for efficient vectorized dot product
     ram_mask = (
         np.einsum(
