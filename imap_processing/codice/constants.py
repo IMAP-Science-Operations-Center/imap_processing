@@ -713,7 +713,7 @@ L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
         "num_spins": 16,
     },
     "hi-ialirt": {
-        "num_spin_sectors": 24,
+        "num_spin_sectors": 6,
         "num_spins": 4,
     },
     "hi-omni": {

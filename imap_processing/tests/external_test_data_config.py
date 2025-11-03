@@ -37,7 +37,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l1a_hi-counters-aggregated_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_hi-counters-singles_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_hi-direct-events_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_hi-ialirt_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
+    ("imap_codice_l1a_hi-ialirt_20250814_v007.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_hi-omni_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_hi-priorities_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_hi-sectored_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
@@ -56,7 +56,7 @@ EXTERNAL_TEST_DATA = [
     # L1B validation data
     ("imap_codice_l1b_hi-counters-aggregated_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
     ("imap_codice_l1b_hi-counters-singles_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_hi-ialirt_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
+    ("imap_codice_l1b_hi-ialirt_20250814_v007.cdf", "codice/data/l1b_validation"),
     ("imap_codice_l1b_hi-omni_20250814_v007.cdf", "codice/data/l1b_validation"),
     ("imap_codice_l1b_hi-priorities_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
     ("imap_codice_l1b_hi-sectored_20250814_v007.cdf", "codice/data/l1b_validation"),

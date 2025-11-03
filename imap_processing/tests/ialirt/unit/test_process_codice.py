@@ -194,6 +194,59 @@ def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data, cod_lo_l1b_test_data):
         np.testing.assert_allclose(actual, expected, rtol=1e-5)
 
 
+@pytest.fixture(scope="session")
+def cod_hi_l1a_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1a_validation"
+        / "imap_codice_l1a_hi-ialirt_20250814_v007.cdf"
+    )
+
+    data = load_cdf(data_path)
+
+    return data
+
+
+@pytest.fixture(scope="session")
+def cod_hi_l1b_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1b_validation"
+        / "imap_codice_l1b_hi-ialirt_20250814_v007.cdf"
+    )
+
+    data = load_cdf(data_path)
+
+    return data
+
+
+@patch("xarray.Dataset.drop_vars", new=lambda self, *args, **kwargs: self)
+@pytest.mark.external_test_data
+def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
+    "Test I-ALiRT CoDICE-Hi l1b data."
+    descriptor = "hi-ialirt"
+    l1b = convert_to_rates(
+        cod_hi_l1a_test_data,
+        descriptor,
+    )
+    variables_to_convert = getattr(
+        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    )
+    for variable in variables_to_convert:
+        actual = l1b[variable].data
+        expected = cod_hi_l1b_test_data[variable].data
+
+        np.testing.assert_allclose(actual, expected, atol=1e-5)
+
+
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_lo(cod_lo_test_dataset):
     "Test that I-ALiRT CoDICE-Lo data can be grouped properly."
