@@ -15,14 +15,12 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
-from imap_processing.codice.codice_l1b import convert_to_rates
-from imap_processing.codice import decompress
 from imap_processing.codice.codice_l1a import process_ialirt_data_streams
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
+from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
-    COD_HI_RANGE,
     COD_LO_COUNTER,
     FILLVAL_UINT8,
     concatenate_bytes,
@@ -147,23 +145,6 @@ def cod_hi_decom_test_file():
         / "l0"
         / "imap_codice_l1a_hi-ialirt.pickle"
     )
-
-
-@pytest.fixture(scope="session")
-def cod_lo_l1a_test_data():
-    """Returns the test data directory."""
-    data_path = (
-        imap_module_directory
-        / "tests"
-        / "codice"
-        / "data"
-        / "l1a_validation"
-        / "imap_codice_l1a_lo-ialirt_20250814_v007.cdf"
-    )
-
-    data = load_cdf(data_path)
-
-    return data
 
 
 @pytest.fixture(scope="session")
