@@ -129,7 +129,7 @@ def cod_lo_l1b_test_data():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_lo-ialirt_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1b_lo-ialirt_20250814_v007.cdf"
     )
 
     data = load_cdf(data_path)
@@ -187,11 +187,15 @@ def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data, cod_lo_l1b_test_data):
     variables_to_convert = getattr(
         constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
     )
-    # TODO: Verify why we need to multiply by 1000 here.
     for variable in variables_to_convert:
-        np.testing.assert_allclose(
-            l1b[variable].data, cod_lo_l1b_test_data[variable].data, rtol=1e-2
-        )
+        actual = l1b[variable].data
+        expected = cod_lo_l1b_test_data[variable].data
+        diff = np.abs(actual - expected)
+
+        print(f"\nVariable: {variable}")
+        print(f"Max diff: {np.nanmax(diff)}")
+        print(f"Mean diff: {np.nanmean(diff)}")
+        np.testing.assert_allclose(actual, expected, atol=1e-6)
 
 
 @pytest.mark.external_test_data

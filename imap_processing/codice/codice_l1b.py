@@ -71,7 +71,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         "lo-sw-angular",
         "lo-nsw-priority",
         "lo-sw-priority",
-        "lo-ialirt",
     ]:
         # Denominator to convert counts to rates
         denominator = (
@@ -93,6 +92,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     elif descriptor in [
         "lo-nsw-species",
         "lo-sw-species",
+        "lo-ialirt",
     ]:
         # Create n_sector with 'esa_step' dimension. This is done by xr.full_like
         # with input dataset.acquisition_time_per_step. This ensures that the resulting
