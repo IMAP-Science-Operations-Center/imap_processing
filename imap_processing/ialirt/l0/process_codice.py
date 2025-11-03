@@ -10,12 +10,6 @@ import xarray as xr
 
 from imap_processing.codice.codice_l1a import process_ialirt_data_streams
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
-from imap_processing.codice.utils import (
-    ViewTabInfo,
-    get_codice_epoch_time,
-    get_view_tab_info,
-    read_sci_lut,
-)
 from imap_processing.ialirt.utils.grouping import find_groups
 
 logger = logging.getLogger(__name__)
@@ -104,25 +98,10 @@ def create_xarray_dataset(
         for bits in science_values
     ]
 
-    sci_lut_data = read_sci_lut(lut_file, metadata_values["TABLE_ID"][0])
+    # Fake epoch time.
+    num_epochs = len(np.array(metadata_values["ACQ_START_SECONDS"]))
+    epoch = np.arange(num_epochs)
 
-    view_tab_info = get_view_tab_info(
-        sci_lut_data, metadata_values["VIEW_ID"][0], apid[sensor]
-    )
-    view_tab_obj = ViewTabInfo(
-        apid=apid[sensor],
-        view_id=metadata_values["VIEW_ID"][0],
-        sensor=0,
-        three_d_collapsed=view_tab_info["3d_collapse"],
-        collapse_table=view_tab_info["collapse_table"],
-    )
-
-    epoch, _ = get_codice_epoch_time(
-        np.array(metadata_values["ACQ_START_SECONDS"]),
-        np.array(metadata_values["ACQ_START_SUBSECONDS"]),
-        np.array(metadata_values["SPIN_PERIOD"]),
-        view_tab_obj,
-    )
     epoch_time = xr.DataArray(epoch, name="epoch", dims=["epoch"])
     dataset = xr.Dataset(coords={"epoch": epoch_time})
 
