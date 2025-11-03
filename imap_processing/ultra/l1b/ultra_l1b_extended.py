@@ -617,7 +617,7 @@ def get_ssd_tof(
 
 
 def get_de_energy_kev(
-    v: np.ndarray, species: np.ndarray, quality_flags: np.ndarray
+    v: np.ndarray, species: np.ndarray, quality_flags: np.ndarray | None = None
 ) -> NDArray:
     """
     Calculate the direct event energy.
@@ -653,10 +653,13 @@ def get_de_energy_kev(
         0.5 * UltraConstants.MASS_H * v2[valid_mask] * UltraConstants.J_KEV
     )
     # Flag out of range energies
-    energy_out_of_range = (energy < UltraConstants.PSET_ENERGY_BIN_EDGES[0]) | (
-        energy > UltraConstants.PSET_ENERGY_BIN_EDGES[-1]
-    )
-    quality_flags[energy_out_of_range] |= ImapDEOutliersUltraFlags.INVALID_ENERGY.value
+    if quality_flags is not None:
+        energy_out_of_range = (energy < UltraConstants.PSET_ENERGY_BIN_EDGES[0]) | (
+            energy > UltraConstants.PSET_ENERGY_BIN_EDGES[-1]
+        )
+        quality_flags[energy_out_of_range] |= (
+            ImapDEOutliersUltraFlags.INVALID_ENERGY.value
+        )
 
     return energy
 
