@@ -267,19 +267,19 @@ def test_get_de_velocity(test_fixture):
 
     np.testing.assert_allclose(
         v_x[test_tof > 0],
-        df_ph["vx"].astype("float").values[test_tof > 0],
+        -df_ph["vx"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
         v_y[test_tof > 0],
-        df_ph["vy"].astype("float").values[test_tof > 0],
+        -df_ph["vy"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
         v_z[test_tof > 0],
-        df_ph["vz"].astype("float").values[test_tof > 0],
+        -df_ph["vz"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
@@ -354,12 +354,13 @@ def test_get_de_energy_kev(test_fixture):
         test_d,
         test_tof,
     )
-
-    energy = get_de_energy_kev(v, species_bin_ph)
+    quality_flags = np.zeros_like(species_bin_ph)
+    energy = get_de_energy_kev(v, species_bin_ph, quality_flags)
     index_hydrogen = np.where(species_bin_ph == 1)
     actual_energy = energy[index_hydrogen[0]]
     expected_energy = df_ph["energy_revised"].astype("float")
-
+    # All flags should be zero
+    assert np.sum(quality_flags) == 0
     np.testing.assert_allclose(actual_energy, expected_energy, atol=1e-01, rtol=0)
 
 

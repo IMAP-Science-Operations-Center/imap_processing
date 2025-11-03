@@ -22,6 +22,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_scattering_thresholds,
 )
 from imap_processing.ultra.l1b.quality_flag_filters import DE_QUALITY_FLAG_FILTERS
+from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -514,11 +515,15 @@ def flag_scattering(
         Quality flags.
     """
     scattering_thresholds = get_scattering_thresholds(ancillary_files)
-
+    _, _, energy_bin_geometric_means = build_energy_bins()
+    energy_bin_inds = np.digitize(tof_energy, UltraConstants.PSET_ENERGY_BIN_EDGES)
+    # Clip indices to valid range (events outside the energy bins get assigned
+    # to the nearest bin. These events have already been flagged and
+    # will be ignored in l1c)
+    energy_bin_inds = np.clip(energy_bin_inds, 1, len(energy_bin_geometric_means))
+    energy_geom_means = energy_bin_geometric_means[energy_bin_inds - 1]
     for (e_min, e_max), threshold in scattering_thresholds.items():
         event_mask = (tof_energy >= e_min) & (tof_energy < e_max)
-        # use the geometric mean of the energy bin for the scattering check
-        energy_geom_mean = np.sqrt(e_min * e_max)
         # Input the theta and phi values for the current energy range.
         # Returns a_theta_val, g_theta_val, a_phi_val, g_phi_val
         theta_coeffs, phi_coeffs = get_scattering_coefficients(
@@ -530,8 +535,11 @@ def flag_scattering(
         )
         # FWHM_PHI = A_PHI * E^G_PHI
         # FWHM_THETA = A_THETA * E^G_THETA
-        fwhm_theta = theta_coeffs[:, 0] * energy_geom_mean ** theta_coeffs[:, 1]
-        fwhm_phi = phi_coeffs[:, 0] * energy_geom_mean ** phi_coeffs[:, 1]
+        # Use the geometric mean of the energy bin for the scattering check
+        fwhm_theta = (
+            theta_coeffs[:, 0] * energy_geom_means[event_mask] ** theta_coeffs[:, 1]
+        )
+        fwhm_phi = phi_coeffs[:, 0] * energy_geom_means[event_mask] ** phi_coeffs[:, 1]
         is_nan = np.isnan(fwhm_theta) | np.isnan(fwhm_phi)
         quality_flags[np.where(event_mask)[0][is_nan]] |= (
             ImapDEScatteringUltraFlags.NAN_PHI_OR_THETA.value

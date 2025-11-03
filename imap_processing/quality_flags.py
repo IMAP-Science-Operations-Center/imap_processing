@@ -44,6 +44,7 @@ class ImapDEOutliersUltraFlags(FlagNameMixin):
     FOV = 2**0  # bit 0
     PHCORR = 2**1  # bit 1
     COINPH = 2**2  # bit 4 # Event validity
+    INVALID_ENERGY = 2**3  # bit 3
 
 
 class ImapHkUltraFlags(FlagNameMixin):

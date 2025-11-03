@@ -304,7 +304,9 @@ def calculate_de(
     de_dict["direct_event_unit_position"] = r_hat.astype(np.float32)
 
     tof_energy[valid_indices] = get_de_energy_kev(
-        velocities[valid_indices], species_bin[valid_indices]
+        velocities[valid_indices],
+        species_bin[valid_indices],
+        quality_flags[valid_indices],
     )
     de_dict["tof_energy"] = tof_energy
     de_dict["energy"] = energy
@@ -348,8 +350,12 @@ def calculate_de(
     de_dict["velocity_dps_sc"] = sc_dps_velocity
     de_dict["velocity_dps_helio"] = helio_velocity
 
-    de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
-    de_dict["energy_heliosphere"] = get_de_energy_kev(helio_velocity, species_bin)
+    de_dict["energy_spacecraft"] = get_de_energy_kev(
+        sc_dps_velocity, species_bin, quality_flags
+    )
+    de_dict["energy_heliosphere"] = get_de_energy_kev(
+        helio_velocity, species_bin, quality_flags
+    )
 
     de_dict["phi_fwhm"], de_dict["theta_fwhm"] = get_fwhm(
         start_type,
@@ -376,6 +382,7 @@ def calculate_de(
         ancillary_files,
         "l1b-sensor-gf-noblades",
     )
+
     de_dict["quality_outliers"] = quality_flags
     flag_scattering(
         de_dict["tof_energy"],

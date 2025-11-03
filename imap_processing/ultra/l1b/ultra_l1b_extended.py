@@ -541,9 +541,9 @@ def get_de_velocity(
     delta_v[:, 2] = d * 0.1
 
     # Convert from 0.1mm/0.1ns to km/s.
-    v_x = delta_v[:, 0] / tof * 1e3
-    v_y = delta_v[:, 1] / tof * 1e3
-    v_z = delta_v[:, 2] / tof * 1e3
+    v_x = -delta_v[:, 0] / tof * 1e3
+    v_y = -delta_v[:, 1] / tof * 1e3
+    v_z = -delta_v[:, 2] / tof * 1e3
 
     v_x[tof < 0] = FILLVAL_FLOAT32  # used as fillvals
     v_y[tof < 0] = FILLVAL_FLOAT32
@@ -554,7 +554,7 @@ def get_de_velocity(
     v_hat = velocities / np.linalg.norm(velocities, axis=1)[:, None]
     r_hat = -v_hat
 
-    return velocities, -v_hat, -r_hat
+    return velocities, v_hat, r_hat
 
 
 def get_ssd_tof(
@@ -616,7 +616,9 @@ def get_ssd_tof(
     return np.asarray(tof, dtype=np.float64)
 
 
-def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
+def get_de_energy_kev(
+    v: np.ndarray, species: np.ndarray, quality_flags: np.ndarray
+) -> NDArray:
     """
     Calculate the direct event energy.
 
@@ -626,6 +628,8 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
         N x 3 array of velocity components (vx, vy, vz) in km/s.
     species : np.ndarray
         Species of the particle.
+    quality_flags : np.ndarray, optional
+        Quality flags to set when there is an outlier.
 
     Returns
     -------
@@ -648,6 +652,11 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
     energy[valid_mask] = (
         0.5 * UltraConstants.MASS_H * v2[valid_mask] * UltraConstants.J_KEV
     )
+    # Flag out of range energies
+    energy_out_of_range = (energy < UltraConstants.PSET_ENERGY_BIN_EDGES[0]) | (
+        energy > UltraConstants.PSET_ENERGY_BIN_EDGES[-1]
+    )
+    quality_flags[energy_out_of_range] |= ImapDEOutliersUltraFlags.INVALID_ENERGY.value
 
     return energy
 
