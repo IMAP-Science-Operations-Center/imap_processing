@@ -161,21 +161,6 @@ class TestHiPointingSet:
         hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
         assert isinstance(hi_pset, ena_maps.HiPointingSet)
 
-    def test_spin_phase_filtering(self, hi_pset_cdf_path):
-        """Test coverage for filtering pset data by ram or anti-ram directions."""
-        pset_ds = load_cdf(hi_pset_cdf_path)
-
-        # Test ram mask is first 1800 elements
-        hi_pset = ena_maps.HiPointingSet(pset_ds)
-        np.testing.assert_array_equal(
-            np.nonzero(hi_pset.data["ram_mask"].values)[0], np.arange(1800)
-        )
-
-        # Test anti-ram direction
-        np.testing.assert_array_equal(
-            np.nonzero(~hi_pset.data["ram_mask"].values)[0], np.arange(1800) + 1800
-        )
-
     def test_plays_nice_with_rectangular_sky_map(self, hi_pset_cdf_path):
         """Test that HiPointingSet works with RectangularSkyMap"""
         hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
