@@ -267,19 +267,19 @@ def test_get_de_velocity(test_fixture):
 
     np.testing.assert_allclose(
         v_x[test_tof > 0],
-        df_ph["vx"].astype("float").values[test_tof > 0],
+        -df_ph["vx"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
         v_y[test_tof > 0],
-        df_ph["vy"].astype("float").values[test_tof > 0],
+        -df_ph["vy"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
         v_z[test_tof > 0],
-        df_ph["vz"].astype("float").values[test_tof > 0],
+        -df_ph["vz"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )

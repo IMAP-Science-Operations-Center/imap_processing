@@ -541,9 +541,9 @@ def get_de_velocity(
     delta_v[:, 2] = d * 0.1
 
     # Convert from 0.1mm/0.1ns to km/s.
-    v_x = delta_v[:, 0] / tof * 1e3
-    v_y = delta_v[:, 1] / tof * 1e3
-    v_z = delta_v[:, 2] / tof * 1e3
+    v_x = -delta_v[:, 0] / tof * 1e3
+    v_y = -delta_v[:, 1] / tof * 1e3
+    v_z = -delta_v[:, 2] / tof * 1e3
 
     v_x[tof < 0] = FILLVAL_FLOAT32  # used as fillvals
     v_y[tof < 0] = FILLVAL_FLOAT32
@@ -554,7 +554,7 @@ def get_de_velocity(
     v_hat = velocities / np.linalg.norm(velocities, axis=1)[:, None]
     r_hat = -v_hat
 
-    return velocities, -v_hat, -r_hat
+    return velocities, v_hat, r_hat
 
 
 def get_ssd_tof(
