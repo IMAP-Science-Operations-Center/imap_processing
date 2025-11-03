@@ -658,15 +658,6 @@ class HiPointingSet(LoHiBasePointingSet):
 
         self.spatial_coords = ("spin_angle_bin",)
 
-        # Naively generate the ram_mask variable assuming spacecraft frame
-        # binning. The ram_mask variable gets updated in the CG correction
-        # code if the CG correction is applied.
-        ram_mask = xr.zeros_like(self.data["spin_angle_bin"], dtype=bool)
-        # ram only includes spin-phase interval [0, 0.5)
-        # which is the first half of the spin_angle_bins
-        ram_mask[slice(0, self.data["spin_angle_bin"].data.size // 2)] = True
-        self.data["ram_mask"] = ram_mask
-
         # Rename some PSET vars to match L2 variables
         self.data = self.data.rename(
             {

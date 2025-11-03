@@ -13,7 +13,9 @@ from imap_processing.ena_maps.ena_maps import (
 )
 from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
+    add_spacecraft_velocity_to_pset,
     apply_compton_getting_correction,
+    calculate_ram_mask,
     interpolate_map_flux_to_helio_frame,
 )
 from imap_processing.ena_maps.utils.naming import MapDescriptor
@@ -145,6 +147,9 @@ def generate_hi_map(
             # convert esa nominal central energy from keV to eV
             esa_energy_ev = energy_kev * 1000
             pset = apply_compton_getting_correction(pset, esa_energy_ev)
+        else:
+            pset = add_spacecraft_velocity_to_pset(pset)
+            pset = calculate_ram_mask(pset)
 
         # Multiply variables that need to be exposure time weighted average by
         # exposure factor.
