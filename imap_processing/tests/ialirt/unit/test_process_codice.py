@@ -190,11 +190,7 @@ def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data, cod_lo_l1b_test_data):
     for variable in variables_to_convert:
         actual = l1b[variable].data
         expected = cod_lo_l1b_test_data[variable].data
-        diff = np.abs(actual - expected)
 
-        print(f"\nVariable: {variable}")
-        print(f"Max diff: {np.nanmax(diff)}")
-        print(f"Mean diff: {np.nanmean(diff)}")
         np.testing.assert_allclose(actual, expected, rtol=1e-5)
 
 
