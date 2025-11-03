@@ -195,7 +195,7 @@ def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data, cod_lo_l1b_test_data):
         print(f"\nVariable: {variable}")
         print(f"Max diff: {np.nanmax(diff)}")
         print(f"Mean diff: {np.nanmean(diff)}")
-        np.testing.assert_allclose(actual, expected, atol=1e-6)
+        np.testing.assert_allclose(actual, expected, rtol=1e-5)
 
 
 @pytest.mark.external_test_data
