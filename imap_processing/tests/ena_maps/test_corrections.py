@@ -12,9 +12,10 @@ from imap_processing.ena_maps.ena_maps import LoHiBasePointingSet
 from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
     _add_cartesian_look_direction,
-    _add_spacecraft_velocity_to_pset,
     _calculate_compton_getting_transform,
+    add_spacecraft_velocity_to_pset,
     apply_compton_getting_correction,
+    calculate_ram_mask,
     interpolate_map_flux_to_helio_frame,
 )
 from imap_processing.spice import geometry
@@ -258,6 +259,7 @@ def mock_hi_pset():
     data = xr.Dataset(
         {
             "epoch": (["epoch"], np.array([797949131184000000])),
+            "epoch_delta": (["epoch"], np.array([1e12])),
             "hae_longitude": (
                 ["epoch", "spin_angle_bin"],
                 np.linspace(0, 360, n_spin, endpoint=False).reshape(n_epoch, n_spin),
@@ -300,7 +302,7 @@ class TestComptonGettingCorrection:
         mock_sc_state = np.array([1e8, 2e8, 3e8, 10.0, 20.0, 30.0])  # km and km/s
         mock_imap_state.return_value = mock_sc_state
 
-        mock_hi_pset = _add_spacecraft_velocity_to_pset(mock_hi_pset)
+        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
 
         # Verify SPICE was called correctly
         mock_imap_state.assert_called_once_with(
@@ -344,7 +346,7 @@ class TestComptonGettingCorrection:
         mock_sc_state = np.array([1e8, 2e8, 3e8, 10.0, 20.0, 30.0])
         mock_imap_state.return_value = mock_sc_state
 
-        mock_hi_pset = _add_spacecraft_velocity_to_pset(mock_hi_pset)
+        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
         mock_hi_pset = _add_cartesian_look_direction(mock_hi_pset)
 
         # Create energy array
@@ -593,6 +595,238 @@ class TestComptonGettingCorrection:
 
         # Verify all values are boolean
         assert ram_mask.dtype == bool
+
+    @staticmethod
+    def create_synthetic_pset_with_hae_coords(shape=(10, 20)):
+        """Create a synthetic LoHiBasePointingSet with known HAE coordinates."""
+        # Create longitude and latitude grids
+        lons = np.linspace(0, 360, shape[0], endpoint=False)
+        lats = np.linspace(-90, 90, shape[1])
+        lon_grid, lat_grid = np.meshgrid(lons, lats, indexing="ij")
+
+        # Create a minimal dataset
+        dataset = xr.Dataset(
+            {
+                "hae_longitude": xr.DataArray(
+                    lon_grid[np.newaxis, :, :],
+                    dims=["epoch", "spin_angle", "off_angle"],
+                ),
+                "hae_latitude": xr.DataArray(
+                    lat_grid[np.newaxis, :, :],
+                    dims=["epoch", "spin_angle", "off_angle"],
+                ),
+            },
+            coords={
+                "epoch": xr.DataArray([1e18], dims=["epoch"]),
+            },
+        )
+
+        # Create a LoPointingSet-like object
+        class SyntheticPset(ena_maps.LoHiBasePointingSet):
+            def __init__(self, dataset):
+                self.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
+                self.data = dataset.copy(deep=True)
+                self.spatial_coords = ("spin_angle", "off_angle")
+                self.update_az_el_points()
+
+        return SyntheticPset(dataset)
+
+    def test_update_ram_mask_plus_x_direction(self):
+        """Test RAM mask with spacecraft velocity in +X direction."""
+        pset = self.create_synthetic_pset_with_hae_coords()
+
+        # Spacecraft velocity in +X direction (HAE frame)
+        pset.data["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset = calculate_ram_mask(pset)
+
+        lon = pset.data["hae_longitude"].values
+        ram_mask = pset.data["ram_mask"].values
+
+        # For +X direction, RAM should be anywhere that the longitude is between
+        # -90 and +90.
+        idx_ram = np.nonzero((lon < 90) | (lon > 270))
+        assert np.all(ram_mask[idx_ram]), (
+            "Expected lon < 90 or lon > 270 to be RAM for +X velocity"
+        )
+
+        # Pixels with 90 < lon < 270 should be anti-RAM (pointing in -X direction)
+        idx_anti = np.nonzero((lon > 90) & (lon < 270))
+        assert not np.any(ram_mask[idx_anti]), (
+            "Expected 90 < lon < 270 to be anti-RAM for +X velocity"
+        )
+
+    def test_update_ram_mask_minus_x_direction(self):
+        """Test RAM mask with spacecraft velocity in -X direction."""
+        pset = self.create_synthetic_pset_with_hae_coords()
+
+        # Spacecraft velocity in -X direction (HAE frame)
+        pset.data["sc_direction_vector"] = np.array([-1.0, 0.0, 0.0])
+        pset = calculate_ram_mask(pset)
+
+        lon = pset.data["hae_longitude"].values
+        ram_mask = pset.data["ram_mask"].values
+
+        # For -X direction, anti-RAM should be anywhere that 90 < lon < 270.
+        idx_ram = np.nonzero((lon > 90) & (lon < 270))
+        assert np.all(ram_mask[idx_ram]), (
+            "Expected 90 < lon < 270 to be RAM for -X velocity"
+        )
+
+        # Pixels with lon < 90 or lon > 270 should be RAM (pointing in -X direction)
+        idx_anti = np.nonzero((lon < 90) | (lon > 270))
+        assert not np.any(ram_mask[idx_anti]), (
+            "Expected lon < 90 or lon > 270 to be anit-RAM for -X velocity"
+        )
+
+    def test_update_ram_mask_plus_y_direction(self):
+        """Test RAM mask with spacecraft velocity in +Y direction."""
+        pset = self.create_synthetic_pset_with_hae_coords()
+
+        # Spacecraft velocity in +Y direction (HAE frame)
+        pset.data["sc_direction_vector"] = np.array([0.0, 1.0, 0.0])
+        pset = calculate_ram_mask(pset)
+
+        lon = pset.data["hae_longitude"].values
+        ram_mask = pset.data["ram_mask"].values
+
+        # For +Y direction, RAM should be anywhere that the 0 < lon < 180.
+        idx_ram = np.nonzero((0 < lon) & (lon < 180))
+        assert np.all(ram_mask[idx_ram]), "Expected lat > 0 to be RAM for +Y velocity"
+
+        # Pixels with lon > 180 should be anti-RAM (pointing in -Y direction)
+        idx_anti = np.nonzero(lon > 180)
+        assert not np.any(ram_mask[idx_anti]), (
+            "Expected lat < 0 to be anti-RAM for +Y velocity"
+        )
+
+    def test_update_ram_mask_magnitude_invariance(self):
+        """Test that RAM mask is invariant to velocity vector magnitude."""
+        pset = self.create_synthetic_pset_with_hae_coords()
+
+        # Test with two different magnitudes in the same direction
+        pset.data["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset = calculate_ram_mask(pset)
+        ram_mask_1 = pset.data["ram_mask"].values.copy()
+
+        pset.data["sc_direction_vector"] = np.array([100.0, 0.0, 0.0])
+        pset = calculate_ram_mask(pset)
+        ram_mask_2 = pset.data["ram_mask"].values.copy()
+
+        # The masks should be identical since direction is the same
+        np.testing.assert_array_equal(ram_mask_1, ram_mask_2)
+
+    def test_update_ram_mask_dot_product_correctness(self):
+        """Test that dot product calculation is mathematically correct."""
+        pset = self.create_synthetic_pset_with_hae_coords()
+
+        # Use a simple spacecraft velocity vector
+        pset.data["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset = calculate_ram_mask(pset)
+
+        # Manually verify a few specific pixels
+        lon = pset.data["hae_longitude"].values
+        lat = pset.data["hae_latitude"].values
+        ram_mask = pset.data["ram_mask"].values
+
+        # Test pixel at lon=0, lat=0 (should point in +X direction)
+        lon_rad = np.deg2rad(0)
+        lat_rad = np.deg2rad(0)
+        x = np.cos(lat_rad) * np.cos(lon_rad)  # = 1.0
+        dot_product = x * 1.0  # = 1.0
+        expected_ram = dot_product >= 0  # True
+
+        idx = np.where((np.abs(lon - 0) < 1) & (np.abs(lat - 0) < 1))
+        if idx[0].size > 0:
+            assert ram_mask[idx][0] == expected_ram
+
+    def test_update_ram_mask_dimensions_preserved(self):
+        """Test that update_ram_mask preserves coordinate dimensions."""
+        # Test with 2D spatial dimensions (like LoPointingSet)
+        pset_2d = self.create_synthetic_pset_with_hae_coords(shape=(5, 10))
+
+        # Get original dimensions
+        original_dims_2d = pset_2d.data["hae_longitude"].dims
+
+        # Update ram_mask
+        pset_2d.data["sc_direction_vector"] = np.array([1.0, 1.0, 0.0])
+        pset_2d = calculate_ram_mask(pset_2d)
+
+        # Verify dimensions are preserved
+        assert pset_2d.data["ram_mask"].dims == original_dims_2d
+
+        # Test with 1D spatial dimensions (like HiPointingSet)
+        # Create synthetic dataset with 1D spatial dimension
+        lons = np.linspace(0, 360, 20, endpoint=False)
+        lats = np.linspace(-90, 90, 20)
+
+        dataset_1d = xr.Dataset(
+            {
+                "hae_longitude": xr.DataArray(
+                    lons[np.newaxis, :],
+                    dims=["epoch", "spin_angle_bin"],
+                ),
+                "hae_latitude": xr.DataArray(
+                    lats[np.newaxis, :],
+                    dims=["epoch", "spin_angle_bin"],
+                ),
+            },
+            coords={
+                "epoch": xr.DataArray([1e18], dims=["epoch"]),
+            },
+        )
+
+        # Create a HiPointingSet-like object
+        class SyntheticPset1D(ena_maps.LoHiBasePointingSet):
+            def __init__(self, dataset):
+                self.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
+                self.data = dataset.copy(deep=True)
+                self.spatial_coords = ("spin_angle_bin",)
+                self.update_az_el_points()
+
+        pset_1d = SyntheticPset1D(dataset_1d)
+
+        # Get original dimensions
+        original_dims_1d = pset_1d.data["hae_longitude"].dims
+
+        # Update ram_mask
+        pset_1d.data["sc_direction_vector"] = np.array([1.0, 1.0, 0.0])
+        pset_1d = calculate_ram_mask(pset_1d)
+
+        # Verify dimensions are preserved
+        assert pset_1d.data["ram_mask"].dims == original_dims_1d
+
+    def test_update_ram_mask_replaces_existing(self):
+        """Test that update_ram_mask replaces existing ram_mask."""
+        pset = self.create_synthetic_pset_with_hae_coords()
+
+        # Set initial mask with +X direction
+        pset.data["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset = calculate_ram_mask(pset)
+        ram_mask_1 = pset.data["ram_mask"].values.copy()
+
+        # Update mask with opposite direction
+        pset.data["sc_direction_vector"] = np.array([-1.0, 0.0, 0.0])
+        pset = calculate_ram_mask(pset)
+        ram_mask_2 = pset.data["ram_mask"].values.copy()
+
+        # The masks should be different
+        assert not np.array_equal(ram_mask_1, ram_mask_2)
+
+    def test_update_ram_mask_arbitrary_direction(self):
+        """Test RAM mask with arbitrary spacecraft velocity direction."""
+        pset = self.create_synthetic_pset_with_hae_coords(shape=(36, 18))
+
+        # Use an arbitrary direction (not aligned with axes)
+        pset.data["sc_direction_vector"] = np.array([1.0, 1.0, 0.5])
+        pset = calculate_ram_mask(pset)
+
+        # Verify the mask was created
+        assert "ram_mask" in pset.data
+
+        # Verify approximately half the pixels are RAM (for a sphere)
+        ram_fraction = pset.data["ram_mask"].sum().values / pset.data["ram_mask"].size
+        # Should be close to 0.5, allowing for discretization effects
+        np.testing.assert_allclose(ram_fraction, 0.5, atol=0.05)
 
 
 class TestInterpolateMapFluxToHelioFrame:

@@ -642,57 +642,6 @@ class LoHiBasePointingSet(PointingSet):
             dims=[*az_stacked.dims, CoordNames.AZ_EL_VECTOR.value],
         )
 
-    def update_ram_mask(self, spacecraft_vel_vec: np.ndarray) -> None:
-        """
-        Calculate the RAM mask using the input spacecraft velocity vector.
-
-        The RAM mask is a boolean array with the same dimensions as what is stored
-        in the "hae_longitude" and "hae_latitude" variables of the dataset.
-
-        Parameters
-        ----------
-        spacecraft_vel_vec : numpy.ndarray
-            Three element vector of the spacecraft velocity in the HAE frame.
-            Units don't matter because only the unit direction vector is used
-            to calculate the RAM mask.
-        """
-        logger.info(
-            f"Calculating the RAM mask using input spacecraft velocity"
-            f"vector: {spacecraft_vel_vec} and hae coordinates in the"
-            f"dataset hae_longitude and hae_latitude variables."
-        )
-        longitude = self.data["hae_longitude"]
-        latitude = self.data["hae_latitude"]
-        spacecraft_direction_vec = spacecraft_vel_vec / np.linalg.norm(
-            spacecraft_vel_vec
-        )
-        spherical_coords = np.stack(
-            [
-                np.ones_like(longitude.values),
-                longitude.values,
-                latitude.values,
-            ],
-            axis=-1,
-        )
-        cartesian_source_direction = xr.DataArray(
-            geometry.spherical_to_cartesian(spherical_coords),
-            dims=[*longitude.dims, CoordNames.CARTESIAN_VECTOR.value],
-        )
-        # For ram/anti-ram filtering we can use the sign of the scalar projection
-        # of the ENA source direction onto the spacecraft velocity vector.
-        # ram_mask = (v⃗_source · û_sc) >= 0
-        # Use Einstein summation for efficient vectorized dot product
-        ram_mask = (
-            np.einsum(
-                "...i,...i->...", spacecraft_direction_vec, cartesian_source_direction
-            )
-            >= 0
-        )
-        self.data["ram_mask"] = xr.DataArray(
-            ram_mask,
-            dims=longitude.dims,
-        )
-
 
 class HiPointingSet(LoHiBasePointingSet):
     """

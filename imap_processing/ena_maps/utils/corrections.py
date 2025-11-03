@@ -321,7 +321,7 @@ class PowerLawFluxCorrector:
         return corrected_flux, corrected_flux_stat_unc
 
 
-def _add_spacecraft_velocity_to_pset(
+def add_spacecraft_velocity_to_pset(
     pset: LoHiBasePsetSubclass,
 ) -> LoHiBasePsetSubclass:
     """
@@ -344,10 +344,9 @@ def _add_spacecraft_velocity_to_pset(
     - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
     """
     # Compute ephemeris time (J2000 seconds) of PSET midpoint time
-    # TODO: Use the Pointing midpoint time. Epoch should be start time
-    #     but use it until we can make Lo and Hi PSETs have a consistent
-    #     variable to hold the midpoint time.
-    et = ttj2000ns_to_et(pset.data["epoch"].values[0])
+    et = ttj2000ns_to_et(
+        pset.data["epoch"].values[0] + pset.data["epoch_delta"].values[0] / 2
+    )
     # Get spacecraft state in HAE frame
     sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
     sc_velocity_vector = sc_state[3:6]
@@ -535,7 +534,63 @@ def _calculate_compton_getting_transform(
     # Update the PSET ram mask. Ram mask calculation uses the sign of the scalar
     # projection of the ENA source direction onto the spacecraft velocity vector.
     # ram_mask = (v⃗_helio · û_sc) >= 0
-    pset.update_ram_mask(pset.data["sc_direction_vector"].values)
+    pset = calculate_ram_mask(pset)
+
+    return pset
+
+
+def calculate_ram_mask(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSubclass:
+    """
+    Calculate the RAM mask using the input spacecraft velocity vector.
+
+    The RAM mask is a boolean array with the same dimensions as what is stored
+    in the "hae_longitude" and "hae_latitude" variables of the dataset.
+
+    Parameters
+    ----------
+    pset : LoHiBasePointingSet
+        Pointing set object. The pset dataset is assumed to have valid
+        "hae_longitude", "hae_latitude", and "sc_direction_vector" variables.
+
+    Returns
+    -------
+    pset : LoHiBasePointingSet
+        Pointing set object with ram_mask variable added.
+    """
+    logger.debug(
+        f"Calculating the RAM mask using input spacecraft direction"
+        f"vector: {pset.data['sc_direction_vector']} and hae coordinates in the"
+        f"dataset hae_longitude and hae_latitude variables."
+    )
+    longitude = pset.data["hae_longitude"]
+    latitude = pset.data["hae_latitude"]
+    spacecraft_direction_vec = pset.data["sc_direction_vector"].values
+    spherical_coords = np.stack(
+        [
+            np.ones_like(longitude.values),
+            longitude.values,
+            latitude.values,
+        ],
+        axis=-1,
+    )
+    cartesian_source_direction = xr.DataArray(
+        geometry.spherical_to_cartesian(spherical_coords),
+        dims=[*longitude.dims, CoordNames.CARTESIAN_VECTOR.value],
+    )
+    # For ram/anti-ram filtering we can use the sign of the scalar projection
+    # of the ENA source direction onto the spacecraft velocity vector.
+    # ram_mask = (v⃗_source · û_sc) >= 0
+    # Use Einstein summation for efficient vectorized dot product
+    ram_mask = (
+        np.einsum(
+            "...i,...i->...", spacecraft_direction_vec, cartesian_source_direction
+        )
+        >= 0
+    )
+    pset.data["ram_mask"] = xr.DataArray(
+        ram_mask,
+        dims=longitude.dims,
+    )
 
     return pset
 
@@ -588,7 +643,7 @@ def apply_compton_getting_correction(
     which will be used for subsequent binning operations.
     """
     # Step 1: Add spacecraft velocity and direction to pset
-    pset = _add_spacecraft_velocity_to_pset(pset)
+    pset = add_spacecraft_velocity_to_pset(pset)
 
     # Step 2: Calculate and add look direction vectors to pset
     pset = _add_cartesian_look_direction(pset)
