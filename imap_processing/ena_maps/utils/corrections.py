@@ -322,70 +322,68 @@ class PowerLawFluxCorrector:
 
 
 def add_spacecraft_velocity_to_pset(
-    pset: LoHiBasePsetSubclass,
-) -> LoHiBasePsetSubclass:
+    pset: xr.Dataset,
+) -> xr.Dataset:
     """
-    Calculate and add spacecraft velocity data to pointing set.
+    Calculate and add spacecraft velocity data to pointing set dataset.
 
     Parameters
     ----------
-    pset : LoHiBasePointingSet
-        Pointing set object to be updated.
+    pset : xr.Dataset
+        Pointing set dataset to be updated. Must contain "epoch" coordinate
+        and "epoch_delta" data variable.
 
     Returns
     -------
-    pset : LoHiBasePointingSet
-        Pointing set object with spacecraft velocity data added.
+    pset_processed : xarray.Dataset
+        Pointing set dataset with spacecraft velocity data added.
 
     Notes
     -----
-    Adds the following DataArrays to pset.data:
+    Adds the following DataArrays to input dataset:
     - "sc_velocity": Spacecraft velocity vector (km/s) with dims ["x_y_z"]
     - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
     """
     # Compute ephemeris time (J2000 seconds) of PSET midpoint time
-    et = ttj2000ns_to_et(
-        pset.data["epoch"].values[0] + pset.data["epoch_delta"].values[0] / 2
-    )
+    et = ttj2000ns_to_et(pset["epoch"].values[0] + pset["epoch_delta"].values[0] / 2)
     # Get spacecraft state in HAE frame
     sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
     sc_velocity_vector = sc_state[3:6]
 
     # Store spacecraft velocity as DataArray
-    pset.data["sc_velocity"] = xr.DataArray(
+    pset["sc_velocity"] = xr.DataArray(
         sc_velocity_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
     )
 
     # Calculate spacecraft speed and direction
-    sc_velocity_km_per_sec = np.linalg.norm(
-        pset.data["sc_velocity"], axis=-1, keepdims=True
-    )
-    pset.data["sc_direction_vector"] = pset.data["sc_velocity"] / sc_velocity_km_per_sec
+    sc_velocity_km_per_sec = np.linalg.norm(pset["sc_velocity"], axis=-1, keepdims=True)
+    pset["sc_direction_vector"] = pset["sc_velocity"] / sc_velocity_km_per_sec
 
     return pset
 
 
-def _add_cartesian_look_direction(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSubclass:
+def _add_cartesian_look_direction(pset: xr.Dataset) -> xr.Dataset:
     """
-    Calculate and add look direction vectors to pointing set.
+    Calculate and add look direction vectors to pointing set dataset.
 
     Parameters
     ----------
-    pset : LoHiBasePointingSet
-        Pointing set object to be updated.
+    pset : xarray.Dataset
+        Pointing set dataset to be updated. Must contain "hae_longitude" and
+        "hae_latitude" data variables.
 
     Returns
     -------
-    pset : LoHiBasePointingSet
-        Pointing set object with look direction vectors added.
+    pset_processed : xarray.Dataset
+        Pointing set dataset with look direction vectors added.
 
     Notes
     -----
-    Adds the following DataArray to pset.data:
+    Adds the following DataArray to input dataset:
     - "look_direction": Cartesian unit vectors with dims [...spatial_dims, "x_y_z"]
     """
-    longitudes = pset.data["hae_longitude"]
-    latitudes = pset.data["hae_latitude"]
+    longitudes = pset["hae_longitude"]
+    latitudes = pset["hae_latitude"]
 
     # Stack spherical coordinates (r=1 for unit vectors, azimuth, elevation)
     spherical_coords = np.stack(
@@ -398,7 +396,7 @@ def _add_cartesian_look_direction(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSub
     )
 
     # Convert to Cartesian coordinates and store as DataArray
-    pset.data["look_direction"] = xr.DataArray(
+    pset["look_direction"] = xr.DataArray(
         geometry.spherical_to_cartesian(spherical_coords),
         dims=[*longitudes.dims, CoordNames.CARTESIAN_VECTOR.value],
     )
@@ -407,9 +405,9 @@ def _add_cartesian_look_direction(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSub
 
 
 def _calculate_compton_getting_transform(
-    pset: LoHiBasePsetSubclass,
+    pset: xr.Dataset,
     energy_hf: xr.DataArray,
-) -> LoHiBasePsetSubclass:
+) -> xr.Dataset:
     """
     Apply Compton-Getting transformation to compute ENA source directions.
 
@@ -423,48 +421,45 @@ def _calculate_compton_getting_transform(
 
     Parameters
     ----------
-    pset : LoHiBasePointingSet
-        Pointing set object with sc_velocity, sc_direction_vector, and
+    pset : xarray.Dataset
+        Pointing set dataset with sc_velocity, sc_direction_vector, and
         look_direction already added.
     energy_hf : xr.DataArray
         ENA energies in the heliosphere frame in eV.
 
     Returns
     -------
-    pset : LoHiBasePointingSet
-        Pointing set object with Compton-Getting related variables added and
-        updated az_el_points.
+    pset : xarray.Dataset
+        Pointing set dataset with Compton-Getting related variables added.
 
     Notes
     -----
     The algorithm is based on the "Appendix A. The IMAP-Lo Mapping Algorithms"
     document.
-    Adds the following DataArrays to pset.data:
+    Adds the following DataArrays to input dataset:
     - "energy_sc": ENA energies in spacecraft frame (eV)
     - "energy_hf": ENA energies in the heliosphere frame (eV)
     - "ram_mask": Mask indicating whether ENA source direction is from the ram
       direction.
-    Updates the following DataArrays in pset.data:
+    Updates the following DataArrays in input dataset:
     - "hae_longitude": ENA source longitudes in heliosphere frame (degrees)
     - "hae_latitude": ENA source latitudes in heliosphere frame (degrees)
     """
     # Store heliosphere frame energies
-    pset.data["energy_hf"] = energy_hf
+    pset["energy_hf"] = energy_hf
 
     # Calculate spacecraft speed
-    sc_velocity_km_per_sec = np.linalg.norm(
-        pset.data["sc_velocity"], axis=-1, keepdims=True
-    )
+    sc_velocity_km_per_sec = np.linalg.norm(pset["sc_velocity"], axis=-1, keepdims=True)
 
     # Calculate dot product between look directions and spacecraft direction vector
     # Use Einstein summation for efficient vectorized dot product
     dot_product = xr.DataArray(
         np.einsum(
             "...i,...i->...",
-            pset.data["look_direction"],
-            pset.data["sc_direction_vector"],
+            pset["look_direction"],
+            pset["sc_direction_vector"],
         ),
-        dims=pset.data["look_direction"].dims[:-1],
+        dims=pset["look_direction"].dims[:-1],
     )
 
     # Calculate the kinetic energy of a hydrogen ENA traveling at spacecraft velocity
@@ -489,7 +484,7 @@ def _calculate_compton_getting_transform(
 
     # Calculate y values for each energy level (Equation 61)
     # y_k = sqrt(E^h_k / E^u)
-    y = np.sqrt(pset.data["energy_hf"] / energy_u)
+    y = np.sqrt(pset["energy_hf"] / energy_u)
 
     # Velocity magnitude factor calculation (Equation 62)
     # x_k = (êₛ · û_sc) + sqrt(y² + (êₛ · û_sc)² - 1)
@@ -503,17 +498,15 @@ def _calculate_compton_getting_transform(
 
     # Calculate the kinetic energy in the spacecraft frame
     # E_sc = (1/2) * M_p * v_sc² (convert km/s to cm/s with 1.0e5 factor)
-    pset.data["energy_sc"] = (
-        0.5 * PROTON_MASS_GRAMS * (velocity_sc * 1e5) ** 2 / ERG_PER_EV
-    )
+    pset["energy_sc"] = 0.5 * PROTON_MASS_GRAMS * (velocity_sc * 1e5) ** 2 / ERG_PER_EV
 
     # Calculate the velocity vector in the spacecraft frame
     # v⃗_sc = |v_sc| * êₛ (velocity direction follows look direction)
-    velocity_vector_sc = velocity_sc * pset.data["look_direction"]
+    velocity_vector_sc = velocity_sc * pset["look_direction"]
 
     # Calculate the ENA velocity vector in the heliosphere frame
     # v⃗_helio = v⃗_sc - U⃗_sc (simple velocity addition)
-    velocity_vector_helio = velocity_vector_sc - pset.data["sc_velocity"]
+    velocity_vector_helio = velocity_vector_sc - pset["sc_velocity"]
 
     # Convert to spherical coordinates to get ENA source directions
     ena_source_direction_helio = geometry.cartesian_to_spherical(
@@ -522,12 +515,12 @@ def _calculate_compton_getting_transform(
 
     # Update the PSET hae_longitude and hae_latitude variables with the new
     # energy-dependent values.
-    pset.data["hae_longitude"] = (
-        pset.data["energy_sc"].dims,
+    pset["hae_longitude"] = (
+        pset["energy_sc"].dims,
         ena_source_direction_helio[..., 1],
     )
-    pset.data["hae_latitude"] = (
-        pset.data["energy_sc"].dims,
+    pset["hae_latitude"] = (
+        pset["energy_sc"].dims,
         ena_source_direction_helio[..., 2],
     )
 
@@ -537,7 +530,7 @@ def _calculate_compton_getting_transform(
     return pset
 
 
-def calculate_ram_mask(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSubclass:
+def calculate_ram_mask(pset: xr.Dataset) -> xr.Dataset:
     """
     Calculate the RAM mask using the input spacecraft velocity vector.
 
@@ -546,23 +539,23 @@ def calculate_ram_mask(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSubclass:
 
     Parameters
     ----------
-    pset : LoHiBasePointingSet
-        Pointing set object. The pset dataset is assumed to have valid
+    pset : xarray.Dataset
+        Pointing set dataset. The pset dataset is assumed to have valid
         "hae_longitude", "hae_latitude", and "sc_direction_vector" variables.
 
     Returns
     -------
-    pset : LoHiBasePointingSet
-        Pointing set object with ram_mask variable added.
+    pset : xarray.Dataset
+        Pointing set dataset with ram_mask variable added.
     """
     logger.debug(
         f"Calculating the RAM mask using input spacecraft direction"
-        f"vector: {pset.data['sc_direction_vector']} and hae coordinates in the"
+        f"vector: {pset['sc_direction_vector']} and hae coordinates in the"
         f"dataset hae_longitude and hae_latitude variables."
     )
-    longitude = pset.data["hae_longitude"]
-    latitude = pset.data["hae_latitude"]
-    spacecraft_direction_vec = pset.data["sc_direction_vector"].values
+    longitude = pset["hae_longitude"]
+    latitude = pset["hae_latitude"]
+    spacecraft_direction_vec = pset["sc_direction_vector"].values
     spherical_coords = np.stack(
         [
             np.ones_like(longitude.values),
@@ -586,7 +579,7 @@ def calculate_ram_mask(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSubclass:
         )
         >= 0
     )
-    pset.data["ram_mask"] = xr.DataArray(
+    pset["ram_mask"] = xr.DataArray(
         ram_mask,
         dims=longitude.dims,
     )
@@ -595,65 +588,67 @@ def calculate_ram_mask(pset: LoHiBasePsetSubclass) -> LoHiBasePsetSubclass:
 
 
 def apply_compton_getting_correction(
-    pset: LoHiBasePsetSubclass,
+    pset: xr.Dataset,
     energy_hf: xr.DataArray,
-) -> LoHiBasePsetSubclass:
+) -> xr.Dataset:
     """
-    Apply Compton-Getting correction to a pointing set and update coordinates.
+    Apply Compton-Getting correction to a pointing set dataset.
 
     This function performs the Compton-Getting velocity transformation to correct
     ENA observations for the motion of the spacecraft through the heliosphere.
     The corrected coordinates represent the true source directions of the ENAs
     in the heliosphere frame.
 
-    The pointing set is modified in-place: new variables are added to the dataset
-    for the corrected coordinates and energies, and the az_el_points attribute
-    is updated to use the corrected coordinates for binning.
+    New variables are added to the dataset for the corrected coordinates and
+    energies.
 
     All calculations are performed using xarray DataArrays to preserve dimension
     information throughout the computation.
 
     Parameters
     ----------
-    pset : LoHiBasePointingSet
-        Pointing set object containing HAE longitude/latitude coordinates.
+    pset : xarray.Dataset
+        Pointing set dataset. Must contain the following coordinates:
+          - epoch: start time of the pointing
+        Must contain the following variables:
+          - epoch_delta: duration of the pointing in nanoseconds
+          - hae_longitude: PSET bin longitudes in the HAE frame (degrees)
+          - hae_latitude: PSET bin latitudes in the HAE frame (degrees)
     energy_hf : xr.DataArray
         ENA energies in the heliosphere frame in eV. Must be 1D with an
         energy dimension.
 
     Returns
     -------
-    pset : LoHiBasePointingSet
-        Updated pointing set object with Compton-Getting related variables added.
+    processed_dataset : xarray.Dataset
+        Updated dataset object with Compton-Getting related variables added and
+        hae_longitude and hae_latitude variables updated to contain energy-dependent
+        cg-corrected values.
 
     Notes
     -----
-    This function adds the following variables to the pointing set dataset:
+    This function adds the following variables to the dataset:
     - "sc_velocity": Spacecraft velocity vector (km/s)
     - "sc_direction_vector": Spacecraft velocity unit vector
     - "look_direction": Cartesian unit vectors of observation directions
     - "energy_hf": ENA energies in heliosphere frame (eV)
     - "energy_sc": ENA energies in spacecraft frame (eV)
-    This function modifies the following variables in the pointing set dataset:
+    This function modifies the following variables in the dataset:
     - "hae_longitude": ENA source longitudes in heliosphere frame (degrees)
     - "hae_latitude": ENA source latitudes in heliosphere frame (degrees)
-
-    The az_el_points attribute is updated to use the corrected coordinates,
-    which will be used for subsequent binning operations.
     """
     # Step 1: Add spacecraft velocity and direction to pset
-    pset = add_spacecraft_velocity_to_pset(pset)
+    processed_dataset = add_spacecraft_velocity_to_pset(pset)
 
     # Step 2: Calculate and add look direction vectors to pset
-    pset = _add_cartesian_look_direction(pset)
+    processed_dataset = _add_cartesian_look_direction(processed_dataset)
 
     # Step 3: Apply Compton-Getting transformation
-    pset = _calculate_compton_getting_transform(pset, energy_hf)
+    processed_dataset = _calculate_compton_getting_transform(
+        processed_dataset, energy_hf
+    )
 
-    # Step 4: Update az_el_points to use the corrected coordinates
-    pset.update_az_el_points()
-
-    return pset
+    return processed_dataset
 
 
 def interpolate_map_flux_to_helio_frame(

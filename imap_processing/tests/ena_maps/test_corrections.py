@@ -250,7 +250,7 @@ def hi_pset_cdf_path(imap_tests_path):
 
 @pytest.fixture
 def mock_hi_pset():
-    """Create a minimal mock Hi pointing set for testing."""
+    """Create a minimal mock Hi pointing set dataset for testing."""
     # Create a simple dataset with necessary fields
     n_epoch = 1
     n_spin = 100
@@ -271,13 +271,7 @@ def mock_hi_pset():
         }
     )
 
-    # Create a mock pointing set object
-    pset = mock.MagicMock(spec=ena_maps.LoHiBasePointingSet)
-    pset.data = data
-    pset.spatial_coords = ("spin_angle_bin",)
-    pset.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
-
-    return pset
+    return data
 
 
 class TestComptonGettingCorrection:
@@ -304,18 +298,18 @@ class TestComptonGettingCorrection:
         )
 
         # Verify sc_velocity was added
-        assert "sc_velocity" in mock_hi_pset.data
-        assert isinstance(mock_hi_pset.data["sc_velocity"], xr.DataArray)
+        assert "sc_velocity" in mock_hi_pset
+        assert isinstance(mock_hi_pset["sc_velocity"], xr.DataArray)
         np.testing.assert_array_equal(
-            mock_hi_pset.data["sc_velocity"].values, np.array([10.0, 20.0, 30.0])
+            mock_hi_pset["sc_velocity"].values, np.array([10.0, 20.0, 30.0])
         )
 
         # Verify sc_direction_vector was added
-        assert "sc_direction_vector" in mock_hi_pset.data
+        assert "sc_direction_vector" in mock_hi_pset
         expected_speed = np.sqrt(10**2 + 20**2 + 30**2)
         expected_direction = np.array([10.0, 20.0, 30.0]) / expected_speed
         np.testing.assert_allclose(
-            mock_hi_pset.data["sc_direction_vector"].values, expected_direction
+            mock_hi_pset["sc_direction_vector"].values, expected_direction
         )
 
     def test_add_cartesian_look_direction(self, mock_hi_pset):
@@ -326,12 +320,12 @@ class TestComptonGettingCorrection:
         # geometry.spherical_to_cartesian. We only need to test that the
         # look_direction variable was added and has the correct shape.
         # Verify look_direction was added
-        assert "look_direction" in mock_hi_pset.data
-        assert isinstance(mock_hi_pset.data["look_direction"], xr.DataArray)
+        assert "look_direction" in mock_hi_pset
+        assert isinstance(mock_hi_pset["look_direction"], xr.DataArray)
 
         # Verify shape
         expected_shape = (1, 100, 3)  # (epoch, spin_angle_bin, x_y_z)
-        assert mock_hi_pset.data["look_direction"].shape == expected_shape
+        assert mock_hi_pset["look_direction"].shape == expected_shape
 
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
     def test_calculate_compton_getting_transform(self, mock_imap_state, mock_hi_pset):
@@ -353,21 +347,21 @@ class TestComptonGettingCorrection:
         mock_hi_pset = _calculate_compton_getting_transform(mock_hi_pset, energy_hf)
 
         # Verify required variables were added
-        assert "energy_hf" in mock_hi_pset.data
-        assert "energy_sc" in mock_hi_pset.data
-        assert "hae_longitude" in mock_hi_pset.data
-        assert "hae_latitude" in mock_hi_pset.data
-        assert "ram_mask" in mock_hi_pset.data
+        assert "energy_hf" in mock_hi_pset
+        assert "energy_sc" in mock_hi_pset
+        assert "hae_longitude" in mock_hi_pset
+        assert "hae_latitude" in mock_hi_pset
+        assert "ram_mask" in mock_hi_pset
 
         # Verify energy_hf matches input
         np.testing.assert_array_equal(
-            mock_hi_pset.data["energy_hf"].values, energy_hf.values
+            mock_hi_pset["energy_hf"].values, energy_hf.values
         )
 
         # Verify energy_sc has correct shape
         # The transformation should broadcast across energy and spatial dimensions
-        assert "energy_sc" in mock_hi_pset.data
-        energy_sc = mock_hi_pset.data["energy_sc"]
+        assert "energy_sc" in mock_hi_pset
+        energy_sc = mock_hi_pset["energy_sc"]
         # Shape should include energy dimension
         assert len(energy_sc.dims) >= 2
 
@@ -376,16 +370,16 @@ class TestComptonGettingCorrection:
         assert np.all(np.isfinite(energy_sc.values))
 
         # Verify corrected coordinates are within valid ranges
-        assert np.all(mock_hi_pset.data["hae_longitude"].values >= 0)
-        assert np.all(mock_hi_pset.data["hae_longitude"].values <= 360)
-        assert np.all(mock_hi_pset.data["hae_latitude"].values >= -90)
-        assert np.all(mock_hi_pset.data["hae_latitude"].values <= 90)
+        assert np.all(mock_hi_pset["hae_longitude"].values >= 0)
+        assert np.all(mock_hi_pset["hae_longitude"].values <= 360)
+        assert np.all(mock_hi_pset["hae_latitude"].values >= -90)
+        assert np.all(mock_hi_pset["hae_latitude"].values <= 90)
 
         # Verify ram_mask properties
-        ram_mask = mock_hi_pset.data["ram_mask"]
+        ram_mask = mock_hi_pset["ram_mask"]
         assert isinstance(ram_mask, xr.DataArray)
         assert ram_mask.dtype == bool
-        assert ram_mask.shape == mock_hi_pset.data["energy_sc"].shape
+        assert ram_mask.shape == mock_hi_pset["energy_sc"].shape
 
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
     def test_apply_compton_getting_correction(self, mock_imap_state, mock_hi_pset):
@@ -405,17 +399,14 @@ class TestComptonGettingCorrection:
         mock_hi_pset = apply_compton_getting_correction(mock_hi_pset, energy_hf)
 
         # Verify all intermediate variables were added
-        assert "sc_velocity" in mock_hi_pset.data
-        assert "sc_direction_vector" in mock_hi_pset.data
-        assert "look_direction" in mock_hi_pset.data
-        assert "energy_hf" in mock_hi_pset.data
-        assert "energy_sc" in mock_hi_pset.data
-        assert "hae_longitude" in mock_hi_pset.data
-        assert "hae_latitude" in mock_hi_pset.data
-        assert "ram_mask" in mock_hi_pset.data
-
-        # Verify update_az_el_points was called
-        mock_hi_pset.update_az_el_points.assert_called_once()
+        assert "sc_velocity" in mock_hi_pset
+        assert "sc_direction_vector" in mock_hi_pset
+        assert "look_direction" in mock_hi_pset
+        assert "energy_hf" in mock_hi_pset
+        assert "energy_sc" in mock_hi_pset
+        assert "hae_longitude" in mock_hi_pset
+        assert "hae_latitude" in mock_hi_pset
+        assert "ram_mask" in mock_hi_pset
 
     @pytest.mark.external_test_data
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
@@ -441,8 +432,8 @@ class TestComptonGettingCorrection:
             coords={"esa_energy_step": np.arange(1, 10)},
         )
 
-        # Apply correction
-        hi_pset = apply_compton_getting_correction(hi_pset, energy_hf)
+        # Apply correction (pass the dataset, not the pointing set object)
+        hi_pset.data = apply_compton_getting_correction(hi_pset.data, energy_hf)
 
         # Verify coordinates were modified
         corrected_lon = hi_pset.data["hae_longitude"]
@@ -479,8 +470,8 @@ class TestComptonGettingCorrection:
         # Set up a known spacecraft velocity
         sc_velocity = np.array([30.0, 0.0, 0.0])  # Moving in +X direction at 30 km/s
 
-        mock_hi_pset.data["sc_velocity"] = xr.DataArray(sc_velocity, dims=["x_y_z"])
-        mock_hi_pset.data["sc_direction_vector"] = xr.DataArray(
+        mock_hi_pset["sc_velocity"] = xr.DataArray(sc_velocity, dims=["x_y_z"])
+        mock_hi_pset["sc_direction_vector"] = xr.DataArray(
             sc_velocity / np.linalg.norm(sc_velocity), dims=["x_y_z"]
         )
 
@@ -495,7 +486,7 @@ class TestComptonGettingCorrection:
         # Physical checks:
         # 1. Energy in spacecraft frame should be higher for particles coming
         #    from the direction of spacecraft motion (ram direction)
-        energy_sc = mock_hi_pset.data["energy_sc"]
+        energy_sc = mock_hi_pset["energy_sc"]
 
         # 2. All energies should be positive
         assert np.all(energy_sc.values > 0)
@@ -511,7 +502,7 @@ class TestComptonGettingCorrection:
         """Test ram_mask correctly identifies ram and anti-ram directions."""
         # Create a simple mock pset with specific look directions
         n_directions = 4
-        data = xr.Dataset(
+        dataset = xr.Dataset(
             {
                 "epoch": (["epoch"], np.array([797949131184000000])),
                 # Set up specific look directions:
@@ -531,30 +522,25 @@ class TestComptonGettingCorrection:
             }
         ).transpose("epoch", "direction")
 
-        pset = mock.MagicMock(spec=ena_maps.LoHiBasePointingSet)
-        pset.data = data
-        pset.spatial_coords = ("direction",)
-        pset.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
-
         # Set up spacecraft velocity in +X direction
         sc_velocity = np.array([30.0, 0.0, 0.0])  # km/s
-        pset.data["sc_velocity"] = xr.DataArray(sc_velocity, dims=["x_y_z"])
-        pset.data["sc_direction_vector"] = xr.DataArray(
+        dataset["sc_velocity"] = xr.DataArray(sc_velocity, dims=["x_y_z"])
+        dataset["sc_direction_vector"] = xr.DataArray(
             sc_velocity / np.linalg.norm(sc_velocity), dims=["x_y_z"]
         )
 
         # Add look directions
-        pset = _add_cartesian_look_direction(pset)
+        dataset = _add_cartesian_look_direction(dataset)
 
         # Single energy level
         energy_hf = xr.DataArray(np.array([1000.0]), dims=["esa_energy_step"])
 
         # Calculate CG transform
-        pset = _calculate_compton_getting_transform(pset, energy_hf)
+        dataset = _calculate_compton_getting_transform(dataset, energy_hf)
 
         # Verify ram_mask exists
-        assert "ram_mask" in pset.data
-        ram_mask = pset.data["ram_mask"]
+        assert "ram_mask" in dataset
+        ram_mask = dataset["ram_mask"]
 
         # Verify dimensions
         assert set(ram_mask.dims) == {"epoch", "esa_energy_step", "direction"}
@@ -586,7 +572,7 @@ class TestComptonGettingCorrection:
 
     @staticmethod
     def create_synthetic_pset_with_hae_coords(shape=(10, 20)):
-        """Create a synthetic LoHiBasePointingSet with known HAE coordinates."""
+        """Create a synthetic dataset with known HAE coordinates."""
         # Create longitude and latitude grids
         lons = np.linspace(0, 360, shape[0], endpoint=False)
         lats = np.linspace(-90, 90, shape[1])
@@ -609,26 +595,18 @@ class TestComptonGettingCorrection:
             },
         )
 
-        # Create a LoPointingSet-like object
-        class SyntheticPset(ena_maps.LoHiBasePointingSet):
-            def __init__(self, dataset):
-                self.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
-                self.data = dataset.copy(deep=True)
-                self.spatial_coords = ("spin_angle", "off_angle")
-                self.update_az_el_points()
-
-        return SyntheticPset(dataset)
+        return dataset
 
     def test_update_ram_mask_plus_x_direction(self):
         """Test RAM mask with spacecraft velocity in +X direction."""
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Spacecraft velocity in +X direction (HAE frame)
-        pset.data["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
 
-        lon = pset.data["hae_longitude"].values
-        ram_mask = pset.data["ram_mask"].values
+        lon = pset["hae_longitude"].values
+        ram_mask = pset["ram_mask"].values
 
         # For +X direction, RAM should be anywhere that the longitude is between
         # -90 and +90.
@@ -648,11 +626,11 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Spacecraft velocity in -X direction (HAE frame)
-        pset.data["sc_direction_vector"] = np.array([-1.0, 0.0, 0.0])
+        pset["sc_direction_vector"] = np.array([-1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
 
-        lon = pset.data["hae_longitude"].values
-        ram_mask = pset.data["ram_mask"].values
+        lon = pset["hae_longitude"].values
+        ram_mask = pset["ram_mask"].values
 
         # For -X direction, anti-RAM should be anywhere that 90 < lon < 270.
         idx_ram = np.nonzero((lon > 90) & (lon < 270))
@@ -671,11 +649,11 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Spacecraft velocity in +Y direction (HAE frame)
-        pset.data["sc_direction_vector"] = np.array([0.0, 1.0, 0.0])
+        pset["sc_direction_vector"] = np.array([0.0, 1.0, 0.0])
         pset = calculate_ram_mask(pset)
 
-        lon = pset.data["hae_longitude"].values
-        ram_mask = pset.data["ram_mask"].values
+        lon = pset["hae_longitude"].values
+        ram_mask = pset["ram_mask"].values
 
         # For +Y direction, RAM should be anywhere that the 0 < lon < 180.
         idx_ram = np.nonzero((0 < lon) & (lon < 180))
@@ -692,13 +670,13 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Test with two different magnitudes in the same direction
-        pset.data["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
-        ram_mask_1 = pset.data["ram_mask"].values.copy()
+        ram_mask_1 = pset["ram_mask"].values.copy()
 
-        pset.data["sc_direction_vector"] = np.array([100.0, 0.0, 0.0])
+        pset["sc_direction_vector"] = np.array([100.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
-        ram_mask_2 = pset.data["ram_mask"].values.copy()
+        ram_mask_2 = pset["ram_mask"].values.copy()
 
         # The masks should be identical since direction is the same
         np.testing.assert_array_equal(ram_mask_1, ram_mask_2)
@@ -708,13 +686,13 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Use a simple spacecraft velocity vector
-        pset.data["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
 
         # Manually verify a few specific pixels
-        lon = pset.data["hae_longitude"].values
-        lat = pset.data["hae_latitude"].values
-        ram_mask = pset.data["ram_mask"].values
+        lon = pset["hae_longitude"].values
+        lat = pset["hae_latitude"].values
+        ram_mask = pset["ram_mask"].values
 
         # Test pixel at lon=0, lat=0 (should point in +X direction)
         lon_rad = np.deg2rad(0)
@@ -733,14 +711,14 @@ class TestComptonGettingCorrection:
         pset_2d = self.create_synthetic_pset_with_hae_coords(shape=(5, 10))
 
         # Get original dimensions
-        original_dims_2d = pset_2d.data["hae_longitude"].dims
+        original_dims_2d = pset_2d["hae_longitude"].dims
 
         # Update ram_mask
-        pset_2d.data["sc_direction_vector"] = np.array([1.0, 1.0, 0.0])
+        pset_2d["sc_direction_vector"] = np.array([1.0, 1.0, 0.0])
         pset_2d = calculate_ram_mask(pset_2d)
 
         # Verify dimensions are preserved
-        assert pset_2d.data["ram_mask"].dims == original_dims_2d
+        assert pset_2d["ram_mask"].dims == original_dims_2d
 
         # Test with 1D spatial dimensions (like HiPointingSet)
         # Create synthetic dataset with 1D spatial dimension
@@ -763,39 +741,29 @@ class TestComptonGettingCorrection:
             },
         )
 
-        # Create a HiPointingSet-like object
-        class SyntheticPset1D(ena_maps.LoHiBasePointingSet):
-            def __init__(self, dataset):
-                self.spice_reference_frame = geometry.SpiceFrame.IMAP_HAE
-                self.data = dataset.copy(deep=True)
-                self.spatial_coords = ("spin_angle_bin",)
-                self.update_az_el_points()
-
-        pset_1d = SyntheticPset1D(dataset_1d)
-
         # Get original dimensions
-        original_dims_1d = pset_1d.data["hae_longitude"].dims
+        original_dims_1d = dataset_1d["hae_longitude"].dims
 
         # Update ram_mask
-        pset_1d.data["sc_direction_vector"] = np.array([1.0, 1.0, 0.0])
-        pset_1d = calculate_ram_mask(pset_1d)
+        dataset_1d["sc_direction_vector"] = np.array([1.0, 1.0, 0.0])
+        dataset_1d = calculate_ram_mask(dataset_1d)
 
         # Verify dimensions are preserved
-        assert pset_1d.data["ram_mask"].dims == original_dims_1d
+        assert dataset_1d["ram_mask"].dims == original_dims_1d
 
     def test_update_ram_mask_replaces_existing(self):
         """Test that update_ram_mask replaces existing ram_mask."""
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Set initial mask with +X direction
-        pset.data["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
-        ram_mask_1 = pset.data["ram_mask"].values.copy()
+        ram_mask_1 = pset["ram_mask"].values.copy()
 
         # Update mask with opposite direction
-        pset.data["sc_direction_vector"] = np.array([-1.0, 0.0, 0.0])
+        pset["sc_direction_vector"] = np.array([-1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
-        ram_mask_2 = pset.data["ram_mask"].values.copy()
+        ram_mask_2 = pset["ram_mask"].values.copy()
 
         # The masks should be different
         assert not np.array_equal(ram_mask_1, ram_mask_2)
@@ -805,14 +773,14 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords(shape=(36, 18))
 
         # Use an arbitrary direction (not aligned with axes)
-        pset.data["sc_direction_vector"] = np.array([1.0, 1.0, 0.5])
+        pset["sc_direction_vector"] = np.array([1.0, 1.0, 0.5])
         pset = calculate_ram_mask(pset)
 
         # Verify the mask was created
-        assert "ram_mask" in pset.data
+        assert "ram_mask" in pset
 
         # Verify approximately half the pixels are RAM (for a sphere)
-        ram_fraction = pset.data["ram_mask"].sum().values / pset.data["ram_mask"].size
+        ram_fraction = pset["ram_mask"].sum().values / pset["ram_mask"].size
         # Should be close to 0.5, allowing for discretization effects
         np.testing.assert_allclose(ram_fraction, 0.5, atol=0.05)
 
