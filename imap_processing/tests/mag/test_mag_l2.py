@@ -86,6 +86,33 @@ def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
         assert np.isnan(dsrf_vectors[i]).all(), f"Vectors at index {i} should be NaN"
 
 
+def test_mag_l2_frame_transform_fails(norm_dataset, mag_test_l2_data, caplog):
+    calibration_dataset = mag_test_l2_data[0]
+
+    offset_dataset = mag_test_l2_data[1]
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        side_effect=Exception("Simulated frame transform failure"),
+    ):
+        mag_l2(
+            calibration_dataset,
+            offset_dataset,
+            norm_dataset,
+            np.datetime64("2025-10-17"),
+        )
+
+    expected_frames = [
+        ValidFrames.SRF,
+        ValidFrames.GSE,
+        ValidFrames.GSM,
+        ValidFrames.RTN,
+        ValidFrames.DSRF,
+    ]
+
+    for frame in expected_frames:
+        assert f"Error rotating to frame {frame.name}" in caplog.text
+
+
 def test_offset_application(norm_dataset, mag_test_l2_data):
     # Test against zeros
     offsets = mag_test_l2_data[1]
