@@ -353,10 +353,9 @@ def get_energy_info(
     # The delta minus is the difference between the center of the bin
     # and the 'left edge' of the bin. The delta plus is the difference
     # between the 'right edge' of the bin and the center of the bin
-    # print("Energy min before reading it in np", energy_table["min_energy"])
     min_energy = np.array(energy_table["min_energy"], dtype=np.float64)
     max_energy = np.array(energy_table["max_energy"], dtype=np.float64)
-    # print(f"Min energy: {min_energy}, Max energy: {max_energy}")
+
     centers = np.sqrt(min_energy * max_energy)
     deltas_minus = centers - min_energy
     deltas_plus = max_energy - centers
