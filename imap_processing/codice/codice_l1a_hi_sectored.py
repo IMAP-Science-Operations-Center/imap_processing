@@ -81,14 +81,13 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # ========= Decompress and Calculate Reshape information ===========
     # Lookup SW or NSW species based on APID
-    if view_tab_obj.apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
-        species_data = sci_lut_data["data_product_hi_tab"]["0"]["sectored"]
-        species_names = species_data.keys()
-        logical_source_id = "imap_codice_l1a_hi-sectored"
-    else:
+    if view_tab_obj.apid != CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
         raise ValueError(
             f"Unknown apid {view_tab_obj.apid} in Hi Sectored species processing."
         )
+    species_data = sci_lut_data["data_product_hi_tab"]["0"]["sectored"]
+    species_names = species_data.keys()
+    logical_source_id = "imap_codice_l1a_hi-sectored"
 
     compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
     # Decompress data using byte count information from decommed data
