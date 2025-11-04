@@ -32,7 +32,58 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
             norm_dataset,
             np.datetime64("2025-10-17"),
         )
-    assert "vectors" in l2[0].data_vars
+
+    expected_frames = [
+        ValidFrames.SRF,
+        ValidFrames.GSE,
+        ValidFrames.GSM,
+        ValidFrames.RTN,
+        ValidFrames.DSRF,
+    ]
+
+    assert len(l2) == len(expected_frames), (
+        f"L2 should produce {len(expected_frames)} frames"
+    )
+
+    for i, dataset in enumerate(l2):
+        assert "vectors" in dataset.data_vars
+        assert expected_frames[i].name in dataset.attrs["Data_type"]
+
+
+def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
+    def return_some_nan_matrices_for_dsrf(et, from_frame, to_frame):
+        matrices = np.tile(np.eye(3), (len(et), 1, 1))
+        if to_frame == ValidFrames.DSRF.value:
+            for i in range(10, matrices.shape[0], 10):  # every 10th matrix is NaN
+                matrices[i] = np.full((3, 3), np.nan)
+        return matrices
+
+    calibration_dataset = mag_test_l2_data[0]
+    offset_dataset = mag_test_l2_data[1]
+
+    with patch(
+        "imap_processing.spice.geometry.get_rotation_matrix",
+        side_effect=return_some_nan_matrices_for_dsrf,
+    ):
+        l2 = mag_l2(
+            calibration_dataset,
+            offset_dataset,
+            norm_dataset,
+            np.datetime64("2025-10-17"),
+        )
+
+    assert len(l2) == 5, "L2 should produce 5 frames"
+
+    for dataset in l2:
+        assert "vectors" in dataset.data_vars
+
+    assert (
+        l2[-1].attrs["Data_type"] == "L2_norm-dsrf>Level 2 normal rate data in DSRF"
+    ), "Last frame should be DSRF"
+
+    dsrf_vectors = l2[-1]["vectors"].data
+    for i in range(10, len(dsrf_vectors), 10):
+        assert np.isnan(dsrf_vectors[i]).all(), f"Vectors at index {i} should be NaN"
 
 
 def test_offset_application(norm_dataset, mag_test_l2_data):
