@@ -6,6 +6,8 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
+from imap_processing.ultra.l1b.de import FILLVAL_FLOAT32
 from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -71,6 +73,29 @@ def mock_data_l1b_extendedspin_dict():
     return data_dict
 
 
+@pytest.fixture
+def mock_get_annotated_particle_velocity():
+    """
+    Mock behavior of get_annotated_particle_velocity.
+
+    Returns NaN-filled arrays matching the expected output shape.
+    """
+
+    def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
+        num_events = event_times.size
+        return (
+            np.full((num_events, 3), np.nan),  # sc_velocity
+            np.full((num_events, 3), np.nan),  # sc_dps_velocity
+            np.full((num_events, 3), np.nan),  # helio_velocity
+        )
+
+    with mock.patch(
+        "imap_processing.ultra.l1b.de.get_annotated_particle_velocity"
+    ) as mocked_func:
+        mocked_func.side_effect = side_effect_func
+        yield mocked_func
+
+
 def test_create_extendedspin_dataset(mock_data_l1b_extendedspin_dict):
     """Tests that dataset is created as expected."""
     dataset = create_dataset(
@@ -101,13 +126,12 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
 
 
 @pytest.mark.external_test_data
-@mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
 def test_cdf_de(
-    mock_get_annotated_particle_velocity,
     de_dataset,
     use_fake_spin_data_for_time,
     ancillary_files,
     use_fake_repoint_data_for_time,
+    mock_get_annotated_particle_velocity,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
@@ -117,22 +141,6 @@ def test_cdf_de(
     # Create a spin table that cover spin 0-141
     use_fake_spin_data_for_time(511000000, 511000000 + 86400 * 5)
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
-
-    # Mock get_annotated_particle_velocity to avoid needing kernels
-    def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
-        """
-        Mock behavior of get_annotated_particle_velocity.
-
-        Returns NaN-filled arrays matching the expected output shape.
-        """
-        num_events = event_times.size
-        return (
-            np.full((num_events, 3), np.nan),  # sc_velocity
-            np.full((num_events, 3), np.nan),  # sc_dps_velocity
-            np.full((num_events, 3), np.nan),  # helio_velocity
-        )
-
-    mock_get_annotated_particle_velocity.side_effect = side_effect_func
 
     l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
 
@@ -149,6 +157,31 @@ def test_cdf_de(
         test_data_path.name
         == "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
     )
+
+
+@pytest.mark.external_test_data
+def test_cdf_de_flags(
+    mock_get_annotated_particle_velocity,
+    de_dataset,
+    use_fake_spin_data_for_time,
+    ancillary_files,
+    use_fake_repoint_data_for_time,
+):
+    """Tests that the de code flags events not in a repointing."""
+    data_dict = {}
+    de_dataset.attrs["Repointing"] = "repoint00000"
+    data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    # Create a spin table that cover spin 0-141
+    use_fake_spin_data_for_time(511000000, 511000000 + 86400 * 5)
+    # Use repoint data that will NOT cover the event times to test flag setting
+    use_fake_repoint_data_for_time(np.arange(0, +86400 * 5, 86400))
+
+    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
+    # All valid events should be flagged as DURINGREPOINT since the repoint data does
+    # not cover any of the event times
+    valid_events = l1b_de_dataset[0]["event_times"] != FILLVAL_FLOAT32
+    flags = l1b_de_dataset[0]["quality_outliers"].values[valid_events]
+    assert np.all((flags & ImapDEOutliersUltraFlags.DURINGREPOINT.value) != 0)
 
 
 @pytest.mark.external_test_data
