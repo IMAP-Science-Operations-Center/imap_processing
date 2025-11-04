@@ -344,7 +344,9 @@ def add_spacecraft_velocity_to_pset(
     - "sc_velocity": Spacecraft velocity vector (km/s) with dims ["x_y_z"]
     - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
     """
-    # Compute ephemeris time (J2000 seconds) of PSET midpoint time
+    # Compute ephemeris time (J2000 seconds) of PSET midpoint
+    # epoch contains Pointing start time, and epoch_delta indicates the total
+    # duration of the Pointing
     et = ttj2000ns_to_et(pset["epoch"].values[0] + pset["epoch_delta"].values[0] / 2)
     # Get spacecraft state in HAE frame
     sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)

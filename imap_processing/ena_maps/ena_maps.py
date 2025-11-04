@@ -672,8 +672,7 @@ class HiPointingSet(LoHiBasePointingSet):
             for key, value in self.l1c_to_l2_var_mapping.items()
             if key in self.data
         }
-        if rename_dict:
-            self.data = self.data.rename(rename_dict)
+        self.data = self.data.rename(rename_dict)
 
         # Add obs_date variable to be used in determining a map mean obs_date
         self.data["obs_date"] = xr.full_like(
