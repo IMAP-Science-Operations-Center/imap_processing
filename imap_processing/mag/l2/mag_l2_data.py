@@ -215,6 +215,9 @@ class MagL2L1dBase:
         self.quality_flags = self.quality_flags[day_start_index:day_end_index]
         self.quality_bitmask = self.quality_bitmask[day_start_index:day_end_index]
 
+        if self.epoch_et is not None:
+            self.epoch_et = self.epoch_et[day_start_index:day_end_index]
+
     @staticmethod
     def calculate_magnitude(
         vectors: np.ndarray,
