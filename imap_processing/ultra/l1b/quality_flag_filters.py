@@ -16,7 +16,10 @@ SPIN_QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
 }
 
 DE_QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
-    "quality_outliers": [ImapDEOutliersUltraFlags.FOV],
+    "quality_outliers": [
+        ImapDEOutliersUltraFlags.FOV,
+        ImapDEOutliersUltraFlags.DURINGREPOINT,
+    ],
     "quality_scattering": [
         ImapDEScatteringUltraFlags.ABOVE_THRESHOLD,
     ],

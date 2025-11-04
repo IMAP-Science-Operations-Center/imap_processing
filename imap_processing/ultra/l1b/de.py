@@ -325,10 +325,10 @@ def calculate_de(
         in_pointing = calculate_events_in_pointing(
             repoint_id, event_times[valid_events]
         )
+        events_to_flag = np.zeros(len(quality_flags), dtype=bool)
+        events_to_flag[valid_events] = ~in_pointing
         # Update quality flags for valid events that are not in the pointing
-        quality_flags[valid_events][~in_pointing] |= (
-            ImapDEOutliersUltraFlags.DURINGREPOINT.value
-        )
+        quality_flags[events_to_flag] |= ImapDEOutliersUltraFlags.DURINGREPOINT.value
         # Update valid_events to only include times within a pointing
         valid_events[valid_events] &= in_pointing
 
