@@ -9,6 +9,7 @@ Paradigms for developing this module:
 * Always return numpy arrays for vectorized calls.
 """
 
+import logging
 import typing
 from enum import IntEnum
 
@@ -16,6 +17,8 @@ import numpy as np
 import numpy.typing as npt
 import spiceypy
 from numpy.typing import NDArray
+
+logger = logging.getLogger(__name__)
 
 
 class SpiceBody(IntEnum):
@@ -367,6 +370,8 @@ def get_rotation_matrix(
     """
     Get the rotation matrix/matrices that can be used to transform between frames.
 
+    If no transformation is defined for a specific time, a matrix of NaNs is returned.
+
     This is a vectorized wrapper around `spiceypy.pxform`
     "Return the matrix that transforms position vectors from one specified frame
     to another at a specified epoch."
@@ -388,8 +393,21 @@ def get_rotation_matrix(
         `et` is a np.ndarray, the returned rotation matrix is of shape `(n, 3, 3)`
         where `n` matches the number of elements in et.
     """
+
+    def pxform_error_handler(  # type: ignore[no-untyped-def]
+        *arg, **kwargs
+    ):  # numpydoc ignore=GL08
+        try:
+            return spiceypy.pxform(*arg, **kwargs)
+        except spiceypy.utils.exceptions.SpiceNOFRAMECONNECT:
+            logger.exception(
+                f"Error getting rotation matrix from {from_frame} to {to_frame}"
+                f" at et={et}. Returning NaNs."
+            )
+            return np.full((3, 3), np.nan)
+
     vec_pxform = np.vectorize(
-        spiceypy.pxform,
+        pxform_error_handler,
         excluded=["fromstr", "tostr"],
         signature="(),(),()->(3,3)",
         otypes=[np.float64],

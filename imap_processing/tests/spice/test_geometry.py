@@ -356,6 +356,25 @@ def test_get_rotation_matrix(furnish_kernels):
         assert rotation.shape == (3, 3)
 
 
+@pytest.mark.external_kernel
+def test_get_rotation_matrix_no_transformation_defined_for_et(furnish_kernels):
+    """Test error handling in get_rotation_matrix()."""
+    kernels = [
+        "naif0012.tls",
+        "imap_100.tf",
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+        "de440s.bsp",
+    ]
+    with furnish_kernels(kernels):
+        # Midnight is not defined in pointing frame
+        et = spiceypy.utc2et("2029-01-01T00:00:00.000")
+        rotation = get_rotation_matrix(et, SpiceFrame.IMAP_MAG_O, SpiceFrame.IMAP_DPS)
+        assert np.isnan(rotation).all()
+
+
 def test_instrument_pointing(furnish_kernels):
     kernels = [
         "naif0012.tls",
