@@ -195,8 +195,11 @@ def generate_hi_map(
         output_map.data_1d, l2_ancillary_path_dict, descriptor
     )
 
-    output_map.data_1d["obs_date"].data = output_map.data_1d["obs_date"].data.astype(
-        np.int64
+    # TODO: Handle variable types correctly in RectangularSkyMap.build_cdf_dataset
+    output_map.data_1d["obs_date"].values = np.where(
+        np.isfinite(output_map.data_1d["obs_date"].values),
+        output_map.data_1d["obs_date"].values.astype(np.int64),
+        -9223372036854775808,
     )
     # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
     output_map.data_1d["obs_date_range"] = xr.zeros_like(output_map.data_1d["obs_date"])
