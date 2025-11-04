@@ -1,5 +1,7 @@
 """Module to run MAG L2 processing."""
 
+import logging
+
 import numpy as np
 import xarray as xr
 
@@ -7,6 +9,8 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
+
+logger = logging.getLogger(__name__)
 
 
 def mag_l2(
@@ -105,17 +109,31 @@ def mag_l2(
         frame=instrument_frame,
     )
 
+    # L2 data should not include the extra 30 min padding either side
+    # Note: this must be done after applying offsets and timedeltas
+    l2_data.truncate_to_24h(day)
+
     attributes = ImapCdfAttributes()
     attributes.add_instrument_global_attrs("mag")
     attributes.add_instrument_variable_attrs("mag", "l2")
 
     # Rotate from the MAG frame into the SRF frame
-    l2_data.rotate_frame(ValidFrames.SRF)
-    imap_srf = l2_data.generate_dataset(attributes, day)
-    l2_data.rotate_frame(ValidFrames.DSRF)
-    imap_dsrf = l2_data.generate_dataset(attributes, day)
+    frames: list[xr.Dataset] = []
 
-    return [imap_dsrf, imap_srf]
+    for frame in [
+        ValidFrames.SRF,
+        ValidFrames.GSE,
+        ValidFrames.GSM,
+        ValidFrames.RTN,
+        ValidFrames.DSRF,  # should be last as some vectors may become NaN
+    ]:
+        try:
+            l2_data.rotate_frame(frame)
+            frames.append(l2_data.generate_dataset(attributes, day))
+        except Exception:
+            logger.exception(f"Error rotating to frame {frame.name}")
+
+    return frames
 
 
 def retrieve_matrix_from_l2_calibration(

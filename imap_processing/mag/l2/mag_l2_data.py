@@ -25,6 +25,7 @@ class ValidFrames(Enum):
     DSRF = SpiceFrame.IMAP_DPS
     SRF = SpiceFrame.IMAP_SPACECRAFT
     GSE = SpiceFrame.IMAP_GSE
+    GSM = SpiceFrame.IMAP_GSM
     RTN = SpiceFrame.IMAP_RTN
 
 
