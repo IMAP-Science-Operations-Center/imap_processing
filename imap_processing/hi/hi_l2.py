@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.ena_maps import (
     HiPointingSet,
     RectangularSkyMap,
@@ -126,19 +127,22 @@ def generate_hi_map(
 
     for pset_path in psets:
         logger.info(f"Processing {pset_path}")
-        pset = HiPointingSet(pset_path)
+        pset_ds = load_cdf(pset_path)
+
+        # Rename some PSET vars to match L2 variables
+        pset_ds = pset_ds.rename(HiPointingSet.l1c_to_l2_var_mapping)
 
         # Store the first PSET esa_energy_step values and make sure every PSET
         # contains the same set of esa_energy_step values.
         # TODO: Correctly handle PSETs with different esa_energy_step values.
         if cached_esa_steps is None:
-            cached_esa_steps = pset.data["esa_energy_step"].values.copy()
+            cached_esa_steps = pset_ds["esa_energy_step"].values.copy()
             esa_ds = esa_energy_df(
                 l2_ancillary_path_dict["esa-energies"],
-                pset.data["esa_energy_step"].values,
+                pset_ds["esa_energy_step"].values,
             ).to_xarray()
             energy_kev = esa_ds["nominal_central_energy"]
-        if not np.array_equal(cached_esa_steps, pset.data["esa_energy_step"].values):
+        if not np.array_equal(cached_esa_steps, pset_ds["esa_energy_step"].values):
             raise ValueError(
                 "All PSETs must have the same set of esa_energy_step values."
             )
@@ -146,28 +150,28 @@ def generate_hi_map(
         if descriptor.frame_descriptor == "hf":
             # convert esa nominal central energy from keV to eV
             esa_energy_ev = energy_kev * 1000
-            pset = apply_compton_getting_correction(pset, esa_energy_ev)
+            pset_ds = apply_compton_getting_correction(pset_ds, esa_energy_ev)
         else:
-            pset = add_spacecraft_velocity_to_pset(pset)
-            pset = calculate_ram_mask(pset)
+            pset_ds = add_spacecraft_velocity_to_pset(pset_ds)
+            pset_ds = calculate_ram_mask(pset_ds)
 
         # Multiply variables that need to be exposure time weighted average by
         # exposure factor.
         for var in vars_to_exposure_time_average:
-            if var in pset.data:
-                pset.data[var] *= pset.data["exposure_factor"]
+            if var in pset_ds:
+                pset_ds[var] *= pset_ds["exposure_factor"]
 
         # Set the mask used to filter ram/anti-ram pixels
         pset_valid_mask = None  # Default to no mask (full spin)
         if descriptor.spin_phase == "ram":
-            pset_valid_mask = pset.data["ram_mask"]
+            pset_valid_mask = pset_ds["ram_mask"]
             logger.debug(
                 f"Using ram mask with shape: {pset_valid_mask.shape} "
                 f"containing {np.prod(pset_valid_mask.shape)} pixels,"
                 f"{np.sum(pset_valid_mask.values)} of which are True."
             )
         elif descriptor.spin_phase == "anti":
-            pset_valid_mask = ~pset.data["ram_mask"]
+            pset_valid_mask = ~pset_ds["ram_mask"]
             logger.debug(
                 f"Using anti-ram mask with shape: {pset_valid_mask.shape} "
                 f"containing {np.prod(pset_valid_mask.shape)} pixels,"
@@ -175,8 +179,9 @@ def generate_hi_map(
             )
 
         # Project (bin) the PSET variables into the map pixels
+        hi_pset = HiPointingSet(pset_ds)
         output_map.project_pset_values_to_map(
-            pset, list(vars_to_bin), pset_valid_mask=pset_valid_mask
+            hi_pset, list(vars_to_bin), pset_valid_mask=pset_valid_mask
         )
 
     # Finish the exposure time weighted mean calculation of backgrounds

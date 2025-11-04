@@ -7,7 +7,7 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TypeVar
+from typing import ClassVar, TypeVar
 
 import astropy_healpix.healpy as hp
 import numpy as np
@@ -653,19 +653,27 @@ class HiPointingSet(LoHiBasePointingSet):
         Hi L1C pointing set data loaded in a xarray.DataArray.
     """
 
+    # class variable that stores the mapping of variables that need to be
+    # renamed to match L2 variables
+    l1c_to_l2_var_mapping: ClassVar[dict[str, str]] = {
+        "exposure_times": "exposure_factor",
+        "background_rates": "bg_rates",
+        "background_rates_uncertainty": "bg_rates_unc",
+    }
+
     def __init__(self, dataset: xr.Dataset | str | Path):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_HAE)
 
         self.spatial_coords = ("spin_angle_bin",)
 
-        # Rename some PSET vars to match L2 variables
-        self.data = self.data.rename(
-            {
-                "exposure_times": "exposure_factor",
-                "background_rates": "bg_rates",
-                "background_rates_uncertainty": "bg_rates_unc",
-            }
-        )
+        # Rename some PSET vars to match L2 variables (if necessary)
+        rename_dict = {
+            key: value
+            for key, value in self.l1c_to_l2_var_mapping.items()
+            if key in self.data
+        }
+        if rename_dict:
+            self.data = self.data.rename(rename_dict)
 
         # Add obs_date variable to be used in determining a map mean obs_date
         self.data["obs_date"] = xr.full_like(
