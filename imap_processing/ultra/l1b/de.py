@@ -5,7 +5,6 @@ import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.quality_flags import (
-    ImapAttitudeUltraFlags,
     ImapDEOutliersUltraFlags,
     ImapDEScatteringUltraFlags,
 )
@@ -328,7 +327,7 @@ def calculate_de(
         )
         # Update quality flags for valid events that are not in the pointing
         quality_flags[valid_events][~in_pointing] |= (
-            ImapAttitudeUltraFlags.DURINGREPOINT.value
+            ImapDEOutliersUltraFlags.DURINGREPOINT.value
         )
         # Update valid_events to only include times within a pointing
         valid_events[valid_events] &= in_pointing

@@ -45,6 +45,7 @@ class ImapDEOutliersUltraFlags(FlagNameMixin):
     PHCORR = 2**1  # bit 1
     COINPH = 2**2  # bit 2 # Event validity
     INVALID_ENERGY = 2**3  # bit 3
+    DURINGREPOINT = 2**4  # bit 4 # event during a repointing
 
 
 class ImapHkUltraFlags(FlagNameMixin):
@@ -65,7 +66,6 @@ class ImapAttitudeUltraFlags(FlagNameMixin):
     AUXMISMATCH = 2**1  # bit 1 # aux packet does not match Universal Spin Table
     SPINPHASE = 2**2  # bit 2 # spin phase flagged by Universal Spin Table
     SPINPERIOD = 2**3  # bit 3 # spin period flagged by Universal Spin Table
-    DURINGREPOINT = 2**4  # bit 4 # spin during a repointing
 
 
 class ImapRatesUltraFlags(FlagNameMixin):
