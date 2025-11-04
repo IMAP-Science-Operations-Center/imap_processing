@@ -426,7 +426,6 @@ def test_hi_counters_singles():
     assert cdf_file.name == "imap_codice_l1a_hi-counters-singles_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in sectored work why this test is failing")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_hi_omni(mock_get_file_paths, codice_lut_path):
     """Tests hi-omni."""
@@ -469,19 +468,18 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     assert cdf_file.name == "imap_codice_l1a_hi-omni_20250814_v001.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     """Tests hi-sectored."""
     mock_get_file_paths.side_effect = [
         codice_lut_path(descriptor="hi-sectored", data_type="l0"),
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
-
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-omni_20250814_v007.cdf"
+        / "imap_codice_l1a_hi-sectored_20250814_v007.cdf"
     )
     val_data = load_cdf(val_path)
 
@@ -494,8 +492,17 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v999.cdf"
+    for variable in val_data.coords:
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+
+    processed_data.attrs["Data_version"] = "001"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v001.cdf"
 
 
 @pytest.mark.skip(reason="Revisit this in l1a refactor work")

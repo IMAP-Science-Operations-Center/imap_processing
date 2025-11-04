@@ -7,6 +7,7 @@ from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l1a_hi_omni import l1a_hi_omni
+from imap_processing.codice.codice_l1a_hi_sectored import l1a_hi_sectored
 from imap_processing.codice.codice_l1a_lo_angular import l1a_lo_angular
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.utils import (
@@ -63,5 +64,7 @@ def process_l1a(dependency: ProcessingInputCollection) -> list[xr.Dataset]:
             datasets.append(l1a_lo_angular(datasets_by_apid[apid], lut_file))
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
             datasets.append(l1a_hi_omni(datasets_by_apid[apid], lut_file))
-
+        elif apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
+            logger.info("Processing Hi Sectored Species Counts")
+            datasets.append(l1a_hi_sectored(datasets_by_apid[apid], lut_file))
     return datasets
