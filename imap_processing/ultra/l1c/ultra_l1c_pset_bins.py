@@ -292,7 +292,7 @@ def get_deadtime_ratios_by_spin_phase(
     numpy.ndarray
         Nominal deadtime ratios at every spin phase step.
     """
-    if sectored_rates is None:
+    if sectored_rates is None or sectored_rates.epoch.size == 0:
         logger.warning(
             "No sector mode data found in the parameters dataset. Using "
             "static dead time ratios from an ancillary file."
