@@ -119,7 +119,10 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # TODO: why multiply by 2?
     epoch_times = (
         np.repeat(epoch_center, n_spins)
-        + np.tile(np.arange(n_spins), num_packets) * np.repeat(deltas, n_spins) * 2
+        + np.tile(np.arange(n_spins), num_packets)
+        * np.repeat(deltas, n_spins)
+        / 1e9
+        * 2
     )
 
     # ========== Initialize CDF Dataset with Coordinates ===========

@@ -250,7 +250,8 @@ def get_codice_epoch_time(
     Returns
     -------
     tuple[np.ndarray, np.ndarray]
-        (center_times, delta_times).
+        (center_times (s), delta_times (ns)). center_times is converted to
+        nanoseconds at CDF write time.
     """
     # If Lo sensor
     if view_tab_obj.sensor == 0:
@@ -278,7 +279,7 @@ def get_codice_epoch_time(
         acq_start_seconds + acq_start_subseconds / 65536 + (delta_times / 1e9)
     )
 
-    return center_times_seconds, delta_times / 1e9
+    return center_times_seconds, delta_times
 
 
 def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:

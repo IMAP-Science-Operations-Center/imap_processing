@@ -231,9 +231,6 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
-        # TODO: check with Joey and Michael
-        if variable.startswith("epoch_delta"):
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -277,9 +274,6 @@ def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
-        # TODO: check with Joey and Michael on Monday
-        if variable.startswith("epoch_delta"):
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -323,9 +317,6 @@ def test_lo_sw_angular(mock_get_file_paths, codice_lut_path):
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
-        # TODO: check with Joey and Michael on Monday
-        if variable.startswith("epoch_delta"):
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -365,9 +356,6 @@ def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
     # Process the input data
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     for variable in val_data.data_vars:
-        # TODO: check with Joey and Michael on Monday
-        if variable.startswith("epoch_delta"):
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -458,7 +446,7 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     val_data = load_cdf(val_path)
 
     for variable in val_data.data_vars:
-        # TODO: check with Joey and Michael on Monday
+        # TODO: check with Joey and Michael
         if variable.startswith("epoch_delta"):
             continue
         np.testing.assert_allclose(
