@@ -8,9 +8,8 @@ import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.quality_flags import ImapPSETUltraFlags
-from imap_processing.spice.repoint import get_pointing_times
+from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.time import (
-    et_to_met,
     met_to_ttj2000ns,
 )
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
@@ -125,9 +124,11 @@ def calculate_spacecraft_pset(
     )
     healpix = np.arange(n_pix)
     # Get the start and stop times of the pointing period
-    pointing_range_met = get_pointing_times(
-        float(et_to_met(species_dataset["event_times"].mean()))
-    )
+    repoint_id = species_dataset.attrs.get("Repointing", None)
+    if repoint_id is None:
+        raise ValueError("Repointing ID attribute is missing from the dataset.")
+
+    pointing_range_met = get_pointing_times_from_id(repoint_id)
 
     # Calculate exposure times
     logger.info("Calculating spacecraft exposure times with deadtime correction.")

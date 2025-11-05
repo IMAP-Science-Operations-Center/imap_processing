@@ -2,6 +2,7 @@
 
 import functools
 import logging
+import re
 from pathlib import Path
 
 import numpy as np
@@ -222,6 +223,49 @@ def get_pointing_times(met_time: float) -> tuple[float, float]:
         repoint_df["repoint_end_met"] == pointing_start_met
     ][0]
     pointing_end_met = repoint_df["repoint_start_met"].iloc[pointing_idx + 1].item()
+    return pointing_start_met, pointing_end_met
+
+
+def get_pointing_times_from_id(repoint_id: int | str) -> tuple[float, float]:
+    """
+    Get the start and end MET times for the pointing given a repoint ID.
+
+    Parameters
+    ----------
+    repoint_id : int
+        The repoint ID corresponding to the pointing.
+
+    Returns
+    -------
+    pointing_start_time : float
+        The MET time of the repoint maneuver that ends before the query MET time.
+    pointing_end_time : float
+        The MET time of the repoint maneuver that starts after the query MET time.
+    """
+    if isinstance(repoint_id, str):
+        if not bool(re.fullmatch(r"repoint\d{5}", str(repoint_id))):
+            raise ValueError(
+                f"Invalid repoint ID string format: {repoint_id}. "
+                f"Expected format is 'repointXXXXX'"
+            )
+
+        repoint_id = int(repoint_id.replace("repoint", ""))
+
+    repoint_df = get_repoint_data()
+    # To find the pointing start and stop, get the end of the current repointing
+    # and the start of the next repointing
+    repoint_row = repoint_df[repoint_df["repoint_id"] == repoint_id]
+    if repoint_row.empty:
+        raise ValueError(f"Repoint ID {repoint_id} not found in repoint table.")
+    next_repoint_row = repoint_df[repoint_df["repoint_id"] == repoint_id + 1]
+    if next_repoint_row.empty:
+        raise ValueError(
+            "Pointing end time not found. Either current "
+            "pointing is ongoing or the repoint table is outdated."
+        )
+
+    pointing_start_met = repoint_row["repoint_end_met"].values[0]
+    pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
     return pointing_start_met, pointing_end_met
 
 

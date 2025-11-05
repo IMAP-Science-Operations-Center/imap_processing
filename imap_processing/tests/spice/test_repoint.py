@@ -82,6 +82,38 @@ def test_get_pointing_times(fake_repoint_data):
     assert pointing_end_time == expected_times[1]
 
 
+def test_get_pointing_times_from_id(fake_repoint_data):
+    """Test coverage for get_pointing_times_from_id function."""
+    id = 0
+    expected_times = (5.1, 15.2)
+
+    pointing_start_time, pointing_end_time = repoint.get_pointing_times_from_id(id)
+
+    assert pointing_start_time == expected_times[0]
+    assert pointing_end_time == expected_times[1]
+
+    # Test with string id
+    str_id = "repoint00000"
+    pointing_start_time, pointing_end_time = repoint.get_pointing_times_from_id(str_id)
+
+    assert pointing_start_time == expected_times[0]
+    assert pointing_end_time == expected_times[1]
+
+
+def test_get_pointing_times_from_id_no_end_time(fake_repoint_data):
+    """Test coverage for get_pointing_times_from_id function."""
+    id = 2
+    with pytest.raises(ValueError, match="Pointing end time not found"):
+        repoint.get_pointing_times_from_id(id)
+
+
+def test_get_pointing_times_from_no_id(fake_repoint_data):
+    """Test coverage for get_pointing_times_from_id function."""
+    id = 3
+    with pytest.raises(ValueError, match="Repoint ID 3 not found in repoint table."):
+        repoint.get_pointing_times_from_id(id)
+
+
 def test_get_pointing_mid_time(fake_repoint_data, monkeypatch):
     """Test coverage for get_pointing_mid_time function."""
     times = 6

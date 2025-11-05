@@ -9,7 +9,7 @@ from imap_processing.quality_flags import (
     ImapDEScatteringUltraFlags,
 )
 from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.repoint import get_repoint_data
+from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.time import et_to_met
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
@@ -418,15 +418,7 @@ def calculate_events_in_pointing(
         Boolean array indicating whether each event is within the pointing period
         combined with the valid_events mask.
     """
-    # TODO add this as a helper function in repoint.py
-    repoint_data = get_repoint_data()
-    # To find the pointing start and stop, get the end of the current repointing
-    # and the start of the next repointing
-    repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id]
-    next_repoint_row = repoint_data[repoint_data["repoint_id"] == repoint_id + 1]
-    pointing_start_met = repoint_row["repoint_end_met"].values[0]
-    pointing_end_met = next_repoint_row["repoint_start_met"].values[0]
-
+    pointing_start_met, pointing_end_met = get_pointing_times_from_id(repoint_id)
     # Check which events are within the pointing
     in_pointing = (et_to_met(event_times) >= pointing_start_met) & (
         et_to_met(event_times) <= pointing_end_met
