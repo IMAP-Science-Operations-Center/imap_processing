@@ -40,7 +40,6 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     xarray.Dataset
         Processed L1A dataset for Hi Omni data.
     """
-    # Implementation of Hi Omni L1A processing goes here
     # Get these values from unpacked data. These are used to
     # lookup in LUT table.
     table_id = unpacked_dataset["table_id"].values[0]
@@ -80,7 +79,6 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     # ========= Decompress and Calculate Reshape information ===========
-    # Lookup SW or NSW species based on APID
     if view_tab_obj.apid != CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
         raise ValueError(
             f"Unknown apid {view_tab_obj.apid} in Hi Sectored species processing."
