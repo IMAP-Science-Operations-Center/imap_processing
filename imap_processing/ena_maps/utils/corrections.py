@@ -657,6 +657,7 @@ def interpolate_map_flux_to_helio_frame(
     map_ds: xr.Dataset,
     esa_energies_ev: xr.DataArray,
     helio_energies_ev: xr.DataArray,
+    vars_to_interpolate: list[str],
 ) -> xr.Dataset:
     """
     Interpolate flux from spacecraft frame to heliocentric frame energies.
@@ -679,6 +680,13 @@ def interpolate_map_flux_to_helio_frame(
     helio_energies_ev : xarray.DataArray
         The heliocentric frame energies to interpolate to (in eV).
         In practice, these are the same as esa_energies_ev.
+    vars_to_interpolate : list(str)
+        List of variables to perform interpolation on. This is just the base
+        flux/intensity variable. It is assumed that the associated statistical
+        uncertainty and systematic error variables are also present in the input
+        dataset and will be interpolated as well. For example, if ["ena_intensity"]
+        is input, then the variables "ena_intensity", "ena_intensity_stat_uncert",
+        and "ena_intensity_sys_err" will be interpolated.
 
     Returns
     -------
@@ -689,9 +697,6 @@ def interpolate_map_flux_to_helio_frame(
 
     # Work with xarray DataArrays to handle arbitrary spatial dimensions
     energy_sc = map_ds["energy_sc"]
-    intensity = map_ds["ena_intensity"]
-    stat_unc = map_ds["ena_intensity_stat_uncert"]
-    sys_err = map_ds["ena_intensity_sys_err"]
 
     # Step 1: Find bounding ESA energy indices for each position
     # Use np.searchsorted on flattened array, then reshape back
@@ -721,65 +726,70 @@ def interpolate_map_flux_to_helio_frame(
         left_idx, dims=energy_sc.dims, coords=coords_without_energy
     )
 
-    # Step 2: Extract flux values at bounding energy channels
-    # Use xarray's advanced indexing to get fluxes at left and right indices
-    flux_left = intensity.isel({"energy": left_idx_da})
-    flux_right = intensity.isel({"energy": right_idx_da})
-    stat_unc_left = stat_unc.isel({"energy": left_idx_da})
-    stat_unc_right = stat_unc.isel({"energy": right_idx_da})
-    sys_err_left = sys_err.isel({"energy": left_idx_da})
-
     # Get energy values at boundaries - select from esa_energies_ev using indices
     energy_left = esa_energies_ev.isel({"energy": left_idx_da})
     energy_right = esa_energies_ev.isel({"energy": right_idx_da})
 
-    # Step 3: Perform power-law interpolation to spacecraft energy
-    # slope = log(f_right/f_left) / log(e_right/e_left)
-    # flux_sc = f_left * (energy_sc / e_left)^slope
-    with np.errstate(divide="ignore", invalid="ignore"):
-        # Calculate slope for power-law interpolation
-        slope = np.log(flux_right / flux_left) / np.log(energy_right / energy_left)
+    for var_name in vars_to_interpolate:
+        # Step 2: Extract flux values at bounding energy channels
+        # Use xarray's advanced indexing to get fluxes at left and right indices
+        intensity = map_ds[var_name]
+        stat_unc = map_ds[f"{var_name}_stat_uncert"]
+        sys_err = map_ds[f"{var_name}_sys_err"]
+        flux_left = intensity.isel({"energy": left_idx_da})
+        flux_right = intensity.isel({"energy": right_idx_da})
+        stat_unc_left = stat_unc.isel({"energy": left_idx_da})
+        stat_unc_right = stat_unc.isel({"energy": right_idx_da})
+        sys_err_left = sys_err.isel({"energy": left_idx_da})
 
-        # Interpolate flux using power-law
-        flux_sc = flux_left * ((energy_sc / energy_left) ** slope)
+        # Step 3: Perform power-law interpolation to spacecraft energy
+        # slope = log(f_right/f_left) / log(e_right/e_left)
+        # flux_sc = f_left * (energy_sc / e_left)^slope
+        with np.errstate(divide="ignore", invalid="ignore"):
+            # Calculate slope for power-law interpolation
+            slope = np.log(flux_right / flux_left) / np.log(energy_right / energy_left)
 
-        # Interpolation factor for uncertainty propagation (Equations 75 & 76)
-        unc_factor = np.log(energy_sc / energy_left) / np.log(
-            energy_right / energy_left
-        )
+            # Interpolate flux using power-law
+            flux_sc = flux_left * ((energy_sc / energy_left) ** slope)
 
-        # Statistical uncertainty propagation (Equation 75):
-        # δJ = J * sqrt((δJ_left/J_left)^2 * (1 + unc_factor^2)
-        #               + unc_factor^2 * (δJ_right/J_right)^2)
-        stat_unc_sc = flux_sc * np.sqrt(
-            (stat_unc_left / flux_left) ** 2 * (1.0 + unc_factor**2)
-            + unc_factor**2 * (stat_unc_right / flux_right) ** 2
-        )
+            # Interpolation factor for uncertainty propagation (Equations 75 & 76)
+            unc_factor = np.log(energy_sc / energy_left) / np.log(
+                energy_right / energy_left
+            )
 
-        # Systematic uncertainty propagation (Equation 76):
-        # σJ^g = σJ^src_kref * (⟨E^s_kref⟩ / E^ESA_kref)^γ_kref * (E^h / ⟨E^s_kref⟩)
-        # Systematic error scales proportionally with flux during power-law
-        # interpolation
-        sys_err_sc = sys_err_left * ((energy_sc / energy_left) ** slope)
+            # Statistical uncertainty propagation (Equation 75):
+            # δJ = J * sqrt((δJ_left/J_left)^2 * (1 + unc_factor^2)
+            #               + unc_factor^2 * (δJ_right/J_right)^2)
+            stat_unc_sc = flux_sc * np.sqrt(
+                (stat_unc_left / flux_left) ** 2 * (1.0 + unc_factor**2)
+                + unc_factor**2 * (stat_unc_right / flux_right) ** 2
+            )
 
-    # Step 4: Energy scaling transformation (Liouville theorem)
-    # flux_helio = flux_sc * (helio_energy / energy_sc)
-    # Use xarray broadcasting - helio_energies_ev will broadcast along esa_energy_step
-    with np.errstate(divide="ignore", invalid="ignore"):
-        energy_ratio = helio_energies_ev / energy_sc
-        flux_helio = flux_sc * energy_ratio
-        stat_unc_helio = stat_unc_sc * energy_ratio
-        sys_err_helio = sys_err_sc * energy_ratio
+            # Systematic uncertainty propagation (Equation 76):
+            # σJ^g = σJ^src_kref * (⟨E^s_kref⟩ / E^ESA_kref)^γ_kref * (E^h / ⟨E^s_kref⟩)
+            # Systematic error scales proportionally with flux during power-law
+            # interpolation
+            sys_err_sc = sys_err_left * ((energy_sc / energy_left) ** slope)
 
-    # Set any location where the value is not finite to NaN (converts +/-inf to NaN)
-    flux_helio = flux_helio.where(np.isfinite(flux_helio), np.nan)
-    stat_unc_helio = stat_unc_helio.where(np.isfinite(stat_unc_helio), np.nan)
-    sys_err_helio = sys_err_helio.where(np.isfinite(sys_err_helio), np.nan)
+        # Step 4: Energy scaling transformation (Liouville theorem)
+        # flux_helio = flux_sc * (helio_energy / energy_sc)
+        # Using xarray broadcasting, helio_energies_ev will broadcast
+        # along esa_energy_step
+        with np.errstate(divide="ignore", invalid="ignore"):
+            energy_ratio = helio_energies_ev / energy_sc
+            flux_helio = flux_sc * energy_ratio
+            stat_unc_helio = stat_unc_sc * energy_ratio
+            sys_err_helio = sys_err_sc * energy_ratio
 
-    # Update the dataset with interpolated values
-    map_ds["ena_intensity"] = flux_helio
-    map_ds["ena_intensity_stat_uncert"] = stat_unc_helio
-    map_ds["ena_intensity_sys_err"] = sys_err_helio
+        # Set any location where the value is not finite to NaN (converts +/-inf to NaN)
+        flux_helio = flux_helio.where(np.isfinite(flux_helio), np.nan)
+        stat_unc_helio = stat_unc_helio.where(np.isfinite(stat_unc_helio), np.nan)
+        sys_err_helio = sys_err_helio.where(np.isfinite(sys_err_helio), np.nan)
+
+        # Update the dataset with interpolated values
+        map_ds[var_name] = flux_helio
+        map_ds[f"{var_name}_stat_uncert"] = stat_unc_helio
+        map_ds[f"{var_name}_sys_err"] = sys_err_helio
 
     return map_ds
 

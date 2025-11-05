@@ -230,7 +230,7 @@ def test_genarate_hi_map(
 ):
     """Test coverage for genarate_hi_map()"""
     mock_calc_ena_intensity.side_effect = lambda x, y, z: x
-    mock_interp_flux.side_effect = lambda x, y, z: x
+    mock_interp_flux.side_effect = lambda a, b, c, d: a
 
     kernels = [
         "imap_sclk_0000.tsc",

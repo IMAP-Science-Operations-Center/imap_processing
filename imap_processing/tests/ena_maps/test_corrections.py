@@ -862,7 +862,7 @@ class TestInterpolateMapFluxToHelioFrame:
 
         # Apply interpolation
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # Verify output structure
@@ -897,7 +897,7 @@ class TestInterpolateMapFluxToHelioFrame:
         map_ds["energy_sc"].values[1, 0] = 750.0
 
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # For a perfect power-law with flux = E^(-2) * spatial_factor:
@@ -953,7 +953,7 @@ class TestInterpolateMapFluxToHelioFrame:
         map_ds["energy_sc"].values[1, 0] = e_sc
 
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # Statistical uncertainty should be positive and finite
@@ -979,7 +979,7 @@ class TestInterpolateMapFluxToHelioFrame:
         )
 
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # Systematic uncertainty should be positive and finite
@@ -1011,7 +1011,7 @@ class TestInterpolateMapFluxToHelioFrame:
         original_flux = map_ds["ena_intensity"].values.copy()
 
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # When E_sc = E_esa and E_helio = E_esa, then E_helio/E_sc = 1
@@ -1042,7 +1042,7 @@ class TestInterpolateMapFluxToHelioFrame:
         map_ds["energy_sc"].values[1, 1] = 0.0
 
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # Check that we have NaN values where expected, not infinities
@@ -1111,7 +1111,7 @@ class TestInterpolateMapFluxToHelioFrame:
 
         # Apply interpolation
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # Verify output shape matches input
@@ -1144,7 +1144,7 @@ class TestInterpolateMapFluxToHelioFrame:
         map_ds["energy_sc"].values[-1, -1] = 1.1 * esa_energies.values[-1]
 
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # Should handle boundary cases without errors
@@ -1165,7 +1165,7 @@ class TestInterpolateMapFluxToHelioFrame:
         original_coords = list(map_ds.coords.keys())
 
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # Verify dimensions are preserved
@@ -1217,7 +1217,7 @@ class TestInterpolateMapFluxToHelioFrame:
         helio_energies = esa_energies.copy()
 
         result_ds = interpolate_map_flux_to_helio_frame(
-            map_ds, esa_energies, helio_energies
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
         )
 
         # With uniform input, output should also be uniform across spatial dimension
@@ -1234,6 +1234,68 @@ class TestInterpolateMapFluxToHelioFrame:
                 if mean_val > 0:
                     rel_std = std_dev / mean_val
                     assert rel_std < 1e-10, f"Energy {i_energy}: rel_std = {rel_std}"
+
+    def test_multiple_variables_interpolation(self):
+        """Test interpolation with multiple intensity variables."""
+        # Create base dataset with ena_intensity
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=5
+        )
+
+        # Add a second intensity variable (e.g., background) with different values
+        map_ds["background_intensity"] = map_ds["ena_intensity"] * 0.2  # 20% of signal
+        map_ds["background_intensity_stat_uncert"] = (
+            map_ds["ena_intensity_stat_uncert"] * 0.2
+        )
+        map_ds["background_intensity_sys_err"] = map_ds["ena_intensity_sys_err"] * 0.2
+
+        # Interpolate both variables
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds,
+            esa_energies,
+            helio_energies,
+            ["ena_intensity", "background_intensity"],
+        )
+
+        # Verify shapes are preserved for ena_intensity
+        assert result_ds["ena_intensity"].shape == map_ds["ena_intensity"].shape
+        assert (
+            result_ds["ena_intensity_stat_uncert"].shape
+            == map_ds["ena_intensity_stat_uncert"].shape
+        )
+        assert (
+            result_ds["ena_intensity_sys_err"].shape
+            == map_ds["ena_intensity_sys_err"].shape
+        )
+
+        # Verify shapes are preserved for background
+        assert (
+            result_ds["background_intensity"].shape
+            == map_ds["background_intensity"].shape
+        )
+        assert (
+            result_ds["background_intensity_stat_uncert"].shape
+            == map_ds["background_intensity_stat_uncert"].shape
+        )
+        assert (
+            result_ds["background_intensity_sys_err"].shape
+            == map_ds["background_intensity_sys_err"].shape
+        )
+
+        # Verify all values are finite and positive
+        assert np.all(np.isfinite(result_ds["ena_intensity"].values))
+        assert np.all(result_ds["ena_intensity"].values > 0)
+        assert np.all(np.isfinite(result_ds["background_intensity"].values))
+        assert np.all(result_ds["background_intensity"].values > 0)
+
+        # Verify the relative scaling between signal and background is
+        # approximately preserved (background should still be ~20% of signal
+        # after interpolation)
+        signal_values = result_ds["ena_intensity"].values
+        background_values = result_ds["background_intensity"].values
+        ratio = background_values / signal_values
+        # Allow for some numerical variation due to interpolation
+        np.testing.assert_allclose(ratio, 0.2, rtol=0.01)
 
 
 class TestGetPsetDirectionalMask:

@@ -212,6 +212,7 @@ def generate_hi_map(
             output_map.data_1d,
             output_map.data_1d["energy"] * 1000,  # Convert ESA energies to eV
             esa_energy_ev,  # heliocentric energies (same as ESA energies)
+            ["ena_intensity"],
         )
 
     return output_map
