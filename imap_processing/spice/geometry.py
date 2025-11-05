@@ -419,7 +419,7 @@ def get_rotation_matrix(
             logger.debug(
                 "Returning NaN matrix due to spiceypy error in rotation from"
                 f" {from_frame} to {to_frame} at et={et}",
-                exc_info=True,
+                exc_info=e,
             )
             return np.full((3, 3), np.nan)
 
