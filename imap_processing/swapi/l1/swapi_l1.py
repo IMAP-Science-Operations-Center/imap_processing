@@ -655,7 +655,7 @@ def process_swapi_science(
                 total_full_sweeps, NUM_PACKETS_PER_SWEEP
             )[:, 0]
         ),
-        precision=0,
+        precision=3,
     )
     dataset["sci_start_time"] = xr.DataArray(
         sci_start_time,
