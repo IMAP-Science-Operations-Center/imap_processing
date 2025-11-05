@@ -241,6 +241,7 @@ def frame_transform(
     position: npt.NDArray,
     from_frame: SpiceFrame,
     to_frame: SpiceFrame,
+    allow_spice_noframeconnect: bool = False,
 ) -> npt.NDArray:
     """
     Transform an <x, y, z> vector between reference frames (rotation only).
@@ -267,6 +268,11 @@ def frame_transform(
         Reference frame of input vector(s).
     to_frame : SpiceFrame
         Reference frame of output vector(s).
+    allow_spice_noframeconnect : bool
+        If True, does not throw SPICE NOFRAMECONNECT error and returns a NaN vector
+        for those `et`s where there is insufficient information available to transform
+        from `from_frame` to `to_frame`.
+        Defaults to False.
 
     Returns
     -------
@@ -299,7 +305,7 @@ def frame_transform(
 
     # rotate will have shape = (3, 3) or (n, 3, 3)
     # position will have shape = (3,) or (n, 3)
-    rotate = get_rotation_matrix(et, from_frame, to_frame)
+    rotate = get_rotation_matrix(et, from_frame, to_frame, allow_spice_noframeconnect)
     # adding a dimension to position results in the following input and output
     # shapes from matrix multiplication
     # Single et/position:      (3, 3),(3, 1) -> (3, 1)
@@ -366,6 +372,7 @@ def get_rotation_matrix(
     et: float | npt.NDArray,
     from_frame: SpiceFrame,
     to_frame: SpiceFrame,
+    allow_spice_noframeconnect: bool = False,
 ) -> npt.NDArray:
     """
     Get the rotation matrix/matrices that can be used to transform between frames.
@@ -385,6 +392,11 @@ def get_rotation_matrix(
         Reference frame to transform from.
     to_frame : SpiceFrame
         Reference frame to transform to.
+    allow_spice_noframeconnect : bool
+        If True, does not throw SPICE NOFRAMECONNECT error and returns a NaN matrix
+        for those `et`s where there is insufficient information available to transform
+        from `from_frame` to `to_frame`.
+        Defaults to False.
 
     Returns
     -------
@@ -392,6 +404,8 @@ def get_rotation_matrix(
         If `et` is a float, the returned rotation matrix is of shape `(3, 3)`. If
         `et` is a np.ndarray, the returned rotation matrix is of shape `(n, 3, 3)`
         where `n` matches the number of elements in et.
+        Some of the matrices in the output may be NaN if no transformation was
+        available for the corresponding `et` and `allow_spice_noframeconnect` is True.
     """
 
     def pxform_error_handler(  # type: ignore[no-untyped-def]
@@ -399,10 +413,13 @@ def get_rotation_matrix(
     ):  # numpydoc ignore=GL08
         try:
             return spiceypy.pxform(*arg, **kwargs)
-        except spiceypy.utils.exceptions.SpiceNOFRAMECONNECT:
-            logger.exception(
-                f"Error getting rotation matrix from {from_frame} to {to_frame}"
-                f" at et={et}. Returning NaNs."
+        except spiceypy.utils.exceptions.SpiceNOFRAMECONNECT as e:
+            if not allow_spice_noframeconnect:
+                raise e
+            logger.debug(
+                "Returning NaN matrix due to spiceypy error in rotation from"
+                f" {from_frame} to {to_frame} at et={et}",
+                exc_info=True,
             )
             return np.full((3, 3), np.nan)
 

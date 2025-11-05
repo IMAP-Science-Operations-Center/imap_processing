@@ -127,11 +127,8 @@ def mag_l2(
         ValidFrames.RTN,
         ValidFrames.DSRF,  # should be last as some vectors may become NaN
     ]:
-        try:
-            l2_data.rotate_frame(frame)
-            frames.append(l2_data.generate_dataset(attributes, day))
-        except Exception:
-            logger.exception(f"Error rotating to frame {frame.name}")
+        l2_data.rotate_frame(frame)
+        frames.append(l2_data.generate_dataset(attributes, day))
 
     return frames
 

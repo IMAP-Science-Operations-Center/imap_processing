@@ -319,6 +319,7 @@ class MagL2L1dBase:
             self.vectors,
             from_frame=self.frame.value,
             to_frame=end_frame.value,
+            allow_spice_noframeconnect=True,
         )
         self.frame = end_frame
 

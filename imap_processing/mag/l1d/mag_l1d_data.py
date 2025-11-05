@@ -298,6 +298,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             self.vectors,
             from_frame=start_frame.value,
             to_frame=end_frame.value,
+            allow_spice_noframeconnect=True,
         )
 
         # If we were in MAGO frame, we need to rotate MAGI vectors from MAGI to
@@ -310,6 +311,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             self.magi_vectors,
             from_frame=start_frame.value,
             to_frame=end_frame.value,
+            allow_spice_noframeconnect=True,
         )
 
         self.frame = end_frame

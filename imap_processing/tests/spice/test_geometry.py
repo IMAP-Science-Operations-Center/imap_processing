@@ -357,8 +357,9 @@ def test_get_rotation_matrix(furnish_kernels):
 
 
 @pytest.mark.external_kernel
-def test_get_rotation_matrix_no_transformation_defined_for_et(furnish_kernels):
-    """Test error handling in get_rotation_matrix()."""
+def test_get_rotation_matrix_no_transformation_defined_for_et_allowed(furnish_kernels):
+    """Test error is swallowed and NaN matrix is returned for undefined SPICE
+    transformation when allow_spice_noframeconnect is True in get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
         "imap_100.tf",
@@ -370,9 +371,51 @@ def test_get_rotation_matrix_no_transformation_defined_for_et(furnish_kernels):
     ]
     with furnish_kernels(kernels):
         # Midnight is not defined in pointing frame
-        et = spiceypy.utc2et("2029-01-01T00:00:00.000")
-        rotation = get_rotation_matrix(et, SpiceFrame.IMAP_MAG_O, SpiceFrame.IMAP_DPS)
+        et = spiceypy.utc2et("2026-01-01T00:00:00.000")
+        rotation = get_rotation_matrix(
+            et,
+            SpiceFrame.IMAP_MAG_O,
+            SpiceFrame.IMAP_DPS,
+            allow_spice_noframeconnect=True,
+        )
         assert np.isnan(rotation).all()
+
+        # one hour after midnight should have coverage
+        ets = np.array([et, et + 3600])
+        rotations = get_rotation_matrix(
+            ets,
+            SpiceFrame.IMAP_MAG_O,
+            SpiceFrame.IMAP_DPS,
+            allow_spice_noframeconnect=True,
+        )
+        assert rotations.shape == (2, 3, 3)
+        assert np.isnan(rotations[0]).all()
+        assert np.isfinite(rotations[1]).all()
+
+
+@pytest.mark.external_kernel
+def test_get_rotation_matrix_no_transformation_defined_for_et_not_allowed(
+    furnish_kernels,
+):
+    """Test error is thrown for undefined SPICE transformation when
+    allow_spice_noframeconnect is False (default) in get_rotation_matrix()."""
+    kernels = [
+        "naif0012.tls",
+        "imap_100.tf",
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+        "de440s.bsp",
+    ]
+    with furnish_kernels(kernels):
+        # Midnight is not defined in pointing frame
+        et = spiceypy.utc2et("2026-01-01T00:00:00.000")
+        with pytest.raises(
+            spiceypy.utils.exceptions.SpiceNOFRAMECONNECT,
+            match=r"SPICE\(NOFRAMECONNECT\)",
+        ):
+            get_rotation_matrix(et, SpiceFrame.IMAP_MAG_O, SpiceFrame.IMAP_DPS)
 
 
 def test_instrument_pointing(furnish_kernels):
