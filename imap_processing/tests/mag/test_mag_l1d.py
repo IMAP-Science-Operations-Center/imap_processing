@@ -461,7 +461,9 @@ def test_rotate_frames(mag_l1d_test_class):
     initial_magi_vectors = mag_l1d_test_class.magi_vectors.copy()
 
     # Mock frame_transform to return identifiable transformed vectors
-    def mock_frame_transform(epoch_et, vectors, from_frame, to_frame):
+    def mock_frame_transform(
+        epoch_et, vectors, from_frame, to_frame, allow_spice_noframeconnect
+    ):
         if from_frame == ValidFrames.MAGO.value:
             return vectors + 100
         elif from_frame == ValidFrames.MAGI.value:
