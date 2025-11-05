@@ -320,7 +320,6 @@ def calculate_de(
 
     # Account for counts=0 (event times have FILL value)
     valid_events = (event_times != FILLVAL_FLOAT32).copy()
-    # TODO - find a better solution than filtering out data from repointings?
     if repoint_id is not None:
         in_pointing = calculate_events_in_pointing(
             repoint_id, event_times[valid_events]
