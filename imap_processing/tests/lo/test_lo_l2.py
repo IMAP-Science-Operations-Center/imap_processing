@@ -566,6 +566,11 @@ def sample_dataset_with_intensities():
         intensity_values * 0.1,
     )
 
+    dataset["bg_intensity"] = dataset["ena_intensity"] * 0.5  # 50% background
+
+    # Add statistical uncertainties (10% of intensity)
+    dataset["bg_intensity_stat_uncert"] = dataset["bg_intensity"] * 0.1
+
     return dataset
 
 
@@ -1141,6 +1146,10 @@ class TestCalculateFluxCorrections:
         original_dataset["ena_intensity_stat_uncert"] = (
             ("epoch", "energy", "x", "y"),
             uncert_values.copy(),
+        )
+        original_dataset["bg_intensity"] = original_dataset["ena_intensity"] * 0.5
+        original_dataset["bg_intensity_stat_uncert"] = (
+            original_dataset["bg_intensity"] * 0.1
         )
 
         # Run flux correction on a copy
