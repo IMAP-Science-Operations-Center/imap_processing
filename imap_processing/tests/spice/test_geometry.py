@@ -345,15 +345,19 @@ def test_get_rotation_matrix(furnish_kernels):
             et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
         )
         assert rotation.shape == (3, 3)
+        assert np.isfinite(rotation).all()
         # test array of et input
         rotation = get_rotation_matrix(
             np.arange(10) + et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
         )
         assert rotation.shape == (10, 3, 3)
+        for i in range(10):
+            assert np.isfinite(rotation[i]).all()
         rotation = get_rotation_matrix(
             et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_GSE
         )
         assert rotation.shape == (3, 3)
+        assert np.isfinite(rotation).all()
 
 
 @pytest.mark.external_kernel
