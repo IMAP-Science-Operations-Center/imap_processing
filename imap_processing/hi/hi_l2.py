@@ -17,6 +17,7 @@ from imap_processing.ena_maps.utils.corrections import (
     add_spacecraft_velocity_to_pset,
     apply_compton_getting_correction,
     calculate_ram_mask,
+    get_pset_directional_mask,
     interpolate_map_flux_to_helio_frame,
 )
 from imap_processing.ena_maps.utils.naming import MapDescriptor
@@ -165,27 +166,11 @@ def generate_hi_map(
             if var in pset_ds:
                 pset_ds[var] *= pset_ds["exposure_factor"]
 
-        # Set the mask used to filter ram/anti-ram pixels
-        pset_valid_mask = None  # Default to no mask (full spin)
-        if descriptor.spin_phase == "ram":
-            pset_valid_mask = pset_ds["ram_mask"]
-            logger.debug(
-                f"Using ram mask with shape: {pset_valid_mask.shape} "
-                f"containing {np.prod(pset_valid_mask.shape)} pixels,"
-                f"{np.sum(pset_valid_mask.values)} of which are True."
-            )
-        elif descriptor.spin_phase == "anti":
-            pset_valid_mask = ~pset_ds["ram_mask"]
-            logger.debug(
-                f"Using anti-ram mask with shape: {pset_valid_mask.shape} "
-                f"containing {np.prod(pset_valid_mask.shape)} pixels,"
-                f"{np.sum(pset_valid_mask.values)} of which are True."
-            )
-
         # Project (bin) the PSET variables into the map pixels
+        directional_mask = get_pset_directional_mask(pset_ds, descriptor.spin_phase)
         hi_pset = HiPointingSet(pset_ds)
         output_map.project_pset_values_to_map(
-            hi_pset, list(vars_to_bin), pset_valid_mask=pset_valid_mask
+            hi_pset, list(vars_to_bin), pset_valid_mask=directional_mask
         )
 
     # Finish the exposure time weighted mean calculation of backgrounds
