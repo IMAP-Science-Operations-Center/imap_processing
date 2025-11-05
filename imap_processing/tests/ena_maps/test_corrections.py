@@ -15,6 +15,7 @@ from imap_processing.ena_maps.utils.corrections import (
     add_spacecraft_velocity_to_pset,
     apply_compton_getting_correction,
     calculate_ram_mask,
+    get_pset_directional_mask,
     interpolate_map_flux_to_helio_frame,
 )
 from imap_processing.spice import geometry
@@ -1233,3 +1234,184 @@ class TestInterpolateMapFluxToHelioFrame:
                 if mean_val > 0:
                     rel_std = std_dev / mean_val
                     assert rel_std < 1e-10, f"Energy {i_energy}: rel_std = {rel_std}"
+
+
+class TestGetPsetDirectionalMask:
+    """Test suite for get_pset_direction_bin_mask function."""
+
+    @pytest.fixture
+    def pset_with_ram_mask(self):
+        """Create a test dataset with ram_mask for testing."""
+        n_epoch = 2
+        n_spin = 100
+        n_energy = 3
+
+        # Create boolean mask with known pattern
+        # First half True (ram), second half False (anti-ram)
+        ram_mask_values = np.zeros((n_epoch, n_energy, n_spin), dtype=bool)
+        ram_mask_values[:, :, :50] = True
+
+        # Create hae_longitude with the same shape for epochs
+        hae_lon_values = np.tile(
+            np.linspace(0, 360, n_spin, endpoint=False), (n_epoch, 1)
+        )
+
+        dataset = xr.Dataset(
+            {
+                "epoch": (["epoch"], np.array([1e18, 1.1e18])),
+                "ram_mask": (
+                    ["epoch", "esa_energy_step", "spin_angle_bin"],
+                    ram_mask_values,
+                ),
+                "hae_longitude": (
+                    ["epoch", "spin_angle_bin"],
+                    hae_lon_values,
+                ),
+            },
+            coords={
+                "esa_energy_step": np.arange(n_energy),
+                "spin_angle_bin": np.arange(n_spin),
+            },
+        )
+
+        return dataset
+
+    def test_invalid_direction_raises_error(self, pset_with_ram_mask):
+        """Test that invalid direction string raises ValueError."""
+        with pytest.raises(ValueError, match="Invalid direction string"):
+            get_pset_directional_mask(pset_with_ram_mask, "invalid")
+
+    def test_ram_direction_returns_ram_mask(self, pset_with_ram_mask):
+        """Test that 'ram' direction returns the ram_mask."""
+        result = get_pset_directional_mask(pset_with_ram_mask, "ram")
+
+        # Should return the ram_mask DataArray
+        assert isinstance(result, xr.DataArray)
+        assert result.name == "ram_mask"
+
+        # Values should match the original ram_mask
+        np.testing.assert_array_equal(
+            result.values, pset_with_ram_mask["ram_mask"].values
+        )
+
+    def test_anti_direction_returns_inverted_mask(self, pset_with_ram_mask):
+        """Test that 'anti' direction returns inverted ram_mask."""
+        result = get_pset_directional_mask(pset_with_ram_mask, "anti")
+
+        # Should return a DataArray
+        assert isinstance(result, xr.DataArray)
+
+        # Values should be inverted from the original ram_mask
+        expected = ~pset_with_ram_mask["ram_mask"]
+        np.testing.assert_array_equal(result.values, expected.values)
+
+    def test_full_direction_returns_none(self, pset_with_ram_mask):
+        """Test that 'full' direction returns None."""
+        result = get_pset_directional_mask(pset_with_ram_mask, "full")
+
+        # Should return None
+        assert result is None
+
+    def test_ram_mask_dimensions_preserved(self, pset_with_ram_mask):
+        """Test that returned mask has same dimensions as input ram_mask."""
+        result = get_pset_directional_mask(pset_with_ram_mask, "ram")
+
+        # Dimensions should match original ram_mask
+        assert result.dims == pset_with_ram_mask["ram_mask"].dims
+        assert result.shape == pset_with_ram_mask["ram_mask"].shape
+
+    def test_anti_mask_dimensions_preserved(self, pset_with_ram_mask):
+        """Test that anti-ram mask has same dimensions as input ram_mask."""
+        result = get_pset_directional_mask(pset_with_ram_mask, "anti")
+
+        # Dimensions should match original ram_mask
+        assert result.dims == pset_with_ram_mask["ram_mask"].dims
+        assert result.shape == pset_with_ram_mask["ram_mask"].shape
+
+    def test_ram_mask_boolean_type(self, pset_with_ram_mask):
+        """Test that returned masks are boolean type."""
+        ram_result = get_pset_directional_mask(pset_with_ram_mask, "ram")
+        anti_result = get_pset_directional_mask(pset_with_ram_mask, "anti")
+
+        assert ram_result.dtype == bool
+        assert anti_result.dtype == bool
+
+    def test_ram_and_anti_are_complementary(self, pset_with_ram_mask):
+        """Test that ram and anti masks are complementary."""
+        ram_mask = get_pset_directional_mask(pset_with_ram_mask, "ram")
+        anti_mask = get_pset_directional_mask(pset_with_ram_mask, "anti")
+
+        # ram_mask and anti_mask should be complementary
+        # (no overlap, cover all pixels)
+        combined = ram_mask.values | anti_mask.values
+        assert np.all(combined), "RAM and anti-RAM masks should cover all pixels"
+
+        overlap = ram_mask.values & anti_mask.values
+        assert not np.any(overlap), "RAM and anti-RAM masks should not overlap"
+
+    def test_with_1d_spatial_dimension(self):
+        """Test with 1D spatial dimension (like HiPointingSet)."""
+        n_spin = 50
+
+        # Create dataset with 1D spatial dimension
+        ram_mask_values = np.zeros(n_spin, dtype=bool)
+        ram_mask_values[:25] = True  # First half is ram
+
+        dataset = xr.Dataset(
+            {
+                "ram_mask": (["spin_angle_bin"], ram_mask_values),
+                "hae_longitude": (
+                    ["spin_angle_bin"],
+                    np.linspace(0, 360, n_spin, endpoint=False),
+                ),
+            },
+            coords={"spin_angle_bin": np.arange(n_spin)},
+        )
+
+        ram_result = get_pset_directional_mask(dataset, "ram")
+        anti_result = get_pset_directional_mask(dataset, "anti")
+
+        # Verify shape is preserved
+        assert ram_result.shape == (n_spin,)
+        assert anti_result.shape == (n_spin,)
+
+        # Verify values
+        assert np.sum(ram_result.values) == 25
+        assert np.sum(anti_result.values) == 25
+
+    def test_with_2d_spatial_dimension(self):
+        """Test with 2D spatial dimension (like LoPointingSet)."""
+        n_spin = 20
+        n_off = 10
+
+        # Create dataset with 2D spatial dimensions
+        ram_mask_values = np.zeros((n_spin, n_off), dtype=bool)
+        ram_mask_values[:10, :] = True  # First half of spin dimension is ram
+
+        dataset = xr.Dataset(
+            {
+                "ram_mask": (["spin_angle", "off_angle"], ram_mask_values),
+                "hae_longitude": (
+                    ["spin_angle", "off_angle"],
+                    np.tile(
+                        np.linspace(0, 360, n_spin, endpoint=False)[:, np.newaxis],
+                        (1, n_off),
+                    ),
+                ),
+            },
+            coords={
+                "spin_angle": np.arange(n_spin),
+                "off_angle": np.arange(n_off),
+            },
+        )
+
+        ram_result = get_pset_directional_mask(dataset, "ram")
+        anti_result = get_pset_directional_mask(dataset, "anti")
+
+        # Verify shape is preserved
+        assert ram_result.shape == (n_spin, n_off)
+        assert anti_result.shape == (n_spin, n_off)
+
+        # Verify values
+        assert np.sum(ram_result.values) == 10 * n_off
+        assert np.sum(anti_result.values) == 10 * n_off

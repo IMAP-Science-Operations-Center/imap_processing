@@ -782,3 +782,46 @@ def interpolate_map_flux_to_helio_frame(
     map_ds["ena_intensity_sys_err"] = sys_err_helio
 
     return map_ds
+
+
+def get_pset_directional_mask(
+    pset_ds: xr.Dataset, direction: str
+) -> xr.DataArray | None:
+    """
+    Get the boolean mask appropriate for the indicated ena direction.
+
+    Parameters
+    ----------
+    pset_ds : xarray.Dataset
+        PSET dataset. If spin_phase is "ram" or "anti", the dataset must contain
+        a "ram_mask" variable.
+    direction : str
+        Map spin phase. Must be "ram", "anti", or "full".
+
+    Returns
+    -------
+    pset_bin_mask : xarray.DataArray | None
+        Boolean mask indicating which bins are in the indicated direction. If
+        direction is "full", then None is returned.
+    """
+    if direction not in ["ram", "anti", "full"]:
+        raise ValueError(
+            f"Invalid direction string: {direction}. Must be 'ram', 'anti', or 'full'."
+        )
+    # Set the mask used to filter ram/anti-ram pixels
+    pset_valid_mask = None  # Default to no mask (full spin)
+    if direction == "ram":
+        pset_valid_mask = pset_ds["ram_mask"]
+        logger.debug(
+            f"Using ram mask with shape: {pset_valid_mask.shape} "
+            f"containing {np.prod(pset_valid_mask.shape)} pixels,"
+            f"{np.sum(pset_valid_mask.values)} of which are True."
+        )
+    elif direction == "anti":
+        pset_valid_mask = ~pset_ds["ram_mask"]
+        logger.debug(
+            f"Using anti-ram mask with shape: {pset_valid_mask.shape} "
+            f"containing {np.prod(pset_valid_mask.shape)} pixels,"
+            f"{np.sum(pset_valid_mask.values)} of which are True."
+        )
+    return pset_valid_mask
