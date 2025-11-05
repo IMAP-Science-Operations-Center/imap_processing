@@ -674,12 +674,6 @@ class HiPointingSet(LoHiBasePointingSet):
         }
         self.data = self.data.rename(rename_dict)
 
-        # Add obs_date variable to be used in determining a map mean obs_date
-        mid_time = self.data["epoch"].values[0] + self.data["epoch_delta"].values[0] / 2
-        self.data["obs_date"] = xr.full_like(
-            self.data["exposure_factor"], float(mid_time)
-        )
-
         # Update az_el_points using the base class method
         self.update_az_el_points()
 

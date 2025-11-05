@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.hi_l2 import (
@@ -259,6 +259,16 @@ def test_genarate_hi_map(
     for var_name in ["counts", "exposure_factor", "obs_date"]:
         assert var_name in sky_map.data_1d.data_vars
         assert np.nanmax(sky_map.data_1d[var_name].data) > 0
+    # With a single PSET input, the valid obs_date values should be very close
+    # to the PSET midpoint. Convert to seconds to set reasonable comparison
+    # tolerance.
+    pset = load_cdf(pset_path)
+    pset_midpoint = (pset["epoch"].values[0] + pset["epoch_delta"].values[0] / 2) / 1e9
+    np.testing.assert_allclose(
+        np.nanmax(sky_map.data_1d["obs_date"].data) / 1e9,
+        pset_midpoint,
+        atol=60,
+    )
     # If the CG correction ran, check that the energy_sc variable is present
     # in the map
     if "-hf-" in descriptor_str:

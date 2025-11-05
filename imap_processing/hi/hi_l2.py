@@ -132,6 +132,10 @@ def generate_hi_map(
         # Rename some PSET vars to match L2 variables
         pset_ds = pset_ds.rename(HiPointingSet.l1c_to_l2_var_mapping)
 
+        # Add obs_date variable to be used in determining a map mean obs_date
+        mid_time = pset_ds["epoch"].values[0] + pset_ds["epoch_delta"].values[0] / 2
+        pset_ds["obs_date"] = xr.full_like(pset_ds["exposure_factor"], float(mid_time))
+
         # Store the first PSET esa_energy_step values and make sure every PSET
         # contains the same set of esa_energy_step values.
         # TODO: Correctly handle PSETs with different esa_energy_step values.
@@ -199,7 +203,7 @@ def generate_hi_map(
     output_map.data_1d["obs_date"].values = np.where(
         np.isfinite(output_map.data_1d["obs_date"].values),
         output_map.data_1d["obs_date"].values.astype(np.int64),
-        -9223372036854775808,
+        np.int64(-9223372036854775808),
     )
     # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
     output_map.data_1d["obs_date_range"] = xr.zeros_like(output_map.data_1d["obs_date"])
