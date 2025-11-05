@@ -85,6 +85,11 @@ def test_get_pointing_times(fake_repoint_data):
 def test_get_pointing_times_from_id(fake_repoint_data):
     """Test coverage for get_pointing_times_from_id function."""
     id = 0
+    # These are the expected start and end times for the pointing that
+    # corresponds to repoint 0 in the fake data.
+    # The first repoint has start time 0.1 and end time 5.1 and the
+    # second repoint has start time 15.2 and end time 20.2
+    # So the pointing period is from 5.1 to 15.2
     expected_times = (5.1, 15.2)
 
     pointing_start_time, pointing_end_time = repoint.get_pointing_times_from_id(id)

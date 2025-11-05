@@ -260,7 +260,7 @@ def get_pointing_times_from_id(repoint_id: int | str) -> tuple[float, float]:
     next_repoint_row = repoint_df[repoint_df["repoint_id"] == repoint_id + 1]
     if next_repoint_row.empty:
         raise ValueError(
-            "Pointing end time not found. Either current "
+            f"Pointing end time not found for repoint ID {repoint_id}. Either current "
             "pointing is ongoing or the repoint table is outdated."
         )
 
