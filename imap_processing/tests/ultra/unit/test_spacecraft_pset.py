@@ -88,10 +88,11 @@ def test_calculate_spacecraft_pset(
             "epoch": ("epoch", epoch),
             "component": ("component", ["vx", "vy", "vz"]),
         },
+        attrs={"Repointing": "repoint00001"},
     )
     with (
         mock.patch(
-            "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times",
+            "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
             return_value=(482374890.0, 482374000.0),
         ),
         mock.patch(
@@ -177,10 +178,11 @@ def test_calculate_spacecraft_pset_with_cdf(
 
         name = "imap_ultra_l1b_45sensor-de"
         dataset = create_dataset(de_dict, name, "l1b")
+        dataset.attrs["Repointing"] = "repoint00000"
         with (
             mock.patch(
-                "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times",
-                return_value=(482374890.0, 482374000.0),
+                "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
+                return_value=(472374890.0, 582378000.0),
             ),
             mock.patch(
                 "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met",

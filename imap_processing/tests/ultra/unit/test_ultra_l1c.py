@@ -178,7 +178,7 @@ def test_calculate_spacecraft_pset_with_cdf(
 
     name = "imap_ultra_l1b_45sensor-de"
     dataset = create_dataset(de_dict, name, "l1b")
-
+    dataset.attrs["Repointing"] = "repoint00001"
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": dataset,  # placeholder
@@ -188,7 +188,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     }
     with (
         mock.patch(
-            "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times",
+            "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
             return_value=(482374890.0, 482374000.0),
         ),
         mock.patch(
@@ -271,10 +271,9 @@ def test_calculate_helio_pset_with_cdf(
     de_dict["quality_outliers"] = np.zeros(len(helio_dps_velocity), dtype=np.uint16)
     de_dict["species"] = np.ones(len(helio_dps_velocity), dtype=np.uint8)
     de_dict["event_times"] = df_subset["tdb"].values
-
     name = "imap_ultra_l1b_45sensor-de"
     dataset = create_dataset(de_dict, name, "l1b")
-
+    dataset.attrs["Repointing"] = "repoint00001"
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
@@ -289,7 +288,7 @@ def test_calculate_helio_pset_with_cdf(
 
     with (
         mock.patch(
-            "imap_processing.ultra.l1c.helio_pset.get_pointing_times",
+            "imap_processing.ultra.l1c.helio_pset.get_pointing_times_from_id",
             return_value=(482374890.0, 482374000.0),
         ),
         mock.patch(
