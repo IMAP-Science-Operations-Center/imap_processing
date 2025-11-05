@@ -72,7 +72,7 @@ def get_energy_histogram(
     spin_df = get_spin_data()
 
     unique_spin_number = np.unique(spin_number)
-    spin_edges = unique_spin_number.astype(np.uint16)
+    spin_edges = unique_spin_number.astype(np.uint32)
     spin_edges = np.append(spin_edges, spin_edges.max() + 1)
 
     # Counts per spin at each energy bin.
