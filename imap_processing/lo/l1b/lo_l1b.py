@@ -1199,8 +1199,8 @@ def initialize_l1b_histrates(
 
 
 def resweep_histogram_data(
-        l1b_histrates: xr.Dataset,
-        anc_dependencies: list,
+    l1b_histrates: xr.Dataset,
+    anc_dependencies: list,
 ) -> tuple[xr.Dataset, np.ndarray]:
     """
     Correct energy steps in histogram data based on sweep and LUT tables.
@@ -1269,15 +1269,18 @@ def resweep_histogram_data(
                 if orig_idx < len(h_original) and 1 <= true_esa_step <= 7:
                     reswept_idx = true_esa_step - 1
                     h_counts_reswept[epoch_idx, az_idx, reswept_idx] += h_original[
-                        orig_idx]
+                        orig_idx
+                    ]
                     o_counts_reswept[epoch_idx, az_idx, reswept_idx] += o_original[
-                        orig_idx]
+                        orig_idx
+                    ]
                     merge_counts[epoch_idx, az_idx, reswept_idx] += 1
 
     l1b_histrates["h_counts"].values = h_counts_reswept
     l1b_histrates["o_counts"].values = o_counts_reswept
-    l1b_histrates.attrs[
-        "energy_step_correction"] = "Applied LUT table energy step mapping"
+    l1b_histrates.attrs["energy_step_correction"] = (
+        "Applied LUT table energy step mapping"
+    )
 
     return l1b_histrates, merge_counts
 
@@ -1338,16 +1341,24 @@ def calculate_histogram_rates(
             continue
 
         spin_cycle_idx = spin_cycle_indices[0]
-        base_exposure_time = 4 * avg_spin_durations_per_cycle.values[spin_cycle_idx] / 60
+        base_exposure_time = (
+            4 * avg_spin_durations_per_cycle.values[spin_cycle_idx] / 60
+        )
 
         for az_idx in range(num_azimuth):
             for esa_idx in range(7):
-                scaled_exposure = base_exposure_time * merge_counts[epoch_idx, az_idx, esa_idx]
+                scaled_exposure = (
+                    base_exposure_time * merge_counts[epoch_idx, az_idx, esa_idx]
+                )
                 exposure_times[epoch_idx, az_idx, esa_idx] = scaled_exposure
 
                 if scaled_exposure > 0:
-                    h_rates[epoch_idx, az_idx, esa_idx] = h_counts[epoch_idx, az_idx, esa_idx] / scaled_exposure
-                    o_rates[epoch_idx, az_idx, esa_idx] = o_counts[epoch_idx, az_idx, esa_idx] / scaled_exposure
+                    h_rates[epoch_idx, az_idx, esa_idx] = (
+                        h_counts[epoch_idx, az_idx, esa_idx] / scaled_exposure
+                    )
+                    o_rates[epoch_idx, az_idx, esa_idx] = (
+                        o_counts[epoch_idx, az_idx, esa_idx] / scaled_exposure
+                    )
                 else:
                     h_rates[epoch_idx, az_idx, esa_idx] = 0
                     o_rates[epoch_idx, az_idx, esa_idx] = 0
@@ -1366,5 +1377,3 @@ def calculate_histogram_rates(
     )
 
     return l1b_histrates
-
-

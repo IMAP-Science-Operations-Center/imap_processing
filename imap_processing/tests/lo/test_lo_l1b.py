@@ -862,13 +862,12 @@ def test_calculate_histogram_rates(l1b_histrates):
         l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle, merge_counts
     )
 
-    hist_rates_h_epoch_0= l1b_histrate["h_rates"]
-    hist_rates_h_epoch_0[0, :,:] = hist_rates_h_epoch_0[0, :,:] / 2
+    hist_rates_h_epoch_0 = l1b_histrate["h_rates"]
+    hist_rates_h_epoch_0[0, :, :] = hist_rates_h_epoch_0[0, :, :] / 2
     hist_rates_h_epoch_0[0, 0, :] = hist_rates_h_epoch_0[0, 0, :] / 2
     hist_rates_o_epoch_0 = l1b_histrate["o_rates"]
     hist_rates_o_epoch_0[0, :, :] = hist_rates_o_epoch_0[0, :, :] / 2
     hist_rates_o_epoch_0[0, 0, :] = hist_rates_o_epoch_0[0, 0, :] / 2
-
 
     np.testing.assert_array_equal(
         l1b_histrate["h_rates"][0, :, :], hist_rates_h_epoch_0[0, :, :]
