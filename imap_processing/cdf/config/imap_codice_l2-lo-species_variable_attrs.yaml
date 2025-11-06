@@ -1,0 +1,132 @@
+# ----------------------------- Useful variables -----------------------------
+real_fillval: &real_fillval -1.0e+31
+max_float: &max_float 3.4028235e+38
+
+# ------------------------------- Coordinates -------------------------------
+elevation_angle:
+  CATDESC: Elevation Angle
+  FIELDNAM: Elevation Angle
+  FORMAT: I8
+  LABLAXIS: Elevation Angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMAX: 180.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
+
+spin_sector:
+  CATDESC: Spin Sector Index
+  FIELDNAM: Spin Sector Index
+  FILLVAL: -1
+  FORMAT: I2
+  LABLAXIS: " "
+  SCALETYP: linear
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 24
+  VAR_TYPE: support_data
+
+# ------------------------------- labels -------------------------------
+elevation_angle_label:
+  CATDESC: Elevation Angle
+  FIELDNAM: Elevation Angle
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+# ------------------------------- species -------------------------------
+# lo species attrs
+lo-species-attrs:
+    CATDESC: "{species} Non-sunward Species"
+    DEPEND_0: epoch
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "Non-sunward - {species}"
+    FILLVAL: *real_fillval
+    FORMAT: F13.4
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
+    UNITS: counts
+    VALIDMIN: 0.0
+    VALIDMAX: 16777216.0
+    VAR_TYPE: data
+
+lo-pui-species-attrs:
+    CATDESC: "{species} Pickup Ion Sunward Species"
+    DEPEND_0: epoch
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "Sunward - {species}"
+    FILLVAL: *real_fillval
+    FORMAT: F13.4
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
+    UNITS: counts
+    VALIDMIN: 0.0
+    VALIDMAX: 16777216.0
+    VAR_TYPE: data
+
+lo-sw-species-attrs:
+  CATDESC: "{species} Solar Wind Sunward Species"
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  DISPLAY_TYPE: time_series
+  FIELDNAM: "Sunward - {species}"
+  FILLVAL: *real_fillval
+  FORMAT: F13.4
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  UNITS: counts
+  VALIDMIN: 0.0
+  VALIDMAX: 16777216.0
+  VAR_TYPE: data
+
+lo-species-unc-attrs:
+    CATDESC: "{species} Non-sunward Species uncertainty"
+    DEPEND_0: epoch
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "Non-sunward - {species}"
+    FILLVAL: *real_fillval
+    FORMAT: F20.9
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
+    UNITS: counts
+    VALIDMIN: 0.0
+    VALIDMAX: 16777216.0
+    VAR_TYPE: data
+
+lo-pui-species-unc-attrs:
+    CATDESC: "{species} Pickup Ion Sunward Species uncertainty"
+    DEPEND_0: epoch
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "Sunward - {species}"
+    FILLVAL: *real_fillval
+    FORMAT: F20.9
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
+    UNITS: counts
+    VALIDMIN: 0.0
+    VALIDMAX: 16777216.0
+    VAR_TYPE: data
+
+lo-sw-species-unc-attrs:
+    CATDESC: "{species} Solar Wind Sunward Species uncertainty"
+    DEPEND_0: epoch
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "Sunward - {species}"
+    FILLVAL: *real_fillval
+    FORMAT: F20.9
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
+    UNITS: counts
+    VALIDMIN: 0.0
+    VALIDMAX: 16777216.0
+    VAR_TYPE: data

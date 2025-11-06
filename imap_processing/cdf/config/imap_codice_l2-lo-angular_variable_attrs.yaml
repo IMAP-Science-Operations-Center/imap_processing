@@ -1,0 +1,87 @@
+# ----------------------------- Useful variables -----------------------------
+real_fillval: &real_fillval -1.0e+31
+max_float: &max_float 3.4028235e+38
+
+# ------------------------------- Coordinates -------------------------------
+elevation_angle:
+  CATDESC: Elevation Angle
+  FIELDNAM: Elevation Angle
+  FORMAT: I8
+  LABLAXIS: Elevation Angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMAX: 180.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
+
+spin_sector:
+  CATDESC: Spin Sector Index
+  FIELDNAM: Spin Sector Index
+  FILLVAL: -1
+  FORMAT: I2
+  LABLAXIS: " "
+  SCALETYP: linear
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 24
+  VAR_TYPE: support_data
+
+# spin angles:
+spin_angles:
+  VAR_TYPE: support_data
+  CATDESC: Spin Angle
+  FIELDNAM: Spin Angle
+  SCALETYP: linear
+  UNITS: degrees
+  FILLVAL: *real_fillval
+  VALIDMAX: 360.0
+  VALIDMIN: 0.0
+  FORMAT: '%f'
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
+  DEPEND_1: spin_sector
+  LABL_PTR_1: spin_sector_label
+
+# ------------------------------- labels -------------------------------
+elevation_angle_label:
+  CATDESC: Elevation Angle
+  FIELDNAM: Elevation Angle
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+# ------------------------------- species -------------------------------
+# lo-angular attribute templates (combined versions of the previous entries)
+lo-angular-attrs:
+    CATDESC: "{species} {direction} species"
+    DEPEND_0: epoch
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    DEPEND_3: elevation_angle
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "{direction} - {species}"
+    FILLVAL: *real_fillval
+    FORMAT: F13.4
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: elevation_angle_label
+    UNITS: intensities
+    VALIDMIN: 0.0
+    VALIDMAX: 16777216.0
+    VAR_TYPE: data
+
+lo-angular-unc-attrs:
+    CATDESC: "{species} {direction} species uncertainty"
+    DEPEND_0: epoch
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    DEPEND_3: elevation_angle
+    DISPLAY_TYPE: time_series
+    FIELDNAM: "{direction} - {species}"
+    FILLVAL: *real_fillval
+    FORMAT: F13.4
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: elevation_angle_label
+    UNITS: intensities
+    VALIDMIN: 0.0
+    VALIDMAX: 16777216.0
+    VAR_TYPE: data

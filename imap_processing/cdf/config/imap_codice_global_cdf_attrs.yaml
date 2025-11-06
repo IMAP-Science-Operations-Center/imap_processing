@@ -249,13 +249,13 @@ imap_codice_l2_lo-nsw-species:
 
 imap_codice_l2_lo-sw-angular:
   <<: *instrument_base
-  Data_type: L2_lo-sw-species>Level-2 Lo Sunward Angular Intensities Data
+  Data_type: L2_lo-sw-angular>Level-2 Lo Sunward Angular Intensities Data
   Logical_source: imap_codice_l2_lo-sw-angular
   Logical_source_description: IMAP Mission CoDICE Lo Level-2 Sunward Angular Intensity Data.
 
 imap_codice_l2_lo-nsw-angular:
   <<: *instrument_base
-  Data_type: L2_lo-nsw-species>Level-2 Lo Non-Sunward Angular Intensities Data
+  Data_type: L2_lo-nsw-angular>Level-2 Lo Non-Sunward Angular Intensities Data
   Logical_source: imap_codice_l2_lo-nsw-angular
   Logical_source_description: IMAP Mission CoDICE Lo Level-2 Non-Sunward Angular Intensity Data.
 

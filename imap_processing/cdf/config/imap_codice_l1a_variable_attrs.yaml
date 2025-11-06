@@ -289,7 +289,7 @@ voltage_table:
     LABLAXIS: V
     SCALETYP: log
     UNITS: V
-    VALIDMIN: 1.0
+    VALIDMIN: 0.5
     VALIDMAX: 14100.0
     VAR_TYPE: support_data
 

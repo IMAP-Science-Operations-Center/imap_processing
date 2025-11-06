@@ -123,10 +123,10 @@ def get_species_efficiency(species: str, efficiency: pd.DataFrame) -> xr.DataArr
         [col for col in species_efficiency if col.startswith("position")],
         key=lambda x: int(x.split("_")[-1]),
     )
-    # Shape: (energy_table, inst_az)
+    # Shape: (esa_step, inst_az)
     return xr.DataArray(
         species_efficiency[position_names_sorted].to_numpy(),
-        dims=("energy_table", "inst_az"),
+        dims=("esa_step", "inst_az"),
     )
 
 
@@ -178,14 +178,12 @@ def compute_geometric_factors(
 
     # Get the geometric factors based on the modes
     gf = np.where(
-        modes[:, :, np.newaxis],  # Shape (epoch, energy_table, 1)
-        geometric_factor_lookup[
-            "reduced"
-        ],  # Shape (1, energy_table, 24) - reduced mode
-        geometric_factor_lookup["full"],  # Shape (1, energy_table, 24) - full mode
-    )  # Shape: (epoch, energy_table, inst_az)
+        modes[:, :, np.newaxis],  # Shape (epoch, esa_step, 1)
+        geometric_factor_lookup["reduced"],  # Shape (1, esa_step, 24) - reduced mode
+        geometric_factor_lookup["full"],  # Shape (1, esa_step, 24) - full mode
+    )  # Shape: (epoch, esa_step, inst_az)
 
-    return xr.DataArray(gf, dims=("epoch", "energy_table", "inst_az"))
+    return xr.DataArray(gf, dims=("epoch", "esa_step", "inst_az"))
 
 
 def calculate_intensity(
@@ -234,7 +232,7 @@ def calculate_intensity(
     # intensity = species_rate / (gm * eff * esa_step) for position and spin angle
     for species in species_list:
         # Select the relevant positions for the species from the efficiency LUT
-        # Shape: (epoch, energy_table, inst_az)
+        # Shape: (epoch, esa_step, inst_az)
         species_eff = get_species_efficiency(species, efficiency).isel(
             inst_az=positions
         )
@@ -246,16 +244,17 @@ def calculate_intensity(
             # Take the mean efficiency across positions
             species_eff = species_eff.mean(dim="inst_az")
 
-        # Shape: (epoch, energy_table, inst_az) or
-        # (epoch, energy_table) if averaged
+        # Shape: (epoch, esa_step, inst_az) or
+        # (epoch, esa_step) if averaged
         denominator = scalar * geometric_factors * species_eff * dataset["energy_table"]
         if species not in dataset:
             logger.warning(
                 f"Species {species} not found in dataset. Filling with NaNS."
             )
-            dataset[species] = np.full(dataset["energy_table"].data.shape, np.nan)
+            dataset[species].data = np.full(dataset["esa_step"].data.shape, np.nan)
         else:
-            dataset[species] = dataset[species] / denominator
+            # Only replace the data with calculated intensity to keep the attributes
+            dataset[species].data = (dataset[species] / denominator).data
 
         # Also calculate uncertainty if available
         species_uncertainty = f"unc_{species}"
@@ -264,11 +263,13 @@ def calculate_intensity(
                 f"Uncertainty {species_uncertainty} not found in dataset."
                 f" Filling with NaNS."
             )
-            dataset[species_uncertainty] = np.full(
-                dataset["energy_table"].data.shape, np.nan
+            dataset[species_uncertainty].data = np.full(
+                dataset["esa_step"].data.shape, np.nan
             )
         else:
-            dataset[species_uncertainty] = dataset[species_uncertainty] / denominator
+            dataset[species_uncertainty].data = (
+                dataset[species_uncertainty] / denominator
+            ).data
 
     return dataset
 
@@ -312,6 +313,28 @@ def process_lo_species_intensity(
         positions,
         average_across_positions=True,
     )
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2-lo-species")
+    if positions == SOLAR_WIND_POSITIONS:
+        species_attrs = cdf_attrs.get_variable_attributes("lo-sw-species-attrs")
+        unc_attrs = cdf_attrs.get_variable_attributes("lo-sw-species-unc-attrs")
+    elif positions == PUI_POSITIONS:
+        species_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-attrs")
+        unc_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-unc-attrs")
+    else:
+        species_attrs = cdf_attrs.get_variable_attributes("lo-species-attrs")
+        unc_attrs = cdf_attrs.get_variable_attributes("lo-species-unc-attrs")
+
+    # update species attrs
+    for species in species_list:
+        if "unc_" in species:
+            attrs = unc_attrs
+        else:
+            attrs = species_attrs
+        # Replace {species} and {direction} in attrs
+        attrs["CATDESC"] = attrs["CATDESC"].format(species=species)
+        attrs["FIELDNAM"] = attrs["FIELDNAM"].format(species=species)
+        dataset[species].attrs.update(attrs)
 
     return dataset
 
@@ -360,9 +383,11 @@ def process_lo_angular_intensity(
     if positions == SW_POSITIONS:
         pos_to_el = LO_POSITION_TO_ELEVATION_ANGLE["sw"]
         position_index_to_adjust = 0
+        direction = "Sunward"
     elif positions == NSW_POSITIONS:
         pos_to_el = LO_POSITION_TO_ELEVATION_ANGLE["nsw"]
         position_index_to_adjust = 9
+        direction = "Non-Sunward"
     else:
         raise ValueError("Unknown positions for elevation angle mapping.")
 
@@ -382,12 +407,12 @@ def process_lo_angular_intensity(
         .sum(keep_attrs=True)  # One position should always contain zeros so sum is safe
         # Restore original dimension order because groupby moves the grouped
         # dimension to the front
-        .transpose("epoch", "energy_table", "spin_sector", "elevation_angle", ...)
+        .transpose("epoch", "esa_step", "spin_sector", "elevation_angle", ...)
     )
     # Create a new coordinate for spin angle based on spin_sector
     # Use equation from section 11.2.2 of algorithm document
     dataset = dataset.assign_coords(
-        spin_angle=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
+        spin_angles=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
     )
     dataset = dataset.drop_vars(species_list).merge(dataset_converted)
     # Positions 0 and 10 only observe half of the 24 spins for each esa step.
@@ -424,6 +449,43 @@ def process_lo_angular_intensity(
             :, b_inds[:, np.newaxis], spin_inds_1, position_index
         ]
 
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2-lo-angular")
+    species_attrs = cdf_attrs.get_variable_attributes("lo-angular-attrs")
+    unc_attrs = cdf_attrs.get_variable_attributes("lo-angular-unc-attrs")
+
+    # update species attrs
+    for species in species_list:
+        if "unc_" in species:
+            attrs = unc_attrs
+        else:
+            attrs = species_attrs
+        # Replace {species} and {direction} in attrs
+        attrs["CATDESC"] = attrs["CATDESC"].format(species=species, direction=direction)
+        attrs["FIELDNAM"] = attrs["FIELDNAM"].format(
+            species=species, direction=direction
+        )
+        dataset[species].attrs.update(attrs)
+
+    # make sure elevation_angle is a coordinate and has the right attrs
+    dataset["elevation_angle"].attrs.update(
+        cdf_attrs.get_variable_attributes("elevation_angle", check_schema=False)
+    )
+    dataset["elevation_angle_label"] = xr.DataArray(
+        dataset["elevation_angle"].data.astype(str),
+        dims=("elevation_angle",),
+        attrs=cdf_attrs.get_variable_attributes(
+            "elevation_angle_label", check_schema=False
+        ),
+    )
+    # update spin angle attributes
+    dataset["spin_angles"].attrs = cdf_attrs.get_variable_attributes(
+        "spin_angles", check_schema=False
+    )
+    # update spin sector attributes
+    dataset["spin_sector"].attrs = cdf_attrs.get_variable_attributes(
+        "spin_sector", check_schema=False
+    )
     return dataset
 
 
