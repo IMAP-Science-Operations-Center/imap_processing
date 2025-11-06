@@ -751,6 +751,8 @@ def test_resweep_histogram_success(anc_dependencies):
             "esa_step": np.arange(1, 8),
         },
     )
+    merge_counts_expected = np.zeros((2, 60, 7))
+    merge_counts_expected[0, :, 0] = 1
 
     l1b_de.h_counts[0, 0, 0] = 5
     l1b_de.h_counts[0, 0, 1] = 10
@@ -760,7 +762,7 @@ def test_resweep_histogram_success(anc_dependencies):
     l1b_de.o_counts[1, 0, 1] = 3
     l1b_de.o_counts[1, 0, 2] = 4
 
-    l1b_histrates = resweep_histogram_data(l1b_de, anc_dependencies)
+    l1b_histrates, merge_counts = resweep_histogram_data(l1b_de, anc_dependencies)
 
     assert l1b_histrates.h_counts[0, 0, 0] == 15
     assert l1b_histrates.h_counts[0, 0, 1] == 0
@@ -769,6 +771,8 @@ def test_resweep_histogram_success(anc_dependencies):
     assert l1b_histrates.o_counts[1, 0, 0] == 5
     assert l1b_histrates.o_counts[1, 0, 1] == 0
     assert l1b_histrates.o_counts[1, 0, 2] == 4
+
+    assert np.array_equal(merge_counts, merge_counts_expected)
 
 
 def test_resweep_histogram_no_date(anc_dependencies):
@@ -838,7 +842,8 @@ def test_calculate_histogram_rates(l1b_histrates):
         ]
     )
     avg_spin_durations_per_cycle = xr.DataArray([30, 15])
-
+    merge_counts = np.zeros((2, 60, 7))
+    merge_counts[0, 0, 0] = 1
     l1b_histrates.h_counts[0, 0, 0] = 30
     l1b_histrates.h_counts[0, 0, 1] = 10
     l1b_histrates.h_counts[0, 0, 2] = 2
@@ -854,19 +859,28 @@ def test_calculate_histogram_rates(l1b_histrates):
     l1b_histrates.o_counts[1, 0, 2] = 4
 
     l1b_histrate = calculate_histogram_rates(
-        l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle
+        l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle, merge_counts
+    )
+
+    hist_rates_h_epoch_0= l1b_histrate["h_rates"]
+    hist_rates_h_epoch_0[0, :,:] = hist_rates_h_epoch_0[0, :,:] / 2
+    hist_rates_h_epoch_0[0, 0, :] = hist_rates_h_epoch_0[0, 0, :] / 2
+    hist_rates_o_epoch_0 = l1b_histrate["o_rates"]
+    hist_rates_o_epoch_0[0, :, :] = hist_rates_o_epoch_0[0, :, :] / 2
+    hist_rates_o_epoch_0[0, 0, :] = hist_rates_o_epoch_0[0, 0, :] / 2
+
+
+    np.testing.assert_array_equal(
+        l1b_histrate["h_rates"][0, :, :], hist_rates_h_epoch_0[0, :, :]
     )
     np.testing.assert_array_equal(
-        l1b_histrate["h_rates"][0, :, :], l1b_histrates["h_counts"][0, :, :] / 2
+        l1b_histrate["h_rates"][1, :, :], hist_rates_h_epoch_0[1, :, :]
     )
     np.testing.assert_array_equal(
-        l1b_histrate["h_rates"][1, :, :], l1b_histrates["h_counts"][1, :, :]
+        l1b_histrate["o_rates"][0, :, :], hist_rates_o_epoch_0[0, :, :]
     )
     np.testing.assert_array_equal(
-        l1b_histrate["o_rates"][0, :, :], l1b_histrates["o_counts"][0, :, :] / 2
-    )
-    np.testing.assert_array_equal(
-        l1b_histrate["o_rates"][1, :, :], l1b_histrates["o_counts"][1, :, :]
+        l1b_histrate["o_rates"][1, :, :], hist_rates_o_epoch_0[1, :, :]
     )
 
 
