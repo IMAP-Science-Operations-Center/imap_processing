@@ -172,9 +172,9 @@ def compute_geometric_factors(
     # all half_spin_values
     rgfo_half_spin = dataset.rgfo_half_spin.data[:, np.newaxis]  # Shape: (epoch, 1)
     # Perform the comparison and calculate modes
-    # Modes will be true (reduced mode) anywhere half_spin >= rgfo_half_spin otherwise
+    # Modes will be true (reduced mode) anywhere half_spin > rgfo_half_spin otherwise
     # false (full mode)
-    modes = half_spin_values >= rgfo_half_spin
+    modes = half_spin_values > rgfo_half_spin
 
     # Get the geometric factors based on the modes
     gf = np.where(
