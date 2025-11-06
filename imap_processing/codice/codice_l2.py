@@ -251,7 +251,7 @@ def calculate_intensity(
             logger.warning(
                 f"Species {species} not found in dataset. Filling with NaNS."
             )
-            dataset[species].data = np.full(dataset["esa_step"].data.shape, np.nan)
+            dataset[species] = np.full(dataset["esa_step"].data.shape, np.nan)
         else:
             # Only replace the data with calculated intensity to keep the attributes
             dataset[species].data = (dataset[species] / denominator).data
@@ -263,7 +263,7 @@ def calculate_intensity(
                 f"Uncertainty {species_uncertainty} not found in dataset."
                 f" Filling with NaNS."
             )
-            dataset[species_uncertainty].data = np.full(
+            dataset[species_uncertainty] = np.full(
                 dataset["esa_step"].data.shape, np.nan
             )
         else:

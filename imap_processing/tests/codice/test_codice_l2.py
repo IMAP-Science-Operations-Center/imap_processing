@@ -168,26 +168,21 @@ def test_get_efficiency_lut(processing_dependencies, mock_get_file_paths):
         assert col in efficiency_lut.columns, f"Missing column {col} in efficiency LUT"
 
 
-def test_process_lo_species_intensity():
-    l1b_val_data = (
-        imap_module_directory
-        / "tests"
-        / "codice"
-        / "data"
-        / "l1b_validation"
-        / "imap_codice_l1b_lo-sw-species_20250814_v007.cdf"
-    )
-    l1b_val_data = load_cdf(l1b_val_data)
-    l1b_val_data_processed = l1b_val_data.copy()
+def test_process_lo_species_intensity(mock_get_file_paths, codice_lut_path):
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-sw-species", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
+    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
+    l1b_data = process_codice_l1b(processed_l1a_file)
+    l1b_val_data_processed = l1b_data.copy()
     gf = xr.DataArray(
-        np.ones((len(l1b_val_data.epoch), 128, 24)) * 2,
-        dims=("epoch", "energy_table", "inst_az"),
+        np.ones((len(l1b_data.epoch), 128, 24)) * 2,
+        dims=("epoch", "esa_step", "inst_az"),
     )
     with mock.patch(
         "imap_processing.codice.codice_l2.get_species_efficiency",
-        return_value=xr.DataArray(
-            np.ones((128, 24)) * 2, dims=("energy_table", "inst_az")
-        ),
+        return_value=xr.DataArray(np.ones((128, 24)) * 2, dims=("esa_step", "inst_az")),
     ):
         len_pos = 5
         process_lo_species_intensity(
@@ -206,10 +201,8 @@ def test_process_lo_species_intensity():
         )
         # Check that values match expected calculation
         expected_intensity = (
-            l1b_val_data[var]
-            / (len_pos * 4 * l1b_val_data["energy_table"].data)[
-                np.newaxis, :, np.newaxis
-            ]
+            l1b_data[var]
+            / (len_pos * 4 * l1b_data["energy_table"].data)[np.newaxis, :, np.newaxis]
         )
         np.testing.assert_allclose(
             l1b_val_data_processed[var].values, expected_intensity.values, rtol=1e-5
@@ -252,26 +245,21 @@ def test_process_lo_missing_species_intensity():
         )
 
 
-def test_process_lo_angular_intensity():
-    l1b_val_data = (
-        imap_module_directory
-        / "tests"
-        / "codice"
-        / "data"
-        / "l1b_validation"
-        / "imap_codice_l1b_lo-sw-angular_20250814_v007.cdf"
-    )
-    l1b_val_data = load_cdf(l1b_val_data)
-    l1b_val_data_processed = l1b_val_data.copy()
+def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-sw-angular", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
+    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
+    l1b_data = process_codice_l1b(processed_l1a_file)
+    l1b_val_data_processed = l1b_data.copy()
     gf = xr.DataArray(
-        np.ones((len(l1b_val_data.epoch), 128, 24)) * 2,
-        dims=("epoch", "energy_table", "inst_az"),
+        np.ones((len(l1b_data.epoch), 128, 24)) * 2,
+        dims=("epoch", "esa_step", "inst_az"),
     )
     with mock.patch(
         "imap_processing.codice.codice_l2.get_species_efficiency",
-        return_value=xr.DataArray(
-            np.ones((128, 24)) * 2, dims=("energy_table", "inst_az")
-        ),
+        return_value=xr.DataArray(np.ones((128, 24)) * 2, dims=("esa_step", "inst_az")),
     ):
         l1b_val_data_processed = process_lo_angular_intensity(
             l1b_val_data_processed,
@@ -289,9 +277,9 @@ def test_process_lo_angular_intensity():
         )
         # Check shape
         expected_shape = (
-            len(l1b_val_data.epoch),
-            len(l1b_val_data.energy_table),
-            len(l1b_val_data.spin_sector),
+            len(l1b_data.epoch),
+            len(l1b_data.energy_table),
+            len(l1b_data.spin_sector),
             3,  # 3 elevation angles map to 5 positions
         )
         np.testing.assert_allclose(
@@ -299,10 +287,8 @@ def test_process_lo_angular_intensity():
         )
         # Check that values match expected calculation
         expected_intensity = (
-            l1b_val_data[var]
-            / (4 * l1b_val_data["energy_table"].data)[
-                np.newaxis, :, np.newaxis, np.newaxis
-            ]
+            l1b_data[var]
+            / (4 * l1b_data["energy_table"].data)[np.newaxis, :, np.newaxis, np.newaxis]
         )
         # convert pos to el
         expected_intensity = (
@@ -320,7 +306,7 @@ def test_process_lo_angular_intensity():
     # Check coords
     np.testing.assert_allclose(l1b_val_data_processed["elevation_angle"], [0, 15, 30])
     np.testing.assert_allclose(
-        l1b_val_data_processed["spin_angle"], np.arange(24) * 15 + 7.5
+        l1b_val_data_processed["spin_angles"], np.arange(24) * 15 + 7.5
     )
 
 
