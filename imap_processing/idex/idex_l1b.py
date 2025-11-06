@@ -352,7 +352,7 @@ def get_spice_data(
     spin_phase = get_spacecraft_spin_phase(query_met_times=met)
     imap_spin_phase = get_spin_angle(spin_phase, degrees=True)
     # Get the position and velocity of IMAP in ecliptic frame
-    ephemeris = imap_state(et[-1], observer=SpiceBody.SUN)
+    ephemeris = imap_state(et, observer=SpiceBody.SUN)
     # Get Idex pointing in the defined frame
     idex_pointing = instrument_pointing(
         et, SpiceFrame.IMAP_IDEX, IDEX_EVENT_REFERENCE_FRAME, cartesian=True
