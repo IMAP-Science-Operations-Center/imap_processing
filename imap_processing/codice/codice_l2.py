@@ -38,6 +38,7 @@ from imap_processing.codice.constants import (
     SOLAR_WIND_POSITIONS,
     SW_POSITIONS,
 )
+from imap_processing.codice.utils import apply_replacements_to_attrs
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -327,13 +328,9 @@ def process_lo_species_intensity(
 
     # update species attrs
     for species in species_list:
-        if "unc_" in species:
-            attrs = unc_attrs
-        else:
-            attrs = species_attrs
+        attrs = unc_attrs if "unc" in unc_attrs else species_attrs
         # Replace {species} and {direction} in attrs
-        attrs["CATDESC"] = attrs["CATDESC"].format(species=species)
-        attrs["FIELDNAM"] = attrs["FIELDNAM"].format(species=species)
+        attrs = apply_replacements_to_attrs(attrs, {"species": species})
         dataset[species].attrs.update(attrs)
 
     return dataset
@@ -456,14 +453,10 @@ def process_lo_angular_intensity(
 
     # update species attrs
     for species in species_list:
-        if "unc_" in species:
-            attrs = unc_attrs
-        else:
-            attrs = species_attrs
+        attrs = unc_attrs if "unc" in unc_attrs else species_attrs
         # Replace {species} and {direction} in attrs
-        attrs["CATDESC"] = attrs["CATDESC"].format(species=species, direction=direction)
-        attrs["FIELDNAM"] = attrs["FIELDNAM"].format(
-            species=species, direction=direction
+        attrs = apply_replacements_to_attrs(
+            attrs, {"species": species, "direction": direction}
         )
         dataset[species].attrs.update(attrs)
 

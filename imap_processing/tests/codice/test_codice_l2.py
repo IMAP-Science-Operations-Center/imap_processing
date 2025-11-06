@@ -119,16 +119,16 @@ def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_lut):
 
 
 def test_compute_geometric_factors_mixed(mock_half_spin_lut):
-    # rgfo_half_spin = 2
-    dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([2]))})
+    # rgfo_half_spin = 1
+    dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([1]))})
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
         "reduced": np.ones((128, 24)),
     }
     result = compute_geometric_factors(dataset, geometric_factor_lut)
 
-    # ESA steps 0-63 (half_spin=1) -> 1 < 2 → mode=full → 1
-    # ESA steps 64-127 (half_spin=2) -> 2 !< 2 → mode=reduced → 0
+    # ESA steps 0-63 (half_spin=1) -> 2 > 1 → mode=full → 1
+    # ESA steps 64-127 (half_spin=2) -> 1 !>1 → mode=reduced → 0
     expected = np.repeat(np.array([[[0]] * 64 + [[1]] * 64]), 24, -1)
     np.testing.assert_array_equal(result, expected)
 
