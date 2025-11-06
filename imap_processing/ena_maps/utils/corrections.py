@@ -731,6 +731,10 @@ def interpolate_map_flux_to_helio_frame(
     energy_right = esa_energies_ev.isel({"energy": right_idx_da})
 
     for var_name in vars_to_interpolate:
+        logger.debug(
+            f"Interpolating {var_name}, {var_name}_stat_uncert, and"
+            f"{var_name}_sys_err to heliocentric frame energies"
+        )
         # Step 2: Extract flux values at bounding energy channels
         # Use xarray's advanced indexing to get fluxes at left and right indices
         intensity = map_ds[var_name]

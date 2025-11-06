@@ -10,7 +10,14 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.ena_maps import AbstractSkyMap, RectangularSkyMap
-from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
+from imap_processing.ena_maps.utils.corrections import (
+    PowerLawFluxCorrector,
+    add_spacecraft_velocity_to_pset,
+    apply_compton_getting_correction,
+    calculate_ram_mask,
+    get_pset_directional_mask,
+    interpolate_map_flux_to_helio_frame,
+)
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo import lo_ancillary
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
@@ -84,6 +91,7 @@ def lo_l2(
         flux_correction,
         o_map_dataset,
         flux_factors,
+        cg_correction,
     ) = _prepare_corrections(
         map_descriptor, descriptor, sci_dependencies, anc_dependencies
     )
@@ -95,6 +103,7 @@ def lo_l2(
         flux_correction=flux_correction,
         o_map_dataset=o_map_dataset,
         flux_factors=flux_factors,
+        cg_correction=cg_correction,
     )
 
     logger.info("Step 5: Finalizing dataset with attributes")
@@ -111,7 +120,7 @@ def _prepare_corrections(
     descriptor: str,
     sci_dependencies: dict,
     anc_dependencies: list,
-) -> tuple[bool, bool, bool, xr.Dataset | None, Path | None]:
+) -> tuple[bool, bool, bool, xr.Dataset | None, Path | None, bool]:
     """
     Determine what corrections are needed and prepare oxygen dataset if required.
 
@@ -136,7 +145,11 @@ def _prepare_corrections(
         A tuple containing:
         - sputtering_correction: Whether to apply sputtering corrections
         - bootstrap_correction: Whether to apply bootstrap corrections
+        - flux_correction: Whether to apply flux corrections
         - o_map_dataset: Oxygen dataset if needed, None otherwise
+        - flux_factors: Path to flux factors ancillary file if needed,
+         None otherwise
+        - cg_correction: Whether to apply CG correction to the dataset.
     """
     # Default values - no corrections needed
     sputtering_correction = False
@@ -169,12 +182,15 @@ def _prepare_corrections(
                 "No flux correction factor file found in ancillary dependencies"
             ) from None
 
+    cg_correction = True if map_descriptor.frame_descriptor == "hf" else False
+
     return (
         sputtering_correction,
         bootstrap_correction,
         flux_correction,
         o_map_dataset,
         flux_factors,
+        cg_correction,
     )
 
 
@@ -302,9 +318,13 @@ def create_sky_map_from_psets(
     for i, pset in enumerate(psets):
         logger.debug(f"Processing pointing set {i + 1}/{len(psets)}")
         processed_pset = process_single_pset(
-            pset, efficiency_data, map_descriptor.species
+            pset,
+            efficiency_data,
+            map_descriptor.species,
+            map_descriptor.frame_descriptor,
         )
-        project_pset_to_map(processed_pset, output_map)
+        directional_mask = get_pset_directional_mask(pset, map_descriptor.spin_phase)
+        project_pset_to_map(processed_pset, output_map, directional_mask)
 
     return output_map
 
@@ -313,6 +333,7 @@ def process_single_pset(
     pset: xr.Dataset,
     efficiency_data: pd.DataFrame,
     species: str,
+    frame: str,
 ) -> xr.Dataset:
     """
     Process a single pointing set for projection to the sky map.
@@ -325,6 +346,10 @@ def process_single_pset(
         Efficiency factor data for correcting counts.
     species : str
         The species to process (e.g., "h", "o").
+    frame : str
+        The output reference frame (e.g., "sc", "hf"). A frame of "hf"
+        (heliocentric frame) will cause the pre-projection Compton Getting
+        Correction to be applied to the PSET data.
 
     Returns
     -------
@@ -339,6 +364,16 @@ def process_single_pset(
 
     # Step 3: Calculate efficiency-corrected quantities
     pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
+
+    # Step 4: CG correction and compute ram mask
+    if frame == "hf":
+        # ram_mask variable is added as part of apply_compton_getting_correction
+        pset_processed = apply_compton_getting_correction(
+            pset_processed, pset_processed["energy"]
+        )
+    else:
+        pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
+        pset_processed = calculate_ram_mask(pset_processed)
 
     return pset_processed
 
@@ -475,6 +510,7 @@ def calculate_efficiency_corrected_quantities(
 def project_pset_to_map(
     pset: xr.Dataset,
     output_map: AbstractSkyMap,
+    directional_mask: xr.DataArray,
 ) -> None:
     """
     Project pointing set data to the output map.
@@ -485,6 +521,9 @@ def project_pset_to_map(
         Processed pointing set ready for projection.
     output_map : AbstractSkyMap
         Target sky map to receive the projected data.
+    directional_mask : xr.DataArray
+        Boolean mask indicating which PSET bins to use for projection. This is
+        how ram/anti-ram bins are removed depending on the descriptor spin phase.
 
     Returns
     -------
@@ -509,6 +548,7 @@ def project_pset_to_map(
         pointing_set=lo_pset,
         value_keys=value_keys,
         index_match_method=ena_maps.IndexMatchMethod.PUSH,
+        pset_valid_mask=directional_mask,
     )
     logger.debug(f"Projected {len(value_keys)} quantities to sky map")
 
@@ -709,6 +749,7 @@ def calculate_all_rates_and_intensities(
     flux_correction: bool = False,
     o_map_dataset: xr.Dataset | None = None,
     flux_factors: Path | None = None,
+    cg_correction: bool = False,
 ) -> xr.Dataset:
     """
     Calculate rates and intensities with proper error propagation.
@@ -730,6 +771,8 @@ def calculate_all_rates_and_intensities(
         Dataset specifically for oxygen, needed for sputtering corrections.
     flux_factors : Path, optional
         Path to flux factor file for flux corrections.
+    cg_correction : bool, optional
+        Whether to apply CG correction to intensities.
 
     Returns
     -------
@@ -759,6 +802,16 @@ def calculate_all_rates_and_intensities(
         if flux_factors is None:
             raise ValueError("Flux factors file must be provided for flux corrections")
         dataset = calculate_flux_corrections(dataset, flux_factors)
+
+    # Optional Step 7: Finish CG correction
+    if cg_correction:
+        logger.info("Interpolating map intensities to helio-frame energies")
+        dataset = interpolate_map_flux_to_helio_frame(
+            dataset,
+            dataset["energy"],
+            dataset["energy"],
+            ["ena_intensity", "bg_intensity"],
+        )
 
     # Step 7: Clean up intermediate variables
     dataset = cleanup_intermediate_variables(dataset)
