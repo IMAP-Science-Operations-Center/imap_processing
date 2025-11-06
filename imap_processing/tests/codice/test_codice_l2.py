@@ -306,7 +306,7 @@ def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
     # Check coords
     np.testing.assert_allclose(l1b_val_data_processed["elevation_angle"], [0, 15, 30])
     np.testing.assert_allclose(
-        l1b_val_data_processed["spin_angles"], np.arange(24) * 15 + 7.5
+        l1b_val_data_processed["spin_angle"], np.arange(24) * 15 + 7.5
     )
 
 

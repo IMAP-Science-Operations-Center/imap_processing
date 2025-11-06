@@ -405,7 +405,7 @@ energy_he3he4_plus:
   DEPEND_1: energy_he3he4
 
 # spin angles:
-spin_angles:
+spin_angle:
   VAR_TYPE: support_data
   CATDESC: Spin Angle
   FIELDNAM: Spin Angle

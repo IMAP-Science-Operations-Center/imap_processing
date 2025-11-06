@@ -46,10 +46,11 @@ lo-species-attrs:
     FORMAT: F13.4
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
-    UNITS: counts
+    UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
     VALIDMAX: 16777216.0
     VAR_TYPE: data
+    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 lo-pui-species-attrs:
     CATDESC: "{species} Pickup Ion Sunward Species"
@@ -62,10 +63,11 @@ lo-pui-species-attrs:
     FORMAT: F13.4
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
-    UNITS: counts
+    UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
     VALIDMAX: 16777216.0
     VAR_TYPE: data
+    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 lo-sw-species-attrs:
   CATDESC: "{species} Solar Wind Sunward Species"
@@ -78,10 +80,11 @@ lo-sw-species-attrs:
   FORMAT: F13.4
   LABL_PTR_1: esa_step_label
   LABL_PTR_2: spin_sector_label
-  UNITS: counts
+  UNITS: "#/(cm^2-s-sr-keV/q)"
   VALIDMIN: 0.0
   VALIDMAX: 16777216.0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 lo-species-unc-attrs:
     CATDESC: "{species} Non-sunward Species uncertainty"
@@ -94,10 +97,11 @@ lo-species-unc-attrs:
     FORMAT: F20.9
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
-    UNITS: counts
+    UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
     VALIDMAX: 16777216.0
     VAR_TYPE: data
+    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
 
 lo-pui-species-unc-attrs:
     CATDESC: "{species} Pickup Ion Sunward Species uncertainty"
@@ -110,10 +114,11 @@ lo-pui-species-unc-attrs:
     FORMAT: F20.9
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
-    UNITS: counts
+    UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
     VALIDMAX: 16777216.0
     VAR_TYPE: data
+    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
 
 lo-sw-species-unc-attrs:
     CATDESC: "{species} Solar Wind Sunward Species uncertainty"
@@ -126,7 +131,8 @@ lo-sw-species-unc-attrs:
     FORMAT: F20.9
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
-    UNITS: counts
+    UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
     VALIDMAX: 16777216.0
     VAR_TYPE: data
+    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty

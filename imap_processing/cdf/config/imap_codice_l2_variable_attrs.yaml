@@ -128,7 +128,7 @@ energy_delta_attrs: &energy_delta_default
   <<: *energy_default
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
 
-spin_angles_attrs: &spin_angles_default
+spin_angle_attrs: &spin_angle_default
   VAR_TYPE: support_data
   CATDESC: Spin Angle
   FIELDNAM: Spin Angle
@@ -207,7 +207,7 @@ elevation_angle:
   VAR_TYPE: support_data
 
 spin_angle:
-  <<: *spin_angles_default
+  <<: *spin_angle_default
   LABLAXIS: Spin Angle
 
 energy_table:
@@ -1603,8 +1603,8 @@ hi-ialirt-h:
   VALIDMAX: 16777216
   VALIDMIN: 0
 
-hi-ialirt-spin_angles:
-  <<: *spin_angles_default
+hi-ialirt-spin_angle:
+  <<: *spin_angle_default
   DEPEND_1: spin_sector_index
   DEPEND_2: elevation_angle
   LABL_PTR_1: spin_sector_index_label
@@ -1860,8 +1860,8 @@ hi-sectored-energy_he3he4_plus:
   FIELDNAM: energy delta plus
   DEPEND_1: energy_he3he4
 
-hi-sectored-spin_angles:
-  <<: *spin_angles_default
+hi-sectored-spin_angle:
+  <<: *spin_angle_default
   DEPEND_1: spin_sector_index
   DEPEND_2: elevation_angle
   LABL_PTR_1: spin_sector_index_label

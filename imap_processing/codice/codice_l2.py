@@ -412,7 +412,7 @@ def process_lo_angular_intensity(
     # Create a new coordinate for spin angle based on spin_sector
     # Use equation from section 11.2.2 of algorithm document
     dataset = dataset.assign_coords(
-        spin_angles=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
+        spin_angle=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
     )
     dataset = dataset.drop_vars(species_list).merge(dataset_converted)
     # Positions 0 and 10 only observe half of the 24 spins for each esa step.
@@ -479,8 +479,8 @@ def process_lo_angular_intensity(
         ),
     )
     # update spin angle attributes
-    dataset["spin_angles"].attrs = cdf_attrs.get_variable_attributes(
-        "spin_angles", check_schema=False
+    dataset["spin_angle"].attrs = cdf_attrs.get_variable_attributes(
+        "spin_angle", check_schema=False
     )
     # update spin sector attributes
     dataset["spin_sector"].attrs = cdf_attrs.get_variable_attributes(
@@ -811,12 +811,12 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # for each SSD index and then adding multiple of 30 degrees for each elevation.
     # Then mod by 360 to keep it within 0-360 range.
     elevation_angles = np.arange(len(l2_dataset["elevation_angle"].values)) * 30.0
-    spin_angles = (L2_HI_SECTORED_ANGLE[:, np.newaxis] + elevation_angles) % 360.0
+    spin_angle = (L2_HI_SECTORED_ANGLE[:, np.newaxis] + elevation_angles) % 360.0
 
     # Add spin angle variable using the new elevation_angle dimension
-    l2_dataset["spin_angles"] = (("spin_sector", "elevation_angle"), spin_angles)
-    l2_dataset["spin_angles"].attrs = cdf_attrs.get_variable_attributes(
-        "spin_angles", check_schema=False
+    l2_dataset["spin_angle"] = (("spin_sector", "elevation_angle"), spin_angle)
+    l2_dataset["spin_angle"].attrs = cdf_attrs.get_variable_attributes(
+        "spin_angle", check_schema=False
     )
 
     # Now carry over other variables from L1B to L2 dataset
