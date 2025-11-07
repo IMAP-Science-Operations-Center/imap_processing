@@ -167,10 +167,14 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     """
     Parse and decompress binary direct event data for Lo.
 
+    This function works directly with raw bytes instead of converting to binary strings,
+    resulting in significant performance improvements.
+
     Parameters
     ----------
     dataset : xr.Dataset
         Lo science direct events from packets_to_dataset function.
+        Should contain raw bytes data in 'data' field.
     attr_mgr : ImapCdfAttributes
         CDF attribute manager for Lo L1A.
 
@@ -184,8 +188,14 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     # parse the count and passes fields. These fields only occur once
     # at the beginning of each packet group and are not part of the
     # compressed direct event data
+
+    # Extract DE counts from raw bytes
+    de_counts = [
+        extract_bits_from_bytes(raw_data, 0, 16) for raw_data in dataset["data"].values
+    ]
+
     dataset["de_count"] = xr.DataArray(
-        [int(pkt[0:16], 2) for pkt in dataset["events"].values],
+        de_counts,
         dims="epoch",
         attrs=attr_mgr.get_variable_attributes("de_count"),
     )
@@ -198,6 +208,7 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
         + list(FIXED_FIELD_BITS._asdict().keys())
         + list(VARIABLE_FIELD_BITS._asdict().keys())
     )
+
     # Initialize all Direct Event fields with their fill value
     # L1A Direct event data will not be tied to an epoch
     # data will use a direct event index for the
@@ -210,151 +221,139 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
         )
     dataset["passes"] = xr.DataArray(
         np.full(
-            len(dataset["events"].values),
+            len(dataset["data"].values),
             attr_mgr.get_variable_attributes("passes")["FILLVAL"],
         ),
         dims="epoch",
         attrs=attr_mgr.get_variable_attributes("passes"),
     )
 
-    # The DE index for the entire pointing
+    # Pre-extract numpy arrays for all fields to avoid xarray overhead
+    field_arrays = {}
+    for field in de_fields:
+        field_arrays[field] = dataset[field].values
+
+    data_values = dataset["data"].values
+    de_count_values = dataset["de_count"].values
+    passes_values = dataset["passes"].values
+
+    # Process each packet
     pointing_de = 0
-    # for each direct event packet in the pointing
-    for pkt_idx, de_count in enumerate(dataset["de_count"].values):
-        # initialize the bit position for the packet
-        # after the counts field
-        dataset.attrs["bit_pos"] = 16
-        # Parse the passes field for the packet
-        dataset["passes"].values[pkt_idx] = parse_de_bin(dataset, pkt_idx, 32)
-        dataset.attrs["bit_pos"] = dataset.attrs["bit_pos"] + 32
 
-        # for each direct event in the packet
-        for _ in range(de_count):
-            # Parse the fixed fields for the direct event
-            # Coincidence Type, Time, ESA Step, Mode
-            dataset = parse_fixed_fields(dataset, pkt_idx, pointing_de)
-            # Parse the variable fields for the direct event
-            # TOF0, TOF1, TOF2, TOF3, Checksum, Position
-            dataset = parse_variable_fields(dataset, pkt_idx, pointing_de)
+    for pkt_idx, de_count in enumerate(de_count_values):
+        raw_data = data_values[pkt_idx]
 
-            pointing_de += 1
+        # Parse all direct events in this packet using bytewise operations
+        pointing_de, passes_value = parse_packet_events(
+            raw_data, de_count, pointing_de, field_arrays
+        )
+        passes_values[pkt_idx] = passes_value
 
-    del dataset.attrs["bit_pos"]
     logger.info("\n Returning Lo L1A Direct Events Dataset")
     return dataset
 
 
-def parse_fixed_fields(
-    dataset: xr.Dataset, pkt_idx: int, pointing_de: int
-) -> xr.Dataset:
+def parse_packet_events(
+    raw_data: bytes, de_count: int, pointing_de: int, field_arrays: dict
+) -> tuple[int, int]:
     """
-    Parse the fixed fields for a direct event.
-
-    Fixed fields are the fields that are always transmitted for
-    a direct event. These fields are the Coincidence Type,
-    Time, ESA Step, and Mode.
+    Parse all direct events in a single packet using bitwise operations on raw bytes.
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        Lo science direct events from packets_to_dataset function.
-    pkt_idx : int
-        Index of the packet for the pointing.
+    raw_data : bytes
+        Raw packet data as bytes.
+    de_count : int
+        Number of direct events in this packet.
     pointing_de : int
-        Index of the total direct event for the pointing.
+        Starting index for direct events in the pointing.
+    field_arrays : dict
+        Dictionary of field names to pre-extracted numpy arrays.
 
     Returns
     -------
-    dataset : xr.Dataset
-        Updated dataset with the fixed fields parsed.
+    int, int
+        Updated pointing_de index after processing all events in packet.
+        Passes value for this packet.
     """
-    for field, bit_length in FIXED_FIELD_BITS._asdict().items():
-        dataset[field].values[pointing_de] = parse_de_bin(dataset, pkt_idx, bit_length)
-        dataset.attrs["bit_pos"] += bit_length
+    # Parse passes field (bits 16-47)
+    passes_value = extract_bits_from_bytes(raw_data, 16, 32)
 
-    return dataset
+    bit_offset = 48  # Start after count (16 bits) + passes (32 bits)
 
+    # Process all direct events in this packet
+    for de_idx in range(de_count):
+        current_de_idx = pointing_de + de_idx
 
-def parse_variable_fields(
-    dataset: xr.Dataset, pkt_idx: int, pointing_de: int
-) -> xr.Dataset:
-    """
-    Parse the variable fields for a direct event.
-
-    Variable fields are the fields that are not always transmitted.
-    Which fields are transmitted is determined by the Coincidence
-    type and Mode. These fields are TOF0, TOF1, TOF2, TOF3, Checksum,
-    and Position. All of these fields except for Position are bit
-    shifted to the right by 1 when packed into the CCSDS packets.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Lo science direct events from packets_to_dataset function.
-    pkt_idx : int
-        Index of the packet for the pointing.
-    pointing_de : int
-        Index of the total direct event for the pointing.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        Updated dataset with the fixed fields parsed.
-    """
-    # The decoder defines which TOF fields are
-    # transmitted for this case and mode
-    case_decoder = CASE_DECODER[
-        (
-            dataset["coincidence_type"].values[pointing_de],
-            dataset["mode"].values[pointing_de],
-        )
-    ]
-
-    for field, field_exists in case_decoder._asdict().items():
-        # Check which TOF fields should have been transmitted for this
-        # case number / mode combination and decompress them.
-        if field_exists:
-            bit_length = VARIABLE_FIELD_BITS._asdict()[field]
-            dataset[field].values[pointing_de] = parse_de_bin(
-                dataset, pkt_idx, bit_length, DE_BIT_SHIFT[field]
+        # Parse fixed fields using bitwise operations
+        for field, bit_length in FIXED_FIELD_BITS._asdict().items():
+            field_arrays[field][current_de_idx] = extract_bits_from_bytes(
+                raw_data, bit_offset, bit_length
             )
-            dataset.attrs["bit_pos"] += bit_length
+            bit_offset += bit_length
 
-    return dataset
+        # Parse variable fields based on coincidence type and mode
+        # Variable fields are the fields that are not always transmitted.
+        # Which fields are transmitted is determined by the Coincidence
+        # type and Mode. These fields are TOF0, TOF1, TOF2, TOF3, Checksum,
+        # and Position. All of these fields except for Position are bit
+        # shifted to the right by 1 when packed into the CCSDS packets.
+        case_decoder = CASE_DECODER[
+            (
+                field_arrays["coincidence_type"][current_de_idx],
+                field_arrays["mode"][current_de_idx],
+            )
+        ]
+
+        for field, field_exists in case_decoder._asdict().items():
+            if field_exists:
+                bit_length = VARIABLE_FIELD_BITS._asdict()[field]
+                bit_shift = DE_BIT_SHIFT.get(field, 0)
+                field_arrays[field][current_de_idx] = extract_bits_from_bytes(
+                    raw_data, bit_offset, bit_length, bit_shift
+                )
+                bit_offset += bit_length
+
+    return pointing_de + de_count, passes_value
 
 
-def parse_de_bin(
-    dataset: xr.Dataset, pkt_idx: int, bit_length: int, bit_shift: int = 0
+def extract_bits_from_bytes(
+    data: bytes, bit_offset: int, bit_length: int, bit_shift: int = 0
 ) -> int:
     """
-    Parse a binary string for a direct event field.
+    Extract bits from raw bytes using bitwise operations.
+
+    This is much faster than converting to binary strings and doing string slicing.
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        Lo science direct events from packets_to_dataset function.
-    pkt_idx : int
-        Index of the packet for the pointing.
+    data : bytes
+        Raw byte data.
+    bit_offset : int
+        Starting bit position (0-based).
     bit_length : int
-        Length of the field in bits.
+        Number of bits to extract.
     bit_shift : int
-        Number of bits to shift the field to the left.
+        Number of bits to shift result left (for unpacking compressed data).
 
     Returns
     -------
     int
-        Parsed integer for the direct event field.
+        Extracted value.
     """
-    bit_pos = dataset.attrs["bit_pos"]
+    # Convert bytes to a big integer for bit manipulation
+    total_bits = len(data) * 8
+    value = int.from_bytes(data, byteorder="big")
 
-    parsed_int = (
-        int(
-            dataset["events"].values[pkt_idx][bit_pos : bit_pos + bit_length],
-            2,
-        )
-        << bit_shift
-    )
-    return parsed_int
+    # Create a mask for the desired bits
+    mask = (1 << bit_length) - 1
+
+    # Shift to align the desired bits to the right, then apply mask
+    shift_amount = total_bits - bit_offset - bit_length
+    extracted = (value >> shift_amount) & mask
+
+    # Apply any additional bit shift for decompression
+    return extracted << bit_shift
 
 
 def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
@@ -396,19 +395,27 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     # where true means the group is valid
     valid_groups = find_valid_groups(seq_ctrs, seg_starts, seg_ends)
 
-    # Combine the segmented packets into a single binary string
-    dataset["events"] = [
-        "".join(dataset["data"].values[start : end + 1])
-        for start, end in zip(seg_starts, seg_ends, strict=False)
-    ]
+    # Combine the segmented packets into raw bytes directly
+    combined_data_list = []
+    for start, end in zip(seg_starts, seg_ends, strict=False):
+        # Concatenate raw bytes data directly
+        combined_bytes = b"".join(dataset["data"].values[start : end + 1])
+        combined_data_list.append(combined_bytes)
 
-    # drop any group of segmented packets that aren't sequential
-    dataset["events"] = dataset["events"].values[valid_groups]
+    # Drop any group of segmented packets that aren't sequential
+    valid_combined_data = [
+        combined_data_list[i] for i, valid in enumerate(valid_groups) if valid
+    ]
 
     # Update the epoch to the first epoch in the segment
     dataset.coords["epoch"] = dataset["epoch"].values[seg_starts]
-    # drop any group of segmented epochs that aren't sequential
+    # Drop any group of segmented epochs that aren't sequential
     dataset.coords["epoch"] = dataset["epoch"].values[valid_groups]
+
+    # Create the data DataArray with combined raw bytes
+    dataset["data"] = xr.DataArray(
+        valid_combined_data, dims=["epoch"], coords={"epoch": dataset.coords["epoch"]}
+    )
     # Set met to the first segment start times for the valid groups.
     # shcoarse will be retained as a per packet coordinate and met
     # is used as the mission elapsed time for each segment

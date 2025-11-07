@@ -16,7 +16,7 @@ from imap_processing.lo.l0.lo_science import (
     parse_histogram,
 )
 from imap_processing.lo.l0.lo_star_sensor import process_star_sensor
-from imap_processing.utils import convert_to_binary_string, packet_file_to_datasets
+from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -85,14 +85,14 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         )
         logical_source = "imap_lo_l1a_de"
         ds = datasets_by_apid[LoAPID.ILO_SCI_DE]
-        # Process the "data" array into a string
-        ds["data"] = xr.DataArray(
-            [convert_to_binary_string(data) for data in ds["data"].values],
-            dims=ds["data"].dims,
-            attrs=ds["data"].attrs,
-        )
 
-        ds = combine_segmented_packets(ds)
+        # Check if we need to combine segmented packets first
+        needs_combine = not all(ds.seq_flgs.values == 3)  # 3 = unsegmented
+
+        if needs_combine:
+            # For segmented packets, combine raw bytes directly
+            ds = combine_segmented_packets(ds)
+
         ds = parse_events(ds, attr_mgr)
         ds = add_dataset_attrs(ds, attr_mgr, logical_source)
         datasets_to_return.append(ds)
@@ -328,7 +328,6 @@ def add_dataset_attrs(
                 "src_seq_ctr",
                 "pkt_len",
                 "data",
-                "events",
             ]
         )
         # An empty DEPEND_0 is being added to support_data
