@@ -6,8 +6,8 @@ from typing import Any
 
 from xarray import Dataset
 
-from imap_processing import decom, imap_module_directory
-from imap_processing.utils import packet_file_to_datasets
+from imap_processing import imap_module_directory
+from imap_processing.utils import packet_file_to_datasets, packet_generator
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def decom_packets(
     science_xtce_file = f"{xtce_base_path}/idex_science_packet_definition.xml"
     hk_xtce_file = f"{xtce_base_path}/idex_housekeeping_packet_definition.xml"
 
-    science_decom_packet_list = decom.decom_packets(packet_file, science_xtce_file)
+    science_decom_packet_list = list(packet_generator(packet_file, science_xtce_file))
     raw_datasets_by_apid = packet_file_to_datasets(
         packet_file, hk_xtce_file, use_derived_value=False
     )

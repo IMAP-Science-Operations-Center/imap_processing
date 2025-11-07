@@ -8,12 +8,13 @@ import pytest
 import xarray as xr
 from cdflib.xarray.xarray_to_cdf import ISTPError
 
-from imap_processing import decom, imap_module_directory
+from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.decode import _decode_sub_frame, read_bits, rice_decode
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.tests.idex.conftest import TEST_L0_FILE_SCI
+from imap_processing.utils import packet_generator
 
 
 def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
@@ -97,7 +98,7 @@ def test_incomplete_event(caplog):
         f"idex_science_packet_definition.xml"
     )
     caplog.at_level("WARNING")
-    packets = decom.decom_packets(TEST_L0_FILE_SCI, xml)
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
     packets = packets[0:1] + packets[2:]
     with mock.patch(
         "imap_processing.idex.idex_l1a.decom_packets",

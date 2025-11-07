@@ -2,6 +2,7 @@
 
 import collections
 import logging
+from collections.abc import Generator
 from pathlib import Path
 
 import numpy as np
@@ -15,13 +16,17 @@ from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
+# The time key is the secondary header, right after the primary header
+# in the data dictionary on IMAP (8th key overall)
+TIME_KEY_INDEX = 7
+
 
 def convert_raw_to_eu(
     dataset: xr.Dataset,
     conversion_table_path: str,
     packet_name: str,
     **read_csv_kwargs: dict,
-) -> xr.Dataset:
+) -> xr.Dataset:  # numpydoc ignore=PR01,PR09
     """
     Convert raw data to engineering unit.
 
@@ -29,10 +34,10 @@ def convert_raw_to_eu(
     ----------
     dataset : xr.Dataset
         Raw data.
-    conversion_table_path : str,
+    conversion_table_path : str
         Path object or file-like object
         Path to engineering unit conversion table.
-        Eg:
+        E.g.
         f"{imap_module_directory}/swe/l1b/engineering_unit_convert_table.csv"
         Engineering unit conversion table must be a csv file with required
         informational columns: ('packetName', 'mnemonic', 'convertAs') and
@@ -45,7 +50,7 @@ def convert_raw_to_eu(
         E.g.:
 
         mnemonic       convertAs …       dn_range_start   dn_range_stop  c0    c1…
-        -------------------------------------------------------------------------
+        --------------------------------------------------------------------------
         temperature  |  SEGMENTED_POLY | 0              | 2063         | 0.1  | 0.2
         temperature  |  SEGMENTED_POLY | 2064           | 3853         | 0    | 0.1
         temperature  |  SEGMENTED_POLY | 3854           | 4094         | 0.6  | 0.3
@@ -258,47 +263,36 @@ def packet_file_to_datasets(
     # Set up the parser from the input packet definition
     packet_definition = spp.load_xtce(xtce_packet_definition)
 
-    with open(packet_file, "rb") as binary_data:
-        for binary_packet in spp.ccsds_generator(binary_data):
-            try:
-                packet = packet_definition.parse_bytes(binary_packet)
-            except UnrecognizedPacketTypeError as e:
-                # NOTE: Not all of our definitions have all of the APIDs
-                #       we may encounter, so we only want to process ones
-                #       we can actual parse.
-                logger.debug(e)
-                continue
-            apid = packet["PKT_APID"]
-            if apid not in data_dict:
-                # This is the first packet for this APID
-                data_dict[apid] = collections.defaultdict(list)
-                datatype_mapping[apid] = dict()
-                variable_mapping[apid] = packet.keys()
-            if variable_mapping[apid] != packet.keys():
-                raise ValueError(
-                    f"Packet fields do not match for APID {apid}. This could be "
-                    f"due to a conditional packet definition in the XTCE, while this "
-                    f"function currently only supports flat packet definitions."
-                    f"\nExpected: {variable_mapping[apid]},\n"
-                    f"got: {packet.keys()}"
-                )
+    for packet in packet_generator(packet_file, xtce_packet_definition):
+        apid = packet["PKT_APID"]
+        if apid not in data_dict:
+            # This is the first packet for this APID
+            data_dict[apid] = collections.defaultdict(list)
+            datatype_mapping[apid] = dict()
+            variable_mapping[apid] = packet.keys()
+        if variable_mapping[apid] != packet.keys():
+            raise ValueError(
+                f"Packet fields do not match for APID {apid}. This could be "
+                f"due to a conditional packet definition in the XTCE, while this "
+                f"function currently only supports flat packet definitions."
+                f"\nExpected: {variable_mapping[apid]},\n"
+                f"got: {packet.keys()}"
+            )
 
-            for key, value in packet.items():
-                val = value if use_derived_value else value.raw_value
-                data_dict[apid][key].append(val)
-                if key not in datatype_mapping[apid]:
-                    # Add this datatype to the mapping
-                    datatype_mapping[apid][key] = _get_minimum_numpy_datatype(
-                        key, packet_definition, use_derived_value=use_derived_value
-                    )
+        for key, value in packet.items():
+            val = value if use_derived_value else value.raw_value
+            data_dict[apid][key].append(val)
+            if key not in datatype_mapping[apid]:
+                # Add this datatype to the mapping
+                datatype_mapping[apid][key] = _get_minimum_numpy_datatype(
+                    key, packet_definition, use_derived_value=use_derived_value
+                )
 
     dataset_by_apid = {}
 
     for apid, data in data_dict.items():
-        # The time key is the secondary header, right after the primary header
-        # in the data dictionary on IMAP (8th key overall)
         try:
-            time_key = list(data.keys())[7]
+            time_key = list(data.keys())[TIME_KEY_INDEX]
         except IndexError:
             logger.debug(
                 f"Could not determine time key for APID {apid}, skipping dataset."
@@ -353,6 +347,67 @@ def packet_file_to_datasets(
         dataset_by_apid[apid] = ds
 
     return dataset_by_apid
+
+
+def packet_generator(
+    packet_file: str | Path,
+    xtce_packet_definition: str | Path,
+) -> Generator[spp.SpacePacket, None, None]:
+    """
+    Parse packets from a packet file.
+
+    Parameters
+    ----------
+    packet_file : str | Path
+        Path to data packet path with filename.
+    xtce_packet_definition : str | Path
+        Path to XTCE file with filename.
+
+    Yields
+    ------
+    packet : space_packet_parser.SpacePacket
+        Parsed packet dictionary.
+    """
+    # Set up the parser from the input packet definition
+    packet_definition = spp.load_xtce(xtce_packet_definition)
+
+    with open(packet_file, "rb") as binary_data:
+        for binary_packet in spp.ccsds_generator(binary_data):
+            try:
+                packet = packet_definition.parse_bytes(binary_packet)
+            except UnrecognizedPacketTypeError as e:
+                # NOTE: Not all of our definitions have all of the APIDs
+                #       we may encounter, so we only want to process ones
+                #       we can actually parse.
+                logger.debug(e)
+                continue
+            yield packet
+
+
+def separate_header_userdata(packet: dict) -> tuple[dict, dict]:
+    """
+    Separate header and userdata from a packet dictionary.
+
+    Parameters
+    ----------
+    packet : dict
+        Packet dictionary.
+
+    Returns
+    -------
+    header : dict
+        Packet header dictionary.
+    user_data : dict
+        Packet userdata dictionary (raw values).
+    """
+    it = iter(packet.items())
+    # take first 7 items for header (indices 0..6)
+    header = {}
+    for _, (k, v) in zip(range(7), it, strict=False):
+        header[k] = v
+    # remaining items are userdata; prefer raw_value if present
+    userdata = {k: v.raw_value for k, v in it}
+    return header, userdata
 
 
 def convert_to_binary_string(data: bytes) -> str:
