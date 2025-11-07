@@ -680,7 +680,7 @@ def interpolate_map_flux_to_helio_frame(
     helio_energies_ev : xarray.DataArray
         The heliocentric frame energies to interpolate to (in eV).
         In practice, these are the same as esa_energies_ev.
-    vars_to_interpolate : list(str)
+    vars_to_interpolate : list[str]
         List of variables to perform interpolation on. This is just the base
         flux/intensity variable. It is assumed that the associated statistical
         uncertainty and systematic error variables are also present in the input
