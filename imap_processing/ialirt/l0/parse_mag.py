@@ -568,6 +568,19 @@ def process_packet(
     pkt_counter = get_pkt_counter(accumulated_data["mag_status"])
     accumulated_data["pkt_counter"] = pkt_counter
 
+    # Convert from incrementing uint16 (0-65535) to radians.
+    sc_spin_phase_rad = accumulated_data["sc_spin_phase"].astype(float) * (
+        2 * np.pi / 65535.0
+    )
+    sc_inertial_right = accumulated_data["sc_inertial_right"].astype(float) * (
+        2 * np.pi / 65535.0
+    )
+    sc_inertial_decline = (
+        accumulated_data["sc_inertial_decline"].astype(float) / 65535.0
+    ) * np.pi - (np.pi / 2)
+
+    attitude_time = met_to_ttj2000ns(accumulated_data["met"])
+
     grouped_data = find_groups(accumulated_data, (0, 3), "pkt_counter", "met")
 
     unique_groups = np.unique(grouped_data["group"])
@@ -630,19 +643,6 @@ def process_packet(
         )
         magi_out = calibrate_and_offset_vectors(
             updated_vector_magi, magi_calibration, offsets, is_magi=True
-        )
-        sc_spin_phase_rad = grouped_data["sc_spin_phase"][
-            (grouped_data["group"] == group).values
-        ]
-        sc_inertial_right = grouped_data["sc_inertial_right"][
-            (grouped_data["group"] == group).values
-        ]
-        sc_inertial_decline = grouped_data["sc_inertial_decline"][
-            (grouped_data["group"] == group).values
-        ]
-
-        attitude_time = met_to_ttj2000ns(
-            grouped_data["met"][(grouped_data["group"] == group).values]
         )
 
         # Convert to ECLIPJ2000 frame.
@@ -712,14 +712,14 @@ def process_packet(
                 "ttj2000ns": int(met_to_ttj2000ns(met_all[i])),
                 "instrument": "mag",
                 "mag_epoch": int(mago_times_all[i]),
-                "mag_B_GSE": [Decimal(str(v)) for v in gse_vector[i]],
-                "mag_B_GSM": [Decimal(str(v)) for v in gsm_vector[i]],
-                "mag_B_RTN": [Decimal(str(v)) for v in rtn_vector[i]],
-                "mag_B_magnitude": Decimal(str(magnitude[i])),
-                "mag_phi_B_GSM": Decimal(str(phi_gsm[i])),
-                "mag_theta_B_GSM": Decimal(str(theta_gsm[i])),
-                "mag_phi_B_GSE": Decimal(str(phi_gse[i])),
-                "mag_theta_B_GSE": Decimal(str(theta_gse[i])),
+                "mag_B_GSE": [Decimal(f"{v:.3f}") for v in gse_vector[i]],
+                "mag_B_GSM": [Decimal(f"{v:.3f}") for v in gsm_vector[i]],
+                "mag_B_RTN": [Decimal(f"{v:.3f}") for v in rtn_vector[i]],
+                "mag_B_magnitude": Decimal(f"{magnitude[i]:.3f}"),
+                "mag_phi_B_GSM": Decimal(f"{phi_gsm[i]:.3f}"),
+                "mag_theta_B_GSM": Decimal(f"{theta_gsm[i]:.3f}"),
+                "mag_phi_B_GSE": Decimal(f"{phi_gse[i]:.3f}"),
+                "mag_theta_B_GSE": Decimal(f"{theta_gse[i]:.3f}"),
                 "mag_hk_status": {
                     "hk1v5_warn": bool(status_data["hk1v5_warn"]),
                     "hk1v5_danger": bool(status_data["hk1v5_danger"]),
