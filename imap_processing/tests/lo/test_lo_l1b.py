@@ -314,10 +314,10 @@ def test_get_spin_start_times():
     # Arrange
     l1b_de = xr.Dataset(
         {
-            "spin_cycle": ("epoch", [0, 1, 2, 3, 4]),
+            "spin_cycle": ("direct_event", [0, 1, 2, 3, 4]),
         },
         coords={
-            "epoch": [
+            "direct_event": [
                 0,
                 1,
                 2,
@@ -329,7 +329,7 @@ def test_get_spin_start_times():
     l1a_de = xr.Dataset(
         {
             "de_count": ("epoch", [2, 3]),
-            "met": ("direct_event", [0, 1, 2, 3, 4]),
+            "met": ("epoch", [0, 1]),  # MET per time epoch, not per direct event
             "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
         },
         coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
@@ -348,7 +348,7 @@ def test_get_spin_start_times():
     )
 
     end_acq = xr.DataArray([0, 1], dims="epoch")
-    spin_start_times_expected = np.array([20.002, 50.0015, 55.002, 60.003, 65.004])
+    spin_start_times_expected = np.array([20.002, 25.003, 55.002, 60.003, 65.004])
     spin_start_times = get_spin_start_times(l1a_de, l1b_de, spin, end_acq)
 
     np.testing.assert_allclose(

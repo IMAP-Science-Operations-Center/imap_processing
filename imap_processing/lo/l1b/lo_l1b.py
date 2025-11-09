@@ -351,9 +351,14 @@ def get_spin_start_times(
     spin_start_time : xr.DataArray
         The start time for the spin that each direct event is in.
     """
-    met = l1a_de["met"].values
-    # Find the closest stop_acq for each shcoarse
-    closest_stop_acq_indices = np.abs(met[:, None] - acq_end.values).argmin(axis=1)
+    # Get the MET times for each individual direct event
+    # l1a_de["met"] has one value per time epoch, but we need one per direct event
+    de_met = np.repeat(l1a_de["met"], l1a_de["de_count"])
+
+    # Find the closest stop_acq for each direct event
+    closest_stop_acq_indices = np.abs(de_met.values[:, None] - acq_end.values).argmin(
+        axis=1
+    )
     # There are 28 spins per epoch (1 aggregated science cycle)
     # Set the spin_cycle_num to the spin number relative to the
     # start of the ASC
