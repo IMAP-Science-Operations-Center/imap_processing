@@ -220,13 +220,19 @@ def swapi_l2(
     # -----------------------------------
     # Convert unpacked ESA_LVL5 values to hex to match the LUT table
     # value
-    esa_lvl5_hex = np.vectorize(lambda x: format(x, "X"))(l1_dataset["esa_lvl5"].values)
+    esa_lvl5_hex = np.vectorize(lambda x: format(x, "04X"))(
+        l1_dataset["esa_lvl5"].values
+    )
+
+    # Turn the string start times into numpy datetime64
+    sci_start_time = l1_dataset["sci_start_time"].values.astype("datetime64[ns]")
+
     esa_energy = solve_full_sweep_energy(
         esa_lvl5_hex,
         l1_dataset["sweep_table"].data,
         esa_table_df=esa_table_df,
         lut_notes_df=lut_notes_df,
-        data_time=np.array(l1_dataset["epoch"].data, dtype="datetime64[ns]"),
+        data_time=sci_start_time,
     )
 
     l2_dataset["swp_esa_energy"] = xr.DataArray(
