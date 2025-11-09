@@ -862,6 +862,7 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
         np.column_stack((x, y, z)),
         SpiceFrame.IMAP_HAE,
         SpiceFrame.IMAP_DPS,
+        allow_spice_noframeconnect=True,
     )
     # convert the pointing direction to latitudinal coordinates
     direction = cartesian_to_latitudinal(dps_xyz)
