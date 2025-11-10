@@ -310,6 +310,8 @@ def create_sky_map_from_psets(
     # Initialize the output map
     output_map = map_descriptor.to_empty_map()
 
+    cg_correct = True if map_descriptor.frame_descriptor == "hf" else False
+
     if not isinstance(output_map, RectangularSkyMap):
         raise NotImplementedError("HEALPix map output not supported for Lo")
 
@@ -321,10 +323,12 @@ def create_sky_map_from_psets(
             pset,
             efficiency_data,
             map_descriptor.species,
-            map_descriptor.frame_descriptor,
+            cg_correct,
         )
-        directional_mask = get_pset_directional_mask(pset, map_descriptor.spin_phase)
-        project_pset_to_map(processed_pset, output_map, directional_mask)
+        directional_mask = get_pset_directional_mask(
+            processed_pset, map_descriptor.spin_phase
+        )
+        project_pset_to_map(processed_pset, output_map, directional_mask, cg_correct)
 
     return output_map
 
@@ -333,7 +337,7 @@ def process_single_pset(
     pset: xr.Dataset,
     efficiency_data: pd.DataFrame,
     species: str,
-    frame: str,
+    cg_correct: bool = False,
 ) -> xr.Dataset:
     """
     Process a single pointing set for projection to the sky map.
@@ -346,10 +350,10 @@ def process_single_pset(
         Efficiency factor data for correcting counts.
     species : str
         The species to process (e.g., "h", "o").
-    frame : str
-        The output reference frame (e.g., "sc", "hf"). A frame of "hf"
-        (heliocentric frame) will cause the pre-projection Compton Getting
-        Correction to be applied to the PSET data.
+    cg_correct : bool
+        Whether to apply the CG correction to each PSET. A value of True will
+        cause the pre-projection Compton Getting Correction to be applied to
+        the PSET data.
 
     Returns
     -------
@@ -366,10 +370,21 @@ def process_single_pset(
     pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
 
     # Step 4: CG correction and compute ram mask
-    if frame == "hf":
+    if cg_correct:
+        # NOTE: Heliospheric frame energy selection for CG correction
+        # The heliospheric (HF) energies passed to the CG correction algorithm
+        # could in principle be completely different from the ESA central energies.
+        # However, for Lo, the instrument team has chosen to use the same HF
+        # energies as the ESA central energies (from the geometric factor files).
+        # This decision aligns the energy grid between the spacecraft frame and
+        # heliospheric frame representations.
+
+        # Convert energy coordinate from keV to eV for CG correction
+        # (energy coordinate was set in normalize_pset_coordinates in keV)
+        energy_values_ev: xr.DataArray = pset_processed["energy"] * 1000.0
         # ram_mask variable is added as part of apply_compton_getting_correction
         pset_processed = apply_compton_getting_correction(
-            pset_processed, pset_processed["energy"]
+            pset_processed, energy_values_ev
         )
     else:
         pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
@@ -394,16 +409,23 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
     xr.Dataset
         Pointing set with normalized energy coordinates and dimension names.
     """
+    # Load true energy values for this species (in keV, matching map convention)
+    esa_modes = np.unique(pset["esa_mode"].values)
+    if len(esa_modes) > 1:
+        raise ValueError(
+            f"Multiple ESA modes found in pointing set: {esa_modes}. "
+            "Only one ESA mode is supported for Lo."
+        )
+    gf_datset = get_geometric_factor_dataset(species, esa_mode=esa_modes[0])
+
     # Ensure consistent energy coordinates (maps want energy not esa_energy_step)
     pset_renamed = pset.rename_dims({"esa_energy_step": "energy"})
 
     # Drop the esa_energy_step coordinate first to avoid conflicts
     pset_renamed = pset_renamed.drop_vars("esa_energy_step")
 
-    # Ensure the pset energy coordinates match the output map
-    # TODO: Do we even need this if we are assigning the true
-    #       energy levels later?
-    pset_renamed = pset_renamed.assign_coords(energy=range(7))
+    # Assign TRUE energy values as coordinates (in keV, matching map convention)
+    pset_renamed = pset_renamed.assign_coords(energy=gf_datset["Cntr_E"].values)
 
     # Rename the variables in the pset for projection to the map
     # L2 wants different variable names than l1c
@@ -511,6 +533,7 @@ def project_pset_to_map(
     pset: xr.Dataset,
     output_map: AbstractSkyMap,
     directional_mask: xr.DataArray,
+    cg_correct: bool = False,
 ) -> None:
     """
     Project pointing set data to the output map.
@@ -524,6 +547,9 @@ def project_pset_to_map(
     directional_mask : xr.DataArray
         Boolean mask indicating which PSET bins to use for projection. This is
         how ram/anti-ram bins are removed depending on the descriptor spin phase.
+    cg_correct : bool
+        Whether the CG correction is being applied. If set to True, "energy_sc"
+        is added to the list of variables to be projected.
 
     Returns
     -------
@@ -541,6 +567,8 @@ def project_pset_to_map(
         "bg_rates_exposure_factor",
         "bg_rates_stat_uncert_exposure_factor2",
     ]
+    if cg_correct:
+        value_keys.append("energy_sc")
 
     # Create LoPointingSet and project to map
     lo_pset = ena_maps.LoPointingSet(pset)
@@ -625,6 +653,45 @@ def load_geometric_factor_data(species: str) -> pd.DataFrame:
         gf_file = anc_path / "imap_lo_oxygen-geometric-factor_v001.csv"
 
     return lo_ancillary.read_ancillary_file(gf_file)
+
+
+def get_geometric_factor_dataset(species: str, esa_mode: int) -> xr.Dataset:
+    """
+    Get geometric factor data as xarray Dataset for a specific species and ESA mode.
+
+    This helper function loads geometric factor data, filters by ESA mode, converts
+    to xarray, and selects all 7 energy steps for vectorized operations.
+
+    Parameters
+    ----------
+    species : str
+        The species to load geometric factors for ("h" or "o").
+    esa_mode : int
+        ESA mode (0 for HiRes, 1 for HiThr).
+
+    Returns
+    -------
+    xarray.Dataset
+        Geometric factor data indexed by Observed_E-Step (1-7), containing all
+        columns from the geometric factor CSV file.
+    """
+    # Load geometric factor data for this species
+    gf_data = load_geometric_factor_data(species)
+
+    # Filter for the specific ESA mode
+    if "esa_mode" in gf_data.columns:
+        gf_data = gf_data[gf_data["esa_mode"] == esa_mode].copy()
+
+    # Convert to xarray Dataset indexed by energy step for vectorized selection
+    gf_ds = gf_data.set_index("Observed_E-Step").to_xarray()
+
+    # TODO: The ancillary data has repeated Observed_E-Step values with different
+    #    incident_E-Step values. Figure out how we get the correct row. For now,
+    #    just remove duplicate Observed_E-Step values.
+    gf_ds = gf_ds.drop_duplicates(dim="Observed_E-Step")
+
+    # Select energy steps 1-7 and return
+    return gf_ds.sel({"Observed_E-Step": range(1, 8)})
 
 
 def initialize_geometric_factor_variables(
@@ -715,16 +782,15 @@ def populate_geometric_factors(
         # Default to mode 0 if not available (HiRes mode)
         esa_mode = 0
 
-    # Populate the geometric factors for each energy step
-    for i in range(7):
-        # Get geometric factor data for this energy step and ESA mode
-        gf_row = gf_data[
-            (gf_data["esa_mode"] == esa_mode) & (gf_data["Observed_E-Step"] == i + 1)
-        ].iloc[0]
+    # Filter for the specific ESA mode
+    gf_dataset = get_geometric_factor_dataset(species, esa_mode)
 
-        # Fill energy step with the geometric factor values
-        for var, col in gf_vars.items():
-            dataset[var].values[i] = gf_row[col]
+    # Populate all geometric factors at once using xarray operations
+    for var, col in gf_vars.items():
+        if var == "energy":
+            dataset = dataset.assign_coords(energy=gf_dataset[col].values)
+        else:
+            dataset[var].values = gf_dataset[col].values
 
     # Update delta_minus and delta_plus based on ESA mode
     if esa_mode == 0:  # HiRes
