@@ -273,7 +273,8 @@ class PowerLawFluxCorrector:
             source_uncertainties = observed_uncertainties / eta_final
 
             # Check convergence
-            ratios_sq = (source_fluxes_n / source_fluxes_prev) ** 2
+            with np.errstate(divide="ignore", invalid="ignore"):
+                ratios_sq = (source_fluxes_n / source_fluxes_prev) ** 2
             chi_n = np.sqrt(np.mean(ratios_sq)) - 1
 
             if chi_n < convergence_threshold:
@@ -344,10 +345,26 @@ def add_spacecraft_velocity_to_pset(
     - "sc_velocity": Spacecraft velocity vector (km/s) with dims ["x_y_z"]
     - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
     """
-    # Compute ephemeris time (J2000 seconds) of PSET midpoint
-    # epoch contains Pointing start time, and epoch_delta indicates the total
-    # duration of the Pointing
-    et = ttj2000ns_to_et(pset["epoch"].values[0] + pset["epoch_delta"].values[0] / 2)
+    # Hi and Lo need to use different methods for computing the Pointing
+    # midpoint time.
+    if pset.attrs["Logical_source"].startswith("imap_hi"):
+        # Compute ephemeris time (J2000 seconds) of PSET midpoint
+        # epoch contains Pointing start time, and epoch_delta indicates the total
+        # duration of the Pointing
+        # For Hi, epoch_delta is the duration of the Pointing in nanoseconds
+        pointing_duration_ns = pset["epoch_delta"].values[0]
+    elif pset.attrs["Logical_source"].startswith("imap_lo"):
+        # For Lo, compute the pointing duration using pointing start/end MET times
+        pointing_duration_ns = (
+            pset["pointing_end_met"].values[0] - pset["pointing_start_met"].values[0]
+        ) * 1e9
+    else:
+        raise NotImplementedError(
+            f"add_spacecraft_velocity_to_pset does not support PSETs with "
+            f"Logical_source: {pset.attrs['Logical_source']}"
+        )
+    et = ttj2000ns_to_et(pset["epoch"].values[0] + pointing_duration_ns / 2)
+
     # Get spacecraft state in HAE frame
     sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
     sc_velocity_vector = sc_state[3:6]
@@ -492,7 +509,7 @@ def _calculate_compton_getting_transform(
     # x_k = (êₛ · û_sc) + sqrt(y² + (êₛ · û_sc)² - 1)
     x = dot_product + np.sqrt(y**2 + dot_product**2 - 1)
     # Get the dimensions in the right order so that spatial is last
-    x = x.transpose(dot_product.dims[0], y.dims[0], dot_product.dims[1])
+    x = x.transpose(dot_product.dims[0], y.dims[0], *dot_product.dims[1:])
 
     # Calculate ENA speed in the spacecraft frame
     # |v⃗_sc| = x_k * U_sc
@@ -551,9 +568,9 @@ def calculate_ram_mask(pset: xr.Dataset) -> xr.Dataset:
         Pointing set dataset with ram_mask variable added.
     """
     logger.debug(
-        f"Calculating the RAM mask using input spacecraft direction"
-        f"vector: {pset['sc_direction_vector']} and hae coordinates in the"
-        f"dataset hae_longitude and hae_latitude variables."
+        f"Calculating the RAM mask using input spacecraft direction "
+        f"vector: {pset['sc_direction_vector'].values} and hae coordinates in "
+        f"the dataset hae_longitude and hae_latitude variables."
     )
     longitude = pset["hae_longitude"]
     latitude = pset["hae_latitude"]

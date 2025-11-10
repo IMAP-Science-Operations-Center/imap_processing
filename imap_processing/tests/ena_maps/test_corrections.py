@@ -269,7 +269,38 @@ def mock_hi_pset():
                 np.linspace(-90, 90, n_spin).reshape(n_epoch, n_spin),
             ),
             "spin_angle_bin": (["spin_angle_bin"], np.arange(n_spin)),
-        }
+        },
+        attrs={"Logical_source": "imap_hi_l1c_45sensor-pset"},
+    )
+
+    return data
+
+
+@pytest.fixture
+def mock_lo_pset():
+    """Create a minimal mock Lo pointing set dataset for testing."""
+    # Create a simple dataset with necessary fields for Lo
+    n_epoch = 1
+    n_spin = 50
+    n_off = 20
+
+    data = xr.Dataset(
+        {
+            "epoch": (["epoch"], np.array([797949131184000000])),
+            "pointing_start_met": (["epoch"], np.array([100.0])),
+            "pointing_end_met": (["epoch"], np.array([200.0])),
+            "hae_longitude": (
+                ["epoch", "spin_angle_bin", "off_angle_bin"],
+                np.linspace(0, 360, n_spin * n_off, endpoint=False).reshape(
+                    n_epoch, n_spin, n_off
+                ),
+            ),
+            "hae_latitude": (
+                ["epoch", "spin_angle_bin", "off_angle_bin"],
+                np.linspace(-90, 90, n_spin * n_off).reshape(n_epoch, n_spin, n_off),
+            ),
+        },
+        attrs={"Logical_source": "imap_lo_l1c_pset"},
     )
 
     return data
@@ -312,6 +343,62 @@ class TestComptonGettingCorrection:
         np.testing.assert_allclose(
             mock_hi_pset["sc_direction_vector"].values, expected_direction
         )
+
+    @mock.patch("imap_processing.ena_maps.utils.corrections.ttj2000ns_to_et")
+    @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
+    def test_add_spacecraft_velocity_to_pset_lo(
+        self, mock_imap_state, mock_ttj2000_to_et, mock_lo_pset
+    ):
+        """Test that spacecraft velocity is correctly added to Lo pointing set."""
+        # Mock conversion from TTJ2000ns to ET
+        et = 1000.0
+        mock_ttj2000_to_et.return_value = et
+        # Mock spacecraft state vector (position + velocity in HAE frame)
+        mock_sc_state = np.array([1e8, 2e8, 3e8, 15.0, 25.0, 35.0])  # km and km/s
+        mock_imap_state.return_value = mock_sc_state
+
+        # For Lo, pointing duration is calculated from MET times
+        # pointing_end_met - pointing_start_met = 200.0 - 100.0 = 100.0 seconds
+        # In nanoseconds: 100.0 * 1e9 = 1e11 ns
+        # Midpoint: epoch + pointing_duration_ns / 2
+        expected_midpoint_time_ns = mock_lo_pset["epoch"].values[0] + 1e11 / 2
+
+        mock_lo_pset = add_spacecraft_velocity_to_pset(mock_lo_pset)
+
+        # Verify SPICE was called correctly
+        mock_ttj2000_to_et.assert_called_once_with(expected_midpoint_time_ns)
+        mock_imap_state.assert_called_once_with(
+            et, ref_frame=geometry.SpiceFrame.IMAP_HAE
+        )
+
+        # Verify sc_velocity was added
+        assert "sc_velocity" in mock_lo_pset
+        assert isinstance(mock_lo_pset["sc_velocity"], xr.DataArray)
+        np.testing.assert_array_equal(
+            mock_lo_pset["sc_velocity"].values, np.array([15.0, 25.0, 35.0])
+        )
+
+        # Verify sc_direction_vector was added
+        assert "sc_direction_vector" in mock_lo_pset
+        expected_speed = np.sqrt(15**2 + 25**2 + 35**2)
+        expected_direction = np.array([15.0, 25.0, 35.0]) / expected_speed
+        np.testing.assert_allclose(
+            mock_lo_pset["sc_direction_vector"].values, expected_direction
+        )
+
+    def test_add_spacecraft_velocity_unsupported_instrument(self):
+        """Test that unsupported instrument raises NotImplementedError."""
+        # Create a dataset with unsupported Logical_source
+        unsupported_pset = xr.Dataset(
+            {
+                "epoch": (["epoch"], np.array([797949131184000000])),
+                "epoch_delta": (["epoch"], np.array([1e12])),
+            },
+            attrs={"Logical_source": "imap_unsupported_instrument_pset"},
+        )
+
+        with pytest.raises(NotImplementedError, match="does not support PSETs"):
+            add_spacecraft_velocity_to_pset(unsupported_pset)
 
     def test_add_cartesian_look_direction(self, mock_hi_pset):
         """Test that look directions are correctly calculated and added."""
