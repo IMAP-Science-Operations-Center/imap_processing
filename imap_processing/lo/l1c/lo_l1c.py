@@ -586,20 +586,20 @@ def set_background_rates(
                 raise ValueError("Unknown background type in ancillary file.")
     # set the background rates, uncertainties, and systematic errors
     bg_rates_data = xr.DataArray(
-        data=bg_rates,
-        dims=["esa_energy_step", "spin_angle", "off_angle"],
+        data=bg_rates[np.newaxis, :, :, :],
+        dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
         attrs=attr_mgr.get_variable_attributes(f"{species.value}_background_rates"),
     )
     bg_stat_uncert_data = xr.DataArray(
-        data=bg_stat_uncert,
-        dims=["esa_energy_step", "spin_angle", "off_angle"],
+        data=bg_stat_uncert[np.newaxis, :, :, :],
+        dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
         attrs=attr_mgr.get_variable_attributes(
             f"{species.value}_background_rates_stat_uncert"
         ),
     )
     bg_sys_err_data = xr.DataArray(
-        data=bg_sys_err,
-        dims=["esa_energy_step", "spin_angle", "off_angle"],
+        data=bg_sys_err[np.newaxis, :, :, :],
+        dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
         attrs=attr_mgr.get_variable_attributes(
             f"{species.value}_background_rates_sys_err"
         ),
@@ -641,15 +641,15 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
     )
 
     return xr.DataArray(
-        data=hae_az_el[:, :, 0].astype(np.float64),
-        dims=["spin_angle", "off_angle"],
+        data=hae_az_el[np.newaxis, :, :, 0].astype(np.float64),
+        dims=["epoch", "spin_angle", "off_angle"],
         # TODO: Add hae_longitude to yaml
         # attrs=attr_mgr.get_variable_attributes(
         #    "hae_longitude"
         # )
     ), xr.DataArray(
-        data=hae_az_el[:, :, 1].astype(np.float64),
-        dims=["spin_angle", "off_angle"],
+        data=hae_az_el[np.newaxis, :, :, 1].astype(np.float64),
+        dims=["epoch", "spin_angle", "off_angle"],
         # TODO: Add hae_longitude to yaml
         # attrs=attr_mgr.get_variable_attributes(
         #    "hae_latitude"
