@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
+    build_energy_bins,
     get_scattering_thresholds_for_energy,
     get_spacecraft_pointing_lookup_tables,
     get_static_deadtime_ratios,
@@ -111,3 +112,11 @@ def test_get_static_deadtime_ratios(ancillary_files):
     np.testing.assert_array_equal(dt_ratio.shape, (721,))
     # Test values
     assert np.all((dt_ratio >= 0.0) & (dt_ratio <= 1.0))
+
+
+def test_energy_bins():
+    """Test build_energy_bins function."""
+    _, _, energy_bin_geometric_means = build_energy_bins()
+    assert len(energy_bin_geometric_means) == 47
+    assert round(energy_bin_geometric_means[0], 6) == 3.193744
+    assert round(energy_bin_geometric_means[-1], 6) == 332.567530
