@@ -367,7 +367,7 @@ def test_set_background_rates_species_error(anc_dependencies, attr_mgr):
         )
 
 
-def test_set_pointing_directions():
+def test_set_pointing_directions(attr_mgr):
     """Test the set_pointing_directions function."""
     # Mock the external dependencies
     mock_et = 123456789.0
@@ -388,7 +388,7 @@ def test_set_pointing_directions():
         test_epoch = 1000000000.0
 
         # Call the function
-        hae_longitude, hae_latitude = set_pointing_directions(test_epoch)
+        hae_longitude, hae_latitude = set_pointing_directions(test_epoch, attr_mgr)
 
         # Verify ttj2000ns_to_et was called correctly
         mock_ttj2000ns_to_et.assert_called_once_with(test_epoch)
@@ -425,7 +425,7 @@ def test_set_pointing_directions():
         np.testing.assert_array_equal(hae_latitude.values[0], mock_hae_az_el[:, :, 1])
 
 
-def test_set_pointing_directions_meshgrid():
+def test_set_pointing_directions_meshgrid(attr_mgr):
     """Test that the meshgrid is created correctly."""
     with (
         patch("imap_processing.lo.l1c.lo_l1c.ttj2000ns_to_et") as mock_ttj2000ns_to_et,
@@ -439,7 +439,7 @@ def test_set_pointing_directions_meshgrid():
         )  # spin_angle x off_angle x 2
         mock_frame_transform.return_value = mock_hae_az_el
 
-        set_pointing_directions(1000000000.0)
+        set_pointing_directions(1000000000.0, attr_mgr)
 
         # Get the dps_az_el array that was passed to frame_transform_az_el
         call_args = mock_frame_transform.call_args

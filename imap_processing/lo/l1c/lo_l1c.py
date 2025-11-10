@@ -170,7 +170,7 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         )
 
         pset["hae_longitude"], pset["hae_latitude"] = set_pointing_directions(
-            pset["epoch"].item()
+            pset["epoch"].item(), attr_mgr
         )
 
     pset.attrs = attr_mgr.get_global_attributes(logical_source)
@@ -608,7 +608,9 @@ def set_background_rates(
     return bg_rates_data, bg_stat_uncert_data, bg_sys_err_data
 
 
-def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
+def set_pointing_directions(
+    epoch: float, attr_mgr: ImapCdfAttributes
+) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Set the pointing directions for the given epoch.
 
@@ -620,6 +622,8 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
     ----------
     epoch : float
         The epoch time in TTJ2000ns.
+    attr_mgr : ImapCdfAttributes
+        Attribute manager used to get the L1C attributes.
 
     Returns
     -------
@@ -643,15 +647,9 @@ def set_pointing_directions(epoch: float) -> tuple[xr.DataArray, xr.DataArray]:
     return xr.DataArray(
         data=hae_az_el[np.newaxis, :, :, 0].astype(np.float64),
         dims=["epoch", "spin_angle", "off_angle"],
-        # TODO: Add hae_longitude to yaml
-        # attrs=attr_mgr.get_variable_attributes(
-        #    "hae_longitude"
-        # )
+        attrs=attr_mgr.get_variable_attributes("hae_longitude"),
     ), xr.DataArray(
         data=hae_az_el[np.newaxis, :, :, 1].astype(np.float64),
         dims=["epoch", "spin_angle", "off_angle"],
-        # TODO: Add hae_longitude to yaml
-        # attrs=attr_mgr.get_variable_attributes(
-        #    "hae_latitude"
-        # )
+        attrs=attr_mgr.get_variable_attributes("hae_latitude"),
     )
