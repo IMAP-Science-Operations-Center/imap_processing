@@ -18,6 +18,8 @@ from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 
 logger = logging.getLogger(__name__)
 
+NUM_IALIRT_ENERGY_STEPS = 63
+
 
 def count_rate(
     energy_pass: float, speed: float, density: float, temp: float
@@ -191,6 +193,8 @@ def process_swapi_ialirt(
         )
 
     raw_coin_count = process_sweep_data(grouped_dataset, "swapi_coin_cnt")
+    # Subset to only the relevant I-ALiRT energy steps
+    raw_coin_count = raw_coin_count[:, :NUM_IALIRT_ENERGY_STEPS]
     raw_coin_rate = raw_coin_count / SWAPI_LIVETIME
     count_rate_error = np.sqrt(raw_coin_count) / SWAPI_LIVETIME
 
@@ -208,10 +212,12 @@ def process_swapi_ialirt(
         & (calibration_lut_table["Sweep #"] == 2)
     ]
     if subset.empty:
-        energy_passbands = np.full(63, np.nan, dtype=np.float64)
+        energy_passbands = np.full(NUM_IALIRT_ENERGY_STEPS, np.nan, dtype=np.float64)
     else:
         subset = subset.sort_values(["timestamp", "ESA Step #"])
-        energy_passbands = subset["Energy"][0:63].to_numpy().astype(float)
+        energy_passbands = (
+            subset["Energy"][:NUM_IALIRT_ENERGY_STEPS].to_numpy().astype(float)
+        )
 
     solution = optimize_pseudo_parameters(
         raw_coin_rate, count_rate_error, energy_passbands
