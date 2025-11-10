@@ -275,7 +275,7 @@ class TestUltraL2:
         for var in unexpected_vars:
             assert var not in hp_skymap.data_1d.data_vars
 
-        energy_bins = 24
+        energy_bins = 47
         n_pix = 196608
         n_counts = 10 * energy_bins * n_pix * 1.5
 
