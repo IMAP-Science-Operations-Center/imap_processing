@@ -112,13 +112,13 @@ def optimize_pseudo_parameters(
         sol = curve_fit(
             f=count_rate,
             xdata=energy_passbands.take(
-                range(max_index - 3, max_index + 3), mode="wrap"
+                range(max_index - 3, max_index + 3), mode="clip"
             ),
             ydata=current_sweep_count_rates.take(
-                range(max_index - 3, max_index + 3), mode="wrap"
+                range(max_index - 3, max_index + 3), mode="clip"
             ),
             sigma=current_sweep_count_rate_errors.take(
-                range(max_index - 3, max_index + 3), mode="wrap"
+                range(max_index - 3, max_index + 3), mode="clip"
             ),
             p0=initial_param_guess,
         )
