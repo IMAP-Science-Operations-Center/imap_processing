@@ -16,7 +16,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 from imap_processing.spice.time import met_to_ttj2000ns
-from imap_processing.utils import packet_generator, separate_header_userdata
+from imap_processing.utils import packet_generator, separate_ccsds_header_userdata
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
     for packet in packet_generator(packet_file_path, xtce_document):
         apid = packet["PKT_APID"]
         if apid in (Mode.BURST, Mode.NORMAL):
-            header, userdata = separate_header_userdata(packet)
+            header, userdata = separate_ccsds_header_userdata(packet)
             mag_l0 = MagL0(CcsdsData(header), *list(userdata.values()))
             if apid == Mode.NORMAL:
                 if mag_l0 not in norm_dict:

@@ -7,7 +7,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.glows import __version__
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
-from imap_processing.utils import packet_generator, separate_header_userdata
+from imap_processing.utils import packet_generator, separate_ccsds_header_userdata
 
 
 class GlowsParams(Enum):
@@ -57,7 +57,7 @@ def decom_packets(
         apid = packet["PKT_APID"]
         # Do something with the packet data
         if apid == GlowsParams.HIST_APID.value:
-            header, userdata = separate_header_userdata(packet)
+            header, userdata = separate_ccsds_header_userdata(packet)
             hist_l0 = HistogramL0(
                 __version__, filename, CcsdsData(header), *list(userdata.values())
             )

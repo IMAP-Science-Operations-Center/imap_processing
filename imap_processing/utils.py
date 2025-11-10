@@ -384,9 +384,20 @@ def packet_generator(
             yield packet
 
 
-def separate_header_userdata(packet: dict) -> tuple[dict, dict]:
+def separate_ccsds_header_userdata(packet: dict) -> tuple[dict, dict]:
     """
-    Separate header and userdata from a packet dictionary.
+    Separate header and userdata from a parsed packet.
+
+    DO NOT USE:
+    This function is not used by instruments other than GLOWS and MAG and should
+    not be relied upon for general use since XTCE definitions may have different
+    structures defining the header items.
+
+    This assumes that the first 7 items in the packet dictionary are the CCSDS
+    header and the following are the userdata section. It assumes insertion order
+    is kept and puts the first 7 items into one dictionary, with all of the following
+    variables assumed to be userdata in a second dictionary. All values are
+    raw values and it doesn't not return the derived values.
 
     Parameters
     ----------
