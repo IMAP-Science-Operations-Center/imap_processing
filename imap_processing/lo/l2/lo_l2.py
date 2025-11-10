@@ -410,13 +410,13 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
         Pointing set with normalized energy coordinates and dimension names.
     """
     # Load true energy values for this species (in keV, matching map convention)
-    esa_modes = np.unique(pset["esa_mode"].values)
-    if len(esa_modes) > 1:
-        raise ValueError(
-            f"Multiple ESA modes found in pointing set: {esa_modes}. "
-            "Only one ESA mode is supported for Lo."
-        )
-    gf_datset = get_geometric_factor_dataset(species, esa_mode=esa_modes[0])
+    # TODO: Figure out how to handle esa_mode properly
+    if "esa_mode" in pset:
+        esa_mode = pset["esa_mode"].values[0]
+    else:
+        # Default to mode 0 if not available (HiRes mode)
+        esa_mode = 0
+    gf_datset = get_geometric_factor_dataset(species, esa_mode=esa_mode)
 
     # Ensure consistent energy coordinates (maps want energy not esa_energy_step)
     pset_renamed = pset.rename_dims({"esa_energy_step": "energy"})
@@ -609,14 +609,11 @@ def add_geometric_factors(dataset: xr.Dataset, species: str) -> xr.Dataset:
 
     logger.info(f"Loading and applying geometric factors for species: {species}")
 
-    # Load geometric factor data for the specific species
-    gf_data = load_geometric_factor_data(species)
-
     # Initialize geometric factor variables
     dataset = initialize_geometric_factor_variables(dataset)
 
     # Populate geometric factors for each energy step
-    dataset = populate_geometric_factors(dataset, gf_data, species)
+    dataset = populate_geometric_factors(dataset, species)
 
     return dataset
 
@@ -730,7 +727,6 @@ def initialize_geometric_factor_variables(
 
 def populate_geometric_factors(
     dataset: xr.Dataset,
-    gf_data: pd.DataFrame,
     species: str,
 ) -> xr.Dataset:
     """
@@ -740,8 +736,6 @@ def populate_geometric_factors(
     ----------
     dataset : xr.Dataset
         Dataset with initialized geometric factor variables.
-    gf_data : pd.DataFrame
-        Geometric factor data for the specified species.
     species : str
         The species to process (only "h" and "o" have geometric factors).
 

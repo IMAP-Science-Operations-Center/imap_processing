@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.l1c.lo_l1c import (
@@ -687,7 +688,13 @@ class TestNormalizePsetCoordinates:
 
         # Check that energy coordinate is present
         assert "energy" in result.coords
-        np.testing.assert_array_equal(result.coords["energy"], list(range(7)))
+        expected_energies = (
+            np.array([0.015, 0.029, 0.055, 0.11, 0.209, 0.439, 0.872])
+            if species == "h"
+            else np.array([0.016, 0.032, 0.065, 0.135, 0.279, 0.601, 1.206])
+        )
+        assert np.array_equal(result.coords["energy"].values, expected_energies)
+        np.testing.assert_array_equal(result.coords["energy"], expected_energies)
 
         # Check that old coordinate variable was dropped
         assert "esa_energy_step" not in result.variables
@@ -720,8 +727,8 @@ class TestNormalizePsetCoordinates:
         )
 
         # For species without background rates, the function should fail
-        # because it tries to access background variables that don't exist
-        with pytest.raises(ValueError, match="cannot rename"):
+        # because geometric factors can only be retrieved for "h" and "o"
+        with pytest.raises(ValueError, match="Geometric factors only available"):
             normalize_pset_coordinates(pset, species)
 
     def test_normalize_coordinates_removes_old_coordinate(self):
@@ -1572,16 +1579,20 @@ class TestPopulateGeometricFactors:
     """Tests for the populate_geometric_factors function."""
 
     @pytest.mark.parametrize("species", ["h", "o"])
-    def test_populate_geometric_factors(self, species, sample_geometric_factor_data):
+    @patch("imap_processing.lo.l2.lo_l2.get_geometric_factor_dataset")
+    def test_populate_geometric_factors(
+        self, mock_get_geometric_factor_dataset, species, sample_geometric_factor_data
+    ):
         """Test population of geometric factor values for a specific species."""
         h_gf_data, o_gf_data = sample_geometric_factor_data
         gf_data = h_gf_data if species == "h" else o_gf_data
+        mock_get_geometric_factor_dataset.return_value = gf_data.to_xarray()
 
         # Create initialized dataset
         dataset = xr.Dataset(coords={"energy": range(7)})
         dataset = initialize_geometric_factor_variables(dataset)
 
-        result = populate_geometric_factors(dataset, gf_data, species)
+        result = populate_geometric_factors(dataset, species)
 
         # Check that values were populated correctly
         for i in range(7):
@@ -1605,10 +1616,8 @@ class TestPopulateGeometricFactors:
         dataset = xr.Dataset(coords={"energy": range(7)})
         dataset = initialize_geometric_factor_variables(dataset)
 
-        gf_data = pd.DataFrame()  # Empty dataframe
-
         # Test with doubles (no geometric factors)
-        result = populate_geometric_factors(dataset, gf_data, "doubles")
+        result = populate_geometric_factors(dataset, "doubles")
 
         # Should return dataset unchanged (all zeros)
         assert np.all(result["geometric_factor"].values == 0)
@@ -2263,6 +2272,37 @@ class TestIntegrationWithMocks:
             assert isinstance(result[0], xr.Dataset)
 
 
+@pytest.fixture
+def ibex_pset_file():
+    """Path to the LO flux factors test file."""
+    # Use the actual test data file from the ena_maps test data
+    test_data_path = Path(__file__).parent / "test_cdfs"
+    return test_data_path / "imap_lo_l1c_pset_20260101-repoint01261_v001.cdf"
+
+
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
+class TestIntegration:
+    """Integration tests using IBEX data and simulated kernels."""
+
+    def test_lo_l2_integration_full(
+        self, ibex_pset_file, imap_ena_sim_metakernel, lo_flux_factors_file
+    ):
+        """Test the main lo_l2 function with no mocking."""
+        # Test with hydrogen data
+        sci_dependencies = {"imap_lo_l1c_pset": [load_cdf(ibex_pset_file)]}
+        anc_dependencies = [lo_flux_factors_file]  # Include flux factors file
+        descriptor = "l090-ena-o-hf-nsp-ram-hae-6deg-3mo"
+
+        # Run the function - should not crash
+        result = lo_l2(sci_dependencies, anc_dependencies, descriptor)
+
+        # Basic validation
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert isinstance(result[0], xr.Dataset)
+
+
 # =============================================================================
 # ERROR HANDLING TESTS
 # =============================================================================
@@ -2484,7 +2524,7 @@ class TestProcessSinglePset:
             mock_cg.return_value = pset
 
             # Process with hf frame
-            _ = process_single_pset(pset, sample_efficiency_data, "h", "hf")
+            _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=True)
 
             # Check that CG correction was called
             mock_cg.assert_called_once()
@@ -2521,7 +2561,7 @@ class TestProcessSinglePset:
             mock_cg.return_value = pset
 
             # Process with sc frame
-            _ = process_single_pset(pset, sample_efficiency_data, "h", "sc")
+            _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=False)
 
             # Check that CG correction was NOT called
             mock_cg.assert_not_called()
