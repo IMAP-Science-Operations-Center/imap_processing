@@ -1,4 +1,4 @@
-YYYYDDD,GoodTime_strt,GoodTime_end,bin_strt,bin_end,Lo,E-Step1,E-Step2,E-Step3,E-Step4,E-Step5,E-Step6,E-Step7,type
+YYYYDDD,GoodTime_start,GoodTime_end,bin_start,bin_end,Lo,E-Step1,E-Step2,E-Step3,E-Step4,E-Step5,E-Step6,E-Step7,type
 2025001,473389200.0,473472000.0,0,1,Lo,0.0098,0.0089,0.0118,0.0113,0.0056,0.0008,0.0000,rate
 2025001,473389200.0,473472000.0,0,1,Lo,0.0025,0.0020,0.0015,0.0015,0.0010,0.0008,0.0000,sigma
 2025001,473389200.0,473472000.0,1,2,Lo,0.0098,0.0089,0.0118,0.0113,0.0056,0.0008,0.0000,rate

@@ -561,19 +561,19 @@ def set_background_rates(
 
     # find to the rows for the current pointing
     pointing_bg_df = background_df[
-        (background_df["GoodTime_strt"] >= pointing_start_met)
+        (background_df["GoodTime_start"] >= pointing_start_met)
         & (background_df["GoodTime_end"] <= pointing_end_met)
     ]
 
     # convert the bin start and end resolution from 6 degrees to .1 degrees
-    pointing_bg_df["bin_strt"] = pointing_bg_df["bin_strt"] * 60
+    pointing_bg_df["bin_start"] = pointing_bg_df["bin_start"] * 60
     # The last bin end in the file is 0, which means 60 degrees. This is
     # converted to 0.1 degree resolution of 3600
     pointing_bg_df["bin_end"] = pointing_bg_df["bin_end"] * 60
     pointing_bg_df.loc[pointing_bg_df["bin_end"] == 0, "bin_end"] = 3600
     # for each row in the bg ancillary file for this pointing
     for _, row in pointing_bg_df.iterrows():
-        bin_start = int(row["bin_strt"])
+        bin_start = int(row["bin_start"])
         bin_end = int(row["bin_end"])
         # for each energy step, set the background rate and uncertainty
         for esa_step in range(0, 7):
