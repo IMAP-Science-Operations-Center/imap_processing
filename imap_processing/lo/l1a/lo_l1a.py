@@ -86,12 +86,9 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         logical_source = "imap_lo_l1a_de"
         ds = datasets_by_apid[LoAPID.ILO_SCI_DE]
 
-        # Check if we need to combine segmented packets first
-        needs_combine = not all(ds.seq_flgs.values == 3)  # 3 = unsegmented
-
-        if needs_combine:
-            # For segmented packets, combine raw bytes directly
-            ds = combine_segmented_packets(ds)
+        # For segmented packets, combine raw bytes directly
+        # Always call combine_segmented_packets to set MET field
+        ds = combine_segmented_packets(ds)
 
         ds = parse_events(ds, attr_mgr)
         ds = add_dataset_attrs(ds, attr_mgr, logical_source)

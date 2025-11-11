@@ -227,6 +227,18 @@ def test_combine_segmented_packets(segmented_pkts_fake_data):
     np.testing.assert_array_equal(dataset["met"].values, np.array([0, 10, 30]))
 
 
+def test_combin_segmented_packets_only_met(segmented_pkts_fake_data):
+    segmented_pkts_fake_data["seq_flgs"].values = np.full(10, 3)
+    dataset = combine_segmented_packets(segmented_pkts_fake_data)
+
+    np.testing.assert_array_equal(
+        dataset["epoch"].values, segmented_pkts_fake_data["epoch"].values
+    )
+    np.testing.assert_array_equal(
+        dataset["met"].values, segmented_pkts_fake_data["shcoarse"].values
+    )
+
+
 def test_validate_parse_events(sample_data, attr_mgr):
     de_data = sample_data[LoAPID.ILO_SCI_DE]
     validation_path = (
