@@ -50,15 +50,15 @@ def test_build_energy_bins():
     energy_bin_start = [interval[0] for interval in intervals]
     energy_bin_end = [interval[1] for interval in intervals]
 
-    assert energy_bin_start[0] == 3.385
-    assert np.allclose(energy_bin_start[1], 4.137, atol=1e-3)
-    assert len(intervals) == 24
+    assert energy_bin_start[0] == 3
+    assert np.allclose(energy_bin_start[1], 3.4, atol=1e-3)
+    assert len(intervals) == 47
     assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
-    np.testing.assert_allclose(energy_bin_end[1], 5.056, atol=1e-3)
-    np.testing.assert_allclose(energy_bin_start[-1], 341.989, atol=1e-3)
-    np.testing.assert_allclose(energy_bin_end[-1], 100000, atol=1e-3)
+    np.testing.assert_allclose(energy_bin_end[1], 3.8)
+    np.testing.assert_allclose(energy_bin_start[-1], 316.334, atol=1e-3)
+    np.testing.assert_allclose(energy_bin_end[-1], 349.633, atol=1e-3)
 
     expected_geometric_means = np.sqrt(
         np.array(energy_bin_start) * np.array(energy_bin_end)
@@ -105,8 +105,8 @@ def test_get_spacecraft_histogram(test_data):
     assert latitude.shape == (n_pix,)
     assert longitude.shape == (n_pix,)
 
-    # Spot check that 1 count is in the first energy bin
-    assert np.sum(hist[1, :]) == 2
+    # Spot check that 0 counts are in the first energy bin
+    assert np.sum(hist[1, :]) == 0
 
     # Test overlapping energy bins
     overlapping_bins = [
@@ -287,8 +287,8 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     exposure_pointing_adjusted = calculate_exposure_time(
         deadtime_ratios, pixels_below_threshold, boundary_sf, pix
     )
-    # The adjusted exposure should now be a function of pixels and energy (24)
-    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (24, pix))
+    # The adjusted exposure should now be a function of pixels and energy (47)
+    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (47, pix))
     # Check that the pixels inside the FOR have adjusted exposure > 0.
     # Subset the energy dimension to check values in the last energy bin. These
     # Should have pixels that are below the FWHM scattering threshold and therefore,
@@ -339,7 +339,7 @@ def test_get_spacecraft_exposure_times(
         ),
         pix,
     )
-    np.testing.assert_array_equal(exposure_pointing.shape, (24, pix))
+    np.testing.assert_array_equal(exposure_pointing.shape, (47, pix))
     np.testing.assert_array_equal(deadtimes.shape, (steps,))
 
 
