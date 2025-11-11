@@ -109,5 +109,5 @@ def test_get_static_deadtime_ratios(ancillary_files):
     spin_phase, dt_ratio = get_static_deadtime_ratios(90, ancillary_files)
     # Test shape
     np.testing.assert_array_equal(dt_ratio.shape, (721,))
-    # Test values
+    # Test the values
     assert np.all((dt_ratio >= 0.0) & (dt_ratio <= 1.0))
