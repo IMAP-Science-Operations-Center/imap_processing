@@ -143,7 +143,7 @@ def _prepare_corrections(
 
     Returns
     -------
-    tuple[bool, bool, xr.Dataset | None]
+    tuple[bool, bool, bool, xr.Dataset | None, Path | None, bool]
         A tuple containing:
         - sputtering_correction: Whether to apply sputtering corrections
         - bootstrap_correction: Whether to apply bootstrap corrections
@@ -419,7 +419,7 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
     else:
         # Default to mode 0 if not available (HiRes mode)
         esa_mode = 0
-    gf_datset = reduce_geometric_factor_dataset(species, esa_mode=esa_mode)
+    gf_dataset = reduce_geometric_factor_dataset(species, esa_mode=esa_mode)
 
     # Ensure consistent energy coordinates (maps want energy not esa_energy_step)
     pset_renamed = pset.rename_dims({"esa_energy_step": "energy"})
@@ -428,7 +428,7 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
     pset_renamed = pset_renamed.drop_vars("esa_energy_step")
 
     # Assign TRUE energy values as coordinates (in keV, matching map convention)
-    pset_renamed = pset_renamed.assign_coords(energy=gf_datset["Cntr_E"].values)
+    pset_renamed = pset_renamed.assign_coords(energy=gf_dataset["Cntr_E"].values)
 
     # Rename the variables in the pset for projection to the map
     # L2 wants different variable names than l1c

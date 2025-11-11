@@ -848,7 +848,6 @@ class TestNormalizePsetCoordinates:
             if species == "h"
             else np.array([0.016, 0.032, 0.065, 0.135, 0.279, 0.601, 1.206])
         )
-        assert np.array_equal(result.coords["energy"].values, expected_energies)
         np.testing.assert_array_equal(result.coords["energy"], expected_energies)
 
         # Check that old coordinate variable was dropped
@@ -2429,7 +2428,7 @@ class TestIntegrationWithMocks:
 
 @pytest.fixture
 def ibex_pset_file():
-    """Path to the LO flux factors test file."""
+    """Path to the LO/IBEX pset test file."""
     # Use the actual test data file from the ena_maps test data
     test_data_path = Path(__file__).parent / "test_cdfs"
     return test_data_path / "imap_lo_l1c_pset_20260101-repoint01261_v001.cdf"
@@ -2444,7 +2443,7 @@ class TestIntegration:
         self, ibex_pset_file, imap_ena_sim_metakernel, lo_flux_factors_file
     ):
         """Test the main lo_l2 function with no mocking."""
-        # Test with hydrogen data
+        # Test with oxygen data to reduce test run-time
         sci_dependencies = {"imap_lo_l1c_pset": [load_cdf(ibex_pset_file)]}
         anc_dependencies = [lo_flux_factors_file]  # Include flux factors file
         descriptor = "l090-ena-o-hf-nsp-ram-hae-6deg-3mo"
@@ -2648,7 +2647,7 @@ class TestPrepareCorrections:
             assert bootstrap_correction is True
             assert flux_correction is True
             assert o_map_dataset is not None
-            assert cg_correction is False  # hae frame, not hf
+            assert cg_correction is False  # sf frame, not hf
 
 
 class TestProcessSinglePset:

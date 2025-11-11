@@ -749,7 +749,7 @@ def interpolate_map_flux_to_helio_frame(
 
     for var_name in vars_to_interpolate:
         logger.debug(
-            f"Interpolating {var_name}, {var_name}_stat_uncert, and"
+            f"Interpolating {var_name}, {var_name}_stat_uncert, and "
             f"{var_name}_sys_err to heliocentric frame energies"
         )
         # Step 2: Extract flux values at bounding energy channels

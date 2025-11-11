@@ -101,6 +101,9 @@ EXTERNAL_TEST_DATA = [
     ("imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv", "idex/test_data/"),
 
+    # Lo
+    ("imap_lo_l1c_pset_20260101-repoint01261_v001.cdf", "lo/test_cdfs"),
+
     # Ultra
     ("FM90_Startup_20230711T081655.CCSDS", "ultra/data/l0/"),
     ("IMAP-Ultra45_r1_L1_V0_shortened.csv", "ultra/data/l1/"),
