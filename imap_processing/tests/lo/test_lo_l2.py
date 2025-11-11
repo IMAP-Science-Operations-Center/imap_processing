@@ -40,6 +40,7 @@ from imap_processing.lo.l2.lo_l2 import (
     populate_geometric_factors,
     process_single_pset,
     project_pset_to_map,
+    reduce_geometric_factor_dataset,
 )
 
 # =============================================================================
@@ -653,6 +654,160 @@ class TestLoadEfficiencyData:
 
         assert isinstance(result, pd.DataFrame)
         assert result.empty
+
+
+class TestReduceGeometricFactor:
+    """Tests for the reduce_geometric_factor_dataset function."""
+
+    @pytest.mark.parametrize("species", ["h", "o"])
+    @pytest.mark.parametrize("esa_mode", [0, 1])
+    def test_reduce_geometric_factor_dataset(
+        self,
+        species,
+        esa_mode,
+    ):
+        """Test functionality of reduce_geometric_factor_dataset with real gf data."""
+
+        result = reduce_geometric_factor_dataset(species, esa_mode)
+
+        # Verify it returns an xarray Dataset
+        assert isinstance(result, xr.Dataset)
+
+        # Verify it has 7 energy steps
+        assert len(result["Observed_E-Step"]) == 7
+
+        # Verify the index is 1-7
+        expected_indices = list(range(1, 8))
+        np.testing.assert_array_equal(
+            result["Observed_E-Step"].values, expected_indices
+        )
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_hydrogen(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test that hydrogen geometric factors are correctly loaded and processed."""
+        h_gf_data, _ = sample_geometric_factor_data
+        mock_load_gf.return_value = h_gf_data
+
+        result = reduce_geometric_factor_dataset("h", esa_mode=0)
+
+        # Check that hydrogen-specific columns are present
+        assert "Cntr_E" in result.data_vars
+        assert "GF_Trpl_H" in result.data_vars
+        assert "GF_Trpl_H_unc" in result.data_vars
+
+        # Verify energy values match expected for hydrogen
+        expected_energies = [0.01 * (i + 1) for i in range(7)]
+        np.testing.assert_array_almost_equal(result["Cntr_E"].values, expected_energies)
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_oxygen(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test that oxygen geometric factors are correctly loaded and processed."""
+        _, o_gf_data = sample_geometric_factor_data
+        mock_load_gf.return_value = o_gf_data
+
+        result = reduce_geometric_factor_dataset("o", esa_mode=0)
+
+        # Check that oxygen-specific columns are present
+        assert "Cntr_E" in result.data_vars
+        assert "GF_Trpl_O" in result.data_vars
+        assert "GF_Trpl_O_unc" in result.data_vars
+
+        # Verify energy values match expected for oxygen
+        expected_energies = [0.015 * (i + 1) for i in range(7)]
+        np.testing.assert_array_almost_equal(result["Cntr_E"].values, expected_energies)
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_esa_mode_filtering(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test that ESA mode filtering works correctly."""
+        h_gf_data, _ = sample_geometric_factor_data
+
+        # Create data with two ESA modes
+        h_gf_mode_0 = h_gf_data.copy()
+        h_gf_mode_1 = h_gf_data.copy()
+
+        # Modify mode 1 data to have different GF values
+        for col in ["GF_Trpl_H", "GF_Dbl_all", "GF_Trpl_all"]:
+            h_gf_mode_1[col] = h_gf_mode_1[col] * 1.5
+        h_gf_mode_1["esa_mode"] = 1
+
+        combined_data = pd.concat([h_gf_mode_0, h_gf_mode_1], ignore_index=True)
+        mock_load_gf.return_value = combined_data
+
+        # Get data for mode 0
+        result_mode_0 = reduce_geometric_factor_dataset("h", esa_mode=0)
+
+        # Get data for mode 1
+        result_mode_1 = reduce_geometric_factor_dataset("h", esa_mode=1)
+
+        # Verify that mode 1 has different (larger) GF values
+        assert np.all(
+            result_mode_1["GF_Trpl_H"].values > result_mode_0["GF_Trpl_H"].values
+        )
+
+        # Verify the ratio is approximately 1.5
+        ratio = result_mode_1["GF_Trpl_H"].values / result_mode_0["GF_Trpl_H"].values
+        np.testing.assert_array_almost_equal(ratio, np.ones(7) * 1.5)
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_duplicate_removal(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test that duplicate Observed_E-Step values are handled correctly."""
+        h_gf_data, _ = sample_geometric_factor_data
+
+        # Add duplicate rows with same Observed_E-Step but different incident_E-Step
+        duplicates = h_gf_data.copy()
+        duplicates["incident_E-Step"] = [
+            i + 8 for i in range(7)
+        ]  # Different incident steps
+
+        combined_data = pd.concat([h_gf_data, duplicates], ignore_index=True)
+        mock_load_gf.return_value = combined_data
+
+        result = reduce_geometric_factor_dataset("h", esa_mode=0)
+
+        # Should still have exactly 7 energy steps (duplicates removed)
+        assert len(result["Observed_E-Step"]) == 7
+
+        # Verify no duplicate indices
+        assert len(np.unique(result["Observed_E-Step"].values)) == 7
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_invalid_species(self, mock_load_gf):
+        """Test that invalid species raises appropriate error."""
+        # Mock should raise ValueError for invalid species
+        mock_load_gf.side_effect = ValueError(
+            "Geometric factors only available for 'h' and 'o', got 'invalid'"
+        )
+
+        with pytest.raises(ValueError, match="Geometric factors only available"):
+            reduce_geometric_factor_dataset("invalid", esa_mode=0)
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_no_esa_mode_column(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test handling when esa_mode column is missing from data."""
+        h_gf_data, _ = sample_geometric_factor_data
+
+        # Remove esa_mode column if it exists
+        if "esa_mode" in h_gf_data.columns:
+            h_gf_data = h_gf_data.drop(columns=["esa_mode"])
+
+        mock_load_gf.return_value = h_gf_data
+
+        # Should still work, just won't filter by esa_mode
+        result = reduce_geometric_factor_dataset("h", esa_mode=0)
+
+        # Should return 7 energy steps
+        assert len(result["Observed_E-Step"]) == 7
+        assert isinstance(result, xr.Dataset)
 
 
 class TestNormalizePsetCoordinates:

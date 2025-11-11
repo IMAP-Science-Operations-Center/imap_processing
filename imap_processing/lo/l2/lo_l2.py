@@ -416,7 +416,7 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
     else:
         # Default to mode 0 if not available (HiRes mode)
         esa_mode = 0
-    gf_datset = get_geometric_factor_dataset(species, esa_mode=esa_mode)
+    gf_datset = reduce_geometric_factor_dataset(species, esa_mode=esa_mode)
 
     # Ensure consistent energy coordinates (maps want energy not esa_energy_step)
     pset_renamed = pset.rename_dims({"esa_energy_step": "energy"})
@@ -652,7 +652,7 @@ def load_geometric_factor_data(species: str) -> pd.DataFrame:
     return lo_ancillary.read_ancillary_file(gf_file)
 
 
-def get_geometric_factor_dataset(species: str, esa_mode: int) -> xr.Dataset:
+def reduce_geometric_factor_dataset(species: str, esa_mode: int) -> xr.Dataset:
     """
     Get geometric factor data as xarray Dataset for a specific species and ESA mode.
 
@@ -777,7 +777,7 @@ def populate_geometric_factors(
         esa_mode = 0
 
     # Filter for the specific ESA mode
-    gf_dataset = get_geometric_factor_dataset(species, esa_mode)
+    gf_dataset = reduce_geometric_factor_dataset(species, esa_mode)
 
     # Populate all geometric factors at once using xarray operations
     for var, col in gf_vars.items():
