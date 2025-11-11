@@ -1734,7 +1734,7 @@ class TestPopulateGeometricFactors:
     """Tests for the populate_geometric_factors function."""
 
     @pytest.mark.parametrize("species", ["h", "o"])
-    @patch("imap_processing.lo.l2.lo_l2.get_geometric_factor_dataset")
+    @patch("imap_processing.lo.l2.lo_l2.reduce_geometric_factor_dataset")
     def test_populate_geometric_factors(
         self, mock_get_geometric_factor_dataset, species, sample_geometric_factor_data
     ):
@@ -2488,7 +2488,7 @@ class TestErrorHandling:
                 NotImplementedError, match="HEALPix map output not supported"
             ):
                 create_sky_map_from_psets(
-                    [minimal_pset_for_species], mock_map_desc, pd.DataFrame()
+                    [minimal_pset_for_species], mock_map_desc, pd.DataFrame(), False
                 )
 
 

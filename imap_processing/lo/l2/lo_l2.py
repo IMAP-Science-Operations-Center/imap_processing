@@ -72,18 +72,6 @@ def lo_l2(
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
 
-    logger.info("Step 1: Loading ancillary data")
-    efficiency_data = load_efficiency_data(anc_dependencies)
-
-    logger.info(f"Step 2: Creating sky map from {len(psets)} pointing sets")
-    sky_map = create_sky_map_from_psets(psets, map_descriptor, efficiency_data)
-
-    logger.info("Step 3: Converting to dataset and adding geometric factors")
-    dataset = sky_map.to_dataset()
-    dataset = add_geometric_factors(dataset, map_descriptor.species)
-
-    logger.info("Step 4: Calculating rates and intensities")
-
     # Determine if corrections are needed and prepare oxygen data if required
     (
         sputtering_correction,
@@ -95,6 +83,20 @@ def lo_l2(
     ) = _prepare_corrections(
         map_descriptor, descriptor, sci_dependencies, anc_dependencies
     )
+
+    logger.info("Step 1: Loading ancillary data")
+    efficiency_data = load_efficiency_data(anc_dependencies)
+
+    logger.info(f"Step 2: Creating sky map from {len(psets)} pointing sets")
+    sky_map = create_sky_map_from_psets(
+        psets, map_descriptor, efficiency_data, cg_correction
+    )
+
+    logger.info("Step 3: Converting to dataset and adding geometric factors")
+    dataset = sky_map.to_dataset()
+    dataset = add_geometric_factors(dataset, map_descriptor.species)
+
+    logger.info("Step 4: Calculating rates and intensities")
 
     dataset = calculate_all_rates_and_intensities(
         dataset,
@@ -284,6 +286,7 @@ def create_sky_map_from_psets(
     psets: list[xr.Dataset],
     map_descriptor: MapDescriptor,
     efficiency_data: pd.DataFrame,
+    cg_correct: bool,
 ) -> AbstractSkyMap:
     """
     Create a sky map by processing all pointing sets.
@@ -296,6 +299,8 @@ def create_sky_map_from_psets(
         Map descriptor object defining the projection and binning.
     efficiency_data : pd.DataFrame
         Efficiency factor data for correcting counts.
+    cg_correct : bool
+        Whether to apply the CG correction to each PSET.
 
     Returns
     -------
@@ -309,8 +314,6 @@ def create_sky_map_from_psets(
     """
     # Initialize the output map
     output_map = map_descriptor.to_empty_map()
-
-    cg_correct = True if map_descriptor.frame_descriptor == "hf" else False
 
     if not isinstance(output_map, RectangularSkyMap):
         raise NotImplementedError("HEALPix map output not supported for Lo")
@@ -750,21 +753,16 @@ def populate_geometric_factors(
         return dataset
 
     # Mapping of dataset variables to dataframe columns for this species
+    gf_coords = {"energy": "Cntr_E"}
+    gf_vars = {
+        "geometric_factor": f"GF_Trpl_{species.upper()}",
+        "geometric_factor_stat_uncert": f"GF_Trpl_{species.upper()}_unc",
+    }
     if species == "h":
-        gf_vars = {
-            "energy": "Cntr_E",
-            "geometric_factor": "GF_Trpl_H",
-            "geometric_factor_stat_uncert": "GF_Trpl_H_unc",
-        }
         # NOTE: From an e-mail from Nathan on 2025-09-11
         energy_delta_hires_values = [5.43, 10.02, 18.61, 33.31, 64.98, 131.64, 262.35]
         energy_delta_hithr_values = [8.81, 16.04, 28.50, 53.13, 105.60, 219.67, 413.60]
     else:  # species == "o"
-        gf_vars = {
-            "energy": "Cntr_E",
-            "geometric_factor": "GF_Trpl_O",
-            "geometric_factor_stat_uncert": "GF_Trpl_O_unc",
-        }
         energy_delta_hires_values = [5.82, 11.10, 21.78, 41.47, 85.61, 180.67, 361.93]
         energy_delta_hithr_values = [9.45, 17.84, 33.51, 66.61, 139.95, 302.24, 569.48]
 
@@ -779,12 +777,10 @@ def populate_geometric_factors(
     # Filter for the specific ESA mode
     gf_dataset = reduce_geometric_factor_dataset(species, esa_mode)
 
-    # Populate all geometric factors at once using xarray operations
+    # Populate geometric factors in dataset
+    dataset = dataset.assign_coords(energy=gf_dataset[gf_coords["energy"]].values)
     for var, col in gf_vars.items():
-        if var == "energy":
-            dataset = dataset.assign_coords(energy=gf_dataset[col].values)
-        else:
-            dataset[var].values = gf_dataset[col].values
+        dataset[var].values = gf_dataset[col].values
 
     # Update delta_minus and delta_plus based on ESA mode
     if esa_mode == 0:  # HiRes
