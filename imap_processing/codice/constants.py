@@ -150,38 +150,6 @@ HI_PRIORITY_VARIABLE_NAMES = [
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 HI_IALIRT_VARIABLE_NAMES = ["h"]
 
-# CDF variable names used for direct event data products
-HI_DE_CDF_FIELDS = [
-    "num_events",
-    "data_quality",
-    "ssd_energy",
-    "tof",
-    "ssd_id",
-    "gain",
-    "multi_flag",
-    "type",
-    "spin_sector",
-    "spin_number",
-]
-HI_DIRECT_EVENTS_VARIABLE_NAMES = [
-    f"p{n}_{field}" for n in range(6) for field in HI_DE_CDF_FIELDS
-]
-LO_DE_CDF_FIELDS = [
-    "num_events",
-    "data_quality",
-    "gain",
-    "apd_id",
-    "apd_energy",
-    "tof",
-    "multi_flag",
-    "type",
-    "spin_sector",
-    "energy_step",
-]
-LO_DIRECT_EVENTS_VARIABLE_NAMES = [
-    f"p{n}_{field}" for n in range(8) for field in LO_DE_CDF_FIELDS
-]
-
 # Final I-ALiRT data product fields
 CODICE_LO_IAL_DATA_FIELDS = [
     "c_over_o_abundance",
@@ -757,6 +725,26 @@ L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
     },
 }
 
+
+# Define the packet fields needed to be stored in segmented data and their
+# corresponding bit lengths for direct event data products
+DE_METADATA_FIELDS = {
+    "packet_version": 16,
+    "spin_period": 16,
+    "acq_start_seconds": 32,
+    "acq_start_subseconds": 20,
+    "spare_1": 2,
+    "st_bias_gain_mode": 2,
+    "sw_bias_gain_mode": 2,
+    "priority": 4,
+    "suspect": 1,
+    "compressed": 1,
+    "num_events": 32,
+    "byte_count": 32,
+}
+
+MAX_DE_EVENTS_PER_PACKET = 10000
+
 # Various configurations to support processing of direct events data products
 # These are described in the algorithm document in chapter 10 ("Data Level 1A")
 DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
@@ -765,117 +753,73 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
         "bit_structure": {
             "ssd_energy": {
                 "bit_length": 11,
-                "dtype": np.uint16,
-                "fillval": np.iinfo(np.uint16).max,
             },
             "tof": {
                 "bit_length": 10,
-                "dtype": np.uint16,
-                "fillval": np.iinfo(np.uint16).max,
             },
             "ssd_id": {
                 "bit_length": 4,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "gain": {
                 "bit_length": 2,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "multi_flag": {
                 "bit_length": 1,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "type": {
                 "bit_length": 2,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "spin_sector": {
                 "bit_length": 5,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "spin_number": {
                 "bit_length": 4,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
-            "Priority": {
+            "priority": {
                 "bit_length": 3,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
-            "Spare": {
+            "spare": {
                 "bit_length": 22,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
         },
-        "cdf_fields": HI_DE_CDF_FIELDS,
     },
     CODICEAPID.COD_LO_PHA: {
         "num_priorities": 8,
         "bit_structure": {
             "gain": {
                 "bit_length": 1,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "apd_id": {
                 "bit_length": 5,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "position": {
                 "bit_length": 5,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "apd_energy": {
                 "bit_length": 9,
-                "dtype": np.uint16,
-                "fillval": np.iinfo(np.uint16).max,
             },
             "tof": {
                 "bit_length": 10,
-                "dtype": np.uint16,
-                "fillval": np.iinfo(np.uint16).max,
             },
             "multi_flag": {
                 "bit_length": 1,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "type": {
                 "bit_length": 2,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "spin_sector": {
                 "bit_length": 5,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
             "energy_step": {
                 "bit_length": 7,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
-            "Priority": {
+            "priority": {
                 "bit_length": 3,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
-            "Spare": {
+            "spare": {
                 "bit_length": 16,
-                "dtype": np.uint8,
-                "fillval": np.iinfo(np.uint8).max,
             },
         },
-        "cdf_fields": LO_DE_CDF_FIELDS,
     },
 }
 
@@ -902,22 +846,6 @@ IAL_BIT_STRUCTURE = {
     "BYTE_COUNT": 23,
 }
 
-# Define the packet fields needed to be stored in segmented data and their
-# corresponding bit lengths for direct event data products
-DE_METADATA_FIELDS = {
-    "packet_version": 16,
-    "spin_period": 16,
-    "acq_start_seconds": 32,
-    "acq_start_subseconds": 20,
-    "spare_1": 2,
-    "st_bias_gain_mode": 2,
-    "sw_bias_gain_mode": 2,
-    "priority": 4,
-    "suspect": 1,
-    "compressed": 1,
-    "num_events": 32,
-    "byte_count": 32,
-}
 
 # Compression ID lookup tables
 # The key is the view_id and the value is the ID for the compression algorithm

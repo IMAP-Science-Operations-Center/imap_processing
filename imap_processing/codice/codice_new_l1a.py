@@ -6,6 +6,7 @@ import xarray as xr
 from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
+from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.codice_l1a_hi_omni import l1a_hi_omni
 from imap_processing.codice.codice_l1a_hi_sectored import l1a_hi_sectored
 from imap_processing.codice.codice_l1a_lo_angular import l1a_lo_angular
@@ -34,10 +35,10 @@ def process_l1a(dependency: ProcessingInputCollection) -> list[xr.Dataset]:
     """
     # Get science data which is L0 packet file
     science_file = dependency.get_file_paths(data_type="l0")[0]
-    # Get LUT file
-    lut_file = dependency.get_file_paths(descriptor="l1a-sci-lut")[0]
-
-    logger.info(f"Processing L1A for {science_file.name} with {lut_file.name}")
+    # Get LUT file.
+    lut_file = dependency.get_file_paths(descriptor="l1a-sci-lut")
+    # Direct events do not need LUT
+    lut_file = lut_file[0] if lut_file else None
 
     xtce_file = (
         imap_module_directory / "codice/packet_definitions/codice_packet_definition.xml"
@@ -67,4 +68,11 @@ def process_l1a(dependency: ProcessingInputCollection) -> list[xr.Dataset]:
         elif apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
             logger.info("Processing Hi Sectored Species Counts")
             datasets.append(l1a_hi_sectored(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_HI_PHA:
+            logger.info("Processing Direct Events for Hi")
+            datasets.append(l1a_direct_event(datasets_by_apid[apid], apid=apid))
+        elif apid == CODICEAPID.COD_LO_PHA:
+            logger.info("Processing Direct Events for Lo")
+            datasets.append(l1a_direct_event(datasets_by_apid[apid], apid=apid))
+
     return datasets

@@ -90,6 +90,15 @@ class CoDICECompression(IntEnum):
     PACK_24_BIT = 6
 
 
+class SegmentedPacketOrder(IntEnum):
+    """ENUM for segmented packet order."""
+
+    UNSEGMENTED = 3
+    FIRST_SEGMENT = 1
+    CONTINUATION_SEGMENT = 0
+    LAST_SEGMENT = 2
+
+
 def read_sci_lut(file_path: Path, table_id: str) -> dict:
     """
     Read the SCI-LUT JSON file for a specific table ID.

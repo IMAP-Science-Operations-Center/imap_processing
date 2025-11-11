@@ -17,65 +17,11 @@ from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.codice.codice_l1a import process_codice_l1a
 from imap_processing.codice.codice_new_l1a import process_l1a
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
 pytestmark = pytest.mark.external_test_data
-
-
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_hi_ialirt():
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_hi-ialirt_20250814_v001.pkts"
-    )
-
-    # Validation
-    val_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-ialirt_20250814211100_v0.0.5.cdf"
-    )
-    val_data = load_cdf(val_path)
-
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Shape mismatch for variable '{variable}'"
-        )
-
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_hi-ialirt_20250814_v999.cdf"
-
-
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_lo_ialirt():
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-ialirt_20250814_v001.pkts"
-    )
-
-    # Validation
-    val_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-ialirt_20250814211100_v0.0.5.cdf"
-    )
-    val_data = load_cdf(val_path)
-
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Shape mismatch for variable '{variable}'"
-        )
-
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_lo-ialirt_20250814_v999.cdf"
 
 
 @pytest.mark.skip(reason="test_hskp - KeyError: 'optics_hv_cmd_err_cnt'")
@@ -87,16 +33,7 @@ def test_hskp():
         / "imap_codice_hskp_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hskp_20250805183835_v0.0.5.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
-
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(file_path=test_file_path)[0]
 
     # Instead of checking all variables, just check that time-related variables
     # have the expected shape and that the processing completes
@@ -124,7 +61,7 @@ def test_lo_counters_aggregated():
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -149,7 +86,7 @@ def test_lo_counters_singles():
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -174,7 +111,7 @@ def test_lo_sw_priority():
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Shape mismatch for variable '{variable}'"
@@ -201,7 +138,7 @@ def test_lo_nsw_priority():
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -393,7 +330,7 @@ def test_hi_counters_aggregated():
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -418,7 +355,7 @@ def test_hi_counters_singles():
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -524,7 +461,7 @@ def test_hi_priority():
     val_data = load_cdf(val_path)
 
     # Process the input data
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(file_path=test_file_path)[0]
 
     for variable in val_data.data_vars:
         assert processed_data[variable].shape == val_data[variable].shape
@@ -533,55 +470,109 @@ def test_hi_priority():
     assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_lo_direct_events():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
     """Tests lo-direct-events."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-direct-events_20250814_v001.pkts"
-    )
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-direct-events", data_type="l0"),
+        [],  # No LUT file for direct events
+    ]
 
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-direct-events_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1a_lo-direct-events_20250814_v007.cdf"
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
+
     for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape
+        if variable in ["priority_label"]:
+            # Do string comparison for priority_label
+            assert np.array_equal(
+                processed_data[variable].values, val_data[variable].values
+            ), f"Mismatch in variable '{variable}'"
+            continue
 
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v999.cdf"
+        # Joey's has fillval of 65535 for uint16 for these variables.
+        # Others are uint8 fillval.
+        val_var_data = val_data[variable].values
+        if variable in ["apd_energy", "tof"]:
+            fillval_indices = np.where(val_var_data == 65535)
+            val_var_data[fillval_indices] = 0
+        else:
+            fillval_indices = np.where(val_var_data == 255)
+            val_var_data[fillval_indices] = 0
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_var_data,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+    for variable in val_data.coords:
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+
+    processed_data.attrs["Data_version"] = "001"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v001.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_hi_direct_events():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
     """Tests hi-direct-events."""
-    test_file_path = (
-        imap_module_directory
-        / "tests"
-        / "codice"
-        / "data"
-        / "l1a_input"
-        / "imap_codice_hi-direct-events_20250814_v001.pkts"
-    )
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="hi-direct-events", data_type="l0"),
+        [],  # No LUT file for direct events
+    ]
 
-    # TODO: uncomment this
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-direct-events_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1a_hi-direct-events_20250814_v007.cdf"
     )
     val_data = load_cdf(val_path)
 
-    processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
 
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_hi-direct-events_20250814_v999.cdf"
+    for variable in val_data.data_vars:
+        if variable in ["priority_label"]:
+            # Do string comparison for priority_label
+            assert np.array_equal(
+                processed_data[variable].values, val_data[variable].values
+            ), f"Mismatch in variable '{variable}'"
+            continue
+
+        # Joey's has fillval of 65535 for uint16 for these variables.
+        # Others are uint8 fillval.
+        val_var_data = val_data[variable].values
+        if variable in ["ssd_energy", "tof"]:
+            fillval_indices = np.where(val_var_data == 65535)
+            val_var_data[fillval_indices] = 0
+        else:
+            fillval_indices = np.where(val_var_data == 255)
+            val_var_data[fillval_indices] = 0
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_var_data,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+    for variable in val_data.coords:
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
+
+    processed_data.attrs["Data_version"] = "001"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1a_hi-direct-events_20250814_v001.cdf"
