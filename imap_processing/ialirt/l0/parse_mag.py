@@ -212,13 +212,12 @@ def get_time(
 
     primary_time = TimeTuple(int(pri_coarsetm.item()), int(pri_fintm.item()))
     secondary_time = TimeTuple(int(sec_coarsetm.item()), int(sec_fintm.item()))
-    time_data_pri_met = primary_time.to_seconds()
-    time_data_primary_ttj2000ns = met_to_ttj2000ns(time_data_pri_met)
+
+    time_data_primary_ttj2000ns = primary_time.to_j2000ns()
     time_data["primary_epoch"] = shift_time(
         time_data_primary_ttj2000ns, time_shift_mago
     )
-    time_data_sec_met = secondary_time.to_seconds()
-    time_data_secondary_ttj2000ns = met_to_ttj2000ns(time_data_sec_met)
+    time_data_secondary_ttj2000ns = secondary_time.to_j2000ns()
     time_data["secondary_epoch"] = shift_time(
         time_data_secondary_ttj2000ns, time_shift_magi
     )
