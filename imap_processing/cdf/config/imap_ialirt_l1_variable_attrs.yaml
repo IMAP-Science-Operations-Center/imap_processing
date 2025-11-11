@@ -192,77 +192,77 @@ hit_e_a_side_low_en:
   CATDESC: Low energy (~300 keV) electrons (A-side)
   FIELDNAM: Low energy (~300 keV) electrons (A-side)
   LABLAXIS: hit_e_a_side_low_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_e_a_side_med_en:
   <<: *default_uint32
   CATDESC: Medium energy (~3 MeV) electrons (A-side)
   FIELDNAM: Medium energy (~3 MeV) electrons (A-side)
   LABLAXIS: hit_e_a_side_med_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_e_a_side_high_en:
   <<: *default_uint32
   CATDESC: High energy (>3 MeV) electrons (A-side)
   FIELDNAM: High energy (>3 MeV) electrons (A-side)
   LABLAXIS: hit_e_a_side_high_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_e_b_side_low_en:
   <<: *default_uint32
   CATDESC: Low energy (~300 keV) electrons (B-side)
   FIELDNAM: Low energy (~300 keV) electrons (B-side)
   LABLAXIS: hit_e_b_side_low_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_e_b_side_med_en:
   <<: *default_uint32
   CATDESC: Medium energy (~3 MeV) electrons (B-side)
   FIELDNAM: Medium energy (~3 MeV) electrons (B-side)
   LABLAXIS: hit_e_b_side_med_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_e_b_side_high_en:
   <<: *default_uint32
   CATDESC: High energy (>3 MeV) electrons (B-side)
   FIELDNAM: High energy (>3 MeV) electrons (B-side)
   LABLAXIS: hit_e_b_side_high_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_h_omni_med_en:
   <<: *default_uint32
   CATDESC: Medium energy (12–70 MeV) protons (Omnidirectional)
   FIELDNAM: Medium energy (12–70 MeV) protons (Omnidirectional)
   LABLAXIS: hit_h_omni_med_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_h_a_side_high_en:
   <<: *default_uint32
   CATDESC: High energy (>70 MeV) protons (A-side)
   FIELDNAM: High energy (>70 MeV) protons (A-side)
   LABLAXIS: hit_h_a_side_high_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_h_b_side_high_en:
   <<: *default_uint32
   CATDESC: High energy (>70 MeV) protons (B-side)
   FIELDNAM: High energy (>70 MeV) protons (B-side)
   LABLAXIS: hit_h_b_side_high_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_he_omni_low_en:
   <<: *default_uint32
   CATDESC: Low energy (6–8 MeV/nuc) He (Omnidirectional)
   FIELDNAM: Low energy (6–8 MeV/nuc) He (Omnidirectional)
   LABLAXIS: hit_he_omni_low_en
-  UNITS: counts
+  UNITS: counts per second
 
 hit_he_omni_high_en:
   <<: *default_uint32
   CATDESC: High energy (15–70 MeV/nuc) He (Omnidirectional)
   FIELDNAM: High energy (15–70 MeV/nuc) He (Omnidirectional)
   LABLAXIS: hit_he_omni_high_en
-  UNITS: counts
+  UNITS: counts per second
 
 mag_epoch:
   <<: *default_float32
