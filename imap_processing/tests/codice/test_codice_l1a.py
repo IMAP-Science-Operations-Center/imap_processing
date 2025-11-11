@@ -475,7 +475,6 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
     """Tests lo-direct-events."""
     mock_get_file_paths.side_effect = [
         codice_lut_path(descriptor="lo-direct-events", data_type="l0"),
-        [],  # No LUT file for direct events
     ]
 
     # Validation
@@ -529,7 +528,6 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
     """Tests hi-direct-events."""
     mock_get_file_paths.side_effect = [
         codice_lut_path(descriptor="hi-direct-events", data_type="l0"),
-        [],  # No LUT file for direct events
     ]
 
     # Validation

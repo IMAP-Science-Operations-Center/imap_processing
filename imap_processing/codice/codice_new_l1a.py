@@ -35,10 +35,6 @@ def process_l1a(dependency: ProcessingInputCollection) -> list[xr.Dataset]:
     """
     # Get science data which is L0 packet file
     science_file = dependency.get_file_paths(data_type="l0")[0]
-    # Get LUT file.
-    lut_file = dependency.get_file_paths(descriptor="l1a-sci-lut")
-    # Direct events do not need LUT
-    lut_file = lut_file[0] if lut_file else None
 
     xtce_file = (
         imap_module_directory / "codice/packet_definitions/codice_packet_definition.xml"
@@ -51,6 +47,11 @@ def process_l1a(dependency: ProcessingInputCollection) -> list[xr.Dataset]:
 
     datasets = []
     for apid in datasets_by_apid:
+        if apid not in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+            # Get LUT file. Direct events do not need LUT
+            lut_file = dependency.get_file_paths(descriptor="l1a-sci-lut")
+            lut_file = lut_file[0]
+
         if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             logger.info("Processing Lo SW Species Counts")
             datasets.append(l1a_lo_species(datasets_by_apid[apid], lut_file))
