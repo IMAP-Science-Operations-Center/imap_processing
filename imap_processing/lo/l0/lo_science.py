@@ -241,6 +241,10 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     pointing_de = 0
 
     for pkt_idx, de_count in enumerate(de_count_values):
+        logger.info(
+            f"Parsing packet {pkt_idx} of {len(de_count_values)} "
+            f"with {de_count} direct events"
+        )
         raw_data = data_values[pkt_idx]
 
         # Parse all direct events in this packet using bytewise operations
