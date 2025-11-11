@@ -392,48 +392,41 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     seg_starts = np.nonzero((seq_flgs == 1) | (seq_flgs == 3))[0]
     seg_ends = np.nonzero((seq_flgs == 2) | (seq_flgs == 3))[0]
 
-    # Check if we need to combine segmented packets
-    needs_combine = not all(seq_flgs == 3)
+    # Swap the epoch dimension for the shcoarse
+    # the epoch dimension will be reduced to the
+    # first epoch in each segment
+    dataset.coords["shcoarse"] = dataset["shcoarse"]
+    dataset = dataset.swap_dims({"epoch": "shcoarse"})
 
-    if needs_combine:
-        # Swap the epoch dimension for the shcoarse
-        # the epoch dimension will be reduced to the
-        # first epoch in each segment
-        dataset.coords["shcoarse"] = dataset["shcoarse"]
-        dataset = dataset.swap_dims({"epoch": "shcoarse"})
+    # Find the valid groups of segmented packets
+    valid_groups = find_valid_groups(seq_ctrs, seg_starts, seg_ends)
 
-        # Find the valid groups of segmented packets
-        valid_groups = find_valid_groups(seq_ctrs, seg_starts, seg_ends)
+    # Combine the segmented packets into raw bytes directly
+    combined_data_list = []
+    for start, end in zip(seg_starts, seg_ends, strict=False):
+        combined_bytes = b"".join(dataset["data"].values[start : end + 1])
+        combined_data_list.append(combined_bytes)
 
-        # Combine the segmented packets into raw bytes directly
-        combined_data_list = []
-        for start, end in zip(seg_starts, seg_ends, strict=False):
-            combined_bytes = b"".join(dataset["data"].values[start : end + 1])
-            combined_data_list.append(combined_bytes)
+    # Drop any group of segmented packets that aren't sequential
+    valid_combined_data = [
+        combined_data_list[i] for i, valid in enumerate(valid_groups) if valid
+    ]
 
-        # Drop any group of segmented packets that aren't sequential
-        valid_combined_data = [
-            combined_data_list[i] for i, valid in enumerate(valid_groups) if valid
-        ]
+    # Update the epoch to the first epoch in the segment
+    dataset.coords["epoch"] = dataset["epoch"].values[seg_starts]
+    # Drop any group of segmented epochs that aren't sequential
+    dataset.coords["epoch"] = dataset["epoch"].values[valid_groups]
 
-        # Update the epoch to the first epoch in the segment
-        dataset.coords["epoch"] = dataset["epoch"].values[seg_starts]
-        # Drop any group of segmented epochs that aren't sequential
-        dataset.coords["epoch"] = dataset["epoch"].values[valid_groups]
-
-        # Create the data DataArray with combined raw bytes
-        dataset["data"] = xr.DataArray(
-            valid_combined_data,
-            dims=["epoch"],
-            coords={"epoch": dataset.coords["epoch"]},
-        )
-        # Set met to the first segment start times for the valid groups
-        dataset["met"] = xr.DataArray(
-            dataset["shcoarse"].values[seg_starts][valid_groups], dims="epoch"
-        )
-    else:
-        # No segmentation: met is the shcoarse for each packet
-        dataset["met"] = xr.DataArray(dataset["shcoarse"].values, dims="epoch")
+    # Create the data DataArray with combined raw bytes
+    dataset["data"] = xr.DataArray(
+        valid_combined_data,
+        dims=["epoch"],
+        coords={"epoch": dataset.coords["epoch"]},
+    )
+    # Set met to the first segment start times for the valid groups
+    dataset["met"] = xr.DataArray(
+        dataset["shcoarse"].values[seg_starts][valid_groups], dims="epoch"
+    )
 
     return dataset
 
