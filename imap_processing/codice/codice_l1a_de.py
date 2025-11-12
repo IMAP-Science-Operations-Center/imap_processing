@@ -193,6 +193,20 @@ def process_de_data(
     # There is one epoch per set of priorities
     num_epochs = len(decompressed_data) // num_priorities
 
+    # Initialize data arrays for each priority and field to store the data
+    # We also need arrays to hold number of events and data quality
+    for field in bit_structure:
+        if field not in ["Priority", "Spare"]:
+            de_data[field] = xr.DataArray(
+                np.full(
+                    (num_epochs, num_priorities, 10000),
+                    bit_structure[field]["fillval"],
+                    dtype=bit_structure[field]["dtype"],
+                ),
+                name=field,
+                dims=["epoch", "priority", "event_num"],
+            )
+
     # Get num_events, data quality, and priorities data for beginning of packet_indexs
     packet_index_starts = np.where(
         (packets.seq_flgs.data == SegmentedPacketOrder.UNSEGMENTED)
@@ -205,14 +219,14 @@ def process_de_data(
     # Initialize other fields of l1a that we want to
     # carry in L1A CDF file
     de_data["num_events"] = xr.DataArray(
-        np.zeros((num_epochs, num_priorities), dtype=int),
+        np.full((num_epochs, num_priorities), 65535, dtype=np.uint16),
         name="num_events",
         dims=["epoch", "priority"],
         attrs=cdf_attrs.get_variable_attributes("de_2d_attrs"),
     )
 
     de_data["data_quality"] = xr.DataArray(
-        np.zeros((num_epochs, num_priorities), dtype=int),
+        np.full((num_epochs, num_priorities), 65535, dtype=np.uint16),
         name="data_quality",
         dims=["epoch", "priority"],
         attrs=cdf_attrs.get_variable_attributes("de_2d_attrs"),

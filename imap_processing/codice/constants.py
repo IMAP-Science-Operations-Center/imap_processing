@@ -753,33 +753,53 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
         "bit_structure": {
             "ssd_energy": {
                 "bit_length": 11,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
             },
             "tof": {
                 "bit_length": 10,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
             },
             "ssd_id": {
                 "bit_length": 4,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "gain": {
                 "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "multi_flag": {
                 "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "type": {
                 "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "spin_sector": {
                 "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "spin_number": {
                 "bit_length": 4,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "priority": {
                 "bit_length": 3,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "spare": {
                 "bit_length": 22,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
         },
     },
@@ -788,36 +808,58 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
         "bit_structure": {
             "gain": {
                 "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "apd_id": {
                 "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "position": {
                 "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "apd_energy": {
                 "bit_length": 9,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
             },
             "tof": {
                 "bit_length": 10,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
             },
             "multi_flag": {
                 "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "type": {
                 "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "spin_sector": {
                 "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "energy_step": {
                 "bit_length": 7,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "priority": {
                 "bit_length": 3,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
             "spare": {
                 "bit_length": 16,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
             },
         },
     },
