@@ -233,12 +233,14 @@ def process_swapi_ialirt(
                 "met_in_utc": met_to_utc(met_values[entry]).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met_values[entry])),
                 "instrument": "swapi",
-                "swapi_pseudo_proton_speed": Decimal(solution["pseudo_speed"][entry]),
+                "swapi_pseudo_proton_speed": Decimal(
+                    f"{solution['pseudo_speed'][entry]:.3f}"
+                ),
                 "swapi_pseudo_proton_density": Decimal(
-                    solution["pseudo_density"][entry]
+                    f"{solution['pseudo_density'][entry]:.3f}"
                 ),
                 "swapi_pseudo_proton_temperature": Decimal(
-                    solution["pseudo_temperature"][entry]
+                    f"{solution['pseudo_temperature'][entry]:.3f}"
                 ),
             }
         )
