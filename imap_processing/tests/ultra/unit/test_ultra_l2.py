@@ -17,6 +17,25 @@ from imap_processing.ultra.l2 import ultra_l2
 
 
 class TestUltraL2:
+    @pytest.fixture(autouse=True)
+    def _mock_build_energy_bins(self):
+        """Mock build_energy_bins function."""
+        with (
+            patch(
+                "imap_processing.tests.ultra.mock_data.build_energy_bins"
+            ) as mock_energy_bins,
+            patch(
+                "imap_processing.ultra.l1c.ultra_l1c_pset_bins.build_energy_bins"
+            ) as mock_energy_bins_pset,
+        ):
+            intervals = [(0, 1), (1, 5), (5, 20), (20, 1234)]
+            midpoints = np.array([0.5, 3, 12.5, 627])
+            geometric_means = np.array([0, 2, 7, 100])
+            mock_energy_bins.return_value = (intervals, midpoints, geometric_means)
+            mock_energy_bins_pset.return_value = (intervals, midpoints, geometric_means)
+
+            yield mock_energy_bins, mock_energy_bins_pset
+
     @pytest.fixture
     def _setup_spice_kernels_list(self, spice_test_data_path, furnish_kernels):
         self.required_kernel_names = [
@@ -275,7 +294,7 @@ class TestUltraL2:
         for var in unexpected_vars:
             assert var not in hp_skymap.data_1d.data_vars
 
-        energy_bins = 46
+        energy_bins = 4
         n_pix = 196608
         n_counts = 10 * energy_bins * n_pix * 1.5
 

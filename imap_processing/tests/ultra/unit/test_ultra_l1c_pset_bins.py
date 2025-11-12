@@ -105,8 +105,8 @@ def test_get_spacecraft_histogram(test_data):
     assert latitude.shape == (n_pix,)
     assert longitude.shape == (n_pix,)
 
-    # Spot check that 0 counts are in the first energy bin
-    assert np.sum(hist[1, :]) == 0
+    # Spot check that 2 counts are in the second energy bin
+    assert np.sum(hist[2, :]) == 2
 
     # Test overlapping energy bins
     overlapping_bins = [
