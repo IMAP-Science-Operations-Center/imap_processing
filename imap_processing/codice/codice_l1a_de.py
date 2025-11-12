@@ -11,6 +11,7 @@ from imap_processing.codice.utils import (
     CoDICECompression,
     SegmentedPacketOrder,
     ViewTabInfo,
+    apply_replacements_to_attrs,
     get_codice_epoch_time,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -147,11 +148,15 @@ def unpack_bits(bit_structure: dict, de_data: np.ndarray) -> dict:
     #   vars - ['gain', 'apd_id', ...., 'energy_step', 'priority', 'spare']
     #   unpack data - [3, 0, 0, ....., 0, 0]
 
-    for name, width in bit_structure.items():
-        mask = (1 << width) - 1
+    # convert data into int type for bitwise operations
+    de_data = de_data.astype(np.uint64)
+
+    for name, data in bit_structure.items():
+        mask = (1 << data["bit_length"]) - 1
         unpacked[name] = de_data & mask
         # Shift the data to the right for the next iteration
-        de_data = de_data >> width
+        de_data = de_data >> data["bit_length"]
+
     return unpacked
 
 
@@ -163,6 +168,13 @@ def process_de_data(
 ) -> xr.Dataset:
     """
     Reshape the decompressed direct event data into CDF-ready arrays.
+
+    Unpacking DE needs below for-loops because of many reasons, including:
+        - Need of preserve fillval per field of various bit lengths
+        - inability to use nan for 64-bits unpacking
+        - num_events being variable length per epoch
+        - binning priorities into its bins
+        - unpacking 64-bits into fields and indexing correctly
 
     Parameters
     ----------
@@ -193,18 +205,25 @@ def process_de_data(
     # There is one epoch per set of priorities
     num_epochs = len(decompressed_data) // num_priorities
 
-    # Initialize data arrays for each priority and field to store the data
-    # We also need arrays to hold number of events and data quality
+    # Initialize data arrays for unpacked 64-bits fields
     for field in bit_structure:
         if field not in ["Priority", "Spare"]:
+            # Update attrs based on fillval per field
+            fillval = bit_structure[field]["fillval"]
+            dtype = bit_structure[field]["dtype"]
+            attrs = cdf_attrs.get_variable_attributes("de_3d_attrs")
+            attrs = apply_replacements_to_attrs(
+                attrs, {"num_digits": len(str(fillval)), "valid_max": fillval}
+            )
             de_data[field] = xr.DataArray(
                 np.full(
                     (num_epochs, num_priorities, 10000),
-                    bit_structure[field]["fillval"],
-                    dtype=bit_structure[field]["dtype"],
+                    fillval,
+                    dtype=dtype,
                 ),
                 name=field,
                 dims=["epoch", "priority", "event_num"],
+                attrs=attrs,
             )
 
     # Get num_events, data quality, and priorities data for beginning of packet_indexs
@@ -230,15 +249,6 @@ def process_de_data(
         name="data_quality",
         dims=["epoch", "priority"],
         attrs=cdf_attrs.get_variable_attributes("de_2d_attrs"),
-    )
-    # Temporary variable to store raw 64-bits event data
-    de_data["64bits_event_data"] = xr.DataArray(
-        np.zeros(
-            (num_epochs, num_priorities, constants.MAX_DE_EVENTS_PER_PACKET),
-            dtype=np.uint64,
-        ),
-        name="64bits_event_data",
-        dims=["epoch", "priority", "event_num"],
     )
 
     # As mentioned above, epoch data is of this shape:
@@ -301,32 +311,14 @@ def process_de_data(
             # each byte by it's respective offset and summing them up.
             lsb_binary_bytes_offset = 1 << (8 * np.arange(8)[::-1])
             combined_64bits = np.dot(events_in_bytes, lsb_binary_bytes_offset)
-            # Put event data into their respective priority number bins
-            de_data["64bits_event_data"][
-                epoch_index, priority_num, :priority_num_events
-            ] = combined_64bits
-
-    # Now unpack the 64-bits event data using bitwise operations
-    unpacked_bits = {
-        field: bit_structure[field]["bit_length"] for field in bit_structure
-    }
-    original_shape = de_data["64bits_event_data"].shape
-    unpacked_fields = unpack_bits(
-        unpacked_bits, de_data["64bits_event_data"].data.flatten()
-    )
-
-    # Create DataArrays for each unpacked field with original dimensions
-    for field_name, field_data in unpacked_fields.items():
-        reshaped_data = field_data.reshape(original_shape)
-        de_data[field_name] = xr.DataArray(
-            reshaped_data,
-            dims=["epoch", "priority", "event_num"],
-            name=field_name,
-            attrs=cdf_attrs.get_variable_attributes("de_3d_attrs"),
-        )
-
-    # Drop the temporary 64-bits event data variable
-    de_data = de_data.drop_vars("64bits_event_data")
+            unpacked_fields = unpack_bits(bit_structure, combined_64bits)
+            # Put event data into their respective variable and priority
+            # number bins
+            for field_name, field_data in unpacked_fields.items():
+                if field_name not in ["Priority", "Spare"]:
+                    de_data[field_name][
+                        epoch_index, priority_num, :priority_num_events
+                    ] = field_data
 
     return de_data
 

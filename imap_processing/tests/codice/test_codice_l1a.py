@@ -495,18 +495,9 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
             ), f"Mismatch in variable '{variable}'"
             continue
 
-        # Joey's has fillval of 65535 for uint16 for these variables.
-        # Others are uint8 fillval.
-        val_var_data = val_data[variable].values
-        if variable in ["apd_energy", "tof"]:
-            fillval_indices = np.where(val_var_data == 65535)
-            val_var_data[fillval_indices] = 0
-        else:
-            fillval_indices = np.where(val_var_data == 255)
-            val_var_data[fillval_indices] = 0
         np.testing.assert_allclose(
             processed_data[variable].values,
-            val_var_data,
+            val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )
@@ -518,9 +509,9 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
 
-    processed_data.attrs["Data_version"] = "001"
+    processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v001.cdf"
+    assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v002.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -548,18 +539,9 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
             ), f"Mismatch in variable '{variable}'"
             continue
 
-        # Joey's has fillval of 65535 for uint16 for these variables.
-        # Others are uint8 fillval.
-        val_var_data = val_data[variable].values
-        if variable in ["ssd_energy", "tof"]:
-            fillval_indices = np.where(val_var_data == 65535)
-            val_var_data[fillval_indices] = 0
-        else:
-            fillval_indices = np.where(val_var_data == 255)
-            val_var_data[fillval_indices] = 0
         np.testing.assert_allclose(
             processed_data[variable].values,
-            val_var_data,
+            val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )
@@ -571,6 +553,6 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
 
-    processed_data.attrs["Data_version"] = "001"
+    processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_hi-direct-events_20250814_v001.cdf"
+    assert cdf_file.name == "imap_codice_l1a_hi-direct-events_20250814_v002.cdf"

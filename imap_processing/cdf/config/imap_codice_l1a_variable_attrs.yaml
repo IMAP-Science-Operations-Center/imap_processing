@@ -1046,11 +1046,8 @@ lo-pui-species-unc-attrs:
     VAR_TYPE: data
 
 # <=== Direct Events Attributes ===>
-# TODO: The lo-direct-events product defines "gain" with different values
-#       than what is found in hi-direct-events. Come up with a way to
-#       distinguish these in the code.
 
-# Minimum attrs setting for DE data
+# Data quality and num of events attrs
 de_2d_attrs:
   CATDESC: Direct event data
   FIELDNAM: Direct Event Data
@@ -1058,14 +1055,15 @@ de_2d_attrs:
   DEPEND_0: epoch
   DEPEND_1: priority
   FILLVAL: -9223372036854775808
-  FORMAT: I19
+  FORMAT: I5
   UNITS: " "
   VALIDMIN: 0
-  VALIDMAX: 9223372036854775807
+  VALIDMAX: 65535
   VAR_TYPE: support_data
   SCALETYP: linear
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
+# unpacked 64-bits attrs
 de_3d_attrs:
   CATDESC: Direct event data
   FIELDNAM: Direct Event Data
@@ -1074,10 +1072,10 @@ de_3d_attrs:
   DEPEND_1: priority
   DEPEND_2: event_num
   FILLVAL: -9223372036854775808
-  FORMAT: I19
+  FORMAT: I{num_digits}
   UNITS: " "
   VALIDMIN: 0
-  VALIDMAX: 9223372036854775807
+  VALIDMAX: "{valid_max}"
   VAR_TYPE: support_data
   SCALETYP: linear
   DICT_KEY: SPASE>Support>SupportQuantity:Other
