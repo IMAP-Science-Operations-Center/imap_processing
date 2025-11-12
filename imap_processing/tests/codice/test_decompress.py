@@ -56,9 +56,9 @@ def test_unpack_bits():
     """Test that 64-bits is unpacked in LSB order correctly."""
     test_data = np.array([0x3, 0x9F], dtype=np.uint64)
     bit_chunks = {
-        "c": 52,
-        "b": 7,
-        "a": 5,
+        "c": {"bit_length": 52},
+        "b": {"bit_length": 7},
+        "a": {"bit_length": 5},
     }
 
     unpacked_fields = unpack_bits(bit_chunks, test_data)
