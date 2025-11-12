@@ -109,8 +109,10 @@ def generate_pset_dataset(
     )
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
     # the pset_dataset
-    pset_et = ttj2000ns_to_et(pset_dataset.epoch.data[0])
-    pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
+    pset_midpoint_et = ttj2000ns_to_et(
+        pset_dataset.epoch.data[0] + pset_dataset.epoch_delta.data[0] / 2
+    )
+    pset_dataset.update(pset_geometry(pset_midpoint_et, logical_source_parts["sensor"]))
     # Bin the counts into the spin-bins
     pset_dataset.update(pset_counts(pset_dataset.coords, config_df, de_dataset))
     # Calculate and add the exposure time to the pset_dataset

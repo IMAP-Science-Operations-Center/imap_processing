@@ -15,6 +15,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi import hi_l1c
 from imap_processing.hi.hi_l1a import DE_CLOCK_TICK_S
 from imap_processing.hi.utils import HIAPID
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 
 @mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")
@@ -68,6 +69,76 @@ def test_generate_pset_dataset(
     write_cdf(l1c_dataset)
 
 
+@mock.patch("imap_processing.hi.hi_l1c.pset_backgrounds")
+@mock.patch("imap_processing.hi.hi_l1c.pset_exposure")
+@mock.patch("imap_processing.hi.hi_l1c.pset_counts")
+@mock.patch("imap_processing.hi.hi_l1c.pset_geometry")
+@mock.patch("imap_processing.hi.hi_l1c.get_pointing_times")
+def test_generate_pset_dataset_uses_midpoint_time(
+    mock_get_pointing_times,
+    mock_pset_geometry,
+    mock_pset_counts,
+    mock_pset_exposure,
+    mock_pset_backgrounds,
+    hi_test_cal_prod_config_path,
+):
+    """Test that generate_pset_dataset uses midpoint ET for pset_geometry."""
+    # Create a mock L1B dataset
+    l1b_met = 482373065.0
+    n_energy_steps = 2
+    mock_l1b_dataset = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(np.arange(10), dims=["epoch"]),
+        },
+        data_vars={
+            "ccsds_met": xr.DataArray(np.full(10, l1b_met), dims=["epoch"]),
+            "esa_energy_step": xr.DataArray(
+                np.concat(
+                    (np.arange(n_energy_steps + 1).repeat(2), np.array([255, 255]))
+                ),
+                attrs={"FILLVAL": 255},
+            ),
+        },
+        attrs={
+            "Logical_file_id": "imap_hi_l1b_45sensor-de_20250415_v999",
+            "Logical_source": "imap_hi_l1b_45sensor-de",
+        },
+    )
+
+    # Mock get_pointing_times to return known start and end times
+    pointing_start_met = l1b_met - 1000.0
+    pointing_end_met = l1b_met + 1000.0
+    mock_get_pointing_times.return_value = (pointing_start_met, pointing_end_met)
+
+    # Mock the return values for the sub-functions
+    mock_pset_geometry.return_value = {}
+    mock_pset_counts.return_value = {}
+    mock_pset_exposure.return_value = {}
+    mock_pset_backgrounds.return_value = {}
+
+    # Call generate_pset_dataset
+    _ = hi_l1c.generate_pset_dataset(mock_l1b_dataset, hi_test_cal_prod_config_path)
+
+    # Calculate expected midpoint ET
+    # The PSET dataset should have epoch and epoch_delta based on pointing times
+    expected_epoch = met_to_ttj2000ns(np.array([pointing_start_met]))[0]
+    expected_epoch_delta = (
+        met_to_ttj2000ns(np.array([pointing_end_met]))[0]
+        - met_to_ttj2000ns(np.array([pointing_start_met]))[0]
+    )
+    expected_midpoint_ttj2000 = expected_epoch + expected_epoch_delta / 2
+    expected_midpoint_et = ttj2000ns_to_et(expected_midpoint_ttj2000)
+
+    # Verify that pset_geometry was called with the midpoint ET time
+    mock_pset_geometry.assert_called_once()
+    actual_et_arg = mock_pset_geometry.call_args[0][0]
+    actual_sensor_arg = mock_pset_geometry.call_args[0][1]
+
+    # Use approximate comparison for the ET time (floating point)
+    np.testing.assert_allclose(actual_et_arg, expected_midpoint_et, rtol=1e-10)
+    assert actual_sensor_arg == "45sensor"
+
+
 def test_empty_pset_dataset(use_fake_repoint_data_for_time):
     """Test coverage for empty_pset_dataset function"""
     n_energy_steps = 8
@@ -100,12 +171,13 @@ def test_empty_pset_dataset(use_fake_repoint_data_for_time):
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
     attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
-    pset_epoch_attrs = attr_mgr.get_variable_attributes(
-        "hi_pset_epoch", check_schema=False
-    )
-    for k, v in pset_epoch_attrs.items():
-        assert k in dataset.epoch.attrs
-        assert dataset.epoch.attrs[k] == v
+    for var_name in ["epoch", "epoch_delta"]:
+        expected_attrs = attr_mgr.get_variable_attributes(
+            f"hi_pset_{var_name}", check_schema=False
+        )
+        for k, v in expected_attrs.items():
+            assert k in dataset[var_name].attrs
+            assert dataset[var_name].attrs[k] == v
 
 
 @pytest.mark.parametrize("sensor_str", ["90sensor", "45sensor"])
