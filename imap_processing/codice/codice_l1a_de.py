@@ -116,16 +116,14 @@ def group_data(packets: xr.Dataset) -> list[bytes]:
     return grouped_data
 
 
-def unpack_bits(bit_structure: list, bit_vars: list, de_data: np.ndarray) -> dict:
+def unpack_bits(bit_structure: dict, de_data: np.ndarray) -> dict:
     """
     Unpack 64-bit values into separate fields based on bit structure.
 
     Parameters
     ----------
-    bit_structure : list
-        List of bit lengths for each variable.
-    bit_vars : list
-        List of variable names to unpack.
+    bit_structure : dict
+        Dictionary mapping variable names to their bit lengths.
     de_data : np.ndarray
         1D array of 64-bit values to unpack.
 
@@ -149,7 +147,7 @@ def unpack_bits(bit_structure: list, bit_vars: list, de_data: np.ndarray) -> dic
     #   vars - ['gain', 'apd_id', ...., 'energy_step', 'priority', 'spare']
     #   unpack data - [3, 0, 0, ....., 0, 0]
 
-    for name, width in zip(bit_vars, bit_structure, strict=False):
+    for name, width in bit_structure.items():
         mask = (1 << width) - 1
         unpacked[name] = de_data & mask
         # Shift the data to the right for the next iteration
@@ -200,9 +198,9 @@ def process_de_data(
         (packets.seq_flgs.data == SegmentedPacketOrder.UNSEGMENTED)
         | (packets.seq_flgs.data == SegmentedPacketOrder.FIRST_SEGMENT)
     )[0]
-    num_events_arr = packets.num_events.data[packet_index_starts]
-    data_quality_arr = packets.suspect.data[packet_index_starts]
-    priorities_arr = packets.priority.data[packet_index_starts]
+    num_events_arr = packets.num_events.isel(epoch=packet_index_starts)
+    data_quality_arr = packets.suspect.isel(epoch=packet_index_starts)
+    priorities_arr = packets.priority.isel(epoch=packet_index_starts)
 
     # Initialize other fields of l1a that we want to
     # carry in L1A CDF file
@@ -242,9 +240,15 @@ def process_de_data(
         epoch_data = decompressed_data[epoch_start:epoch_end]
 
         # Extract these other data
-        unordered_priority = priorities_arr[epoch_start:epoch_end]
-        unordered_data_quality = data_quality_arr[epoch_start:epoch_end]
-        un_ordered_num_events = num_events_arr[epoch_start:epoch_end]
+        unordered_priority = priorities_arr.isel(
+            epoch=slice(epoch_start, epoch_end)
+        ).data
+        unordered_data_quality = data_quality_arr.isel(
+            epoch=slice(epoch_start, epoch_end)
+        ).data
+        unordered_num_events = num_events_arr.isel(
+            epoch=slice(epoch_start, epoch_end)
+        ).data
 
         # If priority array unique size is not same size as
         # num_priorities, then throw error. They should match.
@@ -260,7 +264,7 @@ def process_de_data(
         # Now, we need to put data into their respective priority indexes
         # in final arrays for the current epoch. Eg. put data into
         #   priority - [0, 1, 2, 3, 4, 5, 6, 7]
-        de_data["num_events"][epoch_index, unordered_priority] = un_ordered_num_events
+        de_data["num_events"][epoch_index, unordered_priority] = unordered_num_events
         de_data["data_quality"][epoch_index, unordered_priority] = (
             unordered_data_quality
         )
@@ -269,30 +273,32 @@ def process_de_data(
         # since the epoch has different num_events per priority,
         # we need to loop and index accordingly. Otherwise, numpy throws
         # 'The detected shape was (n,) + inhomogeneous part' error.
-        for priority_index in range(len(unordered_priority)):
+        for i, priority_num in enumerate(unordered_priority):
             # Get num_events
-            priority_num_events = int(un_ordered_num_events[priority_index])
+            priority_num_events = int(unordered_num_events[i])
             # Reshape epoch data into (num_events, 8). That 8 is 8-bytes that
             # make up 64-bits. Therefore, combine last 8 dimension into one to
             # get 64-bits event data that we need to unpack later.
-            events_in_bytes = np.array(epoch_data[priority_index]).reshape(
-                priority_num_events, 8
-            )
-
+            events_in_bytes = np.array(epoch_data[i]).reshape(priority_num_events, 8)
             # combine last 8 dimension into one 64-bits value
-            combined_64bits = np.dot(events_in_bytes, 1 << (8 * np.arange(8)[::-1]))
+            #   lsb_binary_bytes_offset is the offset multipliers for each byte.
+            #       Eg. [00..1..(1 at 8th bit), 0100..(1 at 16th bit), ..., 00000001]
+            # Then the dot product gives us the combined 64-bits value by multiplying
+            # each byte by it's respective offset and summing them up.
+            lsb_binary_bytes_offset = 1 << (8 * np.arange(8)[::-1])
+            combined_64bits = np.dot(events_in_bytes, lsb_binary_bytes_offset)
             # Put event data into their respective priority number bins
-            priority_num = int(unordered_priority[priority_index])
             de_data["64bits_event_data"][
                 epoch_index, priority_num, :priority_num_events
             ] = combined_64bits
 
     # Now unpack the 64-bits event data using bitwise operations
-    unpacked_vars = list(bit_structure.keys())
-    unpacked_bits = [bit_structure[field]["bit_length"] for field in bit_structure]
+    unpacked_bits = {
+        field: bit_structure[field]["bit_length"] for field in bit_structure
+    }
     original_shape = de_data["64bits_event_data"].shape
     unpacked_fields = unpack_bits(
-        unpacked_bits, unpacked_vars, de_data["64bits_event_data"].data.flatten()
+        unpacked_bits, de_data["64bits_event_data"].data.flatten()
     )
 
     # Create DataArrays for each unpacked field with original dimensions

@@ -55,15 +55,19 @@ def test_decompress_raises():
 def test_unpack_bits():
     """Test that 64-bits is unpacked in LSB order correctly."""
     test_data = np.array([0x3, 0x9F], dtype=np.uint64)
-    bit_lengths = [52, 7, 5]
-    bit_vars = ["c", "b", "a"]
+    bit_chunks = {
+        "c": 52,
+        "b": 7,
+        "a": 5,
+    }
 
-    unpacked_fields = unpack_bits(bit_lengths, bit_vars, test_data)
+    unpacked_fields = unpack_bits(bit_chunks, test_data)
     expected_unpacked = {
         "a": np.array([0, 0], dtype=np.uint64),
         "b": np.array([0, 0], dtype=np.uint64),
         "c": np.array([3, 159], dtype=np.uint64),
     }
     assert all(
-        np.array_equal(unpacked_fields[key], expected_unpacked[key]) for key in bit_vars
+        np.array_equal(unpacked_fields[key], expected_unpacked[key])
+        for key in bit_chunks
     )
