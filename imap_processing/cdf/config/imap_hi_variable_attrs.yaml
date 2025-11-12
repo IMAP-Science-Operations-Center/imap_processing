@@ -436,7 +436,7 @@ hi_pset_epoch:
   DELTA_PLUS_VAR: epoch_delta
   BIN_LOCATION: 0
 
-epoch_delta:
+hi_pset_epoch_delta:
   <<: *default_int64
   CATDESC: Number of nanoseconds in spacecraft pointing covered by this pointing set product
   FIELDNAM: epoch delta
