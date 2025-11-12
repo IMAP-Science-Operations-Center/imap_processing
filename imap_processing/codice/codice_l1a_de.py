@@ -303,14 +303,14 @@ def process_de_data(
             # Reshape epoch data into (num_events, 8). That 8 is 8-bytes that
             # make up 64-bits. Therefore, combine last 8 dimension into one to
             # get 64-bits event data that we need to unpack later.
-            events_in_bytes = np.array(epoch_data[i]).reshape(priority_num_events, 8)
+            events_in_bytes = np.array(epoch_data[i], dtype=np.uint8).reshape(
+                priority_num_events, 8
+            )
             # combine last 8 dimension into one 64-bits value
-            #   lsb_binary_bytes_offset is the offset multipliers for each byte.
-            #       Eg. [00..1..(1 at 8th bit), 0100..(1 at 16th bit), ..., 00000001]
-            # Then the dot product gives us the combined 64-bits value by multiplying
-            # each byte by it's respective offset and summing them up.
-            lsb_binary_bytes_offset = 1 << (8 * np.arange(8)[::-1])
-            combined_64bits = np.dot(events_in_bytes, lsb_binary_bytes_offset)
+            #   we need to make a copy and reverse the byte order
+            #   to match LSB order before we use .view.
+            combined_64bits = np.array(events_in_bytes[:, ::-1])
+            combined_64bits = combined_64bits.view(np.uint64).flatten()
             unpacked_fields = unpack_bits(bit_structure, combined_64bits)
             # Put event data into their respective variable and priority
             # number bins
