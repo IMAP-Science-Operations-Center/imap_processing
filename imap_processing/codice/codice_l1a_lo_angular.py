@@ -151,11 +151,6 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             "species_names"
         ]
         logical_source_id = "imap_codice_l1a_lo-nsw-angular"
-    elif view_tab_obj.apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["priority"]["sw"][
-            "species_names"
-        ]
-        logical_source_id = "imap_codice_l1a_lo-sw-priority"
     else:
         raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
 

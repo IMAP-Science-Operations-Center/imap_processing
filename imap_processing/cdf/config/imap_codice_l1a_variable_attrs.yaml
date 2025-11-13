@@ -31,19 +31,6 @@ default_attrs: &default
     VALIDMAX: *max_int
     VAR_TYPE: data
 
-
-hi_priorities_attrs: &hi_priorities_default
-    DEPEND_0: epoch
-    DISPLAY_TYPE: time_series
-    FILLVAL: -1
-    FORMAT: I5
-    LABLAXIS: "events"
-    UNITS: events
-    VALIDMIN: 0
-    VALIDMAX: *max_uint32
-    VAR_TYPE: data
-
-
 # <=== Coordinates ===>
 epoch_delta_minus:
     CATDESC: Time from acquisition start to acquisition center
@@ -583,6 +570,17 @@ hi-energy-delta-attrs:
 
 
 # hi-priority
+hi_priorities_attrs: &hi_priorities_default
+    DEPEND_0: epoch
+    DISPLAY_TYPE: time_series
+    FILLVAL: *uint32_fillval
+    FORMAT: I5
+    LABLAXIS: "events"
+    UNITS: events
+    VALIDMAX: *max_uint32
+    VALIDMIN: 0
+    VAR_TYPE: data
+
 hi-priority-Priority0:
     <<: *hi_priorities_default
     CATDESC: Priority 0
@@ -916,69 +914,57 @@ lo-angular-unc-attrs:
     VAR_TYPE: data
 
 # lo-sw-priority
-p0_tcrs:
-    <<: *counters
-    CATDESC: Sunward Sector Triple Coincidence Pickup Ions Priority
+lo_priority_base: &lo_priority_base
+    DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    FIELDNAM: SW Sector Triple Coincidence PUI's
+    DISPLAY_TYPE: time_series
+    FILLVAL: *uint32_fillval
+    FORMAT: I7
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
+    SCALETYP: linear
+    UNITS: counts
+    VALIDMAX: *max_uint32
+    VALIDMIN: 0
+    VAR_TYPE: data
+
+p0_tcrs:
+    <<: *lo_priority_base
+    CATDESC: Sunward Sector Triple Coincidence Pickup Ions Priority
+    FIELDNAM: SW Sector Triple Coincidence PUI's
+
 
 p1_hplus:
-    <<: *counters
+    <<: *lo_priority_base
     CATDESC: Sunward Sector H+ Priority
-    DEPEND_1: esa_step
-    DEPEND_2: spin_sector
     FIELDNAM: SW Sector H+
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: spin_sector_label
 
 p2_heplusplus:
-    <<: *counters
+    <<: *lo_priority_base
     CATDESC: Sunward Sector He++ Priority
-    DEPEND_1: esa_step
-    DEPEND_2: spin_sector
     FIELDNAM: SW Sector He++
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: spin_sector_label
 
 p3_heavies:
-    <<: *counters
+    <<: *lo_priority_base
     CATDESC: Sunward Sector High Charge State Heavies Priority
-    DEPEND_1: esa_step
-    DEPEND_2: spin_sector
     FIELDNAM: SW Sector High Charge State Heavies
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: spin_sector_label
 
 p4_dcrs:
-    <<: *counters
+    <<: *lo_priority_base
     CATDESC: Sunward Sector Double Coincidence Pickup Ions Priority
-    DEPEND_1: esa_step
-    DEPEND_2: spin_sector
     FIELDNAM: SW Sector Double Coincidence PUI's
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: spin_sector_label
 
 # lo-nsw-priority
 p5_heavies:
-    <<: *counters
+    <<: *lo_priority_base
     CATDESC: Non-sunward Sector Heavies Priority
-    DEPEND_1: esa_step
-    DEPEND_2: spin_sector
     FIELDNAM: NSW Sector Heavies
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: spin_sector_label
 
 p6_hplus_heplusplus:
-    <<: *counters
+    <<: *lo_priority_base
     CATDESC: Non-sunward H+ and He++ Priority
-    DEPEND_1: esa_step
-    DEPEND_2: spin_sector
     FIELDNAM: NSW H+ and He++
-    LABL_PTR_1: esa_step_label
-    LABL_PTR_2: spin_sector_label
 
 # lo species attrs
 lo-species-attrs:
