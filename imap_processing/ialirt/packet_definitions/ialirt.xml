@@ -142,6 +142,9 @@
 				<xtce:IntegerDataEncoding sizeInBits="48" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="int16" signed="true">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="signed" />
+			</xtce:IntegerParameterType>
 						<!-- Enumerated Data Types -->
 			<xtce:EnumeratedParameterType name="status" signed="false">
                 <xtce:UnitSet/>
@@ -296,7 +299,7 @@
 			<xtce:Parameter name="SC_INERTIAL_RIGHT" parameterTypeRef="uint16">
 				<xtce:LongDescription>Inertial Right Ascension of system angular momentum vector</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SC_INERTIAL_DECLINE" parameterTypeRef="uint16">
+			<xtce:Parameter name="SC_INERTIAL_DECLINE" parameterTypeRef="int16">
 				<xtce:LongDescription>Inertial Declination of system angular momentum vector</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SC_SPINPERIODVALID" parameterTypeRef="validity_enum">

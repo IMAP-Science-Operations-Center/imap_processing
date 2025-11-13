@@ -572,11 +572,11 @@ def process_packet(
         2 * np.pi / 65535.0
     )
     sc_inertial_right = accumulated_data["sc_inertial_right"].astype(float) * (
-        2 * np.pi / 65535.0
+        0.0055 * np.pi / 180
     )
-    sc_inertial_decline = (
-        accumulated_data["sc_inertial_decline"].astype(float) / 65535.0
-    ) * np.pi - (np.pi / 2)
+    sc_inertial_decline = accumulated_data["sc_inertial_decline"].astype(float) * (
+        0.0027 * np.pi / 180
+    )
 
     attitude_time = met_to_ttj2000ns(accumulated_data["met"])
 
