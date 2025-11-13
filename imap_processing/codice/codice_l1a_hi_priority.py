@@ -1,4 +1,4 @@
-"""CoDICE L1A Lo priority processing functions."""
+"""CoDICE L1A Hi priority processing functions."""
 
 import logging
 from pathlib import Path
@@ -12,7 +12,6 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
     ViewTabInfo,
-    calculate_acq_time_per_step,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
     get_view_tab_info,
@@ -23,9 +22,9 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     """
-    Process CoDICE Lo Priority L1A data.
+    Process CoDICE Hi Priority L1A data.
 
     Parameters
     ----------
@@ -61,6 +60,7 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     sci_lut_data = read_sci_lut(lut_file, table_id)
 
     view_tab_info = get_view_tab_info(sci_lut_data, view_id, apid)
+
     view_tab_obj = ViewTabInfo(
         apid=apid,
         view_id=view_id,
@@ -69,16 +69,8 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         collapse_table=view_tab_info["collapse_table"],
     )
 
-    if view_tab_obj.sensor != 0:
-        raise ValueError("Unsupported sensor ID for Lo priority processing.")
-
-    # ========== Get Voltage Data from LUT ===========
-    # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
-    # Voltage data is (128,)
-    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
-        "lo_stepping"
-    ]
-    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
+    if view_tab_obj.sensor != 1:
+        raise ValueError("Unsupported sensor ID for Hi priority processing.")
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -91,20 +83,13 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # ========= Decompress and Calculate Reshape information ===========
     # Set needed metadata for Hi and Lo's different priority products
-    if apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["priority"]["sw"][
-            "species_names"
-        ]
-        logical_source_id = "imap_codice_l1a_lo-sw-priority"
-        compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
-    elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["priority"]["nsw"][
-            "species_names"
-        ]
-        logical_source_id = "imap_codice_l1a_lo-nsw-priority"
-        compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
-    else:
-        raise ValueError("Unsupported APID for Lo priority processing.")
+    if apid != CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES:
+        raise ValueError("Unsupported APID for Hi priority processing.")
+
+    species_data = sci_lut_data["data_product_hi_tab"]["0"]["priority"]
+    species_names = species_data.keys()
+    logical_source_id = "imap_codice_l1a_hi-priority"
+    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
 
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
@@ -124,19 +109,13 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     num_packets = len(binary_data_list)
 
     # Reshape decompressed data to in below for loop:
-    # (num_packets, num_species, esa_steps, *collapse_shape)
-    num_species = len(species_names)
-    esa_steps = constants.NUM_ESA_STEPS
+    # (num_packets, *collapse_shape)
     collapse_shape = get_collapse_pattern_shape(
         sci_lut_data,
         view_tab_obj.sensor,
         view_tab_obj.collapse_table,
     )
-    print(f"Collapse shape: {collapse_shape} - num_species: {num_species}")
-    print(f"decompressed data {np.array(decompressed_data).shape}")
-    species_data = np.array(decompressed_data).reshape(
-        num_packets, num_species, esa_steps, collapse_shape[0]
-    )
+    species_data = np.array(decompressed_data).reshape(num_packets, collapse_shape[1])
 
     # ========== Create CDF Dataset with Metadata ===========
     cdf_attrs = ImapCdfAttributes()
@@ -164,39 +143,6 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                     "epoch_delta_plus", check_schema=False
                 ),
             ),
-            "esa_step": xr.DataArray(
-                np.arange(128),
-                dims=("esa_step",),
-                attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
-            ),
-            "esa_step_label": xr.DataArray(
-                np.arange(128).astype(str),
-                dims=("esa_step",),
-                attrs=cdf_attrs.get_variable_attributes(
-                    "esa_step_label", check_schema=False
-                ),
-            ),
-            "k_factor": xr.DataArray(
-                np.array([constants.K_FACTOR]),
-                dims=("k_factor",),
-                attrs=cdf_attrs.get_variable_attributes(
-                    "k_factor_attrs", check_schema=False
-                ),
-            ),
-            "spin_sector": xr.DataArray(
-                np.arange(collapse_shape[0], dtype=np.uint8),
-                dims=("spin_sector",),
-                attrs=cdf_attrs.get_variable_attributes(
-                    "spin_sector", check_schema=False
-                ),
-            ),
-            "spin_sector_label": xr.DataArray(
-                np.arange(collapse_shape[0]).astype(str),
-                dims=("spin_sector",),
-                attrs=cdf_attrs.get_variable_attributes(
-                    "spin_sector_label", check_schema=False
-                ),
-            ),
         },
         attrs=cdf_attrs.get_global_attributes(logical_source_id),
     )
@@ -206,56 +152,27 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("spin_period"),
     )
-    l1a_dataset["k_factor"] = xr.DataArray(
-        np.array([constants.K_FACTOR]),
-        dims=("k_factor",),
-        attrs=cdf_attrs.get_variable_attributes("k_factor_attrs", check_schema=False),
-    )
-    l1a_dataset["voltage_table"] = xr.DataArray(
-        np.array(voltage_data),
-        dims=("esa_step",),
-        attrs=cdf_attrs.get_variable_attributes("voltage_table", check_schema=False),
-    )
     l1a_dataset["data_quality"] = xr.DataArray(
         unpacked_dataset["suspect"].values,
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
-    l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
-        dims=("esa_step",),
-        attrs=cdf_attrs.get_variable_attributes(
-            "acquisition_time_per_step", check_schema=False
-        ),
-    )
-
-    # Carry over these variables from unpacked data to l1a_dataset
-    l1a_carryover_vars = [
-        "sw_bias_gain_mode",
-        "st_bias_gain_mode",
-        "rgfo_half_spin",
-        "nso_half_spin",
-    ]
-    # Loop through them since we need to set their attrs too
-    for var in l1a_carryover_vars:
-        l1a_dataset[var] = xr.DataArray(
-            unpacked_dataset[var].values,
-            dims=("epoch",),
-            attrs=cdf_attrs.get_variable_attributes(var),
-        )
 
     # Finally, add species data variables and their uncertainties
     for idx, species in enumerate(species_names):
-        print(f"shape of {species} - {species_data[:, idx, :, :].shape}")
+        print(f"shape of {species} - {species_data[:, idx].shape}")
         l1a_dataset[species] = xr.DataArray(
-            species_data[:, idx, :, :],
+            species_data[
+                :,
+                idx,
+            ],
             dims=("epoch", "esa_step", "spin_sector"),
-            attrs=cdf_attrs.get_variable_attributes(species),
+            # attrs=cdf_attrs.get_variable_attributes(species),
         )
         l1a_dataset[f"unc_{species}"] = xr.DataArray(
-            np.sqrt(species_data[:, idx, :, :]),
+            np.sqrt(species_data[:, idx]),
             dims=("epoch", "esa_step", "spin_sector"),
-            attrs=cdf_attrs.get_variable_attributes(species),
+            # attrs=cdf_attrs.get_variable_attributes(species),
         )
 
     return l1a_dataset

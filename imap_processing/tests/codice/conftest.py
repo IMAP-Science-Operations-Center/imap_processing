@@ -115,7 +115,7 @@ def codice_lut_path():
                 / "l1a_input"
                 / "imap_codice_l0_lo-sw-priority_20250814_v001.pkts"
             ]
-        elif descriptor == "hi-priority" and data_type == "l0":
+        elif descriptor == "hi-priorities" and data_type == "l0":
             return [
                 imap_module_directory
                 / "tests"

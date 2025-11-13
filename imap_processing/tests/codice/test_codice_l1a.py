@@ -454,14 +454,19 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v001.cdf"
 
 
-def test_hi_priorities():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_hi_priority(mock_get_file_paths, codice_lut_path):
     """Tests hi-priorities."""
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="hi-priorities", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
 
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-priorities_20250814_v007.cdf"
+        / "imap_codice_l1a_hi-priority_20250814_v007.cdf"
     )
 
     val_data = load_cdf(val_path)
