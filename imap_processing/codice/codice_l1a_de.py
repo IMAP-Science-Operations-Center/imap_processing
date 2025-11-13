@@ -231,9 +231,9 @@ def process_de_data(
         (packets.seq_flgs.data == SegmentedPacketOrder.UNSEGMENTED)
         | (packets.seq_flgs.data == SegmentedPacketOrder.FIRST_SEGMENT)
     )[0]
-    num_events_arr = packets.num_events.isel(epoch=packet_index_starts)
-    data_quality_arr = packets.suspect.isel(epoch=packet_index_starts)
-    priorities_arr = packets.priority.isel(epoch=packet_index_starts)
+    num_events_arr = packets.num_events.data[packet_index_starts]
+    data_quality_arr = packets.suspect.data[packet_index_starts]
+    priorities_arr = packets.priority.data[packet_index_starts]
 
     # Initialize other fields of l1a that we want to
     # carry in L1A CDF file
@@ -264,15 +264,9 @@ def process_de_data(
         epoch_data = decompressed_data[epoch_start:epoch_end]
 
         # Extract these other data
-        unordered_priority = priorities_arr.isel(
-            epoch=slice(epoch_start, epoch_end)
-        ).data
-        unordered_data_quality = data_quality_arr.isel(
-            epoch=slice(epoch_start, epoch_end)
-        ).data
-        unordered_num_events = num_events_arr.isel(
-            epoch=slice(epoch_start, epoch_end)
-        ).data
+        unordered_priority = priorities_arr[epoch_start:epoch_end]
+        unordered_data_quality = data_quality_arr[epoch_start:epoch_end]
+        unordered_num_events = num_events_arr[epoch_start:epoch_end]
 
         # If priority array unique size is not same size as
         # num_priorities, then throw error. They should match.
@@ -297,23 +291,26 @@ def process_de_data(
         # since the epoch has different num_events per priority,
         # we need to loop and index accordingly. Otherwise, numpy throws
         # 'The detected shape was (n,) + inhomogeneous part' error.
-        for i, priority_num in enumerate(unordered_priority):
+        for priority_index in range(len(unordered_priority)):
             # Get num_events
-            priority_num_events = int(unordered_num_events[i])
+            priority_num_events = int(unordered_num_events[priority_index])
             # Reshape epoch data into (num_events, 8). That 8 is 8-bytes that
             # make up 64-bits. Therefore, combine last 8 dimension into one to
-            # get 64-bits event data that we need to unpack later.
-            events_in_bytes = np.array(epoch_data[i], dtype=np.uint8).reshape(
-                priority_num_events, 8
-            )
+            # get 64-bits event data that we need to unpack later. First,
             # combine last 8 dimension into one 64-bits value
             #   we need to make a copy and reverse the byte order
             #   to match LSB order before we use .view.
-            combined_64bits = np.array(events_in_bytes[:, ::-1])
-            combined_64bits = combined_64bits.view(np.uint64).flatten()
+            events_in_bytes = (
+                np.array(epoch_data[priority_index], dtype=np.uint8)
+                .reshape(priority_num_events, 8)[:, ::-1]
+                .copy()
+            )
+            combined_64bits = events_in_bytes.view(np.uint64).flatten()
+            # Unpack 64-bits into fields
             unpacked_fields = unpack_bits(bit_structure, combined_64bits)
-            # Put event data into their respective variable and priority
+            # Put unpacked event data into their respective variable and priority
             # number bins
+            priority_num = int(unordered_priority[priority_index])
             for field_name, field_data in unpacked_fields.items():
                 if field_name not in ["Priority", "Spare"]:
                     de_data[field_name][
