@@ -541,8 +541,8 @@ hi-species-unc-attrs:
 
 hi-energy-attrs:
     CATDESC: Energy Table for {species}
-    DELTA_MINUS_VAR: energy_{species}_minus
-    DELTA_PLUS_VAR: energy_{species}_plus
+#    DELTA_MINUS_VAR: energy_{species}_minus
+#    DELTA_PLUS_VAR: energy_{species}_plus
     DISPLAY_TYPE: no_plot
     FIELDNAM: Energy Table
     FILLVAL: *real_fillval
@@ -556,10 +556,10 @@ hi-energy-attrs:
 hi-energy-delta-attrs:
     CATDESC: Energy Table {operation} value for {species}
     FIELDNAM: Energy Delta {operation}
-    DELTA_MINUS_VAR: energy_{species}_{operation}
-    DELTA_PLUS_VAR: energy_{species}_{operation}
+#    DEPEND_0: energy_{species}
+#    DELTA_MINUS_VAR: energy_{species}_minus
+#    DELTA_PLUS_VAR: energy_{species}_plus
     DISPLAY_TYPE: no_plot
-    FIELDNAM: Energy Delta {operation}
     FILLVAL: *real_fillval
     FORMAT: F12.9
     SCALETYP: log
