@@ -22,7 +22,6 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l0_lo-ialirt_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_lo-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-ialirt_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_l0_hi-pha_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-counters-aggregated_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-counters-singles_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-omni_20250814_v001.pkts", "codice/data/l1a_input/"),
