@@ -97,6 +97,33 @@ def codice_lut_path():
                 / "l1a_input"
                 / "imap_codice_l0_hi-direct-events_20250814_v001.pkts"
             ]
+        elif descriptor == "lo-nsw-priority" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-nsw-priority_20250814_v001.pkts"
+            ]
+        elif descriptor == "lo-sw-priority" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-sw-priority_20250814_v001.pkts"
+            ]
+        elif descriptor == "hi-priority" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_hi-priority_20250814_v001.pkts"
+            ]
         if descriptor == "lo-nsw-species" and data_type == "l1b":
             return [
                 imap_module_directory

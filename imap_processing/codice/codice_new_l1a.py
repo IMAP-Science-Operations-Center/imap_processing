@@ -10,6 +10,7 @@ from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.codice_l1a_hi_omni import l1a_hi_omni
 from imap_processing.codice.codice_l1a_hi_sectored import l1a_hi_sectored
 from imap_processing.codice.codice_l1a_lo_angular import l1a_lo_angular
+from imap_processing.codice.codice_l1a_lo_priority import l1a_lo_priority
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.utils import (
     CODICEAPID,
@@ -75,5 +76,14 @@ def process_l1a(dependency: ProcessingInputCollection) -> list[xr.Dataset]:
         elif apid == CODICEAPID.COD_LO_PHA:
             logger.info("Processing Direct Events for Lo")
             datasets.append(l1a_direct_event(datasets_by_apid[apid], apid=apid))
-
+        elif apid in [
+            CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
+            CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
+        ]:
+            logger.info(f"Processing {apid} Priority Counts")
+            datasets.append(l1a_lo_priority(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_HI_PRIORITY_COUNTS:
+            logger.info("Processing Hi Priority Counts")
+            # datasets.append(l1a_hi_priority(datasets_by_apid[apid], lut_file))
+            pass
     return datasets

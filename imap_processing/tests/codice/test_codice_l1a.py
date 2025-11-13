@@ -94,53 +94,65 @@ def test_lo_counters_singles():
     assert cdf_file.name == "imap_codice_l1a_lo-counters-singles_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_lo_sw_priority():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_lo_sw_priority(mock_get_file_paths, codice_lut_path):
     """Tests lo-sw-priority."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input/"
-        / "imap_codice_lo-sw-priority_20250814_v001.pkts"
-    )
 
-    # Validation
-    val_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.5.cdf"
-    )
-    val_data = load_cdf(val_path)
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-sw-priority", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
 
-    processed_data = process_l1a(file_path=test_file_path)[0]
-    for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Shape mismatch for variable '{variable}'"
-        )
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
+
+    # print(val_data.data_vars)
+    # print(val_data.coords)
+    print(processed_data.data_vars)
+    print(processed_data.coords)
+    # for variable in val_data.data_vars:
+    #     assert processed_data[variable].shape == val_data[variable].shape, (
+    #         f"Shape mismatch for variable '{variable}'"
+    #     )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_lo_nsw_priority():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_lo_nsw_priority(mock_get_file_paths, codice_lut_path):
     """Tests lo-nsw-priority."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_lo-nsw-priority_20250814_v001.pkts"
-    )
-
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-nsw-priority", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-priority_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1a_lo-nsw-priority_20250814_v007.cdf"
     )
     val_data = load_cdf(val_path)
+    print(val_data.data_vars)
+    print(val_data.coords)
 
-    processed_data = process_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
+    print(processed_data.data_vars)
+    print(processed_data.coords)
     for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+
+    for variable in val_data.coords:
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-priority_20250814_v999.cdf"
@@ -442,29 +454,25 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v001.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_hi_priority():
-    """Tests hi-priority."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input/"
-        / "imap_codice_hi-priority_20250814_v001.pkts"
-    )
+def test_hi_priorities():
+    """Tests hi-priorities."""
 
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-priorities_20250814211100_v0.0.5.cdf"
+        / "imap_codice_l1a_hi-priorities_20250814_v007.cdf"
     )
 
     val_data = load_cdf(val_path)
+    print(val_data.data_vars)
+    print(val_data.coords)
 
     # Process the input data
-    processed_data = process_l1a(file_path=test_file_path)[0]
+    processed_data = process_l1a(ProcessingInputCollection())[0]
 
-    for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape
+    # for variable in val_data.data_vars:
+    #     assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"
