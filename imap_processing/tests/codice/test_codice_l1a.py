@@ -466,7 +466,7 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-priority_20250814_v007.cdf"
+        / "imap_codice_l1a_hi-priorities_20250814_v007.cdf"
     )
 
     val_data = load_cdf(val_path)

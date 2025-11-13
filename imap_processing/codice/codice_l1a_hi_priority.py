@@ -166,12 +166,12 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 :,
                 idx,
             ],
-            dims=("epoch", "esa_step", "spin_sector"),
+            dims=("epoch",),
             # attrs=cdf_attrs.get_variable_attributes(species),
         )
         l1a_dataset[f"unc_{species}"] = xr.DataArray(
             np.sqrt(species_data[:, idx]),
-            dims=("epoch", "esa_step", "spin_sector"),
+            dims=("epoch",),
             # attrs=cdf_attrs.get_variable_attributes(species),
         )
 
