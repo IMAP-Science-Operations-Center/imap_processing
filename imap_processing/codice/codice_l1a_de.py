@@ -305,7 +305,7 @@ def process_de_data(
                 .reshape(priority_num_events, 8)[:, ::-1]
                 .copy()
             )
-            combined_64bits = events_in_bytes.view(np.uint64).flatten()
+            combined_64bits = events_in_bytes.view(np.uint64)[:, 0]
             # Unpack 64-bits into fields
             unpacked_fields = unpack_bits(bit_structure, combined_64bits)
             # Put unpacked event data into their respective variable and priority
