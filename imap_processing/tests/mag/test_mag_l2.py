@@ -18,6 +18,52 @@ from imap_processing.spice.time import (
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
+def test_mag_l2_attributes(norm_dataset, mag_test_l2_data):
+    """Test that L2 datasets have correct attributes based on frame and mode."""
+    calibration_dataset = mag_test_l2_data[0]
+    offset_dataset = mag_test_l2_data[1]
+
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        side_effect=lambda *args, **kwargs: args[1],
+    ):
+        l2_datasets = mag_l2(
+            calibration_dataset,
+            offset_dataset,
+            norm_dataset,
+            np.datetime64("2025-10-17"),
+        )
+
+    frame_to_coord_system = {
+        "SRF": "SRF",
+        "GSE": "GSE",
+        "GSM": "GSM",
+        "RTN": "RTN",
+        "DSRF": "DSRF",
+    }
+
+    for dataset in l2_datasets:
+        assert "Logical_source" in dataset.attrs
+        assert "Data_type" in dataset.attrs
+        assert dataset.attrs["Logical_source"].startswith("imap_mag_l2_norm-")
+
+        vectors_attrs = dataset["vectors"].attrs
+        assert "DICT_KEY" in vectors_attrs
+
+        # Extract frame from logical source
+        frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
+        expected_coord = frame_to_coord_system.get(frame, frame)
+
+        assert f"CoordinateSystemName:{expected_coord}" in vectors_attrs["DICT_KEY"]
+
+        assert "magnitude" in dataset.data_vars
+        assert "range" in dataset.data_vars
+        assert dataset["magnitude"].attrs["UNITS"] == "nT"
+        assert dataset["range"].attrs["DICT_KEY"] == (
+            "SPASE>Support>SupportQuantity:InstrumentMode"
+        )
+
+
 def test_mag_l2(norm_dataset, mag_test_l2_data):
     calibration_dataset = mag_test_l2_data[0]
 
@@ -305,18 +351,6 @@ def test_magnitude():
     assert np.allclose(output_magnitude, expected_magnitude, atol=1e-9)
 
     assert output_magnitude.shape == (10,)
-
-
-def test_expected_output_norm(norm_dataset):
-    # should return 4 files with correct attributes
-    # TODO: complete with L2 attributes
-
-    pass
-
-
-def test_expected_output_burst():
-    # should return 4 files with correct attributes
-    pass
 
 
 @pytest.mark.parametrize(

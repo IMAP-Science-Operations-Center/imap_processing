@@ -5,6 +5,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1d.mag_l1d import mag_l1d
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL1dConfiguration
@@ -101,6 +102,77 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
     assert "imap_mag_l1d-spin-offsets" in logical_sources
     assert "imap_mag_l1d-gradiometry-offsets-norm" in logical_sources
     assert "imap_mag_l1d-gradiometry-offsets-burst" in logical_sources
+
+
+def test_mag_l1d_attributes(
+    mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin_data
+):
+    """Test that L1D datasets have correct attributes based on frame and mode."""
+    norm_magi = norm_dataset.copy()
+    norm_magi.attrs["Logical_source"] = "imap_mag_l1c_norm-magi"
+
+    with (
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
+            side_effect=lambda *args, **kwargs: args[1],
+        ),
+        patch(
+            "imap_processing.mag.l2.mag_l2_data.frame_transform",
+            side_effect=lambda *args, **kwargs: args[1],
+        ),
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.ttj2000ns_to_met",
+            side_effect=lambda *args, **kwargs: args[0],
+        ),
+    ):
+        l1d_datasets = mag_l1d(
+            [norm_dataset, norm_magi],
+            mag_test_l1d_data,
+            np.datetime64("2000-01-01"),
+        )
+
+    frame_to_coord_system = {
+        "SRF": "SRF",
+        "DSRF": "DSRF",
+        "GSE": "GSE",
+        "RTN": "RTN",
+    }
+
+    # Filter out ancillary datasets
+    science_datasets = [
+        ds
+        for ds in l1d_datasets
+        if "spin-offsets" not in ds.attrs.get("Logical_source", "")
+        and "gradiometry-offsets" not in ds.attrs.get("Logical_source", "")
+    ]
+
+    for dataset in science_datasets:
+        assert "Logical_source" in dataset.attrs
+        assert "Data_type" in dataset.attrs
+        assert dataset.attrs["Logical_source"].startswith("imap_mag_l1d_norm-")
+
+        vectors_attrs = dataset["vectors"].attrs
+        assert "DICT_KEY" in vectors_attrs
+
+        frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
+        expected_coord = frame_to_coord_system.get(frame, frame)
+
+        assert f"CoordinateSystemName:{expected_coord}" in vectors_attrs["DICT_KEY"]
+
+        assert "magnitude" in dataset.data_vars
+        assert "range" in dataset.data_vars
+        assert dataset["magnitude"].attrs["UNITS"] == "nT"
+        assert dataset["range"].attrs["DICT_KEY"] == (
+            "SPASE>Support>SupportQuantity:InstrumentMode"
+        )
+
+    # Test that write_cdf can be called on all datasets
+    with patch("imap_processing.cdf.utils.xarray_to_cdf") as mock_xarray_to_cdf:
+        for dataset in l1d_datasets:
+            write_cdf(dataset)
+
+        # Verify xarray_to_cdf was called for each dataset
+        assert mock_xarray_to_cdf.call_count == len(l1d_datasets)
 
 
 def test_offset_vector():

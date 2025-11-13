@@ -79,6 +79,7 @@ class MagL2L1dBase:
         self,
         attribute_manager: ImapCdfAttributes,
         day: np.datetime64,
+        data_level: str = "l2",
     ) -> xr.Dataset:
         """
         Generate an xarray dataset from the dataclass.
@@ -92,6 +93,8 @@ class MagL2L1dBase:
             CDF attributes object for the correct level.
         day : np.datetime64
          The 24 hour day to process, as a numpy datetime format.
+        data_level : str
+            The data level for constructing logical_source_id. Default is "l2".
 
         Returns
         -------
@@ -101,8 +104,20 @@ class MagL2L1dBase:
         self.truncate_to_24h(day)
 
         logical_source_id = (
-            f"imap_mag_l2_{self.data_mode.value.lower()}-{self.frame.name.lower()}"
+            f"imap_mag_{data_level}_{self.data_mode.value.lower()}-"
+            f"{self.frame.name.lower()}"
         )
+
+        # Select the appropriate vector attributes based on the frame
+        frame_to_vector_attrs = {
+            ValidFrames.SRF: "vector_attrs_srf",
+            ValidFrames.DSRF: "vector_attrs_dsrf",
+            ValidFrames.GSE: "vector_attrs_gse",
+            ValidFrames.RTN: "vector_attrs_rtn",
+            ValidFrames.GSM: "vector_attrs_gsm",  # L2 Only
+        }
+        vector_attrs_name = frame_to_vector_attrs.get(self.frame, "vector_attrs")
+
         direction = xr.DataArray(
             np.arange(3),
             name="direction",
@@ -134,7 +149,7 @@ class MagL2L1dBase:
             self.vectors,
             name="vectors",
             dims=["epoch", "direction"],
-            attrs=attribute_manager.get_variable_attributes("vector_attrs"),
+            attrs=attribute_manager.get_variable_attributes(vector_attrs_name),
         )
 
         quality_flags = xr.DataArray(
@@ -155,15 +170,14 @@ class MagL2L1dBase:
             self.range,
             name="range",
             dims=["epoch"],
-            # TODO temp attrs
-            attrs=attribute_manager.get_variable_attributes("fill"),
+            attrs=attribute_manager.get_variable_attributes("range"),
         )
 
         magnitude = xr.DataArray(
             self.magnitude,
             name="magnitude",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("fill"),
+            attrs=attribute_manager.get_variable_attributes("magnitude"),
         )
 
         global_attributes = (

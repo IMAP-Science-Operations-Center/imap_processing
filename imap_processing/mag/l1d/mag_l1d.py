@@ -78,7 +78,6 @@ def mag_l1d(  # noqa: PLR0912
     if not input_mago_norm.attrs.get("all_vectors_primary", 1):
         config.apply_gradiometry = False
 
-    # TODO: L1D attributes
     attributes = ImapCdfAttributes()
     attributes.add_instrument_global_attrs("mag")
     attributes.add_instrument_variable_attrs("mag", "l2")
@@ -153,14 +152,14 @@ def mag_l1d(  # noqa: PLR0912
     # Add spin offsets dataset from normal mode processing
     if l1d_norm.spin_offsets is not None:
         spin_offset_dataset = l1d_norm.generate_spin_offset_dataset()
-        spin_offset_dataset.attrs["Logical_source"] = "imap_mag_l1d-spin-offsets"
+        spin_offset_dataset.attrs["Logical_source"] = "imap_mag_l1d_spin-offsets"
         output_datasets.append(spin_offset_dataset)
 
     # Add gradiometry offsets dataset if gradiometry was applied
     if l1d_norm.config.apply_gradiometry and hasattr(l1d_norm, "gradiometry_offsets"):
         gradiometry_dataset = l1d_norm.gradiometry_offsets.copy()
         gradiometry_dataset.attrs["Logical_source"] = (
-            "imap_mag_l1d-gradiometry-offsets-norm"
+            "imap_mag_l1d_gradiometry-offsets-norm"
         )
         output_datasets.append(gradiometry_dataset)
 
@@ -169,7 +168,7 @@ def mag_l1d(  # noqa: PLR0912
             if hasattr(l1d_burst, "gradiometry_offsets"):
                 burst_gradiometry_dataset = l1d_burst.gradiometry_offsets.copy()
                 burst_gradiometry_dataset.attrs["Logical_source"] = (
-                    "imap_mag_l1d-gradiometry-offsets-burst"
+                    "imap_mag_l1d_gradiometry-offsets-burst"
                 )
                 output_datasets.append(burst_gradiometry_dataset)
 
