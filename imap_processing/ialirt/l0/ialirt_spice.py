@@ -42,7 +42,7 @@ def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDAr
     return z_axis
 
 
-def get_rotation_matrix(axis: NDArray, angle: float) -> NDArray:
+def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
     """
     Construct a rotation matrix that rotates vectors by an angle about a specified axis.
 
@@ -50,7 +50,7 @@ def get_rotation_matrix(axis: NDArray, angle: float) -> NDArray:
     ----------
     axis : NDArray
         Rotation axis.
-    angle : float
+    angle : NDArray
         Rotation angle, in degrees.
 
     Returns
