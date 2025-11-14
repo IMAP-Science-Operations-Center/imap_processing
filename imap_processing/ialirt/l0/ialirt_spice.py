@@ -9,6 +9,10 @@ from imap_processing.spice.geometry import (
     spherical_to_cartesian,
 )
 
+# Derived empirically from comparing the gold standard (SPICE) output vector
+# and calculated vector.
+SPIN_PHASE_OFFSET_DEG = -24.8
+
 
 def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDArray:
     """
@@ -55,12 +59,7 @@ def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
         Rotation matrices to rotate vectors around Z by spin_phase.
     """
     angle_rad = np.radians(angle)
-    rot_matrices = np.array(
-        [
-            spice.axisar(z, float(phase))
-            for z, phase in zip(axis, angle_rad, strict=False)
-        ]
-    )
+    rot_matrices = spice.axisar(axis[0], angle_rad[0])
 
     return rot_matrices
 
@@ -98,7 +97,7 @@ def get_x_y_axes(z_axis: NDArray) -> NDArray:
     # Take the cross product to get the X-axis.
     x_axis = np.cross(y_axis, z_axis)
 
-    frames = np.stack([x_axis, y_axis, z_axis], axis=1)
+    frames = np.stack([x_axis[0], y_axis[0], z_axis[0]], axis=-1)
 
     return frames
 
@@ -123,7 +122,7 @@ def compute_total_rotation(
     total_rotations : NDArray
         Instrument to inertial rotation matrices (N, 3, 3).
     """
-    total_rotations = mount_matrix @ spin_rotations @ inertial_frames
+    total_rotations = inertial_frames @ spin_rotations @ mount_matrix
 
     return total_rotations
 
@@ -169,27 +168,23 @@ def transform_instrument_vectors_to_inertial(
     # Build inertial S/C frames
     inertial_frames = get_x_y_axes(inertial_z_axis)
 
+    spin_phase_corrected = spin_phase + SPIN_PHASE_OFFSET_DEG
+
     # Get spin rotation matrices (around Z) in the spacecraft frame
     # The spin rotation happens in the spacecraft frame, not in inertial frame.
     # In the spacecraft frame, the spin axis is always exactly [0, 0, 1]
     spin_rotations = get_rotation_matrix(
-        np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase
+        np.tile([0, 0, 1], (len(spin_phase_corrected), 1)), spin_phase_corrected
     )
 
     # Get static mount matrix
-    mount_matrix = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0).T
+    mount_matrix = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
 
     # Compute total rotations
     total_rotations = compute_total_rotation(
         inertial_frames, spin_rotations, mount_matrix
     )
 
-    # Apply to instrument vectors
-    vectors = np.array(
-        [
-            spice.mxv(rot.T.copy(), vec)
-            for rot, vec in zip(total_rotations, instrument_vectors, strict=False)
-        ]
-    )
+    vector = spice.mxv(total_rotations, instrument_vectors[0])
 
-    return vectors
+    return vector
