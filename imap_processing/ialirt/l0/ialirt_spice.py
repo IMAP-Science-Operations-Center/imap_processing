@@ -59,7 +59,7 @@ def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
         Rotation matrices to rotate vectors around Z by spin_phase.
     """
     angle_rad = np.radians(angle)
-    rot_matrices = spice.axisar(axis, angle_rad)
+    rot_matrices = spice.axisar(axis[0], angle_rad[0])
 
     return rot_matrices
 
