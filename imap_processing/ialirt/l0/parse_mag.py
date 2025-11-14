@@ -521,10 +521,10 @@ def transform_to_inertial(
 
     # Transform each into ECLIPJ2000
     inertial_vector = transform_instrument_vectors_to_inertial(
-        mag_vector,
-        spin_phase_deg,
-        ra_deg,
-        dec_deg,
+        np.asarray(mag_vector).reshape(1, 3),
+        np.array([spin_phase_deg]),
+        np.array([ra_deg]),
+        np.array([dec_deg]),
         instrument_frame,
     )
 
