@@ -9,6 +9,10 @@ from scipy.interpolate import make_interp_spline
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.ialirt.l0.ialirt_spice import (
+    get_z_axis,
+    transform_instrument_vectors_to_inertial,
+)
 from imap_processing.ialirt.l0.parse_mag import (
     apply_gradiometry_correction,
     calculate_l1b,
@@ -17,6 +21,7 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_pkt_counter,
     get_status_data,
     get_time,
+    interpolate_spherical,
     process_packet,
     retrieve_matrix_from_single_l1b_calibration,
     transform_to_frames,
@@ -25,8 +30,14 @@ from imap_processing.ialirt.l0.parse_mag import (
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.constants import MAX_FINE_TIME
-from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.time import et_to_ttj2000ns, met_to_ttj2000ns
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    frame_transform,
+)
+from imap_processing.spice.time import (
+    et_to_ttj2000ns,
+    met_to_ttj2000ns,
+)
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -50,6 +61,30 @@ def binary_packet_path():
         "461971389-410.bin",
         "461971390-411.bin",
         "461971391-412.bin",
+    ]
+    return tuple(directory / fname for fname in filenames)
+
+
+@pytest.fixture(scope="session")
+def postlaunch_packet_path():
+    """Returns the paths to the binary packets."""
+    directory = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
+    filenames = [
+        "iois_1_packets_2025_284_05_40_25",
+        "iois_1_packets_2025_284_05_41_26",
+        "iois_1_packets_2025_284_05_42_27",
+        "iois_1_packets_2025_284_05_43_28",
+        "iois_1_packets_2025_284_05_44_29",
+        "iois_1_packets_2025_284_05_45_30",
+        "iois_1_packets_2025_284_05_46_31",
+        "iois_1_packets_2025_284_05_47_32",
+        "iois_1_packets_2025_284_05_48_33",
+        "iois_1_packets_2025_284_05_49_34",
+        "iois_1_packets_2025_284_05_50_35",
+        "iois_1_packets_2025_284_05_51_36",
+        "iois_1_packets_2025_284_05_52_37",
+        "iois_1_packets_2025_284_05_53_38",
+        "iois_1_packets_2025_284_05_54_39",
     ]
     return tuple(directory / fname for fname in filenames)
 
@@ -94,6 +129,21 @@ def xarray_data(binary_packet_path, xtce_mag_path):
     xarray_data = tuple(
         packet_file_to_datasets(packet, xtce_mag_path, use_derived_value=False)[apid]
         for packet in binary_packet_path
+    )
+
+    merged_xarray_data = xr.concat(xarray_data, dim="epoch")
+    return merged_xarray_data
+
+
+@pytest.fixture
+def postlaunch_xarray_data(postlaunch_packet_path, sc_packet_path):
+    """Create xarray data for multiple packets."""
+    apid = 478
+    _, xtce_ialirt_path = sc_packet_path
+
+    xarray_data = tuple(
+        packet_file_to_datasets(packet, xtce_ialirt_path, use_derived_value=False)[apid]
+        for packet in postlaunch_packet_path
     )
 
     merged_xarray_data = xr.concat(xarray_data, dim="epoch")
@@ -526,29 +576,156 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
     np.testing.assert_allclose(rtn_vector, expected_rtn, atol=1e-05)
 
 
-@pytest.mark.external_test_data
-def test_process_packet(
-    sc_packet_path, calibration_dataset, ialirt_mag_test_l1d_data, furnish_kernels
+def test_interpolate_spherical():
+    """Test the interpolate_spherical function."""
+
+    attitude_time = np.array([2, 3])
+    # Can be 0 -> 360 degrees
+    sc_inertial_right = np.radians([0, 180])
+    # Can be -pi/2 -> pi/2
+    sc_inertial_decline = np.radians([0, 0])
+    # Can be 0 -> 2pi
+    sc_spin_phase_rad = np.radians([300, 10])
+
+    target_time = 2.5
+    ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
+        sc_inertial_right,
+        sc_inertial_decline,
+        sc_spin_phase_rad,
+        attitude_time,
+        target_time,
+    )
+
+    expected_ra = np.degrees(np.interp(target_time, attitude_time, sc_inertial_right))
+    expected_spin_phase = np.degrees(
+        np.interp(target_time, attitude_time, sc_spin_phase_rad)
+    )
+
+    assert ra_deg == expected_ra
+    assert spin_phase_deg == 335
+
+    sc_inertial_decline = np.radians([0, 45])
+
+    ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
+        sc_inertial_right,
+        sc_inertial_decline,
+        sc_spin_phase_rad,
+        attitude_time,
+        target_time,
+    )
+
+    # Function is working correctly with declination.
+    assert spin_phase_deg == expected_spin_phase
+    assert np.isclose(ra_deg, 0, atol=1e-6)
+    assert dec_deg == 67.5
+
+    # Function works with wrapped values.
+    sc_inertial_decline = np.radians([0, 0])
+    sc_inertial_right = np.radians([0, 360 + 180])
+
+    ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
+        sc_inertial_right,
+        sc_inertial_decline,
+        sc_spin_phase_rad,
+        attitude_time,
+        target_time,
+    )
+    assert ra_deg == expected_ra
+
+
+@pytest.mark.external_kernel
+def test_transform_instrument_vectors_to_inertial_postlaunch2(
+    postlaunch_xarray_data, spice_test_data_path, furnish_kernels
 ):
-    """Test the process_packet function."""
+    """Test real-world application of this function."""
 
     kernels = [
         "imap_science_100.tf",
-        "imap_130.tf",
+        "imap_130.tf.txt",
         "naif0012.tls",
         "de440s.bsp",
-        "imap_spk_demo.bsp",
+        "imap_recon_od005_20250925_20251014_v01.bsp",
         "pck00011.tpc",
-        "imap_sclk_0000.tsc",
+        "imap_sclk_0036.tsc.txt",
+        "imap_2025_283_2025_284_001.ah.bc",
     ]
 
-    packet_path, xtce_ialirt_path = sc_packet_path
-    sc_xarray_data = packet_file_to_datasets(
-        packet_path, xtce_ialirt_path, use_derived_value=False
-    )[478]
+    with furnish_kernels(kernels):
+        # Get RA/Dec of angular momentum vector (Z-axis) from SPICE
+        rot_sc_to_j2000 = spiceypy.pxform(
+            "IMAP_SPACECRAFT", "ECLIPJ2000", 813433291.0018076
+        )
+        sc_z_inertial = rot_sc_to_j2000[:, 2]  # SC +Z axis (angular momentum)
+        # Convert inertial Z into RA/Dec (radians)
+        _, ra, dec = spiceypy.recrad(sc_z_inertial.copy())
+        # result: ra = 3.3807353189387266
+        # result: dec = 0.001063703254561574
+        # After my interpolation: ra = 3.380299164522455
+        # After my interpolation: dec = 0.0016249749641668303
+        # After my interpolation: spin_phase = 3.8311175082279054
+
+        instrument_vector = np.array([[-2.525630188, -0.337087161, -4.523789905]])
+
+        z_axis = get_z_axis(np.array([np.degrees(ra)]), np.array([np.degrees(dec)]))[
+            0
+        ]  # extract the single row
+        np.testing.assert_allclose(
+            z_axis,
+            sc_z_inertial,
+            atol=1e-9,
+        )
+
+        v_manual_0 = transform_instrument_vectors_to_inertial(
+            instrument_vector,
+            np.array([219.5068640401354]),  # spin phase
+            np.array([np.degrees(ra)]),  # right ascension
+            np.array([np.degrees(dec)]),  # declination
+            SpiceFrame.IMAP_MAG_O,
+        )
+
+        mago_inertial_vector = frame_transform(
+            813433291.0018076,
+            instrument_vector,
+            from_frame=SpiceFrame.IMAP_MAG_O,
+            to_frame=SpiceFrame.ECLIPJ2000,
+        )
+    # array([-3.7886142 , -3.54926134,  0.07910136]) 50
+    # array([-3.78844513, -3.55015479,  0.03457167]) 49
+    # array([-3.78896735, -3.54761301,  0.12360843]) 51
+    # array([-3.78950447, -3.54521028,  0.1680793 ]) 52
+    # array([-3.79022539, -3.54205389,  0.21250044]) 53
+    # array([-3.79112989, -3.53814481,  0.25685832]) 54
+    # array([-3.7922177 , -3.53348421,  0.30113943]) 55
+    np.testing.assert_allclose(
+        v_manual_0[0],
+        mago_inertial_vector,
+        atol=1e-9,
+    )
+    print("hi")
+
+
+@pytest.mark.external_test_data
+def test_process_packet(
+    postlaunch_xarray_data,
+    calibration_dataset,
+    ialirt_mag_test_l1d_data,
+    furnish_kernels,
+):
+    """Test the process_packet function."""
+    kernels = [
+        "imap_science_100.tf",
+        "imap_130.tf.txt",
+        "naif0012.tls",
+        "de440s.bsp",
+        "imap_recon_od005_20250925_20251014_v01.bsp",
+        "pck00011.tpc",
+        "imap_sclk_0036.tsc.txt",
+        "imap_2025_283_2025_284_001.ah.bc",
+    ]
+
     with furnish_kernels(kernels):
         mag_data = process_packet(
-            sc_xarray_data, calibration_dataset, ialirt_mag_test_l1d_data
+            postlaunch_xarray_data, calibration_dataset, ialirt_mag_test_l1d_data
         )
 
     assert isinstance(mag_data[0], dict)

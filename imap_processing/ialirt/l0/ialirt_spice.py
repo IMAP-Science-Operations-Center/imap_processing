@@ -42,7 +42,7 @@ def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDAr
     return z_axis
 
 
-def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
+def get_rotation_matrix(axis: NDArray, angle: float) -> NDArray:
     """
     Construct a rotation matrix that rotates vectors by an angle about a specified axis.
 
@@ -50,7 +50,7 @@ def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
     ----------
     axis : NDArray
         Rotation axis.
-    angle : NDArray
+    angle : float
         Rotation angle, in degrees.
 
     Returns
@@ -59,7 +59,7 @@ def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
         Rotation matrices to rotate vectors around Z by spin_phase.
     """
     angle_rad = np.radians(angle)
-    rot_matrices = spice.axisar(axis[0], angle_rad[0])
+    rot_matrices = spice.axisar(axis, angle_rad)
 
     return rot_matrices
 
