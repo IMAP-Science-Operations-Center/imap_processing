@@ -387,6 +387,73 @@ def apply_gradiometry_correction(
     return mago_corrected, magnitude
 
 
+def interpolate_spherical(
+    sc_inertial_right: np.ndarray,
+    sc_inertial_decline: np.ndarray,
+    sc_spin_phase_rad: np.ndarray,
+    attitude_time: np.ndarray,
+    target_time: float,
+) -> tuple:
+    """
+    Interpolate spherical coordinates.
+
+    Parameters
+    ----------
+    sc_inertial_right : numpy.ndarray
+        Inertial right ascension for 4 packets 0 to 2π radians, shape (4).
+    sc_inertial_decline : numpy.ndarray
+        Inertial declination for 4 packets -π/2 to π/2 radians, shape (4).
+    sc_spin_phase_rad : numpy.ndarray
+        Spin phase for 4 packets 0 to 2π radians, shape (4).
+    attitude_time : np.ndarray
+        Timestamps for all packets in ttj2000ns.
+    target_time : float
+        Time at which to apply the transformation.
+        Will be primary_epoch (mago vector) or secondary_epoch (magi vector).
+        Example: time_data['primary_epoch'].
+
+    Returns
+    -------
+    ra_deg np.ndarray
+        Interpolated right ascension based on time (deg).
+    dec_deg np.ndarray
+        Interpolated declination based on time (deg).
+    spin_phase_deg np.ndarray
+        Interpolated spin-phase based on time (deg).
+    """
+    # Interpolate spin phase, RA, and Dec at target_time
+    # Convert RA/Dec to unit cartesian vectors
+    spherical_coords = np.stack(
+        [
+            np.ones_like(sc_inertial_right),
+            np.degrees(sc_inertial_right),
+            np.degrees(sc_inertial_decline),
+        ],
+        axis=-1,
+    )
+    vecs = spherical_to_cartesian(spherical_coords)
+
+    # Interpolate in Cartesian space
+    vx = np.interp(target_time, attitude_time, vecs[:, 0])
+    vy = np.interp(target_time, attitude_time, vecs[:, 1])
+    vz = np.interp(target_time, attitude_time, vecs[:, 2])
+    v_interp = np.array([vx, vy, vz])
+    # Normalize vector so that its magnitude is 1.
+    v_interp /= np.linalg.norm(v_interp)
+
+    # Convert back to spherical
+    ra_dec = cartesian_to_spherical(v_interp)
+    ra_deg = ra_dec[1]
+    dec_deg = ra_dec[2]
+
+    # Account for discontinuities in spin phase.
+    spin_phase_unwrapped = np.unwrap(sc_spin_phase_rad)
+    spin_phase_interp = np.interp(target_time, attitude_time, spin_phase_unwrapped)
+    spin_phase_deg = np.degrees(spin_phase_interp) % 360
+
+    return ra_deg, dec_deg, spin_phase_deg
+
+
 def transform_to_inertial(
     sc_spin_phase_rad: np.ndarray,
     sc_inertial_right: np.ndarray,
@@ -408,10 +475,7 @@ def transform_to_inertial(
     sc_inertial_decline : numpy.ndarray
         Inertial declination for 4 packets -π/2 to π/2 radians, shape (4).
     attitude_time : np.ndarray
-        Timestamps for the 4 packets.
-        Example: test_met = grouped_data["met"][
-                 (grouped_data["group"] == group).values].
-        ttj2000ns = met_to_ttj2000ns(test_met.values).
+        Timestamps for all packets in ttj2000ns.
     target_time : float
         Time at which to apply the transformation.
         Will be primary_epoch (mago vector) or secondary_epoch (magi vector).
@@ -447,44 +511,22 @@ def transform_to_inertial(
     sc_inertial_right = sc_inertial_right[sort_idx]
     sc_inertial_decline = sc_inertial_decline[sort_idx]
 
-    # Interpolate spin phase, RA, and Dec at target_time
-    # Convert RA/Dec to unit cartesian vectors
-    spherical_coords = np.stack(
-        [
-            np.ones_like(sc_inertial_right),
-            np.degrees(sc_inertial_right),
-            np.degrees(sc_inertial_decline),
-        ],
-        axis=-1,
+    ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
+        sc_inertial_right,
+        sc_inertial_decline,
+        sc_spin_phase_rad,
+        attitude_time,
+        target_time,
     )
-    vecs = spherical_to_cartesian(spherical_coords)
-
-    # Interpolate in Cartesian space
-    vx = np.interp(target_time, attitude_time, vecs[:, 0])
-    vy = np.interp(target_time, attitude_time, vecs[:, 1])
-    vz = np.interp(target_time, attitude_time, vecs[:, 2])
-    v_interp = np.array([vx, vy, vz])
-    # Normalize vector so that its magnitude is 1.
-    v_interp /= np.linalg.norm(v_interp)
-
-    # Convert back to spherical
-    ra_dec = cartesian_to_spherical(v_interp)
-    ra_deg = ra_dec[1]
-    dec_deg = ra_dec[2]
-
-    # Account for discontinuities in spin phase.
-    spin_phase_unwrapped = np.unwrap(sc_spin_phase_rad)
-    spin_phase_interp = np.interp(target_time, attitude_time, spin_phase_unwrapped)
-    spin_phase_deg = np.degrees(spin_phase_interp) % 360
 
     # Transform each into ECLIPJ2000
     inertial_vector = transform_instrument_vectors_to_inertial(
-        np.asarray(mag_vector).reshape(1, 3),
-        np.array([spin_phase_deg]),
-        np.array([ra_deg]),
-        np.array([dec_deg]),
+        mag_vector,
+        spin_phase_deg,
+        ra_deg,
+        dec_deg,
         instrument_frame,
-    )[0]
+    )
 
     return inertial_vector
 
