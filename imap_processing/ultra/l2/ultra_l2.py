@@ -19,6 +19,8 @@ from imap_processing.ena_maps.utils.naming import (
     ns_to_duration_months,
 )
 from imap_processing.quality_flags import ImapPSETUltraFlags
+from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
@@ -49,6 +51,15 @@ DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSky
 DEFAULT_L2_HEALPIX_NSIDE = 32
 DEFAULT_L2_HEALPIX_NESTED = False
 
+# Set the default energy bin size
+DEFAULT_GROUP_SIZE = 4
+# Define energy bin groups for binning L1C energy bins into coarser bins
+# Get number of fine energy bins used in L1C PSETs
+n_fine_energy_bins = len(build_energy_bins()[2])
+DEFAULT_BIN_GROUPS = np.arange(n_fine_energy_bins)[::DEFAULT_GROUP_SIZE]
+# Make sure the last bin includes the remainder of the fine bins
+if DEFAULT_BIN_GROUPS[-1] != n_fine_energy_bins:
+    DEFAULT_BIN_GROUPS = np.append(DEFAULT_BIN_GROUPS, n_fine_energy_bins)
 
 # These variables must always be present in each L1C dataset
 REQUIRED_L1C_VARIABLES_PUSH = [
@@ -100,6 +111,14 @@ INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = [
     "obs_date_range",
 ]
 
+VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS = [
+    "sensitivity",
+    "efficiency",
+    "geometric_function",
+    "exposure_factor",
+]
+VARIABLES_TO_SUM_OVER_COARSE_ENERGY_BINS = ["counts"]
+
 
 def get_variable_attributes_optional_energy_dependence(
     cdf_attrs: ImapCdfAttributes,
@@ -148,12 +167,84 @@ def get_variable_attributes_optional_energy_dependence(
     return metadata
 
 
+def bin_pset_energy_bins(
+    pset: xr.Dataset, bin_groups: np.ndarray
+) -> tuple[xr.Dataset, NDArray]:
+    """
+    Group fine-grained L1C PSET energy bins into coarser bins for l2 ULTRA maps.
+
+    Parameters
+    ----------
+    pset : xarray.Dataset
+        Ultra L1C pointing set dataset to bin.
+    bin_groups : numpy.ndarray
+        Array of indices defining the new energy bin edges.
+
+    Returns
+    -------
+    xarray.Dataset
+        The input pset with energy bins grouped according to the bin_groups.
+    numpy.ndarray
+        The new energy bin edges.
+    """
+    # Get a list of variables that have the energy bin dimension
+    energy_dep_vars = [
+        var for var in pset.data_vars if "energy_bin_geometric_mean" in pset[var].dims
+    ]
+    # From those, get the variables that need to be averaged over the coarse bins
+    vars_to_average = [
+        var
+        for var in energy_dep_vars
+        if var in VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS
+    ]
+    # Create a new coordinate for the new energy bin index
+    n_fine_bins = pset["energy_bin_geometric_mean"].size
+    # For example, if bin_groups = [0,4,8,12...46], then the new coordinate will be:
+    # energy_bin_index = [0,0,0,0,1,1,1,1,2,2,2,2...12] That way we can groupby the new
+    # energy bin index to sum/average over the fine bins.
+    pset = pset.assign_coords(
+        energy_bin_index=(
+            "energy_bin_geometric_mean",
+            np.digitize(np.arange(n_fine_bins), bin_groups),
+        )
+    )
+    # Count number of non zero pixels in each new energy bin
+    non_zero_pixels_per_group = (
+        (pset[vars_to_average] > 0).astype(int).groupby("energy_bin_index").sum()
+    )
+    # Sum variables over the new energy bins
+    pset[energy_dep_vars] = pset[energy_dep_vars].groupby("energy_bin_index").sum()
+    # Average variables by number of non-zero pixels at each new energy bin
+    pset[vars_to_average] = pset[vars_to_average] / non_zero_pixels_per_group
+    # Calculate new energy bin geometric means
+    new_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)[bin_groups]
+    new_bin_geo_means = build_energy_bins(new_bin_edges)[2]
+    pset = pset.assign_coords(
+        energy_bin_geometric_mean=xr.DataArray(
+            new_bin_geo_means,
+            dims=["energy_bin_index"],
+            attrs=pset["energy_bin_geometric_mean"].attrs,
+        )
+    )
+    # Make sure the variables use the new energy bin coordinate
+    pset = (
+        pset.swap_dims({"energy_bin_index": "energy_bin_geometric_mean"})
+        # Restore original dimension order because groupby moves the grouped
+        # dimension to the front
+        .transpose("epoch", "energy_bin_geometric_mean", ...)
+        .drop("energy_bin_index")
+    )
+
+    return pset, new_bin_edges
+
+
 def generate_ultra_healpix_skymap(  # noqa: PLR0912
     ultra_l1c_psets: list[str | xr.Dataset],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
-) -> tuple[ena_maps.HealpixSkyMap, NDArray]:
+    energy_bin_groups: np.ndarray = DEFAULT_BIN_GROUPS,
+) -> tuple[ena_maps.HealpixSkyMap, NDArray, NDArray]:
     """
     Generate a Healpix skymap from ULTRA L1C pointing sets.
 
@@ -170,6 +261,10 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
+    energy_bin_groups : numpy.ndarray, optional
+        Array of indices defining the new energy bin edges for binning
+        L1C energy bins into coarser bins.
+        Defaults to DEFAULT_BIN_GROUPS defined in this module.
 
     Returns
     -------
@@ -178,6 +273,8 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
         with calculated ena_intensity and its statistical uncertainty values.
     NDArray
         Array of epochs corresponding to the pointing sets used in the map.
+    NDArray
+        The new energy bin edges after binning L1C energy bins into coarser bins.
 
     Raises
     ------
@@ -284,8 +381,15 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     )
 
     all_pset_epochs = []
+    new_energy_bin_edges = None
     for ultra_l1c_pset in ultra_l1c_psets:
-        pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
+        binned_pset, new_bin_edges = bin_pset_energy_bins(
+            ultra_l1c_pset, energy_bin_groups
+        )
+        # Keep track of the new energy bin edges
+        if new_energy_bin_edges is None:
+            new_energy_bin_edges = new_bin_edges
+        pointing_set = ena_maps.UltraPointingSet(binned_pset)
         all_pset_epochs.append(pointing_set.epoch)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
@@ -427,7 +531,7 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     skymap.data_1d = skymap.data_1d.drop_vars(
         VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
     )
-    return skymap, np.array(all_pset_epochs)
+    return skymap, np.array(all_pset_epochs), new_energy_bin_edges
 
 
 def ultra_l2(
@@ -491,9 +595,8 @@ def ultra_l2(
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
-    healpix_skymap, pset_epochs = generate_ultra_healpix_skymap(
-        ultra_l1c_psets=l1c_products,
-        output_map_structure=output_map_structure,
+    healpix_skymap, pset_epochs, new_energy_bin_edges = generate_ultra_healpix_skymap(
+        ultra_l1c_psets=l1c_products, output_map_structure=output_map_structure
     )
     # Ensure that the epoch of the map is the earliest epoch of the input PSETs
     healpix_skymap.data_1d.assign_coords(
@@ -651,7 +754,9 @@ def ultra_l2(
     map_dataset.coords["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta"
 
     # Add the energy delta plus/minus to the map dataset
-    energy_delta_minus, energy_delta_plus = get_energy_delta_minus_plus()
+    energy_delta_minus, energy_delta_plus = get_energy_delta_minus_plus(
+        new_energy_bin_edges
+    )
     map_dataset.coords["energy_delta_minus"] = xr.DataArray(
         energy_delta_minus,
         dims=(CoordNames.ENERGY_L2.value,),

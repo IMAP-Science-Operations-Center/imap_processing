@@ -17,25 +17,6 @@ from imap_processing.ultra.l2 import ultra_l2
 
 
 class TestUltraL2:
-    @pytest.fixture(autouse=True)
-    def _mock_build_energy_bins(self):
-        """Mock build_energy_bins function."""
-        with (
-            patch(
-                "imap_processing.tests.ultra.mock_data.build_energy_bins"
-            ) as mock_energy_bins,
-            patch(
-                "imap_processing.ultra.l1c.ultra_l1c_pset_bins.build_energy_bins"
-            ) as mock_energy_bins_pset,
-        ):
-            intervals = [(0, 1), (1, 5), (5, 20), (20, 1234)]
-            midpoints = np.array([0.5, 3, 12.5, 627])
-            geometric_means = np.array([0, 2, 7, 100])
-            mock_energy_bins.return_value = (intervals, midpoints, geometric_means)
-            mock_energy_bins_pset.return_value = (intervals, midpoints, geometric_means)
-
-            yield mock_energy_bins, mock_energy_bins_pset
-
     @pytest.fixture
     def _setup_spice_kernels_list(self, spice_test_data_path, furnish_kernels):
         self.required_kernel_names = [
@@ -120,8 +101,9 @@ class TestUltraL2:
         # Avoid modifying the original pset
         pset = self.ultra_pset.copy(deep=True)
         # Set the values in the single input PSET for easy calculation
-        # of the expected ena_intensity and ena_intensity statistical uncertainty
-        pset["counts"].values = np.full_like(pset["counts"].values, 10)
+        # of the expected ena_intensity and ena_intensity statistical uncertainty]
+        counts_fillval = 10
+        pset["counts"].values = np.full_like(pset["counts"].values, counts_fillval)
         pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"])
         pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
         pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
@@ -140,7 +122,7 @@ class TestUltraL2:
 
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
-            hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
+            hp_skymap, _, new_bin_edges = ultra_l2.generate_ultra_healpix_skymap(
                 ultra_l1c_psets=[
                     pset,
                 ],
@@ -197,12 +179,24 @@ class TestUltraL2:
         )
 
         # Estimate the expected ena_intensity and its uncertainty
-        expected_ena_intensity = (10 * solid_angle_ratio_map_to_pset / 1) / (
-            1 * hp_skymap.solid_angle * 1
-        )
-        expected_ena_intensity_unc = (
-            (10 * solid_angle_ratio_map_to_pset) ** 0.5 / 1
+        expected_ena_intensity = (
+            counts_fillval * solid_angle_ratio_map_to_pset / 1
         ) / (1 * hp_skymap.solid_angle * 1)
+        # 4 fine bins per coarse bin
+        binned_counts = np.full((len(new_bin_edges) - 1), counts_fillval) * 4
+        # last bin only has 2 fine bins
+        binned_counts[-1] = counts_fillval * 2
+        energy_bin_deltas = np.full(12, 4)
+        # The last delta is 2 instead of 4
+        energy_bin_deltas[-1] = 2
+        expected_ena_intensity_unc = (
+            (binned_counts * solid_angle_ratio_map_to_pset) ** 0.5 / 1
+        ) / (1 * hp_skymap.solid_angle * energy_bin_deltas)
+
+        n_pixels = hp_skymap.data_1d["ena_intensity_stat_uncert"].shape[2]
+        expected_ena_intensity_unc = np.tile(
+            expected_ena_intensity_unc[np.newaxis, :, np.newaxis], (1, 1, n_pixels)
+        )
 
         np.testing.assert_allclose(
             hp_skymap.data_1d["ena_intensity"].values,
@@ -210,8 +204,8 @@ class TestUltraL2:
             rtol=rtol,
         )
         np.testing.assert_allclose(
-            hp_skymap.data_1d["ena_intensity_stat_uncert"].values,
             expected_ena_intensity_unc,
+            hp_skymap.data_1d["ena_intensity_stat_uncert"].values,
             rtol=rtol,
         )
 
@@ -255,7 +249,7 @@ class TestUltraL2:
 
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
-            hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
+            hp_skymap, _, _ = ultra_l2.generate_ultra_healpix_skymap(
                 ultra_l1c_psets=[pset, pset_quality],
                 output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                     {
@@ -294,7 +288,7 @@ class TestUltraL2:
         for var in unexpected_vars:
             assert var not in hp_skymap.data_1d.data_vars
 
-        energy_bins = 4
+        energy_bins = 46  # Original number of fine energy bins
         n_pix = 196608
         n_counts = 10 * energy_bins * n_pix * 1.5
 
@@ -312,7 +306,7 @@ class TestUltraL2:
             [],
         ):
             with furnish_kernels(self.required_kernel_names):
-                hp_skymap, pset_epochs = ultra_l2.generate_ultra_healpix_skymap(
+                hp_skymap, pset_epochs, _ = ultra_l2.generate_ultra_healpix_skymap(
                     ultra_l1c_psets=self.ultra_psets,
                     output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                         {

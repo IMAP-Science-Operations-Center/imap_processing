@@ -44,9 +44,16 @@ FILLVAL_FLOAT32 = -1.0e31
 logger = logging.getLogger(__name__)
 
 
-def get_energy_delta_minus_plus() -> tuple[NDArray, NDArray]:
+def get_energy_delta_minus_plus(
+    energy_bin_edges: np.ndarray | None = None,
+) -> tuple[NDArray, NDArray]:
     """
     Calculate the energy_delta_minus and energy_delta_plus for use in the CDF.
+
+    Parameters
+    ----------
+    energy_bin_edges : numpy.ndarray, optional
+        Array of energy bin edges. If None, default Ultra energy bins are used.
 
     Returns
     -------
@@ -63,7 +70,7 @@ def get_energy_delta_minus_plus() -> tuple[NDArray, NDArray]:
     where bin_upper and bin_lower are the upper and lower bounds of the energy bins
     and bin_geom_mean is the geometric mean of the energy bin.
     """
-    bins, _, bin_geom_means = build_energy_bins()
+    bins, _, bin_geom_means = build_energy_bins(energy_bin_edges)
     bins_energy_delta_plus, bins_energy_delta_minus = [], []
     for bin_edges, bin_geom_mean in zip(bins, bin_geom_means, strict=False):
         bins_energy_delta_plus.append(bin_edges[1] - bin_geom_mean)

@@ -322,9 +322,16 @@ def get_static_deadtime_ratios(
     )
 
 
-def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarray]:
+def build_energy_bins(
+    energy_bin_edges: np.ndarray | None = None,
+) -> tuple[list[tuple[float, float]], np.ndarray, np.ndarray]:
     """
     Build energy bin boundaries.
+
+    Parameters
+    ----------
+    energy_bin_edges : numpy.ndarray, optional
+        List of energy bin edges. If None, uses default UltraConstants.PSET_ENERGY_BIN.
 
     Returns
     -------
@@ -336,7 +343,9 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarr
         Array of geometric means of energy bins.
     """
     # Create energy bins.
-    energy_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)
+    if energy_bin_edges is None:
+        energy_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)
+
     energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 
     intervals = [
