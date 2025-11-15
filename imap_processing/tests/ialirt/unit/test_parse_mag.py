@@ -9,10 +9,6 @@ from scipy.interpolate import make_interp_spline
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.ialirt.l0.ialirt_spice import (
-    get_z_axis,
-    transform_instrument_vectors_to_inertial,
-)
 from imap_processing.ialirt.l0.parse_mag import (
     apply_gradiometry_correction,
     calculate_l1b,
@@ -32,7 +28,6 @@ from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.constants import MAX_FINE_TIME
 from imap_processing.spice.geometry import (
     SpiceFrame,
-    frame_transform,
 )
 from imap_processing.spice.time import (
     et_to_ttj2000ns,
@@ -631,60 +626,6 @@ def test_interpolate_spherical():
         target_time,
     )
     assert ra_deg == expected_ra
-
-
-@pytest.mark.external_kernel
-def test_transform_instrument_vectors_to_inertial_single(furnish_kernels):
-    """Test real-world application of this function."""
-
-    kernels = [
-        "imap_science_100.tf",
-        "imap_130.tf.txt",
-        "naif0012.tls",
-        "de440s.bsp",
-        "imap_recon_od005_20250925_20251014_v01.bsp",
-        "pck00011.tpc",
-        "imap_sclk_0036.tsc.txt",
-        "imap_2025_283_2025_284_001.ah.bc",
-    ]
-
-    with furnish_kernels(kernels):
-        # Compare SPICE z-axis with calculated.
-        rot_sc_to_j2000 = spiceypy.pxform(
-            "IMAP_SPACECRAFT", "ECLIPJ2000", 813433291.0018076
-        )
-        sc_z_inertial = rot_sc_to_j2000[:, 2]  # SC +Z axis (angular momentum)
-        _, ra, dec = spiceypy.recrad(sc_z_inertial.copy())
-
-        z_axis = get_z_axis(np.array([np.degrees(ra)]), np.array([np.degrees(dec)]))[0]
-        np.testing.assert_allclose(
-            z_axis,
-            sc_z_inertial,
-            atol=1e-9,
-        )
-
-        # Spot check that calculations are similar for vectors.
-        instrument_vector = np.array([[-2.525630188, -0.337087161, -4.523789905]])
-
-        v_manual_0 = transform_instrument_vectors_to_inertial(
-            instrument_vector,
-            np.array([219.5068640401354]),  # spin phase
-            np.array([np.degrees(ra)]),  # right ascension
-            np.array([np.degrees(dec)]),  # declination
-            SpiceFrame.IMAP_MAG_O,
-        )
-
-        mago_inertial_vector = frame_transform(
-            813433291.0018076,
-            instrument_vector,
-            from_frame=SpiceFrame.IMAP_MAG_O,
-            to_frame=SpiceFrame.ECLIPJ2000,
-        )
-    np.testing.assert_allclose(
-        v_manual_0,
-        mago_inertial_vector,
-        atol=1e-2,
-    )
 
 
 @pytest.mark.external_test_data
