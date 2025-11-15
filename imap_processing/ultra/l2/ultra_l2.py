@@ -215,6 +215,10 @@ def bin_pset_energy_bins(
     # Sum variables over the new energy bins
     pset[energy_dep_vars] = pset[energy_dep_vars].groupby("energy_bin_index").sum()
     # Average variables by number of non-zero pixels at each new energy bin
+    # Create a mask to avoid division by zero
+    non_zero_pixels_per_group = non_zero_pixels_per_group.where(
+        non_zero_pixels_per_group != 0, 1
+    )
     pset[vars_to_average] = pset[vars_to_average] / non_zero_pixels_per_group
     # Calculate new energy bin geometric means
     new_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)[bin_groups]
@@ -383,10 +387,13 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     all_pset_epochs = []
     new_energy_bin_edges = None
     for ultra_l1c_pset in ultra_l1c_psets:
-        binned_pset, new_bin_edges = bin_pset_energy_bins(
-            ultra_l1c_pset, energy_bin_groups
+        pset = (
+            load_cdf(ultra_l1c_pset)
+            if isinstance(ultra_l1c_pset, (str, Path))
+            else ultra_l1c_pset
         )
-        # Keep track of the new energy bin edges
+        binned_pset, new_bin_edges = bin_pset_energy_bins(pset, energy_bin_groups)
+        # # Keep track of the new energy bin edges
         if new_energy_bin_edges is None:
             new_energy_bin_edges = new_bin_edges
         pointing_set = ena_maps.UltraPointingSet(binned_pset)

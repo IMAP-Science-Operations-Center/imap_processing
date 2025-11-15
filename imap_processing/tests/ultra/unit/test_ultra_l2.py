@@ -14,6 +14,10 @@ from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
 from imap_processing.ultra.l2 import ultra_l2
+from imap_processing.ultra.l2.ultra_l2 import (
+    DEFAULT_BIN_GROUPS,
+    VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS,
+)
 
 
 class TestUltraL2:
@@ -694,3 +698,85 @@ class TestUltraL2:
         assert output_map.attrs["HEALPix_nside"] == "32"
 
         write_cdf(output_map)
+
+    @pytest.mark.usefixtures("_mock_single_pset")
+    def test_bin_pset_energy_bins_default(self):
+        # Avoid modifying the original pset
+        pset = self.ultra_pset.copy(deep=True)
+        # Set the values in the single input PSET
+        # Create a mock array with known values to test binning
+        # e.g., 0,0,0,0,1,1,1,1,2,2,2,2,...11,11
+        n_fine_bins = pset.energy_bin_geometric_mean.size
+        n_coarse_bins = len(DEFAULT_BIN_GROUPS) - 1
+        mock_vals = np.repeat(np.arange(n_coarse_bins), 4)[0:n_fine_bins]
+        mock_array = (
+            np.ones_like(pset["exposure_factor"]) * mock_vals[np.newaxis, :, np.newaxis]
+        )
+        pset["counts"].values = mock_array
+        pset["exposure_factor"].values = mock_array
+        pset["sensitivity"].values = mock_array[0]
+        pset["geometric_function"].values = mock_array[0]
+        pset["efficiency"].values = mock_array[0]
+        pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"])
+        # Bin the pset
+        binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(
+            pset, DEFAULT_BIN_GROUPS
+        )
+        # Check that the new bin edges are as expected
+        expected_bin_edges = np.array(
+            [
+                3.0,
+                4.6,
+                6.96,
+                10.27,
+                15.71,
+                23.4444,
+                34.9866,
+                52.2113,
+                77.9161,
+                116.276,
+                173.521,
+                258.95,
+                316.335,
+            ]
+        )
+        np.testing.assert_array_equal(new_bin_edges, expected_bin_edges)
+        # check that the pinned_pset energy_bin_geometric_mean values have been
+        # recalculated correctly with the new bin edges
+        np.testing.assert_array_equal(
+            binned_pset["energy_bin_geometric_mean"].values,
+            np.sqrt(new_bin_edges[:-1] * new_bin_edges[1:]),
+        )
+
+        # Check that the counts have been summed correctly in the new bins
+        # 4 fine bins per coarse bin
+        expected_binned_counts = np.arange(n_coarse_bins) * 4
+        # The last bin only has 2 fine bins
+        expected_binned_counts[-1] = (n_coarse_bins - 1) * 2
+        # Broadcast to shape (1, n_coarse_bins, n_pixels)
+        n_pixels = binned_pset["counts"].shape[2]
+        expected_binned_counts = np.tile(
+            expected_binned_counts[np.newaxis, :, np.newaxis], (1, 1, n_pixels)
+        )
+        np.testing.assert_array_equal(binned_pset["counts"], expected_binned_counts)
+
+        # Check that the variables that should be averaged over the new bins are
+        # correct
+        for var in VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS:
+            num_fine_bins_per_coarse_bin = np.full(n_coarse_bins, 4)
+            # The last bin only has 2 fine bins
+            num_fine_bins_per_coarse_bin[-1] = 2
+            expected_binned_vals = (
+                expected_binned_counts / num_fine_bins_per_coarse_bin[:, np.newaxis]
+            )
+            np.testing.assert_array_equal(
+                binned_pset[var].squeeze(), expected_binned_vals[0]
+            )
+
+    @pytest.mark.usefixtures("_mock_single_pset")
+    def test_bin_pset_energy_bins_new(self):
+        pass
+
+    @pytest.mark.usefixtures("_mock_single_pset")
+    def test_bin_pset_energy_bins_zero_count_fine_bin(self):
+        pass
