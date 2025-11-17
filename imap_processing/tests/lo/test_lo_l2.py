@@ -271,6 +271,7 @@ def sample_geometric_factor_data():
             {
                 "esa_mode": 0,
                 "Observed_E-Step": i + 1,
+                "incident_E-Step": i + 1,
                 "Cntr_E": 0.01 * (i + 1),  # Simple energy values
                 "Cntr_E_unc": 0.001 * (i + 1),
                 "GF_Trpl_H": 1e-4 * (i + 1),
@@ -286,6 +287,7 @@ def sample_geometric_factor_data():
             {
                 "esa_mode": 0,
                 "Observed_E-Step": i + 1,
+                "incident_E-Step": i + 1,
                 "Cntr_E": 0.015 * (i + 1),  # Slightly different for oxygen
                 "Cntr_E_unc": 0.0015 * (i + 1),
                 "GF_Trpl_O": 1.5e-4 * (i + 1),
@@ -680,6 +682,11 @@ class TestReduceGeometricFactor:
         expected_indices = list(range(1, 8))
         np.testing.assert_array_equal(
             result["Observed_E-Step"].values, expected_indices
+        )
+
+        # Verify that incident_E-Step == Observed_E-Step
+        np.testing.assert_array_equal(
+            result["incident_E-Step"].values, result["Observed_E-Step"].values
         )
 
     @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")

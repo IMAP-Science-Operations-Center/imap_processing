@@ -97,7 +97,6 @@ def lo_l2(
     dataset = add_geometric_factors(dataset, map_descriptor.species)
 
     logger.info("Step 4: Calculating rates and intensities")
-
     dataset = calculate_all_rates_and_intensities(
         dataset,
         sputtering_correction=sputtering_correction,
@@ -685,10 +684,9 @@ def reduce_geometric_factor_dataset(species: str, esa_mode: int) -> xr.Dataset:
     # Convert to xarray Dataset indexed by energy step for vectorized selection
     gf_ds = gf_data.set_index("Observed_E-Step").to_xarray()
 
-    # TODO: The ancillary data has repeated Observed_E-Step values with different
-    #    incident_E-Step values. Figure out how we get the correct row. For now,
-    #    just remove duplicate Observed_E-Step values.
-    gf_ds = gf_ds.drop_duplicates(dim="Observed_E-Step")
+    # Lo Instrument team: Use only geometric factors where
+    # incident_E-Step == Observed_E-Step
+    gf_ds = gf_ds.where(gf_ds["incident_E-Step"] == gf_ds["Observed_E-Step"], drop=True)
 
     # Select energy steps 1-7 and return
     return gf_ds.sel({"Observed_E-Step": range(1, 8)})
@@ -847,10 +845,12 @@ def calculate_all_rates_and_intensities(
 
     # Optional Step 4: Calculate sputtering corrections
     if sputtering_correction:
+        logger.info("Calculating sputtering corrections")
         dataset = calculate_sputtering_corrections(dataset, o_map_dataset)
 
     # Optional Step 5: Calculate bootstrap corrections
     if bootstrap_correction:
+        logger.info("Calculating bootstrap corrections")
         dataset = calculate_bootstrap_corrections(dataset)
 
     # Optional Step 6: Calculate flux corrections
