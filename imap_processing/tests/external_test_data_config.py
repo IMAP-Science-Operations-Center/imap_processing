@@ -99,6 +99,21 @@ EXTERNAL_TEST_DATA = [
 
     # I-ALiRT
     ("apid_478.bin", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_40_25", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_41_26", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_42_27", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_43_28", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_44_29", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_45_30", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_46_31", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_47_32", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_48_33", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_49_34", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_50_35", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_51_36", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_52_37", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_53_38", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_54_39", "ialirt/data/l0/"),
 
     # IDEX
     ("idex_l1a_validation_file.h5", "idex/test_data/"),
