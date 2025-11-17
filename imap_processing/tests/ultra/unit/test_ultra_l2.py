@@ -7,6 +7,7 @@ import pytest
 import xarray as xr
 from astropy_healpix.healpy import nside2pixarea
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps import ena_maps
@@ -17,6 +18,15 @@ from imap_processing.ultra.l2 import ultra_l2
 from imap_processing.ultra.l2.ultra_l2 import (
     DEFAULT_BIN_GROUPS,
     VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS,
+)
+
+ENERGY_BIN_EDGES_PATH = (
+    imap_module_directory
+    / "tests"
+    / "ultra"
+    / "data"
+    / "l2"
+    / "imap_ultra_l2-energy-bin-group-sizes_20250101_v000.csv"
 )
 
 
@@ -378,6 +388,7 @@ class TestUltraL2:
         assert hp_skymap.data_1d["scatter_theta"].dims == pointing_independent_dims
         assert hp_skymap.data_1d["scatter_phi"].dims == pointing_independent_dims
 
+    @pytest.mark.external_test_data
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_output_unbinned_healpix(self, mock_data_dict, furnish_kernels):
         map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
@@ -406,6 +417,7 @@ class TestUltraL2:
             ] = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
                 output_map_structure=map_structure,
+                energy_bin_edges_file=ENERGY_BIN_EDGES_PATH,
             )
 
         assert (
@@ -446,6 +458,7 @@ class TestUltraL2:
         # Check that background_rates was renamed to bg_rate
         assert "bg_rate" in map_dataset
 
+    @pytest.mark.external_test_data
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
         rect_map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
@@ -484,12 +497,14 @@ class TestUltraL2:
             ] = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
                 output_map_structure=rect_map_structure,
+                energy_bin_edges_file=ENERGY_BIN_EDGES_PATH,
                 store_subdivision_depth=False,
             )
             [
                 hp_map_dataset,
             ] = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
+                energy_bin_edges_file=ENERGY_BIN_EDGES_PATH,
                 output_map_structure=hp_map_structure,
             )
 
@@ -701,6 +716,7 @@ class TestUltraL2:
 
     @pytest.mark.usefixtures("_mock_single_pset")
     def test_bin_pset_energy_bins_default(self):
+        """Test binning with default bin sizes."""
         # Avoid modifying the original pset
         pset = self.ultra_pset.copy(deep=True)
         # Set the values in the single input PSET
@@ -774,9 +790,107 @@ class TestUltraL2:
             )
 
     @pytest.mark.usefixtures("_mock_single_pset")
-    def test_bin_pset_energy_bins_new(self):
-        pass
+    def test_bin_pset_energy_irregular_bins(self):
+        """Test binning with irregular bin sizes."""
+        # Avoid modifying the original pset
+        pset = self.ultra_pset.copy(deep=True)
+        pset["counts"].values = np.full(pset["counts"].shape, 2)
+        # Update Exposure factor to be a ones array.
+        pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"])
+        # First group has 10 fine bins, then 30, then 6
+        new_bin_edges = np.array([0, 10, 40, 46])
+        # Bin the pset
+        binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(pset, new_bin_edges)
+        # Check that the new bin edges are as expected
+        expected_bin_edges = np.array(
+            [
+                3.0,
+                8.615,
+                173.521,
+                316.335,
+            ]
+        )
+        np.testing.assert_array_equal(new_bin_edges, expected_bin_edges)
+        # check that the pinned_pset energy_bin_geometric_mean values have been
+        # recalculated correctly with the new bin edges
+        np.testing.assert_array_equal(
+            binned_pset["energy_bin_geometric_mean"].values,
+            np.sqrt(new_bin_edges[:-1] * new_bin_edges[1:]),
+        )
+        # Check that the counts have been summed correctly in the bins
+        for i, group_size in enumerate([10, 30, 6]):
+            counts_in_bin = binned_pset["counts"][0, i, :]
+            expected_counts = np.full(
+                counts_in_bin.shape,
+                group_size * 2,
+            )
+            np.testing.assert_array_equal(counts_in_bin, expected_counts)
+
+        # Check that the variables that should be averaged over the new bins are
+        # correct
+        # The arrays in the pset pre-binning are all be ones so they should
+        # remain ones after averaging.
+        for var in VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS:
+            np.testing.assert_array_equal(np.unique(pset[var]), 1)
+
+    @pytest.mark.usefixtures("_mock_single_pset")
+    def test_bin_pset_energy_wrong_bins(self):
+        """Test binning with bins that do not include all of the fine bins."""
+        # Avoid modifying the original pset
+        pset = self.ultra_pset.copy(deep=True)
+        # The bin edges do not cover all fine bins
+        # In this case, we expect the function to automatically extend the bin edges
+        # for a "catch-all" on either end.
+        new_bin_edges = np.array([3, 10, 40])
+        # Bin the pset
+        binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(pset, new_bin_edges)
+        # Check that the new bin edges are as expected
+        # The function should have added the min and max fine bin edges
+        expected_bin_edges = np.array(
+            [
+                3.0,
+                4.2,
+                8.615,
+                173.521,
+                316.335,
+            ]
+        )
+        np.testing.assert_array_equal(new_bin_edges, expected_bin_edges)
+        # check that the pinned_pset energy_bin_geometric_mean values have been
+        # recalculated correctly with the new bin edges
+        np.testing.assert_array_equal(
+            binned_pset["energy_bin_geometric_mean"].values,
+            np.sqrt(new_bin_edges[:-1] * new_bin_edges[1:]),
+        )
+        # Check that the shapes are correct
+        assert binned_pset["counts"].shape[1] == 4
+
+        for var in VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS:
+            assert binned_pset[var].squeeze().shape[0] == 4
+
+        with pytest.raises(
+            ValueError,
+            match="The given bin_groups contain an index larger than the number of fine"
+            " energy bins in the pset: 46.",
+        ):
+            # Bin the pset - should raise ValueError because the last bin edge is
+            # out of range
+            ultra_l2.bin_pset_energy_bins(pset, np.array([0, 10, 48]))
 
     @pytest.mark.usefixtures("_mock_single_pset")
     def test_bin_pset_energy_bins_zero_count_fine_bin(self):
-        pass
+        """Test binning with some fine bins having zero values."""
+        # Avoid modifying the original pset
+        pset = self.ultra_pset.copy(deep=True)
+        # Set values in energy bin 0 to zero
+        pset["sensitivity"][0, :].values = np.ones(pset["sensitivity"][0, :].shape)
+        # Bin the pset
+        binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(
+            pset, DEFAULT_BIN_GROUPS
+        )
+        # Assert that the binned and averaged sensitivity in the first coarse bin is
+        # equal to the average of the fine bins that were included (which excludes the
+        # zero count bin)
+        np.testing.assert_array_equal(
+            binned_pset["sensitivity"].values, np.ones_like(binned_pset["sensitivity"])
+        )

@@ -170,6 +170,8 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1c-45sensor-nominal-for-lookup_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-45sensor-static-dead-times_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-90sensor-static-dead-times_20250101_v000.csv", "ultra/data/l1/"),
+    # l2
+    ("imap_ultra_l2-energy-bin-group-sizes_20250101_v000.csv", "ultra/data/l2/"),
 
     # MAG
     ("mag-l1b-l1c-t013-magi-burst-in.csv",

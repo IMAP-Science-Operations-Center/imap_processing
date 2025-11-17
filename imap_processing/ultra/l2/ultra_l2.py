@@ -1,5 +1,6 @@
 """Calculate ULTRA Level 2 (L2) ENA Map Product."""
 
+# ruff: noqa: PLR0912
 from __future__ import annotations
 
 import logging
@@ -168,7 +169,7 @@ def get_variable_attributes_optional_energy_dependence(
 
 
 def bin_pset_energy_bins(
-    pset: xr.Dataset, bin_groups: np.ndarray
+    pset: xr.Dataset, bin_groups: np.ndarray | None = None
 ) -> tuple[xr.Dataset, NDArray]:
     """
     Group fine-grained L1C PSET energy bins into coarser bins for l2 ULTRA maps.
@@ -177,8 +178,9 @@ def bin_pset_energy_bins(
     ----------
     pset : xarray.Dataset
         Ultra L1C pointing set dataset to bin.
-    bin_groups : numpy.ndarray
-        Array of indices defining the new energy bin edges.
+    bin_groups : numpy.ndarray, optional
+        Array of indices defining the new energy bin edges. If not provided,
+        DEFAULT_BIN_GROUPS will be used.
 
     Returns
     -------
@@ -187,6 +189,8 @@ def bin_pset_energy_bins(
     numpy.ndarray
         The new energy bin edges.
     """
+    if bin_groups is None:
+        bin_groups = DEFAULT_BIN_GROUPS
     # Get a list of variables that have the energy bin dimension
     energy_dep_vars = [
         var for var in pset.data_vars if "energy_bin_geometric_mean" in pset[var].dims
@@ -199,13 +203,37 @@ def bin_pset_energy_bins(
     ]
     # Create a new coordinate for the new energy bin index
     n_fine_bins = pset["energy_bin_geometric_mean"].size
+    logger.info(
+        f"Binning pset fine energy bins into coarser bins with edges: {bin_groups}"
+    )
+
+    if bin_groups[-1] > n_fine_bins:
+        raise ValueError(
+            "The given bin_groups contain an index larger than the number of "
+            f"fine energy bins in the pset: {n_fine_bins}."
+        )
+    # Add any missing 'catch-all' bins at the start or end
+    if bin_groups[-1] < n_fine_bins:
+        bin_groups = np.append(bin_groups, n_fine_bins)
+        logger.info(
+            "The given bin_groups did not include the last fine energy bins."
+            f" Adding another 'catch-all' bin. New coarse energy bin edges:"
+            f" {bin_groups}"
+        )
+    if bin_groups[0] > 0:
+        bin_groups = np.insert(bin_groups, 0, 0)
+        logger.info(
+            "The given bin_groups did not include the first fine energy bins."
+            f" Adding another 'catch-all' bin. New coarse energy bin edges:"
+            f" {bin_groups}"
+        )
     # For example, if bin_groups = [0,4,8,12...46], then the new coordinate will be:
     # energy_bin_index = [0,0,0,0,1,1,1,1,2,2,2,2...12] That way we can groupby the new
     # energy bin index to sum/average over the fine bins.
     pset = pset.assign_coords(
         energy_bin_index=(
             "energy_bin_geometric_mean",
-            np.digitize(np.arange(n_fine_bins), bin_groups),
+            np.digitize(np.arange(n_fine_bins), bin_groups, right=False),
         )
     )
     # Count number of non zero pixels in each new energy bin
@@ -242,12 +270,12 @@ def bin_pset_energy_bins(
     return pset, new_bin_edges
 
 
-def generate_ultra_healpix_skymap(  # noqa: PLR0912
+def generate_ultra_healpix_skymap(
     ultra_l1c_psets: list[str | xr.Dataset],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
-    energy_bin_groups: np.ndarray = DEFAULT_BIN_GROUPS,
+    energy_bin_edges: np.ndarray | None = None,
 ) -> tuple[ena_maps.HealpixSkyMap, NDArray, NDArray]:
     """
     Generate a Healpix skymap from ULTRA L1C pointing sets.
@@ -265,7 +293,7 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
-    energy_bin_groups : numpy.ndarray, optional
+    energy_bin_edges : numpy.ndarray, optional
         Array of indices defining the new energy bin edges for binning
         L1C energy bins into coarser bins.
         Defaults to DEFAULT_BIN_GROUPS defined in this module.
@@ -392,7 +420,7 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
             if isinstance(ultra_l1c_pset, (str, Path))
             else ultra_l1c_pset
         )
-        binned_pset, new_bin_edges = bin_pset_energy_bins(pset, energy_bin_groups)
+        binned_pset, new_bin_edges = bin_pset_energy_bins(pset, energy_bin_edges)
         # # Keep track of the new energy bin edges
         if new_energy_bin_edges is None:
             new_energy_bin_edges = new_bin_edges
@@ -546,6 +574,7 @@ def ultra_l2(
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
+    energy_bin_edges_file: str | Path | None = None,
     *,
     descriptor: str | None = None,
     store_subdivision_depth: bool = False,
@@ -561,6 +590,9 @@ def ultra_l2(
         Empty SkyMap structure providing the properties of the map to be generated.
         If a descriptor is provided, this will be ignored.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
+    energy_bin_edges_file : pathlib.Path | str | None, optional
+        File path to a csv of energy bin edges to use for binning L1C energy bins into
+        coarser bins. If None, DEFAULT_BIN_GROUPS defined in this module will be used.
     descriptor : str | None, optional
         A descriptor to set the output map structure
         If provided, this overrides the default output_map_structure parameter.
@@ -598,12 +630,19 @@ def ultra_l2(
 
     ultra_sensor_number = 45 if "45sensor" in next(iter(data_dict.keys())) else 90
     logger.info(f"Assuming all products are from sensor {ultra_sensor_number}")
-
+    if energy_bin_edges_file is not None:
+        energy_bin_edges = np.loadtxt(energy_bin_edges_file, delimiter=",").astype(
+            np.uint8
+        )
+    else:
+        energy_bin_edges = DEFAULT_BIN_GROUPS
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
     healpix_skymap, pset_epochs, new_energy_bin_edges = generate_ultra_healpix_skymap(
-        ultra_l1c_psets=l1c_products, output_map_structure=output_map_structure
+        ultra_l1c_psets=l1c_products,
+        output_map_structure=output_map_structure,
+        energy_bin_edges=energy_bin_edges,
     )
     # Ensure that the epoch of the map is the earliest epoch of the input PSETs
     healpix_skymap.data_1d.assign_coords(

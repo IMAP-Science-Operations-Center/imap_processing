@@ -1471,6 +1471,9 @@ class Ultra(ProcessInstrument):
             all_pset_filepaths = dependencies.get_file_paths(
                 source="ultra", descriptor="pset"
             )
+            energy_bin_edges_file = dependencies.get_file_paths(
+                data_type="ancillary", descriptor="l2-energy-bin-group-sizes"
+            )[0]
             # There can be many PSET files, so avoid reading them all in.
             # The filename stem (logical_file_id) contains
             # all the information needed in the key.
@@ -1481,6 +1484,7 @@ class Ultra(ProcessInstrument):
             datasets = ultra_l2.ultra_l2(
                 data_dict,
                 descriptor=self.descriptor,
+                energy_bin_edges_file=energy_bin_edges_file,
             )
 
         return datasets
