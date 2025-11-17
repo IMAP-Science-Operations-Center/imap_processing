@@ -576,52 +576,49 @@ def test_interpolate_spherical():
 
     attitude_time = np.array([2, 3])
     # Can be 0 -> 360 degrees
-    sc_inertial_right = np.radians([0, 180])
+    sc_inertial_right = np.array([0, 180])
     # Can be -pi/2 -> pi/2
-    sc_inertial_decline = np.radians([0, 0])
+    sc_inertial_decline = np.array([0, 0])
     # Can be 0 -> 2pi
-    sc_spin_phase_rad = np.radians([300, 10])
+    sc_spin_phase = np.array([300, 10])
 
     target_time = 2.5
     ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
         sc_inertial_right,
         sc_inertial_decline,
-        sc_spin_phase_rad,
+        sc_spin_phase,
         attitude_time,
         target_time,
     )
 
-    expected_ra = np.degrees(np.interp(target_time, attitude_time, sc_inertial_right))
-    expected_spin_phase = np.degrees(
-        np.interp(target_time, attitude_time, sc_spin_phase_rad)
-    )
+    expected_ra = np.interp(target_time, attitude_time, sc_inertial_right)
 
     assert ra_deg == expected_ra
     assert spin_phase_deg == 335
 
-    sc_inertial_decline = np.radians([0, 45])
+    sc_inertial_decline = np.array([0, 45])
 
     ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
         sc_inertial_right,
         sc_inertial_decline,
-        sc_spin_phase_rad,
+        sc_spin_phase,
         attitude_time,
         target_time,
     )
 
     # Function is working correctly with declination.
-    assert spin_phase_deg == expected_spin_phase
+    assert spin_phase_deg == 335
     assert np.isclose(ra_deg, 0, atol=1e-6)
     assert dec_deg == 67.5
 
     # Function works with wrapped values.
-    sc_inertial_decline = np.radians([0, 0])
-    sc_inertial_right = np.radians([0, 360 + 180])
+    sc_inertial_decline = np.array([0, 0])
+    sc_inertial_right = np.array([0, 360 + 180])
 
     ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
         sc_inertial_right,
         sc_inertial_decline,
-        sc_spin_phase_rad,
+        sc_spin_phase,
         attitude_time,
         target_time,
     )
