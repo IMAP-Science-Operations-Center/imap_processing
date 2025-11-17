@@ -390,7 +390,7 @@ def apply_gradiometry_correction(
 def interpolate_spherical(
     sc_inertial_right: np.ndarray,
     sc_inertial_decline: np.ndarray,
-    sc_spin_phase_rad: np.ndarray,
+    sc_spin_phase: np.ndarray,
     attitude_time: np.ndarray,
     target_time: float,
 ) -> tuple:
@@ -400,11 +400,11 @@ def interpolate_spherical(
     Parameters
     ----------
     sc_inertial_right : numpy.ndarray
-        Inertial right ascension for 4 packets 0 to 2π radians, shape (4).
+        Inertial right ascension for 4 packets 0 to 360 degrees, shape (4).
     sc_inertial_decline : numpy.ndarray
-        Inertial declination for 4 packets -π/2 to π/2 radians, shape (4).
-    sc_spin_phase_rad : numpy.ndarray
-        Spin phase for 4 packets 0 to 2π radians, shape (4).
+        Inertial declination for 4 packets -45 to 45 degrees, shape (4).
+    sc_spin_phase : numpy.ndarray
+        Spin phase for 4 packets 0 to 360 degrees, shape (4).
     attitude_time : np.ndarray
         Timestamps for all packets in ttj2000ns.
     target_time : float
@@ -426,8 +426,8 @@ def interpolate_spherical(
     spherical_coords = np.stack(
         [
             np.ones_like(sc_inertial_right),
-            np.degrees(sc_inertial_right),
-            np.degrees(sc_inertial_decline),
+            sc_inertial_right,
+            sc_inertial_decline,
         ],
         axis=-1,
     )
@@ -447,7 +447,7 @@ def interpolate_spherical(
     dec_deg = ra_dec[2]
 
     # Account for discontinuities in spin phase.
-    spin_phase_unwrapped = np.unwrap(sc_spin_phase_rad)
+    spin_phase_unwrapped = np.unwrap(np.radians(sc_spin_phase))
     spin_phase_interp = np.interp(target_time, attitude_time, spin_phase_unwrapped)
     spin_phase_deg = np.degrees(spin_phase_interp) % 360
 
@@ -512,9 +512,9 @@ def transform_to_inertial(
     sc_inertial_decline = sc_inertial_decline[sort_idx]
 
     ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
-        sc_inertial_right,
-        sc_inertial_decline,
-        sc_spin_phase_rad,
+        np.degrees(sc_inertial_right),
+        np.degrees(sc_inertial_decline),
+        np.degrees(sc_spin_phase_rad),
         attitude_time,
         target_time,
     )
@@ -526,7 +526,7 @@ def transform_to_inertial(
         np.array([ra_deg]),
         np.array([dec_deg]),
         instrument_frame,
-    )
+    )[0]
 
     return inertial_vector
 
