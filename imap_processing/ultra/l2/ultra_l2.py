@@ -204,7 +204,6 @@ def bin_pset_energy_bins(
         for var in energy_dep_vars
         if var in VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS
     ]
-    print("COUNTS:", pset["counts"][0, 0:4, 10000:10005].data)
     # Create a new coordinate for the new energy bin index
     n_fine_bins = pset["energy_bin_geometric_mean"].size
     logger.info(
