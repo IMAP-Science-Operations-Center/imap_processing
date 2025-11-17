@@ -269,7 +269,6 @@ def bin_pset_energy_bins(
         .transpose("epoch", "energy_bin_geometric_mean", ...)
         .drop("energy_bin_index")
     )
-    print("COUNTS FINAL:", pset["counts"][0, 0, 10000:10005].data)
     return pset, new_bin_edges
 
 
