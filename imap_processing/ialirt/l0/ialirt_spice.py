@@ -59,7 +59,12 @@ def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
         Rotation matrices to rotate vectors around Z by spin_phase.
     """
     angle_rad = np.radians(angle)
-    rot_matrices = spice.axisar(axis[0], angle_rad[0])
+    rot_matrices = np.array(
+        [
+            spice.axisar(z, float(phase))
+            for z, phase in zip(axis, angle_rad, strict=False)
+        ]
+    )
 
     return rot_matrices
 
@@ -97,7 +102,7 @@ def get_x_y_axes(z_axis: NDArray) -> NDArray:
     # Take the cross product to get the X-axis.
     x_axis = np.cross(y_axis, z_axis)
 
-    frames = np.stack([x_axis[0], y_axis[0], z_axis[0]], axis=-1)
+    frames = np.stack([x_axis, y_axis, z_axis], axis=-1)
 
     return frames
 
@@ -185,6 +190,12 @@ def transform_instrument_vectors_to_inertial(
         inertial_frames, spin_rotations, mount_matrix
     )
 
-    vector = spice.mxv(total_rotations, instrument_vectors[0])
+    # Apply to instrument vectors
+    vectors = np.array(
+        [
+            spice.mxv(rot, vec)
+            for rot, vec in zip(total_rotations, instrument_vectors, strict=False)
+        ]
+    )
 
-    return vector
+    return vectors
