@@ -1,5 +1,7 @@
 """Tests to support I-ALiRT MAG packet processing."""
 
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -498,6 +500,7 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
 
 
 @pytest.mark.external_kernel
+@patch("imap_processing.ialirt.l0.ialirt_spice.SPIN_PHASE_OFFSET_DEG", 0.0)
 def test_transform_to_frames(furnish_kernels, spice_test_data_path):
     """Test transform_to_frames over multiple spin phases."""
 
@@ -531,7 +534,7 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
             inst_frame.name, SpiceFrame.IMAP_SPACECRAFT.name, 0.0
         )
         inverse_spin_phase_rot = spiceypy.axisar(
-            np.array([0, 0, 1]), float(np.radians(-135.0))
+            np.array([0, 0, 1]), float(np.radians(135.0))
         )
         expected_vector = (
             inverse_spin_phase_rot @ inst_to_sc_rot @ np.array([1.0, 0.0, 0.0])
