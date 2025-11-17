@@ -47,7 +47,7 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     plan_step = unpacked_dataset["plan_step"].values[0]
 
     logger.info(
-        f"Processing species with - APID: 0x{apid:X}, View ID: {view_id}, "
+        f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
 
@@ -155,7 +155,9 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # Reshape decompressed data to:
     #   decompressed_data -> (9, 480)
     # Then we will parse 480 data into species below for looping.
-    decompressed_data = np.array(decompressed_data).reshape(num_packets, n_spins * 120)
+    decompressed_data = np.array(decompressed_data, dtype=np.uint32).reshape(
+        num_packets, n_spins * 120
+    )
 
     # Use chunks of (energy_x) to put data in its energy bins as done below.
     #   Eg. [15, 15, 15, 18, 18, 15, 18, 5, 1]

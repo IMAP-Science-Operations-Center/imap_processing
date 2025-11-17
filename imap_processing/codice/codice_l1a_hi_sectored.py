@@ -49,7 +49,7 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     plan_step = unpacked_dataset["plan_step"].values[0]
 
     logger.info(
-        f"Processing species with - APID: 0x{apid:X}, View ID: {view_id}, "
+        f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
 
@@ -125,7 +125,7 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         raise ValueError("Expected energy bins to be 8 for Hi Sectored data.")
 
     # Calculate collapsed size
-    decompressed_data = np.array(decompressed_data).reshape(
+    decompressed_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets, num_species, energy_bins, *collapse_shape
     )
 

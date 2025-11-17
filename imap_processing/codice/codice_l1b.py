@@ -86,6 +86,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
+            # TODO: undo this when I get new validation file from Joey
             # "acquisition_time_per_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
@@ -113,6 +114,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
+            # TODO: undo this when I get new validation file from Joey
             # "acquisition_time_per_step",
         ]
         dataset = dataset.drop_vars(drop_variables)

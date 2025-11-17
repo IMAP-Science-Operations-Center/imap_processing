@@ -18,6 +18,10 @@ from imap_data_access import ProcessingInputCollection
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_new_l1a import process_l1a
+from imap_processing.tests.codice.conftest import (
+    VALIDATION_FILE_DATE,
+    VALIDATION_FILE_VERSION,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -41,10 +45,10 @@ def test_hskp():
         assert len(processed_data.time.shape) == 1, "Time should be a 1D array"
 
     cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_hskp_20250814_v999.cdf"
+    assert cdf_file.name == f"imap_codice_l1a_hskp_{VALIDATION_FILE_DATE}_v999.cdf"
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
+@pytest.mark.skip(reason="test_lo_counters_aggregated - Long test, skip for now")
 def test_lo_counters_aggregated():
     """Tests lo-counters-aggregated."""
     test_file_path = (
@@ -57,7 +61,10 @@ def test_lo_counters_aggregated():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-counters-aggregated_20250814211100_v0.0.5.cdf"
+        / (
+            f"imap_codice_l1a_lo-counters-aggregated_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -66,7 +73,10 @@ def test_lo_counters_aggregated():
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_lo-counters-aggregated_20250814_v999.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-counters-aggregated_{VALIDATION_FILE_DATE}_v999.cdf"
+    )
 
 
 @pytest.mark.skip(reason="Revisit this in l1a refactor work")
@@ -82,7 +92,10 @@ def test_lo_counters_singles():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-counters-singles_20250814211100_v0.0.5.cdf"
+        / (
+            f"imap_codice_l1a_lo-counters-singles_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -91,7 +104,10 @@ def test_lo_counters_singles():
         assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_lo-counters-singles_20250814_v999.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-counters-singles_{VALIDATION_FILE_DATE}_v999.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -109,7 +125,10 @@ def test_lo_sw_priority(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-priority_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_lo-sw-priority_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -137,7 +156,10 @@ def test_lo_sw_priority(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v001.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-sw-priority_{VALIDATION_FILE_DATE}_v001.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -154,7 +176,10 @@ def test_lo_nsw_priority(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-priority_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_lo-nsw-priority_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -183,7 +208,10 @@ def test_lo_nsw_priority(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-nsw-priority_20250814_v001.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-nsw-priority_{VALIDATION_FILE_DATE}_v001.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -199,7 +227,10 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-species_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_lo-sw-species_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     val_data = load_cdf(val_path)
@@ -230,7 +261,10 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
         )
     processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-sw-species_20250814_v002.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-sw-species_{VALIDATION_FILE_DATE}_v002.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -246,7 +280,10 @@ def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-species_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_lo-nsw-species_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     val_data = load_cdf(val_path)
@@ -278,7 +315,10 @@ def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True, istp=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-nsw-species_20250814_v002.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-nsw-species_{VALIDATION_FILE_DATE}_v002.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -294,7 +334,10 @@ def test_lo_sw_angular(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-angular_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_lo-sw-angular_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -324,7 +367,10 @@ def test_lo_sw_angular(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-sw-angular_20250814_v002.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-sw-angular_{VALIDATION_FILE_DATE}_v002.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -339,7 +385,10 @@ def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-angular_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_lo-nsw-angular_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -369,7 +418,10 @@ def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-nsw-angular_20250814_v002.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-nsw-angular_{VALIDATION_FILE_DATE}_v002.cdf"
+    )
 
 
 @pytest.mark.skip(reason="Revisit this in l1a refactor work")
@@ -385,7 +437,10 @@ def test_hi_counters_aggregated():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-counters-aggregated_20250814211100_v0.0.5.cdf"
+        / (
+            f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -410,7 +465,10 @@ def test_hi_counters_singles():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-counters-singles_20250814211100_v0.0.5.cdf"
+        / (
+            f"imap_codice_l1a_hi-counters-singles_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -437,7 +495,10 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-omni_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_hi-omni_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -461,7 +522,7 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
         )
     processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_hi-omni_20250814_v001.cdf"
+    assert cdf_file.name == f"imap_codice_l1a_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -475,7 +536,10 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-sectored_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_hi-sectored_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -506,7 +570,9 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v001.cdf"
+    assert (
+        cdf_file.name == f"imap_codice_l1a_hi-sectored_{VALIDATION_FILE_DATE}_v001.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -524,7 +590,10 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-priorities_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_hi-priorities_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     val_data = load_cdf(val_path)
@@ -552,7 +621,9 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v001.cdf"
+    assert (
+        cdf_file.name == f"imap_codice_l1a_hi-priority_{VALIDATION_FILE_DATE}_v001.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -566,7 +637,10 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-direct-events_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_lo-direct-events_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -596,7 +670,10 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v002.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_lo-direct-events_{VALIDATION_FILE_DATE}_v002.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -610,7 +687,10 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-direct-events_20250814_v008.cdf"
+        / (
+            f"imap_codice_l1a_hi-direct-events_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     val_data = load_cdf(val_path)
 
@@ -640,4 +720,7 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
 
     processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_hi-direct-events_20250814_v002.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_hi-direct-events_{VALIDATION_FILE_DATE}_v002.cdf"
+    )

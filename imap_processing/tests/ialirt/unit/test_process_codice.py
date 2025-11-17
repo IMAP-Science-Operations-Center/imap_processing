@@ -28,6 +28,10 @@ from imap_processing.ialirt.l0.process_codice import (
     process_codice,
 )
 from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.tests.codice.conftest import (
+    VALIDATION_FILE_DATE,
+    VALIDATION_FILE_VERSION,
+)
 from imap_processing.utils import packet_file_to_datasets
 
 pytestmark = pytest.mark.external_test_data
@@ -59,7 +63,7 @@ def cod_lo_test_file():
         / "codice"
         / "data"
         / "l1a_input"
-        / "imap_codice_l0_lo-ialirt_20250814_v001.pkts"
+        / f"imap_codice_l0_lo-ialirt_{VALIDATION_FILE_DATE}_v001.pkts"
     )
 
 
@@ -85,7 +89,10 @@ def cod_lo_l1a_test_data():
         / "codice"
         / "data"
         / "l1a_validation"
-        / "imap_codice_l1a_lo-ialirt_20250814_v007.cdf"
+        / (
+            f"imap_codice_l1a_lo-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     data = load_cdf(data_path)
@@ -101,7 +108,7 @@ def cod_hi_test_file():
         / "codice"
         / "data"
         / "l1a_input"
-        / "imap_codice_l0_hi-ialirt_20250814_v001.pkts"
+        / f"imap_codice_l0_hi-ialirt_{VALIDATION_FILE_DATE}_v001.pkts"
     )
 
 
@@ -156,7 +163,10 @@ def cod_lo_l1b_test_data():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_lo-ialirt_20250814_v007.cdf"
+        / (
+            f"imap_codice_l1b_lo-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     data = load_cdf(data_path)
@@ -230,7 +240,10 @@ def cod_hi_l1a_test_data():
         / "codice"
         / "data"
         / "l1a_validation"
-        / "imap_codice_l1a_hi-ialirt_20250814_v007.cdf"
+        / (
+            f"imap_codice_l1a_hi-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     data = load_cdf(data_path)
@@ -247,7 +260,10 @@ def cod_hi_l1b_test_data():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_hi-ialirt_20250814_v007.cdf"
+        / (
+            f"imap_codice_l1b_hi-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     data = load_cdf(data_path)

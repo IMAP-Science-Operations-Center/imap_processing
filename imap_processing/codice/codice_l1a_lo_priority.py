@@ -48,7 +48,7 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     plan_step = unpacked_dataset["plan_step"].values[0]
 
     logger.info(
-        f"Processing species with - APID: 0x{apid:X}, View ID: {view_id}, "
+        f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
 
@@ -128,9 +128,8 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         view_tab_obj.sensor,
         view_tab_obj.collapse_table,
     )
-    print(f"Collapse shape: {collapse_shape} - num_species: {num_species}")
-    print(f"decompressed data {np.array(decompressed_data).shape}")
-    species_data = np.array(decompressed_data).reshape(
+
+    species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets, num_species, esa_steps, collapse_shape[0]
     )
 
@@ -248,7 +247,7 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             attrs=cdf_attrs.get_variable_attributes(species),
         )
         l1a_dataset[f"unc_{species}"] = xr.DataArray(
-            np.sqrt(species_data[:, idx, :, :]),
+            np.sqrt(l1a_dataset[species].values),
             dims=("epoch", "esa_step", "spin_sector"),
             attrs=cdf_attrs.get_variable_attributes(species),
         )

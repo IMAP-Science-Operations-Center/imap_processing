@@ -28,6 +28,10 @@ from imap_processing.codice.constants import (
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     SW_POSITIONS,
 )
+from imap_processing.tests.codice.conftest import (
+    VALIDATION_FILE_DATE,
+    VALIDATION_FILE_VERSION,
+)
 
 pytestmark = pytest.mark.external_test_data
 
@@ -331,7 +335,10 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         / "codice"
         / "data"
         / "l2_validation"
-        / "imap_codice_l2_lo-sw-species_20250814_v008.cdf"
+        / (
+            f"imap_codice_l2_lo-sw-species_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in l2_val_data.data_vars:
@@ -368,7 +375,10 @@ def test_codice_l2_nsw_species_intensity(mock_get_file_paths, codice_lut_path):
         / "codice"
         / "data"
         / "l2_validation"
-        / "imap_codice_l2_lo-nsw-species_20250814_v008.cdf"
+        / (
+            f"imap_codice_l2_lo-nsw-species_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in l2_val_data.data_vars:
@@ -404,7 +414,10 @@ def test_codice_l2_nsw_angular_intensity(mock_get_file_paths, codice_lut_path):
         / "codice"
         / "data"
         / "l2_validation"
-        / "imap_codice_l2_lo-nsw-angular_20250814_v008.cdf"
+        / (
+            f"imap_codice_l2_lo-nsw-angular_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in LO_NSW_ANGULAR_VARIABLE_NAMES:
@@ -440,7 +453,10 @@ def test_codice_l2_sw_angular_intensity(mock_get_file_paths, codice_lut_path):
         / "codice"
         / "data"
         / "l2_validation"
-        / "imap_codice_l2_lo-sw-angular_20250814_v008.cdf"
+        / (
+            f"imap_codice_l2_lo-sw-angular_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in LO_SW_ANGULAR_VARIABLE_NAMES:
