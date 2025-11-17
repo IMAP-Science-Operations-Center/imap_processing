@@ -99,9 +99,9 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
     logical_sources = [ds.attrs.get("Logical_source", "") for ds in l1d]
 
     # Should include ancillary files
-    assert "imap_mag_l1d-spin-offsets" in logical_sources
-    assert "imap_mag_l1d-gradiometry-offsets-norm" in logical_sources
-    assert "imap_mag_l1d-gradiometry-offsets-burst" in logical_sources
+    assert "imap_mag_l1d_spin-offsets" in logical_sources
+    assert "imap_mag_l1d_gradiometry-offsets-norm" in logical_sources
+    assert "imap_mag_l1d_gradiometry-offsets-burst" in logical_sources
 
 
 def test_mag_l1d_attributes(
