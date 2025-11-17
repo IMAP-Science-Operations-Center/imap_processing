@@ -638,12 +638,12 @@ def test_process_packet(
     """Test the process_packet function."""
     kernels = [
         "imap_science_100.tf",
-        "imap_130.tf.txt",
+        "imap_130.tf",
         "naif0012.tls",
         "de440s.bsp",
         "imap_recon_od005_20250925_20251014_v01.bsp",
         "pck00011.tpc",
-        "imap_sclk_0036.tsc.txt",
+        "imap_sclk_0036.tsc",
         "imap_2025_283_2025_284_001.ah.bc",
     ]
 
