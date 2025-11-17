@@ -131,12 +131,12 @@ def test_transform_instrument_vectors_to_inertial_single(furnish_kernels):
 
     kernels = [
         "imap_science_100.tf",
-        "imap_120.tf.txt",
+        "imap_120.tf",
         "naif0012.tls",
         "de440s.bsp",
         "imap_recon_od005_20250925_20251014_v01.bsp",
         "pck00011.tpc",
-        "imap_sclk_0036.tsc.txt",
+        "imap_sclk_0036.tsc",
         "imap_2025_283_2025_284_001.ah.bc",
     ]
 
