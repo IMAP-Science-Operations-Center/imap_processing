@@ -2,6 +2,7 @@ import ast
 import dataclasses
 import json
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -559,3 +560,11 @@ def test_expected_hist_results(l1a_dataset):
 
         for field in compare_fields:
             assert np.array_equal(data[field], datapoint[field].data)
+
+
+@mock.patch("imap_processing.glows.l1a.glows_l1a.decom_packets")
+def test_glows_l1a_no_packet_data(decom_packets_mock):
+    # Should return empty list when no packet data is present
+    decom_packets_mock.return_value = ([], [])
+    output = glows_l1a("fake/filepath/packets.bin")
+    assert output == []
