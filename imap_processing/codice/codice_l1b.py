@@ -86,7 +86,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
-            "acquisition_time_per_step",
+            # "acquisition_time_per_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
     elif descriptor in [
@@ -113,7 +113,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
-            "acquisition_time_per_step",
+            # "acquisition_time_per_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
 

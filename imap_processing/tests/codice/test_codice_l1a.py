@@ -105,14 +105,35 @@ def test_lo_sw_priority(mock_get_file_paths, codice_lut_path):
 
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
 
-    # print(val_data.data_vars)
-    # print(val_data.coords)
-    print(processed_data.data_vars)
-    print(processed_data.coords)
-    # for variable in val_data.data_vars:
-    #     assert processed_data[variable].shape == val_data[variable].shape, (
-    #         f"Shape mismatch for variable '{variable}'"
-    #     )
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-sw-priority_20250814_v008.cdf"
+    )
+    val_data = load_cdf(val_path)
+
+    for variable in val_data.data_vars:
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+
+    for variable in val_data.coords:
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_data[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v999.cdf"
@@ -125,19 +146,17 @@ def test_lo_nsw_priority(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="lo-nsw-priority", data_type="l0"),
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
+
+    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
+
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-priority_20250814_v007.cdf"
+        / "imap_codice_l1a_lo-nsw-priority_20250814_v008.cdf"
     )
     val_data = load_cdf(val_path)
-    print(val_data.data_vars)
-    print(val_data.coords)
 
-    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
-    print(processed_data.data_vars)
-    print(processed_data.coords)
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
             processed_data[variable].values,
@@ -147,6 +166,13 @@ def test_lo_nsw_priority(mock_get_file_paths, codice_lut_path):
         )
 
     for variable in val_data.coords:
+        # If string type, do equal.
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_data[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -171,7 +197,7 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-species_20250814_v007.cdf"
+        / "imap_codice_l1a_lo-sw-species_20250814_v008.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -188,8 +214,12 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
         )
 
     for variable in val_data.coords:
-        # TODO: make this equal statement after epoch seconds difference
-        # is resolved
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_data[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -214,7 +244,7 @@ def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-species_20250814_v007.cdf"
+        / "imap_codice_l1a_lo-nsw-species_20250814_v008.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -231,8 +261,12 @@ def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
         )
 
     for variable in val_data.coords:
-        # TODO: make this equal statement after epoch seconds difference
-        # is resolved
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_data[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -258,13 +292,12 @@ def test_lo_sw_angular(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-angular_20250814_v007.cdf"
+        / "imap_codice_l1a_lo-sw-angular_20250814_v008.cdf"
     )
     val_data = load_cdf(val_path)
 
     # Process the input data
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
-    # Compare only the common variables
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
             processed_data[variable].values,
@@ -274,6 +307,12 @@ def test_lo_sw_angular(mock_get_file_paths, codice_lut_path):
         )
 
     for variable in val_data.coords:
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_data[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -298,7 +337,7 @@ def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-angular_20250814_v007.cdf"
+        / "imap_codice_l1a_lo-nsw-angular_20250814_v008.cdf"
     )
     val_data = load_cdf(val_path)
 
@@ -313,6 +352,12 @@ def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
         )
 
     for variable in val_data.coords:
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_data[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -390,7 +435,7 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-omni_20250814_v007.cdf"
+        / "imap_codice_l1a_hi-omni_20250814_v008.cdf"
     )
     val_data = load_cdf(val_path)
 
@@ -428,7 +473,7 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-sectored_20250814_v007.cdf"
+        / "imap_codice_l1a_hi-sectored_20250814_v008.cdf"
     )
     val_data = load_cdf(val_path)
 
@@ -442,6 +487,14 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
         )
 
     for variable in val_data.coords:
+        # If _label, do string comparison
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_data[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
+
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -462,22 +515,38 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
+    # Process the input data
+    processed_data = process_l1a(ProcessingInputCollection())[0]
+
     # Validation
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-priorities_20250814_v007.cdf"
+        / "imap_codice_l1a_hi-priorities_20250814_v008.cdf"
     )
 
     val_data = load_cdf(val_path)
-    print(val_data.data_vars)
-    print(val_data.coords)
 
-    # Process the input data
-    processed_data = process_l1a(ProcessingInputCollection())[0]
-
-    # for variable in val_data.data_vars:
-    #     assert processed_data[variable].shape == val_data[variable].shape
+    for variable in val_data.data_vars:
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+    for variable in val_data.coords:
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_data[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in coordinate '{variable}'",
+        )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"
@@ -494,7 +563,7 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-direct-events_20250814_v007.cdf"
+        / "imap_codice_l1a_lo-direct-events_20250814_v008.cdf"
     )
     val_data = load_cdf(val_path)
 
@@ -538,7 +607,7 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-direct-events_20250814_v007.cdf"
+        / "imap_codice_l1a_hi-direct-events_20250814_v008.cdf"
     )
     val_data = load_cdf(val_path)
 

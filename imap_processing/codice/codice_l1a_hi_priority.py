@@ -109,7 +109,7 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     num_packets = len(binary_data_list)
 
     # Reshape decompressed data to in below for loop:
-    # (num_packets, *collapse_shape)
+    # (num_packets, collapse_shape[1](inst_az))
     collapse_shape = get_collapse_pattern_shape(
         sci_lut_data,
         view_tab_obj.sensor,

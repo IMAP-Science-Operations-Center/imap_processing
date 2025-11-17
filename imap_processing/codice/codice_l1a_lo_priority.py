@@ -124,7 +124,7 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     num_packets = len(binary_data_list)
 
     # Reshape decompressed data to in below for loop:
-    # (num_packets, num_species, esa_steps, *collapse_shape)
+    # (num_packets, num_species, esa_steps, collapse_shape[0](spin_sector))
     num_species = len(species_names)
     esa_steps = constants.NUM_ESA_STEPS
     collapse_shape = get_collapse_pattern_shape(
