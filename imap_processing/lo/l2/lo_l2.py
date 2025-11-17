@@ -384,7 +384,9 @@ def process_single_pset(
         # Convert energy coordinate from keV to eV for CG correction
         # (energy coordinate was set in normalize_pset_coordinates in keV)
         energy_values_ev: xr.DataArray = pset_processed["energy"] * 1000.0
-        # ram_mask variable is added as part of apply_compton_getting_correction
+        # TODO: Pull add_spacecraft_velocity_to_pset and calculate_ram_mask out
+        #    of apply_compton_getting_correction for visibility. Issue:
+        # https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/2434
         pset_processed = apply_compton_getting_correction(
             pset_processed, energy_values_ev
         )
