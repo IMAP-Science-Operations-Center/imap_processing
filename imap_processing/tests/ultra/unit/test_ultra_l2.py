@@ -733,6 +733,9 @@ class TestUltraL2:
         pset["sensitivity"].values = mock_array[0]
         pset["geometric_function"].values = mock_array[0]
         pset["efficiency"].values = mock_array[0]
+        pset["background_rates"].values = mock_array
+        pset["scatter_theta"].values = mock_array[0]
+        pset["scatter_phi"].values = mock_array[0]
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"])
         # Bin the pset
         binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(
