@@ -135,8 +135,9 @@ def test_lo_sw_priority(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v999.cdf"
+    processed_data.attrs["Data_version"] = "001"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v001.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -180,8 +181,9 @@ def test_lo_nsw_priority(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_lo-nsw-priority_20250814_v999.cdf"
+    processed_data.attrs["Data_version"] = "001"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1a_lo-nsw-priority_20250814_v001.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -548,8 +550,9 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"
+    processed_data.attrs["Data_version"] = "001"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v001.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")

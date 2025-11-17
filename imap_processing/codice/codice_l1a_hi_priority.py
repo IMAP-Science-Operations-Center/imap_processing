@@ -50,10 +50,6 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         f"Processing species with - APID: 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
-    print(
-        f"Processing species with - APID: 0x{apid:X}, View ID: {view_id}, "
-        f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
-    )
 
     # ========== Get LUT Data ===========
     # Read information from LUT
@@ -160,19 +156,18 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # Finally, add species data variables and their uncertainties
     for idx, species in enumerate(species_names):
-        print(f"shape of {species} - {species_data[:, idx].shape}")
         l1a_dataset[species] = xr.DataArray(
             species_data[
                 :,
                 idx,
             ],
             dims=("epoch",),
-            # attrs=cdf_attrs.get_variable_attributes(species),
+            attrs=cdf_attrs.get_variable_attributes(species),
         )
         l1a_dataset[f"unc_{species}"] = xr.DataArray(
             np.sqrt(species_data[:, idx]),
             dims=("epoch",),
-            # attrs=cdf_attrs.get_variable_attributes(species),
+            attrs=cdf_attrs.get_variable_attributes(species),
         )
 
     return l1a_dataset
