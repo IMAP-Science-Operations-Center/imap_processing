@@ -204,7 +204,6 @@ def bin_pset_energy_bins(
         for var in energy_dep_vars
         if var in VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS
     ]
-    # Create a new coordinate for the new energy bin index
     n_fine_bins = pset["energy_bin_geometric_mean"].size
     logger.info(
         f"Binning pset fine energy bins into coarser bins with edges: {bin_groups}"
@@ -230,6 +229,7 @@ def bin_pset_energy_bins(
             f" Adding another 'catch-all' bin. New coarse energy bin edges:"
             f" {bin_groups}"
         )
+    # Create a new coordinate for the new energy bin index
     # For example, if bin_groups = [0,4,8,12...46], then the new coordinate will be:
     # energy_bin_index = [0,0,0,0,1,1,1,1,2,2,2,2...12] That way we can groupby the new
     # energy bin index to sum/average over the fine bins.
