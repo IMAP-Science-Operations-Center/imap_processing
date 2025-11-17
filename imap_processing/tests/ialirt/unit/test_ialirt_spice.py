@@ -173,7 +173,7 @@ def test_transform_instrument_vectors_to_inertial_single(furnish_kernels):
             to_frame=SpiceFrame.ECLIPJ2000,
         )
     np.testing.assert_allclose(
-        v_manual_0,
+        v_manual_0[0],
         mago_inertial_vector,
         atol=1e-2,
     )
