@@ -164,6 +164,11 @@ def test_lo_l1b_de(
     data = {}
     for file in [de_file, spin_file]:
         dataset = load_cdf(file)
+        if file == spin_file:
+            # We have 0 for num_completed which causes issues downstream
+            # when calculating the average spin durations and cascading
+            # failures. Set to 28 for testing.
+            dataset["num_completed"] = 28
         data[dataset.attrs["Logical_source"]] = dataset
 
     expected_logical_source_de = "imap_lo_l1b_de"
@@ -364,13 +369,22 @@ def test_convert_start_end_acq_times():
 
 def test_get_avg_spin_durations():
     # Arrange
-    acq_start = xr.DataArray([0, 423, 846.2], dims="epoch")
-    acq_end = xr.DataArray([422.8, 846, 1269.7], dims="epoch")
-    expected_avg_spin_durations = np.array([422.8, 423, 423.5]) / 28
+    spin_ds = xr.Dataset(
+        {
+            "acq_start_sec": ("epoch", [1, 2, 3]),
+            "acq_start_subsec": ("epoch", [1e6, 2e6, 3e6]),
+            "acq_end_sec": ("epoch", [100, 200, 300]),
+            "acq_end_subsec": ("epoch", [1e6, 2e6, 3e6]),
+            "num_completed": ("epoch", [28, 14, 28]),
+        },
+        coords={"epoch": [0, 1, 2]},
+    )
+    expected_avg_spin_durations = np.array(
+        [(101 - 2) / 28, (202 - 4) / 14, (303 - 6) / 28]
+    )
 
     # Act
-    avg_spin_durations = get_avg_spin_durations_per_cycle(acq_start, acq_end)
-
+    avg_spin_durations = get_avg_spin_durations_per_cycle(spin_ds)
     # Assert
     np.testing.assert_array_equal(avg_spin_durations, expected_avg_spin_durations)
 
@@ -406,10 +420,10 @@ def test_get_spin_start_times():
     # Arrange
     l1b_de = xr.Dataset(
         {
-            "spin_cycle": ("direct_event", [0, 1, 2, 3, 4]),
+            "spin_cycle": ("epoch", [0, 1, 2, 3, 4]),
         },
         coords={
-            "direct_event": [
+            "epoch": [
                 0,
                 1,
                 2,
@@ -420,6 +434,7 @@ def test_get_spin_start_times():
     )
     l1a_de = xr.Dataset(
         {
+            "shcoarse": ("epoch", [0, 1]),
             "de_count": ("epoch", [2, 3]),
             "met": ("epoch", [0, 1]),  # MET per time epoch, not per direct event
             "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
@@ -428,20 +443,34 @@ def test_get_spin_start_times():
     )
     spin = xr.Dataset(
         {
-            "start_sec_spin": (
-                ["epoch", "spin"],
-                [[20, 25, 30, 35, 40], [45, 50, 55, 60, 65]],
+            "shcoarse": ("epoch", [0, 1]),
+            "acq_start_sec": (
+                "epoch",
+                [20, 25],
             ),
-            "start_subsec_spin": (
-                ["epoch", "spin"],
-                [[2000, 3000, 4000, 5000, 6000], [1000, 1500, 2000, 3000, 4000]],
+            "acq_start_subsec": (
+                "epoch",
+                [0, 0],
+            ),
+            "acq_end_sec": (
+                "epoch",
+                [25, 30],
+            ),
+            "acq_end_subsec": (
+                "epoch",
+                [0, 0],
+            ),
+            "num_completed": (
+                "epoch",
+                [28, 14],
             ),
         }
     )
 
-    end_acq = xr.DataArray([0, 1], dims="epoch")
-    spin_start_times_expected = np.array([20.002, 25.003, 55.002, 60.003, 65.004])
-    spin_start_times = get_spin_start_times(l1a_de, l1b_de, spin, end_acq)
+    spin_start_times_expected = np.array(
+        [20, 20 + 5 / 28, 25 + 5 * 2 / 14, 25 + 5 * 3 / 14, 25 + 5 * 4 / 14]
+    )
+    spin_start_times = get_spin_start_times(l1a_de, l1b_de, spin)
 
     np.testing.assert_allclose(
         spin_start_times,

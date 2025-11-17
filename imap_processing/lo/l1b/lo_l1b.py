@@ -80,16 +80,14 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         pointing_start_met, pointing_end_met = get_pointing_times(
             l1a_de["met"].values[0].item()
         )
-        # Get the start and end times for each spin epoch
-        acq_start, acq_end = convert_start_end_acq_times(spin_data)
+
         # Get the average spin durations for each epoch
-        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
-            acq_start, acq_end
-        )
+        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
         # set the spin cycle for each direct event
         l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
         # get spin start times for each event
-        spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data, acq_end)
+        spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data)
+
         # get the absolute met for each event
         l1b_de = set_event_met(
             l1a_de, l1b_de, spin_start_time, avg_spin_durations_per_cycle
@@ -153,9 +151,7 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         # Get the start and end times for each spin epoch
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
-        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
-            acq_start, acq_end
-        )
+        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
         l1b_histrates = calculate_histogram_rates(
             l1b_histrates,
             acq_start,
@@ -309,26 +305,27 @@ def convert_start_end_acq_times(
 
 
 def get_avg_spin_durations_per_cycle(
-    acq_start: xr.DataArray, acq_end: xr.DataArray
+    spin_data: xr.Dataset,
 ) -> xr.DataArray:
     """
-    Get the average spin duration for each spin epoch.
+    Get the average spin duration for each aggregated science cycle.
 
     Parameters
     ----------
-    acq_start : xarray.DataArray
-        The start acquisition times for each spin epoch.
-    acq_end : xarray.DataArray
-        The end acquisition times for each spin epoch.
+    spin_data : xarray.Dataset
+        The L1A Spin dataset.
 
     Returns
     -------
     avg_spin_durations : xarray.DataArray
-        The average spin duration for each spin epoch.
+        The average spin duration for each ASC.
     """
+    acq_start = spin_data["acq_start_sec"] + spin_data["acq_start_subsec"] * 1e-6
+    acq_end = spin_data["acq_end_sec"] + spin_data["acq_end_subsec"] * 1e-6
     # Get the avg spin duration for each spin epoch
-    # There are 28 spins per epoch (1 aggregated science cycle)
-    avg_spin_durations_per_cycle = (acq_end - acq_start) / 28
+    # We need to use the number of spins that were actually in the ASC
+    # because there may be partial ASCs where only some of the spins were completed
+    avg_spin_durations_per_cycle = (acq_end - acq_start) / spin_data["num_completed"]
     return avg_spin_durations_per_cycle
 
 
@@ -584,7 +581,7 @@ def _check_sufficient_spins(spin_data: xr.Dataset) -> np.ndarray:
 
 
 def get_spin_start_times(
-    l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.Dataset, acq_end: xr.DataArray
+    l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.Dataset
 ) -> xr.DataArray:
     """
     Get the start time for the spin that each direct event is in.
@@ -601,40 +598,40 @@ def get_spin_start_times(
         The L1B DE dataset.
     spin_data : xr.Dataset
         The L1A Spin dataset.
-    acq_end : xr.DataArray
-        The end acquisition times for each spin ASC.
 
     Returns
     -------
     spin_start_time : xr.DataArray
         The start time for the spin that each direct event is in.
     """
-    # Get the MET times for each individual direct event
-    # l1a_de["met"] has one value per time epoch, but we need one per direct event
-    de_met = np.repeat(l1a_de["met"], l1a_de["de_count"])
-
-    # Find the closest stop_acq for each direct event
-    closest_stop_acq_indices = np.abs(de_met.values[:, None] - acq_end.values).argmin(
-        axis=1
+    # align l1a_de packets with spin_data packets
+    de_to_spin_indices = match_science_to_spin_asc(
+        l1a_de["epoch"].values, spin_data["epoch"].values
     )
+    # Repeat this for each direct event based on the de_count
+    de_to_spin_indices = np.repeat(de_to_spin_indices, l1a_de["de_count"])
+
     # There are 28 spins per epoch (1 aggregated science cycle)
     # Set the spin_cycle_num to the spin number relative to the
     # start of the ASC
     spin_cycle_num = l1b_de["spin_cycle"] % 28
-    # Get the seconds portion of the start time for each spin
-    start_sec_spins = spin_data["start_sec_spin"].values[
-        closest_stop_acq_indices, spin_cycle_num
-    ]
-    # Get the subseconds portion of the spin start time and convert from
-    # microseconds to seconds
-    start_subsec_spins = (
-        spin_data["start_subsec_spin"].values[closest_stop_acq_indices, spin_cycle_num]
-        * 1e-6
-    )
+    asc_starts = spin_data["acq_start_sec"] + spin_data["acq_start_subsec"] * 1e-6
+    avg_spin_durations = get_avg_spin_durations_per_cycle(spin_data)
 
-    # Combine the seconds and subseconds to get the start time for each spin
-    spin_start_time = start_sec_spins + start_subsec_spins
-    return xr.DataArray(spin_start_time)
+    # Calculate the time based off of the start of the acquisition period
+    # then using an average spin duration to calculate the offset within the ASC
+    # NOTE: We don't want to use the spin start times directly from the ASC spin packet
+    #       because we are using an average spin_cycle for the ASC and there are
+    #       times when only half the spins were completed in an ASC. This allows us
+    #       to still get a valid spin_cycle start time for each direct event, even
+    #       if the average spin_cycle was after the end of the acquisition period.
+    # TODO: Can we do even better by knowing how many esa_steps and spins were complete?
+    #       i.e. change the spin_cycle calculation
+    spin_start_time = (
+        asc_starts[de_to_spin_indices]
+        + spin_cycle_num * avg_spin_durations[de_to_spin_indices]
+    )
+    return spin_start_time
 
 
 def set_event_met(
