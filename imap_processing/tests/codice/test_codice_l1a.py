@@ -424,15 +424,15 @@ def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
     )
 
 
-@pytest.mark.skip(reason="Revisit this in l1a refactor work")
-def test_hi_counters_aggregated():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
     """Tests hi-counters-aggregated."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_hi-counters-aggregated_20250814_v001.pkts"
-    )
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="hi-counters-aggregated", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
 
+    processed_data = process_l1a(ProcessingInputCollection())[0]
     # Validation
     val_path = (
         imap_module_directory
@@ -443,13 +443,16 @@ def test_hi_counters_aggregated():
         )
     )
     val_data = load_cdf(val_path)
-
-    processed_data = process_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
 
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
+    # cdf_file = write_cdf(processed_data)
+    # assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
 
 
 @pytest.mark.skip(reason="Revisit this in l1a refactor work")

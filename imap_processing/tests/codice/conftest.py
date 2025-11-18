@@ -127,6 +127,24 @@ def codice_lut_path():
                 / "l1a_input"
                 / f"imap_codice_l0_hi-priority_{VALIDATION_FILE_DATE}_v001.pkts"
             ]
+        elif descriptor == "hi-counters-singles" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_hi-counters-singles_20250814_v001.pkts"
+            ]
+        elif descriptor == "hi-counters-aggregated" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_hi-counters-aggregated_20250814_v001.pkts"
+            ]
         if descriptor == "lo-nsw-species" and data_type == "l1b":
             return [
                 imap_module_directory
