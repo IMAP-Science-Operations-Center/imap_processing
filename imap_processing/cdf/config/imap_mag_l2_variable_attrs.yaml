@@ -98,7 +98,7 @@ magnitude:
   FILLVAL: -1.0e+31
   UNITS: nT
   VALIDMIN: 0
-  VALIDMAX: 1.0e+31
+  VALIDMAX: 1.0e+5
   DICT_KEY: SPASE>Field>FieldQuantity:Magnetic,Qualifier:Scalar
 
 range:
