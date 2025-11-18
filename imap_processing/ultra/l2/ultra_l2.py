@@ -785,7 +785,8 @@ def ultra_l2(
 
     # Add the "label" coordinates to the map dataset
     for coord_var, coord_data in map_dataset.coords.items():
-        if coord_var != "epoch":
+        # For energy_delta_minus and plus, the label should be "energy_label"
+        if coord_var not in ["epoch", "energy_delta_minus", "energy_delta_plus"]:
             map_dataset.coords[f"{coord_var}_label"] = xr.DataArray(
                 coord_data.values.astype(str),
                 dims=[
@@ -809,15 +810,6 @@ def ultra_l2(
     )
     map_dataset.coords["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta"
 
-    # Add the energy delta plus/minus to the map dataset
-    map_dataset.coords["energy_delta_minus"] = xr.DataArray(
-        map_dataset["energy_delta_minus"].data,
-        dims=(CoordNames.ENERGY_L2.value,),
-    )
-    map_dataset.coords["energy_delta_plus"] = xr.DataArray(
-        map_dataset["energy_delta_plus"].data,
-        dims=(CoordNames.ENERGY_L2.value,),
-    )
     # Add variable specific attributes to the map's data_vars and coords
     for variable in map_dataset.data_vars:
         # Skip the subdivision depth variables, as these will only be

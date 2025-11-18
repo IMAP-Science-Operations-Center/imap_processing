@@ -137,7 +137,7 @@ class TestUltraL2:
 
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
-            hp_skymap, _, new_bin_edges = ultra_l2.generate_ultra_healpix_skymap(
+            hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
                 ultra_l1c_psets=[
                     pset,
                 ],
@@ -198,7 +198,12 @@ class TestUltraL2:
             counts_fillval * solid_angle_ratio_map_to_pset / 1
         ) / (1 * hp_skymap.solid_angle * 1)
         # 4 fine bins per coarse bin
-        binned_counts = np.full((len(new_bin_edges) - 1), counts_fillval) * 4
+        binned_counts = (
+            np.full(
+                (len(hp_skymap.data_1d["energy_bin_geometric_mean"])), counts_fillval
+            )
+            * 4
+        )
         # last bin only has 2 fine bins
         binned_counts[-1] = counts_fillval * 2
         energy_bin_deltas = np.full(12, 4)
@@ -264,7 +269,7 @@ class TestUltraL2:
 
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
-            hp_skymap, _, _ = ultra_l2.generate_ultra_healpix_skymap(
+            hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
                 ultra_l1c_psets=[pset, pset_quality],
                 output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                     {
@@ -321,7 +326,7 @@ class TestUltraL2:
             [],
         ):
             with furnish_kernels(self.required_kernel_names):
-                hp_skymap, pset_epochs, _ = ultra_l2.generate_ultra_healpix_skymap(
+                hp_skymap, pset_epochs = ultra_l2.generate_ultra_healpix_skymap(
                     ultra_l1c_psets=self.ultra_psets,
                     output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                         {
@@ -702,6 +707,7 @@ class TestUltraL2:
 
         assert output_map.attrs["Spice_reference_frame"] == "IMAP_HAE"
         assert output_map.attrs["Spacing_degrees"] == "6.0"
+        write_cdf(output_map)
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_descriptor_hpmap(self, mock_data_dict, furnish_kernels):
