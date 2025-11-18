@@ -3,9 +3,11 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import xarray as xr
+from imap_data_access.processing_input import ProcessingInputCollection
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.cli import Mag
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1d.mag_l1d import mag_l1d
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL1dConfiguration
@@ -173,6 +175,22 @@ def test_mag_l1d_attributes(
 
         # Verify xarray_to_cdf was called for each dataset
         assert mock_xarray_to_cdf.call_count == len(l1d_datasets)
+
+    # Test that Mag.post_processing can be called on the datasets
+    mag_processor = Mag(
+        data_level="l1d",
+        data_descriptor="all",
+        dependency_str="[]",
+        start_date="20000101",
+        repointing=None,
+        version="v001",
+        upload_to_sdc=False,
+    )
+
+    mock_dependencies = ProcessingInputCollection()
+
+    with patch("imap_processing.cdf.utils.xarray_to_cdf"):
+        mag_processor.post_processing(l1d_datasets, mock_dependencies)
 
 
 def test_offset_vector():

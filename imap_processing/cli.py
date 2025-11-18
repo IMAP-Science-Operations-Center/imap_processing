@@ -1216,11 +1216,9 @@ class Mag(ProcessInstrument):
         Override the post-processing method to handle ancillary file upload.
 
         This will retrieve any datasets with Logical_source matching
-        ancillary_identifiers, remove them from the datasets, upload them as ancillary
-        files, and then call the super().post_processing() function on all other files.
-
-        If none of the files match ancillary_identifiers they are all uploaded through
-        post_processing() as usual.
+        ancillary_identifiers, and write them out to filenames, which will then be
+        passed to super().post_processing(). This means write_cdf will be skipped for
+        ancillary files ONLY.
 
         Parameters
         ----------
@@ -1241,48 +1239,44 @@ class Mag(ProcessInstrument):
             "imap_mag_l1d_spin-offsets",
         ]
 
-        ancillary_files = []
-        science_datasets = []
-        for dataset in processed_data:
-            logical_source = dataset.attrs["Logical_source"]
-            if logical_source in ancillary_identifiers:
-                # Skip write_cdf
-                instrument, _data_level, descriptor = dataset.attrs[
-                    "Logical_source"
-                ].split("_")[1:]
-                start_date = self.start_date
-                version = self.version
+        for index, dataset in enumerate(processed_data):
+            if isinstance(dataset, xr.Dataset):
+                logical_source = dataset.attrs["Logical_source"]
+                if logical_source in ancillary_identifiers:
+                    # Skip write_cdf
+                    instrument, _data_level, descriptor = dataset.attrs[
+                        "Logical_source"
+                    ].split("_")[1:]
+                    start_date = self.start_date
+                    version = self.version
 
-                output_filename = (
-                    imap_data_access.AncillaryFilePath.generate_from_inputs(
-                        instrument=instrument,
-                        descriptor=descriptor,
-                        version=version,
-                        extension="cdf",
-                        start_time=start_date,
-                        end_time=start_date,
-                    ).filename
-                )
-
-                try:
-                    # write file to CDF
-                    xarray_to_cdf(
-                        dataset, output_filename, terminate_on_warning=False, istp=False
+                    output_filepath = (
+                        imap_data_access.AncillaryFilePath.generate_from_inputs(
+                            instrument=instrument,
+                            descriptor=descriptor,
+                            version=version,
+                            extension="cdf",
+                            start_time=start_date,
+                            end_time=start_date,
+                        ).filename
                     )
-                    ancillary_files.append(output_filename)
-                except Exception as e:
-                    # Don't fail for any reason for ancillary files
-                    logger.warning(f"Hit error {e} when creating {output_filename}")
-                    continue
-            else:
-                science_datasets.append(dataset)
 
-        try:
-            self.upload_products(ancillary_files)
-        except Exception as e:
-            logger.warning(f"Failed to upload ancillary products due to error {e}")
+                    try:
+                        # write file to CDF
+                        xarray_to_cdf(
+                            dataset,
+                            output_filepath,
+                            terminate_on_warning=False,
+                            istp=False,
+                        )
+                        # update the dataset in processed_data to point to a path
+                        processed_data[index] = output_filepath
+                    except Exception as e:
+                        # Don't fail for any reason for ancillary files
+                        logger.warning(f"Hit error {e} when creating {output_filepath}")
+                        continue
 
-        return super().post_processing(science_datasets, dependencies)
+        return super().post_processing(processed_data, dependencies)
 
 
 class Spacecraft(ProcessInstrument):
