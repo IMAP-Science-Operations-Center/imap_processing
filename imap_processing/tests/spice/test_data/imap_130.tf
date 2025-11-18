@@ -35,9 +35,22 @@ Version and Date
 
    \begindata
 
-   TEXT_KERNEL_ID += 'IMAP_FRAMES V1.0.0 2025-SEPT-19 FK'
+   TEXT_KERNEL_ID += 'IMAP_FRAMES V1.3.0 2025-NOV-13 FK'
    
    \begintext
+   
+
+   Version 1.3.0 -- Nov 13, 2025 -- Lillian Nguyen
+   
+      Inserted a nominal base frame for MAG.
+      Corrected frame name to ID mapping for HI-90, ULTRA-90, MAG-O.
+	  (Note: Release version number 1.1.0 was inadvertently skipped.)
+
+   Version 1.2.0 -- Oct 21, 2025 -- Lillian Nguyen
+   
+      Updated SWAPI frame with launch site alignments.
+      Added instrument coordinate system diagrams for SWAPI, CoDICE, and GLOWS.
+      Removed unimplemented SWAPI and CODICE aperture frame IDs.
 
    Version 1.0.0 -- Sept 19, 2025 -- Douglas Rodgers
                                      Lillian Nguyen
@@ -278,13 +291,13 @@ IMAP NAIF ID Codes -- Definitions
       NAIF_BODY_CODE   += ( -43150       )
       
       NAIF_BODY_NAME   += ( 'IMAP_HI_90' )
-      NAIF_BODY_CODE   += ( -43175       )
+      NAIF_BODY_CODE   += ( -43151       )
 
       NAIF_BODY_NAME   += ( 'IMAP_ULTRA_45' )
       NAIF_BODY_CODE   += ( -43200          )
       
       NAIF_BODY_NAME   += ( 'IMAP_ULTRA_90' )
-      NAIF_BODY_CODE   += ( -43225          )
+      NAIF_BODY_CODE   += ( -43201          )
 
       NAIF_BODY_NAME   += ( 'IMAP_MAG_BOOM' )
       NAIF_BODY_CODE   += ( -43250          )
@@ -293,7 +306,10 @@ IMAP NAIF ID Codes -- Definitions
       NAIF_BODY_CODE   += ( -43251       )
 
       NAIF_BODY_NAME   += ( 'IMAP_MAG_O' )
-      NAIF_BODY_CODE   += ( -43251       )
+      NAIF_BODY_CODE   += ( -43252       )
+
+      NAIF_BODY_NAME   += ( 'IMAP_MAG_BASE' )
+      NAIF_BODY_CODE   += ( -43253          )
       
       NAIF_BODY_NAME   += ( 'IMAP_SWE' )
       NAIF_BODY_CODE   += ( -43300     )
@@ -322,125 +338,8 @@ IMAP NAIF ID Codes -- Definitions
       NAIF_BODY_NAME   += ( 'IMAP_SWAPI' )
       NAIF_BODY_CODE   += ( -43350      )
       
-      NAIF_BODY_NAME   += ( 'IMAP_SWAPI_APERTURE_L' )
-      NAIF_BODY_CODE   += ( -43351                  )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_SWAPI_APERTURE_R' )
-      NAIF_BODY_CODE   += ( -43352                  )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_SWAPI_SUNGLASSES' )
-      NAIF_BODY_CODE   += ( -43353                  )
-
       NAIF_BODY_NAME   += ( 'IMAP_CODICE' )
       NAIF_BODY_CODE   += ( -43400        )
-
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_01' )
-      NAIF_BODY_CODE   += ( -43401                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_02' )
-      NAIF_BODY_CODE   += ( -43402                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_03' )
-      NAIF_BODY_CODE   += ( -43403                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_04' )
-      NAIF_BODY_CODE   += ( -43404                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_05' )
-      NAIF_BODY_CODE   += ( -43405                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_06' )
-      NAIF_BODY_CODE   += ( -43406                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_07' )
-      NAIF_BODY_CODE   += ( -43407                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_08' )
-      NAIF_BODY_CODE   += ( -43408                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_09' )
-      NAIF_BODY_CODE   += ( -43409                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_10' )
-      NAIF_BODY_CODE   += ( -43410                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_11' )
-      NAIF_BODY_CODE   += ( -43411                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_12' )
-      NAIF_BODY_CODE   += ( -43412                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_13' )
-      NAIF_BODY_CODE   += ( -43413                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_14' )
-      NAIF_BODY_CODE   += ( -43414                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_15' )
-      NAIF_BODY_CODE   += ( -43415                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_16' )
-      NAIF_BODY_CODE   += ( -43416                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_17' )
-      NAIF_BODY_CODE   += ( -43417                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_18' )
-      NAIF_BODY_CODE   += ( -43418                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_19' )
-      NAIF_BODY_CODE   += ( -43419                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_20' )
-      NAIF_BODY_CODE   += ( -43420                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_21' )
-      NAIF_BODY_CODE   += ( -43421                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_22' )
-      NAIF_BODY_CODE   += ( -43422                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_23' )
-      NAIF_BODY_CODE   += ( -43423                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_LO_APERTURE_24' )
-      NAIF_BODY_CODE   += ( -43424                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_01' )
-      NAIF_BODY_CODE   += ( -43425                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_02' )
-      NAIF_BODY_CODE   += ( -43426                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_03' )
-      NAIF_BODY_CODE   += ( -43427                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_04' )
-      NAIF_BODY_CODE   += ( -43428                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_05' )
-      NAIF_BODY_CODE   += ( -43429                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_06' )
-      NAIF_BODY_CODE   += ( -43430                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_07' )
-      NAIF_BODY_CODE   += ( -43431                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_08' )
-      NAIF_BODY_CODE   += ( -43432                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_09' )
-      NAIF_BODY_CODE   += ( -43433                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_10' )
-      NAIF_BODY_CODE   += ( -43434                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_11' )
-      NAIF_BODY_CODE   += ( -43435                       )
-      
-      NAIF_BODY_NAME   += ( 'IMAP_CODICE_HI_APERTURE_12' )
-      NAIF_BODY_CODE   += ( -43436                       )
             
       NAIF_BODY_NAME   += ( 'IMAP_HIT' )
       NAIF_BODY_CODE   += ( -43500     )
@@ -542,8 +441,9 @@ IMAP NAIF ID Codes -- Definitions
       MAG (250-299)
       --------------------------
       IMAP_MAG_BOOM                 IMAP_SPACECRAFT    FIXED     -43250
-      IMAP_MAG_I                    IMAP_SPACECRAFT    FIXED     -43251
-      IMAP_MAG_O                    IMAP_SPACECRAFT    FIXED     -43252
+      IMAP_MAG_BASE                 IMAP_SPACECRAFT    FIXED     -43253
+      IMAP_MAG_I                    IMAP_MAG_BASE      FIXED     -43251
+      IMAP_MAG_O                    IMAP_MAG_BASE      FIXED     -43252
 
       SWE (300-349)
       --------------------------
@@ -559,49 +459,10 @@ IMAP NAIF ID Codes -- Definitions
       SWAPI (350-399)
       --------------------------
       IMAP_SWAPI                    IMAP_SPACECRAFT    FIXED     -43350
-      IMAP_SWAPI_APERTURE_L         IMAP_SWAPI         FIXED     -43351
-      IMAP_SWAPI_APERTURE_R         IMAP_SWAPI         FIXED     -43352
-      IMAP_SWAPI_SUNGLASSES         IMAP_SWAPI         FIXED     -43353
 
       CODICE (400-499)
       --------------------------
       IMAP_CODICE                   IMAP_SPACECRAFT    FIXED     -43400
-      IMAP_CODICE_LO_APERTURE_01    IMAP_CODICE        FIXED     -43401
-      IMAP_CODICE_LO_APERTURE_02    IMAP_CODICE        FIXED     -43402
-      IMAP_CODICE_LO_APERTURE_03    IMAP_CODICE        FIXED     -43403
-      IMAP_CODICE_LO_APERTURE_04    IMAP_CODICE        FIXED     -43404
-      IMAP_CODICE_LO_APERTURE_05    IMAP_CODICE        FIXED     -43405
-      IMAP_CODICE_LO_APERTURE_06    IMAP_CODICE        FIXED     -43406
-      IMAP_CODICE_LO_APERTURE_07    IMAP_CODICE        FIXED     -43407
-      IMAP_CODICE_LO_APERTURE_08    IMAP_CODICE        FIXED     -43408
-      IMAP_CODICE_LO_APERTURE_09    IMAP_CODICE        FIXED     -43409
-      IMAP_CODICE_LO_APERTURE_10    IMAP_CODICE        FIXED     -43410
-      IMAP_CODICE_LO_APERTURE_11    IMAP_CODICE        FIXED     -43411
-      IMAP_CODICE_LO_APERTURE_12    IMAP_CODICE        FIXED     -43412
-      IMAP_CODICE_LO_APERTURE_13    IMAP_CODICE        FIXED     -43413
-      IMAP_CODICE_LO_APERTURE_14    IMAP_CODICE        FIXED     -43414
-      IMAP_CODICE_LO_APERTURE_15    IMAP_CODICE        FIXED     -43415
-      IMAP_CODICE_LO_APERTURE_16    IMAP_CODICE        FIXED     -43416
-      IMAP_CODICE_LO_APERTURE_17    IMAP_CODICE        FIXED     -43417
-      IMAP_CODICE_LO_APERTURE_18    IMAP_CODICE        FIXED     -43418
-      IMAP_CODICE_LO_APERTURE_19    IMAP_CODICE        FIXED     -43419
-      IMAP_CODICE_LO_APERTURE_20    IMAP_CODICE        FIXED     -43420
-      IMAP_CODICE_LO_APERTURE_21    IMAP_CODICE        FIXED     -43421
-      IMAP_CODICE_LO_APERTURE_22    IMAP_CODICE        FIXED     -43422
-      IMAP_CODICE_LO_APERTURE_23    IMAP_CODICE        FIXED     -43423
-      IMAP_CODICE_LO_APERTURE_24    IMAP_CODICE        FIXED     -43424
-      IMAP_CODICE_HI_APERTURE_01    IMAP_CODICE        FIXED     -43425
-      IMAP_CODICE_HI_APERTURE_02    IMAP_CODICE        FIXED     -43426
-      IMAP_CODICE_HI_APERTURE_03    IMAP_CODICE        FIXED     -43427
-      IMAP_CODICE_HI_APERTURE_04    IMAP_CODICE        FIXED     -43428
-      IMAP_CODICE_HI_APERTURE_05    IMAP_CODICE        FIXED     -43429
-      IMAP_CODICE_HI_APERTURE_06    IMAP_CODICE        FIXED     -43430
-      IMAP_CODICE_HI_APERTURE_07    IMAP_CODICE        FIXED     -43431
-      IMAP_CODICE_HI_APERTURE_08    IMAP_CODICE        FIXED     -43432
-      IMAP_CODICE_HI_APERTURE_09    IMAP_CODICE        FIXED     -43433
-      IMAP_CODICE_HI_APERTURE_10    IMAP_CODICE        FIXED     -43434
-      IMAP_CODICE_HI_APERTURE_11    IMAP_CODICE        FIXED     -43435
-      IMAP_CODICE_HI_APERTURE_12    IMAP_CODICE        FIXED     -43436
 
       HIT (500-699)
       --------------------------
@@ -681,9 +542,11 @@ IMAP Frame Tree
            |
            IMAP_MAG_BOOM
            |    
-           IMAP_MAP_I
-           |    
-           IMAP_MAP_O
+           IMAP_MAG_BASE
+           |    |
+           |    IMAP_MAG_I
+           |    |
+           |    IMAP_MAG_O
            |
            IMAP_SWE
            |    |
@@ -702,26 +565,8 @@ IMAP Frame Tree
            |    IMAP_SWE_DETECTOR_M63
            |
            IMAP_SWAPI
-           |    |
-           |    IMAP_SWAPI_APERTURE_L
-           |    |
-           |    IMAP_SWAPI_APERTURE_R
-           |    |
-           |    IMAP_SWAPI_SUNGLASSES
            |
            IMAP_CODICE
-           |    |
-           |    IMAP_CODICE_LO_APERTURE_01
-           |    |
-           |    |...
-           |    |
-           |    IMAP_CODICE_LO_APERTURE_24
-           |    |
-           |    IMAP_CODICE_HI_APERTURE_01
-           |    |
-           |    |...
-           |    |
-           |    IMAP_CODICE_HI_APERTURE_12
            |
            IMAP_HIT
            |    |
@@ -2319,9 +2164,9 @@ IMAP-Hi Frames
    ports aligned with the +Z' axis, and X' = Y' x Z'.
    
    The local coordinate system is shown below, looking into the sensor.
-   The vent ports are aligned as shown with the Z axis.
+   The vent ports are aligned as shown with the Z' axis.
    
-                                +Z
+                                +Z'
                                  ^
                                  |
                                  |
@@ -2332,7 +2177,7 @@ IMAP-Hi Frames
                     /    .'    |'|'|    '.    \  
                    /    /      | | |      \    \ 
                   |    /       |_|_|       \    |
-        +X  /_____|__ |__________|          |   |
+        +X' /_____|__ |__________|          |   |
             \     |   |                     |   |
                   |    \       |'''|       /    |
                    \    \      |   |      /    / 
@@ -2484,6 +2329,12 @@ IMAP-Hi Frames
    rotation matrix generated from these Euler angles is consistent with
    the rotation matrix using the azimuth/elevation look direction. 
 
+   Applying the method described above to the measured alignment vector
+   in [17], 
+   
+   D = +Y' = [ 0.965176886, 0.261597765, 0.000434036 ],
+   
+   we arrive at the definition below.
  
    \begindata
      
@@ -2595,14 +2446,14 @@ IMAP-Ultra Frames
    #-----------||-|-,      @                          /~,".' ;'.'          #
    #===        ||---|@  @     @                 @ @  ,\ '  ,.^`            #
    #___________||_/-~_ _   @     @           _,  _,-' ,.-'`                #
-   #   @| | |  ||       `- , @      @        \,\'  ,'`     S/C +Z'         # 
+   #   @| | |  ||       `- , @      @        \,\'  ,'`     +Z'             # 
    #----' | |  ||           `~,@       @  ,~`' _,'`         ^              #
    #      | |  ||              ',@ .^\_,'` ,.'`             |              #
    #______'-'__||-@--~-~,        \ .;`  .'`                 |              #
    #___________||/ ~  #  ~        | {.'`                    |              #
-   #        |* ||*|   +  <------------  Collector plate     o----> S/C +Y' #
-   #____     --||\ ~     ~       |      axis of symmetry   S/C +X'         #
-   #_  *|      ||-@-^~-~^-------|                        out of page       #
+   #        |* ||*|   +  <------------ Collector plate      o------> +Y'   #
+   #____     --||\ ~     ~       |     axis of symmetry     Instrument     #
+   #_  *|      ||-@-^~-~^-------|                           Coordinates    #
    #*| |       ||_______________|                                          #
    #___*|_______|_|_|__|__|_|_| |                                          #
    #########################################################################
@@ -2612,9 +2463,7 @@ IMAP-Ultra Frames
    defined with the collector-plate-fan axes of symmetry aligned with
    the +X' axis, the cylindrical axes offset in the +Y' axis, and the
    Z' axis perpendicular to both and outward as in the diagram below.
-   
-   TODO: add diagram of instrument axes
-   
+      
    
    IMAP ULTRA 45
    --------------
@@ -2847,8 +2696,11 @@ IMAP Magnetometer (MAG) Frames
       [Y]    = [  -1   0   0  ] [Y']
       [Z]S/C   [   0   0  +1  ] [Z']MAG undeployed   
    
-   The definitions are offset from the nominal values described above to
-   include launch sight alignment measurements.            
+   The MAG local coordinate system is shown in the diagram above. The 
+   matrix taking vectors from the MAG coordinate system to the spacecraft
+   coordinate system is provided below in the IMAP_MAG_BASE frame definition.
+   It represents a nominal, or idealized, orientation. The measured 
+   alignments [17] are given in frames IMAP_MAG_I and IMAP_MAG_O.      
 
    \begindata
 
@@ -2867,49 +2719,64 @@ IMAP Magnetometer (MAG) Frames
                                    -0.000000000000000,
                                     0.004211767995864,
                                    -0.000058106512157,
-                                    0.999991128777642 )
+                                    0.999991128777642 )									
+
+   FRAME_IMAP_MAG_BASE         = -43253
+   FRAME_-43253_NAME           = 'IMAP_MAG_BASE'
+   FRAME_-43253_CLASS          = 4
+   FRAME_-43253_CLASS_ID       = -43253
+   FRAME_-43253_CENTER         = -43
+   TKFRAME_-43253_RELATIVE     = 'IMAP_SPACECRAFT'
+   TKFRAME_-43253_SPEC         = 'MATRIX'
+   TKFRAME_-43253_MATRIX       = (  0.0,
+                                   -1.0,
+                                    0.0,
+                                   -1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0,
+                                    0.0,
+                                   -1.0 )
 
    FRAME_IMAP_MAG_I            = -43251
    FRAME_-43251_NAME           = 'IMAP_MAG_I'
    FRAME_-43251_CLASS          = 4
    FRAME_-43251_CLASS_ID       = -43251
    FRAME_-43251_CENTER         = -43
-   TKFRAME_-43251_RELATIVE     = 'IMAP_SPACECRAFT'
+   TKFRAME_-43251_RELATIVE     = 'IMAP_MAG_BASE'
    TKFRAME_-43251_SPEC         = 'MATRIX'
-   TKFRAME_-43251_MATRIX       = ( -0.000507384835577,
-                                   -0.999999871280306,
-                                   -0.000000000000000,
-                                   -0.999928705504181,
-                                    0.000507348727136,
-                                    0.011930067309210,
-                                   -0.011930065773575,
-                                    0.000006053135240,
-                                   -0.999928834214714 )
+   TKFRAME_-43251_MATRIX       = ( 0.999999871280306
+                                   0.000507384835577
+                                   0.0
+                                  -0.000507348727136
+                                   0.999928705504181
+                                  -0.011930067309210
+                                  -0.000006053135240
+                                   0.011930065773575
+                                   0.999928834214714 )
 
    FRAME_IMAP_MAG_O            = -43252
    FRAME_-43252_NAME           = 'IMAP_MAG_O'
    FRAME_-43252_CLASS          = 4
    FRAME_-43252_CLASS_ID       = -43252
    FRAME_-43252_CENTER         = -43
-   TKFRAME_-43252_RELATIVE     = 'IMAP_SPACECRAFT'
+   TKFRAME_-43252_RELATIVE     = 'IMAP_MAG_BASE'
    TKFRAME_-43252_SPEC         = 'MATRIX'
-   TKFRAME_-43252_MATRIX       = ( -0.010338102964849,
-                                   -0.999946560385648,
-                                   -0.000000000000000,
-                                   -0.999926946999490,
-                                    0.010337900188807,
-                                    0.006263264641177,
-                                   -0.006262929934730,
-                                    0.000064750274757,
-                                   -0.999980385565654 )
+   TKFRAME_-43252_MATRIX       = ( 0.999946560385648
+                                   0.010338102964849
+                                   0.0
+                                  -0.010337900188807
+                                   0.999926946999490
+                                  -0.006263264641177
+                                  -0.000064750274757
+                                   0.006262929934730
+                                   0.999980385565654 )
 
    \begintext
 
 
 IMAP Solar Wind Electron (SWE) Frames
 ========================================================================
-     
-   TODO: Add diagram of SWE location on S/C
      
    The SWE instrument frame is defined in [18] as
    
@@ -2918,18 +2785,18 @@ IMAP Solar Wind Electron (SWE) Frames
       *  +Z is nominally aligned with S/C +Z
       *  +Y complements the right-handed frame
       
-   A view of the instrument looking down the Y axis is illustrated below.
+   A view of the instrument looking down the Y' axis is illustrated below. 
    
                                                 
              .                                       ^   S/C +Z 
-          P63 .      ^ +Z                            | (spin axis)
+          P63 .      ^ +Z'                           | (spin axis)
           .    .     |                               |
       P43  `.   .    |_________ SWE Sensor           |
          .    `.  .  ||         |                    |
      P21   `.   `. . ||         |
         `   . `.  `..||         |
-    000   -X <--------x         |
-        .   ' .'  .'.| +Y (into page )
+    000  -X' <--------x         |
+        .   ' .'  .'.| +Y' (into page )
      M21   .'   .' . |          |
          '    .'  .  |__________|______________
        M43  .'   .     |                       |  Mounting Plate
@@ -3072,41 +2939,64 @@ IMAP Solar Wind Electron (SWE) Frames
 
 IMAP Solar Wind and Pickup Ion (SWAPI) Frames
 ========================================================================
-
-   TODO: add diagrams
+   
+   SWAPI has the following nominal alignment to the spacecraft frame,
+   reference Table 1 of [6]. The azimuth and elevation angles are 
+   illustrated in the 'IMAP I&T Component Placement' section near the 
+   top of this document.
+   
+        azimuth  | elevation 
+         (deg)   |  (deg)
+        ---------+---------
+           168   |    0
    
    The SWAPI base frame is defined in the instrument MICD [8] as follows:
    
       *  -Z axis is the axis of symmetry of the instrument, pointing 
             away from the spacecraft body.
       *  +Y axis is along the aperture center, in the anti-sunward direction.
-    
+      
+   Two views of the instrument are illustrated below. The diagram on the left 
+   is looking down the top of the instrument towards the spacecraft body. The 
+   diagram on the right is a side view of the instrument assembly. In both 
+   diagrams the sunglasses aperture vanes point to the right (+Y direction).
+   The labeled coordinate axes are in the instrument reference frame.   
+   
+                                                 -Z'
+            +X'                                   ^
+             ^                             _______|________
+             |                            |       |        |---- 
+        . ***|*** .                       |       o---------------> +Y'
+       *     |     *    .-'               |________________|----  (towards
+      *      |      *.-'                  . '            ' .        Sun)
+     *       |       *                  '--------------------'
+     *       o----------> +Y'                 /        \   
+     *               *                        |        |
+      *             *'-.                      |\      /|          |
+       *.         .*    `-.                  _|_|____|_|_         |
+          *******                           |            |        |
+                                            |            |        v
+      spacecraft body                       |            |   spacecraft
+        behind page                         |____________|      body
+        
+       
    The nominal azimuth and elevation give the outward axis of symmetry, -Z in the
    instrument frame:
     
       -Z      = -[ -sin(az) * cos(el), cos(az) * cos(el), sin(el) ]
         instr    
       
-   The instrument +Y axis is in the sunward direction, towards the
-   spacecraft +Z axis:
-
-       Y      = [ 0 0 1 ]    
-        instr    
-           
-   Taking the cross product and normalizing, we arrive at the instrumet +X
-   axis:
-                  Y x Z
-       X      = ---------
-        instr   | Y x Z |
-    
-   And adjusting Y:
-    
-                  Z x X
-       Y      = ---------
-        instr   | Z x X |
-    
-    This definition is captured in the keywords below.    
-     
+   [17] provides measured values of the above nominal instrument alignment. The
+   following measured vectors are parallel to the spacecraft axes listed:
+   
+      -Y = Tophat Topplate Rib                    = [ -0.00142, -0.01019, -0.99995 ]
+      
+      -Z = Top of Aperture Grid Frame             = [ -0.20761, -0.97821, 0.001128 ]
+      -Z = Top of Lower Outer ESA Mounting Flange = [ -0.20775, -0.97818, 0.00003  ]
+      
+   Since two measurements were taken for instrument -Z, we use their average.
+   The X axis completes the right-handed coordinate system.
+      
    \begindata
 
    FRAME_IMAP_SWAPI            = -43350
@@ -3116,23 +3006,21 @@ IMAP Solar Wind and Pickup Ion (SWAPI) Frames
    FRAME_-43350_CENTER         = -43
    TKFRAME_-43350_RELATIVE     = 'IMAP_SPACECRAFT'
    TKFRAME_-43350_SPEC         = 'MATRIX'
-   TKFRAME_-43350_MATRIX       = ( -0.97814760073381,
-                                    0.20791169081776,
-                                    0.00000000000000,
-                                    0.00000000000000,
-                                    0.00000000000000,
-                                    1.00000000000000,
-                                    0.20791169081776,
-                                    0.97814760073381,
-                                    0.00000000000000 )
+   TKFRAME_-43350_MATRIX       = ( -0.978196569749791
+   0.207679902805407
+  -0.000727255443315
+  -0.000591151927685
+   0.000717413380944
+   0.999999567928626
+   0.207680334815652
+   0.978196577017512
+  -0.000579000933447 )
 
-\begintext
+   \begintext
 
 
 IMAP Compact Dual Ion Composition Experiment (CoDICE) Frames
 ========================================================================
-
-   TODO: add text and diagram. Add detector frames
 
    CoDICE has the following nominal alignment to the spacecraft frame,
    reference Table 1 of [6]. The azimuth and elevation angles are 
@@ -3151,7 +3039,28 @@ IMAP Compact Dual Ion Composition Experiment (CoDICE) Frames
             away from the spacecraft body.
       *  +Z is aligned with the spacecraft +Z axis
       
-   The alignment measurements [17] give the three axes of the 
+   A diagram of the CoDICE local coordinate system is shown below.
+   
+                         -X'
+                          ^
+                  ________|_______
+                 |________|_______| 
+                    \     |    /
+                    /     |    \   
+                   |      o----------> +Z'
+                    \          /   (towards Sun) 
+                    \ \ \  / / /          
+                   |''''''''''''|         
+                   |            |      |  
+                   |            |      |  
+                   |            |      |  
+                   |            |      |   
+                   |            |      v  
+                   |            |  spacecraft     
+                   |            |     body       
+                   |____________|  
+                   
+   The alignment measurements in [17] give the three axes of the 
    instrument coordinate system and are captured below.
      
    \begindata
@@ -3212,7 +3121,7 @@ IMAP High-energy Ion Telescope (HIT) Frames
                      HIT local coordinate system
                      ----------------------------
                                          
-     S/C +Z axis                         +Z 
+     S/C +Z axis                         +Z' 
     (facing Sun)                         ^
           ^                              `
           |                             .
@@ -3228,9 +3137,9 @@ IMAP High-energy Ion Telescope (HIT) Frames
      groups A1-A5 ||||.            `          .       ___
       and A6-A10 |||||            .           |---''''
             ___....---|           o ....      ||||||| 50 deg space
-                      '       +Y(out)    ```` '|||||
+                      '        +Y'out)   ```` '|||||
                 A10    \                     /|||||``` --- 
-                     .-''.                 .''-.||        ````--> -X
+                     .-''.                 .''-.||        ````--> -X'
                   .-'     '.             .'     '-.
                .-'          / ''--+--'' \          '-.
                      A9    /      |      \   A6
@@ -3532,9 +3441,7 @@ IMAP Interstellar Dust Experiment (IDEX) Frames
 
 IMAP GLObal solar Wind Structure (GLOWS) Frames
 ========================================================================
-
-   TODO: add diagrams
-     
+    
    GLOWS has the following nominal alignment to the spacecraft frame,
    reference Table 1 of [6]. The azimuth and elevation angles are 
    illustrated in the 'IMAP I&T Component Placement' section near the top 
@@ -3549,14 +3456,28 @@ IMAP GLObal solar Wind Structure (GLOWS) Frames
    
       *  +Z axis points in the anti-boresight direction
       *  +Y axis points in the anti-sunward direction (towards S/C -Z)
+         
+   A diagram of the GLOWS local coordinate system is shown below.
+                 ______________________                 
+                |                      |              .-'|       __ -Z'
+     S/C +Z     |                      |           .-'   |    _.-*/    
+    (sunward)   |                      |        .-'      |.-*'
+        ^       |                      |    _.-*'\  _.-*'|
+        |       |                      '.-*'   _.-*'     |
+        |       |                      \    o*'    \ _.-'
+        |       |                       \    \_.-*' '
+                |                        \.-*'\         
+                |________________________|     \
+                                                \
+                                                 v  +Y'                                    
       
-   The azimuth and elevation give the outward axis of symmetry, -Z in the
-   instrument frame:
+   The azimuth and elevation give the nominal outward axis of symmetry, 
+   -Z in the instrument frame:
     
        Z      = -[ -sin(az) * cos(el), cos(az) * cos(el), sin(el) ]
         instr  
     
-   The alignment measurements in [17] give the outward axis of symmetry, 
+   The alignment report [17] gives the measured outward axis of symmetry, 
    -Z in the instrument frame:
     
       -Z      = [ -0.7699232700, -0.5831000067, 0.2592538148 ]
@@ -3580,7 +3501,7 @@ IMAP GLObal solar Wind Structure (GLOWS) Frames
        Y      = ---------
         instr   | Z x X |
     
-    This definition is captured in the keywords below.
+   This definition is captured in the keywords below.
      
    \begindata
 
