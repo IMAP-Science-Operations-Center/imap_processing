@@ -259,7 +259,13 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         start_idx = end_idx
 
     # ========= Add Additional Variables ===========
-    # Repeat data_quality to match new epoch shape (num_epochs)
+    # Repeat spin_period and data_quality to match new epoch shape (num_epochs)
+    l1a_dataset["spin_period"] = xr.DataArray(
+        np.repeat(unpacked_dataset["spin_period"].values, n_spins)
+        * constants.SPIN_PERIOD_CONVERSION,
+        dims=("epoch",),
+        attrs=cdf_attrs.get_variable_attributes("spin_period"),
+    )
     l1a_dataset["data_quality"] = xr.DataArray(
         np.repeat(unpacked_dataset["suspect"].values, n_spins),
         dims=("epoch",),

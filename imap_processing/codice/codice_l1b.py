@@ -147,6 +147,10 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         )
         dataset[unc_variable].attrs["UNITS"] = "1/s"
 
+    # Drop spin_period
+    if "spin_period" in dataset.variables:
+        dataset = dataset.drop_vars("spin_period")
+
     return dataset
 
 

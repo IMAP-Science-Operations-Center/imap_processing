@@ -269,6 +269,11 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         )
 
     # ========= Add Additional Variables ===========
+    l1a_dataset["spin_period"] = xr.DataArray(
+        unpacked_dataset["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
+        dims=("epoch",),
+        attrs=cdf_attrs.get_variable_attributes("spin_period"),
+    )
     l1a_dataset["data_quality"] = xr.DataArray(
         unpacked_dataset["suspect"].values,
         dims=("epoch",),
