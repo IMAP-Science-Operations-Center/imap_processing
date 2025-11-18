@@ -78,7 +78,7 @@ def test_get_energy_delta_minus_plus(monkeypatch):
     expected_bins_energy_delta_plus = np.array([1, 3, 13, 1134])
     expected_bins_energy_delta_minus = np.array([0, 1, 2, 80])
 
-    def mock_build_energy_bins():
+    def mock_build_energy_bins(energy_bins=None):
         return mock_intervals, mock_midpoints, mock_geometric_means
 
     monkeypatch.setattr(

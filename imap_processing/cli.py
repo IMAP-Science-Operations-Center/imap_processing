@@ -1471,9 +1471,12 @@ class Ultra(ProcessInstrument):
             all_pset_filepaths = dependencies.get_file_paths(
                 source="ultra", descriptor="pset"
             )
-            energy_bin_edges_file = dependencies.get_file_paths(
+            energy_ancilary_files = dependencies.get_file_paths(
                 data_type="ancillary", descriptor="l2-energy-bin-group-sizes"
-            )[0]
+            )
+            energy_bin_edges_file = (
+                None if energy_ancilary_files == [] else energy_ancilary_files[0]
+            )
             # There can be many PSET files, so avoid reading them all in.
             # The filename stem (logical_file_id) contains
             # all the information needed in the key.
