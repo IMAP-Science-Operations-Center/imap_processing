@@ -24,6 +24,7 @@ import imap_data_access
 import numpy as np
 import spiceypy
 import xarray as xr
+from cdflib.xarray import xarray_to_cdf
 from imap_data_access.io import IMAPDataAccessError, download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
@@ -1205,6 +1206,80 @@ class Mag(ProcessInstrument):
                     f"monotonically increasing."
                 )
         return datasets
+
+    def post_processing(
+        self,
+        processed_data: list[xr.Dataset | Path],
+        dependencies: ProcessingInputCollection,
+    ) -> list[Path]:
+        """
+        Override the post-processing method to handle ancillary file upload.
+
+        Parameters
+        ----------
+        processed_data : list[xarray.Dataset | Path]
+            A list of datasets (products) and paths produced by the do_processing
+            method.
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+
+        Returns
+        -------
+        list[Path]
+            List of paths to CDF files produced.
+        """
+        if self.data_level != "l1d":
+            # For all non-L1D levels, default to super() call
+            return super().post_processing(processed_data, dependencies)
+
+        ancillary_identifiers = [
+            "imap_mag_l1d_gradiometry-offsets-burst",
+            "imap_mag_l1d_gradiometry-offsets-norm",
+            "imap_mag_l1d_spin-offsets",
+        ]
+
+        ancillary_files = []
+        science_datasets = []
+        for dataset in processed_data:
+            logical_source = dataset.attrs["Logical_source"]
+            if logical_source in ancillary_identifiers:
+                # Skip write_cdf
+                instrument, _data_level, descriptor = dataset.attrs[
+                    "Logical_source"
+                ].split("_")[1:]
+                start_date = self.start_date
+                version = self.version
+
+                output_filename = (
+                    imap_data_access.AncillaryFilePath.generate_from_inputs(
+                        instrument=instrument,
+                        descriptor=descriptor,
+                        version=version,
+                        extension="cdf",
+                        start_time=start_date,
+                        end_time=start_date,
+                    ).filename
+                )
+
+                try:
+                    # write file to CDF
+                    xarray_to_cdf(
+                        dataset, output_filename, terminate_on_warning=False, istp=False
+                    )
+                    ancillary_files.append(output_filename)
+                except Exception as e:
+                    # Don't fail for any reason for ancillary files
+                    logger.warning(f"Hit error {e} when creating {output_filename}")
+                    continue
+            else:
+                science_datasets.append(dataset)
+
+        try:
+            self.upload_products(ancillary_files)
+        except Exception as e:
+            logger.warning(f"Failed to upload ancillary products due to error {e}")
+
+        return super().post_processing(science_datasets, dependencies)
 
 
 class Spacecraft(ProcessInstrument):
