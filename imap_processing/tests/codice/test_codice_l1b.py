@@ -254,7 +254,8 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1b_validation/"
-        / f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_v008.cdf"
+        / f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}"
+        f"_{VALIDATION_FILE_VERSION}.cdf"
     )
     val_data = load_cdf(val_path)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
@@ -281,7 +282,8 @@ def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1b_validation/"
-        / f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_v008.cdf"
+        / f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}"
+        f"_{VALIDATION_FILE_VERSION}.cdf"
     )
     l1a_file_path = write_cdf(process_l1a(dependency=ProcessingInputCollection())[0])
     val_data = load_cdf(val_path)
