@@ -503,9 +503,6 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     val_data = load_cdf(val_path)
 
     for variable in val_data.data_vars:
-        # TODO: check with Joey and Michael # TODO remove this
-        if variable.startswith("epoch_delta"):
-            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
