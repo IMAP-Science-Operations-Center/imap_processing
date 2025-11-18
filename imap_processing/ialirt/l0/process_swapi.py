@@ -193,6 +193,8 @@ def process_swapi_ialirt(
         )
 
     raw_coin_count = process_sweep_data(grouped_dataset, "swapi_coin_cnt")
+    # I-ALiRT packets are 16 times less than the regular science packets.
+    raw_coin_count = raw_coin_count * 16
     # Subset to only the relevant I-ALiRT energy steps
     raw_coin_count = raw_coin_count[:, :NUM_IALIRT_ENERGY_STEPS]
     raw_coin_rate = raw_coin_count / SWAPI_LIVETIME
