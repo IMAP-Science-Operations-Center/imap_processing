@@ -28,7 +28,7 @@ def furnish_pointing_frame_kernels(furnish_kernels, spice_test_data_path):
     required_kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_science_100.tf",
         "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
     ]

@@ -286,7 +286,7 @@ def test_get_instrument_spin_phase(
     """Test coverage for get_instrument_spin_phase()"""
     met_times = np.array([7.5, 30, 61, 75, 106, 121, 136])
     expected_nan_mask = np.array([False, False, True, False, True, True, False])
-    with furnish_kernels([spice_test_data_path / "imap_100.tf"]):
+    with furnish_kernels([spice_test_data_path / "imap_130.tf"]):
         inst_phase = spin.get_instrument_spin_phase(met_times, instrument)
     assert inst_phase.shape == met_times.shape
     np.testing.assert_array_equal(np.isnan(inst_phase), expected_nan_mask)

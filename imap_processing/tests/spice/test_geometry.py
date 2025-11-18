@@ -24,6 +24,13 @@ from imap_processing.spice.geometry import (
 )
 
 
+def test_spice_frame_enum(furnish_kernels):
+    """Test that the SpiceFrame enum values match imap frames kernel."""
+    with furnish_kernels(["imap_130.tf", "imap_science_100.tf"]):
+        for frame in SpiceFrame:
+            assert frame.value == spiceypy.namfrm(frame.name)
+
+
 @pytest.mark.parametrize(
     "et",
     [
@@ -72,7 +79,7 @@ def test_get_instrument_mounting_az_el(
     furnish_kernels, spice_test_data_path, instrument, expected_az_el
 ):
     """Test coverage for get_instrument_mounting_az_el()"""
-    with furnish_kernels([spice_test_data_path / "imap_100.tf"]):
+    with furnish_kernels([spice_test_data_path / "imap_130.tf"]):
         result = get_instrument_mounting_az_el(instrument)
         # Testing as built angles against nominal. Allow for 0.75 degrees of
         # mounting error.
@@ -103,7 +110,7 @@ def test_get_spacecraft_to_instrument_spin_phase_offset(
 ):
     """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
     # Test that the offset is close to SPICE derived mounting azimuth
-    with furnish_kernels([spice_test_data_path / "imap_100.tf"]):
+    with furnish_kernels([spice_test_data_path / "imap_130.tf"]):
         # Lo requires an additional kernel to use the below function. So here,
         # we use the IMAP_LO_BASE frame to verify
         verify_inst = (
@@ -160,7 +167,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
     kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
@@ -331,7 +338,7 @@ def test_get_rotation_matrix(furnish_kernels):
     """Test coverage for get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
@@ -366,7 +373,7 @@ def test_get_rotation_matrix_no_transformation_defined_for_et_allowed(furnish_ke
     transformation when allow_spice_noframeconnect is True in get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
@@ -405,7 +412,7 @@ def test_get_rotation_matrix_no_transformation_defined_for_et_not_allowed(
     allow_spice_noframeconnect is False (default) in get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
@@ -425,7 +432,7 @@ def test_get_rotation_matrix_no_transformation_defined_for_et_not_allowed(
 def test_instrument_pointing(furnish_kernels):
     kernels = [
         "naif0012.tls",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
@@ -473,7 +480,7 @@ def test_instrument_pointing_all_instruments(frame, furnish_kernels):
     """Test the ability to compute instrument pointing for all but Lo."""
     kernels = [
         "naif0012.tls",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
@@ -497,7 +504,7 @@ def test_instrument_pointing_lo_ck(frame, furnish_kernels):
     """Test calculating Lo pointing."""
     kernels = [
         "naif0012.tls",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
