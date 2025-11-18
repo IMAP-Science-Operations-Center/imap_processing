@@ -1215,6 +1215,13 @@ class Mag(ProcessInstrument):
         """
         Override the post-processing method to handle ancillary file upload.
 
+        This will retrieve any datasets with Logical_source matching
+        ancillary_identifiers, remove them from the datasets, upload them as ancillary
+        files, and then call the super().post_processing() function on all other files.
+
+        If none of the files match ancillary_identifiers they are all uploaded through
+        post_processing() as usual.
+
         Parameters
         ----------
         processed_data : list[xarray.Dataset | Path]
@@ -1228,10 +1235,6 @@ class Mag(ProcessInstrument):
         list[Path]
             List of paths to CDF files produced.
         """
-        if self.data_level != "l1d":
-            # For all non-L1D levels, default to super() call
-            return super().post_processing(processed_data, dependencies)
-
         ancillary_identifiers = [
             "imap_mag_l1d_gradiometry-offsets-burst",
             "imap_mag_l1d_gradiometry-offsets-norm",
