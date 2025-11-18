@@ -305,7 +305,11 @@ def calculate_ena_intensity(
     map_ds["ena_intensity_stat_uncert"] = (
         map_ds["ena_signal_rate_stat_unc"] / flux_conversion_divisor
     )
-    map_ds["ena_intensity_sys_err"] = map_ds["bg_rates_unc"] / flux_conversion_divisor
+    map_ds["ena_intensity_sys_err"] = (
+        np.sqrt(map_ds["bg_rates_unc"] / map_ds["exposure_factor"])
+        / map_ds["exposure_factor"]
+        / flux_conversion_divisor
+    )
 
     # Combine calibration products using proper weighted averaging
     # as described in Hi Algorithm Document Section 3.1.2
