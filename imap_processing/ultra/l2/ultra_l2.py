@@ -281,7 +281,7 @@ def bin_pset_energy_bins(
         # Restore the original dimension order because groupby moves the grouped
         # dimension to the front
         .transpose("epoch", "energy_bin_geometric_mean", ...)
-        .drop("energy_bin_index")
+        .drop_vars("energy_bin_index")
     )
     return pset
 
@@ -809,6 +809,15 @@ def ultra_l2(
     )
     map_dataset.coords["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta"
 
+    # Add the energy delta plus/minus to the map dataset
+    map_dataset.coords["energy_delta_minus"] = xr.DataArray(
+        map_dataset["energy_delta_minus"].data,
+        dims=(CoordNames.ENERGY_L2.value,),
+    )
+    map_dataset.coords["energy_delta_plus"] = xr.DataArray(
+        map_dataset["energy_delta_plus"].data,
+        dims=(CoordNames.ENERGY_L2.value,),
+    )
     # Add variable specific attributes to the map's data_vars and coords
     for variable in map_dataset.data_vars:
         # Skip the subdivision depth variables, as these will only be
