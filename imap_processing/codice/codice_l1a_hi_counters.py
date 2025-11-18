@@ -81,6 +81,7 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         collapse_shape = get_collapse_pattern_shape(
             sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
         )[1]
+        collapse_shape = len(species_names)
         logical_source_id = "imap_codice_l1a_hi-counters-singles"
     elif view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
         species_data = get_counters_aggregated_pattern(
@@ -111,7 +112,7 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         )
     ]
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        -1, *collapse_shape
+        -1, collapse_shape
     )
     print(counters_data.shape)
 
