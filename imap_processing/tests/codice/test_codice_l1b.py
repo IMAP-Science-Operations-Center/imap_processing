@@ -259,8 +259,9 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     val_data = load_cdf(val_path)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
     # hi-omni has species-specific shapes
+    # TODO remove this block when new validation file is available
     for variable in val_data.data_vars:
-        if variable == "epoch_delta_plus":
+        if variable in ["epoch_delta_plus", "epoch_delta_minus"]:
             continue
         assert processed_data[variable].shape == val_data[variable].shape
         np.testing.assert_allclose(

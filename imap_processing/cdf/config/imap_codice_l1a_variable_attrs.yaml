@@ -221,6 +221,14 @@ priority_label:
     FORMAT: A2
     VAR_TYPE: metadata
 
+
+energy_species_label:
+    CATDESC:  Energy Table for {species}
+    DEPEND_1: energy_{species}
+    FIELDNAM: energy_{species}
+    FORMAT: A2
+    VAR_TYPE: metadata
+
 # <=== Dataset Variable Attributes ===>
 # The following are set in multiple data products
 acquisition_time_per_step:
@@ -517,7 +525,7 @@ hi-species-attrs:
     FIELDNAM: Species {species}
     FILLVAL: *uint32_fillval
     FORMAT: I7
-    LABL_PTR_1: energy_{species}
+    LABL_PTR_1: energy_{species}_label
     SCALETYP: linear
     UNITS: counts
     VALIDMAX: *max_uint32
@@ -532,7 +540,7 @@ hi-species-unc-attrs:
     FIELDNAM: Species {species}
     FILLVAL: *uint32_fillval
     FORMAT: I7
-    LABL_PTR_1: energy_{species}
+    LABL_PTR_1: energy_{species}_label
     SCALETYP: linear
     UNITS: counts
     VALIDMAX: *max_uint32

@@ -184,6 +184,17 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 )
             }
         )
+        species_label_attrs = cdf_attrs.get_variable_attributes(
+            "energy_species_label", check_schema=False
+        )
+        species_label_attrs = apply_replacements_to_attrs(
+            species_label_attrs, {"species": species_name}
+        )
+        l1a_dataset[f"energy_{species_name}_label"] = xr.DataArray(
+            np.array(centers).astype("str"),
+            dims=(f"energy_{species_name}"),
+            attrs=species_label_attrs,
+        )
         # Add energy minus variables
         delta_attrs = cdf_attrs.get_variable_attributes("hi-energy-delta-attrs")
         delta_attrs = apply_replacements_to_attrs(
