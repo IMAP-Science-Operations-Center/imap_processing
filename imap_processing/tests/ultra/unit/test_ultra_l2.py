@@ -14,9 +14,10 @@ from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
+from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 from imap_processing.ultra.l2 import ultra_l2
 from imap_processing.ultra.l2.ultra_l2 import (
-    DEFAULT_BIN_GROUPS,
+    DEFAULT_BIN_EDGES,
     VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS,
 )
 
@@ -457,6 +458,9 @@ class TestUltraL2:
         assert "positional_uncert_phi" in map_dataset
         # Check that background_rates was renamed to bg_rate
         assert "bg_rate" in map_dataset
+        # Check energy deltas
+        assert "energy_delta_plus" in map_dataset
+        assert "energy_delta_minus" in map_dataset
 
     @pytest.mark.external_test_data
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
@@ -546,6 +550,9 @@ class TestUltraL2:
             rtol=3e-1,
             atol=1e-12,
         )
+        # Check energy deltas
+        assert "energy_delta_plus" in rect_map_dataset
+        assert "energy_delta_minus" in rect_map_dataset
 
         # Variable Metadata spot checks
         ena_intensity_attrs = rect_map_dataset["ena_intensity"].attrs
@@ -723,7 +730,7 @@ class TestUltraL2:
         # Create a mock array with known values to test binning
         # e.g., 0,0,0,0,1,1,1,1,2,2,2,2,...11,11
         n_fine_bins = pset.energy_bin_geometric_mean.size
-        n_coarse_bins = len(DEFAULT_BIN_GROUPS) - 1
+        n_coarse_bins = len(DEFAULT_BIN_EDGES) - 1
         mock_vals = np.repeat(np.arange(n_coarse_bins), 4)[0:n_fine_bins]
         mock_array = (
             np.ones_like(pset["exposure_factor"]) * mock_vals[np.newaxis, :, np.newaxis]
@@ -738,9 +745,7 @@ class TestUltraL2:
         pset["scatter_phi"].values = mock_array[0]
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"])
         # Bin the pset
-        binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(
-            pset, DEFAULT_BIN_GROUPS
-        )
+        binned_pset = ultra_l2.bin_pset_energy_bins(pset, DEFAULT_BIN_EDGES)
         # Check that the new bin edges are as expected
         expected_bin_edges = np.array(
             [
@@ -759,12 +764,22 @@ class TestUltraL2:
                 316.335,
             ]
         )
-        np.testing.assert_array_equal(new_bin_edges, expected_bin_edges)
+        expected_energy_delta_minus, expected_energy_delta_plus = (
+            get_energy_delta_minus_plus(expected_bin_edges)
+        )
+        np.testing.assert_array_equal(
+            binned_pset["energy_delta_plus"].values,
+            expected_energy_delta_plus,
+        )
+        np.testing.assert_array_equal(
+            binned_pset["energy_delta_minus"].values,
+            expected_energy_delta_minus,
+        )
         # check that the pinned_pset energy_bin_geometric_mean values have been
         # recalculated correctly with the new bin edges
         np.testing.assert_array_equal(
             binned_pset["energy_bin_geometric_mean"].values,
-            np.sqrt(new_bin_edges[:-1] * new_bin_edges[1:]),
+            np.sqrt(expected_bin_edges[:-1] * expected_bin_edges[1:]),
         )
 
         # Check that the counts have been summed correctly in the new bins
@@ -800,10 +815,11 @@ class TestUltraL2:
         pset["counts"].values = np.full(pset["counts"].shape, 2)
         # Update Exposure factor to be a ones array.
         pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"])
+        pset["background_rates"].values = np.ones_like(pset["background_rates"])
         # First group has 10 fine bins, then 30, then 6
         new_bin_edges = np.array([0, 10, 40, 46])
         # Bin the pset
-        binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(pset, new_bin_edges)
+        binned_pset = ultra_l2.bin_pset_energy_bins(pset, new_bin_edges)
         # Check that the new bin edges are as expected
         expected_bin_edges = np.array(
             [
@@ -813,12 +829,22 @@ class TestUltraL2:
                 316.335,
             ]
         )
-        np.testing.assert_array_equal(new_bin_edges, expected_bin_edges)
+        expected_energy_delta_minus, expected_energy_delta_plus = (
+            get_energy_delta_minus_plus(expected_bin_edges)
+        )
+        np.testing.assert_array_equal(
+            binned_pset["energy_delta_plus"].values,
+            expected_energy_delta_plus,
+        )
+        np.testing.assert_array_equal(
+            binned_pset["energy_delta_minus"].values,
+            expected_energy_delta_minus,
+        )
         # check that the pinned_pset energy_bin_geometric_mean values have been
         # recalculated correctly with the new bin edges
         np.testing.assert_array_equal(
             binned_pset["energy_bin_geometric_mean"].values,
-            np.sqrt(new_bin_edges[:-1] * new_bin_edges[1:]),
+            np.sqrt(expected_bin_edges[:-1] * expected_bin_edges[1:]),
         )
         # Check that the counts have been summed correctly in the bins
         for i, group_size in enumerate([10, 30, 6]):
@@ -846,9 +872,8 @@ class TestUltraL2:
         # for a "catch-all" on either end.
         new_bin_edges = np.array([3, 10, 40])
         # Bin the pset
-        binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(pset, new_bin_edges)
+        binned_pset = ultra_l2.bin_pset_energy_bins(pset, new_bin_edges)
         # Check that the new bin edges are as expected
-        # The function should have added the min and max fine bin edges
         expected_bin_edges = np.array(
             [
                 3.0,
@@ -858,12 +883,22 @@ class TestUltraL2:
                 316.335,
             ]
         )
-        np.testing.assert_array_equal(new_bin_edges, expected_bin_edges)
+        expected_energy_delta_minus, expected_energy_delta_plus = (
+            get_energy_delta_minus_plus(expected_bin_edges)
+        )
+        np.testing.assert_array_equal(
+            binned_pset["energy_delta_plus"].values,
+            expected_energy_delta_plus,
+        )
+        np.testing.assert_array_equal(
+            binned_pset["energy_delta_minus"].values,
+            expected_energy_delta_minus,
+        )
         # check that the pinned_pset energy_bin_geometric_mean values have been
         # recalculated correctly with the new bin edges
         np.testing.assert_array_equal(
             binned_pset["energy_bin_geometric_mean"].values,
-            np.sqrt(new_bin_edges[:-1] * new_bin_edges[1:]),
+            np.sqrt(expected_bin_edges[:-1] * expected_bin_edges[1:]),
         )
         # Check that the shapes are correct
         assert binned_pset["counts"].shape[1] == 4
@@ -888,9 +923,7 @@ class TestUltraL2:
         # Set values in energy bin 0 to zero
         pset["sensitivity"][0, :].values = np.ones(pset["sensitivity"][0, :].shape)
         # Bin the pset
-        binned_pset, new_bin_edges = ultra_l2.bin_pset_energy_bins(
-            pset, DEFAULT_BIN_GROUPS
-        )
+        binned_pset = ultra_l2.bin_pset_energy_bins(pset, DEFAULT_BIN_EDGES)
         # Assert that the binned and averaged sensitivity in the first coarse bin is
         # equal to the average of the fine bins that were included (which excludes the
         # zero count bin)

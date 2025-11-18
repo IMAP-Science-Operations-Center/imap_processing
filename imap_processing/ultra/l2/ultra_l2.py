@@ -22,7 +22,10 @@ from imap_processing.ena_maps.utils.naming import (
 from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
-from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
+from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
+    FILLVAL_FLOAT32,
+    get_energy_delta_minus_plus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,14 +56,14 @@ DEFAULT_L2_HEALPIX_NSIDE = 32
 DEFAULT_L2_HEALPIX_NESTED = False
 
 # Set the default energy bin size
-DEFAULT_GROUP_SIZE = 4
+DEFAULT_BIN_SIZE = 4
 # Define energy bin groups for binning L1C energy bins into coarser bins
 # Get number of fine energy bins used in L1C PSETs
 n_fine_energy_bins = len(build_energy_bins()[2])
-DEFAULT_BIN_GROUPS = np.arange(n_fine_energy_bins)[::DEFAULT_GROUP_SIZE]
+DEFAULT_BIN_EDGES = np.arange(n_fine_energy_bins)[::DEFAULT_BIN_SIZE]
 # Make sure the last bin includes the remainder of the fine bins
-if DEFAULT_BIN_GROUPS[-1] != n_fine_energy_bins:
-    DEFAULT_BIN_GROUPS = np.append(DEFAULT_BIN_GROUPS, n_fine_energy_bins)
+if DEFAULT_BIN_EDGES[-1] != n_fine_energy_bins:
+    DEFAULT_BIN_EDGES = np.append(DEFAULT_BIN_EDGES, n_fine_energy_bins)
 
 # These variables must always be present in each L1C dataset
 REQUIRED_L1C_VARIABLES_PUSH = [
@@ -173,7 +176,7 @@ def get_variable_attributes_optional_energy_dependence(
 
 def bin_pset_energy_bins(
     pset: xr.Dataset, bin_groups: np.ndarray | None = None
-) -> tuple[xr.Dataset, NDArray]:
+) -> xr.Dataset:
     """
     Group fine-grained L1C PSET energy bins into coarser bins for l2 ULTRA maps.
 
@@ -183,17 +186,15 @@ def bin_pset_energy_bins(
         Ultra L1C pointing set dataset to bin.
     bin_groups : numpy.ndarray, optional
         Array of indices defining the new energy bin edges. If not provided,
-        DEFAULT_BIN_GROUPS will be used.
+        DEFAULT_BIN_EDGES will be used.
 
     Returns
     -------
     xarray.Dataset
         The input pset with energy bins grouped according to the bin_groups.
-    numpy.ndarray
-        The new energy bin edges.
     """
     if bin_groups is None:
-        bin_groups = DEFAULT_BIN_GROUPS
+        bin_groups = DEFAULT_BIN_EDGES
     # Get a list of variables that have the energy bin dimension
     energy_dep_vars = [
         var for var in pset.data_vars if "energy_bin_geometric_mean" in pset[var].dims
@@ -239,9 +240,12 @@ def bin_pset_energy_bins(
             np.digitize(np.arange(n_fine_bins), bin_groups, right=False),
         )
     )
-    # Count number of non zero pixels in each new energy bin
+    # Count number of pixels
     non_zero_pixels_per_group = (
-        (pset[vars_to_average] > 0).astype(int).groupby("energy_bin_index").sum()
+        ((pset[vars_to_average] != 0) | (pset[vars_to_average] != FILLVAL_FLOAT32))
+        .astype(int)
+        .groupby("energy_bin_index")
+        .sum()
     )
     # Sum variables over the new energy bins
     pset[energy_dep_vars] = pset[energy_dep_vars].groupby("energy_bin_index").sum()
@@ -261,15 +265,25 @@ def bin_pset_energy_bins(
             attrs=pset["energy_bin_geometric_mean"].attrs,
         )
     )
+    # Calculate new energy delta minus and plus
+    energy_delta_minus, energy_delta_plus = get_energy_delta_minus_plus(new_bin_edges)
+    pset.coords["energy_delta_minus"] = xr.DataArray(
+        energy_delta_minus,
+        dims=["energy_bin_index"],
+    )
+    pset.coords["energy_delta_plus"] = xr.DataArray(
+        energy_delta_plus,
+        dims=["energy_bin_index"],
+    )
     # Make sure the variables use the new energy bin coordinate
     pset = (
         pset.swap_dims({"energy_bin_index": "energy_bin_geometric_mean"})
-        # Restore original dimension order because groupby moves the grouped
+        # Restore the original dimension order because groupby moves the grouped
         # dimension to the front
         .transpose("epoch", "energy_bin_geometric_mean", ...)
         .drop("energy_bin_index")
     )
-    return pset, new_bin_edges
+    return pset
 
 
 def generate_ultra_healpix_skymap(
@@ -278,7 +292,7 @@ def generate_ultra_healpix_skymap(
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
     energy_bin_edges: np.ndarray | None = None,
-) -> tuple[ena_maps.HealpixSkyMap, NDArray, NDArray]:
+) -> tuple[ena_maps.HealpixSkyMap, NDArray]:
     """
     Generate a Healpix skymap from ULTRA L1C pointing sets.
 
@@ -298,7 +312,7 @@ def generate_ultra_healpix_skymap(
     energy_bin_edges : numpy.ndarray, optional
         Array of indices defining the new energy bin edges for binning
         L1C energy bins into coarser bins.
-        Defaults to DEFAULT_BIN_GROUPS defined in this module.
+        Defaults to DEFAULT_BIN_EDGES defined in this module.
 
     Returns
     -------
@@ -307,8 +321,6 @@ def generate_ultra_healpix_skymap(
         with calculated ena_intensity and its statistical uncertainty values.
     NDArray
         Array of epochs corresponding to the pointing sets used in the map.
-    NDArray
-        The new energy bin edges after binning L1C energy bins into coarser bins.
 
     Raises
     ------
@@ -415,17 +427,13 @@ def generate_ultra_healpix_skymap(
     )
 
     all_pset_epochs = []
-    new_energy_bin_edges = None
     for ultra_l1c_pset in ultra_l1c_psets:
         pset = (
             load_cdf(ultra_l1c_pset)
             if isinstance(ultra_l1c_pset, (str, Path))
             else ultra_l1c_pset
         )
-        binned_pset, new_bin_edges = bin_pset_energy_bins(pset, energy_bin_edges)
-        # # Keep track of the new energy bin edges
-        if new_energy_bin_edges is None:
-            new_energy_bin_edges = new_bin_edges
+        binned_pset = bin_pset_energy_bins(pset, energy_bin_edges)
         pointing_set = ena_maps.UltraPointingSet(binned_pset)
         all_pset_epochs.append(pointing_set.epoch)
         logger.info(
@@ -509,7 +517,7 @@ def generate_ultra_healpix_skymap(
     # the ratio of the solid angles of the map pixel / pointing set pixel
     skymap.data_1d["background_rates"] *= skymap.solid_angle / pointing_set.solid_angle
 
-    # Get the energy bin widths from a PointingSet (they will all be the same)
+    # Get the energy bin widths and deltasfrom a PointingSet (they will all be the same)
     delta_energy = pointing_set.data["energy_bin_delta"]
     if CoordNames.TIME.value in delta_energy.dims:
         delta_energy = delta_energy.mean(
@@ -568,7 +576,7 @@ def generate_ultra_healpix_skymap(
     skymap.data_1d = skymap.data_1d.drop_vars(
         VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
     )
-    return skymap, np.array(all_pset_epochs), new_energy_bin_edges
+    return skymap, np.array(all_pset_epochs)
 
 
 def ultra_l2(
@@ -594,7 +602,7 @@ def ultra_l2(
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
     energy_bin_edges_file : pathlib.Path | str | None, optional
         File path to a csv of energy bin edges to use for binning L1C energy bins into
-        coarser bins. If None, DEFAULT_BIN_GROUPS defined in this module will be used.
+        coarser bins. If None, DEFAULT_BIN_EDGES defined in this module will be used.
     descriptor : str | None, optional
         A descriptor to set the output map structure
         If provided, this overrides the default output_map_structure parameter.
@@ -637,11 +645,11 @@ def ultra_l2(
             np.uint8
         )
     else:
-        energy_bin_edges = DEFAULT_BIN_GROUPS
+        energy_bin_edges = DEFAULT_BIN_EDGES
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
-    healpix_skymap, pset_epochs, new_energy_bin_edges = generate_ultra_healpix_skymap(
+    healpix_skymap, pset_epochs = generate_ultra_healpix_skymap(
         ultra_l1c_psets=l1c_products,
         output_map_structure=output_map_structure,
         energy_bin_edges=energy_bin_edges,
@@ -801,18 +809,6 @@ def ultra_l2(
     )
     map_dataset.coords["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta"
 
-    # Add the energy delta plus/minus to the map dataset
-    energy_delta_minus, energy_delta_plus = get_energy_delta_minus_plus(
-        new_energy_bin_edges
-    )
-    map_dataset.coords["energy_delta_minus"] = xr.DataArray(
-        energy_delta_minus,
-        dims=(CoordNames.ENERGY_L2.value,),
-    )
-    map_dataset.coords["energy_delta_plus"] = xr.DataArray(
-        energy_delta_plus,
-        dims=(CoordNames.ENERGY_L2.value,),
-    )
     # Add variable specific attributes to the map's data_vars and coords
     for variable in map_dataset.data_vars:
         # Skip the subdivision depth variables, as these will only be
