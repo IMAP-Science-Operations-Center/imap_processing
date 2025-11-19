@@ -12,6 +12,7 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
     ViewTabInfo,
+    apply_replacements_to_attrs,
     get_codice_epoch_time,
     get_counters_aggregated_pattern,
     get_view_tab_info,
@@ -163,9 +164,17 @@ def l1a_hi_counters_aggregated(
 
     # Finally, add species data variables and their uncertainties
     for idx, species in enumerate(non_reserved_variables):
+        # Get CDF attrs
+        if species.startswith("reserved"):
+            # extract reserved index
+            reserved_index = species.replace("reserved", "")
+            attrs = cdf_attrs.get_variable_attributes("reserved")
+            # Apply index replacement
+            attrs = apply_replacements_to_attrs(attrs, {"{index}": reserved_index})
+        else:
+            attrs = cdf_attrs.get_variable_attributes(species)
         l1a_dataset[species] = xr.DataArray(
-            counters_data[:, idx],
-            dims=("epoch",),
+            counters_data[:, idx], dims=("epoch",), attrs=attrs
         )
         # No uncertainty needed for counters data
 
