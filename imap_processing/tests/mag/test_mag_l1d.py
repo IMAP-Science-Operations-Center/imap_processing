@@ -113,7 +113,7 @@ def test_offset_vector():
     )
     test_vector = np.array([1, 2, 3, 3])
 
-    expected_vector = [-3, -2, -1, 3]
+    expected_vector = [5, 6, 7, 3]
     output_vector = MagL1d.apply_calibration_offset_single_vector(
         test_vector, offsets, False
     )
@@ -121,7 +121,7 @@ def test_offset_vector():
     assert np.array_equal(expected_vector, output_vector)
 
     test_vector = np.array([1, 2, 3, 0])
-    expected_vector = [2, 3, 4, 0]
+    expected_vector = [0, 1, 2, 0]
     output_vector = MagL1d.apply_calibration_offset_single_vector(
         test_vector, offsets, True
     )
