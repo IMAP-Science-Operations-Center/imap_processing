@@ -206,13 +206,12 @@ def get_counters_aggregated_pattern(
     json_data: dict, sensor_id: int, collapse_table_id: int
 ) -> dict:
     """
-    Return the aggregated counters pattern matrix as-is from the SCI-LUT JSON.
+    Return the aggregated counters pattern from the SCI-LUT JSON.
 
-    The counters aggregated pattern is stored as key and list in the SCI-LUT JSON.
+    The counters aggregated pattern is stored as {key: list} in the SCI-LUT JSON.
     Each variable can be turned on and off in-flight. Because of that, we need to
-    be flexible and return the matrix as-is. If any variable is turned off, its
-    corresponding row in the matrix will be all zeros and fill CDF variable for
-    that row with zeros.
+    be flexible. If any variable is turned off, its corresponding row in the
+    matrix will be all zeros and fill CDF variable for that row with zeros.
 
     Parameters
     ----------
@@ -226,28 +225,45 @@ def get_counters_aggregated_pattern(
     Returns
     -------
     dict
-        The counters key and its corresponding matrix list.
+        The counters key and its corresponding collapse pattern.
     """
     sensor = "lo" if sensor_id == 0 else "hi"
     full_matrix = json_data[f"collapse_{sensor}"][f"{collapse_table_id}"]["variables"]
     # Filter non-zero rows only
-    in_order_rows = {
+    non_zero_rows = {
         k: data_list for k, data_list in full_matrix.items() if 0 not in data_list
     }
-    # TODO: check if we need to sort.
     # Sort keys in order of unique num of their list.
     #   Eg. CoDICE Hi's counters-aggregated is not collapsed
     #   in the order of row by row. It could have collected in this order:
-    #   [1,2,3,4,7,8,11,5,6,9,10]
+    #   [
+    #       [1....1],
+    #       [2....2],
+    #       [3....3],
+    #       [4....4],
+    #       [7....7],
+    #       [8....8],
+    #       [11....11],
+    #       [5....5],
+    #       [6....6],
+    #       [9....9],
+    #       [10....10],
+    #   ]
+    #   Sort to get:
+    #   [
+    #       [1....1],
+    #       [2....2],
+    #       ...
+    #       [11....11],
     # Use the first value in each list as the sort key.
-    # in_order_rows = dict(sorted(non_zero_rows.items(), key=lambda item: item[1][0]))
+    in_order_rows = dict(sorted(non_zero_rows.items(), key=lambda item: item[1][0]))
     # Now get collapse pattern for all variables by finding
     # collapse pattern for the first key. Then replace all key's
     # with that because it should be same. If not,
     # that will effect these remaining logic.
     first_key = next(iter(in_order_rows))
     collapse_patterns = np.array(in_order_rows[first_key])
-    # We only look for unique columns only because each variable
+    # We only look for collapse pattern of columns because each variable
     # are rows in the collapse pattern matrix.
     unique_columns = np.unique(collapse_patterns, axis=0)
     unique_spin_sectors = unique_columns.shape[0]

@@ -75,23 +75,23 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # For singles, CDF variables are coming from 'product' tab. But for
     # counters, it's from 'collapsed' tab in JSON LUT.
     if view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
-        species_names = sci_lut_data["data_product_hi_tab"]["0"][
+        variable_names = sci_lut_data["data_product_hi_tab"]["0"][
             "counters-singles"
         ].keys()
         collapse_shape = get_collapse_pattern_shape(
             sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
         )[1]
-        collapse_shape = len(species_names)
+        collapse_shape = len(variable_names)
         logical_source_id = "imap_codice_l1a_hi-counters-singles"
     elif view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
         species_data = get_counters_aggregated_pattern(
             sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
         )
-        species_names = species_data.keys()
+        variable_names = species_data.keys()
         # For Hi aggregated, the spin sector is 1.
         # That's why we store only length of species.
-        collapse_shape = len(species_names)
-        print(species_names)
+        collapse_shape = len(variable_names)
+        print(variable_names)
         logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
     else:
         raise ValueError("Unsupported APID for Hi Counters processing.")
@@ -168,11 +168,11 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     # Finally, add species data variables and their uncertainties
-    for idx, species in enumerate(species_names):
-        print(counters_data[:, idx])
+    for idx, species in enumerate(variable_names):
         l1a_dataset[species] = xr.DataArray(
             counters_data[:, idx],
             dims=("epoch",),
         )
+        # No uncertainty needed for counters data
 
     return l1a_dataset
