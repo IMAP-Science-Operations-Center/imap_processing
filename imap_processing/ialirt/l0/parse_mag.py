@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import numpy as np
 import xarray as xr
+from scipy.interpolate import CubicSpline
 
 from imap_processing.ialirt.l0.ialirt_spice import (
     transform_instrument_vectors_to_inertial,
@@ -433,10 +434,15 @@ def interpolate_spherical(
     )
     vecs = spherical_to_cartesian(spherical_coords)
 
+    spline_x = CubicSpline(attitude_time, vecs[:, 0])
+    spline_y = CubicSpline(attitude_time, vecs[:, 1])
+    spline_z = CubicSpline(attitude_time, vecs[:, 2])
+
     # Interpolate in Cartesian space
-    vx = np.interp(target_time, attitude_time, vecs[:, 0])
-    vy = np.interp(target_time, attitude_time, vecs[:, 1])
-    vz = np.interp(target_time, attitude_time, vecs[:, 2])
+    vx = float(spline_x(target_time))
+    vy = float(spline_y(target_time))
+    vz = float(spline_z(target_time))
+
     v_interp = np.array([vx, vy, vz])
     # Normalize vector so that its magnitude is 1.
     v_interp /= np.linalg.norm(v_interp)
