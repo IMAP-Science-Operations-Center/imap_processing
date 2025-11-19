@@ -437,9 +437,9 @@ def test_calibrate_and_offset_vectors(ialirt_mag_test_l1d_data):
     magi_vectors = np.array([[7.0, 8.0, 9.0, 2]])
 
     # Calibration and offsets from ancillary cdf
-    mago_calibration = ialirt_mag_test_l1d_data["URFTOORFO"][0]
-    magi_calibration = ialirt_mag_test_l1d_data["URFTOORFI"][0]
-    offsets = ialirt_mag_test_l1d_data["offsets"][0]
+    mago_calibration = ialirt_mag_test_l1d_data["URFTOORFO"]
+    magi_calibration = ialirt_mag_test_l1d_data["URFTOORFI"]
+    offsets = ialirt_mag_test_l1d_data["offsets"]
 
     mago_out = calibrate_and_offset_vectors(
         mago_vectors, mago_calibration, offsets, is_magi=False
@@ -457,7 +457,7 @@ def test_calibrate_and_offset_vectors(ialirt_mag_test_l1d_data):
 def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
     """Tests apply_gradiometry_correction function."""
 
-    gradiometer_factor = ialirt_mag_test_l1d_data["gradiometer_factor"].values
+    gradiometer_factor = ialirt_mag_test_l1d_data["gradiometer_factor"]
 
     # MAGo and MAGi vectors.
     mago_vector_eclipj2000 = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
@@ -633,7 +633,7 @@ def test_interpolate_spherical():
 def test_process_packet(
     postlaunch_xarray_data,
     calibration_dataset,
-    ialirt_mag_test_l1d_data,
+    ialirt_mag_test_l1d_data_postlaunch,
     furnish_kernels,
 ):
     """Test the process_packet function."""
@@ -650,7 +650,9 @@ def test_process_packet(
 
     with furnish_kernels(kernels):
         mag_data = process_packet(
-            postlaunch_xarray_data, calibration_dataset, ialirt_mag_test_l1d_data
+            postlaunch_xarray_data,
+            calibration_dataset,
+            ialirt_mag_test_l1d_data_postlaunch,
         )
 
     assert isinstance(mag_data[0], dict)

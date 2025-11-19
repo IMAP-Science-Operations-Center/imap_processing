@@ -681,9 +681,9 @@ def process_packet(
         if status_data["sec_isvalid"] == 0:
             updated_vector_magi = np.full(4, -32768)
 
-        mago_calibration = l1d_calibration_dataset["URFTOORFO"][0]
-        magi_calibration = l1d_calibration_dataset["URFTOORFI"][0]
-        offsets = l1d_calibration_dataset["offsets"][0]
+        mago_calibration = l1d_calibration_dataset["URFTOORFO"]
+        magi_calibration = l1d_calibration_dataset["URFTOORFI"]
+        offsets = l1d_calibration_dataset["offsets"]
 
         mago_out = calibrate_and_offset_vectors(
             updated_vector_mago, mago_calibration, offsets, is_magi=False
@@ -731,7 +731,7 @@ def process_packet(
         np.array(mago_times_all),
         np.array(magi_vectors_all),
         np.array(magi_times_all),
-        l1d_calibration_dataset["gradiometer_factor"].values.squeeze(),
+        l1d_calibration_dataset["gradiometer_factor"].squeeze(),
     )
 
     gse_vector, gsm_vector, rtn_vector = transform_to_frames(
