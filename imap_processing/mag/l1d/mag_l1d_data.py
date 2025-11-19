@@ -403,7 +403,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         updated_vector = input_vector.copy()
         rng = int(input_vector[3])
         x_y_z = input_vector[:3]
-        updated_vector[:3] = x_y_z - offsets[int(is_magi), rng, :]
+        updated_vector[:3] = x_y_z + offsets[int(is_magi), rng, :]
         return updated_vector
 
     def calculate_spin_offsets(self) -> xr.Dataset:
