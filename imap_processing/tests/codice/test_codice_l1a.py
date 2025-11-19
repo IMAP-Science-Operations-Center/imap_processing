@@ -452,7 +452,10 @@ def test_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
         )
 
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_v999.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -485,7 +488,10 @@ def test_hi_counters_singles(mock_get_file_paths, codice_lut_path):
         )
 
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert cdf_file.name == "imap_codice_l1a_hi-counters-singles_20250814_v999.cdf"
+    assert (
+        cdf_file.name
+        == f"imap_codice_l1a_hi-counters-singles_{VALIDATION_FILE_DATE}_v999.cdf"
+    )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")

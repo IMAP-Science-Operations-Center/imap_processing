@@ -49,10 +49,6 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
-    print(
-        f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
-        f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
-    )
     # ========== Get LUT Data ===========
     # Read information from LUT
     sci_lut_data = read_sci_lut(lut_file, table_id)
@@ -82,7 +78,7 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     collapse_shape = get_collapse_pattern_shape(
         sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
     )
-    # Use inst_azimuth dimension to reshape decompressed data since
+    # Use inst_az dimension to reshape decompressed data since
     # spin sector size is 1.
     inst_az = collapse_shape[1]
 

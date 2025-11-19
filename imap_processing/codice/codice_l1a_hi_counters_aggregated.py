@@ -52,10 +52,6 @@ def l1a_hi_counters_aggregated(
         f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
-    print(
-        f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
-        f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
-    )
     # ========== Get LUT Data ===========
     # Read information from LUT
     sci_lut_data = read_sci_lut(lut_file, table_id)
@@ -89,7 +85,7 @@ def l1a_hi_counters_aggregated(
     ).keys()
 
     # For Hi aggregated, the spin sector is 1. Therefore, only use size
-    # of activie variables to reshape decompressed data.
+    # of active variables to reshape decompressed data.
     num_variables = len(non_reserved_variables)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
@@ -173,6 +169,7 @@ def l1a_hi_counters_aggregated(
             attrs = apply_replacements_to_attrs(attrs, {"{index}": reserved_index})
         else:
             attrs = cdf_attrs.get_variable_attributes(species)
+
         l1a_dataset[species] = xr.DataArray(
             counters_data[:, idx], dims=("epoch",), attrs=attrs
         )
