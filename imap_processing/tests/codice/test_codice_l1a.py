@@ -456,8 +456,8 @@ def test_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
             print(processed_data[variable].values)
             print(val_data[variable].values)
 
-    # cdf_file = write_cdf(processed_data)
-    # assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
+    assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -489,7 +489,7 @@ def test_hi_counters_singles(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
-    cdf_file = write_cdf(processed_data)
+    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-singles_20250814_v999.cdf"
 
 

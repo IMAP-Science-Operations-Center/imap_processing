@@ -143,12 +143,14 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
             "inst_az": xr.DataArray(
                 np.arange(inst_az, dtype=np.uint8),
                 dims=("inst_az",),
-                attrs=cdf_attrs.get_variable_attributes("inst_az"),
+                attrs=cdf_attrs.get_variable_attributes("inst_az", check_schema=False),
             ),
             "inst_az_label": xr.DataArray(
                 np.arange(inst_az, dtype=np.uint8).astype(str),
                 dims=("inst_az",),
-                attrs=cdf_attrs.get_variable_attributes("inst_az_label"),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "inst_az_label", check_schema=False
+                ),
             ),
         },
         attrs=cdf_attrs.get_global_attributes(logical_source_id),
@@ -168,9 +170,14 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
 
     # Finally, add species data variables and their uncertainties
     for idx, species in enumerate(variable_names):
+        attrs = cdf_attrs.get_variable_attributes(species)
+        # Drop LBLAXIS for singles counters data
+        attrs.pop("LABLAXIS", None)
+
         l1a_dataset[species] = xr.DataArray(
             counters_data[:, idx],
             dims=("epoch", "inst_az"),
+            attrs=attrs,
         )
         # No uncertainty needed for counters data
 
