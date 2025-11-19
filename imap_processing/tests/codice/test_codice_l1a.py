@@ -482,7 +482,12 @@ def test_hi_counters_singles(mock_get_file_paths, codice_lut_path):
     val_data = load_cdf(val_path)
 
     for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-singles_20250814_v999.cdf"

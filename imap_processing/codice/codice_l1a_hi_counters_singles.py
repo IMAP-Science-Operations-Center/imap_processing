@@ -14,7 +14,6 @@ from imap_processing.codice.utils import (
     ViewTabInfo,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
-    get_counters_aggregated_pattern,
     get_view_tab_info,
     read_sci_lut,
 )
@@ -23,7 +22,7 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     """
     Process CoDICE Hi Counters singles or aggregated L1A data.
 
@@ -71,33 +70,19 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         raise ValueError("Unsupported sensor ID for Hi processing.")
 
     # ========= Decompress and Reshape Data ===========
+    if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
+        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
+
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
-    # counters, it's from 'collapsed' tab in JSON LUT.
-    if view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
-        variable_names = sci_lut_data["data_product_hi_tab"]["0"][
-            "counters-singles"
-        ].keys()
-        collapse_shape = get_collapse_pattern_shape(
-            sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
-        )
-        print(collapse_shape)
-        # Get inst_azimuth dimension only for singles
-        collapse_shape = collapse_shape[1]
-        logical_source_id = "imap_codice_l1a_hi-counters-singles"
-    elif view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
-        all_variables = get_counters_aggregated_pattern(
-            sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
-        )
-        variable_names = all_variables.keys()
-        # For Hi aggregated, the spin sector is 1.
-        # That's why we store only length of species.
-        collapse_shape = len(variable_names)
-        print(variable_names)
-        logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
-        # TODO: add other turned off variables with zeros
-    else:
-        raise ValueError("Unsupported APID for Hi Counters processing.")
+    # counters aggregated, it's coming from 'collapsed' tab in JSON LUT.
+    variable_names = sci_lut_data["data_product_hi_tab"]["0"]["counters-singles"].keys()
+    collapse_shape = get_collapse_pattern_shape(
+        sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
+    )
+    # Get inst_azimuth dimension only for singles
+    inst_az = collapse_shape[1]
+    logical_source_id = "imap_codice_l1a_hi-counters-singles"
 
     compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
     # Decompress data using byte count information from decommed data
@@ -115,9 +100,8 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         )
     ]
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        -1, len(variable_names), collapse_shape
+        -1, len(variable_names), inst_az
     )
-    print(counters_data.shape)
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -154,6 +138,16 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                     "epoch_delta_plus", check_schema=False
                 ),
             ),
+            "inst_az": xr.DataArray(
+                np.arange(inst_az, dtype=np.uint8),
+                dims=("inst_az",),
+                attrs=cdf_attrs.get_variable_attributes("inst_az"),
+            ),
+            "inst_az_label": xr.DataArray(
+                np.arange(inst_az, dtype=np.uint8).astype(str),
+                dims=("inst_az",),
+                attrs=cdf_attrs.get_variable_attributes("inst_az_label"),
+            ),
         },
         attrs=cdf_attrs.get_global_attributes(logical_source_id),
     )
@@ -174,7 +168,7 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     for idx, species in enumerate(variable_names):
         l1a_dataset[species] = xr.DataArray(
             counters_data[:, idx],
-            dims=("epoch",),
+            dims=("epoch", "inst_az"),
         )
         # No uncertainty needed for counters data
 

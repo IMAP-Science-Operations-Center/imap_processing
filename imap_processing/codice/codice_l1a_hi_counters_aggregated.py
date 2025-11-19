@@ -72,22 +72,24 @@ def l1a_hi_counters_aggregated(
         raise ValueError("Unsupported sensor ID for Hi processing.")
 
     # ========= Decompress and Reshape Data ===========
+    if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
+        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
+
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
-    # counters, it's from 'collapsed' tab in JSON LUT.
-    if view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
-        all_variables = get_counters_aggregated_pattern(
-            sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
-        )
-        turned_on_variables = all_variables.keys()
-        # For Hi aggregated, the spin sector is 1.
-        # That's why we store only length of species.
-        collapse_shape = len(turned_on_variables)
-        print(turned_on_variables)
-        logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
-        # TODO: add other turned off variables with zeros
-    else:
-        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
+    # counters aggregated, it's coming from 'collapsed' tab in JSON LUT.
+    all_variables = get_counters_aggregated_pattern(
+        sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
+    )
+    non_reserved_variables = all_variables.keys()
+    # For Hi aggregated, the spin sector is 1.
+    # That's why we store length of variables which will be used for
+    # extracting data for each variable from decompressed data.
+    num_variables = len(non_reserved_variables)
+    logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
+    # For Lo, we need to add other turned off variables with zeros. But
+    # for Hi, all variables besides reserved are turned on. Therefore,
+    # no need to add reserved variables unless it changes in the future.
 
     compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
     # Decompress data using byte count information from decommed data
@@ -105,7 +107,7 @@ def l1a_hi_counters_aggregated(
         )
     ]
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        -1, collapse_shape
+        -1, num_variables
     )
 
     # ========= Get Epoch Time Data ===========
@@ -160,7 +162,7 @@ def l1a_hi_counters_aggregated(
     )
 
     # Finally, add species data variables and their uncertainties
-    for idx, species in enumerate(turned_on_variables):
+    for idx, species in enumerate(non_reserved_variables):
         l1a_dataset[species] = xr.DataArray(
             counters_data[:, idx],
             dims=("epoch",),

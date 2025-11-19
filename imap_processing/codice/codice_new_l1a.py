@@ -10,6 +10,9 @@ from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.codice_l1a_hi_counters_aggregated import (
     l1a_hi_counters_aggregated,
 )
+from imap_processing.codice.codice_l1a_hi_counters_singles import (
+    l1a_hi_counters_singles,
+)
 from imap_processing.codice.codice_l1a_hi_omni import l1a_hi_omni
 from imap_processing.codice.codice_l1a_hi_priority import l1a_hi_priority
 from imap_processing.codice.codice_l1a_hi_sectored import l1a_hi_sectored
@@ -97,6 +100,7 @@ def process_l1a(  # noqa: PLR0912
                 l1a_hi_counters_aggregated(datasets_by_apid[apid], lut_file)
             )
         elif apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
-            pass
+            logger.info("Processing Hi Counters singles")
+            datasets.append(l1a_hi_counters_singles(datasets_by_apid[apid], lut_file))
 
     return datasets
