@@ -1,4 +1,4 @@
-"""CoDICE L1A Hi Counters and Singles processing functions."""
+"""CoDICE L1A Hi Singles processing functions."""
 
 import logging
 from pathlib import Path
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     """
-    Process CoDICE Hi Counters singles or aggregated L1A data.
+    Process CoDICE Hi Counters singles L1A data.
 
     Parameters
     ----------
@@ -175,6 +175,6 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
             dims=("epoch", "inst_az"),
             attrs=cdf_attrs.get_variable_attributes(species),
         )
-        # No uncertainty needed for counters data
+        # No uncertainty needed for Hi counters data
 
     return l1a_dataset

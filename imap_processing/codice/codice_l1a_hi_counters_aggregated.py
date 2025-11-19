@@ -176,6 +176,6 @@ def l1a_hi_counters_aggregated(
         l1a_dataset[species] = xr.DataArray(
             counters_data[:, idx], dims=("epoch",), attrs=attrs
         )
-        # No uncertainty needed for counters data
+        # No uncertainty needed for Hi counters data
 
     return l1a_dataset

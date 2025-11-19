@@ -255,7 +255,6 @@ def get_counters_aggregated_pattern(
     #       [2....2],
     #       ...
     #       [11....11],
-    # Use the first value in each list as the sort key.
     in_order_rows = dict(sorted(non_zero_rows.items(), key=lambda item: item[1][0]))
     # Now get collapse pattern for all variables by finding
     # collapse pattern for the first key. Then replace all key's

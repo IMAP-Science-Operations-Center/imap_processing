@@ -444,17 +444,12 @@ def test_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
     )
     val_data = load_cdf(val_path)
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except AssertionError:
-            print(f"Variable '{variable}' does not match.")
-            print(processed_data[variable].values)
-            print(val_data[variable].values)
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
 
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
