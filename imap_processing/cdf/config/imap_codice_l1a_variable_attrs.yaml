@@ -387,7 +387,7 @@ sw_bias_gain_mode:
 
 # The following are data product-specific
 # hi-counters-aggregated
-counters_default: &counters_default
+counters_aggregate: &counters_aggre_default
     DEPEND_0: epoch
     DISPLAY_TYPE: time_series
     FILLVAL: *uint32_fillval
@@ -400,81 +400,92 @@ counters_default: &counters_default
     LABLAXIS: "events"
 
 dcr:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: Event B - Double Coincidence Rate (DCR)
     FIELDNAM: DCRs
 
 starts_only:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: Event C - Start Only (STO)
     FIELDNAM: Start Only
 
 stops_only:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: Event D - Stop Only (SPO)
     FIELDNAM: Stop Only
 
 reserved:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: Reserved {index}
     FIELDNAM: Reserved {index}
 
 mst:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: Event H - Multi Start (MST)
     FIELDNAM: Multi Start
 
 singles_starts:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: Singles - Start
     FIELDNAM: Singles - Start
 
 singles_stops:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: Singles - Stop
     FIELDNAM: Singles - Stop
 
 low_tof_cutoff:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: Low TOF Cutoff
     FIELDNAM: Low TOF Cutoff
 
 asic1_flag_invalid:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: ASIC 1 Flag Invalid Count
     FIELDNAM: ASIC 1 Flag Invalid
 
 asic2_flag_invalid:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: ASIC 2 Flag Invalid Count
     FIELDNAM: ASIC 2 Flag Invalid
 
 asic1_channel_invalid:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: ASIC 1 Channel Invalid Count
     FIELDNAM: ASIC 1 Channel Invalid
 asic2_channel_invalid:
-    <<: *counters_default
+    <<: *counters_aggre_default
     CATDESC: ASIC 2 Channel Invalid Count
     FIELDNAM: ASIC 2 Channel Invalid
 
 # hi-counters-singles
+counters_singles: &counters_singles_default
+    DEPEND_0: epoch
+    DISPLAY_TYPE: time_series
+    FILLVAL: *uint32_fillval
+    FORMAT: I7
+    SCALETYP: linear
+    UNITS: counts
+    VALIDMIN: 0
+    VALIDMAX: *max_uint32
+    VAR_TYPE: data
+
 tcr:
-    <<: *counters_default
+    <<: *counters_singles_default
     CATDESC: Event A - Triple Coincidence Rate (TCR)
     FIELDNAM: Rates
     DEPEND_1: inst_az
     LABL_PTR_1: inst_az_label
 
 ssdo:
-    <<: *counters_default
+    <<: *counters_singles_default
     CATDESC: Rates - Event E (SSDO)
     FIELDNAM: Rates
     DEPEND_1: inst_az
     LABL_PTR_1: inst_az_label
 
 stssd:
-    <<: *counters_default
+    <<: *counters_singles_default
     CATDESC: Rates - Event G (STSSD)
     FIELDNAM: Rates
     DEPEND_1: inst_az
