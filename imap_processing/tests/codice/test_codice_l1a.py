@@ -451,10 +451,11 @@ def test_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
+    processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert (
         cdf_file.name
-        == f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_v999.cdf"
+        == f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_v001.cdf"
     )
 
 
@@ -487,10 +488,11 @@ def test_hi_counters_singles(mock_get_file_paths, codice_lut_path):
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
+    processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert (
         cdf_file.name
-        == f"imap_codice_l1a_hi-counters-singles_{VALIDATION_FILE_DATE}_v999.cdf"
+        == f"imap_codice_l1a_hi-counters-singles_{VALIDATION_FILE_DATE}_v001.cdf"
     )
 
 
