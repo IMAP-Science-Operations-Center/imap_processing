@@ -548,7 +548,6 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )
-
     for variable in val_data.coords:
         # If _label, do string comparison
         if variable.endswith("_label"):
