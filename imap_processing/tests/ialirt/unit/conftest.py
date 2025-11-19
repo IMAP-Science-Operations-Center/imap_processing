@@ -31,7 +31,7 @@ def ialirt_mag_test_l1d_data():
         / "ialirt"
         / "data"
         / "l0"
-        / "imap_mag_ialirt-calibration_20250101_v002.cdf"
+        / "imap_mag_ialirt-calibration_20250926_v002.cdf"
     )
 
     with mock.patch(
