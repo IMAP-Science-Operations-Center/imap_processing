@@ -65,7 +65,7 @@ class TestUltraL2:
         with furnish_kernels(self.required_kernel_names):
             self.ultra_psets = [
                 mock_l1c_pset_product_healpix(
-                    nside=128,
+                    nside=16,
                     stripe_center_lat=mid_latitude,
                     width_scale=5,
                     counts_scaling_params=(50, 0.5),
