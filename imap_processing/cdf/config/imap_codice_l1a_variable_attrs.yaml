@@ -564,32 +564,32 @@ hi_priorities_attrs: &hi_priorities_default
     VALIDMIN: 0
     VAR_TYPE: data
 
-Priority0:
+priority0:
     <<: *hi_priorities_default
     CATDESC: Priority 0
     FIELDNAM: Priority 0
 
-Priority1:
+priority1:
     <<: *hi_priorities_default
     CATDESC: Priority 1
     FIELDNAM: Priority 1
 
-Priority2:
+priority2:
     <<: *hi_priorities_default
     CATDESC: Priority 2
     FIELDNAM: Priority 2
 
-Priority3:
+priority3:
     <<: *hi_priorities_default
     CATDESC: Priority 3
     FIELDNAM: Priority 3
 
-Priority4:
+priority4:
     <<: *hi_priorities_default
     CATDESC: Priority 4
     FIELDNAM: Priority 4
 
-Priority5:
+priority5:
     <<: *hi_priorities_default
     CATDESC: Priority 5
     FIELDNAM: Priority 5

@@ -35,7 +35,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l0_hi-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
 
     # L1A LUT
-    ("imap_codice_l1a-sci-lut_20251007_v002.json", "codice/data/l1a_lut/"),
+    ("imap_codice_l1a-sci-lut_20251007_v003.json", "codice/data/l1a_lut/"),
 
     # L1A validation data
     (f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
@@ -44,7 +44,7 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l1a_hi-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
-    (f"imap_codice_l1a_hi-priorities_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),

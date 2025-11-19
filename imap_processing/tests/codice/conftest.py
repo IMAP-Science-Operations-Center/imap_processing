@@ -9,7 +9,7 @@ TEST_DATA_L0_PATH = TEST_DATA_PATH / "l0_data"
 TEST_L0_FILE = TEST_DATA_L0_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
 VALIDATION_FILE_DATE = "20250814"
-VALIDATION_FILE_VERSION = "v008"
+VALIDATION_FILE_VERSION = "v009"
 
 
 @pytest.fixture(scope="session")
@@ -209,7 +209,7 @@ def codice_lut_path():
             return [
                 TEST_DATA_PATH
                 / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v002.json"
+                / "imap_codice_l1a-sci-lut_20251007_v003.json"
             ]
         elif descriptor == "l2-hi-omni-efficiency":
             return [

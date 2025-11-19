@@ -3,7 +3,6 @@ import json
 import numpy as np
 import pytest
 
-from imap_processing import imap_module_directory
 from imap_processing.codice.utils import (
     calculate_acq_time_per_step,
     get_collapse_pattern_shape,
@@ -13,7 +12,7 @@ from imap_processing.codice.utils import (
 pytestmark = pytest.mark.external_test_data
 
 
-def test_codice_non_zero_patterns():
+def test_codice_non_zero_patterns(codice_lut_path):
     """Test L1A collapse Lo and Hi non-zero patterns.
 
     This is mainly checking for expected row indices of non-zero
@@ -22,13 +21,9 @@ def test_codice_non_zero_patterns():
     (row, column). This is different from collapse pattern shape
     which is tested in `test_get_collapse_pattern_shape`.
     """
-    l1a_sci_lut_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_lut"
-        / "imap_codice_l1a-sci-lut_20251007_v001.json"
-    )
+    sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
 
-    sci_lut = json.loads(l1a_sci_lut_path.read_text())
+    sci_lut = json.loads(sci_lut_path.read_text())
     table_id = "3952862729"
     assert table_id in sci_lut
 
@@ -95,19 +90,16 @@ def test_codice_non_zero_patterns():
         assert arr.shape == (24,)
 
 
-def test_get_collapse_pattern_shape():
+def test_get_collapse_pattern_shape(codice_lut_path):
     """Test collapse pattern shapes used to reshape data.
 
     Here, we expact the shape to be in this order:
         (num_spin_sectors, num_positions)
     """
-    lut_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_lut"
-        / "imap_codice_l1a-sci-lut_20251007_v001.json"
-    )
+    sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
+
     table_id = "3952862729"
-    sci_lut_data = json.loads(lut_file_path.read_text()).get(table_id)
+    sci_lut_data = json.loads(sci_lut_path.read_text()).get(table_id)
 
     # Lo instrument counts - singles
     column_collapsed_example = get_collapse_pattern_shape(
@@ -146,12 +138,8 @@ def test_get_collapse_pattern_shape():
     assert non_collapsed_example == (12, 5)
 
 
-def test_acquisition_time():
-    sci_lut_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_lut"
-        / "imap_codice_l1a-sci-lut_20251007_v001.json"
-    )
+def test_acquisition_time(codice_lut_path):
+    sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
     sci_lut_data = json.loads(sci_lut_path.read_text())
     table_id = "3952862729"
     low_stepping_tab = sci_lut_data[table_id]["lo_stepping_tab"]

@@ -605,7 +605,7 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
         / (
-            f"imap_codice_l1a_hi-priorities_{VALIDATION_FILE_DATE}"
+            f"imap_codice_l1a_hi-priority_{VALIDATION_FILE_DATE}"
             f"_{VALIDATION_FILE_VERSION}.cdf"
         )
     )
