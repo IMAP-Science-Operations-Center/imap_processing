@@ -73,6 +73,8 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
         raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
 
+    logical_source_id = "imap_codice_l1a_hi-counters-singles"
+
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
     # counters aggregated, it's coming from 'collapsed' tab in JSON LUT.
@@ -80,9 +82,9 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     collapse_shape = get_collapse_pattern_shape(
         sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
     )
-    # Get inst_azimuth dimension only for singles
+    # Use inst_azimuth dimension to reshape decompressed data since
+    # spin sector size is 1.
     inst_az = collapse_shape[1]
-    logical_source_id = "imap_codice_l1a_hi-counters-singles"
 
     compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
     # Decompress data using byte count information from decommed data

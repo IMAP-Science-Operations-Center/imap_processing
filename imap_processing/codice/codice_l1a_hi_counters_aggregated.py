@@ -75,26 +75,26 @@ def l1a_hi_counters_aggregated(
     if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
         raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
 
+    logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
     # counters aggregated, it's coming from 'collapsed' tab in JSON LUT.
-    all_variables = get_counters_aggregated_pattern(
+    # In addition, for Lo, we include other inactive variables as zeros
+    # in the CDF. For Hi, all variables except 'reserved{x}' are active,
+    # so reserved variables are excluded unless it changes. This change
+    # will affect CoDICE team and here.
+    non_reserved_variables = get_counters_aggregated_pattern(
         sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
-    )
-    non_reserved_variables = all_variables.keys()
-    # For Hi aggregated, the spin sector is 1.
-    # That's why we store length of variables which will be used for
-    # extracting data for each variable from decompressed data.
-    num_variables = len(non_reserved_variables)
-    logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
-    # For Lo, we need to add other turned off variables with zeros. But
-    # for Hi, all variables besides reserved are turned on. Therefore,
-    # no need to add reserved variables unless it changes in the future.
+    ).keys()
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    # For Hi aggregated, the spin sector is 1. Therefore, only use size
+    # of activie variables to reshape decompressed data.
+    num_variables = len(non_reserved_variables)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
+
+    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
 
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [
