@@ -57,13 +57,6 @@ DEFAULT_L2_HEALPIX_NESTED = False
 
 # Set the default energy bin size
 DEFAULT_BIN_SIZE = 4
-# Define energy bin groups for binning L1C energy bins into coarser bins
-# Get number of fine energy bins used in L1C PSETs
-n_fine_energy_bins = len(build_energy_bins()[2])
-DEFAULT_BIN_EDGES = np.arange(n_fine_energy_bins)[::DEFAULT_BIN_SIZE]
-# Make sure the last bin includes the remainder of the fine bins
-if DEFAULT_BIN_EDGES[-1] != n_fine_energy_bins:
-    DEFAULT_BIN_EDGES = np.append(DEFAULT_BIN_EDGES, n_fine_energy_bins)
 
 # These variables must always be present in each L1C dataset
 REQUIRED_L1C_VARIABLES_PUSH = [
@@ -174,6 +167,25 @@ def get_variable_attributes_optional_energy_dependence(
     return metadata
 
 
+def build_default_coarse_bin_edges() -> np.ndarray:
+    """
+    Define energy bin groups for binning L1C energy bins into coarser bins.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of indices defining the new energy bin edges.
+    """
+    # Get number of fine energy bins used in L1C PSETs
+    n_fine_energy_bins = len(build_energy_bins()[2])
+    bin_edges = np.arange(n_fine_energy_bins)[::DEFAULT_BIN_SIZE]
+    # Make sure the last bin includes the remainder of the fine bins
+    if bin_edges[-1] != n_fine_energy_bins:
+        bin_edges = np.append(bin_edges, n_fine_energy_bins)
+
+    return bin_edges
+
+
 def bin_pset_energy_bins(
     pset: xr.Dataset, bin_groups: np.ndarray | None = None
 ) -> xr.Dataset:
@@ -194,7 +206,7 @@ def bin_pset_energy_bins(
         The input pset with energy bins grouped according to the bin_groups.
     """
     if bin_groups is None:
-        bin_groups = DEFAULT_BIN_EDGES
+        bin_groups = build_default_coarse_bin_edges()
     # Get a list of variables that have the energy bin dimension
     energy_dep_vars = [
         var for var in pset.data_vars if "energy_bin_geometric_mean" in pset[var].dims
@@ -645,7 +657,7 @@ def ultra_l2(
             np.uint8
         )
     else:
-        energy_bin_edges = DEFAULT_BIN_EDGES
+        energy_bin_edges = build_default_coarse_bin_edges()
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params

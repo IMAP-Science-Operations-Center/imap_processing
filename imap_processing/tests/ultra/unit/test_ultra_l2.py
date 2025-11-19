@@ -17,8 +17,8 @@ from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 from imap_processing.ultra.l2 import ultra_l2
 from imap_processing.ultra.l2.ultra_l2 import (
-    DEFAULT_BIN_EDGES,
     VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS,
+    build_default_coarse_bin_edges,
 )
 
 ENERGY_BIN_EDGES_PATH = (
@@ -46,7 +46,7 @@ class TestUltraL2:
     def _mock_single_pset(self, _setup_spice_kernels_list, furnish_kernels):
         with furnish_kernels(self.required_kernel_names):
             self.ultra_pset = mock_l1c_pset_product_healpix(
-                nside=128,
+                nside=32,
                 stripe_center_lat=0,
                 timestr="2025-05-15T12:00:00",
                 energy_dependent_exposure=True,
@@ -114,7 +114,12 @@ class TestUltraL2:
         self, epoch_dim_for_energy_delta, map_frame, rtol, furnish_kernels
     ):
         # Avoid modifying the original pset
-        pset = self.ultra_pset.copy(deep=True)
+        pset = mock_l1c_pset_product_healpix(
+            nside=128,
+            stripe_center_lat=0,
+            timestr="2025-05-15T12:00:00",
+            energy_dependent_exposure=True,
+        )
         # Set the values in the single input PSET for easy calculation
         # of the expected ena_intensity and ena_intensity statistical uncertainty]
         counts_fillval = 10
@@ -309,7 +314,7 @@ class TestUltraL2:
             assert var not in hp_skymap.data_1d.data_vars
 
         energy_bins = 46  # Original number of fine energy bins
-        n_pix = 196608
+        n_pix = 12288
         n_counts = 10 * energy_bins * n_pix * 1.5
 
         # The total counts in the skymap should be equal to the sum of the counts
@@ -736,7 +741,7 @@ class TestUltraL2:
         # Create a mock array with known values to test binning
         # e.g., 0,0,0,0,1,1,1,1,2,2,2,2,...11,11
         n_fine_bins = pset.energy_bin_geometric_mean.size
-        n_coarse_bins = len(DEFAULT_BIN_EDGES) - 1
+        n_coarse_bins = len(build_default_coarse_bin_edges()) - 1
         mock_vals = np.repeat(np.arange(n_coarse_bins), 4)[0:n_fine_bins]
         mock_array = (
             np.ones_like(pset["exposure_factor"]) * mock_vals[np.newaxis, :, np.newaxis]
@@ -751,7 +756,9 @@ class TestUltraL2:
         pset["scatter_phi"].values = mock_array[0]
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"])
         # Bin the pset
-        binned_pset = ultra_l2.bin_pset_energy_bins(pset, DEFAULT_BIN_EDGES)
+        binned_pset = ultra_l2.bin_pset_energy_bins(
+            pset, build_default_coarse_bin_edges()
+        )
         # Check that the new bin edges are as expected
         expected_bin_edges = np.array(
             [
@@ -929,7 +936,9 @@ class TestUltraL2:
         # Set values in energy bin 0 to zero
         pset["sensitivity"][0, :].values = np.ones(pset["sensitivity"][0, :].shape)
         # Bin the pset
-        binned_pset = ultra_l2.bin_pset_energy_bins(pset, DEFAULT_BIN_EDGES)
+        binned_pset = ultra_l2.bin_pset_energy_bins(
+            pset, build_default_coarse_bin_edges()
+        )
         # Assert that the binned and averaged sensitivity in the first coarse bin is
         # equal to the average of the fine bins that were included (which excludes the
         # zero count bin)
