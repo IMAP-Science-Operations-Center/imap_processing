@@ -1,4 +1,4 @@
-"""CoDICE L1A Hi Counters and Singles processing functions."""
+"""CoDICE L1A Hi Counters aggregated processing functions."""
 
 import logging
 from pathlib import Path
@@ -13,7 +13,6 @@ from imap_processing.codice.utils import (
     CODICEAPID,
     ViewTabInfo,
     get_codice_epoch_time,
-    get_collapse_pattern_shape,
     get_counters_aggregated_pattern,
     get_view_tab_info,
     read_sci_lut,
@@ -23,9 +22,11 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_hi_counters_aggregated(
+    unpacked_dataset: xr.Dataset, lut_file: Path
+) -> xr.Dataset:
     """
-    Process CoDICE Hi Counters singles or aggregated L1A data.
+    Process CoDICE Hi Counters aggregated L1A data.
 
     Parameters
     ----------
@@ -74,27 +75,19 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
     # counters, it's from 'collapsed' tab in JSON LUT.
-    if view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
-        variable_names = sci_lut_data["data_product_hi_tab"]["0"][
-            "counters-singles"
-        ].keys()
-        collapse_shape = get_collapse_pattern_shape(
-            sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
-        )[1]
-        collapse_shape = len(variable_names)
-        logical_source_id = "imap_codice_l1a_hi-counters-singles"
-    elif view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
-        species_data = get_counters_aggregated_pattern(
+    if view_tab_obj.apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
+        all_variables = get_counters_aggregated_pattern(
             sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
         )
-        variable_names = species_data.keys()
+        turned_on_variables = all_variables.keys()
         # For Hi aggregated, the spin sector is 1.
         # That's why we store only length of species.
-        collapse_shape = len(variable_names)
-        print(variable_names)
+        collapse_shape = len(turned_on_variables)
+        print(turned_on_variables)
         logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
+        # TODO: add other turned off variables with zeros
     else:
-        raise ValueError("Unsupported APID for Hi Counters processing.")
+        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
 
     compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
     # Decompress data using byte count information from decommed data
@@ -114,7 +107,6 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         -1, collapse_shape
     )
-    print(counters_data.shape)
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -168,7 +160,7 @@ def l1a_hi_counters(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     # Finally, add species data variables and their uncertainties
-    for idx, species in enumerate(variable_names):
+    for idx, species in enumerate(turned_on_variables):
         l1a_dataset[species] = xr.DataArray(
             counters_data[:, idx],
             dims=("epoch",),

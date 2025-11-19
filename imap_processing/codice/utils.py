@@ -166,7 +166,7 @@ def get_collapse_pattern_shape(
 
     Returns
     -------
-    tuple[int, ...]
+    tuple[spin_sector, inst_azimuth]
         The reduced shape describing the collapsed pattern. Examples:
         ``(1,)`` for a fully collapsed 1-D pattern or ``(N, M)`` for a
         reduced 2-D pattern.

@@ -7,7 +7,9 @@ from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l1a_de import l1a_direct_event
-from imap_processing.codice.codice_l1a_hi_counters import l1a_hi_counters
+from imap_processing.codice.codice_l1a_hi_counters_aggregated import (
+    l1a_hi_counters_aggregated,
+)
 from imap_processing.codice.codice_l1a_hi_omni import l1a_hi_omni
 from imap_processing.codice.codice_l1a_hi_priority import l1a_hi_priority
 from imap_processing.codice.codice_l1a_hi_sectored import l1a_hi_sectored
@@ -89,11 +91,12 @@ def process_l1a(  # noqa: PLR0912
         elif apid == CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES:
             logger.info("Processing Hi Priority Counts")
             datasets.append(l1a_hi_priority(datasets_by_apid[apid], lut_file))
-        elif apid in [
-            CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
-            CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
-        ]:
-            logger.info(f"Processing Hi Counters or Singles for {apid}")
-            datasets.append(l1a_hi_counters(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
+            logger.info("Processing Hi Counters aggregated")
+            datasets.append(
+                l1a_hi_counters_aggregated(datasets_by_apid[apid], lut_file)
+            )
+        elif apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
+            pass
 
     return datasets
