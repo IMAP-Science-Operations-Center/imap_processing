@@ -8,8 +8,8 @@ from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.codice.codice_l1a import process_l1a
 from imap_processing.codice.codice_l1b import process_codice_l1b
-from imap_processing.codice.codice_new_l1a import process_l1a
 from imap_processing.tests.codice.conftest import (
     VALIDATION_FILE_DATE,
     VALIDATION_FILE_VERSION,

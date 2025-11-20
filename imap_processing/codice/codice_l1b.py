@@ -181,7 +181,6 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # Get the L1b CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
-    cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
 
     # Use the L1a data product as a starting point for L1b
     l1b_dataset = l1a_dataset.copy(deep=True)

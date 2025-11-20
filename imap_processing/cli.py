@@ -49,7 +49,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 #   from imap_processing import cdf
 # In code:
 #   call cdf.utils.write_cdf
-from imap_processing.codice import codice_l1b, codice_l2, codice_new_l1a
+from imap_processing.codice import codice_l1a, codice_l1b, codice_l2
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l2.glows_l2 import glows_l2
@@ -613,7 +613,7 @@ class Codice(ProcessInstrument):
 
         if self.data_level == "l1a":
             # process data
-            datasets = codice_new_l1a.process_l1a(dependencies)
+            datasets = codice_l1a.process_l1a(dependencies)
 
         if self.data_level == "l1b":
             science_files = dependencies.get_file_paths(source="codice")
