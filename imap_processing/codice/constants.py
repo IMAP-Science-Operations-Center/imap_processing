@@ -50,6 +50,20 @@ IAL_BIT_STRUCTURE = {
     "BYTE_COUNT": 23,
 }
 
+LO_IALIRT_VARIABLE_NAMES = [
+    "heplusplus",
+    "cplus5",
+    "cplus6",
+    "oplus6",
+    "oplus7",
+    "oplus8",
+    "mg",
+    "fe_loq",
+    "fe_hiq",
+]
+HI_IALIRT_VARIABLE_NAMES = ["h"]
+
+
 # Define the packet fields needed to be stored in segmented data and their
 # corresponding bit lengths for direct event data products
 DE_METADATA_FIELDS = {
