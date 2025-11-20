@@ -876,24 +876,22 @@ class TestUltraL2:
             np.testing.assert_array_equal(np.unique(pset[var]), 1)
 
     @pytest.mark.usefixtures("_mock_single_pset")
-    def test_bin_pset_energy_wrong_bins(self):
+    def test_bin_pset_energy_bin_subset(self):
         """Test binning with bins that do not include all of the fine bins."""
         # Avoid modifying the original pset
         pset = self.ultra_pset.copy(deep=True)
         # The bin edges do not cover all fine bins
-        # In this case, we expect the function to automatically extend the bin edges
-        # for a "catch-all" on either end.
+        # In this case, we expect the function to ignore the fine bins outside
+        # the new bin edges
         new_bin_edges = np.array([3, 10, 40])
         # Bin the pset
         binned_pset = ultra_l2.bin_pset_energy_bins(pset, new_bin_edges)
         # Check that the new bin edges are as expected
         expected_bin_edges = np.array(
             [
-                3.0,
                 4.2,
                 8.615,
                 173.521,
-                316.335,
             ]
         )
         expected_energy_delta_minus, expected_energy_delta_plus = (
@@ -914,10 +912,10 @@ class TestUltraL2:
             np.sqrt(expected_bin_edges[:-1] * expected_bin_edges[1:]),
         )
         # Check that the shapes are correct
-        assert binned_pset["counts"].shape[1] == 4
+        assert binned_pset["counts"].shape[1] == 2
 
         for var in VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS:
-            assert binned_pset[var].squeeze().shape[0] == 4
+            assert binned_pset[var].squeeze().shape[0] == 2
 
         with pytest.raises(
             ValueError,

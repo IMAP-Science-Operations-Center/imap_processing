@@ -217,44 +217,32 @@ def bin_pset_energy_bins(
         for var in energy_dep_vars
         if var in VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS
     ]
-    n_fine_bins = pset["energy_bin_geometric_mean"].size
     logger.info(
         f"Binning pset fine energy bins into coarser bins with edges: {bin_groups}"
     )
-
+    n_fine_bins = pset["energy_bin_geometric_mean"].size
     if bin_groups[-1] > n_fine_bins:
         raise ValueError(
             "The given bin_groups contain an index larger than the number of "
             f"fine energy bins in the pset: {n_fine_bins}."
         )
-    # Add any missing 'catch-all' bins at the start or end
-    if bin_groups[-1] < n_fine_bins:
-        bin_groups = np.append(bin_groups, n_fine_bins)
-        logger.info(
-            "The given bin_groups did not include the last fine energy bins."
-            f" Adding another 'catch-all' bin. New coarse energy bin edges:"
-            f" {bin_groups}"
-        )
-    if bin_groups[0] > 0:
-        bin_groups = np.insert(bin_groups, 0, 0)
-        logger.info(
-            "The given bin_groups did not include the first fine energy bins."
-            f" Adding another 'catch-all' bin. New coarse energy bin edges:"
-            f" {bin_groups}"
-        )
+    # Select only the energy bins we want to keep (between first and last edge)
+    pset = pset.isel(energy_bin_geometric_mean=slice(bin_groups[0], bin_groups[-1]))
+    energy_inds = np.arange(n_fine_bins)[bin_groups[0] : bin_groups[-1]]
     # Create a new coordinate for the new energy bin index
     # For example, if bin_groups = [0,4,8,12...46], then the new coordinate will be:
     # energy_bin_index = [0,0,0,0,1,1,1,1,2,2,2,2...12] That way we can groupby the new
     # energy bin index to sum/average over the fine bins.
+
     pset = pset.assign_coords(
         energy_bin_index=(
             "energy_bin_geometric_mean",
-            np.digitize(np.arange(n_fine_bins), bin_groups, right=False),
+            np.digitize(energy_inds, bin_groups, right=False),
         )
     )
     # Count number of pixels
     non_zero_pixels_per_group = (
-        ((pset[vars_to_average] != 0) | (pset[vars_to_average] != FILLVAL_FLOAT32))
+        ((pset[vars_to_average] != 0) & (pset[vars_to_average] != FILLVAL_FLOAT32))
         .astype(int)
         .groupby("energy_bin_index")
         .sum()
