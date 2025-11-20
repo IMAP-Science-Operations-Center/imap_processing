@@ -580,7 +580,7 @@ def test_interpolate_spherical():
 
     attitude_time = np.array([2, 3])
     # Can be 0 -> 360 degrees
-    sc_inertial_right = np.array([0, 180])
+    sc_inertial_right = np.array([0, 90])
     # Can be -pi/2 -> pi/2
     sc_inertial_decline = np.array([0, 0])
     # Can be 0 -> 2pi
@@ -598,11 +598,11 @@ def test_interpolate_spherical():
     expected_ra = np.interp(target_time, attitude_time, sc_inertial_right)
 
     # Since declination is equal to 0 the ra value will be a simple interpolation here.
-    assert ra_deg == expected_ra
+    assert np.isclose(ra_deg, expected_ra, atol=1e-6)
     # Tests that it wraps (360-300+10)/2 = 35
-    assert spin_phase_deg == 335
+    assert spin_phase_deg == 335.0
 
-    sc_inertial_decline = np.array([0, 45])
+    sc_inertial_decline = np.array([0, 90])
 
     ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
         sc_inertial_right,
@@ -613,13 +613,13 @@ def test_interpolate_spherical():
     )
 
     # Function is working correctly with declination.
-    assert spin_phase_deg == 335
+    assert spin_phase_deg == 335.0
     assert np.isclose(ra_deg, 0, atol=1e-6)
-    assert dec_deg == 67.5
+    assert np.isclose(dec_deg, 45.0, atol=1e-6)
 
     # Function works with wrapped values.
     sc_inertial_decline = np.array([0, 0])
-    sc_inertial_right = np.array([0, 360 + 180])
+    sc_inertial_right = np.array([0, 360 + 90])
 
     ra_deg, dec_deg, spin_phase_deg = interpolate_spherical(
         sc_inertial_right,
@@ -628,7 +628,7 @@ def test_interpolate_spherical():
         attitude_time,
         target_time,
     )
-    assert ra_deg == expected_ra
+    assert np.isclose(ra_deg, expected_ra, atol=1e-6)
 
 
 @pytest.mark.external_test_data
