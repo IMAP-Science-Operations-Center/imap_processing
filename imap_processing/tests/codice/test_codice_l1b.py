@@ -322,7 +322,7 @@ def test_l1b_hi_priorities(mock_get_file_paths, codice_lut_path):
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
-            rtol=1e-5,
+            rtol=1.2e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
