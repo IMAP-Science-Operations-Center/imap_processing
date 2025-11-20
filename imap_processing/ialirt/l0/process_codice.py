@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import xarray as xr
 
-from imap_processing.codice.codice_l1a import process_ialirt_data_streams
+from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.ialirt.utils.grouping import find_groups
 
@@ -20,6 +20,70 @@ COD_LO_COUNTER = 232
 COD_HI_COUNTER = 197
 COD_LO_RANGE = range(0, 15)
 COD_HI_RANGE = range(0, 5)
+
+
+def process_ialirt_data_streams(
+    grouped_data: list[bytearray],
+) -> tuple[list[str], dict[str, list[int]]]:
+    """
+    Process each I-ALiRT science data stream to extract individual data fields.
+
+    Each data stream is converted to binary so that each metadata and science
+    data field and their values can be separated out. These fields and values
+    eventually will be stored in CDF data/support variables.
+
+    Parameters
+    ----------
+    grouped_data : list[bytearray]
+        A list of grouped I-ALiRT data.
+
+    Returns
+    -------
+    science_values : list[str]
+        The science values / data array portion of the I-ALiRT data in the form
+        of a binary string.
+    metadata_values : dict[str, list[int]]
+        The extracted metadata fields and their values.
+    """
+    # Initialize placeholders for the processed data
+    science_values = []
+    metadata_values: dict[str, list[int]] = {}
+    for field in constants.IAL_BIT_STRUCTURE:
+        metadata_values[field] = []
+
+    # Process each complete data stream
+    for data_stream in grouped_data:
+        try:
+            # Convert the data to binary
+            bit_string = "".join(f"{byte:08b}" for byte in data_stream)
+
+            # Separate the data into its individual fields
+            bit_position = 0
+            for field in constants.IAL_BIT_STRUCTURE:
+                # Convert from binary to integer
+                value = int(
+                    bit_string[
+                        bit_position : bit_position + constants.IAL_BIT_STRUCTURE[field]
+                    ],
+                    2,
+                )
+
+                # If we encounter an SHCOARSE of 0, the packet is bad
+                if field == "SHCOARSE" and value == 0:
+                    raise ValueError("Bad packet encountered")
+
+                metadata_values[field].append(value)
+                bit_position += constants.IAL_BIT_STRUCTURE[field]
+                if field == "BYTE_COUNT":
+                    byte_count = value * 8  # Convert from bytes to number of bits
+
+            # The rest is the data field, up to the byte count
+            data_field = bit_string[bit_position : bit_position + byte_count]
+            science_values.append(data_field)
+        except ValueError:
+            pass
+
+    return science_values, metadata_values
 
 
 def concatenate_bytes(grouped_data: xr.Dataset, group: int, sensor: str) -> bytearray:

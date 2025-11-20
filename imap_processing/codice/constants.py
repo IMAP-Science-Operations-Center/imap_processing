@@ -28,6 +28,29 @@ LO_DESPIN_SPIN_SECTORS = 24
 MAX_DE_EVENTS_PER_PACKET = 10000
 
 # Define the packet fields needed to be stored in segmented data and their
+# corresponding bit lengths for I-ALiRT data products
+IAL_BIT_STRUCTURE = {
+    "SHCOARSE": 32,
+    "PACKET_VERSION": 16,
+    "SPIN_PERIOD": 16,
+    "ACQ_START_SECONDS": 32,
+    "ACQ_START_SUBSECONDS": 20,
+    "SPARE_00": 8,
+    "ST_BIAS_GAIN_MODE": 2,
+    "SW_BIAS_GAIN_MODE": 2,
+    "TABLE_ID": 32,
+    "PLAN_ID": 16,
+    "PLAN_STEP": 4,
+    "VIEW_ID": 4,
+    "RGFO_HALF_SPIN": 6,
+    "NSO_HALF_SPIN": 6,
+    "SPARE_01": 1,
+    "SUSPECT": 1,
+    "COMPRESSION": 3,
+    "BYTE_COUNT": 23,
+}
+
+# Define the packet fields needed to be stored in segmented data and their
 # corresponding bit lengths for direct event data products
 DE_METADATA_FIELDS = {
     "packet_version": 16,
