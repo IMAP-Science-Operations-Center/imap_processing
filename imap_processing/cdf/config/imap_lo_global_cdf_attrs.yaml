@@ -95,6 +95,12 @@ imap_lo_l1b_shk:
   Logical_source: imap_lo_l1b_shk
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
 
+imap_lo_l1b_instrument-status-summary:
+  <<: *instrument_base
+  Data_type: L1B_star>Level-1B Status Summary
+  Logical_source: imap_lo_l1b_instrument-status-summary
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
 imap_lo_l1c_goodtimes:
   <<: *instrument_base
   Data_type: L1C_goodtimes>Level-1C Goodtimes List

@@ -17,6 +17,7 @@ def test_lo_l1a():
         "imap_lo_l1a_star",
         "imap_lo_l1a_nhk",
         "imap_lo_l1b_nhk",
+        "imap_lo_l1b_instrument-status-summary",
     ]
     output_dataset = lo_l1a(dependency)
 
@@ -121,3 +122,22 @@ def test_validate_spin_data():
         np.testing.assert_array_equal(
             output_dataset[0][field], validation_data[field.upper()].values.tolist()
         )
+
+
+def test_instrument_status_summary():
+    dependency = (
+        imap_module_directory / "tests/lo/test_pkts/imap_lo_l0_raw_20240803_v002.pkts"
+    )
+    list_of_data = lo_l1a(dependency)
+    status_summary_ds = list_of_data[-1]
+    assert (
+        status_summary_ds.attrs["Logical_source"]
+        == "imap_lo_l1b_instrument-status-summary"
+    )
+
+    # We started out in HVENG mode and ended in HVSCI mode
+    assert status_summary_ds["op_mode"][0] == "HVENG"
+    assert status_summary_ds["op_mode"][-1] == "HVSCI"
+    # Make sure we have added the FSW version string variable
+    # even though it isn't in our packets in this test
+    assert "fsw_version_str" in status_summary_ds.variables
