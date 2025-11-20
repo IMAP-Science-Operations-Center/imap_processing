@@ -84,6 +84,13 @@ from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
 
+# Set the basic logging configuration for all users
+# of the CLI tool.
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s:%(name)s:%(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 
 

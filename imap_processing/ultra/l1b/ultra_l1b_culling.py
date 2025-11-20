@@ -24,7 +24,6 @@ from imap_processing.ultra.l1b.lookup_utils import (
 from imap_processing.ultra.l1b.quality_flag_filters import DE_QUALITY_FLAG_FILTERS
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SPIN_DURATION = 15  # Default spin duration in seconds.
