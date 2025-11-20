@@ -54,9 +54,8 @@ def test_get_rotation_matrix():
     x = np.array([1, 0, 0])
     x_rot = r @ x
 
-    # X → Y
-    # Y → -X
-    # Z stays the same
+    # Rotating a unit vector pointing along x-axis 90-degrees
+    # about z-axis results in a unit vector pointing along y-axis.
     expected = np.array([0, 1.0, 0])
     assert np.allclose(x_rot, expected, atol=1e-8)
 

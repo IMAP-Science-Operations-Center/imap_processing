@@ -597,7 +597,9 @@ def test_interpolate_spherical():
 
     expected_ra = np.interp(target_time, attitude_time, sc_inertial_right)
 
+    # Since declination is equal to 0 the ra value will be a simple interpolation here.
     assert ra_deg == expected_ra
+    # Tests that it wraps (360-300+10)/2 = 35
     assert spin_phase_deg == 335
 
     sc_inertial_decline = np.array([0, 45])
