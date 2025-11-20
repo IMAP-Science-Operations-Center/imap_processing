@@ -20,7 +20,6 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:

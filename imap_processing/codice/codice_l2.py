@@ -41,7 +41,6 @@ from imap_processing.codice.constants import (
 from imap_processing.codice.utils import apply_replacements_to_attrs
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def get_geometric_factor_lut(dependencies: ProcessingInputCollection) -> dict:

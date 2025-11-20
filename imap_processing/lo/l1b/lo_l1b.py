@@ -27,7 +27,6 @@ from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:

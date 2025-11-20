@@ -24,7 +24,6 @@ from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 HistPacking = namedtuple(
     "HistPacking",

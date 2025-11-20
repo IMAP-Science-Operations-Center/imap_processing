@@ -24,7 +24,6 @@ from imap_processing.tests.codice.conftest import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 pytestmark = pytest.mark.external_test_data
 
 

@@ -19,7 +19,6 @@ from imap_processing.lo.l0.lo_star_sensor import process_star_sensor
 from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def lo_l1a(dependency: Path) -> list[xr.Dataset]:

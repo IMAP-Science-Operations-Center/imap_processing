@@ -29,7 +29,6 @@ from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class CoDICEL1aPipeline:
