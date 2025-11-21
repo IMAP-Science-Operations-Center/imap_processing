@@ -493,6 +493,12 @@ def test_group_and_decompress_ialirt_cod_hi(
     # Returns data for all expected species at 15 energy steps.
     for species in expected_species:
         np.array_equal(result[species].values, cod_hi_l1a_test_data["h"].data)
+    assert np.array_equal(result["data_quality"], cod_hi_l1a_test_data["data_quality"])
+    assert np.allclose(
+        result["spin_period"].values,
+        cod_hi_l1a_test_data["spin_period"].values,
+        atol=1e-6,
+    )
 
 
 @pytest.mark.external_test_data

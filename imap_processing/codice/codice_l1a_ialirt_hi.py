@@ -129,7 +129,7 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         view_tab_obj.collapse_table,
     )
 
-    # Calculate collapsed size
+    # Reshape data into (epoch, energy, n_spins, spin_sector, inst_az)
     decompressed_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets,
         energy_bins,
@@ -159,6 +159,10 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         end_idx = start_idx + chunk_size * n_spins
 
         species_array = decompressed_data[:, start_idx:end_idx]
+        # This is rearranging data from (epoch, energy, n_spins, spin_sector, inst_az)
+        # -> (epoch, n_spins, energy, spin_sector, inst_az) ->
+        # finally (epoch * n_spins, energy,
+        # spin_sector, inst_az)
         species_array = species_array.transpose(0, 2, 1, 3, 4).reshape(
             -1, chunk_size, *collapse_shape
         )
