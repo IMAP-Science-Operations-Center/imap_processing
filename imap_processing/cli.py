@@ -84,13 +84,6 @@ from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
 
-# Set the basic logging configuration for all users
-# of the CLI tool.
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s:%(name)s:%(message)s",
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 logger = logging.getLogger(__name__)
 
 
@@ -204,15 +197,7 @@ def _parse_args() -> argparse.Namespace:
         action="store_const",
         dest="loglevel",
         const=logging.DEBUG,
-        default=logging.WARNING,
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Add verbose output",
-        action="store_const",
-        dest="loglevel",
-        const=logging.INFO,
+        default=logging.INFO,
     )
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--data-level", type=str, required=True, help=level_help)
@@ -265,6 +250,14 @@ def _parse_args() -> argparse.Namespace:
         help="Upload completed output files to the IMAP SDC.",
     )
     args = parser.parse_args()
+
+    # Set the basic logging configuration for all users
+    # of the CLI tool.
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s:%(name)s:%(message)s",
+        level=args.loglevel,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     # If the dependency argument was passed in as a json file, read it into a string
     if args.dependency.endswith(".json"):
