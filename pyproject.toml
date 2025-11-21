@@ -86,6 +86,9 @@ filterwarnings = [
     "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning:cdflib",
     # Ignore Data_version warnings during tests because we default to v001
     "ignore:No Data_version attribute found:UserWarning:imap_processing",
+    # Some test packet data is of the incorrect length and causes many warnings
+    # that can be ignored for testing purposes
+    "ignore:Number of bits:UserWarning:space_packet_parser",
 ]
 markers = [
     "external_kernel: marks tests as requiring external SPICE kernels (deselect with '-m \"not external_kernel\"')",
