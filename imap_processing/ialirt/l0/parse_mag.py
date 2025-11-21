@@ -434,6 +434,9 @@ def interpolate_spherical(
     )
     vecs = spherical_to_cartesian(spherical_coords)
 
+    # This was chosen instead of linear interpolation
+    # to account for the vector moving along a curved
+    # arc on the unit sphere.
     spline_x = CubicSpline(attitude_time, vecs[:, 0])
     spline_y = CubicSpline(attitude_time, vecs[:, 1])
     spline_z = CubicSpline(attitude_time, vecs[:, 2])
