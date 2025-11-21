@@ -133,7 +133,9 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         # filter badtimes
 
         # resweep the histogram data
-        l1b_histrates = resweep_histogram_data(l1b_histrates, anc_dependencies)
+        l1b_histrates, exposure_factor = resweep_histogram_data(
+            l1b_histrates, anc_dependencies
+        )
         # Get the start and end times for each spin epoch
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
@@ -145,6 +147,7 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
             acq_start,
             acq_end,
             avg_spin_durations_per_cycle,
+            exposure_factor,
         )
         datasets_to_return.append(l1b_histrates)
 
@@ -1205,8 +1208,24 @@ def resweep_histogram_data(
     """
     Correct energy steps in histogram data based on sweep and LUT tables.
 
-    Returns the updated dataset and a 3D array of merge counts (epoch, azimuth, esa_step)
-    indicating how many original steps were merged into each final step.
+    Returns the updated dataset and a 3D array of reswept counts
+    (epoch, azimuth, esa_step) indicating how many original steps were reswept into
+    each final step.
+
+    Parameters
+    ----------
+    l1b_histrates : xr.Dataset
+        The L1B histogram rates dataset.
+    anc_dependencies : list
+        List of ancillary file paths.
+
+    Returns
+    -------
+    l1b_histrates : xr.Dataset
+        The updated L1B histogram rates dataset with reswept counts.
+    exposure_factor : np.ndarray
+        3D array of exposure factors (epoch, azimuth, esa_step) indicating how many
+        ESA steps were reswept during resweeping.
     """
     sweep_df = lo_ancillary.read_ancillary_file(
         next(str(s) for s in anc_dependencies if "sweep-table" in str(s))
@@ -1224,7 +1243,7 @@ def resweep_histogram_data(
 
     # Track merges per azimuth and ESA step
     num_azimuth = l1b_histrates["h_counts"].shape[1]
-    merge_counts = np.zeros((len(epochs), num_azimuth, 7), dtype=int)
+    exposure_factor = np.zeros((len(epochs), num_azimuth, 7), dtype=int)
 
     for epoch_idx, epoch in enumerate(epoch_utc):
         epoch_date_only = epoch.split("T")[0]
@@ -1239,8 +1258,8 @@ def resweep_histogram_data(
 
         if len(unique_lut_tables) != 1:
             raise ValueError(
-                f"Expected exactly 1 unique LUT_table value for date {epoch_date_only}, "
-                f"but found {len(unique_lut_tables)}: {unique_lut_tables}"
+                f"Expected exactly 1 unique LUT_table value for date {epoch_date_only},"
+                f" but found {len(unique_lut_tables)}: {unique_lut_tables}"
             )
 
         lut_table_idx = unique_lut_tables[0]
@@ -1250,7 +1269,7 @@ def resweep_histogram_data(
             logger.warning(f"No LUT entries found for table index {lut_table_idx}")
             h_counts_reswept[epoch_idx] = l1b_histrates["h_counts"].values[epoch_idx]
             o_counts_reswept[epoch_idx] = l1b_histrates["o_counts"].values[epoch_idx]
-            merge_counts[epoch_idx] = 1
+            exposure_factor[epoch_idx] = 1
             continue
 
         lut_entries = lut_entries.sort_values("E-Step_Idx")
@@ -1274,7 +1293,8 @@ def resweep_histogram_data(
                     o_counts_reswept[epoch_idx, az_idx, reswept_idx] += o_original[
                         orig_idx
                     ]
-                    merge_counts[epoch_idx, az_idx, reswept_idx] += 1
+                    if orig_idx != reswept_idx:
+                        exposure_factor[epoch_idx, az_idx, reswept_idx] += 1
 
     l1b_histrates["h_counts"].values = h_counts_reswept
     l1b_histrates["o_counts"].values = o_counts_reswept
@@ -1282,7 +1302,7 @@ def resweep_histogram_data(
         "Applied LUT table energy step mapping"
     )
 
-    return l1b_histrates, merge_counts
+    return l1b_histrates, exposure_factor
 
 
 def calculate_histogram_rates(
@@ -1290,7 +1310,7 @@ def calculate_histogram_rates(
     acq_start: xr.DataArray,
     acq_end: xr.DataArray,
     avg_spin_durations_per_cycle: xr.DataArray,
-    merge_counts: np.ndarray,
+    exposure_factor: np.ndarray,
 ) -> xr.Dataset:
     """
     Calculate histogram rates by dividing reswept counts by exposure time.
@@ -1298,7 +1318,7 @@ def calculate_histogram_rates(
     For each epoch in l1b_histrates, this function finds the corresponding
     spin interval, calculates the exposure time for 6-degree bins,
     and divides the counts by the exposure time. The exposure time is scaled
-    by the number of ESA steps that were merged during resweeping.
+    by the number of ESA steps that were reswept during resweeping.
 
     Parameters
     ----------
@@ -1310,9 +1330,9 @@ def calculate_histogram_rates(
         End times for each spin cycle in MET seconds.
     avg_spin_durations_per_cycle : xr.DataArray
         Average spin duration for each cycle in seconds.
-    merge_counts : np.ndarray
-        3D array of merge counts (epoch, azimuth, esa_step) indicating how many
-        original steps were merged during resweeping.
+    exposure_factor : np.ndarray
+        3D array of exposure factors (epoch, azimuth, esa_step) indicating how many
+        ESA steps were reswept during resweeping.
 
     Returns
     -------
@@ -1348,7 +1368,7 @@ def calculate_histogram_rates(
         for az_idx in range(num_azimuth):
             for esa_idx in range(7):
                 scaled_exposure = (
-                    base_exposure_time * merge_counts[epoch_idx, az_idx, esa_idx]
+                    base_exposure_time * exposure_factor[epoch_idx, az_idx, esa_idx]
                 )
                 exposure_times[epoch_idx, az_idx, esa_idx] = scaled_exposure
 
