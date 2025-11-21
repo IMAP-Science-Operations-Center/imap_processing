@@ -15,6 +15,8 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
+from imap_processing.codice.codice_l1a import process_ialirt_data_streams
+from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.codice.decompress import decompress
@@ -418,7 +420,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_hi(
-    cod_hi_test_dataset, cod_hi_decom_test_file, lut_path
+    cod_hi_test_dataset, cod_hi_decom_test_file, lut_path, cod_hi_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Hi data can be grouped and decompressed properly."
 
@@ -481,8 +483,16 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data[i])
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "hi", lut_path)  # noqa
-    # TODO: add function l1a_hi_species
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi", lut_path)
+    result = l1a_ialirt_hi(dataset, lut_path)
+
+    expected_species = [
+        "h",
+    ]
+
+    # Returns data for all expected species at 15 energy steps.
+    for species in expected_species:
+        np.array_equal(result[species].values, cod_hi_l1a_test_data["h"].data)
 
 
 @pytest.mark.external_test_data
