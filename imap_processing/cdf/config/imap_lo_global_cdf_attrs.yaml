@@ -65,10 +65,10 @@ imap_lo_l1b_monitorrates:
   Logical_source: imap_lo_l1b_monitorrates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
 
-imap_lo_l1b_histogramrates:
+imap_lo_l1b_histrates:
   <<: *instrument_base
-  Data_type: L1B_histogramrates>Level-1B Histogram Rates
-  Logical_source: imap_lo_l1b_histogramrrates
+  Data_type: L1B_histrates>Level-1B Histogram Rates
+  Logical_source: imap_lo_l1b_histrates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
 
 imap_lo_l1b_derates:

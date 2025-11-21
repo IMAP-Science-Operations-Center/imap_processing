@@ -109,6 +109,23 @@ def l1b_histrates():
     return l1b_histrates
 
 
+@pytest.fixture
+def l1a_hist():
+    epoch_date = et_to_ttj2000ns(str_to_et(["2025-04-15T02:00:00"]))
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "azimuth_6", "esa_step"), np.zeros((1, 60, 7))),
+            "oxygen": (("epoch", "azimuth_6", "esa_step"), np.zeros((1, 60, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "azimuth_6": np.arange(60),
+            "esa_step": np.arange(1, 8),
+        },
+    )
+    return l1a_hist
+
+
 @patch(
     "imap_processing.lo.l1b.lo_l1b.frame_transform",
     return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
@@ -126,7 +143,7 @@ def l1b_histrates():
     "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
     return_value=np.zeros((2000, 3)),
 )
-def test_lo_l1b(
+def test_lo_l1b_de(
     mock_frame_transform,
     mock_instrument_pointing,
     mocked_get_pointing_times,
@@ -153,6 +170,36 @@ def test_lo_l1b(
 
     # Assert
     assert expected_logical_source == output_files[-1].attrs["Logical_source"]
+
+
+def test_lo_l1b_histogram_rates(l1a_hist, anc_dependencies):
+    # Arrange
+    met = et_to_met(str_to_et(["2025-04-15T02:00:00"]))
+    l1a_spin = xr.Dataset(
+        {
+            "acq_start_sec": ("epoch", met),
+            "acq_start_subsec": ("epoch", [0]),
+            "acq_end_sec": ("epoch", met + 420),
+            "acq_end_subsec": ("epoch", [0]),
+        },
+        coords={
+            "epoch": et_to_ttj2000ns(str_to_et(["2025-04-15T02:00:00"])),
+        },
+    )
+    sci_dependencies = {
+        "imap_lo_l1a_histogram": l1a_hist,
+        "imap_lo_l1a_spin": l1a_spin,
+    }
+
+    # Act
+    l1b_datasets = lo_l1b(sci_dependencies, anc_dependencies)
+
+    # Assert
+    assert "h_rates" in l1b_datasets[0].data_vars
+    assert "o_rates" in l1b_datasets[0].data_vars
+    assert "exposure_time" in l1b_datasets[0].data_vars
+    assert "h_counts" in l1b_datasets[0].data_vars
+    assert "o_counts" in l1b_datasets[0].data_vars
 
 
 # @pytest.mark.external_kernel

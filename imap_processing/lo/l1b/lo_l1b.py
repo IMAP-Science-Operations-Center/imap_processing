@@ -1176,24 +1176,32 @@ def initialize_l1b_histrates(
         The initialized L1B histogram rates dataset.
     """
     l1b_histrates = xr.Dataset(
+        coords={
+            "epoch": l1a_hist["epoch"],
+            "spin_bin_6": xr.DataArray(
+                l1a_hist["azimuth_6"].values,
+                dims=["spin_bin_6"],
+            ),
+            "esa_step": l1a_hist["esa_step"],
+        },
         attrs=attr_mgr_l1b.get_global_attributes(logical_source),
     )
 
-    l1b_histrates["epoch"] = xr.DataArray(
-        l1a_hist["epoch"].values,
-        dims=["epoch"],
-        attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
-    )
+    # l1b_histrates["epoch"] = xr.DataArray(
+    #     l1a_hist["epoch"].values,
+    #     dims=["epoch"],
+    #     attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
+    # )
     # Copy over fields from L1A DE that will not change in L1B processing
     l1b_histrates["h_counts"] = xr.DataArray(
         l1a_hist["hydrogen"].values,
-        dims=["epoch"],
+        dims=["epoch", "spin_bin_6", "esa_step"],
         # TODO: Add hydrogen to YAML file
         # attrs=attr_mgr.get_variable_attributes("hydrogen"),
     )
     l1b_histrates["o_counts"] = xr.DataArray(
         l1a_hist["oxygen"].values,
-        dims=["epoch"],
+        dims=["epoch", "spin_bin_6", "esa_step"],
         # TODO: Add oxygen to YAML file
         # attrs=attr_mgr.get_variable_attributes("oxygen"),
     )
@@ -1385,7 +1393,7 @@ def calculate_histogram_rates(
 
     l1b_histrates["exposure_time"] = xr.DataArray(
         exposure_times,
-        dims=["epoch", "azimuth", "esa_step"],
+        dims=["epoch", "spin_bin_6", "esa_step"],
     )
     l1b_histrates["h_rates"] = xr.DataArray(
         h_rates,
