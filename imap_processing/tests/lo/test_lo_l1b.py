@@ -12,6 +12,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     calculate_tof1_for_golden_triples,
     convert_start_end_acq_times,
     convert_tofs_to_eu,
+    create_badtimes_dataset,
     create_datasets,
     get_avg_spin_durations_per_cycle,
     get_spin_start_times,
@@ -30,6 +31,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_spin_cycle,
 )
 from imap_processing.lo.lo_ancillary import read_ancillary_file
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
@@ -117,10 +119,10 @@ def test_lo_l1b(
     expected_logical_source = "imap_lo_l1b_de"
 
     # Act
-    output_file = lo_l1b(data, anc_dependencies)
+    output_files = lo_l1b(data, anc_dependencies)
 
     # Assert
-    assert expected_logical_source == output_file[0].attrs["Logical_source"]
+    assert expected_logical_source == output_files[-1].attrs["Logical_source"]
 
 
 # @pytest.mark.external_kernel
@@ -670,3 +672,33 @@ def test_pointing_bins(mock_cartesian_to_latitudinal, mock_frame_transform):
     # Assert
     np.testing.assert_array_equal(l1b_de["off_angle_bin"], expected_pointing_lats)
     np.testing.assert_array_equal(l1b_de["spin_bin"], expected_pointing_lons)
+
+
+def test_badtimes_no_spin():
+    """An empty dataset should still be returned when no spin data is found."""
+    badtimes_ds = create_badtimes_dataset()
+
+    assert len(badtimes_ds["epoch"]) == 0
+    # We should have put empty variables into the dataset
+    assert "BadTime_start" in badtimes_ds.data_vars
+
+
+def test_badtimes_with_spin(spice_test_data_path, use_test_spin_data_csv):
+    """Verify some actual badtimes are created from thruster firings."""
+    # Initialize the spin data
+    fake_spin_path = spice_test_data_path / "fake_spin_data.csv"
+    use_test_spin_data_csv([fake_spin_path])
+
+    badtimes_ds = create_badtimes_dataset()
+    spin_df = get_spin_data()
+
+    thruster_df = spin_df[spin_df["thruster_firing"]]
+    n_thruster_firings = len(thruster_df)
+    # We should have some thruster firings
+    assert n_thruster_firings > 0
+
+    # Check the thruster firings we created match those in the spin data
+    assert len(badtimes_ds["epoch"]) == n_thruster_firings
+    np.testing.assert_array_equal(
+        badtimes_ds["BadTime_start"], thruster_df["spin_start_sec_sclk"]
+    )

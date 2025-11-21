@@ -23,7 +23,7 @@ from imap_processing.spice.geometry import (
     instrument_pointing,
 )
 from imap_processing.spice.repoint import get_pointing_times
-from imap_processing.spice.spin import get_spin_number
+from imap_processing.spice.spin import get_spin_data, get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,15 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
     attr_mgr_l1a = ImapCdfAttributes()
     attr_mgr_l1a.add_instrument_variable_attrs(instrument="lo", level="l1a")
     logger.info(f"\n Dependencies: {list(sci_dependencies.keys())}\n")
+
+    datasets_to_return = []
+
+    badtimes_ds = create_badtimes_dataset()
+    if badtimes_ds.data_vars:
+        # If it was an empty dataset, then we don't want to
+        badtimes_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_badtimes")
+        datasets_to_return.append(badtimes_ds)
+
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1a_de" in sci_dependencies and "imap_lo_l1a_spin" in sci_dependencies:
         logger.info("\nProcessing IMAP-Lo L1B Direct Events...")
@@ -106,8 +115,9 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         l1b_de = set_pointing_bin(l1b_de)
         # set the badtimes
         l1b_de = set_bad_times(l1b_de, anc_dependencies)
+        datasets_to_return.append(l1b_de)
 
-    return [l1b_de]
+    return datasets_to_return
 
 
 def initialize_l1b_de(
@@ -1003,3 +1013,98 @@ def create_datasets(
             )
 
     return dataset
+
+
+def create_badtimes_dataset() -> xr.Dataset:
+    """
+    Create a badtimes dataset using the spin products.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset with all badtimes data product fields in xr.DataArray.
+    """
+    logger.info("Creating badtimes dataset")
+    try:
+        spin_df = get_spin_data()
+    except ValueError:
+        logger.warning("No spin data found. Skipping badtimes dataset creation.")
+        # Return an empty dataset with the expected badtimes fields (zero-length)
+        empty_epoch = xr.DataArray(
+            data=np.array([], dtype=np.int64), name="epoch", dims=["epoch"]
+        )
+        empty_ds = xr.Dataset(coords={"epoch": empty_epoch})
+
+        empty_ds["yyyymmdd"] = xr.DataArray(
+            data=np.array([], dtype=np.int32), dims=["epoch"]
+        )
+        empty_ds["BadTime_start"] = xr.DataArray(
+            data=np.array([], dtype=np.int64), dims=["epoch"]
+        )
+        empty_ds["BadTime_end"] = xr.DataArray(
+            data=np.array([], dtype=np.int64), dims=["epoch"]
+        )
+        empty_ds["bin_start"] = xr.DataArray(
+            data=np.array([], dtype=np.uint8), dims=["epoch"]
+        )
+        empty_ds["bin_end"] = xr.DataArray(
+            data=np.array([], dtype=np.uint8), dims=["epoch"]
+        )
+
+        for i in range(1, 8):
+            empty_ds[f"E-Step{i}"] = xr.DataArray(
+                data=np.array([], dtype=np.uint8), dims=["epoch"]
+            )
+
+        empty_ds["Comment"] = xr.DataArray(
+            data=np.array([], dtype=object), dims=["epoch"]
+        )
+
+        return empty_ds
+
+    # All spins with thruster firings are bad times
+    thruster_data = spin_df[spin_df["thruster_firing"]]
+    logger.info("Number of thruster firings found: %d", len(thruster_data))
+    thruster_ds = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(
+                data=met_to_ttj2000ns(thruster_data["spin_start_met"]),
+                name="epoch",
+                dims=["epoch"],
+            )
+        },
+    )
+    thruster_ds["yyyymmdd"] = xr.DataArray(
+        data=thruster_data["spin_start_utc"]
+        .str.replace("-", "")
+        .str.slice(0, 8)
+        .values.astype(int),
+        dims=["epoch"],
+    )
+    thruster_ds["BadTime_start"] = xr.DataArray(
+        data=thruster_data["spin_start_sec_sclk"].values,
+        dims=["epoch"],
+    )
+    thruster_ds["BadTime_end"] = thruster_ds["BadTime_start"] + thruster_data[
+        "spin_period_sec"
+    ].values.astype(int)
+    thruster_ds["bin_start"] = xr.DataArray(
+        data=np.zeros(len(thruster_ds["epoch"]), dtype=np.uint8),
+        dims=["epoch"],
+    )
+    thruster_ds["bin_end"] = xr.DataArray(
+        data=np.full(len(thruster_ds["epoch"]), 59, dtype=np.uint8),
+        dims=["epoch"],
+    )
+    for i in range(1, 8):
+        thruster_ds[f"E-Step{i}"] = xr.DataArray(
+            data=np.ones(len(thruster_ds["epoch"]), dtype=np.uint8),
+            dims=["epoch"],
+        )
+    thruster_ds["Comment"] = xr.DataArray(
+        data=np.full(len(thruster_ds["epoch"]), "Thruster Firing", dtype=object),
+        dims=["epoch"],
+    )
+
+    # TODO: Merge with other datasets if/when those are created
+    return thruster_ds
