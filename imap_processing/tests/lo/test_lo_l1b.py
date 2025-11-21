@@ -702,3 +702,4 @@ def test_badtimes_with_spin(spice_test_data_path, use_test_spin_data_csv):
     np.testing.assert_array_equal(
         badtimes_ds["BadTime_start"], thruster_df["spin_start_sec_sclk"]
     )
+    np.testing.assert_array_equal(badtimes_ds["badtime_flag"], 1)

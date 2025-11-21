@@ -1051,10 +1051,15 @@ def create_badtimes_dataset() -> xr.Dataset:
             data=np.array([], dtype=np.uint8), dims=["epoch"]
         )
 
-        for i in range(1, 8):
-            empty_ds[f"E-Step{i}"] = xr.DataArray(
-                data=np.array([], dtype=np.uint8), dims=["epoch"]
-            )
+        empty_ds["esa_step"] = xr.DataArray(
+            data=np.arange(1, 8, dtype=np.uint8),
+            name="esa_step",
+            dims=["esa_step"],
+        )
+        empty_ds["badtime_flag"] = xr.DataArray(
+            data=np.empty((0, len(empty_ds["esa_step"])), dtype=np.uint8),
+            dims=["epoch", "esa_step"],
+        )
 
         empty_ds["Comment"] = xr.DataArray(
             data=np.array([], dtype=object), dims=["epoch"]
@@ -1096,11 +1101,17 @@ def create_badtimes_dataset() -> xr.Dataset:
         data=np.full(len(thruster_ds["epoch"]), 59, dtype=np.uint8),
         dims=["epoch"],
     )
-    for i in range(1, 8):
-        thruster_ds[f"E-Step{i}"] = xr.DataArray(
-            data=np.ones(len(thruster_ds["epoch"]), dtype=np.uint8),
-            dims=["epoch"],
-        )
+    thruster_ds["esa_step"] = xr.DataArray(
+        data=np.arange(1, 8, dtype=np.uint8),
+        name="esa_step",
+        dims=["esa_step"],
+    )
+    thruster_ds["badtime_flag"] = xr.DataArray(
+        data=np.ones(
+            (len(thruster_ds["epoch"]), len(thruster_ds["esa_step"])), dtype=np.uint8
+        ),
+        dims=["epoch", "esa_step"],
+    )
     thruster_ds["Comment"] = xr.DataArray(
         data=np.full(len(thruster_ds["epoch"]), "Thruster Firing", dtype=object),
         dims=["epoch"],
