@@ -15,7 +15,6 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
-from imap_processing.codice.codice_l1a import process_ialirt_data_streams
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
