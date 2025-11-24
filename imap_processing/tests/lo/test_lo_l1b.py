@@ -972,5 +972,5 @@ def test_calculate_histogram_rates_zero_exposure_time(l1b_histrates):
         l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle, exposure_factor
     )
 
-    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.zeros((2, 60, 7)))
-    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.zeros((2, 60, 7)))
+    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.full((2, 60, 7), np.nan))
+    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.full((2, 60, 7), np.nan))
