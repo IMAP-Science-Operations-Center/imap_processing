@@ -472,11 +472,14 @@ def _calculate_compton_getting_transform(
 
     # Calculate dot product between look directions and spacecraft direction vector
     # Use Einstein summation for efficient vectorized dot product
+    # Calculate spacecraft speed and direction
+    sc_velocity_km_per_sec = np.linalg.norm(pset["sc_velocity"], axis=-1, keepdims=True)
+    sc_direction_vector = pset["sc_velocity"] / sc_velocity_km_per_sec
     dot_product = xr.DataArray(
         np.einsum(
             "...i,...i->...",
             pset["look_direction"],
-            pset["sc_direction_vector"],
+            sc_direction_vector,
         ),
         dims=pset["look_direction"].dims[:-1],
     )
@@ -543,9 +546,6 @@ def _calculate_compton_getting_transform(
         ena_source_direction_helio[..., 2],
     )
 
-    # Update the PSET ram mask.
-    pset = calculate_ram_mask(pset)
-
     return pset
 
 
@@ -560,7 +560,7 @@ def calculate_ram_mask(pset: xr.Dataset) -> xr.Dataset:
     ----------
     pset : xarray.Dataset
         Pointing set dataset. The pset dataset is assumed to have valid
-        "hae_longitude", "hae_latitude", and "sc_direction_vector" variables.
+        "hae_longitude", "hae_latitude", and "sc_velocity" variables.
 
     Returns
     -------
@@ -569,12 +569,12 @@ def calculate_ram_mask(pset: xr.Dataset) -> xr.Dataset:
     """
     logger.debug(
         f"Calculating the RAM mask using input spacecraft direction "
-        f"vector: {pset['sc_direction_vector'].values} and hae coordinates in "
+        f"vector: {pset['sc_velocity'].values} and hae coordinates in "
         f"the dataset hae_longitude and hae_latitude variables."
     )
     longitude = pset["hae_longitude"]
     latitude = pset["hae_latitude"]
-    spacecraft_direction_vec = pset["sc_direction_vector"].values
+    spacecraft_velocity = pset["sc_velocity"].values
     spherical_coords = np.stack(
         [
             np.ones_like(longitude.values),
@@ -593,9 +593,7 @@ def calculate_ram_mask(pset: xr.Dataset) -> xr.Dataset:
     # ram_mask = (-v⃗_ena · û_sc) >= 0
     # Use Einstein summation for efficient vectorized dot product
     ram_mask = (
-        np.einsum(
-            "...i,...i->...", spacecraft_direction_vec, cartesian_source_direction
-        )
+        np.einsum("...i,...i->...", spacecraft_velocity, cartesian_source_direction)
         >= 0
     )
     pset["ram_mask"] = xr.DataArray(
@@ -630,7 +628,9 @@ def apply_compton_getting_correction(
         Pointing set dataset. Must contain the following coordinates:
           - epoch: start time of the pointing
         Must contain the following variables:
-          - epoch_delta: duration of the pointing in nanoseconds
+          - sc_velocity: velocity vector of the spacecraft in the HAE frame at
+            the midpoint time of the pointing [km/s]. See the
+            `add_spacecraft_velocity_to_pset` function.
           - hae_longitude: PSET bin longitudes in the HAE frame (degrees)
           - hae_latitude: PSET bin latitudes in the HAE frame (degrees)
     energy_hf : xr.DataArray
@@ -647,8 +647,6 @@ def apply_compton_getting_correction(
     Notes
     -----
     This function adds the following variables to the dataset:
-    - "sc_velocity": Spacecraft velocity vector (km/s)
-    - "sc_direction_vector": Spacecraft velocity unit vector
     - "look_direction": Cartesian unit vectors of observation directions
     - "energy_hf": ENA energies in heliosphere frame (eV)
     - "energy_sc": ENA energies in spacecraft frame (eV)
@@ -656,13 +654,10 @@ def apply_compton_getting_correction(
     - "hae_longitude": ENA source longitudes in heliosphere frame (degrees)
     - "hae_latitude": ENA source latitudes in heliosphere frame (degrees)
     """
-    # Step 1: Add spacecraft velocity and direction to pset
-    processed_dataset = add_spacecraft_velocity_to_pset(pset)
+    # Step 1: Calculate and add look direction vectors to pset
+    processed_dataset = _add_cartesian_look_direction(pset)
 
-    # Step 2: Calculate and add look direction vectors to pset
-    processed_dataset = _add_cartesian_look_direction(processed_dataset)
-
-    # Step 3: Apply Compton-Getting transformation
+    # Step 2: Apply Compton-Getting transformation
     processed_dataset = _calculate_compton_getting_transform(
         processed_dataset, energy_hf
     )
