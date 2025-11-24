@@ -758,6 +758,13 @@ HI_ACQUISITION_TIME = 0.59916
 # TODO: in the future, read from sci-lut
 LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
 LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
+LO_SW_PRIORITY_VARIABLE_NAMES = [
+    "p0_tcrs",
+    "p1_hplus",
+    "p2_heplusplus",
+    "p3_heavies",
+    "p4_dcrs",
+]
 LO_NSW_PRIORITY_VARIABLE_NAMES = ["p5_heavies", "p6_hplus_heplusplus"]
 LO_SW_SPECIES_VARIABLE_NAMES = [
     "hplus",
