@@ -46,6 +46,7 @@ class ImapDEOutliersUltraFlags(FlagNameMixin):
     COINPH = 2**2  # bit 2 # Event validity
     INVALID_ENERGY = 2**3  # bit 3
     DURINGREPOINT = 2**4  # bit 4 # event during a repointing
+    BACKTOF = 2**5  # bit 5 # Back TOF outlier
 
 
 class ImapHkUltraFlags(FlagNameMixin):

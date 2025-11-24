@@ -734,12 +734,19 @@ def test_is_back_tof_valid(test_fixture, ancillary_files):
     df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
+    # Get the ph inds
+    ph_indices = np.nonzero(
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    quality_flags = np.zeros(len(ph_indices), dtype=np.uint16)
     valid = is_back_tof_valid(
-        de_dataset,
-        df_filt.Xf.astype("float").values,
+        de_dataset.isel(epoch=ph_indices),
+        df_filt.Xf.astype("float").values[ph_indices],
         "ultra45",
         ancillary_files,
+        quality_flags,
     )
+
     back_tof_valid_bool = df_ph["BackTOFValid"].astype(int).astype(bool).values
 
     np.testing.assert_equal(back_tof_valid_bool, valid)
