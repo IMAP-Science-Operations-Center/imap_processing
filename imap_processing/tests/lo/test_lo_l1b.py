@@ -96,13 +96,13 @@ def l1b_histrates():
     )
     l1b_histrates = xr.Dataset(
         {
-            "h_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
-            "o_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+            "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+            "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
         },
         coords={
             "epoch": epoch_date,
-            "azimuth_6": np.arange(60),
             "esa_step": np.arange(1, 8),
+            "azimuth_6": np.arange(60),
         },
     )
 
@@ -114,13 +114,13 @@ def l1a_hist():
     epoch_date = et_to_ttj2000ns(str_to_et(["2025-04-15T02:00:00"]))
     l1a_hist = xr.Dataset(
         {
-            "hydrogen": (("epoch", "azimuth_6", "esa_step"), np.zeros((1, 60, 7))),
-            "oxygen": (("epoch", "azimuth_6", "esa_step"), np.zeros((1, 60, 7))),
+            "hydrogen": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "oxygen": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
         },
         coords={
             "epoch": epoch_date,
-            "azimuth_6": np.arange(60),
             "esa_step": np.arange(1, 8),
+            "azimuth_6": np.arange(60),
         },
     )
     return l1a_hist
@@ -789,35 +789,35 @@ def test_resweep_histogram_success(anc_dependencies):
     )
     l1b_de = xr.Dataset(
         {
-            "h_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
-            "o_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+            "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+            "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
         },
         coords={
             "epoch": epoch_date,
-            "azimuth_6": np.arange(60),
             "esa_step": np.arange(1, 8),
+            "azimuth_6": np.arange(60),
         },
     )
-    exposure_factor_expected = np.zeros((2, 60, 7))
-    exposure_factor_expected[:, :, 0] = 1
+    exposure_factor_expected = np.full((2, 7, 60), 1)
+    exposure_factor_expected[:, 0, :] = 2
 
     l1b_de.h_counts[0, 0, 0] = 5
-    l1b_de.h_counts[0, 0, 1] = 10
-    l1b_de.h_counts[0, 0, 2] = 2
+    l1b_de.h_counts[0, 1, 0] = 10
+    l1b_de.h_counts[0, 2, 0] = 2
 
     l1b_de.o_counts[1, 0, 0] = 2
-    l1b_de.o_counts[1, 0, 1] = 3
-    l1b_de.o_counts[1, 0, 2] = 4
+    l1b_de.o_counts[1, 1, 0] = 3
+    l1b_de.o_counts[1, 2, 0] = 4
 
     l1b_histrates, exposure_factor = resweep_histogram_data(l1b_de, anc_dependencies)
 
     assert l1b_histrates.h_counts[0, 0, 0] == 15
-    assert l1b_histrates.h_counts[0, 0, 1] == 0
-    assert l1b_histrates.h_counts[0, 0, 2] == 2
+    assert l1b_histrates.h_counts[0, 1, 0] == 0
+    assert l1b_histrates.h_counts[0, 2, 0] == 2
 
     assert l1b_histrates.o_counts[1, 0, 0] == 5
-    assert l1b_histrates.o_counts[1, 0, 1] == 0
-    assert l1b_histrates.o_counts[1, 0, 2] == 4
+    assert l1b_histrates.o_counts[1, 1, 0] == 0
+    assert l1b_histrates.o_counts[1, 2, 0] == 4
 
     assert np.array_equal(exposure_factor, exposure_factor_expected)
 
@@ -829,19 +829,19 @@ def test_resweep_histogram_no_date(anc_dependencies):
     )
     l1b_de = xr.Dataset(
         {
-            "h_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
-            "o_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+            "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+            "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
         },
         coords={
             "epoch": epoch_date,
-            "azimuth_6": np.arange(60),
             "esa_step": np.arange(1, 8),
+            "azimuth_6": np.arange(60),
         },
     )
 
     l1b_de.h_counts[0, 0, 0] = 5
-    l1b_de.h_counts[0, 0, 1] = 10
-    l1b_de.h_counts[0, 0, 2] = 2
+    l1b_de.h_counts[0, 1, 0] = 10
+    l1b_de.h_counts[0, 2, 0] = 2
 
     with pytest.raises(
         ValueError,
@@ -857,13 +857,13 @@ def test_resweep_histogram_multiple_lut(anc_dependencies):
     )
     l1b_de = xr.Dataset(
         {
-            "h_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
-            "o_counts": (("epoch", "azimuth_6", "esa_step"), np.zeros((2, 60, 7))),
+            "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+            "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
         },
         coords={
             "epoch": epoch_date,
-            "azimuth_6": np.arange(60),
             "esa_step": np.arange(1, 8),
+            "azimuth_6": np.arange(60),
         },
     )
 
@@ -889,21 +889,21 @@ def test_calculate_histogram_rates(l1b_histrates):
         ]
     )
     avg_spin_durations_per_cycle = xr.DataArray([30, 15])
-    exposure_factor = np.zeros((2, 60, 7))
+    exposure_factor = np.zeros((2, 7, 60))
     exposure_factor[0, 0, 0] = 1
     l1b_histrates.h_counts[0, 0, 0] = 30
-    l1b_histrates.h_counts[0, 0, 1] = 10
-    l1b_histrates.h_counts[0, 0, 2] = 2
+    l1b_histrates.h_counts[0, 1, 0] = 10
+    l1b_histrates.h_counts[0, 2, 0] = 2
     l1b_histrates.h_counts[1, 0, 0] = 15
-    l1b_histrates.h_counts[1, 0, 1] = 30
-    l1b_histrates.h_counts[1, 0, 2] = 45
+    l1b_histrates.h_counts[1, 1, 0] = 30
+    l1b_histrates.h_counts[1, 2, 0] = 45
 
     l1b_histrates.o_counts[0, 0, 0] = 100
-    l1b_histrates.o_counts[0, 0, 1] = 50
-    l1b_histrates.o_counts[0, 0, 2] = 25
+    l1b_histrates.o_counts[0, 1, 0] = 50
+    l1b_histrates.o_counts[0, 2, 0] = 25
     l1b_histrates.o_counts[1, 0, 0] = 2
-    l1b_histrates.o_counts[1, 0, 1] = 3
-    l1b_histrates.o_counts[1, 0, 2] = 4
+    l1b_histrates.o_counts[1, 1, 0] = 3
+    l1b_histrates.o_counts[1, 2, 0] = 4
 
     l1b_histrate = calculate_histogram_rates(
         l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle, exposure_factor
@@ -911,10 +911,10 @@ def test_calculate_histogram_rates(l1b_histrates):
 
     hist_rates_h_epoch_0 = l1b_histrate["h_rates"]
     hist_rates_h_epoch_0[0, :, :] = hist_rates_h_epoch_0[0, :, :] / 2
-    hist_rates_h_epoch_0[0, 0, :] = hist_rates_h_epoch_0[0, 0, :] / 2
+    hist_rates_h_epoch_0[0, :, 0] = hist_rates_h_epoch_0[0, :, 0] / 2
     hist_rates_o_epoch_0 = l1b_histrate["o_rates"]
     hist_rates_o_epoch_0[0, :, :] = hist_rates_o_epoch_0[0, :, :] / 2
-    hist_rates_o_epoch_0[0, 0, :] = hist_rates_o_epoch_0[0, 0, :] / 2
+    hist_rates_o_epoch_0[0, :, 0] = hist_rates_o_epoch_0[0, :, 0] / 2
 
     np.testing.assert_array_equal(
         l1b_histrate["h_rates"][0, :, :], hist_rates_h_epoch_0[0, :, :]
@@ -944,13 +944,13 @@ def test_calculate_histogram_rates_no_interval_found(l1b_histrates):
         ]
     )
     avg_spin_durations_per_cycle = xr.DataArray([30, 15])
-    exposure_factor = np.zeros((2, 60, 7))
+    exposure_factor = np.zeros((2, 7, 60))
     l1b_histrate = calculate_histogram_rates(
         l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle, exposure_factor
     )
 
-    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.full((2, 60, 7), np.nan))
-    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.full((2, 60, 7), np.nan))
+    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.full((2, 7, 60), np.nan))
+    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.full((2, 7, 60), np.nan))
 
 
 def test_calculate_histogram_rates_zero_exposure_time(l1b_histrates):
@@ -967,10 +967,10 @@ def test_calculate_histogram_rates_zero_exposure_time(l1b_histrates):
         ]
     )
     avg_spin_durations_per_cycle = xr.DataArray([0, 15])
-    exposure_factor = np.zeros((2, 60, 7))
+    exposure_factor = np.zeros((2, 7, 60))
     l1b_histrate = calculate_histogram_rates(
         l1b_histrates, acq_start, acq_end, avg_spin_durations_per_cycle, exposure_factor
     )
 
-    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.full((2, 60, 7), np.nan))
-    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.full((2, 60, 7), np.nan))
+    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.full((2, 7, 60), np.nan))
+    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.full((2, 7, 60), np.nan))
