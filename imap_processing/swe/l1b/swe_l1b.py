@@ -695,25 +695,24 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
         logger.info("No full cycle data found. Skipping.")
         return None
 
-    # In this case, we found incomplete cycle data. We need to filter
+    # We may have potentially found incomplete cycle data. We need to filter
     # out all the data that does not make a full cycle.
-    if len(full_cycle_data_indices) != total_packets:
-        # Filter metadata and science data of packets that makes full cycles
-        full_cycle_l1a_data = l1a_data_copy.isel({"epoch": full_cycle_data_indices})
+    logger.info(
+        f"Total packets before filtering [{total_packets}]"
+        f"Number of full cycles found [{len(full_cycle_data_indices)}]"
+    )
+    full_cycle_l1a_data = l1a_data_copy.isel({"epoch": full_cycle_data_indices})
 
-        # Update total packets
-        total_packets = len(full_cycle_data_indices)
-        logger.debug(
-            "Quarters cycle after filtering: "
-            f"{full_cycle_l1a_data['quarter_cycle'].data}"
+    # Update total packets
+    total_packets = len(full_cycle_data_indices)
+    logger.debug(
+        f"Quarters cycle after filtering: {full_cycle_l1a_data['quarter_cycle'].data}"
+    )
+    if len(full_cycle_data_indices) != len(full_cycle_l1a_data["quarter_cycle"].data):
+        raise ValueError(
+            "Error: full cycle data indices and filtered quarter cycle data size "
+            "mismatch"
         )
-        if len(full_cycle_data_indices) != len(
-            full_cycle_l1a_data["quarter_cycle"].data
-        ):
-            raise ValueError(
-                "Error: full cycle data indices and filtered quarter cycle data size "
-                "mismatch"
-            )
 
     # Main science processing steps
     # ---------------------------------------------------------------
