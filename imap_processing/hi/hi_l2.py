@@ -152,13 +152,14 @@ def generate_hi_map(
                 "All PSETs must have the same set of esa_energy_step values."
             )
 
+        pset_ds = add_spacecraft_velocity_to_pset(pset_ds)
+
         if descriptor.frame_descriptor == "hf":
             # convert esa nominal central energy from keV to eV
             esa_energy_ev = energy_kev * 1000
             pset_ds = apply_compton_getting_correction(pset_ds, esa_energy_ev)
-        else:
-            pset_ds = add_spacecraft_velocity_to_pset(pset_ds)
-            pset_ds = calculate_ram_mask(pset_ds)
+
+        pset_ds = calculate_ram_mask(pset_ds)
 
         # Multiply variables that need to be exposure time weighted average by
         # exposure factor.

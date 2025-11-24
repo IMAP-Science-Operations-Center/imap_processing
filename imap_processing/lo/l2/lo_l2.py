@@ -371,7 +371,10 @@ def process_single_pset(
     # Step 3: Calculate efficiency-corrected quantities
     pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
 
-    # Step 4: CG correction and compute ram mask
+    # Step 4: Add s/c velocity, optionally apply CG correction, and calculate
+    # ram-mask
+    pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
+
     if cg_correct:
         # NOTE: Heliospheric frame energy selection for CG correction
         # The heliospheric (HF) energies passed to the CG correction algorithm
@@ -390,9 +393,9 @@ def process_single_pset(
         pset_processed = apply_compton_getting_correction(
             pset_processed, energy_values_ev
         )
-    else:
-        pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
-        pset_processed = calculate_ram_mask(pset_processed)
+
+    # Always calculate ram-mask to identify ram/anti-ram bins
+    pset_processed = calculate_ram_mask(pset_processed)
 
     return pset_processed
 

@@ -2676,22 +2676,34 @@ class TestProcessSinglePset:
                 "imap_processing.lo.l2.lo_l2.calculate_efficiency_corrected_quantities"
             ) as mock_calc_ef,
             patch(
+                "imap_processing.lo.l2.lo_l2.add_spacecraft_velocity_to_pset"
+            ) as mock_add_sv,
+            patch(
                 "imap_processing.lo.l2.lo_l2.apply_compton_getting_correction"
             ) as mock_cg,
+            patch("imap_processing.lo.l2.lo_l2.calculate_ram_mask") as mock_ram_mask,
         ):
             mock_norm.return_value = pset
             mock_add_ef.return_value = pset
             mock_calc_ef.return_value = pset
+            mock_add_sv.return_value = pset
             mock_cg.return_value = pset
+            mock_ram_mask.return_value = pset
 
             # Process with hf frame
             _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=True)
+
+            # Check that add_spacecraft_velocity_to_pset was called
+            mock_add_sv.assert_called_once()
 
             # Check that CG correction was called
             mock_cg.assert_called_once()
             assert mock_cg.call_args[0][0] is pset
             # Energy should be passed as second argument
             assert "energy" in mock_cg.call_args[0][1].dims
+
+            # Check that calculate_ram_mask was called
+            mock_ram_mask.assert_called_once()
 
     def test_process_single_pset_sc_frame(self, minimal_pset, sample_efficiency_data):
         """Test that CG correction is not applied for spacecraft frame."""
