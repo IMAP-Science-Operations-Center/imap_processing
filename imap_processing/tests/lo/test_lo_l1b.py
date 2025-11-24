@@ -169,7 +169,7 @@ def test_lo_l1b_de(
     output_files = lo_l1b(data, anc_dependencies)
 
     # Assert
-    assert expected_logical_source == output_files[-1].attrs["Logical_source"]
+    assert expected_logical_source_de == output_files[-1].attrs["Logical_source"]
 
 
 def test_lo_l1b_histogram_rates(l1a_hist, anc_dependencies):
@@ -195,11 +195,11 @@ def test_lo_l1b_histogram_rates(l1a_hist, anc_dependencies):
     l1b_datasets = lo_l1b(sci_dependencies, anc_dependencies)
 
     # Assert
-    assert "h_rates" in l1b_datasets[0].data_vars
-    assert "o_rates" in l1b_datasets[0].data_vars
-    assert "exposure_time" in l1b_datasets[0].data_vars
-    assert "h_counts" in l1b_datasets[0].data_vars
-    assert "o_counts" in l1b_datasets[0].data_vars
+    assert "h_rates" in l1b_datasets[-1].data_vars
+    assert "o_rates" in l1b_datasets[-1].data_vars
+    assert "exposure_time" in l1b_datasets[-1].data_vars
+    assert "h_counts" in l1b_datasets[-1].data_vars
+    assert "o_counts" in l1b_datasets[-1].data_vars
 
 
 # @pytest.mark.external_kernel
