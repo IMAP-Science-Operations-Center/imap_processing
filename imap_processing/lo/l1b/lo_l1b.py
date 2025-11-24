@@ -24,7 +24,7 @@ from imap_processing.spice.geometry import (
 )
 from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import get_spin_data, get_spin_number
-from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et, et_to_utc
+from imap_processing.spice.time import et_to_utc, met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
