@@ -472,8 +472,6 @@ def _calculate_compton_getting_transform(
 
     # Calculate dot product between look directions and spacecraft direction vector
     # Use Einstein summation for efficient vectorized dot product
-    # Calculate spacecraft speed and direction
-    sc_velocity_km_per_sec = np.linalg.norm(pset["sc_velocity"], axis=-1, keepdims=True)
     sc_direction_vector = pset["sc_velocity"] / sc_velocity_km_per_sec
     dot_product = xr.DataArray(
         np.einsum(
