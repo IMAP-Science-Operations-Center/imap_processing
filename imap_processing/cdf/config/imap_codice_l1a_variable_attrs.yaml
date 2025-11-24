@@ -298,9 +298,9 @@ sw_bias_gain_mode:
     VAR_NOTES: Indicates whether FSW is tracking the Solarwind High-Gain bias curve or the Solarwind Low-Gain bias curve.
     VAR_TYPE: data
 
-# The following are data product-specific
-# hi-counters-aggregated
-counters_aggregate: &counters_aggre_default
+# <=== Counter Variables Base Templates ===>
+# Shared base for all counter data (Hi & Lo)
+counters_base: &counters_base
     DEPEND_0: epoch
     DISPLAY_TYPE: time_series
     FILLVAL: *uint32_fillval
@@ -310,102 +310,86 @@ counters_aggregate: &counters_aggre_default
     VALIDMIN: 0
     VALIDMAX: *max_uint32
     VAR_TYPE: data
+
+# <=== Hi-counters-aggregated ===>
+hi_counters_aggregated_default: &hi_counters_aggregated_default
+    <<: *counters_base
     LABLAXIS: "events"
 
-# This variable is common between Hi and Lo Counters data
-dcr:
-    <<: *counters_aggre_default
+hi-dcr:
+    <<: *hi_counters_aggregated_default
     CATDESC: Event B - Double Coincidence Rate (DCR)
     FIELDNAM: DCRs
 
-starts_only:
-    <<: *counters_aggre_default
+hi-starts_only:
+    <<: *hi_counters_aggregated_default
     CATDESC: Event C - Start Only (STO)
     FIELDNAM: Start Only
 
-stops_only:
-    <<: *counters_aggre_default
+hi-stops_only:
+    <<: *hi_counters_aggregated_default
     CATDESC: Event D - Stop Only (SPO)
     FIELDNAM: Stop Only
 
-reserved:
-    <<: *counters_aggre_default
-    CATDESC: Reserved {index}
-    FIELDNAM: Reserved {index}
-
-mst:
-    <<: *counters_aggre_default
+hi-mst:
+    <<: *hi_counters_aggregated_default
     CATDESC: Event H - Multi Start (MST)
     FIELDNAM: Multi Start
 
-singles_starts:
-    <<: *counters_aggre_default
+hi-singles_starts:
+    <<: *hi_counters_aggregated_default
     CATDESC: Singles - Start
     FIELDNAM: Singles - Start
 
-singles_stops:
-    <<: *counters_aggre_default
+hi-singles_stops:
+    <<: *hi_counters_aggregated_default
     CATDESC: Singles - Stop
     FIELDNAM: Singles - Stop
 
-# Next five variables are common between Hi and Lo Counters data
-low_tof_cutoff:
-    <<: *counters_aggre_default
+hi-low_tof_cutoff:
+    <<: *hi_counters_aggregated_default
     CATDESC: Low TOF Cutoff
     FIELDNAM: Low TOF Cutoff
 
-asic1_flag_invalid:
-    <<: *counters_aggre_default
+hi-asic1_flag_invalid:
+    <<: *hi_counters_aggregated_default
     CATDESC: ASIC 1 Flag Invalid Count
     FIELDNAM: ASIC 1 Flag Invalid
 
-asic2_flag_invalid:
-    <<: *counters_aggre_default
+hi-asic2_flag_invalid:
+    <<: *hi_counters_aggregated_default
     CATDESC: ASIC 2 Flag Invalid Count
     FIELDNAM: ASIC 2 Flag Invalid
 
-asic1_channel_invalid:
-    <<: *counters_aggre_default
+hi-asic1_channel_invalid:
+    <<: *hi_counters_aggregated_default
     CATDESC: ASIC 1 Channel Invalid Count
     FIELDNAM: ASIC 1 Channel Invalid
-asic2_channel_invalid:
-    <<: *counters_aggre_default
+hi-asic2_channel_invalid:
+    <<: *hi_counters_aggregated_default
     CATDESC: ASIC 2 Channel Invalid Count
     FIELDNAM: ASIC 2 Channel Invalid
 
-# hi-counters-singles
-counters_singles: &counters_singles_default
-    DEPEND_0: epoch
-    DISPLAY_TYPE: time_series
-    FILLVAL: *uint32_fillval
-    FORMAT: I7
-    SCALETYP: linear
-    UNITS: counts
-    VALIDMIN: 0
-    VALIDMAX: *max_uint32
-    VAR_TYPE: data
+# <=== Hi-counters-singles ===>
+hi_counters_singles_default: &hi_counters_singles_default
+    <<: *counters_base
+    DEPEND_1: inst_az
+    LABL_PTR_1: inst_az_label
 
-# This variable is common between Hi and Lo Counters data
-tcr:
-    <<: *counters_singles_default
+hi-tcr:
+    <<: *hi_counters_singles_default
     CATDESC: Event A - Triple Coincidence Rate (TCR)
     FIELDNAM: Rates
-    DEPEND_1: inst_az
-    LABL_PTR_1: inst_az_label
 
-ssdo:
-    <<: *counters_singles_default
+hi-ssdo:
+    <<: *hi_counters_singles_default
     CATDESC: Rates - Event E (SSDO)
     FIELDNAM: Rates
-    DEPEND_1: inst_az
-    LABL_PTR_1: inst_az_label
 
-stssd:
-    <<: *counters_singles_default
+hi-stssd:
+    <<: *hi_counters_singles_default
     CATDESC: Rates - Event G (STSSD)
     FIELDNAM: Rates
-    DEPEND_1: inst_az
-    LABL_PTR_1: inst_az_label
 
 # Hi omni and sectored Attributes
 hi-species-attrs:
@@ -510,124 +494,150 @@ priority5:
     CATDESC: Priority 5
     FIELDNAM: Priority 5
 
-# lo-counters-aggregated
-lo_counters_aggregated: &lo_counters_aggregated_default
+# <=== Lo-counters-aggregated ===>
+lo_counters_aggregated_default: &lo_counters_aggregated_default
+    <<: *counters_base
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector_pairs
-    DISPLAY_TYPE: time_series
-    FILLVAL: *uint32_fillval
-    FORMAT: I7
-    LABLAXIS: "events"
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_pairs_label
-    SCALETYP: linear
-    UNITS: counts
-    VALIDMAX: *max_uint32
-    VALIDMIN: 0
-    VAR_TYPE: data
 
-tof_plus_apd:
+lo-tcr:
+    <<: *lo_counters_aggregated_default
+    CATDESC: Triple Coincidence Rate (TCR)
+    FIELDNAM: Event A - TCR
+
+lo-dcr:
+    <<: *lo_counters_aggregated_default
+    CATDESC: Double Coincidence Rate (DCR)
+    FIELDNAM: Event B - DCR
+
+lo-low_tof_cutoff:
+    <<: *lo_counters_aggregated_default
+    CATDESC: Low TOF Cutoff
+    FIELDNAM: Low TOF Cutoff
+
+lo-low_tof_cutoff:
+    <<: *lo_counters_aggregated_default
+    CATDESC: Low TOF Cutoff
+    FIELDNAM: Low TOF Cutoff
+
+lo-asic1_flag_invalid:
+    <<: *lo_counters_aggregated_default
+    CATDESC: ASIC 1 Flag Invalid Count
+    FIELDNAM: ASIC 1 Flag Invalid
+
+lo-asic2_flag_invalid:
+    <<: *lo_counters_aggregated_default
+    CATDESC: ASIC 2 Flag Invalid Count
+    FIELDNAM: ASIC 2 Flag Invalid
+
+lo-asic1_channel_invalid:
+    <<: *lo_counters_aggregated_default
+    CATDESC: ASIC 1 Channel Invalid Count
+    FIELDNAM: ASIC 1 Channel Invalid
+lo-asic2_channel_invalid:
+    <<: *lo_counters_aggregated_default
+    CATDESC: ASIC 2 Channel Invalid Count
+    FIELDNAM: ASIC 2 Channel Invalid
+
+lo-tof_plus_apd:
     <<: *lo_counters_aggregated_default
     CATDESC: TOF + APD
     FIELDNAM: Event C - TOF + APD
 
-tof_only:
+lo-tof_only:
     <<: *lo_counters_aggregated_default
     CATDESC: TOF Only
     FIELDNAM: Event D - TOF Only
 
-position_plus_apd:
+lo-position_plus_apd:
     <<: *lo_counters_aggregated_default
     CATDESC: Position + APD
     FIELDNAM: Event E - Position + APD
 
-position_only:
+lo-position_only:
     <<: *lo_counters_aggregated_default
     CATDESC: Position Only
     FIELDNAM: Event F - Position Only
 
-sta_or_stb_plus_apd:
+lo-sta_or_stb_plus_apd:
     <<: *lo_counters_aggregated_default
     CATDESC: STA or STB + APD
     FIELDNAM: Event G - STA or STB + APD
 
-sta_or_stb_only:
+lo-sta_or_stb_only:
     <<: *lo_counters_aggregated_default
     CATDESC: STA or STB Only
-    FIELDNAM: Event H - STA or STB Only
+    FIELDNAM: Event H - STA or STB Onlys
 
-lo-reserved-attrs:
-    <<: *lo_counters_aggregated_default
-    CATDESC: Reserved
-    FIELDNAM: Reserved {index}
-
-sp_only:
+lo-sp_only:
     <<: *lo_counters_aggregated_default
     CATDESC: SP Only
     FIELDNAM: Event K - SP Only
 
-apd_only:
+lo-apd_only:
     <<: *lo_counters_aggregated_default
     CATDESC: APD Only
     FIELDNAM: Event L - APD Only
 
-sta:
+lo-sta:
     <<: *lo_counters_aggregated_default
     CATDESC: Start A
     FIELDNAM: Singles - Start-A (STA)
 
-stb:
+lo-stb:
     <<: *lo_counters_aggregated_default
     CATDESC: Start B
     FIELDNAM: Singles - Start-B (STB)
 
-sp:
+lo-sp:
     <<: *lo_counters_aggregated_default
     CATDESC: Stop
     FIELDNAM: Singles - Stop (SP)
 
-total_position_count:
+lo-total_position_count:
     <<: *lo_counters_aggregated_default
     CATDESC: Total Position Count
     FIELDNAM: Singles - Total Position Count
 
-invalid_position_count:
+lo-invalid_position_count:
     <<: *lo_counters_aggregated_default
     CATDESC: Invalid Position Count
     FIELDNAM: Singles - Invalid Position Count
 
-tec4_timeout_tof_no_pos:
+lo-tec4_timeout_tof_no_pos:
     <<: *lo_counters_aggregated_default
     CATDESC: TEC-4 Timeout TOF no Position
     FIELDNAM: TEC-4 Timeout Count; TOF, No Position
 
-tec4_timeout_pos_no_tof:
+lo-tec4_timeout_pos_no_tof:
     <<: *lo_counters_aggregated_default
     CATDESC: TEC-4 Timeout Position no TOF
     FIELDNAM: TEC-4 Timeout Count; Position, No TOF
 
-tec4_timeout_no_pos_tof:
+lo-tec4_timeout_no_pos_tof:
     <<: *lo_counters_aggregated_default
     CATDESC: TEC-4 Timeout No Position or TOF
     FIELDNAM: TEC-4 Timeout Count; No Position or TOF
 
-tec5_timeout_tof_no_pos:
+lo-tec5_timeout_tof_no_pos:
     <<: *lo_counters_aggregated_default
     CATDESC: TEC-5 Timeout TOF no Position
     FIELDNAM: TEC-5 Timeout Count; TOF, No Position
 
-tec5_timeout_pos_no_tof:
+lo-tec5_timeout_pos_no_tof:
     <<: *lo_counters_aggregated_default
     CATDESC: TEC-5 Timeout Position no TOF
     FIELDNAM: TEC-5 Timeout Count; Position, No TOF
 
-tec5_timeout_no_pos_tof:
+lo-tec5_timeout_no_pos_tof:
     <<: *lo_counters_aggregated_default
     CATDESC: TEC-5 Timeout No Position or TOF
     FIELDNAM: TEC-5 Timeout Count; No Position or TOF
 
-# lo-counters-singles
+# <=== Lo-counters-singles ===>
 lo_counters_singles:
     CATDESC: Single Rates (APD)
     DEPEND_0: epoch

@@ -1,4 +1,4 @@
-"""CoDICE L1A Hi Singles processing functions."""
+"""CoDICE L1A Lo Singles processing functions."""
 
 import logging
 from pathlib import Path
@@ -12,6 +12,7 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
     ViewTabInfo,
+    calculate_acq_time_per_step,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
     get_view_tab_info,
@@ -22,9 +23,9 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     """
-    Process CoDICE Hi Counters singles L1A data.
+    Process CoDICE Lo Counters singles L1A data.
 
     Parameters
     ----------
@@ -62,27 +63,38 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         collapse_table=view_tab_info["collapse_table"],
     )
 
-    if view_tab_obj.sensor != 1:
+    if view_tab_obj.sensor != 0:
         raise ValueError("Unsupported sensor ID for Hi processing.")
 
-    # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
-        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
+    # ========== Get Voltage Data from LUT ===========
+    # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
+    # Voltage data is (128,)
+    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
+        "lo_stepping"
+    ]
+    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
-    logical_source_id = "imap_codice_l1a_hi-counters-singles"
+    # ========= Decompress and Reshape Data ===========
+    if view_tab_obj.apid != CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
+        raise ValueError("Unsupported APID for Lo Counters singles processing.")
+
+    logical_source_id = "imap_codice_l1a_lo-counters-singles"
 
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
     # counters aggregated, it's coming from 'collapsed' tab in JSON LUT.
-    variable_names = sci_lut_data["data_product_hi_tab"]["0"]["counters-singles"].keys()
+    variable_names = sci_lut_data["data_product_lo_tab"]["0"]["counters-singles"][
+        "species_names"
+    ]
     collapse_shape = get_collapse_pattern_shape(
         sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
     )
-    # Use inst_az dimension to reshape decompressed data since
-    # spin sector size is 1.
+    # Dimensions to reshape decompressed data
+    spin_sector_pairs = collapse_shape[0]
     inst_az = collapse_shape[1]
+    esa_step = len(voltage_data)
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
@@ -97,8 +109,9 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
             binary_data_list, byte_count_list, strict=False
         )
     ]
+
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        -1, len(variable_names), inst_az
+        -1, len(variable_names), esa_step, spin_sector_pairs, inst_az
     )
 
     # ========= Get Epoch Time Data ===========
@@ -136,6 +149,18 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
                     "epoch_delta_plus", check_schema=False
                 ),
             ),
+            "esa_step": xr.DataArray(
+                np.arange(esa_step, dtype=np.uint8),
+                dims=("esa_step",),
+                attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
+            ),
+            "esa_step_label": xr.DataArray(
+                np.arange(esa_step, dtype=np.uint8).astype(str),
+                dims=("esa_step",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "esa_step_label", check_schema=False
+                ),
+            ),
             "inst_az": xr.DataArray(
                 np.arange(inst_az, dtype=np.uint8),
                 dims=("inst_az",),
@@ -148,6 +173,20 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
                     "inst_az_label", check_schema=False
                 ),
             ),
+            "spin_sector_pairs": xr.DataArray(
+                np.arange(spin_sector_pairs, dtype=np.uint8),
+                dims=("spin_sector_pairs",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "spin_sector_pairs", check_schema=False
+                ),
+            ),
+            "spin_sector_pairs_label": xr.DataArray(
+                np.arange(spin_sector_pairs, dtype=np.uint8).astype(str),
+                dims=("spin_sector_pairs",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "spin_sector_pairs_label", check_schema=False
+                ),
+            ),
         },
         attrs=cdf_attrs.get_global_attributes(logical_source_id),
     )
@@ -158,19 +197,51 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("spin_period"),
     )
+    l1a_dataset["k_factor"] = xr.DataArray(
+        np.array([constants.K_FACTOR]),
+        dims=("k_factor",),
+        attrs=cdf_attrs.get_variable_attributes("k_factor_attrs", check_schema=False),
+    )
+    l1a_dataset["voltage_table"] = xr.DataArray(
+        np.array(voltage_data),
+        dims=("esa_step",),
+        attrs=cdf_attrs.get_variable_attributes("voltage_table", check_schema=False),
+    )
     l1a_dataset["data_quality"] = xr.DataArray(
         unpacked_dataset["suspect"].values,
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
+    l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
+        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
+        dims=("esa_step",),
+        attrs=cdf_attrs.get_variable_attributes(
+            "acquisition_time_per_step", check_schema=False
+        ),
+    )
 
-    # Finally, add species data variables and their uncertainties
-    for idx, species in enumerate(variable_names):
-        l1a_dataset[species] = xr.DataArray(
-            counters_data[:, idx],
-            dims=("epoch", "inst_az"),
-            attrs=cdf_attrs.get_variable_attributes(f"hi-{species}"),
+    # Carry over these variables from unpacked data to l1a_dataset
+    l1a_carryover_vars = [
+        "sw_bias_gain_mode",
+        "st_bias_gain_mode",
+        "rgfo_half_spin",
+        "nso_half_spin",
+    ]
+    # Loop through them since we need to set their attrs too
+    for var in l1a_carryover_vars:
+        l1a_dataset[var] = xr.DataArray(
+            unpacked_dataset[var].values,
+            dims=("epoch",),
+            attrs=cdf_attrs.get_variable_attributes(var),
         )
-        # No uncertainty needed for Hi counters data
+
+    # Finally, add species data variables and their uncertainties.
+    # Since singles only has one variable, we can directly add it here.
+    l1a_dataset["apd_singles"] = xr.DataArray(
+        counters_data[:, 0, :, :, :],
+        dims=("epoch", "esa_step", "spin_sector_pairs", "inst_az"),
+        attrs=cdf_attrs.get_variable_attributes("lo_counters_singles"),
+    )
+    # No uncertainty needed for Lo counters data
 
     return l1a_dataset

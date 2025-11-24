@@ -17,6 +17,12 @@ from imap_processing.codice.codice_l1a_hi_omni import l1a_hi_omni
 from imap_processing.codice.codice_l1a_hi_priority import l1a_hi_priority
 from imap_processing.codice.codice_l1a_hi_sectored import l1a_hi_sectored
 from imap_processing.codice.codice_l1a_lo_angular import l1a_lo_angular
+from imap_processing.codice.codice_l1a_lo_counters_aggregated import (
+    l1a_lo_counters_aggregated,
+)
+from imap_processing.codice.codice_l1a_lo_counters_singles import (
+    l1a_lo_counters_singles,
+)
 from imap_processing.codice.codice_l1a_lo_priority import l1a_lo_priority
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.utils import (
@@ -102,5 +108,13 @@ def process_l1a(  # noqa: PLR0912
         elif apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
             logger.info("Processing Hi Counters singles")
             datasets.append(l1a_hi_counters_singles(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
+            logger.info("Processing Lo Counters aggregated")
+            datasets.append(
+                l1a_lo_counters_aggregated(datasets_by_apid[apid], lut_file)
+            )
+        elif apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
+            logger.info("Processing Lo Counters singles")
+            datasets.append(l1a_lo_counters_singles(datasets_by_apid[apid], lut_file))
 
     return datasets

@@ -1,4 +1,4 @@
-"""CoDICE L1A Hi Counters aggregated processing functions."""
+"""CoDICE L1A Lo Counters aggregated processing functions."""
 
 import logging
 from pathlib import Path
@@ -12,6 +12,7 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
     ViewTabInfo,
+    calculate_acq_time_per_step,
     get_codice_epoch_time,
     get_counters_aggregated_pattern,
     get_view_tab_info,
@@ -22,11 +23,11 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_hi_counters_aggregated(
+def l1a_lo_counters_aggregated(
     unpacked_dataset: xr.Dataset, lut_file: Path
 ) -> xr.Dataset:
     """
-    Process CoDICE Hi Counters aggregated L1A data.
+    Process CoDICE Lo Counters aggregated L1A data.
 
     Parameters
     ----------
@@ -48,7 +49,7 @@ def l1a_hi_counters_aggregated(
     plan_step = unpacked_dataset["plan_step"].values[0]
 
     logger.info(
-        f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
+        f"Processing aggregated with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
     # ========== Get LUT Data ===========
@@ -64,14 +65,22 @@ def l1a_hi_counters_aggregated(
         collapse_table=view_tab_info["collapse_table"],
     )
 
-    if view_tab_obj.sensor != 1:
-        raise ValueError("Unsupported sensor ID for Hi processing.")
+    if view_tab_obj.sensor != 0:
+        raise ValueError("Unsupported sensor ID for Lo processing.")
+
+    # ========== Get Voltage Data from LUT ===========
+    # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
+    # Voltage data is (128,)
+    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
+        "lo_stepping"
+    ]
+    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
     # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
-        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
+    if view_tab_obj.apid != CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
+        raise ValueError("Unsupported APID for Lo Counters aggregated processing.")
 
-    logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
+    logical_source_id = "imap_codice_l1a_lo-counters-aggregated"
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
     # counters aggregated, it's coming from 'collapsed' tab in JSON LUT.
@@ -81,16 +90,18 @@ def l1a_hi_counters_aggregated(
     # will affect CoDICE team and here.
     non_reserved_variables = get_counters_aggregated_pattern(
         sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
-    ).keys()
-
-    # For Hi aggregated, the spin sector is 1. Therefore, only use size
-    # of active variables to reshape decompressed data.
-    num_variables = len(non_reserved_variables)
+    )
+    non_reserved_keys = non_reserved_variables.keys()
+    all_keys = sci_lut_data["collapse_lo"]["1"]["variables"].keys()
+    # Dimensions
+    num_variables = len(non_reserved_keys)
+    spin_sector_pairs = non_reserved_variables["tcr"]
+    esa_step = constants.NUM_ESA_STEPS
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
 
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [
@@ -102,8 +113,14 @@ def l1a_hi_counters_aggregated(
             binary_data_list, byte_count_list, strict=False
         )
     ]
+
+    # TODO: update this as needed after Joey checks with Greg Dunn.
+    # If changes are needed, update reshape to:
+    #   (-1, num_variables, esa_step, spin_sector_pairs)
+    # Then update indexing below when adding variables to CDF to:
+    #   [:, idx, :, :]
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        -1, num_variables
+        -1, esa_step, num_variables, spin_sector_pairs
     )
 
     # ========= Get Epoch Time Data ===========
@@ -141,6 +158,32 @@ def l1a_hi_counters_aggregated(
                     "epoch_delta_plus", check_schema=False
                 ),
             ),
+            "esa_step": xr.DataArray(
+                np.arange(esa_step, dtype=np.uint8),
+                dims=("esa_step",),
+                attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
+            ),
+            "esa_step_label": xr.DataArray(
+                np.arange(esa_step, dtype=np.uint8).astype(str),
+                dims=("esa_step",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "esa_step_label", check_schema=False
+                ),
+            ),
+            "spin_sector_pairs": xr.DataArray(
+                np.arange(spin_sector_pairs, dtype=np.uint8),
+                dims=("spin_sector_pairs",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "spin_sector_pairs", check_schema=False
+                ),
+            ),
+            "spin_sector_pairs_label": xr.DataArray(
+                np.arange(spin_sector_pairs, dtype=np.uint8).astype(str),
+                dims=("spin_sector_pairs",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "spin_sector_pairs_label", check_schema=False
+                ),
+            ),
         },
         attrs=cdf_attrs.get_global_attributes(logical_source_id),
     )
@@ -151,20 +194,65 @@ def l1a_hi_counters_aggregated(
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("spin_period"),
     )
+    l1a_dataset["k_factor"] = xr.DataArray(
+        np.array([constants.K_FACTOR]),
+        dims=("k_factor",),
+        attrs=cdf_attrs.get_variable_attributes("k_factor_attrs", check_schema=False),
+    )
+    l1a_dataset["voltage_table"] = xr.DataArray(
+        np.array(voltage_data),
+        dims=("esa_step",),
+        attrs=cdf_attrs.get_variable_attributes("voltage_table", check_schema=False),
+    )
     l1a_dataset["data_quality"] = xr.DataArray(
         unpacked_dataset["suspect"].values,
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
+    l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
+        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
+        dims=("esa_step",),
+        attrs=cdf_attrs.get_variable_attributes(
+            "acquisition_time_per_step", check_schema=False
+        ),
+    )
+
+    # Carry over these variables from unpacked data to l1a_dataset
+    l1a_carryover_vars = [
+        "sw_bias_gain_mode",
+        "st_bias_gain_mode",
+        "rgfo_half_spin",
+        "nso_half_spin",
+    ]
+    # Loop through them since we need to set their attrs too
+    for var in l1a_carryover_vars:
+        l1a_dataset[var] = xr.DataArray(
+            unpacked_dataset[var].values,
+            dims=("epoch",),
+            attrs=cdf_attrs.get_variable_attributes(var),
+        )
 
     # Finally, add data variables
     for idx, variable in enumerate(non_reserved_variables):
         # We don't store reserved variables in CDF
-        attrs = cdf_attrs.get_variable_attributes(f"hi-{variable}")
+        attrs = cdf_attrs.get_variable_attributes(f"lo-{variable}")
 
         l1a_dataset[variable] = xr.DataArray(
-            counters_data[:, idx], dims=("epoch",), attrs=attrs
+            counters_data[:, :, idx, :],
+            dims=("epoch", "esa_step", "spin_sector_pairs"),
+            attrs=attrs,
         )
-        # No uncertainty needed for Hi counters data
 
+    # Add non-active variables as zeros. TODO: fill with actual
+    # filval depends on CoDICE team's decision.
+    for variable in all_keys:
+        if variable in non_reserved_keys or variable.startswith("reserved"):
+            continue
+        attrs = cdf_attrs.get_variable_attributes(f"lo-{variable}")
+        l1a_dataset[variable] = xr.DataArray(
+            np.full(l1a_dataset["tcr"].shape, 0, dtype=np.uint32),
+            dims=("epoch", "esa_step", "spin_sector_pairs"),
+            attrs=attrs,
+        )
+    # No uncertainty needed for Lo counters data
     return l1a_dataset
