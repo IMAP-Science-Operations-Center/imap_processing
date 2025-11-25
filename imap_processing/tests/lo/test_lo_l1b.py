@@ -787,7 +787,7 @@ def test_resweep_histogram_success(anc_dependencies):
     epoch_date = et_to_ttj2000ns(
         str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
     )
-    l1b_de = xr.Dataset(
+    l1b_histrate = xr.Dataset(
         {
             "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
             "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
@@ -795,21 +795,23 @@ def test_resweep_histogram_success(anc_dependencies):
         coords={
             "epoch": epoch_date,
             "esa_step": np.arange(1, 8),
-            "azimuth_6": np.arange(60),
+            "spin_bin_6": np.arange(60),
         },
     )
     exposure_factor_expected = np.full((2, 7, 60), 1)
     exposure_factor_expected[:, 0, :] = 2
 
-    l1b_de.h_counts[0, 0, 0] = 5
-    l1b_de.h_counts[0, 1, 0] = 10
-    l1b_de.h_counts[0, 2, 0] = 2
+    l1b_histrate.h_counts[0, 0, 0] = 5
+    l1b_histrate.h_counts[0, 1, 0] = 10
+    l1b_histrate.h_counts[0, 2, 0] = 2
 
-    l1b_de.o_counts[1, 0, 0] = 2
-    l1b_de.o_counts[1, 1, 0] = 3
-    l1b_de.o_counts[1, 2, 0] = 4
+    l1b_histrate.o_counts[1, 0, 0] = 2
+    l1b_histrate.o_counts[1, 1, 0] = 3
+    l1b_histrate.o_counts[1, 2, 0] = 4
 
-    l1b_histrates, exposure_factor = resweep_histogram_data(l1b_de, anc_dependencies)
+    l1b_histrates, exposure_factor = resweep_histogram_data(
+        l1b_histrate, anc_dependencies
+    )
 
     assert l1b_histrates.h_counts[0, 0, 0] == 15
     assert l1b_histrates.h_counts[0, 1, 0] == 0
@@ -827,7 +829,7 @@ def test_resweep_histogram_no_date(anc_dependencies):
     epoch_date = et_to_ttj2000ns(
         str_to_et(["2025-04-25T02:00:00", "2025-04-25T03:00:00"])
     )
-    l1b_de = xr.Dataset(
+    l1b_histrate = xr.Dataset(
         {
             "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
             "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
@@ -835,27 +837,27 @@ def test_resweep_histogram_no_date(anc_dependencies):
         coords={
             "epoch": epoch_date,
             "esa_step": np.arange(1, 8),
-            "azimuth_6": np.arange(60),
+            "spin_bin_6": np.arange(60),
         },
     )
 
-    l1b_de.h_counts[0, 0, 0] = 5
-    l1b_de.h_counts[0, 1, 0] = 10
-    l1b_de.h_counts[0, 2, 0] = 2
+    l1b_histrate.h_counts[0, 0, 0] = 5
+    l1b_histrate.h_counts[0, 1, 0] = 10
+    l1b_histrate.h_counts[0, 2, 0] = 2
 
     with pytest.raises(
         ValueError,
         match="No sweep table entry found for date "
         "2025-04-25T02:00:00.000 at epoch idx 0",
     ):
-        resweep_histogram_data(l1b_de, anc_dependencies)
+        resweep_histogram_data(l1b_histrate, anc_dependencies)
 
 
 def test_resweep_histogram_multiple_lut(anc_dependencies):
     epoch_date = et_to_ttj2000ns(
         str_to_et(["2025-04-16T02:00:00", "2025-04-16T03:00:00"])
     )
-    l1b_de = xr.Dataset(
+    l1b_histrate = xr.Dataset(
         {
             "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
             "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
@@ -863,7 +865,7 @@ def test_resweep_histogram_multiple_lut(anc_dependencies):
         coords={
             "epoch": epoch_date,
             "esa_step": np.arange(1, 8),
-            "azimuth_6": np.arange(60),
+            "spin_bin_6": np.arange(60),
         },
     )
 
@@ -872,7 +874,7 @@ def test_resweep_histogram_multiple_lut(anc_dependencies):
         match=f"Expected exactly 1 unique LUT_table "
         f"value for date 2025-04-16, but found 2:{[1, 2]}",
     ):
-        resweep_histogram_data(l1b_de, anc_dependencies)
+        resweep_histogram_data(l1b_histrate, anc_dependencies)
 
 
 def test_calculate_histogram_rates(l1b_histrates):

@@ -1254,10 +1254,12 @@ def resweep_histogram_data(
     o_counts_reswept = np.zeros_like(l1b_histrates["o_counts"].values)
 
     # Get the number of azimuth bins from the l1b_histrates dataset
-    num_azimuth = l1b_histrates["h_counts"].shape[2]
+    num_azimuth = l1b_histrates.sizes["spin_bin_6"]
     # initialize exposure factor to 1 as this will be used to scale (multiply)
     # the exposure time later
-    exposure_factor = np.full((len(epochs), 7, num_azimuth), 1, dtype=int)
+    exposure_factor = np.full(
+        (len(epochs), l1b_histrates.sizes["esa_step"], num_azimuth), 1, dtype=int
+    )
 
     for epoch_idx, epoch in enumerate(epoch_utc):
         # Get only the date portion of the epoch string for comparison with the
