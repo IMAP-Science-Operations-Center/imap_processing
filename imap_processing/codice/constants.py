@@ -875,6 +875,14 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
 ]
 HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh", "junk"]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
+HI_PRIORITY_VARIABLE_NAMES = [
+    "priority0",
+    "priority1",
+    "priority2",
+    "priority3",
+    "priority4",
+    "priority5",
+]
 # Lookup table for CoDICE-Lo despinning pixel orientations
 # See section 9.3.4 of the algorithm document for further information
 PIXEL_ORIENTATIONS = {
