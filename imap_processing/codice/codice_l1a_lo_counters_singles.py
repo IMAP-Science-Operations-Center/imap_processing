@@ -10,7 +10,6 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
     ViewTabInfo,
     calculate_acq_time_per_step,
     get_codice_epoch_time,
@@ -75,17 +74,13 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
     # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
-        raise ValueError("Unsupported APID for Lo Counters singles processing.")
-
     logical_source_id = "imap_codice_l1a_lo-counters-singles"
 
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
     # counters aggregated, it's coming from 'collapsed' tab in JSON LUT.
-    variable_names = sci_lut_data["data_product_lo_tab"]["0"]["counters-singles"][
-        "species_names"
-    ]
+    # But since lo counters singles only has one variable, we are skipping
+    # variable_names extraction here.
     collapse_shape = get_collapse_pattern_shape(
         sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
     )
@@ -111,7 +106,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     ]
 
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        -1, len(variable_names), esa_step, spin_sector_pairs, inst_az
+        -1, esa_step, spin_sector_pairs, inst_az
     )
 
     # ========= Get Epoch Time Data ===========
@@ -238,7 +233,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     # Finally, add species data variables and their uncertainties.
     # Since singles only has one variable, we can directly add it here.
     l1a_dataset["apd_singles"] = xr.DataArray(
-        counters_data[:, 0, :, :, :],
+        counters_data,
         dims=("epoch", "esa_step", "spin_sector_pairs", "inst_az"),
         attrs=cdf_attrs.get_variable_attributes("lo_counters_singles"),
     )

@@ -10,7 +10,6 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
     ViewTabInfo,
     apply_replacements_to_attrs,
     get_codice_epoch_time,
@@ -79,10 +78,6 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     # ========= Decompress and Calculate Reshape information ===========
-    if view_tab_obj.apid != CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
-        raise ValueError(
-            f"Unknown apid {view_tab_obj.apid} in Hi Sectored species processing."
-        )
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["sectored"]
     species_names = species_data.keys()
     logical_source_id = "imap_codice_l1a_hi-sectored"

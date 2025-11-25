@@ -10,7 +10,6 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
     ViewTabInfo,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
@@ -78,10 +77,6 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     # ========= Decompress and Calculate Reshape information ===========
-    # Set needed metadata for Hi and Lo's different priority products
-    if apid != CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES:
-        raise ValueError("Unsupported APID for Hi priority processing.")
-
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["priority"]
     species_names = species_data.keys()
     logical_source_id = "imap_codice_l1a_hi-priority"

@@ -10,7 +10,6 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
     ViewTabInfo,
     calculate_acq_time_per_step,
     get_codice_epoch_time,
@@ -77,9 +76,6 @@ def l1a_lo_counters_aggregated(
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
     # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
-        raise ValueError("Unsupported APID for Lo Counters aggregated processing.")
-
     logical_source_id = "imap_codice_l1a_lo-counters-aggregated"
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for

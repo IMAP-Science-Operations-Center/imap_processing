@@ -10,7 +10,6 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
     ViewTabInfo,
     get_codice_epoch_time,
     get_counters_aggregated_pattern,
@@ -68,9 +67,6 @@ def l1a_hi_counters_aggregated(
         raise ValueError("Unsupported sensor ID for Hi processing.")
 
     # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
-        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
-
     logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
