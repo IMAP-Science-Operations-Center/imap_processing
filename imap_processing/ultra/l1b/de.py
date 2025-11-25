@@ -210,7 +210,7 @@ def calculate_de(
         ancillary_files,
     )
     backtofvalid_quality_flags = np.zeros(len(ph_indices), dtype=quality_flags.dtype)
-    backtofvalid = is_back_tof_valid(
+    backtofvalid, backtofvalid_quality_flags = is_back_tof_valid(
         de_dataset.isel(epoch=ph_indices),
         xf[ph_indices],
         f"ultra{sensor}",
@@ -219,7 +219,7 @@ def calculate_de(
     )
 
     coinphvalid_quality_flags = np.zeros(len(ph_indices), dtype=quality_flags.dtype)
-    coinphvalid = is_coin_ph_valid(
+    coinphvalid, coinphvalid_quality_flags = is_coin_ph_valid(
         etof[ph_indices],
         xc[ph_indices],
         xb[ph_indices],
