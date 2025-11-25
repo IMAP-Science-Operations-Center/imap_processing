@@ -110,11 +110,6 @@ def l1a_lo_counters_aggregated(
         )
     ]
 
-    # TODO: update this as needed after Joey checks with Greg Dunn.
-    # If changes are needed, update reshape to:
-    #   (-1, num_variables, esa_step, spin_sector_pairs)
-    # Then update indexing below when adding variables to CDF to:
-    #   [:, idx, :, :]
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         -1, esa_step, num_variables, spin_sector_pairs
     )

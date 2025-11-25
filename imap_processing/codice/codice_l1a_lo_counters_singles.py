@@ -105,8 +105,10 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         )
     ]
 
-    counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        -1, esa_step, spin_sector_pairs, inst_az
+    counters_data = (
+        np.array(decompressed_data, dtype=np.uint32)
+        .reshape(-1, esa_step, inst_az, spin_sector_pairs)
+        .transpose(0, 1, 3, 2)
     )
 
     # ========= Get Epoch Time Data ===========
