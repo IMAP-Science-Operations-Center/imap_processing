@@ -1343,7 +1343,7 @@ def is_back_tof_valid(
     sensor: str,
     ancillary_files: dict,
     quality_flags: NDArray,
-) -> NDArray:
+) -> tuple[NDArray, NDArray]:
     """
     Determine whether back TOF is valid based on stop type.
 
@@ -1365,6 +1365,8 @@ def is_back_tof_valid(
     -------
     valid_mask : NDArray
         Boolean array indicating whether back TOF is valid.
+    quality_flags : NDArray
+        Updated quality flags.
 
     Notes
     -----
@@ -1390,7 +1392,7 @@ def is_back_tof_valid(
         diff[bottom_mask] <= diff_bt_max
     )
     quality_flags[~valid] |= ImapDEOutliersUltraFlags.BACKTOF.value
-    return valid
+    return valid, quality_flags
 
 
 def is_coin_ph_valid(
@@ -1404,7 +1406,7 @@ def is_coin_ph_valid(
     sensor: str,
     ancillary_files: dict,
     quality_flags: NDArray,
-) -> NDArray:
+) -> tuple[NDArray, NDArray]:
     """
     Determine event validity.
 
@@ -1436,6 +1438,8 @@ def is_coin_ph_valid(
     -------
     combined_mask : NDArray
         Boolean array indicating whether back TOF is valid.
+    quality_flags : NDArray
+        Updated quality flags.
 
     Notes
     -----
@@ -1484,4 +1488,4 @@ def is_coin_ph_valid(
 
     quality_flags[~combined_mask] |= ImapDEOutliersUltraFlags.COINPH.value
 
-    return combined_mask
+    return combined_mask, quality_flags
