@@ -234,14 +234,16 @@ def l1a_lo_counters_aggregated(
             attrs=attrs,
         )
 
-    # Add non-active variables as zeros. TODO: fill with actual
-    # filval depends on CoDICE team's decision.
     for variable in all_keys:
         if variable in non_reserved_keys or variable.startswith("reserved"):
             continue
         attrs = cdf_attrs.get_variable_attributes(f"lo-{variable}")
         l1a_dataset[variable] = xr.DataArray(
-            np.full(l1a_dataset["tcr"].shape, 0, dtype=np.uint32),
+            np.full(
+                l1a_dataset["tcr"].shape,
+                np.iinfo(np.uint32).max,
+                dtype=np.uint32,
+            ),
             dims=("epoch", "esa_step", "spin_sector_pairs"),
             attrs=attrs,
         )
