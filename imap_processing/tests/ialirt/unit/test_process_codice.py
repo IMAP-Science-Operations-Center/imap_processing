@@ -31,6 +31,7 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_LO_COUNTER,
+    convert_to_intensities,
     FILLVAL_UINT8,
     concatenate_bytes,
     create_xarray_dataset,
@@ -592,50 +593,8 @@ def test_group_and_decompress_ialirt_cod_hi(
 def test_l2_ialirt_cod_hi(cod_hi_l1b_test_data, l2_lut_path, cod_hi_l2_test_data):
     "Test that I-ALiRT CoDICE-Hi L2 data."
 
-    # Notes:
-    # i = energy bins
-    # n = spin sectors
-    # g = groups
-
-    # Hydrogen is the only ialirt species for Hi.
-    species = "h"
-
     # Read efficiency lookup table
-    # TODO: This is not per group. Ok?
-    efficiencies_df = pd.read_csv(l2_lut_path)
-    species_efficiency = efficiencies_df[
-        efficiencies_df["species"] == species
-    ].sort_values(by="energy_bin")
-
-    # Average of the hydrogen efficiencies.
-    eps_ig = species_efficiency["average_efficiency"].to_numpy(dtype=float)  # (15,)
-
-    # Calculate energy passband from L1B data
-    energy_passbands = (
-        cod_hi_l1b_test_data[f"energy_{species}_plus"]
-        + cod_hi_l1b_test_data[f"energy_{species}_minus"]
-    ).values[np.newaxis, :]
-
-    # Build the ΔE_i / m_p vector from energy_passbands.
-    # TODO: Is the hydrogen mass acceptable?
-    de_over_mp = (
-        np.asarray(energy_passbands, dtype=float).squeeze() / constants.HYDROGEN_MASS
-    )  # (15,)
-
-    # For omni over 3 SSDs:
-    g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
-
-    # denom_energy(i) = G_g * eps_ig * dE_over_mp   → shape (15,)
-    denom_energy = g_g * eps_ig * de_over_mp  # (15,)
-
-    # Rates in shape (epoch * n_spins, energy, spin_sector, inst_az)
-    h = cod_hi_l1b_test_data[species].values
-
-    # reshape to broadcast over (epoch, energy, spin_sector, inst_az)
-    denom = denom_energy.reshape(1, h.shape[1], 1, 1)  # (1, 15, 1, 1)
-
-    # Final intensities with same shape as h
-    intensity = h / denom  # shape (36, 15, 4, 4); units #/(cm^2 sr s MeV/nuc)
+    intensity = convert_to_intensities(cod_hi_l1b_test_data, l2_lut_path, "h")
 
     # test data
     test_data = cod_hi_l2_test_data["h"]
