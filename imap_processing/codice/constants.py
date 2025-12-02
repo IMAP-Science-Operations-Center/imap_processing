@@ -26,6 +26,7 @@ K_FACTOR = 5.76  # This is used to convert voltages to energies in L2
 NUM_ESA_STEPS = 128
 LO_DESPIN_SPIN_SECTORS = 24
 MAX_DE_EVENTS_PER_PACKET = 10000
+HYDROGEN_MASS = 1.0  # amu
 
 # Define the packet fields needed to be stored in segmented data and their
 # corresponding bit lengths for I-ALiRT data products
@@ -1072,6 +1073,7 @@ SOLAR_WIND_POSITIONS = [0]
 PUI_POSITIONS = SW_POSITIONS
 L2_GEOMETRIC_FACTOR = 0.013
 L2_HI_NUMBER_OF_SSD = 12.0
+IALIRT_HI_NUMBER_OF_SSD_PER_GROUP = 3.0
 
 L2_HI_SECTORED_ANGLE = np.array(
     [
