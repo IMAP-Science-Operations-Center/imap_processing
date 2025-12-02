@@ -1283,29 +1283,14 @@ def calculate_flux_corrections(dataset: xr.Dataset, flux_factors: Path) -> xr.Da
 
     # NOTE: We need to apply this to both total flux and background flux
     for var in ["ena", "bg"]:
-        # FluxCorrector works on (energy, :) arrays, so we need to flatten the map
-        # spatial dimensions for the correction and then reshape back after.
-        input_shape = dataset[f"{var}_intensity"].shape[1:]  # Exclude epoch dimension
-        intensity = (
-            dataset[f"{var}_intensity"].values[0].reshape(len(dataset["energy"]), -1)
+        # Apply flux correction with xarray inputs
+        dataset[f"{var}_intensity"], dataset[f"{var}_intensity_stat_uncert"] = (
+            corrector.apply_flux_correction(
+                dataset[f"{var}_intensity"],
+                dataset[f"{var}_intensity_stat_uncert"],
+                dataset["energy"],
+            )
         )
-        stat_uncert = (
-            dataset[f"{var}_intensity_stat_uncert"]
-            .values[0]
-            .reshape(len(dataset["energy"]), -1)
-        )
-        corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
-            intensity,
-            stat_uncert,
-            dataset["energy"].data,
-        )
-        # Add the size 1 epoch dimension back in to the corrected fluxes.
-        dataset[f"{var}_intensity"].data = corrected_intensity.reshape(input_shape)[
-            np.newaxis, ...
-        ]
-        dataset[f"{var}_intensity_stat_uncert"].data = corrected_stat_unc.reshape(
-            input_shape
-        )[np.newaxis, ...]
 
     return dataset
 

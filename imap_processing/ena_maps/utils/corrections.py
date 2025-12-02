@@ -384,15 +384,15 @@ class PowerLawFluxCorrector:
         """
         # Stack all non-energy dimensions into a single "pixel" dimension
         # This converts to shape (energy, pixel) for processing
-        spatial_dims = [d for d in flux.dims if d != "energy"]
+        spatial_dims = [d for d in flux.dims if "energy" not in d]
 
         if spatial_dims:
-            flux_stacked = flux.stack(pixel=spatial_dims)
-            flux_stat_unc_stacked = flux_stat_unc.stack(pixel=spatial_dims)
+            flux_stacked = flux.stack(flux_pixel=spatial_dims)
+            flux_stat_unc_stacked = flux_stat_unc.stack(flux_pixel=spatial_dims)
         else:
             # If only energy dimension exists, add a dummy pixel dimension
-            flux_stacked = flux.expand_dims("pixel")
-            flux_stat_unc_stacked = flux_stat_unc.expand_dims("pixel")
+            flux_stacked = flux.expand_dims("flux_pixel")
+            flux_stat_unc_stacked = flux_stat_unc.expand_dims("flux_pixel")
 
         # Call vectorized predictor-corrector iteration on 2D arrays
         corrected_flux_stacked, corrected_unc_stacked, _ = (
@@ -417,16 +417,16 @@ class PowerLawFluxCorrector:
 
         # Unstack back to original dimensions
         if spatial_dims:
-            corrected_flux_da = corrected_flux_da.unstack("pixel")
-            corrected_unc_da = corrected_unc_da.unstack("pixel")
+            corrected_flux_da = corrected_flux_da.unstack("flux_pixel")
+            corrected_unc_da = corrected_unc_da.unstack("flux_pixel")
 
             # Ensure dimension order matches input
             corrected_flux_da = corrected_flux_da.transpose(*flux.dims)
             corrected_unc_da = corrected_unc_da.transpose(*flux_stat_unc.dims)
         else:
             # Remove dummy pixel dimension
-            corrected_flux_da = corrected_flux_da.squeeze("pixel")
-            corrected_unc_da = corrected_unc_da.squeeze("pixel")
+            corrected_flux_da = corrected_flux_da.squeeze("flux_pixel")
+            corrected_unc_da = corrected_unc_da.squeeze("flux_pixel")
 
         return corrected_flux_da, corrected_unc_da
 
