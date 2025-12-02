@@ -10,12 +10,12 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.codice import constants
-from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
-from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
+from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
+from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc, ttj2000ns_to_met
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +188,6 @@ def create_xarray_dataset(
 
 
 def convert_to_intensities(cod_hi_l1b_test_data, l2_lut_path, species):
-
     # Notes:
     # i = energy bins
     # n = spin sectors
@@ -239,7 +238,7 @@ def process_codice(
     l1a_lut_path: pathlib.Path,
     l2_lut_path: pathlib.Path,
     sensor: str,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple:
     """
     Create final data products.
 
@@ -254,7 +253,9 @@ def process_codice(
 
     Returns
     -------
-    codice_data : tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    cod_lo_data : dict
+        Dictionary of final data product.
+    codice_hi_data : dict
         Dictionary of final data product.
 
     Notes
@@ -267,138 +268,84 @@ def process_codice(
     """
     logger.info("Processing CoDICE.")
 
+    codice_lo_data: list[dict[str, Any]] = []
+    codice_hi_data: list[dict[str, Any]] = []
+
     # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
     # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
-    met = calculate_time(
-        dataset["sc_sclk_sec"], dataset["sc_sclk_sub_sec"], 256
-    )
+    met = calculate_time(dataset["sc_sclk_sec"], dataset["sc_sclk_sub_sec"], 256)
     # Add required parameters.
     dataset["met"] = met
-    met_all = []
 
     if sensor == "codice_lo":
         grouped_cod_lo_data = find_groups(
             dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
         )
         unique_cod_lo_groups = np.unique(grouped_cod_lo_data["group"])
-        cod_lo_grouped = []
 
     if sensor == "codice_hi":
         grouped_cod_hi_data = find_groups(
             dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
         )
         unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
-        cod_hi_grouped = []
 
     if sensor == "codice_lo" and unique_cod_lo_groups.size > 0:
         for group in unique_cod_lo_groups:
             cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
             # Decompress binary stream
-            cod_lo_grouped.append(cod_lo_data_stream)
-            met = grouped_cod_lo_data["met"][(grouped_cod_lo_data["group"] == group).values]
-            met_all.append(met.values[0])
+            met = grouped_cod_lo_data["met"][
+                (grouped_cod_lo_data["group"] == group).values
+            ]  # noqa
 
-        cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
-            cod_lo_grouped
-        )
-        cod_lo_dataset = create_xarray_dataset(
-            cod_lo_science_values, cod_lo_metadata_values, "lo", l1a_lut_path
-        )
-        result = l1a_lo_species(cod_lo_dataset, l1a_lut_path)  # noqa
+            cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
+                [cod_lo_data_stream]
+            )
+            cod_lo_dataset = create_xarray_dataset(
+                cod_lo_science_values, cod_lo_metadata_values, "lo", l1a_lut_path
+            )
+            result = l1a_lo_species(cod_lo_dataset, l1a_lut_path)  # noqa
 
     if sensor == "codice_hi" and unique_cod_hi_groups.size > 0:
-        codice_hi = []
         for group in unique_cod_hi_groups:
             cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
 
             # Decompress binary stream
-            cod_hi_grouped.append(cod_hi_data_stream)
-            met = grouped_cod_hi_data["met"][(grouped_cod_hi_data["group"] == group).values]
-            met_all.append(met.values[0])
+            met = grouped_cod_hi_data["met"][
+                (grouped_cod_hi_data["group"] == group).values
+            ]
 
-        cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
-            cod_hi_grouped
-        )
-        cod_hi_dataset = create_xarray_dataset(  # noqa
-            cod_hi_science_values, cod_hi_metadata_values, "hi", l1a_lut_path
-        )
-        l1a_hi = l1a_ialirt_hi(cod_hi_dataset, l1a_lut_path)
-        l1b_hi = convert_to_rates(
-            l1a_hi,
-            "hi-ialirt",
-        )
-        l2_hi = convert_to_intensities(l1b_hi, l2_lut_path, "h")
-
-        for i in range(len(met_all)):
-
-            codice_hi.append(
-                {
-                    "apid": 478,
-                    "met": int(met_all[i]),
-                    "met_in_utc": met_to_utc(met_all[i]).split(".")[0],
-                    "ttj2000ns": int(met_to_ttj2000ns(met_all[i])),
-                    "instrument": "codice_hi",
-                    "codice_hi_h_energy_ranges": int(mago_times_all[i]),
-                    "mag_B_GSE": [Decimal(f"{v:.3f}") for v in gse_vector[i]],
-                    "mag_B_GSM": [Decimal(f"{v:.3f}") for v in gsm_vector[i]],
-                    "mag_B_RTN": [Decimal(f"{v:.3f}") for v in rtn_vector[i]],
-                    "mag_B_magnitude": Decimal(f"{magnitude[i]:.3f}"),
-                    "mag_phi_B_GSM": Decimal(f"{phi_gsm[i]:.3f}"),
-                    "mag_theta_B_GSM": Decimal(f"{theta_gsm[i]:.3f}"),
-                    "mag_phi_B_GSE": Decimal(f"{phi_gse[i]:.3f}"),
-                    "mag_theta_B_GSE": Decimal(f"{theta_gse[i]:.3f}"),
-                    "mag_hk_status": {
-                        "hk1v5_warn": bool(status_data["hk1v5_warn"]),
-                        "hk1v5_danger": bool(status_data["hk1v5_danger"]),
-                        "hk1v5c_warn": bool(status_data["hk1v5c_warn"]),
-                        "hk1v5c_danger": bool(status_data["hk1v5c_danger"]),
-                        "hk1v8_warn": bool(status_data["hk1v8_warn"]),
-                        "hk1v8_danger": bool(status_data["hk1v8_danger"]),
-                        "hk1v8c_warn": bool(status_data["hk1v8c_warn"]),
-                        "hk1v8c_danger": bool(status_data["hk1v8c_danger"]),
-                        "fob_saturated": bool(status_data["fob_saturated"]),
-                        "fib_saturated": bool(status_data["fib_saturated"]),
-                        "mode": int(status_data["mode"]),
-                        "icu_temp": int(status_data["icu_temp"]),
-                        "hk2v5_warn": bool(status_data["hk2v5_warn"]),
-                        "hk2v5_danger": bool(status_data["hk2v5_danger"]),
-                        "hk2v5c_warn": bool(status_data["hk2v5c_warn"]),
-                        "hk2v5c_danger": bool(status_data["hk2v5c_danger"]),
-                        "hk3v3": int(status_data["hk3v3"]),
-                        "hk3v3_current": int(status_data["hk3v3_current"]),
-                        "pri_isvalid": bool(status_data["pri_isvalid"]),
-                        "hkp8v5_warn": bool(status_data["hkp8v5_warn"]),
-                        "hkp8v5_danger": bool(status_data["hkp8v5_danger"]),
-                        "hkp8v5c_warn": bool(status_data["hkp8v5c_warn"]),
-                        "hkp8v5c_danger": bool(status_data["hkp8v5c_danger"]),
-                        "hkn8v5": int(status_data["hkn8v5"]),
-                        "hkn8v5_current": int(status_data["hkn8v5_current"]),
-                        "fob_temp": int(status_data["fob_temp"]),
-                        "fib_temp": int(status_data["fib_temp"]),
-                        "fob_range": int(status_data["fob_range"]),
-                        "fib_range": int(status_data["fib_range"]),
-                        "multbit_errs": bool(status_data["multbit_errs"]),
-                        "sec_isvalid": bool(status_data["sec_isvalid"]),
-                    },
-                }
+            cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
+                [cod_hi_data_stream]
             )
+            cod_hi_dataset = create_xarray_dataset(
+                cod_hi_science_values, cod_hi_metadata_values, "hi", l1a_lut_path
+            )
+            l1a_hi = l1a_ialirt_hi(cod_hi_dataset, l1a_lut_path)
+            l1b_hi = convert_to_rates(
+                l1a_hi,
+                "hi-ialirt",
+            )
+            time_diff = np.diff(ttj2000ns_to_met(l1b_hi["epoch"]))
+            time_offsets = [0, *time_diff]
+            l2_hi = convert_to_intensities(l1b_hi, l2_lut_path, "h")
 
+            for t_idx, offset in enumerate(time_offsets):
+                met_val = int(met.values[0] + offset)
 
-    # TODO: calculate rates
-    #       This will be done in codice.codice_l1b
+                codice_hi_data.append(
+                    {
+                        "apid": 478,
+                        "met": met_val,
+                        "met_in_utc": met_to_utc(met_val).split(".")[0],
+                        "ttj2000ns": int(met_to_ttj2000ns(met_val)),
+                        "instrument": f"{sensor}",
+                        # each row gets its **own** (15,4,4) slice from l2_hi
+                        "codice_hi_l2_hi": [
+                            [[Decimal(f"{float(v):.3f}") for v in row] for row in mat]
+                            for mat in l2_hi[t_idx]
+                        ],
+                    }
+                )
 
-    # TODO: calculate L2 CoDICE pseudodensities
-    #       This will be done in codice.codice_l2
-
-    # TODO: calculate the public data products
-    #       This will be done in this module
-
-    # Create mock dataset for I-ALiRT SIT
-    # TODO: Once I-ALiRT test data is acquired that actually has data in it,
-    #       we should be able to properly populate the I-ALiRT data, but for
-    #       now, just create lists of dicts.
-    cod_lo_data: list[dict[str, Any]] = []
-    cod_hi_data: list[dict[str, Any]] = []
-
-    return cod_lo_data, cod_hi_data
+    return codice_lo_data, codice_hi_data
