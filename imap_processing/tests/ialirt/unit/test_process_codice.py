@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import cdflib
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -23,6 +24,7 @@ from imap_processing.codice.codice_l2 import (
     compute_geometric_factors,
     get_efficiency_lut,
     get_geometric_factor_lut,
+    process_hi_omni,
     process_lo_species_intensity,
 )
 from imap_processing.codice.decompress import decompress
@@ -32,6 +34,7 @@ from imap_processing.ialirt.l0.process_codice import (
     FILLVAL_UINT8,
     concatenate_bytes,
     create_xarray_dataset,
+    process_codice,
     process_ialirt_data_streams,
 )
 from imap_processing.ialirt.utils.grouping import find_groups
@@ -299,6 +302,27 @@ def cod_lo_l2_test_data():
     return cdf_file
 
 
+@pytest.fixture(scope="session")
+def cod_hi_l2_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / (
+            f"imap_codice_l2_hi-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
+    )
+    # TODO: fix error in cdf file and change to:
+    # data = load_cdf(data_path)
+    cdf_file = cdflib.CDF(data_path)
+
+    return cdf_file
+
+
 @patch("xarray.Dataset.drop_vars", new=lambda self, *args, **kwargs: self)
 @pytest.mark.external_test_data
 def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
@@ -328,6 +352,21 @@ def l1a_lut_path():
         / "data"
         / "l1a_lut"
         / "imap_codice_l1a-sci-lut_20251007_v004.json"
+    )
+
+    return lut_path
+
+
+@pytest.fixture
+def l2_lut_path():
+    """Returns the calibration data."""
+    lut_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_lut"
+        / "imap_codice_l2-hi-omni-efficiency_20251008_v001.csv"
     )
 
     return lut_path
@@ -545,6 +584,56 @@ def test_group_and_decompress_ialirt_cod_hi(
     assert np.allclose(
         result["spin_period"].values,
         cod_hi_l1a_test_data["spin_period"].values,
+        atol=1e-6,
+    )
+
+
+@pytest.mark.external_test_data
+def test_l2_ialirt_cod_hi(
+    cod_hi_l1b_test_data, l2_lut_path, cod_hi_l2_test_data
+):
+    # Read the efficiencies data from the CSV file
+    species = "h"
+    efficiencies_df = pd.read_csv(l2_lut_path)
+    energy_passbands = (cod_hi_l1b_test_data[f"energy_{species}_plus"] +
+                        cod_hi_l1b_test_data[f"energy_{species}_minus"]
+                        ).values[np.newaxis, :]
+    # shape (epoch * n_spins, energy, spin_sector, inst_az)
+    h = cod_hi_l1b_test_data[species].values
+
+    species_efficiency = efficiencies_df[
+        efficiencies_df["species"] == species
+        ].sort_values(by="energy_bin")
+
+    # Average of the hydrogen efficiencies.
+    eps_ig = species_efficiency["average_efficiency"].to_numpy(dtype=float)  # (15,)
+
+    # --- 2. Build the ΔE_i / m_p vector from your energy_passbands ---
+
+    dE_over_mp = np.asarray(energy_passbands, dtype=float).squeeze()  # (15,)
+
+    # --- 3. Geometric factor term ---
+
+    # For omni over all 12 SSDs:
+    G_g = constants.L2_GEOMETRIC_FACTOR * 3.0
+
+    # --- 4. Denominator and intensities I(i,n,g) ---
+
+    # denom_energy(i) = G_g * eps_ig(i) * dE_over_mp(i)   → shape (15,)
+    denom_energy = G_g * eps_ig * dE_over_mp  # (15,)
+
+    # reshape to broadcast over (epoch, spin_sector, inst_az)
+    denom = denom_energy.reshape(1, h.shape[1], 1, 1)  # (1, 15, 1, 1)
+
+    # Final intensities with same shape as h
+    I = h / denom  # shape (36, 15, 4, 4); units #/(cm^2 sr s MeV/nuc)
+
+    # test data
+    test_data = cod_hi_l2_test_data["h"]
+
+    np.testing.assert_allclose(
+        I,
+        test_data,
         atol=1e-6,
     )
 
