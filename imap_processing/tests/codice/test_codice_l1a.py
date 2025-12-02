@@ -27,24 +27,24 @@ logger = logging.getLogger(__name__)
 pytestmark = pytest.mark.external_test_data
 
 
-@pytest.mark.skip(reason="test_hskp - KeyError: 'optics_hv_cmd_err_cnt'")
-def test_hskp():
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_hskp(mock_get_file_paths, codice_lut_path):
     """Tests the housekeeping."""
-    test_file_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_input"
-        / "imap_codice_hskp_20250814_v001.pkts"
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="hskp", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
+    processed_datasets = process_l1a(dependency=ProcessingInputCollection())
+
+    assert len(processed_datasets) == 2
+    processed_l1a = processed_datasets[0]
+    processed_l1b = processed_datasets[1]
+
+    # spot check the l1a value is an integer and the l1b is a float after conversion
+    np.testing.assert_almost_equal(processed_l1a["fee_ssd_eb_temp_1_t"].values[0], 2199)
+    np.testing.assert_almost_equal(
+        processed_l1b["fee_ssd_eb_temp_1_t"].values[0], 18.71, decimal=2
     )
-
-    processed_data = process_l1a(file_path=test_file_path)[0]
-
-    # Instead of checking all variables, just check that time-related variables
-    # have the expected shape and that the processing completes
-    if "time" in processed_data:
-        assert len(processed_data.time.shape) == 1, "Time should be a 1D array"
-
-    cdf_file = write_cdf(processed_data)
-    assert cdf_file.name == f"imap_codice_l1a_hskp_{VALIDATION_FILE_DATE}_v999.cdf"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")

@@ -6,6 +6,7 @@ import xarray as xr
 from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.codice_l1a_hi_counters_aggregated import (
     l1a_hi_counters_aggregated,
@@ -116,5 +117,25 @@ def process_l1a(  # noqa: PLR0912
         elif apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
             logger.info("Processing Lo Counters singles")
             datasets.append(l1a_lo_counters_singles(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_NHK:
+            logger.info("Processing l1a housekeeping data")
+            cdf_attrs = ImapCdfAttributes()
+            cdf_attrs.add_instrument_global_attrs("codice")
+            l1a_ds = datasets_by_apid[apid]
+            l1a_ds.attrs.update(cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"))
+            datasets.append(l1a_ds)
+
+            # l1b processing need to re-run packet file to datasets to do the
+            # housekeeping engineering unit conversions based on the packet definitions
+            # We only do this if there are any housekeeping packets that need it so we
+            # don't process unnecessarily here.
+            logger.info("Processing l1b housekeeping data")
+            l1b_ds = packet_file_to_datasets(
+                science_file,
+                xtce_file,
+                use_derived_value=True,
+            )[apid]
+            l1b_ds.attrs.update(cdf_attrs.get_global_attributes("imap_codice_l1b_hskp"))
+            datasets.append(l1b_ds)
 
     return datasets

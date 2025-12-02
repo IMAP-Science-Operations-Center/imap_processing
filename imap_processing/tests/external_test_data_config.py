@@ -33,6 +33,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l0_hi-sectored_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_hskp_20250814_v001.pkts", "codice/data/l1a_input/"),
 
     # L1A LUT
     ("imap_codice_l1a-sci-lut_20251007_v004.json", "codice/data/l1a_lut/"),
