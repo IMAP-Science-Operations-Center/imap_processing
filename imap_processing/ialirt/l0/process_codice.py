@@ -10,10 +10,12 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.codice import constants
+from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1b import convert_to_rates
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +238,7 @@ def process_codice(
     dataset: xr.Dataset,
     l1a_lut_path: pathlib.Path,
     l2_lut_path: pathlib.Path,
+    sensor: str,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """
     Create final data products.
@@ -262,25 +265,39 @@ def process_codice(
     - Calculate L2 CoDICE pseudodensities (pg 37 of Algorithm Document)
     - Calculate the public data products
     """
-    grouped_cod_lo_data = find_groups(
-        dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
-    )
-    grouped_cod_hi_data = find_groups(
-        dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
-    )
-    unique_cod_lo_groups = np.unique(grouped_cod_lo_data["group"])
-    unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
+    logger.info("Processing CoDICE.")
 
-    cod_lo_grouped = []
-    cod_hi_grouped = []
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = calculate_time(
+        dataset["sc_sclk_sec"], dataset["sc_sclk_sub_sec"], 256
+    )
+    # Add required parameters.
+    dataset["met"] = met
+    met_all = []
 
-    # Processing for l1a.
-    if unique_cod_lo_groups.size > 0:
+    if sensor == "codice_lo":
+        grouped_cod_lo_data = find_groups(
+            dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
+        )
+        unique_cod_lo_groups = np.unique(grouped_cod_lo_data["group"])
+        cod_lo_grouped = []
+
+    if sensor == "codice_hi":
+        grouped_cod_hi_data = find_groups(
+            dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
+        )
+        unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
+        cod_hi_grouped = []
+
+    if sensor == "codice_lo" and unique_cod_lo_groups.size > 0:
         for group in unique_cod_lo_groups:
             cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
             # Decompress binary stream
             cod_lo_grouped.append(cod_lo_data_stream)
+            met = grouped_cod_lo_data["met"][(grouped_cod_lo_data["group"] == group).values]
+            met_all.append(met.values[0])
 
         cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
             cod_lo_grouped
@@ -288,15 +305,17 @@ def process_codice(
         cod_lo_dataset = create_xarray_dataset(
             cod_lo_science_values, cod_lo_metadata_values, "lo", l1a_lut_path
         )
-        result = l1a_lo_species(cod_lo_dataset, lut_path)  # noqa
+        result = l1a_lo_species(cod_lo_dataset, l1a_lut_path)  # noqa
 
-    if unique_cod_hi_groups.size > 0:
+    if sensor == "codice_hi" and unique_cod_hi_groups.size > 0:
         codice_hi = []
         for group in unique_cod_hi_groups:
             cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
 
             # Decompress binary stream
             cod_hi_grouped.append(cod_hi_data_stream)
+            met = grouped_cod_hi_data["met"][(grouped_cod_hi_data["group"] == group).values]
+            met_all.append(met.values[0])
 
         cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
             cod_hi_grouped
@@ -304,14 +323,14 @@ def process_codice(
         cod_hi_dataset = create_xarray_dataset(  # noqa
             cod_hi_science_values, cod_hi_metadata_values, "hi", l1a_lut_path
         )
-        l1a_hi = l1a_ialirt_hi(dataset, l1a_lut_path)
+        l1a_hi = l1a_ialirt_hi(cod_hi_dataset, l1a_lut_path)
         l1b_hi = convert_to_rates(
             l1a_hi,
             "hi-ialirt",
         )
         l2_hi = convert_to_intensities(l1b_hi, l2_lut_path, "h")
 
-        for intensity in l2_hi:
+        for i in range(len(met_all)):
 
             codice_hi.append(
                 {

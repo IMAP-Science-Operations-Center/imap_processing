@@ -72,6 +72,8 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["ialirt"]
     species_names = species_data.keys()
+    first_species = next(iter(species_data))
+    centers, energy_minus, energy_plus = get_energy_info(species_data[first_species])
 
     compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
 
@@ -118,6 +120,14 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             "epoch_delta_plus": xr.DataArray(
                 repeated_deltas,
                 dims=("epoch",),
+            ),
+            f"energy_{first_species}_minus": xr.DataArray(
+                energy_minus,
+                dims=(f"energy_{first_species}",),
+            ),
+            f"energy_{first_species}_plus": xr.DataArray(
+                energy_minus,
+                dims=(f"energy_{first_species}",),
             ),
         },
     )
