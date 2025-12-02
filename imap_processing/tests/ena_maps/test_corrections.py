@@ -59,8 +59,9 @@ class TestPowerLawFluxCorrector:
     def test_estimate_power_law_with_uncertainties(self):
         """Test slope estimation with flux uncertainties."""
 
-        fluxes = np.array([10, 20, 40, 80, 160, 320, 640])
-        energies = np.arange(8) + 1
+        # Create 2D arrays (n_energy, n_pixels)
+        fluxes = np.array([10, 20, 40, 80, 160, 320, 640])[:, np.newaxis]
+        energies = np.arange(7) + 1
         uncertainties = np.sqrt(fluxes)
         gamma, delta_gamma = PowerLawFluxCorrector.estimate_power_law_slope(
             fluxes, energies, uncertainties
@@ -72,7 +73,8 @@ class TestPowerLawFluxCorrector:
     def test_estimate_power_law_with_zero_flux(self):
         """Test slope estimation falls back to linear differencing."""
 
-        fluxes = np.array([10, 0, 40, 60, 0, 0, 80])
+        # Create 2D arrays (n_energy, n_pixels)
+        fluxes = np.array([10, 0, 40, 60, 0, 0, 80])[:, np.newaxis]
         uncertainties = np.maximum(0.1 * fluxes, 1)
         expected_gamma = np.array(
             [
@@ -87,7 +89,7 @@ class TestPowerLawFluxCorrector:
                 0,  # No differencing scheme works
                 0,  # End point fails to find slope
             ]
-        )
+        )[:, np.newaxis]
         expected_delta_gamma = np.array(
             [
                 0,
@@ -98,7 +100,7 @@ class TestPowerLawFluxCorrector:
                 0,
                 0,
             ]
-        )
+        )[:, np.newaxis]
         energies = np.arange(len(fluxes)) + 1
         corr = PowerLawFluxCorrector
         gamma, delta_gamma = corr.estimate_power_law_slope(
@@ -111,7 +113,8 @@ class TestPowerLawFluxCorrector:
         """Test predictor-corrector stops after max_iterations."""
 
         corr = PowerLawFluxCorrector(lo_coeffs_file)
-        fluxes = (np.arange(7) * 1000**2)[::-1]
+        # Create 2D arrays (n_energy, n_pixels)
+        fluxes = ((np.arange(7) * 1000**2)[::-1])[:, np.newaxis]
         energies = np.arange(1, 8) + 1
         _, _, n_iter = corr.predictor_corrector_iteration(
             fluxes,
@@ -120,7 +123,7 @@ class TestPowerLawFluxCorrector:
             max_iterations=3,
             convergence_threshold=1e-12,
         )
-        assert n_iter == 3
+        assert np.all(n_iter == 3)
 
     def create_lo_test_data(self):
         """Create synthetic Lo data to test."""
@@ -188,8 +191,9 @@ class TestPowerLawFluxCorrector:
         """Test correction using sample data from Nathan's spreadsheet."""
         flux_corr = PowerLawFluxCorrector(lo_coeffs_file)
         energies, flux_dict, background_dict = self.create_lo_test_data()
+        # Reshape to 2D arrays (n_energy, n_pixels)
         corrected_fluxes, corrected_unc, _ = flux_corr.predictor_corrector_iteration(
-            flux_dict["J"], flux_dict["delta_J"], energies
+            flux_dict["J"][:, np.newaxis], flux_dict["delta_J"][:, np.newaxis], energies
         )
         expected_corr_fluxes = np.array(
             [
@@ -202,14 +206,17 @@ class TestPowerLawFluxCorrector:
                 7.828285642,
             ]
         )
-        np.testing.assert_allclose(corrected_fluxes, expected_corr_fluxes, rtol=1e-2)
+        np.testing.assert_allclose(
+            corrected_fluxes.squeeze(), expected_corr_fluxes, rtol=1e-2
+        )
 
     def test_predictor_corrector_hi_example(self, hi_coeffs_file):
         """Test correction using sample data from Nathan's spreadsheet."""
         flux_corr = PowerLawFluxCorrector(hi_coeffs_file)
         energies, flux_dict, background_dict = self.create_hi_test_data()
+        # Reshape to 2D arrays (n_energy, n_pixels)
         corrected_fluxes, corrected_unc, _ = flux_corr.predictor_corrector_iteration(
-            flux_dict["J"], flux_dict["delta_J"], energies
+            flux_dict["J"][:, np.newaxis], flux_dict["delta_J"][:, np.newaxis], energies
         )
         expected_corr_fluxes = np.array(
             [
@@ -224,24 +231,221 @@ class TestPowerLawFluxCorrector:
                 4.782030232,
             ]
         )
-        np.testing.assert_allclose(corrected_fluxes, expected_corr_fluxes, rtol=1e-2)
+        np.testing.assert_allclose(
+            corrected_fluxes.squeeze(), expected_corr_fluxes, rtol=1e-2
+        )
 
     @mock.patch(
         "imap_processing.ena_maps.utils.corrections.PowerLawFluxCorrector.predictor_corrector_iteration"
     )
     def test_apply_flux_correction(self, mock_predictor_corrector, hi_coeffs_file):
         """Test applying the correction to map data."""
-        mock_predictor_corrector.side_effect = lambda f, d_f, e: (f * 2, d_f / 2, 0)
-        flux = np.arange(90).reshape(9, 10)
-        delta_flux = np.sqrt(flux)
-        energies = np.arange(flux.shape[0])
+        # Mock returns 2D arrays (n_energy, n_pixels) and n_iterations
+        mock_predictor_corrector.side_effect = lambda f, d_f, e: (
+            f * 2,
+            d_f / 2,
+            np.zeros(f.shape[1], dtype=int),
+        )
+
+        # Create xarray DataArrays with energy dimension
+        flux_data = np.arange(90).reshape(9, 10)
+        delta_flux_data = np.sqrt(flux_data)
+        energies_data = np.arange(flux_data.shape[0])
+
+        flux = xr.DataArray(
+            flux_data,
+            dims=["energy", "spatial"],
+            coords={"energy": energies_data, "spatial": np.arange(10)},
+        )
+        delta_flux = xr.DataArray(
+            delta_flux_data,
+            dims=["energy", "spatial"],
+            coords={"energy": energies_data, "spatial": np.arange(10)},
+        )
+        energies = xr.DataArray(
+            energies_data, dims=["energy"], coords={"energy": energies_data}
+        )
 
         flux_corr = PowerLawFluxCorrector(hi_coeffs_file)
         corrected_flux, corrected_delta_flux = flux_corr.apply_flux_correction(
             flux, delta_flux, energies
         )
-        np.testing.assert_array_equal(corrected_flux, flux * 2)
-        np.testing.assert_array_equal(corrected_delta_flux, delta_flux / 2)
+
+        # Verify output is xarray DataArray with correct dimensions
+        assert isinstance(corrected_flux, xr.DataArray)
+        assert isinstance(corrected_delta_flux, xr.DataArray)
+        assert corrected_flux.dims == flux.dims
+        assert corrected_delta_flux.dims == delta_flux.dims
+
+        # Verify values are correct
+        np.testing.assert_array_equal(corrected_flux.values, flux_data * 2)
+        np.testing.assert_array_equal(corrected_delta_flux.values, delta_flux_data / 2)
+
+    def test_estimate_power_law_slope_multi_pixel(self):
+        """Test slope estimation with multiple spatial pixels (true 2D array)."""
+        # Create test data with 7 energy levels and 12 spatial pixels
+        # Shape: (n_energy=7, n_pixels=12)
+        n_energy = 7
+        n_pixels = 12
+
+        # Create varying flux values across pixels
+        energies = np.arange(n_energy) + 1
+        base_fluxes = np.array([10, 20, 40, 80, 160, 320, 640])
+
+        # Create 2D array where each pixel has slightly different flux scaling
+        fluxes = (
+            base_fluxes[:, np.newaxis] * np.linspace(0.8, 1.2, n_pixels)[np.newaxis, :]
+        )
+        uncertainties = np.sqrt(fluxes)
+
+        gamma, delta_gamma = PowerLawFluxCorrector.estimate_power_law_slope(
+            fluxes, energies, uncertainties
+        )
+
+        # Check output shapes
+        assert gamma.shape == (n_energy, n_pixels)
+        assert delta_gamma.shape == (n_energy, n_pixels)
+
+        # All slopes should be finite and non-zero for this simple power-law data
+        assert np.all(np.isfinite(gamma))
+        assert np.all(np.isfinite(delta_gamma))
+
+        # All slopes should be positive (fluxes increase with energy)
+        assert np.all(gamma > 0)
+        assert np.all(delta_gamma > 0)
+
+    def test_estimate_power_law_slope_with_zeros_multi_pixel(self):
+        """Test slope estimation with zero fluxes in multi-pixel array."""
+        # Create test data with some zero fluxes at different locations per pixel
+        n_energy = 7
+        n_pixels = 5
+
+        energies = np.arange(n_energy) + 1
+
+        # Create different zero patterns for each pixel
+        fluxes = np.array(
+            [
+                [10, 0, 10, 10, 10],  # pixel 0: zero at energy 0
+                [20, 20, 0, 20, 20],  # pixel 1: zero at energy 1
+                [40, 40, 40, 0, 40],  # pixel 2: zero at energy 2
+                [60, 60, 60, 60, 0],  # pixel 3: zero at energy 3
+                [0, 0, 0, 0, 80],  # all zeros except one pixel
+                [0, 80, 80, 80, 80],  # zero at first pixel only
+                [80, 80, 80, 80, 80],  # no zeros
+            ]
+        )
+        uncertainties = np.maximum(0.1 * fluxes, 1)
+
+        gamma, delta_gamma = PowerLawFluxCorrector.estimate_power_law_slope(
+            fluxes, energies, uncertainties
+        )
+
+        # Check output shapes
+        assert gamma.shape == (n_energy, n_pixels)
+        assert delta_gamma.shape == (n_energy, n_pixels)
+
+        # Where we have valid data on both sides, slopes should be non-zero
+        # Last energy level with all valid fluxes should have positive slopes
+        assert np.all(gamma[-1, :] >= 0)
+
+    def test_predictor_corrector_multi_pixel(self, lo_coeffs_file):
+        """Test predictor-corrector with multiple spatial pixels."""
+        corr = PowerLawFluxCorrector(lo_coeffs_file)
+
+        # Create 2D array with 7 energy levels and 8 spatial pixels
+        n_energy = 7
+        n_pixels = 8
+        energies = np.arange(1, n_energy + 1) + 1
+
+        # Create base fluxes that vary across pixels
+        base_fluxes = ((np.arange(n_energy) + 1) * 1000**2)[::-1]
+        fluxes = (
+            base_fluxes[:, np.newaxis] * np.linspace(0.9, 1.1, n_pixels)[np.newaxis, :]
+        )
+        uncertainties = np.sqrt(fluxes)
+
+        corrected_fluxes, corrected_unc, n_iter = corr.predictor_corrector_iteration(
+            fluxes,
+            uncertainties,
+            energies,
+            max_iterations=20,
+            convergence_threshold=0.005,
+        )
+
+        # Check output shapes
+        assert corrected_fluxes.shape == (n_energy, n_pixels)
+        assert corrected_unc.shape == (n_energy, n_pixels)
+        assert n_iter.shape == (n_pixels,)
+
+        # All pixels should converge
+        assert np.all(n_iter < 20)
+        assert np.all(n_iter > 0)
+
+        # Corrected fluxes should be finite and positive
+        assert np.all(np.isfinite(corrected_fluxes))
+        assert np.all(corrected_fluxes > 0)
+
+    def test_apply_flux_correction_2d_spatial(self, hi_coeffs_file):
+        """Test applying correction to data with 2D spatial dimensions (like Lo)."""
+        flux_corr = PowerLawFluxCorrector(hi_coeffs_file)
+
+        # Create xarray DataArrays with 2D spatial dimensions
+        # Shape: (energy=9, spin=36, elevation=4) - simulating Lo's structure
+        n_energy = 9
+        n_spin = 36
+        n_elev = 4
+
+        energies_data = np.arange(n_energy) + 1
+        flux_data = np.random.rand(n_energy, n_spin, n_elev) * 1000 + 100
+        delta_flux_data = np.sqrt(flux_data)
+
+        flux = xr.DataArray(
+            flux_data,
+            dims=["energy", "spin", "elevation"],
+            coords={
+                "energy": energies_data,
+                "spin": np.arange(n_spin),
+                "elevation": np.arange(n_elev),
+            },
+        )
+        delta_flux = xr.DataArray(
+            delta_flux_data,
+            dims=["energy", "spin", "elevation"],
+            coords={
+                "energy": energies_data,
+                "spin": np.arange(n_spin),
+                "elevation": np.arange(n_elev),
+            },
+        )
+        energies = xr.DataArray(
+            energies_data, dims=["energy"], coords={"energy": energies_data}
+        )
+
+        # Apply correction
+        corrected_flux, corrected_unc = flux_corr.apply_flux_correction(
+            flux, delta_flux, energies
+        )
+
+        # Verify output has same dimensions and shape as input
+        assert corrected_flux.dims == flux.dims
+        assert corrected_unc.dims == delta_flux.dims
+        assert corrected_flux.shape == flux.shape
+        assert corrected_unc.shape == delta_flux.shape
+
+        # Verify dimension order is preserved
+        assert corrected_flux.dims == ("energy", "spin", "elevation")
+        assert corrected_unc.dims == ("energy", "spin", "elevation")
+
+        # Verify coordinates are preserved
+        np.testing.assert_array_equal(corrected_flux.coords["energy"], energies_data)
+        np.testing.assert_array_equal(corrected_flux.coords["spin"], np.arange(n_spin))
+        np.testing.assert_array_equal(
+            corrected_flux.coords["elevation"], np.arange(n_elev)
+        )
+
+        # Corrected values should be finite and mostly positive
+        assert np.all(np.isfinite(corrected_flux))
+        assert np.sum(corrected_flux > 0) > 0.9 * corrected_flux.size
 
 
 @pytest.fixture

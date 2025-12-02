@@ -70,23 +70,26 @@ class PowerLawFluxCorrector:
         Parameters
         ----------
         k : np.ndarray
-            Energy levels.
+            Energy levels (1D array of ESA steps).
         gamma : np.ndarray
-            Power-law slopes.
+            Power-law slopes. Can be 1D (n_energy,) or multi-dimensional
+            (n_energy, ...spatial_dims...).
 
         Returns
         -------
         np.ndarray
-            ESA transmission scale factors.
+            ESA transmission scale factors. Shape matches gamma.
         """
         k = np.atleast_1d(k)
         gamma = np.atleast_1d(gamma)
         eta = np.empty_like(gamma)
+
+        # Loop over energy levels only (first axis)
         for i, esa_step in enumerate(k):
+            # Evaluate polynomial for all spatial pixels at this energy level
             eta[i] = self.polynomial_lookup[esa_step](gamma[i])
             # Negative transmissions get set to 1
-            if eta[i] < 0:
-                eta[i] = 1
+            eta[i] = np.where(eta[i] < 0, 1.0, eta[i])
 
         return eta
 
@@ -108,101 +111,129 @@ class PowerLawFluxCorrector:
         Parameters
         ----------
         fluxes : np.ndarray
-            Array of differential fluxes [J_1, J_2, ..., J_7].
+            Array of differential fluxes with shape (n_energy, n_pixels).
         energies : np.ndarray
-            Array of energy levels [E_1, E_2, ..., E_7].
+            Array of energy levels [E_1, E_2, ..., E_7]. Must be 1D.
         uncertainties : np.ndarray, optional
-            Array of flux uncertainties [δJ_1, δJ_2, ..., δJ_7].
+            Array of flux uncertainties. Shape must match fluxes.
 
         Returns
         -------
         gamma : np.ndarray
-            Array of power-law slopes.
+            Array of power-law slopes. Shape (n_energy, n_pixels).
         delta_gamma : np.ndarray or None
-            Array of uncertainty slopes (if uncertainties provided).
+            Array of uncertainty slopes (if uncertainties provided). Shape
+            (n_energy, n_pixels).
         """
-        n_levels = len(fluxes)
-        gamma = np.full(n_levels, 0, dtype=float)
+        n_levels = fluxes.shape[0]
+        gamma = np.zeros_like(fluxes, dtype=float)
         delta_gamma = (
-            np.full(n_levels, 0, dtype=float) if uncertainties is not None else None
+            np.zeros_like(fluxes, dtype=float) if uncertainties is not None else None
         )
-
-        # Create an array of indices that can be used to create a padded array where
-        # the padding duplicates the first element on the front and the last element
-        # on the end of the array
-        extended_inds = np.pad(np.arange(n_levels), 1, mode="edge")
 
         # Compute logs, setting non-positive fluxes to NaN
         log_fluxes = np.log(np.where(fluxes > 0, fluxes, np.nan))
         log_energies = np.log(energies)
-        # Create extended arrays by repeating first and last values. This allows
-        # for linear differencing to be used on the ends and central differencing
-        # to be used on the interior of the array with a single vectorized equation.
+
+        # Pad with NaN so central differencing naturally falls back to one-sided
         # Interior points use central differencing equation:
         #     gamma_k = ln(J_{k+1}/J_{k-1}) / ln(E_{k+1}/E_{k-1})
         # Left boundary uses linear forward differencing:
         #     gamma_k = ln(J_{k+1}/J_{k}) / ln(E_{k+1}/E_{k})
         # Right boundary uses linear backward differencing:
         #     gamma_k = ln(J_{k}/J_{k-1}) / ln(E_{k}/E_{k-1})
-        log_extended_fluxes = log_fluxes[extended_inds]
-        log_extended_energies = log_energies[extended_inds]
 
-        # Extract the left and right log values to use in slope calculation
-        left_log_fluxes = log_extended_fluxes[:-2]  # indices 0 to n_levels-1
-        right_log_fluxes = log_extended_fluxes[2:]  # indices 2 to n_levels+1
-        left_log_energies = log_extended_energies[:-2]
-        right_log_energies = log_extended_energies[2:]
+        # Pad along energy axis (first axis) with NaN
+        # fluxes has shape (n_energy, n_pixels)
+        log_extended_fluxes = np.pad(
+            log_fluxes, ((1, 1), (0, 0)), constant_values=np.nan
+        )
+        log_extended_energies = np.pad(log_energies, (1, 1), constant_values=np.nan)
 
-        # Compute power-law slopes for valid indices
-        central_valid = np.isfinite(left_log_fluxes) & np.isfinite(right_log_fluxes)
-        gamma[central_valid] = (
-            (right_log_fluxes - left_log_fluxes)
-            / (right_log_energies - left_log_energies)
-        )[central_valid]
+        # Broadcast energies to match flux shape:
+        # (n_energy + 2,) -> (n_energy + 2, n_pixels)
+        log_extended_energies_broadcast = np.broadcast_to(
+            log_extended_energies[:, np.newaxis],
+            log_extended_fluxes.shape,
+        )
+
+        # Create index arrays with same shape as fluxes
+        # Start with central differencing indices: left=k-1, right=k+1
+        # In the extended array, original index k corresponds to extended index k+1
+        left_indices = np.broadcast_to(
+            np.arange(n_levels)[:, np.newaxis], fluxes.shape
+        ).copy()
+        right_indices = np.broadcast_to(
+            (np.arange(n_levels) + 2)[:, np.newaxis], fluxes.shape
+        ).copy()
+
+        # Check if central differencing is valid
+        central_invalid = ~(
+            np.isfinite(np.take_along_axis(log_extended_fluxes, left_indices, axis=0))
+            & np.isfinite(
+                np.take_along_axis(log_extended_fluxes, right_indices, axis=0)
+            )
+        )
+
+        # For invalid central differencing, try forward differencing: left=k, right=k+1
+        left_indices[central_invalid] += 1
+
+        # Check if forward differencing is valid
+        forward_invalid = ~(
+            np.isfinite(np.take_along_axis(log_extended_fluxes, left_indices, axis=0))
+            & np.isfinite(
+                np.take_along_axis(log_extended_fluxes, right_indices, axis=0)
+            )
+        )
+
+        # For invalid forward differencing, try backward: left=k-1, right=k
+        need_backward = central_invalid & forward_invalid
+        left_indices[need_backward] -= 1  # Back to k-1
+        right_indices[need_backward] -= 1  # Change from k+1 to k
+
+        # Extract final flux and energy values using the computed indices
+        left_log_fluxes = np.take_along_axis(log_extended_fluxes, left_indices, axis=0)
+        right_log_fluxes = np.take_along_axis(
+            log_extended_fluxes, right_indices, axis=0
+        )
+        left_log_energies = np.take_along_axis(
+            log_extended_energies_broadcast, left_indices, axis=0
+        )
+        right_log_energies = np.take_along_axis(
+            log_extended_energies_broadcast, right_indices, axis=0
+        )
+
+        # Compute power-law slopes
+        valid = np.isfinite(left_log_fluxes) & np.isfinite(right_log_fluxes)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            gamma = np.where(
+                valid,
+                (right_log_fluxes - left_log_fluxes)
+                / (right_log_energies - left_log_energies),
+                0.0,
+            )
 
         # Compute uncertainty slopes
         if uncertainties is not None:
-            with np.errstate(divide="ignore"):
+            with np.errstate(divide="ignore", invalid="ignore"):
                 rel_unc_sq = (uncertainties / fluxes) ** 2
-            extended_rel_unc_sq = rel_unc_sq[extended_inds]
-            delta_gamma = np.sqrt(
-                extended_rel_unc_sq[:-2] + extended_rel_unc_sq[2:]
-            ) / (log_extended_energies[2:] - log_extended_energies[:-2])
-            delta_gamma[~central_valid] = 0
+            extended_rel_unc_sq = np.pad(
+                rel_unc_sq, ((1, 1), (0, 0)), constant_values=np.nan
+            )
 
-        # Handle one-sided differencing for points where central differencing failed
-        need_fallback = ~central_valid & np.isfinite(log_fluxes)
-        # Exclude first and last points since they already use the correct
-        # one-sided differencing
-        interior_fallback = np.zeros_like(need_fallback, dtype=bool)
-        interior_fallback[1:-1] = need_fallback[1:-1]
+            left_rel_unc_sq = np.take_along_axis(
+                extended_rel_unc_sq, left_indices, axis=0
+            )
+            right_rel_unc_sq = np.take_along_axis(
+                extended_rel_unc_sq, right_indices, axis=0
+            )
 
-        if np.any(interior_fallback):
-            indices = np.where(interior_fallback)[0]
-
-            for k in indices:
-                # For interior points: try forward first, then backward
-                if k < n_levels - 1 and np.isfinite(log_fluxes[k + 1]):
-                    gamma[k] = (log_fluxes[k + 1] - log_fluxes[k]) / (
-                        log_energies[k + 1] - log_energies[k]
-                    )
-
-                    # Compute uncertainty slope using same differencing
-                    if isinstance(delta_gamma, np.ndarray):
-                        delta_gamma[k] = np.sqrt(rel_unc_sq[k + 1] + rel_unc_sq[k]) / (
-                            log_energies[k + 1] - log_energies[k]
-                        )
-
-                elif k > 0 and np.isfinite(log_fluxes[k - 1]):
-                    gamma[k] = (log_fluxes[k] - log_fluxes[k - 1]) / (
-                        log_energies[k] - log_energies[k - 1]
-                    )
-
-                    # Compute uncertainty slope using same differencing
-                    if isinstance(delta_gamma, np.ndarray):
-                        delta_gamma[k] = np.sqrt(rel_unc_sq[k] + rel_unc_sq[k - 1]) / (
-                            log_energies[k] - log_energies[k - 1]
-                        )
+            delta_gamma = np.where(
+                valid,
+                np.sqrt(left_rel_unc_sq + right_rel_unc_sq)
+                / (right_log_energies - left_log_energies),
+                0.0,
+            )
 
         return gamma, delta_gamma
 
@@ -213,20 +244,23 @@ class PowerLawFluxCorrector:
         energies: np.ndarray,
         max_iterations: int = 20,
         convergence_threshold: float = 0.005,
-    ) -> tuple[np.ndarray, np.ndarray, int]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Estimate source fluxes using iterative predictor-corrector scheme.
 
         Implements the algorithm from Appendix A of the Mapping Algorithm Document.
+        Fully vectorized to process all spatial pixels simultaneously, with
+        per-pixel convergence tracking.
 
         Parameters
         ----------
         observed_fluxes : np.ndarray
-            Array of observed fluxes.
+            Array of observed fluxes. Shape (n_energy,) or
+            (n_energy, ...spatial_dims...).
         observed_uncertainties : numpy.ndarray
-            Array of observed uncertainties.
+            Array of observed uncertainties. Shape must match observed_fluxes.
         energies : np.ndarray
-            Array of energy levels.
+            Array of energy levels (1D).
         max_iterations : int, optional
             Maximum number of iterations, by default 20.
         convergence_threshold : float, optional
@@ -235,13 +269,14 @@ class PowerLawFluxCorrector:
         Returns
         -------
         source_fluxes : np.ndarray
-            Final estimate of source fluxes.
+            Final estimate of source fluxes. Shape matches observed_fluxes.
         source_uncertainties : np.ndarray
-            Final estimate of source uncertainties.
-        n_iterations : int
-            Number of iterations run.
+            Final estimate of source uncertainties. Shape matches observed_fluxes.
+        n_iterations : np.ndarray
+            Number of iterations run for each pixel. Shape matches spatial dims
+            of input.
         """
-        n_levels = len(observed_fluxes)
+        n_levels = observed_fluxes.shape[0]
         energy_levels = np.arange(n_levels) + 1
 
         # Initial power-law estimate from observed fluxes
@@ -250,18 +285,34 @@ class PowerLawFluxCorrector:
         # Initial source flux estimate
         eta_initial = self.eta_esa(energy_levels, gamma_initial)
         source_fluxes_n = observed_fluxes / eta_initial
+        source_uncertainties = observed_uncertainties / eta_initial
 
-        for _iteration in range(max_iterations):
-            # Store previous iteration
-            source_fluxes_prev = source_fluxes_n.copy()
+        # Track which pixels have converged and iteration count per pixel
+        converged = np.zeros(observed_fluxes.shape[1:], dtype=bool)
+        n_iterations = np.zeros(observed_fluxes.shape[1:], dtype=int)
 
-            # Predictor step
-            gamma_pred, _ = self.estimate_power_law_slope(source_fluxes_n, energies)
-            gamma_half = 0.5 * (gamma_initial + gamma_pred)
+        for iteration in range(max_iterations):
+            # Get mask for unconverged pixels
+            not_converged = ~converged
+
+            # Only process unconverged pixels
+            source_fluxes_active = source_fluxes_n[:, not_converged]
+            observed_fluxes_active = observed_fluxes[:, not_converged]
+            observed_uncertainties_active = observed_uncertainties[:, not_converged]
+            gamma_initial_active = gamma_initial[:, not_converged]
+
+            # Store previous iteration for unconverged pixels
+            source_fluxes_prev = source_fluxes_active.copy()
+
+            # Predictor step - only for unconverged pixels
+            gamma_pred, _ = self.estimate_power_law_slope(
+                source_fluxes_active, energies
+            )
+            gamma_half = 0.5 * (gamma_initial_active + gamma_pred)
 
             # Predictor source flux estimate
             eta_half = self.eta_esa(energy_levels, gamma_half)
-            source_fluxes_half = observed_fluxes / eta_half
+            source_fluxes_half = observed_fluxes_active / eta_half
 
             # Corrector step
             gamma_corr, _ = self.estimate_power_law_slope(source_fluxes_half, energies)
@@ -269,57 +320,115 @@ class PowerLawFluxCorrector:
 
             # Final source flux estimate for this iteration
             eta_final = self.eta_esa(energy_levels, gamma_n)
-            source_fluxes_n = observed_fluxes / eta_final
-            source_uncertainties = observed_uncertainties / eta_final
+            source_fluxes_new = observed_fluxes_active / eta_final
+            source_uncertainties_new = observed_uncertainties_active / eta_final
 
-            # Check convergence
+            # Check convergence for unconverged pixels
             with np.errstate(divide="ignore", invalid="ignore"):
-                ratios_sq = (source_fluxes_n / source_fluxes_prev) ** 2
-            chi_n = np.sqrt(np.mean(ratios_sq)) - 1
+                ratios_sq = (source_fluxes_new / source_fluxes_prev) ** 2
+            # Compute chi per pixel (mean over energy axis)
+            chi_n = np.sqrt(np.mean(ratios_sq, axis=0)) - 1
 
-            if chi_n < convergence_threshold:
+            # Determine which pixels converged this iteration
+            # Start with all False, then set True for newly converged pixels
+            newly_converged = np.zeros_like(converged)
+            newly_converged[not_converged] = chi_n < convergence_threshold
+            n_iterations[newly_converged] = iteration + 1
+
+            # Update source fluxes and uncertainties for unconverged pixels
+            source_fluxes_n[:, not_converged] = source_fluxes_new
+            source_uncertainties[:, not_converged] = source_uncertainties_new
+
+            # Update converged mask
+            converged |= newly_converged
+
+            # If all pixels have converged, exit early
+            if np.all(converged):
                 break
 
-        return source_fluxes_n, source_uncertainties, _iteration + 1
+        # Set iteration count for pixels that didn't converge
+        n_iterations[~converged] = max_iterations
+
+        return source_fluxes_n, source_uncertainties, n_iterations
 
     def apply_flux_correction(
-        self, flux: np.ndarray, flux_stat_unc: np.ndarray, energies: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+        self,
+        flux: xr.DataArray,
+        flux_stat_unc: xr.DataArray,
+        energies: xr.DataArray,
+    ) -> tuple[xr.DataArray, xr.DataArray]:
         """
         Apply flux correction to observed fluxes.
 
-        Iterative predictor-corrector scheme is run on each spatial pixel
-        individually to correct fluxes and statistical uncertainties. This method
-        is intended to be used with the unwrapped data in the ena_maps.AbstractSkyMap
-        class or child classes.
+        Iterative predictor-corrector scheme is applied to all spatial pixels
+        simultaneously using vectorized operations to correct fluxes and
+        statistical uncertainties.
 
         Parameters
         ----------
-        flux : numpy.ndarray
-            Input flux with shape (n_energy, n_spatial_pixels).
-        flux_stat_unc : np.ndarray
-            Statistical uncertainty for input fluxes. Shape must match the shape
-            of flux.
-        energies : numpy.ndarray
-            Array of energy levels in units of eV or keV.
+        flux : xarray.DataArray
+            Input flux. Must have "energy" dimension corresponding to energies.
+            Can have arbitrary additional spatial dimensions.
+        flux_stat_unc : xarray.DataArray
+            Statistical uncertainty for input fluxes. Shape and dimensions must
+            match flux.
+        energies : xarray.DataArray
+            Array of energy levels in units of eV or keV. Must be 1D with
+            "energy" dimension.
 
         Returns
         -------
-        tuple[numpy.ndarray, numpy.ndarray]
-            Corrected fluxes and flux uncertainties.
+        tuple[xarray.DataArray, xarray.DataArray]
+            Corrected fluxes and flux uncertainties with same shape and dimensions
+            as input.
         """
-        corrected_flux = np.empty_like(flux)
-        corrected_flux_stat_unc = np.empty_like(flux_stat_unc)
+        # Stack all non-energy dimensions into a single "pixel" dimension
+        # This converts to shape (energy, pixel) for processing
+        spatial_dims = [d for d in flux.dims if d != "energy"]
 
-        # loop over spatial pixels (last dimension)
-        for i_pixel in range(flux.shape[-1]):
-            corrected_flux[:, i_pixel], corrected_flux_stat_unc[:, i_pixel], _ = (
-                self.predictor_corrector_iteration(
-                    flux[:, i_pixel], flux_stat_unc[:, i_pixel], energies
-                )
+        if spatial_dims:
+            flux_stacked = flux.stack(pixel=spatial_dims)
+            flux_stat_unc_stacked = flux_stat_unc.stack(pixel=spatial_dims)
+        else:
+            # If only energy dimension exists, add a dummy pixel dimension
+            flux_stacked = flux.expand_dims("pixel")
+            flux_stat_unc_stacked = flux_stat_unc.expand_dims("pixel")
+
+        # Call vectorized predictor-corrector iteration on 2D arrays
+        corrected_flux_stacked, corrected_unc_stacked, _ = (
+            self.predictor_corrector_iteration(
+                flux_stacked.values,
+                flux_stat_unc_stacked.values,
+                energies.values,
             )
+        )
 
-        return corrected_flux, corrected_flux_stat_unc
+        # Convert back to DataArrays with stacked dimensions
+        corrected_flux_da = xr.DataArray(
+            corrected_flux_stacked,
+            dims=flux_stacked.dims,
+            coords=flux_stacked.coords,
+        )
+        corrected_unc_da = xr.DataArray(
+            corrected_unc_stacked,
+            dims=flux_stat_unc_stacked.dims,
+            coords=flux_stat_unc_stacked.coords,
+        )
+
+        # Unstack back to original dimensions
+        if spatial_dims:
+            corrected_flux_da = corrected_flux_da.unstack("pixel")
+            corrected_unc_da = corrected_unc_da.unstack("pixel")
+
+            # Ensure dimension order matches input
+            corrected_flux_da = corrected_flux_da.transpose(*flux.dims)
+            corrected_unc_da = corrected_unc_da.transpose(*flux_stat_unc.dims)
+        else:
+            # Remove dummy pixel dimension
+            corrected_flux_da = corrected_flux_da.squeeze("pixel")
+            corrected_unc_da = corrected_unc_da.squeeze("pixel")
+
+        return corrected_flux_da, corrected_unc_da
 
 
 def add_spacecraft_velocity_to_pset(
