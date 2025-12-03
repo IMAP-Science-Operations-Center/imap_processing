@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
+from numpy import typing as npt
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
@@ -501,3 +502,21 @@ class CalibrationProductConfig:
             calibration product definitions.
         """
         return len(self._obj.index.unique(level="calibration_prod"))
+
+    @property
+    def calibration_product_numbers(self) -> npt.NDArray[np.int_]:
+        """
+        Get the calibration product numbers from the current configuration.
+
+        Returns
+        -------
+        cal_prod_numbers : numpy.ndarray
+            Array of calibration product numbers from the configuration.
+            These are sorted in ascending order and can be arbitrary integers.
+        """
+        return (
+            self._obj.index.get_level_values("calibration_prod")
+            .unique()
+            .sort_values()
+            .values
+        )
