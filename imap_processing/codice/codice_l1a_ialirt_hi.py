@@ -71,7 +71,6 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         )
 
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["ialirt"]
-    species_names = species_data.keys()
     first_species = next(iter(species_data))
     centers, energy_minus, energy_plus = get_energy_info(species_data[first_species])
 
@@ -126,7 +125,7 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 dims=(f"energy_{first_species}",),
             ),
             f"energy_{first_species}_plus": xr.DataArray(
-                energy_minus,
+                energy_plus,
                 dims=(f"energy_{first_species}",),
             ),
         },
@@ -147,47 +146,34 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         *collapse_shape,
     )
 
-    species_chunk_sizes = [
-        len(species_data[species]["min_energy"]) for species in species_names
-    ]
+    species_chunk_sizes = [len(species_data[first_species]["min_energy"])]
 
-    start_idx = 0
+    l1a_dataset = l1a_dataset.assign_coords(
+        {f"energy_{first_species}": (f"energy_{first_species}", np.array(centers))}
+    )
 
-    for index, (species_name, data) in enumerate(species_data.items()):
-        centers, _, _ = get_energy_info(data)
+    chunk_size = species_chunk_sizes[0]
+    end_idx = chunk_size * n_spins
 
-        l1a_dataset = l1a_dataset.assign_coords(
-            {
-                f"energy_{species_name}": xr.DataArray(
-                    np.array(centers),
-                    dims=(f"energy_{species_name}",),
-                )
-            }
-        )
+    species_array = decompressed_data[:, 0:end_idx]
 
-        chunk_size = species_chunk_sizes[index]
-        end_idx = start_idx + chunk_size * n_spins
+    # This is rearranging data from (epoch, energy, n_spins, spin_sector, inst_az)
+    # -> (epoch, n_spins, energy, spin_sector, inst_az) ->
+    # finally (epoch * n_spins, energy,
+    # spin_sector, inst_az)
+    species_array = species_array.transpose(0, 2, 1, 3, 4).reshape(
+        -1, chunk_size, *collapse_shape
+    )
 
-        species_array = decompressed_data[:, start_idx:end_idx]
-        # This is rearranging data from (epoch, energy, n_spins, spin_sector, inst_az)
-        # -> (epoch, n_spins, energy, spin_sector, inst_az) ->
-        # finally (epoch * n_spins, energy,
-        # spin_sector, inst_az)
-        species_array = species_array.transpose(0, 2, 1, 3, 4).reshape(
-            -1, chunk_size, *collapse_shape
-        )
+    l1a_dataset[first_species] = xr.DataArray(
+        species_array,
+        dims=("epoch", f"energy_{first_species}", "spin_sector", "inst_az"),
+    )
 
-        l1a_dataset[species_name] = xr.DataArray(
-            species_array,
-            dims=("epoch", f"energy_{species_name}", "spin_sector", "inst_az"),
-        )
-
-        l1a_dataset[f"unc_{species_name}"] = xr.DataArray(
-            np.sqrt(species_array),
-            dims=("epoch", f"energy_{species_name}", "spin_sector", "inst_az"),
-        )
-
-        start_idx = end_idx
+    l1a_dataset[f"unc_{first_species}"] = xr.DataArray(
+        np.sqrt(species_array),
+        dims=("epoch", f"energy_{first_species}", "spin_sector", "inst_az"),
+    )
 
     l1a_dataset["spin_period"] = xr.DataArray(
         np.repeat(unpacked_dataset["spin_period"].values, n_spins)

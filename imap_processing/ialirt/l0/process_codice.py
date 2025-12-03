@@ -15,7 +15,7 @@ from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc, ttj2000ns_to_met
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +187,26 @@ def create_xarray_dataset(
     return dataset
 
 
-def convert_to_intensities(cod_hi_l1b_test_data, l2_lut_path, species):
+def convert_to_intensities(
+    cod_hi_l1b_data: xr.Dataset, l2_lut_path: pathlib.Path, species: str
+):
+    """
+    Calculate intensities.
+
+    Parameters
+    ----------
+    cod_hi_l1b_data : xr.Dataset
+        L1b data.
+    l2_lut_path : pathlib.Path
+        L2 LUT path.
+    species : str
+        CoDICE Hi species.
+
+    Returns
+    -------
+    intensity : np.array
+        L2 CoDICE-Hi intensities.
+    """
     # Notes:
     # i = energy bins
     # n = spin sectors
@@ -205,15 +224,53 @@ def convert_to_intensities(cod_hi_l1b_test_data, l2_lut_path, species):
 
     # Calculate energy passband from L1B data
     energy_passbands = (
-        cod_hi_l1b_test_data[f"energy_{species}_plus"]
-        + cod_hi_l1b_test_data[f"energy_{species}_minus"]
+        cod_hi_l1b_data[f"energy_{species}_plus"]
+        + cod_hi_l1b_data[f"energy_{species}_minus"]
     ).values[np.newaxis, :]
 
+    # test
+    energy_plus = np.array(
+        [
+            0.00450013,
+            0.00636414,
+            0.00900026,
+            0.01272829,
+            0.01800052,
+            0.02545657,
+            0.03600103,
+            0.05091315,
+            0.07200206,
+            0.1018263,
+            0.14400412,
+            0.20365259,
+            0.28800824,
+            0.40730518,
+            0.5760165,
+        ]
+    )
+    energy_minus = np.array(
+        [
+            0.00378414,
+            0.00535159,
+            0.00756828,
+            0.01070317,
+            0.01513657,
+            0.02140634,
+            0.03027314,
+            0.04281268,
+            0.06054628,
+            0.08562537,
+            0.12109255,
+            0.17125073,
+            0.2421851,
+            0.34250146,
+            0.4843702,
+        ],
+    )
+    energy_passbands = (energy_plus + energy_minus)[np.newaxis, :]
+
     # Build the ΔE_i / m_p vector from energy_passbands.
-    # TODO: Is the hydrogen mass acceptable?
-    de_over_mp = (
-        np.asarray(energy_passbands, dtype=float).squeeze() / constants.HYDROGEN_MASS
-    )  # (15,)
+    de_over_mp = np.asarray(energy_passbands, dtype=float).squeeze()  # (15,)
 
     # For omni over 3 SSDs:
     g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
@@ -222,7 +279,7 @@ def convert_to_intensities(cod_hi_l1b_test_data, l2_lut_path, species):
     denom_energy = g_g * eps_ig * de_over_mp  # (15,)
 
     # Rates in shape (epoch * n_spins, energy, spin_sector, inst_az)
-    h = cod_hi_l1b_test_data[species].values
+    h = cod_hi_l1b_data[species].values
 
     # reshape to broadcast over (epoch, energy, spin_sector, inst_az)
     denom = denom_energy.reshape(1, h.shape[1], 1, 1)  # (1, 15, 1, 1)
@@ -296,7 +353,7 @@ def process_codice(
             # Decompress binary stream
             met = grouped_cod_lo_data["met"][
                 (grouped_cod_lo_data["group"] == group).values
-            ]  # noqa
+            ]
 
             cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
                 [cod_lo_data_stream]
@@ -326,26 +383,22 @@ def process_codice(
                 l1a_hi,
                 "hi-ialirt",
             )
-            time_diff = np.diff(ttj2000ns_to_met(l1b_hi["epoch"]))
-            time_offsets = [0, *time_diff]
             l2_hi = convert_to_intensities(l1b_hi, l2_lut_path, "h")
+            # Put in Decimal format so DynamoDB can read it.
+            dec_l2_hi = np.vectorize(lambda x: Decimal(f"{float(x):.3f}"))(
+                l2_hi
+            ).tolist()
 
-            for t_idx, offset in enumerate(time_offsets):
-                met_val = int(met.values[0] + offset)
-
-                codice_hi_data.append(
-                    {
-                        "apid": 478,
-                        "met": met_val,
-                        "met_in_utc": met_to_utc(met_val).split(".")[0],
-                        "ttj2000ns": int(met_to_ttj2000ns(met_val)),
-                        "instrument": f"{sensor}",
-                        # each row gets its **own** (15,4,4) slice from l2_hi
-                        "codice_hi_l2_hi": [
-                            [[Decimal(f"{float(v):.3f}") for v in row] for row in mat]
-                            for mat in l2_hi[t_idx]
-                        ],
-                    }
-                )
+            codice_hi_data.append(
+                {
+                    "apid": 478,
+                    "met": int(met[0]),
+                    "met_in_utc": met_to_utc(met[0]).split(".")[0],
+                    "ttj2000ns": int(met_to_ttj2000ns(met[0])),
+                    "instrument": f"{sensor}",
+                    f"{sensor}_epoch": [int(epoch) for epoch in l1b_hi["epoch"].values],
+                    f"{sensor}_l2_hi": dec_l2_hi,
+                }
+            )
 
     return codice_lo_data, codice_hi_data

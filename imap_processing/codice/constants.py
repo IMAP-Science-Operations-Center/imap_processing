@@ -26,7 +26,6 @@ K_FACTOR = 5.76  # This is used to convert voltages to energies in L2
 NUM_ESA_STEPS = 128
 LO_DESPIN_SPIN_SECTORS = 24
 MAX_DE_EVENTS_PER_PACKET = 10000
-HYDROGEN_MASS = 1.0  # amu
 
 # Define the packet fields needed to be stored in segmented data and their
 # corresponding bit lengths for I-ALiRT data products
