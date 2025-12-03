@@ -24,7 +24,12 @@ from imap_processing.spice.geometry import (
 )
 from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import get_spin_data, get_spin_number
-from imap_processing.spice.time import et_to_utc, met_to_ttj2000ns, ttj2000ns_to_et
+from imap_processing.spice.time import (
+    et_to_utc,
+    met_to_ttj2000ns,
+    ttj2000ns_to_et,
+    ttj2000ns_to_met,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -130,8 +135,17 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         # initialize the L1B Histogram Rates dataset from the L1A Histogram Rates
         # This carries over the epoch and count fields from L1A
         l1b_histrates = initialize_l1b_histrates(l1a_hist, attr_mgr_l1b, logical_source)
-        # filter badtimes
+        # set spin cycle and remove invalid spin ASCs
+        l1b_histrates = set_spin_cycle_from_spin_data(
+            l1a_hist, l1b_histrates, spin_data
+        )
 
+        pointing_start_met, pointing_end_met = get_pointing_times(
+            ttj2000ns_to_met(l1a_hist["epoch"].values[0].item())
+        )
+        l1b_histrates = set_esa_mode(
+            pointing_start_met, pointing_end_met, anc_dependencies, l1b_histrates
+        )
         # resweep the histogram data
         l1b_histrates, exposure_factor = resweep_histogram_data(
             l1b_histrates, anc_dependencies
@@ -214,10 +228,10 @@ def set_esa_mode(
     pointing_start_met: float,
     pointing_end_met: float,
     anc_dependencies: list,
-    l1b_de: xr.Dataset,
+    l1b_science: xr.Dataset,
 ) -> xr.Dataset:
     """
-    Set the ESA mode for each direct event.
+    Set the ESA mode for each direct event or histogram.
 
     The ESA mode is determined from the sweep table for the time period of the pointing.
 
@@ -229,8 +243,8 @@ def set_esa_mode(
         End time for the pointing in MET seconds.
     anc_dependencies : list
         List of ancillary file paths.
-    l1b_de : xarray.Dataset
-        The L1B DE dataset.
+    l1b_science : xarray.Dataset
+        The L1B science dataset.
 
     Returns
     -------
@@ -255,18 +269,18 @@ def set_esa_mode(
         # Get the ESA mode for the pointing
         esa_mode = sweep_df["esa_mode"].values[0]
         # Repeat the ESA mode for each direct event in the pointing
-        esa_mode_array = np.repeat(esa_mode, len(l1b_de["epoch"]))
+        esa_mode_array = np.repeat(esa_mode, len(l1b_science["epoch"]))
     else:
         raise ValueError("Multiple ESA modes found in sweep table for pointing.")
 
-    l1b_de["esa_mode"] = xr.DataArray(
+    l1b_science["esa_mode"] = xr.DataArray(
         esa_mode_array,
         dims=["epoch"],
         # TODO: Add esa_mode to YAML file
         # attrs=attr_mgr.get_variable_attributes("esa_mode"),
     )
 
-    return l1b_de
+    return l1b_science
 
 
 def convert_start_end_acq_times(
@@ -366,6 +380,103 @@ def set_spin_cycle(
     )
 
     return l1b_de
+
+
+# TODO: The spin cycle function above needs to be updated for DEs. We cannot assume
+#  there are 28 spins per ASC and we should calculate the spin start number based on the
+#  corresponding L1A spin data Acq Start for the ASC. The implementation below should be
+#  should be used for the DE rather than the above function, but in the interest of time
+#  the below function is only hooked up to the histogram rates processing and should be
+#  integrated into the DE processing in a later PR.
+# TODO: Break up the invalid spin ASC removal and the code to find the closest DE/Hist
+#  and spin ASCs into their own functions.
+
+
+def set_spin_cycle_from_spin_data(
+    l1a_science: xr.Dataset, l1b_science: xr.Dataset, spin_data: xr.Dataset
+) -> xr.Dataset:
+    """
+    Set the spin cycle for each direct event using the L1A spin data.
+
+    Parameters
+    ----------
+    l1a_science : xr.Dataset
+        The L1A Histogram or Direct Event dataset.
+    l1b_science : xr.Dataset
+        The L1B Histogram Rate or Direct Event dataset.
+    spin_data : xr.Dataset
+        The L1A Spin dataset.
+
+    Returns
+    -------
+    l1b_de : xr.Dataset
+        The L1B DE dataset with the spin cycle added for each direct event.
+    """
+    acq_start, _acq_end = convert_start_end_acq_times(spin_data)
+
+    spin_met_per_asc = spin_data["shcoarse"].values
+    science_met_per_asc = ttj2000ns_to_met(l1a_science["epoch"])
+
+    # Find the closest start_acq for each direct event
+    # computes the index of the closest spin_met_per_asc for each science_met_per_asc
+    # so the resulting array will be of length len(science_met_per_asc), one index per
+    # ASC, but the value of each index will be the index of the closest spin data.
+    closest_start_acq_indices = np.abs(
+        science_met_per_asc[:, None] - spin_met_per_asc
+    ).argmin(axis=1)
+
+    valid_asc_mask = []
+    for spin_idx in closest_start_acq_indices:
+        spin_count = spin_data["num_completed"].isel(epoch=spin_idx)
+        valid_asc_mask.append(spin_count >= 28)
+
+    valid_asc_mask = np.array(valid_asc_mask)
+
+    # Filter out ASCs with insufficient spins
+    if not valid_asc_mask.all():
+        logger.warning(
+            f"Dropping {(~valid_asc_mask).sum()} ASCs with fewer than 28 spins"
+        )
+        l1a_science = l1a_science.isel(epoch=valid_asc_mask)
+        l1b_science = l1b_science.isel(epoch=valid_asc_mask)
+        science_met_per_asc = science_met_per_asc[valid_asc_mask]
+        closest_start_acq_indices = closest_start_acq_indices[valid_asc_mask]
+
+    closest_start_acq_per_asc = acq_start.isel(
+        epoch=xr.DataArray(closest_start_acq_indices)
+    )
+    # Get the spin cycle number from the spin data for each direct event
+    spin_start_num_per_asc = np.atleast_1d(get_spin_number(closest_start_acq_per_asc))
+
+    spin_start_num_per_asc = spin_start_num_per_asc[:, None]  # shape: (n_epochs, 1)
+    if l1a_science.attrs["Logical_source"] == "imap_lo_l1a_de":
+        # For DE: create 1D array by repeating for each DE in the ASC
+        counts = l1a_science["de_count"].values
+        spin_cycle = []
+        for asc_idx, _count in enumerate(counts):
+            esa_steps = l1a_science["esa_step"].values[
+                sum(counts[:asc_idx]) : sum(counts[: asc_idx + 1])
+            ]
+            spin_cycle.extend(
+                spin_start_num_per_asc[asc_idx, 0] + 7 + (esa_steps - 1) * 2
+            )
+        spin_cycle = np.array(spin_cycle)
+        l1b_science["spin_cycle"] = xr.DataArray(
+            spin_cycle,
+            dims=["epoch"],
+        )
+    elif l1a_science.attrs["Logical_source"] == "imap_lo_l1a_histogram":
+        # For histogram: keep 2D array (n_epochs, 7)
+        esa_steps = l1b_science["esa_step"].values  # shape: (7,)
+        spin_cycle = spin_start_num_per_asc + 7 + (esa_steps - 1) * 2
+        l1b_science["spin_cycle"] = xr.DataArray(
+            spin_cycle,
+            dims=["epoch", "esa_step"],
+        )
+    else:
+        raise ValueError("set spin cycle called with unsupported dataset")
+
+    return l1b_science
 
 
 def get_spin_start_times(
