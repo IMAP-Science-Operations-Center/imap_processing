@@ -391,13 +391,13 @@ class TestCalibrationProductConfig:
         """Test calibration_product_numbers with arbitrary non-sequential values."""
         # Create a temporary CSV with non-sequential calibration product numbers
         csv_content = """\
-            calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
-            5,1,0.00055,ABC1C2,15,55,0,70,-50,10,5,25
-            5,2,0.00085,ABC1C2,15,55,0,70,-50,10,5,25
-            10,1,0.00055,BC1C2,15,55,0,70,-50,10,5,25
-            10,2,0.00085,BC1C2,15,55,0,70,-50,10,5,25
-            100,1,0.00055,AC1,15,55,0,70,-50,10,5,25
-            100,2,0.00085,AC1,15,55,0,70,-50,10,5,25
+calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+5,1,0.00055,ABC1C2,15,55,0,70,-50,10,5,25
+5,2,0.00085,ABC1C2,15,55,0,70,-50,10,5,25
+10,1,0.00055,BC1C2,15,55,0,70,-50,10,5,25
+10,2,0.00085,BC1C2,15,55,0,70,-50,10,5,25
+100,1,0.00055,AC1,15,55,0,70,-50,10,5,25
+100,2,0.00085,AC1,15,55,0,70,-50,10,5,25
         """
 
         df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
