@@ -325,13 +325,13 @@ class TestPowerLawFluxCorrector:
         # Create different zero patterns for each pixel
         fluxes = np.array(
             [
-                [10, 0, 10, 10, 10],  # pixel 0: zero at energy 0
-                [20, 20, 0, 20, 20],  # pixel 1: zero at energy 1
-                [40, 40, 40, 0, 40],  # pixel 2: zero at energy 2
-                [60, 60, 60, 60, 0],  # pixel 3: zero at energy 3
-                [0, 0, 0, 0, 80],  # all zeros except one pixel
-                [0, 80, 80, 80, 80],  # zero at first pixel only
-                [80, 80, 80, 80, 80],  # no zeros
+                [10, 0, 10, 10, 10],  # energy 0: zero at pixel 1
+                [20, 20, 0, 20, 20],  # energy 1: zero at pixel 2
+                [40, 40, 40, 0, 40],  # energy 2: zero at pixel 3
+                [60, 60, 60, 60, 0],  # energy 3: zero at pixel 4
+                [0, 0, 0, 0, 80],  # energy 4: zeros at pixels 0-3
+                [0, 80, 80, 80, 80],  # energy 5: zero at pixel 0
+                [80, 80, 80, 80, 80],  # energy 6: no zeros
             ]
         )
         uncertainties = np.maximum(0.1 * fluxes, 1)
