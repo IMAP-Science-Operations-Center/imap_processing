@@ -125,12 +125,6 @@ class PowerLawFluxCorrector:
             Array of uncertainty slopes (if uncertainties provided). Shape
             (n_energy, n_pixels).
         """
-        n_levels = fluxes.shape[0]
-        gamma = np.zeros_like(fluxes, dtype=float)
-        delta_gamma = (
-            np.zeros_like(fluxes, dtype=float) if uncertainties is not None else None
-        )
-
         # Compute logs, setting non-positive fluxes to NaN
         log_fluxes = np.log(np.where(fluxes > 0, fluxes, np.nan))
         log_energies = np.log(energies)
@@ -160,11 +154,12 @@ class PowerLawFluxCorrector:
         # Create index arrays with same shape as fluxes
         # Start with central differencing indices: left=k-1, right=k+1
         # In the extended array, original index k corresponds to extended index k+1
+        n_energies = energies.shape[0]
         left_indices = np.broadcast_to(
-            np.arange(n_levels)[:, np.newaxis], fluxes.shape
+            np.arange(n_energies)[:, np.newaxis], fluxes.shape
         ).copy()
         right_indices = np.broadcast_to(
-            (np.arange(n_levels) + 2)[:, np.newaxis], fluxes.shape
+            (np.arange(n_energies) + 2)[:, np.newaxis], fluxes.shape
         ).copy()
 
         # Check if central differencing is valid
@@ -214,6 +209,7 @@ class PowerLawFluxCorrector:
             )
 
         # Compute uncertainty slopes
+        delta_gamma = np.zeros_like(fluxes, dtype=float)
         if uncertainties is not None:
             with np.errstate(divide="ignore", invalid="ignore"):
                 rel_unc_sq = (uncertainties / fluxes) ** 2
