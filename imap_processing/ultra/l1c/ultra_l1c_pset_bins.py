@@ -407,7 +407,7 @@ def calculate_exposure_time(
 
     counts = all_counts.sum(dim="spin_phase_step")
     # Multiply by the nominal spin step to get the exposure time in ms
-    exposure_pointing = counts * nominal_ms_step
+    exposure_pointing = counts.values * nominal_ms_step
     return exposure_pointing
 
 
