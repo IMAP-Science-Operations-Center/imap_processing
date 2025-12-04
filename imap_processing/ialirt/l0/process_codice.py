@@ -207,6 +207,10 @@ def convert_to_intensities(
     -------
     intensity : np.array
         L2 CoDICE-Hi intensities.
+
+    Notes
+    -----
+    Equation from section 13.1 in the CoDICE Algorithm Document.
     """
     # Average of the hydrogen efficiencies.
     efficiencies_df = pd.read_csv(l2_lut_path)
@@ -232,7 +236,7 @@ def convert_to_intensities(
     # reshape to broadcast along h's first and third dimensions
     denom = denom[None, :, None, :]
 
-    # Rates in shape (n_spins, energy, spin_sector, inst_az - i think this is group)
+    # Rates in shape (n_spins, energy, spin_sector, inst_az - this is group)
     h = cod_hi_l1b_data[species].values
 
     # Final intensities with same shape as h
@@ -288,12 +292,14 @@ def process_codice(
     dataset["met"] = met
 
     if sensor == "codice_lo":
+        logger.info("Processing CoDICE-Lo.")
         grouped_cod_lo_data = find_groups(
             dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
         )
         unique_cod_lo_groups = np.unique(grouped_cod_lo_data["group"])
 
     if sensor == "codice_hi":
+        logger.info("Processing CoDICE-Hi.")
         grouped_cod_hi_data = find_groups(
             dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
         )
