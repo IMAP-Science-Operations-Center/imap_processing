@@ -248,8 +248,8 @@ def set_esa_mode(
 
     Returns
     -------
-    l1b_de : xr.Dataset
-        The L1B DE dataset with the ESA mode added.
+    l1b_science : xr.Dataset
+        The L1B science dataset with the ESA mode added.
     """
     # Read the sweep table from the ancillary files
     sweep_df = lo_ancillary.read_ancillary_file(
@@ -390,8 +390,6 @@ def set_spin_cycle(
 #  integrated into the DE processing in a later PR.
 # TODO: Break up the invalid spin ASC removal and the code to find the closest DE/Hist
 #  and spin ASCs into their own functions.
-
-
 def set_spin_cycle_from_spin_data(
     l1a_science: xr.Dataset, l1b_science: xr.Dataset, spin_data: xr.Dataset
 ) -> xr.Dataset:
@@ -409,8 +407,8 @@ def set_spin_cycle_from_spin_data(
 
     Returns
     -------
-    l1b_de : xr.Dataset
-        The L1B DE dataset with the spin cycle added for each direct event.
+    l1b_science : xr.Dataset
+        The L1B science dataset with the spin cycle added for each direct event.
     """
     acq_start, _acq_end = convert_start_end_acq_times(spin_data)
 
