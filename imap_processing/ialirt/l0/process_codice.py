@@ -355,7 +355,7 @@ def process_codice(
                     "met_in_utc": met_to_utc(met[0]).split(".")[0],
                     "ttj2000ns": int(met_to_ttj2000ns(met[0])),
                     "instrument": f"{sensor}",
-                    f"{sensor}_epoch": [int(epoch) for epoch in l1b_hi["epoch"].values],
+                    f"{sensor}_epoch": [int(epoch) for epoch in l1b_hi["epoch"]],
                     f"{sensor}_l2_hi": dec_l2_hi,
                 }
             )
