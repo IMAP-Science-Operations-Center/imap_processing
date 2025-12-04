@@ -82,6 +82,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-gfactor_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-ialirt-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
 
     # L2 Validation data
     (f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
