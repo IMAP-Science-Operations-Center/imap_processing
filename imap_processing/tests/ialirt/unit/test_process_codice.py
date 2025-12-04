@@ -3,7 +3,7 @@
 See tests.codice.test_codice_l[1a|1b|2] for more unit tests related to this
 code.
 """
-
+import cdflib
 import pickle
 from pathlib import Path
 from unittest.mock import patch
@@ -272,6 +272,27 @@ def cod_hi_l1b_test_data():
     return data
 
 
+@pytest.fixture(scope="session")
+def cod_lo_l2_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / (
+            f"imap_codice_l2_lo-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
+    )
+    # TODO: fix error in cdf file and change to:
+    # data = load_cdf(data_path)
+    cdf_file = cdflib.CDF(data_path)
+
+    return cdf_file
+
+
 @patch("xarray.Dataset.drop_vars", new=lambda self, *args, **kwargs: self)
 @pytest.mark.external_test_data
 def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
@@ -292,7 +313,7 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
 
 
 @pytest.fixture
-def lut_path():
+def l1a_lut_path():
     """Returns the calibration data."""
     lut_path = (
         imap_module_directory
@@ -306,7 +327,7 @@ def lut_path():
     return lut_path
 
 
-def test_create_xarray_dataset_basic(lut_path):
+def test_create_xarray_dataset_basic(l1a_lut_path):
     """Test create_xarray_dataset function."""
 
     science_values = ["0000000100100011"]
@@ -318,7 +339,7 @@ def test_create_xarray_dataset_basic(lut_path):
         "SPIN_PERIOD": np.array([24]),
     }
 
-    ds = create_xarray_dataset(science_values, metadata_values, "lo", lut_path)
+    ds = create_xarray_dataset(science_values, metadata_values, "lo", l1a_lut_path)
 
     for key in metadata_values:
         assert key.lower() in ds.variables
@@ -333,7 +354,7 @@ def test_create_xarray_dataset_basic(lut_path):
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_lo(
-    cod_lo_test_dataset, cod_lo_decom_test_file, lut_path, cod_lo_l1a_test_data
+    cod_lo_test_dataset, cod_lo_decom_test_file, l1a_lut_path, cod_lo_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Lo data can be grouped and decompressed properly."
 
@@ -397,8 +418,8 @@ def test_group_and_decompress_ialirt_cod_lo(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "lo", lut_path)
-    result = l1a_lo_species(dataset, lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "lo", l1a_lut_path)
+    result = l1a_lo_species(dataset, l1a_lut_path)
 
     expected_species = [
         "heplusplus",
@@ -419,7 +440,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_hi(
-    cod_hi_test_dataset, cod_hi_decom_test_file, lut_path, cod_hi_l1a_test_data
+    cod_hi_test_dataset, cod_hi_decom_test_file, l1a_lut_path, cod_hi_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Hi data can be grouped and decompressed properly."
 
@@ -482,8 +503,8 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data[i])
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "hi", lut_path)
-    result = l1a_ialirt_hi(dataset, lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi", l1a_lut_path)
+    result = l1a_ialirt_hi(dataset, l1a_lut_path)
 
     expected_species = [
         "h",
@@ -501,18 +522,34 @@ def test_group_and_decompress_ialirt_cod_hi(
 
 
 @pytest.mark.external_test_data
-def test_process_codice(codice_test_data, caplog, lut_path):
-    """Ensure that the ``process_codice`` function creates a dataset
+def test_process_codice_lo(
+    cod_lo_test_dataset, l1a_lut_path, l2_lut_path, cod_lo_l2_test_data
+):
+    """Test process_codice for hi."""
+    print('hi')
+    test_data = cod_lo_l2_test_data["h"]
 
-    Here we just need to make sure the function is returning the expected data.
-    CoDICE I-ALiRT data products are being validated separately in the
-    ``codice.test_codice_l[1a|1b|2]`` modules.
-    """
+    n = cod_hi_test_dataset.dims["epoch"]
+    cod_hi_test_dataset = cod_hi_test_dataset.assign(
+        sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
+        sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
+    )
 
-    with caplog.at_level("WARNING"):
-        cod_lo_data, cod_hi_data = process_codice(codice_test_data, lut_path)
+    _, cod_hi_data = process_codice(
+        cod_hi_test_dataset, l1a_lut_path, l2_lut_path, "codice_hi"
+    )
+    samples_per_group = test_data.shape[0] // len(cod_hi_data)
+    grouped_test_data = test_data.reshape(
+        len(cod_hi_data),
+        samples_per_group,
+        *test_data.shape[1:],
+    )
 
-    assert isinstance(cod_lo_data, list)
-    assert all(isinstance(item, dict) for item in cod_lo_data)
-    assert isinstance(cod_hi_data, list)
-    assert all(isinstance(item, dict) for item in cod_hi_data)
+    for i, group in enumerate(cod_hi_data):
+        arr = np.array(group["codice_hi_l2_hi"], dtype=float)
+
+        np.testing.assert_allclose(
+            arr,
+            grouped_test_data[i],
+            atol=1e-2,
+        )
