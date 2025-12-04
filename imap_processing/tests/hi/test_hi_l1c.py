@@ -355,6 +355,7 @@ def test_empty_pset_dataset_arbitrary_cal_prod_numbers(use_fake_repoint_data_for
     np.testing.assert_array_equal(dataset.calibration_prod_label.data, expected_labels)
 
 
+@pytest.mark.external_test_data
 def test_pset_counts_arbitrary_cal_prod_numbers(
     hi_l1_test_data_path, use_fake_repoint_data_for_time
 ):
