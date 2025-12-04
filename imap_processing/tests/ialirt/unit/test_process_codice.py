@@ -367,7 +367,7 @@ def l2_lut_path():
         / "codice"
         / "data"
         / "l2_lut"
-        / "imap_codice_l2-hi-omni-efficiency_20251008_v001.csv"
+        / "imap_codice_l2-hi-ialirt-efficiency_20251008_v001.csv"
     )
 
     return lut_path

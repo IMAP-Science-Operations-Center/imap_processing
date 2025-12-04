@@ -80,6 +80,7 @@ EXTERNAL_TEST_DATA = [
     # L2 LUT input data
     ("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-ialirt-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-gfactor_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
 

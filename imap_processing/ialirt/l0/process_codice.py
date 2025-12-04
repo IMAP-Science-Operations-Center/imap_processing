@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
@@ -189,7 +190,7 @@ def create_xarray_dataset(
 
 def convert_to_intensities(
     cod_hi_l1b_data: xr.Dataset, l2_lut_path: pathlib.Path, species: str
-):
+) -> NDArray:
     """
     Calculate intensities.
 
@@ -207,20 +208,12 @@ def convert_to_intensities(
     intensity : np.array
         L2 CoDICE-Hi intensities.
     """
-    # Notes:
-    # i = energy bins
-    # n = spin sectors
-    # g = groups
-
-    # Read efficiency lookup table
-    # TODO: This is not per group. Ok?
-    efficiencies_df = pd.read_csv(l2_lut_path)
-    species_efficiency = efficiencies_df[
-        efficiencies_df["species"] == species
-    ].sort_values(by="energy_bin")
-
     # Average of the hydrogen efficiencies.
-    eps_ig = species_efficiency["average_efficiency"].to_numpy(dtype=float)  # (15,)
+    efficiencies_df = pd.read_csv(l2_lut_path)
+    species_efficiency = efficiencies_df.sort_values(by="energy_bin")
+    eps_ig = species_efficiency[["group_0", "group_1", "group_2", "group_3"]].to_numpy(
+        float
+    )
 
     # Calculate energy passband from L1B data
     energy_passbands = (
@@ -269,23 +262,22 @@ def convert_to_intensities(
     )
     energy_passbands = (energy_plus + energy_minus)[np.newaxis, :]
 
-    # Build the ΔE_i / m_p vector from energy_passbands.
-    de_over_mp = np.asarray(energy_passbands, dtype=float).squeeze()  # (15,)
-
     # For omni over 3 SSDs:
     g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
 
-    # denom_energy(i) = G_g * eps_ig * dE_over_mp   → shape (15,)
-    denom_energy = g_g * eps_ig * de_over_mp  # (15,)
+    # Now give it a column dimension for broadcasting
+    energy_passbands = np.asarray(energy_passbands).squeeze()
+    energy_passbands = energy_passbands[:, None]
 
-    # Rates in shape (epoch * n_spins, energy, spin_sector, inst_az)
+    denom = g_g * eps_ig * energy_passbands  # (15, 4)
+    # reshape to broadcast along h's first and third dimensions
+    denom = denom[None, :, None, :]
+
+    # Rates in shape (n_spins, energy, spin_sector, inst_az - i think this is group)
     h = cod_hi_l1b_data[species].values
 
-    # reshape to broadcast over (epoch, energy, spin_sector, inst_az)
-    denom = denom_energy.reshape(1, h.shape[1], 1, 1)  # (1, 15, 1, 1)
-
     # Final intensities with same shape as h
-    intensity = h / denom  # shape (36, 15, 4, 4); units #/(cm^2 sr s MeV/nuc)
+    intensity = h / denom  # shape (4, 15, 4, 4); units #/(cm^2 sr s MeV/nuc)
 
     return intensity
 
@@ -307,6 +299,8 @@ def process_codice(
         L1A LUT path.
     l2_lut_path : pathlib.Path
         L2 LUT path.
+    sensor : str
+        Sensor (codice_hi or codice_lo).
 
     Returns
     -------
