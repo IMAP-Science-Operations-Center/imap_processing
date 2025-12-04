@@ -221,47 +221,6 @@ def convert_to_intensities(
         + cod_hi_l1b_data[f"energy_{species}_minus"]
     ).values[np.newaxis, :]
 
-    # test
-    energy_plus = np.array(
-        [
-            0.00450013,
-            0.00636414,
-            0.00900026,
-            0.01272829,
-            0.01800052,
-            0.02545657,
-            0.03600103,
-            0.05091315,
-            0.07200206,
-            0.1018263,
-            0.14400412,
-            0.20365259,
-            0.28800824,
-            0.40730518,
-            0.5760165,
-        ]
-    )
-    energy_minus = np.array(
-        [
-            0.00378414,
-            0.00535159,
-            0.00756828,
-            0.01070317,
-            0.01513657,
-            0.02140634,
-            0.03027314,
-            0.04281268,
-            0.06054628,
-            0.08562537,
-            0.12109255,
-            0.17125073,
-            0.2421851,
-            0.34250146,
-            0.4843702,
-        ],
-    )
-    energy_passbands = (energy_plus + energy_minus)[np.newaxis, :]
-
     # For omni over 3 SSDs:
     g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
 
