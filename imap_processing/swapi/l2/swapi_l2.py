@@ -125,6 +125,7 @@ def solve_full_sweep_energy(
     # np.where in a loop to find the index of each value in esa_lvl5_data individually,
     # ensuring the output array has the same shape as the input.
 
+    # Page 31 of algorithm document
     last_energy_step_indices = np.array(
         [
             np.where(lut_notes_df["ESA DAC (Hex)"].values == val)[0][0]
@@ -132,11 +133,20 @@ def solve_full_sweep_energy(
         ]
     )
     # Use back tracking steps to find all 9 fine energy value indices
-    # Eg. [0, -4, -8, ..., -28, -32]
-    steps = np.arange(9) * -4
+    # Eg. [-32, -28, ... -8, -4, 0]
+    steps = np.arange(9)[::-1] * -4
 
     # Find indices of last 9 fine energy values of all sweeps data
     fine_energy_indices = last_energy_step_indices[:, None] + steps
+
+    # NOTE: This back tracking method was updated with sweep id 3. So
+    # we need to change the step values based on sweep id.
+    # The final 3 steps are background and will be set to 0 energy later.
+    sweep_id_3_mask = np.asarray(sweep_table) == 3
+    steps = np.array([-80, -64, -48, -32, -16, 0, 0, 0, 0])
+    fine_energy_indices[sweep_id_3_mask, :] = (
+        last_energy_step_indices[sweep_id_3_mask, None] + steps
+    )
 
     # NOTE: Per SWAPI instruction, set every index that result in negative
     # indices during back tracking to zero index. SWAPI calls this
@@ -149,13 +159,8 @@ def solve_full_sweep_energy(
 
     energy_values = lut_notes_df["Energy"].values[fine_energy_indices]
 
-    # In above steps, we were calculating energy for these energy steps
-    # in this order:
-    #   [72, 71, 70, 69, 68, 67, 66, 65, 64]
-    # Now, we need to reverse the order of these energy steps to match the
-    # order it should be in:
-    #  [64, 65, 66, 67, 68, 69, 70, 71, 72]
-    energy_values = np.flip(energy_values, axis=1)
+    # Set last 3 fine energies to 0 for sweep id 3
+    energy_values[sweep_id_3_mask, -3:] = 0.0
 
     # Append the first_63_values in front of energy_values
     sweeps_energy_value = np.hstack([first_63_energies, energy_values])

@@ -321,3 +321,28 @@ def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
             lut_notes_table,
             data_time,
         )
+
+
+def test_solve_full_sweep_energy_id3(esa_unit_conversion_table, lut_notes_table):
+    """Test the solve_full_sweep_energy function for sweep id 3 case"""
+    # Modify the current conversion table we have to have entries for sweep id 3
+    esa_unit_conversion_table = esa_unit_conversion_table.copy(deep=True)
+    esa_unit_conversion_table.loc[
+        esa_unit_conversion_table["Sweep #"] == 2, "Sweep #"
+    ] = 3
+    esa_lvl5_arr = [4663]
+    sweep_table = [3]
+    data_time = [np.datetime64("2025-12-24T00:00:00", "ns")]
+    esa_lvl5_hex = np.vectorize(lambda x: format(x, "X"))(esa_lvl5_arr)
+    sweeps_energy_value = solve_full_sweep_energy(
+        esa_lvl5_hex, sweep_table, esa_unit_conversion_table, lut_notes_table, data_time
+    )
+    assert sweeps_energy_value.shape == (1, 72)
+
+    # The last 3 values should be 0 for sweep id 3
+    np.testing.assert_array_equal(
+        sweeps_energy_value[0, -3:], np.array([0.0, 0.0, 0.0])
+    )
+    # The -9th value (first fine step) should be the same as the last index-80
+    # 4663 corresponds to 383rd index in lut_notes_table
+    assert sweeps_energy_value[0, -9] == lut_notes_table["Energy"].values[383 - 80]
