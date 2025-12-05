@@ -605,7 +605,7 @@ def test_process_codice_lo(
         pseudo_density_dict[species] = summed_pseudo_density.values
 
     species = constants.LO_IALIRT_VARIABLE_NAMES
-
+    # TODO: is this expected to be zero?
     # Denominator.
     o_abundance_ratio = (
         pseudo_density_dict[species[3]]
