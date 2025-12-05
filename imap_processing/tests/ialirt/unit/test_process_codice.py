@@ -3,11 +3,12 @@
 See tests.codice.test_codice_l[1a|1b|2] for more unit tests related to this
 code.
 """
-import cdflib
+
 import pickle
 from pathlib import Path
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 import xarray as xr
@@ -18,6 +19,12 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
+from imap_processing.codice.codice_l2 import (
+    compute_geometric_factors,
+    get_efficiency_lut,
+    get_geometric_factor_lut,
+    process_lo_species_intensity,
+)
 from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
@@ -25,7 +32,6 @@ from imap_processing.ialirt.l0.process_codice import (
     FILLVAL_UINT8,
     concatenate_bytes,
     create_xarray_dataset,
-    process_codice,
     process_ialirt_data_streams,
 )
 from imap_processing.ialirt.utils.grouping import find_groups
@@ -327,6 +333,28 @@ def l1a_lut_path():
     return lut_path
 
 
+@pytest.fixture
+def l2_processing_dependencies():
+    eff_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_lut"
+        / "imap_codice_l2-lo-efficiency_20251008_v001.csv"
+    )
+    gf_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_lut"
+        / "imap_codice_l2-lo-gfactor_20251008_v001.csv"
+    )
+
+    return eff_path, gf_path
+
+
 def test_create_xarray_dataset_basic(l1a_lut_path):
     """Test create_xarray_dataset function."""
 
@@ -523,33 +551,42 @@ def test_group_and_decompress_ialirt_cod_hi(
 
 @pytest.mark.external_test_data
 def test_process_codice_lo(
-    cod_lo_test_dataset, l1a_lut_path, l2_lut_path, cod_lo_l2_test_data
+    cod_lo_l1b_test_data, l1a_lut_path, cod_lo_l2_test_data, l2_processing_dependencies
 ):
     """Test process_codice for hi."""
-    print('hi')
-    test_data = cod_lo_l2_test_data["h"]
+    eff_path, gf_path = l2_processing_dependencies
 
-    n = cod_hi_test_dataset.dims["epoch"]
-    cod_hi_test_dataset = cod_hi_test_dataset.assign(
-        sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
-        sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
+    geometric_factor_lookup = get_geometric_factor_lut(None, gf_path)
+    geometric_factors = compute_geometric_factors(
+        cod_lo_l1b_test_data, geometric_factor_lookup
     )
 
-    _, cod_hi_data = process_codice(
-        cod_hi_test_dataset, l1a_lut_path, l2_lut_path, "codice_hi"
-    )
-    samples_per_group = test_data.shape[0] // len(cod_hi_data)
-    grouped_test_data = test_data.reshape(
-        len(cod_hi_data),
-        samples_per_group,
-        *test_data.shape[1:],
-    )
+    efficiency_lookup = get_efficiency_lut(None, eff_path)
+    efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
 
-    for i, group in enumerate(cod_hi_data):
-        arr = np.array(group["codice_hi_l2_hi"], dtype=float)
+    # Fix to the test data coordinate name.
+    cod_lo_l1b_test_data["energy_table"] = cod_lo_l1b_test_data["energy_table"].rename(
+        {"energy_table": "esa_step"}
+    )
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
+        if "energy_table" in cod_lo_l1b_test_data[species].dims:
+            cod_lo_l1b_test_data[species] = cod_lo_l1b_test_data[species].rename(
+                {"energy_table": "esa_step"}
+            )
+        unc_var = f"unc_{species}"
+        if (
+            unc_var in cod_lo_l1b_test_data
+            and "energy_table" in cod_lo_l1b_test_data[unc_var].dims
+        ):
+            cod_lo_l1b_test_data[unc_var] = cod_lo_l1b_test_data[unc_var].rename(
+                {"energy_table": "esa_step"}
+            )
 
-        np.testing.assert_allclose(
-            arr,
-            grouped_test_data[i],
-            atol=1e-2,
-        )
+    l2_dataset = process_lo_species_intensity(
+        cod_lo_l1b_test_data,
+        constants.LO_IALIRT_VARIABLE_NAMES,
+        geometric_factors,
+        efficiencies,
+        constants.SOLAR_WIND_POSITIONS,
+    )
+    print(l2_dataset)

@@ -10,6 +10,7 @@ dataset = process_codice_l2(l1_filename)
 """
 
 import logging
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -43,7 +44,10 @@ from imap_processing.codice.utils import apply_replacements_to_attrs
 logger = logging.getLogger(__name__)
 
 
-def get_geometric_factor_lut(dependencies: ProcessingInputCollection) -> dict:
+def get_geometric_factor_lut(
+    dependencies: ProcessingInputCollection | None,
+    path: Path | None = None,
+) -> dict:
     """
     Get the geometric factor lookup table.
 
@@ -51,16 +55,20 @@ def get_geometric_factor_lut(dependencies: ProcessingInputCollection) -> dict:
     ----------
     dependencies : ProcessingInputCollection
         The collection of processing input files.
+    path : Path (Optional)
+        Optional path used for I-ALiRT.
 
     Returns
     -------
     geometric_factor_lut : dict
         A dict with a full and reduced mode array with shape (esa_steps, position).
     """
-    geometric_factors = pd.read_csv(
-        dependencies.get_file_paths(descriptor="l2-lo-gfactor")[0]
-    )
+    if path is not None:
+        csv_path = path
+    else:
+        csv_path = Path(dependencies.get_file_paths(descriptor="l2-lo-gfactor")[0])
 
+    geometric_factors = pd.read_csv(csv_path)
     # sort by esa step. They should already be sorted, but just in case
     full = geometric_factors[geometric_factors["mode"] == "full"].sort_values(
         by="esa_step"
@@ -81,7 +89,10 @@ def get_geometric_factor_lut(dependencies: ProcessingInputCollection) -> dict:
     }
 
 
-def get_efficiency_lut(dependencies: ProcessingInputCollection) -> pd.DataFrame:
+def get_efficiency_lut(
+    dependencies: ProcessingInputCollection | None,
+    path: Path | None = None,
+) -> pd.DataFrame:
     """
     Get the efficiency lookup table.
 
@@ -89,6 +100,8 @@ def get_efficiency_lut(dependencies: ProcessingInputCollection) -> pd.DataFrame:
     ----------
     dependencies : ProcessingInputCollection
         The collection of processing input files.
+    path : Path (Optional)
+        Optional path used for I-ALiRT.
 
     Returns
     -------
@@ -96,7 +109,11 @@ def get_efficiency_lut(dependencies: ProcessingInputCollection) -> pd.DataFrame:
         Contains the efficiency lookup table. Columns are:
         species, product, esa_step, position_1, position_2, ..., position_24.
     """
-    return pd.read_csv(dependencies.get_file_paths(descriptor="l2-lo-efficiency")[0])
+    if path is not None:
+        csv_path = path
+    else:
+        csv_path = Path(dependencies.get_file_paths(descriptor="l2-lo-gfactor")[0])
+    return pd.read_csv(csv_path)
 
 
 def get_species_efficiency(species: str, efficiency: pd.DataFrame) -> xr.DataArray:
@@ -907,6 +924,7 @@ def process_codice_l2(
             )
             # Calculate the sunward solar wind species intensities using equation
             # described in section 11.2.3 of algorithm document.
+            # TODO: use this
             l2_dataset = process_lo_species_intensity(
                 l2_dataset,
                 LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
