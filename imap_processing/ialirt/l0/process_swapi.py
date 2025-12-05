@@ -111,18 +111,18 @@ def optimize_pseudo_parameters(
                 60000 * (initial_speed_guess / 400) ** 2,
             ]
         )
+        five_point_range = range(max_index - 2, max_index + 2 + 1)
+        xdata = energy_passbands.take(five_point_range, mode="clip")
+        ydata = current_sweep_count_rates.take(five_point_range, mode="clip")
+        sigma = current_sweep_count_rate_errors.take(five_point_range, mode="clip")
+        mask = (ydata > 0) & (sigma > 0) & np.isfinite(xdata) & np.isfinite(ydata) & np.isfinite(sigma)  
         sol = curve_fit(
             f=count_rate,
-            xdata=energy_passbands.take(
-                range(max_index - 3, max_index + 3), mode="clip"
-            ),
-            ydata=current_sweep_count_rates.take(
-                range(max_index - 3, max_index + 3), mode="clip"
-            ),
-            sigma=current_sweep_count_rate_errors.take(
-                range(max_index - 3, max_index + 3), mode="clip"
-            ),
+            xdata=xdata[mask],
+            ydata=ydata[mask],
+            sigma=sigma[mask],
             p0=initial_param_guess,
+            full_output=True
         )
         solution_dict["pseudo_speed"].append(sol[0][0])
         solution_dict["pseudo_density"].append(sol[0][1])
