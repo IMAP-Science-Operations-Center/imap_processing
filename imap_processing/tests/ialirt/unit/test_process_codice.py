@@ -590,9 +590,49 @@ def test_process_codice_lo(
         constants.SOLAR_WIND_POSITIONS,
     )
 
+    psN_dict = {}
+
     for species in constants.LO_IALIRT_VARIABLE_NAMES:
-        pseudo_density = intensity[species] * np.sqrt(cod_lo_l1b_test_data["energy_table"]) * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
-        print('hi')
+        d_psN = (
+            intensity[species]
+            * np.sqrt(cod_lo_l1b_test_data["energy_table"])
+            * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
+        )  # (epoch, esa_step, spin_sector)
+
+        # Sum over esa_step and drop the length-1 spin_sector dimension
+        psN = d_psN.sum(dim="esa_step").squeeze("spin_sector")  # (epoch,)
+
+        # Store as a plain NumPy array, not an xarray.DataArray
+        psN_dict[species] = psN.values
+
+    o_abundance_ratio = (
+        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[3]]
+        + psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[4]]
+        + psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[5]]
+    )
+    c_over_o_abundance_ratio = (
+        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[1]]
+        + psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[2]]
+    ) / o_abundance_ratio
+    mg_over_o_abundance_ratio = (
+        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[6]] / o_abundance_ratio
+    )
+    fe_over_o_abundance_ratio = (
+        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[7]]
+        + psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[8]]
+    ) / o_abundance_ratio
+    c_plus_6_over_c_plus_5_ratio = (
+        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[2]]
+        / psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[1]]
+    )
+    o_plus_7_over_o_plus_6_ratio = (
+        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[2]]
+        / psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[1]]
+    )
+    fe_low_over_fe_high_ratio = (
+        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[7]]
+        / psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[8]]
+    )
 
     # print(file_info.zVariables)
     # ['epoch', 'epoch_delta_plus', 'epoch_delta_minus', 'data_quality', 'c_over_o_abundance_ratio', 'mg_over_o_abundance_ratio', 'fe_over_o_abundance_ratio', 'c_plus_6_over_c_plus_5_ratio', 'o_plus_7_over_o_plus_6_ratio', 'fe_low_over_fe_high_ratio']
