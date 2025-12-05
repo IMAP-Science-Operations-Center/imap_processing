@@ -590,50 +590,84 @@ def test_process_codice_lo(
         constants.SOLAR_WIND_POSITIONS,
     )
 
-    psN_dict = {}
+    pseudo_density_dict = {}
 
     for species in constants.LO_IALIRT_VARIABLE_NAMES:
-        d_psN = (
+        pseudo_density = (
             intensity[species]
             * np.sqrt(cod_lo_l1b_test_data["energy_table"])
             * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
         )  # (epoch, esa_step, spin_sector)
 
-        # Sum over esa_step and drop the length-1 spin_sector dimension
-        psN = d_psN.sum(dim="esa_step").squeeze("spin_sector")  # (epoch,)
+        summed_pseudo_density = pseudo_density.sum(dim="esa_step").squeeze(
+            "spin_sector"
+        )  # (epoch,)
+        pseudo_density_dict[species] = summed_pseudo_density.values
 
-        # Store as a plain NumPy array, not an xarray.DataArray
-        psN_dict[species] = psN.values
+    species = constants.LO_IALIRT_VARIABLE_NAMES
 
+    # Denominator.
     o_abundance_ratio = (
-        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[3]]
-        + psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[4]]
-        + psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[5]]
-    )
-    c_over_o_abundance_ratio = (
-        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[1]]
-        + psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[2]]
-    ) / o_abundance_ratio
-    mg_over_o_abundance_ratio = (
-        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[6]] / o_abundance_ratio
-    )
-    fe_over_o_abundance_ratio = (
-        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[7]]
-        + psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[8]]
-    ) / o_abundance_ratio
-    c_plus_6_over_c_plus_5_ratio = (
-        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[2]]
-        / psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[1]]
-    )
-    o_plus_7_over_o_plus_6_ratio = (
-        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[2]]
-        / psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[1]]
-    )
-    fe_low_over_fe_high_ratio = (
-        psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[7]]
-        / psN_dict[constants.LO_IALIRT_VARIABLE_NAMES[8]]
+        pseudo_density_dict[species[3]]
+        + pseudo_density_dict[species[4]]
+        + pseudo_density_dict[species[5]]
     )
 
-    # print(file_info.zVariables)
-    # ['epoch', 'epoch_delta_plus', 'epoch_delta_minus', 'data_quality', 'c_over_o_abundance_ratio', 'mg_over_o_abundance_ratio', 'fe_over_o_abundance_ratio', 'c_plus_6_over_c_plus_5_ratio', 'o_plus_7_over_o_plus_6_ratio', 'fe_low_over_fe_high_ratio']
-    print("hi")
+    c_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[1]] + pseudo_density_dict[species[2]],
+        o_abundance_ratio,
+        out=np.zeros_like(o_abundance_ratio, dtype=float),  # fill with 0s by default
+        where=o_abundance_ratio != 0,
+    )
+    mg_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[6]],
+        o_abundance_ratio,
+        out=np.zeros_like(o_abundance_ratio, dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+    fe_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[7]] + pseudo_density_dict[species[8]],
+        o_abundance_ratio,
+        out=np.zeros_like(o_abundance_ratio, dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+
+    c_plus_6_over_c_plus_5_ratio = np.divide(
+        pseudo_density_dict[species[2]],
+        pseudo_density_dict[species[1]],
+        out=np.zeros_like(pseudo_density_dict[species[1]], dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+    o_plus_7_over_o_plus_6_ratio = np.divide(
+        pseudo_density_dict[species[4]],
+        pseudo_density_dict[species[3]],
+        out=np.zeros_like(pseudo_density_dict[species[3]], dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+    fe_low_over_fe_high_ratio = np.divide(
+        pseudo_density_dict[species[7]],
+        pseudo_density_dict[species[8]],
+        out=np.zeros_like(pseudo_density_dict[species[8]], dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+
+    np.testing.assert_array_equal(
+        c_over_o_abundance_ratio, cod_lo_l2_test_data["c_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        mg_over_o_abundance_ratio, cod_lo_l2_test_data["mg_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        fe_over_o_abundance_ratio, cod_lo_l2_test_data["fe_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        c_plus_6_over_c_plus_5_ratio,
+        cod_lo_l2_test_data["c_plus_6_over_c_plus_5_ratio"],
+    )
+    np.testing.assert_array_equal(
+        o_plus_7_over_o_plus_6_ratio,
+        cod_lo_l2_test_data["o_plus_7_over_o_plus_6_ratio"],
+    )
+    np.testing.assert_array_equal(
+        fe_low_over_fe_high_ratio, cod_lo_l2_test_data["fe_low_over_fe_high_ratio"]
+    )
