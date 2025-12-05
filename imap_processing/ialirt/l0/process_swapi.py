@@ -116,6 +116,7 @@ def optimize_pseudo_parameters(
         ydata = current_sweep_count_rates.take(five_point_range, mode="clip")
         sigma = current_sweep_count_rate_errors.take(five_point_range, mode="clip")
         mask = (ydata > 0) & (sigma > 0) & np.isfinite(xdata) & np.isfinite(ydata) & np.isfinite(sigma)  
+        assert np.count_nonzero(mask) > 0
         sol = curve_fit(
             f=count_rate,
             xdata=xdata[mask],
