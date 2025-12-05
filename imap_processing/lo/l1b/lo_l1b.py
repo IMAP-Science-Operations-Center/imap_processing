@@ -396,6 +396,9 @@ def set_spin_cycle_from_spin_data(
     """
     Set the spin cycle for each direct event using the L1A spin data.
 
+    The spin cycle is the average spin for a given Aggregated Science Cycle
+     in a given ESA Step.
+
     Parameters
     ----------
     l1a_science : xr.Dataset
@@ -412,23 +415,34 @@ def set_spin_cycle_from_spin_data(
     """
     acq_start, _acq_end = convert_start_end_acq_times(spin_data)
 
-    spin_met_per_asc = spin_data["shcoarse"].values
-    science_met_per_asc = ttj2000ns_to_met(l1a_science["epoch"])
+    spin_met_per_asc = spin_data["shcoarse"].values.astype(np.float64)
+    science_met_per_asc = ttj2000ns_to_met(l1a_science["epoch"]).astype(np.float64)
 
     # Find the closest start_acq for each direct event
     # computes the index of the closest spin_met_per_asc for each science_met_per_asc
     # so the resulting array will be of length len(science_met_per_asc), one index per
     # ASC, but the value of each index will be the index of the closest spin data.
-    closest_start_acq_indices = np.abs(
-        science_met_per_asc[:, None] - spin_met_per_asc
-    ).argmin(axis=1)
+    time_diff = science_met_per_asc[:, None] - spin_met_per_asc
+    # Consider values within tolerance as exact matches (set to 0)
+    tolerance = 1e-9
+    # handle floating point precision issues
+    time_diff = np.where(np.abs(time_diff) < tolerance, 0, time_diff)
+    time_diff_masked = np.where(time_diff >= 0, time_diff, np.inf)
+    closest_start_acq_indices = time_diff_masked.argmin(axis=1)
 
-    valid_asc_mask = []
-    for spin_idx in closest_start_acq_indices:
-        spin_count = spin_data["num_completed"].isel(epoch=spin_idx)
-        valid_asc_mask.append(spin_count >= 28)
+    # Filter out epochs where no valid spin data exists (all time_diff < 0)
+    has_valid_spin = ~np.all(time_diff < 0, axis=1)
+    if not has_valid_spin.all():
+        logger.warning(
+            f"Dropping {(~has_valid_spin).sum()} ASCs with no prior spin data"
+        )
+        l1a_science = l1a_science.isel(epoch=has_valid_spin)
+        l1b_science = l1b_science.isel(epoch=has_valid_spin)
+        science_met_per_asc = science_met_per_asc[has_valid_spin]
+        closest_start_acq_indices = closest_start_acq_indices[has_valid_spin]
 
-    valid_asc_mask = np.array(valid_asc_mask)
+    valid_cycles = spin_data["num_completed"] == 28
+    valid_asc_mask = valid_cycles.values[closest_start_acq_indices]
 
     # Filter out ASCs with insufficient spins
     if not valid_asc_mask.all():
@@ -440,9 +454,7 @@ def set_spin_cycle_from_spin_data(
         science_met_per_asc = science_met_per_asc[valid_asc_mask]
         closest_start_acq_indices = closest_start_acq_indices[valid_asc_mask]
 
-    closest_start_acq_per_asc = acq_start.isel(
-        epoch=xr.DataArray(closest_start_acq_indices)
-    )
+    closest_start_acq_per_asc = acq_start.isel(epoch=closest_start_acq_indices)
     # Get the spin cycle number from the spin data for each direct event
     spin_start_num_per_asc = np.atleast_1d(get_spin_number(closest_start_acq_per_asc))
 
@@ -455,6 +467,7 @@ def set_spin_cycle_from_spin_data(
             esa_steps = l1a_science["esa_step"].values[
                 sum(counts[:asc_idx]) : sum(counts[: asc_idx + 1])
             ]
+            # The spin cycle is the average spin for a given ASC in a given ESA Step
             spin_cycle.extend(
                 spin_start_num_per_asc[asc_idx, 0] + 7 + (esa_steps - 1) * 2
             )
