@@ -219,18 +219,14 @@ def convert_to_intensities(
         float
     )
 
+    # For omni over 3 SSDs:
+    g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
+
     # Calculate energy passband from L1B data
     energy_passbands = (
         cod_hi_l1b_data[f"energy_{species}_plus"]
         + cod_hi_l1b_data[f"energy_{species}_minus"]
-    ).values[np.newaxis, :]
-
-    # For omni over 3 SSDs:
-    g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
-
-    # Now give it a column dimension for broadcasting
-    energy_passbands = np.asarray(energy_passbands).squeeze()
-    energy_passbands = energy_passbands[:, None]
+    ).values[:, np.newaxis]
 
     denom = g_g * eps_ig * energy_passbands  # (15, 4)
     # reshape to broadcast along h's first and third dimensions
