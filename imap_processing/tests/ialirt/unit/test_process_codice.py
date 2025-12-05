@@ -582,11 +582,18 @@ def test_process_codice_lo(
                 {"energy_table": "esa_step"}
             )
 
-    l2_dataset = process_lo_species_intensity(
+    intensity = process_lo_species_intensity(
         cod_lo_l1b_test_data,
         constants.LO_IALIRT_VARIABLE_NAMES,
         geometric_factors,
         efficiencies,
         constants.SOLAR_WIND_POSITIONS,
     )
-    print(l2_dataset)
+
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
+        pseudo_density = intensity[species] * np.sqrt(cod_lo_l1b_test_data["energy_table"]) * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
+        print('hi')
+
+    # print(file_info.zVariables)
+    # ['epoch', 'epoch_delta_plus', 'epoch_delta_minus', 'data_quality', 'c_over_o_abundance_ratio', 'mg_over_o_abundance_ratio', 'fe_over_o_abundance_ratio', 'c_plus_6_over_c_plus_5_ratio', 'o_plus_7_over_o_plus_6_ratio', 'fe_low_over_fe_high_ratio']
+    print("hi")

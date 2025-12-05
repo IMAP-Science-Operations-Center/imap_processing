@@ -62,6 +62,17 @@ LO_IALIRT_VARIABLE_NAMES = [
     "fe_hiq",
 ]
 HI_IALIRT_VARIABLE_NAMES = ["h"]
+LO_IALIRT_M_OVER_Q = {
+    "heplusplus": 2.0,
+    "cplus5": 2.4,
+    "cplus6": 2.0,
+    "oplus6": 2.7,
+    "oplus7": 2.28,
+    "oplus8": 2.0,
+    "mg": 3.5,
+    "fe_loq": 3.85,
+    "fe_hiq": 7.25,
+}
 
 
 # Define the packet fields needed to be stored in segmented data and their
