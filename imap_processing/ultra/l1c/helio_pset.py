@@ -2,12 +2,12 @@
 
 import logging
 
-import astropy_healpix.healpy as hp
 import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.quality_flags import ImapPSETUltraFlags
+from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
@@ -17,13 +17,12 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
     calculate_fwhm_spun_scattering,
-    get_spacecraft_pointing_lookup_tables,
 )
+from imap_processing.ultra.l1c.make_helio_maps import make_helio_index_maps
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_efficiencies_and_geometric_function,
     get_energy_delta_minus_plus,
-    get_helio_adjusted_data,
     get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
@@ -98,20 +97,36 @@ def calculate_helio_pset(
         species_dataset["velocity_dps_helio"].values
         / v_mag_helio_spacecraft[:, np.newaxis]
     )
+    # Get the start and stop times of the pointing period
+    repoint_id = species_dataset.attrs.get("Repointing", None)
+    if repoint_id is None:
+        raise ValueError("Repointing ID attribute is missing from the dataset.")
+    instrument_frame = (
+        SpiceFrame.IMAP_ULTRA_90 if sensor_id == 90 else SpiceFrame.IMAP_ULTRA_45
+    )
+    pointing_range_met = get_pointing_times_from_id(repoint_id)
+    start_et = ttj2000ns_to_et(met_to_ttj2000ns(pointing_range_met[0]))
+
+    logger.info("Generating helio pointing lookup tables.")
+    helio_pointing_ds = make_helio_index_maps(
+        nside=nside,
+        spin_duration=15.0,
+        start_et=start_et,
+        num_steps=num_spin_steps,
+        instrument_frame=instrument_frame,
+        compute_bsf=apply_bsf,
+    )
+    boundary_scale_factors = helio_pointing_ds.bsf
+    theta_vals = helio_pointing_ds.theta
+    phi_vals = helio_pointing_ds.phi
+    fov_index = helio_pointing_ds.index
+
     intervals, _, energy_bin_geometric_means = build_energy_bins()
-    # Get lookup table for FOR indices by spin phase step
-    (
-        for_indices_by_spin_phase,
-        theta_vals,
-        phi_vals,
-        ra_and_dec,
-        boundary_scale_factors,
-    ) = get_spacecraft_pointing_lookup_tables(ancillary_files, instrument_id)
 
     logger.info("calculating spun FWHM scattering values.")
     pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = (
         calculate_fwhm_spun_scattering(
-            for_indices_by_spin_phase,
+            fov_index,
             theta_vals,
             phi_vals,
             ancillary_files,
@@ -120,7 +135,6 @@ def calculate_helio_pset(
         )
     )
 
-    nside = hp.npix2nside(for_indices_by_spin_phase.shape[0])
     counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_helio,
         species_dataset["energy_heliosphere"].values,
@@ -131,13 +145,6 @@ def calculate_helio_pset(
         n_pix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
     )
     healpix = np.arange(n_pix)
-
-    # Get the start and stop times of the pointing period
-    repoint_id = species_dataset.attrs.get("Repointing", None)
-    if repoint_id is None:
-        raise ValueError("Repointing ID attribute is missing from the dataset.")
-
-    pointing_range_met = get_pointing_times_from_id(repoint_id)
 
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_time, deadtime_ratios = get_spacecraft_exposure_times(
@@ -175,18 +182,6 @@ def calculate_helio_pset(
         nside=nside,
     )
 
-    mid_time = ttj2000ns_to_et(met_to_ttj2000ns((np.sum(pointing_range_met)) / 2))
-
-    logger.info("Adjusting data for helio frame.")
-    exposure_time, efficiencies, geometric_function = get_helio_adjusted_data(
-        mid_time,
-        exposure_time,
-        geometric_function,
-        efficiencies,
-        ra_and_dec[:, 0],
-        ra_and_dec[:, 1],
-        nside=nside,
-    )
     sensitivity = efficiencies * geometric_function
 
     start: float = np.min(species_dataset["event_times"].values)
