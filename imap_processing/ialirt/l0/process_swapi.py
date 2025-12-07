@@ -111,10 +111,10 @@ def optimize_pseudo_parameters(
                 60000 * (initial_speed_guess / 400) ** 2,
             ]
         )
-        five_point_range = range(max_index - 2, max_index + 2 + 1)
-        xdata = energy_passbands.take(five_point_range, mode="clip")
-        ydata = current_sweep_count_rates.take(five_point_range, mode="clip")
-        sigma = current_sweep_count_rate_errors.take(five_point_range, mode="clip")
+        fitting_point_range = range(max_index - 3, max_index + 3)
+        xdata = energy_passbands.take(fitting_point_range, mode="clip")
+        ydata = current_sweep_count_rates.take(fitting_point_range, mode="clip")
+        sigma = current_sweep_count_rate_errors.take(fitting_point_range, mode="clip")
         mask = (ydata > 0) & (sigma > 0) & np.isfinite(xdata) & np.isfinite(ydata) & np.isfinite(sigma)  
         assert np.count_nonzero(mask) > 0
         sol = curve_fit(
