@@ -3,6 +3,7 @@
 import logging
 import pathlib
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -246,6 +247,7 @@ def process_codice(
     l1a_lut_path: pathlib.Path,
     l2_lut_path: pathlib.Path,
     sensor: str,
+    l2_geometric_factor_path: Path | None = None,
 ) -> tuple:
     """
     Create final data products.
@@ -260,6 +262,8 @@ def process_codice(
         L2 LUT path.
     sensor : str
         Sensor (codice_hi or codice_lo).
+    l2_geometric_factor_path : pathlib.Path
+        Optional path based on the sensor (required by Lo).
 
     Returns
     -------
