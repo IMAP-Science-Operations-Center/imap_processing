@@ -13,12 +13,15 @@ from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
 )
+from imap_processing.ultra.constants import SIM_KERNELS_FOR_HELIO_INDEX_MAPS
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
     calculate_fwhm_spun_scattering,
 )
-from imap_processing.ultra.l1c.make_helio_maps import make_helio_index_maps
+from imap_processing.ultra.l1c.make_helio_maps import (
+    make_helio_index_maps_with_nominal_kernels,
+)
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_efficiencies_and_geometric_function,
@@ -105,13 +108,13 @@ def calculate_helio_pset(
         SpiceFrame.IMAP_ULTRA_90 if sensor_id == 90 else SpiceFrame.IMAP_ULTRA_45
     )
     pointing_range_met = get_pointing_times_from_id(repoint_id)
-    start_et = ttj2000ns_to_et(met_to_ttj2000ns(pointing_range_met[0]))
 
     logger.info("Generating helio pointing lookup tables.")
-    helio_pointing_ds = make_helio_index_maps(
+
+    helio_pointing_ds = make_helio_index_maps_with_nominal_kernels(
+        kernel_paths=SIM_KERNELS_FOR_HELIO_INDEX_MAPS,
         nside=nside,
         spin_duration=15.0,
-        start_et=start_et,
         num_steps=num_spin_steps,
         instrument_frame=instrument_frame,
         compute_bsf=apply_bsf,

@@ -4,6 +4,7 @@ import logging
 
 import healpy as hp
 import numpy as np
+import spiceypy as sp
 import xarray as xr
 
 from imap_processing.spice.geometry import (
@@ -61,8 +62,6 @@ def vector_ijk_to_theta_phi(
     """
     Convert instrument vectors to theta/phi.
 
-    This matches Java's vectorIJK2ThetaPhi implementation.
-
     Parameters
     ----------
     inst_vecs : np.ndarray
@@ -92,6 +91,59 @@ def vector_ijk_to_theta_phi(
     phi = np.where(phi > np.pi, phi - 2 * np.pi, phi)
 
     return theta, phi
+
+
+def make_helio_index_maps_with_nominal_kernels(
+    kernel_paths: list[str],
+    nside: int,
+    spin_duration: float,
+    num_steps: int,
+    instrument_frame: SpiceFrame = SpiceFrame.IMAP_ULTRA_90,
+    compute_bsf: bool = False,
+    boundary_points: int = 8,
+) -> xr.Dataset:
+    """
+    Create index maps with nominal sim kernels.
+
+    This function ensures SPICE kernels are loaded before creating the maps. It uses
+    a KernelPool context manager to ensure only this function uses the nominal sim
+    kerneles.
+
+    Parameters
+    ----------
+    kernel_paths : list[str]
+        List of string paths to nominal simulated SPICE kernels.
+    nside : int
+        HEALPix nside parameter.
+    spin_duration : float
+        Total spin period in seconds.
+    num_steps : int
+        Number of spin phase steps.
+    instrument_frame : SpiceFrame, optional
+        Instrument frame (default IMAP_ULTRA_90).
+    compute_bsf : bool, optional
+        Compute boundary scale factors (default False).
+    boundary_points : int, optional
+        Number of boundary points per pixel (default 8).
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with helio index maps.
+    """
+    with sp.KernelPool(kernel_paths):
+        # Call the main function
+        # TODO get start_et from kernels
+        start_et = 797949123.371627
+        return make_helio_index_maps(
+            nside=nside,
+            spin_duration=spin_duration,
+            num_steps=num_steps,
+            start_et=start_et,
+            instrument_frame=instrument_frame,
+            compute_bsf=compute_bsf,
+            boundary_points=boundary_points,
+        )
 
 
 def make_helio_index_maps(
@@ -132,7 +184,7 @@ def make_helio_index_maps(
         Dataset with dimensions (step, energy, pixel) containing index,
         theta, phi, and bsf data variables, plus ra and dec coordinates.
     """
-    # Get spacecraft velocity at START time
+    # Get spacecraft velocity at start time
     state = imap_state(start_et, ref_frame=SpiceFrame.IMAP_DPS, observer=SpiceBody.SUN)
     sc_vel = state[3:6]  # Extract [vx, vy, vz]
 
@@ -174,7 +226,6 @@ def make_helio_index_maps(
             boundary_points,
         )
 
-    # OUTER LOOP: time steps
     time_id = 0
     t = start_et
     while t < (end_et - dt_step / 2):
@@ -184,8 +235,6 @@ def make_helio_index_maps(
             from_frame=instrument_frame,
             to_frame=SpiceFrame.IMAP_DPS,
         )[0]
-
-        # MIDDLE LOOP: energy bins
         for energy_id in range(num_energy_bins):
             # Convert energy to velocity (km/s)
             energy_mean = energy_bin_geometric_means[energy_id]
@@ -202,14 +251,10 @@ def make_helio_index_maps(
                 helio_velocity, axis=1, keepdims=True
             )
 
-            # Transform to instrument frame
+            # Transform to inst
             inst_vecs = helio_normalized @ rotation_matrix
-            inst_vecs = inst_vecs.astype(np.float32)
 
             theta, phi = vector_ijk_to_theta_phi(inst_vecs)
-            theta = theta.astype(np.float32)
-            phi = phi.astype(np.float32)
-
             # Apply phi correction
             phi_correction = np.radians(ULTRA_90_PHI_CORRECTION_DEG)
             phi = phi + phi_correction
