@@ -343,6 +343,8 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
     l2_val_data = load_cdf(l2_val_data)
     for variable in l2_val_data.data_vars:
         processed_val = processed_2_ds[variable].values
+        # NOTE: Replace nan with 0 for comparison as the validation data uses 0
+        processed_val[np.isnan(processed_val)] = 0.0
         np.testing.assert_allclose(
             processed_val,
             l2_val_data[variable].values,
@@ -382,8 +384,11 @@ def test_codice_l2_nsw_species_intensity(mock_get_file_paths, codice_lut_path):
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in l2_val_data.data_vars:
+        # NOTE: Replace nan with 0 for comparison as the validation data uses 0
+        processed_val = processed_2_ds[variable].values
+        processed_val[np.isnan(processed_val)] = 0.0
         np.testing.assert_allclose(
-            processed_2_ds[variable].values,
+            processed_val,
             l2_val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
