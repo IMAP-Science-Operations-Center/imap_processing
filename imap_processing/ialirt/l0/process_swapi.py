@@ -123,7 +123,6 @@ def optimize_pseudo_parameters(
             ydata=ydata[mask],
             sigma=sigma[mask],
             p0=initial_param_guess,
-            full_output=True
         )
         solution_dict["pseudo_speed"].append(sol[0][0])
         solution_dict["pseudo_density"].append(sol[0][1])
