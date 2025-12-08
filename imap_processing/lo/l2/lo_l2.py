@@ -10,7 +10,14 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.ena_maps import AbstractSkyMap, RectangularSkyMap
-from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
+from imap_processing.ena_maps.utils.corrections import (
+    PowerLawFluxCorrector,
+    add_spacecraft_velocity_to_pset,
+    apply_compton_getting_correction,
+    calculate_ram_mask,
+    get_pset_directional_mask,
+    interpolate_map_flux_to_helio_frame,
+)
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo import lo_ancillary
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
@@ -65,18 +72,6 @@ def lo_l2(
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
 
-    logger.info("Step 1: Loading ancillary data")
-    efficiency_data = load_efficiency_data(anc_dependencies)
-
-    logger.info(f"Step 2: Creating sky map from {len(psets)} pointing sets")
-    sky_map = create_sky_map_from_psets(psets, map_descriptor, efficiency_data)
-
-    logger.info("Step 3: Converting to dataset and adding geometric factors")
-    dataset = sky_map.to_dataset()
-    dataset = add_geometric_factors(dataset, map_descriptor.species)
-
-    logger.info("Step 4: Calculating rates and intensities")
-
     # Determine if corrections are needed and prepare oxygen data if required
     (
         sputtering_correction,
@@ -84,10 +79,24 @@ def lo_l2(
         flux_correction,
         o_map_dataset,
         flux_factors,
+        cg_correction,
     ) = _prepare_corrections(
         map_descriptor, descriptor, sci_dependencies, anc_dependencies
     )
 
+    logger.info("Step 1: Loading ancillary data")
+    efficiency_data = load_efficiency_data(anc_dependencies)
+
+    logger.info(f"Step 2: Creating sky map from {len(psets)} pointing sets")
+    sky_map = create_sky_map_from_psets(
+        psets, map_descriptor, efficiency_data, cg_correction
+    )
+
+    logger.info("Step 3: Converting to dataset and adding geometric factors")
+    dataset = sky_map.to_dataset()
+    dataset = add_geometric_factors(dataset, map_descriptor.species)
+
+    logger.info("Step 4: Calculating rates and intensities")
     dataset = calculate_all_rates_and_intensities(
         dataset,
         sputtering_correction=sputtering_correction,
@@ -95,6 +104,7 @@ def lo_l2(
         flux_correction=flux_correction,
         o_map_dataset=o_map_dataset,
         flux_factors=flux_factors,
+        cg_correction=cg_correction,
     )
 
     logger.info("Step 5: Finalizing dataset with attributes")
@@ -111,7 +121,7 @@ def _prepare_corrections(
     descriptor: str,
     sci_dependencies: dict,
     anc_dependencies: list,
-) -> tuple[bool, bool, bool, xr.Dataset | None, Path | None]:
+) -> tuple[bool, bool, bool, xr.Dataset | None, Path | None, bool]:
     """
     Determine what corrections are needed and prepare oxygen dataset if required.
 
@@ -132,11 +142,15 @@ def _prepare_corrections(
 
     Returns
     -------
-    tuple[bool, bool, xr.Dataset | None]
+    tuple[bool, bool, bool, xr.Dataset | None, Path | None, bool]
         A tuple containing:
         - sputtering_correction: Whether to apply sputtering corrections
         - bootstrap_correction: Whether to apply bootstrap corrections
+        - flux_correction: Whether to apply flux corrections
         - o_map_dataset: Oxygen dataset if needed, None otherwise
+        - flux_factors: Path to flux factors ancillary file if needed,
+         None otherwise
+        - cg_correction: Whether to apply CG correction to the dataset.
     """
     # Default values - no corrections needed
     sputtering_correction = False
@@ -169,12 +183,15 @@ def _prepare_corrections(
                 "No flux correction factor file found in ancillary dependencies"
             ) from None
 
+    cg_correction = True if map_descriptor.frame_descriptor == "hf" else False
+
     return (
         sputtering_correction,
         bootstrap_correction,
         flux_correction,
         o_map_dataset,
         flux_factors,
+        cg_correction,
     )
 
 
@@ -268,6 +285,7 @@ def create_sky_map_from_psets(
     psets: list[xr.Dataset],
     map_descriptor: MapDescriptor,
     efficiency_data: pd.DataFrame,
+    cg_correct: bool,
 ) -> AbstractSkyMap:
     """
     Create a sky map by processing all pointing sets.
@@ -280,6 +298,8 @@ def create_sky_map_from_psets(
         Map descriptor object defining the projection and binning.
     efficiency_data : pd.DataFrame
         Efficiency factor data for correcting counts.
+    cg_correct : bool
+        Whether to apply the CG correction to each PSET.
 
     Returns
     -------
@@ -302,9 +322,15 @@ def create_sky_map_from_psets(
     for i, pset in enumerate(psets):
         logger.debug(f"Processing pointing set {i + 1}/{len(psets)}")
         processed_pset = process_single_pset(
-            pset, efficiency_data, map_descriptor.species
+            pset,
+            efficiency_data,
+            map_descriptor.species,
+            cg_correct,
         )
-        project_pset_to_map(processed_pset, output_map)
+        directional_mask = get_pset_directional_mask(
+            processed_pset, map_descriptor.spin_phase
+        )
+        project_pset_to_map(processed_pset, output_map, directional_mask, cg_correct)
 
     return output_map
 
@@ -313,6 +339,7 @@ def process_single_pset(
     pset: xr.Dataset,
     efficiency_data: pd.DataFrame,
     species: str,
+    cg_correct: bool = False,
 ) -> xr.Dataset:
     """
     Process a single pointing set for projection to the sky map.
@@ -325,6 +352,10 @@ def process_single_pset(
         Efficiency factor data for correcting counts.
     species : str
         The species to process (e.g., "h", "o").
+    cg_correct : bool
+        Whether to apply the CG correction to each PSET. A value of True will
+        cause the pre-projection Compton Getting Correction to be applied to
+        the PSET data.
 
     Returns
     -------
@@ -339,6 +370,32 @@ def process_single_pset(
 
     # Step 3: Calculate efficiency-corrected quantities
     pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
+
+    # Step 4: Add s/c velocity, optionally apply CG correction, and calculate
+    # ram-mask
+    pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
+
+    if cg_correct:
+        # NOTE: Heliospheric frame energy selection for CG correction
+        # The heliospheric (HF) energies passed to the CG correction algorithm
+        # could in principle be completely different from the ESA central energies.
+        # However, for Lo, the instrument team has chosen to use the same HF
+        # energies as the ESA central energies (from the geometric factor files).
+        # This decision aligns the energy grid between the spacecraft frame and
+        # heliospheric frame representations.
+
+        # Convert energy coordinate from keV to eV for CG correction
+        # (energy coordinate was set in normalize_pset_coordinates in keV)
+        energy_values_ev: xr.DataArray = pset_processed["energy"] * 1000.0
+        # TODO: Pull add_spacecraft_velocity_to_pset and calculate_ram_mask out
+        #    of apply_compton_getting_correction for visibility. Issue:
+        # https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/2434
+        pset_processed = apply_compton_getting_correction(
+            pset_processed, energy_values_ev
+        )
+
+    # Always calculate ram-mask to identify ram/anti-ram bins
+    pset_processed = calculate_ram_mask(pset_processed)
 
     return pset_processed
 
@@ -359,16 +416,23 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
     xr.Dataset
         Pointing set with normalized energy coordinates and dimension names.
     """
+    # Load true energy values for this species (in keV, matching map convention)
+    # TODO: Figure out how to handle esa_mode properly
+    if "esa_mode" in pset:
+        esa_mode = pset["esa_mode"].values[0]
+    else:
+        # Default to mode 0 if not available (HiRes mode)
+        esa_mode = 0
+    gf_dataset = reduce_geometric_factor_dataset(species, esa_mode=esa_mode)
+
     # Ensure consistent energy coordinates (maps want energy not esa_energy_step)
     pset_renamed = pset.rename_dims({"esa_energy_step": "energy"})
 
     # Drop the esa_energy_step coordinate first to avoid conflicts
     pset_renamed = pset_renamed.drop_vars("esa_energy_step")
 
-    # Ensure the pset energy coordinates match the output map
-    # TODO: Do we even need this if we are assigning the true
-    #       energy levels later?
-    pset_renamed = pset_renamed.assign_coords(energy=range(7))
+    # Assign TRUE energy values as coordinates (in keV, matching map convention)
+    pset_renamed = pset_renamed.assign_coords(energy=gf_dataset["Cntr_E"].values)
 
     # Rename the variables in the pset for projection to the map
     # L2 wants different variable names than l1c
@@ -475,6 +539,8 @@ def calculate_efficiency_corrected_quantities(
 def project_pset_to_map(
     pset: xr.Dataset,
     output_map: AbstractSkyMap,
+    directional_mask: xr.DataArray,
+    cg_correct: bool = False,
 ) -> None:
     """
     Project pointing set data to the output map.
@@ -485,6 +551,12 @@ def project_pset_to_map(
         Processed pointing set ready for projection.
     output_map : AbstractSkyMap
         Target sky map to receive the projected data.
+    directional_mask : xr.DataArray
+        Boolean mask indicating which PSET bins to use for projection. This is
+        how ram/anti-ram bins are removed depending on the descriptor spin phase.
+    cg_correct : bool
+        Whether the CG correction is being applied. If set to True, "energy_sc"
+        is added to the list of variables to be projected.
 
     Returns
     -------
@@ -502,6 +574,8 @@ def project_pset_to_map(
         "bg_rates_exposure_factor",
         "bg_rates_stat_uncert_exposure_factor2",
     ]
+    if cg_correct:
+        value_keys.append("energy_sc")
 
     # Create LoPointingSet and project to map
     lo_pset = ena_maps.LoPointingSet(pset)
@@ -509,6 +583,7 @@ def project_pset_to_map(
         pointing_set=lo_pset,
         value_keys=value_keys,
         index_match_method=ena_maps.IndexMatchMethod.PUSH,
+        pset_valid_mask=directional_mask,
     )
     logger.debug(f"Projected {len(value_keys)} quantities to sky map")
 
@@ -541,14 +616,11 @@ def add_geometric_factors(dataset: xr.Dataset, species: str) -> xr.Dataset:
 
     logger.info(f"Loading and applying geometric factors for species: {species}")
 
-    # Load geometric factor data for the specific species
-    gf_data = load_geometric_factor_data(species)
-
     # Initialize geometric factor variables
     dataset = initialize_geometric_factor_variables(dataset)
 
     # Populate geometric factors for each energy step
-    dataset = populate_geometric_factors(dataset, gf_data, species)
+    dataset = populate_geometric_factors(dataset, species)
 
     return dataset
 
@@ -587,6 +659,44 @@ def load_geometric_factor_data(species: str) -> pd.DataFrame:
     return lo_ancillary.read_ancillary_file(gf_file)
 
 
+def reduce_geometric_factor_dataset(species: str, esa_mode: int) -> xr.Dataset:
+    """
+    Get geometric factor data as xarray Dataset for a specific species and ESA mode.
+
+    This helper function loads geometric factor data, filters by ESA mode, converts
+    to xarray, and selects all 7 energy steps for vectorized operations.
+
+    Parameters
+    ----------
+    species : str
+        The species to load geometric factors for ("h" or "o").
+    esa_mode : int
+        ESA mode (0 for HiRes, 1 for HiThr).
+
+    Returns
+    -------
+    xarray.Dataset
+        Geometric factor data indexed by Observed_E-Step (1-7), containing all
+        columns from the geometric factor CSV file.
+    """
+    # Load geometric factor data for this species
+    gf_data = load_geometric_factor_data(species)
+
+    # Filter for the specific ESA mode
+    if "esa_mode" in gf_data.columns:
+        gf_data = gf_data[gf_data["esa_mode"] == esa_mode].copy()
+
+    # Convert to xarray Dataset indexed by energy step for vectorized selection
+    gf_ds = gf_data.set_index("Observed_E-Step").to_xarray()
+
+    # Lo Instrument team: Use only geometric factors where
+    # incident_E-Step == Observed_E-Step
+    gf_ds = gf_ds.where(gf_ds["incident_E-Step"] == gf_ds["Observed_E-Step"], drop=True)
+
+    # Select energy steps 1-7 and return
+    return gf_ds.sel({"Observed_E-Step": range(1, 8)})
+
+
 def initialize_geometric_factor_variables(
     dataset: xr.Dataset,
 ) -> xr.Dataset:
@@ -623,7 +733,6 @@ def initialize_geometric_factor_variables(
 
 def populate_geometric_factors(
     dataset: xr.Dataset,
-    gf_data: pd.DataFrame,
     species: str,
 ) -> xr.Dataset:
     """
@@ -633,8 +742,6 @@ def populate_geometric_factors(
     ----------
     dataset : xr.Dataset
         Dataset with initialized geometric factor variables.
-    gf_data : pd.DataFrame
-        Geometric factor data for the specified species.
     species : str
         The species to process (only "h" and "o" have geometric factors).
 
@@ -649,21 +756,16 @@ def populate_geometric_factors(
         return dataset
 
     # Mapping of dataset variables to dataframe columns for this species
+    gf_coords = {"energy": "Cntr_E"}
+    gf_vars = {
+        "geometric_factor": f"GF_Trpl_{species.upper()}",
+        "geometric_factor_stat_uncert": f"GF_Trpl_{species.upper()}_unc",
+    }
     if species == "h":
-        gf_vars = {
-            "energy": "Cntr_E",
-            "geometric_factor": "GF_Trpl_H",
-            "geometric_factor_stat_uncert": "GF_Trpl_H_unc",
-        }
         # NOTE: From an e-mail from Nathan on 2025-09-11
         energy_delta_hires_values = [5.43, 10.02, 18.61, 33.31, 64.98, 131.64, 262.35]
         energy_delta_hithr_values = [8.81, 16.04, 28.50, 53.13, 105.60, 219.67, 413.60]
     else:  # species == "o"
-        gf_vars = {
-            "energy": "Cntr_E",
-            "geometric_factor": "GF_Trpl_O",
-            "geometric_factor_stat_uncert": "GF_Trpl_O_unc",
-        }
         energy_delta_hires_values = [5.82, 11.10, 21.78, 41.47, 85.61, 180.67, 361.93]
         energy_delta_hithr_values = [9.45, 17.84, 33.51, 66.61, 139.95, 302.24, 569.48]
 
@@ -675,16 +777,13 @@ def populate_geometric_factors(
         # Default to mode 0 if not available (HiRes mode)
         esa_mode = 0
 
-    # Populate the geometric factors for each energy step
-    for i in range(7):
-        # Get geometric factor data for this energy step and ESA mode
-        gf_row = gf_data[
-            (gf_data["esa_mode"] == esa_mode) & (gf_data["Observed_E-Step"] == i + 1)
-        ].iloc[0]
+    # Filter for the specific ESA mode
+    gf_dataset = reduce_geometric_factor_dataset(species, esa_mode)
 
-        # Fill energy step with the geometric factor values
-        for var, col in gf_vars.items():
-            dataset[var].values[i] = gf_row[col]
+    # Populate geometric factors in dataset
+    dataset = dataset.assign_coords(energy=gf_dataset[gf_coords["energy"]].values)
+    for var, col in gf_vars.items():
+        dataset[var].values = gf_dataset[col].values
 
     # Update delta_minus and delta_plus based on ESA mode
     if esa_mode == 0:  # HiRes
@@ -709,6 +808,7 @@ def calculate_all_rates_and_intensities(
     flux_correction: bool = False,
     o_map_dataset: xr.Dataset | None = None,
     flux_factors: Path | None = None,
+    cg_correction: bool = False,
 ) -> xr.Dataset:
     """
     Calculate rates and intensities with proper error propagation.
@@ -730,6 +830,8 @@ def calculate_all_rates_and_intensities(
         Dataset specifically for oxygen, needed for sputtering corrections.
     flux_factors : Path, optional
         Path to flux factor file for flux corrections.
+    cg_correction : bool, optional
+        Whether to apply CG correction to intensities.
 
     Returns
     -------
@@ -748,10 +850,12 @@ def calculate_all_rates_and_intensities(
 
     # Optional Step 4: Calculate sputtering corrections
     if sputtering_correction:
+        logger.info("Calculating sputtering corrections")
         dataset = calculate_sputtering_corrections(dataset, o_map_dataset)
 
     # Optional Step 5: Calculate bootstrap corrections
     if bootstrap_correction:
+        logger.info("Calculating bootstrap corrections")
         dataset = calculate_bootstrap_corrections(dataset)
 
     # Optional Step 6: Calculate flux corrections
@@ -759,6 +863,16 @@ def calculate_all_rates_and_intensities(
         if flux_factors is None:
             raise ValueError("Flux factors file must be provided for flux corrections")
         dataset = calculate_flux_corrections(dataset, flux_factors)
+
+    # Optional Step 7: Finish CG correction
+    if cg_correction:
+        logger.info("Interpolating map intensities to helio-frame energies")
+        dataset = interpolate_map_flux_to_helio_frame(
+            dataset,
+            dataset["energy"],
+            dataset["energy"],
+            ["ena_intensity", "bg_intensity"],
+        )
 
     # Step 7: Clean up intermediate variables
     dataset = cleanup_intermediate_variables(dataset)
@@ -1169,29 +1283,14 @@ def calculate_flux_corrections(dataset: xr.Dataset, flux_factors: Path) -> xr.Da
 
     # NOTE: We need to apply this to both total flux and background flux
     for var in ["ena", "bg"]:
-        # FluxCorrector works on (energy, :) arrays, so we need to flatten the map
-        # spatial dimensions for the correction and then reshape back after.
-        input_shape = dataset[f"{var}_intensity"].shape[1:]  # Exclude epoch dimension
-        intensity = (
-            dataset[f"{var}_intensity"].values[0].reshape(len(dataset["energy"]), -1)
+        # Apply flux correction with xarray inputs
+        dataset[f"{var}_intensity"], dataset[f"{var}_intensity_stat_uncert"] = (
+            corrector.apply_flux_correction(
+                dataset[f"{var}_intensity"],
+                dataset[f"{var}_intensity_stat_uncert"],
+                dataset["energy"],
+            )
         )
-        stat_uncert = (
-            dataset[f"{var}_intensity_stat_uncert"]
-            .values[0]
-            .reshape(len(dataset["energy"]), -1)
-        )
-        corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
-            intensity,
-            stat_uncert,
-            dataset["energy"].data,
-        )
-        # Add the size 1 epoch dimension back in to the corrected fluxes.
-        dataset[f"{var}_intensity"].data = corrected_intensity.reshape(input_shape)[
-            np.newaxis, ...
-        ]
-        dataset[f"{var}_intensity_stat_uncert"].data = corrected_stat_unc.reshape(
-            input_shape
-        )[np.newaxis, ...]
 
     return dataset
 

@@ -209,13 +209,17 @@ def calculate_de(
         f"ultra{sensor}",
         ancillary_files,
     )
-    backtofvalid = is_back_tof_valid(
-        de_dataset,
-        xf,
+    backtofvalid_quality_flags = np.zeros(len(ph_indices), dtype=quality_flags.dtype)
+    backtofvalid, backtofvalid_quality_flags = is_back_tof_valid(
+        de_dataset.isel(epoch=ph_indices),
+        xf[ph_indices],
         f"ultra{sensor}",
         ancillary_files,
+        backtofvalid_quality_flags,
     )
-    coinphvalid = is_coin_ph_valid(
+
+    coinphvalid_quality_flags = np.zeros(len(ph_indices), dtype=quality_flags.dtype)
+    coinphvalid, coinphvalid_quality_flags = is_coin_ph_valid(
         etof[ph_indices],
         xc[ph_indices],
         xb[ph_indices],
@@ -225,8 +229,11 @@ def calculate_de(
         de_dataset["stop_west_tdc"][ph_indices].values,
         f"ultra{sensor}",
         ancillary_files,
-        quality_flags[ph_indices],
+        coinphvalid_quality_flags,
     )
+    quality_flags[ph_indices] |= coinphvalid_quality_flags
+    quality_flags[ph_indices] |= backtofvalid_quality_flags
+
     e_bin[ph_indices] = determine_ebin_pulse_height(
         energy[ph_indices],
         tof[ph_indices],

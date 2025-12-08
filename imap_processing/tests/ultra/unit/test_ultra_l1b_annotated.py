@@ -17,7 +17,7 @@ def furnish_kernels(spice_test_data_path, furnish_kernels):
         "imap_science_100.tf",
         "imap_sclk_0000.tsc",
         "sim_1yr_imap_attitude.bc",
-        "imap_100.tf",
+        "imap_130.tf",
         "naif0012.tls",
         "sim_1yr_imap_pointing_frame.bc",
         "de440s.bsp",

@@ -647,8 +647,6 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
     science_files = dependencies.get_file_paths(descriptor="sci")
     l1a_data = load_cdf(science_files[0])
 
-    total_packets = len(l1a_data["science_data"].data)
-
     l1a_data_copy = l1a_data.copy(deep=True)
 
     # First convert some science data to engineering units
@@ -695,25 +693,18 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
         logger.info("No full cycle data found. Skipping.")
         return None
 
-    # In this case, we found incomplete cycle data. We need to filter
+    # We may have potentially found incomplete cycle data. We need to filter
     # out all the data that does not make a full cycle.
-    if len(full_cycle_data_indices) != total_packets:
-        # Filter metadata and science data of packets that makes full cycles
-        full_cycle_l1a_data = l1a_data_copy.isel({"epoch": full_cycle_data_indices})
+    n_cycles = len(full_cycle_data_indices)
+    logger.info(
+        f"Length of data [{len(l1a_data['science_data'])}]; "
+        f"Number of full cycles found [{n_cycles}]"
+    )
+    full_cycle_l1a_data = l1a_data_copy.isel({"epoch": full_cycle_data_indices})
 
-        # Update total packets
-        total_packets = len(full_cycle_data_indices)
-        logger.debug(
-            "Quarters cycle after filtering: "
-            f"{full_cycle_l1a_data['quarter_cycle'].data}"
-        )
-        if len(full_cycle_data_indices) != len(
-            full_cycle_l1a_data["quarter_cycle"].data
-        ):
-            raise ValueError(
-                "Error: full cycle data indices and filtered quarter cycle data size "
-                "mismatch"
-            )
+    logger.debug(
+        f"Quarters cycle after filtering: {full_cycle_l1a_data['quarter_cycle'].data}"
+    )
 
     # Main science processing steps
     # ---------------------------------------------------------------
@@ -767,7 +758,7 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # Store ESA energies of full cycle for L2 purposes.
     esa_energies = get_esa_energy_pattern(esa_lut_files[0])
     # Repeat the (24, 30) energy pattern n_cycles times along a new first axis
-    esa_energies = np.repeat(esa_energies[np.newaxis, :, :], total_packets // 4, axis=0)
+    esa_energies = np.repeat(esa_energies[np.newaxis, :, :], n_cycles // 4, axis=0)
     # Convert voltage to electron energy in eV by apply conversion factor
     esa_energies = esa_energies * swe_constants.ENERGY_CONVERSION_FACTOR
     # ------------------------------------------------------------------
@@ -785,7 +776,7 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # get indices of 3rd quarter cycle data packet in each full cycle
     # and use that to calculate center time of data acquisition time.
     #   Quarter cycle indices: 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, ...
-    indices_of_center_time = np.arange(2, total_packets, swe_constants.N_QUARTER_CYCLES)
+    indices_of_center_time = np.arange(2, n_cycles, swe_constants.N_QUARTER_CYCLES)
 
     center_time = combine_acquisition_time(
         full_cycle_l1a_data["acq_start_coarse"].data[indices_of_center_time],

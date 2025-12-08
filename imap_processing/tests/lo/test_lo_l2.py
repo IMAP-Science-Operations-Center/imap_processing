@@ -8,6 +8,8 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import load_cdf
+from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.l1c.lo_l1c import (
     ESA_ENERGY_STEPS,
@@ -19,6 +21,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     SPIN_ANGLE_BIN_CENTERS,
 )
 from imap_processing.lo.l2.lo_l2 import (
+    _prepare_corrections,
     add_efficiency_factors_to_pset,
     calculate_all_rates_and_intensities,
     calculate_backgrounds,
@@ -35,6 +38,9 @@ from imap_processing.lo.l2.lo_l2 import (
     load_efficiency_data,
     normalize_pset_coordinates,
     populate_geometric_factors,
+    process_single_pset,
+    project_pset_to_map,
+    reduce_geometric_factor_dataset,
 )
 
 # =============================================================================
@@ -265,6 +271,7 @@ def sample_geometric_factor_data():
             {
                 "esa_mode": 0,
                 "Observed_E-Step": i + 1,
+                "incident_E-Step": i + 1,
                 "Cntr_E": 0.01 * (i + 1),  # Simple energy values
                 "Cntr_E_unc": 0.001 * (i + 1),
                 "GF_Trpl_H": 1e-4 * (i + 1),
@@ -280,6 +287,7 @@ def sample_geometric_factor_data():
             {
                 "esa_mode": 0,
                 "Observed_E-Step": i + 1,
+                "incident_E-Step": i + 1,
                 "Cntr_E": 0.015 * (i + 1),  # Slightly different for oxygen
                 "Cntr_E_unc": 0.0015 * (i + 1),
                 "GF_Trpl_O": 1.5e-4 * (i + 1),
@@ -650,6 +658,165 @@ class TestLoadEfficiencyData:
         assert result.empty
 
 
+class TestReduceGeometricFactor:
+    """Tests for the reduce_geometric_factor_dataset function."""
+
+    @pytest.mark.parametrize("species", ["h", "o"])
+    @pytest.mark.parametrize("esa_mode", [0, 1])
+    def test_reduce_geometric_factor_dataset(
+        self,
+        species,
+        esa_mode,
+    ):
+        """Test functionality of reduce_geometric_factor_dataset with real gf data."""
+
+        result = reduce_geometric_factor_dataset(species, esa_mode)
+
+        # Verify it returns an xarray Dataset
+        assert isinstance(result, xr.Dataset)
+
+        # Verify it has 7 energy steps
+        assert len(result["Observed_E-Step"]) == 7
+
+        # Verify the index is 1-7
+        expected_indices = list(range(1, 8))
+        np.testing.assert_array_equal(
+            result["Observed_E-Step"].values, expected_indices
+        )
+
+        # Verify that incident_E-Step == Observed_E-Step
+        np.testing.assert_array_equal(
+            result["incident_E-Step"].values, result["Observed_E-Step"].values
+        )
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_hydrogen(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test that hydrogen geometric factors are correctly loaded and processed."""
+        h_gf_data, _ = sample_geometric_factor_data
+        mock_load_gf.return_value = h_gf_data
+
+        result = reduce_geometric_factor_dataset("h", esa_mode=0)
+
+        # Check that hydrogen-specific columns are present
+        assert "Cntr_E" in result.data_vars
+        assert "GF_Trpl_H" in result.data_vars
+        assert "GF_Trpl_H_unc" in result.data_vars
+
+        # Verify energy values match expected for hydrogen
+        expected_energies = [0.01 * (i + 1) for i in range(7)]
+        np.testing.assert_array_almost_equal(result["Cntr_E"].values, expected_energies)
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_oxygen(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test that oxygen geometric factors are correctly loaded and processed."""
+        _, o_gf_data = sample_geometric_factor_data
+        mock_load_gf.return_value = o_gf_data
+
+        result = reduce_geometric_factor_dataset("o", esa_mode=0)
+
+        # Check that oxygen-specific columns are present
+        assert "Cntr_E" in result.data_vars
+        assert "GF_Trpl_O" in result.data_vars
+        assert "GF_Trpl_O_unc" in result.data_vars
+
+        # Verify energy values match expected for oxygen
+        expected_energies = [0.015 * (i + 1) for i in range(7)]
+        np.testing.assert_array_almost_equal(result["Cntr_E"].values, expected_energies)
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_esa_mode_filtering(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test that ESA mode filtering works correctly."""
+        h_gf_data, _ = sample_geometric_factor_data
+
+        # Create data with two ESA modes
+        h_gf_mode_0 = h_gf_data.copy()
+        h_gf_mode_1 = h_gf_data.copy()
+
+        # Modify mode 1 data to have different GF values
+        for col in ["GF_Trpl_H", "GF_Dbl_all", "GF_Trpl_all"]:
+            h_gf_mode_1[col] = h_gf_mode_1[col] * 1.5
+        h_gf_mode_1["esa_mode"] = 1
+
+        combined_data = pd.concat([h_gf_mode_0, h_gf_mode_1], ignore_index=True)
+        mock_load_gf.return_value = combined_data
+
+        # Get data for mode 0
+        result_mode_0 = reduce_geometric_factor_dataset("h", esa_mode=0)
+
+        # Get data for mode 1
+        result_mode_1 = reduce_geometric_factor_dataset("h", esa_mode=1)
+
+        # Verify that mode 1 has different (larger) GF values
+        assert np.all(
+            result_mode_1["GF_Trpl_H"].values > result_mode_0["GF_Trpl_H"].values
+        )
+
+        # Verify the ratio is approximately 1.5
+        ratio = result_mode_1["GF_Trpl_H"].values / result_mode_0["GF_Trpl_H"].values
+        np.testing.assert_array_almost_equal(ratio, np.ones(7) * 1.5)
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_duplicate_removal(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test that duplicate Observed_E-Step values are handled correctly."""
+        h_gf_data, _ = sample_geometric_factor_data
+
+        # Add duplicate rows with same Observed_E-Step but different incident_E-Step
+        duplicates = h_gf_data.copy()
+        duplicates["incident_E-Step"] = [
+            i + 8 for i in range(7)
+        ]  # Different incident steps
+
+        combined_data = pd.concat([h_gf_data, duplicates], ignore_index=True)
+        mock_load_gf.return_value = combined_data
+
+        result = reduce_geometric_factor_dataset("h", esa_mode=0)
+
+        # Should still have exactly 7 energy steps (duplicates removed)
+        assert len(result["Observed_E-Step"]) == 7
+
+        # Verify no duplicate indices
+        assert len(np.unique(result["Observed_E-Step"].values)) == 7
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_invalid_species(self, mock_load_gf):
+        """Test that invalid species raises appropriate error."""
+        # Mock should raise ValueError for invalid species
+        mock_load_gf.side_effect = ValueError(
+            "Geometric factors only available for 'h' and 'o', got 'invalid'"
+        )
+
+        with pytest.raises(ValueError, match="Geometric factors only available"):
+            reduce_geometric_factor_dataset("invalid", esa_mode=0)
+
+    @patch("imap_processing.lo.l2.lo_l2.load_geometric_factor_data")
+    def test_reduce_geometric_factor_dataset_no_esa_mode_column(
+        self, mock_load_gf, sample_geometric_factor_data
+    ):
+        """Test handling when esa_mode column is missing from data."""
+        h_gf_data, _ = sample_geometric_factor_data
+
+        # Remove esa_mode column if it exists
+        if "esa_mode" in h_gf_data.columns:
+            h_gf_data = h_gf_data.drop(columns=["esa_mode"])
+
+        mock_load_gf.return_value = h_gf_data
+
+        # Should still work, just won't filter by esa_mode
+        result = reduce_geometric_factor_dataset("h", esa_mode=0)
+
+        # Should return 7 energy steps
+        assert len(result["Observed_E-Step"]) == 7
+        assert isinstance(result, xr.Dataset)
+
+
 class TestNormalizePsetCoordinates:
     """Tests for the normalize_pset_coordinates function."""
 
@@ -683,7 +850,12 @@ class TestNormalizePsetCoordinates:
 
         # Check that energy coordinate is present
         assert "energy" in result.coords
-        np.testing.assert_array_equal(result.coords["energy"], list(range(7)))
+        expected_energies = (
+            np.array([0.015, 0.029, 0.055, 0.11, 0.209, 0.439, 0.872])
+            if species == "h"
+            else np.array([0.016, 0.032, 0.065, 0.135, 0.279, 0.601, 1.206])
+        )
+        np.testing.assert_array_equal(result.coords["energy"], expected_energies)
 
         # Check that old coordinate variable was dropped
         assert "esa_energy_step" not in result.variables
@@ -716,8 +888,8 @@ class TestNormalizePsetCoordinates:
         )
 
         # For species without background rates, the function should fail
-        # because it tries to access background variables that don't exist
-        with pytest.raises(ValueError, match="cannot rename"):
+        # because geometric factors can only be retrieved for "h" and "o"
+        with pytest.raises(ValueError, match="Geometric factors only available"):
             normalize_pset_coordinates(pset, species)
 
     def test_normalize_coordinates_removes_old_coordinate(self):
@@ -1568,16 +1740,20 @@ class TestPopulateGeometricFactors:
     """Tests for the populate_geometric_factors function."""
 
     @pytest.mark.parametrize("species", ["h", "o"])
-    def test_populate_geometric_factors(self, species, sample_geometric_factor_data):
+    @patch("imap_processing.lo.l2.lo_l2.reduce_geometric_factor_dataset")
+    def test_populate_geometric_factors(
+        self, mock_get_geometric_factor_dataset, species, sample_geometric_factor_data
+    ):
         """Test population of geometric factor values for a specific species."""
         h_gf_data, o_gf_data = sample_geometric_factor_data
         gf_data = h_gf_data if species == "h" else o_gf_data
+        mock_get_geometric_factor_dataset.return_value = gf_data.to_xarray()
 
         # Create initialized dataset
         dataset = xr.Dataset(coords={"energy": range(7)})
         dataset = initialize_geometric_factor_variables(dataset)
 
-        result = populate_geometric_factors(dataset, gf_data, species)
+        result = populate_geometric_factors(dataset, species)
 
         # Check that values were populated correctly
         for i in range(7):
@@ -1601,10 +1777,8 @@ class TestPopulateGeometricFactors:
         dataset = xr.Dataset(coords={"energy": range(7)})
         dataset = initialize_geometric_factor_variables(dataset)
 
-        gf_data = pd.DataFrame()  # Empty dataframe
-
         # Test with doubles (no geometric factors)
-        result = populate_geometric_factors(dataset, gf_data, "doubles")
+        result = populate_geometric_factors(dataset, "doubles")
 
         # Should return dataset unchanged (all zeros)
         assert np.all(result["geometric_factor"].values == 0)
@@ -2123,6 +2297,87 @@ class TestCalculateAllRatesAndIntensities:
         assert "bg_rates_exposure_factor" not in result.data_vars
         assert "bg_rates_stat_uncert_exposure_factor2" not in result.data_vars
 
+    def test_calculate_all_rates_with_cg_correction(
+        self, sample_dataset_with_intensities
+    ):
+        """Test that CG correction is applied when cg_correction=True."""
+        # Add necessary variables for the calculation
+        dataset = sample_dataset_with_intensities.copy(deep=True)
+        dataset["counts"] = (("epoch", "energy"), np.ones((1, 7)) * 10)
+        dataset["counts_over_eff"] = (("epoch", "energy"), np.ones((1, 7)) * 12)
+        dataset["counts_over_eff_squared"] = (("epoch", "energy"), np.ones((1, 7)) * 12)
+        dataset["exposure_factor"] = (("epoch", "energy"), np.ones((1, 7)) * 1.0)
+        dataset["geometric_factor"] = (("energy",), np.ones(7) * 1e-4)
+        dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(7) * 1e-5)
+        dataset["bg_rates_exposure_factor"] = (
+            ("epoch", "energy"),
+            np.ones((1, 7)) * 0.3,
+        )
+        dataset["bg_rates_stat_uncert_exposure_factor2"] = (
+            ("epoch", "energy"),
+            np.ones((1, 7)) * 0.009,
+        )
+
+        # Mock the interpolation function
+        with patch(
+            "imap_processing.lo.l2.lo_l2.interpolate_map_flux_to_helio_frame"
+        ) as mock_interp:
+            # Make the mock return the input dataset
+            mock_interp.side_effect = lambda ds, *args, **kwargs: ds
+
+            # Call with CG correction enabled
+            _ = calculate_all_rates_and_intensities(dataset, cg_correction=True)
+
+            # Verify that interpolation was called
+            mock_interp.assert_called_once()
+
+            # Check the call arguments
+            call_args = mock_interp.call_args
+            assert call_args[0][1].equals(
+                dataset["energy"]
+            )  # spacecraft frame energies
+            assert call_args[0][2].equals(dataset["energy"])  # helio frame energies
+            assert "ena_intensity" in call_args[0][3]  # variables to interpolate
+            assert "bg_intensity" in call_args[0][3]
+
+    def test_calculate_all_rates_cg_with_other_corrections(
+        self, sample_dataset_with_intensities, lo_flux_factors_file
+    ):
+        """Test CG correction works alongside other corrections."""
+        # Add necessary variables
+        dataset = sample_dataset_with_intensities.copy(deep=True)
+        dataset["counts"] = (("epoch", "energy"), np.ones((1, 7)) * 10)
+        dataset["counts_over_eff"] = (("epoch", "energy"), np.ones((1, 7)) * 12)
+        dataset["counts_over_eff_squared"] = (("epoch", "energy"), np.ones((1, 7)) * 12)
+        dataset["exposure_factor"] = (("epoch", "energy"), np.ones((1, 7)) * 1.0)
+        dataset["geometric_factor"] = (("energy",), np.ones(7) * 1e-4)
+        dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(7) * 1e-5)
+        dataset["bg_rates_exposure_factor"] = (
+            ("epoch", "energy"),
+            np.ones((1, 7)) * 0.3,
+        )
+        dataset["bg_rates_stat_uncert_exposure_factor2"] = (
+            ("epoch", "energy"),
+            np.ones((1, 7)) * 0.009,
+        )
+
+        with patch(
+            "imap_processing.lo.l2.lo_l2.interpolate_map_flux_to_helio_frame"
+        ) as mock_interp:
+            mock_interp.side_effect = lambda ds, *args, **kwargs: ds
+
+            # Call with both flux correction and CG correction
+            result = calculate_all_rates_and_intensities(
+                dataset,
+                flux_correction=True,
+                flux_factors=lo_flux_factors_file,
+                cg_correction=True,
+            )
+
+            # Both corrections should be applied
+            assert "ena_intensity" in result.data_vars
+            mock_interp.assert_called_once()
+
 
 @pytest.mark.external_kernel
 class TestIntegrationWithMocks:
@@ -2178,6 +2433,37 @@ class TestIntegrationWithMocks:
             assert isinstance(result[0], xr.Dataset)
 
 
+@pytest.fixture
+def ibex_pset_file():
+    """Path to the LO/IBEX pset test file."""
+    # Use the actual test data file from the ena_maps test data
+    test_data_path = Path(__file__).parent / "test_cdfs"
+    return test_data_path / "imap_lo_l1c_pset_20260101-repoint01261_v001.cdf"
+
+
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
+class TestIntegration:
+    """Integration tests using IBEX data and simulated kernels."""
+
+    def test_lo_l2_integration_full(
+        self, ibex_pset_file, imap_ena_sim_metakernel, lo_flux_factors_file
+    ):
+        """Test the main lo_l2 function with no mocking."""
+        # Test with oxygen data to reduce test run-time
+        sci_dependencies = {"imap_lo_l1c_pset": [load_cdf(ibex_pset_file)]}
+        anc_dependencies = [lo_flux_factors_file]  # Include flux factors file
+        descriptor = "l090-ena-o-hf-nsp-ram-hae-6deg-3mo"
+
+        # Run the function - should not crash
+        result = lo_l2(sci_dependencies, anc_dependencies, descriptor)
+
+        # Basic validation
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert isinstance(result[0], xr.Dataset)
+
+
 # =============================================================================
 # ERROR HANDLING TESTS
 # =============================================================================
@@ -2208,7 +2494,7 @@ class TestErrorHandling:
                 NotImplementedError, match="HEALPix map output not supported"
             ):
                 create_sky_map_from_psets(
-                    [minimal_pset_for_species], mock_map_desc, pd.DataFrame()
+                    [minimal_pset_for_species], mock_map_desc, pd.DataFrame(), False
                 )
 
 
@@ -2263,3 +2549,249 @@ class TestEdgeCases:
         # Uncertainty calculation should handle negative counts
         # (sqrt of negative gives NaN, which is expected behavior)
         assert np.isnan(result["ena_count_rate_stat_uncert"].values[0])
+
+
+# =============================================================================
+# TESTS FOR CG CORRECTION FUNCTIONALITY
+# =============================================================================
+
+
+class TestPrepareCorrections:
+    """Tests for the _prepare_corrections function."""
+
+    def test_prepare_corrections_hf_frame(self, lo_flux_factors_file):
+        """Test that CG correction is enabled for heliocentric frame (hf)."""
+        # Create a map descriptor with heliocentric frame
+        descriptor = "ilo90-ena-h-hf-nsp-full-hae-6deg-3mo"
+        map_descriptor = MapDescriptor.from_string(descriptor)
+
+        sci_dependencies = {"imap_lo_l1c_pset": []}
+        anc_dependencies = [lo_flux_factors_file]
+
+        with patch("imap_processing.lo.l2.lo_l2.lo_l2") as mock_lo_l2:
+            mock_o_dataset = xr.Dataset()
+            mock_lo_l2.return_value = [mock_o_dataset]
+            result = _prepare_corrections(
+                map_descriptor, descriptor, sci_dependencies, anc_dependencies
+            )
+
+        # Unpack the tuple
+        (
+            sputtering_correction,
+            bootstrap_correction,
+            flux_correction,
+            o_map_dataset,
+            flux_factors,
+            cg_correction,
+        ) = result
+
+        # Check that CG correction is enabled for hf frame
+        assert cg_correction is True, "CG correction should be enabled for 'hf' frame"
+
+        # Check other correction flags
+        assert flux_correction is True  # ENA data should have flux correction
+        assert sputtering_correction is True  # h-ena product, apply sputtering
+        assert bootstrap_correction is True  # h-ena product, apply bootstrap
+        assert o_map_dataset is not None  # oxygen dataset produced
+        assert flux_factors is not None  # Flux factors should be found
+
+    def test_prepare_corrections_sc_frame(self, lo_flux_factors_file):
+        """Test that CG correction is disabled for spacecraft frame (sc)."""
+        # Create a map descriptor with spacecraft frame
+        descriptor = "ilo90-ena-o-sf-nsp-full-hae-6deg-3mo"
+        map_descriptor = MapDescriptor.from_string(descriptor)
+
+        sci_dependencies = {"imap_lo_l1c_pset": []}
+        anc_dependencies = [lo_flux_factors_file]
+
+        result = _prepare_corrections(
+            map_descriptor, descriptor, sci_dependencies, anc_dependencies
+        )
+
+        # Unpack the tuple
+        (
+            sputtering_correction,
+            bootstrap_correction,
+            flux_correction,
+            o_map_dataset,
+            flux_factors,
+            cg_correction,
+        ) = result
+
+        # Check that CG correction is disabled for sc frame
+        assert cg_correction is False, (
+            "CG correction should be disabled for non-'hf' frame"
+        )
+
+    def test_prepare_corrections_with_hydrogen_ena(self, lo_flux_factors_file):
+        """Test corrections for hydrogen ENA data."""
+        descriptor = "ilo90-ena-h-sf-nsp-full-hae-6deg-3mo"
+        map_descriptor = MapDescriptor.from_string(descriptor)
+
+        # Mock the recursive call to lo_l2 for oxygen
+        with patch("imap_processing.lo.l2.lo_l2.lo_l2") as mock_lo_l2:
+            mock_o_dataset = xr.Dataset({"test": (("energy",), np.ones(7))})
+            mock_lo_l2.return_value = [mock_o_dataset]
+
+            sci_dependencies = {"imap_lo_l1c_pset": []}
+            anc_dependencies = [lo_flux_factors_file]
+
+            result = _prepare_corrections(
+                map_descriptor, descriptor, sci_dependencies, anc_dependencies
+            )
+
+            (
+                sputtering_correction,
+                bootstrap_correction,
+                flux_correction,
+                o_map_dataset,
+                flux_factors,
+                cg_correction,
+            ) = result
+
+            # Check that all corrections are enabled for hydrogen ENA
+            assert sputtering_correction is True
+            assert bootstrap_correction is True
+            assert flux_correction is True
+            assert o_map_dataset is not None
+            assert cg_correction is False  # sf frame, not hf
+
+
+class TestProcessSinglePset:
+    """Tests for the process_single_pset function with CG correction."""
+
+    def test_process_single_pset_hf_frame(self, minimal_pset, sample_efficiency_data):
+        """Test that CG correction is applied for heliocentric frame."""
+        pset = minimal_pset.copy()
+        pset = pset.rename({"esa_energy_step": "energy"})
+
+        with (
+            patch(
+                "imap_processing.lo.l2.lo_l2.normalize_pset_coordinates"
+            ) as mock_norm,
+            patch(
+                "imap_processing.lo.l2.lo_l2.add_efficiency_factors_to_pset"
+            ) as mock_add_ef,
+            patch(
+                "imap_processing.lo.l2.lo_l2.calculate_efficiency_corrected_quantities"
+            ) as mock_calc_ef,
+            patch(
+                "imap_processing.lo.l2.lo_l2.add_spacecraft_velocity_to_pset"
+            ) as mock_add_sv,
+            patch(
+                "imap_processing.lo.l2.lo_l2.apply_compton_getting_correction"
+            ) as mock_cg,
+            patch("imap_processing.lo.l2.lo_l2.calculate_ram_mask") as mock_ram_mask,
+        ):
+            mock_norm.return_value = pset
+            mock_add_ef.return_value = pset
+            mock_calc_ef.return_value = pset
+            mock_add_sv.return_value = pset
+            mock_cg.return_value = pset
+            mock_ram_mask.return_value = pset
+
+            # Process with hf frame
+            _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=True)
+
+            # Check that add_spacecraft_velocity_to_pset was called
+            mock_add_sv.assert_called_once()
+
+            # Check that CG correction was called
+            mock_cg.assert_called_once()
+            assert mock_cg.call_args[0][0] is pset
+            # Energy should be passed as second argument
+            assert "energy" in mock_cg.call_args[0][1].dims
+
+            # Check that calculate_ram_mask was called
+            mock_ram_mask.assert_called_once()
+
+    def test_process_single_pset_sc_frame(self, minimal_pset, sample_efficiency_data):
+        """Test that CG correction is not applied for spacecraft frame."""
+        pset = minimal_pset.copy()
+        pset = pset.rename({"esa_energy_step": "energy"})
+
+        with (
+            patch(
+                "imap_processing.lo.l2.lo_l2.normalize_pset_coordinates"
+            ) as mock_norm,
+            patch(
+                "imap_processing.lo.l2.lo_l2.add_efficiency_factors_to_pset"
+            ) as mock_add_ef,
+            patch(
+                "imap_processing.lo.l2.lo_l2.calculate_efficiency_corrected_quantities"
+            ) as mock_calc_ef,
+            patch(
+                "imap_processing.lo.l2.lo_l2.apply_compton_getting_correction"
+            ) as mock_cg,
+            patch(
+                "imap_processing.lo.l2.lo_l2.add_spacecraft_velocity_to_pset"
+            ) as mock_sc_vel,
+            patch("imap_processing.lo.l2.lo_l2.calculate_ram_mask") as mock_ram_mask,
+        ):
+            mock_norm.return_value = pset
+            mock_add_ef.return_value = pset
+            mock_calc_ef.return_value = pset
+            mock_cg.return_value = pset
+
+            # Process with sc frame
+            _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=False)
+
+            # Check that CG correction was NOT called
+            mock_cg.assert_not_called()
+
+            # Check that spacecraft velocity and ram mask were called instead
+            mock_sc_vel.assert_called_once()
+            mock_ram_mask.assert_called_once()
+
+
+class TestProjectPsetToMap:
+    """Tests for the project_pset_to_map function with directional mask."""
+
+    def test_project_pset_to_map_with_mask(self, minimal_pset_for_species):
+        """Test that directional mask is passed to projection."""
+        # Create a mock sky map
+        mock_map = Mock(spec=RectangularSkyMap)
+
+        # Create a directional mask
+        directional_mask = xr.DataArray(
+            np.ones(7, dtype=bool),
+            dims=["energy"],
+            coords={"energy": list(range(7))},
+        )
+
+        # Call project_pset_to_map
+        project_pset_to_map(minimal_pset_for_species, mock_map, directional_mask)
+
+        # Verify that project_pset_values_to_map was called with the mask
+        mock_map.project_pset_values_to_map.assert_called_once()
+        call_kwargs = mock_map.project_pset_values_to_map.call_args[1]
+        assert "pset_valid_mask" in call_kwargs
+        assert call_kwargs["pset_valid_mask"] is directional_mask
+
+    def test_project_pset_to_map_value_keys(self, minimal_pset_for_species):
+        """Test that correct value keys are projected."""
+        mock_map = Mock(spec=RectangularSkyMap)
+        directional_mask = xr.DataArray(
+            np.ones(7, dtype=bool),
+            dims=["energy"],
+        )
+
+        project_pset_to_map(minimal_pset_for_species, mock_map, directional_mask)
+
+        # Check that the expected value keys are in the call
+        call_kwargs = mock_map.project_pset_values_to_map.call_args[1]
+        value_keys = call_kwargs["value_keys"]
+
+        expected_keys = [
+            "exposure_factor",
+            "counts",
+            "counts_over_eff",
+            "counts_over_eff_squared",
+            "bg_rates",
+            "bg_rates_stat_uncert",
+            "bg_rates_exposure_factor",
+            "bg_rates_stat_uncert_exposure_factor2",
+        ]
+
+        for key in expected_keys:
+            assert key in value_keys, f"Expected key '{key}' not in value_keys"

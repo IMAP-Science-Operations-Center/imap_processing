@@ -44,9 +44,16 @@ FILLVAL_FLOAT32 = -1.0e31
 logger = logging.getLogger(__name__)
 
 
-def get_energy_delta_minus_plus() -> tuple[NDArray, NDArray]:
+def get_energy_delta_minus_plus(
+    energy_bin_edges: np.ndarray | None = None,
+) -> tuple[NDArray, NDArray]:
     """
     Calculate the energy_delta_minus and energy_delta_plus for use in the CDF.
+
+    Parameters
+    ----------
+    energy_bin_edges : numpy.ndarray, optional
+        Array of energy bin edges. If None, default Ultra energy bins are used.
 
     Returns
     -------
@@ -63,7 +70,7 @@ def get_energy_delta_minus_plus() -> tuple[NDArray, NDArray]:
     where bin_upper and bin_lower are the upper and lower bounds of the energy bins
     and bin_geom_mean is the geometric mean of the energy bin.
     """
-    bins, _, bin_geom_means = build_energy_bins()
+    bins, _, bin_geom_means = build_energy_bins(energy_bin_edges)
     bins_energy_delta_plus, bins_energy_delta_minus = [], []
     for bin_edges, bin_geom_mean in zip(bins, bin_geom_means, strict=False):
         bins_energy_delta_plus.append(bin_edges[1] - bin_geom_mean)
@@ -272,7 +279,7 @@ def get_deadtime_ratios_by_spin_phase(
     spin_steps: int,
     sensor_id: int | None = None,
     ancillary_files: dict | None = None,
-) -> np.ndarray:
+) -> xr.DataArray:
     """
     Calculate nominal deadtime ratios at every spin phase step (1ms res).
 
@@ -289,7 +296,7 @@ def get_deadtime_ratios_by_spin_phase(
 
     Returns
     -------
-    numpy.ndarray
+    xarray.DataArray
         Nominal deadtime ratios at every spin phase step.
     """
     if sectored_rates is None or sectored_rates.epoch.size == 0:
@@ -352,60 +359,53 @@ def get_deadtime_ratios_by_spin_phase(
     # Calculate the nominal spin phases at the supplied resolution and query the pchip
     # interpolator to get the deadtime ratios.
     nominal_spin_phases = np.arange(0, 360, 360 / spin_steps)
-    return interpolator(nominal_spin_phases)
+    deadtime_ratios = xr.DataArray(
+        interpolator(nominal_spin_phases), dims="spin_phase_step"
+    )
+    return deadtime_ratios
 
 
 def calculate_exposure_time(
-    deadtime_ratios: np.ndarray,
-    pixels_below_scattering: list,
-    boundary_scale_factors: NDArray,
-    n_pix: int,
-) -> np.ndarray:
+    deadtime_ratios: xr.DataArray,
+    valid_spun_pixels: xr.DataArray,
+    boundary_scale_factors: xr.DataArray,
+    apply_bsf: bool = True,
+) -> xr.Dataset:
     """
     Adjust the exposure time at each pixel to account for dead time.
 
     Parameters
     ----------
-    deadtime_ratios : PchipInterpolator
-        Interpolating function for dead time ratios.
-    pixels_below_scattering : list
-        A Nested list of arrays indicating pixels within the scattering threshold.
-        The outer list indicates spin phase steps, the middle list indicates energy
-        bins, and the inner arrays contain indices indicating pixels that are below
-        the FWHM scattering threshold.
-    boundary_scale_factors : np.ndarray
+    deadtime_ratios : xarray.DataArray
+        Deadtime ratios at each spin phase step.
+    valid_spun_pixels : xarray.DataArray
+        3D Array of pixels valid at each spin phase step. If rejection based on
+        scattering was set, then these are the pixels below the FWHM scattering
+        threshold and in the field of regard at each spin phase step, and energy
+        shape = (spin_phase_steps, energy_bins, n_pix). IF no rejection,
+        then these are simply the pixels in the field of regard at each spin phase step
+        shape = (spin_phase_steps, 1, n_pix).
+    boundary_scale_factors : xr.DataArray
         Boundary scale factors for each pixel at each spin phase.
-    n_pix : int
-        Number of HEALPix pixels.
+    apply_bsf : bool, optional
+        Whether to apply boundary scale factors. Default is True.
 
     Returns
     -------
-    exposure_pointing_adjusted : np.ndarray
+    exposure_pointing_adjusted : xarray.Dataset
         Adjusted exposure times accounting for dead time.
     """
-    # Get energy bin geometric means
-    energy_bin_geometric_means = build_energy_bins()[2]
-    # Exposure time should now be of shape (energy, npix)
-    counts = np.zeros((len(energy_bin_geometric_means), n_pix))
     # nominal spin phase step.
-    nominal_ms_step = 15 / len(pixels_below_scattering)  # time step
+    nominal_ms_step = 15 / valid_spun_pixels.shape[0]  # time step
     # Query the dead-time ratio and apply the nominal exposure time to pixels in the FOR
-    # and below the scattering threshold
-    # Loop through the spin phase steps. This is spinning the spacecraft by nominal
-    # 1 ms steps in the despun frame.
-    for i, pixels_at_spin in enumerate(pixels_below_scattering):
-        # Loop through energy bins
-        for energy_bin_idx in range(len(energy_bin_geometric_means)):
-            pixels_at_energy_and_spin = pixels_at_spin[energy_bin_idx]
-            if pixels_at_energy_and_spin.size == 0:
-                continue
-            # Apply the nominal exposure time (1 ms) scaled by the deadtime ratio to
-            # every pixel in the FOR, that is below the FWHM scattering threshold,
-            counts[energy_bin_idx, pixels_at_energy_and_spin] += (
-                deadtime_ratios[i]
-                * boundary_scale_factors[pixels_at_energy_and_spin, i]
-            )
+    # and below the scattering threshold (if scattering rejection is on).
+    # Sum over the first dim of valid_spun_pixels is the spin phase step.
+    # This is like spinning the spacecraft by nominal 1 ms steps in the despun frame.
+    all_counts = valid_spun_pixels * deadtime_ratios
+    if apply_bsf:
+        all_counts *= boundary_scale_factors
 
+    counts = all_counts.sum(dim="spin_phase_step")
     # Multiply by the nominal spin step to get the exposure time in ms
     exposure_pointing = counts * nominal_ms_step
     return exposure_pointing
@@ -414,12 +414,13 @@ def calculate_exposure_time(
 def get_spacecraft_exposure_times(
     rates_dataset: xr.Dataset,
     params_dataset: xr.Dataset,
-    pixels_below_scattering: list[list],
-    boundary_scale_factors: NDArray,
+    valid_spun_pixels: xr.DataArray,
+    boundary_scale_factors: xr.DataArray,
     pointing_range_met: tuple[float, float],
-    n_pix: int,
+    n_energy_bins: int,
     sensor_id: int | None = None,
     ancillary_files: dict | None = None,
+    apply_bsf: bool = True,
 ) -> tuple[NDArray, NDArray]:
     """
     Compute exposure times for HEALPix pixels.
@@ -430,21 +431,25 @@ def get_spacecraft_exposure_times(
         Dataset containing image rates data.
     params_dataset : xarray.Dataset
         Dataset containing image parameters data.
-    pixels_below_scattering : list
-        List of lists indicating pixels within the scattering threshold.
-        The outer list indicates spin phase steps, the middle list indicates energy
-        bins, and the inner list contains pixel indices indicating pixels that are
-        below the FWHM scattering threshold.
-    boundary_scale_factors : np.ndarray
+    valid_spun_pixels : xarray.DataArray
+        3D Array of pixels valid at each spin phase step. If rejection based on
+        scattering was set, then these are the pixels below the FWHM scattering
+        threshold and in the field of regard at each spin phase step, and energy
+        shape = (spin_phase_steps, energy_bins, n_pix). IF no rejection,
+        then these are simply the pixels in the field of regard at each spin phase step
+        shape = (spin_phase_steps, 1, n_pix).
+    boundary_scale_factors : xarray.DataArray
         Boundary scale factors for each pixel at each spin phase.
     pointing_range_met : tuple
         Start and stop time of the pointing period in mission elapsed time.
-    n_pix : int
-        Number of HEALPix pixels.
+    n_energy_bins : int
+        Number of energy bins.
     sensor_id : int, optional
         Sensor ID, either 45 or 90.
     ancillary_files : dict, optional
         Dictionary containing ancillary files.
+    apply_bsf : bool, optional
+        Whether to apply boundary scale factors. Default is True.
 
     Returns
     -------
@@ -463,7 +468,7 @@ def get_spacecraft_exposure_times(
     rates_dataset.isel(epoch=pointing_mask)
     sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
     # Get the number of steps used in the spun pointing lookup tables
-    spin_steps = len(pixels_below_scattering)
+    spin_steps = valid_spun_pixels.shape[0]
     nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(
         sectored_rates, spin_steps, sensor_id, ancillary_files
     )
@@ -472,7 +477,7 @@ def get_spacecraft_exposure_times(
     # by the number of spins in the pointing. For more information, see section 3.4.3
     # of the Ultra Algorithm Document.
     exposure_time = calculate_exposure_time(
-        nominal_deadtime_ratios, pixels_below_scattering, boundary_scale_factors, n_pix
+        nominal_deadtime_ratios, valid_spun_pixels, boundary_scale_factors, apply_bsf
     )
     # Use the universal spin table to determine the actual number of spins
     nominal_spin_seconds = 15.0
@@ -495,16 +500,24 @@ def get_spacecraft_exposure_times(
     )
     # Adjust exposure time by the actual number of valid spins in the pointing
     exposure_pointing_adjusted = n_spins_in_pointing * exposure_time
-    return exposure_pointing_adjusted, nominal_deadtime_ratios
+    # Ensure exposure factor is broadcast correctly
+    if exposure_pointing_adjusted.shape[0] != n_energy_bins:
+        exposure_pointing_adjusted = np.repeat(
+            exposure_pointing_adjusted.values,
+            n_energy_bins,
+            axis=0,
+        )
+    return exposure_pointing_adjusted, nominal_deadtime_ratios.values
 
 
 def get_efficiencies_and_geometric_function(
-    pixels_below_scattering: list[list],
-    boundary_scale_factors: np.ndarray,
+    valid_spun_pixels: xr.DataArray,
+    boundary_scale_factors: xr.DataArray,
     theta_vals: np.ndarray,
     phi_vals: np.ndarray,
     npix: int,
     ancillary_files: dict,
+    apply_bsf: bool = True,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute the geometric factor and efficiency for each pixel and energy bin.
@@ -513,12 +526,14 @@ def get_efficiencies_and_geometric_function(
 
     Parameters
     ----------
-    pixels_below_scattering : list
-        List of lists indicating pixels within the scattering threshold.
-        The outer list indicates spin phase steps, the middle list indicates energy
-        bins, and the inner list contains pixel indices indicating pixels that are
-        below the FWHM scattering threshold.
-    boundary_scale_factors : np.ndarray
+    valid_spun_pixels : xarray.DataArray
+        3D Array of pixels valid at each spin phase step. If rejection based on
+        scattering was set, then these are the pixels below the FWHM scattering
+        threshold and in the field of regard at each spin phase step, and energy
+        shape = (spin_phase_steps, energy_bins, n_pix). IF no rejection,
+        then these are simply the pixels in the field of regard at each spin phase step
+        shape = (spin_phase_steps, 1, n_pix).
+    boundary_scale_factors : xarray.DataArray
         Boundary scale factors for each pixel at each spin phase.
     theta_vals : np.ndarray
         A 2D array of theta values for each HEALPix pixel at each spin phase step.
@@ -528,6 +543,8 @@ def get_efficiencies_and_geometric_function(
         Number of HEALPix pixels.
     ancillary_files : dict
         Dictionary containing ancillary files.
+    apply_bsf : bool, optional
+        Whether to apply boundary scale factors. Default is True.
 
     Returns
     -------
@@ -572,7 +589,8 @@ def get_efficiencies_and_geometric_function(
     eff_summation = np.zeros((energy_bins, npix))
     sample_count = np.zeros((energy_bins, npix))
     # Loop through spin phases
-    for i, pixels_at_spin in enumerate(pixels_below_scattering):
+    spin_steps = valid_spun_pixels.shape[0]
+    for i in range(spin_steps):
         # Loop through energy bins
         # Compute gf and eff for these theta/phi pairs
         theta_at_spin = theta_vals[:, i]
@@ -585,27 +603,39 @@ def get_efficiencies_and_geometric_function(
             quality_flag=np.zeros(len(phi_at_spin)).astype(np.uint16),
             geometric_factor_tables=geometric_lookup_table,
         )
+        # Get valid pixels at this spin phase
+        valid_at_spin = valid_spun_pixels.isel(
+            spin_phase_step=i
+        )  # shape: (energy, pixel)
+
         for energy_bin_idx in range(energy_bins):
-            pixel_inds = pixels_at_spin[energy_bin_idx]
+            # Determine pixel indices based on energy dependence
+            if valid_at_spin.sizes["energy"] == 1:
+                # No scattering rejection. Same pixels for all energies
+                # TODO this may cause performance issues. Revisit later.
+                pixel_inds = np.where(valid_at_spin.isel(energy=0))[0]
+            else:
+                # Scattering rejection - different pixels per energy
+                pixel_inds = np.where(valid_at_spin.isel(energy=energy_bin_idx))[0]
+
             if pixel_inds.size == 0:
                 continue
+
             energy = energy_bin_geometric_means[energy_bin_idx]
-            # Clip energy to calibrated range
             energy_clipped = np.clip(energy, 3.0, 80.0)
+
             eff_values = get_efficiency(
-                np.full(phi_at_spin[pixel_inds].shape, energy_clipped),
+                np.full(pixel_inds.size, energy_clipped),
                 phi_at_spin_clipped[pixel_inds],
                 theta_at_spin_clipped[pixel_inds],
                 ancillary_files,
                 interpolator=eff_interpolator,
             )
-            # Accumulate gf and eff values
-            gf_summation[energy_bin_idx, pixel_inds] += (
-                gf_values[pixel_inds] * boundary_scale_factors[pixel_inds, i]
-            )
-            eff_summation[energy_bin_idx, pixel_inds] += (
-                eff_values * boundary_scale_factors[pixel_inds, i]
-            )
+
+            # Sum
+            bsfs = boundary_scale_factors[pixel_inds, i] if apply_bsf else 1.0
+            gf_summation[energy_bin_idx, pixel_inds] += gf_values[pixel_inds] * bsfs
+            eff_summation[energy_bin_idx, pixel_inds] += eff_values * bsfs
             sample_count[energy_bin_idx, pixel_inds] += 1
 
     # return averaged geometric factors and efficiencies across all spin phases

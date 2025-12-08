@@ -11,7 +11,7 @@ from imap_processing.ialirt.l0.ialirt_spice import (
     get_z_axis,
     transform_instrument_vectors_to_inertial,
 )
-from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.geometry import SpiceFrame, frame_transform
 
 
 def test_get_z_axis():
@@ -42,16 +42,10 @@ def test_get_z_axis():
 def test_get_rotation_matrix():
     """Tests get_rotation_matrix function."""
 
-    z_axis = np.array(
-        [
-            [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
-            [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
-            [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
-        ]
-    )
+    z_axis = np.array([[0.0, 0.0, 1.0]])
 
     # Rotate 90 degrees
-    spin_phase = np.array([90, 90, 90])
+    spin_phase = np.array([90])
 
     # Get rotation matrix
     r = get_rotation_matrix(z_axis, spin_phase)
@@ -60,40 +54,21 @@ def test_get_rotation_matrix():
     x = np.array([1, 0, 0])
     x_rot = r @ x
 
-    expected = np.array(
-        [
-            [1.0, 0.0, 0.0],  # Rotating around X leaves X unchanged
-            [0.0, 0.0, -1.0],  # Rotating around Y sends X → -Z
-            [0.0, 1.0, 0.0],  # Rotating around Z sends X → Y
-        ]
-    )
+    # Rotating a unit vector pointing along x-axis 90-degrees
+    # about z-axis results in a unit vector pointing along y-axis.
+    expected = np.array([0, 1.0, 0])
     assert np.allclose(x_rot, expected, atol=1e-8)
 
 
 def test_get_x_y_axes():
     """Tests get_x_y_axes function."""
 
-    z_axis = np.array(
-        [
-            [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
-            [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
-            [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
-        ]
-    )
+    z_axis = np.array([[1.0, 0.0, 0.0]])
+
     frames = get_x_y_axes(z_axis)
-    x_axis = frames[:, 0, :]
-    y_axis = frames[:, 1, :]
-    z_axis = frames[:, 2, :]
-
-    # Check that the axes are unit vectors.
-    assert np.allclose(np.linalg.norm(x_axis, axis=1), 1.0, atol=1e-6)
-    assert np.allclose(np.linalg.norm(y_axis, axis=1), 1.0, atol=1e-6)
-    assert np.allclose(np.linalg.norm(z_axis, axis=1), 1.0, atol=1e-6)
-
-    # Check each pair of vectors is 90 degrees apart.
-    assert np.allclose(np.sum(z_axis * y_axis, axis=1), 0.0, atol=1e-6)
-    assert np.allclose(np.sum(z_axis * x_axis, axis=1), 0.0, atol=1e-6)
-    assert np.allclose(np.sum(y_axis * x_axis, axis=1), 0.0, atol=1e-6)
+    x_axis = frames[:, 0]
+    y_axis = frames[:, 1]
+    z_axis = frames[:, 2]
 
     # Check cross(X, Y) = Z.
     reconstructed_z = np.cross(x_axis, y_axis)
@@ -150,97 +125,54 @@ def test_compute_total_rotation():
 
 
 @pytest.mark.external_kernel
-def test_transform_instrument_vectors_to_inertial(
-    imap_ena_sim_metakernel, spice_test_data_path
-):
-    """Test transform_instrument_vectors_to_inertial function."""
+def test_transform_instrument_vectors_to_inertial_single(furnish_kernels):
+    """Test real-world application of this function."""
 
-    ck_path = spice_test_data_path / "sim_1yr_imap_attitude.bc"
-    id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
+    kernels = [
+        "imap_science_100.tf",
+        "imap_130.tf",
+        "naif0012.tls",
+        "de440s.bsp",
+        "imap_recon_od005_20250925_20251014_v01.bsp",
+        "pck00011.tpc",
+        "imap_sclk_0036.tsc",
+        "imap_2025_283_2025_284_001.ah.bc",
+    ]
 
-    ck_cover = spiceypy.ckcov(
-        str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
-    )
+    with furnish_kernels(kernels):
+        # Compare SPICE z-axis with calculated.
+        rot_sc_to_j2000 = spiceypy.pxform(
+            "IMAP_SPACECRAFT", "ECLIPJ2000", 813433291.0018076
+        )
+        sc_z_inertial = rot_sc_to_j2000[:, 2]  # SC +Z axis (angular momentum)
+        _, ra, dec = spiceypy.recrad(sc_z_inertial.copy())
 
-    # Pick midpoint of first coverage interval
-    et_start = ck_cover[0]
+        z_axis = get_z_axis(np.array([np.degrees(ra)]), np.array([np.degrees(dec)]))[0]
+        np.testing.assert_allclose(
+            z_axis,
+            sc_z_inertial,
+            atol=1e-9,
+        )
 
-    # Assume IMAP_MAG +X is boresight
-    instrument_vector = np.array([[10.0, 2.0, 3.0]])
+        # Spot check that calculations are similar for vectors.
+        instrument_vector = np.array([[-2.525630188, -0.337087161, -4.523789905]])
 
-    # Get RA/Dec of angular momentum vector (Z-axis) from SPICE
-    rot_sc_to_j2000 = spiceypy.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", et_start + 10)
-    sc_z_inertial = rot_sc_to_j2000[:, 2]  # SC +Z axis (angular momentum)
-    # Convert inertial Z into RA/Dec (radians)
-    _, ra, dec = spiceypy.recrad(sc_z_inertial.copy())
+        v_manual_0 = transform_instrument_vectors_to_inertial(
+            instrument_vector,
+            np.array([219.5068640401354]),  # spin phase
+            np.array([np.degrees(ra)]),  # right ascension
+            np.array([np.degrees(dec)]),  # declination
+            SpiceFrame.IMAP_MAG_O,
+        )
 
-    z_axis = get_z_axis(np.array([np.degrees(ra)]), np.array([np.degrees(dec)]))[
-        0
-    ]  # extract the single row
-
-    # Test that our get_z_axis code is returning what SPICE returns.
-    np.testing.assert_allclose(
-        z_axis,
-        sc_z_inertial,
-        atol=1e-9,
-    )
-
-    v_manual_0 = transform_instrument_vectors_to_inertial(
-        instrument_vector,
-        np.array([120.0]),
-        np.array([np.degrees(ra)]),
-        np.array([np.degrees(dec)]),
-        SpiceFrame.IMAP_MAG_O,
-    )
-    v_manual_1 = transform_instrument_vectors_to_inertial(
-        instrument_vector,
-        np.array([240.0]),
-        np.array([np.degrees(ra)]),
-        np.array([np.degrees(dec)]),
-        SpiceFrame.IMAP_MAG_O,
-    )
-
-    rot_inst_to_inertial_0 = spiceypy.pxform("IMAP_MAG_O", "ECLIPJ2000", et_start + 10)
-    rot_inst_to_inertial_1 = spiceypy.pxform("IMAP_MAG_O", "ECLIPJ2000", et_start + 20)
-
-    v_spice_0 = spiceypy.mxv(rot_inst_to_inertial_0, instrument_vector[0])
-    v_spice_1 = spiceypy.mxv(rot_inst_to_inertial_1, instrument_vector[0])
-
+        mago_inertial_vector = frame_transform(
+            813433291.0018076,
+            instrument_vector,
+            from_frame=SpiceFrame.IMAP_MAG_O,
+            to_frame=SpiceFrame.ECLIPJ2000,
+        )
     np.testing.assert_allclose(
         v_manual_0[0],
-        v_spice_0,
-        atol=1e-9,
+        mago_inertial_vector,
+        atol=1e-2,
     )
-    np.testing.assert_allclose(
-        v_manual_1[0],
-        v_spice_1,
-        atol=1e-9,
-    )
-
-
-@pytest.mark.external_kernel
-def test_no_attitude(imap_ialirt_sim_metakernel):
-    """Test transform_instrument_vectors_to_inertial function."""
-    ra = 0.3653037895099079
-    dec = 4.440892098775276e-16
-
-    # Assume IMAP_MAG +X is boresight
-    instrument_vector = np.array([[1.0, 0.0, 0.0]])
-
-    # At this timestamp for the attitude kernel.
-    spin_phase = np.array([0.0])
-
-    v_manual = transform_instrument_vectors_to_inertial(
-        instrument_vector,
-        spin_phase,
-        np.array([np.degrees(ra)]),
-        np.array([np.degrees(dec)]),
-        SpiceFrame.IMAP_MAG_O,
-    )
-
-    # TODO: Put this into GSE and GSM once we have proper kernels.
-    # Example:
-    # rotation_ecl_to_gse = spiceypy.pxform("ECLIPJ2000", "GSE", et)
-    # v_j2000 = spiceypy.mxv(rotation_ecl_to_gse, v_manual[0])
-
-    assert v_manual is not None

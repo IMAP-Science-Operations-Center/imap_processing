@@ -3,8 +3,10 @@
 import lzma
 from enum import IntEnum
 
+import numpy as np
 import pytest
 
+from imap_processing.codice.codice_l1a_de import unpack_bits
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CoDICECompression
 
@@ -48,3 +50,24 @@ def test_decompress_raises():
 
     with pytest.raises(ValueError, match="some_unsupported_algorithm"):
         decompress("11101010", "some_unsupported_algorithm")
+
+
+def test_unpack_bits():
+    """Test that 64-bits is unpacked in LSB order correctly."""
+    test_data = np.array([0x3, 0x9F], dtype=np.uint64)
+    bit_chunks = {
+        "c": {"bit_length": 52},
+        "b": {"bit_length": 7},
+        "a": {"bit_length": 5},
+    }
+
+    unpacked_fields = unpack_bits(bit_chunks, test_data)
+    expected_unpacked = {
+        "a": np.array([0, 0], dtype=np.uint64),
+        "b": np.array([0, 0], dtype=np.uint64),
+        "c": np.array([3, 159], dtype=np.uint64),
+    }
+    assert all(
+        np.array_equal(unpacked_fields[key], expected_unpacked[key])
+        for key in bit_chunks
+    )

@@ -7,6 +7,11 @@ where ``<destination>`` is relative to ``imap_module_directory/tests/``.
 """
 
 # ruff: noqa: E501
+from imap_processing.tests.codice.conftest import (
+    VALIDATION_FILE_DATE,
+    VALIDATION_FILE_VERSION,
+)
+
 EXTERNAL_TEST_DATA = [
 
     # CoDICE
@@ -22,55 +27,56 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l0_lo-ialirt_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_lo-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-ialirt_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_l0_hi-pha_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-counters-aggregated_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-counters-singles_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-omni_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-sectored_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_hskp_20250814_v001.pkts", "codice/data/l1a_input/"),
 
     # L1A LUT
-    ("imap_codice_l1a-sci-lut_20251007_v001.json", "codice/data/l1a_lut/"),
+    ("imap_codice_l1a-sci-lut_20251007_v004.json", "codice/data/l1a_lut/"),
 
     # L1A validation data
-    ("imap_codice_l1a_hi-counters-aggregated_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_hi-counters-singles_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_hi-direct-events_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_hi-ialirt_20250814_v007.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_hi-omni_20250814_v007.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_hi-priorities_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_hi-sectored_20250814_v007.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-counters-aggregated_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-counters-singles_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-direct-events_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-ialirt_20250814_v007.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-nsw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-nsw-angular_20250814_v007.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-sw-angular_20250814_v007.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-nsw-species_20250814_v007.cdf", "codice/data/l1a_validation"),
-    ("imap_codice_l1a_lo-sw-species_20250814_v007.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-nsw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-sw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-nsw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    (f"imap_codice_l1a_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     # L1B Input data is same as L1A validation data
 
     # L1B validation data
-    ("imap_codice_l1b_hi-counters-aggregated_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_hi-counters-singles_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_hi-ialirt_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_hi-omni_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_hi-priorities_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_hi-sectored_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-counters-aggregated_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-counters-singles_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-ialirt_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-nsw-angular_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-nsw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-sw-angular_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-sw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-nsw-species_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-sw-species_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-nsw-angular_20250814_v007.cdf", "codice/data/l1b_validation"),
-    ("imap_codice_l1b_lo-sw-angular_20250814_v007.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_hi-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_hi-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_hi-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_hi-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-nsw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-sw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-nsw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     # L2 LUT input data
     ("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
@@ -78,12 +84,14 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l2-lo-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
 
     # L2 Validation data
-    ("imap_codice_l2_hi-omni_20250814_v007.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_hi-sectored_20250814_v007.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_lo-nsw-angular_20250814_v007.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_lo-sw-angular_20250814_v007.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_lo-nsw-species_20250814_v007.cdf", "codice/data/l2_validation/"),
-    ("imap_codice_l2_lo-sw-species_20250814_v007.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-nsw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_hi-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
 
     # Hi
     ("imap_hi_l1a_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),
@@ -94,12 +102,32 @@ EXTERNAL_TEST_DATA = [
 
     # I-ALiRT
     ("apid_478.bin", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_40_25", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_41_26", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_42_27", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_43_28", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_44_29", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_45_30", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_46_31", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_47_32", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_48_33", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_49_34", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_50_35", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_51_36", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_52_37", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_53_38", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_284_05_54_39", "ialirt/data/l0/"),
+    ("imap_recon_od005_20250925_20251014_v01.bsp", "spice/test_data/"),
+    ("imap_2025_283_2025_284_001.ah.bc", "spice/test_data/"),
 
     # IDEX
     ("idex_l1a_validation_file.h5", "idex/test_data/"),
     ("idex_l1b_validation_file.h5", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv", "idex/test_data/"),
+
+    # Lo
+    ("imap_lo_l1c_pset_20260101-repoint01261_v001.cdf", "lo/test_cdfs"),
 
     # Ultra
     ("FM90_Startup_20230711T081655.CCSDS", "ultra/data/l0/"),
@@ -162,6 +190,9 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1c-45sensor-nominal-for-lookup_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-45sensor-static-dead-times_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-90sensor-static-dead-times_20250101_v000.csv", "ultra/data/l1/"),
+
+    # l2
+    ("imap_ultra_l2-energy-bin-group-sizes_20250101_v000.csv", "ultra/data/l2/"),
 
     # MAG
     ("mag-l1b-l1c-t013-magi-burst-in.csv",

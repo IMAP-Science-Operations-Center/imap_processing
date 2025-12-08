@@ -20,7 +20,6 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
@@ -86,7 +85,8 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
-            "acquisition_time_per_step",
+            # TODO: undo this when I get new validation file from Joey
+            # "acquisition_time_per_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
     elif descriptor in [
@@ -113,7 +113,8 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
-            "acquisition_time_per_step",
+            # TODO: undo this when I get new validation file from Joey
+            # "acquisition_time_per_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
 
@@ -145,6 +146,10 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         )
         dataset[unc_variable].attrs["UNITS"] = "1/s"
 
+    # Drop spin_period
+    if "spin_period" in dataset.variables:
+        dataset = dataset.drop_vars("spin_period")
+
     return dataset
 
 
@@ -175,7 +180,6 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # Get the L1b CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
-    cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
 
     # Use the L1a data product as a starting point for L1b
     l1b_dataset = l1a_dataset.copy(deep=True)

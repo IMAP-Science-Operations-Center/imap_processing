@@ -19,7 +19,6 @@ from imap_processing.lo.l0.lo_star_sensor import process_star_sensor
 from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def lo_l1a(dependency: Path) -> list[xr.Dataset]:
@@ -142,6 +141,15 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         ds = datasets_by_apid_derived[LoAPID.ILO_APP_SHK]
         ds = add_dataset_attrs(ds, attr_mgr, logical_source)
         datasets_to_return.append(ds)
+    if any(
+        apid in datasets_by_apid
+        for apid in [LoAPID.ILO_APP_NHK, LoAPID.ILO_APP_SHK, LoAPID.ILO_DIAG_PCC]
+    ):
+        logger.info("\nCreating instrument state vector")
+        logical_source = "imap_lo_l1b_instrument-status-summary"
+        combined_ds = instrument_status_summary(datasets_by_apid_derived)
+        combined_ds = add_dataset_attrs(combined_ds, attr_mgr, logical_source)
+        datasets_to_return.append(combined_ds)
 
     logger.info(f"Returning [{len(datasets_to_return)}] datasets")
     return datasets_to_return
@@ -310,6 +318,11 @@ def add_dataset_attrs(
             attrs=attr_mgr.get_variable_attributes("direct_events_label"),
         )
 
+        # For DEs, shcoarse applies to each ASC group and is not per individual epoch
+        # so we can't depend on epoch in the attributes
+        dataset["shcoarse"].attrs.pop("DEPEND_0")
+        dataset["shcoarse"].attrs["DEPEND_1"] = "shcoarse"
+
         dataset = dataset.assign_coords(
             direct_events=direct_events,
             direct_events_label=direct_events_label,
@@ -347,3 +360,74 @@ def add_dataset_attrs(
             dataset[var].attrs.pop("DEPEND_0")
 
     return dataset
+
+
+def instrument_status_summary(datasets_by_apid_derived: dict) -> xr.Dataset:
+    """
+    Combine relevant datasets to create instrument status summary.
+
+    This is from section 9.1.1 of the IMAP-Lo Algorithm Document. We
+    combine the NHK, SHK, and PCC datasets to create a single data
+    product containing the instrument status summary. These are not
+    all aligned in time, so we simply merge them and fill NaNs where
+    the times are not aligned across data products.
+
+    Parameters
+    ----------
+    datasets_by_apid_derived : dict
+        Dictionary of datasets keyed by APID with derived values.
+
+    Returns
+    -------
+    xr.Dataset
+        Combined dataset containing the instrument state vector.
+    """
+    datasets_to_merge = [
+        ds
+        for apid, ds in datasets_by_apid_derived.items()
+        if apid in [LoAPID.ILO_APP_NHK, LoAPID.ILO_APP_SHK, LoAPID.ILO_DIAG_PCC]
+    ]
+    combined_ds = xr.merge(datasets_to_merge, compat="override")
+    # Only keep the desired keys for the state vector
+    status_summary_keys = [
+        "shcoarse",
+        "op_mode",
+        "pac_vset",
+        "mcp_vset",
+        "mcp_v",
+        "bhv_def_neg_dac",
+        "bhv_def_pos_dac",
+        "bhv_pmt_dac",
+        "fsw_version_str",
+        "eng_lut_version_str",
+        "sci_lut_version_str",
+        "an_a_thr",
+        "an_b0_thr",
+        "an_b3_thr",
+        "an_c_thr",
+        "tof3_thr",
+        "tof2_thr",
+        "tof1_thr",
+        "tof0_thr",
+        "ifb_hot_spot_t",
+        "coarse_pot_pri",
+        "fine_pot_pri",
+    ]
+    vars_present = set(status_summary_keys).intersection(
+        set(combined_ds.data_vars.keys())
+    )
+    combined_ds = combined_ds[list(vars_present)]
+    # Add variables that are missing but expected to be in the state vector
+    for key in status_summary_keys:
+        if key not in combined_ds:
+            if key in ["fsw_version_str", "eng_lut_version_str", "sci_lut_version_str"]:
+                combined_ds[key] = xr.DataArray(
+                    data=np.full(combined_ds["epoch"].shape, "", dtype=str),
+                    dims=["epoch"],
+                )
+            else:
+                combined_ds[key] = xr.DataArray(
+                    data=np.full(combined_ds["epoch"].shape, np.nan, dtype=float),
+                    dims=["epoch"],
+                )
+    return combined_ds

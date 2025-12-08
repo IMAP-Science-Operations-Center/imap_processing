@@ -203,7 +203,7 @@ def test_offset_vector():
     )
     test_vector = np.array([1, 2, 3, 3])
 
-    expected_vector = [-3, -2, -1, 3]
+    expected_vector = [5, 6, 7, 3]
     output_vector = MagL1d.apply_calibration_offset_single_vector(
         test_vector, offsets, False
     )
@@ -211,7 +211,7 @@ def test_offset_vector():
     assert np.array_equal(expected_vector, output_vector)
 
     test_vector = np.array([1, 2, 3, 0])
-    expected_vector = [2, 3, 4, 0]
+    expected_vector = [0, 1, 2, 0]
     output_vector = MagL1d.apply_calibration_offset_single_vector(
         test_vector, offsets, True
     )
@@ -232,7 +232,7 @@ def test_calculate_spin_offsets(
     kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
-        "imap_100.tf",
+        "imap_130.tf",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",

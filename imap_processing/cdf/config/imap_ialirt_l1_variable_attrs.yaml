@@ -180,7 +180,7 @@ codice_lo_o_plus_7_over_o_plus_6_ratio:
 
 codice_lo_fe_low_over_fe_high_ratio:
   <<: *default_float32
-  CATDESC: Fe low/Fe high charge state ratio
+  CATDESC: Fe low/Fe high charge state ratio, low charge state = 6-12, high charge state = 13-17
   FIELDNAM: Fe low/Fe high
   LABLAXIS: ratio
   UNITS: " "

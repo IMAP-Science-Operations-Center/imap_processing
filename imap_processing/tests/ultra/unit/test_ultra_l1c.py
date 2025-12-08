@@ -285,7 +285,8 @@ def test_calculate_helio_pset_with_cdf(
         "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
         "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
-
+    mock_eff = np.ones((46, 196608))
+    mock_gf = mock_eff * 2
     with (
         mock.patch(
             "imap_processing.ultra.l1c.helio_pset.get_pointing_times_from_id",
@@ -295,10 +296,27 @@ def test_calculate_helio_pset_with_cdf(
             "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met",
             side_effect=lambda x: x,
         ),
+        # Mock efficiencies and geometric function to known values
+        mock.patch(
+            "imap_processing.ultra.l1c.helio_pset.get_efficiencies_and_geometric_function",
+            return_value=(mock_gf, mock_eff),
+        ),
     ):
         output_datasets = ultra_l1c(data_dict, ancillary_files, "45sensor-heliopset")
     output_datasets[0].attrs["Data_version"] = "999"
     output_datasets[0].attrs["Repointing"] = f"repoint{pointing + 1:05d}"
+    # Assert that the cg corrected efficiencies and geometric functions
+    # are not equal to the mocked ones
+    assert not np.array_equal(output_datasets[0]["efficiency"], mock_eff)
+    assert not np.array_equal(output_datasets[0]["geometric_function"], mock_gf)
+    # Although the arrays are different, their sums should be equal. The helio adjusted
+    # ones are just rebinned.
+    np.testing.assert_array_equal(
+        np.sum(output_datasets[0]["efficiency"]), np.sum(mock_eff)
+    )
+    np.testing.assert_array_equal(
+        np.sum(output_datasets[0]["geometric_function"]), np.sum(mock_gf)
+    )
     test_data_path = write_cdf(output_datasets[0], istp=True)
 
     assert test_data_path.exists()

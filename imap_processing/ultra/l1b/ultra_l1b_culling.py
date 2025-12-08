@@ -24,7 +24,6 @@ from imap_processing.ultra.l1b.lookup_utils import (
 from imap_processing.ultra.l1b.quality_flag_filters import DE_QUALITY_FLAG_FILTERS
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SPIN_DURATION = 15  # Default spin duration in seconds.
@@ -555,7 +554,9 @@ def flag_scattering(
 
 
 def get_de_rejection_mask(
-    quality_scattering: NDArray, quality_outliers: NDArray
+    quality_scattering: NDArray,
+    quality_outliers: NDArray,
+    reject_scattering: bool = True,
 ) -> NDArray:
     """
     Create boolean mask where event is rejected due to relevant flags.
@@ -566,6 +567,8 @@ def get_de_rejection_mask(
         Quality scattering flags.
     quality_outliers : NDArray
         Quality outliers flags.
+    reject_scattering : bool
+        Whether to reject based on scattering flags.
 
     Returns
     -------
@@ -579,11 +582,13 @@ def get_de_rejection_mask(
     outliers_mask = sum(
         flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_outliers"]
     )
-
-    # Boolean mask where event is rejected due to relevant flags
-    rejected = ((quality_scattering & scattering_mask) != 0) | (
-        (quality_outliers & outliers_mask) != 0
-    )
+    if reject_scattering:
+        # Boolean mask where event is rejected due to relevant flags
+        rejected = ((quality_scattering & scattering_mask) != 0) | (
+            (quality_outliers & outliers_mask) != 0
+        )
+    else:
+        rejected = (quality_outliers & outliers_mask) != 0
 
     return rejected
 

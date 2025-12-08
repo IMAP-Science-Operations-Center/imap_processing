@@ -104,7 +104,7 @@ def generate_pset_dataset(
     pset_dataset = empty_pset_dataset(
         de_dataset.ccsds_met.data.mean(),
         de_dataset.esa_energy_step,
-        config_df.cal_prod_config.number_of_products,
+        config_df.cal_prod_config.calibration_product_numbers,
         logical_source_parts["sensor"],
     )
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
@@ -124,7 +124,10 @@ def generate_pset_dataset(
 
 
 def empty_pset_dataset(
-    l1b_met: float, l1b_energy_steps: xr.DataArray, n_cal_prods: int, sensor_str: str
+    l1b_met: float,
+    l1b_energy_steps: xr.DataArray,
+    cal_prod_numbers: npt.NDArray[np.int_],
+    sensor_str: str,
 ) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
@@ -136,8 +139,9 @@ def empty_pset_dataset(
         repoint-table data to get the start and end times of the pointing.
     l1b_energy_steps : xarray.DataArray
         The array of esa_energy_step data from the L1B DE product.
-    n_cal_prods : int
-        Number of calibration products to allocate.
+    cal_prod_numbers : numpy.ndarray
+        Array of calibration product numbers from the configuration file.
+        These can be arbitrary integers, not necessarily starting at 0.
     sensor_str : str
         '45sensor' or '90sensor'.
 
@@ -191,7 +195,7 @@ def empty_pset_dataset(
     ).copy()
     dtype = attrs.pop("dtype")
     coords["calibration_prod"] = xr.DataArray(
-        np.arange(n_cal_prods, dtype=dtype),
+        cal_prod_numbers.astype(dtype),
         name="calibration_prod",
         dims=["calibration_prod"],
         attrs=attrs,
@@ -349,6 +353,12 @@ def pset_counts(
         fill_value=0,
     )
 
+    # Create mapping from calibration product numbers to array indices
+    cal_prod_to_index = {
+        cal_prod: idx
+        for idx, cal_prod in enumerate(pset_coords["calibration_prod"].values)
+    }
+
     # Drop events with FILLVAL for trigger_id. This should only occur for a
     # pointing with no events that gets a single fill event
     de_ds = l1b_de_dataset.drop_dims("epoch")
@@ -406,9 +416,10 @@ def pset_counts(
             # When iterating over rows of a dataframe, the names of the multi-index
             # are not preserved. Below, `config_row.Index[0]` gets the
             # calibration_prod value from the namedtuple representing the
-            # dataframe row.
+            # dataframe row. We map this to the array index using cal_prod_to_index.
+            i_cal_prod = cal_prod_to_index[config_row.Index[0]]
             np.add.at(
-                counts_var["counts"].data[0, i_esa, config_row.Index[0]],
+                counts_var["counts"].data[0, i_esa, i_cal_prod],
                 spin_bin_indices,
                 1,
             )

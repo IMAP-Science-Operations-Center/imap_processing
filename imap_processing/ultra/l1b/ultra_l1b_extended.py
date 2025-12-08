@@ -1342,7 +1342,8 @@ def is_back_tof_valid(
     xf: NDArray,
     sensor: str,
     ancillary_files: dict,
-) -> NDArray:
+    quality_flags: NDArray,
+) -> tuple[NDArray, NDArray]:
     """
     Determine whether back TOF is valid based on stop type.
 
@@ -1357,11 +1358,15 @@ def is_back_tof_valid(
         Sensor name: "ultra45" or "ultra90".
     ancillary_files : dict
         Ancillary files for lookup.
+    quality_flags : NDArray
+        Quality flag to set when there is an outlier.
 
     Returns
     -------
     valid_mask : NDArray
         Boolean array indicating whether back TOF is valid.
+    quality_flags : NDArray
+        Updated quality flags.
 
     Notes
     -----
@@ -1372,15 +1377,10 @@ def is_back_tof_valid(
     )
     diff = tofy - tofx
 
-    indices = np.nonzero(
-        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
-    )[0]
-    de_ph = de_dataset.isel(epoch=indices)
+    top_mask = de_dataset["stop_type"] == StopType.Top.value
+    bottom_mask = de_dataset["stop_type"] == StopType.Bottom.value
 
-    top_mask = de_ph["stop_type"] == StopType.Top.value
-    bottom_mask = de_ph["stop_type"] == StopType.Bottom.value
-
-    valid = np.zeros_like(diff, dtype=bool)
+    valid = np.zeros(len(top_mask), dtype=bool)
 
     diff_tp_min = get_image_params("TOFDiffTpMin", sensor, ancillary_files)
     diff_tp_max = get_image_params("TOFDiffTpMax", sensor, ancillary_files)
@@ -1391,8 +1391,8 @@ def is_back_tof_valid(
     valid[bottom_mask] = (diff[bottom_mask] >= diff_bt_min) & (
         diff[bottom_mask] <= diff_bt_max
     )
-
-    return valid
+    quality_flags[~valid] |= ImapDEOutliersUltraFlags.BACKTOF.value
+    return valid, quality_flags
 
 
 def is_coin_ph_valid(
@@ -1406,7 +1406,7 @@ def is_coin_ph_valid(
     sensor: str,
     ancillary_files: dict,
     quality_flags: NDArray,
-) -> NDArray:
+) -> tuple[NDArray, NDArray]:
     """
     Determine event validity.
 
@@ -1438,6 +1438,8 @@ def is_coin_ph_valid(
     -------
     combined_mask : NDArray
         Boolean array indicating whether back TOF is valid.
+    quality_flags : NDArray
+        Updated quality flags.
 
     Notes
     -----
@@ -1486,4 +1488,4 @@ def is_coin_ph_valid(
 
     quality_flags[~combined_mask] |= ImapDEOutliersUltraFlags.COINPH.value
 
-    return combined_mask
+    return combined_mask, quality_flags

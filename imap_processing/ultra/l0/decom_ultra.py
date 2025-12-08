@@ -34,7 +34,6 @@ from imap_processing.ultra.l0.ultra_utils import (
 )
 from imap_processing.utils import convert_to_binary_string
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

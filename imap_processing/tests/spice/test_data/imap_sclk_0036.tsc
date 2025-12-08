@@ -1,0 +1,192 @@
+\begintext
+
+FILENAME = "imap_sclk_0036.tsc"
+CREATION_DATE = "06-Nov-2025"
+
+
+IMAP Spacecraft Clock Kernel (SCLK)
+===========================================================================
+
+     This file is a SPICE spacecraft clock (SCLK) kernel containing
+     information required for time conversions involving the on-board
+     IMAP spacecraft clock.
+
+Version
+--------------------------------------------------------
+
+     IMAP SCLK Kernel Version:
+
+     IMAP version 0.3 - April 22, 2022 -- Mike Ruffolo
+        Updated to use NAIF SC ID 43
+
+     IMAP Version 0.2 - June 2, 2021 -- Caroline Cocca
+         Updated to use temporary spacecraft id of 225
+
+     IMAP Version 0.1 - March 6, 2015 -- Eric Melin
+         Updated text to replace references to RBSP with SPP
+
+     IMAP Version 0.0 - August 7, 2014 -- Eric Melin
+        The initial SPP spice kernel.
+        This file was created by using RBSPA initial kernel and
+        modifying the spacecraft ID.
+
+
+Usage
+--------------------------------------------------------
+
+     This file is used by the SPICE system as follows: programs that
+     make use of this SCLK kernel must 'load' the kernel, normally
+     during program initialization.  Loading the kernel associates
+     the data items with their names in a data structure called the
+     'kernel pool'.  The SPICELIB routine FURNSH loads text kernel
+     files, such as this one, into the pool as shown below:
+
+        FORTRAN:
+
+                  CALL FURNSH ( SCLK_kernel_name )
+
+        C:
+
+                  furnsh_c ( SCLK_kernel_name );
+
+     Once loaded, the SCLK time conversion routines will be able to
+     access the necessary data located in this kernel for their
+     designed purposes.
+
+References
+--------------------------------------------------------
+
+         1.   "SCLK Required Reading"
+
+Inquiries
+--------------------------------------------------------
+
+     If you have any questions regarding this file or its usage,
+     contact:
+
+           Scott Turner
+           (443)778-1693
+           Scott.Turner@jhuapl.edu
+
+Kernel Data
+--------------------------------------------------------
+
+     The first block of keyword equals value assignments define the
+     type, parallel time system, and format of the spacecraft clock.
+     These fields are invariant from SCLK kernel update to SCLK
+     kernel update.
+
+     The IMAP spacecraft clock is represented by the SPICE
+     type 1 SCLK kernel.  It uses TDT, Terrestrial Dynamical Time,
+     as its parallel time system.
+
+\begindata
+
+SCLK_KERNEL_ID             = ( @2009-07-09T12:20:32 )
+SCLK_DATA_TYPE_43          = (        1 )
+SCLK01_TIME_SYSTEM_43      = (        2 )
+
+
+\begintext
+
+     In a particular partition of the IMAP spacecraft clock,
+     the clock read-out consists of two separate stages:
+
+                           1/18424652:24251
+
+     The first stage, a 32 bit field, represents the spacecraft
+     clock seconds count.  The second, a 16 bit field, represents
+     counts of 20 microsecond increments of the spacecraft clock.
+
+     The following keywords and their values establish this structure:
+
+\begindata
+
+SCLK01_N_FIELDS_43         = (            2 )
+SCLK01_MODULI_43           = (   4294967296       50000 )
+SCLK01_OFFSETS_43          = (            0           0 )
+SCLK01_OUTPUT_DELIM_43     = (            2 )
+
+
+\begintext
+
+     This concludes the invariant portion of the SCLK kernel data.  The
+     remaining sections of the kernel may require updates as the clock
+     correlation coefficients evolve in time.  The first section below
+     establishes the clock partitions.  The data in this section consists
+     of two parallel arrays, which denote the start and end values in
+     ticks of each partition of the spacecraft clock.
+
+     SPICE utilizes these two arrays to map from spacecraft clock ticks,
+     determined with the usual modulo arithmetic, to encoded SCLK--the
+     internal, monotonically increasing sequence used to tag various
+     data sources with spacecraft clock.
+
+\begindata
+
+SCLK_PARTITION_START_43    = ( 0.00000000000000e+00 )
+
+SCLK_PARTITION_END_43      = ( 2.14748364799999e+14 )
+
+\begintext
+
+     The remaining section of the SCLK kernel defines the clock correlation
+     coefficients.  Each line contains a 'coefficient triple':
+
+         Encoded SCLK at which Rate is introduced.
+         Corresponding TDT Epoch at which Rate is introduced.
+         Rate in TDT (seconds) / most significant clock count (~seconds).
+
+     SPICE uses linear extrapolation to convert between the parallel time
+     system and encoded SCLK.  The triples are stored in the array defined
+     below.
+
+     The first time triplet below was entered manually and represents the
+     approximate time (in TDT) at which SCLK = zero.  The current plan for
+     IMAP is that the given epoch will be used for both Observatory I&T
+     and launch.  Note that the conversion from UTC to TDT used 34 leap
+     seconds.
+
+\begindata
+
+SCLK01_COEFFICIENTS_43     = (
+
+                   0     @01-JAN-2010-00:01:06.184000     1.00000000000
+      24822451300000     @24-SEP-2025-22:31:35.831485     1.00000000000
+      24827384750000     @26-SEP-2025-01:56:04.742538     1.00000000000
+      24831795450000     @27-SEP-2025-02:26:18.660826     0.99999908847
+      24837318950000     @28-SEP-2025-09:07:28.560129     0.99999908853
+      24841014800000     @29-SEP-2025-05:39:25.492756     0.99999908837
+      24846929950000     @30-SEP-2025-14:31:08.384908     0.99999908797
+      24852240150000     @01-OCT-2025-20:01:12.288047     0.99999908597
+      24856920150000     @02-OCT-2025-22:01:12.202494     0.99999909228
+      24861600150000     @04-OCT-2025-00:01:12.117531     0.99999908917
+      24875640150000     @07-OCT-2025-06:01:11.861770     0.99999908927
+      24878880150000     @08-OCT-2025-00:01:11.802755     0.99999908938
+      24884280150000     @09-OCT-2025-06:01:11.704408     0.99999908946
+      24888780150000     @10-OCT-2025-07:01:11.622459     0.99999909028
+      24889500150000     @10-OCT-2025-11:01:11.609359     0.99999908975
+      24895440150000     @11-OCT-2025-20:01:11.501221     0.99999909028
+      24906060150000     @14-OCT-2025-07:01:11.307997     0.99999909096
+      24907680150000     @14-OCT-2025-16:01:11.278544     0.99999909107
+      24914520150000     @16-OCT-2025-06:01:11.154203     0.99999909156
+      24922079900000     @18-OCT-2025-00:01:06.016851     0.99999909164
+      24927660150000     @19-OCT-2025-07:01:10.915474     0.99999909233
+      24930000150000     @19-OCT-2025-20:01:10.872995     0.99999909238
+      24935220150000     @21-OCT-2025-01:01:10.778239     0.99999909249
+      24940620150000     @22-OCT-2025-07:01:10.680227     0.99999909327
+      24942240150000     @22-OCT-2025-16:01:10.650849     0.99999909292
+      24948000150000     @24-OCT-2025-00:01:10.546353     0.99999909324
+      24952679900000     @25-OCT-2025-02:01:05.461485     0.99999909350
+      24957900150000     @26-OCT-2025-07:01:10.366842     0.99999909385
+      24960240150000     @26-OCT-2025-20:01:10.324434     0.99999909393
+      24966540150000     @28-OCT-2025-07:01:10.210269     0.99999909430
+      24969240150000     @28-OCT-2025-22:01:10.161361     0.99999909430
+      24973740150000     @29-OCT-2025-23:01:10.079848     0.99999909479
+      24982380200000     @31-OCT-2025-23:01:10.923427     0.99999909520
+      24990660150000     @02-NOV-2025-21:01:09.773593     0.99999909537
+      24994800200000     @03-NOV-2025-20:01:10.698688     0.99999909590
+      24999660200000     @04-NOV-2025-23:01:10.610809     0.99999909621
+      25003800150000     @05-NOV-2025-22:01:09.535976     0.99999909583
+
+)

@@ -11,7 +11,6 @@ from imap_processing.lo.l0.utils.bit_decompression import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def process_star_sensor(ds: xr.Dataset) -> xr.Dataset:

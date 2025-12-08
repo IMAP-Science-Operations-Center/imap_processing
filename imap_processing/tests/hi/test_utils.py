@@ -1,5 +1,7 @@
 """Test coverage for imap_processing.hi.utils.py"""
 
+import io
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -372,3 +374,35 @@ class TestCalibrationProductConfig:
             hi_test_cal_prod_config_path
         )
         assert df.cal_prod_config.number_of_products == 2
+
+    def test_calibration_product_numbers(self, hi_test_cal_prod_config_path):
+        """Test coverage for calibration_product_numbers accessor."""
+        df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
+            hi_test_cal_prod_config_path
+        )
+        cal_prod_numbers = df.cal_prod_config.calibration_product_numbers
+        # The test config file has calibration products 0 and 1
+        np.testing.assert_array_equal(cal_prod_numbers, np.array([0, 1]))
+        # Verify it's a numpy array of integers
+        assert isinstance(cal_prod_numbers, np.ndarray)
+        assert cal_prod_numbers.dtype in [np.int32, np.int64]
+
+    def test_calibration_product_numbers_arbitrary_values(self):
+        """Test calibration_product_numbers with arbitrary non-sequential values."""
+        # Create a temporary CSV with non-sequential calibration product numbers
+        csv_content = """\
+calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+10,1,0.00055,BC1C2,15,55,0,70,-50,10,5,25
+10,2,0.00085,BC1C2,15,55,0,70,-50,10,5,25
+5,1,0.00055,ABC1C2,15,55,0,70,-50,10,5,25
+5,2,0.00085,ABC1C2,15,55,0,70,-50,10,5,25
+100,1,0.00055,AC1,15,55,0,70,-50,10,5,25
+100,2,0.00085,AC1,15,55,0,70,-50,10,5,25
+        """
+
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+        cal_prod_numbers = df.cal_prod_config.calibration_product_numbers
+
+        # Should return sorted unique calibration product numbers
+        np.testing.assert_array_equal(cal_prod_numbers, np.array([5, 10, 100]))
+        assert isinstance(cal_prod_numbers, np.ndarray)

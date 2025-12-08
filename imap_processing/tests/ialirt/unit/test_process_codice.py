@@ -8,6 +8,7 @@ import pickle
 from pathlib import Path
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 import xarray as xr
@@ -15,9 +16,15 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
-from imap_processing.codice.codice_l1a import process_ialirt_data_streams
+from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
+from imap_processing.codice.codice_l2 import (
+    compute_geometric_factors,
+    get_efficiency_lut,
+    get_geometric_factor_lut,
+    process_lo_species_intensity,
+)
 from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
@@ -25,9 +32,13 @@ from imap_processing.ialirt.l0.process_codice import (
     FILLVAL_UINT8,
     concatenate_bytes,
     create_xarray_dataset,
-    process_codice,
+    process_ialirt_data_streams,
 )
 from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.tests.codice.conftest import (
+    VALIDATION_FILE_DATE,
+    VALIDATION_FILE_VERSION,
+)
 from imap_processing.utils import packet_file_to_datasets
 
 pytestmark = pytest.mark.external_test_data
@@ -59,7 +70,7 @@ def cod_lo_test_file():
         / "codice"
         / "data"
         / "l1a_input"
-        / "imap_codice_l0_lo-ialirt_20250814_v001.pkts"
+        / f"imap_codice_l0_lo-ialirt_{VALIDATION_FILE_DATE}_v001.pkts"
     )
 
 
@@ -85,7 +96,10 @@ def cod_lo_l1a_test_data():
         / "codice"
         / "data"
         / "l1a_validation"
-        / "imap_codice_l1a_lo-ialirt_20250814_v007.cdf"
+        / (
+            f"imap_codice_l1a_lo-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     data = load_cdf(data_path)
@@ -101,7 +115,7 @@ def cod_hi_test_file():
         / "codice"
         / "data"
         / "l1a_input"
-        / "imap_codice_l0_hi-ialirt_20250814_v001.pkts"
+        / f"imap_codice_l0_hi-ialirt_{VALIDATION_FILE_DATE}_v001.pkts"
     )
 
 
@@ -156,7 +170,10 @@ def cod_lo_l1b_test_data():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_lo-ialirt_20250814_v007.cdf"
+        / (
+            f"imap_codice_l1b_lo-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     data = load_cdf(data_path)
@@ -230,7 +247,10 @@ def cod_hi_l1a_test_data():
         / "codice"
         / "data"
         / "l1a_validation"
-        / "imap_codice_l1a_hi-ialirt_20250814_v007.cdf"
+        / (
+            f"imap_codice_l1a_hi-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     data = load_cdf(data_path)
@@ -247,12 +267,36 @@ def cod_hi_l1b_test_data():
         / "codice"
         / "data"
         / "l1b_validation"
-        / "imap_codice_l1b_hi-ialirt_20250814_v007.cdf"
+        / (
+            f"imap_codice_l1b_hi-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     data = load_cdf(data_path)
 
     return data
+
+
+@pytest.fixture(scope="session")
+def cod_lo_l2_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / (
+            f"imap_codice_l2_lo-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
+    )
+    # TODO: fix error in cdf file and change to:
+    # data = load_cdf(data_path)
+    cdf_file = cdflib.CDF(data_path)
+
+    return cdf_file
 
 
 @patch("xarray.Dataset.drop_vars", new=lambda self, *args, **kwargs: self)
@@ -275,7 +319,7 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
 
 
 @pytest.fixture
-def lut_path():
+def l1a_lut_path():
     """Returns the calibration data."""
     lut_path = (
         imap_module_directory
@@ -283,13 +327,35 @@ def lut_path():
         / "codice"
         / "data"
         / "l1a_lut"
-        / "imap_codice_l1a-sci-lut_20251007_v001.json"
+        / "imap_codice_l1a-sci-lut_20251007_v004.json"
     )
 
     return lut_path
 
 
-def test_create_xarray_dataset_basic(lut_path):
+@pytest.fixture
+def l2_processing_dependencies():
+    eff_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_lut"
+        / "imap_codice_l2-lo-efficiency_20251008_v001.csv"
+    )
+    gf_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_lut"
+        / "imap_codice_l2-lo-gfactor_20251008_v001.csv"
+    )
+
+    return eff_path, gf_path
+
+
+def test_create_xarray_dataset_basic(l1a_lut_path):
     """Test create_xarray_dataset function."""
 
     science_values = ["0000000100100011"]
@@ -301,7 +367,7 @@ def test_create_xarray_dataset_basic(lut_path):
         "SPIN_PERIOD": np.array([24]),
     }
 
-    ds = create_xarray_dataset(science_values, metadata_values, "lo", lut_path)
+    ds = create_xarray_dataset(science_values, metadata_values, "lo", l1a_lut_path)
 
     for key in metadata_values:
         assert key.lower() in ds.variables
@@ -316,7 +382,7 @@ def test_create_xarray_dataset_basic(lut_path):
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_lo(
-    cod_lo_test_dataset, cod_lo_decom_test_file, lut_path, cod_lo_l1a_test_data
+    cod_lo_test_dataset, cod_lo_decom_test_file, l1a_lut_path, cod_lo_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Lo data can be grouped and decompressed properly."
 
@@ -380,8 +446,8 @@ def test_group_and_decompress_ialirt_cod_lo(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "lo", lut_path)
-    result = l1a_lo_species(dataset, lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "lo", l1a_lut_path)
+    result = l1a_lo_species(dataset, l1a_lut_path)
 
     expected_species = [
         "heplusplus",
@@ -402,7 +468,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
 @pytest.mark.external_test_data
 def test_group_and_decompress_ialirt_cod_hi(
-    cod_hi_test_dataset, cod_hi_decom_test_file, lut_path
+    cod_hi_test_dataset, cod_hi_decom_test_file, l1a_lut_path, cod_hi_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Hi data can be grouped and decompressed properly."
 
@@ -465,23 +531,147 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data[i])
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "hi", lut_path)  # noqa
-    # TODO: add function l1a_hi_species
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi", l1a_lut_path)
+    result = l1a_ialirt_hi(dataset, l1a_lut_path)
+
+    expected_species = [
+        "h",
+    ]
+
+    # Returns data for all expected species at 15 energy steps.
+    for species in expected_species:
+        np.array_equal(result[species].values, cod_hi_l1a_test_data["h"].data)
+    assert np.array_equal(result["data_quality"], cod_hi_l1a_test_data["data_quality"])
+    assert np.allclose(
+        result["spin_period"].values,
+        cod_hi_l1a_test_data["spin_period"].values,
+        atol=1e-6,
+    )
 
 
 @pytest.mark.external_test_data
-def test_process_codice(codice_test_data, caplog, lut_path):
-    """Ensure that the ``process_codice`` function creates a dataset
+def test_process_codice_lo(
+    cod_lo_l1b_test_data, l1a_lut_path, cod_lo_l2_test_data, l2_processing_dependencies
+):
+    """Test process_codice for hi."""
+    eff_path, gf_path = l2_processing_dependencies
 
-    Here we just need to make sure the function is returning the expected data.
-    CoDICE I-ALiRT data products are being validated separately in the
-    ``codice.test_codice_l[1a|1b|2]`` modules.
-    """
+    geometric_factor_lookup = get_geometric_factor_lut(None, gf_path)
+    geometric_factors = compute_geometric_factors(
+        cod_lo_l1b_test_data, geometric_factor_lookup
+    )
 
-    with caplog.at_level("WARNING"):
-        cod_lo_data, cod_hi_data = process_codice(codice_test_data, lut_path)
+    efficiency_lookup = get_efficiency_lut(None, eff_path)
+    efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
 
-    assert isinstance(cod_lo_data, list)
-    assert all(isinstance(item, dict) for item in cod_lo_data)
-    assert isinstance(cod_hi_data, list)
-    assert all(isinstance(item, dict) for item in cod_hi_data)
+    # Fix to the test data coordinate name.
+    cod_lo_l1b_test_data["energy_table"] = cod_lo_l1b_test_data["energy_table"].rename(
+        {"energy_table": "esa_step"}
+    )
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
+        if "energy_table" in cod_lo_l1b_test_data[species].dims:
+            cod_lo_l1b_test_data[species] = cod_lo_l1b_test_data[species].rename(
+                {"energy_table": "esa_step"}
+            )
+        unc_var = f"unc_{species}"
+        if (
+            unc_var in cod_lo_l1b_test_data
+            and "energy_table" in cod_lo_l1b_test_data[unc_var].dims
+        ):
+            cod_lo_l1b_test_data[unc_var] = cod_lo_l1b_test_data[unc_var].rename(
+                {"energy_table": "esa_step"}
+            )
+
+    intensity = process_lo_species_intensity(
+        cod_lo_l1b_test_data,
+        constants.LO_IALIRT_VARIABLE_NAMES,
+        geometric_factors,
+        efficiencies,
+        constants.SOLAR_WIND_POSITIONS,
+    )
+
+    pseudo_density_dict = {}
+
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
+        pseudo_density = (
+            intensity[species]
+            * np.sqrt(cod_lo_l1b_test_data["energy_table"])
+            * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
+        )  # (epoch, esa_step, spin_sector)
+
+        summed_pseudo_density = pseudo_density.sum(dim="esa_step").squeeze(
+            "spin_sector"
+        )  # (epoch,)
+        pseudo_density_dict[species] = summed_pseudo_density.values
+
+    species = constants.LO_IALIRT_VARIABLE_NAMES
+
+    # Denominator.
+    # Note that outside of this test a zero value denominator
+    # will lead to a null value.
+    # The use of zeros here is only to match the test data as
+    # confirmed by the instrument team.
+    o_abundance_ratio = (
+        pseudo_density_dict[species[3]]
+        + pseudo_density_dict[species[4]]
+        + pseudo_density_dict[species[5]]
+    )
+
+    c_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[1]] + pseudo_density_dict[species[2]],
+        o_abundance_ratio,
+        out=np.zeros_like(o_abundance_ratio, dtype=float),  # fill with 0s by default
+        where=o_abundance_ratio != 0,
+    )
+    mg_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[6]],
+        o_abundance_ratio,
+        out=np.zeros_like(o_abundance_ratio, dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+    fe_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[7]] + pseudo_density_dict[species[8]],
+        o_abundance_ratio,
+        out=np.zeros_like(o_abundance_ratio, dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+
+    c_plus_6_over_c_plus_5_ratio = np.divide(
+        pseudo_density_dict[species[2]],
+        pseudo_density_dict[species[1]],
+        out=np.zeros_like(pseudo_density_dict[species[1]], dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+    o_plus_7_over_o_plus_6_ratio = np.divide(
+        pseudo_density_dict[species[4]],
+        pseudo_density_dict[species[3]],
+        out=np.zeros_like(pseudo_density_dict[species[3]], dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+    fe_low_over_fe_high_ratio = np.divide(
+        pseudo_density_dict[species[7]],
+        pseudo_density_dict[species[8]],
+        out=np.zeros_like(pseudo_density_dict[species[8]], dtype=float),
+        where=o_abundance_ratio != 0,
+    )
+
+    np.testing.assert_array_equal(
+        c_over_o_abundance_ratio, cod_lo_l2_test_data["c_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        mg_over_o_abundance_ratio, cod_lo_l2_test_data["mg_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        fe_over_o_abundance_ratio, cod_lo_l2_test_data["fe_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        c_plus_6_over_c_plus_5_ratio,
+        cod_lo_l2_test_data["c_plus_6_over_c_plus_5_ratio"],
+    )
+    np.testing.assert_array_equal(
+        o_plus_7_over_o_plus_6_ratio,
+        cod_lo_l2_test_data["o_plus_7_over_o_plus_6_ratio"],
+    )
+    np.testing.assert_array_equal(
+        fe_low_over_fe_high_ratio, cod_lo_l2_test_data["fe_low_over_fe_high_ratio"]
+    )

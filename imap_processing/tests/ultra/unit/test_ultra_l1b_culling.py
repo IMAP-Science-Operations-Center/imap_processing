@@ -277,6 +277,11 @@ def test_get_de_rejection_mask():
         counted, np.array([False, True, True, True, True, False, True, True, False])
     )
 
+    counts_no_scattering = get_de_rejection_mask(
+        quality_scattering, quality_outliers, reject_scattering=False
+    )
+    np.testing.assert_array_equal(counts_no_scattering, quality_outliers.astype(bool))
+
 
 def test_count_rejected_events_per_spin():
     """Tests count_rejected_events_per_spin function."""

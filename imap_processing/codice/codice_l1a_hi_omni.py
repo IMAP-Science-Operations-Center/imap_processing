@@ -10,7 +10,6 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
     ViewTabInfo,
     apply_replacements_to_attrs,
     get_codice_epoch_time,
@@ -47,7 +46,7 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     plan_step = unpacked_dataset["plan_step"].values[0]
 
     logger.info(
-        f"Processing species with - APID: {apid}, View ID: {view_id}, "
+        f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
 
@@ -68,9 +67,6 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         raise ValueError("Unsupported sensor ID for Hi processing.")
 
     # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-        raise ValueError(f"Unknown apid {view_tab_obj.apid} in Hi omni processing.")
-
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["omni"]
     species_names = species_data.keys()
     logical_source_id = "imap_codice_l1a_hi-omni"
@@ -155,7 +151,9 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # Reshape decompressed data to:
     #   decompressed_data -> (9, 480)
     # Then we will parse 480 data into species below for looping.
-    decompressed_data = np.array(decompressed_data).reshape(num_packets, n_spins * 120)
+    decompressed_data = np.array(decompressed_data, dtype=np.uint32).reshape(
+        num_packets, n_spins * 120
+    )
 
     # Use chunks of (energy_x) to put data in its energy bins as done below.
     #   Eg. [15, 15, 15, 18, 18, 15, 18, 5, 1]
@@ -181,6 +179,17 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                     attrs=energy_attrs,
                 )
             }
+        )
+        species_label_attrs = cdf_attrs.get_variable_attributes(
+            "energy_species_label", check_schema=False
+        )
+        species_label_attrs = apply_replacements_to_attrs(
+            species_label_attrs, {"species": species_name}
+        )
+        l1a_dataset[f"energy_{species_name}_label"] = xr.DataArray(
+            np.array(centers).astype("str"),
+            dims=(f"energy_{species_name}"),
+            attrs=species_label_attrs,
         )
         # Add energy minus variables
         delta_attrs = cdf_attrs.get_variable_attributes("hi-energy-delta-attrs")

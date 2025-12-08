@@ -105,6 +105,7 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*IntEnum.*"),
     (r"py:.*", r".*space_packet_parser.*"),
     (r"py:.*", r".*CoDICECompression.*"),
+    (r"py:.*", r".*SegmentedPacketOrder.*"),
     (r"py:.*", r".*RectangularSkyMap.*"),
     (r"py:.*", r".*AbstractSkyMap.*"),
     (r"py:.*", r".*MapDescriptor.*"),

@@ -8,6 +8,9 @@ TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
 TEST_DATA_L0_PATH = TEST_DATA_PATH / "l0_data"
 TEST_L0_FILE = TEST_DATA_L0_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
+VALIDATION_FILE_DATE = "20250814"
+VALIDATION_FILE_VERSION = "v011"
+
 
 @pytest.fixture(scope="session")
 def codice_lut_path():
@@ -32,7 +35,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_lo-sw-species_20250814_v001.pkts"
+                / f"imap_codice_l0_lo-sw-species_{VALIDATION_FILE_DATE}_v001.pkts"
             ]
         elif descriptor == "lo-nsw-species" and data_type == "l0":
             return [
@@ -41,7 +44,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_lo-nsw-species_20250814_v001.pkts"
+                / f"imap_codice_l0_lo-nsw-species_{VALIDATION_FILE_DATE}_v001.pkts"
             ]
         elif descriptor == "lo-sw-angular" and data_type == "l0":
             return [
@@ -50,7 +53,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_lo-sw-angular_20250814_v001.pkts"
+                / f"imap_codice_l0_lo-sw-angular_{VALIDATION_FILE_DATE}_v001.pkts"
             ]
         elif descriptor == "lo-nsw-angular" and data_type == "l0":
             return [
@@ -59,7 +62,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_lo-nsw-angular_20250814_v001.pkts"
+                / f"imap_codice_l0_lo-nsw-angular_{VALIDATION_FILE_DATE}_v001.pkts"
             ]
         elif descriptor == "hi-sectored" and data_type == "l0":
             return [
@@ -68,7 +71,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_hi-sectored_20250814_v001.pkts"
+                / f"imap_codice_l0_hi-sectored_{VALIDATION_FILE_DATE}_v001.pkts"
             ]
         elif descriptor == "hi-omni" and data_type == "l0":
             return [
@@ -77,7 +80,97 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_hi-omni_20250814_v001.pkts"
+                / f"imap_codice_l0_hi-omni_{VALIDATION_FILE_DATE}_v001.pkts"
+            ]
+        elif descriptor == "lo-direct-events" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / f"imap_codice_l0_lo-direct-events_{VALIDATION_FILE_DATE}_v001.pkts"
+            ]
+        elif descriptor == "hi-direct-events" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / f"imap_codice_l0_hi-direct-events_{VALIDATION_FILE_DATE}_v001.pkts"
+            ]
+        elif descriptor == "lo-nsw-priority" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / f"imap_codice_l0_lo-nsw-priority_{VALIDATION_FILE_DATE}_v001.pkts"
+            ]
+        elif descriptor == "lo-sw-priority" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / f"imap_codice_l0_lo-sw-priority_{VALIDATION_FILE_DATE}_v001.pkts"
+            ]
+        elif descriptor == "hi-priorities" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / f"imap_codice_l0_hi-priority_{VALIDATION_FILE_DATE}_v001.pkts"
+            ]
+        elif descriptor == "hi-counters-singles" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_hi-counters-singles_20250814_v001.pkts"
+            ]
+        elif descriptor == "hi-counters-aggregated" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_hi-counters-aggregated_20250814_v001.pkts"
+            ]
+        elif descriptor == "lo-counters-singles" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-counters-singles_20250814_v001.pkts"
+            ]
+        elif descriptor == "lo-counters-aggregated" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-counters-aggregated_20250814_v001.pkts"
+            ]
+        elif descriptor == "hskp" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_hskp_20250814_v001.pkts"
             ]
         if descriptor == "lo-nsw-species" and data_type == "l1b":
             return [
@@ -86,7 +179,10 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1b_validation"
-                / "imap_codice_l1b_lo-nsw-species_20250814_v007.cdf"
+                / (
+                    f"imap_codice_l1b_lo-nsw-species_{VALIDATION_FILE_DATE}"
+                    f"_{VALIDATION_FILE_VERSION}.cdf"
+                )
             ]
         elif descriptor == "lo-sw-species" and data_type == "l1b":
             return [
@@ -95,37 +191,52 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1b_validation"
-                / "imap_codice_l1b_lo-sw-species_20250814_v007.cdf"
+                / (
+                    f"imap_codice_l1b_lo-sw-species_{VALIDATION_FILE_DATE}"
+                    f"_{VALIDATION_FILE_VERSION}.cdf"
+                )
             ]
         elif descriptor == "lo-nsw-angular" and data_type == "l1b":
             return [
                 TEST_DATA_PATH
                 / "l1b_validation"
-                / "imap_codice_l1b_lo-nsw-angular_20250814_v007.cdf"
+                / (
+                    f"imap_codice_l1b_lo-nsw-angular_{VALIDATION_FILE_DATE}"
+                    f"_{VALIDATION_FILE_VERSION}.cdf"
+                )
             ]
         elif descriptor == "lo-sw-angular" and data_type == "l1b":
             return [
                 TEST_DATA_PATH
                 / "l1b_validation"
-                / "imap_codice_l1b_lo-sw-angular_20250814_v007.cdf"
+                / (
+                    f"imap_codice_l1b_lo-sw-angular_{VALIDATION_FILE_DATE}"
+                    f"_{VALIDATION_FILE_VERSION}.cdf"
+                )
             ]
         elif descriptor == "hi-sectored" and data_type == "l1b":
             return [
                 imap_module_directory
                 / "tests/codice/data/l1b_validation"
-                / "imap_codice_l1b_hi-sectored_20250814_v007.cdf"
+                / (
+                    f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}"
+                    f"_{VALIDATION_FILE_VERSION}.cdf"
+                )
             ]
         elif descriptor == "hi-omni" and data_type == "l1b":
             return [
                 imap_module_directory
                 / "tests/codice/data/l1b_validation"
-                / "imap_codice_l1b_hi-omni_20250814_v007.cdf"
+                / (
+                    f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}"
+                    f"_{VALIDATION_FILE_VERSION}.cdf"
+                )
             ]
         elif descriptor == "l1a-sci-lut":
             return [
                 TEST_DATA_PATH
                 / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v001.json"
+                / "imap_codice_l1a-sci-lut_20251007_v004.json"
             ]
         elif descriptor == "l2-hi-omni-efficiency":
             return [

@@ -47,15 +47,16 @@ class SpiceFrame(IntEnum):
     # IMAP specific as defined in imap_###.tf
     IMAP_SPACECRAFT = -43000
     IMAP_LO_BASE = -43100
-    IMAP_LO_STAR_SENSOR = -43103
-    IMAP_LO = -43105
+    IMAP_LO = -43101
+    IMAP_LO_STAR_SENSOR = -43102
     IMAP_HI_45 = -43150
-    IMAP_HI_90 = -43160
+    IMAP_HI_90 = -43151
     IMAP_ULTRA_45 = -43200
-    IMAP_ULTRA_90 = -43210
+    IMAP_ULTRA_90 = -43201
     IMAP_MAG_BOOM = -43250
     IMAP_MAG_I = -43251
     IMAP_MAG_O = -43252
+    IMAP_MAG_BASE = -43253
     IMAP_SWE = -43300
     IMAP_SWAPI = -43350
     IMAP_CODICE = -43400
@@ -64,7 +65,9 @@ class SpiceFrame(IntEnum):
     IMAP_GLOWS = -43750
 
     # IMAP Science Frames (new additions from imap_science_xxx.tf)
-    IMAP_OMD = -43900
+    # IMAP_OMD appears to have a bad definition in imap_science_100.tf
+    # Commenting it out for now.
+    # IMAP_OMD = -43900
     IMAP_EARTHFIXED = -43910
     IMAP_ECLIPDATE = -43911
     IMAP_MDI = -43912
@@ -217,14 +220,14 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
         The spin phase offset from the spacecraft to the instrument.
     """
     phase_offset_lookup = {
-        # Phase offset values based on imap_100.tf frame kernel
+        # Phase offset values based on imap_130.tf frame kernel
         # See docstring notes for details on how these values were determined.
         SpiceFrame.IMAP_LO: 60 / 360,  # (330 + 90) % 360 = 60
         SpiceFrame.IMAP_HI_45: 344.8264 / 360,  # 255 + 90 = 345
         SpiceFrame.IMAP_HI_90: 15.1649 / 360,  # (285 + 90) % 360 = 15
         SpiceFrame.IMAP_ULTRA_45: 122.8642 / 360,  # 33 + 90 = 123
         SpiceFrame.IMAP_ULTRA_90: 299.9511 / 360,  # 210 + 90 = 300
-        SpiceFrame.IMAP_SWAPI: 258 / 360,  # 168 + 90 = 258
+        SpiceFrame.IMAP_SWAPI: 258.0135 / 360,  # 168 + 90 = 258
         SpiceFrame.IMAP_IDEX: 179.9229 / 360,  # 90 + 90 = 180
         SpiceFrame.IMAP_CODICE: 225.9086 / 360,  # 136 + 90 = 226
         SpiceFrame.IMAP_HIT: 119.6452 / 360,  # 30 + 90 = 120

@@ -57,18 +57,17 @@ def glows_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     # Decompose packet file into histogram, and direct event data.
     hist_l0, de_l0 = decom_packets(packet_filepath)
 
-    l1a_de = process_de_l0(de_l0)
-    l1a_hists = []
-    for hist in hist_l0:
-        l1a_hists.append(HistogramL1A(hist))
-
     # Generate CDF files for each day
     output_datasets = []
-    dataset = generate_histogram_dataset(l1a_hists, glows_attrs)
-    output_datasets.append(dataset)
+    if hist_l0:
+        l1a_hists = [HistogramL1A(hist) for hist in hist_l0]
+        dataset = generate_histogram_dataset(l1a_hists, glows_attrs)
+        output_datasets.append(dataset)
 
-    dataset = generate_de_dataset(l1a_de, glows_attrs)
-    output_datasets.append(dataset)
+    if de_l0:
+        l1a_de = process_de_l0(de_l0)
+        dataset = generate_de_dataset(l1a_de, glows_attrs)
+        output_datasets.append(dataset)
 
     return output_datasets
 

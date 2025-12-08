@@ -1,12 +1,9 @@
 """Pytest plugin module for test data paths."""
 
-from unittest import mock
-
 import pytest
-from imap_data_access.processing_input import AncillaryInput
 
 from imap_processing import imap_module_directory
-from imap_processing.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
+from imap_processing.cdf.utils import load_cdf
 
 
 @pytest.fixture
@@ -34,11 +31,23 @@ def ialirt_mag_test_l1d_data():
         / "imap_mag_ialirt-calibration_20250101_v002.cdf"
     )
 
-    with mock.patch(
-        "imap_processing.ancillary.ancillary_dataset_combiner.AncillaryFilePath.construct_path",
-        return_value=cal_path,
-    ):
-        processing = AncillaryInput(cal_path.name)
-        calibration_data = MagAncillaryCombiner(processing, "20250101").combined_dataset
+    calibration_data = load_cdf(cal_path)
+
+    return calibration_data
+
+
+@pytest.fixture
+def ialirt_mag_test_l1d_data_postlaunch():
+    """Returns the MAG I-ALiRT calibration dataset."""
+    cal_path = (
+        imap_module_directory
+        / "tests"
+        / "ialirt"
+        / "data"
+        / "l0"
+        / "imap_mag_ialirt-calibration_20250926_v002.cdf"
+    )
+
+    calibration_data = load_cdf(cal_path)
 
     return calibration_data

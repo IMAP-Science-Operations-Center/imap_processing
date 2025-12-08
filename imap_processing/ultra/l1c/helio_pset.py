@@ -70,6 +70,10 @@ def calculate_helio_pset(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
+    # Do not cull events based on scattering thresholds
+    reject_scattering = False
+    # Do not apply boundary scale factor corrections
+    apply_bsf = False
     sensor_id = int(parse_filename_like(name)["sensor"][0:2])
     pset_dict: dict[str, np.ndarray] = {}
     # Select only the species we are interested in.
@@ -83,6 +87,7 @@ def calculate_helio_pset(
     rejected = get_de_rejection_mask(
         species_dataset["quality_scattering"].values,
         species_dataset["quality_outliers"].values,
+        reject_scattering,
     )
     species_dataset = species_dataset.isel(epoch=~rejected)
 
@@ -111,6 +116,7 @@ def calculate_helio_pset(
             phi_vals,
             ancillary_files,
             instrument_id,
+            reject_scattering,
         )
     )
 
@@ -140,9 +146,10 @@ def calculate_helio_pset(
         pixels_below_scattering,
         boundary_scale_factors,
         pointing_range_met,
-        n_pix=n_pix,
+        n_energy_bins=len(energy_bin_geometric_means),
         sensor_id=sensor_id,
         ancillary_files=ancillary_files,
+        apply_bsf=apply_bsf,
     )
     logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
@@ -153,6 +160,7 @@ def calculate_helio_pset(
         phi_vals,
         n_pix,
         ancillary_files,
+        apply_bsf,
     )
 
     logger.info("Calculating background rates.")
@@ -170,7 +178,7 @@ def calculate_helio_pset(
     mid_time = ttj2000ns_to_et(met_to_ttj2000ns((np.sum(pointing_range_met)) / 2))
 
     logger.info("Adjusting data for helio frame.")
-    exposure_time, _efficiency, geometric_function = get_helio_adjusted_data(
+    exposure_time, efficiencies, geometric_function = get_helio_adjusted_data(
         mid_time,
         exposure_time,
         geometric_function,

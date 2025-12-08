@@ -50,7 +50,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 #   from imap_processing import cdf
 # In code:
 #   call cdf.utils.write_cdf
-from imap_processing.codice import codice_l1b, codice_l2, codice_new_l1a
+from imap_processing.codice import codice_l1a, codice_l1b, codice_l2
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l2.glows_l2 import glows_l2
@@ -198,15 +198,7 @@ def _parse_args() -> argparse.Namespace:
         action="store_const",
         dest="loglevel",
         const=logging.DEBUG,
-        default=logging.WARNING,
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Add verbose output",
-        action="store_const",
-        dest="loglevel",
-        const=logging.INFO,
+        default=logging.INFO,
     )
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--data-level", type=str, required=True, help=level_help)
@@ -259,6 +251,14 @@ def _parse_args() -> argparse.Namespace:
         help="Upload completed output files to the IMAP SDC.",
     )
     args = parser.parse_args()
+
+    # Set the basic logging configuration for all users
+    # of the CLI tool.
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s:%(name)s:%(message)s",
+        level=args.loglevel,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     # If the dependency argument was passed in as a json file, read it into a string
     if args.dependency.endswith(".json"):
@@ -614,7 +614,7 @@ class Codice(ProcessInstrument):
 
         if self.data_level == "l1a":
             # process data
-            datasets = codice_new_l1a.process_l1a(dependencies)
+            datasets = codice_l1a.process_l1a(dependencies)
 
         if self.data_level == "l1b":
             science_files = dependencies.get_file_paths(source="codice")
@@ -1543,6 +1543,12 @@ class Ultra(ProcessInstrument):
             all_pset_filepaths = dependencies.get_file_paths(
                 source="ultra", descriptor="pset"
             )
+            energy_ancilary_files = dependencies.get_file_paths(
+                data_type="ancillary", descriptor="l2-energy-bin-group-sizes"
+            )
+            energy_bin_edges_file = (
+                None if energy_ancilary_files == [] else energy_ancilary_files[0]
+            )
             # There can be many PSET files, so avoid reading them all in.
             # The filename stem (logical_file_id) contains
             # all the information needed in the key.
@@ -1553,6 +1559,7 @@ class Ultra(ProcessInstrument):
             datasets = ultra_l2.ultra_l2(
                 data_dict,
                 descriptor=self.descriptor,
+                energy_bin_edges_file=energy_bin_edges_file,
             )
 
         return datasets

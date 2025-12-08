@@ -13,6 +13,10 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l2 import (
     process_codice_l2,
 )
+from imap_processing.tests.codice.conftest import (
+    VALIDATION_FILE_DATE,
+    VALIDATION_FILE_VERSION,
+)
 
 pytestmark = pytest.mark.external_test_data
 
@@ -32,7 +36,9 @@ def mock_get_file_paths(codice_lut_path):
 
 
 def test_l2_hi_omni(mock_get_file_paths):
-    sci_input = ScienceInput("imap_codice_l1b_hi-omni_20250814_v007.cdf")
+    sci_input = ScienceInput(
+        f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf"
+    )
     anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv")
     dependencies = ProcessingInputCollection(anc_input, sci_input)
 
@@ -41,7 +47,7 @@ def test_l2_hi_omni(mock_get_file_paths):
     val_data = (
         imap_module_directory
         / "tests/codice/data/l2_validation"
-        / "imap_codice_l2_hi-omni_20250814_v007.cdf"
+        / f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf"
     )
 
     val_data = load_cdf(val_data)
@@ -70,14 +76,18 @@ def test_l2_hi_omni(mock_get_file_paths):
 
     processed_l2.attrs["Data_version"] = "001"
     omni_cdf_file = write_cdf(processed_l2)
-    assert omni_cdf_file.name == "imap_codice_l2_hi-omni_20250814_v001.cdf"
+    assert (
+        omni_cdf_file.name == f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
+    )
 
 
 def test_l2_hi_sectored(mock_get_file_paths):
     anc_input = AncillaryInput(
         "imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
     )
-    sci_input = ScienceInput("imap_codice_l1b_hi-sectored_20250814_v007.cdf")
+    sci_input = ScienceInput(
+        f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf"
+    )
     dependencies = ProcessingInputCollection(anc_input, sci_input)
 
     processed_l2 = process_codice_l2("hi-sectored", dependencies)
@@ -85,7 +95,10 @@ def test_l2_hi_sectored(mock_get_file_paths):
     val_data = (
         imap_module_directory
         / "tests/codice/data/l2_validation"
-        / "imap_codice_l2_hi-sectored_20250814_v007.cdf"
+        / (
+            f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
     )
 
     val_data = load_cdf(val_data)
@@ -110,6 +123,12 @@ def test_l2_hi_sectored(mock_get_file_paths):
 
     # Check coordinates
     for variable in val_data.coords:
+        if variable.endswith("_label"):
+            assert np.array_equal(
+                processed_l2[variable].values,
+                val_data[variable].values,
+            ), f"Mismatch in coordinate '{variable}'"
+            continue
         np.testing.assert_allclose(
             processed_l2[variable].values,
             val_data[variable].values,
@@ -123,4 +142,7 @@ def test_l2_hi_sectored(mock_get_file_paths):
 
     processed_l2.attrs["Data_version"] = "001"
     sectored_cdf_file = write_cdf(processed_l2)
-    assert sectored_cdf_file.name == "imap_codice_l2_hi-sectored_20250814_v001.cdf"
+    assert (
+        sectored_cdf_file.name
+        == f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}_v001.cdf"
+    )

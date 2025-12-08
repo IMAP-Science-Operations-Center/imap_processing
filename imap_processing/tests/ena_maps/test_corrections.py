@@ -7,7 +7,8 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.ena_maps import ena_maps
+from imap_processing.ena_maps.ena_maps import HiPointingSet
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
     _add_cartesian_look_direction,
@@ -58,8 +59,9 @@ class TestPowerLawFluxCorrector:
     def test_estimate_power_law_with_uncertainties(self):
         """Test slope estimation with flux uncertainties."""
 
-        fluxes = np.array([10, 20, 40, 80, 160, 320, 640])
-        energies = np.arange(8) + 1
+        # Create 2D arrays (n_energy, n_pixels)
+        fluxes = np.array([10, 20, 40, 80, 160, 320, 640])[:, np.newaxis]
+        energies = np.arange(7) + 1
         uncertainties = np.sqrt(fluxes)
         gamma, delta_gamma = PowerLawFluxCorrector.estimate_power_law_slope(
             fluxes, energies, uncertainties
@@ -71,7 +73,8 @@ class TestPowerLawFluxCorrector:
     def test_estimate_power_law_with_zero_flux(self):
         """Test slope estimation falls back to linear differencing."""
 
-        fluxes = np.array([10, 0, 40, 60, 0, 0, 80])
+        # Create 2D arrays (n_energy, n_pixels)
+        fluxes = np.array([10, 0, 40, 60, 0, 0, 80])[:, np.newaxis]
         uncertainties = np.maximum(0.1 * fluxes, 1)
         expected_gamma = np.array(
             [
@@ -86,7 +89,7 @@ class TestPowerLawFluxCorrector:
                 0,  # No differencing scheme works
                 0,  # End point fails to find slope
             ]
-        )
+        )[:, np.newaxis]
         expected_delta_gamma = np.array(
             [
                 0,
@@ -97,7 +100,7 @@ class TestPowerLawFluxCorrector:
                 0,
                 0,
             ]
-        )
+        )[:, np.newaxis]
         energies = np.arange(len(fluxes)) + 1
         corr = PowerLawFluxCorrector
         gamma, delta_gamma = corr.estimate_power_law_slope(
@@ -110,7 +113,8 @@ class TestPowerLawFluxCorrector:
         """Test predictor-corrector stops after max_iterations."""
 
         corr = PowerLawFluxCorrector(lo_coeffs_file)
-        fluxes = (np.arange(7) * 1000**2)[::-1]
+        # Create 2D arrays (n_energy, n_pixels)
+        fluxes = ((np.arange(7) * 1000**2)[::-1])[:, np.newaxis]
         energies = np.arange(1, 8) + 1
         _, _, n_iter = corr.predictor_corrector_iteration(
             fluxes,
@@ -119,7 +123,7 @@ class TestPowerLawFluxCorrector:
             max_iterations=3,
             convergence_threshold=1e-12,
         )
-        assert n_iter == 3
+        assert np.all(n_iter == 3)
 
     def create_lo_test_data(self):
         """Create synthetic Lo data to test."""
@@ -187,8 +191,9 @@ class TestPowerLawFluxCorrector:
         """Test correction using sample data from Nathan's spreadsheet."""
         flux_corr = PowerLawFluxCorrector(lo_coeffs_file)
         energies, flux_dict, background_dict = self.create_lo_test_data()
+        # Reshape to 2D arrays (n_energy, n_pixels)
         corrected_fluxes, corrected_unc, _ = flux_corr.predictor_corrector_iteration(
-            flux_dict["J"], flux_dict["delta_J"], energies
+            flux_dict["J"][:, np.newaxis], flux_dict["delta_J"][:, np.newaxis], energies
         )
         expected_corr_fluxes = np.array(
             [
@@ -201,14 +206,17 @@ class TestPowerLawFluxCorrector:
                 7.828285642,
             ]
         )
-        np.testing.assert_allclose(corrected_fluxes, expected_corr_fluxes, rtol=1e-2)
+        np.testing.assert_allclose(
+            corrected_fluxes.squeeze(), expected_corr_fluxes, rtol=1e-2
+        )
 
     def test_predictor_corrector_hi_example(self, hi_coeffs_file):
         """Test correction using sample data from Nathan's spreadsheet."""
         flux_corr = PowerLawFluxCorrector(hi_coeffs_file)
         energies, flux_dict, background_dict = self.create_hi_test_data()
+        # Reshape to 2D arrays (n_energy, n_pixels)
         corrected_fluxes, corrected_unc, _ = flux_corr.predictor_corrector_iteration(
-            flux_dict["J"], flux_dict["delta_J"], energies
+            flux_dict["J"][:, np.newaxis], flux_dict["delta_J"][:, np.newaxis], energies
         )
         expected_corr_fluxes = np.array(
             [
@@ -223,24 +231,221 @@ class TestPowerLawFluxCorrector:
                 4.782030232,
             ]
         )
-        np.testing.assert_allclose(corrected_fluxes, expected_corr_fluxes, rtol=1e-2)
+        np.testing.assert_allclose(
+            corrected_fluxes.squeeze(), expected_corr_fluxes, rtol=1e-2
+        )
 
     @mock.patch(
         "imap_processing.ena_maps.utils.corrections.PowerLawFluxCorrector.predictor_corrector_iteration"
     )
     def test_apply_flux_correction(self, mock_predictor_corrector, hi_coeffs_file):
         """Test applying the correction to map data."""
-        mock_predictor_corrector.side_effect = lambda f, d_f, e: (f * 2, d_f / 2, 0)
-        flux = np.arange(90).reshape(9, 10)
-        delta_flux = np.sqrt(flux)
-        energies = np.arange(flux.shape[0])
+        # Mock returns 2D arrays (n_energy, n_pixels) and n_iterations
+        mock_predictor_corrector.side_effect = lambda f, d_f, e: (
+            f * 2,
+            d_f / 2,
+            np.zeros(f.shape[1], dtype=int),
+        )
+
+        # Create xarray DataArrays with energy dimension
+        flux_data = np.arange(90).reshape(9, 10)
+        delta_flux_data = np.sqrt(flux_data)
+        energies_data = np.arange(flux_data.shape[0])
+
+        flux = xr.DataArray(
+            flux_data,
+            dims=["energy", "spatial"],
+            coords={"energy": energies_data, "spatial": np.arange(10)},
+        )
+        delta_flux = xr.DataArray(
+            delta_flux_data,
+            dims=["energy", "spatial"],
+            coords={"energy": energies_data, "spatial": np.arange(10)},
+        )
+        energies = xr.DataArray(
+            energies_data, dims=["energy"], coords={"energy": energies_data}
+        )
 
         flux_corr = PowerLawFluxCorrector(hi_coeffs_file)
         corrected_flux, corrected_delta_flux = flux_corr.apply_flux_correction(
             flux, delta_flux, energies
         )
-        np.testing.assert_array_equal(corrected_flux, flux * 2)
-        np.testing.assert_array_equal(corrected_delta_flux, delta_flux / 2)
+
+        # Verify output is xarray DataArray with correct dimensions
+        assert isinstance(corrected_flux, xr.DataArray)
+        assert isinstance(corrected_delta_flux, xr.DataArray)
+        assert corrected_flux.dims == flux.dims
+        assert corrected_delta_flux.dims == delta_flux.dims
+
+        # Verify values are correct
+        np.testing.assert_array_equal(corrected_flux.values, flux_data * 2)
+        np.testing.assert_array_equal(corrected_delta_flux.values, delta_flux_data / 2)
+
+    def test_estimate_power_law_slope_multi_pixel(self):
+        """Test slope estimation with multiple spatial pixels (true 2D array)."""
+        # Create test data with 7 energy levels and 12 spatial pixels
+        # Shape: (n_energy=7, n_pixels=12)
+        n_energy = 7
+        n_pixels = 12
+
+        # Create varying flux values across pixels
+        energies = np.arange(n_energy) + 1
+        base_fluxes = np.array([10, 20, 40, 80, 160, 320, 640])
+
+        # Create 2D array where each pixel has slightly different flux scaling
+        fluxes = (
+            base_fluxes[:, np.newaxis] * np.linspace(0.8, 1.2, n_pixels)[np.newaxis, :]
+        )
+        uncertainties = np.sqrt(fluxes)
+
+        gamma, delta_gamma = PowerLawFluxCorrector.estimate_power_law_slope(
+            fluxes, energies, uncertainties
+        )
+
+        # Check output shapes
+        assert gamma.shape == (n_energy, n_pixels)
+        assert delta_gamma.shape == (n_energy, n_pixels)
+
+        # All slopes should be finite and non-zero for this simple power-law data
+        assert np.all(np.isfinite(gamma))
+        assert np.all(np.isfinite(delta_gamma))
+
+        # All slopes should be positive (fluxes increase with energy)
+        assert np.all(gamma > 0)
+        assert np.all(delta_gamma > 0)
+
+    def test_estimate_power_law_slope_with_zeros_multi_pixel(self):
+        """Test slope estimation with zero fluxes in multi-pixel array."""
+        # Create test data with some zero fluxes at different locations per pixel
+        n_energy = 7
+        n_pixels = 5
+
+        energies = np.arange(n_energy) + 1
+
+        # Create different zero patterns for each pixel
+        fluxes = np.array(
+            [
+                [10, 0, 10, 10, 10],  # energy 0: zero at pixel 1
+                [20, 20, 0, 20, 20],  # energy 1: zero at pixel 2
+                [40, 40, 40, 0, 40],  # energy 2: zero at pixel 3
+                [60, 60, 60, 60, 0],  # energy 3: zero at pixel 4
+                [0, 0, 0, 0, 80],  # energy 4: zeros at pixels 0-3
+                [0, 80, 80, 80, 80],  # energy 5: zero at pixel 0
+                [80, 80, 80, 80, 80],  # energy 6: no zeros
+            ]
+        )
+        uncertainties = np.maximum(0.1 * fluxes, 1)
+
+        gamma, delta_gamma = PowerLawFluxCorrector.estimate_power_law_slope(
+            fluxes, energies, uncertainties
+        )
+
+        # Check output shapes
+        assert gamma.shape == (n_energy, n_pixels)
+        assert delta_gamma.shape == (n_energy, n_pixels)
+
+        # Where we have valid data on both sides, slopes should be non-zero
+        # Last energy level with all valid fluxes should have positive slopes
+        assert np.all(gamma[-1, :] >= 0)
+
+    def test_predictor_corrector_multi_pixel(self, lo_coeffs_file):
+        """Test predictor-corrector with multiple spatial pixels."""
+        corr = PowerLawFluxCorrector(lo_coeffs_file)
+
+        # Create 2D array with 7 energy levels and 8 spatial pixels
+        n_energy = 7
+        n_pixels = 8
+        energies = np.arange(1, n_energy + 1) + 1
+
+        # Create base fluxes that vary across pixels
+        base_fluxes = ((np.arange(n_energy) + 1) * 1000**2)[::-1]
+        fluxes = (
+            base_fluxes[:, np.newaxis] * np.linspace(0.9, 1.1, n_pixels)[np.newaxis, :]
+        )
+        uncertainties = np.sqrt(fluxes)
+
+        corrected_fluxes, corrected_unc, n_iter = corr.predictor_corrector_iteration(
+            fluxes,
+            uncertainties,
+            energies,
+            max_iterations=20,
+            convergence_threshold=0.005,
+        )
+
+        # Check output shapes
+        assert corrected_fluxes.shape == (n_energy, n_pixels)
+        assert corrected_unc.shape == (n_energy, n_pixels)
+        assert n_iter.shape == (n_pixels,)
+
+        # All pixels should converge
+        assert np.all(n_iter < 20)
+        assert np.all(n_iter > 0)
+
+        # Corrected fluxes should be finite and positive
+        assert np.all(np.isfinite(corrected_fluxes))
+        assert np.all(corrected_fluxes > 0)
+
+    def test_apply_flux_correction_2d_spatial(self, hi_coeffs_file):
+        """Test applying correction to data with 2D spatial dimensions (like Lo)."""
+        flux_corr = PowerLawFluxCorrector(hi_coeffs_file)
+
+        # Create xarray DataArrays with 2D spatial dimensions
+        # Shape: (energy=9, spin=36, elevation=4) - simulating Lo's structure
+        n_energy = 9
+        n_spin = 36
+        n_elev = 4
+
+        energies_data = np.arange(n_energy) + 1
+        flux_data = np.random.rand(n_energy, n_spin, n_elev) * 1000 + 100
+        delta_flux_data = np.sqrt(flux_data)
+
+        flux = xr.DataArray(
+            flux_data,
+            dims=["energy", "spin", "elevation"],
+            coords={
+                "energy": energies_data,
+                "spin": np.arange(n_spin),
+                "elevation": np.arange(n_elev),
+            },
+        )
+        delta_flux = xr.DataArray(
+            delta_flux_data,
+            dims=["energy", "spin", "elevation"],
+            coords={
+                "energy": energies_data,
+                "spin": np.arange(n_spin),
+                "elevation": np.arange(n_elev),
+            },
+        )
+        energies = xr.DataArray(
+            energies_data, dims=["energy"], coords={"energy": energies_data}
+        )
+
+        # Apply correction
+        corrected_flux, corrected_unc = flux_corr.apply_flux_correction(
+            flux, delta_flux, energies
+        )
+
+        # Verify output has same dimensions and shape as input
+        assert corrected_flux.dims == flux.dims
+        assert corrected_unc.dims == delta_flux.dims
+        assert corrected_flux.shape == flux.shape
+        assert corrected_unc.shape == delta_flux.shape
+
+        # Verify dimension order is preserved
+        assert corrected_flux.dims == ("energy", "spin", "elevation")
+        assert corrected_unc.dims == ("energy", "spin", "elevation")
+
+        # Verify coordinates are preserved
+        np.testing.assert_array_equal(corrected_flux.coords["energy"], energies_data)
+        np.testing.assert_array_equal(corrected_flux.coords["spin"], np.arange(n_spin))
+        np.testing.assert_array_equal(
+            corrected_flux.coords["elevation"], np.arange(n_elev)
+        )
+
+        # Corrected values should be finite and mostly positive
+        assert np.all(np.isfinite(corrected_flux))
+        assert np.sum(corrected_flux > 0) > 0.9 * corrected_flux.size
 
 
 @pytest.fixture
@@ -269,7 +474,38 @@ def mock_hi_pset():
                 np.linspace(-90, 90, n_spin).reshape(n_epoch, n_spin),
             ),
             "spin_angle_bin": (["spin_angle_bin"], np.arange(n_spin)),
-        }
+        },
+        attrs={"Logical_source": "imap_hi_l1c_45sensor-pset"},
+    )
+
+    return data
+
+
+@pytest.fixture
+def mock_lo_pset():
+    """Create a minimal mock Lo pointing set dataset for testing."""
+    # Create a simple dataset with necessary fields for Lo
+    n_epoch = 1
+    n_spin = 50
+    n_off = 20
+
+    data = xr.Dataset(
+        {
+            "epoch": (["epoch"], np.array([797949131184000000])),
+            "pointing_start_met": (["epoch"], np.array([100.0])),
+            "pointing_end_met": (["epoch"], np.array([200.0])),
+            "hae_longitude": (
+                ["epoch", "spin_angle_bin", "off_angle_bin"],
+                np.linspace(0, 360, n_spin * n_off, endpoint=False).reshape(
+                    n_epoch, n_spin, n_off
+                ),
+            ),
+            "hae_latitude": (
+                ["epoch", "spin_angle_bin", "off_angle_bin"],
+                np.linspace(-90, 90, n_spin * n_off).reshape(n_epoch, n_spin, n_off),
+            ),
+        },
+        attrs={"Logical_source": "imap_lo_l1c_pset"},
     )
 
     return data
@@ -313,6 +549,62 @@ class TestComptonGettingCorrection:
             mock_hi_pset["sc_direction_vector"].values, expected_direction
         )
 
+    @mock.patch("imap_processing.ena_maps.utils.corrections.ttj2000ns_to_et")
+    @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
+    def test_add_spacecraft_velocity_to_pset_lo(
+        self, mock_imap_state, mock_ttj2000_to_et, mock_lo_pset
+    ):
+        """Test that spacecraft velocity is correctly added to Lo pointing set."""
+        # Mock conversion from TTJ2000ns to ET
+        et = 1000.0
+        mock_ttj2000_to_et.return_value = et
+        # Mock spacecraft state vector (position + velocity in HAE frame)
+        mock_sc_state = np.array([1e8, 2e8, 3e8, 15.0, 25.0, 35.0])  # km and km/s
+        mock_imap_state.return_value = mock_sc_state
+
+        # For Lo, pointing duration is calculated from MET times
+        # pointing_end_met - pointing_start_met = 200.0 - 100.0 = 100.0 seconds
+        # In nanoseconds: 100.0 * 1e9 = 1e11 ns
+        # Midpoint: epoch + pointing_duration_ns / 2
+        expected_midpoint_time_ns = mock_lo_pset["epoch"].values[0] + 1e11 / 2
+
+        mock_lo_pset = add_spacecraft_velocity_to_pset(mock_lo_pset)
+
+        # Verify SPICE was called correctly
+        mock_ttj2000_to_et.assert_called_once_with(expected_midpoint_time_ns)
+        mock_imap_state.assert_called_once_with(
+            et, ref_frame=geometry.SpiceFrame.IMAP_HAE
+        )
+
+        # Verify sc_velocity was added
+        assert "sc_velocity" in mock_lo_pset
+        assert isinstance(mock_lo_pset["sc_velocity"], xr.DataArray)
+        np.testing.assert_array_equal(
+            mock_lo_pset["sc_velocity"].values, np.array([15.0, 25.0, 35.0])
+        )
+
+        # Verify sc_direction_vector was added
+        assert "sc_direction_vector" in mock_lo_pset
+        expected_speed = np.sqrt(15**2 + 25**2 + 35**2)
+        expected_direction = np.array([15.0, 25.0, 35.0]) / expected_speed
+        np.testing.assert_allclose(
+            mock_lo_pset["sc_direction_vector"].values, expected_direction
+        )
+
+    def test_add_spacecraft_velocity_unsupported_instrument(self):
+        """Test that unsupported instrument raises NotImplementedError."""
+        # Create a dataset with unsupported Logical_source
+        unsupported_pset = xr.Dataset(
+            {
+                "epoch": (["epoch"], np.array([797949131184000000])),
+                "epoch_delta": (["epoch"], np.array([1e12])),
+            },
+            attrs={"Logical_source": "imap_unsupported_instrument_pset"},
+        )
+
+        with pytest.raises(NotImplementedError, match="does not support PSETs"):
+            add_spacecraft_velocity_to_pset(unsupported_pset)
+
     def test_add_cartesian_look_direction(self, mock_hi_pset):
         """Test that look directions are correctly calculated and added."""
         mock_hi_pset = _add_cartesian_look_direction(mock_hi_pset)
@@ -352,7 +644,6 @@ class TestComptonGettingCorrection:
         assert "energy_sc" in mock_hi_pset
         assert "hae_longitude" in mock_hi_pset
         assert "hae_latitude" in mock_hi_pset
-        assert "ram_mask" in mock_hi_pset
 
         # Verify energy_hf matches input
         np.testing.assert_array_equal(
@@ -376,12 +667,6 @@ class TestComptonGettingCorrection:
         assert np.all(mock_hi_pset["hae_latitude"].values >= -90)
         assert np.all(mock_hi_pset["hae_latitude"].values <= 90)
 
-        # Verify ram_mask properties
-        ram_mask = mock_hi_pset["ram_mask"]
-        assert isinstance(ram_mask, xr.DataArray)
-        assert ram_mask.dtype == bool
-        assert ram_mask.shape == mock_hi_pset["energy_sc"].shape
-
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
     def test_apply_compton_getting_correction(self, mock_imap_state, mock_hi_pset):
         """Test full Compton-Getting correction pipeline."""
@@ -396,6 +681,9 @@ class TestComptonGettingCorrection:
             coords={"esa_energy_step": [1, 2, 3]},
         )
 
+        # add the required sc_velocity to the pointing set
+        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
+
         # Apply the full correction
         mock_hi_pset = apply_compton_getting_correction(mock_hi_pset, energy_hf)
 
@@ -407,22 +695,21 @@ class TestComptonGettingCorrection:
         assert "energy_sc" in mock_hi_pset
         assert "hae_longitude" in mock_hi_pset
         assert "hae_latitude" in mock_hi_pset
-        assert "ram_mask" in mock_hi_pset
 
     @pytest.mark.external_test_data
-    @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
-    def test_compton_getting_with_real_pset(self, mock_imap_state, hi_pset_cdf_path):
+    def test_compton_getting_with_real_pset(self, hi_pset_cdf_path):
         """Test Compton-Getting correction with real Hi PSET data."""
         # Load real pointing set
-        pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds)
+        pset = load_cdf(hi_pset_cdf_path)
+        pset = pset.rename(HiPointingSet.l1c_to_l2_var_mapping)
 
         # Store original coordinates for comparison
-        original_lon = hi_pset.data["hae_longitude"].copy()
+        original_lon = pset["hae_longitude"].copy()
 
         # Mock spacecraft state
-        mock_sc_state = np.array([1e8, 2e8, 3e8, 12.0, -27.0, 0.02])  # km and km/s
-        mock_imap_state.return_value = mock_sc_state
+        pset["sc_velocity"] = xr.DataArray(
+            np.array([12.0, -27.0, 0.02]), dims=[CoordNames.CARTESIAN_VECTOR.value]
+        )
 
         # Create energy array (Hi has 9 energy steps)
         energy_hf = xr.DataArray(
@@ -434,11 +721,11 @@ class TestComptonGettingCorrection:
         )
 
         # Apply correction (pass the dataset, not the pointing set object)
-        hi_pset.data = apply_compton_getting_correction(hi_pset.data, energy_hf)
+        pset = apply_compton_getting_correction(pset, energy_hf)
 
         # Verify coordinates were modified
-        corrected_lon = hi_pset.data["hae_longitude"]
-        corrected_lat = hi_pset.data["hae_latitude"]
+        corrected_lon = pset["hae_longitude"]
+        corrected_lat = pset["hae_latitude"]
 
         # Shape should now include energy dimension
         assert "esa_energy_step" in corrected_lon.dims
@@ -454,17 +741,6 @@ class TestComptonGettingCorrection:
         assert np.all(corrected_lon.values <= 360)
         assert np.all(corrected_lat.values >= -90)
         assert np.all(corrected_lat.values <= 90)
-
-        # Verify az_el_points was updated
-        assert hi_pset.az_el_points is not None
-        assert isinstance(hi_pset.az_el_points, xr.DataArray)
-
-        # Verify ram_mask was added and has correct properties
-        assert "ram_mask" in hi_pset.data
-        ram_mask = hi_pset.data["ram_mask"]
-        assert isinstance(ram_mask, xr.DataArray)
-        assert ram_mask.dtype == bool
-        assert ram_mask.shape == hi_pset.data["energy_sc"].shape
 
     def test_compton_getting_physical_consistency(self, mock_hi_pset):
         """Test physical consistency of Compton-Getting correction."""
@@ -499,6 +775,10 @@ class TestComptonGettingCorrection:
         # 4. Energy variation should exist across different look directions
         assert energy_sc.values.std() > 0
 
+
+class TestRamMask:
+    """Test suite for calculate_ram_mask function."""
+
     def test_ram_mask_calculation(self):
         """Test ram_mask correctly identifies ram and anti-ram directions."""
         # Create a simple mock pset with specific look directions
@@ -526,9 +806,6 @@ class TestComptonGettingCorrection:
         # Set up spacecraft velocity in +X direction
         sc_velocity = np.array([30.0, 0.0, 0.0])  # km/s
         dataset["sc_velocity"] = xr.DataArray(sc_velocity, dims=["x_y_z"])
-        dataset["sc_direction_vector"] = xr.DataArray(
-            sc_velocity / np.linalg.norm(sc_velocity), dims=["x_y_z"]
-        )
 
         # Add look directions
         dataset = _add_cartesian_look_direction(dataset)
@@ -538,6 +815,8 @@ class TestComptonGettingCorrection:
 
         # Calculate CG transform
         dataset = _calculate_compton_getting_transform(dataset, energy_hf)
+
+        dataset = calculate_ram_mask(dataset)
 
         # Verify ram_mask exists
         assert "ram_mask" in dataset
@@ -603,7 +882,7 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Spacecraft velocity in +X direction (HAE frame)
-        pset["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset["sc_velocity"] = np.array([1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
 
         lon = pset["hae_longitude"].values
@@ -627,7 +906,7 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Spacecraft velocity in -X direction (HAE frame)
-        pset["sc_direction_vector"] = np.array([-1.0, 0.0, 0.0])
+        pset["sc_velocity"] = np.array([-1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
 
         lon = pset["hae_longitude"].values
@@ -650,7 +929,7 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Spacecraft velocity in +Y direction (HAE frame)
-        pset["sc_direction_vector"] = np.array([0.0, 1.0, 0.0])
+        pset["sc_velocity"] = np.array([0.0, 1.0, 0.0])
         pset = calculate_ram_mask(pset)
 
         lon = pset["hae_longitude"].values
@@ -671,11 +950,11 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Test with two different magnitudes in the same direction
-        pset["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset["sc_velocity"] = np.array([1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
         ram_mask_1 = pset["ram_mask"].values.copy()
 
-        pset["sc_direction_vector"] = np.array([100.0, 0.0, 0.0])
+        pset["sc_velocity"] = np.array([100.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
         ram_mask_2 = pset["ram_mask"].values.copy()
 
@@ -687,7 +966,7 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Use a simple spacecraft velocity vector
-        pset["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset["sc_velocity"] = np.array([1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
 
         # Manually verify a few specific pixels
@@ -715,7 +994,7 @@ class TestComptonGettingCorrection:
         original_dims_2d = pset_2d["hae_longitude"].dims
 
         # Update ram_mask
-        pset_2d["sc_direction_vector"] = np.array([1.0, 1.0, 0.0])
+        pset_2d["sc_velocity"] = np.array([1.0, 1.0, 0.0])
         pset_2d = calculate_ram_mask(pset_2d)
 
         # Verify dimensions are preserved
@@ -746,7 +1025,7 @@ class TestComptonGettingCorrection:
         original_dims_1d = dataset_1d["hae_longitude"].dims
 
         # Update ram_mask
-        dataset_1d["sc_direction_vector"] = np.array([1.0, 1.0, 0.0])
+        dataset_1d["sc_velocity"] = np.array([1.0, 1.0, 0.0])
         dataset_1d = calculate_ram_mask(dataset_1d)
 
         # Verify dimensions are preserved
@@ -757,12 +1036,12 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords()
 
         # Set initial mask with +X direction
-        pset["sc_direction_vector"] = np.array([1.0, 0.0, 0.0])
+        pset["sc_velocity"] = np.array([1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
         ram_mask_1 = pset["ram_mask"].values.copy()
 
         # Update mask with opposite direction
-        pset["sc_direction_vector"] = np.array([-1.0, 0.0, 0.0])
+        pset["sc_velocity"] = np.array([-1.0, 0.0, 0.0])
         pset = calculate_ram_mask(pset)
         ram_mask_2 = pset["ram_mask"].values.copy()
 
@@ -774,7 +1053,7 @@ class TestComptonGettingCorrection:
         pset = self.create_synthetic_pset_with_hae_coords(shape=(36, 18))
 
         # Use an arbitrary direction (not aligned with axes)
-        pset["sc_direction_vector"] = np.array([1.0, 1.0, 0.5])
+        pset["sc_velocity"] = np.array([1.0, 1.0, 0.5])
         pset = calculate_ram_mask(pset)
 
         # Verify the mask was created

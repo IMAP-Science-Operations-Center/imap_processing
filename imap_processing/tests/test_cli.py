@@ -188,7 +188,7 @@ def test_validate_args(
         _validate_args(args)
 
 
-@mock.patch("imap_processing.cli.codice_new_l1a.process_l1a")
+@mock.patch("imap_processing.cli.codice_l1a.process_l1a")
 def test_codice(mock_process_l1a, mock_instrument_dependencies):
     """Test coverage for cli.CoDICE class"""
 

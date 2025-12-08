@@ -1,5 +1,6 @@
 """Test coverage for imap_processing.hi.l1c.hi_l1c.py"""
 
+import io
 from collections import namedtuple
 from unittest import mock
 from unittest.mock import MagicMock
@@ -146,7 +147,8 @@ def test_empty_pset_dataset(use_fake_repoint_data_for_time):
         data=np.concat((np.arange(n_energy_steps + 1).repeat(2), np.array([255, 255]))),
         attrs={"FILLVAL": 255},
     )
-    n_calibration_prods = 5
+    # Create calibration product numbers array (0, 1, 2, 3, 4)
+    cal_prod_numbers = np.arange(5)
     sensor_str = HIAPID.H90_SCI_DE.sensor
     l1b_met = 482373065
     use_fake_repoint_data_for_time(
@@ -154,7 +156,7 @@ def test_empty_pset_dataset(use_fake_repoint_data_for_time):
     )
 
     dataset = hi_l1c.empty_pset_dataset(
-        l1b_met, l1b_esa_energy_steps, n_calibration_prods, sensor_str
+        l1b_met, l1b_esa_energy_steps, cal_prod_numbers, sensor_str
     )
 
     assert dataset.epoch.size == 1
@@ -164,7 +166,8 @@ def test_empty_pset_dataset(use_fake_repoint_data_for_time):
     np.testing.assert_array_equal(
         dataset.esa_energy_step.data, np.arange(n_energy_steps) + 1
     )
-    assert dataset.calibration_prod.size == n_calibration_prods
+    assert dataset.calibration_prod.size == len(cal_prod_numbers)
+    np.testing.assert_array_equal(dataset.calibration_prod.data, cal_prod_numbers)
 
     # verify that attrs defined in hi_pset_epoch have overwritten default
     # epoch attributes
@@ -229,7 +232,7 @@ def test_pset_counts(
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
         l1b_dataset.esa_energy_step,
-        cal_config_df.cal_prod_config.number_of_products,
+        cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
     counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
@@ -255,7 +258,7 @@ def test_pset_counts_empty_l1b(
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
         l1b_dataset.esa_energy_step,
-        cal_config_df.cal_prod_config.number_of_products,
+        cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
     counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
@@ -325,6 +328,103 @@ def test_get_tof_window_mask():
     np.testing.assert_array_equal(expected_mask, window_mask)
 
 
+def test_empty_pset_dataset_arbitrary_cal_prod_numbers(use_fake_repoint_data_for_time):
+    """Test empty_pset_dataset with non-sequential calibration product numbers."""
+    n_energy_steps = 3
+    l1b_esa_energy_steps = xr.DataArray(
+        data=np.concat((np.arange(n_energy_steps + 1).repeat(2), np.array([255, 255]))),
+        attrs={"FILLVAL": 255},
+    )
+    # Use non-sequential calibration product numbers
+    cal_prod_numbers = np.array([5, 10, 100])
+    sensor_str = HIAPID.H45_SCI_DE.sensor
+    l1b_met = 482373065
+    use_fake_repoint_data_for_time(
+        np.asarray([l1b_met - 15 * 60, l1b_met + 24 * 60 * 60])
+    )
+
+    dataset = hi_l1c.empty_pset_dataset(
+        l1b_met, l1b_esa_energy_steps, cal_prod_numbers, sensor_str
+    )
+
+    # Verify calibration_prod coordinate has the correct non-sequential values
+    assert dataset.calibration_prod.size == len(cal_prod_numbers)
+    np.testing.assert_array_equal(dataset.calibration_prod.data, cal_prod_numbers)
+    # Verify the calibration_prod_label reflects the actual numbers
+    expected_labels = np.array(["5", "10", "100"])
+    np.testing.assert_array_equal(dataset.calibration_prod_label.data, expected_labels)
+
+
+@pytest.mark.external_test_data
+def test_pset_counts_arbitrary_cal_prod_numbers(
+    hi_l1_test_data_path, use_fake_repoint_data_for_time
+):
+    """Test pset_counts with non-sequential calibration product numbers."""
+    # Create a test calibration product config with non-sequential numbers
+    csv_content = """\
+calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+5,1,0.00055,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023
+5,2,0.00085,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023
+10,1,0.00055,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023
+10,2,0.00085,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023
+    """
+
+    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
+    l1b_dataset = load_cdf(l1b_de_path)
+
+    cal_config_df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
+        io.StringIO(csv_content)
+    )
+
+    # Create PSET with non-sequential calibration product numbers
+    l1b_met = 482373065
+    use_fake_repoint_data_for_time(
+        np.asarray([l1b_met - 15 * 60, l1b_met + 24 * 60 * 60])
+    )
+
+    empty_pset = hi_l1c.empty_pset_dataset(
+        l1b_met,
+        l1b_dataset.esa_energy_step,
+        cal_config_df.cal_prod_config.calibration_product_numbers,
+        HIAPID.H90_SCI_DE.sensor,
+    )
+
+    # Verify the calibration_prod coordinate has non-sequential values
+    np.testing.assert_array_equal(empty_pset.calibration_prod.data, np.array([5, 10]))
+
+    # Mock get_pointing_times to avoid SPICE kernel requirements
+    with mock.patch(
+        "imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200)
+    ):
+        counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
+
+    # Verify counts array has correct shape based on coordinates
+    assert "counts" in counts_var
+    # Shape should be (n_epoch, n_esa_energy, n_cal_prod, n_spin_bins)
+    # where n_cal_prod is 2 (for products 5 and 10)
+    expected_shape = (
+        1,
+        empty_pset.esa_energy_step.size,
+        2,  # Two calibration products: 5 and 10
+        3600,
+    )
+    assert counts_var["counts"].data.shape == expected_shape
+    # Check that total number of expected counts is correct
+    # ABC1C2 is coincidence type 15
+    esa_1_2_mask = (l1b_dataset["esa_step"][l1b_dataset["ccsds_index"]] < 3).values
+    coincidence_15_mask = (l1b_dataset["coincidence_type"] == 15).values
+    np.testing.assert_equal(
+        np.sum(counts_var["counts"].data[:, :, 0]),
+        np.sum(coincidence_15_mask & esa_1_2_mask),
+    )
+    # BC1C2 is coincidence type 7
+    coincidence_7_mask = (l1b_dataset["coincidence_type"] == 7).values
+    np.testing.assert_equal(
+        np.sum(counts_var["counts"].data[:, :, 1]),
+        np.sum(coincidence_7_mask & esa_1_2_mask),
+    )
+
+
 def test_pset_backgrounds():
     """Test coverage for pset_backgrounds function."""
     # Create some fake coordinates to use
@@ -369,7 +469,7 @@ def test_pset_exposure(
         attrs={"FILLVAL": 255},
     )
     empty_pset = hi_l1c.empty_pset_dataset(
-        100, l1b_energy_steps, 2, HIAPID.H90_SCI_DE.sensor
+        100, l1b_energy_steps, np.array([0, 1]), HIAPID.H90_SCI_DE.sensor
     )
     # Set the mock of find_second_de_packet_data to return a xr.Dataset
     # with some dummy data. ESA 1 will get binned data once, ESA 2 will get

@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="HIT">
-	<xtce:Header date="2024-03-21" version="13" author="IMAP SDC" source_file="TLM_HIT_v20240404-sdc_version.xls" />
+	<xtce:Header date="2025-06-25" version="17" author="IMAP SDC" source_file="TLM_HIT_2025_07.xls" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">
@@ -141,18 +141,19 @@
 					<xtce:Enumeration value="16" label="FILE_SIZE_16" />
 					<xtce:Enumeration value="17" label="CMD_XSUM" />
 					<xtce:Enumeration value="18" label="CMD_LEN" />
+					<xtce:Enumeration value="19" label="NO_DBL_HTR" />
+					<xtce:Enumeration value="20" label="FEE_XSUM" />
 					<xtce:Enumeration value="21" label="CMD_NUM_ARG" />
 					<xtce:Enumeration value="22" label="TABLE_CODE" />
 					<xtce:Enumeration value="23" label="MRAM_WRITE" />
 					<xtce:Enumeration value="24" label="CMD_LEN" />
-					<xtce:Enumeration value="31" label="CMD_SHORT" />
-					<xtce:Enumeration value="32" label="APID" />
-					<xtce:Enumeration value="33" label="ITF" />
-					<xtce:Enumeration value="36" label="TIME_LATE" />
-					<xtce:Enumeration value="37" label="TLM_FATAL" />
-					<xtce:Enumeration value="19" label="NO_DBL_HTR" />
-					<xtce:Enumeration value="20" label="FEE_XSUM" />
 					<xtce:Enumeration value="30" label="FEE_APID" />
+					<xtce:Enumeration value="31" label="CMD_SHORT" />
+					<xtce:Enumeration value="32" label="UNUSED" />
+					<xtce:Enumeration value="33" label="ITF" />
+					<xtce:Enumeration value="34" label="INVLD_APID" />
+					<xtce:Enumeration value="35" label="NO_SCI" />
+					<xtce:Enumeration value="37" label="TLM_FATAL" />
 					<xtce:Enumeration value="38" label="FEE_RX" />
 					<xtce:Enumeration value="39" label="TASK_CREATE" />
 					<xtce:Enumeration value="40" label="NUM_BYTES" />
@@ -178,6 +179,9 @@
 					<xtce:Enumeration value="62" label="FEE_TIMEOUT_GOSAFE" />
 					<xtce:Enumeration value="63" label="FEE_SYNC" />
 					<xtce:Enumeration value="64" label="FEE_PKT_FMT" />
+					<xtce:Enumeration value="65" label="FAIL_READ_FRM_FEE" />
+					<xtce:Enumeration value="66" label="FEE_READ_TIMEOUT" />
+					<xtce:Enumeration value="68" label="FEE_TLM_TIMEOUT" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.CODE_CHECKSUM" signed="false">
@@ -2363,7 +2367,7 @@
 			<xtce:Parameter name="HIT_SCIENCE.SC_TICK" parameterTypeRef="HIT_SCIENCE.SC_TICK" shortDescription="Spacecraft tick">
 				<xtce:LongDescription>CCSDS Packet Sec Header</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HIT_SCIENCE.SCIENCE_DATA" parameterTypeRef="HIT_SCIENCE.SCIENCE_DATA" shortDescription="Science data ">
+			<xtce:Parameter name="HIT_SCIENCE.SCIENCE_DATA" parameterTypeRef="HIT_SCIENCE.SCIENCE_DATA" shortDescription="Science data">
 				<xtce:LongDescription>262 byte chunks of science data</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>

@@ -734,15 +734,24 @@ def test_is_back_tof_valid(test_fixture, ancillary_files):
     df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    valid = is_back_tof_valid(
-        de_dataset,
-        df_filt.Xf.astype("float").values,
+    # Get the ph inds
+    ph_mask = (
+        (de_dataset["stop_type"] == StopType.Top.value)
+        | (de_dataset["stop_type"] == StopType.Bottom.value)
+    ).values
+    quality_flags = np.zeros(len(np.nonzero(ph_mask)[0]), dtype=np.uint16)
+    valid, quality_flags = is_back_tof_valid(
+        de_dataset.isel(epoch=np.nonzero(ph_mask)[0]),
+        df_filt.Xf.astype("float").values[ph_mask],
         "ultra45",
         ancillary_files,
+        quality_flags,
     )
+
     back_tof_valid_bool = df_ph["BackTOFValid"].astype(int).astype(bool).values
 
     np.testing.assert_equal(back_tof_valid_bool, valid)
+    assert np.any(quality_flags)
 
 
 @pytest.mark.external_test_data
@@ -764,7 +773,7 @@ def test_is_coin_ph_valid(test_fixture, ancillary_files):
         len(ctof), ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
     )
 
-    combined_mask = is_coin_ph_valid(
+    combined_mask, quality_flags = is_coin_ph_valid(
         etof,
         xc,
         xb,

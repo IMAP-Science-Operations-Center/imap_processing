@@ -1,4 +1,4 @@
-"""CoDICE Lo Species L1A processing functions."""
+"""CoDICE L1A Lo Counters aggregated processing functions."""
 
 import logging
 from pathlib import Path
@@ -10,11 +10,10 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
     ViewTabInfo,
     calculate_acq_time_per_step,
     get_codice_epoch_time,
-    get_collapse_pattern_shape,
+    get_counters_aggregated_pattern,
     get_view_tab_info,
     read_sci_lut,
 )
@@ -23,23 +22,24 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_lo_counters_aggregated(
+    unpacked_dataset: xr.Dataset, lut_file: Path
+) -> xr.Dataset:
     """
-    L1A processing code.
+    Process CoDICE Lo Counters aggregated L1A data.
 
     Parameters
     ----------
     unpacked_dataset : xarray.Dataset
-        The decompressed and unpacked data from the packet file.
-    lut_file : pathlib.Path
-        Path to the LUT (Lookup Table) file used for processing.
+        Unpacked dataset from L0 packet file.
+    lut_file : Path
+        Path to the LUT file for processing.
 
     Returns
     -------
     xarray.Dataset
-        The processed L1A dataset for the given species product.
+        Processed L1A dataset for Hi Omni data.
     """
-    # Get these values from unpacked data. These are used to
     # lookup in LUT table.
     table_id = unpacked_dataset["table_id"].values[0]
     view_id = unpacked_dataset["view_id"].values[0]
@@ -48,10 +48,9 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     plan_step = unpacked_dataset["plan_step"].values[0]
 
     logger.info(
-        f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
+        f"Processing aggregated with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
-
     # ========== Get LUT Data ===========
     # Read information from LUT
     sci_lut_data = read_sci_lut(lut_file, table_id)
@@ -66,33 +65,39 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     if view_tab_obj.sensor != 0:
-        raise ValueError("Unsupported sensor ID for Lo species processing.")
+        raise ValueError("Unsupported sensor ID for Lo processing.")
+
+    # ========== Get Voltage Data from LUT ===========
+    # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
+    # Voltage data is (128,)
+    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
+        "lo_stepping"
+    ]
+    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
     # ========= Decompress and Reshape Data ===========
-    # Lookup SW or NSW species based on APID
-    if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"]["sw"][
-            "species_names"
-        ]
-        logical_source_id = "imap_codice_l1a_lo-sw-species"
-    elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"]["nsw"][
-            "species_names"
-        ]
-        logical_source_id = "imap_codice_l1a_lo-nsw-species"
-    elif view_tab_obj.apid == CODICEAPID.COD_LO_IAL:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
-            "species_names"
-        ]
-        # Note: ialirt does not produce a cdf for l1a so this is arbitrary.
-        logical_source_id = "imap_codice_l1a_lo-sw-species"
-    else:
-        raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
-
-    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    logical_source_id = "imap_codice_l1a_lo-counters-aggregated"
+    # Counters is little bit different in how CDF variables are derived.
+    # For singles, CDF variables are coming from 'product' tab. But for
+    # counters aggregated, it's coming from 'collapsed' tab in JSON LUT.
+    # In addition, for Lo, we include other inactive variables as zeros
+    # in the CDF. For Hi, all variables except 'reserved{x}' are active,
+    # so reserved variables are excluded unless it changes. This change
+    # will affect CoDICE team and here.
+    non_reserved_variables = get_counters_aggregated_pattern(
+        sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
+    )
+    non_reserved_keys = non_reserved_variables.keys()
+    all_keys = sci_lut_data["collapse_lo"]["1"]["variables"].keys()
+    # Dimensions
+    num_variables = len(non_reserved_keys)
+    spin_sector_pairs = non_reserved_variables["tcr"]
+    esa_step = constants.NUM_ESA_STEPS
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
+
+    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
 
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [
@@ -105,29 +110,9 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         )
     ]
 
-    # Look up collapse pattern using LUT table. This should return collapsed shape.
-    # For Lo species, it will be (1,)
-    collapsed_shape = get_collapse_pattern_shape(
-        sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
+    counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
+        -1, esa_step, num_variables, spin_sector_pairs
     )
-
-    # Reshape decompressed data to:
-    #   (num_packets, num_species, esa_steps, *collapsed_shape)
-    # where collapsed_shape is usually (1,) for Lo species.
-    num_packets = len(binary_data_list)
-    num_species = len(species_names)
-    esa_steps = constants.NUM_ESA_STEPS
-    species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        num_packets, num_species, esa_steps, *collapsed_shape
-    )
-
-    # ========== Get Voltage Data from LUT ===========
-    # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
-    # Voltage data is (128,)
-    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
-        "lo_stepping"
-    ]
-    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -138,7 +123,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         view_tab_obj,
     )
 
-    # ========== Create CDF Dataset with Metadata ===========
+    # ========== Initialize CDF Dataset with Coordinates ===========
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
@@ -165,41 +150,35 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 ),
             ),
             "esa_step": xr.DataArray(
-                np.arange(128),
+                np.arange(esa_step, dtype=np.uint8),
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
             ),
             "esa_step_label": xr.DataArray(
-                np.arange(128).astype(str),
+                np.arange(esa_step, dtype=np.uint8).astype(str),
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "esa_step_label", check_schema=False
                 ),
             ),
-            "k_factor": xr.DataArray(
-                np.array([constants.K_FACTOR]),
-                dims=("k_factor",),
+            "spin_sector_pairs": xr.DataArray(
+                np.arange(spin_sector_pairs, dtype=np.uint8),
+                dims=("spin_sector_pairs",),
                 attrs=cdf_attrs.get_variable_attributes(
-                    "k_factor_attrs", check_schema=False
+                    "spin_sector_pairs", check_schema=False
                 ),
             ),
-            "spin_sector": xr.DataArray(
-                np.array([0], dtype=np.uint8),
-                dims=("spin_sector",),
+            "spin_sector_pairs_label": xr.DataArray(
+                np.arange(spin_sector_pairs, dtype=np.uint8).astype(str),
+                dims=("spin_sector_pairs",),
                 attrs=cdf_attrs.get_variable_attributes(
-                    "spin_sector", check_schema=False
-                ),
-            ),
-            "spin_sector_label": xr.DataArray(
-                np.array(["0"]).astype(str),
-                dims=("spin_sector",),
-                attrs=cdf_attrs.get_variable_attributes(
-                    "spin_sector_label", check_schema=False
+                    "spin_sector_pairs_label", check_schema=False
                 ),
             ),
         },
         attrs=cdf_attrs.get_global_attributes(logical_source_id),
     )
+
     # Add first few unique variables
     l1a_dataset["spin_period"] = xr.DataArray(
         unpacked_dataset["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
@@ -244,46 +223,29 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             attrs=cdf_attrs.get_variable_attributes(var),
         )
 
-    # Finally, add species data variables and their uncertainties
-    for idx, species in enumerate(species_names):
-        if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS and species in [
-            "heplus",
-            "cnoplus",
-        ]:
-            species_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-attrs")
-            unc_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-unc-attrs")
-        else:
-            species_attrs = cdf_attrs.get_variable_attributes("lo-species-attrs")
-            unc_attrs = cdf_attrs.get_variable_attributes("lo-species-unc-attrs")
+    # Finally, add data variables
+    for idx, variable in enumerate(non_reserved_variables):
+        # We don't store reserved variables in CDF
+        attrs = cdf_attrs.get_variable_attributes(f"lo-{variable}")
 
-        direction = (
-            "Sunward"
-            if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS
-            else "Non-Sunward"
-        )
-        # Replace {species} and {direction} in attrs
-        species_attrs["CATDESC"] = species_attrs["CATDESC"].format(
-            species=species, direction=direction
-        )
-        species_attrs["FIELDNAM"] = species_attrs["FIELDNAM"].format(
-            species=species, direction=direction
-        )
-        l1a_dataset[species] = xr.DataArray(
-            species_data[:, idx, :, :],
-            dims=("epoch", "esa_step", "spin_sector"),
-            attrs=species_attrs,
-        )
-        # Uncertainty data
-        unc_attrs["CATDESC"] = unc_attrs["CATDESC"].format(
-            species=species, direction=direction
-        )
-        unc_attrs["FIELDNAM"] = unc_attrs["FIELDNAM"].format(
-            species=species, direction=direction
-        )
-        l1a_dataset[f"unc_{species}"] = xr.DataArray(
-            np.sqrt(l1a_dataset[species].values),
-            dims=("epoch", "esa_step", "spin_sector"),
-            attrs=unc_attrs,
+        l1a_dataset[variable] = xr.DataArray(
+            counters_data[:, :, idx, :],
+            dims=("epoch", "esa_step", "spin_sector_pairs"),
+            attrs=attrs,
         )
 
+    for variable in all_keys:
+        if variable in non_reserved_keys or variable.startswith("reserved"):
+            continue
+        attrs = cdf_attrs.get_variable_attributes(f"lo-{variable}")
+        l1a_dataset[variable] = xr.DataArray(
+            np.full(
+                l1a_dataset["tcr"].shape,
+                np.iinfo(np.uint32).max,
+                dtype=np.uint32,
+            ),
+            dims=("epoch", "esa_step", "spin_sector_pairs"),
+            attrs=attrs,
+        )
+    # No uncertainty needed for Lo counters data
     return l1a_dataset

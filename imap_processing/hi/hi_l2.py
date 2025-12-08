@@ -152,13 +152,14 @@ def generate_hi_map(
                 "All PSETs must have the same set of esa_energy_step values."
             )
 
+        pset_ds = add_spacecraft_velocity_to_pset(pset_ds)
+
         if descriptor.frame_descriptor == "hf":
             # convert esa nominal central energy from keV to eV
             esa_energy_ev = energy_kev * 1000
             pset_ds = apply_compton_getting_correction(pset_ds, esa_energy_ev)
-        else:
-            pset_ds = add_spacecraft_velocity_to_pset(pset_ds)
-            pset_ds = calculate_ram_mask(pset_ds)
+
+        pset_ds = calculate_ram_mask(pset_ds)
 
         # Multiply variables that need to be exposure time weighted average by
         # exposure factor.
@@ -317,16 +318,14 @@ def calculate_ena_intensity(
     if "raw" not in descriptor.principal_data:
         # Flux correction
         corrector = PowerLawFluxCorrector(l2_ancillary_path_dict["esa-eta-fit-factors"])
-        # FluxCorrector does not accept the size 1 epoch dimension. Remove that
-        # dimension by passing the zeroth element.
-        corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
-            map_ds["ena_intensity"].values[0],
-            map_ds["ena_intensity_stat_uncert"].values[0],
-            esa_energy.data,
+        # Apply flux correction with xarray inputs
+        map_ds["ena_intensity"], map_ds["ena_intensity_stat_uncert"] = (
+            corrector.apply_flux_correction(
+                map_ds["ena_intensity"],
+                map_ds["ena_intensity_stat_uncert"],
+                esa_energy,
+            )
         )
-        # Add the size 1 epoch dimension back in to the corrected fluxes.
-        map_ds["ena_intensity"].data = corrected_intensity[np.newaxis, ...]
-        map_ds["ena_intensity_stat_uncert"].data = corrected_stat_unc[np.newaxis, ...]
 
     return map_ds
 

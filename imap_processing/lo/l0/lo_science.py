@@ -24,7 +24,6 @@ from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 HistPacking = namedtuple(
     "HistPacking",
@@ -241,7 +240,7 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     pointing_de = 0
 
     for pkt_idx, de_count in enumerate(de_count_values):
-        logger.info(
+        logger.debug(
             f"Parsing packet {pkt_idx} of {len(de_count_values)} "
             f"with {de_count} direct events"
         )

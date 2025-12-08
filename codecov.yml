@@ -14,3 +14,4 @@ coverage:
 # Ignore coverage of fixtures
 ignore:
   - "**/conftest.py"
+  - "**/test_spacecraft_pset.py"

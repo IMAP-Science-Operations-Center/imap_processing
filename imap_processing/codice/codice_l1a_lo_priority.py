@@ -1,4 +1,4 @@
-"""CoDICE Lo Species L1A processing functions."""
+"""CoDICE L1A Lo priority processing functions."""
 
 import logging
 from pathlib import Path
@@ -23,21 +23,21 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     """
-    L1A processing code.
+    Process CoDICE Lo Priority L1A data.
 
     Parameters
     ----------
     unpacked_dataset : xarray.Dataset
-        The decompressed and unpacked data from the packet file.
-    lut_file : pathlib.Path
-        Path to the LUT (Lookup Table) file used for processing.
+        Unpacked dataset from L0 packet file.
+    lut_file : Path
+        Path to the LUT file for processing.
 
     Returns
     -------
     xarray.Dataset
-        The processed L1A dataset for the given species product.
+        Processed L1A dataset for Hi Omni data.
     """
     # Get these values from unpacked data. These are used to
     # lookup in LUT table.
@@ -66,60 +66,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     if view_tab_obj.sensor != 0:
-        raise ValueError("Unsupported sensor ID for Lo species processing.")
-
-    # ========= Decompress and Reshape Data ===========
-    # Lookup SW or NSW species based on APID
-    if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"]["sw"][
-            "species_names"
-        ]
-        logical_source_id = "imap_codice_l1a_lo-sw-species"
-    elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"]["nsw"][
-            "species_names"
-        ]
-        logical_source_id = "imap_codice_l1a_lo-nsw-species"
-    elif view_tab_obj.apid == CODICEAPID.COD_LO_IAL:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
-            "species_names"
-        ]
-        # Note: ialirt does not produce a cdf for l1a so this is arbitrary.
-        logical_source_id = "imap_codice_l1a_lo-sw-species"
-    else:
-        raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
-
-    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
-    # Decompress data using byte count information from decommed data
-    binary_data_list = unpacked_dataset["data"].values
-    byte_count_list = unpacked_dataset["byte_count"].values
-
-    # The decompressed data in the shape of (epoch, n). Then reshape later.
-    decompressed_data = [
-        decompress(
-            packet_data[:byte_count],
-            compression_algorithm,
-        )
-        for (packet_data, byte_count) in zip(
-            binary_data_list, byte_count_list, strict=False
-        )
-    ]
-
-    # Look up collapse pattern using LUT table. This should return collapsed shape.
-    # For Lo species, it will be (1,)
-    collapsed_shape = get_collapse_pattern_shape(
-        sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
-    )
-
-    # Reshape decompressed data to:
-    #   (num_packets, num_species, esa_steps, *collapsed_shape)
-    # where collapsed_shape is usually (1,) for Lo species.
-    num_packets = len(binary_data_list)
-    num_species = len(species_names)
-    esa_steps = constants.NUM_ESA_STEPS
-    species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        num_packets, num_species, esa_steps, *collapsed_shape
-    )
+        raise ValueError("Unsupported sensor ID for Lo priority processing.")
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
@@ -136,6 +83,54 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         unpacked_dataset["acq_start_subseconds"].values,
         unpacked_dataset["spin_period"].values,
         view_tab_obj,
+    )
+
+    # ========= Decompress and Calculate Reshape information ===========
+    # Set needed metadata for Hi and Lo's different priority products
+    if apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
+        species_names = sci_lut_data["data_product_lo_tab"]["0"]["priority"]["sw"][
+            "species_names"
+        ]
+        logical_source_id = "imap_codice_l1a_lo-sw-priority"
+        compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
+        species_names = sci_lut_data["data_product_lo_tab"]["0"]["priority"]["nsw"][
+            "species_names"
+        ]
+        logical_source_id = "imap_codice_l1a_lo-nsw-priority"
+        compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    else:
+        raise ValueError("Unsupported APID for Lo priority processing.")
+
+    # Decompress data using byte count information from decommed data
+    binary_data_list = unpacked_dataset["data"].values
+    byte_count_list = unpacked_dataset["byte_count"].values
+
+    # The decompressed data in the shape of (epoch, n). Then reshape later.
+    decompressed_data = [
+        decompress(
+            packet_data[:byte_count],
+            compression_algorithm,
+        )
+        for (packet_data, byte_count) in zip(
+            binary_data_list, byte_count_list, strict=False
+        )
+    ]
+
+    num_packets = len(binary_data_list)
+
+    # Reshape decompressed data to in below for loop:
+    # (num_packets, num_species, esa_steps, collapse_shape[0](spin_sector))
+    num_species = len(species_names)
+    esa_steps = constants.NUM_ESA_STEPS
+    collapse_shape = get_collapse_pattern_shape(
+        sci_lut_data,
+        view_tab_obj.sensor,
+        view_tab_obj.collapse_table,
+    )
+
+    species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
+        num_packets, num_species, esa_steps, collapse_shape[0]
     )
 
     # ========== Create CDF Dataset with Metadata ===========
@@ -184,14 +179,14 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 ),
             ),
             "spin_sector": xr.DataArray(
-                np.array([0], dtype=np.uint8),
+                np.arange(collapse_shape[0], dtype=np.uint8),
                 dims=("spin_sector",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "spin_sector", check_schema=False
                 ),
             ),
             "spin_sector_label": xr.DataArray(
-                np.array(["0"]).astype(str),
+                np.arange(collapse_shape[0]).astype(str),
                 dims=("spin_sector",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "spin_sector_label", check_schema=False
@@ -246,44 +241,15 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # Finally, add species data variables and their uncertainties
     for idx, species in enumerate(species_names):
-        if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS and species in [
-            "heplus",
-            "cnoplus",
-        ]:
-            species_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-attrs")
-            unc_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-unc-attrs")
-        else:
-            species_attrs = cdf_attrs.get_variable_attributes("lo-species-attrs")
-            unc_attrs = cdf_attrs.get_variable_attributes("lo-species-unc-attrs")
-
-        direction = (
-            "Sunward"
-            if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS
-            else "Non-Sunward"
-        )
-        # Replace {species} and {direction} in attrs
-        species_attrs["CATDESC"] = species_attrs["CATDESC"].format(
-            species=species, direction=direction
-        )
-        species_attrs["FIELDNAM"] = species_attrs["FIELDNAM"].format(
-            species=species, direction=direction
-        )
         l1a_dataset[species] = xr.DataArray(
             species_data[:, idx, :, :],
             dims=("epoch", "esa_step", "spin_sector"),
-            attrs=species_attrs,
-        )
-        # Uncertainty data
-        unc_attrs["CATDESC"] = unc_attrs["CATDESC"].format(
-            species=species, direction=direction
-        )
-        unc_attrs["FIELDNAM"] = unc_attrs["FIELDNAM"].format(
-            species=species, direction=direction
+            attrs=cdf_attrs.get_variable_attributes(species),
         )
         l1a_dataset[f"unc_{species}"] = xr.DataArray(
             np.sqrt(l1a_dataset[species].values),
             dims=("epoch", "esa_step", "spin_sector"),
-            attrs=unc_attrs,
+            attrs=cdf_attrs.get_variable_attributes(species),
         )
 
     return l1a_dataset

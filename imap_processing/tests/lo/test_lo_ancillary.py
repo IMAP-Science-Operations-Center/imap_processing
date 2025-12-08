@@ -135,7 +135,7 @@ def test_read_sweep_table():
         ANCILLARY_DIR / "imap_lo_sweep-table-small_20250101_20260301_v001.csv"
     )
     df = lo_ancillary.read_ancillary_file(ancillary_file)
-    assert len(df) == 6
+    assert len(df) == 10
 
     # spot check the first row
     np.testing.assert_array_equal(
