@@ -111,24 +111,31 @@ def optimize_pseudo_parameters(
                 60000 * (initial_speed_guess / 400) ** 2,
             ]
         )
+        
         fitting_point_range = range(max_index - 3, max_index + 3)
         xdata = energy_passbands.take(fitting_point_range, mode="clip")
         ydata = current_sweep_count_rates.take(fitting_point_range, mode="clip")
         sigma = current_sweep_count_rate_errors.take(fitting_point_range, mode="clip")
-        mask = (ydata > 0) & (sigma > 0) & np.isfinite(xdata) & np.isfinite(ydata) & np.isfinite(sigma)  
-        assert np.count_nonzero(mask) > 0
-        sol = curve_fit(
-            f=count_rate,
-            xdata=xdata[mask],
-            ydata=ydata[mask],
-            sigma=sigma[mask],
-            p0=initial_param_guess,
-            full_output=True
-        )
-        solution_dict["pseudo_speed"].append(sol[0][0])
-        solution_dict["pseudo_density"].append(sol[0][1])
-        solution_dict["pseudo_temperature"].append(sol[0][2])
+        is_valid_data = ((ydata > 0)
+                         & (sigma > 0)
+                         & np.isfinite(xdata)
+                         & np.isfinite(ydata)
+                         & np.isfinite(sigma))  
 
+        if np.count_nonzero(is_valid_data) >= 3:
+            solution = curve_fit(
+                f=count_rate,
+                xdata=xdata[is_valid_data],
+                ydata=ydata[is_valid_data],
+                sigma=sigma[is_valid_data],
+                p0=initial_param_guess
+            )[0]
+        else:
+            solution = [np.nan] * 3
+
+        solution_dict["pseudo_speed"].append(solution[0])
+        solution_dict["pseudo_density"].append(solution[1])
+        solution_dict["pseudo_temperature"].append(solution[2])
     return solution_dict
 
 
