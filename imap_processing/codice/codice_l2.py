@@ -55,7 +55,7 @@ def get_geometric_factor_lut(
     ----------
     dependencies : ProcessingInputCollection
         The collection of processing input files.
-    path : pathlib.Path, optional
+    path : pathlib.Path
         Optional path used for I-ALiRT.
 
     Returns
@@ -100,7 +100,7 @@ def get_efficiency_lut(
     ----------
     dependencies : ProcessingInputCollection
         The collection of processing input files.
-    path : pathlib.Path, optional
+    path : pathlib.Path
         Optional path used for I-ALiRT.
 
     Returns
