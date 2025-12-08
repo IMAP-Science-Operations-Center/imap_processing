@@ -112,7 +112,7 @@ def get_efficiency_lut(
     if path is not None:
         csv_path = path
     else:
-        csv_path = Path(dependencies.get_file_paths(descriptor="l2-lo-gfactor")[0])
+        csv_path = Path(dependencies.get_file_paths(descriptor="l2-lo-efficiency")[0])
     return pd.read_csv(csv_path)
 
 
