@@ -263,7 +263,7 @@ def process_codice(
     sensor : str
         Sensor (codice_hi or codice_lo).
     l2_geometric_factor_path : pathlib.Path
-        Optional path based on the sensor (required by Lo).
+        Optional geometric factor path based on the sensor (required by Lo).
 
     Returns
     -------
