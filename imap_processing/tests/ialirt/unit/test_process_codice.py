@@ -10,7 +10,6 @@ from unittest.mock import patch
 
 import cdflib
 import numpy as np
-import pandas as pd
 import pytest
 import xarray as xr
 
@@ -24,7 +23,6 @@ from imap_processing.codice.codice_l2 import (
     compute_geometric_factors,
     get_efficiency_lut,
     get_geometric_factor_lut,
-    process_hi_omni,
     process_lo_species_intensity,
 )
 from imap_processing.codice.decompress import decompress
