@@ -193,6 +193,10 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1c-45sensor-static-dead-times_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-90sensor-static-dead-times_20250101_v000.csv", "ultra/data/l1/"),
 
+    # l1c validation index maps
+    ("IMAP_ULTRA_90-HELIO-IMAP_DPS-nside32-steps720-ebin0-index.csv", "ultra/data/l1/"),
+    ("IMAP_ULTRA_90-HELIO-IMAP_DPS-nside32-steps720-ebin0-theta.csv", "ultra/data/l1/"),
+    ("IMAP_ULTRA_90-HELIO-IMAP_DPS-nside32-steps720-ebin0-phi.csv", "ultra/data/l1/"),
     # l2
     ("imap_ultra_l2-energy-bin-group-sizes_20250101_v000.csv", "ultra/data/l2/"),
 

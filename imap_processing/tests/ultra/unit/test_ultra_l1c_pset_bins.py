@@ -20,7 +20,6 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_deadtime_ratios,
     get_deadtime_ratios_by_spin_phase,
     get_energy_delta_minus_plus,
-    get_helio_adjusted_data,
     get_sectored_rates,
     get_spacecraft_background_rates,
     get_spacecraft_count_rate_uncertainty,
@@ -391,38 +390,6 @@ def test_get_spacecraft_exposure_times(
     )
     np.testing.assert_array_equal(exposure_pointing.shape, (46, pix))
     np.testing.assert_array_equal(deadtimes.shape, (steps,))
-
-
-@pytest.mark.external_kernel
-def test_get_helio_exposure_time_and_sensitivity(imap_ena_sim_metakernel):
-    """Tests get_helio_exposure_times function."""
-
-    start_time = 829485054.185627
-    end_time = 829567884.185627
-
-    mid_time = np.average([start_time, end_time])
-
-    _, energy_midpoints, _ = build_energy_bins()
-    nside = 128
-    npix = hp.nside2npix(nside)
-    shape = (len(energy_midpoints), npix)
-    exposure = np.ones(shape)
-    eff = np.ones(shape)
-    gf = np.ones(shape)
-    mock_ra = np.random.uniform(-80, 80, (npix))
-    mock_dec = np.random.uniform(-80, 80, (npix))
-
-    helio_exposure, helio_eff, helio_gf = get_helio_adjusted_data(
-        mid_time, exposure, gf, eff, mock_ra, mock_dec
-    )
-
-    for helio_array, array in zip(
-        [helio_exposure, helio_eff, helio_gf], [exposure, eff, gf], strict=False
-    ):
-        total_input = np.sum(array)
-        total_output = np.sum(total_input)
-        assert np.allclose(total_input, total_output, atol=1e-6)
-        assert helio_array.shape == shape
 
 
 def test_get_spacecraft_background_rates(
