@@ -306,7 +306,7 @@ def calculate_ena_intensity(
         map_ds["ena_signal_rate_stat_unc"] / flux_conversion_divisor
     )
     map_ds["ena_intensity_sys_err"] = (
-        np.sqrt(map_ds["bg_rates_unc"] * map_ds["exposure_factor"])
+        np.sqrt(map_ds["bg_rates"] * map_ds["exposure_factor"])
         / map_ds["exposure_factor"]
         / flux_conversion_divisor
     )
