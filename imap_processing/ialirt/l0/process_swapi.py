@@ -159,6 +159,9 @@ def process_swapi_ialirt(
     """
     logger.info("Processing SWAPI.")
 
+    # TODO: account for potentially multiple sweep table versions in one packet due to it falling on the change date
+    sweep_table_version = unpacked_data['swapi_version'].values[0]
+
     sci_dataset = unpacked_data.sortby("epoch", ascending=True)
 
     met = calculate_time(
@@ -219,7 +222,7 @@ def process_swapi_ialirt(
     # Find the sweep's energy data for the latest time, where sweep_id == 2
     subset = calibration_lut_table[
         (calibration_lut_table["timestamp"] == calibration_lut_table["timestamp"].max())
-        & (calibration_lut_table["Sweep #"] == 2)
+        & (calibration_lut_table["Sweep #"] == sweep_table_version)
     ]
     if subset.empty:
         energy_passbands = np.full(NUM_IALIRT_ENERGY_STEPS, np.nan, dtype=np.float64)
