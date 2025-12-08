@@ -156,6 +156,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
     config: MagL1dConfiguration
     spin_offsets: xr.Dataset = None
     day: InitVar[np.datetime64]
+    data_level = "l1d"
 
     def __post_init__(self, day: np.datetime64) -> None:
         """
@@ -222,7 +223,6 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         self,
         attribute_manager: ImapCdfAttributes,
         day: np.datetime64,
-        data_level: str = "l1d",
     ) -> xr.Dataset:
         """
         Generate an xarray dataset from the dataclass.
@@ -237,8 +237,6 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             CDF attributes object for the correct level.
         day : np.datetime64
             The 24 hour day to process, as a numpy datetime format.
-        data_level : str
-            The data level for constructing logical_source_id. Default is "l1d".
 
         Returns
         -------
@@ -258,7 +256,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             self.range = self.magi_range  # type: ignore[no-redef]
 
             # Call parent generate_dataset method with L1D data level
-            dataset = super().generate_dataset(attribute_manager, day, data_level="l1d")
+            dataset = super().generate_dataset(attribute_manager, day)
 
             # Restore original vectors for any further processing
             self.vectors = original_vectors
@@ -266,7 +264,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             self.range = original_range
         else:
             # Use MAGO data (default behavior)
-            dataset = super().generate_dataset(attribute_manager, day, data_level="l1d")
+            dataset = super().generate_dataset(attribute_manager, day)
 
         return dataset
 

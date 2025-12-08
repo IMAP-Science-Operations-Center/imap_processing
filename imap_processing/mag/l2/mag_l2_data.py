@@ -62,6 +62,9 @@ class MagL2L1dBase:
     epoch_et: np.ndarray
         The epoch timestamps converted to ET format. Used for frame transformations.
         Calculated on first use and then saved. Should not be passed in.
+    data_level: str
+        The data level of the product, to be used in the output attributes.
+        This should always be overridden by base classes.
     """
 
     vectors: np.ndarray
@@ -74,12 +77,12 @@ class MagL2L1dBase:
     magnitude: np.ndarray = field(init=False)
     frame: ValidFrames = ValidFrames.MAGO
     epoch_et: np.ndarray | None = field(init=False, default=None)
+    data_level: str = ""
 
     def generate_dataset(
         self,
         attribute_manager: ImapCdfAttributes,
         day: np.datetime64,
-        data_level: str = "l2",
     ) -> xr.Dataset:
         """
         Generate an xarray dataset from the dataclass.
@@ -93,8 +96,6 @@ class MagL2L1dBase:
             CDF attributes object for the correct level.
         day : np.datetime64
          The 24 hour day to process, as a numpy datetime format.
-        data_level : str
-            The data level for constructing logical_source_id. Default is "l2".
 
         Returns
         -------
@@ -104,7 +105,7 @@ class MagL2L1dBase:
         self.truncate_to_24h(day)
 
         logical_source_id = (
-            f"imap_mag_{data_level}_{self.data_mode.value.lower()}-"
+            f"imap_mag_{self.data_level}_{self.data_mode.value.lower()}-"
             f"{self.frame.name.lower()}"
         )
 
@@ -340,16 +341,11 @@ class MagL2L1dBase:
 
 @dataclass(kw_only=True)
 class MagL2(MagL2L1dBase):
-    """
-    Dataclass for MAG L2 data.
-
-    Since L2 and L1D should have the same structure, this can be used for either level.
-
-    Some of the methods are also static, so they can be used in i-ALiRT processing.
-    """
+    """Dataclass for MAG L2 data."""
 
     offsets: InitVar[np.ndarray] = None
     timedelta: InitVar[np.ndarray] = None
+    data_level = "l2"
 
     def __post_init__(self, offsets: np.ndarray, timedelta: np.ndarray) -> None:
         """

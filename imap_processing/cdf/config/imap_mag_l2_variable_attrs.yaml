@@ -75,7 +75,7 @@ vector_attrs_gsm:
 
 vector_attrs_rtn:
     <<: *vectors_default
-    CATDESC: Magnetic field vectors with x y z varying by time in Radial-Tangential-Normal Reference Frame
+    CATDESC: Magnetic field vectors with r t n varying by time in Radial-Tangential-Normal Reference Frame
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:RTN,CoordinateRepresentation:Cartesian"
 
 direction_attrs:

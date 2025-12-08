@@ -25,6 +25,7 @@ import numpy as np
 import spiceypy
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
+from cdflib.xarray.xarray_to_cdf import ISTPError
 from imap_data_access.io import IMAPDataAccessError, download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
@@ -1271,7 +1272,7 @@ class Mag(ProcessInstrument):
                         )
                         # update the dataset in processed_data to point to a path
                         processed_data[index] = output_filepath
-                    except Exception as e:
+                    except (ValueError, TypeError, ISTPError) as e:
                         # Don't fail for any reason for ancillary files
                         logger.warning(f"Hit error {e} when creating {output_filepath}")
                         continue
