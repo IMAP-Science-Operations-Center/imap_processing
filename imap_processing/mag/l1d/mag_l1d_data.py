@@ -2,7 +2,7 @@
 """Data classes for MAG L1D processing."""
 
 import logging
-from dataclasses import InitVar, dataclass
+from dataclasses import InitVar, dataclass, field
 
 import numpy as np
 import xarray as xr
@@ -156,7 +156,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
     config: MagL1dConfiguration
     spin_offsets: xr.Dataset = None
     day: InitVar[np.datetime64]
-    data_level = "l1d"
+    data_level: str = field(default="l1d", init=False)
 
     def __post_init__(self, day: np.datetime64) -> None:
         """

@@ -18,10 +18,18 @@ from imap_processing.spice.time import (
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
-def test_mag_l2_attributes(norm_dataset, mag_test_l2_data):
+@pytest.mark.parametrize("data_mode", ["norm", "burst"])
+def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
     """Test that L2 datasets have correct attributes based on frame and mode."""
     calibration_dataset = mag_test_l2_data[0]
     offset_dataset = mag_test_l2_data[1]
+
+    # Create dataset for the appropriate mode
+    test_dataset = norm_dataset.copy()
+    test_dataset.attrs["Logical_source"] = f"imap_mag_l1c_{data_mode}-mago"
+
+    # Convert data_mode string to DataMode enum
+    mode = DataMode.NORM if data_mode == "norm" else DataMode.BURST
 
     with patch(
         "imap_processing.mag.l2.mag_l2_data.frame_transform",
@@ -30,31 +38,36 @@ def test_mag_l2_attributes(norm_dataset, mag_test_l2_data):
         l2_datasets = mag_l2(
             calibration_dataset,
             offset_dataset,
-            norm_dataset,
+            test_dataset,
             np.datetime64("2025-10-17"),
+            mode=mode,
         )
 
-    frame_to_coord_system = {
-        "SRF": "SRF",
-        "GSE": "GSE",
-        "GSM": "GSM",
-        "RTN": "RTN",
-        "DSRF": "DSRF",
-    }
+    # Verify we have the expected number of datasets
+    # L2 produces 5 frames: SRF, GSE, GSM, RTN, DSRF
+    assert len(l2_datasets) == 5, (
+        f"Expected 5 {data_mode} datasets, got {len(l2_datasets)}"
+    )
 
     for dataset in l2_datasets:
         assert "Logical_source" in dataset.attrs
         assert "Data_type" in dataset.attrs
-        assert dataset.attrs["Logical_source"].startswith("imap_mag_l2_norm-")
+        assert dataset.attrs["Logical_source"].startswith(f"imap_mag_l2_{data_mode}-")
+
+        # Verify that data_level is correctly set to "l2" in logical source
+        logical_source_parts = dataset.attrs["Logical_source"].split("_")
+        assert logical_source_parts[2] == "l2", (
+            f"Expected data_level 'l2' in Logical_source, "
+            f"got '{logical_source_parts[2]}'"
+        )
 
         vectors_attrs = dataset["vectors"].attrs
         assert "DICT_KEY" in vectors_attrs
 
         # Extract frame from logical source
         frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
-        expected_coord = frame_to_coord_system.get(frame, frame)
 
-        assert f"CoordinateSystemName:{expected_coord}" in vectors_attrs["DICT_KEY"]
+        assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
 
         assert "magnitude" in dataset.data_vars
         assert "range" in dataset.data_vars

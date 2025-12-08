@@ -106,12 +106,33 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
     assert "imap_mag_l1d_gradiometry-offsets-burst" in logical_sources
 
 
+@pytest.mark.parametrize("data_mode", ["norm", "burst"])
 def test_mag_l1d_attributes(
-    mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin_data
+    mag_test_l1d_data,
+    norm_dataset,
+    furnish_kernels,
+    fake_mag_spin_data,
+    data_mode,
 ):
     """Test that L1D datasets have correct attributes based on frame and mode."""
+    # L1D always requires normal mode MAGO and MAGI datasets
+    norm_mago = norm_dataset.copy()
+    norm_mago.attrs["Logical_source"] = "imap_mag_l1c_norm-mago"
+
     norm_magi = norm_dataset.copy()
     norm_magi.attrs["Logical_source"] = "imap_mag_l1c_norm-magi"
+
+    input_datasets = [norm_mago, norm_magi]
+
+    # If testing burst mode, add burst datasets as well
+    if data_mode == "burst":
+        burst_mago = norm_dataset.copy()
+        burst_mago.attrs["Logical_source"] = "imap_mag_l1c_burst-mago"
+
+        burst_magi = norm_dataset.copy()
+        burst_magi.attrs["Logical_source"] = "imap_mag_l1c_burst-magi"
+
+        input_datasets.extend([burst_mago, burst_magi])
 
     with (
         patch(
@@ -128,38 +149,44 @@ def test_mag_l1d_attributes(
         ),
     ):
         l1d_datasets = mag_l1d(
-            [norm_dataset, norm_magi],
+            input_datasets,
             mag_test_l1d_data,
             np.datetime64("2000-01-01"),
         )
 
-    frame_to_coord_system = {
-        "SRF": "SRF",
-        "DSRF": "DSRF",
-        "GSE": "GSE",
-        "RTN": "RTN",
-    }
-
-    # Filter out ancillary datasets
+    # Filter out ancillary datasets and select only datasets matching the data_mode
     science_datasets = [
         ds
         for ds in l1d_datasets
         if "spin-offsets" not in ds.attrs.get("Logical_source", "")
         and "gradiometry-offsets" not in ds.attrs.get("Logical_source", "")
+        and f"l1d_{data_mode}-" in ds.attrs.get("Logical_source", "")
     ]
+
+    # Verify we have the expected number of datasets for the mode
+    # Each mode produces 4 frames: SRF, DSRF, GSE, RTN
+    assert len(science_datasets) == 4, (
+        f"Expected 4 L1D {data_mode} datasets, got {len(science_datasets)}"
+    )
 
     for dataset in science_datasets:
         assert "Logical_source" in dataset.attrs
         assert "Data_type" in dataset.attrs
-        assert dataset.attrs["Logical_source"].startswith("imap_mag_l1d_norm-")
+        assert dataset.attrs["Logical_source"].startswith(f"imap_mag_l1d_{data_mode}-")
+
+        # Verify that data_level is correctly set to "l1d" in logical source
+        logical_source_parts = dataset.attrs["Logical_source"].split("_")
+        assert logical_source_parts[2] == "l1d", (
+            f"Expected data_level 'l1d' in Logical_source, "
+            f"got '{logical_source_parts[2]}'"
+        )
 
         vectors_attrs = dataset["vectors"].attrs
         assert "DICT_KEY" in vectors_attrs
 
         frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
-        expected_coord = frame_to_coord_system.get(frame, frame)
 
-        assert f"CoordinateSystemName:{expected_coord}" in vectors_attrs["DICT_KEY"]
+        assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
 
         assert "magnitude" in dataset.data_vars
         assert "range" in dataset.data_vars

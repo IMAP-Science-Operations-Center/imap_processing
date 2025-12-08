@@ -77,7 +77,7 @@ class MagL2L1dBase:
     magnitude: np.ndarray = field(init=False)
     frame: ValidFrames = ValidFrames.MAGO
     epoch_et: np.ndarray | None = field(init=False, default=None)
-    data_level: str = ""
+    data_level: str = field(init=False)
 
     def generate_dataset(
         self,
@@ -345,7 +345,7 @@ class MagL2(MagL2L1dBase):
 
     offsets: InitVar[np.ndarray] = None
     timedelta: InitVar[np.ndarray] = None
-    data_level = "l2"
+    data_level: str = field(default="l2", init=False)
 
     def __post_init__(self, offsets: np.ndarray, timedelta: np.ndarray) -> None:
         """
