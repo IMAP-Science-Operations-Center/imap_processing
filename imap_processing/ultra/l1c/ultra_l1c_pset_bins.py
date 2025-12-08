@@ -9,9 +9,7 @@ from numpy.typing import NDArray
 from scipy import interpolate
 
 from imap_processing.spice.geometry import (
-    SpiceFrame,
     cartesian_to_spherical,
-    imap_state,
 )
 from imap_processing.spice.spin import (
     get_spacecraft_spin_phase,
@@ -370,7 +368,7 @@ def calculate_exposure_time(
     valid_spun_pixels: xr.DataArray,
     boundary_scale_factors: xr.DataArray,
     apply_bsf: bool = True,
-) -> xr.Dataset:
+) -> xr.DataArray:
     """
     Adjust the exposure time at each pixel to account for dead time.
 
@@ -503,11 +501,11 @@ def get_spacecraft_exposure_times(
     # Ensure exposure factor is broadcast correctly
     if exposure_pointing_adjusted.shape[0] != n_energy_bins:
         exposure_pointing_adjusted = np.repeat(
-            exposure_pointing_adjusted.values,
+            exposure_pointing_adjusted,
             n_energy_bins,
             axis=0,
         )
-    return exposure_pointing_adjusted, nominal_deadtime_ratios.values
+    return exposure_pointing_adjusted.values, nominal_deadtime_ratios.values
 
 
 def get_efficiencies_and_geometric_function(
@@ -536,9 +534,12 @@ def get_efficiencies_and_geometric_function(
     boundary_scale_factors : xarray.DataArray
         Boundary scale factors for each pixel at each spin phase.
     theta_vals : np.ndarray
-        A 2D array of theta values for each HEALPix pixel at each spin phase step.
+        2D or 3D array of theta values. Shape is either (spin_phase_step, npix)
+        or (spin_phase_step, energy_bins, npix) when energy-dependent scattering
+        rejection is used.
     phi_vals : np.ndarray
-         A 2D array of phi values for each HEALPix pixel at each spin phase step.
+        Array of phi values with the same shape as `theta_vals`, giving the
+        corresponding phi for each pixel (and energy, if present).
     npix : int
         Number of HEALPix pixels.
     ancillary_files : dict
@@ -589,20 +590,9 @@ def get_efficiencies_and_geometric_function(
     eff_summation = np.zeros((energy_bins, npix))
     sample_count = np.zeros((energy_bins, npix))
     # Loop through spin phases
-    spin_steps = valid_spun_pixels.shape[0]
+    spin_steps = valid_spun_pixels.sizes["spin_phase_step"]
     for i in range(spin_steps):
         # Loop through energy bins
-        # Compute gf and eff for these theta/phi pairs
-        theta_at_spin = theta_vals[:, i]
-        phi_at_spin = phi_vals[:, i]
-        theta_at_spin_clipped = theta_vals_clipped[:, i]
-        phi_at_spin_clipped = phi_vals_clipped[:, i]
-        gf_values = get_geometric_factor(
-            phi=phi_at_spin,
-            theta=theta_at_spin,
-            quality_flag=np.zeros(len(phi_at_spin)).astype(np.uint16),
-            geometric_factor_tables=geometric_lookup_table,
-        )
         # Get valid pixels at this spin phase
         valid_at_spin = valid_spun_pixels.isel(
             spin_phase_step=i
@@ -614,13 +604,29 @@ def get_efficiencies_and_geometric_function(
                 # No scattering rejection. Same pixels for all energies
                 # TODO this may cause performance issues. Revisit later.
                 pixel_inds = np.where(valid_at_spin.isel(energy=0))[0]
+                # Compute gf and eff for these theta/phi pairs
+                theta_at_spin = theta_vals[i, :]
+                phi_at_spin = phi_vals[i, :]
+                theta_at_spin_clipped = theta_vals_clipped[i, :]
+                phi_at_spin_clipped = phi_vals_clipped[i, :]
             else:
                 # Scattering rejection - different pixels per energy
                 pixel_inds = np.where(valid_at_spin.isel(energy=energy_bin_idx))[0]
+                # Compute gf and eff for these theta/phi pairs
+                theta_at_spin = theta_vals[i, energy_bin_idx, :]
+                phi_at_spin = phi_vals[i, energy_bin_idx, :]
+                theta_at_spin_clipped = theta_vals_clipped[i, energy_bin_idx, :]
+                phi_at_spin_clipped = phi_vals_clipped[i, energy_bin_idx, :]
 
             if pixel_inds.size == 0:
                 continue
 
+            gf_values = get_geometric_factor(
+                phi=phi_at_spin[pixel_inds],
+                theta=theta_at_spin[pixel_inds],
+                quality_flag=np.zeros(len(phi_at_spin[pixel_inds])).astype(np.uint16),
+                geometric_factor_tables=geometric_lookup_table,
+            )
             energy = energy_bin_geometric_means[energy_bin_idx]
             energy_clipped = np.clip(energy, 3.0, 80.0)
 
@@ -634,7 +640,7 @@ def get_efficiencies_and_geometric_function(
 
             # Sum
             bsfs = boundary_scale_factors[pixel_inds, i] if apply_bsf else 1.0
-            gf_summation[energy_bin_idx, pixel_inds] += gf_values[pixel_inds] * bsfs
+            gf_summation[energy_bin_idx, pixel_inds] += gf_values * bsfs
             eff_summation[energy_bin_idx, pixel_inds] += eff_values * bsfs
             sample_count[energy_bin_idx, pixel_inds] += 1
 
@@ -645,124 +651,6 @@ def get_efficiencies_and_geometric_function(
     np.divide(gf_summation, sample_count, out=gf_averaged, where=sample_count != 0)
     np.divide(eff_summation, sample_count, out=eff_averaged, where=sample_count != 0)
     return gf_averaged, eff_averaged
-
-
-def get_helio_adjusted_data(
-    time: float,
-    exposure_time: np.ndarray,
-    geometric_factor: np.ndarray,
-    efficiency: np.ndarray,
-    ra: np.ndarray,
-    dec: np.ndarray,
-    nside: int = 128,
-    nested: bool = False,
-) -> tuple[NDArray, NDArray, NDArray]:
-    """
-    Compute 2D (Healpix index, energy) arrays for in the helio frame.
-
-    Build CG corrected exposure, efficiency, and geometric factor arrays.
-
-    Parameters
-    ----------
-    time : float
-        Median time of pointing in et.
-    exposure_time : np.ndarray
-        Spacecraft exposure. Shape = (energy, npix).
-    geometric_factor : np.ndarray
-        Geometric factor values. Shape = (energy, npix).
-    efficiency : np.ndarray
-        Efficiency values. Shape = (energy, npix).
-    ra : np.ndarray
-        Right ascension in the spacecraft frame (degrees).
-    dec : np.ndarray
-        Declination in the spacecraft frame (degrees).
-    nside : int, optional
-        The nside parameter of the Healpix tessellation (default is 128).
-    nested : bool, optional
-        Whether the Healpix tessellation is nested (default is False).
-
-    Returns
-    -------
-    helio_exposure : np.ndarray
-        A 2D array of shape (n_energy_bins, npix).
-    helio_efficiency : np.ndarray
-        A 2D array of shape (n_energy_bins, npix).
-    helio_geometric_factors : np.ndarray
-        A 2D array of shape (n_energy_bins, npix).
-
-    Notes
-    -----
-    These calculations are performed once per pointing.
-    """
-    # Get energy midpoints.
-    _, _, energy_bin_geometric_means = build_energy_bins()
-
-    # The Cartesian state vector representing the position and velocity of the
-    # IMAP spacecraft.
-    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
-
-    # Extract the velocity part of the state vector
-    spacecraft_velocity = state[3:6]
-    # Convert (RA, Dec) angles into 3D unit vectors.
-    # Each unit vector represents a direction in the sky where the spacecraft observed
-    # and accumulated exposure time.
-    npix = hp.nside2npix(nside)
-    unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T  # Shape (N, 3)
-    shape = (len(energy_bin_geometric_means), int(npix))
-    if np.any(
-        [arr.shape != shape for arr in [exposure_time, geometric_factor, efficiency]]
-    ):
-        raise ValueError(
-            f"Input arrays must have the same shape {shape}, but got "
-            f"{exposure_time.shape}, {geometric_factor.shape}, {efficiency.shape}."
-        )
-    # Initialize output array.
-    # Each row corresponds to a HEALPix pixel, and each column to an energy bin.
-    helio_exposure = np.zeros(shape)
-    helio_efficiency = np.zeros(shape)
-    helio_geometric_factors = np.zeros(shape)
-
-    # Loop through energy bins and compute transformed exposure.
-    for i, energy_mean in enumerate(energy_bin_geometric_means):
-        # Convert the midpoint energy to a velocity (km/s).
-        # Based on kinetic energy equation: E = 1/2 * m * v^2.
-        energy_velocity = (
-            np.sqrt(2 * energy_mean * UltraConstants.KEV_J / UltraConstants.MASS_H)
-            / 1e3
-        )
-
-        # Use Galilean Transform to transform the velocity wrt spacecraft
-        # to the velocity wrt heliosphere.
-        # energy_velocity * cartesian -> apply the magnitude of the velocity
-        # to every position on the grid in the despun grid.
-        helio_velocity = spacecraft_velocity.reshape(1, 3) + energy_velocity * unit_dirs
-
-        # Normalized vectors representing the direction of the heliocentric velocity.
-        helio_normalized = helio_velocity / np.linalg.norm(
-            helio_velocity, axis=1, keepdims=True
-        )
-
-        # Convert Cartesian heliocentric vectors into spherical coordinates.
-        # Result: azimuth (longitude) and elevation (latitude) in degrees.
-        helio_spherical = cartesian_to_spherical(helio_normalized)
-        az, el = helio_spherical[:, 1], helio_spherical[:, 2]
-
-        # Convert azimuth/elevation directions to HEALPix pixel indices.
-        hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
-
-        # Accumulate exposure, eff, and gf values into HEALPix pixels for this energy
-        # bin.
-        helio_exposure[i, :] = np.bincount(
-            hpix_idx, weights=exposure_time[i, :], minlength=npix
-        )
-        helio_efficiency[i, :] = np.bincount(
-            hpix_idx, weights=efficiency[i, :], minlength=npix
-        )
-        helio_geometric_factors[i, :] = np.bincount(
-            hpix_idx, weights=geometric_factor[i, :], minlength=npix
-        )
-
-    return helio_exposure, helio_efficiency, helio_geometric_factors
 
 
 def get_spacecraft_background_rates(

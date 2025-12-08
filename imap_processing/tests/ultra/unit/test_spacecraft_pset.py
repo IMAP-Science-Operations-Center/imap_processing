@@ -208,7 +208,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         )
 
 
-@pytest.mark.skip(reason="Long running test for validation purposes.")
+# @pytest.mark.skip(reason="Long running test for validation purposes.")
 def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_datasets):
     """Validates exposure time and sensitivities for ebin 0."""
     test_data = [
@@ -224,10 +224,10 @@ def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_data
         ("imap_ultra_l1c-90sensor-sc-pointing-bsf_20250101_v001.csv", "ultra/data/l1/"),
         ("Exposures-IMAP_ULTRA_90-IMAP_DPS-SC-nside32-ebin0.csv", "ultra/data/l1/"),
         ("SENS-IMAP_ULTRA_90-IMAP_DPS-SC-nside32-ebin0.csv", "ultra/data/l1/"),
-        ("imap_ultra_l1b_45sensor-de_20000101-repoint00000_v000.cdf", "ultra/data/l1/"),
+        ("imap_ultra_l1b_90sensor-de_20000101-repoint00000_v000.cdf", "ultra/data/l1/"),
     ]
     _download_external_data(test_data)
-    l1b_de = TEST_PATH / "imap_ultra_l1b_45sensor-de_20000101-repoint00000_v000.cdf"
+    l1b_de = TEST_PATH / "imap_ultra_l1b_90sensor-de_20000101-repoint00000_v000.cdf"
     l1b_de = load_cdf(l1b_de)
     sensitivities_ebin_0 = pd.read_csv(
         TEST_PATH / "SENS-IMAP_ULTRA_90-IMAP_DPS-SC-nside32-ebin0.csv"

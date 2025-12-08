@@ -118,6 +118,7 @@ def calculate_spacecraft_pset(
             phi_vals,
             ancillary_files,
             instrument_id,
+            reject_scattering,
         )
     )
     # Determine nside from the lookup table

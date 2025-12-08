@@ -13,7 +13,7 @@ from imap_processing.spice.geometry import (
     imap_state,
 )
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
+from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 logger = logging.getLogger(__name__)
 
@@ -268,31 +268,33 @@ def make_helio_index_maps(
     spin_phases = np.linspace(0, 360, num_steps, endpoint=False)
 
     # Create xarray Dataset
+    # Ensure idex_map is a boolean type
+    index_map = index_map.astype(bool)
     ds = xr.Dataset(
         data_vars={
             "index": (
-                ["step", "energy", "pixel"],
+                ["spin_phase_step", "energy", "pixel"],
                 index_map,
                 {"long_name": "Pixel in FOV flag"},
             ),
             "theta": (
-                ["step", "energy", "pixel"],
+                ["spin_phase_step", "energy", "pixel"],
                 theta_map,
                 {"long_name": "Instrument theta angle", "units": "degrees"},
             ),
             "phi": (
-                ["step", "energy", "pixel"],
+                ["spin_phase_step", "energy", "pixel"],
                 phi_map,
                 {"long_name": "Instrument phi angle", "units": "degrees"},
             ),
             "bsf": (
-                ["step", "energy", "pixel"],
+                ["spin_phase_step", "energy", "pixel"],
                 bsf_map,
                 {"long_name": "Boundary scale factor", "units": "fractional"},
             ),
         },
         coords={
-            "step": (["step"], step_indices),
+            "spin_phase_step": (["spin_phase_step"], step_indices),
             "energy": (
                 ["energy"],
                 energy_bin_geometric_means,
@@ -300,7 +302,7 @@ def make_helio_index_maps(
             ),
             "pixel": (["pixel"], pixel_indices),
             "spin_phase": (
-                ["step"],
+                ["spin_phase_step"],
                 spin_phases,
                 {"long_name": "Spin phase", "units": "degrees"},
             ),
