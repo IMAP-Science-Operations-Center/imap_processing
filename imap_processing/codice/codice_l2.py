@@ -924,7 +924,6 @@ def process_codice_l2(
             )
             # Calculate the sunward solar wind species intensities using equation
             # described in section 11.2.3 of algorithm document.
-            # TODO: use this
             l2_dataset = process_lo_species_intensity(
                 l2_dataset,
                 LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,

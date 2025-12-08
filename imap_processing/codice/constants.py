@@ -62,6 +62,8 @@ LO_IALIRT_VARIABLE_NAMES = [
     "fe_hiq",
 ]
 HI_IALIRT_VARIABLE_NAMES = ["h"]
+# Mass over charge (AMU/e)
+# Section 13.2 of Algorithm Document.
 LO_IALIRT_M_OVER_Q = {
     "heplusplus": 2.0,
     "cplus5": 2.4,
