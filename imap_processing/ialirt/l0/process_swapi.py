@@ -116,8 +116,11 @@ def optimize_pseudo_parameters(
         xdata = energy_passbands.take(fitting_point_range, mode="clip")
         ydata = current_sweep_count_rates.take(fitting_point_range, mode="clip")
         sigma = current_sweep_count_rate_errors.take(fitting_point_range, mode="clip")
-        is_valid_data = ((ydata > 0) & (sigma > 0)
-                         & np.isfinite(ydata) & np.isfinite(sigma))  
+        is_valid_data = ((ydata > 0)
+                         & (sigma > 0)
+                         & np.isfinite(xdata)
+                         & np.isfinite(ydata)
+                         & np.isfinite(sigma))  
 
         if np.count_nonzero(is_valid_data) >= 3:
             solution = curve_fit(
