@@ -605,8 +605,12 @@ def test_process_codice_lo(
         pseudo_density_dict[species] = summed_pseudo_density.values
 
     species = constants.LO_IALIRT_VARIABLE_NAMES
-    # TODO: is this expected to be zero?
+
     # Denominator.
+    # Note that outside of this test a zero value denominator
+    # will lead to a null value.
+    # The use of zeros here is only to match the test data as
+    # confirmed by the instrument team.
     o_abundance_ratio = (
         pseudo_density_dict[species[3]]
         + pseudo_density_dict[species[4]]
