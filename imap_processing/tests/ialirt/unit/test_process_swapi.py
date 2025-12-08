@@ -172,11 +172,10 @@ def test_count_rate():
     )
 
 
-def test_optimize_parameters():
-    """Test that the optimize_pseudo_parameters() function works correctly."""
-
+@pytest.fixture
+def test_data():
     # The following files and values are all validation sets provided by the SWAPI team.
-    test_data = {
+    return {
         "test_set_1": {
             "file_name": "ialirt_test_data_u_sw_550_n_sw_5_T_sw_100000_v2.csv",
             "expected_values": {  # expected output and acceptable tolerance
@@ -203,10 +202,18 @@ def test_optimize_parameters():
         },
     }
 
+
+@pytest.fixture
+def energy_passbands():
     calibration_test_file = pd.read_csv(
         f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
     )
     energy_passbands = calibration_test_file["Energy"][0:63].to_numpy().astype(float)
+    return energy_passbands
+
+
+def test_optimize_parameters(test_data, energy_passbands):
+    """Test that the optimize_pseudo_parameters() function works correctly."""
 
     for test_set in test_data:
         energy_data = pd.read_csv(
@@ -214,23 +221,92 @@ def test_optimize_parameters():
             f"{test_data[test_set]['file_name']}",
         )
         count_rates = energy_data["Count Rates [Hz]"].to_numpy()
-        count_rates[0] = 0.0
-        count_rates = np.tile(count_rates, (2, 1))
+        count_rates[0] = 0.0  # set the first count to zero
+        count_rates = np.tile(count_rates, (2, 1))  # repeat new first dimension x 2, shape (72,) -> (2, 72)
         count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
         count_rates_errors = np.tile(count_rates_errors, (2, 1))
-
+    
         result = optimize_pseudo_parameters(
             count_rates, count_rates_errors, energy_passbands
         )
 
         for param in test_data[test_set]["expected_values"]:
-            (
-                np.testing.assert_allclose(
-                    result[param][0],
-                    test_data[test_set]["expected_values"][param][0],
-                    rtol=test_data[test_set]["expected_values"][param][1],
-                ),
-                f"{param} did not match the expected result within the tolerance.",
+            np.testing.assert_allclose(
+                result[param][0],
+                test_data[test_set]["expected_values"][param][0],
+                rtol=test_data[test_set]["expected_values"][param][1],
+                err_msg=f"{param} did not match the expected result within the tolerance."
+            )
+
+
+def test_optimize_parameters_with_invalid_values(test_data, energy_passbands):
+    """Test that the optimize_pseudo_parameters() function works correctly with invalid count and count rate values."""
+    for test_set in test_data:
+        energy_data = pd.read_csv(
+            f"{imap_module_directory}/tests/ialirt/data/l0/"
+            f"{test_data[test_set]['file_name']}",
+        )
+        count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+        count_rates[0] = 0.0  # set the first count to zero
+        count_rates = np.tile(count_rates, (2, 1))  # repeat new first dimension x N, shape (72,) -> (N, 72), so that there are N sweeps
+        count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
+        count_rates_errors = np.tile(count_rates_errors, (2, 1))
+    
+        # set some points to have invalid values that should not affect the fit too much
+        i_peak = count_rates[0].argmax() # invalid values need to be close to the maximum to be detected
+        
+        # sweep 0: zero count/count rate
+        count_rates[0, i_peak + 2] = 0
+        count_rates_errors[0, i_peak + 2] = 0
+        
+        # sweep 1: nan count/count rate
+        count_rates[0, i_peak + 2] = np.nan
+        count_rates_errors[0, i_peak + 2] = np.nan
+        
+        result = optimize_pseudo_parameters(
+            count_rates, count_rates_errors, energy_passbands
+        )
+
+        for param in test_data[test_set]["expected_values"]:
+            # because invalid values inserted, higher error tolerance by 50%
+            np.testing.assert_allclose(
+                result[param],
+                test_data[test_set]["expected_values"][param][0],
+                rtol=0.5 + test_data[test_set]["expected_values"][param][1],
+                err_msg=f"{param} did not match the expected result within the tolerance."
+            )
+
+
+def test_optimize_parameters_with_invalid_energy(test_data, energy_passbands):
+    """Test that the optimize_pseudo_parameters() function works correctly with invalid energy."""
+    for test_set in test_data:
+        energy_data = pd.read_csv(
+            f"{imap_module_directory}/tests/ialirt/data/l0/"
+            f"{test_data[test_set]['file_name']}",
+        )
+        count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+        count_rates[0] = 0.0  # set the first count to zero
+        count_rates = np.tile(count_rates, (2, 1))  # repeat new first dimension x N, shape (72,) -> (N, 72), so that there are N sweeps
+        count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
+        count_rates_errors = np.tile(count_rates_errors, (2, 1))
+    
+        # set some points to have invalid values that should not affect the fit too much
+        i_peak = count_rates[0].argmax() # invalid values need to be close to the maximum to be detected
+
+        # set passband energy next to peak to nan
+        energy_passbands[i_peak + 1] = np.nan        
+        
+        result = optimize_pseudo_parameters(
+            count_rates, count_rates_errors, energy_passbands
+        )
+
+        for param in test_data[test_set]["expected_values"]:
+            # because invalid values inserted, higher error tolerance by 50%
+            np.testing.assert_allclose(
+                result[param],
+                test_data[test_set]["expected_values"][param][0],
+                rtol=0.5 + test_data[test_set]["expected_values"][param][1],
+                err_msg=f"{param} did not match the expected result within the tolerance."
             )
 
 
