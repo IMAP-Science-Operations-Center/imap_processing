@@ -50,6 +50,9 @@ def load_cdf(
     # round-trip of writing and then loading a cdf keeps the dataset the same.
     if "to_datetime" not in kwargs:
         kwargs["to_datetime"] = False  # type: ignore
+    # By default, load fillvalues as nan
+    if "fillval_to_nan" not in kwargs:
+        kwargs["fillval_to_nan"] = True  # type: ignore
     dataset = cdf_to_xarray(file_path, **kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
