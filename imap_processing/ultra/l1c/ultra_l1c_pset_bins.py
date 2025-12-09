@@ -390,7 +390,7 @@ def calculate_exposure_time(
 
     Returns
     -------
-    exposure_pointing_adjusted : xarray.Dataset
+    exposure_pointing: xarray.DataArray
         Adjusted exposure times accounting for dead time.
     """
     # nominal spin phase step.
@@ -498,7 +498,7 @@ def get_spacecraft_exposure_times(
     )
     # Adjust exposure time by the actual number of valid spins in the pointing
     exposure_pointing_adjusted = n_spins_in_pointing * exposure_time
-    # Ensure exposure factor is broadcast correctly
+
     if exposure_pointing_adjusted.shape[0] != n_energy_bins:
         exposure_pointing_adjusted = np.repeat(
             exposure_pointing_adjusted,
@@ -600,8 +600,8 @@ def get_efficiencies_and_geometric_function(
 
         for energy_bin_idx in range(energy_bins):
             # Determine pixel indices based on energy dependence
-            if valid_at_spin.sizes["energy"] == 1:
-                # No scattering rejection. Same pixels for all energies
+            if theta_vals.ndim < 3:
+                # Energy independent calculations
                 # TODO this may cause performance issues. Revisit later.
                 pixel_inds = np.where(valid_at_spin.isel(energy=0))[0]
                 # Compute gf and eff for these theta/phi pairs
@@ -610,7 +610,7 @@ def get_efficiencies_and_geometric_function(
                 theta_at_spin_clipped = theta_vals_clipped[i, :]
                 phi_at_spin_clipped = phi_vals_clipped[i, :]
             else:
-                # Scattering rejection - different pixels per energy
+                # Energy dependent calculations
                 pixel_inds = np.where(valid_at_spin.isel(energy=energy_bin_idx))[0]
                 # Compute gf and eff for these theta/phi pairs
                 theta_at_spin = theta_vals[i, energy_bin_idx, :]
@@ -628,8 +628,8 @@ def get_efficiencies_and_geometric_function(
                 geometric_factor_tables=geometric_lookup_table,
             )
             energy = energy_bin_geometric_means[energy_bin_idx]
+            # Clip energy to calibrated range
             energy_clipped = np.clip(energy, 3.0, 80.0)
-
             eff_values = get_efficiency(
                 np.full(pixel_inds.size, energy_clipped),
                 phi_at_spin_clipped[pixel_inds],
@@ -638,8 +638,12 @@ def get_efficiencies_and_geometric_function(
                 interpolator=eff_interpolator,
             )
 
-            # Sum
-            bsfs = boundary_scale_factors[pixel_inds, i] if apply_bsf else 1.0
+            # Accumulate and sum eff and gf values
+            bsfs = (
+                boundary_scale_factors[pixel_inds, i]
+                if apply_bsf
+                else np.ones(len(pixel_inds))
+            )
             gf_summation[energy_bin_idx, pixel_inds] += gf_values * bsfs
             eff_summation[energy_bin_idx, pixel_inds] += eff_values * bsfs
             sample_count[energy_bin_idx, pixel_inds] += 1

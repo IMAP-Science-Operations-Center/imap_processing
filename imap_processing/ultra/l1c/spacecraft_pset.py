@@ -122,7 +122,7 @@ def calculate_spacecraft_pset(
         )
     )
     # Determine nside from the lookup table
-    nside = hp.npix2nside(len(for_indices_by_spin_phase))
+    nside = hp.npix2nside(for_indices_by_spin_phase.sizes["pixel"])
     counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
         species_dataset["energy_spacecraft"].values,
