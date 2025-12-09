@@ -160,7 +160,6 @@ class UltraConstants:
     }
 
 
-SIM_START_ET = 797949123.371627
 SPICE_DATA_TEST_PATH = imap_module_directory / "tests/spice/test_data"
 SIM_KERNELS_FOR_HELIO_INDEX_MAPS: list = [
     str(SPICE_DATA_TEST_PATH / k)

@@ -13,15 +13,11 @@ from imap_processing.spice.geometry import (
     get_rotation_matrix,
     imap_state,
 )
-from imap_processing.ultra.constants import SIM_START_ET, UltraConstants
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import is_inside_fov
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 logger = logging.getLogger(__name__)
-
-# TODO why this constant offset??? Ask Nick for his CoordConverters.convertToRaDec
-#  function
-ULTRA_90_PHI_CORRECTION_DEG = 139.609025
 
 
 def vector_ijk_to_theta_phi(
@@ -100,12 +96,18 @@ def make_helio_index_maps_with_nominal_kernels(
         Dataset with helio index maps.
     """
     with sp.KernelPool(kernel_paths):
+        # calculate the start et of the pointing kernel.
+        ck_kernel, _, _, _ = sp.kdata(1, "ck")
+        ck_cover = sp.ckcov(
+            ck_kernel, SpiceFrame.IMAP_DPS.value, True, "INTERVAL", 0, "TDB"
+        )
+        et_start, _ = sp.wnfetd(ck_cover, 0)
         # Call the main function
         return make_helio_index_maps(
             nside=nside,
             spin_duration=spin_duration,
             num_steps=num_steps,
-            start_et=SIM_START_ET,
+            start_et=et_start,
             instrument_frame=instrument_frame,
             compute_bsf=compute_bsf,
             boundary_points=boundary_points,
@@ -191,7 +193,7 @@ def make_helio_index_maps(
             "Computing boundary scale factors with %d points per pixel",
             boundary_points,
         )
-
+    # TODO vectorize loop
     time_id = 0
     t = start_et
     while t < (end_et - dt_step / 2):
@@ -219,11 +221,8 @@ def make_helio_index_maps(
 
             # Transform to inst
             inst_vecs = helio_normalized @ rotation_matrix
-
             theta, phi = vector_ijk_to_theta_phi(inst_vecs)
-            # Apply phi correction
-            phi_correction = np.radians(ULTRA_90_PHI_CORRECTION_DEG)
-            phi = phi + phi_correction
+
             phi = np.where(phi > np.pi, phi - 2 * np.pi, phi)
 
             # Check FOV
@@ -261,7 +260,6 @@ def make_helio_index_maps(
 
                     # Convert to theta/phi
                     theta_b, phi_b = vector_ijk_to_theta_phi(inst_boundary)
-                    phi_b = phi_b + phi_correction
                     phi_b = np.where(phi_b > np.pi, phi_b - 2 * np.pi, phi_b)
 
                     # Check how many sample points are in FOV

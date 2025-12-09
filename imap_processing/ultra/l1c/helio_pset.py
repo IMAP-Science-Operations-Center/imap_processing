@@ -168,8 +168,8 @@ def calculate_helio_pset(
     geometric_function, efficiencies = get_efficiencies_and_geometric_function(
         pixels_below_scattering,
         boundary_scale_factors,
-        theta_vals.values,
-        phi_vals.values,
+        theta_vals,
+        phi_vals,
         n_pix,
         ancillary_files,
         apply_bsf,
