@@ -94,7 +94,7 @@ rate_default: &rate_default
   LABL_PTR_1: esa_step_label
   FILLVAL: -1.0000000E+31
   FORMAT: E19.5
-  UNITS: counts
+  UNITS: counts/s
   VALIDMIN: 0.0
   VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
   VAR_TYPE: data
