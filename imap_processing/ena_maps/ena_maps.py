@@ -1633,13 +1633,6 @@ class HealpixSkyMap(AbstractSkyMap):
             + subpix_spacing / 2
         )
 
-        # We must weight by solid angle, which is not exactly equal for all subpixels
-        # Calculate the solid angle of the full rectangular pixel (sterad)
-        full_rect_pixel_solid_angle = np.deg2rad(rect_pix_spacing_deg) * (
-            np.sin(np.deg2rad(bottom_edge_lat + rect_pix_spacing_deg))
-            - np.sin(np.deg2rad(bottom_edge_lat))
-        )
-
         # Calculate solid angle of each subpix from the rect_subpix_lat_ctrs (sterad)
         all_edges_lat = bottom_edge_lat + np.arange(n_subpix_side + 1) * subpix_spacing
         sine_all_edges_lat = np.sin(np.deg2rad(all_edges_lat))
@@ -1669,13 +1662,16 @@ class HealpixSkyMap(AbstractSkyMap):
         # Get the healpix values at the rectangular subpixel centers
         hp_vals_at_rect_pix_ctrs = value_array.values[..., hp_pix_at_rect_subpix_ctrs]
 
+        mask = np.isfinite(hp_vals_at_rect_pix_ctrs)
+
         # Weighted mean (weighted by solid angle) of these values over the pixel axis,
         # which is the last axis of this array
+        non_nan_weights = np.where(mask, rect_subpix_solid_angle_by_lat, 0)
         weighted_hp_vals_at_rect_pix_ctrs = (
-            hp_vals_at_rect_pix_ctrs * rect_subpix_solid_angle_by_lat
+            np.where(mask, hp_vals_at_rect_pix_ctrs, 0) * non_nan_weights
         )
-        mean_pixel_value = (
-            weighted_hp_vals_at_rect_pix_ctrs.sum(axis=-1) / full_rect_pixel_solid_angle
+        mean_pixel_value = weighted_hp_vals_at_rect_pix_ctrs.sum(axis=-1) / np.sum(
+            non_nan_weights, axis=-1
         )
         # Log the mean pixel value and the number of subdivisions for debugging
         logger.debug(

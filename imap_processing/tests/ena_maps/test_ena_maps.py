@@ -1327,18 +1327,18 @@ class TestHealpixSkyMap:
             (179.5, -0.5): 10,
             (179.5, 0.5): 11,
             (179.5, 1.5): 12,
-            (180.5, -1.5): 12,
+            (180.5, -1.5): 13,
             (180.5, -0.5): 14,
             (180.5, 0.5): 15,
             (180.5, 1.5): 16,
             (181.5, -1.5): 17,
             (181.5, -0.5): 18,
             (181.5, 0.5): 19,
-            (181.5, 1.5): 20,
+            (181.5, 1.5): 999,
         }
         expected_mean_0_subdivisions = 0
         expected_mean_1_subdivisions = 2.5
-        expected_mean_2_subdivisions = 12.5
+        expected_mean_2_subdivisions = 12
 
         def mock_ang2pix_fn(nside, theta, phi, nest=True, lonlat=False):
             vals = []
@@ -1354,10 +1354,11 @@ class TestHealpixSkyMap:
         )
         hp_map.data_1d["counts"] = xr.DataArray(
             data=[
-                np.arange(hp_map.num_points),
+                np.arange(hp_map.num_points, dtype=float),
             ],
             dims=["epoch", "pixel"],
         )
+        hp_map.data_1d["counts"][0, 999] = np.nan
 
         for num_subdiv, (expected_value, atol) in enumerate(
             [
@@ -1365,7 +1366,7 @@ class TestHealpixSkyMap:
                 (expected_mean_0_subdivisions, 1e-9),
                 (expected_mean_1_subdivisions, 1e-9),
                 # Slight difference from not taking into account asym solid angle
-                (expected_mean_2_subdivisions, 0.1),
+                (expected_mean_2_subdivisions, 1e-4),
             ]
         ):
             mock_ang2pix.reset_mock()
