@@ -1,6 +1,7 @@
 """SWAPI L2 processing module."""
 
 import logging
+import select
 
 import numpy as np
 import numpy.typing as npt
@@ -68,34 +69,7 @@ def solve_full_sweep_energy(
     first_63_energies = []
 
     for time, sweep_id in zip(data_time, sweep_table, strict=False):
-        # Find the sweep's ESA data for the given time and sweep_id
-        subset = esa_table_df[
-            (esa_table_df["timestamp"] <= time) & (esa_table_df["Sweep #"] == sweep_id)
-        ]
-        if subset.empty:
-            # Get the earliest timestamp available
-            earliest_time = esa_table_df["timestamp"].min()
-
-            # Find the sweep's ESA data for the earliest time and sweep_id
-            earliest_subset = esa_table_df[
-                (esa_table_df["timestamp"] == earliest_time)
-                & (esa_table_df["Sweep #"] == sweep_id)
-            ]
-            if earliest_subset.empty:
-                raise ValueError(
-                    f"No matching ESA table entry found for sweep ID {sweep_id} "
-                    f"at time {time}, and no entries found for earliest time "
-                    f"{earliest_time}."
-                )
-            subset = earliest_subset
-
-        # Subset data can contain multiple 72 energy values with last 9 fine energies
-        # with 'Solve' value. We need to sort by time and ESA step to maintain correct
-        # order. Then take the last group of 72 steps values and select first 63
-        # values only.
-        subset = subset.sort_values(["timestamp", "ESA Step #"])
-        grouped = subset["Energy"].values.reshape(-1, NUM_ENERGY_STEPS)
-        first_63 = grouped[-1, :63]
+        first_63 = select_first_63_passband_energies(esa_table_df, time, sweep_id)
         first_63_energies.append(first_63)
 
     # Find last 9 fine energy values of all sweeps data
@@ -161,6 +135,33 @@ def solve_full_sweep_energy(
     sweeps_energy_value = np.hstack([first_63_energies, energy_values])
 
     return sweeps_energy_value
+
+
+def select_first_63_passband_energies(calibration_table_df, time, sweep_table_version):
+    """
+    Select passband energies from the calibration table based on the time and table version.
+        
+    :param calibration_table_df:
+        DataFrame containing entries for `timestamp`, `Sweep #`, `ESA Step #`, and `Energy`.
+        Each timestamp has 72 energy steps.
+    :param time: Time of measurement (calibration from after this time is excluded if earlier is available, otherwise earliest time is used)
+    :param sweep_table_version: Sweep table version (to select from the `Sweep #` column)
+    """
+    
+    subset = calibration_table_df[calibration_table_df["Sweep #"] == sweep_table_version]
+    
+    table_timestamps = pd.to_datetime(subset["timestamp"], utc=True)
+    table_timestamps_before = table_timestamps[table_timestamps <= pd.to_datetime(time, utc=True)]
+    selected_timestamp = (table_timestamps_before.max()  # latest one that is not after the input time
+                          if not table_timestamps_before.empty
+                          else table_timestamps.max())
+    
+    subset = subset[table_timestamps == selected_timestamp]
+    
+    assert len(subset) == 72, f'{len(subset)} entries in calibration table for time {time}, sweep # {sweep_table_version}; 72 are required'
+
+    subset = subset.sort_values(["timestamp", "ESA Step #"])
+    return subset["Energy"][:63].to_numpy().astype(float)
 
 
 def swapi_l2(
