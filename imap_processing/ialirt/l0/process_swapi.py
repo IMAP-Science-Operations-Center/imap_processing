@@ -113,13 +113,11 @@ def optimize_pseudo_parameters(
     xdata = energy_passbands.take(fitting_point_range, mode="clip")
     ydata = current_sweep_count_rates.take(fitting_point_range, mode="clip")
     sigma = current_sweep_count_rate_errors.take(fitting_point_range, mode="clip")
-    is_valid_data = (
-        (ydata > 0)
-        & (sigma > 0)
-        & np.isfinite(xdata)
-        & np.isfinite(ydata)
-        & np.isfinite(sigma)
-    )  
+    
+    # exclude points where the count is zero (or rounded to zero)
+    # because the fitting algorithm cannot handle them
+    # (since zero count implies sigma=0)
+    is_valid_data = ydata > 0
 
     if np.count_nonzero(is_valid_data) >= 3:
         solution = curve_fit(
@@ -184,6 +182,7 @@ def process_swapi_ialirt(
             (grouped_dataset["group"] == group)
         ]
 
+        # TODO change this to the center of the interval
         met_values.append(
             int(grouped_dataset["met"][(grouped_dataset["group"] == group).values][0])
         )
