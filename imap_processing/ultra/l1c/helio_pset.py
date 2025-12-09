@@ -76,6 +76,8 @@ def calculate_helio_pset(
     reject_scattering = False
     # Do not apply boundary scale factor corrections
     apply_bsf = False
+    nside = 32
+    num_spin_steps = 720
     sensor_id = int(parse_filename_like(name)["sensor"][0:2])
     pset_dict: dict[str, np.ndarray] = {}
     # Select only the species we are interested in.
