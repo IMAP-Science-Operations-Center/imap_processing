@@ -113,11 +113,13 @@ def optimize_pseudo_parameters(
     xdata = energy_passbands.take(fitting_point_range, mode="clip")
     ydata = current_sweep_count_rates.take(fitting_point_range, mode="clip")
     sigma = current_sweep_count_rate_errors.take(fitting_point_range, mode="clip")
-    is_valid_data = ((ydata > 0)
-                        & (sigma > 0)
-                        & np.isfinite(xdata)
-                        & np.isfinite(ydata)
-                        & np.isfinite(sigma))  
+    is_valid_data = (
+        (ydata > 0)
+        & (sigma > 0)
+        & np.isfinite(xdata)
+        & np.isfinite(ydata)
+        & np.isfinite(sigma)
+    )  
 
     if np.count_nonzero(is_valid_data) >= 3:
         solution = curve_fit(
@@ -125,7 +127,7 @@ def optimize_pseudo_parameters(
             xdata=xdata[is_valid_data],
             ydata=ydata[is_valid_data],
             sigma=sigma[is_valid_data],
-            p0=initial_param_guess
+            p0=initial_param_guess,
         )[0]
     else:
         solution = [np.nan] * 3
@@ -220,7 +222,7 @@ def process_swapi_ialirt(
     for entry in np.arange(0, len(raw_coin_rate)):
         entry_met = int(met_values[entry])
         entry_met_in_utc = met_to_utc(entry_met)
-        sweep_table_version = unpacked_data['swapi_version'].sel(epoch=entry_met, method='nearest').item()
+        sweep_table_version = unpacked_data["swapi_version"].sel(epoch=entry_met, method="nearest").item()
         energy_passbands = select_first_63_passband_energies(
             calibration_table_df=calibration_lut_table,
             time=entry_met_in_utc,
