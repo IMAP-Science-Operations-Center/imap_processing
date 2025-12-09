@@ -2,7 +2,7 @@
 
 import logging
 
-import healpy as hp
+import astropy_healpix.healpy as hp
 import numpy as np
 import spiceypy as sp
 import xarray as xr
