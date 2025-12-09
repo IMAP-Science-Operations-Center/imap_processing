@@ -147,13 +147,13 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
 
     # Number of energy chunks.
-    species_chunk_sizes = [len(species_data[first_species]["min_energy"])]
+    num_energy_chunk = [len(species_data[first_species]["min_energy"])]
 
     l1a_dataset = l1a_dataset.assign_coords(
         {f"energy_{first_species}": (f"energy_{first_species}", np.array(centers))}
     )
 
-    chunk_size = species_chunk_sizes[0]
+    chunk_size = num_energy_chunk[0]
 
     # This is rearranging data from (epoch, energy, n_spins, spin_sector, inst_az)
     # -> (epoch, n_spins, energy, spin_sector, inst_az) ->
