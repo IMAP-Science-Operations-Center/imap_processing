@@ -7,7 +7,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
-from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.constants import FOV_PHI_LIMIT_DEG, FOV_THETA_OFFSET_DEG
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -458,13 +458,10 @@ def is_inside_fov(theta: np.ndarray, phi: np.ndarray) -> np.ndarray:
     """
     numerator = 5.0 * np.cos(phi)
     denominator = 1.0 + 2.80 * np.cos(phi)
-    # Equation 19 in the Ultra Algorithm Document.
-    theta_nom = np.arctan(numerator / denominator) - np.radians(
-        UltraConstants.FOV_THETA_OFFSET_DEG
-    )
+    theta_nom = np.arctan(numerator / denominator) - np.radians(FOV_THETA_OFFSET_DEG)
 
     theta_check = np.abs(theta) <= np.abs(theta_nom)
-    phi_check = np.abs(phi) <= np.radians(UltraConstants.FOV_PHI_LIMIT_DEG)
+    phi_check = np.abs(phi) <= np.radians(FOV_PHI_LIMIT_DEG)
 
     return theta_check & phi_check
 

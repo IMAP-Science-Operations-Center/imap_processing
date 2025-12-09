@@ -13,7 +13,8 @@ from imap_processing.spice.geometry import (
     get_rotation_matrix,
     imap_state,
 )
-from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.constants import SIM_START_ET, UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import is_inside_fov
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 logger = logging.getLogger(__name__)
@@ -21,39 +22,6 @@ logger = logging.getLogger(__name__)
 # TODO why this constant offset??? Ask Nick for his CoordConverters.convertToRaDec
 #  function
 ULTRA_90_PHI_CORRECTION_DEG = 139.609025
-
-
-def is_inside_fov(theta: np.ndarray, phi: np.ndarray) -> np.ndarray:
-    """
-    Determine if angles are inside the field of view (FOV).
-
-    Parameters
-    ----------
-    theta : np.ndarray
-        Theta angles in radians.
-    phi : np.ndarray
-        Phi angles in radians.
-
-    Returns
-    -------
-    np.ndarray
-        Boolean array indicating if angles are in FOV.
-    """
-    numer_term = 5.0
-    denom_term = 2.80
-    theta_offset_deg = 0.0
-    phi_limit_deg = 60.0
-
-    cos_phi = np.cos(phi)
-
-    theta_boundary = np.arctan(
-        numer_term * cos_phi / (1.0 + denom_term * cos_phi)
-    ) - np.radians(theta_offset_deg)
-
-    theta_check = np.abs(theta) < np.abs(theta_boundary)
-    phi_check = np.abs(phi) < np.radians(phi_limit_deg)
-
-    return theta_check & phi_check
 
 
 def vector_ijk_to_theta_phi(
@@ -133,13 +101,11 @@ def make_helio_index_maps_with_nominal_kernels(
     """
     with sp.KernelPool(kernel_paths):
         # Call the main function
-        # TODO get start_et from kernels
-        start_et = 797949123.371627
         return make_helio_index_maps(
             nside=nside,
             spin_duration=spin_duration,
             num_steps=num_steps,
-            start_et=start_et,
+            start_et=SIM_START_ET,
             instrument_frame=instrument_frame,
             compute_bsf=compute_bsf,
             boundary_points=boundary_points,
