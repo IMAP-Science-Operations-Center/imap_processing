@@ -235,7 +235,7 @@ def swapi_l2(
         data_time=sci_start_time,
     )
 
-    l2_dataset["swp_esa_energy"] = xr.DataArray(
+    l2_dataset["esa_energy"] = xr.DataArray(
         esa_energy,
         name="esa_energy",
         dims=["epoch", "esa_step"],
