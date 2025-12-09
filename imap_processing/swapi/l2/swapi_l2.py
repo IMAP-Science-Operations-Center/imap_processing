@@ -259,6 +259,11 @@ def swapi_l2(
     l2_dataset["swp_pcem_rate"] = l1_dataset["swp_pcem_counts"] / SWAPI_LIVETIME
     l2_dataset["swp_scem_rate"] = l1_dataset["swp_scem_counts"] / SWAPI_LIVETIME
     l2_dataset["swp_coin_rate"] = l1_dataset["swp_coin_counts"] / SWAPI_LIVETIME
+
+    # NOTE: The counts can be negative from FILLVAL in l1a data. We want to ignore those
+    #       and propagate nans
+    for var in ["swp_pcem_rate", "swp_scem_rate", "swp_coin_rate"]:
+        l2_dataset[var] = l2_dataset[var].where(l2_dataset[var] >= 0, np.nan)
     # update attrs
     l2_dataset["swp_pcem_rate"].attrs = cdf_manager.get_variable_attributes("pcem_rate")
     l2_dataset["swp_scem_rate"].attrs = cdf_manager.get_variable_attributes("scem_rate")

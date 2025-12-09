@@ -25,7 +25,7 @@ counts_default: &counts_default
   DEPEND_1: esa_step
   DISPLAY_TYPE: spectrogram
   LABL_PTR_1: esa_step_label
-  FILLVAL: 65535
+  FILLVAL: -1.0000000E+31
   FORMAT: I5
   UNITS: counts
   VALIDMIN: 0
