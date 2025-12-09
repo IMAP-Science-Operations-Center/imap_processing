@@ -703,7 +703,7 @@ def process_packet(
             attitude_time,
             time_data["primary_epoch"],
             mago_out,
-            SpiceFrame.IMAP_MAG_O,
+            SpiceFrame.IMAP_MAG_BASE,
         )
         magi_inertial_vector = transform_to_inertial(
             sc_spin_phase_rad.values,
@@ -712,7 +712,7 @@ def process_packet(
             attitude_time,
             time_data["secondary_epoch"],
             magi_out,
-            SpiceFrame.IMAP_MAG_I,
+            SpiceFrame.IMAP_MAG_BASE,
         )
 
         met = grouped_data["met"][(grouped_data["group"] == group).values]
