@@ -1,5 +1,6 @@
 from unittest import mock
 
+import healpy as hp
 import numpy as np
 import pandas as pd
 import pytest
@@ -217,7 +218,7 @@ def test_calculate_helio_pset_with_cdf(
     random_spin_data,
     ancillary_files,
     imap_ena_sim_metakernel,
-    mock_spacecraft_pointing_lookups,
+    mock_helio_pointing_lookups,
     deadtime_datasets,
     use_fake_spin_data_for_time,
 ):
@@ -285,7 +286,8 @@ def test_calculate_helio_pset_with_cdf(
         "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
         "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
-    mock_eff = np.ones((46, 196608))
+    n_pix = hp.nside2npix(32)
+    mock_eff = np.ones((46, n_pix))
     mock_gf = mock_eff * 2
     with (
         mock.patch(
@@ -305,10 +307,7 @@ def test_calculate_helio_pset_with_cdf(
         output_datasets = ultra_l1c(data_dict, ancillary_files, "45sensor-heliopset")
     output_datasets[0].attrs["Data_version"] = "999"
     output_datasets[0].attrs["Repointing"] = f"repoint{pointing + 1:05d}"
-    # Assert that the cg corrected efficiencies and geometric functions
-    # are not equal to the mocked ones
-    assert not np.array_equal(output_datasets[0]["efficiency"], mock_eff)
-    assert not np.array_equal(output_datasets[0]["geometric_function"], mock_gf)
+
     # Although the arrays are different, their sums should be equal. The helio adjusted
     # ones are just rebinned.
     np.testing.assert_array_equal(

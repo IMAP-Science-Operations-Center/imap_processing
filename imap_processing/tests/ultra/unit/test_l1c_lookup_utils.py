@@ -25,10 +25,10 @@ def test_get_spacecraft_pointing_lookup_tables(ancillary_files):
     # Test shapes
     # There should be 498 spin phase steps. In the real test files there will be 15000
     cols = 498
-    assert for_indices_by_spin_phase.shape == (npix, cols)
-    assert theta_vals.shape == (npix, cols)
-    assert phi_vals.shape == (npix, cols)
-    assert ra_and_dec.shape == (npix, 2)
+    assert for_indices_by_spin_phase.shape == (cols, npix)
+    assert theta_vals.shape == (cols, npix)
+    assert phi_vals.shape == (cols, npix)
+    assert ra_and_dec.shape == (2, npix)
 
     # Value tests
     assert for_indices_by_spin_phase.dtype == bool

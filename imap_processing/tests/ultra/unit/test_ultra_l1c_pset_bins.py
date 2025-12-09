@@ -270,12 +270,14 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     pix = hp.nside2npix(nside)
     steps = 500  # Reduced for testing
     np.random.seed(42)
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.zeros((pix, steps)).astype(bool)  # Spin phase steps 1-15000,
+    mock_theta = np.random.uniform(-60, 60, (steps, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, pix))
+    spin_phase_steps = xr.DataArray(
+        np.zeros((steps, pix)).astype(bool), dims=("spin_phase_step", "pixel")
+    )
     # Simulate first 100 pixels are in the FOR for all spin phases
     inside_inds = 100
-    spin_phase_steps[:inside_inds, :] = True
+    spin_phase_steps[:, :inside_inds] = True
     deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
 
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
@@ -295,8 +297,8 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
         boundary_sf,
         apply_bsf=True,
     )
-    # The adjusted exposure should be of shape (1,npix)
-    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (1, pix))
+    # The adjusted exposure should be of shape (46,npix)
+    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (46, pix))
     # Check that the pixels inside the FOR have adjusted exposure > 0.
     assert np.all(exposure_pointing_adjusted[:, :inside_inds] > 0)
     # Assert that pixels outside the FOR remain at 0.
@@ -310,12 +312,14 @@ def test_apply_deadtime_correction_energy_dep(imap_ena_sim_metakernel, ancillary
     pix = hp.nside2npix(nside)
     steps = 500  # Reduced for testing
     np.random.seed(42)
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.zeros((pix, steps)).astype(bool)  # Spin phase steps 1-15000,
+    mock_theta = np.random.uniform(-60, 60, (steps, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, pix))
+    spin_phase_steps = xr.DataArray(
+        np.zeros((steps, pix)).astype(bool), dims=("spin_phase_step", "pixel")
+    )
     # Simulate first 100 pixels are in the FOR for all spin phases
     inside_inds = 100
-    spin_phase_steps[:inside_inds, :] = True
+    spin_phase_steps[:, :inside_inds] = True
     deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
 
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
@@ -328,14 +332,14 @@ def test_apply_deadtime_correction_energy_dep(imap_ena_sim_metakernel, ancillary
             reject_scattering=True,
         )
     )
-    boundary_sf = xr.DataArray(np.ones((pix, steps)), dims=("pixel", "spin_phase_step"))
+    boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
     exposure_pointing_adjusted = calculate_exposure_time(
         deadtime_ratios,
         valid_spun_pixels,
         boundary_sf,
         apply_bsf=True,
     )
-    # The adjusted exposure should be of shape (1,npix)
+    # The adjusted exposure should be of shape (46,npix)
     np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (46, pix))
     # Check that the pixels inside the FOR have adjusted exposure > 0.
     # Subset the energy dimension to check values in the last energy bin. These
@@ -364,10 +368,12 @@ def test_get_spacecraft_exposure_times(
     params = deadtime_datasets["params"]
 
     pix = 786
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.random.randint(0, 2, (pix, steps)).astype(
-        bool
+    mock_theta = np.random.uniform(-60, 60, (steps, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, pix))
+    np.random.seed(42)
+    spin_phase_steps = xr.DataArray(
+        np.random.randint(0, 2, (steps, pix)).astype(bool),
+        dims=("spin_phase_step", "pixel"),
     )  # Spin phase steps, random 0 or 1
 
     pixels_below_threshold, fwhm_theta, fwhm_phi, thresholds = (
@@ -375,7 +381,7 @@ def test_get_spacecraft_exposure_times(
             spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
         )
     )
-    boundary_sf = xr.DataArray(np.ones((pix, steps)), dims=("pixel", "spin_phase_step"))
+    boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
     exposure_pointing, deadtimes = get_spacecraft_exposure_times(
         rates,
         params,

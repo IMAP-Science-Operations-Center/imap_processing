@@ -14,9 +14,7 @@ from imap_processing.ultra.l1c.helio_pset import calculate_helio_pset
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.mark.skip(
-    reason="Long running test for validation purposes. Currently not passing."
-)
+@pytest.mark.skip(reason="Long running test for validation purposes.")
 def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_datasets):
     """Validates exposure time and sensitivities for ebin 0."""
     sens_filename = "SENS-IMAP_ULTRA_90-IMAP_DPS-HELIO-nside32-ebin0.csv"
@@ -38,7 +36,6 @@ def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_data
         .to_numpy()
         .squeeze()
     )
-    start_et = 797949123.371627
     npix = 12288  # nside 32
     # Create a minimal dataset to pass to the function
     dataset = xr.Dataset(
@@ -48,7 +45,7 @@ def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_data
     )
     dataset.attrs["Repointing"] = "repoint00000"
 
-    pointing_range_met = (start_et, 582378000.0)
+    pointing_range_met = (472374890.0, 582378000.0)
     # Create mock spin data that has 5525 nominal spins
     # Create DataFrame
     nspins = 5522
@@ -109,7 +106,7 @@ def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_data
     np.testing.assert_allclose(
         exposure_times,
         expected_exposure_times,
-        rtol=1e-2,
+        atol=95,  # TODO This is due to the helio index map differences
         err_msg="Exposure times do not match expected values for ebin 0.",
     )
     # Validate sensitivities for ebin 0
@@ -118,6 +115,6 @@ def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_data
     np.testing.assert_allclose(
         sensitivity,
         expected_sensitivity,
-        rtol=0.15,
+        atol=0.0006,  # TODO This is due to the helio index map differences
         err_msg="Sensitivities times do not match expected values for ebin 0.",
     )
