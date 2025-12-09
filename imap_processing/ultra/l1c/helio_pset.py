@@ -4,9 +4,6 @@ import logging
 
 import numpy as np
 import xarray as xr
-from imap_processing.ultra.l1c.make_helio_maps import (
-    make_helio_index_maps_with_nominal_kernels,
-)
 
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.quality_flags import ImapPSETUltraFlags
@@ -21,6 +18,9 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
     calculate_fwhm_spun_scattering,
+)
+from imap_processing.ultra.l1c.make_helio_index_maps import (
+    make_helio_index_maps_with_nominal_kernels,
 )
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (

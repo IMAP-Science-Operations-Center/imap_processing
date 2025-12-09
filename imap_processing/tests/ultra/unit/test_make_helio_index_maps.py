@@ -4,7 +4,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.ultra.l1c.make_helio_maps import make_helio_index_maps
+from imap_processing.ultra.l1c.make_helio_index_maps import make_helio_index_maps
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
