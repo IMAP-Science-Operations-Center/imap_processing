@@ -605,7 +605,7 @@ def test_l2_ialirt_cod_hi(cod_hi_l1b_test_data, l2_lut_path, cod_hi_l2_test_data
 
 
 @pytest.mark.external_test_data
-def test_process_codice_lo(
+def test_l2_ialirt_cod_lo(
     cod_lo_l1b_test_data, l1a_lut_path, cod_lo_l2_test_data, l2_processing_dependencies
 ):
     """Test process_codice for hi."""
@@ -730,6 +730,44 @@ def test_process_codice_lo(
     np.testing.assert_array_equal(
         fe_low_over_fe_high_ratio, cod_lo_l2_test_data["fe_low_over_fe_high_ratio"]
     )
+
+
+@pytest.mark.external_test_data
+def test_process_codice_lo(
+    cod_lo_test_dataset,
+    l1a_lut_path,
+    l2_lut_path,
+    cod_lo_l2_test_data,
+    l2_processing_dependencies,
+):
+    """Test process_codice for hi."""
+    test_data = cod_hi_l2_test_data["h"]
+    eff_path, gf_path = l2_processing_dependencies
+
+    n = cod_lo_test_dataset.dims["epoch"]
+    cod_lo_test_dataset = cod_lo_test_dataset.assign(
+        sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
+        sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
+    )
+
+    cod_lo_data, _ = process_codice(
+        cod_lo_test_dataset, l1a_lut_path, eff_path, "codice_lo", gf_path
+    )
+    samples_per_group = test_data.shape[0] // len(cod_lo_data)
+    grouped_test_data = test_data.reshape(
+        len(cod_lo_data),
+        samples_per_group,
+        *test_data.shape[1:],
+    )
+
+    for i, group in enumerate(cod_lo_data):
+        arr = np.array(group["codice_hi_l2_hi"], dtype=float)
+
+        np.testing.assert_allclose(
+            arr,
+            grouped_test_data[i],
+            atol=1e-2,
+        )
 
 
 @pytest.mark.external_test_data

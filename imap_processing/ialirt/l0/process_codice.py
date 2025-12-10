@@ -2,6 +2,7 @@
 
 import logging
 import pathlib
+from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,12 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
+from imap_processing.codice.codice_l2 import (
+    compute_geometric_factors,
+    get_efficiency_lut,
+    get_geometric_factor_lut,
+    process_lo_species_intensity,
+)
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
@@ -27,6 +34,18 @@ COD_LO_COUNTER = 232
 COD_HI_COUNTER = 197
 COD_LO_RANGE = range(0, 15)
 COD_HI_RANGE = range(0, 5)
+
+COD_LO_L2 = namedtuple(
+    "COD_LO_L2",
+    [
+        "c_over_o_abundance_ratio",
+        "mg_over_o_abundance_ratio",
+        "fe_over_o_abundance_ratio",
+        "c_plus_6_over_c_plus_5_ratio",
+        "o_plus_7_over_o_plus_6_ratio",
+        "fe_low_over_fe_high_ratio",
+    ],
+)
 
 
 def process_ialirt_data_streams(
@@ -242,6 +261,88 @@ def convert_to_intensities(
     return intensity
 
 
+def calculate_ratios(
+    cod_lo_l1b_data: xr.Dataset,
+    l2_lut_path: pathlib.Path,
+    l2_geometric_factor_path: pathlib.Path,
+):
+    geometric_factor_lookup = get_geometric_factor_lut(None, l2_geometric_factor_path)
+    geometric_factors = compute_geometric_factors(
+        cod_lo_l1b_data, geometric_factor_lookup
+    )
+
+    efficiency_lookup = get_efficiency_lut(None, l2_lut_path)
+    efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
+    intensity = process_lo_species_intensity(
+        cod_lo_l1b_data,
+        constants.LO_IALIRT_VARIABLE_NAMES,
+        geometric_factors,
+        efficiencies,
+        constants.SOLAR_WIND_POSITIONS,
+    )
+    pseudo_density_dict = {}
+
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
+        pseudo_density = (
+            intensity[species]
+            * np.sqrt(cod_lo_l1b_data["energy_table"])
+            * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
+        )  # (epoch, esa_step, spin_sector)
+
+        summed_pseudo_density = pseudo_density.sum(dim="esa_step").squeeze(
+            "spin_sector"
+        )  # (epoch,)
+        pseudo_density_dict[species] = summed_pseudo_density.values
+
+    species = constants.LO_IALIRT_VARIABLE_NAMES
+
+    # Denominator.
+    # Note that outside of this test a zero value denominator
+    # will lead to a null value.
+    # The use of zeros here is only to match the test data as
+    # confirmed by the instrument team.
+    o_abundance_ratio = (
+        pseudo_density_dict[species[3]]
+        + pseudo_density_dict[species[4]]
+        + pseudo_density_dict[species[5]]
+    )
+
+    c_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[1]] + pseudo_density_dict[species[2]],
+        o_abundance_ratio,
+    )
+    mg_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[6]],
+        o_abundance_ratio,
+    )
+    fe_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[7]] + pseudo_density_dict[species[8]],
+        o_abundance_ratio,
+    )
+
+    c_plus_6_over_c_plus_5_ratio = np.divide(
+        pseudo_density_dict[species[2]],
+        pseudo_density_dict[species[1]],
+    )
+    o_plus_7_over_o_plus_6_ratio = np.divide(
+        pseudo_density_dict[species[4]],
+        pseudo_density_dict[species[3]],
+    )
+    fe_low_over_fe_high_ratio = np.divide(
+        pseudo_density_dict[species[7]],
+        pseudo_density_dict[species[8]],
+    )
+
+    return COD_LO_L2(
+        c_over_o_abundance_ratio=c_over_o_abundance_ratio,
+        mg_over_o_abundance_ratio=mg_over_o_abundance_ratio,
+        fe_over_o_abundance_ratio=fe_over_o_abundance_ratio,
+        c_plus_6_over_c_plus_5_ratio=c_plus_6_over_c_plus_5_ratio,
+        o_plus_7_over_o_plus_6_ratio=o_plus_7_over_o_plus_6_ratio,
+        fe_low_over_fe_high_ratio=fe_low_over_fe_high_ratio,
+    )
+
+
 def process_codice(
     dataset: xr.Dataset,
     l1a_lut_path: pathlib.Path,
@@ -320,7 +421,12 @@ def process_codice(
             cod_lo_dataset = create_xarray_dataset(
                 cod_lo_science_values, cod_lo_metadata_values, "lo", l1a_lut_path
             )
-            result = l1a_lo_species(cod_lo_dataset, l1a_lut_path)  # noqa
+            l1a_lo = l1a_lo_species(cod_lo_dataset, l1a_lut_path)
+            l1b_lo = convert_to_rates(
+                l1a_lo,
+                "lo-ialirt",
+            )
+            l2_lo = calculate_ratios(l1b_lo, l2_lut_path, l2_geometric_factor_path)
 
     if sensor == "codice_hi" and unique_cod_hi_groups.size > 0:
         for group in unique_cod_hi_groups:
