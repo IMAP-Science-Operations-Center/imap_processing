@@ -217,7 +217,7 @@ def process_swapi_ialirt(
 
     swapi_data = []
 
-    if len(met_values) == len(raw_coin_rate):
+    if len(met_values) != len(raw_coin_rate):
         raise RuntimeError('Inconsistent number of MET times and count sweep bins')
 
     for entry in np.arange(0, len(raw_coin_rate)):
