@@ -283,7 +283,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         # Self.frame should refer to the main data in self.vectors, which is MAGO
         # data. For most frames, MAGO and MAGI are in the same frame, except the
         # instrument reference frame.
-        if ValidFrames.MAGI is self.frame or ValidFrames.MAGI is end_frame:
+        if if ValidFrames.MAGI in (self.frame, end_frame):
             raise ValueError(
                 "MAGL1d.frame should never be equal to MAGI frame. If the "
                 "data is in the instrument frame, use MAGO."
