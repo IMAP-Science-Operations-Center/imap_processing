@@ -94,8 +94,9 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
         )
     # Should have: 4 norm frames + 4 burst frames + spin offsets + 2 gradiometry offsets
 
+    frame = l1d[0].attrs["Logical_source"].split("-")[-1].lower()
     assert len(l1d) == 11
-    assert "vectors" in l1d[0].data_vars
+    assert f"b_{frame}" in l1d[0].data_vars
 
     # Check that expected logical sources are present
     logical_sources = [ds.attrs.get("Logical_source", "") for ds in l1d]
@@ -181,10 +182,10 @@ def test_mag_l1d_attributes(
             f"got '{logical_source_parts[2]}'"
         )
 
-        vectors_attrs = dataset["vectors"].attrs
-        assert "DICT_KEY" in vectors_attrs
-
         frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
+
+        vectors_attrs = dataset[f"b_{frame.lower()}"].attrs
+        assert "DICT_KEY" in vectors_attrs
 
         assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
 
@@ -482,7 +483,7 @@ def test_mago_magi_swap_functionality(mag_l1d_test_class):
     assert np.array_equal(mag_l1d_test_class.vectors, mago_vectors)
     assert np.array_equal(mag_l1d_test_class.epoch, mago_epoch)
 
-    assert np.array_equal(result["vectors"].data, magi_vectors)
+    assert np.array_equal(result[mag_l1d_test_class.frame.var_name].data, magi_vectors)
     assert np.array_equal(result["epoch"].data, magi_epoch)
 
 
@@ -509,7 +510,7 @@ def test_mago_magi_no_swap_functionality(mag_l1d_test_class):
     assert np.array_equal(mag_l1d_test_class.vectors, mago_vectors)
     assert np.array_equal(mag_l1d_test_class.epoch, mago_epoch)
 
-    assert np.array_equal(result["vectors"].data, mago_vectors)
+    assert np.array_equal(result[mag_l1d_test_class.frame.var_name].data, mago_vectors)
     assert np.array_equal(result["epoch"].data, mago_epoch)
 
 
