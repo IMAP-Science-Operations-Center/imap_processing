@@ -511,8 +511,8 @@ def get_spacecraft_exposure_times(
 def get_efficiencies_and_geometric_function(
     valid_spun_pixels: xr.DataArray,
     boundary_scale_factors: xr.DataArray,
-    theta_vals: np.ndarray,
-    phi_vals: np.ndarray,
+    theta_vals: np.ndarray | xr.DataArray,
+    phi_vals: np.ndarray | xr.DataArray,
     npix: int,
     ancillary_files: dict,
     apply_bsf: bool = True,
@@ -533,11 +533,11 @@ def get_efficiencies_and_geometric_function(
         shape = (spin_phase_steps, 1, n_pix).
     boundary_scale_factors : xarray.DataArray
         Boundary scale factors for each pixel at each spin phase.
-    theta_vals : np.ndarray
+    theta_vals : np.ndarray or xarray.DataArray
         2D or 3D array of theta values. Shape is either (spin_phase_step, npix)
         or (spin_phase_step, energy_bins, npix) when energy-dependent scattering
         rejection is used.
-    phi_vals : np.ndarray
+    phi_vals : np.ndarray or xarray.DataArray
         Array of phi values with the same shape as `theta_vals`, giving the
         corresponding phi for each pixel (and energy, if present).
     npix : int
@@ -622,8 +622,8 @@ def get_efficiencies_and_geometric_function(
                 continue
 
             gf_values = get_geometric_factor(
-                phi=phi_at_spin[pixel_inds],
-                theta=theta_at_spin[pixel_inds],
+                phi=phi_at_spin[pixel_inds].values,
+                theta=theta_at_spin[pixel_inds].values,
                 quality_flag=np.zeros(len(phi_at_spin[pixel_inds])).astype(np.uint16),
                 geometric_factor_tables=geometric_lookup_table,
             )

@@ -458,6 +458,7 @@ def is_inside_fov(theta: np.ndarray, phi: np.ndarray) -> np.ndarray:
     """
     numerator = 5.0 * np.cos(phi)
     denominator = 1.0 + 2.80 * np.cos(phi)
+    # Equation 19 in the Ultra Algorithm Document.
     theta_nom = np.arctan(numerator / denominator) - np.radians(FOV_THETA_OFFSET_DEG)
 
     theta_check = np.abs(theta) <= np.abs(theta_nom)

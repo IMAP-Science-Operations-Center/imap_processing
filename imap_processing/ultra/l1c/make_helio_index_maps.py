@@ -97,6 +97,7 @@ def make_helio_index_maps_with_nominal_kernels(
     """
     with sp.KernelPool(kernel_paths):
         # calculate the start et of the pointing kernel.
+        # TODO replace this with a util function
         ck_kernel, _, _, _ = sp.kdata(1, "ck")
         ck_cover = sp.ckcov(
             ck_kernel, SpiceFrame.IMAP_DPS.value, True, "INTERVAL", 0, "TDB"
