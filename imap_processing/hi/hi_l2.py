@@ -371,16 +371,11 @@ def combine_calibration_products(
         map_ds, geometric_factors, esa_energies
     )
 
-    # Calculate total variance
-    # Note that sys_err contains uncertainty, so it must be squared to get
-    # the systematic variance needed in this equation.
-    total_variance = improved_stat_variance + sys_err**2
-
     # Perform inverse-variance weighted averaging
     # Handle divide by zero and invalid values
     with np.errstate(divide="ignore", invalid="ignore"):
         # Use total variance weights for flux combination
-        flux_weights = 1.0 / total_variance
+        flux_weights = 1.0 / improved_stat_variance
         weighted_flux_sum = (ena_flux * flux_weights).sum(dim="calibration_prod")
         combined_flux = weighted_flux_sum / flux_weights.sum(dim="calibration_prod")
 
