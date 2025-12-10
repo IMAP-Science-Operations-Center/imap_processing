@@ -283,7 +283,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         # Self.frame should refer to the main data in self.vectors, which is MAGO
         # data. For most frames, MAGO and MAGI are in the same frame, except the
         # instrument reference frame.
-        if ValidFrames.MAGI in (self.frame, end_frame):
+        if ValidFrames.MAGI is self.frame or ValidFrames.MAGI is end_frame:
             raise ValueError(
                 "MAGL1d.frame should never be equal to MAGI frame. If the "
                 "data is in the instrument frame, use MAGO."
@@ -298,8 +298,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         self.vectors = frame_transform(
             self.epoch_et,
             self.vectors,
-            from_frame=start_frame.value,
-            to_frame=end_frame.value,
+            from_frame=start_frame.spice_frame,
+            to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
 
@@ -311,8 +311,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         self.magi_vectors = frame_transform(
             self.magi_epoch_et,
             self.magi_vectors,
-            from_frame=start_frame.value,
-            to_frame=end_frame.value,
+            from_frame=start_frame.spice_frame,
+            to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
 

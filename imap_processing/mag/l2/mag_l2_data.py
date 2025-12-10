@@ -20,13 +20,33 @@ from imap_processing.spice.time import (
 class ValidFrames(Enum):
     """SPICE reference frames for output."""
 
-    MAGO = SpiceFrame.IMAP_MAG_BASE
-    MAGI = SpiceFrame.IMAP_MAG_BASE
-    DSRF = SpiceFrame.IMAP_DPS
-    SRF = SpiceFrame.IMAP_SPACECRAFT
-    GSE = SpiceFrame.IMAP_GSE
-    GSM = SpiceFrame.IMAP_GSM
-    RTN = SpiceFrame.IMAP_RTN
+    MAGO = ("MAGO", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
+    MAGI = ("MAGi", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
+    DSRF = ("DSRF", SpiceFrame.IMAP_DPS, "vector_attrs_dsrf", "b_dsrf")
+    SRF = ( "SRF", SpiceFrame.IMAP_SPACECRAFT, "vector_attrs_srf", "b_srf")
+    GSE = ( "GSE", SpiceFrame.IMAP_GSE,"vector_attrs_gse", "b_gse")
+    GSM = ( "GSM", SpiceFrame.IMAP_GSM, "vector_attrs_gsm", "b_gsm")
+    RTN = ( "RTN",SpiceFrame.IMAP_RTN, "vector_attrs_rtn", "b_rtn")
+
+    def __new__(cls, value, spice_frame, attrs_name, var_name):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj._spice_frame_ = spice_frame
+        obj._vector_attrs_name_ = attrs_name
+        obj._var_name_ = var_name
+        return obj
+
+    @property
+    def spice_frame(self):
+        return self._spice_frame_
+    
+    @property
+    def vector_attrs_name(self):
+        return self._vector_attrs_name_
+    
+    @property
+    def var_name(self):
+        return self._var_name_
 
 
 @dataclass(kw_only=True)
@@ -109,16 +129,6 @@ class MagL2L1dBase:
             f"{self.frame.name.lower()}"
         )
 
-        # Select the appropriate vector attributes based on the frame
-        frame_to_vector_attrs = {
-            ValidFrames.SRF: "vector_attrs_srf",
-            ValidFrames.DSRF: "vector_attrs_dsrf",
-            ValidFrames.GSE: "vector_attrs_gse",
-            ValidFrames.RTN: "vector_attrs_rtn",
-            ValidFrames.GSM: "vector_attrs_gsm",  # L2 Only
-        }
-        vector_attrs_name = frame_to_vector_attrs.get(self.frame, "vector_attrs")
-
         direction = xr.DataArray(
             np.arange(3),
             name="direction",
@@ -148,9 +158,9 @@ class MagL2L1dBase:
 
         vectors = xr.DataArray(
             self.vectors,
-            name="vectors",
+            name=self.frame.var_name,
             dims=["epoch", "direction"],
-            attrs=attribute_manager.get_variable_attributes(vector_attrs_name),
+            attrs=attribute_manager.get_variable_attributes(self.frame.vector_attrs_name),
         )
 
         quality_flags = xr.DataArray(
@@ -195,7 +205,7 @@ class MagL2L1dBase:
             attrs=global_attributes,
         )
 
-        output["vectors"] = vectors
+        output[self.frame.var_name] = vectors
         output["quality_flags"] = quality_flags
         output["quality_bitmask"] = quality_bitmask
         output["range"] = rng
@@ -332,8 +342,8 @@ class MagL2L1dBase:
         self.vectors = frame_transform(
             self.epoch_et,
             self.vectors,
-            from_frame=self.frame.value,
-            to_frame=end_frame.value,
+            from_frame=self.frame.spice_frame,
+            to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
         self.frame = end_frame
