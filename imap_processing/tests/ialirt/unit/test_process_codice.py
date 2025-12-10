@@ -29,6 +29,7 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_LO_COUNTER,
+    FILLVAL_FLOAT32,
     FILLVAL_UINT8,
     concatenate_bytes,
     convert_to_intensities,
@@ -405,7 +406,7 @@ def test_create_xarray_dataset_basic(l1a_lut_path):
         "SPIN_PERIOD": np.array([24]),
     }
 
-    ds = create_xarray_dataset(science_values, metadata_values, "lo", l1a_lut_path)
+    ds = create_xarray_dataset(science_values, metadata_values, "lo")
 
     for key in metadata_values:
         assert key.lower() in ds.variables
@@ -484,7 +485,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "lo", l1a_lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "lo")
     result = l1a_lo_species(dataset, l1a_lut_path)
 
     expected_species = [
@@ -569,7 +570,7 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data[i])
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "hi", l1a_lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi")
     result = l1a_ialirt_hi(dataset, l1a_lut_path)
 
     expected_species = [
@@ -741,7 +742,6 @@ def test_process_codice_lo(
     l2_processing_dependencies,
 ):
     """Test process_codice for hi."""
-    test_data = cod_hi_l2_test_data["h"]
     eff_path, gf_path = l2_processing_dependencies
 
     n = cod_lo_test_dataset.dims["epoch"]
@@ -753,21 +753,20 @@ def test_process_codice_lo(
     cod_lo_data, _ = process_codice(
         cod_lo_test_dataset, l1a_lut_path, eff_path, "codice_lo", gf_path
     )
-    samples_per_group = test_data.shape[0] // len(cod_lo_data)
-    grouped_test_data = test_data.reshape(
-        len(cod_lo_data),
-        samples_per_group,
-        *test_data.shape[1:],
-    )
 
-    for i, group in enumerate(cod_lo_data):
-        arr = np.array(group["codice_hi_l2_hi"], dtype=float)
+    l2_products = [
+        "codice_lo_c_over_o_abundance",
+        "codice_lo_mg_over_o_abundance",
+        "codice_lo_fe_over_o_abundance",
+        "codice_lo_c_plus_6_over_c_plus_5",
+        "codice_lo_o_plus_7_over_o_plus_6",
+        "codice_lo_fe_low_over_fe_high",
+    ]
 
-        np.testing.assert_allclose(
-            arr,
-            grouped_test_data[i],
-            atol=1e-2,
-        )
+    assert len(cod_lo_data) == 9
+
+    for product in l2_products:
+        assert cod_lo_data[0][product] == FILLVAL_FLOAT32
 
 
 @pytest.mark.external_test_data
