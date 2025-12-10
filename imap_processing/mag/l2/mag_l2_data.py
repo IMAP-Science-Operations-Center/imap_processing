@@ -20,8 +20,31 @@ from imap_processing.spice.time import (
 class ValidFrames(Enum):
     """SPICE reference frames for output."""
 
+    """
+    Default MAGO and MAGI L1D and L2 frames both map to the same SPICE frame.
+    This is because the idealised IMAP_MAG_BASE frame is used for both sensors,
+    as the MAG team provides a calibration matrix to convert from the real mechanical
+    mount as assessed in flight into the idealised frame.
+
+    MAGO_GROUND_CAL and MAGI_GROUND_CAL additionally included for reference to the
+    ground assessed mount, and for future use if needed.
+    """
     MAGO = ("MAGO", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
-    MAGI = ("MAGi", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
+    MAGI = ("MAGI", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
+
+    MAGO_GROUND_CAL = (
+        "MAGO_GROUND_CAL",
+        SpiceFrame.IMAP_MAG_O,
+        "vector_attrs",
+        "vectors",
+    )
+    MAGI_GROUND_CAL = (
+        "MAGI_GROUND_CAL",
+        SpiceFrame.IMAP_MAG_I,
+        "vector_attrs",
+        "vectors",
+    )
+
     DSRF = ("DSRF", SpiceFrame.IMAP_DPS, "vector_attrs_dsrf", "b_dsrf")
     SRF = ("SRF", SpiceFrame.IMAP_SPACECRAFT, "vector_attrs_srf", "b_srf")
     GSE = ("GSE", SpiceFrame.IMAP_GSE, "vector_attrs_gse", "b_gse")
