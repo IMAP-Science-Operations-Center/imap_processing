@@ -95,6 +95,14 @@ def make_helio_index_maps_with_nominal_kernels(
     xr.Dataset
         Dataset with helio index maps.
     """
+    # Get all loaded SPK kernels
+    spk_kernels = [sp.kdata(i, "spk")[0] for i in range(sp.ktotal("spk"))]
+    # Find the de440s.bps kernel
+    de440s_file = next((k for k in spk_kernels if "de440s" in k), None)
+    if de440s_file is None:
+        raise RuntimeError("de440s.bsp kernel not found in loaded SPK kernels.")
+    # If found, add to kernel paths
+    kernel_paths.append(de440s_file)
     with sp.KernelPool(kernel_paths):
         # calculate the start et of the pointing kernel.
         # TODO replace this with a util function
