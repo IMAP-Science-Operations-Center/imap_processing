@@ -59,7 +59,7 @@ def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
         assert logical_source_parts[2] == "l2", (
             f"Expected data_level 'l2' in Logical_source, "
             f"got '{logical_source_parts[2]}'"
-        ) 
+        )
 
         # Extract frame from logical source
         frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
@@ -138,7 +138,9 @@ def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
     all_vars = ["b_srf", "b_gse", "b_gsm", "b_rtn", "b_dsrf"]
 
     for dataset in l2:
-        assert len(set(all_vars) & set(dataset.data_vars)) == 1, "Each dataset should have one of the expected vector variables"
+        assert len(set(all_vars) & set(dataset.data_vars)) == 1, (
+            "Each dataset should have one of the expected vector variables"
+        )
 
     assert (
         l2[-1].attrs["Data_type"] == "L2_norm-dsrf>Level 2 normal rate data in DSRF"
