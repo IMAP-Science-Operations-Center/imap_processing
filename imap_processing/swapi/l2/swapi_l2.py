@@ -65,9 +65,16 @@ def solve_full_sweep_energy(
         dtype="datetime64[ns]"
     )
 
-    first_63_energies = []
+    # Initialize the output energy array
+    # Each sweep will have different energies for each step.
+    # The first 63 energies are coarse steps, then followed by 9 fine steps.
+    # The 9 fine steps may be defined in the main table (fixed steps), or "solve"
+    # which requires a separate lookup in the lut-notes table.
+    energy_data = np.empty((len(sweep_table), NUM_ENERGY_STEPS), dtype=float)
 
-    for time, sweep_id in zip(data_time, sweep_table, strict=False):
+    for i_sweep, (time, sweep_id, esa_lvl5_val) in enumerate(
+        zip(data_time, sweep_table, esa_lvl5_data, strict=True)
+    ):
         # Find the sweep's ESA data for the given time and sweep_id
         subset = esa_table_df[
             (esa_table_df["timestamp"] <= time) & (esa_table_df["Sweep #"] == sweep_id)
@@ -89,83 +96,56 @@ def solve_full_sweep_energy(
                 )
             subset = earliest_subset
 
-        # Subset data can contain multiple 72 energy values with last 9 fine energies
-        # with 'Solve' value. We need to sort by time and ESA step to maintain correct
-        # order. Then take the last group of 72 steps values and select first 63
-        # values only.
-        subset = subset.sort_values(["timestamp", "ESA Step #"])
-        grouped = subset["Energy"].values.reshape(-1, NUM_ENERGY_STEPS)
-        first_63 = grouped[-1, :63]
-        first_63_energies.append(first_63)
-
-    # Find last 9 fine energy values of all sweeps data
-    # -------------------------------------------------
-    # First, verify that all values in the LUT-notes table's 'ESA DAC (Hex)' column
-    # exactly matches a value in the esa_lvl5_data.
-    has_exact_match = np.isin(esa_lvl5_data, lut_notes_df["ESA DAC (Hex)"].values)
-    if not np.all(has_exact_match):
-        raise ValueError(
-            "These ESA_LVL5 values not found in lut-notes table: "
-            f"{esa_lvl5_data[np.where(~has_exact_match)[0]]} "
-        )
-
-    # Find index of 71st energy step for all sweeps data in lut-notes table.
-    # Tried using np.where(np.isin(...)) or df.index[np.isin(...)] to find the index
-    # of each value in esa_lvl5_data within the LUT table. However, these methods
-    # return only the unique matching indices — not one index per input value.
-    # For example, given the input:
-    #   ['12F1', '12F1', '12F1', '12F1']
-    # np.where(np.isin(...)) would return:
-    #   [336]
-    # because it finds that '12F1' exists in the LUT and only returns its position once.
-    # What we actually need is:
-    #   [336, 336, 336, 336]
-    # — one index for *each* occurrence in the input, preserving its shape and order.
-    # Therefore, instead of relying on np.isin or similar, we explicitly use
-    # np.where in a loop to find the index of each value in esa_lvl5_data individually,
-    # ensuring the output array has the same shape as the input.
-
-    # Page 31 of algorithm document
-    last_energy_step_indices = np.array(
-        [
-            np.where(lut_notes_df["ESA DAC (Hex)"].values == val)[0][0]
-            for val in esa_lvl5_data
+        # Subset data can contain multiple sweeps of 72 energy values.
+        # We need to sort by time and ESA step to maintain correct
+        # order. Then take the last sweep (72 values).
+        subset = subset.sort_values(["timestamp", "ESA Step #"]).iloc[
+            -NUM_ENERGY_STEPS:
         ]
-    )
-    # Use back tracking steps to find all 9 fine energy value indices
-    # Eg. [-32, -28, ... -8, -4, 0]
-    steps = np.arange(9)[::-1] * -4
+        sweep_esa_energies = subset["Energy"].values
 
-    # Find indices of last 9 fine energy values of all sweeps data
-    fine_energy_indices = last_energy_step_indices[:, None] + steps
+        # Solve steps are the fine sweep steps. This can be variable numbers and is
+        # not always the final 9 steps. They are negative values when reading in the df
+        solve_steps = sweep_esa_energies < 0
+        energy_data[i_sweep, ~solve_steps] = sweep_esa_energies[~solve_steps]
+        if not np.any(solve_steps):
+            # No solve steps, we've already filled all energies continue to next sweep
+            continue
 
-    # NOTE: This back tracking method was updated with sweep id 3. So
-    # we need to change the step values based on sweep id.
-    # The final 3 steps are background and will be set to 0 energy later.
-    sweep_id_3_mask = np.asarray(sweep_table) == 3
-    steps = np.array([-80, -64, -48, -32, -16, 0, 0, 0, 0])
-    fine_energy_indices[sweep_id_3_mask, :] = (
-        last_energy_step_indices[sweep_id_3_mask, None] + steps
-    )
+        # Page 31 of algorithm document
+        # Get the last energy step index for use in looking up the fine sweep values
+        # Find the index of the matching ESA DAC value
+        matching_indices = np.nonzero(
+            lut_notes_df["ESA DAC (Hex)"].values == esa_lvl5_val
+        )[0]
+        if len(matching_indices) == 0:
+            raise ValueError(
+                f"ESA DAC value '{esa_lvl5_val}' not found in LUT notes table "
+                f"for sweep {i_sweep} at time {time}"
+            )
+        last_energy_step_index = matching_indices[0]
 
-    # NOTE: Per SWAPI instruction, set every index that result in negative
-    # indices during back tracking to zero index. SWAPI calls this
-    # "flooring" the index. For example, if the 71st energy step index results
-    # in less than 32, then it would result in some negative indices. Eg.
-    #    71st index = 31
-    #    nine fine energy indices = [31, 27, 23, 19, 15, 11, 7, 3, -1]
-    #    flooring = [31, 27, 23, 19, 15, 11, 7, 3, 0]
-    fine_energy_indices[fine_energy_indices < 0] = 0
+        # The ESA Index Number contains the offset indices for the fine energy values
+        fine_offsets = subset["ESA Index Number"].values[solve_steps]
+        # Since we are backtracking from the final index, we need to subtract that
+        # offset from all of the other indices.
+        fine_offsets -= fine_offsets[-1]
+        fine_lut_indices = last_energy_step_index + fine_offsets
 
-    energy_values = lut_notes_df["Energy"].values[fine_energy_indices]
+        # NOTE: Per SWAPI instruction, set every index that result in negative
+        # indices during back tracking to zero index. SWAPI calls this
+        # "flooring" the index. For example, if the 71st energy step index results
+        # in less than 32, then it would result in some negative indices. Eg.
+        #    71st index = 31
+        #    nine fine energy indices = [31, 27, 23, 19, 15, 11, 7, 3, -1]
+        #    flooring = [31, 27, 23, 19, 15, 11, 7, 3, 0]
+        fine_lut_indices[fine_lut_indices < 0] = 0  # Ensure no negative indices
 
-    # Set last 3 fine energies to 0 for sweep id 3
-    energy_values[sweep_id_3_mask, -3:] = 0.0
+        energy_data[i_sweep, solve_steps] = lut_notes_df["Energy"].values[
+            fine_lut_indices
+        ]
 
-    # Append the first_63_values in front of energy_values
-    sweeps_energy_value = np.hstack([first_63_energies, energy_values])
-
-    return sweeps_energy_value
+    return energy_data
 
 
 def swapi_l2(

@@ -226,14 +226,14 @@ def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
             107,
         ]
     )
-    assert np.all(sweeps_energy_value[:, :63] == fixed_energy_values)
+    np.testing.assert_array_equal(sweeps_energy_value[0, :63], fixed_energy_values)
 
     # Now, test that the last 9 fine energy values are as expected for first sweep.
     # I manually picked those values from LUT table.
     expected_fine_energies = np.array(
         [3220.0, 3151.0, 3083.0, 3017.0, 2953.0, 2889.0, 2827.0, 2767.0, 2707.0]
     )
-    assert np.all(sweeps_energy_value[0, -9:] == expected_fine_energies)
+    np.testing.assert_array_equal(sweeps_energy_value[0, -9:], expected_fine_energies)
 
     # Test that we get different values for date later than 2025-05-19
     data_time = [np.datetime64("2025-05-20T00:00:00", "ns")]
@@ -307,12 +307,12 @@ def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
             100,
         ]
     )
-    assert np.all(sweeps_energy_value[:, :63] == new_fixed_energy_values)
+    np.testing.assert_array_equal(sweeps_energy_value[0, :63], new_fixed_energy_values)
 
     # Test mismatch values for 9 fine steps x 4 steps.
     mismatch_value = [1]
     with pytest.raises(
-        ValueError, match="These ESA_LVL5 values not found in lut-notes table"
+        ValueError, match="ESA DAC value '1' not found in LUT notes table"
     ):
         solve_full_sweep_energy(
             np.array(mismatch_value),
@@ -330,6 +330,19 @@ def test_solve_full_sweep_energy_id3(esa_unit_conversion_table, lut_notes_table)
     esa_unit_conversion_table.loc[
         esa_unit_conversion_table["Sweep #"] == 2, "Sweep #"
     ] = 3
+    # Update the first 3 fine energies to be 0 rather than "solve" / negative
+    # This makes 6 fine energy steps for sweep id 3
+    # Get sweep 3 rows and set Energy values at indices 63-66 (inclusive) to 0
+    sweep_3_mask = esa_unit_conversion_table["Sweep #"] == 3
+    sweep_3_indices = esa_unit_conversion_table[sweep_3_mask].index
+    esa_unit_conversion_table.loc[sweep_3_indices[63:66], "Energy"] = 0
+
+    # Update the ESA Index Number in lut_notes_table for sweep id 3
+    # to match the 6 fine energy steps
+    esa_unit_conversion_table.loc[sweep_3_indices[66:], "ESA Index Number"] = np.array(
+        [-40, -24, -8, 8, 24, 40]
+    )
+
     esa_lvl5_arr = [4663]
     sweep_table = [3]
     data_time = [np.datetime64("2025-12-24T00:00:00", "ns")]
@@ -339,10 +352,11 @@ def test_solve_full_sweep_energy_id3(esa_unit_conversion_table, lut_notes_table)
     )
     assert sweeps_energy_value.shape == (1, 72)
 
-    # The last 3 values should be 0 for sweep id 3
+    # The first 3 fine step values should be 0 for sweep id 3
     np.testing.assert_array_equal(
-        sweeps_energy_value[0, -3:], np.array([0.0, 0.0, 0.0])
+        sweeps_energy_value[0, 63:66], np.array([0.0, 0.0, 0.0])
     )
-    # The -9th value (first fine step) should be the same as the last index-80
+    # The -6th value (first fine step) should be the same as the last index-80
     # 4663 corresponds to 383rd index in lut_notes_table
-    assert sweeps_energy_value[0, -9] == lut_notes_table["Energy"].values[383 - 80]
+    assert sweeps_energy_value[0, -6] == lut_notes_table["Energy"].values[383 - 80]
+    assert sweeps_energy_value[0, -1] == lut_notes_table["Energy"].values[383]
