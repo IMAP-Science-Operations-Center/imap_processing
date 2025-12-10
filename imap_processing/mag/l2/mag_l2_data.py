@@ -23,12 +23,37 @@ class ValidFrames(Enum):
     MAGO = ("MAGO", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
     MAGI = ("MAGi", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
     DSRF = ("DSRF", SpiceFrame.IMAP_DPS, "vector_attrs_dsrf", "b_dsrf")
-    SRF = ( "SRF", SpiceFrame.IMAP_SPACECRAFT, "vector_attrs_srf", "b_srf")
-    GSE = ( "GSE", SpiceFrame.IMAP_GSE,"vector_attrs_gse", "b_gse")
-    GSM = ( "GSM", SpiceFrame.IMAP_GSM, "vector_attrs_gsm", "b_gsm")
-    RTN = ( "RTN",SpiceFrame.IMAP_RTN, "vector_attrs_rtn", "b_rtn")
+    SRF = ("SRF", SpiceFrame.IMAP_SPACECRAFT, "vector_attrs_srf", "b_srf")
+    GSE = ("GSE", SpiceFrame.IMAP_GSE, "vector_attrs_gse", "b_gse")
+    GSM = ("GSM", SpiceFrame.IMAP_GSM, "vector_attrs_gsm", "b_gsm")
+    RTN = ("RTN", SpiceFrame.IMAP_RTN, "vector_attrs_rtn", "b_rtn")
 
-    def __new__(cls, value, spice_frame, attrs_name, var_name):
+    _spice_frame_: SpiceFrame
+    _vector_attrs_name_: str
+    _var_name_: str
+
+    def __new__(
+        cls, value: str, spice_frame: SpiceFrame, attrs_name: str, var_name: str
+    ) -> "ValidFrames":
+        """
+        Construct a new Valid Frame.
+
+        Parameters
+        ----------
+        value : str
+            Unique name of the frame.
+        spice_frame : str
+            The SPICE frame name corresponding to this frame.
+        attrs_name : str
+            The name of the variable attributes in the attribute manager for this frame.
+        var_name : str
+            The name of the variable in the output dataset for this frame.
+
+        Returns
+        -------
+        ValidFrame : ValidFrame
+            A ValidFrame enum member.
+        """
         obj = object.__new__(cls)
         obj._value_ = value
         obj._spice_frame_ = spice_frame
@@ -37,15 +62,39 @@ class ValidFrames(Enum):
         return obj
 
     @property
-    def spice_frame(self):
+    def spice_frame(self) -> SpiceFrame:
+        """
+        Get the SPICE frame name for this ValidFrame.
+
+        Returns
+        -------
+        spice_frame : str
+            The frame's associated spice frame.
+        """
         return self._spice_frame_
-    
+
     @property
-    def vector_attrs_name(self):
+    def vector_attrs_name(self) -> str:
+        """
+        Get the vector attributes name for this valid frame.
+
+        Returns
+        -------
+        vector_attrs_name : str
+            The frame's associated vector attributes name.
+        """
         return self._vector_attrs_name_
-    
+
     @property
-    def var_name(self):
+    def var_name(self) -> str:
+        """
+        Get the vector variable name for this valid frame.
+
+        Returns
+        -------
+        var_name : str
+            The frame's associated vectors variable name.
+        """
         return self._var_name_
 
 
@@ -160,7 +209,9 @@ class MagL2L1dBase:
             self.vectors,
             name=self.frame.var_name,
             dims=["epoch", "direction"],
-            attrs=attribute_manager.get_variable_attributes(self.frame.vector_attrs_name),
+            attrs=attribute_manager.get_variable_attributes(
+                self.frame.vector_attrs_name
+            ),
         )
 
         quality_flags = xr.DataArray(

@@ -569,6 +569,7 @@ def test_enhanced_gradiometry_with_quality_flags_detailed():
     )
     assert np.array_equal(grad_ds["quality_flags"].data, expected_flags)
 
+
 def test_rotate_frames(mag_l1d_test_class):
     # Reset to initial MAGO frame for this test
     mag_l1d_test_class.frame = ValidFrames.MAGO
@@ -580,7 +581,7 @@ def test_rotate_frames(mag_l1d_test_class):
     def mock_frame_transform(
         epoch_et, vectors, from_frame, to_frame, allow_spice_noframeconnect
     ):
-        if from_frame == ValidFrames.MAGO.spice_frame or from_frame == ValidFrames.MAGI.spice_frame:
+        if from_frame in [ValidFrames.MAGO.spice_frame, ValidFrames.MAGI.spice_frame]:
             return vectors + 100
         else:
             return vectors + 300
