@@ -105,7 +105,7 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
     )
 
     for i, dataset in enumerate(l2):
-        assert "vectors" in dataset.data_vars
+        assert expected_frames[i].var_name in dataset.data_vars
         assert expected_frames[i].name in dataset.attrs["Data_type"]
 
 
@@ -114,7 +114,7 @@ def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
         et, from_frame, to_frame, allow_spice_noframeconnect
     ):
         matrices = np.tile(np.eye(3), (len(et), 1, 1))
-        if to_frame == ValidFrames.DSRF.value:
+        if to_frame == ValidFrames.DSRF.spice_frame:
             for i in range(10, matrices.shape[0], 10):  # every 10th matrix is NaN
                 matrices[i] = np.full((3, 3), np.nan)
         return matrices
