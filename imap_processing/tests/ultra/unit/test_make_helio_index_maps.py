@@ -20,14 +20,14 @@ def helio_index_kernels(furnish_kernels, _download_kernels):
         "sim_1yr_imap_attitude.bc",
         "imap_001.tf",
         "de440s.bsp",
-        "imap_science_110.tf",
+        "imap_science_100.tf",
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels) as k:
         yield k
 
 
-# @pytest.mark.skip(reason="Long running test for validation purposes.")
+@pytest.mark.skip(reason="Long running test for validation purposes.")
 def test_make_helio_index_maps(
     helio_index_kernels, use_fake_repoint_data_for_time, spice_test_data_path
 ):
@@ -107,7 +107,7 @@ def test_make_helio_index_maps(
     )
 
 
-# @pytest.mark.skip(reason="Long running test for validation purposes.")
+@pytest.mark.skip(reason="Long running test for validation purposes.")
 def test_make_helio_index_maps_45(helio_index_kernels, use_fake_repoint_data_for_time):
     """Test make_helio_index_maps."""
     ck_kernel, _, _, _ = sp.kdata(1, "ck")

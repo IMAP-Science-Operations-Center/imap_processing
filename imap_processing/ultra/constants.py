@@ -170,7 +170,7 @@ SIM_KERNELS_FOR_HELIO_INDEX_MAPS: list = [
         "sim_1yr_imap_attitude.bc",
         "imap_001.tf",
         "de440s.bsp",
-        "imap_science_110.tf",
+        "imap_science_100.tf",
         "sim_1yr_imap_pointing_frame.bc",
     ]
 ]
