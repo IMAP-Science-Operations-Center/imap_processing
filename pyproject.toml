@@ -10,7 +10,7 @@ description = "IMAP Science Operations Center Processing"
 authors = ["IMAP SDC Developers <imap-sdc@lists.lasp.colorado.edu>"]
 readme = "README.md"
 include = ["imap_processing/_version.py",
-           "ultra/l1c/sim_spice_kernels/*"]
+           "imap_processing/ultra/l1c/sim_spice_kernels/*"]
 license = "MIT"
 keywords = ["IMAP", "SDC", "SOC", "Science Operations"]
 classifiers = [
