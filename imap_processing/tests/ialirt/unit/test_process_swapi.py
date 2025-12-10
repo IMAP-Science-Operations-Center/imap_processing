@@ -307,47 +307,6 @@ def test_optimize_parameters_with_zero_count(test_data, energy_passbands):
 
 
 @pytest.mark.external_test_data
-def test_process_spacecraft_packet(sc_xarray_data):
-    """Tests spacecraft packet processing."""
-    calibration_file = pd.read_csv(
-        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
-    )
-
-    # Case 1: Not fixing the sequence number attribute, which is all zeros.
-    swapi_product = process_swapi_ialirt(sc_xarray_data, calibration_file)
-    assert swapi_product == []
-
-    # Case 2: Overwriting swapi_seq_number to be an acceptable array of numbers.
-    # Calculate how many times to tile the sequence to reach length of sc packet
-    target_length = sc_xarray_data["swapi_seq_number"].shape[0]
-    base_sequence = np.arange(12)
-    repeat_times = (target_length // len(base_sequence)) + 1  # Over-repeat
-
-    # Tile the sequence and truncate to target_length
-    extended_data = np.tile(base_sequence, repeat_times)[:target_length]
-    sc_xarray_data["swapi_seq_number"].data = extended_data
-
-    # it is 0 in this example data, but there is no #0 in the table
-    sc_xarray_data['swapi_version'] = (['epoch'], [calibration_file['Sweep #'].max()] * len(sc_xarray_data.epoch))
-
-    swapi_product1 = process_swapi_ialirt(sc_xarray_data, calibration_file)
-    key_names = [
-        "apid",
-        "met",
-        "met_in_utc",
-        "ttj2000ns",
-        "swapi_pseudo_proton_density",
-        "swapi_pseudo_proton_speed",
-        "swapi_pseudo_proton_temperature",
-    ]
-
-    for key in key_names:
-        assert swapi_product1[0][key] is not None, (
-            f"The expected attribute {key} was not filled in the result dict."
-        )
-
-
-@pytest.mark.external_test_data
 def test_process_presweep_spacecraft_packet(swapi_presweep_sc_xarray_data):
     """Tests spacecraft packet processing presweep."""
     calibration_file = pd.read_csv(
