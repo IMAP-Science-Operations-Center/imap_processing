@@ -19,7 +19,6 @@ from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 logger = logging.getLogger(__name__)
 
 NUM_IALIRT_ENERGY_STEPS = 63
-SWEEP_NUMBER = 2
 
 
 def count_rate(
