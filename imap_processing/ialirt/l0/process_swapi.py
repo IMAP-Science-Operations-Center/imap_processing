@@ -19,6 +19,7 @@ from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 logger = logging.getLogger(__name__)
 
 NUM_IALIRT_ENERGY_STEPS = 63
+SWEEP_NUMBER = 2
 
 
 def count_rate(
@@ -202,19 +203,21 @@ def process_swapi_ialirt(
 
     # Extract energy values from the calibration lookup table file
     calibration_lut_table["timestamp"] = pd.to_datetime(
-        calibration_lut_table["timestamp"], format="%m/%d/%Y %H:%M"
+        calibration_lut_table["timestamp"]
     )
-    calibration_lut_table["timestamp"] = calibration_lut_table["timestamp"].to_numpy(
-        dtype="datetime64[ns]"
-    )
+    subset_sweep = calibration_lut_table[
+        calibration_lut_table["Sweep #"] == SWEEP_NUMBER
+    ]
 
     # Find the sweep's energy data for the latest time, where sweep_id == 2
-    subset = calibration_lut_table[
-        (calibration_lut_table["timestamp"] == calibration_lut_table["timestamp"].max())
-        & (calibration_lut_table["Sweep #"] == 2)
+    subset = subset_sweep[
+        (subset_sweep["timestamp"] == subset_sweep["timestamp"].max())
     ]
     if subset.empty:
-        energy_passbands = np.full(NUM_IALIRT_ENERGY_STEPS, np.nan, dtype=np.float64)
+        raise ValueError(
+            f"No esa unit conversion available for sweep {SWEEP_NUMBER}. "
+            f"Check lookup table?"
+        )
     else:
         subset = subset.sort_values(["timestamp", "ESA Step #"])
         energy_passbands = (
