@@ -226,18 +226,22 @@ def test_optimize_parameters():
         )
         count_rates = energy_data["Count Rates [Hz]"].to_numpy()
         count_rates[0] = 0.0
-        count_rates = np.tile(count_rates, (2, 1))
         count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
-        count_rates_errors = np.tile(count_rates_errors, (2, 1))
 
         result = optimize_pseudo_parameters(
             count_rates, count_rates_errors, energy_passbands
         )
 
+        result_dict = {
+            "pseudo_speed": result[0],
+            "pseudo_density": result[1],
+            "pseudo_temperature": result[2],
+        }
+
         for param in test_data[test_set]["expected_values"]:
             (
                 np.testing.assert_allclose(
-                    result[param][0],
+                    result_dict[param],
                     test_data[test_set]["expected_values"][param][0],
                     rtol=test_data[test_set]["expected_values"][param][1],
                 ),
