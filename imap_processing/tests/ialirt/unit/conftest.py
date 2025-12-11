@@ -20,7 +20,7 @@ def sc_packet_path():
 
 
 @pytest.fixture
-def swapi_postsweep_sc_packet_path():
+def swapi_postlaunch_sc_packet_path():
     """Returns the spacecraft packet directory."""
     packet_path = (
         imap_module_directory

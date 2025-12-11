@@ -1,3 +1,5 @@
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -57,10 +59,21 @@ def xarray_data(binary_packet_path, xtce_swapi_path):
 
 
 @pytest.fixture
-def sc_xarray_data(swapi_postsweep_sc_packet_path):
+def sc_xarray_data(sc_packet_path):
+    """Extract spacecraft packet for testing."""
+
+    packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
+    return sc_xarray_data
+
+
+@pytest.fixture
+def postlaunch_sc_xarray_data(swapi_postlaunch_sc_packet_path):
     """ "Extract spacecraft packet for testing."""
 
-    packet_path, xtce_ialirt_path = swapi_postsweep_sc_packet_path
+    packet_path, xtce_ialirt_path = swapi_postlaunch_sc_packet_path
     sc_xarray_data = packet_file_to_datasets(
         packet_path, xtce_ialirt_path, use_derived_value=False
     )[478]
@@ -113,6 +126,47 @@ def test_decom_packets(xarray_data, swapi_test_data):
         assert np.all(actual_values == expected_values), (
             f"Mismatch found in {xarray_field}: "
             f"actual {actual_values}, expected {expected_values}"
+        )
+
+
+@pytest.mark.external_test_data
+@mock.patch("imap_processing.ialirt.l0.process_swapi.process_sweep_data")
+def test_process_swapi_ialirt(
+    mock_process_sweep_data, xarray_data, ialirt_test_data, sc_xarray_data
+):
+    """Test that the process_swapi_ialirt() function returns expected keys."""
+
+    mock_process_sweep_data.return_value = ialirt_test_data[0]
+
+    # Adding necessary time variables from spacecraft packet
+    xarray_data = xarray_data.assign(sc_sclk_sec=sc_xarray_data["sc_sclk_sec"])
+    xarray_data["sc_sclk_sec"].data = sc_xarray_data["sc_sclk_sec"][
+        0 : xarray_data["swapi_flag"].shape[0]
+    ].data
+    xarray_data = xarray_data.assign(sc_sclk_sub_sec=sc_xarray_data["sc_sclk_sub_sec"])
+    xarray_data["sc_sclk_sub_sec"].data = sc_xarray_data["sc_sclk_sub_sec"][
+        0 : xarray_data["swapi_flag"].shape[0]
+    ].data
+
+    energy_passbands = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
+    )
+
+    swapi_result = process_swapi_ialirt(xarray_data, energy_passbands)
+
+    key_names = [
+        "apid",
+        "met",
+        "met_in_utc",
+        "ttj2000ns",
+        "swapi_pseudo_proton_density",
+        "swapi_pseudo_proton_speed",
+        "swapi_pseudo_proton_temperature",
+    ]
+
+    for key in key_names:
+        assert swapi_result[0][key] is not None, (
+            f"The expected attribute {key} was not filled in the result dict."
         )
 
 
@@ -192,14 +246,14 @@ def test_optimize_parameters():
 
 
 @pytest.mark.external_test_data
-def test_process_spacecraft_packet(sc_xarray_data):
+def test_process_spacecraft_packet(postlaunch_sc_xarray_data):
     """Tests spacecraft packet processing."""
 
     calibration_file = pd.read_csv(
         f"{imap_module_directory}/tests/ialirt/data/l0/imap_swapi_esa-unit-conversion_20251201_v001.csv"
     )
 
-    swapi_product = process_swapi_ialirt(sc_xarray_data, calibration_file)
+    swapi_product = process_swapi_ialirt(postlaunch_sc_xarray_data, calibration_file)
 
     assert len(swapi_product) == 4
 
