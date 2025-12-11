@@ -137,6 +137,9 @@ def test_process_swapi_ialirt(
     """Test that the process_swapi_ialirt() function returns expected keys."""
 
     mock_process_sweep_data.return_value = ialirt_test_data[0]
+    xarray_data["swapi_version"].data = np.full_like(
+        xarray_data["swapi_version"].data, 2
+    )
 
     # Adding necessary time variables from spacecraft packet
     xarray_data = xarray_data.assign(sc_sclk_sec=sc_xarray_data["sc_sclk_sec"])
@@ -254,7 +257,7 @@ def test_process_spacecraft_packet(postlaunch_sc_xarray_data):
     """Tests spacecraft packet processing."""
 
     calibration_file = pd.read_csv(
-        f"{imap_module_directory}/tests/ialirt/data/l0/imap_swapi_esa-unit-conversion_20251201_v001.csv"
+        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
     )
 
     swapi_product = process_swapi_ialirt(postlaunch_sc_xarray_data, calibration_file)
