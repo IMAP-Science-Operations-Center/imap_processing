@@ -171,7 +171,7 @@ def process_swapi_ialirt(
         )
 
         # Ensure no duplicates and all values from 0 to 11 are present
-        if not np.array_equal(seq_values.astype(int), np.arange(12)):
+        if not np.array_equal(seq_values.values.astype(int), np.arange(12)):
             incomplete_groups.append(group)
             continue
 
