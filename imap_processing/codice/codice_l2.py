@@ -21,6 +21,7 @@ from numpy.typing import NDArray
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.constants import (
+    GAIN_ID_TO_STR,
     HALF_SPIN_LUT,
     HI_L2_ELEVATION_ANGLE,
     HI_OMNI_VARIABLE_NAMES,
@@ -38,6 +39,8 @@ from imap_processing.codice.constants import (
     PIXEL_ORIENTATIONS,
     PUI_POSITIONS,
     SOLAR_WIND_POSITIONS,
+    SSD_ID_TO_ELEVATION,
+    SSD_ID_TO_SPIN_ANGLE,
     SW_POSITIONS,
 )
 from imap_processing.codice.utils import apply_replacements_to_attrs
@@ -1100,6 +1103,155 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     return l2_dataset
 
 
+def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Dataset:
+    """
+    Process the hi-direct-events L1A dataset to convert variables to physical units.
+
+    See section 11.2.1 of the CoDICE algorithm document for details.
+
+    Parameters
+    ----------
+    dependencies : ProcessingInputCollection
+        The collection of processing input files.
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated L2 dataset with variables converted to physical units.
+    """
+    file_path = dependencies.get_file_paths(descriptor="hi-direct-events")[0]
+    l1a_dataset = load_cdf(file_path)
+
+    # Update global CDF attributes
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi-direct-events")
+
+    # Convert from position to elevation angle in degrees relative to the spacecraft
+    # axis
+    l2_dataset = l1a_dataset.copy(deep=True)
+    # Load energy table and tof table needed for conversions
+    energy_table_file_path = dependencies.get_file_paths(
+        descriptor="l2-hi-energy-table"
+    )[0]
+    tof_table_file_path = dependencies.get_file_paths(descriptor="l2-hi-tof-table")[0]
+    # Read energy table CSV, skip first column which is an index
+    energy_table = (
+        pd.read_csv(energy_table_file_path, header=None, skiprows=1)
+        .iloc[:, 1:]
+        .to_numpy()
+    )
+    elevation_angle_shape = l2_dataset["ssd_id"].shape
+    # Read TOF table CSV, and get the second column which is TOF in ns
+    # Each row corresponds to a tof index
+    tof_table = (
+        pd.read_csv(tof_table_file_path, header=None, skiprows=1).iloc[:, 1:].to_numpy()
+    )
+
+    ssd_id_flat = l2_dataset["ssd_id"].values.ravel()
+    elevation_angle = np.array(
+        [SSD_ID_TO_ELEVATION.get(id, np.nan) for id in ssd_id_flat]
+    ).reshape(elevation_angle_shape)
+
+    l2_dataset["elevation_angle"] = (
+        l2_dataset["ssd_id"].dims,
+        elevation_angle.astype(np.float32),
+    )
+    # Calculate ssd energy in meV
+    gain_flat = l2_dataset["gain"].values.ravel()
+    ssd_energy_flat = l2_dataset["ssd_energy"].values.ravel()
+    # Set up array to hold calculated energies
+    ssd_energy = np.full(ssd_energy_flat.shape, np.nan)
+    valid_mask = (
+        (np.isin(gain_flat, list(GAIN_ID_TO_STR.keys())))
+        & (ssd_id_flat <= 15)
+        & (ssd_energy_flat != len(energy_table))
+    )
+    # The columns are organized in order of id and gains (LG, MG, HG)
+    cols = ssd_id_flat * 3 + (gain_flat - 1)
+    ssd_energy[valid_mask] = energy_table[ssd_energy_flat[valid_mask], cols[valid_mask]]
+    l2_dataset["ssd_energy"].data = ssd_energy.reshape(
+        l2_dataset["ssd_energy"].shape
+    ).astype(np.float32)
+
+    # Convert spin_sector to spin_angle in degrees
+    theta_angles = np.array(
+        [SSD_ID_TO_SPIN_ANGLE.get(ssd_id, np.nan) for ssd_id in ssd_id_flat]
+    )
+    spin_angles = (
+        theta_angles + 15.0 * l2_dataset["spin_sector"].values.ravel()
+    ) % 360.0
+    l2_dataset["spin_angle"] = xr.DataArray(
+        data=spin_angles.reshape(l2_dataset["spin_sector"].shape),
+        dims=l2_dataset["spin_sector"].dims,
+    ).astype(np.float32)
+
+    # Calculate TOF in ns
+    tof_flat = l2_dataset["tof"].values.ravel()
+    # Get valid TOF indices for lookup
+    valid_tof_mask = tof_flat < tof_table.shape[0]
+    tof_ns = np.full(tof_flat.shape, np.nan)
+    # Get tof values in ns from first column of tof_table
+    tof_ns[valid_tof_mask] = tof_table[tof_flat[valid_tof_mask], 0]
+    l2_dataset["tof"] = xr.DataArray(
+        data=tof_ns.reshape(l2_dataset["tof"].shape),
+        dims=l2_dataset["tof"].dims,
+    ).astype(np.float32)
+
+    # Calculate energy per nuc
+    energy_nuc = np.full(tof_flat.shape, np.nan)
+    # Get value from second column of tof_table (E/n (MeV/n))
+    energy_nuc[valid_tof_mask] = tof_table[tof_flat[valid_tof_mask], 1]
+    l2_dataset["energy_per_nuc"] = xr.DataArray(
+        data=energy_nuc.reshape(l2_dataset["tof"].shape),
+        dims=l2_dataset["tof"].dims,
+    ).astype(np.float32)
+    # Drop unused variables
+    vars_to_drop = ["spare", "sw_bias_gain_mode", "st_bias_gain_mode"]
+    l2_dataset = l2_dataset.drop_vars(vars_to_drop)
+    # Update variable attributes
+    l2_dataset.attrs.update(
+        cdf_attrs.get_global_attributes("imap_codice_l2_hi-direct-events")
+    )
+    for var in l2_dataset.data_vars:
+        l2_dataset[var].attrs.update(cdf_attrs.get_variable_attributes(var))
+    # Update coord attributes
+    l2_dataset["priority"].attrs.update(
+        cdf_attrs.get_variable_attributes("priority", check_schema=False)
+    )
+    l2_dataset["event_num"].attrs.update(
+        cdf_attrs.get_variable_attributes("event_num", check_schema=False)
+    )
+    l2_dataset["epoch"] = xr.DataArray(
+        l2_dataset["epoch"].data,
+        dims="epoch",
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
+    )
+    l2_dataset["epoch_delta_minus"] = xr.DataArray(
+        data=l2_dataset["epoch_delta_minus"].data.astype(np.int64),
+        dims="epoch",
+        attrs=cdf_attrs.get_variable_attributes("epoch_delta_minus"),
+    )
+    l2_dataset["epoch_delta_plus"] = xr.DataArray(
+        l2_dataset["epoch_delta_plus"].data.astype(np.int64),
+        dims="epoch",
+        attrs=cdf_attrs.get_variable_attributes("epoch_delta_plus"),
+    )
+    # Add labels
+    l2_dataset["event_num_label"] = xr.DataArray(
+        l2_dataset["event_num"].values.astype(str).astype("<U5"),
+        dims=("event_num",),
+        attrs=cdf_attrs.get_variable_attributes("event_num_label", check_schema=False),
+    )
+    l2_dataset["priority_label"] = xr.DataArray(
+        l2_dataset["priority_label"].values.astype("<U1"),
+        dims=("priority",),
+        attrs=cdf_attrs.get_variable_attributes("priority_label", check_schema=False),
+    )
+
+    return l2_dataset
+
+
 def process_codice_l2(
     descriptor: str, dependencies: ProcessingInputCollection
 ) -> xr.Dataset:
@@ -1232,7 +1384,7 @@ def process_codice_l2(
         # These converted variables are *in addition* to the existing L1 variables
         # The other data variables require no changes
         # See section 11.1.2 of algorithm document
-        pass
+        l2_dataset = process_hi_direct_events(dependencies)
 
     elif dataset_name == "imap_codice_l2_hi-sectored":
         # Convert the sectored count rates using equation described in section

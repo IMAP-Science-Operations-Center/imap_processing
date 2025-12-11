@@ -271,6 +271,15 @@ def codice_lut_path():
                 TEST_DATA_PATH
                 / "l2_lut/imap_codice_l2-lo-onboard-energy-table_20250101_v001.csv"
             ]
+        elif descriptor == "l2-hi-energy-table":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-hi-energy-table_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-hi-tof-table":
+            return [
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-hi-tof-table_20250101_v001.csv"
+            ]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")
 

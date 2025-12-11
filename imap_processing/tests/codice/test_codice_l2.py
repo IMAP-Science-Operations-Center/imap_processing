@@ -48,7 +48,10 @@ EXPECTED_LOGICAL_SOURCES = [
 def processing_dependencies(codice_lut_path):
     eff_file = "imap_codice_l2-lo-efficiency_20251008_v001.csv"
     gf_file = "imap_codice_l2-lo-gfactor_20251008_v001.csv"
-    return ProcessingInputCollection(AncillaryInput(gf_file), AncillaryInput(eff_file))
+    mpq_file = "imap_codice_lo-mpq-cal_20250101_v001.csv"
+    return ProcessingInputCollection(
+        AncillaryInput(gf_file), AncillaryInput(eff_file), AncillaryInput(mpq_file)
+    )
 
 
 @pytest.fixture
@@ -559,6 +562,59 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
             )
     processed_l2_ds.attrs["Data_version"] = "001"
     assert processed_l2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-direct-events"
+    file = write_cdf(processed_l2_ds)
+    errors = CDFValidator().validate(file)
+    assert not errors
+    load_cdf(file)
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="hi-direct-events", data_type="l0")
+    ]
+    l1a_cdf = process_l1a(ProcessingInputCollection())[0]
+
+    processed_l1a_file = write_cdf(l1a_cdf)
+    file_path = processed_l1a_file.as_posix()
+    # Mock get_files for l2
+    mock_get_file_paths.side_effect = [
+        [file_path],
+        [file_path],
+        codice_lut_path(descriptor="l2-hi-energy-table"),
+        codice_lut_path(descriptor="l2-hi-tof-table"),
+    ]
+
+    processed_l2_ds = process_codice_l2("hi-direct-events", ProcessingInputCollection())
+    l2_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / (
+            f"imap_codice_l2_hi-direct-events_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
+    )
+    l2_val_data = load_cdf(l2_val_data)
+    for variable in l2_val_data.data_vars:
+        if "label" in variable:
+            np.testing.assert_array_equal(
+                processed_l2_ds[variable].values,
+                l2_val_data[variable].values,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        else:
+            np.testing.assert_allclose(
+                processed_l2_ds[variable].values,
+                l2_val_data[variable].values,
+                rtol=5e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+
+    processed_l2_ds.attrs["Data_version"] = "001"
+    assert processed_l2_ds.attrs["Logical_source"] == "imap_codice_l2_hi-direct-events"
     file = write_cdf(processed_l2_ds)
     errors = CDFValidator().validate(file)
     assert not errors

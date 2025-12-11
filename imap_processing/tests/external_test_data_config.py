@@ -83,6 +83,8 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l2-hi-ialirt-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-gfactor_20251008_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-tof-table_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-energy-table_20250101_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-onboard-energy-bins_20250101_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-onboard-energy-table_20250101_v001.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-onboard-mpq-cal_20250101_v001.csv", "codice/data/l2_lut/"),
