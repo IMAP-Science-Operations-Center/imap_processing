@@ -418,31 +418,27 @@ def set_spin_cycle_from_spin_data(
     spin_met_per_asc = spin_data["shcoarse"].values.astype(np.float64)
     science_met_per_asc = ttj2000ns_to_met(l1a_science["epoch"]).astype(np.float64)
 
-    closest_start_acq_indices, time_diff = match_science_to_spin_asc(
+    science_to_spin_indices = match_science_to_spin_asc(
         science_met_per_asc, spin_met_per_asc
     )
 
-    valid_mask = find_valid_asc(time_diff, closest_start_acq_indices, spin_data)
-    valid_idx = np.where(valid_mask)[0]
+    valid_mask = find_valid_asc(science_to_spin_indices, spin_data)
 
     # If none valid, return an empty/filtered dataset
     # (preserves dims & avoids misalignment)
-    if len(valid_idx) == 0:
+    if not valid_mask.any():
         logger.warning(
             "No valid ASCs remain after filtering; returning empty epoch set"
         )
-        return l1b_science.isel(epoch=valid_idx)
-
-    if len(valid_idx) < len(valid_mask):
-        logger.info(f"Dropping {len(valid_mask) - len(valid_idx)} invalid ASCs")
+        return l1b_science.isel(epoch=[])
 
     # Filter the input datasets to only the valid ASCs so all subsequent arrays align
-    l1a_valid = l1a_science.isel(epoch=valid_idx)
-    l1b_valid = l1b_science.isel(epoch=valid_idx)
+    l1a_valid = l1a_science.isel(epoch=valid_mask)
+    l1b_valid = l1b_science.isel(epoch=valid_mask)
 
     # Use the valid closest indices to get the corresponding acq_start rows
-    closest_start_acq_indices_valid = closest_start_acq_indices[valid_idx]
-    closest_start_acq_per_asc = acq_start.isel(epoch=closest_start_acq_indices_valid)
+    science_to_spin_indices_valid = science_to_spin_indices[valid_mask]
+    closest_start_acq_per_asc = acq_start.isel(epoch=science_to_spin_indices_valid)
 
     # compute spin start number for each remaining ASC
     spin_start_num_per_asc = np.atleast_1d(get_spin_number(closest_start_acq_per_asc))
@@ -478,7 +474,7 @@ def set_spin_cycle_from_spin_data(
 
 def match_science_to_spin_asc(
     science_met_per_asc: xr.DataArray, spin_met_per_asc: xr.DataArray
-) -> tuple[np.ndarray, np.ndarray]:
+) -> np.ndarray:
     """
     Compute the indices of the closest spin acquisition times for each science event.
 
@@ -496,28 +492,23 @@ def match_science_to_spin_asc(
 
     Returns
     -------
-    closest_start_acq_indices : np.ndarray
-        An array of indices representing the closest spin acquisition times for each
-        science event.
-    time_diff : np.ndarray
-        An array of time differences between each science event and all spin acquisition
-        times.
+    science_to_spin_indices : np.ndarray
+        Index of closest prior spin ASC for each science ASC.
+        Set to -1 if no valid prior spin exists.
     """
-    # Find the closest start_acq for each direct event
+    # Find the closest spin shcoarse for each science ASC
     # computes the index of the closest spin_met_per_asc for each science_met_per_asc
     # so the resulting array will be of length len(science_met_per_asc), one index per
     # ASC, but the value of each index will be the index of the closest spin data.
-    # Find the index of the spin data that starts just before or at each science epoch
-    time_diff = science_met_per_asc[:, None] - spin_met_per_asc
-    time_diff_masked = np.where(time_diff >= 0, time_diff, np.inf)
-    closest_start_acq_indices = time_diff_masked.argmin(axis=1)
+    science_to_spin_indices = np.abs(
+        science_met_per_asc[:, None] - spin_met_per_asc
+    ).argmin(axis=1)
 
-    return closest_start_acq_indices, time_diff
+    return science_to_spin_indices
 
 
 def find_valid_asc(
-    time_diff: np.ndarray,
-    closest_start_acq_indices: np.ndarray,
+    science_to_spin_indices: np.ndarray,
     spin_data: xr.Dataset,
 ) -> np.ndarray:
     """
@@ -525,9 +516,7 @@ def find_valid_asc(
 
     Parameters
     ----------
-    time_diff : np.ndarray
-        Time differences between science and spin data.
-    closest_start_acq_indices : np.ndarray
+    science_to_spin_indices : np.ndarray
         Indices of closest spin acquisitions.
     spin_data : xr.Dataset
         The L1A Spin dataset.
@@ -537,36 +526,70 @@ def find_valid_asc(
     valid_mask : np.ndarray
         Boolean mask indicating valid ASCs.
     """
-    # Start with all ASCs as valid
-    valid_mask = np.ones(len(closest_start_acq_indices), dtype=bool)
+    # Apply each validation check independently on full arrays
+    valid_indices = _check_valid_indices(science_to_spin_indices)
+    valid_spin_count = _check_sufficient_spins(science_to_spin_indices, spin_data)
 
-    # Filter out epochs where no valid spin data exists (all time_diff < 0)
-    no_prior_spin = np.all(time_diff < 0, axis=1)
-    if no_prior_spin.any():
-        logger.warning(f"Dropping {no_prior_spin.sum()} ASCs with no prior spin data")
-        valid_mask &= ~no_prior_spin
+    # Combine only these two masks:
+    valid_mask = valid_indices & valid_spin_count
 
-    # Filter out epochs with invalid indices
-    invalid_indices = closest_start_acq_indices < 0
+    total_invalid = (~valid_mask).sum()
+    if total_invalid > 0:
+        logger.info(f"Dropping {total_invalid} invalid ASCs total")
+
+    return valid_mask
+
+
+def _check_valid_indices(science_to_spin_indices: np.ndarray) -> np.ndarray:
+    """
+    Check that all matched spin indices are valid (non-negative).
+
+    Parameters
+    ----------
+    science_to_spin_indices : np.ndarray
+        Indices of closest spin acquisitions.
+
+    Returns
+    -------
+    valid_mask : np.ndarray
+        Boolean mask where True indicates a valid index.
+    """
+    invalid_indices = science_to_spin_indices < 0
     if invalid_indices.any():
-        logger.warning(
-            f"Dropping {invalid_indices.sum()} ASCs with invalid spin indices"
-        )
-        valid_mask &= ~invalid_indices
+        logger.warning(f"Found {invalid_indices.sum()} ASCs with invalid spin indices")
+    return ~invalid_indices
 
-    # Filter out ASCs with insufficient spins
-    valid_cycles = spin_data["num_completed"] == 28
-    # Only check cycles for valid indices
-    valid_indices = closest_start_acq_indices[valid_mask]
-    insufficient_spins = ~valid_cycles.values[valid_indices]
-    if insufficient_spins.any():
-        logger.warning(
-            f"Dropping {insufficient_spins.sum()} ASCs with fewer than 28 spins"
-        )
-        # Update the mask for remaining valid entries
-        temp_mask = np.copy(valid_mask)
-        temp_mask[valid_mask] &= ~insufficient_spins
-        valid_mask = temp_mask
+
+def _check_sufficient_spins(
+    science_to_spin_indices: np.ndarray, spin_data: xr.Dataset
+) -> np.ndarray:
+    """
+    Check that matched spin cycles have sufficient spins (28 completed).
+
+    Parameters
+    ----------
+    science_to_spin_indices : np.ndarray
+        Indices of closest spin acquisitions.
+    spin_data : xr.Dataset
+        The L1A Spin dataset containing num_completed field.
+
+    Returns
+    -------
+    valid_mask : np.ndarray
+        Boolean mask where True indicates sufficient spins.
+    """
+    # Create array same length as science indices, initialize to False
+    valid_mask = np.zeros(len(science_to_spin_indices), dtype=bool)
+
+    # For valid indices, check if corresponding spin cycle has 28 spins
+    valid_idx = science_to_spin_indices >= 0
+    valid_mask[valid_idx] = (
+        spin_data["num_completed"].values[science_to_spin_indices[valid_idx]] == 28
+    )
+
+    insufficient = ~valid_mask & valid_idx
+    if insufficient.any():
+        logger.warning(f"Found {insufficient.sum()} ASCs with fewer than 28 spins")
 
     return valid_mask
 

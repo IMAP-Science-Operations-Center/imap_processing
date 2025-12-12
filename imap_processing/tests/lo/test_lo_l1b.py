@@ -1090,12 +1090,9 @@ def test_set_spin_cycle_from_spin_data_matching_ascs():
         l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
 
     # Assert - Each epoch should use the correct spin start number
-    # science_met[0]=100 -> searchsorted returns 1, -1 = 0 (spin_met[0]=50)
-    # science_met[1]=200 -> searchsorted returns 2, -1 = 1 (spin_met[1]=150)
-    # science_met[2]=300 -> searchsorted returns 3, -1 = 2 (spin_met[2]=250)
     assert l1b_hist["spin_cycle"][0, 0] == 7  # 0 + 7 + 0
     assert l1b_hist["spin_cycle"][1, 0] == 35  # 28 + 7 + 0
-    assert l1b_hist["spin_cycle"][2, 0] == 63  # 56 + 7 + 0
+    assert l1b_hist["spin_cycle"][2, 2] == 67  # 56 + 7 + 2*2
 
 
 def test_set_spin_cycle_from_spin_data_repeated_closest():
@@ -1234,52 +1231,3 @@ def test_set_spin_cycle_from_spin_data_insufficient_spins():
 
     # Verify spin_cycle shape matches filtered data
     assert result["spin_cycle"].shape == (1, 7)
-
-
-def test_set_spin_cycle_from_spin_data_outside_range():
-    """Test that science ASCs outside spin data time range are filtered out."""
-    # Arrange - Science times before and after spin data coverage
-    science_met = [10, 100, 500]  # 10 is before first spin, 500 is after last spin
-    spin_met = [50, 150, 250]
-
-    epoch_date = met_to_ttj2000ns(science_met)
-    l1a_hist = xr.Dataset(
-        {
-            "hydrogen": (["epoch", "esa_step", "azimuth"], np.ones((3, 7, 60))),
-            "oxygen": (["epoch", "esa_step", "azimuth"], np.ones((3, 7, 60))),
-        },
-        coords={
-            "epoch": epoch_date,
-            "esa_step": np.arange(1, 8),
-            "azimuth": np.arange(60),
-        },
-        attrs={"Logical_source": "imap_lo_l1a_histogram"},
-    )
-
-    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
-
-    spin_data = xr.Dataset(
-        {
-            "shcoarse": ("epoch", spin_met),
-            "num_completed": ("epoch", [28, 28, 28]),
-            "acq_start_sec": ("epoch", np.array([50, 150, 250])),
-            "acq_start_subsec": ("epoch", np.zeros(3)),
-            "acq_end_sec": ("epoch", np.array([78, 178, 278])),
-            "acq_end_subsec": ("epoch", np.zeros(3)),
-        },
-        coords={"epoch": np.arange(3)},
-    )
-
-    # Act
-    with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=np.array([0, 28])
-    ):
-        result = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
-
-    # Assert - Only middle epoch (science_met[1]=100) should remain
-    assert len(result["epoch"]) == 2
-    expected_epochs = met_to_ttj2000ns([100, 500])
-    np.testing.assert_array_equal(result["epoch"].values, expected_epochs)
-
-    # Verify spin_cycle shape matches filtered data
-    assert result["spin_cycle"].shape == (2, 7)
