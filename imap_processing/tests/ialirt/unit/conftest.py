@@ -28,7 +28,7 @@ def swapi_postlaunch_sc_packet_path():
         / "ialirt"
         / "data"
         / "l0"
-        / "iois_1_packets_2025_344_05_59_58"
+        / "iois_1_packets_2025_344_05_57_56"
     )
     xtce_ialirt_path = (
         imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"

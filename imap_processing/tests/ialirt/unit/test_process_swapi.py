@@ -89,17 +89,6 @@ def sc_xarray_data(sc_packet_path):
 
 
 @pytest.fixture
-def postlaunch_sc_xarray_data(swapi_postlaunch_sc_packet_path):
-    """ "Extract spacecraft packet for testing."""
-
-    packet_path, xtce_ialirt_path = swapi_postlaunch_sc_packet_path
-    sc_xarray_data = packet_file_to_datasets(
-        packet_path, xtce_ialirt_path, use_derived_value=False
-    )[478]
-    return sc_xarray_data
-
-
-@pytest.fixture
 def ialirt_test_data():
     """Extract test data for unit tests below."""
 
@@ -270,9 +259,14 @@ def test_optimize_parameters():
 
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(
-    postlaunch_sc_xarray_data, esa_unit_conversion_table
+    esa_unit_conversion_table, swapi_postlaunch_sc_packet_path
 ):
     """Tests spacecraft packet processing."""
+
+    packet_path, xtce_ialirt_path = swapi_postlaunch_sc_packet_path
+    postlaunch_sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
 
     postlaunch_sc_xarray_data["swapi_version"].data = np.full_like(
         postlaunch_sc_xarray_data["swapi_version"].data, 2
