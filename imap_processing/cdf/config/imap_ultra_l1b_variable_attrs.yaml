@@ -128,7 +128,7 @@ event_times:
   CATDESC: time of event as calculated using Universal Spin Table and de l1a packets
   FIELDNAM: event_times
   LABLAXIS: event times
-  UNITS: s
+  UNITS: seconds
 
 spin_starts:
   <<: *default_float32
