@@ -165,7 +165,7 @@ def calculate_de(
         de_dataset["shcoarse"].data,
     )
     event_times_ns = met_to_ttj2000ns(event_times)
-    de_dict["event_times"] = event_times_ns.astype(np.int64)
+    de_dict["event_times"] = event_times_ns.astype(np.float64)
     # Pulse height
     ph_result = get_ph_tof_and_back_positions(
         de_dataset, xf, f"ultra{sensor}", ancillary_files
