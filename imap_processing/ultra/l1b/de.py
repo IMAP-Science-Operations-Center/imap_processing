@@ -288,7 +288,6 @@ def calculate_de(
     de_dict["path_length"] = r
     de_dict["phi"] = phi
     de_dict["theta"] = theta
-    # Pick one specific event to debug
 
     velocities[valid_indices], v_hat[valid_indices], r_hat[valid_indices] = (
         get_de_velocity(

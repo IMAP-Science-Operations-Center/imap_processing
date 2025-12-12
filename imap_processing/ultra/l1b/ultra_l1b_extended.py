@@ -533,27 +533,24 @@ def get_de_velocity(
     if tof[tof < 0].any():
         logger.info("Negative tof values found.")
 
-    # distances in hundredths of mm, keep as-is
+    # distances in .1 mm
     delta_v = np.empty((len(d), 3), dtype=np.float32)
-    delta_v[:, 0] = front_position[0] - back_position[0]
-    delta_v[:, 1] = front_position[1] - back_position[1]
-    delta_v[:, 2] = d
+    delta_v[:, 0] = (front_position[0] - back_position[0]) * 0.1
+    delta_v[:, 1] = (front_position[1] - back_position[1]) * 0.1
+    delta_v[:, 2] = d * 0.1
 
     # Convert from 0.1mm/0.1ns to km/s.
     v_x = -delta_v[:, 0] / tof * 1e3
     v_y = -delta_v[:, 1] / tof * 1e3
     v_z = -delta_v[:, 2] / tof * 1e3
 
-    v_x[tof < 0] = FILLVAL_FLOAT32
+    v_x[tof < 0] = FILLVAL_FLOAT32  # used as fillvals
     v_y[tof < 0] = FILLVAL_FLOAT32
     v_z[tof < 0] = FILLVAL_FLOAT32
 
     velocities = np.vstack((v_x, v_y, v_z)).T
 
-    # Check magnitude before normalization
-    v_mag = np.linalg.norm(velocities, axis=1)
-
-    v_hat = velocities / v_mag[:, None]
+    v_hat = velocities / np.linalg.norm(velocities, axis=1)[:, None]
 
     r_hat = -v_hat
 
