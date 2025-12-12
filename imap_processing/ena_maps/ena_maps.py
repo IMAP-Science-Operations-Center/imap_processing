@@ -1662,17 +1662,22 @@ class HealpixSkyMap(AbstractSkyMap):
         # Get the healpix values at the rectangular subpixel centers
         hp_vals_at_rect_pix_ctrs = value_array.values[..., hp_pix_at_rect_subpix_ctrs]
 
-        mask = np.isfinite(hp_vals_at_rect_pix_ctrs)
+        valid_pixel_mask = np.isfinite(hp_vals_at_rect_pix_ctrs)
 
         # Weighted mean (weighted by solid angle) of these values over the pixel axis,
         # which is the last axis of this array
-        non_nan_weights = np.where(mask, rect_subpix_solid_angle_by_lat, 0)
+        valid_pixel_weights = np.where(
+            valid_pixel_mask, rect_subpix_solid_angle_by_lat, 0
+        )
         weighted_hp_vals_at_rect_pix_ctrs = (
-            np.where(mask, hp_vals_at_rect_pix_ctrs, 0) * non_nan_weights
+            np.where(valid_pixel_mask, hp_vals_at_rect_pix_ctrs, 0)
+            * valid_pixel_weights
         )
-        mean_pixel_value = weighted_hp_vals_at_rect_pix_ctrs.sum(axis=-1) / np.sum(
-            non_nan_weights, axis=-1
-        )
+
+        with np.errstate(invalid="ignore"):
+            mean_pixel_value = weighted_hp_vals_at_rect_pix_ctrs.sum(axis=-1) / np.sum(
+                valid_pixel_weights, axis=-1
+            )
         # Log the mean pixel value and the number of subdivisions for debugging
         logger.debug(
             f"    Mean pixel value at Number of subdivisions: {num_subdivisions}: "
