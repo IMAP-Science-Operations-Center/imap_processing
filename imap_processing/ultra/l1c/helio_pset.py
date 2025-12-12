@@ -198,7 +198,7 @@ def calculate_helio_pset(
     # whichever is smaller.
     end = min(end + 1800, ttj2000ns_to_et(pointing_range_ns[1]))
     # Time bins in 30 minute intervals in et
-    time_bins = ttj2000ns_to_et(np.arange(start, end, 1800))
+    time_bins = np.arange(start, end, 1800)
 
     # Compute mask for culling the Earth
     compute_culling_mask(
