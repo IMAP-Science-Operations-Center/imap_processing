@@ -1335,6 +1335,7 @@ class TestHealpixSkyMap:
             (181.5, -1.5): 17,
             (181.5, -0.5): 18,
             (181.5, 0.5): 19,
+            # Set the final entry to 999 to identify a pixel that will be set to NaN
             (181.5, 1.5): 999,
         }
         expected_mean_0_subdivisions = 0
