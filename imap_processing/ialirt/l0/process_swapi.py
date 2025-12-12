@@ -71,7 +71,7 @@ def optimize_pseudo_parameters(
     count_rates: np.ndarray,
     count_rate_error: np.ndarray,
     energy_passbands: np.ndarray,
-) -> tuple:
+) -> np.ndarray:
     """
     Find the pseudo speed (u), density (n) and temperature (T) of solar wind particles.
 
@@ -88,12 +88,8 @@ def optimize_pseudo_parameters(
 
     Returns
     -------
-    pseudo_speed : float
-        Pseudo speed.
-    pseudo_density : float
-        Pseudo density.
-    pseudo_temperature : float
-        Pseudo temperature.
+    pseudo_params : np.ndarray
+        Pseudo speed, pseudo density, pseudo temperature.
     """
     # Find the max count rate, and use the 5 points surrounding it
     max_index = np.argmax(count_rates)
@@ -113,7 +109,7 @@ def optimize_pseudo_parameters(
         p0=initial_param_guess,
     )
 
-    return sol[0][0], sol[0][1], sol[0][2]
+    return sol[0]
 
 
 def process_swapi_ialirt(

@@ -10,6 +10,7 @@ from imap_processing.ialirt.l0.process_swapi import (
     optimize_pseudo_parameters,
     process_swapi_ialirt,
 )
+from imap_processing.swapi.swapi_utils import read_swapi_lut_table
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -30,6 +31,24 @@ def binary_packet_path():
         / "l0"
         / "BinLog CCSDS_FRAG_TLM_20240826_152323Z_IALIRT_data_for_SDC.bin"
     )
+
+
+@pytest.fixture(scope="session")
+def esa_unit_conversion_table() -> pd.DataFrame:
+    """
+    Read the ESA unit conversion table.
+
+    Returns
+    -------
+    esa_unit_conversion_table : pandas.DataFrame
+        The ESA unit conversion table.
+    """
+    esa_file_path = (
+        imap_module_directory
+        / "tests/swapi/lut/imap_swapi_esa-unit-conversion_20250626_v001.csv"
+    )
+    df = read_swapi_lut_table(esa_file_path)
+    return df
 
 
 @pytest.fixture(scope="session")
@@ -132,14 +151,15 @@ def test_decom_packets(xarray_data, swapi_test_data):
 @pytest.mark.external_test_data
 @mock.patch("imap_processing.ialirt.l0.process_swapi.process_sweep_data")
 def test_process_swapi_ialirt(
-    mock_process_sweep_data, xarray_data, ialirt_test_data, sc_xarray_data
+    mock_process_sweep_data,
+    xarray_data,
+    ialirt_test_data,
+    sc_xarray_data,
+    esa_unit_conversion_table,
 ):
     """Test that the process_swapi_ialirt() function returns expected keys."""
 
     mock_process_sweep_data.return_value = ialirt_test_data[0]
-    xarray_data["swapi_version"].data = np.full_like(
-        xarray_data["swapi_version"].data, 2
-    )
 
     # Adding necessary time variables from spacecraft packet
     xarray_data = xarray_data.assign(sc_sclk_sec=sc_xarray_data["sc_sclk_sec"])
@@ -151,11 +171,7 @@ def test_process_swapi_ialirt(
         0 : xarray_data["swapi_flag"].shape[0]
     ].data
 
-    energy_passbands = pd.read_csv(
-        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
-    )
-
-    swapi_result = process_swapi_ialirt(xarray_data, energy_passbands)
+    swapi_result = process_swapi_ialirt(xarray_data, esa_unit_conversion_table)
 
     key_names = [
         "apid",
@@ -253,14 +269,17 @@ def test_optimize_parameters():
 
 
 @pytest.mark.external_test_data
-def test_process_spacecraft_packet(postlaunch_sc_xarray_data):
+def test_process_spacecraft_packet(
+    postlaunch_sc_xarray_data, esa_unit_conversion_table
+):
     """Tests spacecraft packet processing."""
 
-    calibration_file = pd.read_csv(
-        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
+    postlaunch_sc_xarray_data["swapi_version"].data = np.full_like(
+        postlaunch_sc_xarray_data["swapi_version"].data, 2
     )
-
-    swapi_product = process_swapi_ialirt(postlaunch_sc_xarray_data, calibration_file)
+    swapi_product = process_swapi_ialirt(
+        postlaunch_sc_xarray_data, esa_unit_conversion_table
+    )
 
     assert len(swapi_product) == 4
 
