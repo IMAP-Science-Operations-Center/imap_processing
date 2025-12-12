@@ -7,6 +7,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
+from imap_processing.ultra.constants import UltraConstants
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -319,7 +320,7 @@ def get_geometric_factor(
     # Fetch geometric factor values at nearest (phi, theta) pairs
     geometric_factor = geometric_factor_tables["gf_table"][phi_idx, theta_idx]
 
-    outside_fov = ~is_inside_fov(np.deg2rad(phi), np.deg2rad(theta))
+    outside_fov = ~is_inside_fov(np.deg2rad(theta), np.deg2rad(phi))
     quality_flag[outside_fov] |= ImapDEOutliersUltraFlags.FOV.value
 
     return geometric_factor
@@ -434,7 +435,7 @@ def get_scattering_coefficients(
     )
 
 
-def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:
+def is_inside_fov(theta: np.ndarray, phi: np.ndarray) -> np.ndarray:
     """
     Determine angles in the field of view (FOV).
 
@@ -445,10 +446,10 @@ def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    phi : np.ndarray
-        Azimuth angles in radians.
     theta : np.ndarray
         Elevation angles in radians.
+    phi : np.ndarray
+        Azimuth angles in radians.
 
     Returns
     -------
@@ -456,10 +457,16 @@ def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:
         Boolean array indicating if the angle is in the FOV, False otherwise.
     """
     numerator = 5.0 * np.cos(phi)
-    denominator = 1 + 2.80 * np.cos(phi)
+    denominator = 1.0 + 2.80 * np.cos(phi)
     # Equation 19 in the Ultra Algorithm Document.
-    theta_nom = np.arctan(numerator / denominator)
-    return np.abs(theta) <= theta_nom
+    theta_nom = np.arctan(numerator / denominator) - np.radians(
+        UltraConstants.FOV_THETA_OFFSET_DEG
+    )
+
+    theta_check = np.abs(theta) <= np.abs(theta_nom)
+    phi_check = np.abs(phi) <= np.radians(UltraConstants.FOV_PHI_LIMIT_DEG)
+
+    return theta_check & phi_check
 
 
 def get_ph_corrected(

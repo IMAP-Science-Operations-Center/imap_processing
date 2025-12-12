@@ -10,7 +10,10 @@ from imap_processing.quality_flags import (
 )
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.repoint import get_pointing_times_from_id
-from imap_processing.spice.time import et_to_met
+from imap_processing.spice.time import (
+    met_to_ttj2000ns,
+    ttj2000ns_to_et,
+)
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
@@ -35,7 +38,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
-    get_spin_number,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     is_back_tof_valid,
@@ -49,7 +51,7 @@ FILLVAL_FLOAT32 = -1.0e31
 
 
 def calculate_de(
-    de_dataset: xr.Dataset, name: str, ancillary_files: dict
+    de_dataset: xr.Dataset, aux_dataset: xr.Dataset, name: str, ancillary_files: dict
 ) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Direct Event Data.
@@ -58,6 +60,8 @@ def calculate_de(
     ----------
     de_dataset : xarray.Dataset
         L1a dataset containing direct event data.
+    aux_dataset : xarray.Dataset
+        L1a dataset containing auxiliary data.
     name : str
         Name of the l1a dataset.
     ancillary_files : dict
@@ -71,16 +75,12 @@ def calculate_de(
     de_dict = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
 
-    # Define epoch and spin.
+    # Define epoch
     de_dict["epoch"] = de_dataset["epoch"].data
-    spin_number = get_spin_number(
-        de_dataset["shcoarse"].values, de_dataset["spin"].values
-    )
+
     repoint_id = de_dataset.attrs.get("Repointing", None)
     if repoint_id is not None:
         repoint_id = int(repoint_id.replace("repoint", ""))
-
-    de_dict["spin"] = spin_number
 
     # Add already populated fields.
     keys = [
@@ -104,7 +104,6 @@ def calculate_de(
             for key, dataset_key in zip(keys, dataset_keys, strict=False)
         }
     )
-
     valid_mask = de_dataset["start_type"].data != FILLVAL_UINT8
     ph_mask = np.isin(
         de_dataset["stop_type"].data, [StopType.Top.value, StopType.Bottom.value]
@@ -114,7 +113,6 @@ def calculate_de(
     valid_indices = np.nonzero(valid_mask)[0]
     ph_indices = np.nonzero(valid_mask & ph_mask)[0]
     ssd_indices = np.nonzero(valid_mask & ssd_mask)[0]
-
     # Instantiate arrays
     xf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     yf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
@@ -135,12 +133,10 @@ def calculate_de(
     e_bin_l1a = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     shape = (len(de_dataset["epoch"]), 3)
     sc_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     sc_dps_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     helio_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
     velocities = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     v_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     r_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
@@ -163,16 +159,13 @@ def calculate_de(
         ancillary_files,
     )
     start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
-
-    (
-        event_times[valid_indices],
-        spin_starts[valid_indices],
-        _,
-    ) = get_eventtimes(
-        de_dict["spin"][valid_indices],
-        de_dataset["phase_angle"].data[valid_indices],
+    (event_times) = get_eventtimes(
+        aux_dataset,
+        de_dataset["phase_angle"].data,
+        de_dataset["shcoarse"].data,
     )
-
+    event_times_ns = met_to_ttj2000ns(event_times)
+    de_dict["event_times"] = event_times_ns.astype(np.int64)
     # Pulse height
     ph_result = get_ph_tof_and_back_positions(
         de_dataset, xf, f"ultra{sensor}", ancillary_files
@@ -283,8 +276,6 @@ def calculate_de(
 
     # Combine ph_yb and ssd_yb along with their indices
     de_dict["x_front"] = xf.astype(np.float32)
-    de_dict["event_times"] = event_times
-    de_dict["spin_starts"] = spin_starts
     de_dict["y_front"] = yf
     de_dict["x_back"] = xb
     de_dict["y_back"] = yb
@@ -297,6 +288,7 @@ def calculate_de(
     de_dict["path_length"] = r
     de_dict["phi"] = phi
     de_dict["theta"] = theta
+    # Pick one specific event to debug
 
     velocities[valid_indices], v_hat[valid_indices], r_hat[valid_indices] = (
         get_de_velocity(
@@ -325,31 +317,27 @@ def calculate_de(
     # Annotated Events.
     ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
 
-    # Account for counts=0 (event times have FILL value)
-    valid_events = (event_times != FILLVAL_FLOAT32).copy()
+    valid_events = np.ones(event_times.shape, bool)
+
     if repoint_id is not None:
-        in_pointing = calculate_events_in_pointing(
-            repoint_id, event_times[valid_events]
-        )
-        events_to_flag = np.zeros(len(quality_flags), dtype=bool)
-        events_to_flag[valid_events] = ~in_pointing
+        in_pointing = calculate_events_in_pointing(repoint_id, event_times)
+        events_to_flag = ~in_pointing
         # Update quality flags for valid events that are not in the pointing
         quality_flags[events_to_flag] |= ImapDEOutliersUltraFlags.DURINGREPOINT.value
         # Update valid_events to only include times within a pointing
-        valid_events[valid_events] &= in_pointing
+        valid_events &= in_pointing
 
-    if np.any(valid_events):
-        (
-            sc_velocity[valid_events],
-            sc_dps_velocity[valid_events],
-            helio_velocity[valid_events],
-        ) = get_annotated_particle_velocity(
-            event_times[valid_events],
-            velocities.astype(np.float32)[valid_events],
-            ultra_frame,
-            SpiceFrame.IMAP_DPS,
-            SpiceFrame.IMAP_SPACECRAFT,
-        )
+    (
+        sc_velocity[valid_events],
+        sc_dps_velocity[valid_events],
+        helio_velocity[valid_events],
+    ) = get_annotated_particle_velocity(
+        ttj2000ns_to_et(event_times_ns)[valid_events],
+        velocities.astype(np.float32)[valid_events],
+        ultra_frame,
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.IMAP_SPACECRAFT,
+    )
 
     de_dict["velocity_sc"] = sc_velocity
     de_dict["velocity_dps_sc"] = sc_dps_velocity
@@ -387,6 +375,41 @@ def calculate_de(
         ancillary_files,
         "l1b-sensor-gf-noblades",
     )
+    ebin_flag = np.isin(de_dict["ebin"], np.arange(1, 20))
+    quality_flags[~ebin_flag] |= ImapDEOutliersUltraFlags.EBINVALID.value
+    print(f"TOTAL EVENTS count: {len(de_dict['phi'])}")
+    print(
+        f"OUTSIDE FOV FLAG count: "
+        f"{(np.sum(quality_flags & ImapDEOutliersUltraFlags.FOV.value > 0))}"
+    )
+    print(
+        f"BACKTOF INVALID FLAG count: "
+        f"{np.sum((quality_flags & ImapDEOutliersUltraFlags.BACKTOF.value) > 0)}"
+    )
+    print(
+        f"COINPH INVALID FLAG count:"
+        f" {np.sum((quality_flags & ImapDEOutliersUltraFlags.COINPH.value) > 0)}"
+    )
+    print(
+        f"DURING REPOINT FLAG count: "
+        f"{np.sum((quality_flags & ImapDEOutliersUltraFlags.DURINGREPOINT.value) > 0)}"
+    )
+    print(
+        f"EBIN FLAG count: "
+        f"{np.sum((quality_flags & ImapDEOutliersUltraFlags.EBINVALID.value) > 0)}"
+    )
+    outliers_mask = sum(
+        [
+            ImapDEOutliersUltraFlags.COINPH,
+            ImapDEOutliersUltraFlags.BACKTOF,
+            ImapDEOutliersUltraFlags.FOV,
+            ImapDEOutliersUltraFlags.DURINGREPOINT,
+            ImapDEOutliersUltraFlags.EBINVALID,
+        ]
+    )
+    rejected = (quality_flags & outliers_mask) != 0
+    print(f"REJECTED EVENTS count: {np.sum(rejected)}")
+    print(f"VALID EVENTS count: {np.sum(~rejected)}")
 
     de_dict["quality_outliers"] = quality_flags
     flag_scattering(
@@ -425,9 +448,10 @@ def calculate_events_in_pointing(
         combined with the valid_events mask.
     """
     pointing_start_met, pointing_end_met = get_pointing_times_from_id(repoint_id)
+
     # Check which events are within the pointing
-    in_pointing = (et_to_met(event_times) >= pointing_start_met) & (
-        et_to_met(event_times) <= pointing_end_met
+    in_pointing = (event_times >= pointing_start_met) & (
+        event_times <= pointing_end_met
     )
 
     return in_pointing
