@@ -48,7 +48,7 @@ class UltraConstants:
     COMPOSITE_ENERGY_THRESHOLD: int = 1707
     # Geometry-related constants
     Z_DSTOP: float = 2.6 / 2  # Position of stop foil on Z axis [mm]
-    Z_DS: float = 46.19  # - (2.6 / 2)  # Position of slit on Z axis [mm]
+    Z_DS: float = 46.19 - (2.6 / 2)  # Position of slit on Z axis [mm]
     DF: float = 3.39  # Distance from slit to foil [mm]
     # Derived constants
     DMIN_PH_CTOF: float = (

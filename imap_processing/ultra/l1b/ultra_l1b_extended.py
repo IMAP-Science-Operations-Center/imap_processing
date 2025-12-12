@@ -127,9 +127,6 @@ def get_front_y_position(
     yf : np.array
         Front y position in hundredths of a millimeter.
     """
-    print("\nDEBUG get_front_y_position:")
-    print(f"  Using SLIT_Z = {UltraConstants.SLIT_Z}")
-    print(f"  Using D_SLIT_FOIL = {UltraConstants.D_SLIT_FOIL}")
     # Determine start types
     index_left = np.nonzero(start_type == 1)
     index_right = np.nonzero(start_type == 2)
@@ -168,12 +165,6 @@ def get_front_y_position(
     distance_adjust_right = np.sqrt(2) * UltraConstants.D_SLIT_FOIL - y_adjust_right
     # hundredths of a millimeter
     d[index_right] = (UltraConstants.SLIT_Z - distance_adjust_right) * 100
-    test_indices = np.where(yb == -821.0)[0]
-    if len(test_indices) > 0:
-        test_idx = test_indices[0]
-        if start_type[test_idx] == 2:  # RIGHT
-            print("\nTest event d calculation:")
-            print(f"  SLIT_Z: {UltraConstants.SLIT_Z}")
 
     return np.array(d), np.array(yf)
 
@@ -963,23 +954,7 @@ def get_eventtimes(
     start_inds = np.searchsorted(spin_start_sec, de_event_met, side="right") - 1
     # Clip to valid range of indices
     start_inds = np.clip(start_inds, 0, len(spin_start_sec) - 1)
-    schc = 501425443
-    inds = de_event_met == schc
 
-    print(f"METS: {de_event_met[inds]}")
-    # Test 2: Check spin boundaries
-    spin_start = spin_start_sec[653]
-    print(f"Spin 652 start: {spin_start_sec[652]}")
-    print(f"Spin 653 start: {spin_start}")
-    print(f"Spin 654 start: {spin_start_sec[654]}")
-    spin_end = spin_start + spin_duration[653] / 1000.0
-    print(f"Spin 653: {spin_start} to {spin_end}")
-    print(f"Events at: {de_event_met[inds]}")
-
-    # Test 3: What if it's the NEXT spin?
-    spin_654_start = spin_start_sec[654]
-    time_into_next_spin = de_event_met[0] - spin_654_start
-    print(f"Time into next spin: {time_into_next_spin}")
     # Get the relevant spin parameters for each event
     evt_spin_starts = spin_start_sec[start_inds]
     evt_spin_start_subs = spin_start_subsec[start_inds]
@@ -987,7 +962,7 @@ def get_eventtimes(
 
     event_times = (
         evt_spin_starts
-        + (evt_spin_start_subs / 1000000.0)
+        + (evt_spin_start_subs / 1000.0)
         + (evt_spin_durations / 1000.0) * (phase_angle / 720.0)
     )
 

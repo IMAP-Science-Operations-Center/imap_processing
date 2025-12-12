@@ -375,41 +375,6 @@ def calculate_de(
         ancillary_files,
         "l1b-sensor-gf-noblades",
     )
-    ebin_flag = np.isin(de_dict["ebin"], np.arange(1, 20))
-    quality_flags[~ebin_flag] |= ImapDEOutliersUltraFlags.EBINVALID.value
-    print(f"TOTAL EVENTS count: {len(de_dict['phi'])}")
-    print(
-        f"OUTSIDE FOV FLAG count: "
-        f"{(np.sum(quality_flags & ImapDEOutliersUltraFlags.FOV.value > 0))}"
-    )
-    print(
-        f"BACKTOF INVALID FLAG count: "
-        f"{np.sum((quality_flags & ImapDEOutliersUltraFlags.BACKTOF.value) > 0)}"
-    )
-    print(
-        f"COINPH INVALID FLAG count:"
-        f" {np.sum((quality_flags & ImapDEOutliersUltraFlags.COINPH.value) > 0)}"
-    )
-    print(
-        f"DURING REPOINT FLAG count: "
-        f"{np.sum((quality_flags & ImapDEOutliersUltraFlags.DURINGREPOINT.value) > 0)}"
-    )
-    print(
-        f"EBIN FLAG count: "
-        f"{np.sum((quality_flags & ImapDEOutliersUltraFlags.EBINVALID.value) > 0)}"
-    )
-    outliers_mask = sum(
-        [
-            ImapDEOutliersUltraFlags.COINPH,
-            ImapDEOutliersUltraFlags.BACKTOF,
-            ImapDEOutliersUltraFlags.FOV,
-            ImapDEOutliersUltraFlags.DURINGREPOINT,
-            ImapDEOutliersUltraFlags.EBINVALID,
-        ]
-    )
-    rejected = (quality_flags & outliers_mask) != 0
-    print(f"REJECTED EVENTS count: {np.sum(rejected)}")
-    print(f"VALID EVENTS count: {np.sum(~rejected)}")
 
     de_dict["quality_outliers"] = quality_flags
     flag_scattering(
@@ -439,7 +404,7 @@ def calculate_events_in_pointing(
     repoint_id : int
         The repointing ID.
     event_times : np.ndarray
-        Array of event times in ET.
+        Array of event times in MET.
 
     Returns
     -------
