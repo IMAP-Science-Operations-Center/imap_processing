@@ -14,6 +14,7 @@ from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
@@ -919,9 +920,9 @@ def get_phi_theta(
 
 def get_eventtimes(
     aux_dataset: xr.Dataset, phase_angle: NDArray, de_event_met: NDArray
-) -> NDArray:
+) -> tuple[NDArray, NDArray, NDArray]:
     """
-    Get the event times.
+    Get the event times, spin start times, and spin numbers.
 
     Use formula from section 3.3.1 of the ULTRA algorithm document.
     t_e = t_spin_start + (t_start_sub / 1000) +
@@ -940,6 +941,10 @@ def get_eventtimes(
     -------
     event_times : numpy.ndarray
         Event times in met.
+    spin_start_times: numpy.ndarray
+        Spin start times in met.
+    spin_numbers: numpy.ndarray
+        Spin numbers for each event.
     """
     # Get Spin Start Time in seconds
     spin_start_sec = aux_dataset["timespinstart"].values
@@ -951,19 +956,26 @@ def get_eventtimes(
     start_inds = np.searchsorted(spin_start_sec, de_event_met, side="right") - 1
     # Clip to valid range of indices
     start_inds = np.clip(start_inds, 0, len(spin_start_sec) - 1)
+    # Get the spin numbers for each event
+    spin_numbers = aux_dataset["spinnumber"].values[start_inds]
 
     # Get the relevant spin parameters for each event
     evt_spin_starts = spin_start_sec[start_inds]
     evt_spin_start_subs = spin_start_subsec[start_inds]
     evt_spin_durations = spin_duration[start_inds]
 
-    event_times = (
-        evt_spin_starts
-        + (evt_spin_start_subs / 1000.0)
-        + (evt_spin_durations / 1000.0) * (phase_angle / 720.0)
+    # spin start with subsecond precision
+    spin_start_times = evt_spin_starts + (evt_spin_start_subs / 1000.0)
+    # add the fractional spin offset
+    event_times = spin_start_times + (evt_spin_durations / 1000.0) * (
+        phase_angle / 720.0
     )
 
-    return event_times
+    return (
+        ttj2000ns_to_et(met_to_ttj2000ns(event_times)),
+        ttj2000ns_to_et(met_to_ttj2000ns(spin_start_times)),
+        spin_numbers,
+    )
 
 
 def interpolate_fwhm(

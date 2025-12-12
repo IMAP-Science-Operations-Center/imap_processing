@@ -11,8 +11,7 @@ from imap_processing.quality_flags import (
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.time import (
-    met_to_ttj2000ns,
-    ttj2000ns_to_et,
+    et_to_met,
 )
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
@@ -159,13 +158,13 @@ def calculate_de(
         ancillary_files,
     )
     start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
-    (event_times) = get_eventtimes(
+    (event_times, spin_starts, spin_number) = get_eventtimes(
         aux_dataset,
         de_dataset["phase_angle"].data,
         de_dataset["shcoarse"].data,
     )
-    event_times_ns = met_to_ttj2000ns(event_times)
-    de_dict["event_times"] = event_times_ns.astype(np.float64)
+    de_dict["spin"] = spin_number
+    de_dict["event_times"] = event_times.astype(np.float64)
     # Pulse height
     ph_result = get_ph_tof_and_back_positions(
         de_dataset, xf, f"ultra{sensor}", ancillary_files
@@ -276,6 +275,8 @@ def calculate_de(
 
     # Combine ph_yb and ssd_yb along with their indices
     de_dict["x_front"] = xf.astype(np.float32)
+    de_dict["event_times"] = event_times
+    de_dict["spin_starts"] = spin_starts
     de_dict["y_front"] = yf
     de_dict["x_back"] = xb
     de_dict["y_back"] = yb
@@ -319,7 +320,7 @@ def calculate_de(
     valid_events = np.ones(event_times.shape, bool)
 
     if repoint_id is not None:
-        in_pointing = calculate_events_in_pointing(repoint_id, event_times)
+        in_pointing = calculate_events_in_pointing(repoint_id, et_to_met(event_times))
         events_to_flag = ~in_pointing
         # Update quality flags for valid events that are not in the pointing
         quality_flags[events_to_flag] |= ImapDEOutliersUltraFlags.DURINGREPOINT.value
@@ -331,7 +332,7 @@ def calculate_de(
         sc_dps_velocity[valid_events],
         helio_velocity[valid_events],
     ) = get_annotated_particle_velocity(
-        ttj2000ns_to_et(event_times_ns)[valid_events],
+        event_times[valid_events],
         velocities.astype(np.float32)[valid_events],
         ultra_frame,
         SpiceFrame.IMAP_DPS,
