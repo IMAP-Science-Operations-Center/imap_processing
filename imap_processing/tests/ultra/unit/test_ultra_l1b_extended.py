@@ -6,6 +6,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
@@ -520,11 +521,20 @@ def test_get_eventtimes(test_fixture, aux_dataset):
     """Tests get_eventtimes function."""
     df_filt, _, _, de_dataset = test_fixture
 
-    event_times = get_eventtimes(
+    event_times, spin_start_times, spin_numbers = get_eventtimes(
         aux_dataset,
         de_dataset["phase_angle"].values,
         de_dataset["shcoarse"].values,
     )
+
+    # Check shapes
+    assert (
+        event_times.shape
+        == spin_start_times.shape
+        == spin_numbers.shape
+        == de_dataset["phase_angle"].shape
+    )
+
     t1_start_sec = aux_dataset["timespinstart"].values[0]
     t1_start_subsec = aux_dataset["timespinstartsub"].values[0]
     t1_start_dur = aux_dataset["duration"].values[0]
@@ -535,15 +545,13 @@ def test_get_eventtimes(test_fixture, aux_dataset):
         / 1000.0
     )
     # Check first event
-    assert expected_first_event_time == event_times[0]
-    # check that all event times are within the aux time range
-    assert np.all(
-        (event_times >= aux_dataset["timespinstart"].values.min())
-        & (event_times <= aux_dataset["timespinstart"].values.max() + 15)
+    assert (
+        ttj2000ns_to_et(met_to_ttj2000ns(expected_first_event_time)) == event_times[0]
     )
+
     # Check that each calculated event times fall within the expected range
     # Use the coarse time to determine the expected range
-    spin_starts = aux_dataset["timespinstart"].values
+    spin_starts = ttj2000ns_to_et(met_to_ttj2000ns(aux_dataset["timespinstart"].values))
     for i, coarse_time in enumerate(de_dataset["shcoarse"].values):
         boundary = np.searchsorted(spin_starts, coarse_time, side="right") - 1
         if boundary < 0 or boundary >= len(spin_starts) - 1:
