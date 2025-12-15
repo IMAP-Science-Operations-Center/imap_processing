@@ -528,7 +528,7 @@ def find_valid_asc(
     """
     # Apply each validation check independently on full arrays
     valid_indices = _check_valid_indices(science_to_spin_indices)
-    valid_spin_count = _check_sufficient_spins(science_to_spin_indices, spin_data)
+    valid_spin_count = _check_sufficient_spins(spin_data)[science_to_spin_indices]
 
     # Combine only these two masks:
     valid_mask = valid_indices & valid_spin_count
@@ -560,16 +560,12 @@ def _check_valid_indices(science_to_spin_indices: np.ndarray) -> np.ndarray:
     return ~invalid_indices
 
 
-def _check_sufficient_spins(
-    science_to_spin_indices: np.ndarray, spin_data: xr.Dataset
-) -> np.ndarray:
+def _check_sufficient_spins(spin_data: xr.Dataset) -> np.ndarray:
     """
     Check that matched spin cycles have sufficient spins (28 completed).
 
     Parameters
     ----------
-    science_to_spin_indices : np.ndarray
-        Indices of closest spin acquisitions.
     spin_data : xr.Dataset
         The L1A Spin dataset containing num_completed field.
 
@@ -578,18 +574,11 @@ def _check_sufficient_spins(
     valid_mask : np.ndarray
         Boolean mask where True indicates sufficient spins.
     """
-    # Create array same length as science indices, initialize to False
-    valid_mask = np.zeros(len(science_to_spin_indices), dtype=bool)
+    # Check if corresponding spin cycle has 28 spins
+    valid_mask = spin_data["num_completed"].values == 28
 
-    # For valid indices, check if corresponding spin cycle has 28 spins
-    valid_idx = science_to_spin_indices >= 0
-    valid_mask[valid_idx] = (
-        spin_data["num_completed"].values[science_to_spin_indices[valid_idx]] == 28
-    )
-
-    insufficient = ~valid_mask & valid_idx
-    if insufficient.any():
-        logger.warning(f"Found {insufficient.sum()} ASCs with fewer than 28 spins")
+    if (~valid_mask).any():
+        logger.warning(f"Found {(~valid_mask).sum()} ASCs with fewer than 28 spins")
 
     return valid_mask
 
