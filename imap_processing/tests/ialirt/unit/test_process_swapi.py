@@ -10,6 +10,7 @@ from imap_processing.ialirt.l0.process_swapi import (
     optimize_pseudo_parameters,
     process_swapi_ialirt,
 )
+from imap_processing.swapi.swapi_utils import read_swapi_lut_table
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -30,6 +31,24 @@ def binary_packet_path():
         / "l0"
         / "BinLog CCSDS_FRAG_TLM_20240826_152323Z_IALIRT_data_for_SDC.bin"
     )
+
+
+@pytest.fixture(scope="session")
+def esa_unit_conversion_table() -> pd.DataFrame:
+    """
+    Read the ESA unit conversion table.
+
+    Returns
+    -------
+    esa_unit_conversion_table : pandas.DataFrame
+        The ESA unit conversion table.
+    """
+    esa_file_path = (
+        imap_module_directory
+        / "tests/swapi/lut/imap_swapi_esa-unit-conversion_20250626_v001.csv"
+    )
+    df = read_swapi_lut_table(esa_file_path)
+    return df
 
 
 @pytest.fixture(scope="session")
