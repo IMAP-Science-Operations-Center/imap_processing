@@ -797,7 +797,23 @@ LO_SW_SPECIES_VARIABLE_NAMES = [
     "heplus",
     "cnoplus",
 ]
-
+LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    "tcr",
+    "dcr",
+    "sta",
+    "stb",
+    "sp",
+    "total_position_count",
+]
+HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    "dcr",
+    "mst",
+    "starts_only",
+    "stops_only",
+    "singles_starts",
+    "singles_stops",
+    "low_tof_cutoff",
+]
 LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
 HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 # Various configurations to support L1b processing of individual data products
