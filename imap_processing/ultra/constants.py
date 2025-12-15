@@ -157,6 +157,6 @@ class UltraConstants:
         "non_proton": [20, 21, 22, 23, 24, 25, 26],
     }
 
-    # For FOR calculations
+    # For FOV calculations
     FOV_THETA_OFFSET_DEG = 0.0
     FOV_PHI_LIMIT_DEG = 60.0

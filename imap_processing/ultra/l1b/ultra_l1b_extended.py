@@ -7,7 +7,6 @@ from enum import Enum
 
 import numpy as np
 import pandas
-import xarray
 import xarray as xr
 from numpy import ndarray
 from numpy.typing import NDArray
@@ -171,7 +170,7 @@ def get_front_y_position(
 
 
 def get_ph_tof_and_back_positions(
-    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
+    de_dataset: xr.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
 ) -> PHTOFResult:
     """
     Calculate back xb, yb position and tof.
@@ -326,7 +325,7 @@ def get_path_length(
 
 
 def get_ssd_back_position_and_tof_offset(
-    de_dataset: xarray.Dataset, sensor: str, ancillary_files: dict
+    de_dataset: xr.Dataset, sensor: str, ancillary_files: dict
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Lookup the Y SSD positions (yb), TOF Offset, and SSD number.
@@ -380,7 +379,7 @@ def get_ssd_back_position_and_tof_offset(
 
 
 def calculate_etof_xc(
-    de_subset: xarray.Dataset,
+    de_subset: xr.Dataset,
     particle_tof: np.ndarray,
     sensor: str,
     location: str,
@@ -434,7 +433,7 @@ def calculate_etof_xc(
 
 
 def get_coincidence_positions(
-    de_dataset: xarray.Dataset,
+    de_dataset: xr.Dataset,
     particle_tof: np.ndarray,
     sensor: str,
     ancillary_files: dict,
@@ -559,7 +558,7 @@ def get_de_velocity(
 
 
 def get_ssd_tof(
-    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
+    de_dataset: xr.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
 ) -> NDArray[np.float64]:
     """
     Calculate back xb, yb position for the SSDs.
@@ -764,7 +763,7 @@ def get_energy_pulse_height(
 
 
 def get_energy_ssd(
-    de_dataset: xarray.Dataset, ssd: np.ndarray, ancillary_files: dict
+    de_dataset: xr.Dataset, ssd: np.ndarray, ancillary_files: dict
 ) -> NDArray[np.float64]:
     """
     Get SSD energy.
@@ -918,7 +917,7 @@ def get_phi_theta(
     return np.degrees(phi), np.degrees(theta)
 
 
-def get_eventtimes(
+def get_event_times(
     aux_dataset: xr.Dataset, phase_angle: NDArray, de_event_met: NDArray
 ) -> tuple[NDArray, NDArray, NDArray]:
     """
@@ -931,7 +930,7 @@ def get_eventtimes(
     Parameters
     ----------
     aux_dataset : numpy.ndarray
-        Spin number.
+        Auxiliary dataset containing spin information.
     phase_angle : numpy.ndarray
         Phase angle.
     de_event_met : numpy.ndarray
@@ -940,9 +939,9 @@ def get_eventtimes(
     Returns
     -------
     event_times : numpy.ndarray
-        Event times in met.
+        Event times in et.
     spin_start_times: numpy.ndarray
-        Spin start times in met.
+        Spin start times in et.
     spin_numbers: numpy.ndarray
         Spin numbers for each event.
     """
@@ -952,6 +951,19 @@ def get_eventtimes(
     spin_start_subsec = aux_dataset["timespinstartsub"].values
     # Get spin duration in milliseconds
     spin_duration = aux_dataset["duration"].values
+
+    # Check that all events fall within the aux dataset time range.
+    # The time window spans from the first spin start to the end of the last spin.
+    first_spin_start = spin_start_sec[0]
+    # Define the end of the last spin as start time + max duration (15s)
+    last_spin_end = spin_start_sec[-1] + 15.0
+    if np.any(de_event_met < first_spin_start) or np.any(de_event_met > last_spin_end):
+        raise ValueError(
+            "Coarse MET time contains events outside aux_dataset time range "
+            f"({first_spin_start} - {last_spin_end}). "
+            f"Found min={de_event_met.min()}, max={de_event_met.max()}."
+        )
+
     # Find the spin_start_sec that started directly before each event.
     start_inds = np.searchsorted(spin_start_sec, de_event_met, side="right") - 1
     # Clip to valid range of indices
@@ -1291,7 +1303,7 @@ def determine_ebin_ssd(
 
 
 def is_back_tof_valid(
-    de_dataset: xarray.Dataset,
+    de_dataset: xr.Dataset,
     xf: NDArray,
     sensor: str,
     ancillary_files: dict,

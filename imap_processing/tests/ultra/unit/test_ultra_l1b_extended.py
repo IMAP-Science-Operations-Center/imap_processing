@@ -24,7 +24,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
-    get_eventtimes,
+    get_event_times,
     get_front_x_position,
     get_front_y_position,
     get_fwhm,
@@ -521,7 +521,7 @@ def test_get_eventtimes(test_fixture, aux_dataset):
     """Tests get_eventtimes function."""
     df_filt, _, _, de_dataset = test_fixture
 
-    event_times, spin_start_times, spin_numbers = get_eventtimes(
+    event_times, spin_start_times, spin_numbers = get_event_times(
         aux_dataset,
         de_dataset["phase_angle"].values,
         de_dataset["shcoarse"].values,
@@ -559,6 +559,27 @@ def test_get_eventtimes(test_fixture, aux_dataset):
         start_time = spin_starts[boundary]
         end_time = spin_starts[boundary + 1]
         assert start_time <= int(event_times[i]) <= end_time
+
+
+def test_get_event_times_out_of_range(test_fixture, aux_dataset):
+    """Tests get_event_times with out of range values."""
+    df_filt, _, _, de_dataset = test_fixture
+    # Get min time from aux_dataset
+    min_time = aux_dataset["timespinstart"].values.min()
+    # Set some coarse times to be out of range (less than min_time)
+    coarse_times = de_dataset["shcoarse"].values.copy()
+    # Set first coarse time to be out of range
+    coarse_times[0] = min_time - 1000
+
+    with pytest.raises(
+        ValueError,
+        match="Coarse MET time contains events outside aux_dataset time range",
+    ):
+        get_event_times(
+            aux_dataset,
+            de_dataset["phase_angle"].values,
+            coarse_times,
+        )
 
 
 @pytest.mark.external_test_data

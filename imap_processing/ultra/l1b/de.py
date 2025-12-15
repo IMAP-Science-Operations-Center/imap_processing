@@ -30,7 +30,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
-    get_eventtimes,
+    get_event_times,
     get_front_x_position,
     get_front_y_position,
     get_fwhm,
@@ -158,7 +158,7 @@ def calculate_de(
         ancillary_files,
     )
     start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
-    (event_times, spin_starts, spin_number) = get_eventtimes(
+    (event_times, spin_starts, spin_number) = get_event_times(
         aux_dataset,
         de_dataset["phase_angle"].data,
         de_dataset["shcoarse"].data,
