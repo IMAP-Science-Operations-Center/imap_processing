@@ -449,11 +449,6 @@ def _calculate_improved_stat_variance(
     # Total count rates for Poisson uncertainty calculation
     total_count_rates_for_uncertainty = map_ds["bg_rates"] + averaged_signal_rates
 
-    # Ensure non-negative values for sqrt and minimum of 1 for uncertainty calculation
-    total_count_rates_for_uncertainty = xr.where(
-        total_count_rates_for_uncertainty < 1, 1, total_count_rates_for_uncertainty
-    )
-
     logger.debug("Computing improved flux uncertainties")
     # Statistical variance:
     with np.errstate(divide="ignore", invalid="ignore"):
