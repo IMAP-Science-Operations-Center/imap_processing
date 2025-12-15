@@ -561,6 +561,7 @@ def test_get_eventtimes(test_fixture, aux_dataset):
         assert start_time <= int(event_times[i]) <= end_time
 
 
+@pytest.mark.external_test_data
 def test_get_event_times_out_of_range(test_fixture, aux_dataset):
     """Tests get_event_times with out of range values."""
     df_filt, _, _, de_dataset = test_fixture
