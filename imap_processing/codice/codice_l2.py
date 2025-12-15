@@ -1168,68 +1168,60 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     l2_dataset = l1a_dataset
     # Load energy table and tof table needed for conversions
     energy_table, tof_table = get_hi_de_luts(dependencies)
-
+    # Initialize nan array for calculations
+    nan_array = np.full(l2_dataset["ssd_id"].shape, np.nan)
     # Convert from position to elevation angle in degrees relative to the spacecraft
     # axis
-    elevation_angle_shape = l2_dataset["ssd_id"].shape
-    ssd_id_flat = l2_dataset["ssd_id"].values.ravel()
-    elevation_angle = np.array(
-        [SSD_ID_TO_ELEVATION.get(id, np.nan) for id in ssd_id_flat]
-    ).reshape(elevation_angle_shape)
+    ssd_id = l2_dataset["ssd_id"].values
+    valid_ssd = (ssd_id <= 15) & (ssd_id >= 0)
 
-    l2_dataset["elevation_angle"] = (
-        l2_dataset["ssd_id"].dims,
-        elevation_angle.astype(np.float32),
+    elevation = nan_array.copy()
+    elevation[valid_ssd] = SSD_ID_TO_ELEVATION[ssd_id[valid_ssd]]
+    l2_dataset["elevation_angle"] = xr.DataArray(
+        data=elevation.astype(np.float32), dims=l2_dataset["ssd_id"].dims
     )
     # Calculate ssd energy in meV
-    gain_flat = l2_dataset["gain"].values.ravel()
-    ssd_energy_flat = l2_dataset["ssd_energy"].values.ravel()
-    # Initialize ssd_energy with nans
-    ssd_energy = np.full(ssd_energy_flat.shape, np.nan)
+    gain = l2_dataset["gain"].values
+    ssd_energy = l2_dataset["ssd_energy"].values
     valid_mask = (
-        (np.isin(gain_flat, list(GAIN_ID_TO_STR.keys())))
-        & (ssd_id_flat <= 15)
-        & (ssd_energy_flat != len(energy_table))
+        (np.isin(gain, list(GAIN_ID_TO_STR.keys())))
+        & valid_ssd
+        & (ssd_energy != len(energy_table))
     )
     # The columns are organized in order of id and gains
     # E.g. ssd 0 - LG, ssd 0 - MG, ssd 0 - HG, ssd 1 - LG, ssd 1 - MG, ssd 1 - HG, ...
-    cols = ssd_id_flat * 3 + (gain_flat - 1)
-    ssd_energy[valid_mask] = energy_table[ssd_energy_flat[valid_mask], cols[valid_mask]]
-    l2_dataset["ssd_energy"].data = ssd_energy.reshape(
-        l2_dataset["ssd_energy"].shape
-    ).astype(np.float32)
+    cols = ssd_id * 3 + (gain - 1)
+    ssd_energy_converted = nan_array.copy()
+    ssd_energy_converted[valid_mask] = energy_table[
+        ssd_energy[valid_mask], cols[valid_mask]
+    ]
+    l2_dataset["ssd_energy"].data = ssd_energy_converted.astype(np.float32)
 
     # Convert spin_sector to spin_angle in degrees
-    theta_angles = np.array(
-        [SSD_ID_TO_SPIN_ANGLE.get(ssd_id, np.nan) for ssd_id in ssd_id_flat]
-    )
-    spin_angles = (
-        theta_angles + 15.0 * l2_dataset["spin_sector"].values.ravel()
-    ) % 360.0
-
-    l2_dataset["spin_angle"] = xr.DataArray(
-        data=spin_angles.reshape(l2_dataset["spin_sector"].shape),
-        dims=l2_dataset["spin_sector"].dims,
+    theta_angles = nan_array.copy()
+    theta_angles[valid_ssd] = SSD_ID_TO_SPIN_ANGLE[ssd_id[valid_ssd]]
+    l2_dataset["spin_angle"] = (
+        (theta_angles + 15.0 * l2_dataset["spin_sector"]) % 360.0
     ).astype(np.float32)
 
     # Calculate TOF in ns
-    tof_flat = l2_dataset["tof"].values.ravel()
+    tof = l2_dataset["tof"].values
     # Get valid TOF indices for lookup
-    valid_tof_mask = tof_flat < tof_table.shape[0]
-    tof_ns = np.full(tof_flat.shape, np.nan)
+    valid_tof_mask = tof < tof_table.shape[0]
+    tof_ns = nan_array.copy()
     # Get tof values in ns from first column of tof_table
-    tof_ns[valid_tof_mask] = tof_table[tof_flat[valid_tof_mask], 0]
+    tof_ns[valid_tof_mask] = tof_table[tof[valid_tof_mask], 0]
     l2_dataset["tof"] = xr.DataArray(
-        data=tof_ns.reshape(l2_dataset["tof"].shape),
+        data=tof_ns,
         dims=l2_dataset["tof"].dims,
     ).astype(np.float32)
 
     # Calculate energy per nuc
-    energy_nuc = np.full(tof_flat.shape, np.nan)
+    energy_nuc = nan_array.copy()
     # Get value from second column of tof_table (E/n (MeV/n))
-    energy_nuc[valid_tof_mask] = tof_table[tof_flat[valid_tof_mask], 1]
+    energy_nuc[valid_tof_mask] = tof_table[tof[valid_tof_mask], 1]
     l2_dataset["energy_per_nuc"] = xr.DataArray(
-        data=energy_nuc.reshape(l2_dataset["tof"].shape),
+        data=energy_nuc,
         dims=l2_dataset["tof"].dims,
     ).astype(np.float32)
     # Drop unused variables
