@@ -161,7 +161,7 @@ def get_hi_de_luts(
         descriptor="l2-hi-energy-table"
     )[0]
     tof_table_file_path = dependencies.get_file_paths(descriptor="l2-hi-tof-table")[0]
-    # Read TOF table CSV, and get the second column which is TOF in ns
+    # Read TOF CSV, skip first column which is an index
     # Each row corresponds to a tof index and the columns are tof (ns) and E/n (MeV/n)
     tof_table = (
         pd.read_csv(tof_table_file_path, header=None, skiprows=1).iloc[:, 1:].to_numpy()
@@ -1165,13 +1165,13 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi-direct-events")
 
-    # Convert from position to elevation angle in degrees relative to the spacecraft
-    # axis
     l2_dataset = l1a_dataset
     # Load energy table and tof table needed for conversions
     energy_table, tof_table = get_hi_de_luts(dependencies)
-    elevation_angle_shape = l2_dataset["ssd_id"].shape
 
+    # Convert from position to elevation angle in degrees relative to the spacecraft
+    # axis
+    elevation_angle_shape = l2_dataset["ssd_id"].shape
     ssd_id_flat = l2_dataset["ssd_id"].values.ravel()
     elevation_angle = np.array(
         [SSD_ID_TO_ELEVATION.get(id, np.nan) for id in ssd_id_flat]
