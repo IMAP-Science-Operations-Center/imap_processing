@@ -19,6 +19,7 @@ from imap_processing.codice.codice_l2 import (
     compute_geometric_factors,
     get_efficiency_lut,
     get_geometric_factor_lut,
+    get_hi_de_luts,
     get_mpq_calc_energy_conversion_vals,
     get_mpq_calc_tof_conversion_vals,
     process_codice_l2,
@@ -200,6 +201,13 @@ def test_get_energy_kev_from_mpq_lut(processing_dependencies, mock_get_file_path
     expected_e_kev = mpq_df.loc[5, 4:].to_numpy().astype(np.float64)
     # Calculated values should be more precise than LUT but should be close
     np.testing.assert_allclose(energy_kev, expected_e_kev, rtol=0.01)
+
+
+def test_get_hi_de_luts(processing_dependencies, mock_get_file_paths):
+    # Mock get_file_paths to return specific files for hi-energy-table and hi-tof-table
+    energy_table, tof_table = get_hi_de_luts(processing_dependencies)
+    assert energy_table.shape == (2048, 48)
+    assert tof_table.shape == (1024, 2)
 
 
 def test_process_lo_species_intensity(mock_get_file_paths, codice_lut_path):

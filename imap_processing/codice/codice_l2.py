@@ -139,6 +139,44 @@ def get_mpq_calc_tof_conversion_vals(
     return tof_ns
 
 
+def get_hi_de_luts(
+    dependencies: ProcessingInputCollection | None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Load lookup tables for hi direct-event processing.
+
+    Parameters
+    ----------
+    dependencies : ProcessingInputCollection
+        The collection of processing input files.
+
+    Returns
+    -------
+    energy_table : np.ndarray
+        2D array of energy lookup table with shape (ssd_energy, col).
+    tof_table : np.ndarray
+        2D array of tof lookup table with shape (tof_index, col).
+    """
+    energy_table_file_path = dependencies.get_file_paths(
+        descriptor="l2-hi-energy-table"
+    )[0]
+    tof_table_file_path = dependencies.get_file_paths(descriptor="l2-hi-tof-table")[0]
+    # Read TOF table CSV, and get the second column which is TOF in ns
+    # Each row corresponds to a tof index and the columns are tof (ns) and E/n (MeV/n)
+    tof_table = (
+        pd.read_csv(tof_table_file_path, header=None, skiprows=1).iloc[:, 1:].to_numpy()
+    )
+    # Read energy table CSV, skip first column which is an index
+    # Each row corresponds to an ssd energy index and the columns map to a combination
+    # of gain and ssd id
+    energy_table = (
+        pd.read_csv(energy_table_file_path, header=None, skiprows=1)
+        .iloc[:, 1:]
+        .to_numpy()
+    )
+    return energy_table, tof_table
+
+
 def get_geometric_factor_lut(
     dependencies: ProcessingInputCollection | None,
     path: Path | None = None,
@@ -1129,24 +1167,10 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
 
     # Convert from position to elevation angle in degrees relative to the spacecraft
     # axis
-    l2_dataset = l1a_dataset.copy(deep=True)
+    l2_dataset = l1a_dataset
     # Load energy table and tof table needed for conversions
-    energy_table_file_path = dependencies.get_file_paths(
-        descriptor="l2-hi-energy-table"
-    )[0]
-    tof_table_file_path = dependencies.get_file_paths(descriptor="l2-hi-tof-table")[0]
-    # Read energy table CSV, skip first column which is an index
-    energy_table = (
-        pd.read_csv(energy_table_file_path, header=None, skiprows=1)
-        .iloc[:, 1:]
-        .to_numpy()
-    )
+    energy_table, tof_table = get_hi_de_luts(dependencies)
     elevation_angle_shape = l2_dataset["ssd_id"].shape
-    # Read TOF table CSV, and get the second column which is TOF in ns
-    # Each row corresponds to a tof index
-    tof_table = (
-        pd.read_csv(tof_table_file_path, header=None, skiprows=1).iloc[:, 1:].to_numpy()
-    )
 
     ssd_id_flat = l2_dataset["ssd_id"].values.ravel()
     elevation_angle = np.array(
@@ -1160,14 +1184,15 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     # Calculate ssd energy in meV
     gain_flat = l2_dataset["gain"].values.ravel()
     ssd_energy_flat = l2_dataset["ssd_energy"].values.ravel()
-    # Set up array to hold calculated energies
+    # Initialize ssd_energy with nans
     ssd_energy = np.full(ssd_energy_flat.shape, np.nan)
     valid_mask = (
         (np.isin(gain_flat, list(GAIN_ID_TO_STR.keys())))
         & (ssd_id_flat <= 15)
         & (ssd_energy_flat != len(energy_table))
     )
-    # The columns are organized in order of id and gains (LG, MG, HG)
+    # The columns are organized in order of id and gains
+    # E.g. ssd 0 - LG, ssd 0 - MG, ssd 0 - HG, ssd 1 - LG, ssd 1 - MG, ssd 1 - HG, ...
     cols = ssd_id_flat * 3 + (gain_flat - 1)
     ssd_energy[valid_mask] = energy_table[ssd_energy_flat[valid_mask], cols[valid_mask]]
     l2_dataset["ssd_energy"].data = ssd_energy.reshape(
@@ -1181,6 +1206,7 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     spin_angles = (
         theta_angles + 15.0 * l2_dataset["spin_sector"].values.ravel()
     ) % 360.0
+
     l2_dataset["spin_angle"] = xr.DataArray(
         data=spin_angles.reshape(l2_dataset["spin_sector"].shape),
         dims=l2_dataset["spin_sector"].dims,
@@ -1226,16 +1252,6 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         l2_dataset["epoch"].data,
         dims="epoch",
         attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
-    )
-    l2_dataset["epoch_delta_minus"] = xr.DataArray(
-        data=l2_dataset["epoch_delta_minus"].data.astype(np.int64),
-        dims="epoch",
-        attrs=cdf_attrs.get_variable_attributes("epoch_delta_minus"),
-    )
-    l2_dataset["epoch_delta_plus"] = xr.DataArray(
-        l2_dataset["epoch_delta_plus"].data.astype(np.int64),
-        dims="epoch",
-        attrs=cdf_attrs.get_variable_attributes("epoch_delta_plus"),
     )
     # Add labels
     l2_dataset["event_num_label"] = xr.DataArray(
