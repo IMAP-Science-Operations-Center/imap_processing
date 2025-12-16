@@ -798,6 +798,8 @@ LO_SW_SPECIES_VARIABLE_NAMES = [
     "cnoplus",
 ]
 
+LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
+HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 # Various configurations to support L1b processing of individual data products
 # Much of these are described in the algorithm document in chapter 11 ("Data
 # Level 1B")
