@@ -148,54 +148,33 @@ def mock_imap_state(time, ref_frame):
     return np.array([0, 0, 0, 0, 0, 0])
 
 
-def test_get_sectored_rates():
+def test_get_sectored_rates(rates_dataset):
     """Tests get_sectored_rates function."""
+    sectored_rates = get_sectored_rates(rates_dataset)
+    expected_sectored_rates = rates_dataset.isel(epoch=slice(14, None))
+    xr.testing.assert_equal(sectored_rates, expected_sectored_rates)
 
-    # Simulate a test rates dataset.
-    epoch = 60
-    test_l1a_rates_dataset = xr.Dataset(
-        {
-            "test_data": (["epoch"], np.arange(epoch)),
-        },
-    )
-    # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
-    # each time the mode changes, it is recorded in the params packet.
-    # Create a test params dataset that simulates the mode changing to 3, 3 times.
-    modes = np.tile(np.array([1, 3]), 3)
-    test_l1a_params_dataset = xr.Dataset(
-        {
-            "imageratescadence": (["epoch"], modes),
-        },
-        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
-    )
-    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
-    np.testing.assert_array_equal(
-        sectored_rates["test_data"].data,
-        np.arange(
-            10, 20
-        ),  # Make sure duplicate epochs with the same mode are filtered out
-    )
-    # Test with one mode shift in the middle of the dataset.
-    modes = np.array([1, 3, 1])
-    test_l1a_params_dataset = xr.Dataset(
-        {
-            "imageratescadence": (["epoch"], modes),
-        },
-        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
-    )
-    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
-    np.testing.assert_array_equal(sectored_rates["test_data"].data, np.arange(20, 40))
 
-    # Test with one mode shift in the middle of the dataset.
-    modes = np.array([1, 3, 1])
-    test_l1a_params_dataset = xr.Dataset(
+def test_get_sectored_rates_manual():
+    """Tests get_sectored_rates function."""
+    # This dataset has 2 sections where it goes into sectored mode.
+    test_spins = np.concatenate([np.full(15, 0), np.array([10, 11]), np.full(15, 12)])
+    rates_dataset = xr.Dataset(
         {
-            "imageratescadence": (["epoch"], modes),
-        },
-        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+            "epoch": ("epoch", np.arange(32)),
+            "spin": ("epoch", test_spins),
+        }
     )
-    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
-    np.testing.assert_array_equal(sectored_rates["test_data"].data, np.arange(20, 40))
+    sectored_rates = get_sectored_rates(rates_dataset)
+    # The sectored rates should be the first and last 15 epochs.
+    expected_sectored_rates = xr.concat(
+        [
+            rates_dataset.isel(epoch=slice(0, 15)),
+            rates_dataset.isel(epoch=slice(17, 33)),
+        ],
+        dim="epoch",
+    )
+    xr.testing.assert_equal(sectored_rates, expected_sectored_rates)
 
 
 def test_get_deadtime_ratios():

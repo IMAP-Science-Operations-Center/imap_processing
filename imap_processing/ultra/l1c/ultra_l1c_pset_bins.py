@@ -15,6 +15,7 @@ from imap_processing.spice.spin import (
     get_spacecraft_spin_phase,
     get_spin_angle,
     get_spin_data,
+    get_spin_number,
 )
 from imap_processing.spice.time import ttj2000ns_to_met
 from imap_processing.ultra.constants import UltraConstants
@@ -178,7 +179,9 @@ def get_spacecraft_count_rate_uncertainty(hist: NDArray, exposure: NDArray) -> N
     return rate_uncertainty
 
 
-def get_deadtime_ratios(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
+def get_deadtime_ratios(
+    sectored_rates_ds: xr.Dataset, spin_durations: np.ndarray
+) -> xr.DataArray:
     """
     Compute the dead time ratio at each sector.
 
@@ -192,38 +195,38 @@ def get_deadtime_ratios(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
     ----------
     sectored_rates_ds : xarray.Dataset
         Dataset containing sector mode image rates data.
+    spin_durations : numpy.ndarray
+        Array of spin durations corresponding to each sector.
 
     Returns
     -------
     dead_time_ratio : xarray.DataArray
         Dead time correction factor for each sector.
     """
-    # Compute the correction factor at each sector
-    a = sectored_rates_ds.fifo_valid_events / (
-        1
-        - (sectored_rates_ds.event_active_time + 2 * sectored_rates_ds.start_pos) * 1e-7
-    )
-
-    start_full = sectored_rates_ds.start_rf + sectored_rates_ds.start_lf
-    b = a * np.exp(start_full * 1e-7 * 5)
-
+    tint = (24 / 360) * spin_durations
+    # (24 / 360) * spin duration
+    # compute the correction factor for each step in each sector
+    start_full_cdf = sectored_rates_ds.start_rf + sectored_rates_ds.start_lf
     coin_stop_nd = (
         sectored_rates_ds.coin_tn
         + sectored_rates_ds.coin_bn
         - sectored_rates_ds.stop_tn
         - sectored_rates_ds.stop_bn
     )
-    corrected_valid_events = b * np.exp(1e-7 * 8 * coin_stop_nd)
+    numerator = np.exp(5e-7 * start_full_cdf) * np.exp(8e-7 * coin_stop_nd) * tint
+    denominator = (
+        tint
+        - (sectored_rates_ds.event_active_time + 2 * sectored_rates_ds.start_pos) * 1e-7
+    )
 
+    correction_factor = numerator / denominator
     # Compute dead time ratio
-    dead_time_ratios = sectored_rates_ds.fifo_valid_events / corrected_valid_events
+    dead_time_ratios = 1 / correction_factor
 
     return dead_time_ratios
 
 
-def get_sectored_rates(
-    rates_ds: xr.Dataset, params_ds: xr.Dataset
-) -> xr.Dataset | None:
+def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
     """
     Filter rates dataset to only include sector mode data.
 
@@ -231,45 +234,39 @@ def get_sectored_rates(
     ----------
     rates_ds : xarray.Dataset
         Dataset containing image rates data.
-    params_ds : xarray.Dataset
-        Dataset containing image parameters data.
 
     Returns
     -------
     rates : xarray.Dataset or None
         Rates dataset with only the sector mode data.
     """
-    # Find indices in which the parameters dataset, indicates that ULTRA was in
+    # Find indices in which the parameters dataset indicates that ULTRA was in
     # sector mode. At the normal 15-second spin period, each 24° sector takes ~1 second.
+    spins = rates_ds.spin.values
+    # Check if spins are monotonically increasing
+    if not np.all(np.diff(spins) >= 0):
+        logger.warning("Spin values in rates dataset are not monotonically increasing.")
+    # Get the indices where the spin value changes
+    spin_change = np.where(np.diff(spins) != 0)[0] + 1
+    # add the first and last index
+    spin_change = np.concatenate(([0], spin_change, [len(spins)]))
+    # Get the length of each spin run
+    # e.g. 0,0,0,3,3,3,4,4 -> 3,3,2
+    spin_runs = np.diff(spin_change)
+    spin_run_inds = np.where(spin_runs == 15)[0]
 
-    # This means that data was collected as a function of spin allowing for fine grained
-    # rate analysis.
-    # Only get unique combinations of epoch and imageratescadence
-    params = params_ds.groupby(["epoch", "imageratescadence"]).first()
-
-    sector_mode_start_inds = np.where(params["imageratescadence"] == 3)[0]
-    if len(sector_mode_start_inds) == 0:
+    if len(spin_run_inds) == 0:
+        logger.warning("No sector mode data found in the rates dataset.")
         return None
-    # get the sector mode start and stop indices
-    sector_mode_stop_inds = sector_mode_start_inds + 1
-    # get the sector mode start and stop times
-    mode_3_start = params["epoch"].values[sector_mode_start_inds]
-    # if the last mode is a sector mode, we can assume that the sector data goes through
-    # the end of the dataset, so we append np.inf to the end of the last time range.
-    if sector_mode_stop_inds[-1] == len(params["epoch"]):
-        mode_3_end = np.append(
-            params["epoch"].values[sector_mode_stop_inds[:-1]], np.inf
-        )
-    else:
-        mode_3_end = params["epoch"].values[sector_mode_stop_inds]
-    # Build a list of conditions for each sector mode time range
-    conditions = [
-        (rates_ds["epoch"] >= start) & (rates_ds["epoch"] < end)
-        for start, end in zip(mode_3_start, mode_3_end, strict=False)
-    ]
 
-    sector_mode_mask = np.logical_or.reduce(conditions)
-    return rates_ds.isel(epoch=sector_mode_mask)
+    # Get the start indices of each sector mode spin
+    sector_starts = spin_change[spin_run_inds]
+    sectored_mode_mask = np.zeros(len(spins), dtype=bool)
+    for start in sector_starts:
+        # Set the group of 15 to True
+        sectored_mode_mask[start : start + 15] = True
+    # Return the sectored rates dataset
+    return rates_ds.isel(epoch=sectored_mode_mask)
 
 
 def get_deadtime_ratios_by_spin_phase(
@@ -311,12 +308,16 @@ def get_deadtime_ratios_by_spin_phase(
             sensor_id, ancillary_files
         )
     else:
-        deadtime_ratios = get_deadtime_ratios(sectored_rates).data
-        # Get the spin phase at the start of each sector rate measurement
-        met_times = ttj2000ns_to_met(sectored_rates.epoch.data)
+        met_time = sectored_rates["shcoarse"].values
+        spin_data = get_spin_data()
+        spin_numbers = get_spin_number(met_time)
+        spin_durations = spin_data.loc[spin_numbers, "spin_period_sec"].values
+        print("spin durations:", spin_durations)
+        deadtime_ratios = get_deadtime_ratios(sectored_rates, spin_durations).data
         spin_phases = np.asarray(
-            get_spin_angle(get_spacecraft_spin_phase(met_times), degrees=True)
+            get_spin_angle(get_spacecraft_spin_phase(met_time), degrees=True)
         )
+        print("spin phases:", spin_phases)
         # Assume the sectored rate data is evenly spaced in time, and find the middle
         # spin phase value for each sector.
         # The center spin phase is the closest / most accurate spin phase.
@@ -330,7 +331,8 @@ def get_deadtime_ratios_by_spin_phase(
         spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + 12)
         # Wrap any spin phases > 360 back to [0, 360]
         spin_phases_centered = np.array(spin_phases_centered % 360)
-
+    print("spin phases centered:", spin_phases_centered)
+    print("deadtime_ratios:", deadtime_ratios)
     # Create a dataset with spin phases and dead time ratios
     deadtime_by_spin_phase = xr.Dataset(
         {"deadtime_ratio": (("spin_phase",), deadtime_ratios)},
@@ -411,7 +413,6 @@ def calculate_exposure_time(
 
 def get_spacecraft_exposure_times(
     rates_dataset: xr.Dataset,
-    params_dataset: xr.Dataset,
     valid_spun_pixels: xr.DataArray,
     boundary_scale_factors: xr.DataArray,
     pointing_range_met: tuple[float, float],
@@ -427,8 +428,6 @@ def get_spacecraft_exposure_times(
     ----------
     rates_dataset : xarray.Dataset
         Dataset containing image rates data.
-    params_dataset : xarray.Dataset
-        Dataset containing image parameters data.
     valid_spun_pixels : xarray.DataArray
         3D Array of pixels valid at each spin phase step. If rejection based on
         scattering was set, then these are the pixels below the FWHM scattering
@@ -464,7 +463,7 @@ def get_spacecraft_exposure_times(
         rates_time <= pointing_range_met[1]
     )
     rates_dataset.isel(epoch=pointing_mask)
-    sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
+    sectored_rates = get_sectored_rates(rates_dataset)
     # Get the number of steps used in the spun pointing lookup tables
     spin_steps = valid_spun_pixels.shape[0]
     nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(

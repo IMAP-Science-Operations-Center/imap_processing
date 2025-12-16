@@ -37,7 +37,6 @@ def calculate_spacecraft_pset(
     de_dataset: xr.Dataset,
     goodtimes_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
-    params_dataset: xr.Dataset,
     name: str,
     ancillary_files: dict,
     instrument_id: int,
@@ -54,8 +53,6 @@ def calculate_spacecraft_pset(
         Dataset containing goodtimes data.
     rates_dataset : xarray.Dataset
         Dataset containing image rates data.
-    params_dataset : xarray.Dataset
-        Dataset containing image parameters data.
     name : str
         Name of the dataset.
     ancillary_files : dict
@@ -142,7 +139,6 @@ def calculate_spacecraft_pset(
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
         rates_dataset,
-        params_dataset,
         valid_spun_pixels,
         boundary_scale_factors,
         pointing_range_met,
@@ -188,7 +184,6 @@ def calculate_spacecraft_pset(
     end = min(end + 1800, ttj2000ns_to_et(pointing_range_ns[1]))
     # Time bins in 30 minute intervals in et
     time_bins = np.arange(start, end, 1800)
-
     # Compute mask for culling the Earth
     compute_culling_mask(
         time_bins,

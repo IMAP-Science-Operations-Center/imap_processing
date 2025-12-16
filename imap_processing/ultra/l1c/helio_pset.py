@@ -39,7 +39,6 @@ def calculate_helio_pset(
     de_dataset: xr.Dataset,
     goodtimes_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
-    params_dataset: xr.Dataset,
     name: str,
     ancillary_files: dict,
     instrument_id: int,
@@ -56,8 +55,6 @@ def calculate_helio_pset(
         Dataset containing goodtimes data.
     rates_dataset : xarray.Dataset
         Dataset containing image rates data.
-    params_dataset : xarray.Dataset
-        Dataset containing image parameters data.
     name : str
         Name of the dataset.
     ancillary_files : dict
@@ -154,7 +151,6 @@ def calculate_helio_pset(
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_time, deadtime_ratios = get_spacecraft_exposure_times(
         rates_dataset,
-        params_dataset,
         pixels_below_scattering,
         boundary_scale_factors,
         pointing_range_met,
