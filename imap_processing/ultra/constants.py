@@ -160,9 +160,9 @@ class UltraConstants:
     }
 
 
-SPICE_DATA_TEST_PATH = imap_module_directory / "ultra/l1c/sim_spice_kernels"
+SPICE_DATA_SIM_PATH = imap_module_directory / "ultra/l1c/sim_spice_kernels"
 SIM_KERNELS_FOR_HELIO_INDEX_MAPS: list = [
-    str(SPICE_DATA_TEST_PATH / k)
+    str(SPICE_DATA_SIM_PATH / k)
     for k in [
         "imap_sclk_0000.tsc",
         "naif0012.tls",

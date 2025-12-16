@@ -98,7 +98,7 @@ def make_helio_index_maps_with_nominal_kernels(
     # Get all loaded SPK kernels
     spk_kernels = [sp.kdata(i, "spk")[0] for i in range(sp.ktotal("spk"))]
     # Find the de440s.bps kernel
-    de440s_file = next((k for k in spk_kernels if "de440s" in k), None)
+    de440s_file = next((k for k in spk_kernels if "de440" in k), None)
     if de440s_file is None:
         raise RuntimeError("de440s.bsp kernel not found in loaded SPK kernels.")
     # If found, add to kernel paths
@@ -208,10 +208,10 @@ def make_helio_index_maps(
     while t < (end_et - dt_step / 2):
         # Get rotation matrix for this time step
         rotation_matrix = get_rotation_matrix(
-            np.array([t]),
-            from_frame=instrument_frame,
-            to_frame=SpiceFrame.IMAP_DPS,
-        )[0]
+            t,
+            from_frame=SpiceFrame.IMAP_DPS,
+            to_frame=instrument_frame,
+        )
         for energy_id in range(num_energy_bins):
             # Convert energy to velocity (km/s)
             energy_mean = energy_bin_geometric_means[energy_id]
@@ -229,7 +229,7 @@ def make_helio_index_maps(
             )
 
             # Transform to inst
-            inst_vecs = helio_normalized @ rotation_matrix
+            inst_vecs = helio_normalized @ rotation_matrix.T
             theta, phi = vector_ijk_to_theta_phi(inst_vecs)
 
             phi = np.where(phi > np.pi, phi - 2 * np.pi, phi)
