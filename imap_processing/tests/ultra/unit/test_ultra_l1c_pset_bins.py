@@ -321,7 +321,7 @@ def test_apply_deadtime_correction_energy_dep(
 ):
     """Tests apply_deadtime_correction function when scattering rejection is on."""
     mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps = spun_index_data
-    deadtime_ratios = xr.DataArray(np.eones(steps), dims="spin_phase_step")
+    deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
     boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
 
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
