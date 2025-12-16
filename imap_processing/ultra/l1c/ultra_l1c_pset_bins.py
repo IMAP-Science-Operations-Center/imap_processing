@@ -306,19 +306,23 @@ def get_deadtime_ratios_by_spin_phase(
             sensor_id, ancillary_files
         )
     else:
-        met_time = sectored_rates["shcoarse"].values
+        num_spin_sectors = 15
+        sector_indices = np.arange(len(sectored_rates["epoch"])) % num_spin_sectors
+        # Get timestamps at the START of each spin (sector 0 of each spin)
+        spin_start_indices = np.where(sector_indices == 0)[0]
+        met_time = sectored_rates["shcoarse"].values[spin_start_indices]
         spin_data = get_spin_data()
         spin_numbers = get_spin_number(met_time)
         spin_durations = spin_data.loc[spin_numbers, "spin_period_sec"].values
-        print("spin durations:", spin_durations)
+        # Repeat the spin duration for each of the 15 sectors.
+        # Sectors are over a spin so each one has the same spin duration
+        spin_durations = np.repeat(spin_durations, 15)
         deadtime_ratios = get_deadtime_ratios(sectored_rates, spin_durations).data
         # Assume the sectored rate data is evenly spaced in time, and find the middle
         # spin phase value for each sector.
         # The center spin phase is the closest / most accurate spin phase.
         # There are 24 spin phases per sector so the nominal middle sector spin phases
         # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
-        num_spin_sectors = 15
-        sector_indices = np.arange(len(sectored_rates["epoch"])) % num_spin_sectors
         spin_phases_centered = (sector_indices / num_spin_sectors) * 360.0 + 12.0
     print("spin phases centered:", spin_phases_centered)
     print("deadtime_ratios:", deadtime_ratios)
