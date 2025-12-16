@@ -1,6 +1,7 @@
 import astropy_healpix.healpy as hp
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_fwhm_spun_scattering,
@@ -124,3 +125,34 @@ def test_calculate_fwhm_spun_scattering(ancillary_files):
         calculate_fwhm_spun_scattering(
             for_pixels, theta_vals, phi_vals, ancillary_files, 45
         )
+
+
+def test_calculate_fwhm_spun_scattering_reject(ancillary_files):
+    """Test calculate_fwhm_spun_scattering function."""
+    nside = 8
+    pix = hp.nside2npix(nside)
+    steps = 5  # Reduced for testing
+    energy_dim = 46
+    np.random.seed(42)
+    mock_theta = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    for_pixels = xr.DataArray(
+        np.zeros((steps, energy_dim, pix)).astype(bool),
+        dims=("spin_phase_step", "energy", "pixel"),
+    )
+    # Simulate first 100 pixels are in the FOR for all spin phases
+    inside_inds = 100
+    for_pixels[:, :, :inside_inds] = True
+    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
+        calculate_fwhm_spun_scattering(
+            for_pixels,
+            mock_theta,
+            mock_phi,
+            ancillary_files,
+            45,
+            reject_scattering=True,
+        )
+    )
+    assert valid_spun_pixels.shape == (steps, energy_dim, pix)
+    # Check that some pixels are rejected
+    assert not np.array_equal(valid_spun_pixels, for_pixels)
