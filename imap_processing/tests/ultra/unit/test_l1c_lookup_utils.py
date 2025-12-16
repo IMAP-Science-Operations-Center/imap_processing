@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
+    calculate_fwhm_spun_scattering,
     get_scattering_thresholds_for_energy,
     get_spacecraft_pointing_lookup_tables,
     get_static_deadtime_ratios,
@@ -111,3 +112,15 @@ def test_get_static_deadtime_ratios(ancillary_files):
     np.testing.assert_array_equal(dt_ratio.shape, (721,))
     # Test the values
     assert np.all((dt_ratio >= 0.0) & (dt_ratio <= 1.0))
+
+
+def test_calculate_fwhm_spun_scattering(ancillary_files):
+    """Test calculate_fwhm_spun_scattering function."""
+    # Make array with ones (we are only testing the shape here)
+    for_pixels = np.ones((50, 10))
+    theta_vals = np.ones((50, 10)) * 20  # All theta values are 20
+    phi_vals = np.ones((50, 5)) * 15  # All phi
+    with pytest.raises(ValueError, match="Shape mismatch"):
+        calculate_fwhm_spun_scattering(
+            for_pixels, theta_vals, phi_vals, ancillary_files, 45
+        )

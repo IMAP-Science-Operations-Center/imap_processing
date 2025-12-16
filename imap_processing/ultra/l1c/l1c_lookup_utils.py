@@ -201,7 +201,6 @@ def calculate_fwhm_spun_scattering(
         else:
             # Energy independent FOR indices
             if not np.any(for_inds):
-                logger.info(f"No pixels found in FOR at spin phase step {i}")
                 continue
 
             theta = theta_vals[i, for_inds]
