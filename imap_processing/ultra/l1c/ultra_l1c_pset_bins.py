@@ -324,8 +324,7 @@ def get_deadtime_ratios_by_spin_phase(
         # There are 24 spin phases per sector so the nominal middle sector spin phases
         # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
         spin_phases_centered = (sector_indices / num_spin_sectors) * 360.0 + 12.0
-    print("spin phases centered:", spin_phases_centered)
-    print("deadtime_ratios:", deadtime_ratios)
+
     # Create a dataset with spin phases and dead time ratios
     deadtime_by_spin_phase = xr.Dataset(
         {"deadtime_ratio": (("spin_phase",), deadtime_ratios)},
