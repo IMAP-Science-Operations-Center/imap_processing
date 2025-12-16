@@ -160,3 +160,7 @@ class UltraConstants:
     # For FOV calculations
     FOV_THETA_OFFSET_DEG = 0.0
     FOV_PHI_LIMIT_DEG = 60.0
+
+    # For spatiotemporal culling
+    EARTH_RADIUS_KM: float = 6378.1
+    DEFAULT_KEEP_OUT_RADIUS = EARTH_RADIUS_KM * 30

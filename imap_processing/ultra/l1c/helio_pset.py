@@ -13,6 +13,7 @@ from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
 )
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
@@ -203,7 +204,7 @@ def calculate_helio_pset(
     # Compute mask for culling the Earth
     compute_culling_mask(
         time_bins,
-        6378.1,  # Earth radius
+        UltraConstants.DEFAULT_KEEP_OUT_RADIUS,
         helio_pset_quality_flags,
         nside=nside,
     )
