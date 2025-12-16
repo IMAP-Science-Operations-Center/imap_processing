@@ -13,7 +13,7 @@ from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
 )
-from imap_processing.ultra.constants import SIM_KERNELS_FOR_HELIO_INDEX_MAPS
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
@@ -114,7 +114,7 @@ def calculate_helio_pset(
     logger.info("Generating helio pointing lookup tables.")
 
     helio_pointing_ds = make_helio_index_maps_with_nominal_kernels(
-        kernel_paths=SIM_KERNELS_FOR_HELIO_INDEX_MAPS,
+        kernel_paths=UltraConstants.SIM_KERNELS_FOR_HELIO_INDEX_MAPS,
         nside=nside,
         spin_duration=15.0,
         num_steps=num_spin_steps,
