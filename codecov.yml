@@ -15,4 +15,5 @@ coverage:
 ignore:
   - "**/conftest.py"
   - "**/test_spacecraft_pset.py"
+  - "**/test_helio_pset.py"
   - "**/test_make_helio_index_maps.py"
