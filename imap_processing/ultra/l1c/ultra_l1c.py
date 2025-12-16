@@ -35,14 +35,12 @@ def ultra_l1c(
             f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
             and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
-            and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
             and create_helio_pset
         ):
             helio_pset = calculate_helio_pset(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
-                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
                 f"imap_ultra_l1c_{instrument_id}sensor-heliopset",
                 ancillary_files,
                 instrument_id,
@@ -53,13 +51,11 @@ def ultra_l1c(
             f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
             and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
-            and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
         ):
             spacecraft_pset = calculate_spacecraft_pset(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
-                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
                 f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset",
                 ancillary_files,
                 instrument_id,
@@ -70,7 +66,6 @@ def ultra_l1c(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
-                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
                 f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset-nonproton",
                 ancillary_files,
                 instrument_id,

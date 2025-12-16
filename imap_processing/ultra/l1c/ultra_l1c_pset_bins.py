@@ -12,8 +12,6 @@ from imap_processing.spice.geometry import (
     cartesian_to_spherical,
 )
 from imap_processing.spice.spin import (
-    get_spacecraft_spin_phase,
-    get_spin_angle,
     get_spin_data,
     get_spin_number,
 )
@@ -314,23 +312,14 @@ def get_deadtime_ratios_by_spin_phase(
         spin_durations = spin_data.loc[spin_numbers, "spin_period_sec"].values
         print("spin durations:", spin_durations)
         deadtime_ratios = get_deadtime_ratios(sectored_rates, spin_durations).data
-        spin_phases = np.asarray(
-            get_spin_angle(get_spacecraft_spin_phase(met_time), degrees=True)
-        )
-        print("spin phases:", spin_phases)
         # Assume the sectored rate data is evenly spaced in time, and find the middle
         # spin phase value for each sector.
         # The center spin phase is the closest / most accurate spin phase.
         # There are 24 spin phases per sector so the nominal middle sector spin phases
         # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
-        spin_phases_centered = (spin_phases[:-1] + spin_phases[1:]) / 2
-        # Assume the last sector is nominal because we dont have enough data to
-        # determine the spin phase at the end of the last sector.
-        # TODO: is this assumption valid?
-        # Add the last spin phase value + half of a nominal sector.
-        spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + 12)
-        # Wrap any spin phases > 360 back to [0, 360]
-        spin_phases_centered = np.array(spin_phases_centered % 360)
+        num_spin_sectors = 15
+        sector_indices = np.arange(len(sectored_rates["epoch"])) % num_spin_sectors
+        spin_phases_centered = (sector_indices / num_spin_sectors) * 360.0 + 12.0
     print("spin phases centered:", spin_phases_centered)
     print("deadtime_ratios:", deadtime_ratios)
     # Create a dataset with spin phases and dead time ratios
@@ -338,7 +327,6 @@ def get_deadtime_ratios_by_spin_phase(
         {"deadtime_ratio": (("spin_phase",), deadtime_ratios)},
         coords={"spin_phase": xr.DataArray(spin_phases_centered, dims="spin_phase")},
     )
-
     # Sort the dataset by spin phase (ascending order)
     deadtime_by_spin_phase = deadtime_by_spin_phase.sortby("spin_phase")
     # Group by spin phase and calculate the median dead time ratio for each phase
@@ -353,6 +341,7 @@ def get_deadtime_ratios_by_spin_phase(
     deadtime_medians = deadtime_medians.where(
         np.isfinite(deadtime_medians["deadtime_ratio"]), drop=True
     )
+    deadtime_medians.to_netcdf("deadtime_by_spin_phase.nc")
     interpolator = interpolate.PchipInterpolator(
         deadtime_medians["spin_phase"].values, deadtime_medians["deadtime_ratio"].values
     )
@@ -362,6 +351,7 @@ def get_deadtime_ratios_by_spin_phase(
     deadtime_ratios = xr.DataArray(
         interpolator(nominal_spin_phases), dims="spin_phase_step"
     )
+    deadtime_ratios.to_netcdf("deadtime_interp.nc")
     return deadtime_ratios
 
 
