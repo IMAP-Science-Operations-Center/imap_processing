@@ -71,7 +71,7 @@ def make_helio_index_maps_with_nominal_kernels(
 
     This function ensures SPICE kernels are loaded before creating the maps. It uses
     a KernelPool context manager to ensure only this function uses the nominal sim
-    kerneles.
+    kernels.
 
     Parameters
     ----------
@@ -286,7 +286,7 @@ def make_helio_index_maps(
     spin_phases = np.linspace(0, 360, num_steps, endpoint=False)
 
     # Create xarray Dataset
-    # Ensure idex_map is a boolean type
+    # Ensure index_map is a boolean type
     index_map = index_map.astype(bool)
     ds = xr.Dataset(
         data_vars={
