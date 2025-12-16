@@ -321,7 +321,7 @@ def test_apply_deadtime_correction_energy_dep(
 ):
     """Tests apply_deadtime_correction function when scattering rejection is on."""
     mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps = spun_index_data
-    deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
+    deadtime_ratios = xr.DataArray(np.eones(steps), dims="spin_phase_step")
     boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
 
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
@@ -356,7 +356,20 @@ def test_apply_deadtime_correction_energy_dep(
 @pytest.mark.external_kernel
 def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_data):
     """Tests apply_deadtime_correction function when scattering rejection is on."""
-    mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps = spun_index_data
+    nside = 8
+    pix = hp.nside2npix(nside)
+    steps = 5  # Reduced for testing
+    energy_dim = 46
+    np.random.seed(42)
+    mock_theta = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    spin_phase_steps = xr.DataArray(
+        np.zeros((steps, energy_dim, pix)).astype(bool),
+        dims=("spin_phase_step", "energy", "pixel"),
+    )
+    # Simulate first 100 pixels are in the FOR for all spin phases
+    inside_inds = 100
+    spin_phase_steps[:, :, :inside_inds] = True
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
         calculate_fwhm_spun_scattering(
             spin_phase_steps,
@@ -367,7 +380,9 @@ def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_dat
             reject_scattering=False,
         )
     )
-    boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
+    boundary_sf = xr.DataArray(
+        np.ones((steps, energy_dim, pix)), dims=("spin_phase_step", "energy", "pixel")
+    )
     eff, gf = get_efficiencies_and_geometric_function(
         valid_spun_pixels,
         boundary_sf,
@@ -377,14 +392,12 @@ def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_dat
         ancillary_files=ancillary_files,
         apply_bsf=False,
     )
-    # The efficiencies should be of shape (46,npix)
-    np.testing.assert_array_equal(eff.shape, (46, pix))
-    np.testing.assert_array_equal(gf.shape, (46, pix))
+    # The efficiencies should be of shape (energy_dim,npix)
+    np.testing.assert_array_equal(eff.shape, (energy_dim, pix))
+    np.testing.assert_array_equal(gf.shape, (energy_dim, pix))
     # Check that the pixels inside the FOR have efficiencies and geometric factors > 0.
-    # Subset the energy dimension to check values in the last energy bin.
-    last_energy_bin_vals = np.where(build_energy_bins()[2] >= 40)[0]
-    assert np.all(eff[last_energy_bin_vals, :inside_inds] > 0)
-    assert np.all(gf[last_energy_bin_vals, :inside_inds] > 0)
+    assert np.all(eff[:, :inside_inds] > 0)
+    assert np.all(gf[:, :inside_inds] > 0)
     # Assert that pixels outside the FOR remain at 0.
     assert np.all(eff[:, inside_inds:] == 0)
     assert np.all(gf[:, inside_inds:] == 0)
