@@ -127,6 +127,7 @@ def test_calculate_fwhm_spun_scattering(ancillary_files):
         )
 
 
+@pytest.mark.external_test_data
 def test_calculate_fwhm_spun_scattering_reject(ancillary_files):
     """Test calculate_fwhm_spun_scattering function."""
     nside = 8
