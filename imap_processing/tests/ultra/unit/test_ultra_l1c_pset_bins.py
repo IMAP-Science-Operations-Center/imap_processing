@@ -436,6 +436,22 @@ def test_get_spacecraft_background_rates(
     "Tests calculate_background_rates function."
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
+    # Should be evenly spaced spins of 15 seconds each except the first one has 14.
+    num_spins = 15
+    spin_start_times = np.concatenate([[0], np.arange(14, 222, num_spins)]) + 445015651
+    spin_numbers = np.arange(127, 142)
+    num_spins = len(spin_numbers)
+
+    aux_ds = xr.Dataset(
+        data_vars={
+            "timespinstart": ("epoch", spin_start_times),
+            "duration": ("epoch", np.full(num_spins, 15)),
+            "spinnumber": ("epoch", spin_numbers),
+        },
+        coords={"epoch": ("epoch", np.arange(num_spins))},
+    )
+
     df = pd.read_csv(rates_l1_test_path)
 
     rates = {
@@ -464,7 +480,12 @@ def test_get_spacecraft_background_rates(
     goodtimes_spin_number = np.array([130, 131])
 
     background_rates = get_spacecraft_background_rates(
-        rates, "ultra45", ancillary_files, energy_bin_edges, goodtimes_spin_number
+        rates,
+        aux_ds,
+        "ultra45",
+        ancillary_files,
+        energy_bin_edges,
+        goodtimes_spin_number,
     )
 
     assert background_rates.shape == (len(energy_bin_edges), hp.nside2npix(128))
