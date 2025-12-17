@@ -37,6 +37,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
+    get_spin_and_duration,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     is_back_tof_valid,
@@ -158,11 +159,13 @@ def calculate_de(
         ancillary_files,
     )
     start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
-    (event_times, spin_starts, spin_number) = get_event_times(
+    (event_times, spin_starts) = get_event_times(
         aux_dataset,
         de_dataset["phase_angle"].data,
         de_dataset["shcoarse"].data,
     )
+    spin_number, _ = get_spin_and_duration(aux_dataset, de_dataset["shcoarse"].data)
+
     de_dict["spin"] = spin_number
     de_dict["event_times"] = event_times.astype(np.float64)
     # Pulse height

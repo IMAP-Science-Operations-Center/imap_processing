@@ -31,6 +31,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
+    get_spin_and_duration,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     interpolate_fwhm,
@@ -521,7 +522,7 @@ def test_get_eventtimes(test_fixture, aux_dataset):
     """Tests get_eventtimes function."""
     df_filt, _, _, de_dataset = test_fixture
 
-    event_times, spin_start_times, spin_numbers = get_event_times(
+    event_times, spin_start_times = get_event_times(
         aux_dataset,
         de_dataset["phase_angle"].values,
         de_dataset["shcoarse"].values,
@@ -529,10 +530,7 @@ def test_get_eventtimes(test_fixture, aux_dataset):
 
     # Check shapes
     assert (
-        event_times.shape
-        == spin_start_times.shape
-        == spin_numbers.shape
-        == de_dataset["phase_angle"].shape
+        event_times.shape == spin_start_times.shape == de_dataset["phase_angle"].shape
     )
 
     t1_start_sec = aux_dataset["timespinstart"].values[0]
@@ -559,6 +557,26 @@ def test_get_eventtimes(test_fixture, aux_dataset):
         start_time = spin_starts[boundary]
         end_time = spin_starts[boundary + 1]
         assert start_time <= int(event_times[i]) <= end_time
+
+
+@pytest.mark.external_test_data
+def test_get_spin_and_duration(test_fixture, aux_dataset):
+    """Tests get_eventtimes function."""
+    df_filt, _, _, de_dataset = test_fixture
+
+    spin_number, spin_duration = get_spin_and_duration(
+        aux_dataset,
+        de_dataset["shcoarse"].values,
+    )
+
+    # Check shapes
+    assert spin_number.shape == spin_duration.shape == de_dataset["shcoarse"].shape
+
+    t1_spin_number = aux_dataset["spinnumber"].values[0]
+    t1_start_dur = aux_dataset["duration"].values[0]
+    # Check the first event spin number and duration
+    assert spin_number[0] == t1_spin_number
+    assert spin_duration[0] == t1_start_dur
 
 
 @pytest.mark.external_test_data

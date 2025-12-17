@@ -23,11 +23,11 @@ from imap_processing.ultra.l1b.lookup_utils import (
 )
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_pulses_per_spin,
-    get_spin_and_duration,
 )
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_efficiency,
     get_efficiency_interpolator,
+    get_spin_and_duration,
 )
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
@@ -645,6 +645,7 @@ def get_efficiencies_and_geometric_function(
 
 def get_spacecraft_background_rates(
     rates_dataset: xr.Dataset,
+    aux_dataset: xr.Dataset,
     sensor_id: int,
     ancillary_files: dict,
     energy_bin_edges: list[tuple[float, float]],
@@ -658,6 +659,8 @@ def get_spacecraft_background_rates(
     ----------
     rates_dataset : xr.Dataset
         Rates dataset.
+    aux_dataset : xr.Dataset
+        Auxiliary dataset.
     sensor_id : int
         Sensor ID: either 45 or 90.
     ancillary_files : dict[Path]
@@ -680,12 +683,12 @@ def get_spacecraft_background_rates(
     -----
     See Eqn. 3, 8, and 20 in the Algorithm Document for the equation.
     """
-    pulses = get_pulses_per_spin(rates_dataset)
+    pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
     # Pulses for the pointing.
     etof_min = get_image_params("eTOFMin", f"ultra{sensor_id}", ancillary_files)
     etof_max = get_image_params("eTOFMax", f"ultra{sensor_id}", ancillary_files)
     spin_number, _ = get_spin_and_duration(
-        rates_dataset["shcoarse"], rates_dataset["spin"]
+        aux_dataset, rates_dataset["shcoarse"].values
     )
 
     # Get dmin for PH (mm).

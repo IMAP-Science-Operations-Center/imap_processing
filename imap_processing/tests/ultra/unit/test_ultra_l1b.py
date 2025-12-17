@@ -190,7 +190,7 @@ def test_cdf_de_flags(
 
 @pytest.mark.external_test_data
 def test_ultra_l1b_extendedspin(
-    use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset
+    use_fake_spin_data_for_time, aux_dataset, rates_dataset
 ):
     """Tests that L1b data is created."""
     use_fake_spin_data_for_time(0, 141 * 15)
@@ -205,7 +205,7 @@ def test_ultra_l1b_extendedspin(
             "imap_ultra_l1a_45sensor-params",
         ]
     }
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
     ancillary_files = {}
@@ -219,7 +219,7 @@ def test_ultra_l1b_extendedspin(
 
 
 @pytest.mark.external_test_data
-def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
+def test_cdf_extendedspin(use_fake_spin_data_for_time, aux_dataset, rates_dataset):
     use_fake_spin_data_for_time(0, 141 * 15)
     l1b_de_dataset_path = (
         TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
@@ -233,7 +233,7 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
             "imap_ultra_l1a_45sensor-params",
         ]
     }
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
     ancillary_files = {}
@@ -251,7 +251,7 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
 
 
 @pytest.mark.external_test_data
-def test_cdf_goodtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
+def test_cdf_goodtimes(use_fake_spin_data_for_time, aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
     l1b_de_dataset_path = (
@@ -266,7 +266,7 @@ def test_cdf_goodtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_data
             "imap_ultra_l1a_45sensor-params",
         ]
     }
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
     ancillary_files = {}
@@ -288,7 +288,7 @@ def test_cdf_goodtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_data
 
 
 @pytest.mark.external_test_data
-def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
+def test_cdf_badtimes(use_fake_spin_data_for_time, aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
     l1b_de_dataset_path = (
@@ -303,7 +303,7 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
             "imap_ultra_l1a_45sensor-params",
         ]
     }
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
     ancillary_files = {}

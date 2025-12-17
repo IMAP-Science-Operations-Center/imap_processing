@@ -34,7 +34,7 @@ def calculate_badtimes(
     badtimes_dataset : xarray.Dataset
         Dataset containing the extendedspin data that has been culled.
     """
-    n_bins = extendedspin_dataset.dims["energy_bin_geometric_mean"]
+    n_bins = extendedspin_dataset.sizes["energy_bin_geometric_mean"]
     culled_spins = np.setdiff1d(
         extendedspin_dataset["spin_number"].values, goodtimes_spins
     )

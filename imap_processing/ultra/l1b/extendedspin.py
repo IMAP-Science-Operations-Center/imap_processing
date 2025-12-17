@@ -61,7 +61,7 @@ def calculate_extendedspin(
     inst_qf = flag_imap_instruments(de_dataset["spin"].values)
 
     # Get the number of pulses per spin.
-    pulses = get_pulses_per_spin(rates_dataset)
+    pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
 
     # Track rejected events in each spin based on
     # quality flags in de l1b data.

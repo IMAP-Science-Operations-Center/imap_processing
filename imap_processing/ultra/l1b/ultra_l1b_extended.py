@@ -917,11 +917,50 @@ def get_phi_theta(
     return np.degrees(phi), np.degrees(theta)
 
 
+def get_spin_start_indices(aux_dataset: xr.Dataset, de_event_met: NDArray) -> NDArray:
+    """
+    Get the spin start indices in the aux dataset for each event.
+
+    Parameters
+    ----------
+    aux_dataset : numpy.ndarray
+        Auxiliary dataset containing spin information.
+    de_event_met : numpy.ndarray
+        Direct event MET.
+
+    Returns
+    -------
+    start_inds : numpy.ndarray
+        Spin start indices for each event.
+    """
+    # Get Spin Start Time in seconds
+    spin_start_sec = aux_dataset["timespinstart"].values
+
+    # Check that all events fall within the aux dataset time range.
+    # The time window spans from the first spin start to the end of the last spin.
+    first_spin_start = spin_start_sec[0]
+    # Define the end of the last spin as start time + max duration (15s)
+    last_spin_end = spin_start_sec[-1] + 15.0
+    if np.any(de_event_met < first_spin_start) or np.any(de_event_met > last_spin_end):
+        raise ValueError(
+            "Coarse MET time contains events outside aux_dataset time range "
+            f"({first_spin_start} - {last_spin_end}). "
+            f"Found min={de_event_met.min()}, max={de_event_met.max()}."
+        )
+
+    # Find the spin_start_sec that started directly before each event.
+    start_inds = np.searchsorted(spin_start_sec, de_event_met, side="right") - 1
+    # Clip to valid range of indices
+    start_inds = np.clip(start_inds, 0, len(spin_start_sec) - 1)
+
+    return start_inds
+
+
 def get_event_times(
     aux_dataset: xr.Dataset, phase_angle: NDArray, de_event_met: NDArray
-) -> tuple[NDArray, NDArray, NDArray]:
+) -> tuple[NDArray, NDArray]:
     """
-    Get the event times, spin start times, and spin numbers.
+    Get the event times, spin start times.
 
     Use formula from section 3.3.1 of the ULTRA algorithm document.
     t_e = t_spin_start + (t_start_sub / 1000) +
@@ -942,8 +981,6 @@ def get_event_times(
         Event times in et.
     spin_start_times: numpy.ndarray
         Spin start times in et.
-    spin_numbers: numpy.ndarray
-        Spin numbers for each event.
     """
     # Get Spin Start Time in seconds
     spin_start_sec = aux_dataset["timespinstart"].values
@@ -952,25 +989,7 @@ def get_event_times(
     # Get spin duration in milliseconds
     spin_duration = aux_dataset["duration"].values
 
-    # Check that all events fall within the aux dataset time range.
-    # The time window spans from the first spin start to the end of the last spin.
-    first_spin_start = spin_start_sec[0]
-    # Define the end of the last spin as start time + max duration (15s)
-    last_spin_end = spin_start_sec[-1] + 15.0
-    if np.any(de_event_met < first_spin_start) or np.any(de_event_met > last_spin_end):
-        raise ValueError(
-            "Coarse MET time contains events outside aux_dataset time range "
-            f"({first_spin_start} - {last_spin_end}). "
-            f"Found min={de_event_met.min()}, max={de_event_met.max()}."
-        )
-
-    # Find the spin_start_sec that started directly before each event.
-    start_inds = np.searchsorted(spin_start_sec, de_event_met, side="right") - 1
-    # Clip to valid range of indices
-    start_inds = np.clip(start_inds, 0, len(spin_start_sec) - 1)
-    # Get the spin numbers for each event
-    spin_numbers = aux_dataset["spinnumber"].values[start_inds]
-
+    start_inds = get_spin_start_indices(aux_dataset, de_event_met)
     # Get the relevant spin parameters for each event
     evt_spin_starts = spin_start_sec[start_inds]
     evt_spin_start_subs = spin_start_subsec[start_inds]
@@ -986,8 +1005,37 @@ def get_event_times(
     return (
         ttj2000ns_to_et(met_to_ttj2000ns(event_times)),
         ttj2000ns_to_et(met_to_ttj2000ns(spin_start_times)),
-        spin_numbers,
     )
+
+
+def get_spin_and_duration(
+    aux_dataset: xr.Dataset, de_event_met: NDArray
+) -> tuple[NDArray, NDArray]:
+    """
+    Get the spin numbers and durations.
+
+    Parameters
+    ----------
+    aux_dataset : numpy.ndarray
+        Auxiliary dataset containing spin information.
+    de_event_met : numpy.ndarray
+        Direct event MET.
+
+    Returns
+    -------
+    spin_numbers: numpy.ndarray
+        Spin numbers for each event.
+    spin_durations: numpy.ndarray
+        Spin durations for each event.
+    """
+    # Get the spin start indices for each event
+    start_inds = get_spin_start_indices(aux_dataset, de_event_met)
+    # Get the spin numbers for each event
+    spin_numbers = aux_dataset["spinnumber"].values[start_inds]
+    # Get the spin duration for each event
+    spin_durations = aux_dataset["duration"].values[start_inds]
+
+    return spin_numbers, spin_durations
 
 
 def interpolate_fwhm(

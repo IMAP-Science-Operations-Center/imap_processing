@@ -37,6 +37,7 @@ def calculate_spacecraft_pset(
     de_dataset: xr.Dataset,
     goodtimes_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
+    aux_dataset: xr.Dataset,
     name: str,
     ancillary_files: dict,
     instrument_id: int,
@@ -53,6 +54,8 @@ def calculate_spacecraft_pset(
         Dataset containing goodtimes data.
     rates_dataset : xarray.Dataset
         Dataset containing image rates data.
+    aux_dataset : xarray.Dataset
+        Dataset containing auxiliary data.
     name : str
         Name of the dataset.
     ancillary_files : dict
@@ -163,6 +166,7 @@ def calculate_spacecraft_pset(
     # Calculate background rates
     background_rates = get_spacecraft_background_rates(
         rates_dataset,
+        aux_dataset,
         sensor_id,
         ancillary_files,
         intervals,
