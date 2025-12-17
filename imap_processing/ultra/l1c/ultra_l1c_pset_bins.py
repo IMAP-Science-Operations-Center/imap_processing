@@ -251,6 +251,7 @@ def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
     # Get the length of each spin run
     # e.g. 0,0,0,3,3,3,4,4 -> 3,3,2
     spin_runs = np.diff(spin_change)
+    # Find the indices where the spin run length is exactly 15 (sector mode)
     spin_run_inds = np.where(spin_runs == 15)[0]
 
     if len(spin_run_inds) == 0:
