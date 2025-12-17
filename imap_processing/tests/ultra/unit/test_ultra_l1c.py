@@ -221,6 +221,7 @@ def test_calculate_helio_pset_with_cdf(
     mock_helio_pointing_lookups,
     deadtime_datasets,
     aux_dataset,
+    rates_dataset,
     use_fake_spin_data_for_time,
 ):
     """Tests ultra_l1c function with imported test data."""
