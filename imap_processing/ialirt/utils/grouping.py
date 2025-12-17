@@ -8,7 +8,9 @@ import xarray as xr
 logger = logging.getLogger(__name__)
 
 
-def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
+def filter_valid_groups(
+    grouped_data: xr.Dataset, flag: str | None = None
+) -> xr.Dataset:
     """
     Filter out groups where `src_seq_ctr` diff are not 1.
 
@@ -16,6 +18,8 @@ def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
     ----------
     grouped_data : xr.Dataset
         Dataset with a "group" coordinate.
+    flag : str | None
+        Name of flag data variable.
 
     Returns
     -------
@@ -42,6 +46,12 @@ def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
         drop=True,
     )
 
+    if flag:
+        filtered_data = filtered_data.where(
+            filtered_data[flag] != 0,
+            drop=True,
+        )
+
     return filtered_data
 
 
@@ -50,6 +60,7 @@ def find_groups(
     sequence_range: tuple,
     sequence_name: str,
     time_name: str,
+    flag: str | None,
 ) -> xr.Dataset:
     """
     Group data based on time and sequence number values.
@@ -64,6 +75,8 @@ def find_groups(
         Name of the sequence variable.
     time_name : str
         Name of the time variable.
+    flag : str | None
+        Name of flag data variable.
 
     Returns
     -------
@@ -82,9 +95,14 @@ def find_groups(
 
     # Use sequence_range == 0 to define the beginning of the group.
     # Find time at this index and use it as the beginning time for the group.
-    start_times = sorted_data[time_name][
-        (sorted_data[sequence_name] == sequence_range[0])
-    ]
+    if flag:
+        start_times = sorted_data[time_name][
+            (sorted_data[sequence_name] == sequence_range[0]) & (sorted_data[flag] != 0)
+        ]
+    else:
+        start_times = sorted_data[time_name][
+            (sorted_data[sequence_name] == sequence_range[0])
+        ]
     # Use max sequence_range to define the end of the group.
     end_times = sorted_data[time_name][
         ([sorted_data[sequence_name] == sequence_range[-1]][-1])
@@ -115,6 +133,6 @@ def find_groups(
     grouped_data = grouped_data.assign_coords(group=("epoch", group_labels))
 
     # Filter out groups with non-sequential src_seq_ctr values.
-    filtered_data = filter_valid_groups(grouped_data)
+    filtered_data = filter_valid_groups(grouped_data, flag)
 
     return filtered_data
