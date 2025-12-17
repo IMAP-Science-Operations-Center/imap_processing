@@ -191,7 +191,7 @@ def calculate_spacecraft_pset(
     # Compute mask for culling the Earth
     compute_culling_mask(
         time_bins,
-        UltraConstants.DEFAULT_KEEP_OUT_RADIUS,
+        UltraConstants.DEFAULT_EARTH_CULLING_RADIUS,
         spacecraft_pset_quality_flags,
         nside=nside,
     )

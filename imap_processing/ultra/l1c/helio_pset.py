@@ -204,7 +204,7 @@ def calculate_helio_pset(
     # Compute mask for culling the Earth
     compute_culling_mask(
         time_bins,
-        UltraConstants.DEFAULT_KEEP_OUT_RADIUS,
+        UltraConstants.DEFAULT_EARTH_CULLING_RADIUS,
         helio_pset_quality_flags,
         nside=nside,
     )
@@ -230,8 +230,10 @@ def calculate_helio_pset(
     pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
     pset_dict["quality_flags"] = helio_pset_quality_flags[np.newaxis, ...]
 
-    pset_dict["scatter_theta"] = scattering_theta
-    pset_dict["scatter_phi"] = scattering_phi
+    # Convert FWHM to gaussian uncertainty by dividing by 2.355
+    # See algorithm documentation (section 3.5.7, third bullet point) for more details
+    pset_dict["scatter_theta"] = scattering_theta / 2.355
+    pset_dict["scatter_phi"] = scattering_phi / 2.355
     pset_dict["scatter_threshold"] = scattering_thresholds
 
     # Add the energy delta plus/minus to the dataset
