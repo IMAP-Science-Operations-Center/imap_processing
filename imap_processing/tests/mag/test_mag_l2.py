@@ -75,6 +75,7 @@ def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
         assert dataset["range"].attrs["DICT_KEY"] == (
             "SPASE>Support>SupportQuantity:InstrumentMode"
         )
+        assert dataset["vectors"].attrs["CDF_DATA_TYPE"] == "CDF_FLOAT"
 
 
 def test_mag_l2(norm_dataset, mag_test_l2_data):

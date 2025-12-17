@@ -50,6 +50,7 @@ vector_attrs: &vectors_default
     LABL_PTR_1: direction_label
     FILLVAL: 9223372036854775807
     FORMAT: F12.5
+    CDF_DATA_TYPE: CDF_FLOAT
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
 
 # Frame-specific vector attributes
@@ -99,6 +100,7 @@ magnitude:
   UNITS: nT
   VALIDMIN: 0
   VALIDMAX: 1.0e+5
+  CDF_DATA_TYPE: CDF_FLOAT
   DICT_KEY: SPASE>Field>FieldQuantity:Magnetic,Qualifier:Scalar
 
 range:
@@ -111,6 +113,7 @@ range:
   UNITS: ' '
   VALIDMAX: 3
   VALIDMIN: 0
+  CDF_DATA_TYPE: CDF_UINT1
   DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 pri_sens:
