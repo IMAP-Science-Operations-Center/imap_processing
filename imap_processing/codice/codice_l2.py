@@ -1234,10 +1234,17 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     for var in l2_dataset.data_vars:
         l2_dataset[var].attrs.update(cdf_attrs.get_variable_attributes(var))
     # Update coord attributes
-    for coord in l2_dataset.coords:
-        l2_dataset[coord].attrs.update(
-            cdf_attrs.get_variable_attributes(coord), check_schema=False
-        )
+    l2_dataset["priority"].attrs.update(
+        cdf_attrs.get_variable_attributes("priority", check_schema=False)
+    )
+    l2_dataset["event_num"].attrs.update(
+        cdf_attrs.get_variable_attributes("event_num", check_schema=False)
+    )
+    l2_dataset["epoch"] = xr.DataArray(
+        l2_dataset["epoch"].data,
+        dims="epoch",
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
+    )
     # Add labels
     l2_dataset["event_num_label"] = xr.DataArray(
         l2_dataset["event_num"].values.astype(str).astype("<U5"),

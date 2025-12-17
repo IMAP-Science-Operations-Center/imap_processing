@@ -16,6 +16,7 @@ priority:
   VALIDMIN: 0
   VALIDMAX: 7
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 event_num:
   CATDESC: Event Number
@@ -28,6 +29,7 @@ event_num:
   VALIDMIN: 0
   VALIDMAX: 10000
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
@@ -74,6 +76,7 @@ num_events:
   VALIDMAX: 10000
   VALIDMIN: 0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 data_quality:
   CATDESC: Data Quality Flag per Priority
@@ -89,6 +92,7 @@ data_quality:
   VALIDMAX: 255
   VALIDMIN: 0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 energy_step:
   CATDESC: Energy Step Index
@@ -106,6 +110,7 @@ energy_step:
   VALIDMAX: 127
   VALIDMIN: 0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 energy_per_charge:
   CATDESC: Energy per Charge
@@ -123,6 +128,7 @@ energy_per_charge:
   VALIDMAX: 200.0
   VALIDMIN: 0.0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
 
 gain:
   CATDESC: Gain Setting
@@ -140,6 +146,7 @@ gain:
   VALIDMAX: 1
   VALIDMIN: 0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 multi_flag:
   CATDESC: Multiple Event Flag
@@ -157,6 +164,7 @@ multi_flag:
   VALIDMAX: 1
   VALIDMIN: 0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 type:
   CATDESC: Event Type
@@ -174,6 +182,7 @@ type:
   VALIDMAX: 4
   VALIDMIN: 0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 tof:
   CATDESC: Time of Flight
@@ -191,6 +200,7 @@ tof:
   VALIDMAX: 1024.0
   VALIDMIN: 0.0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:TimeOfFlight
 
 spin_sector:
   CATDESC: Spin Sector Index
@@ -208,6 +218,7 @@ spin_sector:
   VALIDMIN: 0
   VALIDMAX: 23
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 spin_angle:
   VAR_TYPE: data
@@ -242,6 +253,8 @@ elevation_angle:
   VALIDMAX: 180.0
   VALIDMIN: 0.0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.ElevationAngle
+
 ssd_energy:
   CATDESC: SSD Energy
   DEPEND_0: epoch
@@ -258,6 +271,7 @@ ssd_energy:
   VALIDMAX: 512.0
   VALIDMIN: 0.0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:Energy
 
 energy_per_nuc:
   CATDESC: Energy per Nucleon
@@ -275,6 +289,7 @@ energy_per_nuc:
   VALIDMAX: 200.0
   VALIDMIN: 0.0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 ssd_id:
   CATDESC: SSD Identifier
@@ -292,6 +307,7 @@ ssd_id:
   VALIDMAX: 15
   VALIDMIN: 0
   VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 spin_number:
   CATDESC: Spin Number
@@ -309,6 +325,7 @@ spin_number:
   VALIDMAX: 4294967295
   VALIDMIN: 0
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 # ------------------------------- labels -------------------------------
 
 event_num_label:
