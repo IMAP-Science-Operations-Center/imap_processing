@@ -308,18 +308,18 @@ def get_deadtime_ratios_by_spin_phase(
     else:
         num_spin_sectors = 15
         sector_indices = np.arange(len(sectored_rates["epoch"])) % num_spin_sectors
-        # Get timestamps at the START of each spin (sector 0 of each spin)
+        # Get timestamps at the start of each spin (sector 0)
         spin_start_indices = np.where(sector_indices == 0)[0]
         met_time = sectored_rates["shcoarse"].values[spin_start_indices]
         spin_data = get_spin_data()
         spin_numbers = get_spin_number(met_time)
+        # Get spin durations for each spin
         spin_durations = spin_data.loc[spin_numbers, "spin_period_sec"].values
         # Repeat the spin duration for each of the 15 sectors.
-        # Sectors are over a spin so each one has the same spin duration
-        spin_durations = np.repeat(spin_durations, 15)
+        # Sectors are all within a spin so each one corresponds to the same spin
+        # duration
+        spin_durations = np.repeat(spin_durations, num_spin_sectors)
         deadtime_ratios = get_deadtime_ratios(sectored_rates, spin_durations).data
-        # Assume the sectored rate data is evenly spaced in time, and find the middle
-        # spin phase value for each sector.
         # The center spin phase is the closest / most accurate spin phase.
         # There are 24 spin phases per sector so the nominal middle sector spin phases
         # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
@@ -344,7 +344,6 @@ def get_deadtime_ratios_by_spin_phase(
     deadtime_medians = deadtime_medians.where(
         np.isfinite(deadtime_medians["deadtime_ratio"]), drop=True
     )
-    deadtime_medians.to_netcdf("deadtime_by_spin_phase.nc")
     interpolator = interpolate.PchipInterpolator(
         deadtime_medians["spin_phase"].values, deadtime_medians["deadtime_ratio"].values
     )
@@ -354,7 +353,6 @@ def get_deadtime_ratios_by_spin_phase(
     deadtime_ratios = xr.DataArray(
         interpolator(nominal_spin_phases), dims="spin_phase_step"
     )
-    deadtime_ratios.to_netcdf("deadtime_interp.nc")
     return deadtime_ratios
 
 
