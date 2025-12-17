@@ -19,7 +19,7 @@ def filter_valid_groups(
     grouped_data : xr.Dataset
         Dataset with a "group" coordinate.
     flag : str | None
-        Name of flag data variable.
+        Optional name of flag data variable.
 
     Returns
     -------
@@ -60,7 +60,7 @@ def find_groups(
     sequence_range: tuple,
     sequence_name: str,
     time_name: str,
-    flag: str | None,
+    flag: str | None = None,
 ) -> xr.Dataset:
     """
     Group data based on time and sequence number values.
@@ -76,7 +76,7 @@ def find_groups(
     time_name : str
         Name of the time variable.
     flag : str | None
-        Name of flag data variable.
+        Optional name of flag data variable.
 
     Returns
     -------
