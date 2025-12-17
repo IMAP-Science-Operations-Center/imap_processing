@@ -123,7 +123,7 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 def test_calculate_spacecraft_pset_with_cdf(
     random_spin_data,
     ancillary_files,
-    deadtime_datasets,
+    rates_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
     mock_spacecraft_pointing_lookups,
@@ -138,7 +138,10 @@ def test_calculate_spacecraft_pset_with_cdf(
     df_subset = df[df["pointing_number"] == pointing].copy()
 
     de_dict = {}
-
+    # Ensure rate dataset has correct time range
+    rates_dataset.shcoarse.data = np.linspace(
+        0, 141 * 15, len(rates_dataset.shcoarse.data)
+    )
     de_dict["epoch"] = df_subset["epoch"].values
     species_bin = np.full(len(df_subset), 1, dtype=np.uint8)
 
@@ -184,8 +187,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": dataset,  # placeholder
         "imap_ultra_l1b_45sensor-goodtimes": dataset,  # placeholder
-        "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
-        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
+        "imap_ultra_l1a_45sensor-rates": rates_dataset,
     }
     with (
         mock.patch(
@@ -219,7 +221,7 @@ def test_calculate_helio_pset_with_cdf(
     ancillary_files,
     imap_ena_sim_metakernel,
     mock_helio_pointing_lookups,
-    deadtime_datasets,
+    rates_dataset,
     use_fake_spin_data_for_time,
 ):
     """Tests ultra_l1c function with imported test data."""
@@ -230,10 +232,11 @@ def test_calculate_helio_pset_with_cdf(
     )
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
 
+    # Ensure rate dataset has correct time range
+    rates_dataset.shcoarse.data += 56970124
     # Select a single pointing number
     pointing = 0
     df_subset = df[df["pointing_number"] == pointing].copy()
-
     de_dict = {}
 
     de_dict["epoch"] = df_subset["epoch"].values
@@ -283,8 +286,7 @@ def test_calculate_helio_pset_with_cdf(
                 "spin_number": ("epoch", np.zeros(5)),
             }
         ),  # placeholder
-        "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
-        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
+        "imap_ultra_l1a_45sensor-rates": rates_dataset,
     }
     n_pix = hp.nside2npix(32)
     mock_eff = np.ones((46, n_pix))

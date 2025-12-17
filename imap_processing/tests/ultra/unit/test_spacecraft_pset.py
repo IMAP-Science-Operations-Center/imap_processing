@@ -32,7 +32,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset(
     random_spin_data,
-    deadtime_datasets,
+    rates_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
     ancillary_files,
@@ -41,7 +41,10 @@ def test_calculate_spacecraft_pset(
     """Tests calculate_spacecraft_pset function."""
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
-
+    # Ensure rate dataset has correct time range
+    rates_dataset.shcoarse.data = np.linspace(
+        0, 141 * 15, len(rates_dataset.shcoarse.data)
+    )
     # This is just setting up the data so that it is in the format of l1b_de_dataset.
     test_path = TEST_PATH / "ultra-90_raw_event_data_shortened.csv"
     df = pd.read_csv(test_path)
@@ -105,8 +108,7 @@ def test_calculate_spacecraft_pset(
         spacecraft_pset = calculate_spacecraft_pset(
             test_l1b_de_dataset,
             test_l1b_de_dataset,  # placeholder for goodtimes_dataset
-            deadtime_datasets["rates"],
-            deadtime_datasets["params"],
+            rates_dataset,
             "imap_ultra_l1c_45sensor-spacecraftpset",
             ancillary_files,
             45,
@@ -122,7 +124,7 @@ def test_calculate_spacecraft_pset(
 def test_calculate_spacecraft_pset_with_cdf(
     random_spin_data,
     ancillary_files,
-    deadtime_datasets,
+    rates_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
     mock_spacecraft_pointing_lookups,
@@ -140,7 +142,10 @@ def test_calculate_spacecraft_pset_with_cdf(
 
         de_dict["epoch"] = df_subset["epoch"].values
         species_bin = np.full(len(df_subset), 1, dtype=np.uint8)
-
+        # Ensure rate dataset has correct time range
+        rates_dataset.shcoarse.data = np.linspace(
+            0, 141 * 15, len(rates_dataset.shcoarse.data)
+        )
         # PosYSlit is True for left (start_type = 1)
         # PosYSlit is False for right (start_type = 2)
         start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
@@ -194,8 +199,7 @@ def test_calculate_spacecraft_pset_with_cdf(
             spacecraft_pset = calculate_spacecraft_pset(
                 dataset,
                 dataset,  # placeholder for goodtimes_dataset
-                deadtime_datasets["rates"],
-                deadtime_datasets["params"],
+                rates_dataset,
                 "imap_ultra_l1c_45sensor-spacecraftpset",
                 ancillary_files,
                 45,
@@ -208,8 +212,10 @@ def test_calculate_spacecraft_pset_with_cdf(
         )
 
 
-@pytest.mark.skip(reason="Long running test for validation purposes.")
-def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_datasets):
+pytest.mark.skip(reason="Long running test for validation purposes.")
+
+
+def test_validate_exposure_time_and_sensitivities(ancillary_files, rates_dataset):
     """Validates exposure time and sensitivities for ebin 0."""
     test_data = [
         (
@@ -309,8 +315,7 @@ def test_validate_exposure_time_and_sensitivities(ancillary_files, deadtime_data
         pset = calculate_spacecraft_pset(
             l1b_de,
             dataset,
-            deadtime_datasets["rates"],
-            deadtime_datasets["params"],
+            rates_dataset,
             "imap_ultra_l1c_90sensor-spacecraftpset",
             ancillary_files,
             90,

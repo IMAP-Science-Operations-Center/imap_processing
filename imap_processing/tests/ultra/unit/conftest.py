@@ -547,51 +547,13 @@ def ancillary_files():
 
 
 @pytest.fixture
-def deadtime_datasets():
-    """Fixture to create params and rates datasets needed to calculate the spacecraft
-    exposure time."""
-    # Simulate a test rates dataset.
-    epoch = 200
-    test_l1a_rates_dataset = xr.Dataset(
-        {
-            "fifo_valid_events": (["epoch"], np.random.randint(100, 200, epoch)),
-            "event_active_time": (["epoch"], np.random.uniform(0, 10, epoch)),
-            "start_pos": (["epoch"], np.random.randint(0, 5, epoch)),
-            "start_rf": (["epoch"], np.random.randint(0, 5, epoch)),
-            "start_lf": (["epoch"], np.random.randint(0, 5, epoch)),
-            "coin_tn": (["epoch"], np.random.randint(0, 5, epoch)),
-            "coin_bn": (["epoch"], np.random.randint(0, 5, epoch)),
-            "stop_tn": (["epoch"], np.random.randint(0, 5, epoch)),
-            "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
-            "shcoarse": (["epoch"], np.arange(epoch)),
-            "spin": (["epoch"], 127 + (np.arange(epoch) % (141 - 127))),
-        }
-    )
-    # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
-    # each time the mode changes, it is recorded in the params packet.
-    # Create a test params dataset that simulates the mode changing to 3, 3 times.
-    modes = np.tile(np.arange(4), 3)
-    test_l1a_params_dataset = xr.Dataset(
-        {
-            "imageratescadence": (["epoch"], modes),
-        },
-        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
-    )
-    return {"rates": test_l1a_rates_dataset, "params": test_l1a_params_dataset}
-
-
-@pytest.fixture
 def random_spin_data():
     """Fixture for random spin data."""
     with (
         mock.patch(
-            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
-        ) as mock_spin_phases,
-        mock.patch(
             "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met"
         ) as mock_met,
     ):
-        mock_spin_phases.side_effect = lambda time: np.random.random(time.shape)
         mock_met.side_effect = lambda time: time
         yield
 

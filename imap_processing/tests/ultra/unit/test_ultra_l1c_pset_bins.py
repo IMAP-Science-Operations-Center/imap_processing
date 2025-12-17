@@ -194,14 +194,15 @@ def test_get_deadtime_ratios():
             "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
         }
     )
-    deadtime_correction_factors = get_deadtime_ratios(sectored_rates_ds)
+    durations = np.full(epoch, 15)
+    deadtime_correction_factors = get_deadtime_ratios(sectored_rates_ds, durations)
     assert deadtime_correction_factors.shape == (sectored_rates_ds.sizes["epoch"],)
     assert np.all(deadtime_correction_factors >= 0)
 
 
-def test_get_deadtime_interpolator(random_spin_data):
+def test_get_deadtime_interpolator(random_spin_data, use_fake_spin_data_for_time):
     """Tests get_deadtime_correction_factors function."""
-
+    use_fake_spin_data_for_time(1, 10)
     sector_rate_seconds = 20 * 60  # 20 minutes in seconds
     num_sectors = 3  # Number of sectors per pointing
     num_spins = sector_rate_seconds * num_sectors / 15  # 15 seconds per spin
@@ -212,7 +213,10 @@ def test_get_deadtime_interpolator(random_spin_data):
     deadtime_ratios = xr.DataArray(
         np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
     )
-    sectored_rates_ds = xr.Dataset({"epoch": ("epoch", np.ones_like(deadtime_ratios))})
+    sectored_rates_ds = xr.Dataset(
+        {"epoch": ("epoch", np.ones_like(deadtime_ratios))},
+        {"shcoarse": ("epoch", np.ones_like(deadtime_ratios))},
+    )
     with mock.patch(
         "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
         return_value=deadtime_ratios,
@@ -384,19 +388,17 @@ def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_dat
 
 @pytest.mark.external_test_data
 def test_get_spacecraft_exposure_times(
-    deadtime_datasets,
+    rates_dataset,
     random_spin_data,
     imap_ena_sim_metakernel,
     ancillary_files,
     use_fake_spin_data_for_time,
 ):
     """Test get_spacecraft_exposure_times function."""
-    data_start_time = 453051293.0
+    data_start_time = 445015665.0
     data_end_time = 453070000.0
     use_fake_spin_data_for_time(data_start_time, data_end_time)
     steps = 500  # reduced for testing
-    rates = deadtime_datasets["rates"]
-    params = deadtime_datasets["params"]
 
     pix = 786
     mock_theta = np.random.uniform(-60, 60, (steps, pix))
@@ -414,8 +416,7 @@ def test_get_spacecraft_exposure_times(
     )
     boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
     exposure_pointing, deadtimes = get_spacecraft_exposure_times(
-        rates,
-        params,
+        rates_dataset,
         pixels_below_threshold,
         boundary_sf,
         (
