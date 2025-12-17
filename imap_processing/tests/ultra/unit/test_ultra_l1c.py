@@ -124,6 +124,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     ancillary_files,
     rates_dataset,
     deadtime_datasets,
+    rates_dataset,
     aux_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
@@ -188,7 +189,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": dataset,  # placeholder
         "imap_ultra_l1b_45sensor-goodtimes": dataset,  # placeholder
-        "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
+        "imap_ultra_l1a_45sensor-rates": rates_dataset,
         "imap_ultra_l1a_45sensor-aux": aux_dataset,
         "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }

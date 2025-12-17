@@ -31,6 +31,8 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset(
+    deadtime_datasets,
+    aux_dataset,
     rates_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
@@ -102,6 +104,8 @@ def test_calculate_spacecraft_pset(
             test_l1b_de_dataset,
             test_l1b_de_dataset,  # placeholder for goodtimes_dataset
             rates_dataset,
+            aux_dataset,
+            deadtime_datasets["params"],
             "imap_ultra_l1c_45sensor-spacecraftpset",
             ancillary_files,
             45,
@@ -116,6 +120,8 @@ def test_calculate_spacecraft_pset(
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
     ancillary_files,
+    deadtime_datasets,
+    aux_dataset,
     rates_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
@@ -186,6 +192,9 @@ def test_calculate_spacecraft_pset_with_cdf(
                 dataset,
                 dataset,  # placeholder for goodtimes_dataset
                 rates_dataset,
+                rates_dataset,
+                aux_dataset,
+                deadtime_datasets["params"],
                 "imap_ultra_l1c_45sensor-spacecraftpset",
                 ancillary_files,
                 45,
