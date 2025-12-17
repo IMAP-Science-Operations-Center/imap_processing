@@ -200,7 +200,7 @@ def test_get_deadtime_ratios():
     assert np.all(deadtime_correction_factors >= 0)
 
 
-def test_get_deadtime_interpolator(random_spin_data, use_fake_spin_data_for_time):
+def test_get_deadtime_interpolator(use_fake_spin_data_for_time):
     """Tests get_deadtime_correction_factors function."""
     use_fake_spin_data_for_time(1, 10)
     sector_rate_seconds = 20 * 60  # 20 minutes in seconds
@@ -389,7 +389,6 @@ def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_dat
 @pytest.mark.external_test_data
 def test_get_spacecraft_exposure_times(
     rates_dataset,
-    random_spin_data,
     imap_ena_sim_metakernel,
     ancillary_files,
     use_fake_spin_data_for_time,

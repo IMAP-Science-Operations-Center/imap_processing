@@ -121,7 +121,6 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
-    random_spin_data,
     ancillary_files,
     rates_dataset,
     imap_ena_sim_metakernel,
@@ -194,10 +193,6 @@ def test_calculate_spacecraft_pset_with_cdf(
             "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
             return_value=(482374890.0, 482374000.0),
         ),
-        mock.patch(
-            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met",
-            side_effect=lambda x: x,
-        ),
     ):
         output_datasets = ultra_l1c(
             data_dict, ancillary_files, "45sensor-spacecraftpset"
@@ -217,7 +212,6 @@ def test_calculate_spacecraft_pset_with_cdf(
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_helio_pset_with_cdf(
-    random_spin_data,
     ancillary_files,
     imap_ena_sim_metakernel,
     mock_helio_pointing_lookups,
@@ -295,10 +289,6 @@ def test_calculate_helio_pset_with_cdf(
         mock.patch(
             "imap_processing.ultra.l1c.helio_pset.get_pointing_times_from_id",
             return_value=(482374890.0, 482374000.0),
-        ),
-        mock.patch(
-            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met",
-            side_effect=lambda x: x,
         ),
         # Mock efficiencies and geometric function to known values
         mock.patch(

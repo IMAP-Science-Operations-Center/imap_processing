@@ -547,18 +547,6 @@ def ancillary_files():
 
 
 @pytest.fixture
-def random_spin_data():
-    """Fixture for random spin data."""
-    with (
-        mock.patch(
-            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met"
-        ) as mock_met,
-    ):
-        mock_met.side_effect = lambda time: time
-        yield
-
-
-@pytest.fixture
 def mock_spacecraft_pointing_lookups():
     """Test lookup tables fixture."""
     np.random.seed(42)

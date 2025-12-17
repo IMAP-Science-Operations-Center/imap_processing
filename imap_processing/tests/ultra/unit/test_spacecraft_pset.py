@@ -31,7 +31,6 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset(
-    random_spin_data,
     rates_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
@@ -95,15 +94,9 @@ def test_calculate_spacecraft_pset(
         },
         attrs={"Repointing": "repoint00001"},
     )
-    with (
-        mock.patch(
-            "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
-            return_value=(482374890.0, 482374000.0),
-        ),
-        mock.patch(
-            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met",
-            side_effect=lambda x: x,
-        ),
+    with mock.patch(
+        "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
+        return_value=(482374890.0, 482374000.0),
     ):
         spacecraft_pset = calculate_spacecraft_pset(
             test_l1b_de_dataset,
@@ -122,7 +115,6 @@ def test_calculate_spacecraft_pset(
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
-    random_spin_data,
     ancillary_files,
     rates_dataset,
     imap_ena_sim_metakernel,
@@ -186,15 +178,9 @@ def test_calculate_spacecraft_pset_with_cdf(
         name = "imap_ultra_l1b_45sensor-de"
         dataset = create_dataset(de_dict, name, "l1b")
         dataset.attrs["Repointing"] = "repoint00000"
-        with (
-            mock.patch(
-                "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
-                return_value=(472374890.0, 582378000.0),
-            ),
-            mock.patch(
-                "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met",
-                side_effect=lambda x: x,
-            ),
+        with mock.patch(
+            "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
+            return_value=(472374890.0, 582378000.0),
         ):
             spacecraft_pset = calculate_spacecraft_pset(
                 dataset,
@@ -286,10 +272,6 @@ def test_validate_exposure_time_and_sensitivities(ancillary_files, rates_dataset
         mock.patch(
             "imap_processing.ultra.l1c.spacecraft_pset.get_pointing_times_from_id",
             return_value=pointing_range_met,
-        ),
-        mock.patch(
-            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met",
-            side_effect=lambda x: x,
         ),
         # Mock deadtimes to be all ones
         mock.patch(
