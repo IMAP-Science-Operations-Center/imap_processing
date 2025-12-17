@@ -324,6 +324,7 @@ def get_deadtime_ratios_by_spin_phase(
         # The center spin phase is the closest / most accurate spin phase.
         # There are 24 spin phases per sector so the nominal middle sector spin phases
         # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
+        # We can assume each sector 0 starts at spin phase 0
         spin_phases_centered = (sector_indices / num_spin_sectors) * 360.0 + 12.0
 
     # Create a dataset with spin phases and dead time ratios
