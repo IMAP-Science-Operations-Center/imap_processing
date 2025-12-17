@@ -202,7 +202,6 @@ def get_deadtime_ratios(
         Dead time correction factor for each sector.
     """
     tint = (24 / 360) * spin_durations
-    # (24 / 360) * spin duration
     # compute the correction factor for each step in each sector
     start_full_cdf = sectored_rates_ds.start_rf + sectored_rates_ds.start_lf
     coin_stop_nd = (
@@ -228,6 +227,10 @@ def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
     """
     Filter rates dataset to only include sector mode data.
 
+    Identify intervals where ULTRA was in sector mode by examining contiguous runs
+    of identical spin values. At the normal 15-second spin period, each 24° sector
+    takes ~1 second, so a full spin in sector mode consists of 15 sectors.
+
     Parameters
     ----------
     rates_ds : xarray.Dataset
@@ -238,8 +241,6 @@ def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
     rates : xarray.Dataset or None
         Rates dataset with only the sector mode data.
     """
-    # Find indices in which the parameters dataset indicates that ULTRA was in
-    # sector mode. At the normal 15-second spin period, each 24° sector takes ~1 second.
     spins = rates_ds.spin.values
     # Check if spins are monotonically increasing
     if not np.all(np.diff(spins) >= 0):
@@ -455,7 +456,7 @@ def get_spacecraft_exposure_times(
     pointing_mask = (rates_time >= pointing_range_met[0]) & (
         rates_time <= pointing_range_met[1]
     )
-    rates_dataset.isel(epoch=pointing_mask)
+    rates_dataset = rates_dataset.isel(epoch=pointing_mask)
     sectored_rates = get_sectored_rates(rates_dataset)
     # Get the number of steps used in the spun pointing lookup tables
     spin_steps = valid_spun_pixels.shape[0]

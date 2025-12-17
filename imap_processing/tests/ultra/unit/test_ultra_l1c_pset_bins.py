@@ -170,7 +170,7 @@ def test_get_sectored_rates_manual():
     expected_sectored_rates = xr.concat(
         [
             rates_dataset.isel(epoch=slice(0, 15)),
-            rates_dataset.isel(epoch=slice(17, 33)),
+            rates_dataset.isel(epoch=slice(17, 32)),
         ],
         dim="epoch",
     )

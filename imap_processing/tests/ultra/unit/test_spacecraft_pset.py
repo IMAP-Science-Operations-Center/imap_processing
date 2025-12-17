@@ -212,9 +212,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         )
 
 
-pytest.mark.skip(reason="Long running test for validation purposes.")
-
-
+@pytest.mark.skip(reason="Long running test for validation purposes.")
 def test_validate_exposure_time_and_sensitivities(ancillary_files, rates_dataset):
     """Validates exposure time and sensitivities for ebin 0."""
     test_data = [
