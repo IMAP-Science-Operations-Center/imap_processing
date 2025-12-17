@@ -16,6 +16,7 @@ priority:
   VALIDMIN: 0
   VALIDMAX: 7
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 event_num:
   CATDESC: Event Number
@@ -28,6 +29,7 @@ event_num:
   VALIDMIN: 0
   VALIDMAX: 10000
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
