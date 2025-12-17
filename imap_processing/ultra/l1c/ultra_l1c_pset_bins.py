@@ -15,7 +15,6 @@ from imap_processing.spice.spin import (
     get_spin_data,
     get_spin_number,
 )
-from imap_processing.spice.time import ttj2000ns_to_met
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_geometric_factor,
@@ -451,12 +450,6 @@ def get_spacecraft_exposure_times(
     nominal_deadtime_ratios : np.ndarray
         Deadtime ratios at each spin phase step (1ms res).
     """
-    # filter rates dataset to only include data during a pointing
-    rates_time = ttj2000ns_to_met(rates_dataset.epoch.data)
-    pointing_mask = (rates_time >= pointing_range_met[0]) & (
-        rates_time <= pointing_range_met[1]
-    )
-    rates_dataset = rates_dataset.isel(epoch=pointing_mask)
     sectored_rates = get_sectored_rates(rates_dataset)
     # Get the number of steps used in the spun pointing lookup tables
     spin_steps = valid_spun_pixels.shape[0]
