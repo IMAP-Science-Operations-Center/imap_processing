@@ -147,7 +147,7 @@ class MagL2L1dBase:
         )
 
         vectors = xr.DataArray(
-            self.vectors,
+            self.vectors.astype(np.float32),
             name="vectors",
             dims=["epoch", "direction"],
             attrs=attribute_manager.get_variable_attributes(vector_attrs_name),
@@ -168,14 +168,14 @@ class MagL2L1dBase:
         )
 
         rng = xr.DataArray(
-            self.range,
+            self.range.astype(np.uint8),
             name="range",
             dims=["epoch"],
             attrs=attribute_manager.get_variable_attributes("range"),
         )
 
         magnitude = xr.DataArray(
-            self.magnitude,
+            self.magnitude.astype(np.float32),
             name="magnitude",
             dims=["epoch"],
             attrs=attribute_manager.get_variable_attributes("magnitude"),

@@ -382,6 +382,9 @@ def test_mag_l2_validation(test_number, mode):
     # leapseconds.
     # Subtract 5 seconds from epoch to account for leap seconds
     expected_output["epoch"] = expected_output["epoch"] - pd.Timedelta(seconds=5)
+    expected_output["x"] = expected_output["x"].astype(np.float32)
+    expected_output["y"] = expected_output["y"].astype(np.float32)
+    expected_output["z"] = expected_output["z"].astype(np.float32)
 
     # Truncate expected output to only include time after 2025-05-06T00:00:00
     expected_output = expected_output[
