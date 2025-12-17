@@ -123,6 +123,8 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 def test_calculate_spacecraft_pset_with_cdf(
     ancillary_files,
     rates_dataset,
+    deadtime_datasets,
+    aux_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
     mock_spacecraft_pointing_lookups,
@@ -186,7 +188,9 @@ def test_calculate_spacecraft_pset_with_cdf(
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": dataset,  # placeholder
         "imap_ultra_l1b_45sensor-goodtimes": dataset,  # placeholder
-        "imap_ultra_l1a_45sensor-rates": rates_dataset,
+        "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
+        "imap_ultra_l1a_45sensor-aux": aux_dataset,
+        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
     with (
         mock.patch(
@@ -215,7 +219,8 @@ def test_calculate_helio_pset_with_cdf(
     ancillary_files,
     imap_ena_sim_metakernel,
     mock_helio_pointing_lookups,
-    rates_dataset,
+    deadtime_datasets,
+    aux_dataset,
     use_fake_spin_data_for_time,
 ):
     """Tests ultra_l1c function with imported test data."""
@@ -281,6 +286,8 @@ def test_calculate_helio_pset_with_cdf(
             }
         ),  # placeholder
         "imap_ultra_l1a_45sensor-rates": rates_dataset,
+        "imap_ultra_l1a_45sensor-aux": aux_dataset,
+        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
     n_pix = hp.nside2npix(32)
     mock_eff = np.ones((46, n_pix))
