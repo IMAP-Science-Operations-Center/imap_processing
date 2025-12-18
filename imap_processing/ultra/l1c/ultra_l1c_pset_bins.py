@@ -176,9 +176,7 @@ def get_spacecraft_count_rate_uncertainty(hist: NDArray, exposure: NDArray) -> N
     return rate_uncertainty
 
 
-def get_deadtime_ratios(
-    sectored_rates_ds: xr.Dataset, spin_durations: np.ndarray
-) -> xr.DataArray:
+def get_deadtime_ratios(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
     """
     Compute the dead time ratio at each sector.
 
@@ -192,15 +190,13 @@ def get_deadtime_ratios(
     ----------
     sectored_rates_ds : xarray.Dataset
         Dataset containing sector mode image rates data.
-    spin_durations : numpy.ndarray
-        Array of spin durations corresponding to each sector.
 
     Returns
     -------
     dead_time_ratio : xarray.DataArray
         Dead time correction factor for each sector.
     """
-    tint = (24 / 360) * spin_durations
+    tint = (24 / 360) * sectored_rates_ds.spin_durations
     # compute the correction factor for each step in each sector
     start_full_cdf = sectored_rates_ds.start_rf + sectored_rates_ds.start_lf
     coin_stop_nd = (
@@ -261,9 +257,10 @@ def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
     # Get the start indices of each sector mode spin
     sector_starts = spin_change[spin_run_inds]
     sectored_mode_mask = np.zeros(len(spins), dtype=bool)
-    for start in sector_starts:
-        # Set the group of 15 to True
-        sectored_mode_mask[start : start + 15] = True
+    starts = np.asarray(sector_starts)
+    # Create offsets 0..14 and broadcast
+    idx = starts[:, None] + np.arange(15)
+    sectored_mode_mask[idx] = True
     # Return the sectored rates dataset
     return rates_ds.isel(epoch=sectored_mode_mask)
 
@@ -319,8 +316,11 @@ def get_deadtime_ratios_by_spin_phase(
         # Repeat the spin duration for each of the 15 sectors.
         # Sectors are all within a spin so each one corresponds to the same spin
         # duration
-        spin_durations = np.repeat(spin_durations, num_spin_sectors)
-        deadtime_ratios = get_deadtime_ratios(sectored_rates, spin_durations).data
+        sectored_rates["spin_durations"] = (
+            "epoch",
+            np.repeat(spin_durations, num_spin_sectors),
+        )
+        deadtime_ratios = get_deadtime_ratios(sectored_rates).data
         # The center spin phase is the closest / most accurate spin phase.
         # There are 24 spin phases per sector so the nominal middle sector spin phases
         # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.

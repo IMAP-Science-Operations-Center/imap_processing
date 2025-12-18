@@ -195,7 +195,8 @@ def test_get_deadtime_ratios():
         }
     )
     durations = np.full(epoch, 15)
-    deadtime_correction_factors = get_deadtime_ratios(sectored_rates_ds, durations)
+    sectored_rates_ds["spin_durations"] = (["epoch"], durations)
+    deadtime_correction_factors = get_deadtime_ratios(sectored_rates_ds)
     assert deadtime_correction_factors.shape == (sectored_rates_ds.sizes["epoch"],)
     assert np.all(deadtime_correction_factors >= 0)
 
