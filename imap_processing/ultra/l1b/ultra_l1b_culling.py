@@ -22,7 +22,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_scattering_thresholds,
 )
 from imap_processing.ultra.l1b.quality_flag_filters import DE_QUALITY_FLAG_FILTERS
-from imap_processing.ultra.l1b.ultra_l1b_extended import get_spin_and_duration
+from imap_processing.ultra.l1b.ultra_l1b_extended import get_spin_info
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 logger = logging.getLogger(__name__)
@@ -368,7 +368,8 @@ def get_pulses_per_spin(aux: xr.Dataset, rates: xr.Dataset) -> RateResult:
     coin_pulses : NDArray
         Total coincidence pulses.
     """
-    spin_number, _duration = get_spin_and_duration(aux, rates["shcoarse"].values)
+    spin_ds = get_spin_info(aux, rates["shcoarse"].values)
+    spin_number = spin_ds["spin_number"].values
 
     # Top coin pulses
     top_coin_pulses = np.stack(

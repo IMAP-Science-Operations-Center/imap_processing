@@ -144,6 +144,7 @@ def calculate_spacecraft_pset(
         rates_dataset,
         valid_spun_pixels,
         boundary_scale_factors,
+        aux_dataset,
         pointing_range_met,
         n_energy_bins=len(energy_bin_geometric_means),
         sensor_id=sensor_id,

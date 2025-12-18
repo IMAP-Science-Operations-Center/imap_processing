@@ -156,6 +156,7 @@ def calculate_helio_pset(
         rates_dataset,
         pixels_below_scattering,
         boundary_scale_factors,
+        aux_dataset,
         pointing_range_met,
         n_energy_bins=len(energy_bin_geometric_means),
         sensor_id=sensor_id,

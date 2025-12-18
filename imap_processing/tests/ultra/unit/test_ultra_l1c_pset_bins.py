@@ -201,7 +201,7 @@ def test_get_deadtime_ratios():
     assert np.all(deadtime_correction_factors >= 0)
 
 
-def test_get_deadtime_interpolator(use_fake_spin_data_for_time):
+def test_get_deadtime_interpolator(use_fake_spin_data_for_time, aux_dataset):
     """Tests get_deadtime_correction_factors function."""
     use_fake_spin_data_for_time(1, 10)
     sector_rate_seconds = 20 * 60  # 20 minutes in seconds
@@ -223,7 +223,7 @@ def test_get_deadtime_interpolator(use_fake_spin_data_for_time):
         return_value=deadtime_ratios,
     ):
         deadtime_ratios = get_deadtime_ratios_by_spin_phase(
-            sectored_rates_ds, spin_steps=num_deadtimes
+            sectored_rates_ds, aux_dataset, spin_steps=num_deadtimes
         )
     np.testing.assert_array_equal(deadtime_ratios.shape, (num_deadtimes))
 
@@ -237,12 +237,12 @@ def test_get_deadtime_interpolator(use_fake_spin_data_for_time):
             match="All dead time ratios are NaN, cannot interpolate",
         ):
             get_deadtime_ratios_by_spin_phase(
-                sectored_rates_ds, spin_steps=num_deadtimes
+                sectored_rates_ds, aux_dataset, spin_steps=num_deadtimes
             )
 
 
 @pytest.mark.external_test_data
-def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files):
+def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files, aux_dataset):
     """Tests get_deadtime_correction_factors function."""
 
     num_deadtimes = 15000  # Standard number of spin phases
@@ -251,6 +251,7 @@ def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files):
     # static deadtime ratios lookup.
     dt_ratios = get_deadtime_ratios_by_spin_phase(
         sectored_rates=None,
+        aux_dataset=aux_dataset,
         spin_steps=num_deadtimes,
         sensor_id=sensor,
         ancillary_files=ancillary_files,
@@ -393,6 +394,7 @@ def test_get_spacecraft_exposure_times(
     imap_ena_sim_metakernel,
     ancillary_files,
     use_fake_spin_data_for_time,
+    aux_dataset,
 ):
     """Test get_spacecraft_exposure_times function."""
     data_start_time = 445015665.0
@@ -419,6 +421,7 @@ def test_get_spacecraft_exposure_times(
         rates_dataset,
         pixels_below_threshold,
         boundary_sf,
+        aux_dataset,
         (
             data_start_time,
             data_start_time,
@@ -446,6 +449,7 @@ def test_get_spacecraft_background_rates(
     aux_ds = xr.Dataset(
         data_vars={
             "timespinstart": ("epoch", spin_start_times),
+            "timespinstartsub": ("epoch", np.ones_like(spin_start_times)),
             "duration": ("epoch", np.full(num_spins, 15)),
             "spinnumber": ("epoch", spin_numbers),
         },

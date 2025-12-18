@@ -13,6 +13,7 @@ from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -917,7 +918,9 @@ def get_phi_theta(
     return np.degrees(phi), np.degrees(theta)
 
 
-def get_spin_start_indices(aux_dataset: xr.Dataset, de_event_met: NDArray) -> NDArray:
+def get_spin_start_indices(
+    aux_dataset: xr.Dataset, de_event_met: NDArray
+) -> tuple[NDArray, NDArray]:
     """
     Get the spin start indices in the aux dataset for each event.
 
@@ -932,32 +935,76 @@ def get_spin_start_indices(aux_dataset: xr.Dataset, de_event_met: NDArray) -> ND
     -------
     start_inds : numpy.ndarray
         Spin start indices for each event.
+    missing_aux_data_mask : numpy.ndarray
+        Boolean array indicating where there are events out of the aux data range. The
+        universal spin table should be used to fill in missing data for these events.
     """
     # Get Spin Start Time in seconds
     spin_start_sec = aux_dataset["timespinstart"].values
-
     # Check that all events fall within the aux dataset time range.
     # The time window spans from the first spin start to the end of the last spin.
     first_spin_start = spin_start_sec[0]
     # Define the end of the last spin as start time + max duration (15s)
     last_spin_end = spin_start_sec[-1] + 15.0
-    if np.any(de_event_met < first_spin_start) or np.any(de_event_met > last_spin_end):
-        raise ValueError(
+    missing_aux_data_mask = (de_event_met < first_spin_start) | (
+        de_event_met > last_spin_end
+    )
+    if np.any(missing_aux_data_mask):
+        logger.info(
             "Coarse MET time contains events outside aux_dataset time range "
             f"({first_spin_start} - {last_spin_end}). "
+            f"Found min={de_event_met.min()}, max={de_event_met.max()}. "
+            f"Found {np.sum(missing_aux_data_mask)} events not covered by aux data. "
+            f" Trying to fill missing data using universal spin table."
+        )
+    # Find the spin_start_sec that started directly before each event.
+    start_inds = (
+        np.searchsorted(
+            spin_start_sec, de_event_met[~missing_aux_data_mask], side="right"
+        )
+        - 1
+    )
+
+    return start_inds, missing_aux_data_mask
+
+
+def get_spin_data_from_universal_spin_table(de_event_met: NDArray) -> pandas.DataFrame:
+    """
+    Get spin data from the universal spin table for each event.
+
+    Parameters
+    ----------
+    de_event_met : numpy.ndarray
+        Direct event MET.
+
+    Returns
+    -------
+    spin_data_per_event : pandas.DataFrame
+        Spin information for each event.
+    """
+    # Get the relevant spin parameters for each event
+    spin_df = get_spin_data()
+    ut_spin_start = spin_df["spin_start_met"].values
+    if np.any(
+        (de_event_met < np.min(ut_spin_start)) | (de_event_met > np.max(ut_spin_start))
+    ):
+        raise ValueError(
+            "Coarse MET time contains events outside of universal spin table time "
+            f"range ({np.min(ut_spin_start)} - {np.max(ut_spin_start)}). "
             f"Found min={de_event_met.min()}, max={de_event_met.max()}."
         )
-
-    # Find the spin_start_sec that started directly before each event.
-    start_inds = np.searchsorted(spin_start_sec, de_event_met, side="right") - 1
-    # Clip to valid range of indices
-    start_inds = np.clip(start_inds, 0, len(spin_start_sec) - 1)
-
-    return start_inds
+    ut_start_inds = (
+        np.searchsorted(spin_df["spin_start_met"].values, de_event_met, side="right")
+        - 1
+    )
+    return spin_df.iloc[ut_start_inds]
 
 
 def get_event_times(
-    aux_dataset: xr.Dataset, phase_angle: NDArray, de_event_met: NDArray
+    aux_dataset: xr.Dataset,
+    de_event_met: NDArray,
+    phase_angle: NDArray,
+    spin_ds: xr.Dataset | None = None,
 ) -> tuple[NDArray, NDArray]:
     """
     Get the event times, spin start times.
@@ -970,10 +1017,12 @@ def get_event_times(
     ----------
     aux_dataset : xarray.Dataset
         Auxiliary dataset containing spin information.
-    phase_angle : numpy.ndarray
-        Phase angle.
     de_event_met : numpy.ndarray
         Direct event MET.
+    phase_angle : numpy.ndarray
+        Phase angle.
+    spin_ds : xarray.Dataset, optional
+        Pre-computed spin information. If None, will be computed from aux_dataset.
 
     Returns
     -------
@@ -982,37 +1031,29 @@ def get_event_times(
     spin_start_times: numpy.ndarray
         Spin start times in et.
     """
-    # Get Spin Start Time in seconds
-    spin_start_sec = aux_dataset["timespinstart"].values
-    # Get Spin Start Subsecond in milliseconds
-    spin_start_subsec = aux_dataset["timespinstartsub"].values
-    # Get spin duration in milliseconds
-    spin_duration = aux_dataset["duration"].values
-
-    start_inds = get_spin_start_indices(aux_dataset, de_event_met)
-    # Get the relevant spin parameters for each event
-    evt_spin_starts = spin_start_sec[start_inds]
-    evt_spin_start_subs = spin_start_subsec[start_inds]
-    evt_spin_durations = spin_duration[start_inds]
+    # Get or compute spin info
+    if spin_ds is None:
+        spin_ds = get_spin_info(aux_dataset, de_event_met)
 
     # spin start with subsecond precision
-    spin_start_times = evt_spin_starts + (evt_spin_start_subs / 1000.0)
+    spin_start_times = spin_ds.spin_starts + (spin_ds.spin_start_subs / 1000.0)
+
     # add the fractional spin offset
-    event_times = spin_start_times + (evt_spin_durations / 1000.0) * (
+    event_times = spin_start_times + (spin_ds.spin_duration / 1000.0) * (
         phase_angle / 720.0
     )
-
     return (
         ttj2000ns_to_et(met_to_ttj2000ns(event_times)),
         ttj2000ns_to_et(met_to_ttj2000ns(spin_start_times)),
     )
 
 
-def get_spin_and_duration(
-    aux_dataset: xr.Dataset, de_event_met: NDArray
-) -> tuple[NDArray, NDArray]:
+def get_spin_info(aux_dataset: xr.Dataset, de_event_met: NDArray) -> xr.Dataset:
     """
-    Get the spin numbers and durations.
+    Get the spin information for each event.
+
+    The returned dataset contains the spin number, spin duration,
+    spin start time, and spin start subsecond for each event.
 
     Parameters
     ----------
@@ -1023,19 +1064,40 @@ def get_spin_and_duration(
 
     Returns
     -------
-    spin_numbers: numpy.ndarray
-        Spin numbers for each event.
-    spin_durations: numpy.ndarray
-        Spin durations for each event.
+    spin_info_per_event : xarray.Dataset
+        Spin information for each event.
     """
-    # Get the spin start indices for each event
-    start_inds = get_spin_start_indices(aux_dataset, de_event_met)
-    # Get the spin numbers for each event
-    spin_numbers = aux_dataset["spinnumber"].values[start_inds]
-    # Get the spin duration for each event
-    spin_durations = aux_dataset["duration"].values[start_inds]
+    start_inds, missing_events = get_spin_start_indices(aux_dataset, de_event_met)
+    # Initialize spin info dataset
+    spin_info_per_event = xr.Dataset()
+    # Create dict of var name lookups
+    var_names = {
+        "spin_number": ("spinnumber", "spin_number"),
+        "spin_duration": ("duration", "spin_period_sec"),
+        "spin_starts": ("timespinstart", "spin_start_sec_sclk"),
+        "spin_start_subs": ("timespinstartsub", "spin_start_subsec_sclk"),
+    }
+    # If there is not enough aux data covering an event, query the universal
+    # spin table using the start time to fill in the missing data.
+    # This can happen for the first event if the aux data starts after the DE data.
+    spin_data = (
+        get_spin_data_from_universal_spin_table(de_event_met[missing_events])
+        if np.any(missing_events)
+        else None
+    )
 
-    return spin_numbers, spin_durations
+    for var in var_names.keys():
+        # Get the corresponding aux and universal table variable names
+        aux_name, ut_name = var_names[str(var)]
+        init_array = np.zeros_like(de_event_met)
+        if np.any(missing_events) and spin_data is not None:
+            # Get data from universal table for events missing aux data
+            init_array[missing_events] = spin_data[ut_name].values
+        # Get data from aux dataset for the rest of the events
+        init_array[~missing_events] = aux_dataset[aux_name].values[start_inds]
+        spin_info_per_event[var] = (("epoch",), init_array)
+
+    return spin_info_per_event
 
 
 def interpolate_fwhm(

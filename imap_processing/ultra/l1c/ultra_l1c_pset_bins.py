@@ -13,7 +13,6 @@ from imap_processing.spice.geometry import (
 )
 from imap_processing.spice.spin import (
     get_spin_data,
-    get_spin_number,
 )
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -27,7 +26,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_efficiency,
     get_efficiency_interpolator,
-    get_spin_and_duration,
+    get_spin_info,
 )
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
@@ -267,6 +266,7 @@ def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
 
 def get_deadtime_ratios_by_spin_phase(
     sectored_rates: xr.Dataset | None,
+    aux_dataset: xr.Dataset,
     spin_steps: int,
     sensor_id: int | None = None,
     ancillary_files: dict | None = None,
@@ -278,6 +278,8 @@ def get_deadtime_ratios_by_spin_phase(
     ----------
     sectored_rates : xarray.Dataset, optional
         Dataset containing sector mode image rates data.
+    aux_dataset : xarray.Dataset
+        Auxiliary dataset containing spin information.
     spin_steps : int
         Number of spin phase steps (e.g. 15000 for 1ms resolution).
     sensor_id : int, optional
@@ -309,16 +311,13 @@ def get_deadtime_ratios_by_spin_phase(
         # Get timestamps at the start of each spin (sector 0)
         spin_start_indices = np.where(sector_indices == 0)[0]
         met_time = sectored_rates["shcoarse"].values[spin_start_indices]
-        spin_data = get_spin_data()
-        spin_numbers = get_spin_number(met_time)
-        # Get spin durations for each spin
-        spin_durations = spin_data.loc[spin_numbers, "spin_period_sec"].values
+        spin_ds = get_spin_info(aux_dataset, met_time)
         # Repeat the spin duration for each of the 15 sectors.
         # Sectors are all within a spin so each one corresponds to the same spin
         # duration
         sectored_rates["spin_durations"] = (
             "epoch",
-            np.repeat(spin_durations, num_spin_sectors),
+            np.repeat(spin_ds.spin_duration.data, num_spin_sectors),
         )
         deadtime_ratios = get_deadtime_ratios(sectored_rates).data
         # The center spin phase is the closest / most accurate spin phase.
@@ -408,6 +407,7 @@ def get_spacecraft_exposure_times(
     rates_dataset: xr.Dataset,
     valid_spun_pixels: xr.DataArray,
     boundary_scale_factors: xr.DataArray,
+    aux_dataset: xr.Dataset,
     pointing_range_met: tuple[float, float],
     n_energy_bins: int,
     sensor_id: int | None = None,
@@ -430,6 +430,8 @@ def get_spacecraft_exposure_times(
         shape = (spin_phase_steps, 1, n_pix).
     boundary_scale_factors : xarray.DataArray
         Boundary scale factors for each pixel at each spin phase.
+    aux_dataset : xarray.Dataset,
+        Auxiliary dataset containing spin information.
     pointing_range_met : tuple
         Start and stop time of the pointing period in mission elapsed time.
     n_energy_bins : int
@@ -454,7 +456,7 @@ def get_spacecraft_exposure_times(
     # Get the number of steps used in the spun pointing lookup tables
     spin_steps = valid_spun_pixels.shape[0]
     nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(
-        sectored_rates, spin_steps, sensor_id, ancillary_files
+        sectored_rates, aux_dataset, spin_steps, sensor_id, ancillary_files
     )
     # The exposure time will be approximately the same per spin, so to save
     # computation time, calculate the exposure time for a single spin and then scale it
@@ -687,9 +689,8 @@ def get_spacecraft_background_rates(
     # Pulses for the pointing.
     etof_min = get_image_params("eTOFMin", f"ultra{sensor_id}", ancillary_files)
     etof_max = get_image_params("eTOFMax", f"ultra{sensor_id}", ancillary_files)
-    spin_number, _ = get_spin_and_duration(
-        aux_dataset, rates_dataset["shcoarse"].values
-    )
+    spin_ds = get_spin_info(aux_dataset, rates_dataset["shcoarse"].values)
+    spin_number = spin_ds["spin_number"].values
 
     # Get dmin for PH (mm).
     dmin_ctof = UltraConstants.DMIN_PH_CTOF

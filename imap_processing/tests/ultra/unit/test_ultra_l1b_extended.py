@@ -31,7 +31,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
-    get_spin_and_duration,
+    get_spin_info,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     interpolate_fwhm,
@@ -561,44 +561,50 @@ def test_get_eventtimes(test_fixture, aux_dataset):
 
 @pytest.mark.external_test_data
 def test_get_spin_and_duration(test_fixture, aux_dataset):
-    """Tests get_spin_and_duration function."""
+    """Tests get_spin_info function."""
     df_filt, _, _, de_dataset = test_fixture
 
-    spin_number, spin_duration = get_spin_and_duration(
+    spin_ds = get_spin_info(
         aux_dataset,
         de_dataset["shcoarse"].values,
     )
 
     # Check shapes
-    assert spin_number.shape == spin_duration.shape == de_dataset["shcoarse"].shape
+    assert (
+        spin_ds.spin_number.shape
+        == spin_ds.spin_duration.shape
+        == de_dataset["shcoarse"].shape
+    )
 
     t1_spin_number = aux_dataset["spinnumber"].values[0]
     t1_start_dur = aux_dataset["duration"].values[0]
     # Check the first event spin number and duration
-    assert spin_number[0] == t1_spin_number
-    assert spin_duration[0] == t1_start_dur
+    assert spin_ds.spin_number[0] == t1_spin_number
+    assert spin_ds.spin_duration[0] == t1_start_dur
 
 
 @pytest.mark.external_test_data
-def test_get_event_times_out_of_range(test_fixture, aux_dataset):
+def test_get_event_times_out_of_range(
+    test_fixture, aux_dataset, use_fake_spin_data_for_time, caplog
+):
     """Tests get_event_times with out of range values."""
     df_filt, _, _, de_dataset = test_fixture
     # Get min time from aux_dataset
     min_time = aux_dataset["timespinstart"].values.min()
     # Set some coarse times to be out of range (less than min_time)
     coarse_times = de_dataset["shcoarse"].values.copy()
-    # Set first coarse time to be out of range
+    # Set first coarse time to be out of range of the aux data
     coarse_times[0] = min_time - 1000
-
-    with pytest.raises(
-        ValueError,
-        match="Coarse MET time contains events outside aux_dataset time range",
-    ):
-        get_event_times(
-            aux_dataset,
-            de_dataset["phase_angle"].values,
-            coarse_times,
-        )
+    # set spin data that DOES cover the range of coarse_times
+    use_fake_spin_data_for_time(min_time - 1000, min_time + 10000)
+    # This should not raise an error.
+    event_times, spin_starts = get_event_times(
+        aux_dataset,
+        de_dataset["phase_angle"].values,
+        coarse_times,
+    )
+    assert event_times.shape == coarse_times.shape
+    assert spin_starts.shape == coarse_times.shape
 
 
 @pytest.mark.external_test_data
