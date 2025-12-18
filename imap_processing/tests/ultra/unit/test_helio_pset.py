@@ -16,7 +16,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 @pytest.mark.skip(reason="Long running test for validation purposes.")
 def test_validate_exposure_time_and_sensitivities(
-    ancillary_files, rates_dataset, imap_ena_sim_metakernel
+    ancillary_files, rates_dataset, imap_ena_sim_metakernel, aux_dataset
 ):
     """Validates exposure time and sensitivities for ebin 0."""
     sens_filename = "SENS-IMAP_ULTRA_90-IMAP_DPS-HELIO-nside32-ebin0.csv"
@@ -91,6 +91,7 @@ def test_validate_exposure_time_and_sensitivities(
             l1b_de,
             dataset,
             rates_dataset,
+            aux_dataset,
             "imap_ultra_l1c_90sensor-heliopset",
             ancillary_files,
             90,

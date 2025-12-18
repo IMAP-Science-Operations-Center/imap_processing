@@ -138,10 +138,11 @@ def test_calculate_spacecraft_pset_with_cdf(
 
         de_dict["epoch"] = df_subset["epoch"].values
         species_bin = np.full(len(df_subset), 1, dtype=np.uint8)
-        # Ensure rate dataset has correct time range
-        rates_dataset.shcoarse.data = np.linspace(
-            0, 141 * 15, len(rates_dataset.shcoarse.data)
-        )
+        # Ensure rate and aux data have the correct time range
+        t_rates = np.linspace(0, 141 * 15, len(rates_dataset.shcoarse.data))
+        rates_dataset.shcoarse.data = t_rates
+        aux_dataset.timespinstart.data = t_rates[: len(aux_dataset.timespinstart.data)]
+        aux_dataset.timespinstart.data[-1] = t_rates[-1]
         # PosYSlit is True for left (start_type = 1)
         # PosYSlit is False for right (start_type = 2)
         start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
@@ -190,7 +191,6 @@ def test_calculate_spacecraft_pset_with_cdf(
                 dataset,
                 dataset,  # placeholder for goodtimes_dataset
                 rates_dataset,
-                rates_dataset,
                 aux_dataset,
                 "imap_ultra_l1c_45sensor-spacecraftpset",
                 ancillary_files,
@@ -205,7 +205,9 @@ def test_calculate_spacecraft_pset_with_cdf(
 
 
 @pytest.mark.skip(reason="Long running test for validation purposes.")
-def test_validate_exposure_time_and_sensitivities(ancillary_files, rates_dataset):
+def test_validate_exposure_time_and_sensitivities(
+    ancillary_files, rates_dataset, aux_dataset
+):
     """Validates exposure time and sensitivities for ebin 0."""
     test_data = [
         (
@@ -302,6 +304,7 @@ def test_validate_exposure_time_and_sensitivities(ancillary_files, rates_dataset
             l1b_de,
             dataset,
             rates_dataset,
+            aux_dataset,
             "imap_ultra_l1c_90sensor-spacecraftpset",
             ancillary_files,
             90,
