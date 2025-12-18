@@ -31,7 +31,6 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset(
-    deadtime_datasets,
     aux_dataset,
     rates_dataset,
     imap_ena_sim_metakernel,
@@ -42,10 +41,11 @@ def test_calculate_spacecraft_pset(
     """Tests calculate_spacecraft_pset function."""
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
-    # Ensure rate dataset has correct time range
-    rates_dataset.shcoarse.data = np.linspace(
-        0, 141 * 15, len(rates_dataset.shcoarse.data)
-    )
+    # Ensure rate and aux data have the correct time range
+    t_rates = np.linspace(0, 141 * 15, len(rates_dataset.shcoarse.data))
+    rates_dataset.shcoarse.data = t_rates
+    aux_dataset.timespinstart.data = t_rates[: len(aux_dataset.timespinstart.data)]
+    aux_dataset.timespinstart.data[-1] = t_rates[-1]
     # This is just setting up the data so that it is in the format of l1b_de_dataset.
     test_path = TEST_PATH / "ultra-90_raw_event_data_shortened.csv"
     df = pd.read_csv(test_path)
@@ -105,7 +105,6 @@ def test_calculate_spacecraft_pset(
             test_l1b_de_dataset,  # placeholder for goodtimes_dataset
             rates_dataset,
             aux_dataset,
-            deadtime_datasets["params"],
             "imap_ultra_l1c_45sensor-spacecraftpset",
             ancillary_files,
             45,
@@ -120,7 +119,6 @@ def test_calculate_spacecraft_pset(
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
     ancillary_files,
-    deadtime_datasets,
     aux_dataset,
     rates_dataset,
     imap_ena_sim_metakernel,
@@ -194,7 +192,6 @@ def test_calculate_spacecraft_pset_with_cdf(
                 rates_dataset,
                 rates_dataset,
                 aux_dataset,
-                deadtime_datasets["params"],
                 "imap_ultra_l1c_45sensor-spacecraftpset",
                 ancillary_files,
                 45,

@@ -171,7 +171,7 @@ def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_datas
     assert np.all(result == expected)
 
 
-def test_get_duration(rates_l1_test_path, use_fake_spin_data_for_time, aux_test_path):
+def test_get_duration(rates_l1_test_path, use_fake_spin_data_for_time):
     """Tests get_duration function."""
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
     df = pd.read_csv(rates_l1_test_path)

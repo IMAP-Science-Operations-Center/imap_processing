@@ -561,7 +561,7 @@ def test_get_eventtimes(test_fixture, aux_dataset):
 
 @pytest.mark.external_test_data
 def test_get_spin_and_duration(test_fixture, aux_dataset):
-    """Tests get_eventtimes function."""
+    """Tests get_spin_and_duration function."""
     df_filt, _, _, de_dataset = test_fixture
 
     spin_number, spin_duration = get_spin_and_duration(

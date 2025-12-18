@@ -123,8 +123,6 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 def test_calculate_spacecraft_pset_with_cdf(
     ancillary_files,
     rates_dataset,
-    deadtime_datasets,
-    rates_dataset,
     aux_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
@@ -140,10 +138,11 @@ def test_calculate_spacecraft_pset_with_cdf(
     df_subset = df[df["pointing_number"] == pointing].copy()
 
     de_dict = {}
-    # Ensure rate dataset has correct time range
-    rates_dataset.shcoarse.data = np.linspace(
-        0, 141 * 15, len(rates_dataset.shcoarse.data)
-    )
+    # Ensure rate and aux data are in the correct time window
+    t_rates = np.linspace(0, 141 * 15, len(rates_dataset.shcoarse.data))
+    rates_dataset.shcoarse.data = t_rates
+    aux_dataset.timespinstart.data = t_rates[: len(aux_dataset.timespinstart.data)]
+    aux_dataset.timespinstart.data[-1] = t_rates[-1]
     de_dict["epoch"] = df_subset["epoch"].values
     species_bin = np.full(len(df_subset), 1, dtype=np.uint8)
 
@@ -191,7 +190,6 @@ def test_calculate_spacecraft_pset_with_cdf(
         "imap_ultra_l1b_45sensor-goodtimes": dataset,  # placeholder
         "imap_ultra_l1a_45sensor-rates": rates_dataset,
         "imap_ultra_l1a_45sensor-aux": aux_dataset,
-        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
     with (
         mock.patch(
@@ -220,7 +218,6 @@ def test_calculate_helio_pset_with_cdf(
     ancillary_files,
     imap_ena_sim_metakernel,
     mock_helio_pointing_lookups,
-    deadtime_datasets,
     aux_dataset,
     rates_dataset,
     use_fake_spin_data_for_time,
@@ -233,8 +230,10 @@ def test_calculate_helio_pset_with_cdf(
     )
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
 
-    # Ensure rate dataset has correct time range
-    rates_dataset.shcoarse.data += 56970124
+    # Ensure rate and aux data are in the correct time window
+    t_off = 56970125
+    rates_dataset.shcoarse.data += t_off
+    aux_dataset.timespinstart.data += t_off
     # Select a single pointing number
     pointing = 0
     df_subset = df[df["pointing_number"] == pointing].copy()
@@ -289,7 +288,6 @@ def test_calculate_helio_pset_with_cdf(
         ),  # placeholder
         "imap_ultra_l1a_45sensor-rates": rates_dataset,
         "imap_ultra_l1a_45sensor-aux": aux_dataset,
-        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
     n_pix = hp.nside2npix(32)
     mock_eff = np.ones((46, n_pix))

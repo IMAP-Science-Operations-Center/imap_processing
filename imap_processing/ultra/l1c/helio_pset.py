@@ -39,7 +39,7 @@ def calculate_helio_pset(
     de_dataset: xr.Dataset,
     goodtimes_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
-    aux_dataset: xr.Dataset,,
+    aux_dataset: xr.Dataset,
     name: str,
     ancillary_files: dict,
     instrument_id: int,

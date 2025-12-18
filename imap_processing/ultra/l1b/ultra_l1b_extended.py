@@ -923,7 +923,7 @@ def get_spin_start_indices(aux_dataset: xr.Dataset, de_event_met: NDArray) -> ND
 
     Parameters
     ----------
-    aux_dataset : numpy.ndarray
+    aux_dataset : xarray.Dataset
         Auxiliary dataset containing spin information.
     de_event_met : numpy.ndarray
         Direct event MET.
@@ -968,7 +968,7 @@ def get_event_times(
 
     Parameters
     ----------
-    aux_dataset : numpy.ndarray
+    aux_dataset : xarray.Dataset
         Auxiliary dataset containing spin information.
     phase_angle : numpy.ndarray
         Phase angle.
@@ -1016,7 +1016,7 @@ def get_spin_and_duration(
 
     Parameters
     ----------
-    aux_dataset : numpy.ndarray
+    aux_dataset : xarray.Dataset
         Auxiliary dataset containing spin information.
     de_event_met : numpy.ndarray
         Direct event MET.
