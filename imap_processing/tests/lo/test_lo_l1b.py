@@ -31,6 +31,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_pointing_bin,
     set_pointing_direction,
     set_spin_cycle,
+    set_spin_cycle_from_spin_data,
 )
 from imap_processing.lo.lo_ancillary import read_ancillary_file
 from imap_processing.spice.spin import get_spin_data
@@ -39,6 +40,7 @@ from imap_processing.spice.time import (
     et_to_ttj2000ns,
     met_to_ttj2000ns,
     str_to_et,
+    ttj2000ns_to_met,
 )
 
 
@@ -122,6 +124,7 @@ def l1a_hist():
             "esa_step": np.arange(1, 8),
             "azimuth_6": np.arange(60),
         },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
     )
     return l1a_hist
 
@@ -172,11 +175,20 @@ def test_lo_l1b_de(
     assert expected_logical_source_de == output_files[-1].attrs["Logical_source"]
 
 
-def test_lo_l1b_histogram_rates(l1a_hist, anc_dependencies):
+@patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+    return_value=(473389199, 473472001),
+)
+def test_lo_l1b_histogram_rates(
+    mock_repoint_times, mock_spin_number, l1a_hist, anc_dependencies
+):
     # Arrange
     met = et_to_met(str_to_et(["2025-04-15T02:00:00"]))
     l1a_spin = xr.Dataset(
         {
+            "shcoarse": ("epoch", [0]),
+            "num_completed": ("epoch", [28]),
             "acq_start_sec": ("epoch", met),
             "acq_start_subsec": ("epoch", [0]),
             "acq_end_sec": ("epoch", met + 420),
@@ -185,6 +197,7 @@ def test_lo_l1b_histogram_rates(l1a_hist, anc_dependencies):
         coords={
             "epoch": et_to_ttj2000ns(str_to_et(["2025-04-15T02:00:00"])),
         },
+        attrs={"Logical_source": "imap_lo_l1a_spin"},
     )
     sci_dependencies = {
         "imap_lo_l1a_histogram": l1a_hist,
@@ -976,3 +989,245 @@ def test_calculate_histogram_rates_zero_exposure_time(l1b_histrates):
 
     np.testing.assert_array_equal(l1b_histrate["h_rates"], np.full((2, 7, 60), np.nan))
     np.testing.assert_array_equal(l1b_histrate["o_rates"], np.full((2, 7, 60), np.nan))
+
+
+def test_set_spin_cycle_from_spin_data_histogram():
+    """Test spin cycle calculation for histogram data."""
+    # Arrange
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
+    )
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+            "azimuth_6": np.arange(60),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+        }
+    )
+
+    met_times = ttj2000ns_to_met(epoch_date)
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", met_times),
+            "num_completed": ("epoch", [28, 28]),
+            "acq_start_sec": ("epoch", met_times),
+            "acq_start_subsec": ("epoch", [0, 0]),
+            "acq_end_sec": ("epoch", met_times),
+            "acq_end_subsec": ("epoch", [0, 0]),
+        },
+        coords={
+            "epoch": epoch_date,
+        },
+    )
+
+    # Mock get_spin_number to return predictable values
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=np.array([0, 28])
+    ):
+        # Act
+        l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Expected: spin_cycle = spin_start + 7 + (esa_step - 1) * 2
+    # For epoch 0: 0 + 7 + (1-1)*2 = 7, (2-1)*2 = 9, ..., (7-1)*2 = 19
+    # For epoch 1: 28 + 7 + (1-1)*2 = 35, ..., 28 + 7 + (7-1)*2 = 47
+    expected_spin_cycles = np.array(
+        [[7, 9, 11, 13, 15, 17, 19], [35, 37, 39, 41, 43, 45, 47]]
+    )
+
+    # Assert
+    assert "spin_cycle" in l1b_hist.data_vars
+    np.testing.assert_array_equal(l1b_hist["spin_cycle"].values, expected_spin_cycles)
+
+
+def test_set_spin_cycle_from_spin_data_matching_ascs():
+    """Test that science ASCs correctly match to spin ASCs."""
+    # Arrange - Science ASCs that should match different spin ASCs
+    science_met = [100, 200, 300]
+    spin_met = [50, 150, 250]  # Science times fall after these spin times
+
+    epoch_date = met_to_ttj2000ns(science_met)
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step"), np.zeros((3, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
+
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", spin_met),
+            "num_completed": ("epoch", [28, 28, 28]),
+            "acq_start_sec": ("epoch", spin_met),
+            "acq_start_subsec": ("epoch", [0, 0, 0]),
+            "acq_end_sec": ("epoch", spin_met),
+            "acq_end_subsec": ("epoch", [0, 0, 0]),
+        },
+        coords={"epoch": met_to_ttj2000ns(spin_met)},
+    )
+
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number",
+        return_value=np.array([0, 28, 56]),
+    ):
+        # Act
+        l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Assert - Each epoch should use the correct spin start number
+    assert l1b_hist["spin_cycle"][0, 0] == 7  # 0 + 7 + 0
+    assert l1b_hist["spin_cycle"][1, 0] == 35  # 28 + 7 + 0
+    assert l1b_hist["spin_cycle"][2, 2] == 67  # 56 + 7 + 2*2
+
+
+def test_set_spin_cycle_from_spin_data_repeated_closest():
+    """Test when multiple science ASCs map to the same spin ASC."""
+    # Arrange - Multiple science ASCs close to the same spin ASC
+    science_met = [100, 101, 200, 201]
+    spin_met = [50, 150]  # First two science ASCs map to spin[0], last two to spin[1]
+
+    epoch_date = met_to_ttj2000ns(science_met)
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step"), np.zeros((4, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
+
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", spin_met),
+            "num_completed": ("epoch", [28, 28]),
+            "acq_start_sec": ("epoch", spin_met),
+            "acq_start_subsec": ("epoch", [0, 0]),
+            "acq_end_sec": ("epoch", spin_met),
+            "acq_end_subsec": ("epoch", [0, 0]),
+        },
+        coords={"epoch": met_to_ttj2000ns(spin_met)},
+    )
+
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number",
+        return_value=np.array([10, 10, 38, 38]),
+    ):
+        # Act
+        l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Assert - First two should use spin 10, last two should use spin 38
+    assert l1b_hist["spin_cycle"][0, 0] == 17  # 10 + 7 + 0
+    assert l1b_hist["spin_cycle"][1, 0] == 17  # 10 + 7 + 0 (same spin)
+    assert l1b_hist["spin_cycle"][2, 0] == 45  # 38 + 7 + 0
+    assert l1b_hist["spin_cycle"][3, 0] == 45  # 38 + 7 + 0 (same spin)
+
+
+def test_set_spin_cycle_from_spin_data_all_esa_steps():
+    """Test that all ESA steps get correct spin cycles."""
+    # Arrange
+    epoch_date = et_to_ttj2000ns(str_to_et(["2025-04-15T02:00:00"]))
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step"), np.zeros((1, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
+
+    met_time = ttj2000ns_to_met(epoch_date)
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", [met_time[0]]),
+            "num_completed": ("epoch", [28]),
+            "acq_start_sec": ("epoch", [met_time[0]]),
+            "acq_start_subsec": ("epoch", [0]),
+            "acq_end_sec": ("epoch", [met_time[0]]),
+            "acq_end_subsec": ("epoch", [0]),
+        },
+        coords={"epoch": epoch_date},
+    )
+
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=np.array([0])
+    ):
+        # Act
+        l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Assert - Verify the formula: spin_start + 7 + (esa_step - 1) * 2
+    expected = np.array([7, 9, 11, 13, 15, 17, 19])
+    np.testing.assert_array_equal(l1b_hist["spin_cycle"].values[0], expected)
+
+
+def test_set_spin_cycle_from_spin_data_insufficient_spins():
+    """Test that ASCs with fewer than 28 spins are filtered out."""
+    # Arrange - Mix of valid and invalid spin counts
+    science_met = [100, 200, 300]
+    spin_met = [50, 150, 250]
+
+    epoch_date = met_to_ttj2000ns(science_met)
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (["epoch", "esa_step", "azimuth"], np.ones((3, 7, 60))),
+            "oxygen": (["epoch", "esa_step", "azimuth"], np.ones((3, 7, 60))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+            "azimuth": np.arange(60),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
+
+    # Spin data with mixed valid/invalid counts
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", spin_met),
+            "num_completed": ("epoch", [20, 28, 15]),  # 20 and 15 are < 28
+            "acq_start_sec": ("epoch", np.array([50, 150, 250])),
+            "acq_start_subsec": ("epoch", np.zeros(3)),
+            "acq_end_sec": ("epoch", np.array([78, 178, 278])),
+            "acq_end_subsec": ("epoch", np.zeros(3)),
+        },
+        coords={"epoch": np.arange(3)},
+    )
+
+    # Act
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=np.array([28])
+    ):
+        result = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Assert - Only epoch 1 (science_met[1]=200) should remain
+    # (matched to spin with 28 spins)
+    assert len(result["epoch"]) == 1
+    expected_epochs = met_to_ttj2000ns([200])
+    np.testing.assert_array_equal(result["epoch"].values, expected_epochs)
+
+    # Verify spin_cycle shape matches filtered data
+    assert result["spin_cycle"].shape == (1, 7)

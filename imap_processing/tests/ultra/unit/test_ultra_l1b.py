@@ -128,6 +128,7 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
 @pytest.mark.external_test_data
 def test_cdf_de(
     de_dataset,
+    aux_dataset,
     use_fake_spin_data_for_time,
     ancillary_files,
     use_fake_repoint_data_for_time,
@@ -138,6 +139,7 @@ def test_cdf_de(
     data_dict = {}
     de_dataset.attrs["Repointing"] = "repoint00001"
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    data_dict[aux_dataset.attrs["Logical_source"]] = aux_dataset
     # Create a spin table that cover spin 0-141
     use_fake_spin_data_for_time(511000000, 511000000 + 86400 * 5)
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
@@ -163,6 +165,7 @@ def test_cdf_de(
 def test_cdf_de_flags(
     mock_get_annotated_particle_velocity,
     de_dataset,
+    aux_dataset,
     use_fake_spin_data_for_time,
     ancillary_files,
     use_fake_repoint_data_for_time,
@@ -171,6 +174,7 @@ def test_cdf_de_flags(
     data_dict = {}
     de_dataset.attrs["Repointing"] = "repoint00000"
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    data_dict[aux_dataset.attrs["Logical_source"]] = aux_dataset
     # Create a spin table that cover spin 0-141
     use_fake_spin_data_for_time(511000000, 511000000 + 86400 * 5)
     # Use repoint data that will NOT cover the event times to test flag setting

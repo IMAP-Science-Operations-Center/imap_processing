@@ -518,11 +518,6 @@ lo-low_tof_cutoff:
     CATDESC: Low TOF Cutoff
     FIELDNAM: Low TOF Cutoff
 
-lo-low_tof_cutoff:
-    <<: *lo_counters_aggregated_default
-    CATDESC: Low TOF Cutoff
-    FIELDNAM: Low TOF Cutoff
-
 lo-asic1_flag_invalid:
     <<: *lo_counters_aggregated_default
     CATDESC: ASIC 1 Flag Invalid Count

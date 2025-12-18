@@ -20,6 +20,24 @@ def sc_packet_path():
 
 
 @pytest.fixture
+def swapi_postlaunch_sc_packet_path():
+    """Returns the spacecraft packet directory."""
+    packet_path = (
+        imap_module_directory
+        / "tests"
+        / "ialirt"
+        / "data"
+        / "l0"
+        / "iois_1_packets_2025_344_05_57_56"
+    )
+    xtce_ialirt_path = (
+        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
+    )
+
+    return packet_path, xtce_ialirt_path
+
+
+@pytest.fixture
 def ialirt_mag_test_l1d_data():
     """Returns the MAG I-ALiRT calibration dataset."""
     cal_path = (

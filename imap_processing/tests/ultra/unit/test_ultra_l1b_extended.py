@@ -6,7 +6,6 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
-from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
@@ -25,14 +24,13 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
-    get_eventtimes,
+    get_event_times,
     get_front_x_position,
     get_front_y_position,
     get_fwhm,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
-    get_spin_number,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     interpolate_fwhm,
@@ -519,63 +517,70 @@ def test_get_phi_theta(test_fixture):
 
 
 @pytest.mark.external_test_data
-def test_get_spin_number(test_fixture, use_fake_spin_data_for_time):
-    """Tests that get_spin_number assigns the correct spin number."""
+def test_get_eventtimes(test_fixture, aux_dataset):
+    """Tests get_eventtimes function."""
     df_filt, _, _, de_dataset = test_fixture
 
-    # Simulate a spin table from MET = 0 to MET = 500*15 seconds
-    use_fake_spin_data_for_time(start_met=0, end_met=500 * 15)
+    event_times, spin_start_times, spin_numbers = get_event_times(
+        aux_dataset,
+        de_dataset["phase_angle"].values,
+        de_dataset["shcoarse"].values,
+    )
 
-    de_met = np.array([0, 0, 5760, 5760, 5760, 5760, 5760, 5760])
-    de_spin = np.array([128, 128, 129, 129, 130, 130, 131, 131], dtype=np.uint8)
+    # Check shapes
+    assert (
+        event_times.shape
+        == spin_start_times.shape
+        == spin_numbers.shape
+        == de_dataset["phase_angle"].shape
+    )
 
-    spin_number = get_spin_number(de_met, de_spin)
+    t1_start_sec = aux_dataset["timespinstart"].values[0]
+    t1_start_subsec = aux_dataset["timespinstartsub"].values[0]
+    t1_start_dur = aux_dataset["duration"].values[0]
 
-    assert np.array_equal(spin_number & 0xFF, de_spin)
+    expected_first_event_time = (
+        t1_start_sec
+        + (t1_start_subsec + t1_start_dur * de_dataset["phase_angle"].values[0] / 720.0)
+        / 1000.0
+    )
+    # Check first event
+    assert (
+        ttj2000ns_to_et(met_to_ttj2000ns(expected_first_event_time)) == event_times[0]
+    )
+
+    # Check that each calculated event times fall within the expected range
+    # Use the coarse time to determine the expected range
+    spin_starts = ttj2000ns_to_et(met_to_ttj2000ns(aux_dataset["timespinstart"].values))
+    for i, coarse_time in enumerate(de_dataset["shcoarse"].values):
+        boundary = np.searchsorted(spin_starts, coarse_time, side="right") - 1
+        if boundary < 0 or boundary >= len(spin_starts) - 1:
+            continue
+        start_time = spin_starts[boundary]
+        end_time = spin_starts[boundary + 1]
+        assert start_time <= int(event_times[i]) <= end_time
 
 
 @pytest.mark.external_test_data
-def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
-    """Tests get_eventtimes function."""
+def test_get_event_times_out_of_range(test_fixture, aux_dataset):
+    """Tests get_event_times with out of range values."""
     df_filt, _, _, de_dataset = test_fixture
-    # Create a spin table that cover spin 0-141
-    use_fake_spin_data_for_time(0, 141 * 15)
+    # Get min time from aux_dataset
+    min_time = aux_dataset["timespinstart"].values.min()
+    # Set some coarse times to be out of range (less than min_time)
+    coarse_times = de_dataset["shcoarse"].values.copy()
+    # Set first coarse time to be out of range
+    coarse_times[0] = min_time - 1000
 
-    event_times, spin_starts, spin_period_sec = get_eventtimes(
-        de_dataset["spin"].values, de_dataset["phase_angle"].values
-    )
-
-    spin_df = get_spin_data()
-    expected_min_df = spin_df[spin_df["spin_number"] == de_dataset["spin"].values.min()]
-    expected_max_df = spin_df[spin_df["spin_number"] == de_dataset["spin"].values.max()]
-    spin_period_sec_min = expected_min_df["spin_period_sec"].values[0]
-    spin_period_sec_max = expected_max_df["spin_period_sec"].values[0]
-
-    spin_start_min = (
-        expected_min_df["spin_start_sec_sclk"]
-        + expected_min_df["spin_start_subsec_sclk"] / 1e6
-    )
-    spin_start_max = (
-        expected_max_df["spin_start_sec_sclk"]
-        + expected_max_df["spin_start_subsec_sclk"] / 1e6
-    )
-
-    assert (
-        ttj2000ns_to_et(met_to_ttj2000ns(spin_start_min.values[0])) == spin_starts.min()
-    )
-    assert (
-        ttj2000ns_to_et(met_to_ttj2000ns(spin_start_max.values[0])) == spin_starts.max()
-    )
-
-    event_times_min = spin_start_min.values[0] + spin_period_sec_min * (
-        de_dataset["phase_angle"][0] / 720
-    )
-    event_times_max = spin_start_max.values[0] + spin_period_sec_max * (
-        de_dataset["phase_angle"][-1] / 720
-    )
-
-    assert ttj2000ns_to_et(met_to_ttj2000ns(event_times_min)) == event_times.min()
-    assert ttj2000ns_to_et(met_to_ttj2000ns(event_times_max)) == event_times.max()
+    with pytest.raises(
+        ValueError,
+        match="Coarse MET time contains events outside aux_dataset time range",
+    ):
+        get_event_times(
+            aux_dataset,
+            de_dataset["phase_angle"].values,
+            coarse_times,
+        )
 
 
 @pytest.mark.external_test_data

@@ -394,7 +394,7 @@ def instrument_status_summary(datasets_by_apid_derived: dict) -> xr.Dataset:
         "op_mode",
         "pac_vset",
         "mcp_vset",
-        "mcp_v",
+        "tof_mcp_v",
         "bhv_def_neg_dac",
         "bhv_def_pos_dac",
         "bhv_pmt_dac",

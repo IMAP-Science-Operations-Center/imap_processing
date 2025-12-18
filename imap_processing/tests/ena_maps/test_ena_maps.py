@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+import warnings
 from copy import deepcopy
 from pathlib import Path
 from unittest import mock
@@ -1327,18 +1328,19 @@ class TestHealpixSkyMap:
             (179.5, -0.5): 10,
             (179.5, 0.5): 11,
             (179.5, 1.5): 12,
-            (180.5, -1.5): 12,
+            (180.5, -1.5): 13,
             (180.5, -0.5): 14,
             (180.5, 0.5): 15,
             (180.5, 1.5): 16,
             (181.5, -1.5): 17,
             (181.5, -0.5): 18,
             (181.5, 0.5): 19,
-            (181.5, 1.5): 20,
+            # Set the final entry to 999 to identify a pixel that will be set to NaN
+            (181.5, 1.5): 999,
         }
         expected_mean_0_subdivisions = 0
         expected_mean_1_subdivisions = 2.5
-        expected_mean_2_subdivisions = 12.5
+        expected_mean_2_subdivisions = 12
 
         def mock_ang2pix_fn(nside, theta, phi, nest=True, lonlat=False):
             vals = []
@@ -1354,10 +1356,11 @@ class TestHealpixSkyMap:
         )
         hp_map.data_1d["counts"] = xr.DataArray(
             data=[
-                np.arange(hp_map.num_points),
+                np.arange(hp_map.num_points, dtype=float),
             ],
             dims=["epoch", "pixel"],
         )
+        hp_map.data_1d["counts"][0, 999] = np.nan
 
         for num_subdiv, (expected_value, atol) in enumerate(
             [
@@ -1365,7 +1368,7 @@ class TestHealpixSkyMap:
                 (expected_mean_0_subdivisions, 1e-9),
                 (expected_mean_1_subdivisions, 1e-9),
                 # Slight difference from not taking into account asym solid angle
-                (expected_mean_2_subdivisions, 0.1),
+                (expected_mean_2_subdivisions, 1e-4),
             ]
         ):
             mock_ang2pix.reset_mock()
@@ -1389,6 +1392,64 @@ class TestHealpixSkyMap:
             rect_pix_spacing_deg=2,
             value_array=hp_map.data_1d["counts"],
             num_subdivisions=0,
+        )
+
+    @mock.patch("astropy_healpix.healpy.ang2pix")
+    def test_calculate_rect_pixel_value_outputs_fill_for_pixels_with_zero_non_fill_vals(
+        self,
+        mock_ang2pix,
+    ):
+        """Test getting rectangular pixel values from HealpixSkyMap via subdivision."""
+
+        # Mock ang2pix to return fixed values based on a dict
+        pixel_dict = {
+            # 0 subdiv - just 1 pixel
+            (180, 0): 0,
+            # 1 subdiv - all subpix have same solid angle because centered on equator
+            (179, -1): 999,
+            (179, 1): 999,
+            (181, -1): 999,
+            (181, 1): 999,
+        }
+
+        def mock_ang2pix_fn(nside, theta, phi, nest=True, lonlat=False):
+            vals = []
+            for pix_num in range(len(theta)):
+                key = (theta[pix_num], phi[pix_num])
+                vals.append(pixel_dict.get(key, 0))
+            return np.array(vals)
+
+        mock_ang2pix.side_effect = mock_ang2pix_fn
+
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=16,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            nested=True,
+        )
+        hp_map.data_1d["counts"] = xr.DataArray(
+            data=[
+                np.arange(hp_map.num_points, dtype=float),
+            ],
+            dims=["epoch", "pixel"],
+        )
+        hp_map.data_1d["counts"][0, 999] = np.nan
+
+        with warnings.catch_warnings(record=True) as w:
+            mean_value = (
+                hp_map.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
+                    rect_pix_center_lon_lat=(180, 0),
+                    rect_pix_spacing_deg=4,
+                    value_array=hp_map.data_1d["counts"],
+                    num_subdivisions=1,
+                )
+            )
+
+        assert len(w) == 0, "Should not raise RuntimeWarning for dividing by zero"
+
+        np.testing.assert_allclose(
+            mean_value,
+            np.nan,
+            err_msg=f"Failed for num_subdivisions: {1}",
         )
 
     @mock.patch(

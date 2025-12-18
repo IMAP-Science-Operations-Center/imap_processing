@@ -19,8 +19,8 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     calculate_exposure_time,
     get_deadtime_ratios,
     get_deadtime_ratios_by_spin_phase,
+    get_efficiencies_and_geometric_function,
     get_energy_delta_minus_plus,
-    get_helio_adjusted_data,
     get_sectored_rates,
     get_spacecraft_background_rates,
     get_spacecraft_count_rate_uncertainty,
@@ -30,6 +30,25 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+
+
+@pytest.fixture
+def spun_index_data(ancillary_files):
+    """Spun index test data fixture."""
+    nside = 8
+    pix = hp.nside2npix(nside)
+    steps = 500  # Reduced for testing
+    np.random.seed(42)
+    mock_theta = np.random.uniform(-60, 60, (steps, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, pix))
+    spin_phase_steps = xr.DataArray(
+        np.zeros((steps, pix)).astype(bool), dims=("spin_phase_step", "pixel")
+    )
+    # Simulate first 100 pixels are in the FOR for all spin phases
+    inside_inds = 100
+    spin_phase_steps[:, :inside_inds] = True
+
+    return mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps
 
 
 @pytest.fixture
@@ -265,20 +284,12 @@ def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files):
 
 
 @pytest.mark.external_kernel
-def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
+def test_apply_deadtime_correction(
+    imap_ena_sim_metakernel, ancillary_files, spun_index_data
+):
     """Tests apply_deadtime_correction function."""
-    nside = 8
-    pix = hp.nside2npix(nside)
-    steps = 500  # Reduced for testing
-    np.random.seed(42)
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.zeros((pix, steps)).astype(bool)  # Spin phase steps 1-15000,
-    # Simulate first 100 pixels are in the FOR for all spin phases
-    inside_inds = 100
-    spin_phase_steps[:inside_inds, :] = True
+    mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps = spun_index_data
     deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
-
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
         calculate_fwhm_spun_scattering(
             spin_phase_steps,
@@ -296,8 +307,8 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
         boundary_sf,
         apply_bsf=True,
     )
-    # The adjusted exposure should be of shape (1,npix)
-    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (1, pix))
+    # The adjusted exposure should be of shape (46,npix)
+    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (46, pix))
     # Check that the pixels inside the FOR have adjusted exposure > 0.
     assert np.all(exposure_pointing_adjusted[:, :inside_inds] > 0)
     # Assert that pixels outside the FOR remain at 0.
@@ -305,19 +316,13 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
 
 
 @pytest.mark.external_kernel
-def test_apply_deadtime_correction_energy_dep(imap_ena_sim_metakernel, ancillary_files):
+def test_apply_deadtime_correction_energy_dep(
+    imap_ena_sim_metakernel, ancillary_files, spun_index_data
+):
     """Tests apply_deadtime_correction function when scattering rejection is on."""
-    nside = 8
-    pix = hp.nside2npix(nside)
-    steps = 500  # Reduced for testing
-    np.random.seed(42)
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.zeros((pix, steps)).astype(bool)  # Spin phase steps 1-15000,
-    # Simulate first 100 pixels are in the FOR for all spin phases
-    inside_inds = 100
-    spin_phase_steps[:inside_inds, :] = True
+    mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps = spun_index_data
     deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
+    boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
 
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
         calculate_fwhm_spun_scattering(
@@ -329,14 +334,14 @@ def test_apply_deadtime_correction_energy_dep(imap_ena_sim_metakernel, ancillary
             reject_scattering=True,
         )
     )
-    boundary_sf = xr.DataArray(np.ones((pix, steps)), dims=("pixel", "spin_phase_step"))
+
     exposure_pointing_adjusted = calculate_exposure_time(
         deadtime_ratios,
         valid_spun_pixels,
         boundary_sf,
         apply_bsf=True,
     )
-    # The adjusted exposure should be of shape (1,npix)
+    # The adjusted exposure should be of shape (46,npix)
     np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (46, pix))
     # Check that the pixels inside the FOR have adjusted exposure > 0.
     # Subset the energy dimension to check values in the last energy bin. These
@@ -346,6 +351,56 @@ def test_apply_deadtime_correction_energy_dep(imap_ena_sim_metakernel, ancillary
     assert np.all(exposure_pointing_adjusted[last_energy_bin_vals, :inside_inds] > 0)
     # Assert that pixels outside the FOR remain at 0.
     assert np.all(exposure_pointing_adjusted[:, inside_inds:] == 0)
+
+
+@pytest.mark.external_kernel
+def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_data):
+    """Tests apply_deadtime_correction function when scattering rejection is on."""
+    nside = 8
+    pix = hp.nside2npix(nside)
+    steps = 5  # Reduced for testing
+    energy_dim = 46
+    np.random.seed(42)
+    mock_theta = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    spin_phase_steps = xr.DataArray(
+        np.zeros((steps, energy_dim, pix)).astype(bool),
+        dims=("spin_phase_step", "energy", "pixel"),
+    )
+    # Simulate first 100 pixels are in the FOR for all spin phases
+    inside_inds = 100
+    spin_phase_steps[:, :, :inside_inds] = True
+    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
+        calculate_fwhm_spun_scattering(
+            spin_phase_steps,
+            mock_theta,
+            mock_phi,
+            ancillary_files,
+            45,
+            reject_scattering=False,
+        )
+    )
+    boundary_sf = xr.DataArray(
+        np.ones((steps, energy_dim, pix)), dims=("spin_phase_step", "energy", "pixel")
+    )
+    eff, gf = get_efficiencies_and_geometric_function(
+        valid_spun_pixels,
+        boundary_sf,
+        mock_theta,
+        mock_phi,
+        npix=pix,
+        ancillary_files=ancillary_files,
+        apply_bsf=False,
+    )
+    # The efficiencies should be of shape (energy_dim,npix)
+    np.testing.assert_array_equal(eff.shape, (energy_dim, pix))
+    np.testing.assert_array_equal(gf.shape, (energy_dim, pix))
+    # Check that the pixels inside the FOR have efficiencies and geometric factors > 0.
+    assert np.all(eff[:, :inside_inds] > 0)
+    assert np.all(gf[:, :inside_inds] > 0)
+    # Assert that pixels outside the FOR remain at 0.
+    assert np.all(eff[:, inside_inds:] == 0)
+    assert np.all(gf[:, inside_inds:] == 0)
 
 
 @pytest.mark.external_test_data
@@ -365,10 +420,12 @@ def test_get_spacecraft_exposure_times(
     params = deadtime_datasets["params"]
 
     pix = 786
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.random.randint(0, 2, (pix, steps)).astype(
-        bool
+    mock_theta = np.random.uniform(-60, 60, (steps, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, pix))
+    np.random.seed(42)
+    spin_phase_steps = xr.DataArray(
+        np.random.randint(0, 2, (steps, pix)).astype(bool),
+        dims=("spin_phase_step", "pixel"),
     )  # Spin phase steps, random 0 or 1
 
     pixels_below_threshold, fwhm_theta, fwhm_phi, thresholds = (
@@ -376,7 +433,7 @@ def test_get_spacecraft_exposure_times(
             spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
         )
     )
-    boundary_sf = xr.DataArray(np.ones((pix, steps)), dims=("pixel", "spin_phase_step"))
+    boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
     exposure_pointing, deadtimes = get_spacecraft_exposure_times(
         rates,
         params,
@@ -391,38 +448,6 @@ def test_get_spacecraft_exposure_times(
     )
     np.testing.assert_array_equal(exposure_pointing.shape, (46, pix))
     np.testing.assert_array_equal(deadtimes.shape, (steps,))
-
-
-@pytest.mark.external_kernel
-def test_get_helio_exposure_time_and_sensitivity(imap_ena_sim_metakernel):
-    """Tests get_helio_exposure_times function."""
-
-    start_time = 829485054.185627
-    end_time = 829567884.185627
-
-    mid_time = np.average([start_time, end_time])
-
-    _, energy_midpoints, _ = build_energy_bins()
-    nside = 128
-    npix = hp.nside2npix(nside)
-    shape = (len(energy_midpoints), npix)
-    exposure = np.ones(shape)
-    eff = np.ones(shape)
-    gf = np.ones(shape)
-    mock_ra = np.random.uniform(-80, 80, (npix))
-    mock_dec = np.random.uniform(-80, 80, (npix))
-
-    helio_exposure, helio_eff, helio_gf = get_helio_adjusted_data(
-        mid_time, exposure, gf, eff, mock_ra, mock_dec
-    )
-
-    for helio_array, array in zip(
-        [helio_exposure, helio_eff, helio_gf], [exposure, eff, gf], strict=False
-    ):
-        total_input = np.sum(array)
-        total_output = np.sum(total_input)
-        assert np.allclose(total_input, total_output, atol=1e-6)
-        assert helio_array.shape == shape
 
 
 def test_get_spacecraft_background_rates(

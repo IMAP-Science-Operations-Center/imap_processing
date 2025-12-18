@@ -7,13 +7,12 @@ from enum import Enum
 
 import numpy as np
 import pandas
-import xarray
+import xarray as xr
 from numpy import ndarray
 from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
-from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -171,7 +170,7 @@ def get_front_y_position(
 
 
 def get_ph_tof_and_back_positions(
-    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
+    de_dataset: xr.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
 ) -> PHTOFResult:
     """
     Calculate back xb, yb position and tof.
@@ -326,7 +325,7 @@ def get_path_length(
 
 
 def get_ssd_back_position_and_tof_offset(
-    de_dataset: xarray.Dataset, sensor: str, ancillary_files: dict
+    de_dataset: xr.Dataset, sensor: str, ancillary_files: dict
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Lookup the Y SSD positions (yb), TOF Offset, and SSD number.
@@ -380,7 +379,7 @@ def get_ssd_back_position_and_tof_offset(
 
 
 def calculate_etof_xc(
-    de_subset: xarray.Dataset,
+    de_subset: xr.Dataset,
     particle_tof: np.ndarray,
     sensor: str,
     location: str,
@@ -434,7 +433,7 @@ def calculate_etof_xc(
 
 
 def get_coincidence_positions(
-    de_dataset: xarray.Dataset,
+    de_dataset: xr.Dataset,
     particle_tof: np.ndarray,
     sensor: str,
     ancillary_files: dict,
@@ -552,13 +551,14 @@ def get_de_velocity(
     velocities = np.vstack((v_x, v_y, v_z)).T
 
     v_hat = velocities / np.linalg.norm(velocities, axis=1)[:, None]
+
     r_hat = -v_hat
 
     return velocities, v_hat, r_hat
 
 
 def get_ssd_tof(
-    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
+    de_dataset: xr.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
 ) -> NDArray[np.float64]:
     """
     Calculate back xb, yb position for the SSDs.
@@ -763,7 +763,7 @@ def get_energy_pulse_height(
 
 
 def get_energy_ssd(
-    de_dataset: xarray.Dataset, ssd: np.ndarray, ancillary_files: dict
+    de_dataset: xr.Dataset, ssd: np.ndarray, ancillary_files: dict
 ) -> NDArray[np.float64]:
     """
     Get SSD energy.
@@ -917,111 +917,76 @@ def get_phi_theta(
     return np.degrees(phi), np.degrees(theta)
 
 
-def get_spin_number(de_met: NDArray, de_spin: NDArray) -> NDArray:
-    """
-    Get the spin number.
-
-    Parameters
-    ----------
-    de_met : NDArray
-        Mission elapsed time.
-    de_spin : NDArray
-        Spin number 0-255.
-
-    Returns
-    -------
-    assigned_spin_number : NDArray
-        Spin number for DE data product.
-    """
-    # DE packet data.
-    # Since the spin number in the direct events packet
-    # is only 8 bits it goes from 0-255.
-    # Within a pointing that means we will always have duplicate spin numbers.
-    # In other words, different spins will be represented by the same spin number.
-    # Just to make certain that we won't accidentally combine
-    # multiple spins we need to sort by time here.
-    sort_idx = np.argsort(de_met)
-    de_met_sorted = de_met[sort_idx]
-    de_spin_sorted = de_spin[sort_idx]
-    # Here we are finding the start and end indices of each spin in the sorted array.
-    is_new_spin = np.concatenate([[True], de_spin_sorted[1:] != de_spin_sorted[:-1]])
-    spin_start_indices = np.where(is_new_spin)[0]
-    spin_end_indices = np.append(spin_start_indices[1:], len(de_met_sorted))
-
-    # Universal Spin Table.
-    spin_df = get_spin_data()
-    # Retrieve the met values of the start of the spin.
-    spin_start_mets = spin_df["spin_start_met"].values
-    # Retrieve the corresponding spin numbers.
-    spin_numbers = spin_df["spin_number"].values
-    assigned_spin_number_sorted = np.empty(de_spin_sorted.shape, dtype=np.uint32)
-    # These last 8 bits are the same as the spin number in the DE packet.
-    # So this will give us choices of which spins are
-    # available to assign to the DE data.
-    possible_spins = spin_numbers & 0xFF
-
-    # Assign each group based on time.
-    for start, end in zip(spin_start_indices, spin_end_indices, strict=False):
-        # Now that we have the possible spins from the Universal Spin Table,
-        # we match the times of those spins to the nearest times in the DE data.
-        possible_times = spin_start_mets[possible_spins == de_spin_sorted[start]]
-        # Get nearest time for matching spins.
-        nearest_idx = np.abs(possible_times - de_met_sorted[start]).argmin()
-        nearest_value = possible_times[nearest_idx]
-        assigned_spin_number_sorted[start:end] = spin_numbers[
-            spin_start_mets == nearest_value
-        ]
-
-    # Undo the sort to match original order.
-    assigned_spin_number = np.empty_like(assigned_spin_number_sorted)
-    assigned_spin_number[sort_idx] = assigned_spin_number_sorted
-
-    return assigned_spin_number
-
-
-def get_eventtimes(
-    spin: NDArray, phase_angle: NDArray
+def get_event_times(
+    aux_dataset: xr.Dataset, phase_angle: NDArray, de_event_met: NDArray
 ) -> tuple[NDArray, NDArray, NDArray]:
     """
-    Get the event times.
+    Get the event times, spin start times, and spin numbers.
+
+    Use formula from section 3.3.1 of the ULTRA algorithm document.
+    t_e = t_spin_start + (t_start_sub / 1000) +
+        (t_spin_duration * theta_event) / (1000 * 720)
 
     Parameters
     ----------
-    spin : np.ndarray
-        Spin number.
-    phase_angle : np.ndarray
+    aux_dataset : numpy.ndarray
+        Auxiliary dataset containing spin information.
+    phase_angle : numpy.ndarray
         Phase angle.
+    de_event_met : numpy.ndarray
+        Direct event MET.
 
     Returns
     -------
-    event_times : np.ndarray
+    event_times : numpy.ndarray
         Event times in et.
-    spin_starts : np.ndarray
+    spin_start_times: numpy.ndarray
         Spin start times in et.
-    spin_period_sec : np.ndarray
-        Spin period in seconds.
-
-    Notes
-    -----
-    Equation for event time:
-    t = t_(spin start) + t_(spin start sub)/1e6 +
-    t_spin_period_sec * phase_angle/720
+    spin_numbers: numpy.ndarray
+        Spin numbers for each event.
     """
-    spin_df = get_spin_data()
+    # Get Spin Start Time in seconds
+    spin_start_sec = aux_dataset["timespinstart"].values
+    # Get Spin Start Subsecond in milliseconds
+    spin_start_subsec = aux_dataset["timespinstartsub"].values
+    # Get spin duration in milliseconds
+    spin_duration = aux_dataset["duration"].values
 
-    index = np.searchsorted(spin_df["spin_number"].values, spin)
-    spin_starts = (
-        spin_df["spin_start_sec_sclk"].values[index]
-        + spin_df["spin_start_subsec_sclk"].values[index] / 1e6
+    # Check that all events fall within the aux dataset time range.
+    # The time window spans from the first spin start to the end of the last spin.
+    first_spin_start = spin_start_sec[0]
+    # Define the end of the last spin as start time + max duration (15s)
+    last_spin_end = spin_start_sec[-1] + 15.0
+    if np.any(de_event_met < first_spin_start) or np.any(de_event_met > last_spin_end):
+        raise ValueError(
+            "Coarse MET time contains events outside aux_dataset time range "
+            f"({first_spin_start} - {last_spin_end}). "
+            f"Found min={de_event_met.min()}, max={de_event_met.max()}."
+        )
+
+    # Find the spin_start_sec that started directly before each event.
+    start_inds = np.searchsorted(spin_start_sec, de_event_met, side="right") - 1
+    # Clip to valid range of indices
+    start_inds = np.clip(start_inds, 0, len(spin_start_sec) - 1)
+    # Get the spin numbers for each event
+    spin_numbers = aux_dataset["spinnumber"].values[start_inds]
+
+    # Get the relevant spin parameters for each event
+    evt_spin_starts = spin_start_sec[start_inds]
+    evt_spin_start_subs = spin_start_subsec[start_inds]
+    evt_spin_durations = spin_duration[start_inds]
+
+    # spin start with subsecond precision
+    spin_start_times = evt_spin_starts + (evt_spin_start_subs / 1000.0)
+    # add the fractional spin offset
+    event_times = spin_start_times + (evt_spin_durations / 1000.0) * (
+        phase_angle / 720.0
     )
-
-    spin_period_sec = spin_df["spin_period_sec"].values[index]
-    event_times = spin_starts + spin_period_sec * (phase_angle / 720)
 
     return (
         ttj2000ns_to_et(met_to_ttj2000ns(event_times)),
-        ttj2000ns_to_et(met_to_ttj2000ns(spin_starts)),
-        spin_period_sec,
+        ttj2000ns_to_et(met_to_ttj2000ns(spin_start_times)),
+        spin_numbers,
     )
 
 
@@ -1338,7 +1303,7 @@ def determine_ebin_ssd(
 
 
 def is_back_tof_valid(
-    de_dataset: xarray.Dataset,
+    de_dataset: xr.Dataset,
     xf: NDArray,
     sensor: str,
     ancillary_files: dict,

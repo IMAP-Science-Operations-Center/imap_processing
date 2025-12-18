@@ -66,7 +66,7 @@ def test_process_spacecraft_packet(sc_packet_path):
     )[478]
     hit_product = process_hit(sc_xarray_data)
 
-    assert len(hit_product[0].keys()) == 16
+    assert len(hit_product[0].keys()) == 17
 
 
 def generate_prefixes(prefixes):

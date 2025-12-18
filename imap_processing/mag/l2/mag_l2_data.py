@@ -233,7 +233,7 @@ class MagL2L1dBase:
             name=self.frame.var_name,
             dims=["epoch", "direction"],
             attrs=attribute_manager.get_variable_attributes(
-                self.frame.vector_attrs_name
+                self.frame.vector_attrs_name, check_schema=False
             ),
         )
 
@@ -255,14 +255,18 @@ class MagL2L1dBase:
             self.range,
             name="range",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("range"),
+            attrs=attribute_manager.get_variable_attributes(
+                "range", check_schema=False
+            ),
         )
 
         magnitude = xr.DataArray(
             self.magnitude,
             name="magnitude",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("magnitude"),
+            attrs=attribute_manager.get_variable_attributes(
+                "magnitude", check_schema=False
+            ),
         )
 
         global_attributes = (

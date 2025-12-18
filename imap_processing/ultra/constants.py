@@ -3,6 +3,10 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+from imap_processing import imap_module_directory
+
+SPICE_DATA_SIM_PATH = imap_module_directory / "ultra/l1c/sim_spice_kernels"
+
 
 @dataclass(frozen=True)
 class UltraConstants:
@@ -46,7 +50,6 @@ class UltraConstants:
 
     # Composite energy threshold for SSD events
     COMPOSITE_ENERGY_THRESHOLD: int = 1707
-
     # Geometry-related constants
     Z_DSTOP: float = 2.6 / 2  # Position of stop foil on Z axis [mm]
     Z_DS: float = 46.19 - (2.6 / 2)  # Position of slit on Z axis [mm]
@@ -157,3 +160,23 @@ class UltraConstants:
         "proton": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         "non_proton": [20, 21, 22, 23, 24, 25, 26],
     }
+
+    SIM_KERNELS_FOR_HELIO_INDEX_MAPS: ClassVar[list] = [
+        str(SPICE_DATA_SIM_PATH / k)
+        for k in [
+            "imap_sclk_0000.tsc",
+            "naif0012.tls",
+            "imap_spk_demo.bsp",
+            "sim_1yr_imap_attitude.bc",
+            "imap_001.tf",
+            "imap_science_100.tf",
+            "sim_1yr_imap_pointing_frame.bc",
+        ]
+    ]
+
+    FOV_THETA_OFFSET_DEG = 0.0
+    FOV_PHI_LIMIT_DEG = 60.0
+
+    # For spatiotemporal culling
+    EARTH_RADIUS_KM: float = 6378.1
+    DEFAULT_EARTH_CULLING_RADIUS = EARTH_RADIUS_KM * 30

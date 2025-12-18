@@ -797,7 +797,25 @@ LO_SW_SPECIES_VARIABLE_NAMES = [
     "heplus",
     "cnoplus",
 ]
-
+LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    "tcr",
+    "dcr",
+    "sta",
+    "stb",
+    "sp",
+    "total_position_count",
+]
+HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    "dcr",
+    "mst",
+    "starts_only",
+    "stops_only",
+    "singles_starts",
+    "singles_stops",
+    "low_tof_cutoff",
+]
+LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
+HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 # Various configurations to support L1b processing of individual data products
 # Much of these are described in the algorithm document in chapter 11 ("Data
 # Level 1B")
@@ -1072,6 +1090,7 @@ SOLAR_WIND_POSITIONS = [0]
 PUI_POSITIONS = SW_POSITIONS
 L2_GEOMETRIC_FACTOR = 0.013
 L2_HI_NUMBER_OF_SSD = 12.0
+IALIRT_HI_NUMBER_OF_SSD_PER_GROUP = 3.0
 
 L2_HI_SECTORED_ANGLE = np.array(
     [
@@ -1139,3 +1158,52 @@ LO_POSITION_TO_ELEVATION_ANGLE = {
         13: 180,
     },
 }
+
+# SSD ID to Elevation Angle
+# The index corresponds to the SSD ID. Missing SSD IDs are represented with np.nan.
+SSD_ID_TO_ELEVATION = np.array(
+    [
+        150.0,
+        138.6,
+        np.nan,
+        115.7,
+        90.0,
+        64.3,
+        np.nan,
+        41.4,
+        30.0,
+        41.4,
+        np.nan,
+        64.3,
+        90.0,
+        115.7,
+        np.nan,
+        138.6,
+    ]
+)
+
+# gain lookup table
+GAIN_ID_TO_STR = {1: "LG", 2: "MG", 3: "HG"}
+
+# SSD ID to Spin Angle (degrees)
+# The index corresponds to the SSD ID. Missing SSD IDs are represented with np.nan.
+SSD_ID_TO_SPIN_ANGLE = np.array(
+    [
+        277.50,
+        236.61,
+        np.nan,
+        221.19,
+        217.5,
+        221.19,
+        np.nan,
+        236.61,
+        277.50,
+        318.39,
+        np.nan,
+        333.81,
+        337.50,
+        333.81,
+        np.nan,
+        318.39,
+    ]
+)

@@ -3,14 +3,21 @@
 import logging
 import pathlib
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing.codice import constants
+from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
+from imap_processing.codice.codice_l1b import convert_to_rates
 from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -182,10 +189,66 @@ def create_xarray_dataset(
     return dataset
 
 
+def convert_to_intensities(
+    cod_hi_l1b_data: xr.Dataset, l2_lut_path: pathlib.Path, species: str
+) -> NDArray:
+    """
+    Calculate intensities.
+
+    Parameters
+    ----------
+    cod_hi_l1b_data : xr.Dataset
+        L1b data.
+    l2_lut_path : pathlib.Path
+        L2 LUT path.
+    species : str
+        CoDICE Hi species.
+
+    Returns
+    -------
+    intensity : np.array
+        L2 CoDICE-Hi intensities.
+
+    Notes
+    -----
+    Equation from section 13.1 in the CoDICE Algorithm Document.
+    """
+    # Average of the hydrogen efficiencies.
+    efficiencies_df = pd.read_csv(l2_lut_path)
+    species_efficiency = efficiencies_df.sort_values(by="energy_bin")
+    eps_ig = species_efficiency[["group_0", "group_1", "group_2", "group_3"]].to_numpy(
+        float
+    )
+
+    # For omni over 3 SSDs:
+    g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
+
+    # Calculate energy passband from L1B data
+    energy_passbands = (
+        cod_hi_l1b_data[f"energy_{species}_plus"]
+        + cod_hi_l1b_data[f"energy_{species}_minus"]
+    ).values[:, np.newaxis]
+
+    denom = g_g * eps_ig * energy_passbands  # (15, 4)
+    # reshape to broadcast along h's first and third dimensions
+    denom = denom[None, :, None, :]
+
+    # Rates in shape (n_spins, energy, spin_sector, inst_az - this is group)
+    h = cod_hi_l1b_data[species].values
+
+    # Final intensities with same shape as h
+    intensity = h / denom  # shape (4, 15, 4, 4); units #/(cm^2 sr s MeV/nuc)
+
+    return intensity
+
+
 def process_codice(
     dataset: xr.Dataset,
-    lut_path: pathlib.Path,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    l1a_lut_path: pathlib.Path,
+    l2_lut_path: pathlib.Path,
+    sensor: str,
+    l2_geometric_factor_path: Path | None = None,
+) -> tuple:
     """
     Create final data products.
 
@@ -193,12 +256,20 @@ def process_codice(
     ----------
     dataset : xr.Dataset
         Decommed L0 data.
-    lut_path : pathlib.Path
+    l1a_lut_path : pathlib.Path
         L1A LUT path.
+    l2_lut_path : pathlib.Path
+        L2 LUT path.
+    sensor : str
+        Sensor (codice_hi or codice_lo).
+    l2_geometric_factor_path : pathlib.Path
+        Optional geometric factor path based on the sensor (required by Lo).
 
     Returns
     -------
-    codice_data : tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    cod_lo_data : dict
+        Dictionary of final data product.
+    codice_hi_data : dict
         Dictionary of final data product.
 
     Notes
@@ -209,62 +280,84 @@ def process_codice(
     - Calculate L2 CoDICE pseudodensities (pg 37 of Algorithm Document)
     - Calculate the public data products
     """
-    grouped_cod_lo_data = find_groups(
-        dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
-    )
-    grouped_cod_hi_data = find_groups(
-        dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
-    )
-    unique_cod_lo_groups = np.unique(grouped_cod_lo_data["group"])
-    unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
+    logger.info("Processing CoDICE.")
 
-    cod_lo_grouped = []
-    cod_hi_grouped = []
+    codice_lo_data: list[dict[str, Any]] = []
+    codice_hi_data: list[dict[str, Any]] = []
 
-    # Processing for l1a.
-    if unique_cod_lo_groups.size > 0:
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = calculate_time(dataset["sc_sclk_sec"], dataset["sc_sclk_sub_sec"], 256)
+    # Add required parameters.
+    dataset["met"] = met
+
+    if sensor == "codice_lo":
+        logger.info("Processing CoDICE-Lo.")
+        grouped_cod_lo_data = find_groups(
+            dataset, (0, COD_LO_COUNTER), "cod_lo_counter", "cod_lo_acq"
+        )
+        unique_cod_lo_groups = np.unique(grouped_cod_lo_data["group"])
+
+    if sensor == "codice_hi":
+        logger.info("Processing CoDICE-Hi.")
+        grouped_cod_hi_data = find_groups(
+            dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
+        )
+        unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
+
+    if sensor == "codice_lo" and unique_cod_lo_groups.size > 0:
         for group in unique_cod_lo_groups:
             cod_lo_data_stream = concatenate_bytes(grouped_cod_lo_data, group, "lo")
 
             # Decompress binary stream
-            cod_lo_grouped.append(cod_lo_data_stream)
+            met = grouped_cod_lo_data["met"][
+                (grouped_cod_lo_data["group"] == group).values
+            ]
 
-        cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
-            cod_lo_grouped
-        )
-        cod_lo_dataset = create_xarray_dataset(
-            cod_lo_science_values, cod_lo_metadata_values, "lo", lut_path
-        )
-        result = l1a_lo_species(cod_lo_dataset, lut_path)  # noqa
+            cod_lo_science_values, cod_lo_metadata_values = process_ialirt_data_streams(
+                [cod_lo_data_stream]
+            )
+            cod_lo_dataset = create_xarray_dataset(
+                cod_lo_science_values, cod_lo_metadata_values, "lo", l1a_lut_path
+            )
+            result = l1a_lo_species(cod_lo_dataset, l1a_lut_path)  # noqa
 
-    if unique_cod_hi_groups.size > 0:
+    if sensor == "codice_hi" and unique_cod_hi_groups.size > 0:
         for group in unique_cod_hi_groups:
             cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
 
             # Decompress binary stream
-            cod_hi_grouped.append(cod_hi_data_stream)
+            met = grouped_cod_hi_data["met"][
+                (grouped_cod_hi_data["group"] == group).values
+            ]
 
-        cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
-            cod_hi_grouped
-        )
-        cod_hi_dataset = create_xarray_dataset(  # noqa
-            cod_hi_science_values, cod_hi_metadata_values, "hi", lut_path
-        )
+            cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
+                [cod_hi_data_stream]
+            )
+            cod_hi_dataset = create_xarray_dataset(
+                cod_hi_science_values, cod_hi_metadata_values, "hi", l1a_lut_path
+            )
+            l1a_hi = l1a_ialirt_hi(cod_hi_dataset, l1a_lut_path)
+            l1b_hi = convert_to_rates(
+                l1a_hi,
+                "hi-ialirt",
+            )
+            l2_hi = convert_to_intensities(l1b_hi, l2_lut_path, "h")
+            # Put in Decimal format so DynamoDB can read it.
+            dec_l2_hi = np.vectorize(lambda x: Decimal(f"{float(x):.3f}"))(
+                l2_hi
+            ).tolist()
 
-    # TODO: calculate rates
-    #       This will be done in codice.codice_l1b
+            codice_hi_data.append(
+                {
+                    "apid": 478,
+                    "met": int(met[0]),
+                    "met_in_utc": met_to_utc(met[0]).split(".")[0],
+                    "ttj2000ns": int(met_to_ttj2000ns(met[0])),
+                    "instrument": f"{sensor}",
+                    f"{sensor}_epoch": [int(epoch) for epoch in l1b_hi["epoch"]],
+                    f"{sensor}_l2_hi": dec_l2_hi,
+                }
+            )
 
-    # TODO: calculate L2 CoDICE pseudodensities
-    #       This will be done in codice.codice_l2
-
-    # TODO: calculate the public data products
-    #       This will be done in this module
-
-    # Create mock dataset for I-ALiRT SIT
-    # TODO: Once I-ALiRT test data is acquired that actually has data in it,
-    #       we should be able to properly populate the I-ALiRT data, but for
-    #       now, just create lists of dicts.
-    cod_lo_data: list[dict[str, Any]] = []
-    cod_hi_data: list[dict[str, Any]] = []
-
-    return cod_lo_data, cod_hi_data
+    return codice_lo_data, codice_hi_data
