@@ -250,7 +250,6 @@ def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
     spin_run_inds = np.where(spin_runs == 15)[0]
 
     if len(spin_run_inds) == 0:
-        logger.warning("No sector mode data found in the rates dataset.")
         return None
 
     # Get the start indices of each sector mode spin
