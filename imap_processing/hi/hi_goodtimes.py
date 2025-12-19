@@ -4,7 +4,6 @@ import logging
 import re
 from enum import IntEnum
 from pathlib import Path
-from typing import Self
 
 import numpy as np
 import xarray as xr
@@ -33,15 +32,106 @@ class CullCode(IntEnum):
     LOOSE = 1
 
 
-# mypy doesn't like subclassing Dataset
-class Goodtimes(xr.Dataset):  # type: ignore[misc]
+def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
     """
-    IMAP-Hi Good Times data structure.
+    Create goodtimes dataset from L1A Direct Event data.
 
-    Tracks good/bad time intervals for a single Pointing based on validation
-    checks defined in the IMAP-Hi Algorithm Document Section 2.2.4 and 2.3.2.
+    Initializes all times and spin bins as good (cull_flags=0) for complete
+    8-spin periods. Since we receive one packet every 4 spins but only record
+    MET every 8 spins, we expect MET values to appear in pairs. Only MET values
+    that appear as duplicates (pairs) are included, as single occurrences indicate
+    incomplete 8-spin periods.
 
-    The data structure maintains a cull_flags array initialized to all zeros (good).
+    Parameters
+    ----------
+    l1a_de : xarray.Dataset
+        L1A direct event data for this pointing. Used to extract MET timestamps
+        for each 8-spin interval.
+
+    Returns
+    -------
+    xarray.Dataset
+        Initialized goodtimes dataset with cull_flags set to 0 (all good) for
+        complete 8-spin periods only. Access goodtimes methods via the
+        .goodtimes accessor (e.g., dataset.goodtimes.remove_times()).
+    """
+    logger.info("Creating Goodtimes from L1A Direct Event data")
+
+    # Extract MET times from packet metadata
+    # Each MET represents one 8-spin histogram packet interval
+    # Format: seconds + subseconds/1000
+    met_all = (
+        l1a_de["meta_seconds"].astype(float)
+        + l1a_de["meta_subseconds"].astype(float) / 1000
+    )
+    logger.debug(f"Extracted {len(met_all)} total MET entries from L1A DE data")
+
+    # Find unique MET values, their counts, and indices of first occurrences
+    unique_mets, first_indices, counts = np.unique(
+        met_all.values, return_index=True, return_counts=True
+    )
+    logger.debug(f"Found {len(unique_mets)} unique MET values")
+
+    # Keep only MET values that appear as pairs (count == 2)
+    paired_mask = counts == 2
+    first_occurrence_indices = first_indices[paired_mask]
+
+    n_paired = int(np.sum(paired_mask))
+    n_unpaired = len(unique_mets) - n_paired
+    logger.info(
+        f"Filtered to {n_paired} complete 8-spin periods "
+        f"(excluded {n_unpaired} incomplete periods)"
+    )
+
+    # Extract data for paired METs only
+    met = met_all.isel(epoch=first_occurrence_indices)
+    esa_step = l1a_de["esa_step"].isel(epoch=first_occurrence_indices)
+
+    # Create coordinates
+    coords = {
+        "met": met.values,
+        "spin_bin": np.arange(90),
+    }
+
+    # Create data variables
+    # Initialize cull_flags - all good (0) by default
+    # Shape: (n_met_timestamps, 90 spin_bins)
+    # Per alg doc Section 2.2.4: 90-element arrays, one per histogram packet
+    data_vars = {
+        "cull_flags": xr.DataArray(
+            np.zeros((len(met), 90), dtype=np.uint8),
+            dims=["met", "spin_bin"],
+        ),
+        "esa_step": esa_step,
+    }
+
+    # Create attributes
+    sensor_number = parse_sensor_number(l1a_de.attrs["Logical_source"])
+    match = re.match(r"repoint(?P<pointing_num>\d{5})", l1a_de.attrs["Repointing"])
+    if not match:
+        raise ValueError(
+            f"Unable to parse sensor number from l1a_de Repointing "
+            f"attribute: {l1a_de.attrs['Repointing']}"
+        )
+    attrs = {
+        "sensor": f"Hi{sensor_number}",
+        "pointing": int(match["pointing_num"]),
+    }
+
+    return xr.Dataset(data_vars, coords, attrs)
+
+
+@xr.register_dataset_accessor("goodtimes")
+class GoodtimesAccessor:
+    """
+    Extend xarray.Dataset with accessor for IMAP-Hi Good Times operations.
+
+    Provides methods to track and manage good/bad time intervals for a single
+    Pointing based on validation checks defined in the IMAP-Hi Algorithm
+    Document Section 2.2.4 and 2.3.2.
+
+    The accessor operates on xr.Dataset objects created by create_goodtimes_dataset().
+    The dataset maintains a cull_flags array initialized to all zeros (good).
     As bad times are identified by validation algorithms, they are flagged via
     the `remove_times()` method with a non-zero cull code.
 
@@ -49,7 +139,7 @@ class Goodtimes(xr.Dataset):  # type: ignore[misc]
       * 0 : Good time (default)
       * 1-N : Bad time, with specific cull reason code
 
-    xarray.Dataset structure:
+    Expected xarray.Dataset structure:
       * Dimensions:
         * met : int
           Number of MET timestamps (one per 8-spin histogram packet, ~90 per pointing)
@@ -70,95 +160,22 @@ class Goodtimes(xr.Dataset):  # type: ignore[misc]
          Sensor identifier ('45sensor' or '90sensor')
         * pointing : int
          Pointing number for this dataset
+
+    Parameters
+    ----------
+    xarray_obj : xarray.Dataset
+        The xarray Dataset to wrap with goodtimes accessor functionality.
+
+    Examples
+    --------
+    >>> gt_dataset = create_goodtimes_dataset(l1a_de)
+    >>> gt_dataset.goodtimes.remove_times(met=1000.5, cull=CullCode.LOOSE)
+    >>> intervals = gt_dataset.goodtimes.get_good_intervals()
     """
 
-    @classmethod
-    def from_l1a_de(cls, l1a_de: xr.Dataset) -> Self:
-        """
-        Create Goodtimes object from L1A Direct Event data.
-
-        Initializes all times and spin bins as good (cull_flags=0) for complete
-        8-spin periods. Since we receive one packet every 4 spins but only record
-        MET every 8 spins, we expect MET values to appear in pairs. Only MET values
-        that appear as duplicates (pairs) are included, as single occurrences indicate
-        incomplete 8-spin periods.
-
-        Parameters
-        ----------
-        l1a_de : xarray.Dataset
-            L1A direct event data for this pointing. Used to extract MET timestamps
-            for each 8-spin interval.
-
-        Returns
-        -------
-        Goodtimes
-            Initialized Goodtimes object with cull_flags set to 0 (all good) for
-            complete 8-spin periods only.
-        """
-        logger.info("Creating Goodtimes from L1A Direct Event data")
-
-        # Extract MET times from packet metadata
-        # Each MET represents one 8-spin histogram packet interval
-        # Format: seconds + subseconds/1000
-        met_all = (
-            l1a_de["meta_seconds"].astype(float)
-            + l1a_de["meta_subseconds"].astype(float) / 1000
-        )
-        logger.debug(f"Extracted {len(met_all)} total MET entries from L1A DE data")
-
-        # Find unique MET values, their counts, and indices of first occurrences
-        unique_mets, first_indices, counts = np.unique(
-            met_all.values, return_index=True, return_counts=True
-        )
-        logger.debug(f"Found {len(unique_mets)} unique MET values")
-
-        # Keep only MET values that appear as pairs (count == 2)
-        paired_mask = counts == 2
-        first_occurrence_indices = first_indices[paired_mask]
-
-        n_paired = int(np.sum(paired_mask))
-        n_unpaired = len(unique_mets) - n_paired
-        logger.info(
-            f"Filtered to {n_paired} complete 8-spin periods "
-            f"(excluded {n_unpaired} incomplete periods)"
-        )
-
-        # Extract data for paired METs only
-        met = met_all.isel(epoch=first_occurrence_indices)
-        esa_step = l1a_de["esa_step"].isel(epoch=first_occurrence_indices)
-
-        # Create coordinates
-        coords = {
-            "met": met.values,
-            "spin_bin": np.arange(90),
-        }
-
-        # Create data variables
-        # Initialize cull_flags - all good (0) by default
-        # Shape: (n_met_timestamps, 90 spin_bins)
-        # Per alg doc Section 2.2.4: 90-element arrays, one per histogram packet
-        data_vars = {
-            "cull_flags": xr.DataArray(
-                np.zeros((len(met), 90), dtype=np.uint8),
-                dims=["met", "spin_bin"],
-            ),
-            "esa_step": esa_step,
-        }
-
-        # Create attributes
-        sensor_number = parse_sensor_number(l1a_de.attrs["Logical_source"])
-        match = re.match(r"repoint(?P<pointing_num>\d{5})", l1a_de.attrs["Repointing"])
-        if not match:
-            raise ValueError(
-                f"Unable to parse sensor number from l1a_de Repointing "
-                f"attribute: {l1a_de.attrs['Repointing']}"
-            )
-        attrs = {
-            "sensor": f"Hi{sensor_number}",
-            "pointing": int(match["pointing_num"]),
-        }
-
-        return cls(data_vars, coords, attrs)
+    def __init__(self, xarray_obj: xr.Dataset) -> None:
+        """Initialize the accessor with an xarray Dataset."""
+        self._obj = xarray_obj
 
     def remove_times(
         self,
@@ -232,7 +249,7 @@ class Goodtimes(xr.Dataset):  # type: ignore[misc]
         if np.any((bins_array < 0) | (bins_array >= 90)):
             raise ValueError("Spin bins must be in range [0, 89]")
 
-        met_values = self.coords["met"].values
+        met_values = self._obj.coords["met"].values
 
         # Handle time range input (tuple of start, end)
         if isinstance(met, tuple) and len(met) == 2:
@@ -266,7 +283,7 @@ class Goodtimes(xr.Dataset):  # type: ignore[misc]
             f"Flagging {n_times} MET time(s) x {n_bins} spin bin(s) with "
             f"cull code {cull}"
         )
-        self["cull_flags"].values[np.ix_(met_indices, bins_array)] = cull
+        self._obj["cull_flags"].values[np.ix_(met_indices, bins_array)] = cull
 
     def get_good_intervals(self) -> np.ndarray:
         """
@@ -296,9 +313,9 @@ class Goodtimes(xr.Dataset):  # type: ignore[misc]
         """
         logger.debug("Extracting good time intervals")
         intervals: list[np.void] = []
-        met_values = self.coords["met"].values
-        cull_flags = self["cull_flags"].values
-        esa_steps = self["esa_step"].values
+        met_values = self._obj.coords["met"].values
+        cull_flags = self._obj["cull_flags"].values
+        esa_steps = self._obj["esa_step"].values
 
         if len(met_values) == 0:
             logger.warning("No MET values found, returning empty intervals array")
@@ -404,13 +421,14 @@ class Goodtimes(xr.Dataset):  # type: ignore[misc]
             - fraction_good: Fraction of bins that are good
             - cull_code_counts: Dict mapping cull codes to counts
         """
-        total_bins = self["cull_flags"].size
-        good_bins = int(np.sum(self["cull_flags"].values == 0))
+        total_bins = self._obj["cull_flags"].size
+        good_bins = int(np.sum(self._obj["cull_flags"].values == 0))
         culled_bins = total_bins - good_bins
 
         # Count occurrences of each cull code
         unique_codes, counts = np.unique(
-            self["cull_flags"].values[self["cull_flags"].values > 0], return_counts=True
+            self._obj["cull_flags"].values[self._obj["cull_flags"].values > 0],
+            return_counts=True,
         )
         cull_code_counts = dict(
             zip(unique_codes.tolist(), counts.tolist(), strict=False)
@@ -424,7 +442,7 @@ class Goodtimes(xr.Dataset):  # type: ignore[misc]
             "cull_code_counts": cull_code_counts,
         }
 
-    def to_txt(self, output_path: Path) -> Path:
+    def write_txt(self, output_path: Path) -> Path:
         """
         Write good times to text file in the format specified by algorithm document.
 
@@ -447,8 +465,8 @@ class Goodtimes(xr.Dataset):  # type: ignore[misc]
 
         with open(output_path, "w") as f:
             for interval in intervals:
-                pointing = self.attrs.get("pointing", 0)
-                sensor = self.attrs.get("sensor", "45sensor")
+                pointing = self._obj.attrs.get("pointing", 0)
+                sensor = self._obj.attrs.get("sensor", "45sensor")
 
                 # Format:
                 # pointing met_start met_end spin_bin_low spin_bin_high sensor esa_step
