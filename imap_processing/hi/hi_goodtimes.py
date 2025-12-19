@@ -110,7 +110,7 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
     match = re.match(r"repoint(?P<pointing_num>\d{5})", l1a_de.attrs["Repointing"])
     if not match:
         raise ValueError(
-            f"Unable to parse sensor number from l1a_de Repointing "
+            f"Unable to parse pointing number from l1a_de Repointing "
             f"attribute: {l1a_de.attrs['Repointing']}"
         )
     attrs = {
@@ -157,7 +157,7 @@ class GoodtimesAccessor:
           ESA energy step for each MET timestamp
       * Attributes
         * sensor : str
-         Sensor identifier ('45sensor' or '90sensor')
+         Sensor identifier ('Hi45' or 'Hi90')
         * pointing : int
          Pointing number for this dataset
 
