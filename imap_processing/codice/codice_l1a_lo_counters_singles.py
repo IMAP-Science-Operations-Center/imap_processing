@@ -164,7 +164,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
                 attrs=cdf_attrs.get_variable_attributes("inst_az", check_schema=False),
             ),
             "inst_az_label": xr.DataArray(
-                np.arange(inst_az, dtype=np.uint8).astype(str),
+                (np.arange(inst_az, dtype=np.uint8) + 1).astype(str),
                 dims=("inst_az",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "inst_az_label", check_schema=False
