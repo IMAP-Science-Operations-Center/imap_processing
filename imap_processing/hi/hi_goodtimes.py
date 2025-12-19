@@ -251,6 +251,20 @@ class GoodtimesAccessor:
 
         met_values = self._obj.coords["met"].values
 
+        # check for met times out of range
+        met_array = np.atleast_1d(met)
+        # Add the difference between the last two MET values to the valid range
+        # to get the time of the last MET + 8_spins
+        valid_met_range = (met_values[0], met_values[-1] + np.diff(met_values[-2:])[0])
+        invalid_met_mask = (met_array < valid_met_range[0]) | (
+            met_array > valid_met_range[-1]
+        )
+        if np.any(invalid_met_mask):
+            raise ValueError(
+                f"MET value(s) {met_array[invalid_met_mask]} are "
+                f"outside valid range: {valid_met_range}"
+            )
+
         # Handle time range input (tuple of start, end)
         if isinstance(met, tuple) and len(met) == 2:
             met_start, met_end = met
@@ -258,23 +272,10 @@ class GoodtimesAccessor:
             in_range = (met_values >= met_start) & (met_values <= met_end)
             met_indices = np.nonzero(in_range)[0]
         else:
-            # Convert met to array for consistent handling
-            met_array = np.atleast_1d(met)
-
             # Find indices of largest MET that is <= each met_val (vectorized)
             # searchsorted with side='right' gives first index where value would go
             # Subtract 1 to get the largest value <= met_val
             met_indices = np.searchsorted(met_values, met_array, side="right") - 1
-
-        # Check for invalid indices (< 0 or >= len(met_values))
-        valid_mask = (met_indices >= 0) & (met_indices < len(met_values) - 1)
-        if len(met_indices) == 0 or not np.all(valid_mask):
-            invalid_mets = met_array[~valid_mask] if len(met_array) > 1 else met_array
-            raise ValueError(
-                f"MET value(s) outside valid range: {invalid_mets}. "
-                f"Valid range: [{met_values[0]}, {met_values[-1]}]"
-            )
-        met_indices = met_indices[valid_mask]
 
         # Set cull_flags for all indices
         n_times = len(met_indices)
@@ -466,7 +467,7 @@ class GoodtimesAccessor:
         with open(output_path, "w") as f:
             for interval in intervals:
                 pointing = self._obj.attrs.get("pointing", 0)
-                sensor = self._obj.attrs.get("sensor", "45sensor")
+                sensor = self._obj.attrs["sensor"]
 
                 # Format:
                 # pointing met_start met_end spin_bin_low spin_bin_high sensor esa_step

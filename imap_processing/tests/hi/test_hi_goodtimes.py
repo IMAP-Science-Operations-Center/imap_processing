@@ -223,7 +223,7 @@ class TestRemoveTimes:
         met_vals = goodtimes_instance.coords["met"].values
         met_out_of_range = met_vals[-1] + 1000
 
-        with pytest.raises(ValueError, match="MET value\\(s\\) outside valid range"):
+        with pytest.raises(ValueError, match="MET value\\(s\\) "):
             goodtimes_instance.goodtimes.remove_times(met=met_out_of_range)
 
     def test_remove_times_overwrites_existing_cull(self, goodtimes_instance):
