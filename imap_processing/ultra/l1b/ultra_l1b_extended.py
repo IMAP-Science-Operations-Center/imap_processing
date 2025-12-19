@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
-from imap_processing.spice.spin import get_spin_data
+from imap_processing.spice.spin import interpolate_spin_data
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -968,38 +968,6 @@ def get_spin_start_indices(
     return start_inds, missing_aux_data_mask
 
 
-def get_spin_data_from_universal_spin_table(de_event_met: NDArray) -> pandas.DataFrame:
-    """
-    Get spin data from the universal spin table for each event.
-
-    Parameters
-    ----------
-    de_event_met : numpy.ndarray
-        Direct event MET.
-
-    Returns
-    -------
-    spin_data_per_event : pandas.DataFrame
-        Spin information for each event.
-    """
-    # Get the relevant spin parameters for each event
-    spin_df = get_spin_data()
-    ut_spin_start = spin_df["spin_start_met"].values
-    if np.any(
-        (de_event_met < np.min(ut_spin_start)) | (de_event_met > np.max(ut_spin_start))
-    ):
-        raise ValueError(
-            "Coarse MET time contains events outside of universal spin table time "
-            f"range ({np.min(ut_spin_start)} - {np.max(ut_spin_start)}). "
-            f"Found min={de_event_met.min()}, max={de_event_met.max()}."
-        )
-    ut_start_inds = (
-        np.searchsorted(spin_df["spin_start_met"].values, de_event_met, side="right")
-        - 1
-    )
-    return spin_df.iloc[ut_start_inds]
-
-
 def get_event_times(
     aux_dataset: xr.Dataset,
     de_event_met: NDArray,
@@ -1081,18 +1049,19 @@ def get_spin_info(aux_dataset: xr.Dataset, de_event_met: NDArray) -> xr.Dataset:
     # spin table using the start time to fill in the missing data.
     # This can happen for the first event if the aux data starts after the DE data.
     spin_data = (
-        get_spin_data_from_universal_spin_table(de_event_met[missing_events])
+        interpolate_spin_data(de_event_met[missing_events])
         if np.any(missing_events)
         else None
     )
 
-    for var in var_names.keys():
-        # Get the corresponding aux and universal table variable names
-        aux_name, ut_name = var_names[str(var)]
-        init_array = np.zeros_like(de_event_met)
+    for var, (aux_name, ut_name) in var_names.items():
+        init_array = np.zeros_like(de_event_met, dtype=np.float64)
         if np.any(missing_events) and spin_data is not None:
             # Get data from universal table for events missing aux data
             init_array[missing_events] = spin_data[ut_name].values
+            if ut_name == "spin_start_subsec_sclk":
+                # Convert from microseconds to milliseconds to match aux data units
+                init_array[missing_events] /= 1000.0
         # Get data from aux dataset for the rest of the events
         init_array[~missing_events] = aux_dataset[aux_name].values[start_inds]
         spin_info_per_event[var] = (("epoch",), init_array)

@@ -164,8 +164,8 @@ def calculate_de(
 
     (event_times, spin_starts) = get_event_times(
         aux_dataset,
-        de_dataset["phase_angle"].data,
         de_dataset["shcoarse"].data,
+        de_dataset["phase_angle"].data,
         spin_ds,
     )
 

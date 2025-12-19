@@ -524,8 +524,8 @@ def test_get_eventtimes(test_fixture, aux_dataset):
 
     event_times, spin_start_times = get_event_times(
         aux_dataset,
-        de_dataset["phase_angle"].values,
         de_dataset["shcoarse"].values,
+        de_dataset["phase_angle"].values,
     )
 
     # Check shapes
@@ -585,7 +585,7 @@ def test_get_spin_and_duration(test_fixture, aux_dataset):
 
 @pytest.mark.external_test_data
 def test_get_event_times_out_of_range(
-    test_fixture, aux_dataset, use_fake_spin_data_for_time, caplog
+    test_fixture, aux_dataset, use_fake_spin_data_for_time
 ):
     """Tests get_event_times with out of range values."""
     df_filt, _, _, de_dataset = test_fixture
@@ -600,8 +600,8 @@ def test_get_event_times_out_of_range(
     # This should not raise an error.
     event_times, spin_starts = get_event_times(
         aux_dataset,
-        de_dataset["phase_angle"].values,
         coarse_times,
+        de_dataset["phase_angle"].values,
     )
     assert event_times.shape == coarse_times.shape
     assert spin_starts.shape == coarse_times.shape

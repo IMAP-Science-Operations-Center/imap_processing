@@ -430,7 +430,7 @@ def get_spacecraft_exposure_times(
         shape = (spin_phase_steps, 1, n_pix).
     boundary_scale_factors : xarray.DataArray
         Boundary scale factors for each pixel at each spin phase.
-    aux_dataset : xarray.Dataset,
+    aux_dataset : xarray.Dataset
         Auxiliary dataset containing spin information.
     pointing_range_met : tuple
         Start and stop time of the pointing period in mission elapsed time.
