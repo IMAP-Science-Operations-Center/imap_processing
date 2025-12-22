@@ -133,8 +133,8 @@ def calculate_de(
     e_bin_l1a = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
     shape = (len(de_dataset["epoch"]), 3)
     sc_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     sc_dps_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
@@ -170,6 +170,7 @@ def calculate_de(
         de_dataset["phase_angle"].data[valid_mask],
         spin_ds.isel(epoch=valid_mask),
     )
+
     de_dict["spin"] = spin_ds.spin_number.data
     de_dict["event_times"] = event_times.astype(np.float64)
     # Pulse height
@@ -327,10 +328,13 @@ def calculate_de(
     # Account for counts=0 (event times have FILL value)
     valid_events = (event_times != FILLVAL_FLOAT32).copy()
     if repoint_id is not None:
+        # Check all valid event times to see which are in the pointing
         in_pointing = calculate_events_in_pointing(
             repoint_id, et_to_met(event_times[valid_events])
         )
+        # Initialize an array of all events as False
         events_to_flag = np.zeros(len(quality_flags), dtype=bool)
+        # Identify valid events that are outside the pointing
         events_to_flag[valid_events] = ~in_pointing
         # Update quality flags for valid events that are not in the pointing
         quality_flags[events_to_flag] |= ImapDEOutliersUltraFlags.DURINGREPOINT.value
@@ -423,7 +427,6 @@ def calculate_events_in_pointing(
         combined with the valid_events mask.
     """
     pointing_start_met, pointing_end_met = get_pointing_times_from_id(repoint_id)
-
     # Check which events are within the pointing
     in_pointing = (event_times >= pointing_start_met) & (
         event_times <= pointing_end_met
