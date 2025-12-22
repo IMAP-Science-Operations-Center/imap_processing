@@ -120,8 +120,6 @@ def write_pointing_frame_ck(
     parent_cks : list[str]
         Filenames of the CK kernels that the quaternions were derived from.
     """
-    id_imap_dps = spiceypy.gipool("FRAME_IMAP_DPS", 0, 1)
-
     comments = [
         "CK FOR IMAP_DPS FRAME",
         "==================================================================",
@@ -149,7 +147,7 @@ def write_pointing_frame_ck(
                 # End time of the segment.
                 segment["end_sclk_ticks"],
                 # Pointing frame ID.
-                int(id_imap_dps),
+                SpiceFrame.IMAP_DPS.value,
                 # Reference frame.
                 SpiceFrame.ECLIPJ2000.name,  # Reference frame
                 # Identifier.
