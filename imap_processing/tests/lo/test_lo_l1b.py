@@ -811,8 +811,12 @@ def test_resweep_histogram_success(anc_dependencies):
             "spin_bin_6": np.arange(60),
         },
     )
+    # Exposure factor is how many times we saw each ESA step during the sweep
+    # The first ESA level was repeated twice during the sweep and the second
+    # ESA level was skipped entirely. [1, 1, 3, 4, 5, 6, 7]
     exposure_factor_expected = np.full((2, 7, 60), 1)
     exposure_factor_expected[:, 0, :] = 2
+    exposure_factor_expected[:, 1, :] = 0
 
     l1b_histrate.h_counts[0, 0, 0] = 5
     l1b_histrate.h_counts[0, 1, 0] = 10
@@ -835,6 +839,9 @@ def test_resweep_histogram_success(anc_dependencies):
     assert l1b_histrates.o_counts[1, 2, 0] == 4
 
     assert np.array_equal(exposure_factor, exposure_factor_expected)
+    # Sanity check on making sure we get 7 ESA levels for each sweep
+    # regardless of which bin they are in
+    np.testing.assert_equal(np.sum(exposure_factor, axis=1), 7)
 
 
 def test_resweep_histogram_no_date(anc_dependencies):
@@ -860,8 +867,7 @@ def test_resweep_histogram_no_date(anc_dependencies):
 
     with pytest.raises(
         ValueError,
-        match="No sweep table entry found for date "
-        "2025-04-25T02:00:00.000 at epoch idx 0",
+        match="No sweep table entry found for date 2025-04-25",
     ):
         resweep_histogram_data(l1b_histrate, anc_dependencies)
 
