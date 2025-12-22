@@ -13,8 +13,8 @@ from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.pointing_frame import (
     POINTING_SEGMENT_DTYPE,
-    _average_quaternions,
     _create_rotation_matrix,
+    _mean_spin_axis,
     calculate_pointing_attitude_segments,
     generate_pointing_attitude_kernel,
     write_pointing_frame_ck,
@@ -165,20 +165,21 @@ def test_write_pointing_frame_ck(
     assert parent_file in lines[5]
 
 
-def test_average_quaternions(et_times, furnish_pointing_frame_kernels):
-    """Tests average_quaternions function."""
-    q_avg = _average_quaternions(et_times)
+def test_mean_spin_axis(et_times, furnish_pointing_frame_kernels):
+    """Tests _mean_spin_axis function."""
+    z_avg = _mean_spin_axis(et_times)
 
     # Generated from MATLAB code results
-    q_avg_expected = np.array([-0.6611, 0.4981, -0.5019, -0.2509])
-    np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-4)
+    z_avg_expected = spiceypy.q2m(
+        np.array([-0.6611, 0.4981, -0.5019, -0.2509])
+    ) @ np.array([0, 0, 1])
+    np.testing.assert_allclose(z_avg, z_avg_expected, atol=1e-4)
 
 
 def test_create_rotation_matrix(et_times, furnish_pointing_frame_kernels):
     """Tests create_rotation_matrix function."""
-    q_avg = _average_quaternions(et_times)
-    rotation_matrix = _create_rotation_matrix(q_avg)
-    z_avg = spiceypy.q2m(list(q_avg))[:, 2]
+    z_avg = _mean_spin_axis(et_times)
+    rotation_matrix = _create_rotation_matrix(z_avg)
 
     rotation_matrix_expected = np.array(
         [
