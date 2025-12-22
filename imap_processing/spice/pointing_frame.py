@@ -11,7 +11,8 @@ import spiceypy
 from imap_data_access import SPICEFilePath
 from numpy.typing import NDArray
 
-from imap_processing.spice.geometry import SpiceFrame, frame_transform
+from imap_processing.spice import IMAP_SC_ID
+from imap_processing.spice.geometry import SpiceBody, SpiceFrame, frame_transform
 from imap_processing.spice.repoint import get_repoint_data
 from imap_processing.spice.time import (
     TICK_DURATION,
@@ -217,10 +218,6 @@ def calculate_pointing_attitude_segments(
         f"Extracting mean spin axes for all Pointings that are"
         f" fully covered by the CK files: {[p.name for p in ck_paths]}"
     )
-    # Get IDs.
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
-    id_imap_sclk = spiceypy.gipool("CK_-43000_SCLK", 0, 1)
-    id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
 
     # This job relies on the batch starter to provide all the correct CK kernels
     # to cover the time range of the new repoint table.
@@ -230,7 +227,7 @@ def calculate_pointing_attitude_segments(
     et_end = -np.inf
     for ck_path in ck_paths:
         ck_cover = spiceypy.ckcov(
-            str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
+            str(ck_path), SpiceBody.IMAP_SPACECRAFT.value, True, "INTERVAL", 0, "TDB"
         )
         num_intervals = spiceypy.wncard(ck_cover)
         individual_ck_start, _ = spiceypy.wnfetd(ck_cover, 0)
@@ -308,10 +305,10 @@ def calculate_pointing_attitude_segments(
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
         # Convert start and end times to SCLK ticks.
         pointing_segments[i_pointing]["start_sclk_ticks"] = spiceypy.sce2c(
-            int(id_imap_sclk), pointing_start_et
+            IMAP_SC_ID, pointing_start_et
         )
         pointing_segments[i_pointing]["end_sclk_ticks"] = spiceypy.sce2c(
-            int(id_imap_sclk), pointing_end_et
+            IMAP_SC_ID, pointing_end_et
         )
 
     return pointing_segments
