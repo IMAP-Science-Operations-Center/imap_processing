@@ -1019,6 +1019,8 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             science_files = dependencies.get_file_paths(source="lo", data_type="l1a")
+            science_files += dependencies.get_file_paths(source="lo", data_type="l1b")
+
             ancillary_files = dependencies.get_file_paths(
                 source="lo", data_type="ancillary"
             )

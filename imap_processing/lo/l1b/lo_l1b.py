@@ -85,6 +85,11 @@ def lo_l1b(
         ds = l1b_histrates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
         datasets_to_return.append(ds)
 
+    if descriptor == "derates":
+        logger.info("\nProcessing IMAP-Lo L1B DE Rates...")
+        ds = calculate_de_rates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
+        datasets_to_return.append(ds)
+
     return datasets_to_return
 
 
@@ -1615,6 +1620,191 @@ def calculate_histogram_rates(
     )
 
     return l1b_histrates
+
+
+def calculate_de_rates(
+    sci_dependencies: dict,
+    anc_dependencies: list,
+    attr_mgr_l1b: ImapCdfAttributes,
+) -> xr.Dataset:
+    """
+    Calculate direct event rates histograms.
+
+    The histograms are per ASC (28 spins), so we need to
+    regroup the individual DEs from the l1b_de dataset into
+    their associated ASC and then bin them by ESA / spin bin.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        The science dependencies for the derates product.
+    anc_dependencies : list
+        List of ancillary file paths.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the L1B derates dataset attributes.
+
+    Returns
+    -------
+    l1b_derates : xr.Dataset
+        Dataset containing DE rates histograms.
+    """
+    l1b_de = sci_dependencies["imap_lo_l1b_de"]
+    l1a_spin = sci_dependencies["imap_lo_l1a_spin"]
+    l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
+    # Set the asc_start for each DE by removing the average spin cycle
+    # which is a function of esa_step
+    asc_start = l1b_de["spin_cycle"] - (7 + (l1b_de["esa_step"] - 1) * 2)
+
+    # Get unique ASC values and create a mapping from asc_start to index
+    unique_asc, unique_idx, asc_idx = np.unique(
+        asc_start.values, return_index=True, return_inverse=True
+    )
+    num_asc = len(unique_asc)
+
+    # Pre-extract arrays for faster access (avoid repeated xarray indexing)
+    esa_step_idx = l1b_de["esa_step"].values - 1  # Convert to 0-based index
+    # Convert spin_bin from 0.1 degree bins to 6 degree bins for coarse histograms
+    spin_bin = l1b_de["spin_bin"].values // 60
+    species = l1b_de["species"].values
+    coincidence_type = l1b_de["coincidence_type"].values
+
+    if len(anc_dependencies) == 0:
+        logger.warning("No ancillary dependencies provided, using linear stepping.")
+        energy_step_mapping = np.arange(7)
+    else:
+        # An array mapping esa step index to esa level for resweeping
+        energy_step_mapping = _get_esa_level_indices(asc_start, anc_dependencies)
+
+    # exposure time shape: (num_asc, num_esa_steps)
+    exposure_time = np.zeros((num_asc, 7), dtype=float)
+    # exposure_time_6deg = 4 * avg_spin_per_asc / 60
+    # 4 sweeps per ASC (28 / 7) in 60 bins
+    asc_avg_spin_durations = 4 * l1b_de["avg_spin_durations"].data[unique_idx] / 60
+    np.add.at(
+        exposure_time,
+        (slice(None), energy_step_mapping),
+        asc_avg_spin_durations[:, np.newaxis],
+    )
+
+    # Create output arrays
+    output_shape = (num_asc, 7, 60)
+    h_counts = np.zeros(output_shape)
+    o_counts = np.zeros(output_shape)
+    triple_counts = np.zeros(output_shape)
+    double_counts = np.zeros(output_shape)
+
+    # Species masks
+    h_mask = species == "H"
+    o_mask = species == "O"
+
+    # Coincidence type masks
+    triple_types = ["111111", "111100", "111000"]
+    double_types = [
+        "110100",
+        "110000",
+        "101101",
+        "101100",
+        "101000",
+        "100100",
+        "100101",
+        "100000",
+        "011100",
+        "011000",
+        "010100",
+        "010101",
+        "010000",
+        "001100",
+        "001101",
+        "001000",
+    ]
+    triple_mask = np.isin(coincidence_type, triple_types)
+    double_mask = np.isin(coincidence_type, double_types)
+
+    # Vectorized histogramming using np.add.at with full index arrays
+    np.add.at(h_counts, (asc_idx[h_mask], esa_step_idx[h_mask], spin_bin[h_mask]), 1)
+    np.add.at(o_counts, (asc_idx[o_mask], esa_step_idx[o_mask], spin_bin[o_mask]), 1)
+    np.add.at(
+        triple_counts,
+        (asc_idx[triple_mask], esa_step_idx[triple_mask], spin_bin[triple_mask]),
+        1,
+    )
+    np.add.at(
+        double_counts,
+        (asc_idx[double_mask], esa_step_idx[double_mask], spin_bin[double_mask]),
+        1,
+    )
+
+    ds = xr.Dataset(
+        coords={
+            # ASC start time in TTJ2000ns
+            "epoch": l1a_spin["epoch"],
+            "esa_step": np.arange(7),
+            "spin_bin": np.arange(60),
+        },
+    )
+    ds["h_counts"] = xr.DataArray(
+        h_counts,
+        dims=["epoch", "esa_step", "spin_bin"],
+    )
+    ds["o_counts"] = xr.DataArray(
+        o_counts,
+        dims=["epoch", "esa_step", "spin_bin"],
+    )
+    ds["triple_counts"] = xr.DataArray(
+        triple_counts,
+        dims=["epoch", "esa_step", "spin_bin"],
+    )
+    ds["double_counts"] = xr.DataArray(
+        double_counts,
+        dims=["epoch", "esa_step", "spin_bin"],
+    )
+    ds["exposure_time"] = xr.DataArray(
+        exposure_time,
+        dims=["epoch", "esa_step"],
+    )
+    ds["h_rates"] = ds["h_counts"] / ds["exposure_time"]
+    ds["o_rates"] = ds["o_counts"] / ds["exposure_time"]
+    ds["triple_rates"] = ds["triple_counts"] / ds["exposure_time"]
+    ds["double_rates"] = ds["double_counts"] / ds["exposure_time"]
+
+    # (N, 7)
+    unique_asc = xr.DataArray(unique_asc, dims=["epoch"])
+    ds["spin_cycle"] = unique_asc + 7 + (ds["esa_step"] - 1) * 2
+
+    # TODO: Add badtimes
+    ds["badtime"] = xr.zeros_like(ds["epoch"], dtype=int)
+
+    pivot_angle = _get_nearest_pivot_angle(ds["epoch"].values[0], l1b_nhk)
+    ds["pivot_angle"] = xr.DataArray([pivot_angle], dims=["pivot_angle"])
+
+    pointing_start_met, pointing_end_met = get_pointing_times(
+        ttj2000ns_to_met(ds["epoch"].values[0].item())
+    )
+    ds = set_esa_mode(pointing_start_met, pointing_end_met, anc_dependencies, ds)
+
+    ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_derates")
+    ds["epoch"].attrs = attr_mgr_l1b.get_variable_attributes("epoch")
+
+    return ds
+
+
+def _get_nearest_pivot_angle(epoch: int, ds_nhk: xr.Dataset) -> float:
+    """
+    Get the nearest pivot angle for the given epoch from the NHK dataset.
+
+    Parameters
+    ----------
+    epoch : int
+        The epoch in TTJ2000ns format.
+    ds_nhk : xr.Dataset
+        The NHK dataset containing pivot angle information.
+
+    Returns
+    -------
+    pivot_angle : float
+        The nearest pivot angle for the given epoch.
+    """
+    return ds_nhk["pcc_cumulative_cnt_pri"].sel(epoch=epoch, method="nearest").item()
 
 
 def _get_esa_level_indices(epochs: np.ndarray, anc_dependencies: list) -> np.ndarray:
