@@ -10,7 +10,10 @@ import spiceypy
 from imap_data_access import SPICEInput
 
 from imap_processing.spice import IMAP_SC_ID
-from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    spherical_to_cartesian,
+)
 from imap_processing.spice.pointing_frame import (
     POINTING_SEGMENT_DTYPE,
     _create_rotation_matrix,
@@ -19,7 +22,7 @@ from imap_processing.spice.pointing_frame import (
     generate_pointing_attitude_kernel,
     write_pointing_frame_ck,
 )
-from imap_processing.spice.time import TICK_DURATION
+from imap_processing.spice.time import TICK_DURATION, met_to_sclkticks, sct_to_et
 
 
 @pytest.fixture
@@ -31,6 +34,22 @@ def furnish_pointing_frame_kernels(furnish_kernels, spice_test_data_path):
         "imap_130.tf",
         "imap_science_100.tf",
         "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
+    ]
+    with furnish_kernels(required_kernels):
+        yield [str(spice_test_data_path / k) for k in required_kernels]
+
+
+@pytest.fixture
+def furnish_flight_ah_kernels(furnish_kernels, spice_test_data_path):
+    """List SPICE kernels."""
+    required_kernels = [
+        "naif0012.tls",
+        "imap_sclk_0000.tsc",
+        "imap_130.tf",
+        "imap_science_100.tf",
+        "imap_2025_338_2025_339_001.ah.bc",
+        "imap_2025_339_2025_339_001.ah.bc",
+        "imap_2025_339_2025_340_001.ah.bc",
     ]
     with furnish_kernels(required_kernels):
         yield [str(spice_test_data_path / k) for k in required_kernels]
@@ -165,14 +184,19 @@ def test_write_pointing_frame_ck(
     assert parent_file in lines[5]
 
 
-def test_mean_spin_axis(et_times, furnish_pointing_frame_kernels):
+@pytest.mark.external_test_data
+def test_mean_spin_axis(furnish_flight_ah_kernels):
     """Tests _mean_spin_axis function."""
+    # Pointing 69 start/end times as defined in imap_2025_351_01.repoint
+    met_range = np.array([502624925, 502711208])
+    et_range = sct_to_et(met_to_sclkticks(met_range))
+    et_times = np.linspace(et_range[0], et_range[1], int(et_range[1] - et_range[0]))
     z_avg = _mean_spin_axis(et_times)
 
-    # Generated from MATLAB code results
-    z_avg_expected = spiceypy.q2m(
-        np.array([-0.6611, 0.4981, -0.5019, -0.2509])
-    ) @ np.array([0, 0, 1])
+    # Generated from GLOWS average spin-axis
+    exp_z_avg_lat = 0.065
+    exp_z_avg_lon = 249.86
+    z_avg_expected = spherical_to_cartesian(np.array([1, exp_z_avg_lon, exp_z_avg_lat]))
     np.testing.assert_allclose(z_avg, z_avg_expected, atol=1e-4)
 
 

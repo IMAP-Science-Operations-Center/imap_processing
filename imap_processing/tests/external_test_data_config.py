@@ -138,6 +138,11 @@ EXTERNAL_TEST_DATA = [
     # Lo
     ("imap_lo_l1c_pset_20260101-repoint01261_v001.cdf", "lo/test_cdfs"),
 
+    # Pointing Attitude Kernel
+    ("imap_2025_338_2025_339_001.ah.bc", "spice/test_data/"),
+    ("imap_2025_339_2025_339_001.ah.bc", "spice/test_data/"),
+    ("imap_2025_339_2025_340_001.ah.bc", "spice/test_data/"),
+
     # Ultra
     ("FM90_Startup_20230711T081655.CCSDS", "ultra/data/l0/"),
     ("IMAP-Ultra45_r1_L1_V0_shortened.csv", "ultra/data/l1/"),

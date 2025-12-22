@@ -284,8 +284,8 @@ def calculate_pointing_attitude_segments(
             f"range: ({et_to_utc(pointing_start_et)}, {et_to_utc(pointing_end_et)})"
         )
 
-        # 1 spin/15 seconds; 10 quaternions / spin.
-        num_samples = (pointing_end_et - pointing_start_et) / 15 * 10
+        # Sample at 1Hz
+        num_samples = pointing_end_et - pointing_start_et
         # There were rounding errors when using spiceypy.pxform
         # so np.ceil and np.floor were used to ensure the start
         # and end times were within the ck range.
@@ -321,8 +321,10 @@ def _mean_spin_axis(et_times: np.ndarray) -> NDArray:
     """
     Compute the mean spin axis for a given time range.
 
-    The mean spin-axis is computed by taking the mean of the instantaneous
-    spin-axes evaluated at each input ET time.
+    The mean spin-axis is computed by taking the mean of the spacecraft z-axis
+    expressed in HAE Cartesian coordinates at each of the input et_times. The
+    mean is computed by finding the mean of each component of the vector across
+    time.
 
     Parameters
     ----------
@@ -370,9 +372,13 @@ def _create_rotation_matrix(z_avg: np.ndarray) -> NDArray:
         Rotation matrix.
     """
     # y_avg is perpendicular to both z_avg and the HAE Z-axis.
+    # Since z_avg will never point anywhere near the HAE Z-axis, this
+    # cross-product will always work to define the Pointing Y-axis
     y_avg = np.cross(z_avg, [0, 0, 1])
+    y_avg /= np.linalg.norm(y_avg)
     # x_avg is perpendicular to y_avg and z_avg.
     x_avg = np.cross(y_avg, z_avg)
+    x_avg /= np.linalg.norm(x_avg)
 
     # Construct the rotation matrix from x_avg, y_avg, z_avg
     rotation_matrix = np.asarray([x_avg, y_avg, z_avg])
