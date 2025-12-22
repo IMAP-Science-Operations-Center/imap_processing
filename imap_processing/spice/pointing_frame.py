@@ -332,7 +332,7 @@ def _mean_spin_axis(et_times: np.ndarray) -> NDArray:
     Returns
     -------
     z_avg : np.ndarray
-        Mean spin-axis. Shape is (n, 3) where n is the number of ET times.
+        Mean spin-axis. Shape is (3,), a single 3D vector (x, y, z).
     """
     # we use a quick and dirty method here for sampling the instantaneous
     # spin-axis.  Depending on how well the kernel input
