@@ -346,6 +346,10 @@ def _mean_spin_axis(et_times: np.ndarray) -> NDArray:
 
     # Compute the average spin axis by averaging each component across time
     z_avg = np.mean(z_inertial_hae, axis=0)
+    # We don't need to worry about the magnitude being close to zero when
+    # normalizing because the instantaneous spin-axes will always be close
+    # to the same direction.
+    z_avg /= np.linalg.norm(z_avg)
 
     return z_avg
 
@@ -357,7 +361,8 @@ def _create_rotation_matrix(z_avg: np.ndarray) -> NDArray:
     Parameters
     ----------
     z_avg : numpy.ndarray
-        Average spin-axis expressed in HAE coordinates.
+        Average spin-axis that has been normalized to have unit length expressed
+        in HAE coordinates.
 
     Returns
     -------
