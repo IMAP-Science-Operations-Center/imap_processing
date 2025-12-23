@@ -72,8 +72,8 @@ LO_IALIRT_M_OVER_Q = {
     "oplus7": 2.28,
     "oplus8": 2.0,
     "mg": 3.5,
-    "fe_loq": 3.85,
-    "fe_hiq": 7.25,
+    "fe_loq": 7.25,
+    "fe_hiq": 3.85,
 }
 
 
@@ -1046,7 +1046,12 @@ PIXEL_ORIENTATIONS = {
     126: "B",
     127: "B",
 }
-
+# TODO this will need to change. What if we add a variable in l1a
+#   128 by half spin index
+#   use half spin when computing intensities for both angular and species intensity
+#   This should be added to l1a so it can follow the data through processing
+#   (shape 128) -
+#
 # Lookup table for mapping half-spin (keys) to esa steps (values)
 # This is used to determine geometry factors L2
 HALF_SPIN_LUT = {
@@ -1088,8 +1093,6 @@ NSW_POSITIONS = [x for x in range(3, 22)]
 SW_POSITIONS = [0, 1, 2, 22, 23]
 SOLAR_WIND_POSITIONS = [0]
 PUI_POSITIONS = SW_POSITIONS
-L2_GEOMETRIC_FACTOR = 0.013
-L2_HI_NUMBER_OF_SSD = 12.0
 IALIRT_HI_NUMBER_OF_SSD_PER_GROUP = 3.0
 
 L2_HI_SECTORED_ANGLE = np.array(
