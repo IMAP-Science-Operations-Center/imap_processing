@@ -524,7 +524,7 @@ class TestIntervalDtype:
         """Test that INTERVAL_DTYPE has correct field types."""
         assert INTERVAL_DTYPE["met_start"] == np.float64
         assert INTERVAL_DTYPE["met_end"] == np.float64
-        assert INTERVAL_DTYPE["spin_bin_low"] == np.int32
-        assert INTERVAL_DTYPE["spin_bin_high"] == np.int32
-        assert INTERVAL_DTYPE["n_good_bins"] == np.int32
+        assert INTERVAL_DTYPE["spin_bin_low"] == np.uint8
+        assert INTERVAL_DTYPE["spin_bin_high"] == np.uint8
+        assert INTERVAL_DTYPE["n_good_bins"] == np.uint8
         assert INTERVAL_DTYPE["esa_step"] == np.uint8

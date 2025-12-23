@@ -17,9 +17,9 @@ INTERVAL_DTYPE = np.dtype(
     [
         ("met_start", np.float64),
         ("met_end", np.float64),
-        ("spin_bin_low", np.int32),
-        ("spin_bin_high", np.int32),
-        ("n_good_bins", np.int32),
+        ("spin_bin_low", np.uint8),
+        ("spin_bin_high", np.uint8),
+        ("n_good_bins", np.uint8),
         ("esa_step", np.uint8),
     ]
 )
@@ -423,8 +423,8 @@ class GoodtimesAccessor:
             - cull_code_counts: Dict mapping cull codes to counts
         """
         total_bins = self._obj["cull_flags"].size
-        good_bins = int(np.sum(self._obj["cull_flags"].values == 0))
-        culled_bins = total_bins - good_bins
+        culled_bins = np.count_nonzero(self._obj["cull_flags"])
+        good_bins = total_bins - culled_bins
 
         # Count occurrences of each cull code
         unique_codes, counts = np.unique(
