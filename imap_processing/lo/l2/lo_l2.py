@@ -94,6 +94,10 @@ def lo_l2(
 
     logger.info("Step 3: Converting to dataset and adding geometric factors")
     dataset = sky_map.to_dataset()
+
+    if cg_correction:
+        dataset["energy_sc"] /= dataset["exposure_factor"]
+
     dataset = add_geometric_factors(dataset, map_descriptor.species)
 
     logger.info("Step 4: Calculating rates and intensities")
@@ -393,6 +397,8 @@ def process_single_pset(
         pset_processed = apply_compton_getting_correction(
             pset_processed, energy_values_ev
         )
+
+        pset_processed["energy_sc"] *= pset_processed["exposure_factor"]
 
     # Always calculate ram-mask to identify ram/anti-ram bins
     pset_processed = calculate_ram_mask(pset_processed)
