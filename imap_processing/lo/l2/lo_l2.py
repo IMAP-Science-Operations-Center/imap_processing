@@ -762,12 +762,20 @@ def populate_geometric_factors(
         "geometric_factor_stat_uncert": f"GF_Trpl_{species.upper()}_unc",
     }
     if species == "h":
-        # NOTE: From an e-mail from Nathan on 2025-09-11
-        energy_delta_hires_values = [5.43, 10.02, 18.61, 33.31, 64.98, 131.64, 262.35]
-        energy_delta_hithr_values = [8.81, 16.04, 28.50, 53.13, 105.60, 219.67, 413.60]
+        # NOTE: From an e-mail from Nathan on 2025-09-11 (values converted to keV)
+        energy_delta_hires_values = (
+            np.array([5.43, 10.02, 18.61, 33.31, 64.98, 131.64, 262.35]) * 1e-3
+        )
+        energy_delta_hithr_values = (
+            np.array([8.81, 16.04, 28.50, 53.13, 105.60, 219.67, 413.60]) * 1e-3
+        )
     else:  # species == "o"
-        energy_delta_hires_values = [5.82, 11.10, 21.78, 41.47, 85.61, 180.67, 361.93]
-        energy_delta_hithr_values = [9.45, 17.84, 33.51, 66.61, 139.95, 302.24, 569.48]
+        energy_delta_hires_values = (
+            np.array([5.82, 11.10, 21.78, 41.47, 85.61, 180.67, 361.93]) * 1e-3
+        )
+        energy_delta_hithr_values = (
+            np.array([9.45, 17.84, 33.51, 66.61, 139.95, 302.24, 569.48]) * 1e-3
+        )
 
     # Get ESA mode from the map (assuming it's constant or we take the first)
     # TODO: Figure out how to handle esa_mode properly
@@ -788,15 +796,11 @@ def populate_geometric_factors(
     # Update delta_minus and delta_plus based on ESA mode
     # converting eV to keV
     if esa_mode == 0:  # HiRes
-        dataset["energy_delta_minus"].values = (
-            np.array(energy_delta_hires_values) * 1e-3
-        )
-        dataset["energy_delta_plus"].values = np.array(energy_delta_hires_values) * 1e-3
+        dataset["energy_delta_minus"].values = energy_delta_hires_values
+        dataset["energy_delta_plus"].values = energy_delta_hires_values
     else:  # HiThr
-        dataset["energy_delta_minus"].values = (
-            np.array(energy_delta_hithr_values) * 1e-3
-        )
-        dataset["energy_delta_plus"].values = np.array(energy_delta_hithr_values) * 1e-3
+        dataset["energy_delta_minus"].values = energy_delta_hithr_values
+        dataset["energy_delta_plus"].values = energy_delta_hithr_values
 
     return dataset
 

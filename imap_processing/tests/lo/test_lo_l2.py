@@ -1772,6 +1772,7 @@ class TestPopulateGeometricFactors:
                 )
         # Ensure that energy_deltas are in units of keV
         assert np.all(result["energy_delta_plus"].values < 1)
+        assert np.all(result["energy_delta_minus"].values < 1)
 
     def test_populate_geometric_factors_no_gf_species(self):
         """Test population for species without geometric factors."""
