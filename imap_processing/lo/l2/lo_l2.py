@@ -786,12 +786,17 @@ def populate_geometric_factors(
         dataset[var].values = gf_dataset[col].values
 
     # Update delta_minus and delta_plus based on ESA mode
+    # converting eV to keV
     if esa_mode == 0:  # HiRes
-        dataset["energy_delta_minus"].values = energy_delta_hires_values
-        dataset["energy_delta_plus"].values = energy_delta_hires_values
+        dataset["energy_delta_minus"].values = (
+            np.array(energy_delta_hires_values) * 1e-3
+        )
+        dataset["energy_delta_plus"].values = np.array(energy_delta_hires_values) * 1e-3
     else:  # HiThr
-        dataset["energy_delta_minus"].values = energy_delta_hithr_values
-        dataset["energy_delta_plus"].values = energy_delta_hithr_values
+        dataset["energy_delta_minus"].values = (
+            np.array(energy_delta_hithr_values) * 1e-3
+        )
+        dataset["energy_delta_plus"].values = np.array(energy_delta_hithr_values) * 1e-3
 
     return dataset
 
