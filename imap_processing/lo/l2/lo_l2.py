@@ -875,8 +875,8 @@ def calculate_all_rates_and_intensities(
         logger.info("Interpolating map intensities to helio-frame energies")
         dataset = interpolate_map_flux_to_helio_frame(
             dataset,
-            dataset["energy"],
-            dataset["energy"],
+            dataset["energy"] * 1000,
+            dataset["energy"] * 1000,
             ["ena_intensity", "bg_intensity"],
         )
 
