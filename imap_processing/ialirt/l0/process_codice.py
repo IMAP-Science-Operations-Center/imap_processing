@@ -317,25 +317,23 @@ def calculate_ratios(
         )  # (epoch,)
         pseudo_density_dict[species] = summed_pseudo_density.values
 
-    species_list = constants.LO_IALIRT_VARIABLE_NAMES
-
     # Denominator.
     # Note that outside of this test a zero value denominator
     # will lead to a null value.
     # The use of zeros here is only to match the test data as
     # confirmed by the instrument team.
     o_abundance_denom = (
-        pseudo_density_dict[species_list[3]]
-        + pseudo_density_dict[species_list[4]]
-        + pseudo_density_dict[species_list[5]]
+        pseudo_density_dict["oplus6"]
+        + pseudo_density_dict["oplus7"]
+        + pseudo_density_dict["oplus8"]
     )
 
     c_over_o_abundance_num = (
-        pseudo_density_dict[species_list[1]] + pseudo_density_dict[species_list[2]]
+        pseudo_density_dict["cplus5"] + pseudo_density_dict["cplus6"]
     )
-    mg_over_o_abundance_num = pseudo_density_dict[species_list[6]]
+    mg_over_o_abundance_num = pseudo_density_dict["mg"]
     fe_over_o_abundance_num = (
-        pseudo_density_dict[species_list[7]] + pseudo_density_dict[species_list[8]]
+        pseudo_density_dict["fe_loq"] + pseudo_density_dict["fe_hiq"]
     )
 
     if float(o_abundance_denom) != 0:
@@ -353,26 +351,26 @@ def calculate_ratios(
             FILLVAL_FLOAT32,
         )
 
-    if float(pseudo_density_dict[species_list[1]]) != 0:
+    if float(pseudo_density_dict["cplus5"]) != 0:
         c_plus_6_over_c_plus_5 = (
-            pseudo_density_dict[species_list[2]] / pseudo_density_dict[species_list[1]]
+            pseudo_density_dict["cplus6"] / pseudo_density_dict["cplus5"]
         )
 
         c_plus_6_over_c_plus_5 = Decimal(f"{c_plus_6_over_c_plus_5:.3f}")
     else:
         c_plus_6_over_c_plus_5 = FILLVAL_FLOAT32
 
-    if float(pseudo_density_dict[species_list[3]]) != 0:
+    if float(pseudo_density_dict["oplus6"]) != 0:
         o_plus_7_over_o_plus_6 = (
-            pseudo_density_dict[species_list[4]] / pseudo_density_dict[species_list[3]]
+            pseudo_density_dict["oplus7"] / pseudo_density_dict["oplus6"]
         )
         o_plus_7_over_o_plus_6 = Decimal(f"{o_plus_7_over_o_plus_6:.3f}")
     else:
         o_plus_7_over_o_plus_6 = FILLVAL_FLOAT32
 
-    if float(pseudo_density_dict[species_list[8]]) != 0:
+    if float(pseudo_density_dict["fe_hiq"]) != 0:
         fe_low_over_fe_high = (
-            pseudo_density_dict[species_list[7]] / pseudo_density_dict[species_list[8]]
+            pseudo_density_dict["fe_loq"] / pseudo_density_dict["fe_hiq"]
         )
         fe_low_over_fe_high = Decimal(f"{fe_low_over_fe_high:.3f}")
     else:
