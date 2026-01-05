@@ -74,12 +74,12 @@ class TestGoodtimesFromL1aDe:
 
         assert isinstance(gt, xr.Dataset)
 
-    def test_from_l1a_de_filters_unpaired_mets(self, mock_l1a_de):
-        """Test that unpaired METs are filtered out."""
+    def test_from_l1a_de_keeps_unique_mets(self, mock_l1a_de):
+        """Test that all unique METs are included."""
         gt = create_goodtimes_dataset(mock_l1a_de)
 
-        # Should have 10 paired METs (20 total entries -> 10 unique paired)
-        assert len(gt.coords["met"]) == 10
+        # Should have 12 unique METs (10 paired + 2 unpaired)
+        assert len(gt.coords["met"]) == 12
 
     def test_from_l1a_de_dimensions(self, goodtimes_instance):
         """Test that dimensions are correct."""
@@ -112,14 +112,11 @@ class TestGoodtimesFromL1aDe:
         assert goodtimes_instance["cull_flags"].shape == (n_met, 90)
 
     def test_from_l1a_de_esa_step_preserved(self, mock_l1a_de, goodtimes_instance):
-        """Test that ESA step values are preserved for paired METs."""
-        # Get first occurrence of each paired MET
+        """Test that ESA step values are preserved for all unique METs."""
+        # Get first occurrence of each unique MET
         met_all = mock_l1a_de["meta_seconds"].values.astype(float)
-        unique_mets, first_indices, counts = np.unique(
-            met_all, return_index=True, return_counts=True
-        )
-        paired_mask = counts == 2
-        expected_esa_steps = mock_l1a_de["esa_step"].values[first_indices[paired_mask]]
+        unique_mets, first_indices = np.unique(met_all, return_index=True)
+        expected_esa_steps = mock_l1a_de["esa_step"].values[first_indices]
 
         np.testing.assert_array_equal(
             goodtimes_instance["esa_step"].values, expected_esa_steps
@@ -221,7 +218,9 @@ class TestRemoveTimes:
     def test_remove_times_met_out_of_range(self, goodtimes_instance):
         """Test that MET outside valid range raises ValueError."""
         met_vals = goodtimes_instance.coords["met"].values
-        met_out_of_range = met_vals[-1] + 1000
+        # Use a value clearly beyond the valid range
+        # (last MET + 2x the interval between last two METs)
+        met_out_of_range = met_vals[-1] + 2000
 
         with pytest.raises(ValueError, match="MET value\\(s\\) "):
             goodtimes_instance.goodtimes.remove_times(met=met_out_of_range)
@@ -304,8 +303,8 @@ class TestGetGoodIntervals:
         intervals = goodtimes_instance.goodtimes.get_good_intervals()
 
         # Should create 2 intervals for the first MET (bins split by gap)
-        # Plus 9 more intervals for the remaining METs
-        assert len(intervals) == 11
+        # Plus 11 more intervals for the remaining METs (12 total METs)
+        assert len(intervals) == 13
 
         # First two intervals should be for the same MET
         assert intervals[0]["met_start"] == intervals[1]["met_start"]
@@ -326,8 +325,8 @@ class TestGetGoodIntervals:
 
         intervals = goodtimes_instance.goodtimes.get_good_intervals()
 
-        # Should have 9 intervals (one per good MET, excluding the first)
-        assert len(intervals) == 9
+        # Should have 11 intervals (one per good MET, excluding the first, 12-1=11)
+        assert len(intervals) == 11
 
         # First interval should be for the second MET
         assert intervals[0]["met_start"] == goodtimes_instance.coords["met"].values[1]
@@ -428,8 +427,8 @@ class TestToTxt:
         with open(output_path) as f:
             lines = f.readlines()
 
-        # Should have one line per interval (10 METs, all good)
-        assert len(lines) == 10
+        # Should have one line per interval (12 METs, all good)
+        assert len(lines) == 12
 
         # Check format of first line
         parts = lines[0].strip().split()
@@ -492,8 +491,8 @@ class TestToTxt:
         with open(output_path) as f:
             lines = f.readlines()
 
-        # Should have 11 lines (2 for first MET, 1 for each of 9 remaining METs)
-        assert len(lines) == 11
+        # Should have 13 lines (2 for first MET, 1 for each of 11 remaining METs)
+        assert len(lines) == 13
 
         # First two lines should be for same MET
         parts1 = lines[0].strip().split()

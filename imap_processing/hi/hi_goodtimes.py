@@ -36,11 +36,10 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
     """
     Create goodtimes dataset from L1A Direct Event data.
 
-    Initializes all times and spin bins as good (cull_flags=0) for complete
-    8-spin periods. Since we receive one packet every 4 spins but only record
-    MET every 8 spins, we expect MET values to appear in pairs. Only MET values
-    that appear as duplicates (pairs) are included, as single occurrences indicate
-    incomplete 8-spin periods.
+    Initializes all times and spin bins as good (cull_flags=0). The goodtimes
+    dataset is created with one entry per unique MET timestamp found in the
+    L1A DE data. Culling functions (e.g., drop_partial_packets) should be
+    called after creation to identify and flag bad times.
 
     Parameters
     ----------
@@ -51,9 +50,9 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     xarray.Dataset
-        Initialized goodtimes dataset with cull_flags set to 0 (all good) for
-        complete 8-spin periods only. Access goodtimes methods via the
-        .goodtimes accessor (e.g., dataset.goodtimes.remove_times()).
+        Initialized goodtimes dataset with cull_flags set to 0 (all good).
+        Access goodtimes methods via the .goodtimes accessor
+        (e.g., dataset.goodtimes.remove_times()).
     """
     logger.info("Creating Goodtimes from L1A Direct Event data")
 
@@ -66,26 +65,13 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
     )
     logger.debug(f"Extracted {len(met_all)} total MET entries from L1A DE data")
 
-    # Find unique MET values, their counts, and indices of first occurrences
-    unique_mets, first_indices, counts = np.unique(
-        met_all.values, return_index=True, return_counts=True
-    )
-    logger.debug(f"Found {len(unique_mets)} unique MET values")
+    # Find unique MET values and indices of first occurrences
+    unique_mets, first_indices = np.unique(met_all.values, return_index=True)
+    logger.info(f"Found {len(unique_mets)} unique MET values")
 
-    # Keep only MET values that appear as pairs (count == 2)
-    paired_mask = counts == 2
-    first_occurrence_indices = first_indices[paired_mask]
-
-    n_paired = int(np.sum(paired_mask))
-    n_unpaired = len(unique_mets) - n_paired
-    logger.info(
-        f"Filtered to {n_paired} complete 8-spin periods "
-        f"(excluded {n_unpaired} incomplete periods)"
-    )
-
-    # Extract data for paired METs only
-    met = met_all.isel(epoch=first_occurrence_indices)
-    esa_step = l1a_de["esa_step"].isel(epoch=first_occurrence_indices)
+    # Extract data for unique METs (use first occurrence of each)
+    met = met_all.isel(epoch=first_indices)
+    esa_step = l1a_de["esa_step"].isel(epoch=first_indices)
 
     # Create coordinates
     coords = {
@@ -96,7 +82,8 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
     # Create data variables
     # Initialize cull_flags - all good (0) by default
     # Shape: (n_met_timestamps, 90 spin_bins)
-    # Per alg doc Section 2.2.4: 90-element arrays, one per histogram packet
+    # Per alg doc Section 2.3.2: 90-element arrays, one per histogram packet
+    # Culling functions will set non-zero cull codes for bad times
     data_vars = {
         "cull_flags": xr.DataArray(
             np.zeros((len(met), 90), dtype=np.uint8),
@@ -255,7 +242,16 @@ class GoodtimesAccessor:
         met_array = np.atleast_1d(met)
         # Add the difference between the last two MET values to the valid range
         # to get the time of the last MET + 8_spins
-        valid_met_range = (met_values[0], met_values[-1] + np.diff(met_values[-2:])[0])
+        if len(met_values) >= 2:
+            met_interval = np.diff(met_values[-2:])[0]
+        elif len(met_values) == 1:
+            # Only one MET value - use a default interval (120 seconds)
+            met_interval = 120.0
+        else:
+            # No MET values - can't validate range
+            met_interval = 0.0
+
+        valid_met_range = (met_values[0], met_values[-1] + met_interval)
         invalid_met_mask = (met_array < valid_met_range[0]) | (
             met_array > valid_met_range[-1]
         )
