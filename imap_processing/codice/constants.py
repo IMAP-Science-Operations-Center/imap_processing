@@ -72,8 +72,8 @@ LO_IALIRT_M_OVER_Q = {
     "oplus7": 2.28,
     "oplus8": 2.0,
     "mg": 3.5,
-    "fe_loq": 7.25,
-    "fe_hiq": 3.85,
+    "fe_loq": 3.85,
+    "fe_hiq": 7.25,
 }
 
 
@@ -1046,12 +1046,9 @@ PIXEL_ORIENTATIONS = {
     126: "B",
     127: "B",
 }
-# TODO this will need to change. What if we add a variable in l1a
-#   128 by half spin index
-#   use half spin when computing intensities for both angular and species intensity
-#   This should be added to l1a so it can follow the data through processing
-#   (shape 128) -
-#
+# TODO Add a variable in l1a (carrying through l2) that indicates mapping from
+#   half spin to esa step (shape 128)
+#   use this var when computing intensities for both angular and species intensity
 # Lookup table for mapping half-spin (keys) to esa steps (values)
 # This is used to determine geometry factors L2
 HALF_SPIN_LUT = {
