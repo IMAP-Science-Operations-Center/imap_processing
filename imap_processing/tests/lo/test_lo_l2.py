@@ -2320,6 +2320,7 @@ class TestCalculateAllRatesAndIntensities:
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.009,
         )
+        dataset["energy_sc_exposure_factor"] = xr.ones_like(dataset["ena_intensity"])
 
         # Mock the interpolation function
         with patch(
@@ -2363,6 +2364,7 @@ class TestCalculateAllRatesAndIntensities:
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.009,
         )
+        dataset["energy_sc_exposure_factor"] = xr.ones_like(dataset["ena_intensity"])
 
         with patch(
             "imap_processing.lo.l2.lo_l2.interpolate_map_flux_to_helio_frame"
@@ -2667,6 +2669,9 @@ class TestProcessSinglePset:
         """Test that CG correction is applied for heliocentric frame."""
         pset = minimal_pset.copy()
         pset = pset.rename({"esa_energy_step": "energy"})
+        # apply_compton_getting_correction gets mocked out so we need to add the
+        # energy_sc variable to the pset
+        pset["energy_sc"] = xr.ones_like(pset["counts"])
 
         with (
             patch(

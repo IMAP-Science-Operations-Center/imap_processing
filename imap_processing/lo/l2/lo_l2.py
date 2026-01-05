@@ -387,11 +387,12 @@ def process_single_pset(
         # Convert energy coordinate from keV to eV for CG correction
         # (energy coordinate was set in normalize_pset_coordinates in keV)
         energy_values_ev: xr.DataArray = pset_processed["energy"] * 1000.0
-        # TODO: Pull add_spacecraft_velocity_to_pset and calculate_ram_mask out
-        #    of apply_compton_getting_correction for visibility. Issue:
-        # https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/2434
         pset_processed = apply_compton_getting_correction(
             pset_processed, energy_values_ev
+        )
+        # Prepare energy_sc for exposure time weighted projection
+        pset_processed["energy_sc_exposure_factor"] = (
+            pset_processed["energy_sc"] * pset_processed["exposure_factor"]
         )
 
     # Always calculate ram-mask to identify ram/anti-ram bins
@@ -575,7 +576,7 @@ def project_pset_to_map(
         "bg_rates_stat_uncert_exposure_factor2",
     ]
     if cg_correct:
-        value_keys.append("energy_sc")
+        value_keys.append("energy_sc_exposure_factor")
 
     # Create LoPointingSet and project to map
     lo_pset = ena_maps.LoPointingSet(pset)
@@ -876,6 +877,10 @@ def calculate_all_rates_and_intensities(
     # Optional Step 7: Finish CG correction
     if cg_correction:
         logger.info("Interpolating map intensities to helio-frame energies")
+        # Finish calculation of the exposure factor weighted projection of energy_sc
+        dataset["energy_sc"] = (
+            dataset["energy_sc_exposure_factor"] / dataset["exposure_factor"]
+        )
         dataset = interpolate_map_flux_to_helio_frame(
             dataset,
             dataset["energy"],
