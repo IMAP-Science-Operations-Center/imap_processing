@@ -1,3 +1,4 @@
+import logging
 from collections import namedtuple
 from unittest.mock import patch
 
@@ -118,11 +119,24 @@ def l1a_hist():
         {
             "hydrogen": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
             "oxygen": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "tof0_tof1": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "tof0_tof2": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "tof1_tof3": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "silver_triple": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "start_a": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "start_c": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "stop_b0": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "stop_b3": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "tof0": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "tof1": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "tof2": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "tof3": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
         },
         coords={
             "epoch": epoch_date,
             "esa_step": np.arange(1, 8),
             "azimuth_6": np.arange(60),
+            "azimuth_60": np.arange(6),
         },
         attrs={"Logical_source": "imap_lo_l1a_histogram"},
     )
@@ -802,17 +816,75 @@ def test_resweep_histogram_success(anc_dependencies):
     )
     l1b_histrate = xr.Dataset(
         {
-            "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
-            "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60))),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60))),
+            "tof0_tof1_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "tof0_tof2_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "tof1_tof3_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "silver_triple_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "start_a_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "start_c_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "stop_b0_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "stop_b3_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "tof0_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof1_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof2_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof3_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
         },
         coords={
             "epoch": epoch_date,
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
+            "spin_bin_60": np.arange(6),
         },
     )
-    exposure_factor_expected = np.full((2, 7, 60), 1)
-    exposure_factor_expected[:, 0, :] = 2
+    spin_bin_6_fields = [
+        "h_counts",
+        "o_counts",
+        "tof0_tof1_counts",
+        "tof0_tof2_counts",
+        "tof1_tof3_counts",
+        "silver_triple_counts",
+    ]
+    spin_bin_60_fields = [
+        "start_a_counts",
+        "start_c_counts",
+        "stop_b0_counts",
+        "stop_b3_counts",
+        "tof0_counts",
+        "tof1_counts",
+        "tof2_counts",
+        "tof3_counts",
+    ]
+    exposure_factor_init = np.full((2, 7, 60), 1)
+    exposure_factor_init[:, 0, :] = 2
+    exposure_factor_expected = dict()
+    for field in spin_bin_6_fields + spin_bin_60_fields:
+        exposure_factor_expected[field] = exposure_factor_init
 
     l1b_histrate.h_counts[0, 0, 0] = 5
     l1b_histrate.h_counts[0, 1, 0] = 10
@@ -834,23 +906,61 @@ def test_resweep_histogram_success(anc_dependencies):
     assert l1b_histrates.o_counts[1, 1, 0] == 0
     assert l1b_histrates.o_counts[1, 2, 0] == 4
 
-    assert np.array_equal(exposure_factor, exposure_factor_expected)
+    for field in spin_bin_6_fields + spin_bin_60_fields:
+        assert np.array_equal(l1b_histrates[field], l1b_histrate[field])
 
 
-def test_resweep_histogram_no_date(anc_dependencies):
+def test_resweep_histogram_no_date_in_sweep(anc_dependencies, caplog):
     # Arrange
     epoch_date = et_to_ttj2000ns(
         str_to_et(["2025-04-25T02:00:00", "2025-04-25T03:00:00"])
     )
     l1b_histrate = xr.Dataset(
         {
-            "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
-            "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60))),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60))),
+            "tof0_tof1_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "tof0_tof2_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "tof1_tof3_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "silver_triple_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "start_a_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "start_c_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "stop_b0_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "stop_b3_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "tof0_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof1_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof2_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof3_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
         },
         coords={
             "epoch": epoch_date,
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
+            "spin_bin_60": np.arange(6),
         },
     )
 
@@ -858,36 +968,144 @@ def test_resweep_histogram_no_date(anc_dependencies):
     l1b_histrate.h_counts[0, 1, 0] = 10
     l1b_histrate.h_counts[0, 2, 0] = 2
 
-    with pytest.raises(
-        ValueError,
-        match="No sweep table entry found for date "
-        "2025-04-25T02:00:00.000 at epoch idx 0",
-    ):
-        resweep_histogram_data(l1b_histrate, anc_dependencies)
+    with caplog.at_level(logging.WARNING):
+        result, _ = resweep_histogram_data(l1b_histrate, anc_dependencies)
+
+    # Check that warning was logged
+    assert any(
+        "not found in sweep table" in record.message for record in caplog.records
+    )
 
 
-def test_resweep_histogram_multiple_lut(anc_dependencies):
+def test_resweep_histogram_no_table_in_lut(anc_dependencies, caplog):
+    # Arrange
     epoch_date = et_to_ttj2000ns(
-        str_to_et(["2025-04-16T02:00:00", "2025-04-16T03:00:00"])
+        str_to_et(["2024-01-01T02:00:00", "2024-01-01T03:00:00"])
     )
     l1b_histrate = xr.Dataset(
         {
-            "h_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
-            "o_counts": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60))),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60))),
+            "tof0_tof1_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "tof0_tof2_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "tof1_tof3_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "silver_triple_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "start_a_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "start_c_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "stop_b0_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "stop_b3_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "tof0_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof1_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof2_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof3_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
         },
         coords={
             "epoch": epoch_date,
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
+            "spin_bin_60": np.arange(6),
         },
     )
 
-    with pytest.raises(
-        ValueError,
-        match=f"Expected exactly 1 unique LUT_table "
-        f"value for date 2025-04-16, but found 2:{[1, 2]}",
-    ):
-        resweep_histogram_data(l1b_histrate, anc_dependencies)
+    l1b_histrate.h_counts[0, 0, 0] = 5
+    l1b_histrate.h_counts[0, 1, 0] = 10
+    l1b_histrate.h_counts[0, 2, 0] = 2
+
+    with caplog.at_level(logging.WARNING):
+        result, _ = resweep_histogram_data(l1b_histrate, anc_dependencies)
+
+    # Check that warning was logged
+    assert any(
+        "No LUT entries for epoch" in record.message for record in caplog.records
+    )
+
+
+def test_resweep_histogram_multiple_lut(anc_dependencies, caplog):
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-16T02:00:00", "2025-04-16T03:00:00"])
+    )
+    l1b_histrate = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60))),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60))),
+            "tof0_tof1_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "tof0_tof2_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "tof1_tof3_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "silver_triple_counts": (
+                ("epoch", "esa_step", "spin_bin_6"),
+                np.zeros((2, 7, 60)),
+            ),
+            "start_a_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "start_c_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "stop_b0_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "stop_b3_counts": (
+                ("epoch", "esa_step", "spin_bin_60"),
+                np.zeros((2, 7, 6)),
+            ),
+            "tof0_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof1_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof2_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+            "tof3_counts": (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+            "spin_bin_60": np.arange(6),
+        },
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result, _ = resweep_histogram_data(l1b_histrate, anc_dependencies)
+
+    # Check that warning was logged
+    assert any(
+        "Multiple LUT tables found for epoch" in record.message
+        for record in caplog.records
+    )
+    assert any("but found tables" in record.message for record in caplog.records)
 
 
 def test_calculate_histogram_rates(l1b_histrates):

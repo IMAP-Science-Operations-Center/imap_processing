@@ -134,21 +134,21 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         spin_data = sci_dependencies["imap_lo_l1a_spin"]
         # initialize the L1B Histogram Rates dataset from the L1A Histogram Rates
         # This carries over the epoch and count fields from L1A
-        l1b_histrates = initialize_l1b_histrates(l1a_hist, attr_mgr_l1b, logical_source)
+        l1b_all_rates = initialize_all_rates(l1a_hist, attr_mgr_l1b)
         # set spin cycle and remove invalid spin ASCs
         l1b_histrates = set_spin_cycle_from_spin_data(
-            l1a_hist, l1b_histrates, spin_data
+            l1a_hist, l1b_all_rates, spin_data
         )
 
         pointing_start_met, pointing_end_met = get_pointing_times(
             ttj2000ns_to_met(l1a_hist["epoch"].values[0].item())
         )
-        l1b_histrates = set_esa_mode(
-            pointing_start_met, pointing_end_met, anc_dependencies, l1b_histrates
+        l1b_all_rates = set_esa_mode(
+            pointing_start_met, pointing_end_met, anc_dependencies, l1b_all_rates
         )
         # resweep the histogram data
-        l1b_histrates, exposure_factor = resweep_histogram_data(
-            l1b_histrates, anc_dependencies
+        l1b_all_rates, exposure_factor = resweep_histogram_data(
+            l1b_all_rates, anc_dependencies
         )
         # Get the start and end times for each spin epoch
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
@@ -156,13 +156,13 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
             acq_start, acq_end
         )
-        l1b_histrates = calculate_histogram_rates(
-            l1b_histrates,
-            acq_start,
-            acq_end,
-            avg_spin_durations_per_cycle,
-            exposure_factor,
-        )
+        # l1b_histrates = calculate_histogram_rates(
+        #     l1b_histrates,
+        #     acq_start,
+        #     acq_end,
+        #     avg_spin_durations_per_cycle,
+        #     exposure_factor,
+        # )
         datasets_to_return.append(l1b_histrates)
 
     return datasets_to_return
@@ -1370,8 +1370,8 @@ def create_badtimes_dataset() -> xr.Dataset:
     return thruster_ds
 
 
-def initialize_l1b_histrates(
-    l1a_hist: xr.Dataset, attr_mgr_l1b: ImapCdfAttributes, logical_source: str
+def initialize_all_rates(
+    l1a_hist: xr.Dataset, attr_mgr_l1b: ImapCdfAttributes
 ) -> xr.Dataset:
     """
     Initialize the L1B histogram rates dataset.
@@ -1382,15 +1382,13 @@ def initialize_l1b_histrates(
         The L1A histogram rates dataset.
     attr_mgr_l1b : ImapCdfAttributes
         Attribute manager used to get the L1B histogram rates dataset attributes.
-    logical_source : str
-        The logical source of the data product that's being created.
 
     Returns
     -------
-    l1b_histrates : xr.Dataset
-        The initialized L1B histogram rates dataset.
+    l1b_all_rates : xr.Dataset
+        The initialized L1B histogram and monitor rates dataset.
     """
-    l1b_histrates = xr.Dataset(
+    l1b_all_rates = xr.Dataset(
         coords={
             "epoch": xr.DataArray(l1a_hist["epoch"].values, dims=["epoch"]),
             "esa_step": l1a_hist["esa_step"],
@@ -1398,40 +1396,60 @@ def initialize_l1b_histrates(
                 l1a_hist["azimuth_6"].values,
                 dims=["spin_bin_6"],
             ),
+            "spin_bin_60": xr.DataArray(
+                l1a_hist["azimuth_60"].values,
+                dims=["spin_bin_60"],
+            ),
         },
-        attrs=attr_mgr_l1b.get_global_attributes(logical_source),
     )
+    # Define field mappings from L1A to the L1B dataset
+    # according to the algorithm document, only the histogram rate product should have
+    # counts (hydrogen and oxygen). The rest of the fields will be dropped after
+    # processing when the monitor rates product is created. These fields are needed for
+    # processing though and are added to the all_rates dataset temporarily.
+    # {"l1a_field_name": "l1b_all_rates_field_name"}
+    spin_bin_6_fields = {
+        "hydrogen": "h_counts",
+        "oxygen": "o_counts",
+        "tof0_tof1": "tof0_tof1_counts",
+        "tof0_tof2": "tof0_tof2_counts",
+        "tof1_tof3": "tof1_tof3_counts",
+        "silver_triple": "silver_triple_counts",
+    }
+    spin_bin_60_fields = {
+        "start_a": "start_a_counts",
+        "start_c": "start_c_counts",
+        "stop_b0": "stop_b0_counts",
+        "stop_b3": "stop_b3_counts",
+        "tof0": "tof0_counts",
+        "tof1": "tof1_counts",
+        "tof2": "tof2_counts",
+        "tof3": "tof3_counts",
+    }
 
-    # l1b_histrates["epoch"] = xr.DataArray(
-    #     l1a_hist["epoch"].values,
-    #     dims=["epoch"],
-    #     attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
-    # )
-    # Copy over fields from L1A DE that will not change in L1B processing
-    l1b_histrates["h_counts"] = xr.DataArray(
-        l1a_hist["hydrogen"].values,
-        dims=["epoch", "esa_step", "spin_bin_6"],
-        # TODO: Add hydrogen to YAML file
-        # attrs=attr_mgr.get_variable_attributes("hydrogen"),
-    )
-    l1b_histrates["o_counts"] = xr.DataArray(
-        l1a_hist["oxygen"].values,
-        dims=["epoch", "esa_step", "spin_bin_6"],
-        # TODO: Add oxygen to YAML file
-        # attrs=attr_mgr.get_variable_attributes("oxygen"),
-    )
+    for l1a_field, l1b_field in spin_bin_6_fields.items():
+        l1b_all_rates[l1b_field] = xr.DataArray(
+            l1a_hist[l1a_field].values,
+            dims=["epoch", "esa_step", "spin_bin_6"],
+        )
 
-    return l1b_histrates
+    for l1a_field, l1b_field in spin_bin_60_fields.items():
+        l1b_all_rates[l1b_field] = xr.DataArray(
+            l1a_hist[l1a_field].values,
+            dims=["epoch", "esa_step", "spin_bin_60"],
+        )
+
+    return l1b_all_rates
 
 
 def resweep_histogram_data(
     l1b_histrates: xr.Dataset,
     anc_dependencies: list,
-) -> tuple[xr.Dataset, np.ndarray]:
+) -> tuple[xr.Dataset, dict[str, np.ndarray]]:
     """
     Correct energy steps in histogram data based on sweep and LUT tables.
 
-    Returns the updated dataset and a 3D array of reswept counts
+    Returns the updated dataset and a dictionary of 3D arrays of reswept counts
     (epoch, azimuth, esa_step) indicating how many original steps were reswept into
     each final step.
 
@@ -1446,12 +1464,10 @@ def resweep_histogram_data(
     -------
     l1b_histrates : xr.Dataset
         The updated L1B histogram rates dataset with reswept counts.
-    exposure_factor : np.ndarray
-        3D array of exposure factors (epoch, azimuth, esa_step) indicating how many
-        ESA steps were reswept during resweeping.
+    exposure_factors : dict[str, np.ndarray]
+        Dictionary mapping field names to their 3D exposure factor arrays
+        (epoch, azimuth, esa_step).
     """
-    # The sweep table contains the mapping of dates to the LUT table which shows how
-    # the ESA steps should be reswept.
     sweep_df = lo_ancillary.read_ancillary_file(
         next(str(s) for s in anc_dependencies if "sweep-table" in str(s))
     )
@@ -1459,110 +1475,114 @@ def resweep_histogram_data(
         next(str(s) for s in anc_dependencies if "esa-mode-lut" in str(s))
     )
 
-    # Get the time information to compare the epochs to the sweep table dates
+    # Define field groups with their spin bin dimensions
+    spin_bin_6_fields = [
+        "h_counts",
+        "o_counts",
+        "tof0_tof1_counts",
+        "tof0_tof2_counts",
+        "tof1_tof3_counts",
+        "silver_triple_counts",
+    ]
+    spin_bin_60_fields = [
+        "start_a_counts",
+        "start_c_counts",
+        "stop_b0_counts",
+        "stop_b3_counts",
+        "tof0_counts",
+        "tof1_counts",
+        "tof2_counts",
+        "tof3_counts",
+    ]
+
     sweep_dates = sweep_df["Date"].astype(str)
     epochs = l1b_histrates["epoch"].values
     epoch_utc = et_to_utc(ttj2000ns_to_et(epochs))
 
-    # initialize the reswept counts arrays
-    h_counts_reswept = np.zeros_like(l1b_histrates["h_counts"].values)
-    o_counts_reswept = np.zeros_like(l1b_histrates["o_counts"].values)
+    # Initialize reswept arrays for all fields
+    reswept_data = {}
+    for field in spin_bin_6_fields + spin_bin_60_fields:
+        reswept_data[field] = np.zeros_like(l1b_histrates[field].values)
 
-    # Get the number of azimuth bins from the l1b_histrates dataset
-    num_azimuth = l1b_histrates.sizes["spin_bin_6"]
-    # initialize exposure factor to 1 as this will be used to scale (multiply)
-    # the exposure time later
-    exposure_factor = np.full(
-        (len(epochs), l1b_histrates.sizes["esa_step"], num_azimuth), 1, dtype=int
-    )
+    # Initialize exposure factors for each field type
+    num_azimuth_6 = l1b_histrates.sizes["spin_bin_6"]
+    num_azimuth_60 = l1b_histrates.sizes["spin_bin_60"]
+    exposure_factors = {}
+
+    for field in spin_bin_6_fields:
+        exposure_factors[field] = np.full(
+            (len(epochs), l1b_histrates.sizes["esa_step"], num_azimuth_6), 1, dtype=int
+        )
+
+    for field in spin_bin_60_fields:
+        exposure_factors[field] = np.full(
+            (len(epochs), l1b_histrates.sizes["esa_step"], num_azimuth_60), 1, dtype=int
+        )
 
     for epoch_idx, epoch in enumerate(epoch_utc):
-        # Get only the date portion of the epoch string for comparison with the
-        # sweep table
         epoch_date_only = epoch.split("T")[0]
 
-        # if the epoch dat is not in the sweep table, raise an error
         if epoch_date_only not in sweep_dates.values:
-            raise ValueError(
-                f"No sweep table entry found for date {epoch} at epoch idx {epoch_idx}"
+            logger.warning(
+                f"Epoch {epoch} at index {epoch_idx} not found in sweep table"
             )
+            continue
 
-        # Get the matching sweep table entry for the epoch date and its LUT table index
         matching_sweep = sweep_df[sweep_dates == epoch_date_only]
         unique_lut_tables = matching_sweep["LUT_table"].unique()
 
-        # There should only be one unique LUT table for each date
         if len(unique_lut_tables) != 1:
-            raise ValueError(
-                f"Expected exactly 1 unique LUT_table value for date {epoch_date_only},"
-                f" but found {len(unique_lut_tables)}: {unique_lut_tables}"
+            logger.warning(
+                f"Multiple LUT tables found for epoch {epoch} at index {epoch_idx}, "
+                f"but found tables {unique_lut_tables}."
             )
+            continue
 
-        # Get the LUT entries for the identified LUT table index
         lut_table_idx = unique_lut_tables[0]
         lut_entries = lut_df[lut_df["Tbl_Idx"] == lut_table_idx].copy()
 
-        # If there are no LUT entries for the identified LUT table, log a warning
-        # and skip resweeping for this epoch
         if len(lut_entries) == 0:
-            logger.warning(f"No LUT entries found for table index {lut_table_idx}")
-            h_counts_reswept[epoch_idx] = l1b_histrates["h_counts"].values[epoch_idx]
-            o_counts_reswept[epoch_idx] = l1b_histrates["o_counts"].values[epoch_idx]
+            logger.warning(
+                f"No LUT entries for epoch {epoch} at index {epoch_idx}. Looking"
+                f"for table index {lut_table_idx}."
+            )
             continue
 
-        # Sort the LUT entries by E-Step_Idx to ensure correct mapping order
         lut_entries = lut_entries.sort_values("E-Step_Idx")
 
-        # Create a mapping of original ESA step index to true ESA step
         energy_step_mapping = {}
-        # Loop through the LUT entries and populate the mapping
         for _, row in lut_entries.iterrows():
-            # Original ESA step index is 1-based, convert to 0-based
             esa_idx = int(row["E-Step_Idx"]) - 1
-            # True ESA step is 1-based
             true_esa_step = int(row["E-Step_lvl"])
-            # Populate the mapping
             energy_step_mapping[esa_idx] = true_esa_step
 
-        # TODO: Change all instances of azimuth to spin bin
-        # Resweep the counts for each spin bin using the energy step mapping
-        for az_idx in range(num_azimuth):
-            h_original = l1b_histrates["h_counts"].values[epoch_idx, :, az_idx]
-            o_original = l1b_histrates["o_counts"].values[epoch_idx, :, az_idx]
-
-            # Loop through the original ESA step indices and map to the true ESA steps
-            for orig_idx, true_esa_step in energy_step_mapping.items():
-                # Check that the original index and true ESA step are within bounds
-                if orig_idx < len(h_original) and 1 <= true_esa_step <= 7:
-                    # Resweep the counts into the true ESA step
-                    # (convert to 0-based index)
-                    reswept_idx = true_esa_step - 1
-                    h_counts_reswept[epoch_idx, reswept_idx, az_idx] += h_original[
+        # Process spin_bin_6 fields
+        for field in spin_bin_6_fields:
+            for az_idx in range(num_azimuth_6):
+                original = l1b_histrates[field].values[epoch_idx, :, az_idx]
+                for orig_idx, true_esa_step in energy_step_mapping.items():
+                    target_idx = true_esa_step - 1
+                    reswept_data[field][epoch_idx, target_idx, az_idx] += original[
                         orig_idx
                     ]
-                    o_counts_reswept[epoch_idx, reswept_idx, az_idx] += o_original[
+                    exposure_factors[field][epoch_idx, target_idx, az_idx] += 1
+
+        # Process spin_bin_60 fields
+        for field in spin_bin_60_fields:
+            for az_idx in range(num_azimuth_60):
+                original = l1b_histrates[field].values[epoch_idx, :, az_idx]
+                for orig_idx, true_esa_step in energy_step_mapping.items():
+                    target_idx = true_esa_step - 1
+                    reswept_data[field][epoch_idx, target_idx, az_idx] += original[
                         orig_idx
                     ]
-                    # If a reswept was needed for this index, increment the exposure
-                    # factor to so the exposure time can be scaled accordingly
-                    if orig_idx != reswept_idx:
-                        exposure_factor[epoch_idx, reswept_idx, az_idx] += 1
+                    exposure_factors[field][epoch_idx, target_idx, az_idx] += 1
 
-                else:
-                    logger.warning(
-                        f"Original ESA index {orig_idx} or "
-                        f"true ESA step {true_esa_step}"
-                        f" out of bounds at epoch idx {epoch_idx}, "
-                        f"spin bin idx {az_idx}"
-                    )
+    # Update dataset with reswept data
+    for field in spin_bin_6_fields + spin_bin_60_fields:
+        l1b_histrates[field].values = reswept_data[field]
 
-    l1b_histrates["h_counts"].values = h_counts_reswept
-    l1b_histrates["o_counts"].values = o_counts_reswept
-    l1b_histrates.attrs["energy_step_correction"] = (
-        "Applied LUT table energy step mapping"
-    )
-
-    return l1b_histrates, exposure_factor
+    return l1b_histrates, exposure_factors
 
 
 def calculate_histogram_rates(
