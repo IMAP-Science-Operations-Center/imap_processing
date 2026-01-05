@@ -770,8 +770,8 @@ def apply_compton_getting_correction(
 
 def interpolate_map_flux_to_helio_frame(
     map_ds: xr.Dataset,
-    esa_energies_ev: xr.DataArray,
-    helio_energies_ev: xr.DataArray,
+    esa_energies: xr.DataArray,
+    helio_energies: xr.DataArray,
     vars_to_interpolate: list[str],
 ) -> xr.Dataset:
     """
@@ -790,11 +790,13 @@ def interpolate_map_flux_to_helio_frame(
     map_ds : xarray.Dataset
         Map dataset with `energy_sc` data variable containing the spacecraft
         frame energies for each spatial pixel and ESA energy step.
-    esa_energies_ev : xarray.DataArray
-        The ESA nominal central energies (in eV).
-    helio_energies_ev : xarray.DataArray
-        The heliocentric frame energies to interpolate to (in eV).
-        In practice, these are the same as esa_energies_ev.
+    esa_energies : xarray.DataArray
+        The ESA nominal central energies. Any energy unit is acceptable as long
+        as it is consistent with `helio_energies`.
+    helio_energies : xarray.DataArray
+        The heliocentric frame energies to interpolate to. Any energy unit is
+        acceptable as long as it is consistent with `esa_energies`.
+        In practice, these are the same as esa_energies.
     vars_to_interpolate : list[str]
         List of variables to perform interpolation on. This is just the base
         flux/intensity variable. It is assumed that the associated statistical
@@ -815,7 +817,7 @@ def interpolate_map_flux_to_helio_frame(
 
     # Step 1: Find bounding ESA energy indices for each position
     # Use np.searchsorted on flattened array, then reshape back
-    esa_energy_vals = esa_energies_ev.values
+    esa_energy_vals = esa_energies.values
     energy_sc_flat = energy_sc.values.ravel()
 
     # Find right bound index for each element (vectorized)
@@ -841,9 +843,9 @@ def interpolate_map_flux_to_helio_frame(
         left_idx, dims=energy_sc.dims, coords=coords_without_energy
     )
 
-    # Get energy values at boundaries - select from esa_energies_ev using indices
-    energy_left = esa_energies_ev.isel({"energy": left_idx_da})
-    energy_right = esa_energies_ev.isel({"energy": right_idx_da})
+    # Get energy values at boundaries - select from esa_energies using indices
+    energy_left = esa_energies.isel({"energy": left_idx_da})
+    energy_right = esa_energies.isel({"energy": right_idx_da})
 
     for var_name in vars_to_interpolate:
         logger.debug(
@@ -892,10 +894,10 @@ def interpolate_map_flux_to_helio_frame(
 
         # Step 4: Energy scaling transformation (Liouville theorem)
         # flux_helio = flux_sc * (helio_energy / energy_sc)
-        # Using xarray broadcasting, helio_energies_ev will broadcast
+        # Using xarray broadcasting, helio_energies will broadcast
         # along esa_energy_step
         with np.errstate(divide="ignore", invalid="ignore"):
-            energy_ratio = helio_energies_ev / energy_sc
+            energy_ratio = helio_energies / energy_sc
             flux_helio = flux_sc * energy_ratio
             stat_unc_helio = stat_unc_sc * energy_ratio
             sys_err_helio = sys_err_sc * energy_ratio
