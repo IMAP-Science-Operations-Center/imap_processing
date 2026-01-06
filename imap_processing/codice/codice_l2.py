@@ -368,7 +368,12 @@ def calculate_intensity(
         The updated L2 dataset with species intensities calculated.
     """
     # Select the relevant positions from the geometric factors
-    geometric_factors = geometric_factors.isel(inst_az=positions)
+    # TODO revisit gfactor calculation. For pickup ions, only position 0 is used
+    #   Eventually, the CoDICE team wants to standardize this.
+    if species_list == LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES:
+        geometric_factors = geometric_factors.isel(inst_az=[0])
+    else:
+        geometric_factors = geometric_factors.isel(inst_az=positions)
     if average_across_positions:
         # take the mean geometric factor across positions
         geometric_factors = geometric_factors.mean(dim="inst_az")
