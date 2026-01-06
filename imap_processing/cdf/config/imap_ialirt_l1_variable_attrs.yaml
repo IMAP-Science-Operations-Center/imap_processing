@@ -143,6 +143,7 @@ codice_hi_h:
   DEPEND_2: codice_hi_h_energy_range
   DEPEND_3: codice_hi_h_spin_sector
   DEPEND_4: codice_hi_h_azimuth
+  VAR_NOTES: Energy ranges (MeV) are 0.0200–0.0283, 0.0283–0.0400, 0.0400–0.0566, 0.0566–0.0800, 0.0800–0.113, 0.113–0.160, 0.160–0.226, 0.226–0.320, 0.320–0.453, 0.453–0.640, 0.640–0.905, 0.905–1.28, 1.28–1.81, 1.81–2.56, 2.56–3.62.
 
 codice_lo_c_over_o_abundance:
   <<: *default_float32
@@ -470,12 +471,14 @@ swe_normalized_counts:
   VALIDMIN: 0
   VALIDMAX: 500000
   DEPEND_1: esa_step
+  VAR_NOTES: The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
 
 swe_counterstreaming_electrons:
-    <<: *default_uint8
-    CATDESC: Counterstreaming electrons flag (0=no, 1=yes)
-    FIELDNAM: Counterstreaming electrons
-    LABLAXIS: Counterstreaming e-
-    UNITS: " "
-    VALIDMIN: 0
-    VALIDMAX: 1
+  <<: *default_uint8
+  CATDESC: Counterstreaming electrons flag (0=no, 1=yes)
+  FIELDNAM: Counterstreaming electrons
+  LABLAXIS: Counterstreaming e-
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 1
+  VAR_NOTES: A value of 1 indicates that counterstreaming electrons were observed, a value of 0 indicates unidirectional electron flow..
