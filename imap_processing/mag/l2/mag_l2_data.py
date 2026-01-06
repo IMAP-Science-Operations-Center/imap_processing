@@ -51,6 +51,10 @@ class ValidFrames(Enum):
     GSM = ("GSM", SpiceFrame.IMAP_GSM, "vector_attrs_gsm", "b_gsm")
     RTN = ("RTN", SpiceFrame.IMAP_RTN, "vector_attrs_rtn", "b_rtn")
 
+    # J2000 is used as an intermediate step for rotations, and generally should not be
+    # used as an output.
+    J2000 = ("J2000", SpiceFrame.J2000, "vector_attrs_j2000", "b_j2000")
+
     _spice_frame_: SpiceFrame
     _vector_attrs_name_: str
     _var_name_: str

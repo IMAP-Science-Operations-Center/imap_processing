@@ -1,5 +1,8 @@
 """Module for generating Level 1d magnetic field data."""
 
+from copy import deepcopy
+from itertools import product
+
 import numpy as np
 import xarray as xr
 
@@ -99,19 +102,15 @@ def mag_l1d(  # noqa: PLR0912
 
     # Nominally, this is expected to create MAGO data. However, if the configuration
     # setting for always_output_mago is set to False, it will create MAGI data.
+    l1d_norm.rotate_frame(ValidFrames.J2000)
 
-    l1d_norm.rotate_frame(ValidFrames.SRF)
-    norm_srf_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
-    l1d_norm.rotate_frame(ValidFrames.DSRF)
-    norm_dsrf_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
-    l1d_norm.rotate_frame(ValidFrames.GSE)
-    norm_gse_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
-    l1d_norm.rotate_frame(ValidFrames.RTN)
-    norm_rtn_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
-    output_datasets.append(norm_srf_dataset)
-    output_datasets.append(norm_dsrf_dataset)
-    output_datasets.append(norm_gse_dataset)
-    output_datasets.append(norm_rtn_dataset)
+    output_frames = [
+        ValidFrames.SRF,
+        ValidFrames.DSRF,
+        ValidFrames.GSE,
+        ValidFrames.RTN,
+    ]
+    input_datasets = [l1d_norm]
 
     if input_mago_burst is not None and input_magi_burst is not None:
         # If burst data is provided, use it to create the burst L1d dataset
@@ -134,19 +133,13 @@ def mag_l1d(  # noqa: PLR0912
             day=day,
         )
 
-        # TODO: frame specific attributes may be required
-        l1d_burst.rotate_frame(ValidFrames.SRF)
-        burst_srf_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
-        l1d_burst.rotate_frame(ValidFrames.DSRF)
-        burst_dsrf_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
-        l1d_burst.rotate_frame(ValidFrames.GSE)
-        burst_gse_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
-        l1d_burst.rotate_frame(ValidFrames.RTN)
-        burst_rtn_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
-        output_datasets.append(burst_srf_dataset)
-        output_datasets.append(burst_dsrf_dataset)
-        output_datasets.append(burst_gse_dataset)
-        output_datasets.append(burst_rtn_dataset)
+        l1d_burst.rotate_frame(ValidFrames.J2000)
+        input_datasets.append(l1d_burst)
+
+    for l1d, frame in product(input_datasets, output_frames):
+        output_datasets.append(
+            rotate_copy_to_frame_and_output(l1d, frame, attributes, day_to_process)
+        )
 
     # Output ancillary files
     # Add spin offsets dataset from normal mode processing
@@ -173,3 +166,39 @@ def mag_l1d(  # noqa: PLR0912
                 output_datasets.append(burst_gradiometry_dataset)
 
     return output_datasets
+
+
+def rotate_copy_to_frame_and_output(
+    l1d_input: MagL1d,
+    target_frame: ValidFrames,
+    attributes: ImapCdfAttributes,
+    day_to_process: np.datetime64,
+) -> xr.Dataset:
+    """
+    Given an input, create a copy, rotate to target_frame, and output dataset.
+
+    For efficiency, the best input should be in the J2000 frame.
+
+    Parameters
+    ----------
+    l1d_input : MagL1d
+        Input L1D class instance, which for best efficiency should be in the J2000
+        frame.
+    target_frame : ValidFrames
+        Output frame.
+    attributes : ImapCdfAttributes
+        Attributes instance with the correct MAG L1D from ImapCdfAttributes.
+    day_to_process : np.datetime64
+        The day to process - this will crop the data to the exact 24 hours provided.
+
+    Returns
+    -------
+    xr.Dataset
+        The resulting dataset.
+    """
+    l1d_copy = deepcopy(l1d_input)
+    # Rotate to target frame (this is expensive)
+    l1d_copy.rotate_frame(target_frame)
+    dataset = l1d_copy.generate_dataset(attributes, day_to_process)
+
+    return dataset

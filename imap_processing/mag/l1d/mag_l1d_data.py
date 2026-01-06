@@ -289,14 +289,25 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
                 "data is in the instrument frame, use MAGO."
             )
 
-        start_frame = self.frame
-
         if self.epoch_et is None:
             self.epoch_et: np.ndarray = ttj2000ns_to_et(self.epoch)
             self.magi_epoch_et: np.ndarray = ttj2000ns_to_et(self.magi_epoch)
 
+        start_frame = self.frame
+
+        single_mago_epoch = None
+        single_magi_epoch = None
+        if (
+            start_frame in (ValidFrames.MAGO, ValidFrames.MAGI)
+            and end_frame == ValidFrames.SRF
+        ):
+            # Since Instrument -> spacecraft rotations are static, we can optimize
+            # by only passing one time into frame_transform.
+            single_mago_epoch = self.epoch_et[0]
+            single_magi_epoch = self.magi_epoch_et[0]
+
         self.vectors = frame_transform(
-            self.epoch_et,
+            self.epoch_et if single_mago_epoch is None else single_mago_epoch,
             self.vectors,
             from_frame=start_frame.spice_frame,
             to_frame=end_frame.spice_frame,
@@ -309,7 +320,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             start_frame = ValidFrames.MAGI
 
         self.magi_vectors = frame_transform(
-            self.magi_epoch_et,
+            self.magi_epoch_et if single_magi_epoch is None else single_magi_epoch,
             self.magi_vectors,
             from_frame=start_frame.spice_frame,
             to_frame=end_frame.spice_frame,
@@ -359,21 +370,14 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             vectors_plus_range_magi, magi_calibration
         )
 
-        mago_vectors = np.apply_along_axis(
-            func1d=self.apply_calibration_offset_single_vector,
-            axis=1,
-            arr=mago_vectors,
-            offsets=offsets,
-            is_magi=False,
-        )
+        # Extract range values and convert to int for indexing
+        mago_range_indices = mago_vectors[:, 3].astype(int)
+        magi_range_indices = magi_vectors[:, 3].astype(int)
 
-        magi_vectors = np.apply_along_axis(
-            func1d=self.apply_calibration_offset_single_vector,
-            axis=1,
-            arr=magi_vectors,
-            offsets=offsets,
-            is_magi=True,
-        )
+        # offsets[sensor, range, axis]
+        # For MAGO: sensor=0, for MAGI: sensor=1
+        mago_vectors[:, :3] = mago_vectors[:, :3] + offsets[0, mago_range_indices, :]
+        magi_vectors[:, :3] = magi_vectors[:, :3] + offsets[1, magi_range_indices, :]
 
         return mago_vectors[:, :3], magi_vectors[:, :3]
 
@@ -754,11 +758,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             The output vectors with gradiometry offsets applied, shape (N, 3).
         """
         offset_value = gradiometry_offsets["gradiometer_offsets"].data
-        offset_value = np.apply_along_axis(
-            np.dot,
-            1,
-            offset_value,
-            gradiometer_factor,
-        )
+        # np.dot(row, matrix) = row @ matrix
+        gradiometer_factor = np.asarray(gradiometer_factor)
+        offset_value = offset_value @ gradiometer_factor
 
         return vectors - offset_value
