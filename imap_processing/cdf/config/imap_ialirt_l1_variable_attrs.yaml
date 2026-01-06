@@ -40,6 +40,13 @@ esa_step:
   VAR_TYPE: metadata
   UNITS: " "
 
+swe_electron_energy_labels:
+  CATDESC: SWE electron channel labels (nominal central energies)
+  FIELDNAM: SWE electron channel labels
+  FORMAT: A12
+  VAR_TYPE: support_data
+  UNITS: " "
+
 codice_hi_h_spin_angle:
     CATDESC: CoDICE-Hi spin angle bin
     FIELDNAM: CoDICE-Hi spin angle bin
@@ -485,20 +492,19 @@ swapi_pseudo_proton_temperature:
 swe_normalized_counts:
   <<: *default_uint32
   CATDESC: Normalized electron counts
-  FIELDNAM: SWE normalized counts
-  LABLAXIS: SWE norm counts
+  FIELDNAM: Normalized electron counts
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000
-  DEPEND_1: esa_step
+  LABL_PTR_1: swe_electron_energy_labels
   VAR_NOTES: The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
 
 swe_counterstreaming_electrons:
   <<: *default_uint8
-  CATDESC: Counterstreaming electrons flag (0=no, 1=yes)
-  FIELDNAM: Counterstreaming electrons
+  CATDESC: Counterstreaming electrons flag (1=counterstreaming, 0=unidirectional)
+  FIELDNAM: Counterstreaming e- (1=counterstreaming)
   LABLAXIS: Counterstreaming e-
-  UNITS: " "
+  UNITS: "1=counterstreaming, 0=unidirectional"
   VALIDMIN: 0
   VALIDMAX: 1
   VAR_NOTES: A value of 1 indicates that counterstreaming electrons were observed, a value of 0 indicates unidirectional electron flow.

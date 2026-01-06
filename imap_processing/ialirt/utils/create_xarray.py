@@ -62,11 +62,22 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_variable_attributes("B_RTN_labels", check_schema=False),
     )
 
-    esa_step = xr.DataArray(
-        data=np.arange(8, dtype=np.uint8),
-        name="esa_step",
-        dims=["esa_step"],
-        attrs=cdf_manager.get_variable_attributes("esa_step", check_schema=False),
+    swe_electron_energy_labels = xr.DataArray(
+        [
+            "100.4 eV",
+            "140 eV",
+            "194 eV",
+            "270 eV",
+            "376 eV",
+            "523 eV",
+            "727 eV",
+            "1011 eV",
+        ],
+        name="swe_electron_energy_labels",
+        dims=["swe_electron_energy_labels"],
+        attrs=cdf_manager.get_variable_attributes(
+            "swe_electron_energy_labels", check_schema=False
+        ),
     )
 
     energy_range = xr.DataArray(
@@ -110,7 +121,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "B_GSM_labels": gsm_component,
         "B_GSE_labels": gse_component,
         "B_RTN_labels": rtn_component,
-        "esa_step": esa_step,
+        "swe_electron_energy_labels": swe_electron_energy_labels,
         "codice_hi_h_spin_angle": spin_angle,
         "codice_hi_h_energy_range": energy_range,
         "codice_hi_h_spin_sector": spin_sector,
@@ -153,7 +164,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key.startswith("swe"):
             data = np.full((n, 8), fillval, dtype=np.uint32)
-            dims = ["epoch", "esa_step"]
+            dims = ["epoch", "swe_electron_energy_labels"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key.startswith("hit"):
             data = np.full(n, fillval, dtype=np.uint32)
