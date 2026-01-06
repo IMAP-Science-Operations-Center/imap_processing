@@ -9,7 +9,7 @@ from imap_processing.hi.hi_goodtimes import (
     CullCode,
     create_goodtimes_dataset,
     drop_drf_times,
-    drop_partial_packets,
+    drop_incomplete_spin_sets,
 )
 
 
@@ -531,8 +531,8 @@ class TestIntervalDtype:
         assert INTERVAL_DTYPE["esa_step"] == np.uint8
 
 
-class TestDropPartialPackets:
-    """Test suite for drop_partial_packets() function."""
+class TestDropIncompleteSpinSets:
+    """Test suite for drop_incomplete_spin_sets() function."""
 
     @pytest.fixture
     def l1a_de_complete_4th_spin(self):
@@ -730,34 +730,40 @@ class TestDropPartialPackets:
         )
         return ds
 
-    def test_drop_partial_packets_complete_4th_spin(self, l1a_de_complete_4th_spin):
+    def test_drop_incomplete_spin_sets_complete_4th_spin(
+        self, l1a_de_complete_4th_spin
+    ):
         """Test that complete 4th spin cadence is accepted."""
         gt = create_goodtimes_dataset(l1a_de_complete_4th_spin)
-        drop_partial_packets(gt, l1a_de_complete_4th_spin)
+        drop_incomplete_spin_sets(gt, l1a_de_complete_4th_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_partial_packets_complete_2nd_spin(self, l1a_de_complete_2nd_spin):
+    def test_drop_incomplete_spin_sets_complete_2nd_spin(
+        self, l1a_de_complete_2nd_spin
+    ):
         """Test that complete 2nd spin cadence is accepted."""
         gt = create_goodtimes_dataset(l1a_de_complete_2nd_spin)
-        drop_partial_packets(gt, l1a_de_complete_2nd_spin)
+        drop_incomplete_spin_sets(gt, l1a_de_complete_2nd_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_partial_packets_complete_every_spin(self, l1a_de_complete_every_spin):
+    def test_drop_incomplete_spin_sets_complete_every_spin(
+        self, l1a_de_complete_every_spin
+    ):
         """Test that complete every-spin cadence is accepted."""
         gt = create_goodtimes_dataset(l1a_de_complete_every_spin)
-        drop_partial_packets(gt, l1a_de_complete_every_spin)
+        drop_incomplete_spin_sets(gt, l1a_de_complete_every_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_partial_packets_incomplete(self, l1a_de_incomplete):
+    def test_drop_incomplete_spin_sets_incomplete(self, l1a_de_incomplete):
         """Test that incomplete 8-spin periods are culled."""
         gt = create_goodtimes_dataset(l1a_de_incomplete)
-        drop_partial_packets(gt, l1a_de_incomplete)
+        drop_incomplete_spin_sets(gt, l1a_de_incomplete)
 
         # First 2 METs should be good, last 2 should be culled
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.GOOD)
@@ -765,16 +771,18 @@ class TestDropPartialPackets:
         assert np.all(gt["cull_flags"].values[2, :] == CullCode.LOOSE)
         assert np.all(gt["cull_flags"].values[3, :] == CullCode.LOOSE)
 
-    def test_drop_partial_packets_with_invalid_spins(self, l1a_de_with_invalid_spins):
+    def test_drop_incomplete_spin_sets_with_invalid_spins(
+        self, l1a_de_with_invalid_spins
+    ):
         """Test that times with invalid spins are culled."""
         gt = create_goodtimes_dataset(l1a_de_with_invalid_spins)
-        drop_partial_packets(gt, l1a_de_with_invalid_spins)
+        drop_incomplete_spin_sets(gt, l1a_de_with_invalid_spins)
 
         # First MET should be culled (has invalid spins), second should be good
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.GOOD)
 
-    def test_drop_partial_packets_no_de_packets(self):
+    def test_drop_incomplete_spin_sets_no_de_packets(self):
         """Test that MET times with no DE packets are culled."""
         # Create L1A DE with packets at 1000.0 and 1120.0
         # (60 second intervals for 4th spin)
@@ -817,14 +825,14 @@ class TestDropPartialPackets:
             attrs=gt.attrs,
         )
 
-        drop_partial_packets(gt, l1a_de)
+        drop_incomplete_spin_sets(gt, l1a_de)
 
         # First and last METs should be good, middle one should be culled
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.GOOD)
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.LOOSE)  # No packets
         assert np.all(gt["cull_flags"].values[2, :] == CullCode.GOOD)
 
-    def test_drop_partial_packets_mixed_cadence(self):
+    def test_drop_incomplete_spin_sets_mixed_cadence(self):
         """Test that mixed/invalid cadence patterns are culled."""
         # Create packets with invalid pattern: has spins 4,8,1 (mixing cadences)
         met_seconds = [1000, 1000, 1000]
@@ -848,12 +856,12 @@ class TestDropPartialPackets:
         )
 
         gt = create_goodtimes_dataset(l1a_de)
-        drop_partial_packets(gt, l1a_de)
+        drop_incomplete_spin_sets(gt, l1a_de)
 
         # Should be culled (invalid pattern)
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
 
-    def test_drop_partial_packets_duplicate_spin_num(self):
+    def test_drop_incomplete_spin_sets_duplicate_spin_num(self):
         """Test that duplicate last_spin_num values are culled."""
         # Create packets with duplicate spin: has spins 4,4 (should be 4,8)
         met_seconds = [1000, 1000]
@@ -877,29 +885,29 @@ class TestDropPartialPackets:
         )
 
         gt = create_goodtimes_dataset(l1a_de)
-        drop_partial_packets(gt, l1a_de)
+        drop_incomplete_spin_sets(gt, l1a_de)
 
         # Should be culled (duplicate spin numbers)
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
 
-    def test_drop_partial_packets_custom_cull_code(self, l1a_de_incomplete):
+    def test_drop_incomplete_spin_sets_custom_cull_code(self, l1a_de_incomplete):
         """Test that custom cull code is used."""
         gt = create_goodtimes_dataset(l1a_de_incomplete)
         custom_cull_code = 5
-        drop_partial_packets(gt, l1a_de_incomplete, cull_code=custom_cull_code)
+        drop_incomplete_spin_sets(gt, l1a_de_incomplete, cull_code=custom_cull_code)
 
         # Incomplete METs should be culled with custom code
         assert np.all(gt["cull_flags"].values[2, :] == custom_cull_code)
         assert np.all(gt["cull_flags"].values[3, :] == custom_cull_code)
 
-    def test_drop_partial_packets_preserves_good_times(self, l1a_de_incomplete):
+    def test_drop_incomplete_spin_sets_preserves_good_times(self, l1a_de_incomplete):
         """Test that previously good times remain untouched."""
         gt = create_goodtimes_dataset(l1a_de_incomplete)
 
         # Manually mark first MET as culled with code 2
         gt["cull_flags"].values[0, :] = 2
 
-        drop_partial_packets(gt, l1a_de_incomplete)
+        drop_incomplete_spin_sets(gt, l1a_de_incomplete)
 
         # First MET should still have code 2 (not overwritten)
         # Note: This depends on implementation - current implementation may overwrite

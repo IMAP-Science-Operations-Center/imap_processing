@@ -491,7 +491,7 @@ class GoodtimesAccessor:
 # ==============================================================================
 
 
-def drop_partial_packets(
+def drop_incomplete_spin_sets(
     goodtimes_ds: xr.Dataset,
     l1a_de: xr.Dataset,
     cull_code: int = CullCode.LOOSE,
