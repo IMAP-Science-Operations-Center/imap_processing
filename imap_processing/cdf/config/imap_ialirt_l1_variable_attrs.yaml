@@ -189,17 +189,21 @@ codice_lo_fe_low_over_fe_high_ratio:
 
 hit_e_a_side_low_en:
   <<: *default_uint32
-  CATDESC: Low energy (~300 keV) electrons (A-side)
-  FIELDNAM: Low energy (~300 keV) electrons (A-side)
+  CATDESC: Low energy (>0.5 MeV) electrons (A-side)
+  FIELDNAM: Low energy (>0.5 MeV) electrons (A-side)
   LABLAXIS: hit_e_a_side_low_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_e_a_side_med_en:
   <<: *default_uint32
-  CATDESC: Medium energy (~3 MeV) electrons (A-side)
-  FIELDNAM: Medium energy (~3 MeV) electrons (A-side)
+  CATDESC: Medium energy (<1 MeV) electrons (A-side)
+  FIELDNAM: Medium energy (<1 MeV) electrons (A-side)
   LABLAXIS: hit_e_a_side_med_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_e_a_side_high_en:
   <<: *default_uint32
@@ -207,20 +211,26 @@ hit_e_a_side_high_en:
   FIELDNAM: High energy (>3 MeV) electrons (A-side)
   LABLAXIS: hit_e_a_side_high_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_e_b_side_low_en:
   <<: *default_uint32
-  CATDESC: Low energy (~300 keV) electrons (B-side)
-  FIELDNAM: Low energy (~300 keV) electrons (B-side)
+  CATDESC: Low energy (>0.5 keV) electrons (B-side)
+  FIELDNAM: Low energy (>0.5 keV) electrons (B-side)
   LABLAXIS: hit_e_b_side_low_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_e_b_side_med_en:
   <<: *default_uint32
-  CATDESC: Medium energy (~3 MeV) electrons (B-side)
-  FIELDNAM: Medium energy (~3 MeV) electrons (B-side)
+  CATDESC: Medium energy (<1 MeV) electrons (B-side)
+  FIELDNAM: Medium energy (<1 MeV) electrons (B-side)
   LABLAXIS: hit_e_b_side_med_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_e_b_side_high_en:
   <<: *default_uint32
@@ -228,13 +238,26 @@ hit_e_b_side_high_en:
   FIELDNAM: High energy (>3 MeV) electrons (B-side)
   LABLAXIS: hit_e_b_side_high_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
+
+hit_h_omni_low_en:
+  <<: *default_uint32
+  CATDESC: Low energy (6–8 MeV) protons (Omnidirectional)
+  FIELDNAM: Low energy (6–8 MeV) protons (Omnidirectional)
+  LABLAXIS: hit_h_omni_low_en
+  UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_h_omni_med_en:
   <<: *default_uint32
-  CATDESC: Medium energy (12–70 MeV) protons (Omnidirectional)
-  FIELDNAM: Medium energy (12–70 MeV) protons (Omnidirectional)
+  CATDESC: Medium energy (12–15 MeV) protons (Omnidirectional)
+  FIELDNAM: Medium energy (12–15 MeV) protons (Omnidirectional)
   LABLAXIS: hit_h_omni_med_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_h_a_side_high_en:
   <<: *default_uint32
@@ -242,6 +265,8 @@ hit_h_a_side_high_en:
   FIELDNAM: High energy (>70 MeV) protons (A-side)
   LABLAXIS: hit_h_a_side_high_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_h_b_side_high_en:
   <<: *default_uint32
@@ -249,6 +274,8 @@ hit_h_b_side_high_en:
   FIELDNAM: High energy (>70 MeV) protons (B-side)
   LABLAXIS: hit_h_b_side_high_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_he_omni_low_en:
   <<: *default_uint32
@@ -256,6 +283,8 @@ hit_he_omni_low_en:
   FIELDNAM: Low energy (6–8 MeV/nuc) He (Omnidirectional)
   LABLAXIS: hit_he_omni_low_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 hit_he_omni_high_en:
   <<: *default_uint32
@@ -263,6 +292,8 @@ hit_he_omni_high_en:
   FIELDNAM: High energy (15–70 MeV/nuc) He (Omnidirectional)
   LABLAXIS: hit_he_omni_high_en
   UNITS: counts per second
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
 
 mag_epoch:
   <<: *default_float32
@@ -347,6 +378,42 @@ mag_theta_B_GSE:
   UNITS: degrees
   VALIDMIN: -90
   VALIDMAX: 90
+
+sc_position_GSM:
+  <<: *default_float32
+  CATDESC: Spacecraft position in GSM coordinates
+  FIELDNAM: sc_position_GSM
+  UNITS: km
+  DEPEND_1: component
+  VALIDMIN: -3000000.0
+  VALIDMAX: 3000000.0
+
+sc_velocity_GSM:
+  <<: *default_float32
+  CATDESC: Spacecraft velocity in GSM coordinates
+  FIELDNAM: sc_velocity_GSM
+  UNITS: km/s
+  DEPEND_1: component
+  VALIDMIN: -1000.0
+  VALIDMAX: 1000.0
+
+sc_position_GSE:
+  <<: *default_float32
+  CATDESC: Spacecraft position in GSE coordinates
+  FIELDNAM: sc_position_GSE
+  UNITS: km
+  DEPEND_1: component
+  VALIDMIN: -3000000.0
+  VALIDMAX: 3000000.0
+
+sc_velocity_GSE:
+  <<: *default_float32
+  CATDESC: Spacecraft velocity in GSE coordinates
+  FIELDNAM: sc_velocity_GSE
+  UNITS: km/s
+  DEPEND_1: component
+  VALIDMIN: -1000.0
+  VALIDMAX: 1000.0
 
 swapi_pseudo_proton_density:
   <<: *default_float32

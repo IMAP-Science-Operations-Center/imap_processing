@@ -25,7 +25,6 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     cdf_manager.add_instrument_global_attrs("ialirt")
     cdf_manager.add_instrument_variable_attrs("ialirt", "l1")
 
-    instrument_keys: set[str] = set(IALIRT_KEYS)
     n = len(records)
     attrs = cdf_manager.get_variable_attributes("default_int64_attrs")
     fillval = attrs.get("FILLVAL")
@@ -104,7 +103,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     # Create empty dataset for each key.
-    for key in instrument_keys:
+    for key in IALIRT_KEYS:
         attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
         fillval = attrs.get("FILLVAL")
         if key in ["mag_B_GSE", "mag_B_GSM"]:
