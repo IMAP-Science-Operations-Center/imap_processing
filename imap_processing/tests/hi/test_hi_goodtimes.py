@@ -1119,7 +1119,7 @@ class TestDropDrfTimes:
                 goodtimes_for_drf["cull_flags"].values[i, :] == custom_cull_code
             ), f"MET at index {i} should use custom cull code"
 
-    def test_drop_drf_times_preserves_existing_culls(
+    def test_drop_drf_times_overwrites_existing_culls(
         self, goodtimes_for_drf, hk_single_drf_transition
     ):
         """Test that existing cull flags are overwritten by DRF culling."""

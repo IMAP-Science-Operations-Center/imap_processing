@@ -532,7 +532,7 @@ def drop_incomplete_spin_sets(
     This function modifies goodtimes_ds in place by calling remove_times()
     for MET timestamps with incomplete spin coverage.
     """
-    logger.info("Running drop_partial_packets culling")
+    logger.info("Running drop_incomplete_spin_sets culling")
 
     met_values = goodtimes_ds.coords["met"].values
 
@@ -605,7 +605,7 @@ def drop_incomplete_spin_sets(
     if bad_mets:
         goodtimes_ds.goodtimes.remove_times(met=np.array(bad_mets), cull=cull_code)
 
-    logger.info(f"Dropped {len(bad_mets)} partial DE packet(s)")
+    logger.info(f"Dropped {len(bad_mets)} incomplete 8-spin period(s)")
 
 
 def drop_drf_times(
@@ -662,6 +662,8 @@ def drop_drf_times(
     # Transition from 1->0 shows as -1 in diff
     # diff[i] = status[i+1] - status[i], so add 1 to get index where it became 0
     transition_indices = np.nonzero(drf_diff == -1)[0] + 1
+    # Ensure transition_indices is always iterable, even if a scalar is returned
+    transition_indices = np.atleast_1d(transition_indices)
 
     # For each DRF deactivation, remove times in 30-minute window before
     for idx in transition_indices:
