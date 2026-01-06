@@ -1160,7 +1160,7 @@ class TestInterpolateMapFluxToHelioFrame:
             == map_ds["ena_intensity_sys_err"].shape
         )
 
-    def test_energy_unit_insensivity(self):
+    def test_energy_unit_insensitivity(self):
         """Test that units of eV or keV produce the same result."""
 
         map_ds, esa_energies, helio_energies = self.create_test_map_dataset()
@@ -1174,13 +1174,7 @@ class TestInterpolateMapFluxToHelioFrame:
         )
 
         # Verify results are the same
-        np.testing.assert_array_equal(ev_ds["ena_intensity"], kev_ds["ena_intensity"])
-        np.testing.assert_array_equal(
-            ev_ds["ena_intensity_stat_uncert"], kev_ds["ena_intensity_stat_uncert"]
-        )
-        np.testing.assert_array_equal(
-            ev_ds["ena_intensity_sys_err"], kev_ds["ena_intensity_sys_err"]
-        )
+        xr.testing.assert_equal(ev_ds, kev_ds)
 
     def test_power_law_interpolation_accuracy(self):
         """Test that power-law interpolation formula is correct."""
