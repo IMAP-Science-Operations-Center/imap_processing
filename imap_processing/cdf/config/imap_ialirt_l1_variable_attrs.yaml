@@ -216,8 +216,8 @@ hit_e_a_side_high_en:
 
 hit_e_b_side_low_en:
   <<: *default_uint32
-  CATDESC: Low energy (>0.5 keV) electrons (B-side)
-  FIELDNAM: Low energy (>0.5 keV) electrons (B-side)
+  CATDESC: Low energy (>0.5 MeV) electrons (B-side)
+  FIELDNAM: Low energy (>0.5 MeV) electrons (B-side)
   LABLAXIS: hit_e_b_side_low_en
   UNITS: counts per second
   VALIDMIN: 0
