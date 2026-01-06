@@ -207,6 +207,7 @@ hit_e_a_side_low_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_a_side_med_en:
   <<: *default_uint32
@@ -216,6 +217,7 @@ hit_e_a_side_med_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_a_side_high_en:
   <<: *default_uint32
@@ -225,6 +227,7 @@ hit_e_a_side_high_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_b_side_low_en:
   <<: *default_uint32
@@ -234,6 +237,7 @@ hit_e_b_side_low_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_b_side_med_en:
   <<: *default_uint32
@@ -243,6 +247,7 @@ hit_e_b_side_med_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_b_side_high_en:
   <<: *default_uint32
@@ -252,6 +257,7 @@ hit_e_b_side_high_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_h_omni_low_en:
   <<: *default_uint32
@@ -279,6 +285,7 @@ hit_h_a_side_high_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_h_b_side_high_en:
   <<: *default_uint32
@@ -288,6 +295,7 @@ hit_h_b_side_high_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_he_omni_low_en:
   <<: *default_uint32
@@ -314,7 +322,7 @@ mag_epoch:
   LABLAXIS: MAG epoch
   UNITS: ns
   VALIDMIN: 0.0
-  VALIDMAX: 9223372036854775807
+  VALIDMAX: 9223372036854775807.0
 
 mag_B_GSE:
   <<: *default_float32
@@ -324,8 +332,8 @@ mag_B_GSE:
   LABL_PTR_1: component
   UNITS: nT
   DEPEND_1: component
-  VALIDMIN: -65000
-  VALIDMAX: 65000
+  VALIDMIN: -65000.0
+  VALIDMAX: 65000.0
 
 mag_B_GSM:
   <<: *default_float32
@@ -335,8 +343,8 @@ mag_B_GSM:
   LABL_PTR_1: component
   UNITS: nT
   DEPEND_1: component
-  VALIDMIN: -65000
-  VALIDMAX: 65000
+  VALIDMIN: -65000.0
+  VALIDMAX: 65000.0
 
 mag_B_RTN:
   <<: *default_float32
@@ -346,8 +354,8 @@ mag_B_RTN:
   LABL_PTR_1: RTN_component
   UNITS: nT
   DEPEND_1: RTN_component
-  VALIDMIN: -65000
-  VALIDMAX: 65000
+  VALIDMIN: -65000.0
+  VALIDMAX: 65000.0
 
 mag_B_magnitude:
   <<: *default_float32
@@ -355,8 +363,8 @@ mag_B_magnitude:
   FIELDNAM: Magnetic field magnitude
   LABLAXIS: B Magnitude
   UNITS: nT
-  VALIDMIN: 0
-  VALIDMAX: 65000
+  VALIDMIN: 0.0
+  VALIDMAX: 65000.0
 
 mag_phi_B_GSM:
   <<: *default_float32
@@ -364,8 +372,8 @@ mag_phi_B_GSM:
   FIELDNAM: B azimuth angle in GSM
   LABLAXIS: B azimuth (GSM)
   UNITS: degrees
-  VALIDMIN: 0
-  VALIDMAX: 360
+  VALIDMIN: 0.0
+  VALIDMAX: 360.0
 
 mag_theta_B_GSM:
   <<: *default_float32
@@ -373,8 +381,8 @@ mag_theta_B_GSM:
   FIELDNAM: B elevation angle in GSM
   LABLAXIS: B elevation (GSM)
   UNITS: degrees
-  VALIDMIN: -90
-  VALIDMAX: 90
+  VALIDMIN: -90.0
+  VALIDMAX: 90.0
 
 mag_phi_B_GSE:
   <<: *default_float32
@@ -382,8 +390,8 @@ mag_phi_B_GSE:
   FIELDNAM: B azimuth angle in GSE
   LABLAXIS: B azimuth (GSE)
   UNITS: degrees
-  VALIDMIN: 0
-  VALIDMAX: 360
+  VALIDMIN: 0.0
+  VALIDMAX: 360.0
 
 mag_theta_B_GSE:
   <<: *default_float32
@@ -391,8 +399,8 @@ mag_theta_B_GSE:
   FIELDNAM: B elevation angle in GSE
   LABLAXIS: B elevation (GSE)
   UNITS: degrees
-  VALIDMIN: -90
-  VALIDMAX: 90
+  VALIDMIN: -90.0
+  VALIDMAX: 90.0
 
 sc_position_GSM:
   <<: *default_float32
@@ -481,4 +489,4 @@ swe_counterstreaming_electrons:
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 1
-  VAR_NOTES: A value of 1 indicates that counterstreaming electrons were observed, a value of 0 indicates unidirectional electron flow..
+  VAR_NOTES: A value of 1 indicates that counterstreaming electrons were observed, a value of 0 indicates unidirectional electron flow.
