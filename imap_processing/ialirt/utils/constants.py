@@ -59,4 +59,12 @@ IALIRT_KEYS = [
     "swe_normalized_counts",
     # SWE Counterstreaming flag
     "swe_counterstreaming_electrons",
+    # Spacecraft position in GSM coordinates
+    "sc_position_GSM",
+    # Spacecraft velocity in GSM coordinates
+    "sc_velocity_GSM",
+    # Spacecraft position in GSE coordinates
+    "sc_position_GSE",
+    # Spacecraft velocity in GSE coordinates
+    "sc_velocity_GSE",
 ]

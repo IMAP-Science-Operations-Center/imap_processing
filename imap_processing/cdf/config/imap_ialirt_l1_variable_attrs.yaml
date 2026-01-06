@@ -9,19 +9,24 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: " "
 
-component:
-  CATDESC: Component direction (x, y, z)
-  FIELDNAM: Vector component
-  LABLAXIS: Component
-  FORMAT: A3
+B_GSM_labels:
+  CATDESC: B GSM component labels
+  FIELDNAM: B GSM component labels
+  FORMAT: A8
   VAR_TYPE: metadata
   UNITS: " "
 
-RTN_component:
-  CATDESC: Component direction (radial, tangential, normal)
-  FIELDNAM: RTN vector component
-  LABLAXIS: RTN component
-  FORMAT: A3
+B_GSE_labels:
+  CATDESC: B GSE component labels
+  FIELDNAM: B GSE component labels
+  FORMAT: A8
+  VAR_TYPE: metadata
+  UNITS: " "
+
+B_RTN_labels:
+  CATDESC: B RTN component labels B radial (RTN), B tangential (RTN), B normal (RTN)
+  FIELDNAM: B RTN component labels
+  FORMAT: A18
   VAR_TYPE: metadata
   UNITS: " "
 
@@ -267,6 +272,7 @@ hit_h_omni_low_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_h_omni_med_en:
   <<: *default_uint32
@@ -276,6 +282,7 @@ hit_h_omni_med_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_h_a_side_high_en:
   <<: *default_uint32
@@ -305,6 +312,7 @@ hit_he_omni_low_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_he_omni_high_en:
   <<: *default_uint32
@@ -314,6 +322,7 @@ hit_he_omni_high_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
+  VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 mag_epoch:
   <<: *default_float32
@@ -327,40 +336,40 @@ mag_epoch:
 mag_B_GSE:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSE coordinates
-  FIELDNAM: Magnetic field in GSE
+  FIELDNAM: B vector in GSE coordinates
   LABLAXIS: B (GSE)
-  LABL_PTR_1: component
+  LABL_PTR_1: B_GSE_labels
   UNITS: nT
-  DEPEND_1: component
+  FORMAT: F13.6
   VALIDMIN: -65000.0
   VALIDMAX: 65000.0
 
 mag_B_GSM:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSM coordinates
-  FIELDNAM: Magnetic field in GSM
+  FIELDNAM: B vector in GSM coordinates
   LABLAXIS: B (GSM)
-  LABL_PTR_1: component
+  LABL_PTR_1: B_GSM_labels
   UNITS: nT
-  DEPEND_1: component
+  FORMAT: F13.6
   VALIDMIN: -65000.0
   VALIDMAX: 65000.0
 
 mag_B_RTN:
   <<: *default_float32
   CATDESC: Magnetic field vector in RTN coordinates
-  FIELDNAM: Magnetic field in RTN
+  FIELDNAM: B vector in RTN coordinates
   LABLAXIS: B (RTN)
-  LABL_PTR_1: RTN_component
+  LABL_PTR_1: B_RTN_labels
   UNITS: nT
-  DEPEND_1: RTN_component
+  FORMAT: F13.6
   VALIDMIN: -65000.0
   VALIDMAX: 65000.0
 
 mag_B_magnitude:
   <<: *default_float32
   CATDESC: Magnitude of the magnetic field vector
-  FIELDNAM: Magnetic field magnitude
+  FIELDNAM: B vector magnitude
   LABLAXIS: B Magnitude
   UNITS: nT
   VALIDMIN: 0.0
@@ -369,7 +378,7 @@ mag_B_magnitude:
 mag_phi_B_GSM:
   <<: *default_float32
   CATDESC: Azimuth angle (φ) of the magnetic field in GSM coordinates
-  FIELDNAM: B azimuth angle in GSM
+  FIELDNAM: B azimuth angle in GSM coordinates
   LABLAXIS: B azimuth (GSM)
   UNITS: degrees
   VALIDMIN: 0.0
@@ -378,7 +387,7 @@ mag_phi_B_GSM:
 mag_theta_B_GSM:
   <<: *default_float32
   CATDESC: Elevation angle (θ) of the magnetic field in GSM coordinates
-  FIELDNAM: B elevation angle in GSM
+  FIELDNAM: B elevation angle in GSM coordinates
   LABLAXIS: B elevation (GSM)
   UNITS: degrees
   VALIDMIN: -90.0
@@ -387,7 +396,7 @@ mag_theta_B_GSM:
 mag_phi_B_GSE:
   <<: *default_float32
   CATDESC: Azimuth angle (φ) of the magnetic field in GSE coordinates
-  FIELDNAM: B azimuth angle in GSE
+  FIELDNAM: B azimuth angle in GSE coordinates
   LABLAXIS: B azimuth (GSE)
   UNITS: degrees
   VALIDMIN: 0.0
@@ -396,7 +405,7 @@ mag_phi_B_GSE:
 mag_theta_B_GSE:
   <<: *default_float32
   CATDESC: Elevation angle (θ) of the magnetic field in GSE coordinates
-  FIELDNAM: B elevation angle in GSE
+  FIELDNAM: B elevation angle in GSE coordinates
   LABLAXIS: B elevation (GSE)
   UNITS: degrees
   VALIDMIN: -90.0
@@ -405,10 +414,10 @@ mag_theta_B_GSE:
 sc_position_GSM:
   <<: *default_float32
   CATDESC: Spacecraft position vector in GSM coordinates
-  FIELDNAM: Spacecraft position in GSM
+  FIELDNAM: Spacecraft position in GSM coordinates
   LABLAXIS: SC position (GSM)
   UNITS: km
-  DEPEND_1: component
+  LABL_PTR_1: B_GSM_labels
   VALIDMIN: -3000000.0
   VALIDMAX: 3000000.0
 
@@ -418,7 +427,7 @@ sc_velocity_GSM:
   FIELDNAM: Spacecraft velocity in GSM
   LABLAXIS: SC velocity (GSM)
   UNITS: km/s
-  DEPEND_1: component
+  LABL_PTR_1: B_GSM_labels
   VALIDMIN: -1000.0
   VALIDMAX: 1000.0
 
@@ -428,7 +437,7 @@ sc_position_GSE:
   FIELDNAM: Spacecraft position in GSE
   LABLAXIS: SC position (GSE)
   UNITS: km
-  DEPEND_1: component
+  LABL_PTR_1: B_GSE_labels
   VALIDMIN: -3000000.0
   VALIDMAX: 3000000.0
 
@@ -438,7 +447,7 @@ sc_velocity_GSE:
   FIELDNAM: Spacecraft velocity in GSE
   LABLAXIS: SC velocity (GSE)
   UNITS: km/s
-  DEPEND_1: component
+  LABL_PTR_1: B_GSE_labels
   VALIDMIN: -1000.0
   VALIDMAX: 1000.0
 
@@ -446,28 +455,31 @@ swapi_pseudo_proton_density:
   <<: *default_float32
   CATDESC: Pseudo density of solar wind protons
   FIELDNAM: SW proton pseudo density
-  LABLAXIS: proton density
+  LABLAXIS: SW p pseudo N
   UNITS: 1/cm^3
   VALIDMIN: 0.0
   VALIDMAX: 1000.0
+  VAR_NOTES: The pseudo density is derived from the SWAPI proton moments but does not account for instrument calibration factors.
 
 swapi_pseudo_proton_speed:
   <<: *default_float32
   CATDESC: Pseudo speed of solar wind protons in solar inertial frame
-  FIELDNAM: SW proton pseudo speed
-  LABLAXIS: proton speed
+  FIELDNAM: SW proton pseudo V in solar inertial frame
+  LABLAXIS: SW p pseudo V
   UNITS: km/sec
   VALIDMIN: 0.0
   VALIDMAX: 10000.0
+  VAR_NOTES: The pseudo speed is derived from the SWAPI proton moments but does not account for instrument calibration factors.
 
 swapi_pseudo_proton_temperature:
   <<: *default_float32
   CATDESC: Pseudo temperature of solar wind protons in plasma frame
   FIELDNAM: SW proton pseudo temperature
-  LABLAXIS: proton temperature
+  LABLAXIS: SW p pseudo T
   UNITS: Kelvin
   VALIDMIN: 0.0
   VALIDMAX: 50000000.0
+  VAR_NOTES: The pseudo temperature is derived from the SWAPI proton moments but does not account for instrument calibration factors.
 
 # SWE Normalized Counts
 swe_normalized_counts:

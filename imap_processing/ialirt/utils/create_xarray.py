@@ -40,18 +40,26 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("epoch", check_schema=False),
     )
-    component = xr.DataArray(
-        ["x", "y", "z"],
-        name="component",
-        dims=["component"],
-        attrs=cdf_manager.get_variable_attributes("component", check_schema=False),
+
+    gsm_component = xr.DataArray(
+        ["Bx (GSM)", "By (GSM)", "Bz (GSM)"],
+        name="B_GSM_labels",
+        dims=["B_GSM_labels"],
+        attrs=cdf_manager.get_variable_attributes("B_GSM_labels", check_schema=False),
+    )
+
+    gse_component = xr.DataArray(
+        ["Bx (GSE)", "By (GSE)", "Bz (GSE)"],
+        name="B_GSE_labels",
+        dims=["B_GSE_labels"],
+        attrs=cdf_manager.get_variable_attributes("B_GSE_labels", check_schema=False),
     )
 
     rtn_component = xr.DataArray(
-        ["radial", "tangential", "normal"],
-        name="RTN_component",
-        dims=["RTN_component"],
-        attrs=cdf_manager.get_variable_attributes("RTN_component", check_schema=False),
+        ["B radial (RTN)", "B tangential (RTN)", "B normal (RTN)"],
+        name="B_RTN_labels",
+        dims=["B_RTN_labels"],
+        attrs=cdf_manager.get_variable_attributes("B_RTN_labels", check_schema=False),
     )
 
     esa_step = xr.DataArray(
@@ -99,8 +107,9 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     coords = {
         "epoch": epoch,
-        "component": component,
-        "RTN_component": rtn_component,
+        "B_GSM_labels": gsm_component,
+        "B_GSE_labels": gse_component,
+        "B_RTN_labels": rtn_component,
         "esa_step": esa_step,
         "codice_hi_h_spin_angle": spin_angle,
         "codice_hi_h_energy_range": energy_range,
@@ -116,13 +125,17 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     for key in IALIRT_KEYS:
         attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
         fillval = attrs.get("FILLVAL")
-        if key in ["mag_B_GSE", "mag_B_GSM"]:
+        if key in ["mag_B_GSE", "sc_position_GSE", "sc_velocity_GSE"]:
             data = np.full((n, 3), fillval, dtype=np.float32)
-            dims = ["epoch", "component"]
+            dims = ["epoch", "B_GSE_labels"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
+        elif key in ["mag_B_GSM", "sc_position_GSM", "sc_velocity_GSM"]:
+            data = np.full((n, 3), fillval, dtype=np.float32)
+            dims = ["epoch", "B_GSM_labels"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key == "mag_B_RTN":
             data = np.full((n, 3), fillval, dtype=np.float32)
-            dims = ["epoch", "RTN_component"]
+            dims = ["epoch", "B_RTN_labels"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key.startswith("codice_hi"):
             data = np.full((n, 4, 15, 4, 4), fillval, dtype=np.float32)
