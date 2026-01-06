@@ -912,8 +912,6 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
         # Xarray automatically aligns dimensions and coordinates, making it easier
         # to work with multi-dimensional data. Thus, we convert the efficiencies
         # to xarray.DataArray with dimensions (energy, inst_az)
-        # replace '_' with '-' to match CSV species naming
-        # species_csv_name = species.replace("_", "-")
         species_data = efficiencies_df[efficiencies_df["species"] == species].values
         species_efficiencies = xr.DataArray(
             species_data[:, 2:].astype(
