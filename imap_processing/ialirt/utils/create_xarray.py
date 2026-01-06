@@ -41,6 +41,20 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_variable_attributes("epoch", check_schema=False),
     )
 
+    sc_gsm_component = xr.DataArray(
+        ["x (GSM)", "y (GSM)", "z (GSM)"],
+        name="sc_GSM_labels",
+        dims=["sc_GSM_labels"],
+        attrs=cdf_manager.get_variable_attributes("sc_GSM_labels", check_schema=False),
+    )
+
+    sc_gse_component = xr.DataArray(
+        ["x (GSE)", "y (GSE)", "z (GSE)"],
+        name="sc_GSE_labels",
+        dims=["sc_GSE_labels"],
+        attrs=cdf_manager.get_variable_attributes("sc_GSE_labels", check_schema=False),
+    )
+
     gsm_component = xr.DataArray(
         ["Bx (GSM)", "By (GSM)", "Bz (GSM)"],
         name="B_GSM_labels",
@@ -121,6 +135,8 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "B_GSM_labels": gsm_component,
         "B_GSE_labels": gse_component,
         "B_RTN_labels": rtn_component,
+        "sc_GSM_labels": sc_gsm_component,
+        "sc_GSE_labels": sc_gse_component,
         "swe_electron_energy_labels": swe_electron_energy_labels,
         "codice_hi_h_spin_angle": spin_angle,
         "codice_hi_h_energy_range": energy_range,
@@ -136,11 +152,19 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     for key in IALIRT_KEYS:
         attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
         fillval = attrs.get("FILLVAL")
-        if key in ["mag_B_GSE", "sc_position_GSE", "sc_velocity_GSE"]:
+        if key == "mag_B_GSE":
             data = np.full((n, 3), fillval, dtype=np.float32)
             dims = ["epoch", "B_GSE_labels"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key in ["mag_B_GSM", "sc_position_GSM", "sc_velocity_GSM"]:
+        elif key in ["sc_position_GSE", "sc_velocity_GSE"]:
+            data = np.full((n, 3), fillval, dtype=np.float32)
+            dims = ["epoch", "sc_GSE_labels"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
+        elif key in ["sc_position_GSM", "sc_velocity_GSM"]:
+            data = np.full((n, 3), fillval, dtype=np.float32)
+            dims = ["epoch", "sc_GSM_labels"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
+        elif key == "mag_B_GSM":
             data = np.full((n, 3), fillval, dtype=np.float32)
             dims = ["epoch", "B_GSM_labels"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
