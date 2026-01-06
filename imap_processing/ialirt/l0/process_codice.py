@@ -215,13 +215,17 @@ def convert_to_intensities(
     """
     # Average of the hydrogen efficiencies.
     efficiencies_df = pd.read_csv(l2_lut_path)
-    species_efficiency = efficiencies_df.sort_values(by="energy_bin")
+    species_efficiency = efficiencies_df.sort_values(by="energy_bin")[
+        efficiencies_df["species"] != "GF"
+    ]
     eps_ig = species_efficiency[["group_0", "group_1", "group_2", "group_3"]].to_numpy(
         float
     )
 
     # For omni over 3 SSDs:
-    g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
+    g_g = efficiencies_df[efficiencies_df["species"] == "GF"][
+        ["group_0", "group_1", "group_2", "group_3"]
+    ].to_numpy(float)
 
     # Calculate energy passband from L1B data
     energy_passbands = (
