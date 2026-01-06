@@ -61,21 +61,21 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_variable_attributes("esa_step", check_schema=False),
     )
 
-    energy_ranges = xr.DataArray(
+    energy_range = xr.DataArray(
         data=np.arange(15, dtype=np.uint8),
-        name="codice_hi_h_energy_ranges",
-        dims=["codice_hi_h_energy_ranges"],
+        name="codice_hi_h_energy_range",
+        dims=["codice_hi_h_energy_range"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_energy_ranges", check_schema=False
+            "codice_hi_h_energy_range", check_schema=False
         ),
     )
 
-    elevation = xr.DataArray(
+    azimuth = xr.DataArray(
         data=np.arange(4, dtype=np.uint8),
-        name="codice_hi_h_elevation",
-        dims=["codice_hi_h_elevation"],
+        name="codice_hi_h_azimuth",
+        dims=["codice_hi_h_azimuth"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_elevation", check_schema=False
+            "codice_hi_h_azimuth", check_schema=False
         ),
     )
 
@@ -88,14 +88,24 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
+    spin_sector = xr.DataArray(
+        data=np.arange(4, dtype=np.uint8),
+        name="codice_hi_h_spin_sector",
+        dims=["codice_hi_h_spin_sector"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_h_spin_sector", check_schema=False
+        ),
+    )
+
     coords = {
         "epoch": epoch,
         "component": component,
         "RTN_component": rtn_component,
         "esa_step": esa_step,
-        "codice_hi_h_energy_ranges": energy_ranges,
-        "codice_hi_h_elevation": elevation,
         "codice_hi_h_spin_angle": spin_angle,
+        "codice_hi_h_energy_range": energy_range,
+        "codice_hi_h_spin_sector": spin_sector,
+        "codice_hi_h_azimuth": azimuth,
     }
     dataset = xr.Dataset(
         coords=coords,
@@ -115,12 +125,13 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
             dims = ["epoch", "RTN_component"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key.startswith("codice_hi"):
-            data = np.full((n, 15, 4, 4), fillval, dtype=np.float32)
+            data = np.full((n, 4, 15, 4, 4), fillval, dtype=np.float32)
             dims = [
                 "epoch",
-                "codice_hi_h_energy_ranges",
-                "codice_hi_h_elevation",
                 "codice_hi_h_spin_angle",
+                "codice_hi_h_energy_range",
+                "codice_hi_h_spin_sector",
+                "codice_hi_h_azimuth",
             ]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key == "swe_counterstreaming_electrons":
@@ -149,10 +160,6 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
                 "met_in_utc",
                 "ttj2000ns",
                 "last_modified",
-                "sc_position_GSM",
-                "sc_position_GSE",
-                "sc_velocity_GSM",
-                "sc_velocity_GSE",
                 "mag_hk_status",
                 "spice_kernels",
                 "instrument",
@@ -163,7 +170,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
             elif key.startswith("swe_normalized_counts"):
                 dataset[key].data[i, :] = val
             elif key.startswith("codice_hi"):
-                dataset[key].data[i, :, :, :] = val
+                dataset[key].data[i, :, :, :, :] = val
             else:
                 dataset[key].data[i] = val
 
