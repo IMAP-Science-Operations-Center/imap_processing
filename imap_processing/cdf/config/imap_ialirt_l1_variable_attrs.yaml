@@ -203,7 +203,7 @@ hit_e_a_side_low_en:
   <<: *default_uint32
   CATDESC: Low energy (>0.5 MeV) electrons (A-side)
   FIELDNAM: Electrons low energy (A-side)
-  LABLAXIS: e- low energy (A)
+  LABLAXIS: A-side e- >0.5 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -213,7 +213,7 @@ hit_e_a_side_med_en:
   <<: *default_uint32
   CATDESC: Medium energy (<1 MeV) electrons (A-side)
   FIELDNAM: Electrons medium energy (A-side)
-  LABLAXIS: e- medium energy (A)
+  LABLAXIS: A-side e- <1 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -223,7 +223,7 @@ hit_e_a_side_high_en:
   <<: *default_uint32
   CATDESC: High energy (>3 MeV) electrons (A-side)
   FIELDNAM: Electrons high energy (A-side)
-  LABLAXIS: e- high energy (A)
+  LABLAXIS: A-side e- >3 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -233,7 +233,7 @@ hit_e_b_side_low_en:
   <<: *default_uint32
   CATDESC: Low energy (>0.5 MeV) electrons (B-side)
   FIELDNAM: Electrons low energy (B-side)
-  LABLAXIS: e- low energy (B)
+  LABLAXIS: B-side e- >0.5 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -242,8 +242,8 @@ hit_e_b_side_low_en:
 hit_e_b_side_med_en:
   <<: *default_uint32
   CATDESC: Medium energy (<1 MeV) electrons (B-side)
-  FIELDNAM: Electrons medium energy (B-side)
-  LABLAXIS: e- medium energy (B)
+  FIELDNAM: Electrons medium energy
+  LABLAXIS: B-side e- <1 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -253,7 +253,7 @@ hit_e_b_side_high_en:
   <<: *default_uint32
   CATDESC: High energy (>3 MeV) electrons (B-side)
   FIELDNAM: Electrons high energy (B-side)
-  LABLAXIS: e- high energy (B)
+  LABLAXIS: B-side e- >3 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -263,7 +263,7 @@ hit_h_omni_low_en:
   <<: *default_uint32
   CATDESC: Low energy (6–8 MeV) protons (omnidirectional)
   FIELDNAM: Protons 6–8 MeV (omni)
-  LABLAXIS: H 6–8 MeV (omni)
+  LABLAXIS: Omni H 6–8 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -272,7 +272,7 @@ hit_h_omni_med_en:
   <<: *default_uint32
   CATDESC: Medium energy (12–15 MeV) protons (omnidirectional)
   FIELDNAM: Protons 12–15 MeV (omni)
-  LABLAXIS: H 12–15 MeV (omni)
+  LABLAXIS: Omni H 12–15 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -281,7 +281,7 @@ hit_h_a_side_high_en:
   <<: *default_uint32
   CATDESC: High energy (>70 MeV) protons (A-side)
   FIELDNAM: Protons >70 MeV (A-side)
-  LABLAXIS: H >70 MeV (A-side)
+  LABLAXIS: A-side H >70 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -291,7 +291,7 @@ hit_h_b_side_high_en:
   <<: *default_uint32
   CATDESC: High energy (>70 MeV) protons (B-side)
   FIELDNAM: Protons >70 MeV (B-side)
-  LABLAXIS: H >70 MeV (B-side)
+  LABLAXIS: B-side H >70 MeV
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -301,7 +301,7 @@ hit_he_omni_low_en:
   <<: *default_uint32
   CATDESC: Low energy (6–8 MeV/nuc) helium (omnidirectional)
   FIELDNAM: Helium 6–8 MeV/nuc (omni)
-  LABLAXIS: He 6–8 MeV/nuc (omni)
+  LABLAXIS: Omni He 6–8 MeV/nuc
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -310,7 +310,7 @@ hit_he_omni_high_en:
   <<: *default_uint32
   CATDESC: High energy (15–70 MeV/nuc) helium (omnidirectional)
   FIELDNAM: Helium 15–70 MeV/nuc (omni)
-  LABLAXIS: He 15–70 MeV/nuc (omni)
+  LABLAXIS: Omni He 15–70 MeV/nuc
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
