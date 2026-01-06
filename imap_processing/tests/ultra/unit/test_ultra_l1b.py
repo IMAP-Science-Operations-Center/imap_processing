@@ -159,6 +159,8 @@ def test_cdf_de(
         test_data_path.name
         == "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
     )
+    # check that event_id exists in the dataset
+    assert "event_id" in l1b_de_dataset[0].variables
 
 
 @pytest.mark.external_test_data
