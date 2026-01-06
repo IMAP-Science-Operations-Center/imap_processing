@@ -77,7 +77,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     swe_electron_energy_labels = xr.DataArray(
-        [
+        data=[
             "100.4 eV",
             "140 eV",
             "194 eV",
@@ -95,7 +95,23 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     energy_range = xr.DataArray(
-        data=np.arange(15, dtype=np.uint8),
+        data=[
+            "0.0200-0.0283 MeV",
+            "0.0283-0.0400 MeV",
+            "0.0400-0.0566 MeV",
+            "0.0566-0.0800 MeV",
+            "0.0800-0.113 MeV",
+            "0.113-0.160 MeV",
+            "0.160-0.226 MeV",
+            "0.226-0.320 MeV",
+            "0.320-0.453 MeV",
+            "0.453-0.640 MeV",
+            "0.640-0.905 MeV",
+            "0.905-1.28 MeV",
+            "1.28-1.81 MeV",
+            "1.81-2.56 MeV",
+            "2.56-3.62 MeV",
+        ],
         name="codice_hi_h_energy_range",
         dims=["codice_hi_h_energy_range"],
         attrs=cdf_manager.get_variable_attributes(
@@ -104,7 +120,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     azimuth = xr.DataArray(
-        data=np.arange(4, dtype=np.uint8),
+        data=["TODO", "TODO", "TODO", "TODO"],
         name="codice_hi_h_azimuth",
         dims=["codice_hi_h_azimuth"],
         attrs=cdf_manager.get_variable_attributes(
@@ -113,7 +129,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     spin_angle = xr.DataArray(
-        data=np.arange(4, dtype=np.uint8),
+        data=["TODO", "TODO", "TODO", "TODO"],
         name="codice_hi_h_spin_angle",
         dims=["codice_hi_h_spin_angle"],
         attrs=cdf_manager.get_variable_attributes(
@@ -122,7 +138,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     spin_sector = xr.DataArray(
-        data=np.arange(4, dtype=np.uint8),
+        data=["TODO", "TODO", "TODO", "TODO"],
         name="codice_hi_h_spin_sector",
         dims=["codice_hi_h_spin_sector"],
         attrs=cdf_manager.get_variable_attributes(

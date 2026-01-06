@@ -65,41 +65,32 @@ codice_hi_h_spin_angle:
     CATDESC: CoDICE-Hi spin angle bin
     FIELDNAM: CoDICE-Hi spin angle bin
     LABLAXIS: Spin angle bin
-    FORMAT: I3
-    VALIDMIN: 0
-    VALIDMAX: 3
-    VAR_TYPE: metadata
-    UNITS: " "
+    FORMAT: A20
+    VAR_TYPE: support_data
+    UNITS: "TODO"
 
 codice_hi_h_energy_range:
-    CATDESC: CoDICE-Hi H energy range
-    FIELDNAM: CoDICE-Hi H energy range
-    LABLAXIS: Energy range
-    FORMAT: I3
-    VALIDMIN: 0
-    VALIDMAX: 14
-    VAR_TYPE: metadata
-    UNITS: " "
+    CATDESC: CoDICE-Hi proton energy bin labels (MeV)
+    FIELDNAM: CoDICE-Hi proton energy bin labels
+    FORMAT: A20
+    VAR_TYPE: support_data
+    UNITS: "MeV"
 
 codice_hi_h_spin_sector:
     CATDESC: CoDICE-Hi spin sector
     FIELDNAM: CoDICE-Hi spin sector
     LABLAXIS: Spin sector
-    FORMAT: I3
-    VALIDMIN: 0
-    VALIDMAX: 3
-    VAR_TYPE: metadata
-    UNITS: " "
+    FORMAT: A20
+    VAR_TYPE: support_data
+    UNITS: "TODO"
 
 codice_hi_h_azimuth:
     CATDESC: CoDICE-Hi azimuth bin
     FIELDNAM: CoDICE-Hi azimuth bin
     LABLAXIS: Azimuth bin
-    FORMAT: I3
-    VALIDMIN: 0
-    VALIDMAX: 3
-    VAR_TYPE: metadata
-    UNITS: " "
+    FORMAT: A20
+    VAR_TYPE: support_data
+    UNITS: "TODO"
 
 default_uint8_attrs: &default_uint8
   <<: *default
@@ -159,17 +150,23 @@ default_float64_attrs: &default_float64
 
 codice_hi_h:
   <<: *default_float32
-  CATDESC: H intensity in 4 spin angle bins, 15 energy ranges, 4 spin sector bins, and 4 azimuth bins
+  CATDESC: Proton intensity in 4 spin angle bins, 15 energy ranges, 4 spin sector bins, and 4 azimuth bins
   FIELDNAM: H intensity
   LABLAXIS: H intensity
-  UNITS: "# / cm2-sr-s- MeV"
+  UNITS: "counts / cm2-sr-s-MeV"
   VALIDMIN: 0
   VALIDMAX: 100000000.0
   DEPEND_1: codice_hi_h_spin_angle
+  LABL_PTR_1: codice_hi_h_spin_angle
   DEPEND_2: codice_hi_h_energy_range
+  LABL_PTR_2: codice_hi_h_energy_range
   DEPEND_3: codice_hi_h_spin_sector
+  LABL_PTR_3: codice_hi_h_spin_sector
   DEPEND_4: codice_hi_h_azimuth
-  VAR_NOTES: Energy ranges (MeV) are 0.0200–0.0283, 0.0283–0.0400, 0.0400–0.0566, 0.0566–0.0800, 0.0800–0.113, 0.113–0.160, 0.160–0.226, 0.226–0.320, 0.320–0.453, 0.453–0.640, 0.640–0.905, 0.905–1.28, 1.28–1.81, 1.81–2.56, 2.56–3.62.
+  LABL_PTR_4: codice_hi_h_azimuth
+  DISPLAY_TYPE: no_plot
+  FORMAT: F16.6
+  VAR_NOTES: Proton intensity for energy ranges (MeV) are 0.0200–0.0283, 0.0283–0.0400, 0.0400–0.0566, 0.0566–0.0800, 0.0800–0.113, 0.113–0.160, 0.160–0.226, 0.226–0.320, 0.320–0.453, 0.453–0.640, 0.640–0.905, 0.905–1.28, 1.28–1.81, 1.81–2.56, 2.56–3.62.
 
 codice_lo_c_over_o_abundance:
   <<: *default_float32
