@@ -909,9 +909,7 @@ class TestDropIncompleteSpinSets:
 
         drop_incomplete_spin_sets(gt, l1a_de_incomplete)
 
-        # First MET should still have code 2 (not overwritten)
-        # Note: This depends on implementation - current implementation may overwrite
-        # For now, just check that complete times are good
+        # Check that complete times are good
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.GOOD)
 
 

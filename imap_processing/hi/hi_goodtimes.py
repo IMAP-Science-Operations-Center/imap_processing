@@ -38,7 +38,7 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
 
     Initializes all times and spin bins as good (cull_flags=0). The goodtimes
     dataset is created with one entry per unique MET timestamp found in the
-    L1A DE data. Culling functions (e.g., drop_partial_packets) should be
+    L1A DE data. Culling functions (e.g., drop_incomplete_spin_sets) should be
     called after creation to identify and flag bad times.
 
     Parameters
