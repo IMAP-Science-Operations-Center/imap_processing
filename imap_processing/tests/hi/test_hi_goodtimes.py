@@ -8,6 +8,7 @@ from imap_processing.hi.hi_goodtimes import (
     INTERVAL_DTYPE,
     CullCode,
     create_goodtimes_dataset,
+    drop_drf_times,
     drop_partial_packets,
 )
 
@@ -904,3 +905,310 @@ class TestDropPartialPackets:
         # Note: This depends on implementation - current implementation may overwrite
         # For now, just check that complete times are good
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.GOOD)
+
+
+class TestDropDrfTimes:
+    """Test suite for drop_drf_times() function."""
+
+    @pytest.fixture
+    def goodtimes_for_drf(self):
+        """Create a goodtimes dataset with METs spanning 2 hours."""
+        # Create METs every 60 seconds for 2 hours (120 METs)
+        n_mets = 120
+        met_values = np.arange(1000.0, 1000.0 + n_mets * 60, 60)
+
+        gt = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((n_mets, 90), dtype=np.uint8), dims=["met", "spin_bin"]
+                ),
+                "esa_step": xr.DataArray(np.ones(n_mets, dtype=np.uint8), dims=["met"]),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+            attrs={"sensor": "Hi45", "pointing": 1},
+        )
+        return gt
+
+    @pytest.fixture
+    def hk_single_drf_transition(self):
+        """Create HK data with one DRF transition from 1->0."""
+        # HK packets every 60 seconds for 2 hours
+        n_hk = 120
+        ccsds_met = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
+
+        # DRF active for first 30 minutes, then inactive
+        # Transition at index 30 (MET 2800.0)
+        fsw_thruster_warn = np.zeros(n_hk, dtype=np.uint8)
+        fsw_thruster_warn[:30] = 1  # DRF active
+
+        hk = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], ccsds_met),
+                "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
+            }
+        )
+        return hk
+
+    @pytest.fixture
+    def hk_multiple_drf_transitions(self):
+        """Create HK data with multiple DRF transitions."""
+        # HK packets every 60 seconds for 2 hours
+        n_hk = 120
+        ccsds_met = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
+
+        # Multiple DRF periods:
+        # Active: 0-30, inactive: 30-60, active: 60-90, inactive: 90-120
+        # Transitions at indices 30 and 90
+        fsw_thruster_warn = np.zeros(n_hk, dtype=np.uint8)
+        fsw_thruster_warn[0:30] = 1  # First DRF period
+        fsw_thruster_warn[60:90] = 1  # Second DRF period
+
+        hk = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], ccsds_met),
+                "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
+            }
+        )
+        return hk
+
+    @pytest.fixture
+    def hk_no_drf(self):
+        """Create HK data with no DRF activity."""
+        n_hk = 120
+        ccsds_met = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
+        fsw_thruster_warn = np.zeros(n_hk, dtype=np.uint8)
+
+        hk = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], ccsds_met),
+                "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
+            }
+        )
+        return hk
+
+    @pytest.fixture
+    def hk_always_drf(self):
+        """Create HK data with DRF always active (no transitions)."""
+        n_hk = 120
+        ccsds_met = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
+        fsw_thruster_warn = np.ones(n_hk, dtype=np.uint8)
+
+        hk = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], ccsds_met),
+                "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
+            }
+        )
+        return hk
+
+    @pytest.fixture
+    def hk_empty(self):
+        """Create empty HK data."""
+        hk = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], np.array([])),
+                "fsw_thruster_warn": (["epoch"], np.array([], dtype=np.uint8)),
+            }
+        )
+        return hk
+
+    def test_drop_drf_times_single_transition(
+        self, goodtimes_for_drf, hk_single_drf_transition
+    ):
+        """Test that a single DRF transition removes 30-minute window."""
+        drop_drf_times(goodtimes_for_drf, hk_single_drf_transition)
+
+        # Transition at index 30 (MET 2800.0)
+        # Window: 2800 - 1800 = 1000 to 2800 (inclusive on both ends)
+        # remove_times uses (met_start, met_end) which includes both endpoints
+        # So METs from 1000 to 2800 should be culled (indices 0-30)
+
+        # Check that METs in the window are culled (indices 0-30)
+        for i in range(31):
+            assert np.all(
+                goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.LOOSE
+            ), (
+                f"MET at index {i} (value "
+                f"{goodtimes_for_drf.coords['met'].values[i]}) should be culled"
+            )
+
+        # Check that METs after the window are good
+        for i in range(31, len(goodtimes_for_drf.coords["met"])):
+            assert np.all(
+                goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.GOOD
+            ), f"MET at index {i} should be good"
+
+    def test_drop_drf_times_multiple_transitions(
+        self, goodtimes_for_drf, hk_multiple_drf_transitions
+    ):
+        """Test that multiple DRF transitions remove multiple windows."""
+        drop_drf_times(goodtimes_for_drf, hk_multiple_drf_transitions)
+
+        # First transition at index 30 (MET 2800.0)
+        # Window: 2800 - 1800 = 1000 to 2800 (inclusive, so indices 0-30)
+
+        # Second transition at index 90 (MET 6400.0)
+        # Window: 6400 - 1800 = 4600 to 6400 (inclusive, so indices 60-90)
+
+        # Check first window (indices 0-30)
+        for i in range(31):
+            assert np.all(
+                goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.LOOSE
+            ), f"MET at index {i} should be culled (first window)"
+
+        # Check between windows (indices 31-59, should be good)
+        for i in range(31, 60):
+            assert np.all(
+                goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.GOOD
+            ), f"MET at index {i} should be good (between windows)"
+
+        # Check second window (indices 60-90)
+        for i in range(60, 91):
+            assert np.all(
+                goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.LOOSE
+            ), f"MET at index {i} should be culled (second window)"
+
+        # Check after second window (indices 91+, should be good)
+        for i in range(91, len(goodtimes_for_drf.coords["met"])):
+            assert np.all(
+                goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.GOOD
+            ), f"MET at index {i} should be good (after windows)"
+
+    def test_drop_drf_times_no_drf(self, goodtimes_for_drf, hk_no_drf):
+        """Test that no times are removed when DRF is never active."""
+        drop_drf_times(goodtimes_for_drf, hk_no_drf)
+
+        # All times should remain good
+        assert np.all(goodtimes_for_drf["cull_flags"].values == CullCode.GOOD)
+
+    def test_drop_drf_times_always_drf(self, goodtimes_for_drf, hk_always_drf):
+        """Test that no times are removed when DRF is always active (no transitions)."""
+        drop_drf_times(goodtimes_for_drf, hk_always_drf)
+
+        # All times should remain good (no 1->0 transitions)
+        assert np.all(goodtimes_for_drf["cull_flags"].values == CullCode.GOOD)
+
+    def test_drop_drf_times_empty_hk(self, goodtimes_for_drf, hk_empty):
+        """Test that function handles empty HK data gracefully."""
+        # Should log warning and return without error
+        drop_drf_times(goodtimes_for_drf, hk_empty)
+
+        # All times should remain good
+        assert np.all(goodtimes_for_drf["cull_flags"].values == CullCode.GOOD)
+
+    def test_drop_drf_times_custom_cull_code(
+        self, goodtimes_for_drf, hk_single_drf_transition
+    ):
+        """Test that custom cull code is used."""
+        custom_cull_code = 5
+        drop_drf_times(
+            goodtimes_for_drf, hk_single_drf_transition, cull_code=custom_cull_code
+        )
+
+        # Check that culled times use custom code (indices 0-30)
+        for i in range(31):
+            assert np.all(
+                goodtimes_for_drf["cull_flags"].values[i, :] == custom_cull_code
+            ), f"MET at index {i} should use custom cull code"
+
+    def test_drop_drf_times_preserves_existing_culls(
+        self, goodtimes_for_drf, hk_single_drf_transition
+    ):
+        """Test that existing cull flags are overwritten by DRF culling."""
+        # Manually set some METs to a different cull code
+        goodtimes_for_drf["cull_flags"].values[0:5, :] = 2
+
+        drop_drf_times(goodtimes_for_drf, hk_single_drf_transition)
+
+        # First 5 METs should now be LOOSE (overwritten), not 2
+        for i in range(5):
+            assert np.all(
+                goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.LOOSE
+            )
+
+    def test_drop_drf_times_transition_at_start(self):
+        """Test DRF transition near the start - window exactly at data start."""
+        # Create goodtimes starting at a later time
+        met_values = np.arange(2000.0, 4000.0, 60)
+        gt = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((len(met_values), 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                ),
+                "esa_step": xr.DataArray(
+                    np.ones(len(met_values), dtype=np.uint8), dims=["met"]
+                ),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+            attrs={"sensor": "Hi45", "pointing": 1},
+        )
+
+        # HK with DRF active for first 30 samples, then transition
+        # Transition at index 30 gives window that exactly matches goodtimes start
+        ccsds_met = np.arange(2000.0, 4000.0, 60)
+        fsw_thruster_warn = np.zeros(len(ccsds_met), dtype=np.uint8)
+        fsw_thruster_warn[0:30] = 1  # Active for first 30 samples
+
+        hk = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], ccsds_met),
+                "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
+            }
+        )
+
+        drop_drf_times(gt, hk)
+
+        # Transition at index 30 (MET 3800.0)
+        # Window: 3800 - 1800 = 2000 to 3800
+        # This includes METs from 2000 to 3800 (indices 0-30)
+        for i in range(31):
+            assert np.all(gt["cull_flags"].values[i, :] == CullCode.LOOSE), (
+                f"MET at index {i} should be culled"
+            )
+
+        # Rest should be good
+        for i in range(31, len(met_values)):
+            assert np.all(gt["cull_flags"].values[i, :] == CullCode.GOOD), (
+                f"MET at index {i} should be good"
+            )
+
+    def test_drop_drf_times_transition_at_end(self):
+        """Test DRF transition at the very end of HK data."""
+        # Create goodtimes
+        met_values = np.arange(1000.0, 3000.0, 60)
+        gt = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((len(met_values), 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                ),
+                "esa_step": xr.DataArray(
+                    np.ones(len(met_values), dtype=np.uint8), dims=["met"]
+                ),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+            attrs={"sensor": "Hi45", "pointing": 1},
+        )
+
+        # HK with DRF becoming active mid-way, then transition at end
+        ccsds_met = np.arange(1000.0, 3000.0, 60)
+        fsw_thruster_warn = np.zeros(len(ccsds_met), dtype=np.uint8)
+        fsw_thruster_warn[-10:] = 1  # Active for last 10 samples
+        fsw_thruster_warn[-1] = 0  # Transition at last sample
+
+        hk = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], ccsds_met),
+                "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
+            }
+        )
+
+        drop_drf_times(gt, hk)
+
+        # Transition at last index (MET ~2940)
+        # Should remove 30-minute window before it
+        # Most METs should still be good except the last ~30
+        n_culled = np.sum(gt["cull_flags"].values[:, 0] == CullCode.LOOSE)
+        assert n_culled > 0  # Some should be culled
+        assert n_culled <= 31  # But not all (only last ~30 minutes)
