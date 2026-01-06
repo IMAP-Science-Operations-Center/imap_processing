@@ -179,6 +179,7 @@ codice_lo_c_over_o_abundance:
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
+  FORMAT: F16.6
 
 codice_lo_mg_over_o_abundance:
   <<: *default_float32
@@ -188,6 +189,7 @@ codice_lo_mg_over_o_abundance:
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
+  FORMAT: F16.6
 
 codice_lo_fe_over_o_abundance:
   <<: *default_float32
@@ -197,33 +199,37 @@ codice_lo_fe_over_o_abundance:
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
+  FORMAT: F16.6
 
 codice_lo_c_plus_6_over_c_plus_5_ratio:
   <<: *default_float32
   CATDESC: C+6/C+5 charge state ratio
-  FIELDNAM: C6+/C5+ charge ratio
-  LABLAXIS: C6+/C5+
+  FIELDNAM: C+6/C+5 charge state ratio
+  LABLAXIS: C+6/C+5 ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
+  FORMAT: F16.6
 
 codice_lo_o_plus_7_over_o_plus_6_ratio:
   <<: *default_float32
   CATDESC: O+7/O+6 charge state ratio
-  FIELDNAM: O7+/O6+ charge ratio
-  LABLAXIS: O7+/O6+
+  FIELDNAM: O7+/O6+ charge state ratio
+  LABLAXIS: O7+/O6+ ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
+  FORMAT: F16.6
 
 codice_lo_fe_low_over_fe_high_ratio:
   <<: *default_float32
   CATDESC: Fe low/high charge state ratio (low=6–12, high=13–17)
-  FIELDNAM: Fe low/high charge ratio
-  LABLAXIS: Fe low/high
+  FIELDNAM: Fe low/high charge state ratio
+  LABLAXIS: Fe low/high ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
+  FORMAT: F16.6
 
 hit_e_a_side_low_en:
   <<: *default_uint32
