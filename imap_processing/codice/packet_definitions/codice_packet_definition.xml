@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="COD">
-	<xtce:Header date="19/04/2024" version="1" author="IMAP SDC" />
+	<xtce:Header date="04/12/2025" version="1" author="IMAP SDC" source_file="TLM_COD.xlsx" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">
@@ -45,7 +45,7 @@
 			<xtce:EnumeratedParameterType name="COD_NHK.LAST_OPCODE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="ERROR" />
+					<xtce:Enumeration value="0" label="NONE" />
 					<xtce:Enumeration value="4096" label="COD_NOOP" />
 					<xtce:Enumeration value="4097" label="COD_RESET" />
 					<xtce:Enumeration value="4098" label="COD_SHUTDOWN" />
@@ -297,8 +297,17 @@
 					<xtce:Enumeration value="1" label="EN" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="COD_NHK.LO_ESA_OP_ST" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NORMAL" />
+					<xtce:Enumeration value="1" label="RGFO" />
+					<xtce:Enumeration value="2" label="NSO" />
+					<xtce:Enumeration value="3" label="INVALID" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.SPARE_4" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.ESAA_DAC" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
@@ -358,7 +367,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.1587301587301587" exponent="1" />
+							<xtce:Term coefficient="0.1465201465201465" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -439,7 +448,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-4.731379731379731" exponent="1" />
+							<xtce:Term coefficient="4.319650655022997" exponent="0" />
+							<xtce:Term coefficient="-5.067248908296944" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -567,46 +577,28 @@
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.MDM25P_14_T" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.MDM25P_15_T" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.MDM25P_16_T" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.MDM51P_27_T" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.IO_HVPS_T" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-221.1818252275" exponent="0" />
+							<xtce:Term coefficient="0.8267522147985" exponent="1" />
+							<xtce:Term coefficient="-0.001244271145701" exponent="2" />
+							<xtce:Term coefficient="1.042036140147e-06" exponent="3" />
+							<xtce:Term coefficient="-4.838134493789e-10" exponent="4" />
+							<xtce:Term coefficient="1.170514336388e-13" exponent="5" />
+							<xtce:Term coefficient="-1.149646218581e-17" exponent="6" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -615,7 +607,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-273.2" exponent="0" />
+							<xtce:Term coefficient="0.1444619083" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -624,7 +617,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-273.2" exponent="0" />
+							<xtce:Term coefficient="0.1444619083" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -633,7 +627,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-273.2" exponent="0" />
+							<xtce:Term coefficient="0.1444619083" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -688,7 +683,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.0009156844968268358" exponent="1" />
+							<xtce:Term coefficient="0.0009132947976878612" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -697,8 +692,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.110223024625157e-16" exponent="0" />
-							<xtce:Term coefficient="0.0004921562596124269" exponent="1" />
+							<xtce:Term coefficient="0.0004919831223628692" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -707,8 +701,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.110223024625157e-16" exponent="0" />
-							<xtce:Term coefficient="0.0004921562596124269" exponent="1" />
+							<xtce:Term coefficient="0.0004923547400611621" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -717,7 +710,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.0007037943696450428" exponent="1" />
+							<xtce:Term coefficient="0.0007031578947368422" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -726,7 +719,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.0007037943696450428" exponent="1" />
+							<xtce:Term coefficient="0.0001407528641571195" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -796,19 +789,19 @@
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_NHK.TBD_HVPS_1_IF_ERR_CNT" signed="false">
+			<xtce:IntegerParameterType name="COD_NHK.HVPS_1_IF_ERR_CNT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_NHK.TBD_HVPS_2_IF_ERR_CNT" signed="false">
+			<xtce:IntegerParameterType name="COD_NHK.HVPS_2_IF_ERR_CNT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_NHK.TBD_FEE_1_IF_ERR_CNT" signed="false">
+			<xtce:IntegerParameterType name="COD_NHK.FEE_1_IF_ERR_CNT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_NHK.TBD_FEE_2_IF_ERR_CNT" signed="false">
+			<xtce:IntegerParameterType name="COD_NHK.FEE_2_IF_ERR_CNT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_NHK.TBD_MACRO_STATUS" signed="false">
+			<xtce:IntegerParameterType name="COD_NHK.MACRO_STATUS" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="28" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.FDC_TRIGGER_CNT_FSW" signed="false">
@@ -835,15 +828,55 @@
 			<xtce:IntegerParameterType name="COD_NHK.FDC_TRIGGER_CNT_SPARE4" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_NHK.FDC_LAST_TRIGGER_MINMAX" signed="false">
+			<xtce:EnumeratedParameterType name="COD_NHK.FDC_LAST_TRIGGER_MINMAX" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="MIN" />
+					<xtce:Enumeration value="1" label="MAX" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="COD_NHK.FDC_LAST_TRIGGER_ID" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_NHK.FDC_LAST_TRIGGER_ACTION" signed="false">
+			<xtce:EnumeratedParameterType name="COD_NHK.FDC_LAST_TRIGGER_ACTION" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="REPORT_ONLY" />
+					<xtce:Enumeration value="1" label="SOFT_SAFE" />
+					<xtce:Enumeration value="128" label="MACRO_0" />
+					<xtce:Enumeration value="129" label="MACRO_1" />
+					<xtce:Enumeration value="130" label="MACRO_2" />
+					<xtce:Enumeration value="131" label="MACRO_3" />
+					<xtce:Enumeration value="132" label="MACRO_4" />
+					<xtce:Enumeration value="133" label="MACRO_5" />
+					<xtce:Enumeration value="134" label="MACRO_6" />
+					<xtce:Enumeration value="135" label="MACRO_7" />
+					<xtce:Enumeration value="136" label="MACRO_8" />
+					<xtce:Enumeration value="137" label="MACRO_9" />
+					<xtce:Enumeration value="138" label="MACRO_10" />
+					<xtce:Enumeration value="139" label="MACRO_11" />
+					<xtce:Enumeration value="140" label="MACRO_12" />
+					<xtce:Enumeration value="141" label="MACRO_13" />
+					<xtce:Enumeration value="142" label="MACRO_14" />
+					<xtce:Enumeration value="143" label="MACRO_15" />
+					<xtce:Enumeration value="144" label="MACRO_16" />
+					<xtce:Enumeration value="145" label="MACRO_17" />
+					<xtce:Enumeration value="146" label="MACRO_18" />
+					<xtce:Enumeration value="147" label="MACRO_19" />
+					<xtce:Enumeration value="148" label="MACRO_20" />
+					<xtce:Enumeration value="149" label="MACRO_21" />
+					<xtce:Enumeration value="150" label="MACRO_22" />
+					<xtce:Enumeration value="151" label="MACRO_23" />
+					<xtce:Enumeration value="152" label="MACRO_24" />
+					<xtce:Enumeration value="153" label="MACRO_25" />
+					<xtce:Enumeration value="154" label="MACRO_26" />
+					<xtce:Enumeration value="155" label="MACRO_27" />
+					<xtce:Enumeration value="156" label="MACRO_28" />
+					<xtce:Enumeration value="157" label="MACRO_29" />
+					<xtce:Enumeration value="158" label="MACRO_30" />
+					<xtce:Enumeration value="159" label="MACRO_31" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="COD_NHK.ROUND_ROBIN_INDEX" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 				<xtce:EnumerationList>
@@ -1115,7 +1148,7 @@
 					<xtce:Enumeration value="1" label="EN" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
-			<xtce:EnumeratedParameterType name="COD_NHK.HEATER_OUTPUT_STATE" signed="false">
+			<xtce:EnumeratedParameterType name="COD_NHK.HEATER_OUTPUT_STATE_1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
 					<xtce:Enumeration value="0" label="DS" />
@@ -1145,7 +1178,13 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-221.1818252275" exponent="0" />
+							<xtce:Term coefficient="0.8267522147985" exponent="1" />
+							<xtce:Term coefficient="-0.001244271145701" exponent="2" />
+							<xtce:Term coefficient="1.042036140147e-06" exponent="3" />
+							<xtce:Term coefficient="-4.838134493789e-10" exponent="4" />
+							<xtce:Term coefficient="1.170514336388e-13" exponent="5" />
+							<xtce:Term coefficient="-1.149646218581e-17" exponent="6" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -1154,7 +1193,13 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-221.1818252275" exponent="0" />
+							<xtce:Term coefficient="0.8267522147985" exponent="1" />
+							<xtce:Term coefficient="-0.001244271145701" exponent="2" />
+							<xtce:Term coefficient="1.042036140147e-06" exponent="3" />
+							<xtce:Term coefficient="-4.838134493789e-10" exponent="4" />
+							<xtce:Term coefficient="1.170514336388e-13" exponent="5" />
+							<xtce:Term coefficient="-1.149646218581e-17" exponent="6" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -1163,7 +1208,13 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-221.1818252275" exponent="0" />
+							<xtce:Term coefficient="0.8267522147985" exponent="1" />
+							<xtce:Term coefficient="-0.001244271145701" exponent="2" />
+							<xtce:Term coefficient="1.042036140147e-06" exponent="3" />
+							<xtce:Term coefficient="-4.838134493789e-10" exponent="4" />
+							<xtce:Term coefficient="1.170514336388e-13" exponent="5" />
+							<xtce:Term coefficient="-1.149646218581e-17" exponent="6" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -1172,7 +1223,13 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-221.1818252275" exponent="0" />
+							<xtce:Term coefficient="0.8267522147985" exponent="1" />
+							<xtce:Term coefficient="-0.001244271145701" exponent="2" />
+							<xtce:Term coefficient="1.042036140147e-06" exponent="3" />
+							<xtce:Term coefficient="-4.838134493789e-10" exponent="4" />
+							<xtce:Term coefficient="1.170514336388e-13" exponent="5" />
+							<xtce:Term coefficient="-1.149646218581e-17" exponent="6" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -1181,7 +1238,13 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
+							<xtce:Term coefficient="-221.1818252275" exponent="0" />
+							<xtce:Term coefficient="0.8267522147985" exponent="1" />
+							<xtce:Term coefficient="-0.001244271145701" exponent="2" />
+							<xtce:Term coefficient="1.042036140147e-06" exponent="3" />
+							<xtce:Term coefficient="-4.838134493789e-10" exponent="4" />
+							<xtce:Term coefficient="1.170514336388e-13" exponent="5" />
+							<xtce:Term coefficient="-1.149646218581e-17" exponent="6" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -1474,74 +1537,12 @@
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_LO_PHA.PACKET_VERSION" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_LO_PHA.SPIN_PERIOD" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.00032" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_LO_PHA.ACQ_START_SECONDS" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_LO_PHA.ACQ_START_SUBSECONDS" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_LO_PHA.SPARE_1" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:EnumeratedParameterType name="COD_LO_PHA.ST_BIAS_GAIN_MODE" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="LV" />
-					<xtce:Enumeration value="1" label="MV" />
-					<xtce:Enumeration value="2" label="HV" />
-					<xtce:Enumeration value="3" label="nan" />
-				</xtce:EnumerationList>
-			</xtce:EnumeratedParameterType>
-			<xtce:EnumeratedParameterType name="COD_LO_PHA.SW_BIAS_GAIN_MODE" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="LV" />
-					<xtce:Enumeration value="1" label="MV" />
-					<xtce:Enumeration value="2" label="HV" />
-					<xtce:Enumeration value="3" label="nan" />
-				</xtce:EnumerationList>
-			</xtce:EnumeratedParameterType>
-			<xtce:IntegerParameterType name="COD_LO_PHA.PRIORITY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:EnumeratedParameterType name="COD_LO_PHA.SUSPECT" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="NO" />
-					<xtce:Enumeration value="1" label="YES" />
-				</xtce:EnumerationList>
-			</xtce:EnumeratedParameterType>
-			<xtce:EnumeratedParameterType name="COD_LO_PHA.COMPRESSED" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="NO" />
-					<xtce:Enumeration value="1" label="YES" />
-				</xtce:EnumerationList>
-			</xtce:EnumeratedParameterType>
-			<xtce:IntegerParameterType name="COD_LO_PHA.NUM_EVENTS" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_LO_PHA.BYTE_COUNT" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="COD_LO_PHA.EVENT_DATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-200" />
+							<xtce:LinearAdjustment slope="8" intercept="-40" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -1737,7 +1738,6 @@
 					<xtce:Enumeration value="3" label="LOSSLESS_ONLY" />
 					<xtce:Enumeration value="4" label="LOSSY_A_LOSSLESS" />
 					<xtce:Enumeration value="5" label="LOSSY_B_LOSSLESS" />
-					<xtce:Enumeration value="6" label="24_BIT_PACKED" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="COD_LO_SW_SPECIES_COUNTS.BYTE_COUNT" signed="false">
@@ -2422,74 +2422,12 @@
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_HI_PHA.PACKET_VERSION" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_HI_PHA.SPIN_PERIOD" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.00032" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_HI_PHA.ACQ_START_SECONDS" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_HI_PHA.ACQ_START_SUBSECONDS" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_HI_PHA.SPARE_1" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:EnumeratedParameterType name="COD_HI_PHA.ST_BIAS_GAIN_MODE" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="LV" />
-					<xtce:Enumeration value="1" label="MV" />
-					<xtce:Enumeration value="2" label="HV" />
-					<xtce:Enumeration value="3" label="nan" />
-				</xtce:EnumerationList>
-			</xtce:EnumeratedParameterType>
-			<xtce:EnumeratedParameterType name="COD_HI_PHA.SW_BIAS_GAIN_MODE" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="LV" />
-					<xtce:Enumeration value="1" label="MV" />
-					<xtce:Enumeration value="2" label="HV" />
-					<xtce:Enumeration value="3" label="nan" />
-				</xtce:EnumerationList>
-			</xtce:EnumeratedParameterType>
-			<xtce:IntegerParameterType name="COD_HI_PHA.PRIORITY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:EnumeratedParameterType name="COD_HI_PHA.SUSPECT" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="NO" />
-					<xtce:Enumeration value="1" label="YES" />
-				</xtce:EnumerationList>
-			</xtce:EnumeratedParameterType>
-			<xtce:EnumeratedParameterType name="COD_HI_PHA.COMPRESSED" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="NO" />
-					<xtce:Enumeration value="1" label="YES" />
-				</xtce:EnumerationList>
-			</xtce:EnumeratedParameterType>
-			<xtce:IntegerParameterType name="COD_HI_PHA.NUM_EVENTS" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="COD_HI_PHA.BYTE_COUNT" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="COD_HI_PHA.EVENT_DATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-200" />
+							<xtce:LinearAdjustment slope="8" intercept="-40" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -3104,6 +3042,12 @@
 			<xtce:Parameter name="COD_NHK.SBULK_EN" parameterTypeRef="COD_NHK.SBULK_EN" shortDescription="SENSOR HV - P6KV ENABLE" />
 			<xtce:Parameter name="COD_NHK.STPMCP_EN" parameterTypeRef="COD_NHK.STPMCP_EN" shortDescription="SENSOR HV - STOP MCP ENABLE" />
 			<xtce:Parameter name="COD_NHK.STRMCP_EN" parameterTypeRef="COD_NHK.STRMCP_EN" shortDescription="SENSOR HV - START MCP ENABLE" />
+			<xtce:Parameter name="COD_NHK.LO_ESA_OP_ST" parameterTypeRef="COD_NHK.LO_ESA_OP_ST" shortDescription="ESA RGFO/NSO STATUS">
+				<xtce:LongDescription>INDICATES THE CURRENT OPERATIONAL STATE OF THE LO ESA SWEEP:
+- NORMAL - BOTH ESAS ARE TRACKING TOGETHER
+- RGFO - REDUCED GAIN FACTOR OPERATION; ESA-A IS REDUCED IN ORDER TO REDUCE THE GAIN FACTOR AND ALLOW FEWER IONS INTO THE DETECTOR
+- NSO - NO SCAN OPERATION; BOTH ESAS ARE RETURNED TO A HIGH-ENERGY SETTING AND NO SCANNING IS DONE FOR THE REMAINDER OF THE ESA SWEEP</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="COD_NHK.SPARE_4" parameterTypeRef="COD_NHK.SPARE_4" shortDescription="SPARE FOR ALIGNMENT" />
 			<xtce:Parameter name="COD_NHK.ESAA_DAC" parameterTypeRef="COD_NHK.ESAA_DAC" shortDescription="OPTICS HV - ESA A DAC" />
 			<xtce:Parameter name="COD_NHK.ESAB_DAC" parameterTypeRef="COD_NHK.ESAB_DAC" shortDescription="OPTICS HV -  ESA B DAC" />
@@ -3127,17 +3071,27 @@
 			<xtce:Parameter name="COD_NHK.STPMCP_VMON" parameterTypeRef="COD_NHK.STPMCP_VMON" shortDescription="HVPS – V10: STOP MCP VOLTAGE MONITOR" />
 			<xtce:Parameter name="COD_NHK.STPOG_VMON" parameterTypeRef="COD_NHK.STPOG_VMON" shortDescription="HVPS – V11: STOP OPTICS GRID VOLTAGE MONITOR" />
 			<xtce:Parameter name="COD_NHK.APDB1_IMON" parameterTypeRef="COD_NHK.APDB1_IMON" shortDescription="HVPS – V12: APD1 BIAS CURRENT MONITOR" />
-			<xtce:Parameter name="COD_NHK.ESAB_HI_VMON" parameterTypeRef="COD_NHK.ESAB_HI_VMON" shortDescription="HVPS – V13: ESA A HIGH RANGE VOLTAGE MONITOR" />
+			<xtce:Parameter name="COD_NHK.ESAB_HI_VMON" parameterTypeRef="COD_NHK.ESAB_HI_VMON" shortDescription="HVPS – V13: ESA B HIGH RANGE VOLTAGE MONITOR" />
 			<xtce:Parameter name="COD_NHK.SPARE_68" parameterTypeRef="COD_NHK.SPARE_68" shortDescription="SPARE (WAS ESAB_LO_VMON)" />
-			<xtce:Parameter name="COD_NHK.APDB2_IMON" parameterTypeRef="COD_NHK.APDB2_IMON" shortDescription="HVPS – V15: APD2 BIAS CURRENT MONITOR" />
-			<xtce:Parameter name="COD_NHK.SSDB_IMON" parameterTypeRef="COD_NHK.SSDB_IMON" shortDescription="HVPS – V16: SSD BIAS CURRENT MONIOTR" />
-			<xtce:Parameter name="COD_NHK.STPMCP_IMON" parameterTypeRef="COD_NHK.STPMCP_IMON" shortDescription="HVPS – I1: STOP MCP CURRENT MONITOR" />
-			<xtce:Parameter name="COD_NHK.IOBULK_IMON" parameterTypeRef="COD_NHK.IOBULK_IMON" shortDescription="HVPS – I2: IO BULK CURRENTMONITOR" />
-			<xtce:Parameter name="COD_NHK.STRMCP_IMON" parameterTypeRef="COD_NHK.STRMCP_IMON" shortDescription="HVPS – I3: START MCP CURRENT MONITOR" />
-			<xtce:Parameter name="COD_NHK.MDM25P_14_T" parameterTypeRef="COD_NHK.MDM25P_14_T" shortDescription="SYSTEM TEMPERATURE 1: MDM25P – 14 TEMPERATURE" />
-			<xtce:Parameter name="COD_NHK.MDM25P_15_T" parameterTypeRef="COD_NHK.MDM25P_15_T" shortDescription="SYSTEM TEMPERATURE 2: MDM25P – 15 TEMPERATURE" />
-			<xtce:Parameter name="COD_NHK.MDM25P_16_T" parameterTypeRef="COD_NHK.MDM25P_16_T" shortDescription="SYSTEM TEMPERATURE 3: MDM25P – 16 TEMPERATURE" />
-			<xtce:Parameter name="COD_NHK.MDM51P_27_T" parameterTypeRef="COD_NHK.MDM51P_27_T" shortDescription="LO TEMPERATURE: MDM51P – 27 TEMPERATURE" />
+			<xtce:Parameter name="COD_NHK.APDB2_IMON" parameterTypeRef="COD_NHK.APDB2_IMON" shortDescription="HVPS – V15: APD2 BIAS CURRENT MONITOR">
+				<xtce:LongDescription>ALARM PERSISTENCE = 3 IN OASIS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_NHK.SSDB_IMON" parameterTypeRef="COD_NHK.SSDB_IMON" shortDescription="HVPS – V16: SSD BIAS CURRENT MONIOTR">
+				<xtce:LongDescription>ALARM PERSISTENCE = 3 IN OASIS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_NHK.STPMCP_IMON" parameterTypeRef="COD_NHK.STPMCP_IMON" shortDescription="HVPS – I1: STOP MCP CURRENT MONITOR">
+				<xtce:LongDescription>ALARM PERSISTENCE = 3 IN OASIS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_NHK.IOBULK_IMON" parameterTypeRef="COD_NHK.IOBULK_IMON" shortDescription="HVPS – I2: IO BULK CURRENTMONITOR">
+				<xtce:LongDescription>ALARM PERSISTENCE = 3 IN OASIS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_NHK.STRMCP_IMON" parameterTypeRef="COD_NHK.STRMCP_IMON" shortDescription="HVPS – I3: START MCP CURRENT MONITOR">
+				<xtce:LongDescription>ALARM PERSISTENCE = 3 IN OASIS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_NHK.MDM25P_14_T" parameterTypeRef="COD_NHK.MDM25P_14_T" shortDescription="TEMP SENSOR (NOT POPULATED)" />
+			<xtce:Parameter name="COD_NHK.MDM25P_15_T" parameterTypeRef="COD_NHK.MDM25P_15_T" shortDescription="TEMP SENSOR (NOT POPULATED)" />
+			<xtce:Parameter name="COD_NHK.MDM25P_16_T" parameterTypeRef="COD_NHK.MDM25P_16_T" shortDescription="TEMP SENSOR (NOT POPULATED)" />
+			<xtce:Parameter name="COD_NHK.MDM51P_27_T" parameterTypeRef="COD_NHK.MDM51P_27_T" shortDescription="TEMP SENSOR (NOT POPULATED)" />
 			<xtce:Parameter name="COD_NHK.IO_HVPS_T" parameterTypeRef="COD_NHK.IO_HVPS_T" shortDescription="HVPS TEMPERATURE: IO-HVPS TEMPERATURE" />
 			<xtce:Parameter name="COD_NHK.LVPS_12V_T" parameterTypeRef="COD_NHK.LVPS_12V_T" shortDescription="LVPS TEMPERATURE 1: LVPS – 12V TEMPERATURE" />
 			<xtce:Parameter name="COD_NHK.LVPS_5V_T" parameterTypeRef="COD_NHK.LVPS_5V_T" shortDescription="LVPS TEMPERATURE 2: LVPS – 5V TEMPERATURE" />
@@ -3159,11 +3113,13 @@
 			<xtce:Parameter name="COD_NHK.CDH_N12V" parameterTypeRef="COD_NHK.CDH_N12V" shortDescription="CDH – -12V" />
 			<xtce:Parameter name="COD_NHK.CDH_5V" parameterTypeRef="COD_NHK.CDH_5V" shortDescription="CDH – +5V" />
 			<xtce:Parameter name="COD_NHK.CDH_5V_ADC" parameterTypeRef="COD_NHK.CDH_5V_ADC" shortDescription="CDH – ANALOG REF: CDH – +5V ADC" />
-			<xtce:Parameter name="COD_NHK.TBD_HVPS_1_IF_ERR_CNT" parameterTypeRef="COD_NHK.TBD_HVPS_1_IF_ERR_CNT" shortDescription="TBD - PLACEHOLDER FOR HVPS 1 INTERFACE ERROR COUNTS" />
-			<xtce:Parameter name="COD_NHK.TBD_HVPS_2_IF_ERR_CNT" parameterTypeRef="COD_NHK.TBD_HVPS_2_IF_ERR_CNT" shortDescription="TBD - PLACEHOLDER FOR HVPS 2 INTERFACE ERROR COUNTS" />
-			<xtce:Parameter name="COD_NHK.TBD_FEE_1_IF_ERR_CNT" parameterTypeRef="COD_NHK.TBD_FEE_1_IF_ERR_CNT" shortDescription="TBD - PLACEHOLDER FOR FEE 1 INTERFACE ERROR COUNTS" />
-			<xtce:Parameter name="COD_NHK.TBD_FEE_2_IF_ERR_CNT" parameterTypeRef="COD_NHK.TBD_FEE_2_IF_ERR_CNT" shortDescription="TBD - PLACEHOLDER FOR FEE 2 INTERFACE ERROR COUNTS" />
-			<xtce:Parameter name="COD_NHK.TBD_MACRO_STATUS" parameterTypeRef="COD_NHK.TBD_MACRO_STATUS" shortDescription="TBD - PLACEHOLDER FOR MACRO STATUS" />
+			<xtce:Parameter name="COD_NHK.HVPS_1_IF_ERR_CNT" parameterTypeRef="COD_NHK.HVPS_1_IF_ERR_CNT" shortDescription="HVPS 1 INTERFACE ERROR COUNTS" />
+			<xtce:Parameter name="COD_NHK.HVPS_2_IF_ERR_CNT" parameterTypeRef="COD_NHK.HVPS_2_IF_ERR_CNT" shortDescription="HVPS 2 INTERFACE ERROR COUNTS" />
+			<xtce:Parameter name="COD_NHK.FEE_1_IF_ERR_CNT" parameterTypeRef="COD_NHK.FEE_1_IF_ERR_CNT" shortDescription="FEE 1 INTERFACE ERROR COUNTS" />
+			<xtce:Parameter name="COD_NHK.FEE_2_IF_ERR_CNT" parameterTypeRef="COD_NHK.FEE_2_IF_ERR_CNT" shortDescription="FEE 2 INTERFACE ERROR COUNTS" />
+			<xtce:Parameter name="COD_NHK.MACRO_STATUS" parameterTypeRef="COD_NHK.MACRO_STATUS" shortDescription="MACRO STATUS">
+				<xtce:LongDescription>EACH BIT INDICATES WHETHER THE CORRESPONDING MACRO IS CURRENTLY RUNNING (E.G. BIT 1 WILL BE SET IF MACRO 1 IS RUNNING)</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="COD_NHK.FDC_TRIGGER_CNT_FSW" parameterTypeRef="COD_NHK.FDC_TRIGGER_CNT_FSW" shortDescription="INDICATES WHETHER ANY CATEGORY 1 LIMITS HAVE TRIGGERED">
 				<xtce:LongDescription>INDICATES WHETHER ANY CATEGORY 1 LIMITS HAVE TRIGGERED.
 
@@ -3194,7 +3150,7 @@
 				<xtce:LongDescription>INDICATES WHETHER THE MOST RECENT TRIGGER WAS A MINIMUM OR MAXIMUM LIMIT</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_NHK.FDC_LAST_TRIGGER_ID" parameterTypeRef="COD_NHK.FDC_LAST_TRIGGER_ID" shortDescription="INDICATES THE ID OF THE MOST RECENT FDC TRIGGER">
-				<xtce:LongDescription>INDICATES THE ID OF THE MOST RECENT FDC TRIGGER</xtce:LongDescription>
+				<xtce:LongDescription>INDICATES THE TABLE INDEX OF THE MOST RECENT FDC TRIGGER</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_NHK.FDC_LAST_TRIGGER_ACTION" parameterTypeRef="COD_NHK.FDC_LAST_TRIGGER_ACTION" shortDescription="INDICATES THE ACTION THAT WAS TAKEN FOR THE MOST RECENT FDC TRIGGER">
 				<xtce:LongDescription>INDICATES THE ACTION THAT WAS TAKEN FOR THE MOST RECENT FDC TRIGGER</xtce:LongDescription>
@@ -3208,7 +3164,7 @@
 			<xtce:Parameter name="COD_NHK.HEATER_CONTROL_STATE" parameterTypeRef="COD_NHK.HEATER_CONTROL_STATE" shortDescription="STATE OF THE HEATER CONTROLLER">
 				<xtce:LongDescription>INDICATES WHETHER FSW CONTROL OF THE OPERATIONAL HEATER IS ENABLED</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_NHK.HEATER_OUTPUT_STATE" parameterTypeRef="COD_NHK.HEATER_OUTPUT_STATE" shortDescription="STATE OF THE HEATER OUTPUT">
+			<xtce:Parameter name="COD_NHK.HEATER_OUTPUT_STATE_1" parameterTypeRef="COD_NHK.HEATER_OUTPUT_STATE_1" shortDescription="STATE OF THE HEATER OUTPUT">
 				<xtce:LongDescription>INDICATES THE CURRENT STATE OF THE PHYSICAL HEATER OUTPUT</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_NHK.HEATER_OUTPUT_STATE_2" parameterTypeRef="COD_NHK.HEATER_OUTPUT_STATE_2" shortDescription="STATE OF THE HEATER OUTPUT 2">
@@ -3312,40 +3268,6 @@
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_LO_PHA.SHCOARSE" parameterTypeRef="COD_LO_PHA.SHCOARSE" shortDescription="S/C TIME - SECONDS">
 				<xtce:LongDescription>SECONDARY HEADER - WHOLE-SECONDS PART OF SCLK</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.PACKET_VERSION" parameterTypeRef="COD_LO_PHA.PACKET_VERSION" shortDescription="PACKET VERSION">
-				<xtce:LongDescription>PACKET VERSION - THIS WILL BE INCREMENTED EACH TIME THE FORMAT OF THE PACKET CHANGESCOD_LO_PHA.</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.SPIN_PERIOD" parameterTypeRef="COD_LO_PHA.SPIN_PERIOD" shortDescription="SPIN PERIOD REPORTED BY THE SPACECRAFT">
-				<xtce:LongDescription>SPIN PERIOD REPORTED BY THE SPACECRAFT IN THE TIME AND STATUS MESSAGE.  REPORTED PERIOD IS THE PERIOD THAT WAS ACTIVE WHEN THE 16-SPIN ACQUISITION CYCLE STARTED.</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.ACQ_START_SECONDS" parameterTypeRef="COD_LO_PHA.ACQ_START_SECONDS" shortDescription="ACQUISITION START TIME (SECONDS)">
-				<xtce:LongDescription>FULL-SECONDS PORTION OF THE TIME AT WHICH THE 16-SPIN CYCLE STARTED</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.ACQ_START_SUBSECONDS" parameterTypeRef="COD_LO_PHA.ACQ_START_SUBSECONDS" shortDescription="ACQUISITION START TIME (SUBSECONDS)">
-				<xtce:LongDescription>SUB-SECONDS PORTION OF THE TIME AT WHICH THE 16-SPIN CYCLE STARTED</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.SPARE_1" parameterTypeRef="COD_LO_PHA.SPARE_1" shortDescription="SPARE FOR ALIGNMENT">
-				<xtce:LongDescription>SPARE FOR ALIGNMENT</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.ST_BIAS_GAIN_MODE" parameterTypeRef="COD_LO_PHA.ST_BIAS_GAIN_MODE" shortDescription="BIAS GAIN MODE (SUPRATHERMAL)">
-				<xtce:LongDescription>BIAS GAIN MODE FOR THE SUPRATHERMAL SECTOR</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.SW_BIAS_GAIN_MODE" parameterTypeRef="COD_LO_PHA.SW_BIAS_GAIN_MODE" shortDescription="BIAS GAIN MODE (SOLARWIND)">
-				<xtce:LongDescription>BIAS GAIN MODE FOR THE SOLARWIND SECTOR</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.PRIORITY" parameterTypeRef="COD_LO_PHA.PRIORITY" shortDescription="PRIORITY INCLUDED IN THIS PACKET" />
-			<xtce:Parameter name="COD_LO_PHA.SUSPECT" parameterTypeRef="COD_LO_PHA.SUSPECT" shortDescription="INDICATES A DATA QUALITY ISSUE">
-				<xtce:LongDescription>INDICATES THAT THERE WAS SOME ERROR DETECTED DURING ACQUISITION OR PROCESSING OF THE DATA.  ERRORS COULD INCLUDE CORRUPTED ACQUISITION MEMORY (I.E. EDAC ERRORS), TIMING VIOLATIONS, OR OTHER EVENTS THAT INTERRUPTED OR OTHERWISE AFFECTED DATA COLLECTION.</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.COMPRESSED" parameterTypeRef="COD_LO_PHA.COMPRESSED" shortDescription="WHETHER THE EVENT DATA IS COMPRESSED">
-				<xtce:LongDescription>WHETHER THE EVENT DATA IS COMPRESSED.  IF 1/YES, EVENT_DATA ARRAY IS COMPRESSED USING THE LZMA COMPRESSION ALGORITHM.</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.NUM_EVENTS" parameterTypeRef="COD_LO_PHA.NUM_EVENTS" shortDescription="NUMBER OF EVENTS INCLUDED IN THIS PACKET">
-				<xtce:LongDescription>NUMBER OF EVENTS SELECTED FOR DOWNLINK (I.E. NUMBER OF EVENTS IN THE EVENT_DATA ARRAY)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_PHA.BYTE_COUNT" parameterTypeRef="COD_LO_PHA.BYTE_COUNT" shortDescription="NUMBER OF BYTES IN THE EVENT DATA ARRAY">
-				<xtce:LongDescription>NUMBER OF BYTES IN THE EVENT_DATA ARRAY.  IF COMPRESSED, THIS VALUE REPRESENTS THE LENGTH OF THE COMPRESSED DATA.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_LO_PHA.EVENT_DATA" parameterTypeRef="COD_LO_PHA.EVENT_DATA" shortDescription="EVENT DATA">
 				<xtce:LongDescription>OPTIONALLY COMPRESSED ARRAY OF EVENT DATA
@@ -3999,40 +3921,6 @@ WHEN THIS ARRAY IS TOO LARGE FOR A SINGLE CCSDS PACKET, CODICE WILL UTILIZE THE 
 			<xtce:Parameter name="COD_HI_PHA.SHCOARSE" parameterTypeRef="COD_HI_PHA.SHCOARSE" shortDescription="S/C TIME - SECONDS">
 				<xtce:LongDescription>SECONDARY HEADER - WHOLE-SECONDS PART OF SCLK</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.PACKET_VERSION" parameterTypeRef="COD_HI_PHA.PACKET_VERSION" shortDescription="PACKET VERSION">
-				<xtce:LongDescription>PACKET VERSION - THIS WILL BE INCREMENTED EACH TIME THE FORMAT OF THE PACKET CHANGESCOD_LO_PHA.</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.SPIN_PERIOD" parameterTypeRef="COD_HI_PHA.SPIN_PERIOD" shortDescription="SPIN PERIOD REPORTED BY THE SPACECRAFT">
-				<xtce:LongDescription>SPIN PERIOD REPORTED BY THE SPACECRAFT IN THE TIME AND STATUS MESSAGE.  REPORTED PERIOD IS THE PERIOD THAT WAS ACTIVE WHEN THE 16-SPIN ACQUISITION CYCLE STARTED.</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.ACQ_START_SECONDS" parameterTypeRef="COD_HI_PHA.ACQ_START_SECONDS" shortDescription="ACQUISITION START TIME (SECONDS)">
-				<xtce:LongDescription>FULL-SECONDS PORTION OF THE TIME AT WHICH THE 16-SPIN CYCLE STARTED</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.ACQ_START_SUBSECONDS" parameterTypeRef="COD_HI_PHA.ACQ_START_SUBSECONDS" shortDescription="ACQUISITION START TIME (SUBSECONDS)">
-				<xtce:LongDescription>SUB-SECONDS PORTION OF THE TIME AT WHICH THE 16-SPIN CYCLE STARTED</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.SPARE_1" parameterTypeRef="COD_HI_PHA.SPARE_1" shortDescription="SPARE FOR ALIGNMENT">
-				<xtce:LongDescription>SPARE FOR ALIGNMENT</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.ST_BIAS_GAIN_MODE" parameterTypeRef="COD_HI_PHA.ST_BIAS_GAIN_MODE" shortDescription="BIAS GAIN MODE (SUPRATHERMAL)">
-				<xtce:LongDescription>BIAS GAIN MODE FOR THE SUPRATHERMAL SECTOR</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.SW_BIAS_GAIN_MODE" parameterTypeRef="COD_HI_PHA.SW_BIAS_GAIN_MODE" shortDescription="BIAS GAIN MODE (SOLARWIND)">
-				<xtce:LongDescription>BIAS GAIN MODE FOR THE SOLARWIND SECTOR</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.PRIORITY" parameterTypeRef="COD_HI_PHA.PRIORITY" shortDescription="PRIORITY INCLUDED IN THIS PACKET" />
-			<xtce:Parameter name="COD_HI_PHA.SUSPECT" parameterTypeRef="COD_HI_PHA.SUSPECT" shortDescription="INDICATES A DATA QUALITY ISSUE">
-				<xtce:LongDescription>INDICATES THAT THERE WAS SOME ERROR DETECTED DURING ACQUISITION OR PROCESSING OF THE DATA.  ERRORS COULD INCLUDE CORRUPTED ACQUISITION MEMORY (I.E. EDAC ERRORS), TIMING VIOLATIONS, OR OTHER EVENTS THAT INTERRUPTED OR OTHERWISE AFFECTED DATA COLLECTION.</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.COMPRESSED" parameterTypeRef="COD_HI_PHA.COMPRESSED" shortDescription="WHETHER THE EVENT DATA IS COMPRESSED">
-				<xtce:LongDescription>WHETHER THE EVENT DATA IS COMPRESSED.  IF 1/YES, EVENT_DATA ARRAY IS COMPRESSED USING THE RICE COMPRESSION ALGORITHM.</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.NUM_EVENTS" parameterTypeRef="COD_HI_PHA.NUM_EVENTS" shortDescription="NUMBER OF EVENTS INCLUDED IN THIS PACKET">
-				<xtce:LongDescription>NUMBER OF EVENTS SELECTED FOR DOWNLINK (I.E. NUMBER OF EVENTS IN THE EVENT_DATA ARRAY)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_PHA.BYTE_COUNT" parameterTypeRef="COD_HI_PHA.BYTE_COUNT" shortDescription="NUMBER OF BYTES IN THE EVENT DATA ARRAY">
-				<xtce:LongDescription>NUMBER OF BYTES IN THE EVENT_DATA ARRAY.  IF COMPRESSED, THIS VALUE REPRESENTS THE LENGTH OF THE COMPRESSED DATA.</xtce:LongDescription>
-			</xtce:Parameter>
 			<xtce:Parameter name="COD_HI_PHA.EVENT_DATA" parameterTypeRef="COD_HI_PHA.EVENT_DATA" shortDescription="EVENT DATA">
 				<xtce:LongDescription>OPTIONALLY COMPRESSED ARRAY OF EVENT DATA
 
@@ -4491,6 +4379,7 @@ WHEN THIS ARRAY IS TOO LARGE FOR A SINGLE CCSDS PACKET, CODICE WILL UTILIZE THE 
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.SBULK_EN" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.STPMCP_EN" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.STRMCP_EN" />
+					<xtce:ParameterRefEntry parameterRef="COD_NHK.LO_ESA_OP_ST" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.SPARE_4" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.ESAA_DAC" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.ESAB_DAC" />
@@ -4546,11 +4435,11 @@ WHEN THIS ARRAY IS TOO LARGE FOR A SINGLE CCSDS PACKET, CODICE WILL UTILIZE THE 
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.CDH_N12V" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.CDH_5V" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.CDH_5V_ADC" />
-					<xtce:ParameterRefEntry parameterRef="COD_NHK.TBD_HVPS_1_IF_ERR_CNT" />
-					<xtce:ParameterRefEntry parameterRef="COD_NHK.TBD_HVPS_2_IF_ERR_CNT" />
-					<xtce:ParameterRefEntry parameterRef="COD_NHK.TBD_FEE_1_IF_ERR_CNT" />
-					<xtce:ParameterRefEntry parameterRef="COD_NHK.TBD_FEE_2_IF_ERR_CNT" />
-					<xtce:ParameterRefEntry parameterRef="COD_NHK.TBD_MACRO_STATUS" />
+					<xtce:ParameterRefEntry parameterRef="COD_NHK.HVPS_1_IF_ERR_CNT" />
+					<xtce:ParameterRefEntry parameterRef="COD_NHK.HVPS_2_IF_ERR_CNT" />
+					<xtce:ParameterRefEntry parameterRef="COD_NHK.FEE_1_IF_ERR_CNT" />
+					<xtce:ParameterRefEntry parameterRef="COD_NHK.FEE_2_IF_ERR_CNT" />
+					<xtce:ParameterRefEntry parameterRef="COD_NHK.MACRO_STATUS" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.FDC_TRIGGER_CNT_FSW" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.FDC_TRIGGER_CNT_HVPS" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.FDC_TRIGGER_CNT_CDH" />
@@ -4565,7 +4454,7 @@ WHEN THIS ARRAY IS TOO LARGE FOR A SINGLE CCSDS PACKET, CODICE WILL UTILIZE THE 
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.ROUND_ROBIN_INDEX" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.ROUND_ROBIN_VALUE" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.HEATER_CONTROL_STATE" />
-					<xtce:ParameterRefEntry parameterRef="COD_NHK.HEATER_OUTPUT_STATE" />
+					<xtce:ParameterRefEntry parameterRef="COD_NHK.HEATER_OUTPUT_STATE_1" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.HEATER_OUTPUT_STATE_2" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.SPARE_5" />
 					<xtce:ParameterRefEntry parameterRef="COD_NHK.CPU_IDLE" />
@@ -4632,18 +4521,6 @@ WHEN THIS ARRAY IS TOO LARGE FOR A SINGLE CCSDS PACKET, CODICE WILL UTILIZE THE 
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.PACKET_VERSION" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.SPIN_PERIOD" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.ACQ_START_SECONDS" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.ACQ_START_SUBSECONDS" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.SPARE_1" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.ST_BIAS_GAIN_MODE" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.SW_BIAS_GAIN_MODE" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.PRIORITY" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.SUSPECT" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.COMPRESSED" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.NUM_EVENTS" />
-					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.BYTE_COUNT" />
 					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.EVENT_DATA" />
 					<xtce:ParameterRefEntry parameterRef="COD_LO_PHA.CHKSUM" />
 				</xtce:EntryList>
@@ -4908,18 +4785,6 @@ WHEN THIS ARRAY IS TOO LARGE FOR A SINGLE CCSDS PACKET, CODICE WILL UTILIZE THE 
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.PACKET_VERSION" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.SPIN_PERIOD" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.ACQ_START_SECONDS" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.ACQ_START_SUBSECONDS" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.SPARE_1" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.ST_BIAS_GAIN_MODE" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.SW_BIAS_GAIN_MODE" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.PRIORITY" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.SUSPECT" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.COMPRESSED" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.NUM_EVENTS" />
-					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.BYTE_COUNT" />
 					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.EVENT_DATA" />
 					<xtce:ParameterRefEntry parameterRef="COD_HI_PHA.CHKSUM" />
 				</xtce:EntryList>
