@@ -120,6 +120,7 @@ def ultra_l1a(  # noqa: PLR0912
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("ultra")
     attr_mgr.add_instrument_variable_attrs("ultra", "l1a")
+
     for i, datasets_by_apid in enumerate(decommutated_packet_datasets):
         for apid in apids:
             logger.info(f"Processing APID: {apid}")
