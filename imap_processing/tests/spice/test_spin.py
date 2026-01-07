@@ -140,6 +140,11 @@ def test_get_spin_number(fake_spin_data, met_time, spin_number_expected):
         # is same as [0, 360) degree angle. At 15 seconds the spacecraft
         # has completed a full spin
         (np.array([0, 15]), np.zeros(2)),
+        # Test gap between estimated spin end and actual next spin start
+        # Spin 9: start=135, spin_period_sec=14.5, estimated_end=149.5
+        # Spin 10: start=150 (actual start is 0.5s after estimated end)
+        # Query at 149.7 should be valid: (149.7-135)/15 = 0.98 < 1
+        (149.7, 14.7 / 15),
     ],
 )
 def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
@@ -189,7 +194,7 @@ def test_get_spin_angle(spin_phases, degrees, expected, context):
         np.testing.assert_array_equal(spin_angles, expected)
 
 
-@pytest.mark.parametrize("query_met_times", [-1, 165])
+@pytest.mark.parametrize("query_met_times", [-1, 181])
 def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
     """Test get_spacecraft_spin_phase() for raising ValueError."""
     with pytest.raises(ValueError, match="Query times"):
