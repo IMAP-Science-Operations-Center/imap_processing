@@ -38,7 +38,7 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
 
     Initializes all times and spin bins as good (cull_flags=0). The goodtimes
     dataset is created with one entry per unique MET timestamp found in the
-    L1A DE data. Culling functions (e.g., drop_incomplete_spin_sets) should be
+    L1A DE data. Culling functions (e.g., mark_incomplete_spin_sets) should be
     called after creation to identify and flag bad times.
 
     Parameters
@@ -156,7 +156,7 @@ class GoodtimesAccessor:
     Examples
     --------
     >>> gt_dataset = create_goodtimes_dataset(l1a_de)
-    >>> gt_dataset.goodtimes.remove_times(met=1000.5, cull=CullCode.LOOSE)
+    >>> gt_dataset.goodtimes.mark_bad_times(met=1000.5, cull=CullCode.LOOSE)
     >>> intervals = gt_dataset.goodtimes.get_good_intervals()
     """
 
@@ -164,7 +164,7 @@ class GoodtimesAccessor:
         """Initialize the accessor with an xarray Dataset."""
         self._obj = xarray_obj
 
-    def remove_times(
+    def mark_bad_times(
         self,
         met: np.ndarray | float | tuple[float, float],
         bins: np.ndarray | int | None = None,
@@ -204,20 +204,22 @@ class GoodtimesAccessor:
         Examples
         --------
         >>> # Flag all spin bins for MET=1000.5 as loose (cull=1)
-        >>> goodtimes.remove_times(met=1000.5, bins=None, cull=CullCode.LOOSE)
+        >>> goodtimes.mark_bad_times(met=1000.5, bins=None, cull=CullCode.LOOSE)
 
         >>> # Flag spin bins 0-10 for MET=1000.5
-        >>> goodtimes.remove_times(met=1000.5, bins=np.arange(11), cull=CullCode.LOOSE)
+        >>> goodtimes.mark_bad_times(
+        ...     met=1000.5, bins=np.arange(11), cull=CullCode.LOOSE
+        ... )
 
         >>> # Flag time range around a repoint (240s before/after)
         >>> repoint_time = 1000.0
-        >>> goodtimes.remove_times(
+        >>> goodtimes.mark_bad_times(
         ...     met=(repoint_time - 240, repoint_time + 240),
         ...     cull=CullCode.LOOSE
         ... )
 
         >>> # Flag multiple specific METs, all bins
-        >>> goodtimes.remove_times(
+        >>> goodtimes.mark_bad_times(
         ...     met=np.array([1000.5, 1001.5]), bins=None, cull=CullCode.LOOSE
         ... )
         """
@@ -491,7 +493,7 @@ class GoodtimesAccessor:
 # ==============================================================================
 
 
-def drop_incomplete_spin_sets(
+def mark_incomplete_spin_sets(
     goodtimes_ds: xr.Dataset,
     l1a_de: xr.Dataset,
     cull_code: int = CullCode.LOOSE,
@@ -532,7 +534,7 @@ def drop_incomplete_spin_sets(
     This function modifies goodtimes_ds in place by calling remove_times()
     for MET timestamps with incomplete spin coverage.
     """
-    logger.info("Running drop_incomplete_spin_sets culling")
+    logger.info("Running mark_incomplete_spin_sets culling")
 
     met_values = goodtimes_ds.coords["met"].values
 
@@ -603,12 +605,12 @@ def drop_incomplete_spin_sets(
 
     # Remove all bad times at once
     if bad_mets:
-        goodtimes_ds.goodtimes.remove_times(met=np.array(bad_mets), cull=cull_code)
+        goodtimes_ds.goodtimes.mark_bad_times(met=np.array(bad_mets), cull=cull_code)
 
     logger.info(f"Dropped {len(bad_mets)} incomplete 8-spin period(s)")
 
 
-def drop_drf_times(
+def mark_drf_times(
     goodtimes_ds: xr.Dataset,
     hk: xr.Dataset,
     cull_code: int = CullCode.LOOSE,
@@ -647,7 +649,7 @@ def drop_drf_times(
     This function modifies goodtimes_ds in place. If no housekeeping data is
     available, a warning is logged but no times are removed.
     """
-    logger.info("Running drop_drf_times culling")
+    logger.info("Running mark_drf_times culling")
 
     if len(hk.epoch) == 0:
         logger.warning("No NHK loaded to check for DRF times")
@@ -671,7 +673,7 @@ def drop_drf_times(
         window_start = drf_end_time - 30 * 60  # 30 minutes before
 
         # Remove time range using tuple input
-        goodtimes_ds.goodtimes.remove_times(
+        goodtimes_ds.goodtimes.mark_bad_times(
             met=(window_start, drf_end_time), cull=cull_code
         )
 

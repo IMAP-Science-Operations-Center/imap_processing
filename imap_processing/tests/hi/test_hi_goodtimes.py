@@ -8,8 +8,8 @@ from imap_processing.hi.hi_goodtimes import (
     INTERVAL_DTYPE,
     CullCode,
     create_goodtimes_dataset,
-    drop_drf_times,
-    drop_incomplete_spin_sets,
+    mark_drf_times,
+    mark_incomplete_spin_sets,
 )
 
 
@@ -131,12 +131,12 @@ class TestGoodtimesFromL1aDe:
 
 
 class TestRemoveTimes:
-    """Test suite for Goodtimes.remove_times() method."""
+    """Test suite for Goodtimes.mark_bad_times() method."""
 
-    def test_remove_times_single_met_all_bins(self, goodtimes_instance):
+    def test_mark_bad_times_single_met_all_bins(self, goodtimes_instance):
         """Test flagging a single MET with all bins."""
         met_val = goodtimes_instance.coords["met"].values[0]
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=None, cull=CullCode.LOOSE
         )
 
@@ -146,11 +146,11 @@ class TestRemoveTimes:
         # Check that other METs are still good
         assert np.all(goodtimes_instance["cull_flags"].values[1:, :] == CullCode.GOOD)
 
-    def test_remove_times_single_met_specific_bins(self, goodtimes_instance):
+    def test_mark_bad_times_single_met_specific_bins(self, goodtimes_instance):
         """Test flagging specific bins for a single MET."""
         met_val = goodtimes_instance.coords["met"].values[0]
         bins_to_flag = np.array([0, 1, 2, 10])
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=bins_to_flag, cull=CullCode.LOOSE
         )
 
@@ -165,10 +165,10 @@ class TestRemoveTimes:
             goodtimes_instance["cull_flags"].values[0, other_bins] == CullCode.GOOD
         )
 
-    def test_remove_times_multiple_mets(self, goodtimes_instance):
+    def test_mark_bad_times_multiple_mets(self, goodtimes_instance):
         """Test flagging multiple METs."""
         met_vals = goodtimes_instance.coords["met"].values[:3]
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_vals, bins=None, cull=CullCode.LOOSE
         )
 
@@ -178,13 +178,13 @@ class TestRemoveTimes:
         # Check that other METs are still good
         assert np.all(goodtimes_instance["cull_flags"].values[3:, :] == CullCode.GOOD)
 
-    def test_remove_times_time_range(self, goodtimes_instance):
+    def test_mark_bad_times_time_range(self, goodtimes_instance):
         """Test flagging a time range."""
         met_vals = goodtimes_instance.coords["met"].values
         met_start = met_vals[2]
         met_end = met_vals[5]
 
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=(met_start, met_end), bins=None, cull=CullCode.LOOSE
         )
 
@@ -195,29 +195,29 @@ class TestRemoveTimes:
         assert np.all(goodtimes_instance["cull_flags"].values[:2, :] == CullCode.GOOD)
         assert np.all(goodtimes_instance["cull_flags"].values[6:, :] == CullCode.GOOD)
 
-    def test_remove_times_invalid_cull_code_zero(self, goodtimes_instance):
+    def test_mark_bad_times_invalid_cull_code_zero(self, goodtimes_instance):
         """Test that cull code 0 raises ValueError."""
         met_val = goodtimes_instance.coords["met"].values[0]
         with pytest.raises(ValueError, match="Cull code must be non-zero"):
-            goodtimes_instance.goodtimes.remove_times(met=met_val, cull=0)
+            goodtimes_instance.goodtimes.mark_bad_times(met=met_val, cull=0)
 
-    def test_remove_times_invalid_bin_indices(self, goodtimes_instance):
+    def test_mark_bad_times_invalid_bin_indices(self, goodtimes_instance):
         """Test that invalid bin indices raise ValueError."""
         met_val = goodtimes_instance.coords["met"].values[0]
 
         # Test bin < 0
         with pytest.raises(ValueError, match="Spin bins must be in range"):
-            goodtimes_instance.goodtimes.remove_times(
+            goodtimes_instance.goodtimes.mark_bad_times(
                 met=met_val, bins=np.array([-1, 0])
             )
 
         # Test bin >= 90
         with pytest.raises(ValueError, match="Spin bins must be in range"):
-            goodtimes_instance.goodtimes.remove_times(
+            goodtimes_instance.goodtimes.mark_bad_times(
                 met=met_val, bins=np.array([89, 90])
             )
 
-    def test_remove_times_met_out_of_range(self, goodtimes_instance):
+    def test_mark_bad_times_met_out_of_range(self, goodtimes_instance):
         """Test that MET outside valid range raises ValueError."""
         met_vals = goodtimes_instance.coords["met"].values
         # Use a value clearly beyond the valid range
@@ -225,20 +225,20 @@ class TestRemoveTimes:
         met_out_of_range = met_vals[-1] + 2000
 
         with pytest.raises(ValueError, match="MET value\\(s\\) "):
-            goodtimes_instance.goodtimes.remove_times(met=met_out_of_range)
+            goodtimes_instance.goodtimes.mark_bad_times(met=met_out_of_range)
 
-    def test_remove_times_overwrites_existing_cull(self, goodtimes_instance):
+    def test_mark_bad_times_overwrites_existing_cull(self, goodtimes_instance):
         """Test that new cull code overwrites existing one."""
         met_val = goodtimes_instance.coords["met"].values[0]
 
         # Flag with LOOSE
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=None, cull=CullCode.LOOSE
         )
         assert np.all(goodtimes_instance["cull_flags"].values[0, :] == CullCode.LOOSE)
 
         # Overwrite with a different cull code
-        goodtimes_instance.goodtimes.remove_times(met=met_val, bins=None, cull=2)
+        goodtimes_instance.goodtimes.mark_bad_times(met=met_val, bins=None, cull=2)
         assert np.all(goodtimes_instance["cull_flags"].values[0, :] == 2)
 
 
@@ -283,7 +283,7 @@ class TestGetGoodIntervals:
         """Test intervals when some bins are culled."""
         # Flag bins 0-20 for first MET
         met_val = goodtimes_instance.coords["met"].values[0]
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=np.arange(21), cull=CullCode.LOOSE
         )
 
@@ -298,7 +298,7 @@ class TestGetGoodIntervals:
         """Test intervals when good bins have gaps (wraparound)."""
         # Flag bins 20-70 for first MET, leaving bins 0-19 and 71-89 as good
         met_val = goodtimes_instance.coords["met"].values[0]
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=np.arange(20, 71), cull=CullCode.LOOSE
         )
 
@@ -321,7 +321,7 @@ class TestGetGoodIntervals:
         """Test intervals when all bins are culled for a MET."""
         # Flag all bins for first MET
         met_val = goodtimes_instance.coords["met"].values[0]
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=None, cull=CullCode.LOOSE
         )
 
@@ -378,7 +378,7 @@ class TestGetCullStatistics:
         """Test statistics after culling some bins."""
         # Flag first MET, all bins
         met_val = goodtimes_instance.coords["met"].values[0]
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=None, cull=CullCode.LOOSE
         )
 
@@ -396,12 +396,12 @@ class TestGetCullStatistics:
         met_vals = goodtimes_instance.coords["met"].values
 
         # Flag first MET with LOOSE
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_vals[0], bins=None, cull=CullCode.LOOSE
         )
 
         # Flag second MET with code 2
-        goodtimes_instance.goodtimes.remove_times(met=met_vals[1], bins=None, cull=2)
+        goodtimes_instance.goodtimes.mark_bad_times(met=met_vals[1], bins=None, cull=2)
 
         stats = goodtimes_instance.goodtimes.get_cull_statistics()
 
@@ -461,7 +461,7 @@ class TestToTxt:
         """Test output when some bins are culled."""
         # Flag bins 0-20 for first MET
         met_val = goodtimes_instance.coords["met"].values[0]
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=np.arange(21), cull=CullCode.LOOSE
         )
 
@@ -483,7 +483,7 @@ class TestToTxt:
         """Test output when bins have gaps."""
         # Flag bins 20-70, leaving 0-19 and 71-89 as good
         met_val = goodtimes_instance.coords["met"].values[0]
-        goodtimes_instance.goodtimes.remove_times(
+        goodtimes_instance.goodtimes.mark_bad_times(
             met=met_val, bins=np.arange(20, 71), cull=CullCode.LOOSE
         )
 
@@ -532,7 +532,7 @@ class TestIntervalDtype:
 
 
 class TestDropIncompleteSpinSets:
-    """Test suite for drop_incomplete_spin_sets() function."""
+    """Test suite for mark_incomplete_spin_sets() function."""
 
     @pytest.fixture
     def l1a_de_complete_4th_spin(self):
@@ -730,40 +730,40 @@ class TestDropIncompleteSpinSets:
         )
         return ds
 
-    def test_drop_incomplete_spin_sets_complete_4th_spin(
+    def test_mark_incomplete_spin_sets_complete_4th_spin(
         self, l1a_de_complete_4th_spin
     ):
         """Test that complete 4th spin cadence is accepted."""
         gt = create_goodtimes_dataset(l1a_de_complete_4th_spin)
-        drop_incomplete_spin_sets(gt, l1a_de_complete_4th_spin)
+        mark_incomplete_spin_sets(gt, l1a_de_complete_4th_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_incomplete_spin_sets_complete_2nd_spin(
+    def test_mark_incomplete_spin_sets_complete_2nd_spin(
         self, l1a_de_complete_2nd_spin
     ):
         """Test that complete 2nd spin cadence is accepted."""
         gt = create_goodtimes_dataset(l1a_de_complete_2nd_spin)
-        drop_incomplete_spin_sets(gt, l1a_de_complete_2nd_spin)
+        mark_incomplete_spin_sets(gt, l1a_de_complete_2nd_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_incomplete_spin_sets_complete_every_spin(
+    def test_mark_incomplete_spin_sets_complete_every_spin(
         self, l1a_de_complete_every_spin
     ):
         """Test that complete every-spin cadence is accepted."""
         gt = create_goodtimes_dataset(l1a_de_complete_every_spin)
-        drop_incomplete_spin_sets(gt, l1a_de_complete_every_spin)
+        mark_incomplete_spin_sets(gt, l1a_de_complete_every_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_incomplete_spin_sets_incomplete(self, l1a_de_incomplete):
+    def test_mark_incomplete_spin_sets_incomplete(self, l1a_de_incomplete):
         """Test that incomplete 8-spin periods are culled."""
         gt = create_goodtimes_dataset(l1a_de_incomplete)
-        drop_incomplete_spin_sets(gt, l1a_de_incomplete)
+        mark_incomplete_spin_sets(gt, l1a_de_incomplete)
 
         # First 2 METs should be good, last 2 should be culled
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.GOOD)
@@ -771,18 +771,18 @@ class TestDropIncompleteSpinSets:
         assert np.all(gt["cull_flags"].values[2, :] == CullCode.LOOSE)
         assert np.all(gt["cull_flags"].values[3, :] == CullCode.LOOSE)
 
-    def test_drop_incomplete_spin_sets_with_invalid_spins(
+    def test_mark_incomplete_spin_sets_with_invalid_spins(
         self, l1a_de_with_invalid_spins
     ):
         """Test that times with invalid spins are culled."""
         gt = create_goodtimes_dataset(l1a_de_with_invalid_spins)
-        drop_incomplete_spin_sets(gt, l1a_de_with_invalid_spins)
+        mark_incomplete_spin_sets(gt, l1a_de_with_invalid_spins)
 
         # First MET should be culled (has invalid spins), second should be good
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.GOOD)
 
-    def test_drop_incomplete_spin_sets_no_de_packets(self):
+    def test_mark_incomplete_spin_sets_no_de_packets(self):
         """Test that MET times with no DE packets are culled."""
         # Create L1A DE with packets at 1000.0 and 1120.0
         # (60 second intervals for 4th spin)
@@ -825,14 +825,14 @@ class TestDropIncompleteSpinSets:
             attrs=gt.attrs,
         )
 
-        drop_incomplete_spin_sets(gt, l1a_de)
+        mark_incomplete_spin_sets(gt, l1a_de)
 
         # First and last METs should be good, middle one should be culled
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.GOOD)
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.LOOSE)  # No packets
         assert np.all(gt["cull_flags"].values[2, :] == CullCode.GOOD)
 
-    def test_drop_incomplete_spin_sets_mixed_cadence(self):
+    def test_mark_incomplete_spin_sets_mixed_cadence(self):
         """Test that mixed/invalid cadence patterns are culled."""
         # Create packets with invalid pattern: has spins 4,8,1 (mixing cadences)
         met_seconds = [1000, 1000, 1000]
@@ -856,12 +856,12 @@ class TestDropIncompleteSpinSets:
         )
 
         gt = create_goodtimes_dataset(l1a_de)
-        drop_incomplete_spin_sets(gt, l1a_de)
+        mark_incomplete_spin_sets(gt, l1a_de)
 
         # Should be culled (invalid pattern)
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
 
-    def test_drop_incomplete_spin_sets_duplicate_spin_num(self):
+    def test_mark_incomplete_spin_sets_duplicate_spin_num(self):
         """Test that duplicate last_spin_num values are culled."""
         # Create packets with duplicate spin: has spins 4,4 (should be 4,8)
         met_seconds = [1000, 1000]
@@ -885,36 +885,36 @@ class TestDropIncompleteSpinSets:
         )
 
         gt = create_goodtimes_dataset(l1a_de)
-        drop_incomplete_spin_sets(gt, l1a_de)
+        mark_incomplete_spin_sets(gt, l1a_de)
 
         # Should be culled (duplicate spin numbers)
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
 
-    def test_drop_incomplete_spin_sets_custom_cull_code(self, l1a_de_incomplete):
+    def test_mark_incomplete_spin_sets_custom_cull_code(self, l1a_de_incomplete):
         """Test that custom cull code is used."""
         gt = create_goodtimes_dataset(l1a_de_incomplete)
         custom_cull_code = 5
-        drop_incomplete_spin_sets(gt, l1a_de_incomplete, cull_code=custom_cull_code)
+        mark_incomplete_spin_sets(gt, l1a_de_incomplete, cull_code=custom_cull_code)
 
         # Incomplete METs should be culled with custom code
         assert np.all(gt["cull_flags"].values[2, :] == custom_cull_code)
         assert np.all(gt["cull_flags"].values[3, :] == custom_cull_code)
 
-    def test_drop_incomplete_spin_sets_preserves_good_times(self, l1a_de_incomplete):
+    def test_mark_incomplete_spin_sets_preserves_good_times(self, l1a_de_incomplete):
         """Test that previously good times remain untouched."""
         gt = create_goodtimes_dataset(l1a_de_incomplete)
 
         # Manually mark first MET as culled with code 2
         gt["cull_flags"].values[0, :] = 2
 
-        drop_incomplete_spin_sets(gt, l1a_de_incomplete)
+        mark_incomplete_spin_sets(gt, l1a_de_incomplete)
 
         # Check that complete times are good
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.GOOD)
 
 
 class TestDropDrfTimes:
-    """Test suite for drop_drf_times() function."""
+    """Test suite for mark_drf_times() function."""
 
     @pytest.fixture
     def goodtimes_for_drf(self):
@@ -1018,15 +1018,15 @@ class TestDropDrfTimes:
         )
         return hk
 
-    def test_drop_drf_times_single_transition(
+    def test_mark_drf_times_single_transition(
         self, goodtimes_for_drf, hk_single_drf_transition
     ):
         """Test that a single DRF transition removes 30-minute window."""
-        drop_drf_times(goodtimes_for_drf, hk_single_drf_transition)
+        mark_drf_times(goodtimes_for_drf, hk_single_drf_transition)
 
         # Transition at index 30 (MET 2800.0)
         # Window: 2800 - 1800 = 1000 to 2800 (inclusive on both ends)
-        # remove_times uses (met_start, met_end) which includes both endpoints
+        # mark_bad_times uses (met_start, met_end) which includes both endpoints
         # So METs from 1000 to 2800 should be culled (indices 0-30)
 
         # Check that METs in the window are culled (indices 0-30)
@@ -1044,11 +1044,11 @@ class TestDropDrfTimes:
                 goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.GOOD
             ), f"MET at index {i} should be good"
 
-    def test_drop_drf_times_multiple_transitions(
+    def test_mark_drf_times_multiple_transitions(
         self, goodtimes_for_drf, hk_multiple_drf_transitions
     ):
         """Test that multiple DRF transitions remove multiple windows."""
-        drop_drf_times(goodtimes_for_drf, hk_multiple_drf_transitions)
+        mark_drf_times(goodtimes_for_drf, hk_multiple_drf_transitions)
 
         # First transition at index 30 (MET 2800.0)
         # Window: 2800 - 1800 = 1000 to 2800 (inclusive, so indices 0-30)
@@ -1080,34 +1080,34 @@ class TestDropDrfTimes:
                 goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.GOOD
             ), f"MET at index {i} should be good (after windows)"
 
-    def test_drop_drf_times_no_drf(self, goodtimes_for_drf, hk_no_drf):
+    def test_mark_drf_times_no_drf(self, goodtimes_for_drf, hk_no_drf):
         """Test that no times are removed when DRF is never active."""
-        drop_drf_times(goodtimes_for_drf, hk_no_drf)
+        mark_drf_times(goodtimes_for_drf, hk_no_drf)
 
         # All times should remain good
         assert np.all(goodtimes_for_drf["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_drf_times_always_drf(self, goodtimes_for_drf, hk_always_drf):
+    def test_mark_drf_times_always_drf(self, goodtimes_for_drf, hk_always_drf):
         """Test that no times are removed when DRF is always active (no transitions)."""
-        drop_drf_times(goodtimes_for_drf, hk_always_drf)
+        mark_drf_times(goodtimes_for_drf, hk_always_drf)
 
         # All times should remain good (no 1->0 transitions)
         assert np.all(goodtimes_for_drf["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_drf_times_empty_hk(self, goodtimes_for_drf, hk_empty):
+    def test_mark_drf_times_empty_hk(self, goodtimes_for_drf, hk_empty):
         """Test that function handles empty HK data gracefully."""
         # Should log warning and return without error
-        drop_drf_times(goodtimes_for_drf, hk_empty)
+        mark_drf_times(goodtimes_for_drf, hk_empty)
 
         # All times should remain good
         assert np.all(goodtimes_for_drf["cull_flags"].values == CullCode.GOOD)
 
-    def test_drop_drf_times_custom_cull_code(
+    def test_mark_drf_times_custom_cull_code(
         self, goodtimes_for_drf, hk_single_drf_transition
     ):
         """Test that custom cull code is used."""
         custom_cull_code = 5
-        drop_drf_times(
+        mark_drf_times(
             goodtimes_for_drf, hk_single_drf_transition, cull_code=custom_cull_code
         )
 
@@ -1117,14 +1117,14 @@ class TestDropDrfTimes:
                 goodtimes_for_drf["cull_flags"].values[i, :] == custom_cull_code
             ), f"MET at index {i} should use custom cull code"
 
-    def test_drop_drf_times_overwrites_existing_culls(
+    def test_mark_drf_times_overwrites_existing_culls(
         self, goodtimes_for_drf, hk_single_drf_transition
     ):
         """Test that existing cull flags are overwritten by DRF culling."""
         # Manually set some METs to a different cull code
         goodtimes_for_drf["cull_flags"].values[0:5, :] = 2
 
-        drop_drf_times(goodtimes_for_drf, hk_single_drf_transition)
+        mark_drf_times(goodtimes_for_drf, hk_single_drf_transition)
 
         # First 5 METs should now be LOOSE (overwritten), not 2
         for i in range(5):
@@ -1132,7 +1132,7 @@ class TestDropDrfTimes:
                 goodtimes_for_drf["cull_flags"].values[i, :] == CullCode.LOOSE
             )
 
-    def test_drop_drf_times_transition_at_start(self):
+    def test_mark_drf_times_transition_at_start(self):
         """Test DRF transition near the start - window exactly at data start."""
         # Create goodtimes starting at a later time
         met_values = np.arange(2000.0, 4000.0, 60)
@@ -1163,7 +1163,7 @@ class TestDropDrfTimes:
             }
         )
 
-        drop_drf_times(gt, hk)
+        mark_drf_times(gt, hk)
 
         # Transition at index 30 (MET 3800.0)
         # Window: 3800 - 1800 = 2000 to 3800
@@ -1179,7 +1179,7 @@ class TestDropDrfTimes:
                 f"MET at index {i} should be good"
             )
 
-    def test_drop_drf_times_transition_at_end(self):
+    def test_mark_drf_times_transition_at_end(self):
         """Test DRF transition at the very end of HK data."""
         # Create goodtimes
         met_values = np.arange(1000.0, 3000.0, 60)
@@ -1210,7 +1210,7 @@ class TestDropDrfTimes:
             }
         )
 
-        drop_drf_times(gt, hk)
+        mark_drf_times(gt, hk)
 
         # Transition at last index (MET ~2940)
         # Should remove 30-minute window before it
