@@ -1586,87 +1586,96 @@ def resweep_histogram_data(
 
 
 def calculate_histogram_rates(
-    l1b_histrates: xr.Dataset,
-    acq_start: xr.DataArray,
-    acq_end: xr.DataArray,
-    avg_spin_durations_per_cycle: xr.DataArray,
-    exposure_factor: np.ndarray,
+        l1b_histrates: xr.Dataset,
+        acq_start: xr.DataArray,
+        acq_end: xr.DataArray,
+        avg_spin_durations_per_cycle: xr.DataArray,
+        exposure_factors: dict[str, np.ndarray],
 ) -> xr.Dataset:
     """
     Calculate histogram rates by dividing reswept counts by exposure time.
 
     For each epoch in l1b_histrates, this function finds the corresponding
-    spin interval, calculates the exposure time for 6-degree bins,
+    spin interval, calculates the exposure time for each bin type,
     and divides the counts by the exposure time. The exposure time is scaled
     by the number of ESA steps that were reswept during resweeping.
 
     Parameters
     ----------
     l1b_histrates : xr.Dataset
-        The L1B histogram rates dataset containing reswept h_counts and o_counts.
+        The L1B histogram rates dataset containing reswept counts.
     acq_start : xr.DataArray
         Start times for each spin cycle in MET seconds.
     acq_end : xr.DataArray
         End times for each spin cycle in MET seconds.
     avg_spin_durations_per_cycle : xr.DataArray
         Average spin duration for each cycle in seconds.
-    exposure_factor : np.ndarray
-        3D array of exposure factors (epoch, azimuth, esa_step) indicating how many
-        ESA steps were reswept during resweeping.
+    exposure_factors : dict[str, np.ndarray]
+        Dictionary mapping field names to their 3D exposure factor arrays
+        (epoch, esa_step, azimuth) indicating how many ESA steps were
+        reswept during resweeping.
 
     Returns
     -------
     l1b_histrates : xr.Dataset
-        Updated dataset with h_rates and o_rates added.
+        The L1B histogram rates dataset with rates calculated.
     """
-    epochs = l1b_histrates["epoch"].values
-    h_counts = l1b_histrates["h_counts"].values
-    o_counts = l1b_histrates["o_counts"].values
+    epochs_ttj2000 = l1b_histrates["epoch"].values
+    epochs_met = ttj2000ns_to_met(epochs_ttj2000)
 
-    h_rates = np.zeros_like(h_counts, dtype=float)
-    o_rates = np.zeros_like(o_counts, dtype=float)
-    num_azimuth = h_counts.shape[2]
-    exposure_times = np.zeros((len(epochs), 7, num_azimuth), dtype=float)
+    # Match each histogram epoch to its corresponding spin cycle
+    closest_spin_idx = np.abs(epochs_met[:, None] - acq_start.values).argmin(axis=1)
 
-    # Calculate rates for each epoch
-    for epoch_idx, epoch in enumerate(epochs):
-        # Find the spin cycle that contains the current epoch
-        spin_cycle_mask = (epoch >= met_to_ttj2000ns(acq_start.values)) & (
-            epoch <= met_to_ttj2000ns(acq_end.values)
-        )
-        spin_cycle_indices = np.nonzero(spin_cycle_mask)[0]
+    # Get spin durations for each epoch
+    spin_durations = avg_spin_durations_per_cycle.values[closest_spin_idx]
 
-        # If no matching spin cycle is found, log a warning and set rates to NaN
-        if len(spin_cycle_indices) == 0:
-            logger.warning(f"Epoch {epoch_idx} not found in any spin_cycle interval")
-            h_rates[epoch_idx] = np.nan
-            o_rates[epoch_idx] = np.nan
-            continue
+    # Calculate exposure time for 6-degree bins (60 bins per spin)
+    exposure_time_6deg = spin_durations / 60
 
-        spin_cycle_idx = spin_cycle_indices[0]
-        # Calculate the base exposure time for the spin cycle in minutes
-        base_exposure_time = (
-            4 * avg_spin_durations_per_cycle.values[spin_cycle_idx] / 60
-        )
-        # Scale the exposure time by the exposure factor from resweeping
-        scaled_exposure = base_exposure_time * exposure_factor[epoch_idx, ...]
-        # Avoid division by zero by setting zero exposure times to NaN
-        exposure_times[epoch_idx, ...] = scaled_exposure
-        with np.errstate(divide="ignore"):
-            h_rates[epoch_idx, ...] = h_counts[epoch_idx, ...] / scaled_exposure
-            o_rates[epoch_idx, ...] = o_counts[epoch_idx, ...] / scaled_exposure
+    # Calculate exposure time for 0.6-degree bins (600 bins per spin)
+    exposure_time_06deg = spin_durations / 600
 
-    l1b_histrates["exposure_time"] = xr.DataArray(
-        exposure_times,
-        dims=["epoch", "esa_step", "spin_bin_6"],
-    )
-    l1b_histrates["h_rates"] = xr.DataArray(
-        h_rates,
-        dims=l1b_histrates["h_counts"].dims,
-    )
-    l1b_histrates["o_rates"] = xr.DataArray(
-        o_rates,
-        dims=l1b_histrates["o_counts"].dims,
-    )
+    # Process all fields
+    spin_bin_6_fields = ["h_counts", "o_counts", "tof0_tof1_counts",
+                         "tof0_tof2_counts", "tof1_tof3_counts",
+                         "silver_triple_counts"]
+    spin_bin_60_fields = ["start_a_counts", "start_c_counts", "stop_b0_counts",
+                          "stop_b3_counts", "tof0_counts", "tof1_counts",
+                          "tof2_counts", "tof3_counts"]
+
+    # Process 6-degree bin fields
+    for field in spin_bin_6_fields:
+        counts = l1b_histrates[field].values  # (epoch, esa_step, spin_bin_6)
+        exp_factor = exposure_factors[field]  # (epoch, esa_step, spin_bin_6)
+
+        # Calculate effective exposure time with broadcasting
+        # Shape: (epoch, 1, 1) * (epoch, esa_step, spin_bin_6)
+        effective_exposure = exposure_time_6deg[:, None, None] * exp_factor
+
+        # Avoid division by zero
+        with np.errstate(divide='ignore', invalid='ignore'):
+            rates = np.where(effective_exposure > 0,
+                             counts / effective_exposure,
+                             0)
+
+        l1b_histrates[field].values = rates
+
+    # Process 0.6-degree bin fields
+    for field in spin_bin_60_fields:
+        counts = l1b_histrates[field].values  # (epoch, esa_step, spin_bin_60)
+        exp_factor = exposure_factors[field]  # (epoch, esa_step, spin_bin_60)
+
+        # Calculate effective exposure time with broadcasting
+        # Shape: (epoch, 1, 1) * (epoch, esa_step, spin_bin_60)
+        effective_exposure = exposure_time_06deg[:, None, None] * exp_factor
+
+        # Avoid division by zero
+        with np.errstate(divide='ignore', invalid='ignore'):
+            rates = np.where(effective_exposure > 0,
+                             counts / effective_exposure,
+                             0)
+
+        l1b_histrates[field].values = rates
 
     return l1b_histrates
+
