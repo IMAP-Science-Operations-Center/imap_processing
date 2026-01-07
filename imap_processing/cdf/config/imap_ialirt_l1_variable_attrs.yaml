@@ -61,37 +61,6 @@ swe_electron_energy_labels:
   VAR_TYPE: support_data
   UNITS: " "
 
-codice_hi_h_spin_angle:
-    CATDESC: CoDICE-Hi spin angle bin
-    FIELDNAM: CoDICE-Hi spin angle bin
-    LABLAXIS: Spin angle bin
-    FORMAT: A20
-    VAR_TYPE: support_data
-    UNITS: "TODO"
-
-codice_hi_h_energy_range:
-    CATDESC: CoDICE-Hi proton energy bin labels (MeV)
-    FIELDNAM: CoDICE-Hi proton energy bin labels
-    FORMAT: A20
-    VAR_TYPE: support_data
-    UNITS: "MeV"
-
-codice_hi_h_spin_sector:
-    CATDESC: CoDICE-Hi spin sector
-    FIELDNAM: CoDICE-Hi spin sector
-    LABLAXIS: Spin sector
-    FORMAT: A20
-    VAR_TYPE: support_data
-    UNITS: "TODO"
-
-codice_hi_h_azimuth:
-    CATDESC: CoDICE-Hi azimuth bin
-    FIELDNAM: CoDICE-Hi azimuth bin
-    LABLAXIS: Azimuth bin
-    FORMAT: A20
-    VAR_TYPE: support_data
-    UNITS: "TODO"
-
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
@@ -148,6 +117,47 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
+codice_hi_h_spin_angle:
+  <<: *default_float32
+  CATDESC: CoDICE-Hi spin angle
+  FIELDNAM: CoDICE-Hi spin angle
+  LABLAXIS: Spin angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMIN: 0.0
+  VALIDMAX: 180.0
+  VAR_TYPE: support_data
+
+codice_hi_h_energy_range:
+  CATDESC: CoDICE-Hi proton energy bin labels (MeV)
+  FIELDNAM: CoDICE-Hi proton energy bin labels
+  FORMAT: A20
+  VAR_TYPE: support_data
+  UNITS: "MeV"
+
+codice_hi_h_spin_sector:
+  CATDESC: CoDICE-Hi spin sector index
+  FIELDNAM: CoDICE-Hi spin sector index
+  FILLVAL: -1
+  FORMAT: I2
+  LABLAXIS: " "
+  SCALETYP: linear
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 3
+  VAR_TYPE: support_data
+
+codice_hi_h_elevation:
+  <<: *default_float32
+  CATDESC: Elevation Angle
+  FIELDNAM: Elevation Angle
+  LABLAXIS: Elevation Angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMIN: 0.0
+  VALIDMAX: 180.0
+  VAR_TYPE: support_data
+
 codice_hi_epoch:
   CATDESC: CoDICE-Hi instrument epoch time tag
   FIELDNAM: CoDICE-Hi epoch
@@ -168,7 +178,7 @@ codice_hi_epoch:
 
 codice_hi_h:
   <<: *default_float32
-  CATDESC: Proton intensity in 4 spin angle bins, 15 energy ranges, 4 spin sector bins, and 4 azimuth bins
+  CATDESC: Proton intensity in 4 spin angles, 15 energy ranges, 4 spin sectors, and 4 elevations
   FIELDNAM: H intensity
   LABLAXIS: H intensity
   DEPEND_0: codice_hi_epoch
@@ -181,8 +191,8 @@ codice_hi_h:
   LABL_PTR_2: codice_hi_h_energy_range
   DEPEND_3: codice_hi_h_spin_sector
   LABL_PTR_3: codice_hi_h_spin_sector
-  DEPEND_4: codice_hi_h_azimuth
-  LABL_PTR_4: codice_hi_h_azimuth
+  DEPEND_4: codice_hi_h_elevation
+  LABL_PTR_4: codice_hi_h_elevation
   DISPLAY_TYPE: no_plot
   FORMAT: F16.6
   VAR_NOTES: Proton intensity for energy ranges (MeV) are 0.0200–0.0283, 0.0283–0.0400, 0.0400–0.0566, 0.0566–0.0800, 0.0800–0.113, 0.113–0.160, 0.160–0.226, 0.226–0.320, 0.320–0.453, 0.453–0.640, 0.640–0.905, 0.905–1.28, 1.28–1.81, 1.81–2.56, 2.56–3.62.

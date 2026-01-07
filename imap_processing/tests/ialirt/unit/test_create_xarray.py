@@ -17,6 +17,7 @@ def test_create_dataset():
             "met": 123456789,
             "met_in_utc": "2025-06-20T08:00:00",
             "ttj2000ns": 123456789000000,
+            "instrument": "codice_hi",
             "swe_normalized_counts": [Decimal("0.0") for _ in range(8)],
             "swe_counterstreaming_electrons": Decimal("0.0"),
             "swapi_pseudo_proton_speed": Decimal("0.0"),
@@ -52,13 +53,25 @@ def test_create_dataset():
                 [[Decimal("0.0") for _ in range(4)] for _ in range(4)]
                 for _ in range(15)
             ],
+            "codice_hi_h_spin_angle": [
+                Decimal("0.0"),
+                Decimal("0.0"),
+                Decimal("0.0"),
+                Decimal("0.0"),
+            ],
+            "codice_hi_h_elevation_angle": [
+                Decimal("0.0"),
+                Decimal("0.0"),
+                Decimal("0.0"),
+                Decimal("0.0"),
+            ],
         },
         {
             "apid": 478,
             "met": 123456789,
             "met_in_utc": "2025-06-20T08:00:00",
             "ttj2000ns": 123456789000001,
-            # Only MAG is present
+            "instrument": "mag",
             "mag_epoch": Decimal("0.0"),
             "mag_B_GSE": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
             "mag_B_GSM": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
@@ -74,7 +87,7 @@ def test_create_dataset():
             "met": 123456789,
             "met_in_utc": "2025-06-20T08:00:00",
             "ttj2000ns": 123456789000002,
-            # Only SWAPI is present
+            "instrument": "swapi",
             "swapi_pseudo_proton_speed": Decimal("0.0"),
             "swapi_pseudo_proton_density": Decimal("0.0"),
             "swapi_pseudo_proton_temperature": Decimal("0.0"),
