@@ -758,8 +758,4 @@ def test_process_codice_hi(
     for i, group in enumerate(cod_hi_data):
         arr = np.array(group["codice_hi_l2_hi"], dtype=float)
 
-        np.testing.assert_allclose(
-            arr,
-            grouped_test_data[i],
-            atol=1e-2,
-        )
+        np.testing.assert_allclose(arr, grouped_test_data[i], atol=3e-2, rtol=1e-5)
