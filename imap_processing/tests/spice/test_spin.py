@@ -44,10 +44,11 @@ def test_set_spin_table_paths(monkeypatch):
                     "2024-04-11 00:00:15.000000",
                     15.0,
                     True,
-                    1,
+                    True,
                     0,
                     False,
                     15.0,
+                    15.0,  # actual_spin_period
                     0.0,
                 ]
             ],
@@ -62,10 +63,11 @@ def test_set_spin_table_paths(monkeypatch):
                     "2024-04-11 00:00:15.000000",
                     15.0,
                     True,
-                    1,
+                    True,
                     0,
                     False,
                     15.0,
+                    15.0,  # actual_spin_period
                     0.1 / 15,
                 ],
                 [
@@ -75,10 +77,11 @@ def test_set_spin_table_paths(monkeypatch):
                     "2024-04-11 00:00:30.000000",
                     15.0,
                     True,
-                    1,
+                    True,
                     0,
                     False,
                     30.0,
+                    15.0,  # actual_spin_period
                     0.2 / 15,
                 ],
             ],
@@ -114,6 +117,7 @@ def test_get_spin_number(fake_spin_data, met_time, spin_number_expected):
     [
         (15, 0.0),  # Scalar test
         (np.array([15.1, 30.1]), np.array([0.1 / 15, 0.1 / 15])),  # Array test
+        # Query time 50 is in spin 3 (45-60), uses spin_period_sec=15 (spin 4 missing)
         (np.array([50]), np.array([5 / 15])),  # Single element array test
         # The first spin has thruster firing set, but should return valid value
         (5.0, 5 / 15),
@@ -123,12 +127,13 @@ def test_get_spin_number(fake_spin_data, met_time, spin_number_expected):
         (np.array([121, 122, 123]), np.full(3, np.nan)),
         # Test that invalid spin period causes nans
         (np.array([110, 111]), np.full(2, np.nan)),
-        # Test for time in missing spin
+        # Test for time in gap (spin 4 missing) - invalid because (65-45)/15 > 1
         (65, np.nan),
         (np.array([65.1, 66]), np.full(2, np.nan)),
         # Combined test
         (
             np.array([7.5, 30, 61, 75, 106, 121, 136]),
+            # 61 is in spin 3, uses spin_period_sec=15, (61-45)/15 > 1 → invalid
             np.array([0.5, 0, np.nan, 0, np.nan, np.nan, 1 / 15]),
         ),
         # Test that this spin phase range [0, 1) is valid which
@@ -214,6 +219,7 @@ def test_get_spin_data(use_fake_spin_data_for_time):
         "spin_period_source",
         "thruster_firing",
         "spin_start_met",
+        "actual_spin_period",
     }, "Spin data must have the specified fields."
 
 
@@ -285,6 +291,7 @@ def test_get_instrument_spin_phase(
 ):
     """Test coverage for get_instrument_spin_phase()"""
     met_times = np.array([7.5, 30, 61, 75, 106, 121, 136])
+    # Time 61 is in missing spin gap, should be invalid
     expected_nan_mask = np.array([False, False, True, False, True, True, False])
     with furnish_kernels([spice_test_data_path / "imap_130.tf"]):
         inst_phase = spin.get_instrument_spin_phase(met_times, instrument)
