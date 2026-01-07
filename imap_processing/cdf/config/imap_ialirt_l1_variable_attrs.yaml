@@ -525,7 +525,7 @@ swapi_pseudo_proton_density:
   UNITS: 1/cm^3
   VALIDMIN: 0.0
   VALIDMAX: 1000.0
-  VAR_NOTES: The pseudo density is derived from the SWAPI proton moments but does not account for instrument calibration factors.
+  VAR_NOTES: The pseudo density is derived using a simplified analytical model of solar wind proton density.
 
 swapi_pseudo_proton_speed:
   <<: *default_float32
@@ -535,7 +535,7 @@ swapi_pseudo_proton_speed:
   UNITS: km/sec
   VALIDMIN: 0.0
   VALIDMAX: 10000.0
-  VAR_NOTES: The pseudo speed is derived from the SWAPI proton moments but does not account for instrument calibration factors.
+  VAR_NOTES: The pseudo speed is derived using a simplified analytical model of solar wind proton speed.
 
 swapi_pseudo_proton_temperature:
   <<: *default_float32
@@ -545,7 +545,7 @@ swapi_pseudo_proton_temperature:
   UNITS: Kelvin
   VALIDMIN: 0.0
   VALIDMAX: 50000000.0
-  VAR_NOTES: The pseudo temperature is derived from the SWAPI proton moments but does not account for instrument calibration factors.
+  VAR_NOTES: The pseudo temperature is derived using a simplified analytical model of solar wind proton speed.
 
 # SWE Normalized Counts
 swe_normalized_counts:
