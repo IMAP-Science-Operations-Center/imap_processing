@@ -1,5 +1,8 @@
 """Test ULTRA L1a CDFs."""
 
+import logging
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -519,3 +522,33 @@ def test_get_event_id():
         counters_for_met.append(event_id & np.int64(0x7FFFFFFF))
 
     assert counters_for_met == [0, 0, 0, 1]
+
+
+def test_tof_decompression_error_handling(ccsds_path_tof_high_angular, caplog):
+    """Test that ultra_l1a handles TOF decom errors gracefully."""
+
+    caplog.set_level(logging.ERROR)
+
+    # Create side effect function to simulate IndexError
+    def mock_process_ultra_tof(*args):
+        raise IndexError(
+            "Attempted to read past the end of binary string. "
+            "Current position: 32648, Requested bits: 4, String length: 32648"
+        )
+
+    # Use monkeypatch to replace process_ultra_tof
+    with mock.patch(
+        "imap_processing.ultra.l1a.ultra_l1a.process_ultra_tof"
+    ) as mocked_tof:
+        mocked_tof.side_effect = mock_process_ultra_tof
+
+        # Should NOT raise an exception - should catch and log
+        result = ultra_l1a(
+            ccsds_path_tof_high_angular, apid_input=ULTRA_PHXTOF_HIGH_ANGULAR.apid[0]
+        )
+
+    # Test that the result is still returned
+    assert isinstance(result, list)
+
+    # Verify error was logged
+    assert "Error processing TOF data" in caplog.text
