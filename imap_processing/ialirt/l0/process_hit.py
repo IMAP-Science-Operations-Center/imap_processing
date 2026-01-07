@@ -161,16 +161,18 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         slow_rate = grouped_data["hit_slow_rate"][
             (grouped_data["group"] == group).values
         ]
-        met = int(grouped_data["met"][(grouped_data["group"] == group).values][0])
+        met = grouped_data["met"][(grouped_data["group"] == group).values]
+        # Calculate the center of the time variable
+        sc_met = int(np.mean([np.min(met), np.max(met)]))
 
         l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
 
         hit_data.append(
             {
                 "apid": 478,
-                "met": int(met),
-                "met_in_utc": met_to_utc(met).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(met)),
+                "met": sc_met,
+                "met_in_utc": met_to_utc(sc_met).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(sc_met)),
                 "instrument": "hit",
                 "hit_e_a_side_low_en": int(l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"]),
                 "hit_e_a_side_med_en": int(l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"]),

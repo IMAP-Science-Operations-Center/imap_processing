@@ -513,12 +513,15 @@ def process_codice(
                 l2_hi
             ).tolist()
 
+            # Calculate the center of the time variable
+            sc_met = int(np.mean([np.min(met), np.max(met)]))
+
             codice_hi_data.append(
                 {
                     "apid": 478,
-                    "met": int(met[0]),
-                    "met_in_utc": met_to_utc(met[0]).split(".")[0],
-                    "ttj2000ns": int(met_to_ttj2000ns(met[0])),
+                    "met": int(sc_met),
+                    "met_in_utc": met_to_utc(sc_met).split(".")[0],
+                    "ttj2000ns": int(met_to_ttj2000ns(sc_met)),
                     "instrument": f"{sensor}",
                     f"{sensor}_epoch": [int(epoch) for epoch in l1b_hi["epoch"]],
                     f"{sensor}_h": dec_l2_hi,

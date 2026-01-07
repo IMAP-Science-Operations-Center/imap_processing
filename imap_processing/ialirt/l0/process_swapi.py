@@ -162,9 +162,9 @@ def process_swapi_ialirt(
             (grouped_dataset["group"] == group)
         ]
 
-        met_values = int(
-            grouped_dataset["met"][(grouped_dataset["group"] == group).values][0]
-        )
+        met = grouped_dataset["met"][(grouped_dataset["group"] == group).values]
+        # Calculate the center of the time variable
+        sc_met = int(np.mean([np.min(met), np.max(met)]))
 
         # Ensure no duplicates and all values from 0 to 11 are present
         if not np.array_equal(seq_values.values.astype(int), np.arange(12)):
@@ -208,9 +208,9 @@ def process_swapi_ialirt(
         swapi_data.append(
             {
                 "apid": 478,
-                "met": int(met_values),
-                "met_in_utc": met_to_utc(met_values).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(met_values)),
+                "met": sc_met,
+                "met_in_utc": met_to_utc(sc_met).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(sc_met)),
                 "instrument": "swapi",
                 "swapi_pseudo_proton_speed": Decimal(f"{pseudo_speed:.3f}"),
                 "swapi_pseudo_proton_density": Decimal(f"{pseudo_density:.3f}"),

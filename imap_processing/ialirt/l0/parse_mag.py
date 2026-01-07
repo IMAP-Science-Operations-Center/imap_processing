@@ -716,7 +716,9 @@ def process_packet(
         )
 
         met = grouped_data["met"][(grouped_data["group"] == group).values]
-        met_all.append(met.values[0])
+        # Calculate the center of the time variable
+        sc_met = int(np.mean([np.min(met), np.max(met)]))
+        met_all.append(sc_met)
         mago_times_all.append(time_data["primary_epoch"])
         mago_vectors_all.append(mago_inertial_vector)
         magi_vectors_all.append(magi_inertial_vector)
