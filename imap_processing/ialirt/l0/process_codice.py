@@ -348,7 +348,7 @@ def process_codice(
             )
             l2_hi = convert_to_intensities(l1b_hi, l2_lut_path, "h")
             # Put in Decimal format so DynamoDB can read it.
-            dec_l2_hi = np.vectorize(lambda x: Decimal(f"{float(x):.3f}"))(
+            dec_l2_hi = np.vectorize(lambda x: Decimal(f"{float(x):.4f}"))(
                 l2_hi
             ).tolist()
 
