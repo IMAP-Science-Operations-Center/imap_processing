@@ -1060,8 +1060,13 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         l2_dataset["spin_sector"],
     )
     l2_dataset["spin_angle"] = l2_dataset["spin_sector"].astype(np.float32) * 15.0 + 7.5
+
+    # Set spin angle and sector to NaN for invalid positions (>23)
     l2_dataset["spin_angle"] = xr.where(
         (original_spin_sector > 23), np.nan, l2_dataset["spin_angle"]
+    )
+    l2_dataset["spin_sector"] = xr.where(
+        (original_spin_sector > 23), np.nan, l2_dataset["spin_sector"]
     )
     # convert apd energy to physical units
     # Set the gain labels based on gain values

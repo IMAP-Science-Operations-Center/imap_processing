@@ -551,8 +551,10 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     l2_val_data = load_cdf(l2_val_data)
 
     for variable in l2_val_data.data_vars:
-        if variable in ["spin_angle"]:
-            # TODO remove this block when joey fixes spin_angle calculation
+        if variable in ["spin_angle", "spin_sector"]:
+            # TODO remove this block when joey fixes spin_angle and spin_sector
+            #  calculation. Currently they are not setting spin sector and spin angles
+            #  to NaNs for invalid positions.
             continue  # skip spin_angle
         if "label" in variable:
             np.testing.assert_array_equal(
