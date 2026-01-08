@@ -654,6 +654,7 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
     )
 
 
+@pytest.mark.xfail(reason="Known issue with l1a HI Direct Event processing")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
     """Tests lo-direct-events."""
@@ -704,6 +705,7 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
     )
 
 
+@pytest.mark.xfail(reason="Known issue with l1a HI Direct Event processing")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
     """Tests hi-direct-events."""

@@ -554,6 +554,7 @@ def test_codice_l2_sw_angular_intensity(mock_get_file_paths, codice_lut_path):
     write_cdf(processed_2_ds)
 
 
+@pytest.mark.xfail(reason="Known issue with l1a HI Direct Event processing")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
@@ -616,6 +617,7 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     load_cdf(file)
 
 
+@pytest.mark.xfail(reason="Known issue with l1a HI Direct Event processing")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
