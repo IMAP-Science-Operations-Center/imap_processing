@@ -53,6 +53,12 @@ def test_create_dataset():
                 [[Decimal("0.0") for _ in range(4)] for _ in range(4)]
                 for _ in range(15)
             ],
+            "codice_hi_epoch": [
+                Decimal("0.0"),
+                Decimal("0.0"),
+                Decimal("0.0"),
+                Decimal("0.0"),
+            ],
             "codice_hi_h_spin_angle": [
                 Decimal("0.0"),
                 Decimal("0.0"),

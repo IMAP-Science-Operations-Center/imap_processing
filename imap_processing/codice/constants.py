@@ -76,6 +76,24 @@ LO_IALIRT_M_OVER_Q = {
     "fe_hiq": 7.25,
 }
 
+HI_IALIRT_ELEVATION_ANGLE = np.array(
+    [
+        132.8,
+        65.7,
+        47.1,
+        114.3,
+    ],
+    dtype=float,
+)
+HI_IALIRT_REF_SPIN_ANGLE = np.array(
+    [
+        286.85,
+        264.55,
+        343.16,
+        5.44,
+    ],
+    dtype=float,
+)
 
 # Define the packet fields needed to be stored in segmented data and their
 # corresponding bit lengths for direct event data products

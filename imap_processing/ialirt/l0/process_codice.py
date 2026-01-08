@@ -524,9 +524,6 @@ def process_codice(
                     "ttj2000ns": int(met_to_ttj2000ns(sc_met)),
                     "instrument": f"{sensor}",
                     f"{sensor}_epoch": [int(epoch) for epoch in l1b_hi["epoch"]],
-                    # TODO: add values here. How?
-                    # codice_hi_h_spin_angle (n=4)
-                    # codice_hi_h_elevation_angle (n=4)
                     f"{sensor}_h": dec_l2_hi,
                 }
             )

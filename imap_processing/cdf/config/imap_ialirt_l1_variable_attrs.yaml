@@ -117,25 +117,14 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
-codice_hi_h_spin_angle:
-  <<: *default_float32
-  CATDESC: CoDICE-Hi spin angle
-  FIELDNAM: CoDICE-Hi spin angle
-  LABLAXIS: Spin angle
-  SCALETYP: linear
-  UNITS: degrees
-  VALIDMIN: 0.0
-  VALIDMAX: 180.0
-  VAR_TYPE: support_data
-
-codice_hi_h_energy_range:
+codice_hi_h_energy_range_labels:
   CATDESC: CoDICE-Hi proton energy bin labels (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin labels
   FORMAT: A20
   VAR_TYPE: support_data
   UNITS: "MeV"
 
-codice_hi_h_spin_sector:
+codice_hi_spin_sector:
   CATDESC: CoDICE-Hi spin sector index
   FIELDNAM: CoDICE-Hi spin sector index
   FILLVAL: -1
@@ -147,7 +136,7 @@ codice_hi_h_spin_sector:
   VALIDMAX: 3
   VAR_TYPE: support_data
 
-codice_hi_h_elevation:
+codice_hi_elevation:
   <<: *default_float32
   CATDESC: Elevation Angle
   FIELDNAM: Elevation Angle
@@ -157,6 +146,34 @@ codice_hi_h_elevation:
   VALIDMIN: 0.0
   VALIDMAX: 180.0
   VAR_TYPE: support_data
+
+codice_hi_elevation_labels:
+  CATDESC: Elevation Angle
+  FIELDNAM: Elevation Angle
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+codice_hi_spin_sector_labels:
+  CATDESC: Spin Sector
+  DEPEND_1: spin_sector
+  FIELDNAM: Spin Sector
+  FORMAT: A2
+  VAR_TYPE: metadata
+
+codice_hi_spin_angle:
+  <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Spin Angle
+  FIELDNAM: Spin Angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMAX: 360.0
+  VALIDMIN: 0.0
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
+  DEPEND_1: codice_hi_spin_sector
+  DEPEND_2: codice_hi_elevation
+  LABL_PTR_1: codice_hi_spin_sector_labels
+  LABL_PTR_2: codice_hi_elevation_labels
 
 codice_hi_epoch:
   CATDESC: CoDICE-Hi instrument epoch time tag
@@ -185,14 +202,10 @@ codice_hi_h:
   UNITS: "counts / cm2-sr-s-MeV"
   VALIDMIN: 0
   VALIDMAX: 100000000.0
-  DEPEND_1: codice_hi_h_spin_angle
-  LABL_PTR_1: codice_hi_h_spin_angle
-  DEPEND_2: codice_hi_h_energy_range
-  LABL_PTR_2: codice_hi_h_energy_range
-  DEPEND_3: codice_hi_h_spin_sector
-  LABL_PTR_3: codice_hi_h_spin_sector
-  DEPEND_4: codice_hi_h_elevation
-  LABL_PTR_4: codice_hi_h_elevation
+  LABL_PTR_1: codice_hi_h_energy_range_labels
+  DEPEND_2: codice_hi_h_spin_sector_labels
+  DEPEND_3: codice_hi_h_elevation
+  LABL_PTR_3: codice_hi_h_elevation_labels
   DISPLAY_TYPE: no_plot
   FORMAT: F16.6
   VAR_NOTES: Proton intensity for energy ranges (MeV) are 0.0200–0.0283, 0.0283–0.0400, 0.0400–0.0566, 0.0566–0.0800, 0.0800–0.113, 0.113–0.160, 0.160–0.226, 0.226–0.320, 0.320–0.453, 0.453–0.640, 0.640–0.905, 0.905–1.28, 1.28–1.81, 1.81–2.56, 2.56–3.62.

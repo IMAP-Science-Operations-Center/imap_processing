@@ -4,7 +4,15 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.ialirt.utils.constants import IALIRT_KEYS
+from imap_processing.codice.constants import (
+    HI_IALIRT_ELEVATION_ANGLE,
+    HI_IALIRT_REF_SPIN_ANGLE,
+)
+from imap_processing.ialirt.utils.constants import (
+    IALIRT_KEYS,
+    codice_energy_bounds,
+    swe_energy_labels,
+)
 
 
 def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0912
@@ -105,16 +113,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     swe_electron_energy_labels = xr.DataArray(
-        data=[
-            "100.4 eV",
-            "140 eV",
-            "194 eV",
-            "270 eV",
-            "376 eV",
-            "523 eV",
-            "727 eV",
-            "1011 eV",
-        ],
+        data=[f"{label} eV" for label in swe_energy_labels],
         name="swe_electron_energy_labels",
         dims=["swe_electron_energy_labels"],
         attrs=cdf_manager.get_variable_attributes(
@@ -123,47 +122,52 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     energy_range = xr.DataArray(
-        data=[
-            "0.0200-0.0283 MeV",
-            "0.0283-0.0400 MeV",
-            "0.0400-0.0566 MeV",
-            "0.0566-0.0800 MeV",
-            "0.0800-0.113 MeV",
-            "0.113-0.160 MeV",
-            "0.160-0.226 MeV",
-            "0.226-0.320 MeV",
-            "0.320-0.453 MeV",
-            "0.453-0.640 MeV",
-            "0.640-0.905 MeV",
-            "0.905-1.28 MeV",
-            "1.28-1.81 MeV",
-            "1.81-2.56 MeV",
-            "2.56-3.62 MeV",
-        ],
-        name="codice_hi_h_energy_range",
-        dims=["codice_hi_h_energy_range"],
+        data=[f"{low:.4f}-{high:.4f} MeV" for low, high in codice_energy_bounds],
+        name="codice_hi_h_energy_range_labels",
+        dims=["codice_hi_h_energy_range_labels"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_energy_range", check_schema=False
+            "codice_hi_h_energy_range_labels", check_schema=False
         ),
     )
 
-    # TODO: I think this need to be indices too.
-    elevation = xr.DataArray(
-        data=elevation_values,
-        name="codice_hi_h_elevation",
-        dims=["codice_hi_h_elevation"],
-        attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_elevation", check_schema=False
+    elevation = (
+        xr.DataArray(
+            HI_IALIRT_ELEVATION_ANGLE,
+            name="codice_hi_elevation",
+            dims=("codice_hi_elevation",),
+            attrs=cdf_manager.get_variable_attributes(
+                "codice_hi_elevation", check_schema=False
+            ),
         ),
     )
 
-    # TODO: I think this need to be indices too.
+    elevation_labels = xr.DataArray(
+        HI_IALIRT_ELEVATION_ANGLE.astype(str),
+        name="codice_hi_elevation_labels",
+        dims=["codice_hi_elevation"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_elevation_labels", check_schema=False
+        ),
+    )
+
+    # Calculate spin angle for CoDICE-Hi
+    # Formula:
+    #   θ_(g,n) = (θ_(g,0)+90°* n)  mod 360°
+    # where
+    #   n is number of sectored angles, 0 to 3,
+    #   g is size of the group (inst_az), 0 to 3,
+    # Calculate spin angle by adding a base angle from L2_HI_SECTORED_ANGLE
+    # for each SSD index and then adding multiple of 30 degrees for each elevation.
+    # Then mod by 360 to keep it within 0-360 range.
+    spin_angles = (
+        HI_IALIRT_REF_SPIN_ANGLE[:, np.newaxis] + np.array([0, 1, 2, 3]) * 90
+    ) % 360.0
     spin_angle = xr.DataArray(
-        data=spin_angle_values,
-        name="codice_hi_h_spin_angle",
-        dims=["codice_hi_h_spin_angle"],
+        data=spin_angles,
+        name="codice_hi_spin_angle",
+        dims=["spin_sector", "elevation_angle"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_spin_angle", check_schema=False
+            "codice_hi_spin_angle", check_schema=False
         ),
     )
 
@@ -173,6 +177,15 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         dims=["codice_hi_h_spin_sector"],
         attrs=cdf_manager.get_variable_attributes(
             "codice_hi_h_spin_sector", check_schema=False
+        ),
+    )
+
+    spin_sector_labels = xr.DataArray(
+        data=["0", "1", "2", "3"],
+        name="codice_hi_h_spin_sector_labels",
+        dims=["codice_hi_h_spin_sector"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_h_spin_sector_labels", check_schema=False
         ),
     )
 
@@ -186,10 +199,12 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "sc_GSM_labels": sc_gsm_component,
         "sc_GSE_labels": sc_gse_component,
         "swe_electron_energy_labels": swe_electron_energy_labels,
-        "codice_hi_h_spin_angle": spin_angle,
         "codice_hi_h_energy_range": energy_range,
-        "codice_hi_h_spin_sector": spin_sector,
-        "codice_hi_h_elevation": elevation,
+        "codice_hi_elevation": elevation,
+        "codice_hi_elevation_labels": elevation_labels,
+        "codice_hi_spin_angle": spin_angle,
+        "codice_hi_spin_sector": spin_sector,
+        "codice_hi_spin_sector_labels": spin_sector_labels,
     }
     dataset = xr.Dataset(
         coords=coords,
@@ -221,13 +236,12 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
             dims = ["mag_epoch", "B_RTN_labels"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key.startswith("codice_hi"):
-            data = np.full((n, 4, 15, 4, 4), fillval, dtype=np.float32)
+            data = np.full((4 * n, 15, 4, 4), fillval, dtype=np.float32)
             dims = [
-                "codice_hi_epoch",  # ? not certain this is correct.
-                "codice_hi_h_spin_angle",  # changes within each group
-                "codice_hi_h_energy_range",
-                "codice_hi_h_spin_sector",  # index (0, 1, 2, 3)
-                "codice_hi_h_elevation",  # static for each group (btw groups changes)
+                "codice_hi_epoch",
+                "codice_hi_energy_range",
+                "codice_hi_spin_sector",
+                "codice_hi_elevation",
             ]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key == "swe_counterstreaming_electrons":
