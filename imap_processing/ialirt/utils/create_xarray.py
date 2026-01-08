@@ -33,49 +33,28 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     cdf_manager.add_instrument_global_attrs("ialirt")
     cdf_manager.add_instrument_variable_attrs("ialirt", "l1")
 
-    n = len(records)
-    attrs = cdf_manager.get_variable_attributes("default_int64_attrs")
-    fillval = attrs.get("FILLVAL")
-    ttj2000ns_values = np.full(n, fillval, dtype=np.int64)
-    codice_hi_ttj2000ns_values = np.full(n * 4, fillval, dtype=np.int64)
-    mag_ttj2000ns_values = np.full(n * 4, fillval, dtype=np.int64)
-    attrs = cdf_manager.get_variable_attributes("default_float32_attrs")
-    fillval = attrs.get("FILLVAL")
-    elevation_values = np.full(n * 4, fillval, dtype=np.float32)
-    spin_angle_values = np.full(n * 4, fillval, dtype=np.float32)
+    ONE_EPOCH = {"codice_lo", "hit", "swapi", "swe", "spacecraft", "mag"}
+    MULTI_EPOCH = {"codice_hi"}
 
-    # Collect all keys that start with the instrument prefixes.
-    for i, record in enumerate(records):
-        ttj2000ns_values[i] = record["ttj2000ns"]
-        if record["instrument"] == "codice_hi":
-            codice_hi_ttj2000ns_values[4 * i : 4 * i + 4] = record["codice_hi_epoch"]
-            elevation_values[4 * i : 4 * i + 4] = record["codice_hi_h_elevation_angle"]
-            spin_angle_values[4 * i : 4 * i + 4] = record["codice_hi_h_spin_angle"]
-        if record["instrument"] == "mag":
-            mag_ttj2000ns_values[4 * i : 4 * i + 4] = record["mag_epoch"]
+    epochs = {inst: [] for inst in (ONE_EPOCH | MULTI_EPOCH)}
 
-    epoch = xr.DataArray(
-        data=ttj2000ns_values,
-        name="epoch",
-        dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("epoch", check_schema=False),
-    )
+    for r in records:
+        inst = r.get("instrument")
+        if inst in ONE_EPOCH:
+            epochs[inst].append(r["mag_epoch"] if inst == "mag" else r["ttj2000ns"])
+        elif inst in MULTI_EPOCH:
+            epochs[inst].extend(r["codice_hi_epoch"])
 
-    codice_hi_epoch = xr.DataArray(
-        data=codice_hi_ttj2000ns_values,
-        name="codice_hi_epoch",
-        dims=["codice_hi_epoch"],
-        attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_epoch", check_schema=False
-        ),
-    )
+    epoch_arrays = {}
 
-    mag_epoch = xr.DataArray(
-        data=mag_ttj2000ns_values,
-        name="mag_epoch",
-        dims=["mag_epoch"],
-        attrs=cdf_manager.get_variable_attributes("mag_epoch", check_schema=False),
-    )
+    for inst, arr in epochs.items():
+        coord = f"{inst}_epoch"
+        epoch_arrays[coord] = xr.DataArray(
+            data=arr,
+            name=coord,
+            dims=[coord],
+            attrs=cdf_manager.get_variable_attributes(coord, check_schema=False),
+        )
 
     sc_gsm_component = xr.DataArray(
         ["x (GSM)", "y (GSM)", "z (GSM)"],
@@ -130,24 +109,11 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
-    elevation = (
-        xr.DataArray(
-            HI_IALIRT_ELEVATION_ANGLE,
-            name="codice_hi_elevation",
-            dims=("codice_hi_elevation",),
-            attrs=cdf_manager.get_variable_attributes(
-                "codice_hi_elevation", check_schema=False
-            ),
-        ),
-    )
-
-    elevation_labels = xr.DataArray(
-        HI_IALIRT_ELEVATION_ANGLE.astype(str),
-        name="codice_hi_elevation_labels",
+    elevation = xr.DataArray(
+        HI_IALIRT_ELEVATION_ANGLE,
+        name="codice_hi_elevation",
         dims=["codice_hi_elevation"],
-        attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_elevation_labels", check_schema=False
-        ),
+        attrs=cdf_manager.get_variable_attributes("codice_hi_elevation", check_schema=False),
     )
 
     # Calculate spin angle for CoDICE-Hi
@@ -165,7 +131,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     spin_angle = xr.DataArray(
         data=spin_angles,
         name="codice_hi_spin_angle",
-        dims=["spin_sector", "elevation_angle"],
+        dims=["codice_hi_spin_sector", "codice_hi_elevation_angle"],
         attrs=cdf_manager.get_variable_attributes(
             "codice_hi_spin_angle", check_schema=False
         ),
@@ -180,19 +146,13 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
-    spin_sector_labels = xr.DataArray(
-        data=["0", "1", "2", "3"],
-        name="codice_hi_h_spin_sector_labels",
-        dims=["codice_hi_h_spin_sector"],
-        attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_spin_sector_labels", check_schema=False
-        ),
-    )
-
     coords = {
-        "epoch": epoch,
-        "mag_epoch": mag_epoch,
-        "codice_hi_epoch": codice_hi_epoch,
+        "codice_hi_epoch": epoch_arrays["codice_hi_epoch"],
+        "codice_lo_epoch": epoch_arrays["codice_lo_epoch"],
+        "hit_epoch": epoch_arrays["hit_epoch"],
+        "mag_epoch": epoch_arrays["mag_epoch"],
+        "swapi_epoch": epoch_arrays["swapi_epoch"],
+        "swe_epoch": epoch_arrays["swe_epoch"],
         "B_GSM_labels": gsm_component,
         "B_GSE_labels": gse_component,
         "B_RTN_labels": rtn_component,
@@ -201,87 +161,44 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "swe_electron_energy_labels": swe_electron_energy_labels,
         "codice_hi_h_energy_range": energy_range,
         "codice_hi_elevation": elevation,
-        "codice_hi_elevation_labels": elevation_labels,
         "codice_hi_spin_angle": spin_angle,
         "codice_hi_spin_sector": spin_sector,
-        "codice_hi_spin_sector_labels": spin_sector_labels,
     }
     dataset = xr.Dataset(
         coords=coords,
         attrs=cdf_manager.get_global_attributes("imap_ialirt_l1_realtime"),
     )
 
-    # Create empty dataset for each key.
-    for key in IALIRT_KEYS:
-        attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
-        fillval = attrs.get("FILLVAL")
-        if key == "mag_B_GSE":
-            data = np.full((n, 3), fillval, dtype=np.float32)
-            dims = ["mag_epoch", "B_GSE_labels"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key in ["sc_position_GSE", "sc_velocity_GSE"]:
-            data = np.full((n, 3), fillval, dtype=np.float32)
-            dims = ["epoch", "sc_GSE_labels"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key in ["sc_position_GSM", "sc_velocity_GSM"]:
-            data = np.full((n, 3), fillval, dtype=np.float32)
-            dims = ["epoch", "sc_GSM_labels"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key == "mag_B_GSM":
-            data = np.full((n, 3), fillval, dtype=np.float32)
-            dims = ["mag_epoch", "B_GSM_labels"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key == "mag_B_RTN":
-            data = np.full((n, 3), fillval, dtype=np.float32)
-            dims = ["mag_epoch", "B_RTN_labels"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key.startswith("codice_hi"):
-            data = np.full((4 * n, 15, 4, 4), fillval, dtype=np.float32)
-            dims = [
-                "codice_hi_epoch",
-                "codice_hi_energy_range",
-                "codice_hi_spin_sector",
-                "codice_hi_elevation",
-            ]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key == "swe_counterstreaming_electrons":
-            data = np.full(n, fillval, dtype=np.uint8)
-            dims = ["epoch"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key.startswith("swe"):
-            data = np.full((n, 8), fillval, dtype=np.uint32)
-            dims = ["epoch", "swe_electron_energy_labels"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key.startswith("hit"):
-            data = np.full(n, fillval, dtype=np.uint32)
-            dims = ["epoch"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        else:
-            data = np.full(n, fillval, dtype=np.float32)
-            dims = ["epoch"]
-            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-
     # Populate the dataset variables
     for i, record in enumerate(records):
         for key, val in record.items():
-            if key in [
-                "apid",
-                "met",
-                "met_in_utc",
-                "ttj2000ns",
-                "last_modified",
-                "mag_hk_status",
-                "spice_kernels",
-                "instrument",
-            ]:
+            attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
+            if key not in IALIRT_KEYS:
                 continue
-            elif key in ["mag_B_GSE", "mag_B_GSM", "mag_B_RTN"]:
-                dataset[key].data[i, :] = val
-            elif key.startswith("swe_normalized_counts"):
-                dataset[key].data[i, :] = val
-            elif key.startswith("codice_hi"):
-                dataset[key].data[i, :, :, :, :] = val
+            elif key == "mag_B_GSE":
+                dims = ["mag_epoch", "B_GSE_labels"]
+            elif key in ["sc_position_GSE", "sc_velocity_GSE"]:
+                dims = ["epoch", "sc_GSE_labels"]
+            elif key in ["sc_position_GSM", "sc_velocity_GSM"]:
+                dims = ["epoch", "sc_GSM_labels"]
+            elif key == "mag_B_GSE":
+                dims = ["mag_epoch", "B_GSE_labels"]
+            elif key == "mag_B_GSM":
+                dims = ["mag_epoch", "B_GSM_labels"]
+            elif key == "mag_B_RTN":
+                dims = ["mag_epoch", "B_RTN_labels"]
+            elif key.startswith("swe"):
+                dims = ["epoch", "swe_electron_energy_labels"]
+            elif key == "codice_hi_h":
+                dims = [
+                    "codice_hi_epoch",
+                    "codice_hi_h_energy_range",
+                    "codice_hi_spin_sector",
+                    "codice_hi_elevation",
+                ]
             else:
-                dataset[key].data[i] = val
+                dims = [f"{record['instrument']}_epoch"]
+
+            dataset[key] = xr.DataArray(val, dims=dims, attrs=attrs)
 
     return dataset
