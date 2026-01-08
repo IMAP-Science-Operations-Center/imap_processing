@@ -1,5 +1,6 @@
 """Creates xarray based on structure of queried DynamoDB."""
 
+from collections import defaultdict
 import numpy as np
 import xarray as xr
 
@@ -9,6 +10,7 @@ from imap_processing.codice.constants import (
     HI_IALIRT_REF_SPIN_ANGLE,
 )
 from imap_processing.ialirt.utils.constants import (
+    IALIRT_DTYPES,
     IALIRT_DIMS,
     codice_energy_bounds,
     swe_energy_labels,
@@ -37,9 +39,11 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     MULTI_EPOCH = {"codice_hi"}
 
     epochs = {inst: [] for inst in (ONE_EPOCH | MULTI_EPOCH)}
+    by_inst: dict[str, list[dict]] = defaultdict(list)
 
     for r in records:
         inst = r.get("instrument")
+        by_inst[r["instrument"]].append(r)
         if inst in ONE_EPOCH:
             epochs[inst].append(r["mag_epoch"] if inst == "mag" else r["ttj2000ns"])
         elif inst in MULTI_EPOCH:
@@ -131,7 +135,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     spin_angle = xr.DataArray(
         data=spin_angles,
         name="codice_hi_spin_angle",
-        dims=["codice_hi_spin_sector", "codice_hi_elevation_angle"],
+        dims=["codice_hi_spin_sector", "codice_hi_elevation"],
         attrs=cdf_manager.get_variable_attributes(
             "codice_hi_spin_angle", check_schema=False
         ),
@@ -159,7 +163,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "sc_GSM_labels": sc_gsm_component,
         "sc_GSE_labels": sc_gse_component,
         "swe_electron_energy_labels": swe_electron_energy_labels,
-        "codice_hi_h_energy_range": energy_range,
+        "codice_hi_h_energy_range_labels": energy_range,
         "codice_hi_elevation": elevation,
         "codice_hi_spin_angle": spin_angle,
         "codice_hi_spin_sector": spin_sector,
@@ -173,48 +177,76 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         dims = IALIRT_DIMS[key]
         attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
         fill = attrs["FILLVAL"]
+        dtype = IALIRT_DTYPES[key]
 
         shape = [dataset.dims[d] for d in dims]
-
-        dtype = np.float32
-        if key in {
-            "swe_counterstreaming_electrons",
-        }:
-            dtype = np.uint8
 
         data = np.full(shape, fill, dtype=dtype)
         dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
 
-    # Populate the dataset variables
-    for i, record in enumerate(records):
-        for key, val in record.items():
-            attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
-            if key not in IALIRT_KEYS:
-                continue
-            elif key == "mag_B_GSE":
-                dims = ["mag_epoch", "B_GSE_labels"]
-            elif key in ["sc_position_GSE", "sc_velocity_GSE"]:
-                dims = ["epoch", "sc_GSE_labels"]
-            elif key in ["sc_position_GSM", "sc_velocity_GSM"]:
-                dims = ["epoch", "sc_GSM_labels"]
-            elif key == "mag_B_GSE":
-                dims = ["mag_epoch", "B_GSE_labels"]
-            elif key == "mag_B_GSM":
-                dims = ["mag_epoch", "B_GSM_labels"]
-            elif key == "mag_B_RTN":
-                dims = ["mag_epoch", "B_RTN_labels"]
-            elif key.startswith("swe"):
-                dims = ["epoch", "swe_electron_energy_labels"]
-            elif key == "codice_hi_h":
-                dims = [
-                    "codice_hi_epoch",
-                    "codice_hi_h_energy_range",
-                    "codice_hi_spin_sector",
-                    "codice_hi_elevation",
-                ]
-            else:
-                dims = [f"{record['instrument']}_epoch"]
+    for i, r in enumerate(by_inst.get("mag", [])):
+        dataset["mag_B_GSE"].data[i, :] = np.asarray(r["mag_B_GSE"], dtype=np.float32)
+        dataset["mag_B_GSM"].data[i, :] = np.asarray(r["mag_B_GSM"], dtype=np.float32)
+        dataset["mag_B_RTN"].data[i, :] = np.asarray(r["mag_B_RTN"], dtype=np.float32)
 
-            dataset[key] = xr.DataArray(val, dims=dims, attrs=attrs)
+        dataset["mag_B_magnitude"].data[i] = np.float32(r["mag_B_magnitude"])
+        dataset["mag_theta_B_GSE"].data[i] = np.float32(r["mag_theta_B_GSE"])
+        dataset["mag_phi_B_GSE"].data[i] = np.float32(r["mag_phi_B_GSE"])
+        dataset["mag_theta_B_GSM"].data[i] = np.float32(r["mag_theta_B_GSM"])
+        dataset["mag_phi_B_GSM"].data[i] = np.float32(r["mag_phi_B_GSM"])
+
+    for i, r in enumerate(by_inst.get("codice_hi", [])):
+        sl = slice(4 * i, 4 * i + 4)
+
+        hi = np.asarray(r["codice_hi_h"], dtype=np.float32)
+
+        # Allow either (4,15,4,4) or (15,4,4)
+        if hi.shape == (15, 4, 4):
+            hi = np.repeat(hi[None, ...], 4, axis=0)
+
+        dataset["codice_hi_h"].data[sl, :, :, :] = hi
+
+    CODICE_LO_KEYS = [
+        "codice_lo_c_over_o_abundance",
+        "codice_lo_mg_over_o_abundance",
+        "codice_lo_fe_over_o_abundance",
+        "codice_lo_c_plus_6_over_c_plus_5_ratio",
+        "codice_lo_o_plus_7_over_o_plus_6_ratio",
+        "codice_lo_fe_low_over_fe_high_ratio",
+    ]
+
+    for i, r in enumerate(by_inst.get("codice_lo", [])):
+        for k in CODICE_LO_KEYS:
+            dataset[k].data[i] = np.float32(r[k])
+
+    HIT_KEYS = [
+        "hit_e_a_side_low_en",
+        "hit_e_a_side_med_en",
+        "hit_e_b_side_low_en",
+        "hit_e_b_side_med_en",
+        "hit_h_omni_low_en",
+        "hit_h_omni_med_en",
+        "hit_he_omni_low_en",
+        "hit_he_omni_high_en",
+    ]
+
+    for i, r in enumerate(by_inst.get("hit", [])):
+        for k in HIT_KEYS:
+            dataset[k].data[i] = np.uint32(r[k])
+
+    for i, r in enumerate(by_inst.get("swapi", [])):
+        dataset["swapi_pseudo_proton_density"].data[i] = np.float32(r["swapi_pseudo_proton_density"])
+        dataset["swapi_pseudo_proton_speed"].data[i] = np.float32(r["swapi_pseudo_proton_speed"])
+        dataset["swapi_pseudo_proton_temperature"].data[i] = np.float32(r["swapi_pseudo_proton_temperature"])
+
+    for i, r in enumerate(by_inst.get("swe", [])):
+        dataset["swe_normalized_counts"].data[i, :] = np.asarray(r["swe_normalized_counts"], dtype=np.uint32)
+        dataset["swe_counterstreaming_electrons"].data[i] = np.uint8(r["swe_counterstreaming_electrons"])
+
+    for i, r in enumerate(by_inst.get("spacecraft", [])):
+        dataset["sc_position_GSE"].data[i, :] = np.asarray(r["sc_position_GSE"], dtype=np.float32)
+        dataset["sc_velocity_GSE"].data[i, :] = np.asarray(r["sc_velocity_GSE"], dtype=np.float32)
+        dataset["sc_position_GSM"].data[i, :] = np.asarray(r["sc_position_GSM"], dtype=np.float32)
+        dataset["sc_velocity_GSM"].data[i, :] = np.asarray(r["sc_velocity_GSM"], dtype=np.float32)
 
     return dataset

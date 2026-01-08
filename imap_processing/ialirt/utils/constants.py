@@ -1,11 +1,13 @@
 """Keys for I-ALiRT data products."""
 
+import numpy as np
+
 # ---- the actual mapping ----
 IALIRT_DIMS = {
     # H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
     "codice_hi_h": [
         "codice_hi_epoch",
-        "codice_hi_h_energy_range",
+        "codice_hi_h_energy_range_labels",
         "codice_hi_spin_sector",
         "codice_hi_elevation",
     ],
@@ -72,6 +74,56 @@ IALIRT_DIMS = {
     # Spacecraft velocity in GSM coordinates
     "sc_velocity_GSM": ["spacecraft_epoch", "sc_GSM_labels"],
 }
+
+IALIRT_DTYPES = {
+    # H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
+    "codice_hi_h": np.float32,
+
+    # CoDICE-Lo abundance / ratios
+    "codice_lo_c_over_o_abundance": np.float32,
+    "codice_lo_mg_over_o_abundance": np.float32,
+    "codice_lo_fe_over_o_abundance": np.float32,
+    "codice_lo_c_plus_6_over_c_plus_5_ratio": np.float32,
+    "codice_lo_o_plus_7_over_o_plus_6_ratio": np.float32,
+    "codice_lo_fe_low_over_fe_high_ratio": np.float32,
+
+    # HIT scalars
+    "hit_e_a_side_low_en": np.uint32,
+    "hit_e_a_side_med_en": np.uint32,
+    "hit_e_b_side_low_en": np.uint32,
+    "hit_e_b_side_med_en": np.uint32,
+    "hit_h_omni_low_en": np.uint32,
+    "hit_h_omni_med_en": np.uint32,
+    "hit_he_omni_low_en": np.uint32,
+    "hit_he_omni_high_en": np.uint32,
+
+    # MAG
+    "mag_epoch": np.int64,          # if you are treating this as a data variable
+    "mag_B_magnitude": np.float32,
+    "mag_B_RTN": np.float32,
+    "mag_B_GSE": np.float32,
+    "mag_theta_B_GSE": np.float32,
+    "mag_phi_B_GSE": np.float32,
+    "mag_B_GSM": np.float32,
+    "mag_theta_B_GSM": np.float32,
+    "mag_phi_B_GSM": np.float32,
+
+    # SWAPI
+    "swapi_pseudo_proton_density": np.float32,
+    "swapi_pseudo_proton_speed": np.float32,
+    "swapi_pseudo_proton_temperature": np.float32,
+
+    # SWE
+    "swe_normalized_counts": np.uint32,
+    "swe_counterstreaming_electrons": np.uint8,
+
+    # Spacecraft vectors
+    "sc_position_GSM": np.float32,
+    "sc_velocity_GSM": np.float32,
+    "sc_position_GSE": np.float32,
+    "sc_velocity_GSE": np.float32,
+}
+
 
 codice_energy_bounds = [
     (0.020, 0.028),
