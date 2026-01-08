@@ -9,7 +9,7 @@ from imap_processing.codice.constants import (
     HI_IALIRT_REF_SPIN_ANGLE,
 )
 from imap_processing.ialirt.utils.constants import (
-    IALIRT_KEYS,
+    IALIRT_DIMS,
     codice_energy_bounds,
     swe_energy_labels,
 )
@@ -168,6 +168,22 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         coords=coords,
         attrs=cdf_manager.get_global_attributes("imap_ialirt_l1_realtime"),
     )
+
+    for key in IALIRT_DIMS.keys():
+        dims = IALIRT_DIMS[key]
+        attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
+        fill = attrs["FILLVAL"]
+
+        shape = [dataset.dims[d] for d in dims]
+
+        dtype = np.float32
+        if key in {
+            "swe_counterstreaming_electrons",
+        }:
+            dtype = np.uint8
+
+        data = np.full(shape, fill, dtype=dtype)
+        dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
 
     # Populate the dataset variables
     for i, record in enumerate(records):
