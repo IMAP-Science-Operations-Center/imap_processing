@@ -243,7 +243,7 @@ codice_lo_fe_over_o_abundance:
   VALIDMAX: 100000000.0
   FORMAT: F16.6
 
-codice_lo_c_plus_6_over_c_plus_5_ratio:
+codice_lo_c_plus_6_over_c_plus_5:
   <<: *default_float32
   CATDESC: C+6/C+5 charge state ratio
   FIELDNAM: C+6/C+5 charge state ratio
@@ -254,7 +254,7 @@ codice_lo_c_plus_6_over_c_plus_5_ratio:
   VALIDMAX: 100000000.0
   FORMAT: F16.6
 
-codice_lo_o_plus_7_over_o_plus_6_ratio:
+codice_lo_o_plus_7_over_o_plus_6:
   <<: *default_float32
   CATDESC: O+7/O+6 charge state ratio
   FIELDNAM: O7+/O6+ charge state ratio
@@ -265,7 +265,7 @@ codice_lo_o_plus_7_over_o_plus_6_ratio:
   VALIDMAX: 100000000.0
   FORMAT: F16.6
 
-codice_lo_fe_low_over_fe_high_ratio:
+codice_lo_fe_low_over_fe_high:
   <<: *default_float32
   CATDESC: Fe low/high charge state ratio (low=6–12, high=13–17)
   FIELDNAM: Fe low/high charge state ratio

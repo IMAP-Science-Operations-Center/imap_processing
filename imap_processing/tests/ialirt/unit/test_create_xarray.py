@@ -19,8 +19,11 @@ def test_create_dataset():
             "ttj2000ns": 123456789000000,
             "instrument": "codice_hi",
             "codice_hi_h": [
-                [[Decimal("0.0") for _ in range(4)] for _ in range(4)]
-                for _ in range(15)
+                [
+                    [[Decimal("0.0") for _ in range(4)] for _ in range(4)]
+                    for _ in range(15)
+                ]
+                for _ in range(4)
             ],
             "codice_hi_epoch": [
                 Decimal("0.0"),
@@ -28,6 +31,40 @@ def test_create_dataset():
                 Decimal("0.0"),
                 Decimal("0.0"),
             ],
+        },
+        {
+            "apid": 478,
+            "met": 123456789,
+            "met_in_utc": "2025-06-20T08:00:00",
+            "ttj2000ns": 123456789000000,
+            "instrument": "codice_hi",
+            "codice_hi_h": [
+                [
+                    [[Decimal("0.0") for _ in range(4)] for _ in range(4)]
+                    for _ in range(15)
+                ]
+                for _ in range(4)
+            ],
+            "codice_hi_epoch": [
+                Decimal("0.0"),
+                Decimal("0.0"),
+                Decimal("0.0"),
+                Decimal("0.0"),
+            ],
+        },
+        {
+            "apid": 478,
+            "met": 123456789,
+            "met_in_utc": "2025-06-20T08:00:00",
+            "ttj2000ns": 123456789000000,
+            "instrument": "codice_lo",
+            "codice_hi_epoch": Decimal("0.0"),
+            "codice_lo_c_over_o_abundance": Decimal("0.0"),
+            "codice_lo_mg_over_o_abundance": Decimal("0.0"),
+            "codice_lo_fe_over_o_abundance": Decimal("0.0"),
+            "codice_lo_c_plus_6_over_c_plus_5": Decimal("0.0"),
+            "codice_lo_o_plus_7_over_o_plus_6": Decimal("0.0"),
+            "codice_lo_fe_low_over_fe_high": Decimal("0.0"),
         },
         {
             "apid": 478,

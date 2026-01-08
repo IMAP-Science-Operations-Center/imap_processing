@@ -18,11 +18,11 @@ IALIRT_DIMS = {
     # Fe/O abundance ratio
     "codice_lo_fe_over_o_abundance": ["codice_lo_epoch"],
     # C+6/C+5 charge state ratio
-    "codice_lo_c_plus_6_over_c_plus_5_ratio": ["codice_lo_epoch"],
+    "codice_lo_c_plus_6_over_c_plus_5": ["codice_lo_epoch"],
     # O+7/O+6 charge state ratio
-    "codice_lo_o_plus_7_over_o_plus_6_ratio": ["codice_lo_epoch"],
+    "codice_lo_o_plus_7_over_o_plus_6": ["codice_lo_epoch"],
     # Fe low/Fe high charge state ratio
-    "codice_lo_fe_low_over_fe_high_ratio": ["codice_lo_epoch"],
+    "codice_lo_fe_low_over_fe_high": ["codice_lo_epoch"],
     # Low energy (>0.5 MeV) electrons (A-side)
     "hit_e_a_side_low_en": ["hit_epoch"],
     # Medium energy (<1 MeV) electrons (A-side)
@@ -78,15 +78,13 @@ IALIRT_DIMS = {
 IALIRT_DTYPES = {
     # H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
     "codice_hi_h": np.float32,
-
     # CoDICE-Lo abundance / ratios
     "codice_lo_c_over_o_abundance": np.float32,
     "codice_lo_mg_over_o_abundance": np.float32,
     "codice_lo_fe_over_o_abundance": np.float32,
-    "codice_lo_c_plus_6_over_c_plus_5_ratio": np.float32,
-    "codice_lo_o_plus_7_over_o_plus_6_ratio": np.float32,
-    "codice_lo_fe_low_over_fe_high_ratio": np.float32,
-
+    "codice_lo_c_plus_6_over_c_plus_5": np.float32,
+    "codice_lo_o_plus_7_over_o_plus_6": np.float32,
+    "codice_lo_fe_low_over_fe_high": np.float32,
     # HIT scalars
     "hit_e_a_side_low_en": np.uint32,
     "hit_e_a_side_med_en": np.uint32,
@@ -96,9 +94,8 @@ IALIRT_DTYPES = {
     "hit_h_omni_med_en": np.uint32,
     "hit_he_omni_low_en": np.uint32,
     "hit_he_omni_high_en": np.uint32,
-
     # MAG
-    "mag_epoch": np.int64,          # if you are treating this as a data variable
+    "mag_epoch": np.int64,  # if you are treating this as a data variable
     "mag_B_magnitude": np.float32,
     "mag_B_RTN": np.float32,
     "mag_B_GSE": np.float32,
@@ -107,16 +104,13 @@ IALIRT_DTYPES = {
     "mag_B_GSM": np.float32,
     "mag_theta_B_GSM": np.float32,
     "mag_phi_B_GSM": np.float32,
-
     # SWAPI
     "swapi_pseudo_proton_density": np.float32,
     "swapi_pseudo_proton_speed": np.float32,
     "swapi_pseudo_proton_temperature": np.float32,
-
     # SWE
     "swe_normalized_counts": np.uint32,
     "swe_counterstreaming_electrons": np.uint8,
-
     # Spacecraft vectors
     "sc_position_GSM": np.float32,
     "sc_velocity_GSM": np.float32,
