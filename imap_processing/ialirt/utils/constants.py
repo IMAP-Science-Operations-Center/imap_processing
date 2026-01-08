@@ -2,7 +2,6 @@
 
 import numpy as np
 
-# ---- the actual mapping ----
 IALIRT_DIMS = {
     # H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
     "codice_hi_h": [
@@ -62,7 +61,7 @@ IALIRT_DIMS = {
     # Pseudo temperature of solar wind protons in plasma frame
     "swapi_pseudo_proton_temperature": ["swapi_epoch"],
     # SWE Normalized Counts
-    "swe_normalized_counts": ["swe_epoch", "swe_electron_energy_labels"],
+    "swe_normalized_counts": ["swe_epoch", "swe_electron_energy"],
     # SWE Counterstreaming flag
     "swe_counterstreaming_electrons": ["swe_epoch"],
     # Spacecraft position in GSE coordinates
@@ -118,32 +117,65 @@ IALIRT_DTYPES = {
     "sc_velocity_GSE": np.float32,
 }
 
-
-codice_energy_bounds = [
-    (0.020, 0.028),
-    (0.028, 0.040),
-    (0.040, 0.057),
-    (0.057, 0.080),
-    (0.080, 0.113),
-    (0.113, 0.160),
-    (0.160, 0.226),
-    (0.226, 0.320),
-    (0.320, 0.453),
-    (0.453, 0.640),
-    (0.640, 0.905),
-    (0.905, 1.280),
-    (1.280, 1.810),
-    (1.810, 2.560),
-    (2.560, 3.620),
+codice_hi_energy_centers = [
+    0.02378414,
+    0.03363586,
+    0.04756828,
+    0.06727171,
+    0.09513657,
+    0.13454343,
+    0.19027314,
+    0.26908685,
+    0.38054628,
+    0.53817371,
+    0.76109255,
+    1.07634741,
+    1.52218511,
+    2.15269482,
+    3.04437021,
+]
+codice_hi_energy_minus = [
+    0.00378414,
+    0.00535159,
+    0.00756828,
+    0.01070317,
+    0.01513657,
+    0.02140634,
+    0.03027314,
+    0.04281268,
+    0.06054628,
+    0.08562537,
+    0.12109255,
+    0.17125073,
+    0.24218511,
+    0.34250146,
+    0.48437021,
+]
+codice_hi_energy_plus = [
+    0.00450013,
+    0.00636414,
+    0.00900026,
+    0.01272829,
+    0.01800052,
+    0.02545657,
+    0.03600103,
+    0.05091315,
+    0.07200206,
+    0.10182629,
+    0.14400413,
+    0.20365259,
+    0.28800825,
+    0.40730518,
+    0.57601651,
 ]
 
-swe_energy_labels = [
-    "100.4",
-    "140.0",
-    "194.0",
-    "270.0",
-    "376.0",
-    "523.0",
-    "727.0",
-    "1011.0",
+swe_energy = [
+    100.4,
+    140.0,
+    194.0,
+    270.0,
+    376.0,
+    523.0,
+    727.0,
+    1011.0,
 ]

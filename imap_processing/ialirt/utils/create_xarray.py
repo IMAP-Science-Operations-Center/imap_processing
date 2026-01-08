@@ -13,8 +13,10 @@ from imap_processing.codice.constants import (
 from imap_processing.ialirt.utils.constants import (
     IALIRT_DIMS,
     IALIRT_DTYPES,
-    codice_energy_bounds,
-    swe_energy_labels,
+    codice_hi_energy_centers,
+    codice_hi_energy_minus,
+    codice_hi_energy_plus,
+    swe_energy,
 )
 
 
@@ -46,11 +48,9 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         inst = record.get("instrument")
         by_inst[record["instrument"]].append(record)
         if inst in one_epoch:
-            epochs[inst].append(
-                record["mag_epoch"] if inst == "mag" else record["ttj2000ns"]
-            )
+            epochs[inst].append(record[f"{inst}_epoch"])
         elif inst in multi_epoch:
-            epochs[inst].extend(record["codice_hi_epoch"])
+            epochs[inst].extend(record[f"{inst}_epoch"])
 
     epoch_arrays = {}
 
@@ -60,7 +60,9 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
             data=arr,
             name=coord,
             dims=[coord],
-            attrs=cdf_manager.get_variable_attributes(coord, check_schema=False),
+            attrs=cdf_manager.get_variable_attributes(
+                f"{inst}_epoch", check_schema=False
+            ),
         )
 
     sc_gsm_component = xr.DataArray(
@@ -98,21 +100,39 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_variable_attributes("B_RTN_labels", check_schema=False),
     )
 
-    swe_electron_energy_labels = xr.DataArray(
-        data=[f"{label} eV" for label in swe_energy_labels],
-        name="swe_electron_energy_labels",
-        dims=["swe_electron_energy_labels"],
+    swe_electron_energy = xr.DataArray(
+        data=swe_energy,
+        name="swe_electron_energy",
+        dims=["swe_electron_energy"],
         attrs=cdf_manager.get_variable_attributes(
-            "swe_electron_energy_labels", check_schema=False
+            "swe_electron_energy", check_schema=False
         ),
     )
 
-    energy_range = xr.DataArray(
-        data=[f"{low:.4f}-{high:.4f} MeV" for low, high in codice_energy_bounds],
-        name="codice_hi_h_energy_range_labels",
-        dims=["codice_hi_h_energy_range_labels"],
+    codice_hi_energy_center = xr.DataArray(
+        data=codice_hi_energy_centers,
+        name="codice_hi_energy_center",
+        dims=["codice_hi_energy_center"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_energy_range_labels", check_schema=False
+            "codice_hi_energy_center", check_schema=False
+        ),
+    )
+
+    codice_energy_minus = xr.DataArray(
+        data=codice_hi_energy_minus,
+        name="codice_hi_energy_minus",
+        dims=["codice_hi_energy_center"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_energy_minus", check_schema=False
+        ),
+    )
+
+    codice_energy_plus = xr.DataArray(
+        data=codice_hi_energy_plus,
+        name="codice_hi_energy_plus",
+        dims=["codice_hi_energy_center"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_energy_plus", check_schema=False
         ),
     )
 
@@ -125,15 +145,12 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
-    # Calculate spin angle for CoDICE-Hi
+    # Calculate spin angle
     # Formula:
     #   θ_(g,n) = (θ_(g,0)+90°* n)  mod 360°
     # where
     #   n is number of sectored angles, 0 to 3,
     #   g is size of the group (inst_az), 0 to 3,
-    # Calculate spin angle by adding a base angle from L2_HI_SECTORED_ANGLE
-    # for each SSD index and then adding multiple of 30 degrees for each elevation.
-    # Then mod by 360 to keep it within 0-360 range.
     spin_angles = (
         HI_IALIRT_REF_SPIN_ANGLE[:, np.newaxis] + np.array([0, 1, 2, 3]) * 90
     ) % 360.0
@@ -148,10 +165,10 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     spin_sector = xr.DataArray(
         data=np.arange(4, dtype=np.uint8),
-        name="codice_hi_h_spin_sector",
-        dims=["codice_hi_h_spin_sector"],
+        name="codice_hi_spin_sector",
+        dims=["codice_hi_spin_sector"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_h_spin_sector", check_schema=False
+            "codice_hi_spin_sector", check_schema=False
         ),
     )
 
@@ -168,8 +185,10 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "B_RTN_labels": rtn_component,
         "sc_GSM_labels": sc_gsm_component,
         "sc_GSE_labels": sc_gse_component,
-        "swe_electron_energy_labels": swe_electron_energy_labels,
-        "codice_hi_h_energy_range_labels": energy_range,
+        "swe_electron_energy": swe_electron_energy,
+        "codice_hi_energy_center": codice_hi_energy_center,
+        "codice_hi_energy_minus_delta": codice_energy_minus,
+        "codice_hi_energy_plus_delta": codice_energy_plus,
         "codice_hi_elevation": elevation,
         "codice_hi_spin_angle": spin_angle,
         "codice_hi_spin_sector": spin_sector,
@@ -206,7 +225,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
                 dataset[key].data[i] = np.float32(record[key])
 
     for i, record in enumerate(by_inst.get("codice_hi", [])):
-        # 4 high epochs per record
+        # 4 codice-hi epochs per record
         t0 = 4 * i
         t1 = t0 + 4
         hi = np.asarray(record["codice_hi_h"], dtype=np.float32)

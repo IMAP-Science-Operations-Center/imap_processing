@@ -9,6 +9,59 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: " "
 
+instrument_epoch: &instrument_epoch
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
+  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ' '
+  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
+
+codice_hi_epoch:
+    <<: *instrument_epoch
+    CATDESC: CoDICE-Hi time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: CoDICE-Hi epoch
+
+codice_lo_epoch:
+    <<: *instrument_epoch
+    CATDESC: CoDICE-Lo time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: CoDICE-Lo epoch
+
+hit_epoch:
+    <<: *instrument_epoch
+    CATDESC: HIT time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: HIT epoch
+
+mag_epoch:
+    <<: *instrument_epoch
+    CATDESC: MAG time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: MAG epoch
+
+swapi_epoch:
+    <<: *instrument_epoch
+    CATDESC: SWAPI time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: SWAPI epoch
+
+swe_epoch:
+    <<: *instrument_epoch
+    CATDESC: SWE time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: SWE epoch
+
+spacecraft_epoch:
+    <<: *instrument_epoch
+    CATDESC: Spacecraft time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: Spacecraft epoch
+
 B_GSM_labels:
   CATDESC: B GSM component labels
   FIELDNAM: B GSM component labels
@@ -117,12 +170,34 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
-codice_hi_h_energy_range_labels:
-  CATDESC: CoDICE-Hi proton energy bin labels (MeV)
-  FIELDNAM: CoDICE-Hi proton energy bin labels
-  FORMAT: A20
+codice_hi_energy_minus_delta:
+  <<: *default_float32
+  CATDESC: CoDICE-Hi proton energy bin lower delta (MeV)
+  FIELDNAM: CoDICE-Hi proton energy bin lower delta
   VAR_TYPE: support_data
   UNITS: "MeV"
+  VALIDMAX: 200.0
+  VALIDMIN: 0.05000000074505806
+  DEPEND_1: codice_hi_energy_center
+
+codice_hi_energy_plus_delta:
+  <<: *default_float32
+  CATDESC: CoDICE-Hi proton energy bin upper delta (MeV)
+  FIELDNAM: CoDICE-Hi proton energy bin upper delta
+  VAR_TYPE: support_data
+  UNITS: "MeV"
+  VALIDMAX: 200.0
+  VALIDMIN: 0.05000000074505806
+  DEPEND_1: codice_hi_energy_center
+
+codice_hi_energy_center:
+  <<: *default_float32
+  CATDESC: CoDICE-Hi proton energy bin (MeV)
+  FIELDNAM: CoDICE-Hi proton energy bin
+  VAR_TYPE: support_data
+  UNITS: "MeV"
+  DELTA_PLUS_VAR: codice_hi_energy_plus_delta
+  DELTA_MINUS_VAR: codice_hi_energy_minus_delta
 
 codice_hi_spin_sector:
   CATDESC: CoDICE-Hi spin sector index
@@ -135,6 +210,13 @@ codice_hi_spin_sector:
   VALIDMIN: 0
   VALIDMAX: 3
   VAR_TYPE: support_data
+
+swe_electron_energy:
+  <<: *default_float32
+  CATDESC: SWE electron channels (nominal central energies)
+  FIELDNAM: SWE electron channels
+  VAR_TYPE: support_data
+  UNITS: "eV"
 
 codice_hi_elevation:
   <<: *default_float32
@@ -175,24 +257,6 @@ codice_hi_spin_angle:
   LABL_PTR_1: codice_hi_spin_sector_labels
   LABL_PTR_2: codice_hi_elevation_labels
 
-codice_hi_epoch:
-  CATDESC: CoDICE-Hi instrument epoch time tag
-  FIELDNAM: CoDICE-Hi epoch
-  LABLAXIS: CoDICE-Hi epoch
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
-  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-  RESOLUTION: ' '
-  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
-
 codice_hi_h:
   <<: *default_float32
   CATDESC: Proton intensity in 4 spin angles, 15 energy ranges, 4 spin sectors, and 4 elevations
@@ -202,10 +266,9 @@ codice_hi_h:
   UNITS: "counts / cm2-sr-s-MeV"
   VALIDMIN: 0
   VALIDMAX: 100000000.0
-  LABL_PTR_1: codice_hi_h_energy_range_labels
-  DEPEND_2: codice_hi_h_spin_sector_labels
+  DEPEND_1: codice_hi_h_energy_range
+  DEPEND_2: codice_hi_h_spin_sector
   DEPEND_3: codice_hi_h_elevation
-  LABL_PTR_3: codice_hi_h_elevation_labels
   DISPLAY_TYPE: no_plot
   FORMAT: F16.6
   VAR_NOTES: Proton intensity for energy ranges (MeV) are 0.0200–0.0283, 0.0283–0.0400, 0.0400–0.0566, 0.0566–0.0800, 0.0800–0.113, 0.113–0.160, 0.160–0.226, 0.226–0.320, 0.320–0.453, 0.453–0.640, 0.640–0.905, 0.905–1.28, 1.28–1.81, 1.81–2.56, 2.56–3.62.
@@ -396,24 +459,6 @@ hit_he_omni_high_en:
   VALIDMAX: 1000000000
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
-mag_epoch:
-  CATDESC: MAG instrument epoch time tag
-  FIELDNAM: MAG epoch
-  LABLAXIS: MAG epoch
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
-  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-  RESOLUTION: ' '
-  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
-
 mag_B_GSE:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSE coordinates
@@ -578,7 +623,9 @@ swe_normalized_counts:
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000
-  LABL_PTR_1: swe_electron_energy_labels
+  DEPEND_1: swe_electron_energy_labels
+  DISPLAY_TYPE: stack_plot
+  LABLAXIS: Electrons
   VAR_NOTES: The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
 
 swe_counterstreaming_electrons:

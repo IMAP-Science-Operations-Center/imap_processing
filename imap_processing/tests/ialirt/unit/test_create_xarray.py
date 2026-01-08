@@ -140,7 +140,7 @@ def test_create_dataset():
     assert dataset["mag_B_GSE"].dims == ("epoch", "component")
     assert dataset["swe_normalized_counts"].dims == ("epoch", "esa_step")
     assert dataset["codice_hi_h"].dims == (
-        "epoch",
+        "codice_hi_epoch",
         "codice_hi_h_energy_ranges",
         "codice_hi_h_elevation",
         "codice_hi_h_spin_angle",
