@@ -383,9 +383,6 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         processed_val = processed_2_ds[variable].values
         # NOTE: Replace nan with 0 for comparison as the validation data uses 0
         processed_val[np.isnan(processed_val)] = 0.0
-        # TODO determine why cnoplus differs
-        if variable in ["cnoplus", "unc_cnoplus"]:
-            continue
         np.testing.assert_allclose(
             processed_val,
             l2_val_data[variable].values,
@@ -411,7 +408,7 @@ def test_codice_l2_nsw_species_intensity(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l2-lo-gfactor"),
         codice_lut_path(descriptor="l2-lo-efficiency"),
     ]
-    processed_2_ds = process_codice_l2("lo-nsw-angular", ProcessingInputCollection())
+    processed_2_ds = process_codice_l2("lo-nsw-species", ProcessingInputCollection())
     l2_val_data = (
         imap_module_directory
         / "tests"
