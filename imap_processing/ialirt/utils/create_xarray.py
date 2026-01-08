@@ -42,13 +42,15 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     epochs: dict[str, list[int]] = {inst: [] for inst in (one_epoch | multi_epoch)}
     by_inst: dict[str, list[dict]] = defaultdict(list)
 
-    for r in records:
-        inst = r.get("instrument")
-        by_inst[r["instrument"]].append(r)
+    for record in records:
+        inst = record.get("instrument")
+        by_inst[record["instrument"]].append(record)
         if inst in one_epoch:
-            epochs[inst].append(r["mag_epoch"] if inst == "mag" else r["ttj2000ns"])
+            epochs[inst].append(
+                record["mag_epoch"] if inst == "mag" else record["ttj2000ns"]
+            )
         elif inst in multi_epoch:
-            epochs[inst].extend(r["codice_hi_epoch"])
+            epochs[inst].extend(record["codice_hi_epoch"])
 
     epoch_arrays = {}
 
@@ -189,53 +191,53 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         data = np.full(shape, fill, dtype=dtype)
         dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
 
-    for i, r in enumerate(by_inst.get("mag", [])):
-        for k in IALIRT_DIMS.keys():
-            if k in ["mag_B_GSE", "mag_B_GSM", "mag_B_RTN"]:
-                dataset[k].data[i, :] = np.asarray(r[k], dtype=np.float32)
+    for i, record in enumerate(by_inst.get("mag", [])):
+        for key in IALIRT_DIMS.keys():
+            if key in ["mag_B_GSE", "mag_B_GSM", "mag_B_RTN"]:
+                dataset[key].data[i, :] = np.asarray(record[key], dtype=np.float32)
 
-            if k in [
+            if key in [
                 "mag_B_magnitude",
                 "mag_theta_B_GSE",
                 "mag_phi_B_GSE",
                 "mag_theta_B_GSM",
                 "mag_phi_B_GSM",
             ]:
-                dataset[k].data[i] = np.float32(r[k])
+                dataset[key].data[i] = np.float32(record[key])
 
-    for rec_i, r in enumerate(by_inst.get("codice_hi", [])):
+    for i, record in enumerate(by_inst.get("codice_hi", [])):
         # 4 high epochs per record
-        t0 = 4 * rec_i
+        t0 = 4 * i
         t1 = t0 + 4
-        hi = np.asarray(r["codice_hi_h"], dtype=np.float32)
+        hi = np.asarray(record["codice_hi_h"], dtype=np.float32)
         dataset["codice_hi_h"].data[t0:t1, :, :, :] = hi
 
-    for i, r in enumerate(by_inst.get("codice_lo", [])):
-        for k in IALIRT_DIMS.keys():
-            if k.startswith("codice_lo_"):
-                dataset[k].data[i] = np.float32(r[k])
+    for i, record in enumerate(by_inst.get("codice_lo", [])):
+        for key in IALIRT_DIMS.keys():
+            if key.startswith("codice_lo_"):
+                dataset[key].data[i] = np.float32(record[key])
 
-    for i, r in enumerate(by_inst.get("hit", [])):
-        for k in IALIRT_DIMS.keys():
-            if k.startswith("hit_"):
-                dataset[k].data[i] = np.uint32(r[k])
+    for i, record in enumerate(by_inst.get("hit", [])):
+        for key in IALIRT_DIMS.keys():
+            if key.startswith("hit_"):
+                dataset[key].data[i] = np.uint32(record[key])
 
-    for i, r in enumerate(by_inst.get("swapi", [])):
-        for k in IALIRT_DIMS.keys():
-            if k.startswith("swapi_"):
-                dataset[k].data[i] = np.float32(r[k])
+    for i, record in enumerate(by_inst.get("swapi", [])):
+        for key in IALIRT_DIMS.keys():
+            if key.startswith("swapi_"):
+                dataset[key].data[i] = np.float32(record[key])
 
-    for i, r in enumerate(by_inst.get("swe", [])):
+    for i, record in enumerate(by_inst.get("swe", [])):
         dataset["swe_normalized_counts"].data[i, :] = np.asarray(
-            r["swe_normalized_counts"], dtype=np.uint32
+            record["swe_normalized_counts"], dtype=np.uint32
         )
         dataset["swe_counterstreaming_electrons"].data[i] = np.uint8(
-            r["swe_counterstreaming_electrons"]
+            record["swe_counterstreaming_electrons"]
         )
 
-    for i, r in enumerate(by_inst.get("spacecraft", [])):
-        for k in IALIRT_DIMS.keys():
-            if k.startswith("sc_"):
-                dataset[k].data[i, :] = np.asarray(r[k], dtype=np.float32)
+    for i, record in enumerate(by_inst.get("spacecraft", [])):
+        for key in IALIRT_DIMS.keys():
+            if key.startswith("sc_"):
+                dataset[key].data[i, :] = np.asarray(record[key], dtype=np.float32)
 
     return dataset
