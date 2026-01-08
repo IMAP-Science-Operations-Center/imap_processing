@@ -184,7 +184,7 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
 
     # Make sure input times are within the bounds of spin data
     spin_df_start_time = spin_start_met[0]
-    spin_df_end_time = spin_start_met[-1] + spin_df["spin_period_sec"].values[-1]
+    spin_df_end_time = spin_start_met[-1] + actual_spin_periods[-1]
     input_start_time = query_met_times.min()
     input_end_time = query_met_times.max()
     if input_start_time < spin_df_start_time or input_end_time >= spin_df_end_time:
