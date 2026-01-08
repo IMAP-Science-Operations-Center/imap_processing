@@ -7,7 +7,6 @@ from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.codice_l1a_hi_counters_aggregated import (
     l1a_hi_counters_aggregated,
 )
@@ -87,11 +86,15 @@ def process_l1a(  # noqa: PLR0912
             logger.info("Processing Hi Sectored Species Counts")
             datasets.append(l1a_hi_sectored(datasets_by_apid[apid], lut_file))
         elif apid == CODICEAPID.COD_HI_PHA:
-            logger.info("Processing Direct Events for Hi")
-            datasets.append(l1a_direct_event(datasets_by_apid[apid], apid=apid))
+            logger.info("Skip processing Direct Events for Hi")
+            continue
+            # TODO: undo this in coming DE segmented work
+            # datasets.append(l1a_direct_event(datasets_by_apid[apid], apid=apid))
         elif apid == CODICEAPID.COD_LO_PHA:
-            logger.info("Processing Direct Events for Lo")
-            datasets.append(l1a_direct_event(datasets_by_apid[apid], apid=apid))
+            logger.info("Skip processing Direct Events for Lo")
+            continue
+            # TODO: undo this in coming DE segmented work
+            # datasets.append(l1a_direct_event(datasets_by_apid[apid], apid=apid))
         elif apid in [
             CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
             CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
