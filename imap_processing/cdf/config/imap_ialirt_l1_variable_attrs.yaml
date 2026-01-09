@@ -238,8 +238,8 @@ swe_electron_energy:
 codice_hi_h:
   <<: *default_float32
   CATDESC: Proton intensity in 4 spin angles, 15 energy ranges, 4 spin sectors, and 4 elevations
-  FIELDNAM: H intensity
-  LABLAXIS: H intensity
+  FIELDNAM: H+ intensity
+  LABLAXIS: H+ intensity
   DEPEND_0: codice_hi_epoch
   UNITS: "counts / cm2-sr-s-MeV"
   VALIDMIN: 0
