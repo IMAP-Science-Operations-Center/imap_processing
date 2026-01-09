@@ -122,12 +122,24 @@ epoch:
     FIELDNAM: Spacecraft epoch
 
 # Labels
+B_GSM_component_index:
+  CATDESC: B GSM component index
+  FIELDNAM: B GSM component index
+  FORMAT: I2
+  VAR_TYPE: support_data
+  UNITS: " "
+  VALIDMIN: 1
+  VALIDMAX: 3
+  dtype: int8
+  LABL_PTR_1: B_GSM_labels
+
 B_GSM_labels:
   CATDESC: B GSM component labels
   FIELDNAM: B GSM component labels
   FORMAT: A8
-  VAR_TYPE: support_data
+  VAR_TYPE: metadata
   UNITS: " "
+  DEPEND_0: B_GSM_component_index
 
 B_GSE_component_index:
   CATDESC: B GSE component index
@@ -138,34 +150,69 @@ B_GSE_component_index:
   VALIDMIN: 1
   VALIDMAX: 3
   dtype: int8
+  LABL_PTR_1: B_GSE_labels
 
 B_GSE_labels:
   CATDESC: B GSE component labels
   FIELDNAM: B GSE component labels
   FORMAT: A8
-  VAR_TYPE: support_data
+  VAR_TYPE: metadata
   UNITS: " "
   DEPEND_0: B_GSE_component_index
+
+B_RTN_component_index:
+  CATDESC: B RTN component index
+  FIELDNAM: B RTN component index
+  FORMAT: I2
+  VAR_TYPE: support_data
+  UNITS: " "
+  VALIDMIN: 1
+  VALIDMAX: 3
+  dtype: int8
+  LABL_PTR_1: B_RTN_labels
 
 B_RTN_labels:
   CATDESC: B RTN component labels B radial (RTN), B tangential (RTN), B normal (RTN)
   FIELDNAM: B RTN component labels
   FORMAT: A18
+  VAR_TYPE: metadata
+  UNITS: " "
+  DEPEND_0: B_RTN_component_index
+
+sc_GSM_component_index:
+  CATDESC: Spacecraft GSM component index
+  FIELDNAM: Spacecraft GSM component index
+  FORMAT: I2
   VAR_TYPE: support_data
   UNITS: " "
+  VALIDMIN: 1
+  VALIDMAX: 3
+  dtype: int8
+  LABL_PTR_1: sc_GSM_labels
 
 sc_GSM_labels:
   CATDESC: Spacecraft position and velocity component labels in GSM coordinates
   FIELDNAM: Spacecraft GSM component labels
   FORMAT: A8
+  VAR_TYPE: metadata
+  UNITS: " "
+
+sc_GSE_component_index:
+  CATDESC: Spacecraft GSE component index
+  FIELDNAM: Spacecraft GSE component index
+  FORMAT: I2
   VAR_TYPE: support_data
   UNITS: " "
+  VALIDMIN: 1
+  VALIDMAX: 3
+  dtype: int8
+  LABL_PTR_1: sc_GSE_labels
 
 sc_GSE_labels:
   CATDESC: Spacecraft position and velocity component labels in GSE coordinates
   FIELDNAM: Spacecraft GSE component labels
   FORMAT: A8
-  VAR_TYPE: support_data
+  VAR_TYPE: metadata
   UNITS: " "
 
 # Coordinate Variables
@@ -609,6 +656,7 @@ sc_position_GSE:
   LABL_PTR_1: sc_GSE_labels
   VALIDMIN: -3000000.0
   VALIDMAX: 3000000.0
+  FORMAT: F15.6
 
 sc_velocity_GSE:
   <<: *default_float32
@@ -629,6 +677,7 @@ sc_position_GSM:
   LABL_PTR_1: sc_GSM_labels
   VALIDMIN: -3000000.0
   VALIDMAX: 3000000.0
+  FORMAT: F15.6
 
 sc_velocity_GSM:
   <<: *default_float32
