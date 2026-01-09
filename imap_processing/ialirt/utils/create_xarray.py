@@ -235,6 +235,20 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
+    spin_sector_labels = xr.DataArray(
+        [
+            "sector_0",
+            "sector_1",
+            "sector_2",
+            "sector_3",
+        ],  # or ["sector0","sector1",...] - whatever you prefer
+        name="codice_hi_spin_sector_labels",
+        dims=["codice_hi_spin_sector"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_spin_sector_labels", check_schema=False
+        ),
+    )
+
     coords = {
         "codice_hi_epoch": epoch_arrays["codice_hi_epoch"],
         "codice_lo_epoch": epoch_arrays["codice_lo_epoch"],
@@ -260,6 +274,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "codice_hi_elevation": elevation,
         "codice_hi_spin_angle": spin_angle,
         "codice_hi_spin_sector": spin_sector,
+        "codice_hi_spin_sector_labels": spin_sector_labels,
         "swe_electron_energy": swe_electron_energy,
     }
     dataset = xr.Dataset(

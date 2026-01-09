@@ -280,12 +280,20 @@ codice_hi_spin_sector:
   CATDESC: CoDICE-Hi spin sector index
   FIELDNAM: CoDICE-Hi spin sector index
   FORMAT: I2
-  LABLAXIS: " "
-  SCALETYP: linear
+  VAR_TYPE: support_data
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 3
-  VAR_TYPE: support_data
+  dtype: int32
+  LABL_PTR_1: codice_hi_spin_sector_labels
+
+codice_hi_spin_sector_labels:
+  CATDESC: CoDICE-Hi spin sector labels
+  FIELDNAM: CoDICE-Hi spin sector labels
+  FORMAT: A8
+  VAR_TYPE: metadata
+  UNITS: " "
+  DEPEND_0: codice_hi_spin_sector
 
 codice_hi_spin_angle:
   <<: *default_float32
@@ -296,9 +304,9 @@ codice_hi_spin_angle:
   UNITS: degrees
   VALIDMAX: 360.0
   VALIDMIN: 0.0
-  DEPEND_0: codice_hi_epoch
-  DEPEND_1: codice_hi_spin_sector
-  DEPEND_2: codice_hi_elevation
+  DEPEND_0: codice_hi_spin_sector    # first dim (numeric index)
+  DEPEND_1: codice_hi_elevation      # second dim (elevation)
+  LABL_PTR_1: codice_hi_spin_sector_labels
 
 swe_electron_energy:
   CATDESC: SWE electron channels (nominal central energies)
