@@ -471,12 +471,15 @@ def process_codice(
             )
             l2_lo = calculate_ratios(l1b_lo, l2_lut_path, l2_geometric_factor_path)
 
+            # Calculate the center of the time variable
+            sc_met = int(np.mean([np.min(met), np.max(met)]))
+
             codice_lo_data.append(
                 {
                     "apid": 478,
-                    "met": int(met[0]),
-                    "met_in_utc": met_to_utc(met[0]).split(".")[0],
-                    "ttj2000ns": int(met_to_ttj2000ns(met[0])),
+                    "met": int(sc_met),
+                    "met_in_utc": met_to_utc(sc_met).split(".")[0],
+                    "ttj2000ns": int(met_to_ttj2000ns(sc_met)),
                     "instrument": f"{sensor}",
                     f"{sensor}_c_over_o_abundance": l2_lo.c_over_o_abundance,
                     f"{sensor}_mg_over_o_abundance": l2_lo.mg_over_o_abundance,
