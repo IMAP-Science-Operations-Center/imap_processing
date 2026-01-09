@@ -24,7 +24,7 @@ def test_codice_non_zero_patterns(codice_lut_path):
     sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
 
     sci_lut = json.loads(sci_lut_path.read_text())
-    table_id = "3952862729"
+    table_id = "3974360784"
     assert table_id in sci_lut
 
     collapse_lo = sci_lut[table_id]["collapse_lo"]
@@ -98,7 +98,7 @@ def test_get_collapse_pattern_shape(codice_lut_path):
     """
     sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
 
-    table_id = "3952862729"
+    table_id = "3974360784"
     sci_lut_data = json.loads(sci_lut_path.read_text()).get(table_id)
 
     # Lo instrument counts - singles
@@ -141,7 +141,7 @@ def test_get_collapse_pattern_shape(codice_lut_path):
 def test_acquisition_time(codice_lut_path):
     sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
     sci_lut_data = json.loads(sci_lut_path.read_text())
-    table_id = "3952862729"
+    table_id = "3974360784"
     low_stepping_tab = sci_lut_data[table_id]["lo_stepping_tab"]
     acq_time_per_step = calculate_acq_time_per_step(low_stepping_tab)
     expected_acq_times = (

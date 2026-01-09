@@ -400,7 +400,7 @@ def test_create_xarray_dataset_basic(l1a_lut_path):
     science_values = ["0000000100100011"]
     metadata_values = {
         "VIEW_ID": np.array([0]),
-        "TABLE_ID": np.array([3952862729]),
+        "TABLE_ID": np.array([3974360784]),
         "ACQ_START_SECONDS": np.array([1625078400]),
         "ACQ_START_SUBSECONDS": np.array([0]),
         "SPIN_PERIOD": np.array([24]),
