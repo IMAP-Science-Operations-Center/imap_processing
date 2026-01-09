@@ -84,6 +84,7 @@ instrument_epoch: &instrument_epoch
   REFERENCE_POSITION: Rotating Earth Geoid
   RESOLUTION: ' '
   DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
+  dtype: int64
 
 codice_hi_epoch:
     <<: *instrument_epoch
@@ -128,12 +129,23 @@ B_GSM_labels:
   VAR_TYPE: support_data
   UNITS: " "
 
+B_GSE_component_index:
+  CATDESC: B GSE component index
+  FIELDNAM: B GSE component index
+  FORMAT: I2
+  VAR_TYPE: support_data
+  UNITS: " "
+  VALIDMIN: 1
+  VALIDMAX: 3
+  dtype: int8
+
 B_GSE_labels:
   CATDESC: B GSE component labels
   FIELDNAM: B GSE component labels
   FORMAT: A8
   VAR_TYPE: support_data
   UNITS: " "
+  DEPEND_0: B_GSE_component_index
 
 B_RTN_labels:
   CATDESC: B RTN component labels B radial (RTN), B tangential (RTN), B normal (RTN)
@@ -503,6 +515,7 @@ mag_B_GSE:
   FIELDNAM: B vector in GSE coordinates
   LABLAXIS: B (GSE)
   DEPEND_0: mag_epoch
+  DEPEND_1: B_GSE_component_index
   LABL_PTR_1: B_GSE_labels
   UNITS: nT
   FORMAT: F13.6

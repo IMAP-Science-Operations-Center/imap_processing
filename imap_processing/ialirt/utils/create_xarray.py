@@ -67,7 +67,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
                 f"{inst}_epoch", check_schema=False
             )
         epoch_arrays[coord] = xr.DataArray(
-            data=arr, name=coord, dims=[coord], attrs=attr
+            data=np.array(arr, dtype=np.int64), name=coord, dims=[coord], attrs=attr
         )
 
     sc_gsm_component = xr.DataArray(
@@ -91,10 +91,20 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_variable_attributes("B_GSM_labels", check_schema=False),
     )
 
+    # numeric component index for GSE vector (1-based; use 0-based if you prefer)
+    gse_component_index = xr.DataArray(
+        data=np.arange(1, 4, dtype=np.int32),
+        name="B_GSE_component_index",
+        dims=["B_GSE_component_index"],
+        attrs=cdf_manager.get_variable_attributes(
+            "B_GSE_component_index", check_schema=False
+        ),
+    )
+
     gse_component = xr.DataArray(
         ["Bx (GSE)", "By (GSE)", "Bz (GSE)"],
         name="B_GSE_labels",
-        dims=["B_GSE_labels"],
+        dims=["B_GSE_component_index"],
         attrs=cdf_manager.get_variable_attributes("B_GSE_labels", check_schema=False),
     )
 
@@ -186,6 +196,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "swe_epoch": epoch_arrays["swe_epoch"],
         "epoch": epoch_arrays["epoch"],
         "B_GSM_labels": gsm_component,
+        "B_GSE_component_index": gse_component_index,
         "B_GSE_labels": gse_component,
         "B_RTN_labels": rtn_component,
         "sc_GSM_labels": sc_gsm_component,

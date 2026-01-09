@@ -153,7 +153,7 @@ def test_create_dataset():
         dataset["codice_hi_h"].isel(codice_hi_epoch=0).values, expected_zeros
     )
 
-    assert dataset["mag_B_GSE"].dims == ("mag_epoch", "B_GSE_labels")
+    assert dataset["mag_B_GSE"].dims == ("mag_epoch", "B_GSE_component_index")
     assert dataset["swe_normalized_counts"].dims == ("swe_epoch", "swe_electron_energy")
     assert dataset["codice_hi_h"].dims == (
         "codice_hi_epoch",

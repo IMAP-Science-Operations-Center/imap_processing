@@ -49,7 +49,7 @@ IALIRT_DIMS = {
     # Azimuth angle (φ) of the magnetic field in GSM coordinates
     "mag_phi_B_GSM": ["mag_epoch"],
     # Magnetic field vector in GSE coordinates
-    "mag_B_GSE": ["mag_epoch", "B_GSE_labels"],
+    "mag_B_GSE": ["mag_epoch", "B_GSE_component_index"],
     # Magnetic field vector in GSM coordinates
     "mag_B_GSM": ["mag_epoch", "B_GSM_labels"],
     # Magnetic field vector in RTN coordinates
