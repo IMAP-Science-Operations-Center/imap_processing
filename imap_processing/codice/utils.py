@@ -360,7 +360,9 @@ def get_codice_epoch_time(
     return center_times_seconds, delta_times
 
 
-def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
+def calculate_acq_time_per_step(
+    low_stepping_tab: dict, esa_step_dim: int = 128
+) -> np.ndarray:
     """
     Calculate acquisition time per step from low stepping table.
 
@@ -368,6 +370,8 @@ def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
     ----------
     low_stepping_tab : dict
         The low stepping table from the SCI-LUT JSON.
+    esa_step_dim : int
+        The ESA step dimension size.
 
     Returns
     -------
@@ -397,10 +401,11 @@ def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
     hv_settle_per_step = np.minimum(
         np.maximum(non_adjusted_hv_settle_per_step, min_hv_settle_ms), max_hv_settle_ms
     )
-
+    # initialize array of nans for acquisition time per step
+    acq_time_per_step = np.full(esa_step_dim, np.nan, dtype=np.float64)
     # acquisition time per step in milliseconds
     # sector_time - sector_margin_ms / num_steps - hv_settle_per_step
-    acq_time_per_step = (
+    acq_time_per_step[: len(num_steps_data)] = (
         (sector_time - sector_margin_ms) / num_steps_data
     ) - hv_settle_per_step
     # Convert to seconds
