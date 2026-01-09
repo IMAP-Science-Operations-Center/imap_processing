@@ -158,7 +158,6 @@ sc_GSE_labels:
 
 # Coordinate Variables
 codice_hi_energy_center:
-  <<: *default_float32
   CATDESC: CoDICE-Hi proton energy bin (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin
   VAR_TYPE: support_data
@@ -167,16 +166,21 @@ codice_hi_energy_center:
   VALIDMIN: 0.0
   DELTA_PLUS_VAR: codice_hi_energy_plus_delta
   DELTA_MINUS_VAR: codice_hi_energy_minus_delta
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  dtype: float32
 
 codice_hi_energy_minus_delta:
-  <<: *default_float32
   CATDESC: CoDICE-Hi proton energy bin lower delta (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin lower delta
   VAR_TYPE: support_data
   UNITS: "MeV"
   VALIDMAX: 20.0
   VALIDMIN: 0.0
-  DEPEND_1: codice_hi_energy_center
+  DEPEND_0: codice_hi_energy_center
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  dtype: float32
 
 codice_hi_energy_plus_delta:
   <<: *default_float32
@@ -186,10 +190,12 @@ codice_hi_energy_plus_delta:
   UNITS: "MeV"
   VALIDMAX: 20.0
   VALIDMIN: 0.0
-  DEPEND_1: codice_hi_energy_center
+  DEPEND_0: codice_hi_energy_center
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  dtype: float32
 
 codice_hi_elevation:
-  <<: *default_float32
   CATDESC: Elevation Angle
   FIELDNAM: Elevation Angle
   LABLAXIS: Elevation Angle
@@ -198,20 +204,9 @@ codice_hi_elevation:
   VALIDMIN: 0.0
   VALIDMAX: 180.0
   VAR_TYPE: support_data
-
-codice_hi_spin_angle:
-  <<: *default_float32
-  VAR_TYPE: support_data
-  CATDESC: Spin Angle
-  FIELDNAM: Spin Angle
-  SCALETYP: linear
-  UNITS: degrees
-  VALIDMAX: 360.0
-  VALIDMIN: 0.0
-  DEPEND_1: codice_hi_spin_sector
-  DEPEND_2: codice_hi_elevation
-  LABL_PTR_1: codice_hi_spin_sector_labels
-  LABL_PTR_2: codice_hi_elevation_labels
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  dtype: float32
 
 codice_hi_spin_sector:
   CATDESC: CoDICE-Hi spin sector index
@@ -224,8 +219,20 @@ codice_hi_spin_sector:
   VALIDMAX: 3
   VAR_TYPE: support_data
 
-swe_electron_energy:
+codice_hi_spin_angle:
   <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Spin Angle
+  FIELDNAM: Spin Angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMAX: 360.0
+  VALIDMIN: 0.0
+  DEPEND_0: codice_hi_epoch
+  DEPEND_1: codice_hi_spin_sector
+  DEPEND_2: codice_hi_elevation
+
+swe_electron_energy:
   CATDESC: SWE electron channels (nominal central energies)
   FIELDNAM: SWE electron channels
   LABLAXIS: SWE electron channels
@@ -233,6 +240,9 @@ swe_electron_energy:
   UNITS: "eV"
   VALIDMIN: 0.0
   VALIDMAX: 2000.0
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  dtype: float32
 
 # Variables
 codice_hi_h:
@@ -244,9 +254,9 @@ codice_hi_h:
   UNITS: "counts / cm2-sr-s-MeV"
   VALIDMIN: 0
   VALIDMAX: 100000000.0
-  DEPEND_1: codice_hi_h_energy_range
-  DEPEND_2: codice_hi_h_spin_sector
-  DEPEND_3: codice_hi_h_elevation
+  DEPEND_1: codice_hi_energy_center
+  DEPEND_2: codice_hi_spin_sector
+  DEPEND_3: codice_hi_elevation
   DISPLAY_TYPE: no_plot
   FORMAT: F16.6
   VAR_NOTES: Proton intensity for energy ranges (MeV) are 0.0200–0.0283, 0.0283–0.0400, 0.0400–0.0566, 0.0566–0.0800, 0.0800–0.113, 0.113–0.160, 0.160–0.226, 0.226–0.320, 0.320–0.453, 0.453–0.640, 0.640–0.905, 0.905–1.28, 1.28–1.81, 1.81–2.56, 2.56–3.62.
