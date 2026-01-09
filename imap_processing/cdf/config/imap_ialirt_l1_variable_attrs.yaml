@@ -318,7 +318,7 @@ codice_lo_o_plus_7_over_o_plus_6:
 
 codice_lo_fe_low_over_fe_high:
   <<: *default_float32
-  CATDESC: Fe low/high charge state ratio (low=6–12, high=13–17)
+  CATDESC: Fe low/high charge state ratio (low=6 to 12, high=13 to 17)
   FIELDNAM: Fe low/high charge state ratio
   LABLAXIS: Fe low/high ratio
   DEPEND_0: codice_lo_epoch
