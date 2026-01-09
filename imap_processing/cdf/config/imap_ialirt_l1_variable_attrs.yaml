@@ -276,6 +276,14 @@ codice_hi_elevation:
   FORMAT: F12.6
   dtype: float32
 
+codice_hi_elevation_labels:
+  CATDESC: CoDICE-Hi elevation labels
+  FIELDNAM: CoDICE-Hi elevation labels
+  FORMAT: A12
+  VAR_TYPE: metadata
+  UNITS: " "
+  DEPEND_0: codice_hi_elevation
+
 codice_hi_spin_sector:
   CATDESC: CoDICE-Hi spin sector index
   FIELDNAM: CoDICE-Hi spin sector index
@@ -304,9 +312,10 @@ codice_hi_spin_angle:
   UNITS: degrees
   VALIDMAX: 360.0
   VALIDMIN: 0.0
-  DEPEND_0: codice_hi_spin_sector    # first dim (numeric index)
-  DEPEND_1: codice_hi_elevation      # second dim (elevation)
+  DEPEND_0: codice_hi_spin_sector
+  DEPEND_1: codice_hi_elevation
   LABL_PTR_1: codice_hi_spin_sector_labels
+  LABL_PTR_2: codice_hi_elevation_labels
 
 swe_electron_energy:
   CATDESC: SWE electron channels (nominal central energies)

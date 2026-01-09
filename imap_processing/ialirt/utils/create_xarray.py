@@ -208,6 +208,15 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
+    elevation_labels = xr.DataArray(
+        [f"{float(v):.1f}deg" for v in elevation.values],
+        name="codice_hi_elevation_labels",
+        dims=["codice_hi_elevation"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_elevation_labels", check_schema=False
+        ),
+    )
+
     # Calculate spin angle
     # Formula:
     #   θ_(g,n) = (θ_(g,0)+90°* n)  mod 360°
@@ -272,6 +281,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "codice_hi_energy_plus": codice_energy_plus,
         "codice_hi_energy_labels": codice_energy_labels,
         "codice_hi_elevation": elevation,
+        "codice_hi_elevation_labels": elevation_labels,
         "codice_hi_spin_angle": spin_angle,
         "codice_hi_spin_sector": spin_sector,
         "codice_hi_spin_sector_labels": spin_sector_labels,
