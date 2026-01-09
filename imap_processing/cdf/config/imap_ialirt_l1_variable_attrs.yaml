@@ -1,3 +1,4 @@
+# Defaults
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
@@ -7,111 +8,6 @@ default_attrs: &default
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
   VAR_TYPE: data
-  UNITS: " "
-
-instrument_epoch: &instrument_epoch
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  LABLAXIS: epoch
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
-  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-  RESOLUTION: ' '
-  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
-
-codice_hi_epoch:
-    <<: *instrument_epoch
-    CATDESC: CoDICE-Hi time, number of nanoseconds since J2000 with leap seconds included
-    FIELDNAM: CoDICE-Hi epoch
-
-codice_lo_epoch:
-    <<: *instrument_epoch
-    CATDESC: CoDICE-Lo time, number of nanoseconds since J2000 with leap seconds included
-    FIELDNAM: CoDICE-Lo epoch
-
-hit_epoch:
-    <<: *instrument_epoch
-    CATDESC: HIT time, number of nanoseconds since J2000 with leap seconds included
-    FIELDNAM: HIT epoch
-
-mag_epoch:
-    <<: *instrument_epoch
-    CATDESC: MAG time, number of nanoseconds since J2000 with leap seconds included
-    FIELDNAM: MAG epoch
-
-swapi_epoch:
-    <<: *instrument_epoch
-    CATDESC: SWAPI time, number of nanoseconds since J2000 with leap seconds included
-    FIELDNAM: SWAPI epoch
-
-swe_epoch:
-    <<: *instrument_epoch
-    CATDESC: SWE time, number of nanoseconds since J2000 with leap seconds included
-    FIELDNAM: SWE epoch
-
-spacecraft_epoch:
-    <<: *instrument_epoch
-    CATDESC: Spacecraft time, number of nanoseconds since J2000 with leap seconds included
-    FIELDNAM: Spacecraft epoch
-
-B_GSM_labels:
-  CATDESC: B GSM component labels
-  FIELDNAM: B GSM component labels
-  FORMAT: A8
-  VAR_TYPE: support_data
-  UNITS: " "
-
-B_GSE_labels:
-  CATDESC: B GSE component labels
-  FIELDNAM: B GSE component labels
-  FORMAT: A8
-  VAR_TYPE: support_data
-  UNITS: " "
-
-B_RTN_labels:
-  CATDESC: B RTN component labels B radial (RTN), B tangential (RTN), B normal (RTN)
-  FIELDNAM: B RTN component labels
-  FORMAT: A18
-  VAR_TYPE: support_data
-  UNITS: " "
-
-sc_GSM_labels:
-  CATDESC: Spacecraft position and velocity component labels in GSM coordinates
-  FIELDNAM: Spacecraft GSM component labels
-  FORMAT: A8
-  VAR_TYPE: support_data
-  UNITS: " "
-
-sc_GSE_labels:
-  CATDESC: Spacecraft position and velocity component labels in GSE coordinates
-  FIELDNAM: Spacecraft GSE component labels
-  FORMAT: A8
-  VAR_TYPE: support_data
-  UNITS: " "
-
-esa_step:
-  CATDESC: ESA step number. The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
-  FIELDNAM: ESA step index
-  LABLAXIS: ESA step
-  FORMAT: I2
-  VALIDMIN: 0
-  VALIDMAX: 7
-  VAR_TYPE: metadata
-  UNITS: " "
-
-swe_electron_energy_labels:
-  CATDESC: SWE electron channel labels (nominal central energies)
-  FIELDNAM: SWE electron channel labels
-  FORMAT: A12
-  VAR_TYPE: support_data
   UNITS: " "
 
 default_uint8_attrs: &default_uint8
@@ -170,14 +66,116 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
+# Epochs
+instrument_epoch: &instrument_epoch
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
+  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ' '
+  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
+
+codice_hi_epoch:
+    <<: *instrument_epoch
+    CATDESC: CoDICE-Hi time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: CoDICE-Hi epoch
+
+codice_lo_epoch:
+    <<: *instrument_epoch
+    CATDESC: CoDICE-Lo time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: CoDICE-Lo epoch
+
+hit_epoch:
+    <<: *instrument_epoch
+    CATDESC: HIT time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: HIT epoch
+
+mag_epoch:
+    <<: *instrument_epoch
+    CATDESC: MAG time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: MAG epoch
+
+swapi_epoch:
+    <<: *instrument_epoch
+    CATDESC: SWAPI time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: SWAPI epoch
+
+swe_epoch:
+    <<: *instrument_epoch
+    CATDESC: SWE time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: SWE epoch
+
+epoch:
+    <<: *instrument_epoch
+    CATDESC: Spacecraft time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: Spacecraft epoch
+
+# Labels
+B_GSM_labels:
+  CATDESC: B GSM component labels
+  FIELDNAM: B GSM component labels
+  FORMAT: A8
+  VAR_TYPE: support_data
+  UNITS: " "
+
+B_GSE_labels:
+  CATDESC: B GSE component labels
+  FIELDNAM: B GSE component labels
+  FORMAT: A8
+  VAR_TYPE: support_data
+  UNITS: " "
+
+B_RTN_labels:
+  CATDESC: B RTN component labels B radial (RTN), B tangential (RTN), B normal (RTN)
+  FIELDNAM: B RTN component labels
+  FORMAT: A18
+  VAR_TYPE: support_data
+  UNITS: " "
+
+sc_GSM_labels:
+  CATDESC: Spacecraft position and velocity component labels in GSM coordinates
+  FIELDNAM: Spacecraft GSM component labels
+  FORMAT: A8
+  VAR_TYPE: support_data
+  UNITS: " "
+
+sc_GSE_labels:
+  CATDESC: Spacecraft position and velocity component labels in GSE coordinates
+  FIELDNAM: Spacecraft GSE component labels
+  FORMAT: A8
+  VAR_TYPE: support_data
+  UNITS: " "
+
+# Coordinate Variables
+codice_hi_energy_center:
+  <<: *default_float32
+  CATDESC: CoDICE-Hi proton energy bin (MeV)
+  FIELDNAM: CoDICE-Hi proton energy bin
+  VAR_TYPE: support_data
+  UNITS: "MeV"
+  VALIDMAX: 20.0
+  VALIDMIN: 0.0
+  DELTA_PLUS_VAR: codice_hi_energy_plus_delta
+  DELTA_MINUS_VAR: codice_hi_energy_minus_delta
+
 codice_hi_energy_minus_delta:
   <<: *default_float32
   CATDESC: CoDICE-Hi proton energy bin lower delta (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin lower delta
   VAR_TYPE: support_data
   UNITS: "MeV"
-  VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMAX: 20.0
+  VALIDMIN: 0.0
   DEPEND_1: codice_hi_energy_center
 
 codice_hi_energy_plus_delta:
@@ -186,37 +184,9 @@ codice_hi_energy_plus_delta:
   FIELDNAM: CoDICE-Hi proton energy bin upper delta
   VAR_TYPE: support_data
   UNITS: "MeV"
-  VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMAX: 20.0
+  VALIDMIN: 0.0
   DEPEND_1: codice_hi_energy_center
-
-codice_hi_energy_center:
-  <<: *default_float32
-  CATDESC: CoDICE-Hi proton energy bin (MeV)
-  FIELDNAM: CoDICE-Hi proton energy bin
-  VAR_TYPE: support_data
-  UNITS: "MeV"
-  DELTA_PLUS_VAR: codice_hi_energy_plus_delta
-  DELTA_MINUS_VAR: codice_hi_energy_minus_delta
-
-codice_hi_spin_sector:
-  CATDESC: CoDICE-Hi spin sector index
-  FIELDNAM: CoDICE-Hi spin sector index
-  FILLVAL: -1
-  FORMAT: I2
-  LABLAXIS: " "
-  SCALETYP: linear
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 3
-  VAR_TYPE: support_data
-
-swe_electron_energy:
-  <<: *default_float32
-  CATDESC: SWE electron channels (nominal central energies)
-  FIELDNAM: SWE electron channels
-  VAR_TYPE: support_data
-  UNITS: "eV"
 
 codice_hi_elevation:
   <<: *default_float32
@@ -229,19 +199,6 @@ codice_hi_elevation:
   VALIDMAX: 180.0
   VAR_TYPE: support_data
 
-codice_hi_elevation_labels:
-  CATDESC: Elevation Angle
-  FIELDNAM: Elevation Angle
-  FORMAT: A6
-  VAR_TYPE: metadata
-
-codice_hi_spin_sector_labels:
-  CATDESC: Spin Sector
-  DEPEND_1: spin_sector
-  FIELDNAM: Spin Sector
-  FORMAT: A2
-  VAR_TYPE: metadata
-
 codice_hi_spin_angle:
   <<: *default_float32
   VAR_TYPE: support_data
@@ -251,12 +208,33 @@ codice_hi_spin_angle:
   UNITS: degrees
   VALIDMAX: 360.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
   DEPEND_1: codice_hi_spin_sector
   DEPEND_2: codice_hi_elevation
   LABL_PTR_1: codice_hi_spin_sector_labels
   LABL_PTR_2: codice_hi_elevation_labels
 
+codice_hi_spin_sector:
+  CATDESC: CoDICE-Hi spin sector index
+  FIELDNAM: CoDICE-Hi spin sector index
+  FORMAT: I2
+  LABLAXIS: " "
+  SCALETYP: linear
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 3
+  VAR_TYPE: support_data
+
+swe_electron_energy:
+  <<: *default_float32
+  CATDESC: SWE electron channels (nominal central energies)
+  FIELDNAM: SWE electron channels
+  LABLAXIS: SWE electron channels
+  VAR_TYPE: support_data
+  UNITS: "eV"
+  VALIDMIN: 0.0
+  VALIDMAX: 2000.0
+
+# Variables
 codice_hi_h:
   <<: *default_float32
   CATDESC: Proton intensity in 4 spin angles, 15 energy ranges, 4 spin sectors, and 4 elevations
@@ -459,6 +437,56 @@ hit_he_omni_high_en:
   VALIDMAX: 1000000000
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
+mag_B_magnitude:
+  <<: *default_float32
+  CATDESC: Magnitude of the magnetic field vector
+  FIELDNAM: B vector magnitude
+  LABLAXIS: B Magnitude
+  DEPEND_0: mag_epoch
+  UNITS: nT
+  VALIDMIN: 0.0
+  VALIDMAX: 65000.0
+
+mag_theta_B_GSE:
+  <<: *default_float32
+  CATDESC: Elevation angle (θ) of the magnetic field in GSE coordinates
+  FIELDNAM: B elevation angle in GSE coordinates
+  LABLAXIS: B elevation (GSE)
+  DEPEND_0: mag_epoch
+  UNITS: degrees
+  VALIDMIN: -90.0
+  VALIDMAX: 90.0
+
+mag_phi_B_GSE:
+  <<: *default_float32
+  CATDESC: Azimuth angle (φ) of the magnetic field in GSE coordinates
+  FIELDNAM: B azimuth angle in GSE coordinates
+  LABLAXIS: B azimuth (GSE)
+  DEPEND_0: mag_epoch
+  UNITS: degrees
+  VALIDMIN: 0.0
+  VALIDMAX: 360.0
+
+mag_theta_B_GSM:
+  <<: *default_float32
+  CATDESC: Elevation angle (θ) of the magnetic field in GSM coordinates
+  FIELDNAM: B elevation angle in GSM coordinates
+  LABLAXIS: B elevation (GSM)
+  DEPEND_0: mag_epoch
+  UNITS: degrees
+  VALIDMIN: -90.0
+  VALIDMAX: 90.0
+
+mag_phi_B_GSM:
+  <<: *default_float32
+  CATDESC: Azimuth angle (φ) of the magnetic field in GSM coordinates
+  FIELDNAM: B azimuth angle in GSM coordinates
+  LABLAXIS: B azimuth (GSM)
+  DEPEND_0: mag_epoch
+  UNITS: degrees
+  VALIDMIN: 0.0
+  VALIDMAX: 360.0
+
 mag_B_GSE:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSE coordinates
@@ -494,96 +522,6 @@ mag_B_RTN:
   FORMAT: F13.6
   VALIDMIN: -65000.0
   VALIDMAX: 65000.0
-
-mag_B_magnitude:
-  <<: *default_float32
-  CATDESC: Magnitude of the magnetic field vector
-  FIELDNAM: B vector magnitude
-  LABLAXIS: B Magnitude
-  DEPEND_0: mag_epoch
-  UNITS: nT
-  VALIDMIN: 0.0
-  VALIDMAX: 65000.0
-
-mag_phi_B_GSM:
-  <<: *default_float32
-  CATDESC: Azimuth angle (φ) of the magnetic field in GSM coordinates
-  FIELDNAM: B azimuth angle in GSM coordinates
-  LABLAXIS: B azimuth (GSM)
-  DEPEND_0: mag_epoch
-  UNITS: degrees
-  VALIDMIN: 0.0
-  VALIDMAX: 360.0
-
-mag_theta_B_GSM:
-  <<: *default_float32
-  CATDESC: Elevation angle (θ) of the magnetic field in GSM coordinates
-  FIELDNAM: B elevation angle in GSM coordinates
-  LABLAXIS: B elevation (GSM)
-  DEPEND_0: mag_epoch
-  UNITS: degrees
-  VALIDMIN: -90.0
-  VALIDMAX: 90.0
-
-mag_phi_B_GSE:
-  <<: *default_float32
-  CATDESC: Azimuth angle (φ) of the magnetic field in GSE coordinates
-  FIELDNAM: B azimuth angle in GSE coordinates
-  LABLAXIS: B azimuth (GSE)
-  DEPEND_0: mag_epoch
-  UNITS: degrees
-  VALIDMIN: 0.0
-  VALIDMAX: 360.0
-
-mag_theta_B_GSE:
-  <<: *default_float32
-  CATDESC: Elevation angle (θ) of the magnetic field in GSE coordinates
-  FIELDNAM: B elevation angle in GSE coordinates
-  LABLAXIS: B elevation (GSE)
-  DEPEND_0: mag_epoch
-  UNITS: degrees
-  VALIDMIN: -90.0
-  VALIDMAX: 90.0
-
-sc_position_GSM:
-  <<: *default_float32
-  CATDESC: Spacecraft position vector in GSM coordinates
-  FIELDNAM: Spacecraft position in GSM coordinates
-  LABLAXIS: SC position (GSM)
-  UNITS: km
-  LABL_PTR_1: sc_GSM_labels
-  VALIDMIN: -3000000.0
-  VALIDMAX: 3000000.0
-
-sc_velocity_GSM:
-  <<: *default_float32
-  CATDESC: Spacecraft velocity vector in GSM coordinates
-  FIELDNAM: Spacecraft velocity in GSM
-  LABLAXIS: SC velocity (GSM)
-  UNITS: km/s
-  LABL_PTR_1: sc_GSM_labels
-  VALIDMIN: -1000.0
-  VALIDMAX: 1000.0
-
-sc_position_GSE:
-  <<: *default_float32
-  CATDESC: Spacecraft position vector in GSE coordinates
-  FIELDNAM: Spacecraft position in GSE
-  LABLAXIS: SC position (GSE)
-  UNITS: km
-  LABL_PTR_1: sc_GSE_labels
-  VALIDMIN: -3000000.0
-  VALIDMAX: 3000000.0
-
-sc_velocity_GSE:
-  <<: *default_float32
-  CATDESC: Spacecraft velocity vector in GSE coordinates
-  FIELDNAM: Spacecraft velocity in GSE
-  LABLAXIS: SC velocity (GSE)
-  UNITS: km/s
-  LABL_PTR_1: sc_GSE_labels
-  VALIDMIN: -1000.0
-  VALIDMAX: 1000.0
 
 swapi_pseudo_proton_density:
   <<: *default_float32
@@ -623,7 +561,7 @@ swe_normalized_counts:
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000
-  DEPEND_1: swe_electron_energy_labels
+  DEPEND_1: swe_electron_energy
   DISPLAY_TYPE: stack_plot
   LABLAXIS: Electrons
   VAR_NOTES: The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
@@ -637,3 +575,43 @@ swe_counterstreaming_electrons:
   VALIDMIN: 0
   VALIDMAX: 1
   VAR_NOTES: A value of 1 indicates that counterstreaming electrons were observed, a value of 0 indicates unidirectional electron flow.
+
+sc_position_GSE:
+  <<: *default_float32
+  CATDESC: Spacecraft position vector in GSE coordinates
+  FIELDNAM: Spacecraft position in GSE
+  LABLAXIS: SC position (GSE)
+  UNITS: km
+  LABL_PTR_1: sc_GSE_labels
+  VALIDMIN: -3000000.0
+  VALIDMAX: 3000000.0
+
+sc_velocity_GSE:
+  <<: *default_float32
+  CATDESC: Spacecraft velocity vector in GSE coordinates
+  FIELDNAM: Spacecraft velocity in GSE
+  LABLAXIS: SC velocity (GSE)
+  UNITS: km/s
+  LABL_PTR_1: sc_GSE_labels
+  VALIDMIN: -1000.0
+  VALIDMAX: 1000.0
+
+sc_position_GSM:
+  <<: *default_float32
+  CATDESC: Spacecraft position vector in GSM coordinates
+  FIELDNAM: Spacecraft position in GSM coordinates
+  LABLAXIS: SC position (GSM)
+  UNITS: km
+  LABL_PTR_1: sc_GSM_labels
+  VALIDMIN: -3000000.0
+  VALIDMAX: 3000000.0
+
+sc_velocity_GSM:
+  <<: *default_float32
+  CATDESC: Spacecraft velocity vector in GSM coordinates
+  FIELDNAM: Spacecraft velocity in GSM
+  LABLAXIS: SC velocity (GSM)
+  UNITS: km/s
+  LABL_PTR_1: sc_GSM_labels
+  VALIDMIN: -1000.0
+  VALIDMAX: 1000.0

@@ -13,9 +13,10 @@ from imap_processing.codice.constants import (
 from imap_processing.ialirt.utils.constants import (
     IALIRT_DIMS,
     IALIRT_DTYPES,
-    codice_hi_energy_centers,
+    codice_hi_energy_center,
     codice_hi_energy_minus,
     codice_hi_energy_plus,
+    hit_restricted_fields,
     swe_energy,
 )
 
@@ -47,7 +48,9 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     for record in records:
         inst = record.get("instrument")
         by_inst[record["instrument"]].append(record)
-        if inst in one_epoch:
+        if inst == "spacecraft":
+            epochs[inst].append(record["ttj2000ns"])
+        elif inst in one_epoch:
             epochs[inst].append(record[f"{inst}_epoch"])
         elif inst in multi_epoch:
             epochs[inst].extend(record[f"{inst}_epoch"])
@@ -55,14 +58,16 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     epoch_arrays = {}
 
     for inst, arr in epochs.items():
-        coord = f"{inst}_epoch"
-        epoch_arrays[coord] = xr.DataArray(
-            data=arr,
-            name=coord,
-            dims=[coord],
-            attrs=cdf_manager.get_variable_attributes(
+        if inst == "spacecraft":
+            coord = "epoch"
+            attr = cdf_manager.get_variable_attributes("epoch", check_schema=False)
+        else:
+            coord = f"{inst}_epoch"
+            attr = cdf_manager.get_variable_attributes(
                 f"{inst}_epoch", check_schema=False
-            ),
+            )
+        epoch_arrays[coord] = xr.DataArray(
+            data=arr, name=coord, dims=[coord], attrs=attr
         )
 
     sc_gsm_component = xr.DataArray(
@@ -101,7 +106,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     swe_electron_energy = xr.DataArray(
-        data=swe_energy,
+        data=np.float32(swe_energy),
         name="swe_electron_energy",
         dims=["swe_electron_energy"],
         attrs=cdf_manager.get_variable_attributes(
@@ -109,8 +114,8 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
-    codice_hi_energy_center = xr.DataArray(
-        data=codice_hi_energy_centers,
+    codice_hi_energy_centers = xr.DataArray(
+        data=np.float32(codice_hi_energy_center),
         name="codice_hi_energy_center",
         dims=["codice_hi_energy_center"],
         attrs=cdf_manager.get_variable_attributes(
@@ -119,7 +124,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     codice_energy_minus = xr.DataArray(
-        data=codice_hi_energy_minus,
+        data=np.float32(codice_hi_energy_minus),
         name="codice_hi_energy_minus",
         dims=["codice_hi_energy_center"],
         attrs=cdf_manager.get_variable_attributes(
@@ -128,7 +133,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     codice_energy_plus = xr.DataArray(
-        data=codice_hi_energy_plus,
+        data=np.float32(codice_hi_energy_plus),
         name="codice_hi_energy_plus",
         dims=["codice_hi_energy_center"],
         attrs=cdf_manager.get_variable_attributes(
@@ -137,7 +142,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     elevation = xr.DataArray(
-        HI_IALIRT_ELEVATION_ANGLE,
+        np.float32(HI_IALIRT_ELEVATION_ANGLE),
         name="codice_hi_elevation",
         dims=["codice_hi_elevation"],
         attrs=cdf_manager.get_variable_attributes(
@@ -155,7 +160,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         HI_IALIRT_REF_SPIN_ANGLE[:, np.newaxis] + np.array([0, 1, 2, 3]) * 90
     ) % 360.0
     spin_angle = xr.DataArray(
-        data=spin_angles,
+        data=np.float32(spin_angles),
         name="codice_hi_spin_angle",
         dims=["codice_hi_spin_sector", "codice_hi_elevation"],
         attrs=cdf_manager.get_variable_attributes(
@@ -177,21 +182,21 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "codice_lo_epoch": epoch_arrays["codice_lo_epoch"],
         "hit_epoch": epoch_arrays["hit_epoch"],
         "mag_epoch": epoch_arrays["mag_epoch"],
-        "spacecraft_epoch": epoch_arrays["spacecraft_epoch"],
         "swapi_epoch": epoch_arrays["swapi_epoch"],
         "swe_epoch": epoch_arrays["swe_epoch"],
+        "epoch": epoch_arrays["epoch"],
         "B_GSM_labels": gsm_component,
         "B_GSE_labels": gse_component,
         "B_RTN_labels": rtn_component,
         "sc_GSM_labels": sc_gsm_component,
         "sc_GSE_labels": sc_gse_component,
-        "swe_electron_energy": swe_electron_energy,
-        "codice_hi_energy_center": codice_hi_energy_center,
+        "codice_hi_energy_center": codice_hi_energy_centers,
         "codice_hi_energy_minus_delta": codice_energy_minus,
         "codice_hi_energy_plus_delta": codice_energy_plus,
         "codice_hi_elevation": elevation,
         "codice_hi_spin_angle": spin_angle,
         "codice_hi_spin_sector": spin_sector,
+        "swe_electron_energy": swe_electron_energy,
     }
     dataset = xr.Dataset(
         coords=coords,
@@ -238,7 +243,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     for i, record in enumerate(by_inst.get("hit", [])):
         for key in IALIRT_DIMS.keys():
-            if key.startswith("hit_"):
+            if key.startswith("hit_") and key not in hit_restricted_fields:
                 dataset[key].data[i] = np.uint32(record[key])
 
     for i, record in enumerate(by_inst.get("swapi", [])):

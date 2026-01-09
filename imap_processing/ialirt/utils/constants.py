@@ -6,7 +6,7 @@ IALIRT_DIMS = {
     # H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
     "codice_hi_h": [
         "codice_hi_epoch",
-        "codice_hi_h_energy_range_labels",
+        "codice_hi_energy_center",
         "codice_hi_spin_sector",
         "codice_hi_elevation",
     ],
@@ -65,13 +65,13 @@ IALIRT_DIMS = {
     # SWE Counterstreaming flag
     "swe_counterstreaming_electrons": ["swe_epoch"],
     # Spacecraft position in GSE coordinates
-    "sc_position_GSE": ["spacecraft_epoch", "sc_GSE_labels"],
+    "sc_position_GSE": ["epoch", "sc_GSE_labels"],
     # Spacecraft velocity in GSE coordinates
-    "sc_velocity_GSE": ["spacecraft_epoch", "sc_GSE_labels"],
+    "sc_velocity_GSE": ["epoch", "sc_GSE_labels"],
     # Spacecraft position in GSM coordinates
-    "sc_position_GSM": ["spacecraft_epoch", "sc_GSM_labels"],
+    "sc_position_GSM": ["epoch", "sc_GSM_labels"],
     # Spacecraft velocity in GSM coordinates
-    "sc_velocity_GSM": ["spacecraft_epoch", "sc_GSM_labels"],
+    "sc_velocity_GSM": ["epoch", "sc_GSM_labels"],
 }
 
 IALIRT_DTYPES = {
@@ -117,7 +117,14 @@ IALIRT_DTYPES = {
     "sc_velocity_GSE": np.float32,
 }
 
-codice_hi_energy_centers = [
+hit_restricted_fields = {
+    "hit_e_a_side_high_en",
+    "hit_e_b_side_high_en",
+    "hit_h_a_side_high_en",
+    "hit_h_b_side_high_en",
+}
+
+codice_hi_energy_center = [
     0.02378414,
     0.03363586,
     0.04756828,
