@@ -164,7 +164,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     codice_hi_energy_centers = xr.DataArray(
-        data=np.float32(codice_hi_energy_center),
+        data=np.array(codice_hi_energy_center, dtype=np.float32),
         name="codice_hi_energy_center",
         dims=["codice_hi_energy_center"],
         attrs=cdf_manager.get_variable_attributes(
@@ -173,7 +173,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     codice_energy_minus = xr.DataArray(
-        data=np.float32(codice_hi_energy_minus),
+        data=np.array(codice_hi_energy_minus, dtype=np.float32),
         name="codice_hi_energy_minus",
         dims=["codice_hi_energy_center"],
         attrs=cdf_manager.get_variable_attributes(
@@ -182,11 +182,20 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     codice_energy_plus = xr.DataArray(
-        data=np.float32(codice_hi_energy_plus),
+        data=np.array(codice_hi_energy_plus, dtype=np.float32),
         name="codice_hi_energy_plus",
         dims=["codice_hi_energy_center"],
         attrs=cdf_manager.get_variable_attributes(
             "codice_hi_energy_plus", check_schema=False
+        ),
+    )
+
+    codice_energy_labels = xr.DataArray(
+        [f"ch{n + 1}" for n in range(len(codice_hi_energy_center))],
+        name="codice_hi_energy_labels",
+        dims=["codice_hi_energy_center"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_energy_labels", check_schema=False
         ),
     )
 
@@ -245,8 +254,9 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "sc_GSE_component_index": sc_gse_component_index,
         "sc_GSE_labels": sc_gse_component,
         "codice_hi_energy_center": codice_hi_energy_centers,
-        "codice_hi_energy_minus_delta": codice_energy_minus,
-        "codice_hi_energy_plus_delta": codice_energy_plus,
+        "codice_hi_energy_minus": codice_energy_minus,
+        "codice_hi_energy_plus": codice_energy_plus,
+        "codice_hi_energy_labels": codice_energy_labels,
         "codice_hi_elevation": elevation,
         "codice_hi_spin_angle": spin_angle,
         "codice_hi_spin_sector": spin_sector,

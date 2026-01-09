@@ -215,7 +215,6 @@ sc_GSE_labels:
   VAR_TYPE: metadata
   UNITS: " "
 
-# Coordinate Variables
 codice_hi_energy_center:
   CATDESC: CoDICE-Hi proton energy bin (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin
@@ -223,13 +222,14 @@ codice_hi_energy_center:
   UNITS: "MeV"
   VALIDMAX: 20.0
   VALIDMIN: 0.0
-  DELTA_PLUS_VAR: codice_hi_energy_plus_delta
-  DELTA_MINUS_VAR: codice_hi_energy_minus_delta
+  DELTA_PLUS_VAR: codice_hi_energy_plus
+  DELTA_MINUS_VAR: codice_hi_energy_minus
+  LABL_PTR_1: codice_hi_energy_labels
   FILLVAL: -1.0e31
   FORMAT: F12.6
   dtype: float32
 
-codice_hi_energy_minus_delta:
+codice_hi_energy_minus:
   CATDESC: CoDICE-Hi proton energy bin lower delta (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin lower delta
   VAR_TYPE: support_data
@@ -237,12 +237,12 @@ codice_hi_energy_minus_delta:
   VALIDMAX: 20.0
   VALIDMIN: 0.0
   DEPEND_0: codice_hi_energy_center
+  LABL_PTR_1: codice_hi_energy_labels
   FILLVAL: -1.0e31
   FORMAT: F12.6
   dtype: float32
 
-codice_hi_energy_plus_delta:
-  <<: *default_float32
+codice_hi_energy_plus:
   CATDESC: CoDICE-Hi proton energy bin upper delta (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin upper delta
   VAR_TYPE: support_data
@@ -250,9 +250,18 @@ codice_hi_energy_plus_delta:
   VALIDMAX: 20.0
   VALIDMIN: 0.0
   DEPEND_0: codice_hi_energy_center
+  LABL_PTR_1: codice_hi_energy_labels
   FILLVAL: -1.0e31
   FORMAT: F12.6
   dtype: float32
+
+codice_hi_energy_labels:
+  CATDESC: CoDICE-Hi energy channel labels
+  FIELDNAM: CoDICE-Hi energy channel labels
+  FORMAT: A12
+  VAR_TYPE: metadata
+  UNITS: " "
+  DEPEND_0: codice_hi_energy_center
 
 codice_hi_elevation:
   CATDESC: Elevation Angle
