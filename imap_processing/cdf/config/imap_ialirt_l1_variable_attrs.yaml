@@ -85,7 +85,6 @@ instrument_epoch: &instrument_epoch
   RESOLUTION: ' '
   DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
   dtype: int64
-  DEPEND_0: ""
 
 codice_hi_epoch:
     <<: *instrument_epoch

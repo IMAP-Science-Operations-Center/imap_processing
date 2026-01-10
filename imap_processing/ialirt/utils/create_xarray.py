@@ -292,15 +292,6 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_global_attributes("imap_ialirt_l1_realtime"),
     )
 
-    epoch_keys = [k for k in dataset.coords if k == "epoch" or k.endswith("_epoch")]
-
-    for k in epoch_keys:
-        # ensure dtype is int64 and set writer hint for TT2000
-        data_array = dataset.coords[k].astype(np.int64)
-        data_array.encoding["dtype"] = np.int64
-        data_array.encoding["cdf_type"] = "CDF_TIME_TT2000"
-        dataset.coords[k] = data_array
-
     # Create variables with fill values.
     for key in IALIRT_DIMS.keys():
         dims = IALIRT_DIMS[key]
