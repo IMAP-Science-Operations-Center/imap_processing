@@ -417,6 +417,7 @@ hit_e_a_side_low_en:
   CATDESC: Low energy (>0.5 MeV) electrons (A-side)
   FIELDNAM: Electrons low energy (A-side)
   LABLAXIS: A-side e- >0.5 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -427,6 +428,7 @@ hit_e_a_side_med_en:
   CATDESC: Medium energy (<1 MeV) electrons (A-side)
   FIELDNAM: Electrons medium energy (A-side)
   LABLAXIS: A-side e- <1 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -437,6 +439,7 @@ hit_e_a_side_high_en:
   CATDESC: High energy (>3 MeV) electrons (A-side)
   FIELDNAM: Electrons high energy (A-side)
   LABLAXIS: A-side e- >3 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -447,6 +450,7 @@ hit_e_b_side_low_en:
   CATDESC: Low energy (>0.5 MeV) electrons (B-side)
   FIELDNAM: Electrons low energy (B-side)
   LABLAXIS: B-side e- >0.5 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -457,6 +461,7 @@ hit_e_b_side_med_en:
   CATDESC: Medium energy (<1 MeV) electrons (B-side)
   FIELDNAM: Electrons medium energy
   LABLAXIS: B-side e- <1 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -467,6 +472,7 @@ hit_e_b_side_high_en:
   CATDESC: High energy (>3 MeV) electrons (B-side)
   FIELDNAM: Electrons high energy (B-side)
   LABLAXIS: B-side e- >3 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -477,6 +483,7 @@ hit_h_omni_low_en:
   CATDESC: Low energy (6 to 8 MeV) protons (omnidirectional)
   FIELDNAM: Protons 6 to 8 MeV (omni)
   LABLAXIS: Omni H 6 to 8 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -487,6 +494,7 @@ hit_h_omni_med_en:
   CATDESC: Medium energy (12 to 15 MeV) protons (omnidirectional)
   FIELDNAM: Protons 12 to 15 MeV (omni)
   LABLAXIS: Omni H 12 to 15 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -497,6 +505,7 @@ hit_h_a_side_high_en:
   CATDESC: High energy (>70 MeV) protons (A-side)
   FIELDNAM: Protons >70 MeV (A-side)
   LABLAXIS: A-side H >70 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -507,6 +516,7 @@ hit_h_b_side_high_en:
   CATDESC: High energy (>70 MeV) protons (B-side)
   FIELDNAM: Protons >70 MeV (B-side)
   LABLAXIS: B-side H >70 MeV
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -517,6 +527,7 @@ hit_he_omni_low_en:
   CATDESC: Low energy (6 to 8 MeV/nuc) helium (omnidirectional)
   FIELDNAM: Helium 6 to 8 MeV/nuc (omni)
   LABLAXIS: Omni He 6 to 8 MeV/nuc
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -527,6 +538,7 @@ hit_he_omni_high_en:
   CATDESC: High energy (15 to 70 MeV/nuc) helium (omnidirectional)
   FIELDNAM: Helium 15 to 70 MeV/nuc (omni)
   LABLAXIS: Omni He 15 to 70 MeV/nuc
+  DEPEND_0: hit_epoch
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000
@@ -624,6 +636,7 @@ swapi_pseudo_proton_density:
   CATDESC: Pseudo density of solar wind protons
   FIELDNAM: SW proton pseudo density
   LABLAXIS: SW p pseudo N
+  DEPEND_0: swapi_epoch
   UNITS: 1/cm^3
   VALIDMIN: 0.0
   VALIDMAX: 1000.0
@@ -634,6 +647,7 @@ swapi_pseudo_proton_speed:
   CATDESC: Pseudo speed of solar wind protons in solar inertial frame
   FIELDNAM: SW proton pseudo V in solar inertial frame
   LABLAXIS: SW p pseudo V
+  DEPEND_0: swapi_epoch
   UNITS: km/sec
   VALIDMIN: 0.0
   VALIDMAX: 10000.0
@@ -644,6 +658,7 @@ swapi_pseudo_proton_temperature:
   CATDESC: Pseudo temperature of solar wind protons in plasma frame
   FIELDNAM: SW proton pseudo temperature
   LABLAXIS: SW p pseudo T
+  DEPEND_0: swapi_epoch
   UNITS: Kelvin
   VALIDMIN: 0.0
   VALIDMAX: 50000000.0
@@ -661,6 +676,7 @@ swe_normalized_counts:
   DEPEND_1: swe_electron_energy
   DISPLAY_TYPE: stack_plot
   LABLAXIS: Electrons
+  DEPEND_0: swe_epoch
   VAR_NOTES: The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
 
 swe_counterstreaming_electrons:
@@ -668,6 +684,7 @@ swe_counterstreaming_electrons:
   CATDESC: Counterstreaming electrons flag (1=counterstreaming, 0=unidirectional)
   FIELDNAM: Counterstreaming e- (1=counterstreaming)
   LABLAXIS: Counterstreaming e-
+  DEPEND_0: swe_epoch
   UNITS: "1=counterstreaming, 0=unidirectional"
   VALIDMIN: 0
   VALIDMAX: 1
