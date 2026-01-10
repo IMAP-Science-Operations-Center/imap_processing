@@ -164,6 +164,6 @@ def test_create_dataset():
 
     # Tests that you can write to a cdf.
     dataset.attrs["Data_version"] = "001"
-    test_data_path = write_cdf(dataset, istp=True)
+    test_data_path = write_cdf(dataset, istp=True, compression=None)
 
     assert test_data_path.exists()

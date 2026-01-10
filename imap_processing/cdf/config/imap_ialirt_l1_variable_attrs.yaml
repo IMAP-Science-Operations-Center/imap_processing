@@ -72,7 +72,7 @@ instrument_epoch: &instrument_epoch
   FIELDNAM: epoch
   LABLAXIS: epoch
   FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  FORMAT: I20
   VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
   VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
   UNITS: ns
@@ -85,6 +85,7 @@ instrument_epoch: &instrument_epoch
   RESOLUTION: ' '
   DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
   dtype: int64
+  DEPEND_0: ""
 
 codice_hi_epoch:
     <<: *instrument_epoch
