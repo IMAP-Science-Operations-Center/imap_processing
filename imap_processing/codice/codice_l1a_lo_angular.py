@@ -175,12 +175,22 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sci_lut_data, view_tab_obj.sensor, view_tab_obj.collapse_table
     )
 
+    # ========== Get Voltage Data from LUT ===========
+    # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
+    # Voltage data length varies by configuration (e.g., 104 or 128 steps)
+    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
+        "lo_stepping"
+    ]
+    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
+    
+    # Determine actual number of ESA steps from the voltage data
+    esa_steps = len(voltage_data)
+
     # Reshape decompressed data to:
     #   (num_packets, num_species, esa_steps, 12, 5)
     # 24 includes despinning spin sector. Then at later steps,
     # we handle despinning.
     num_packets = len(binary_data_list)
-    esa_steps = constants.NUM_ESA_STEPS
     num_species = len(species_names)
     species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets, num_species, esa_steps, *collapsed_shape
@@ -189,14 +199,6 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # Despinning
     # ----------------
     species_data = _despin_species_data(species_data, sci_lut_data, view_tab_obj)
-
-    # ========== Get Voltage Data from LUT ===========
-    # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
-    # Voltage data is (128,)
-    esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
-        "lo_stepping"
-    ]
-    voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -234,12 +236,12 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 ),
             ),
             "esa_step": xr.DataArray(
-                np.arange(128),
+                np.arange(esa_steps),
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
             ),
             "esa_step_label": xr.DataArray(
-                np.arange(128).astype(str),
+                np.arange(esa_steps).astype(str),
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "esa_step_label", check_schema=False
@@ -303,7 +305,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
     l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
+        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"])[:esa_steps],
         dims=("esa_step",),
         attrs=cdf_attrs.get_variable_attributes(
             "acquisition_time_per_step", check_schema=False

@@ -160,12 +160,12 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 ),
             ),
             "esa_step": xr.DataArray(
-                np.arange(128),
+                np.arange(esa_steps),
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
             ),
             "esa_step_label": xr.DataArray(
-                np.arange(128).astype(str),
+                np.arange(esa_steps).astype(str),
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "esa_step_label", check_schema=False
@@ -217,7 +217,7 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
     l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
+        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"])[:esa_steps],
         dims=("esa_step",),
         attrs=cdf_attrs.get_variable_attributes(
             "acquisition_time_per_step", check_schema=False
