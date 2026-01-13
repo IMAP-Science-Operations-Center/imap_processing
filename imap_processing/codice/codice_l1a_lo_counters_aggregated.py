@@ -207,11 +207,18 @@ def l1a_lo_counters_aggregated(
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
-    l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
-        dims=("esa_step",),
+    # TODO: Handle epoch dependent acquisition time per esa step
+    #   For now, just tile the same array for all epochs.
+    #   Eventually we may have data from a day where the LUT changed. If this is the
+    #  case, we need to split the data by epoch and assign different acquisition times
+    l1a_dataset["acquisition_time_per_esa_step"] = xr.DataArray(
+        np.tile(
+            np.asarray(calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"])),
+            (len(epoch_center), 1),
+        ),
+        dims=("epoch", "esa_step"),
         attrs=cdf_attrs.get_variable_attributes(
-            "acquisition_time_per_step", check_schema=False
+            "acquisition_time_per_esa_step", check_schema=False
         ),
     )
 

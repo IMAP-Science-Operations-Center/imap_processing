@@ -22,6 +22,8 @@ from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
+UINT32_FILLVAL = 4294967294
+
 
 def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     """
@@ -120,6 +122,15 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets, num_species, esa_steps, *collapsed_shape
     )
+    row_numbers = np.array(
+        sci_lut_data["lo_stepping_tab"]["row_number"].get("data"), dtype=np.int64
+    )
+    # For every energy after nso_half_spin, set data to nan
+    nso_half_spin = unpacked_dataset["nso_half_spin"].values
+    mask = row_numbers > nso_half_spin[:, np.newaxis]
+    mask = mask[:, np.newaxis, :, np.newaxis]
+    mask = np.repeat(mask, num_species, 1)
+    species_data[mask] = UINT32_FILLVAL
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
@@ -228,11 +239,18 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
-    l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
-        dims=("esa_step",),
+    # TODO: Handle epoch dependent acquisition time per esa step
+    #   For now, just tile the same array for all epochs.
+    #   Eventually we may have data from a day where the LUT changed. If this is the
+    #  case, we need to split the data by epoch and assign different acquisition times
+    l1a_dataset["acquisition_time_per_esa_step"] = xr.DataArray(
+        np.tile(
+            np.asarray(calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"])),
+            (len(epoch_center), 1),
+        ),
+        dims=("epoch", "esa_step"),
         attrs=cdf_attrs.get_variable_attributes(
-            "acquisition_time_per_step", check_schema=False
+            "acquisition_time_per_esa_step", check_schema=False
         ),
     )
 

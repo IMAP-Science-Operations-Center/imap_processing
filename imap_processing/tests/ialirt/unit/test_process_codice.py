@@ -195,9 +195,9 @@ def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor):
         "k_factor": ("dim0", cod_lo_l1a_test_data["k_factor"].data),
         "voltage_table": ("esa_step", cod_lo_l1a_test_data["voltage_table"].data),
         "data_quality": ("epoch", cod_lo_l1a_test_data["data_quality"].data),
-        "acquisition_time_per_step": (
+        "acquisition_time_per_esa_step": (
             "esa_step",
-            cod_lo_l1a_test_data["acquisition_time_per_step"].data,
+            cod_lo_l1a_test_data["acquisition_time_per_esa_step"].data,
         ),
         "epoch_delta_minus": ("epoch", cod_lo_l1a_test_data["epoch_delta_minus"].data),
         "epoch_delta_plus": ("epoch", cod_lo_l1a_test_data["epoch_delta_plus"].data),

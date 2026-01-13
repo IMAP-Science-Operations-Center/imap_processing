@@ -172,8 +172,9 @@ energy_species_label:
     VAR_TYPE: metadata
 
 # <=== Dataset Variable Attributes ===>
-acquisition_time_per_step:
+acquisition_time_per_esa_step:
     CATDESC: Acquisition time for each step of energy
+    DEPEND_0: epoch
     DEPEND_1: esa_step
     FIELDNAM: Acquisition Time
     FILLVAL: *real_fillval

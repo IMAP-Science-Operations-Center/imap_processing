@@ -9,7 +9,7 @@ TEST_DATA_L0_PATH = TEST_DATA_PATH / "l0_data"
 TEST_L0_FILE = TEST_DATA_L0_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
 VALIDATION_FILE_DATE = "20250814"
-VALIDATION_FILE_VERSION = "v013"
+VALIDATION_FILE_VERSION = "v015"
 
 
 @pytest.fixture(scope="session")
