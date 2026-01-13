@@ -1117,8 +1117,8 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     energy_steps = l2_dataset["energy_step"].values.flatten()
     # Create output array
     kev = np.full(energy_steps.shape, np.nan, dtype=np.float64)
-    # Get only valid energy_steps between 0 and 128
-    valid_mask = (energy_steps >= 0) & (energy_steps < 128)
+    # Get only valid energy_steps (valid indices into the esa_kev lookup table)
+    valid_mask = (energy_steps >= 0) & (energy_steps < len(esa_kev))
     kev[valid_mask] = esa_kev[energy_steps[valid_mask]]
     # Reshape back to original shape
     l2_dataset["energy_per_charge"] = (
