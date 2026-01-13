@@ -69,11 +69,14 @@ def l1a_lo_counters_aggregated(
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
-    # Voltage data is (128,)
+    # Voltage data length varies by configuration (e.g., 104 or 128 steps)
     esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
         "lo_stepping"
     ]
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
+    
+    # Determine actual number of ESA steps from the voltage data
+    esa_step = len(voltage_data)
 
     # ========= Decompress and Reshape Data ===========
     logical_source_id = "imap_codice_l1a_lo-counters-aggregated"
@@ -92,7 +95,6 @@ def l1a_lo_counters_aggregated(
     # Dimensions
     num_variables = len(non_reserved_keys)
     spin_sector_pairs = non_reserved_variables["tcr"]
-    esa_step = constants.NUM_ESA_STEPS
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
@@ -201,7 +203,7 @@ def l1a_lo_counters_aggregated(
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
     l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
+        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"])[:esa_step],
         dims=("esa_step",),
         attrs=cdf_attrs.get_variable_attributes(
             "acquisition_time_per_step", check_schema=False

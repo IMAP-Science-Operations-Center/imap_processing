@@ -70,11 +70,14 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
-    # Voltage data is (128,)
+    # Voltage data length varies by configuration (e.g., 104 or 128 steps)
     esa_table_number = sci_lut_data["plan_tab"][f"({plan_id}, {plan_step})"][
         "lo_stepping"
     ]
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
+    
+    # Determine actual number of ESA steps from the voltage data
+    esa_steps = len(voltage_data)
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -122,7 +125,6 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # Reshape decompressed data to in below for loop:
     # (num_packets, num_species, esa_steps, collapse_shape[0](spin_sector))
     num_species = len(species_names)
-    esa_steps = constants.NUM_ESA_STEPS
     collapse_shape = get_collapse_pattern_shape(
         sci_lut_data,
         view_tab_obj.sensor,
