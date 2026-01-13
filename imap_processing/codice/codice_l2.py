@@ -312,9 +312,12 @@ def compute_geometric_factors(
         val: key for key, vals in HALF_SPIN_LUT.items() for val in vals
     }
 
-    # Create a list of half_spin values corresponding to ESA steps (0 to 127)
+    # Determine the actual number of ESA steps from the dataset
+    num_esa_steps = len(dataset.esa_step) if "esa_step" in dataset.dims else 128
+    
+    # Create a list of half_spin values corresponding to ESA steps (0 to num_esa_steps-1)
     half_spin_values = np.array(
-        [esa_step_to_half_spin_map[step] for step in range(128)]
+        [esa_step_to_half_spin_map[step] for step in range(num_esa_steps)]
     )
     # Expand dimensions to compare each rgfo_half_spin value against
     # all half_spin_values
@@ -324,11 +327,11 @@ def compute_geometric_factors(
     # false (full mode)
     modes = half_spin_values > rgfo_half_spin
 
-    # Get the geometric factors based on the modes
+    # Get the geometric factors based on the modes, slicing to match actual esa_steps
     gf = np.where(
         modes[:, :, np.newaxis],  # Shape (epoch, esa_step, 1)
-        geometric_factor_lookup["reduced"],  # Shape (1, esa_step, 24) - reduced mode
-        geometric_factor_lookup["full"],  # Shape (1, esa_step, 24) - full mode
+        geometric_factor_lookup["reduced"][:num_esa_steps, :],  # Shape (num_esa_steps, 24) - reduced mode
+        geometric_factor_lookup["full"][:num_esa_steps, :],  # Shape (num_esa_steps, 24) - full mode
     )  # Shape: (epoch, esa_step, inst_az)
 
     return xr.DataArray(gf, dims=("epoch", "esa_step", "inst_az"))
