@@ -153,7 +153,7 @@ def test_create_dataset():
         dataset["codice_hi_h"].isel(codice_hi_epoch=0).values, expected_zeros
     )
 
-    assert dataset["mag_B_GSE"].dims == ("mag_epoch", "B_GSE_component_index")
+    assert dataset["mag_B_GSE"].dims == ("mag_epoch", "B_GSE_labels")
     assert dataset["swe_normalized_counts"].dims == ("swe_epoch", "swe_electron_energy")
     assert dataset["codice_hi_h"].dims == (
         "codice_hi_epoch",
@@ -164,6 +164,7 @@ def test_create_dataset():
 
     # Tests that you can write to a cdf.
     dataset.attrs["Data_version"] = "001"
+    dataset.attrs["Start_date"] = "20260114"
     test_data_path = write_cdf(dataset, istp=True, compression=None)
 
     assert test_data_path.exists()

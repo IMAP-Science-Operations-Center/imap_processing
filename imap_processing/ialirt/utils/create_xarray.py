@@ -19,6 +19,7 @@ from imap_processing.ialirt.utils.constants import (
     hit_restricted_fields,
     swe_energy,
 )
+from imap_processing.spice.time import TTJ2000_EPOCH
 
 
 def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0912
@@ -59,8 +60,8 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     for inst, arr in epochs.items():
         if inst == "spacecraft":
-            coord = "epoch"
-            attr = cdf_manager.get_variable_attributes("epoch", check_schema=False)
+            coord = "ephemeris_epoch"
+            attr = cdf_manager.get_variable_attributes("ephemeris_epoch", check_schema=False)
         else:
             coord = f"{inst}_epoch"
             attr = cdf_manager.get_variable_attributes(
@@ -219,7 +220,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "mag_epoch": epoch_arrays["mag_epoch"],
         "swapi_epoch": epoch_arrays["swapi_epoch"],
         "swe_epoch": epoch_arrays["swe_epoch"],
-        "epoch": epoch_arrays["epoch"],
+        "ephemeris_epoch": epoch_arrays["ephemeris_epoch"],
         "B_GSM_labels": gsm_component,
         "B_GSE_labels": gse_component,
         "B_RTN_labels": rtn_component,
