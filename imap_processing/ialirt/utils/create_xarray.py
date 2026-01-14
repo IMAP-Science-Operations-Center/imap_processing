@@ -69,88 +69,51 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         epoch_arrays[coord] = xr.DataArray(
             data=np.array(arr, dtype=np.int64), name=coord, dims=[coord], attrs=attr
         )
-    # numeric component index for GSE vector (1-based; use 0-based if you prefer)
-    sc_gsm_component_index = xr.DataArray(
-        data=np.arange(1, 4, dtype=np.int32),
-        name="sc_GSM_component_index",
-        dims=["sc_GSM_component_index"],
-        attrs=cdf_manager.get_variable_attributes(
-            "sc_GSM_component_index", check_schema=False
-        ),
+
+    sc_gsm_position_component = xr.DataArray(
+        ["sc X (GSM)", "sc Y (GSM)", "sc Z (GSM)"],
+        name="sc_GSM_position_labels",
+        dims=["sc_GSM_position_labels"],
+        attrs=cdf_manager.get_variable_attributes("sc_GSM_position_labels", check_schema=False),
+    )
+    sc_gsm_velocity_component = xr.DataArray(
+        ["sc Vx (GSM)", "sc Vy (GSM)", "sc Vz (GSM)"],
+        name="sc_GSM_velocity_labels",
+        dims=["sc_GSM_velocity_labels"],
+        attrs=cdf_manager.get_variable_attributes("sc_GSM_velocity_labels", check_schema=False),
     )
 
-    sc_gsm_component = xr.DataArray(
-        ["x (GSM)", "y (GSM)", "z (GSM)"],
-        name="sc_GSM_labels",
-        dims=["sc_GSM_labels"],
-        attrs=cdf_manager.get_variable_attributes("sc_GSM_labels", check_schema=False),
+    sc_gse_position_component = xr.DataArray(
+        ["sc X (GSE)", "sc Y (GSE)", "sc Z (GSE)"],
+        name="sc_GSE_position_labels",
+        dims=["sc_GSE_position_labels"],
+        attrs=cdf_manager.get_variable_attributes("sc_GSE_position_labels", check_schema=False),
     )
-
-    # numeric component index for GSE vector (1-based; use 0-based if you prefer)
-    sc_gse_component_index = xr.DataArray(
-        data=np.arange(1, 4, dtype=np.int32),
-        name="sc_GSE_component_index",
-        dims=["sc_GSE_component_index"],
-        attrs=cdf_manager.get_variable_attributes(
-            "sc_GSE_component_index", check_schema=False
-        ),
-    )
-
-    sc_gse_component = xr.DataArray(
-        ["x (GSE)", "y (GSE)", "z (GSE)"],
-        name="sc_GSE_labels",
-        dims=["sc_GSE_component_index"],
-        attrs=cdf_manager.get_variable_attributes("sc_GSE_labels", check_schema=False),
-    )
-
-    # numeric component index for GSE vector (1-based; use 0-based if you prefer)
-    gsm_component_index = xr.DataArray(
-        data=np.arange(1, 4, dtype=np.int32),
-        name="B_GSM_component_index",
-        dims=["B_GSM_component_index"],
-        attrs=cdf_manager.get_variable_attributes(
-            "B_GSM_component_index", check_schema=False
-        ),
+    sc_gse_velocity_component = xr.DataArray(
+        ["sc Vx (GSE)", "sc Vy (GSE)", "sc Vz (GSE)"],
+        name="sc_GSE_velocity_labels",
+        dims=["sc_GSE_velocity_labels"],
+        attrs=cdf_manager.get_variable_attributes("sc_GSE_velocity_labels", check_schema=False),
     )
 
     gsm_component = xr.DataArray(
         ["Bx (GSM)", "By (GSM)", "Bz (GSM)"],
         name="B_GSM_labels",
-        dims=["B_GSM_component_index"],
+        dims=["B_GSM_labels"],
         attrs=cdf_manager.get_variable_attributes("B_GSM_labels", check_schema=False),
-    )
-
-    # numeric component index for GSE vector (1-based; use 0-based if you prefer)
-    gse_component_index = xr.DataArray(
-        data=np.arange(1, 4, dtype=np.int32),
-        name="B_GSE_component_index",
-        dims=["B_GSE_component_index"],
-        attrs=cdf_manager.get_variable_attributes(
-            "B_GSE_component_index", check_schema=False
-        ),
     )
 
     gse_component = xr.DataArray(
         ["Bx (GSE)", "By (GSE)", "Bz (GSE)"],
         name="B_GSE_labels",
-        dims=["B_GSE_component_index"],
+        dims=["B_GSE_labels"],
         attrs=cdf_manager.get_variable_attributes("B_GSE_labels", check_schema=False),
-    )
-
-    # numeric component index for GSE vector (1-based; use 0-based if you prefer)
-    rtn_component_index = xr.DataArray(
-        data=np.arange(1, 4, dtype=np.int32),
-        name="B_RTN_component_index",
-        dims=["B_RTN_component_index"],
-        attrs=cdf_manager.get_variable_attributes(
-            "B_RTN_component_index", check_schema=False
-        ),
     )
 
     rtn_component = xr.DataArray(
         ["B radial (RTN)", "B tangential (RTN)", "B normal (RTN)"],
         name="B_RTN_labels",
-        dims=["B_RTN_component_index"],
+        dims=["B_RTN_labels"],
         attrs=cdf_manager.get_variable_attributes("B_RTN_labels", check_schema=False),
     )
 
@@ -187,15 +150,6 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         dims=["codice_hi_energy_center"],
         attrs=cdf_manager.get_variable_attributes(
             "codice_hi_energy_plus", check_schema=False
-        ),
-    )
-
-    codice_energy_labels = xr.DataArray(
-        [f"ch{n + 1}" for n in range(len(codice_hi_energy_center))],
-        name="codice_hi_energy_labels",
-        dims=["codice_hi_energy_center"],
-        attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_energy_labels", check_schema=False
         ),
     )
 
@@ -266,20 +220,16 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "swapi_epoch": epoch_arrays["swapi_epoch"],
         "swe_epoch": epoch_arrays["swe_epoch"],
         "epoch": epoch_arrays["epoch"],
-        "B_GSM_component_index": gsm_component_index,
         "B_GSM_labels": gsm_component,
-        "B_GSE_component_index": gse_component_index,
         "B_GSE_labels": gse_component,
-        "B_RTN_component_index": rtn_component_index,
         "B_RTN_labels": rtn_component,
-        "sc_GSM_component_index": sc_gsm_component_index,
-        "sc_GSM_labels": sc_gsm_component,
-        "sc_GSE_component_index": sc_gse_component_index,
-        "sc_GSE_labels": sc_gse_component,
+        "sc_GSM_position_labels": sc_gsm_position_component,
+        "sc_GSM_velocity_labels": sc_gsm_velocity_component,
+        "sc_GSE_position_labels": sc_gse_position_component,
+        "sc_GSE_velocity_labels": sc_gse_velocity_component,
         "codice_hi_energy_center": codice_hi_energy_centers,
         "codice_hi_energy_minus": codice_energy_minus,
         "codice_hi_energy_plus": codice_energy_plus,
-        "codice_hi_energy_labels": codice_energy_labels,
         "codice_hi_elevation": elevation,
         "codice_hi_elevation_labels": elevation_labels,
         "codice_hi_spin_angle": spin_angle,

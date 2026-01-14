@@ -49,11 +49,11 @@ IALIRT_DIMS = {
     # Azimuth angle (φ) of the magnetic field in GSM coordinates
     "mag_phi_B_GSM": ["mag_epoch"],
     # Magnetic field vector in GSE coordinates
-    "mag_B_GSE": ["mag_epoch", "B_GSE_component_index"],
+    "mag_B_GSE": ["mag_epoch", "B_GSE_labels"],
     # Magnetic field vector in GSM coordinates
-    "mag_B_GSM": ["mag_epoch", "B_GSM_component_index"],
+    "mag_B_GSM": ["mag_epoch", "B_GSM_labels"],
     # Magnetic field vector in RTN coordinates
-    "mag_B_RTN": ["mag_epoch", "B_RTN_component_index"],
+    "mag_B_RTN": ["mag_epoch", "B_RTN_labels"],
     # Pseudo density of solar wind protons
     "swapi_pseudo_proton_density": ["swapi_epoch"],
     # Pseudo speed of solar wind protons in solar inertial frame
@@ -65,13 +65,13 @@ IALIRT_DIMS = {
     # SWE Counterstreaming flag
     "swe_counterstreaming_electrons": ["swe_epoch"],
     # Spacecraft position in GSE coordinates
-    "sc_position_GSE": ["epoch", "sc_GSE_component_index"],
+    "sc_position_GSE": ["ephemeris_epoch", "sc_GSE_position_labels"],
     # Spacecraft velocity in GSE coordinates
-    "sc_velocity_GSE": ["epoch", "sc_GSE_component_index"],
+    "sc_velocity_GSE": ["ephemeris_epoch", "sc_GSE_velocity_labels"],
     # Spacecraft position in GSM coordinates
-    "sc_position_GSM": ["epoch", "sc_GSM_component_index"],
+    "sc_position_GSM": ["ephemeris_epoch", "sc_GSM_position_labels"],
     # Spacecraft velocity in GSM coordinates
-    "sc_velocity_GSM": ["epoch", "sc_GSM_component_index"],
+    "sc_velocity_GSM": ["ephemeris_epoch", "sc_GSM_velocity_labels"],
 }
 
 IALIRT_DTYPES = {
