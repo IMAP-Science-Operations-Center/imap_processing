@@ -248,6 +248,7 @@ def convert_to_intensities(
         + cod_hi_l1b_data[f"energy_{species}_minus"]
     ).values[:, np.newaxis]
 
+    # g_g is 4 elements (replicate 15 times)
     denom = g_g * eps_ig * energy_passbands  # (15, 4)
     # reshape to broadcast along h's first and third dimensions
     denom = denom[None, :, None, :]
