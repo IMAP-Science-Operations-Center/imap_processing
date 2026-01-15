@@ -111,7 +111,6 @@ def test_validation_data_histogram(
         "glows_end_time_offset": "glows_time_offset",
         "imap_start_time": "imap_start_time",
         "imap_end_time_offset": "imap_time_offset",
-        "number_of_spins_per_block": "number_of_spins_per_block",
         "number_of_bins_per_histogram": "number_of_bins_per_histogram",
         "histogram": "histogram",
         "number_of_events": "number_of_events",

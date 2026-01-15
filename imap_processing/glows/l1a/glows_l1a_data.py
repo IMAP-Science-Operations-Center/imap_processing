@@ -264,8 +264,7 @@ class HistogramL1A:
         self.glows_time_offset = TimeTuple(l0.GLXOFFSEC, l0.GLXOFFSUBSEC)
 
         # In L1a, these are left as unit encoded values.
-        # TODO: This is plus one in validation code, why?
-        self.number_of_spins_per_block = l0.SPINS + 1
+        self.number_of_spins_per_block = l0.SPINS
         self.number_of_bins_per_histogram = l0.NBINS
         self.number_of_events = l0.EVENTS
         self.filter_temperature_average = l0.TEMPAVG

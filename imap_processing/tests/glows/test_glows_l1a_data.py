@@ -522,10 +522,11 @@ def test_expected_hist_results(l1a_dataset):
     }
 
     # block header and flags are handled differently, so not tested here
+    # "number_of_spins_per_block" is a special case and handled specifically
+    # (validation data is incorrect)
     compare_fields = [
         "first_spin_id",
         "last_spin_id",
-        "number_of_spins_per_block",
         "number_of_bins_per_histogram",
         "histogram",
         "number_of_events",
@@ -560,6 +561,10 @@ def test_expected_hist_results(l1a_dataset):
 
         for field in compare_fields:
             assert np.array_equal(data[field], datapoint[field].data)
+        assert np.array_equal(
+            data["number_of_spins_per_block"] - 1,
+            datapoint["number_of_spins_per_block"].data,
+        )
 
 
 @mock.patch("imap_processing.glows.l1a.glows_l1a.decom_packets")
