@@ -1,11 +1,14 @@
 """Data classes to support GLOWS L1A processing."""
 
+import logging
 import struct
 from dataclasses import InitVar, dataclass, field
 
 from imap_processing.glows import __version__
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -279,6 +282,16 @@ class HistogramL1A:
             "flags_set_onboard": l0.FLAGS,
             "is_generated_on_ground": False,
         }
+
+        # Remove the extra byte from some packets (if there are an odd number of bins)
+        if self.number_of_bins_per_histogram % 2 == 1:
+            self.histogram = self.histogram[:-1]
+
+        if self.number_of_bins_per_histogram != len(self.histogram):
+            logger.warning(
+                f"Number of bins {self.number_of_bins_per_histogram} does not match "
+                f"processed number of bins {len(self.histogram)}!"
+            )
 
 
 @dataclass

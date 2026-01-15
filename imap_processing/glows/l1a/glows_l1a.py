@@ -9,6 +9,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
+from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
 )
@@ -295,7 +296,13 @@ def generate_histogram_dataset(
     # TODO Add daily average of histogram counts
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
-    hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.uint16)
+    # Determine the maximum histogram size (number of bins) across all histograms
+    max_bins = max(len(hist.histogram) for hist in hist_l1a_list)
+    hist_data = np.full(
+        (len(hist_l1a_list), max_bins),
+        GlowsConstants.HISTOGRAM_FILLVAL,
+        dtype=np.uint16,
+    )
 
     # First variable is the output data type, second is the list of values
     support_data: dict = {
@@ -326,7 +333,9 @@ def generate_histogram_dataset(
 
     for index, hist in enumerate(hist_l1a_list):
         epoch_time = met_to_ttj2000ns(hist.imap_start_time.to_seconds())
-        hist_data[index] = hist.histogram
+        # Assign histogram data, padding with zeros if shorter than max_bins
+        hist_len = len(hist.histogram)
+        hist_data[index, :hist_len] = hist.histogram
 
         support_data["flags_set_onboard"][1].append(hist.flags["flags_set_onboard"])
         support_data["is_generated_on_ground"][1].append(
@@ -348,7 +357,8 @@ def generate_histogram_dataset(
         dims=["epoch"],
         attrs=glows_cdf_attributes.get_variable_attributes("epoch", check_schema=False),
     )
-    bin_count = 3600  # TODO: Is it always 3600 bins?
+    # Use the actual maximum bin count from the histograms
+    bin_count = max_bins
 
     bins = xr.DataArray(
         np.arange(bin_count),

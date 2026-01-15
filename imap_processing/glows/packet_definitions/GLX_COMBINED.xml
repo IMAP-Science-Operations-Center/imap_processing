@@ -35,10 +35,14 @@ P_GLX_TMSCDE.xml and P_GLX_TMSHIST.xml to process both packet APIDs -->
 			<xtce:IntegerParameterType name="INT32" signed="true">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="signed" />
 			</xtce:IntegerParameterType>
-			<xtce:BinaryParameterType name="BYTE28800">
+			<xtce:BinaryParameterType name="BYTEHIST">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
-						<xtce:FixedValue>28800</xtce:FixedValue>
+						<xtce:DynamicValue>
+						  <xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+<!--To find the rest of the packet, this intercept is -(32 + 32 + 16 + 16 + 24 + 32 + 24 + 16 + 24 + 32 + 24 + 16 + 24 + 8 + 16 + 8 + 16 + 16 + 32 + 16 + 32 + 8 + 16 + 32) = 512 bits for all HIST fields before HISTOGRAM_DATA. Then +8 because PKT_LEN is zero indexed, resulting in an offset of -504. -->
+						  <xtce:LinearAdjustment intercept="-504" slope="8"/>
+						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
@@ -172,9 +176,9 @@ P_GLX_TMSCDE.xml and P_GLX_TMSHIST.xml to process both packet APIDs -->
 				<xtce:ShortDescription>Number of events</xtce:ShortDescription>
 				<xtce:LongDescription>Number of event in all bins (sum) of this histogram.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HISTOGRAM_DATA" parameterTypeRef="BYTE28800">
+			<xtce:Parameter name="HISTOGRAM_DATA" parameterTypeRef="BYTEHIST">
 				<xtce:ShortDescription>Histogram Counts</xtce:ShortDescription>
-				<xtce:LongDescription>Total histogram data counts. Each bin has 8 bits of data, with 3600 total bins.</xtce:LongDescription>
+				<xtce:LongDescription>Total histogram data counts. Each bin has 8 bits of data. Number of bins is dynamically determined from packet length.</xtce:LongDescription>
 			</xtce:Parameter>
 			<!-- Direct event parameters -->
 			<xtce:Parameter name="LEN" parameterTypeRef="UINT16">
