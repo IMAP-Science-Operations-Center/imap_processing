@@ -128,6 +128,9 @@ def generate_de_dataset(
     """
     # TODO: Block header per second, or global attribute?
 
+    # Filter out DE records with no direct_events (incomplete packet sequences)
+    de_l1a_list = [de for de in de_l1a_list if de.direct_events is not None]
+
     # Store timestamps for each DirectEventL1a object.
     time_data = np.zeros(len(de_l1a_list), dtype=np.int64)
 
