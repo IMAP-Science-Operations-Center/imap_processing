@@ -1186,3 +1186,5 @@ SSD_ID_TO_SPIN_ANGLE = np.array(
         318.39,
     ]
 )
+
+UINT32_FILLVAL = 4294967294

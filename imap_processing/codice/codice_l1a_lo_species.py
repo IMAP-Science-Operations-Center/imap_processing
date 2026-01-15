@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
+from imap_processing.codice.constants import UINT32_FILLVAL
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
@@ -21,8 +22,6 @@ from imap_processing.codice.utils import (
 from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
-
-UINT32_FILLVAL = 4294967294
 
 
 def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
@@ -122,15 +121,38 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets, num_species, esa_steps, *collapsed_shape
     )
-    row_numbers = np.array(
-        sci_lut_data["lo_stepping_tab"]["row_number"].get("data"), dtype=np.int64
+
+    half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
+    acquisition_time_per_step = calculate_acq_time_per_step(
+        sci_lut_data["lo_stepping_tab"]
     )
-    # For every energy after nso_half_spin, set data to nan
+    # Get acquisition time per esa step
+    # TODO: Handle epoch dependent acquisition time and half spin per esa step
+    #   For now, just tile the same array for all epochs.
+    #   Eventually we may have data from a day where the LUT changed. If this is the
+    #  case, we need to split the data by epoch and assign different acquisition times
+    half_spin_per_esa_step = np.tile(
+        np.asarray(
+            half_spin_per_esa_step,
+        ),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    acquisition_time_per_step = np.tile(
+        np.asarray(acquisition_time_per_step),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+
+    # For every energy after nso_half_spin, set data to fill values
     nso_half_spin = unpacked_dataset["nso_half_spin"].values
-    mask = row_numbers > nso_half_spin[:, np.newaxis]
-    mask = mask[:, np.newaxis, :, np.newaxis]
-    mask = np.repeat(mask, num_species, 1)
-    species_data[mask] = UINT32_FILLVAL
+    nso_mask = half_spin_per_esa_step > nso_half_spin[:, np.newaxis]
+    species_mask = nso_mask[:, np.newaxis, :, np.newaxis]
+    species_mask = np.repeat(species_mask, num_species, 1)
+    species_data[species_mask] = UINT32_FILLVAL
+
+    # # Set half_spin_per_esa_step to 63 which is the fill value
+    # half_spin_per_esa_step[nso_mask] = 63
+    # # Set acquisition time per esa step to nan where nso_mask is True
+    # acquisition_time_per_step[nso_mask] = np.nan
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
@@ -181,8 +203,11 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
             ),
             "half_spin_per_esa_step": xr.DataArray(
-                sci_lut_data["lo_stepping_tab"]["row_number"].get("data"),
-                dims=("esa_step",),
+                half_spin_per_esa_step,
+                dims=(
+                    "epoch",
+                    "esa_step",
+                ),
                 attrs=cdf_attrs.get_variable_attributes(
                     "half_spin_per_esa_step", check_schema=False
                 ),
@@ -239,15 +264,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
-    # TODO: Handle epoch dependent acquisition time per esa step
-    #   For now, just tile the same array for all epochs.
-    #   Eventually we may have data from a day where the LUT changed. If this is the
-    #  case, we need to split the data by epoch and assign different acquisition times
     l1a_dataset["acquisition_time_per_esa_step"] = xr.DataArray(
-        np.tile(
-            np.asarray(calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"])),
-            (len(epoch_center), 1),
-        ),
+        acquisition_time_per_step,
         dims=("epoch", "esa_step"),
         attrs=cdf_attrs.get_variable_attributes(
             "acquisition_time_per_esa_step", check_schema=False

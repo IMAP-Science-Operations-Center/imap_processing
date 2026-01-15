@@ -188,6 +188,7 @@ acquisition_time_per_esa_step:
 
 half_spin_per_esa_step:
     CATDESC: Half spin number for each step of energy
+    DEPEND_0: epoch
     DEPEND_1: esa_step
     FIELDNAM: Half Spin Number
     FILLVAL: 255

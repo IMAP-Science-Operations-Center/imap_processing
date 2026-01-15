@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
+from imap_processing.codice.constants import UINT32_FILLVAL
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     ViewTabInfo,
@@ -111,6 +112,34 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         .transpose(0, 1, 3, 2)
     )
 
+    half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
+    # TODO: Handle epoch dependent acquisition time and half spin per esa step
+    #   For now, just tile the same array for all epochs.
+    #   Eventually we may have data from a day where the LUT changed. If this is the
+    #  case, we need to split the data by epoch and assign different acquisition times
+    half_spin_per_esa_step = np.tile(
+        np.asarray(half_spin_per_esa_step),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    # Get acquisition time per esa step
+    acquisition_time_per_step = calculate_acq_time_per_step(
+        sci_lut_data["lo_stepping_tab"]
+    )
+    acquisition_time_per_step = np.tile(
+        np.asarray(acquisition_time_per_step),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    # For every energy after nso_half_spin, set data to fill values
+    nso_half_spin = unpacked_dataset["nso_half_spin"].values
+    nso_mask = half_spin_per_esa_step > nso_half_spin[:, np.newaxis]
+    counters_mask = nso_mask[:, :, np.newaxis, np.newaxis]
+    counters_mask = np.broadcast_to(counters_mask, counters_data.shape)
+    counters_data[counters_mask] = UINT32_FILLVAL
+    # Set half_spin_per_esa_step to 63 which is the fill value
+    # half_spin_per_esa_step[nso_mask] = 63
+    # # Set acquisition time per esa step to nan where nso_mask is True
+    # acquisition_time_per_step[nso_mask] = np.nan
+
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
     epoch_center, deltas = get_codice_epoch_time(
@@ -152,8 +181,11 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
             ),
             "half_spin_per_esa_step": xr.DataArray(
-                sci_lut_data["lo_stepping_tab"]["row_number"].get("data"),
-                dims=("esa_step",),
+                half_spin_per_esa_step,
+                dims=(
+                    "epoch",
+                    "esa_step",
+                ),
                 attrs=cdf_attrs.get_variable_attributes(
                     "half_spin_per_esa_step", check_schema=False
                 ),
@@ -216,15 +248,8 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
-    # TODO: Handle epoch dependent acquisition time per esa step
-    #   For now, just tile the same array for all epochs.
-    #   Eventually we may have data from a day where the LUT changed. If this is the
-    #  case, we need to split the data by epoch and assign different acquisition times
     l1a_dataset["acquisition_time_per_esa_step"] = xr.DataArray(
-        np.tile(
-            np.asarray(calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"])),
-            (len(epoch_center), 1),
-        ),
+        acquisition_time_per_step,
         dims=("epoch", "esa_step"),
         attrs=cdf_attrs.get_variable_attributes(
             "acquisition_time_per_esa_step", check_schema=False
