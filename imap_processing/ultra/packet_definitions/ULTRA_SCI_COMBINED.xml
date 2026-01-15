@@ -4664,27 +4664,12 @@
 			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4692,27 +4677,12 @@
 			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_EGY.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_EGY.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_EGY.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_EGY.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_EGY.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_EGY.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U45_IMG_ENA_PHXTOF_HI_EGY.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4720,27 +4690,12 @@
 			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4748,27 +4703,12 @@
 			<xtce:IntegerParameterType name="U45_IMG_ENA_EXTOF_HI_ANG.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_EXTOF_HI_ANG.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_EXTOF_HI_ANG.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_EXTOF_HI_ANG.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_EXTOF_HI_ANG.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_EXTOF_HI_ANG.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U45_IMG_ENA_EXTOF_HI_ANG.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4776,27 +4716,12 @@
 			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_EGY.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_EGY.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_EGY.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_EGY.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_EGY.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_EGY.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U45_IMG_ION_EXTOF_HI_EGY.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4804,27 +4729,12 @@
 			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_TIME.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_TIME.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_TIME.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_TIME.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_TIME.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ION_EXTOF_HI_TIME.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U45_IMG_ION_EXTOF_HI_TIME.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9662,27 +9572,12 @@
 			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9690,27 +9585,12 @@
 			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_EGY.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_EGY.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_EGY.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_EGY.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_EGY.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_EGY.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U90_IMG_ENA_PHXTOF_HI_EGY.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9718,27 +9598,12 @@
 			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_TIME.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_TIME.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_TIME.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_TIME.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U90_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9746,27 +9611,12 @@
 			<xtce:IntegerParameterType name="U90_IMG_ENA_EXTOF_HI_ANG.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_EXTOF_HI_ANG.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_EXTOF_HI_ANG.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_EXTOF_HI_ANG.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_EXTOF_HI_ANG.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ENA_EXTOF_HI_ANG.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U90_IMG_ENA_EXTOF_HI_ANG.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9774,27 +9624,12 @@
 			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_EGY.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_EGY.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_EGY.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_EGY.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_EGY.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_EGY.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U90_IMG_ION_EXTOF_HI_EGY.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9802,27 +9637,12 @@
 			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_TIME.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_TIME.SID" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_TIME.SPIN" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_TIME.ABORTFLAG" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_TIME.STARTDELAY" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U90_IMG_ION_EXTOF_HI_TIME.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U90_IMG_ION_EXTOF_HI_TIME.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-64" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -11561,41 +11381,11 @@
 			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.SID" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.SPIN" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.ABORTFLAG" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.STARTDELAY" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.P00" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
-			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_EGY.SHCOARSE" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_EGY.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_EGY.SID" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_EGY.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_EGY.SPIN" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_EGY.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_EGY.ABORTFLAG" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_EGY.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_EGY.STARTDELAY" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_EGY.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_EGY.P00" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_EGY.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_EGY.PACKETDATA" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_EGY.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
@@ -11603,41 +11393,11 @@
 			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_TIME.SHCOARSE" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_TIME.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_TIME.SID" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_TIME.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_TIME.SPIN" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_TIME.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_TIME.P00" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_TIME.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
-			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ENA_EXTOF_HI_ANG.SHCOARSE" parameterTypeRef="U45_IMG_ENA_EXTOF_HI_ANG.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_EXTOF_HI_ANG.SID" parameterTypeRef="U45_IMG_ENA_EXTOF_HI_ANG.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_EXTOF_HI_ANG.SPIN" parameterTypeRef="U45_IMG_ENA_EXTOF_HI_ANG.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_EXTOF_HI_ANG.ABORTFLAG" parameterTypeRef="U45_IMG_ENA_EXTOF_HI_ANG.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_EXTOF_HI_ANG.STARTDELAY" parameterTypeRef="U45_IMG_ENA_EXTOF_HI_ANG.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ENA_EXTOF_HI_ANG.P00" parameterTypeRef="U45_IMG_ENA_EXTOF_HI_ANG.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ENA_EXTOF_HI_ANG.PACKETDATA" parameterTypeRef="U45_IMG_ENA_EXTOF_HI_ANG.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
@@ -11645,41 +11405,11 @@
 			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_EGY.SHCOARSE" parameterTypeRef="U45_IMG_ION_EXTOF_HI_EGY.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_EGY.SID" parameterTypeRef="U45_IMG_ION_EXTOF_HI_EGY.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_EGY.SPIN" parameterTypeRef="U45_IMG_ION_EXTOF_HI_EGY.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_EGY.ABORTFLAG" parameterTypeRef="U45_IMG_ION_EXTOF_HI_EGY.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_EGY.STARTDELAY" parameterTypeRef="U45_IMG_ION_EXTOF_HI_EGY.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_EGY.P00" parameterTypeRef="U45_IMG_ION_EXTOF_HI_EGY.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
-			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_EGY.PACKETDATA" parameterTypeRef="U45_IMG_ION_EXTOF_HI_EGY.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_TIME.SHCOARSE" parameterTypeRef="U45_IMG_ION_EXTOF_HI_TIME.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_TIME.SID" parameterTypeRef="U45_IMG_ION_EXTOF_HI_TIME.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_TIME.SPIN" parameterTypeRef="U45_IMG_ION_EXTOF_HI_TIME.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_TIME.ABORTFLAG" parameterTypeRef="U45_IMG_ION_EXTOF_HI_TIME.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_TIME.STARTDELAY" parameterTypeRef="U45_IMG_ION_EXTOF_HI_TIME.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_TIME.P00" parameterTypeRef="U45_IMG_ION_EXTOF_HI_TIME.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ION_EXTOF_HI_TIME.PACKETDATA" parameterTypeRef="U45_IMG_ION_EXTOF_HI_TIME.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
@@ -13346,41 +13076,11 @@
 			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.SID" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.SPIN" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.ABORTFLAG" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.STARTDELAY" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.P00" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
-			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_EGY.SHCOARSE" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_EGY.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_EGY.SID" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_EGY.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_EGY.SPIN" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_EGY.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_EGY.ABORTFLAG" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_EGY.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_EGY.STARTDELAY" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_EGY.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_EGY.P00" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_EGY.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_EGY.PACKETDATA" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_EGY.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
@@ -13388,41 +13088,11 @@
 			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_TIME.SHCOARSE" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_TIME.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_TIME.SID" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_TIME.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_TIME.SPIN" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_TIME.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_TIME.P00" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_TIME.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
-			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ENA_EXTOF_HI_ANG.SHCOARSE" parameterTypeRef="U90_IMG_ENA_EXTOF_HI_ANG.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_EXTOF_HI_ANG.SID" parameterTypeRef="U90_IMG_ENA_EXTOF_HI_ANG.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_EXTOF_HI_ANG.SPIN" parameterTypeRef="U90_IMG_ENA_EXTOF_HI_ANG.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_EXTOF_HI_ANG.ABORTFLAG" parameterTypeRef="U90_IMG_ENA_EXTOF_HI_ANG.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_EXTOF_HI_ANG.STARTDELAY" parameterTypeRef="U90_IMG_ENA_EXTOF_HI_ANG.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ENA_EXTOF_HI_ANG.P00" parameterTypeRef="U90_IMG_ENA_EXTOF_HI_ANG.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ENA_EXTOF_HI_ANG.PACKETDATA" parameterTypeRef="U90_IMG_ENA_EXTOF_HI_ANG.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
@@ -13430,41 +13100,11 @@
 			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_EGY.SHCOARSE" parameterTypeRef="U90_IMG_ION_EXTOF_HI_EGY.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_EGY.SID" parameterTypeRef="U90_IMG_ION_EXTOF_HI_EGY.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_EGY.SPIN" parameterTypeRef="U90_IMG_ION_EXTOF_HI_EGY.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_EGY.ABORTFLAG" parameterTypeRef="U90_IMG_ION_EXTOF_HI_EGY.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_EGY.STARTDELAY" parameterTypeRef="U90_IMG_ION_EXTOF_HI_EGY.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_EGY.P00" parameterTypeRef="U90_IMG_ION_EXTOF_HI_EGY.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
-			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_EGY.PACKETDATA" parameterTypeRef="U90_IMG_ION_EXTOF_HI_EGY.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_TIME.SHCOARSE" parameterTypeRef="U90_IMG_ION_EXTOF_HI_TIME.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_TIME.SID" parameterTypeRef="U90_IMG_ION_EXTOF_HI_TIME.SID" shortDescription="Science ID">
-				<xtce:LongDescription>Science ID</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_TIME.SPIN" parameterTypeRef="U90_IMG_ION_EXTOF_HI_TIME.SPIN" shortDescription="Spin number at integration start">
-				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_TIME.ABORTFLAG" parameterTypeRef="U90_IMG_ION_EXTOF_HI_TIME.ABORTFLAG" shortDescription="Integration aborted">
-				<xtce:LongDescription>Integration aborted</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_TIME.STARTDELAY" parameterTypeRef="U90_IMG_ION_EXTOF_HI_TIME.STARTDELAY" shortDescription="Integration start delay (ms)">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_TIME.P00" parameterTypeRef="U90_IMG_ION_EXTOF_HI_TIME.P00" shortDescription="Starting pixel">
-				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ION_EXTOF_HI_TIME.PACKETDATA" parameterTypeRef="U90_IMG_ION_EXTOF_HI_TIME.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
@@ -14287,11 +13927,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.SID" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.P00" />
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -14303,11 +13938,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_EGY.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_EGY.SID" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_EGY.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_EGY.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_EGY.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_EGY.P00" />
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_EGY.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -14319,11 +13949,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_TIME.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_TIME.SID" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_TIME.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_TIME.P00" />
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -14335,11 +13960,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_EXTOF_HI_ANG.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_EXTOF_HI_ANG.SID" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_EXTOF_HI_ANG.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_EXTOF_HI_ANG.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_EXTOF_HI_ANG.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_EXTOF_HI_ANG.P00" />
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_EXTOF_HI_ANG.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -14351,11 +13971,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_EGY.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_EGY.SID" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_EGY.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_EGY.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_EGY.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_EGY.P00" />
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_EGY.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -14367,11 +13982,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_TIME.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_TIME.SID" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_TIME.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_TIME.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_TIME.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_TIME.P00" />
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ION_EXTOF_HI_TIME.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -15155,11 +14765,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.SID" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.P00" />
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -15171,11 +14776,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_EGY.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_EGY.SID" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_EGY.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_EGY.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_EGY.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_EGY.P00" />
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_EGY.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -15187,11 +14787,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_TIME.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_TIME.SID" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_TIME.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_TIME.P00" />
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -15203,11 +14798,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_EXTOF_HI_ANG.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_EXTOF_HI_ANG.SID" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_EXTOF_HI_ANG.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_EXTOF_HI_ANG.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_EXTOF_HI_ANG.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_EXTOF_HI_ANG.P00" />
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_EXTOF_HI_ANG.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -15219,11 +14809,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_EGY.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_EGY.SID" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_EGY.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_EGY.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_EGY.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_EGY.P00" />
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_EGY.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -15235,11 +14820,6 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_TIME.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_TIME.SID" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_TIME.SPIN" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_TIME.ABORTFLAG" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_TIME.STARTDELAY" />
-					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_TIME.P00" />
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ION_EXTOF_HI_TIME.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
