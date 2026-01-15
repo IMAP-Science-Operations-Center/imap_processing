@@ -400,8 +400,6 @@ def calculate_acq_time_per_step(
     num_steps_data = np.array(
         low_stepping_tab["num_steps"].get("data"), dtype=np.float64
     )
-    print(sector_time)
-    print(float(sector_time))
     # Total non-acquisition time is in column (BD) of science LUT
     dwell_fraction_percentage = float(sector_time) * (100.0 - dwell_fraction) / 100.0
 
