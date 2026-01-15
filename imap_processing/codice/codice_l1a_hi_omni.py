@@ -237,6 +237,8 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         species_attrs = apply_replacements_to_attrs(
             species_attrs, {"species": species_name}
         )
+        # Convert to float
+        species_data = species_data.astype(np.float64)
         l1a_dataset[species_name] = xr.DataArray(
             species_data,
             dims=("epoch", f"energy_{species_name}"),

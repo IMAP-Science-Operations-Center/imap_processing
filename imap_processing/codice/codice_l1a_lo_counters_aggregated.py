@@ -8,7 +8,6 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
-from imap_processing.codice.constants import UINT32_FILLVAL
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     ViewTabInfo,
@@ -137,7 +136,8 @@ def l1a_lo_counters_aggregated(
     nso_mask = half_spin_per_esa_step > nso_half_spin[:, np.newaxis]
     counters_mask = nso_mask[:, :, np.newaxis, np.newaxis]
     counters_mask = np.broadcast_to(counters_mask, counters_data.shape)
-    counters_data[counters_mask] = UINT32_FILLVAL
+    counters_data = counters_data.astype(np.float64)
+    counters_data[counters_mask] = np.nan
     # Set half_spin_per_esa_step to 63 which is the fill value
     # half_spin_per_esa_step[nso_mask] = 63
     # # Set acquisition time per esa step to nan where nso_mask is True

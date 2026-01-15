@@ -8,7 +8,6 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
-from imap_processing.codice.constants import UINT32_FILLVAL
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
@@ -156,7 +155,8 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     nso_mask = half_spin_per_esa_step > nso_half_spin[:, np.newaxis]
     species_mask = nso_mask[:, np.newaxis, :, np.newaxis]
     species_mask = np.broadcast_to(species_mask, species_data.shape)
-    species_data[species_mask] = UINT32_FILLVAL
+    species_data = species_data.astype(np.float64)
+    species_data[species_mask] = np.nan
     # Set half_spin_per_esa_step to 63 which is the fill value
     # half_spin_per_esa_step[nso_mask] = 63
     # # Set acquisition time per esa step to nan where nso_mask is True

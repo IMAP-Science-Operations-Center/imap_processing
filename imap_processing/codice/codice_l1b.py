@@ -96,14 +96,15 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         "lo-sw-species",
         "lo-ialirt",
     ]:
-        # Create n_sector with 'esa_step' dimension. This is done by xr.full_like
-        # with input dataset.acquisition_time_per_esa_step. This ensures that the
-        # resulting n_sector has the same dimensions as acquisition_time_per_esa_step.
-        # Per CoDICE, fill first 127 with default value of 12. Then fill last with 11.
+        # Create n_sector with 'epoch' and 'esa_step' dimension. This is done by
+        # xr.full_like with input dataset.acquisition_time_per_esa_step. This ensures
+        # that the resulting n_sector has the same dimensions as
+        # acquisition_time_per_esa_step. Per CoDICE, fill first 127 with default value
+        # of 12. Then fill last with 11. In your SDC processing
         n_sector = xr.full_like(
             dataset.acquisition_time_per_esa_step, 12.0, dtype=np.float64
         )
-        n_sector[-1] = 11.0
+        n_sector[:, -1] = 11.0
 
         # Denominator to convert counts to rates
         denominator = dataset.acquisition_time_per_esa_step * n_sector

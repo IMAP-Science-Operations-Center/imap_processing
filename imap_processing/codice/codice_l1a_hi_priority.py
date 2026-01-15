@@ -109,7 +109,7 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets, collapse_shape[1]
     )
-
+    species_data = species_data.astype(np.float64)
     # ========== Create CDF Dataset with Metadata ===========
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")

@@ -237,6 +237,7 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         species_attrs = apply_replacements_to_attrs(
             species_attrs, {"species": species_name}
         )
+        species_data = species_data.astype(np.float64)
         # Add DEPEND_2, DEPEND_3
         species_attrs["DEPEND_2"] = "spin_sector"
         species_attrs["LABL_PTR_2"] = "spin_sector_label"

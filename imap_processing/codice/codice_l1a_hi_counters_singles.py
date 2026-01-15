@@ -96,7 +96,8 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         -1, len(variable_names), inst_az
     )
-
+    # Convert counters data to float
+    counters_data = counters_data.astype(np.float64)
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
     epoch_center, deltas = get_codice_epoch_time(
