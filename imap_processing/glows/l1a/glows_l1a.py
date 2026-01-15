@@ -296,13 +296,10 @@ def generate_histogram_dataset(
     """
     # Store timestamps for each HistogramL1A object.
     time_data = np.zeros(len(hist_l1a_list), dtype=np.int64)
-    # TODO Add daily average of histogram counts
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
-    # Determine the maximum histogram size (number of bins) across all histograms
-    max_bins = max(len(hist.histogram) for hist in hist_l1a_list)
     hist_data = np.full(
-        (len(hist_l1a_list), max_bins),
+        (len(hist_l1a_list), GlowsConstants.STANDARD_BIN_COUNT),
         GlowsConstants.HISTOGRAM_FILLVAL,
         dtype=np.uint16,
     )
@@ -360,8 +357,8 @@ def generate_histogram_dataset(
         dims=["epoch"],
         attrs=glows_cdf_attributes.get_variable_attributes("epoch", check_schema=False),
     )
-    # Use the actual maximum bin count from the histograms
-    bin_count = max_bins
+
+    bin_count = GlowsConstants.STANDARD_BIN_COUNT
 
     bins = xr.DataArray(
         np.arange(bin_count),

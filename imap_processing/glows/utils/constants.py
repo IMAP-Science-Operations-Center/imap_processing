@@ -66,6 +66,7 @@ class GlowsConstants:
     SUBSECOND_LIMIT: int = 2_000_000
     SCAN_CIRCLE_ANGULAR_RADIUS: float = 75.0
     HISTOGRAM_FILLVAL = 65535
+    STANDARD_BIN_COUNT = 3600
 
 
 @dataclass
