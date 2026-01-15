@@ -33,6 +33,134 @@ from imap_processing.spice.time import (
 
 logger = logging.getLogger(__name__)
 
+# -------------------------------------------------------------------
+# Centralized field definitions to avoid repetition across functions
+# -------------------------------------------------------------------
+# spin-bin fields (count fields used in multiple places)
+SPIN_BIN_6_FIELDS = [
+    "h_counts",
+    "o_counts",
+    "tof0_tof1_counts",
+    "tof0_tof2_counts",
+    "tof1_tof2_counts",
+    "silver_triple_counts",
+]
+
+SPIN_BIN_60_FIELDS = [
+    "start_a_counts",
+    "start_c_counts",
+    "stop_b0_counts",
+    "stop_b3_counts",
+    "tof0_counts",
+    "tof1_counts",
+    "tof2_counts",
+    "tof3_counts",
+    "disc_tof0_counts",
+    "disc_tof1_counts",
+    "disc_tof2_counts",
+    "disc_tof3_counts",
+    "pos0_counts",
+    "pos1_counts",
+    "pos2_counts",
+    "pos3_counts",
+]
+
+# Mapping from L1A field names to L1B count field names used in initialize_all_rates
+SPIN_BIN_6_L1A_TO_L1B = {
+    "hydrogen": "h_counts",
+    "oxygen": "o_counts",
+    "tof0_tof1": "tof0_tof1_counts",
+    "tof0_tof2": "tof0_tof2_counts",
+    "tof1_tof2": "tof1_tof2_counts",
+    "silver": "silver_triple_counts",
+}
+
+SPIN_BIN_60_L1A_TO_L1B = {
+    "start_a": "start_a_counts",
+    "start_c": "start_c_counts",
+    "stop_b0": "stop_b0_counts",
+    "stop_b3": "stop_b3_counts",
+    "tof0_count": "tof0_counts",
+    "tof1_count": "tof1_counts",
+    "tof2_count": "tof2_counts",
+    "tof3_count": "tof3_counts",
+    "disc_tof0": "disc_tof0_counts",
+    "disc_tof1": "disc_tof1_counts",
+    "disc_tof2": "disc_tof2_counts",
+    "disc_tof3": "disc_tof3_counts",
+    "pos0": "pos0_counts",
+    "pos1": "pos1_counts",
+    "pos2": "pos2_counts",
+    "pos3": "pos3_counts",
+}
+
+# Count-field -> rate-field mappings used by calculate_histogram_rates
+SPIN_BIN_6_COUNT_TO_RATE = {
+    "h_counts": "h_rates",
+    "o_counts": "o_rates",
+    "tof0_tof1_counts": "tof0_tof1_rates",
+    "tof0_tof2_counts": "tof0_tof2_rates",
+    "tof1_tof2_counts": "tof1_tof2_rates",
+    "silver_triple_counts": "silver_triple_rates",
+}
+
+SPIN_BIN_60_COUNT_TO_RATE = {
+    "start_a_counts": "start_a_rates",
+    "start_c_counts": "start_c_rates",
+    "stop_b0_counts": "stop_b0_rates",
+    "stop_b3_counts": "stop_b3_rates",
+    "tof0_counts": "tof0_rates",
+    "tof1_counts": "tof1_rates",
+    "tof2_counts": "tof2_rates",
+    "tof3_counts": "tof3_rates",
+    "disc_tof0_counts": "disc_tof0_rates",
+    "disc_tof1_counts": "disc_tof1_rates",
+    "disc_tof2_counts": "disc_tof2_rates",
+    "disc_tof3_counts": "disc_tof3_rates",
+    "pos0_counts": "pos0_rates",
+    "pos1_counts": "pos1_rates",
+    "pos2_counts": "pos2_rates",
+    "pos3_counts": "pos3_rates",
+}
+
+# Fields to include in the split hist/monitor rate datasets
+HIST_RATE_FIELDS = [
+    "h_rates",
+    "o_rates",
+    "h_counts",
+    "o_counts",
+    "esa_mode",
+    "exposure_time_6deg",
+    "spin_cycle",
+]
+MONITOR_RATE_FIELDS = [
+    "tof0_tof1_rates",
+    "tof0_tof2_rates",
+    "tof1_tof2_rates",
+    "silver_triple_rates",
+    "start_a_rates",
+    "start_c_rates",
+    "stop_b0_rates",
+    "stop_b3_rates",
+    "tof0_rates",
+    "tof1_rates",
+    "tof2_rates",
+    "tof3_rates",
+    "disc_tof0_rates",
+    "disc_tof1_rates",
+    "disc_tof2_rates",
+    "disc_tof3_rates",
+    "pos0_rates",
+    "pos1_rates",
+    "pos2_rates",
+    "pos3_rates",
+    "esa_mode",
+    "exposure_time_60deg",
+    "exposure_time_6deg",
+    "spin_cycle",
+]
+# -------------------------------------------------------------------
+
 
 def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
     """
@@ -136,7 +264,7 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         # This carries over the epoch and count fields from L1A
         l1b_all_rates = initialize_all_rates(l1a_hist, attr_mgr_l1b)
         # set spin cycle and remove invalid spin ASCs
-        l1b_histrates = set_spin_cycle_from_spin_data(
+        l1b_all_rates = set_spin_cycle_from_spin_data(
             l1a_hist, l1b_all_rates, spin_data
         )
 
@@ -156,14 +284,18 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
             acq_start, acq_end
         )
-        # l1b_histrates = calculate_histogram_rates(
-        #     l1b_histrates,
-        #     acq_start,
-        #     acq_end,
-        #     avg_spin_durations_per_cycle,
-        #     exposure_factor,
-        # )
-        datasets_to_return.append(l1b_histrates)
+        l1b_all_rates = calculate_histogram_rates(
+            l1b_all_rates,
+            acq_start,
+            acq_end,
+            avg_spin_durations_per_cycle,
+            exposure_factor,
+        )
+
+        l1b_hist_rates, l1b_monitor_rates = split_rate_dataset(
+            l1b_all_rates, attr_mgr_l1b
+        )
+        datasets_to_return.extend([l1b_hist_rates, l1b_monitor_rates])
 
     return datasets_to_return
 
@@ -1402,38 +1534,14 @@ def initialize_all_rates(
             ),
         },
     )
-    # Define field mappings from L1A to the L1B dataset
-    # according to the algorithm document, only the histogram rate product should have
-    # counts (hydrogen and oxygen). The rest of the fields will be dropped after
-    # processing when the monitor rates product is created. These fields are needed for
-    # processing though and are added to the all_rates dataset temporarily.
-    # {"l1a_field_name": "l1b_all_rates_field_name"}
-    spin_bin_6_fields = {
-        "hydrogen": "h_counts",
-        "oxygen": "o_counts",
-        "tof0_tof1": "tof0_tof1_counts",
-        "tof0_tof2": "tof0_tof2_counts",
-        "tof1_tof3": "tof1_tof3_counts",
-        "silver_triple": "silver_triple_counts",
-    }
-    spin_bin_60_fields = {
-        "start_a": "start_a_counts",
-        "start_c": "start_c_counts",
-        "stop_b0": "stop_b0_counts",
-        "stop_b3": "stop_b3_counts",
-        "tof0": "tof0_counts",
-        "tof1": "tof1_counts",
-        "tof2": "tof2_counts",
-        "tof3": "tof3_counts",
-    }
-
-    for l1a_field, l1b_field in spin_bin_6_fields.items():
+    # Use centralized mappings for field definitions
+    for l1a_field, l1b_field in SPIN_BIN_6_L1A_TO_L1B.items():
         l1b_all_rates[l1b_field] = xr.DataArray(
             l1a_hist[l1a_field].values,
             dims=["epoch", "esa_step", "spin_bin_6"],
         )
 
-    for l1a_field, l1b_field in spin_bin_60_fields.items():
+    for l1a_field, l1b_field in SPIN_BIN_60_L1A_TO_L1B.items():
         l1b_all_rates[l1b_field] = xr.DataArray(
             l1a_hist[l1a_field].values,
             dims=["epoch", "esa_step", "spin_bin_60"],
@@ -1475,33 +1583,13 @@ def resweep_histogram_data(
         next(str(s) for s in anc_dependencies if "esa-mode-lut" in str(s))
     )
 
-    # Define field groups with their spin bin dimensions
-    spin_bin_6_fields = [
-        "h_counts",
-        "o_counts",
-        "tof0_tof1_counts",
-        "tof0_tof2_counts",
-        "tof1_tof3_counts",
-        "silver_triple_counts",
-    ]
-    spin_bin_60_fields = [
-        "start_a_counts",
-        "start_c_counts",
-        "stop_b0_counts",
-        "stop_b3_counts",
-        "tof0_counts",
-        "tof1_counts",
-        "tof2_counts",
-        "tof3_counts",
-    ]
-
     sweep_dates = sweep_df["Date"].astype(str)
     epochs = l1b_histrates["epoch"].values
     epoch_utc = et_to_utc(ttj2000ns_to_et(epochs))
 
     # Initialize reswept arrays for all fields
     reswept_data = {}
-    for field in spin_bin_6_fields + spin_bin_60_fields:
+    for field in SPIN_BIN_6_FIELDS + SPIN_BIN_60_FIELDS:
         reswept_data[field] = np.zeros_like(l1b_histrates[field].values)
 
     # Initialize exposure factors for each field type
@@ -1509,12 +1597,12 @@ def resweep_histogram_data(
     num_azimuth_60 = l1b_histrates.sizes["spin_bin_60"]
     exposure_factors = {}
 
-    for field in spin_bin_6_fields:
+    for field in SPIN_BIN_6_FIELDS:
         exposure_factors[field] = np.full(
             (len(epochs), l1b_histrates.sizes["esa_step"], num_azimuth_6), 1, dtype=int
         )
 
-    for field in spin_bin_60_fields:
+    for field in SPIN_BIN_60_FIELDS:
         exposure_factors[field] = np.full(
             (len(epochs), l1b_histrates.sizes["esa_step"], num_azimuth_60), 1, dtype=int
         )
@@ -1557,7 +1645,7 @@ def resweep_histogram_data(
             energy_step_mapping[esa_idx] = true_esa_step
 
         # Process spin_bin_6 fields
-        for field in spin_bin_6_fields:
+        for field in SPIN_BIN_6_FIELDS:
             for az_idx in range(num_azimuth_6):
                 original = l1b_histrates[field].values[epoch_idx, :, az_idx]
                 for orig_idx, true_esa_step in energy_step_mapping.items():
@@ -1568,7 +1656,7 @@ def resweep_histogram_data(
                     exposure_factors[field][epoch_idx, target_idx, az_idx] += 1
 
         # Process spin_bin_60 fields
-        for field in spin_bin_60_fields:
+        for field in SPIN_BIN_60_FIELDS:
             for az_idx in range(num_azimuth_60):
                 original = l1b_histrates[field].values[epoch_idx, :, az_idx]
                 for orig_idx, true_esa_step in energy_step_mapping.items():
@@ -1579,18 +1667,18 @@ def resweep_histogram_data(
                     exposure_factors[field][epoch_idx, target_idx, az_idx] += 1
 
     # Update dataset with reswept data
-    for field in spin_bin_6_fields + spin_bin_60_fields:
+    for field in SPIN_BIN_6_FIELDS + SPIN_BIN_60_FIELDS:
         l1b_histrates[field].values = reswept_data[field]
 
     return l1b_histrates, exposure_factors
 
 
 def calculate_histogram_rates(
-        l1b_histrates: xr.Dataset,
-        acq_start: xr.DataArray,
-        acq_end: xr.DataArray,
-        avg_spin_durations_per_cycle: xr.DataArray,
-        exposure_factors: dict[str, np.ndarray],
+    l1b_histrates: xr.Dataset,
+    acq_start: xr.DataArray,
+    acq_end: xr.DataArray,
+    avg_spin_durations_per_cycle: xr.DataArray,
+    exposure_factors: dict[str, np.ndarray],
 ) -> xr.Dataset:
     """
     Calculate histogram rates by dividing reswept counts by exposure time.
@@ -1633,49 +1721,98 @@ def calculate_histogram_rates(
     exposure_time_6deg = spin_durations / 60
 
     # Calculate exposure time for 0.6-degree bins (600 bins per spin)
-    exposure_time_06deg = spin_durations / 600
+    exposure_time_60deg = spin_durations / 6
 
     # Process all fields
-    spin_bin_6_fields = ["h_counts", "o_counts", "tof0_tof1_counts",
-                         "tof0_tof2_counts", "tof1_tof3_counts",
-                         "silver_triple_counts"]
-    spin_bin_60_fields = ["start_a_counts", "start_c_counts", "stop_b0_counts",
-                          "stop_b3_counts", "tof0_counts", "tof1_counts",
-                          "tof2_counts", "tof3_counts"]
-
     # Process 6-degree bin fields
-    for field in spin_bin_6_fields:
-        counts = l1b_histrates[field].values  # (epoch, esa_step, spin_bin_6)
-        exp_factor = exposure_factors[field]  # (epoch, esa_step, spin_bin_6)
+    for count_field, rate_field in SPIN_BIN_6_COUNT_TO_RATE.items():
+        counts = l1b_histrates[count_field].values  # (epoch, esa_step, spin_bin_6)
+        exp_factor = exposure_factors[count_field]  # (epoch, esa_step, spin_bin_6)
 
         # Calculate effective exposure time with broadcasting
-        # Shape: (epoch, 1, 1) * (epoch, esa_step, spin_bin_6)
         effective_exposure = exposure_time_6deg[:, None, None] * exp_factor
 
         # Avoid division by zero
-        with np.errstate(divide='ignore', invalid='ignore'):
-            rates = np.where(effective_exposure > 0,
-                             counts / effective_exposure,
-                             0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            rates = np.where(effective_exposure > 0, counts / effective_exposure, 0)
 
-        l1b_histrates[field].values = rates
+        l1b_histrates[rate_field] = xr.DataArray(
+            rates,
+            dims=l1b_histrates[count_field].dims,
+        )
 
-    # Process 0.6-degree bin fields
-    for field in spin_bin_60_fields:
-        counts = l1b_histrates[field].values  # (epoch, esa_step, spin_bin_60)
-        exp_factor = exposure_factors[field]  # (epoch, esa_step, spin_bin_60)
+        l1b_histrates["exposure_time_6deg"] = xr.DataArray(
+            effective_exposure,
+            dims=["epoch", "esa_step", "spin_bin_6"],
+        )
+
+    # Process 60-degree bin fields
+    for count_field, rate_field in SPIN_BIN_60_COUNT_TO_RATE.items():
+        counts = l1b_histrates[count_field].values  # (epoch, esa_step, spin_bin_60)
+        exp_factor = exposure_factors[count_field]  # (epoch, esa_step, spin_bin_60)
 
         # Calculate effective exposure time with broadcasting
-        # Shape: (epoch, 1, 1) * (epoch, esa_step, spin_bin_60)
-        effective_exposure = exposure_time_06deg[:, None, None] * exp_factor
+        effective_exposure = exposure_time_60deg[:, None, None] * exp_factor
 
         # Avoid division by zero
-        with np.errstate(divide='ignore', invalid='ignore'):
-            rates = np.where(effective_exposure > 0,
-                             counts / effective_exposure,
-                             0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            rates = np.where(effective_exposure > 0, counts / effective_exposure, 0)
 
-        l1b_histrates[field].values = rates
+        l1b_histrates[rate_field] = xr.DataArray(
+            rates,
+            dims=l1b_histrates[count_field].dims,
+        )
+
+        l1b_histrates["exposure_time_60deg"] = xr.DataArray(
+            effective_exposure,
+            dims=["epoch", "esa_step", "spin_bin_60"],
+        )
 
     return l1b_histrates
 
+
+def split_rate_dataset(
+    l1b_all_rates: xr.Dataset, attr_mgr_l1b: ImapCdfAttributes
+) -> tuple[xr.Dataset, xr.Dataset]:
+    """
+    Split the L1B all rates dataset into histogram rates and monitor rates datasets.
+
+    Parameters
+    ----------
+    l1b_all_rates : xr.Dataset
+        The L1B all rates dataset containing both histogram and monitor rates.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the L1B histogram and monitor rates dataset
+        attributes.
+
+    Returns
+    -------
+    l1b_hist_rates : xr.Dataset
+        The L1B histogram rates dataset.
+    l1b_monitor_rates : xr.Dataset
+        The L1B monitor rates dataset.
+    """
+    # Use centralized lists for fields to include in split datasets
+    l1b_hist_rates = xr.Dataset(
+        attrs=attr_mgr_l1b.get_global_attributes("imap_lo_l1b_histrates"),
+        coords=l1b_all_rates.coords,
+    )
+    l1b_monitor_rates = xr.Dataset(
+        attrs=attr_mgr_l1b.get_global_attributes("imap_lo_l1b_monitorrates"),
+        coords=l1b_all_rates.coords,
+    )
+
+    for field in HIST_RATE_FIELDS:
+        l1b_hist_rates[field] = xr.DataArray(
+            l1b_all_rates[field].values,
+            dims=l1b_all_rates[field].dims,
+            # attrs=attr_mgr_l1b.get_variable_attributes(field)
+        )
+    for field in MONITOR_RATE_FIELDS:
+        l1b_monitor_rates[field] = xr.DataArray(
+            l1b_all_rates[field].values,
+            dims=l1b_all_rates[field].dims,
+            # attrs=attr_mgr_l1b.get_variable_attributes(field)
+        )
+
+    return l1b_hist_rates, l1b_monitor_rates
