@@ -83,7 +83,7 @@ HI_IALIRT_ELEVATION_ANGLE = np.array(
         47.1,
         114.3,
     ],
-    dtype=float,
+    dtype=np.float32,
 )
 HI_IALIRT_REF_SPIN_ANGLE = np.array(
     [

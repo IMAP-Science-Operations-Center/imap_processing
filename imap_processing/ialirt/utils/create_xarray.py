@@ -155,7 +155,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     elevation = xr.DataArray(
-        np.float32(HI_IALIRT_ELEVATION_ANGLE),
+        HI_IALIRT_ELEVATION_ANGLE,
         name="codice_hi_elevation",
         dims=["codice_hi_elevation"],
         attrs=cdf_manager.get_variable_attributes(
@@ -201,11 +201,11 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     spin_sector_labels = xr.DataArray(
         [
-            "sector_0",
-            "sector_1",
-            "sector_2",
-            "sector_3",
-        ],  # or ["sector0","sector1",...] - whatever you prefer
+            "0",
+            "1",
+            "2",
+            "3",
+        ],
         name="codice_hi_spin_sector_labels",
         dims=["codice_hi_spin_sector"],
         attrs=cdf_manager.get_variable_attributes(
@@ -244,7 +244,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     )
 
     # Create variables with fill values.
-    for key in IALIRT_DIMS.keys():
+    for key in IALIRT_DIMS:
         dims = IALIRT_DIMS[key]
         attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
         fill = attrs["FILLVAL"]

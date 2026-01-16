@@ -20,37 +20,37 @@ instrument_epoch: &instrument_epoch
 
 codice_hi_epoch:
     <<: *instrument_epoch
-    CATDESC: CoDICE-Hi time, number of nanoseconds since J2000 with leap seconds included
+    CATDESC: Time CoDICE-Hi instrument took the measurement, number of nanoseconds since J2000 with leap seconds included
     FIELDNAM: CoDICE-Hi epoch
 
 codice_lo_epoch:
     <<: *instrument_epoch
-    CATDESC: CoDICE-Lo time, number of nanoseconds since J2000 with leap seconds included
+    CATDESC: Time CoDICE-Lo instrument took the measurement, number of nanoseconds since J2000 with leap seconds included
     FIELDNAM: CoDICE-Lo epoch
 
 hit_epoch:
     <<: *instrument_epoch
-    CATDESC: HIT time, number of nanoseconds since J2000 with leap seconds included
+    CATDESC: Time HIT instrument took the measurement, number of nanoseconds since J2000 with leap seconds included
     FIELDNAM: HIT epoch
 
 mag_epoch:
     <<: *instrument_epoch
-    CATDESC: MAG time, number of nanoseconds since J2000 with leap seconds included
+    CATDESC: Time MAG instrument took the measurement, number of nanoseconds since J2000 with leap seconds included
     FIELDNAM: MAG epoch
 
 swapi_epoch:
     <<: *instrument_epoch
-    CATDESC: SWAPI time, number of nanoseconds since J2000 with leap seconds included
+    CATDESC: Time SWAPI instrument took the measurement, number of nanoseconds since J2000 with leap seconds included
     FIELDNAM: SWAPI epoch
 
 swe_epoch:
     <<: *instrument_epoch
-    CATDESC: SWE time, number of nanoseconds since J2000 with leap seconds included
+    CATDESC: Time SWE instrument took the measurement, number of nanoseconds since J2000 with leap seconds included
     FIELDNAM: SWE epoch
 
 ephemeris_epoch:
     <<: *instrument_epoch
-    CATDESC: Ephemeris time, number of nanoseconds since J2000 with leap seconds included
+    CATDESC: Time of ephemeris measurement, number of nanoseconds since J2000 with leap seconds included
     FIELDNAM: Ephemeris epoch
 
 # Defaults

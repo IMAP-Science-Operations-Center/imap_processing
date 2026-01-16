@@ -472,12 +472,12 @@ def process_codice(
             l2_lo = calculate_ratios(l1b_lo, l2_lut_path, l2_geometric_factor_path)
 
             # Calculate the center of the time variable
-            sc_met = int(np.mean([np.min(met), np.max(met)]))
+            sc_met = (met[0] + met[-1]) // 2
 
             codice_lo_data.append(
                 {
                     "apid": 478,
-                    "met": int(sc_met),
+                    "met": sc_met,
                     "met_in_utc": met_to_utc(sc_met).split(".")[0],
                     "ttj2000ns": int(met_to_ttj2000ns(sc_met)),
                     "instrument": f"{sensor}",
@@ -517,12 +517,12 @@ def process_codice(
             ).tolist()
 
             # Calculate the center of the time variable
-            sc_met = int(np.mean([np.min(met), np.max(met)]))
+            sc_met = (met[0] + met[-1]) // 2
 
             codice_hi_data.append(
                 {
                     "apid": 478,
-                    "met": int(sc_met),
+                    "met": sc_met,
                     "met_in_utc": met_to_utc(sc_met).split(".")[0],
                     "ttj2000ns": int(met_to_ttj2000ns(sc_met)),
                     "instrument": f"{sensor}",
