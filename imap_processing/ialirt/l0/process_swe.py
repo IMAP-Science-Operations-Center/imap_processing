@@ -7,7 +7,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.grouping import find_groups, _populate_instrument_header_items
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 from imap_processing.swe.l1a.swe_science import decompressed_counts
@@ -549,33 +549,20 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         summed_second = normalized_second_half.sum(axis=(1, 2))
 
         met_first_half = grouped["met"].where(grouped["swe_seq"] == 0, drop=True).values
-        sc_met_first_half = int(
-            np.mean([np.min(met_first_half), np.max(met_first_half)])
-        )
         met_second_half = (
             grouped["met"].where(grouped["swe_seq"] == 30, drop=True).values
         )
-        sc_met_second_half = int(
-            np.mean([np.min(met_second_half), np.max(met_second_half)])
-        )
 
         swe_data.append(
-            {
-                "apid": 478,
-                "met": sc_met_first_half,
-                "met_in_utc": met_to_utc(sc_met_first_half).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(sc_met_first_half)),
+            _populate_instrument_header_items(met_first_half) |{
                 "instrument": "swe",
                 "swe_normalized_counts": [int(val) for val in summed_first],
                 "swe_counterstreaming_electrons": bde_first_half,
             },
         )
         swe_data.append(
+            _populate_instrument_header_items(met_second_half) |
             {
-                "apid": 478,
-                "met": sc_met_second_half,
-                "met_in_utc": met_to_utc(sc_met_second_half).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(sc_met_second_half)),
                 "instrument": "swe",
                 "swe_normalized_counts": [int(val) for val in summed_second],
                 "swe_counterstreaming_electrons": bde_second_half,

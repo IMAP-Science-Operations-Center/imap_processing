@@ -2,6 +2,11 @@
 
 import numpy as np
 
+from imap_processing.codice.constants import (
+    HI_IALIRT_ELEVATION_ANGLE,
+    HI_IALIRT_REF_SPIN_ANGLE,
+)
+
 IALIRT_DIMS = {
     # H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
     "codice_hi_h": [
@@ -175,6 +180,16 @@ codice_hi_energy_plus = [
     0.40730518,
     0.57601651,
 ]
+
+# Calculate spin angle
+# Formula:
+#   θ_(g,n) = (θ_(g,0)+90°* n)  mod 360°
+# where
+#   n is number of sectored angles, 0 to 3,
+#   g is size of the group (inst_az), 0 to 3,
+HI_IALIRT_SPIN_ANGLE = (
+    HI_IALIRT_REF_SPIN_ANGLE[:, np.newaxis] + np.array([0, 1, 2, 3]) * 90
+) % 360.0
 
 swe_energy = [
     100.4,

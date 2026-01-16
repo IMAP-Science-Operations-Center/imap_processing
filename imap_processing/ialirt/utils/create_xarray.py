@@ -16,6 +16,7 @@ from imap_processing.ialirt.utils.constants import (
     codice_hi_energy_center,
     codice_hi_energy_minus,
     codice_hi_energy_plus,
+    HI_IALIRT_SPIN_ANGLE,
     hit_restricted_fields,
     swe_energy,
 )
@@ -172,17 +173,8 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
-    # Calculate spin angle
-    # Formula:
-    #   θ_(g,n) = (θ_(g,0)+90°* n)  mod 360°
-    # where
-    #   n is number of sectored angles, 0 to 3,
-    #   g is size of the group (inst_az), 0 to 3,
-    spin_angles = (
-        HI_IALIRT_REF_SPIN_ANGLE[:, np.newaxis] + np.array([0, 1, 2, 3]) * 90
-    ) % 360.0
     spin_angle = xr.DataArray(
-        data=np.float32(spin_angles),
+        data=HI_IALIRT_SPIN_ANGLE.astype(np.float32),
         name="codice_hi_spin_angle",
         dims=["codice_hi_spin_sector", "codice_hi_elevation"],
         attrs=cdf_manager.get_variable_attributes(
@@ -258,7 +250,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     for i, record in enumerate(by_inst.get("mag", [])):
         for key in IALIRT_DIMS.keys():
             if key in ["mag_B_GSE", "mag_B_GSM", "mag_B_RTN"]:
-                dataset[key].data[i, :] = np.asarray(record[key], dtype=np.float32)
+                dataset[key].data[i, :] = record[key]
 
             if key in [
                 "mag_B_magnitude",
