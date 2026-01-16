@@ -50,9 +50,7 @@ class StationProperties(NamedTuple):
     min_elevation_deg: float  # minimum elevation angle in degrees
 
 
-# Verified by Kiel and KSWC Observatory staff.
-# Notes: the KSWC station is not yet operational,
-# but will have the following properties:
+# Verified by Observatory staff.
 STATIONS = {
     "Kiel": StationProperties(
         longitude=10.1808,  # degrees East
