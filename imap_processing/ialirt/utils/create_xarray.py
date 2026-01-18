@@ -8,19 +8,17 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice.constants import (
     HI_IALIRT_ELEVATION_ANGLE,
-    HI_IALIRT_REF_SPIN_ANGLE,
 )
 from imap_processing.ialirt.utils.constants import (
+    HI_IALIRT_SPIN_ANGLE,
     IALIRT_DIMS,
     IALIRT_DTYPES,
     codice_hi_energy_center,
     codice_hi_energy_minus,
     codice_hi_energy_plus,
-    HI_IALIRT_SPIN_ANGLE,
     hit_restricted_fields,
     swe_energy,
 )
-from imap_processing.spice.time import TTJ2000_EPOCH
 
 
 def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0912
@@ -62,7 +60,9 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     for inst, arr in epochs.items():
         if inst == "spacecraft":
             coord = "ephemeris_epoch"
-            attr = cdf_manager.get_variable_attributes("ephemeris_epoch", check_schema=False)
+            attr = cdf_manager.get_variable_attributes(
+                "ephemeris_epoch", check_schema=False
+            )
         else:
             coord = f"{inst}_epoch"
             attr = cdf_manager.get_variable_attributes(
@@ -76,26 +76,34 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ["sc X (GSM)", "sc Y (GSM)", "sc Z (GSM)"],
         name="sc_GSM_position_labels",
         dims=["sc_GSM_position_labels"],
-        attrs=cdf_manager.get_variable_attributes("sc_GSM_position_labels", check_schema=False),
+        attrs=cdf_manager.get_variable_attributes(
+            "sc_GSM_position_labels", check_schema=False
+        ),
     )
     sc_gsm_velocity_component = xr.DataArray(
         ["sc Vx (GSM)", "sc Vy (GSM)", "sc Vz (GSM)"],
         name="sc_GSM_velocity_labels",
         dims=["sc_GSM_velocity_labels"],
-        attrs=cdf_manager.get_variable_attributes("sc_GSM_velocity_labels", check_schema=False),
+        attrs=cdf_manager.get_variable_attributes(
+            "sc_GSM_velocity_labels", check_schema=False
+        ),
     )
 
     sc_gse_position_component = xr.DataArray(
         ["sc X (GSE)", "sc Y (GSE)", "sc Z (GSE)"],
         name="sc_GSE_position_labels",
         dims=["sc_GSE_position_labels"],
-        attrs=cdf_manager.get_variable_attributes("sc_GSE_position_labels", check_schema=False),
+        attrs=cdf_manager.get_variable_attributes(
+            "sc_GSE_position_labels", check_schema=False
+        ),
     )
     sc_gse_velocity_component = xr.DataArray(
         ["sc Vx (GSE)", "sc Vy (GSE)", "sc Vz (GSE)"],
         name="sc_GSE_velocity_labels",
         dims=["sc_GSE_velocity_labels"],
-        attrs=cdf_manager.get_variable_attributes("sc_GSE_velocity_labels", check_schema=False),
+        attrs=cdf_manager.get_variable_attributes(
+            "sc_GSE_velocity_labels", check_schema=False
+        ),
     )
 
     gsm_component = xr.DataArray(

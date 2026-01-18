@@ -7,9 +7,11 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.ialirt.utils.grouping import find_groups, _populate_instrument_header_items
+from imap_processing.ialirt.utils.grouping import (
+    _populate_instrument_header_items,
+    find_groups,
+)
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 from imap_processing.swe.l1a.swe_science import decompressed_counts
 from imap_processing.swe.l1b.swe_l1b import (
     deadtime_correction,
@@ -554,15 +556,16 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         )
 
         swe_data.append(
-            _populate_instrument_header_items(met_first_half) |{
+            _populate_instrument_header_items(met_first_half)
+            | {
                 "instrument": "swe",
                 "swe_normalized_counts": [int(val) for val in summed_first],
                 "swe_counterstreaming_electrons": bde_first_half,
             },
         )
         swe_data.append(
-            _populate_instrument_header_items(met_second_half) |
-            {
+            _populate_instrument_header_items(met_second_half)
+            | {
                 "instrument": "swe",
                 "swe_normalized_counts": [int(val) for val in summed_second],
                 "swe_counterstreaming_electrons": bde_second_half,

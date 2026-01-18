@@ -3,7 +3,6 @@
 import numpy as np
 
 from imap_processing.codice.constants import (
-    HI_IALIRT_ELEVATION_ANGLE,
     HI_IALIRT_REF_SPIN_ANGLE,
 )
 

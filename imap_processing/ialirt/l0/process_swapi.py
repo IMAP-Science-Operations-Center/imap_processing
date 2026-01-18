@@ -10,9 +10,11 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 
 from imap_processing.ialirt.constants import IalirtSwapiConstants as Consts
-from imap_processing.ialirt.utils.grouping import find_groups, _populate_instrument_header_items
+from imap_processing.ialirt.utils.grouping import (
+    _populate_instrument_header_items,
+    find_groups,
+)
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 from imap_processing.swapi.l1.swapi_l1 import process_sweep_data
 from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 
@@ -204,7 +206,8 @@ def process_swapi_ialirt(
         )
 
         swapi_data.append(
-            _populate_instrument_header_items(met) | {
+            _populate_instrument_header_items(met)
+            | {
                 "instrument": "swapi",
                 "swapi_pseudo_proton_speed": Decimal(f"{pseudo_speed:.3f}"),
                 "swapi_pseudo_proton_density": Decimal(f"{pseudo_density:.3f}"),

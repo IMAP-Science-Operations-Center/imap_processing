@@ -4,7 +4,11 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.ialirt.utils.grouping import filter_valid_groups, find_groups, _populate_instrument_header_items
+from imap_processing.ialirt.utils.grouping import (
+    _populate_instrument_header_items,
+    filter_valid_groups,
+    find_groups,
+)
 
 
 @pytest.fixture

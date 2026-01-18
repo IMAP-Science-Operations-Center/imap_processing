@@ -16,7 +16,10 @@ from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
     Packet2,
     Packet3,
 )
-from imap_processing.ialirt.utils.grouping import find_groups, _populate_instrument_header_items
+from imap_processing.ialirt.utils.grouping import (
+    _populate_instrument_header_items,
+    find_groups,
+)
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
 from imap_processing.mag.l1b.mag_l1b import (
@@ -31,7 +34,7 @@ from imap_processing.spice.geometry import (
     frame_transform,
     spherical_to_cartesian,
 )
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc, ttj2000ns_to_et
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -755,8 +758,8 @@ def process_packet(
             continue
 
         mag_data.append(
-            _populate_instrument_header_items(met_all[i]) |
-                 {
+            _populate_instrument_header_items(met_all[i])
+            | {
                 "instrument": "mag",
                 "mag_epoch": int(mago_times_all[i]),
                 "mag_B_GSE": [Decimal(f"{v:.3f}") for v in gse_vector[i]],
