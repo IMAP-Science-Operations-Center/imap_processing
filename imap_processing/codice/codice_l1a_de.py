@@ -1,5 +1,7 @@
 """Processing functions for CoDICE L1A Direct Event data."""
 
+import logging
+
 import numpy as np
 import xarray as xr
 
@@ -15,6 +17,8 @@ from imap_processing.codice.utils import (
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import combine_segmented_packets
+
+logger = logging.getLogger(__name__)
 
 
 def extract_initial_items_from_combined_packets(
@@ -355,12 +359,31 @@ def process_de_data(
     num_priorities = config["num_priorities"]
     bit_structure = config["bit_structure"]
 
-    # Truncate to complete priority groups only
-    num_packets = len(packets["epoch"])
-    num_epochs = num_packets // num_priorities
-    num_complete_packets = num_epochs * num_priorities
-    if num_complete_packets < num_packets:
-        packets = packets.isel(epoch=slice(None, num_complete_packets))
+    # Identify complete priority groups by acq_start_seconds
+    # Each priority group should have exactly num_priorities packets
+    # with the same acq_start_seconds value
+    acq_start_seconds = packets["acq_start_seconds"].values
+    unique_times, counts = np.unique(acq_start_seconds, return_counts=True)
+
+    # Find incomplete groups (not exactly num_priorities packets)
+    incomplete_mask = counts != num_priorities
+    if np.any(incomplete_mask):
+        incomplete_times = unique_times[incomplete_mask]
+        incomplete_counts = counts[incomplete_mask]
+        logger.warning(
+            f"Found {len(incomplete_times)} incomplete priority group(s) "
+            f"for APID {apid}. Expected {num_priorities} packets per group. "
+            f"Incomplete groups at acq_start_seconds {incomplete_times.tolist()} "
+            f"with counts {incomplete_counts.tolist()}. Dropping these packets."
+        )
+
+    # Keep only complete groups
+    complete_times = unique_times[~incomplete_mask]
+    keep_mask = np.isin(acq_start_seconds, complete_times)
+    packets = packets.isel(epoch=keep_mask)
+
+    # Calculate number of epochs from complete groups
+    num_epochs = len(complete_times)
 
     # Create dataset with coordinates
     de_data = _create_dataset_coords(packets, apid, num_priorities, cdf_attrs)

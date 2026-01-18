@@ -389,6 +389,8 @@ def combine_segmented_packets(
 
     # Get indices of packets we'll keep (first packet of each group)
     group_start_indices = np.where(is_group_start)[0]
+    # Keep track of the groups that don't have the expected sequences
+    bad_groups = []
 
     # Concatenate binary data in-place for each group
     for group_id in np.unique(group_ids):
@@ -411,15 +413,19 @@ def combine_segmented_packets(
                     and not np.all(seq_flags[1:-1] == SequenceFlags.CONTINUATION)
                 )
             ):
+                bad_groups.append(start_index)
                 logger.warning(
                     f"Incorrect/incomplete sequence flags in group {group_id}. "
                     f"Flags: {seq_flags}, "
                     f"SHCOARSEs: {packets['shcoarse'].data[group_indices]}"
                 )
+
             packets[binary_field_name].data[start_index] = np.sum(
                 packets[binary_field_name].data[group_indices]
             )
 
+    # Remove any bad groups from the start indices we are keeping
+    group_start_indices = np.setdiff1d(group_start_indices, bad_groups)
     # Select only the first packet of each group (drop the middle/last packets)
     combined_packets = packets.isel(epoch=group_start_indices)
 
