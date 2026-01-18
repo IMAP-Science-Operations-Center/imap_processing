@@ -306,6 +306,18 @@ def test_combine_segmented_packets():
     xr.testing.assert_equal(combined_ds, expected_ds)
 
 
+def test_check_source_sequence_counter(caplog):
+    """Test _check_source_sequence_counter function."""
+    data_vars = {
+        "src_seq_ctr": (["epoch"], np.array([0, 1, 3, 4, 6])),
+    }
+    ds = xr.Dataset(data_vars=data_vars)
+
+    utils._check_source_sequence_counter(ds, apid=1234)
+
+    assert "Found [2] gap(s) in source sequence counter for APID 1234" in caplog.text
+
+
 def test_extract_data_dict():
     """Test extract_data_dict function."""
     data_vars = {

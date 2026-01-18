@@ -333,6 +333,9 @@ def packet_file_to_datasets(
             )
             ds = ds.isel(epoch=unique_indices)
 
+        # Log a warning if there are gaps in the source sequence counter
+        _check_source_sequence_counter(ds, apid)
+
         # Strip any leading characters before "." from the field names which was due
         # to the packet_name being a part of the variable name in the XTCE definition
         ds = ds.rename(
@@ -421,6 +424,51 @@ def combine_segmented_packets(
     combined_packets = packets.isel(epoch=group_start_indices)
 
     return combined_packets
+
+
+def _check_source_sequence_counter(ds: xr.Dataset, apid: int) -> None:
+    """
+    Check for gaps in the source sequence counter.
+
+    Log a warning if gaps are found, but don't do anything else.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Dataset containing the packets to check.
+    apid : int
+        APID of the packets.
+    """
+    # Check for sequential source sequence counters
+    # CCSDS source sequence counter is a 14-bit field (0-16383)
+    counter_max = 16384
+    src_seq_ctr = ds["src_seq_ctr"].data
+
+    if len(src_seq_ctr) <= 1:
+        return
+
+    # Check if each counter equals (previous + 1) % counter_max
+    # This handles both normal increments and rollover (16383 -> 0)
+    expected = (src_seq_ctr[:-1] + 1) % counter_max
+    actual = src_seq_ctr[1:]
+    non_sequential = expected != actual
+
+    if np.any(non_sequential):
+        gap_indices = np.where(non_sequential)[0]
+        # Calculate total missing packets across all gaps
+        total_missing = sum(
+            (src_seq_ctr[idx + 1] - src_seq_ctr[idx] - 1) % counter_max
+            for idx in gap_indices
+        )
+        # Show the counter values before and after each gap
+        gap_starts = src_seq_ctr[gap_indices].tolist()
+        gap_ends = src_seq_ctr[gap_indices + 1].tolist()
+        gap_pairs = list(zip(gap_starts, gap_ends, strict=True))
+        logger.warning(
+            f"Found [{len(gap_indices)}] gap(s) in source sequence counter "
+            f"for APID {apid} at {gap_pairs} "
+            f"({total_missing} total missing packets)"
+        )
 
 
 def packet_generator(
