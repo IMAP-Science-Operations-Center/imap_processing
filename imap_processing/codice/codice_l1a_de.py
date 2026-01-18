@@ -25,19 +25,24 @@ def extract_initial_items_from_combined_packets(
     packets: xr.Dataset,
 ) -> xr.Dataset:
     """
-    Extract metadata fields from the beginning of combined event_data packets.
+    Extract fields from the beginning of combined event_data packets.
 
     Extracts bit fields from the first 20 bytes of each event_data array
-    and adds them as new variables to the dataset.
+    and add them as new variables to the dataset.
+
+    This was previously done in XTCE, but we can't do that because of
+    segmented packets that need to be combined. Each segmented packet
+    has its own (SHCOARSE, EVENTDATA, CHKSUM) fields, so we need to
+    only combine along the EVENTDATA field and extract data that way.
 
     Parameters
     ----------
-    packets : xr.Dataset
+    packets : xarray.Dataset
         Dataset containing combined packets with event_data.
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         Dataset with extracted metadata fields added.
     """
     # Initialize arrays for extracted fields
@@ -170,7 +175,7 @@ def _create_dataset_coords(
 
     Parameters
     ----------
-    packets : xr.Dataset
+    packets : xarray.Dataset
         Combined packets with extracted header fields.
     apid : int
         APID for sensor type.
@@ -181,7 +186,7 @@ def _create_dataset_coords(
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         Dataset with coordinates defined.
     """
     # Get timing info from the first packet of each epoch
@@ -267,9 +272,9 @@ def _unpack_and_store_events(
 
     Parameters
     ----------
-    de_data : xr.Dataset
+    de_data : xarray.Dataset
         Dataset to store unpacked events into (modified in place).
-    packets : xr.Dataset
+    packets : xarray.Dataset
         Combined packets with extracted header fields.
     num_priorities : int
         Number of priorities per epoch.
@@ -280,7 +285,7 @@ def _unpack_and_store_events(
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         The dataset with unpacked events stored.
     """
     # Extract arrays from packets dataset
@@ -312,7 +317,7 @@ def _unpack_and_store_events(
         pkt_bytes = pkt_bytes.reshape(n_events, 8)[:, ::-1]
         all_event_bytes[offset : offset + n_events] = pkt_bytes
 
-        # Record destination indices for scattering
+        # Record destination indices for later array-based assignments
         event_epoch_idx[offset : offset + n_events] = pkt_idx // num_priorities
         event_priority_idx[offset : offset + n_events] = priorities_arr[pkt_idx]
         event_position_idx[offset : offset + n_events] = np.arange(n_events)
@@ -323,7 +328,7 @@ def _unpack_and_store_events(
     all_64bits = all_event_bytes.view(np.uint64).ravel()
     unpacked = unpack_bits(bit_structure, all_64bits)
 
-    # Scatter unpacked values directly into the dataset arrays
+    # Place unpacked values directly into the dataset arrays
     for field in event_fields:
         de_data[field].values[
             event_epoch_idx, event_priority_idx, event_position_idx
