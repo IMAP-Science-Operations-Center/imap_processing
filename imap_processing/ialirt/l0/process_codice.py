@@ -497,6 +497,7 @@ def process_codice(
                 _populate_instrument_header_items(met)
                 | {
                     "instrument": f"{sensor}",
+                    "codice_lo_epoch": int(l1a_lo["epoch"]),
                     f"{sensor}_c_over_o_abundance": l2_lo.c_over_o_abundance,
                     f"{sensor}_mg_over_o_abundance": l2_lo.mg_over_o_abundance,
                     f"{sensor}_fe_over_o_abundance": l2_lo.fe_over_o_abundance,

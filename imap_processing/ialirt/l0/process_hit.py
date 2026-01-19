@@ -175,7 +175,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
             _populate_instrument_header_items(met)
             | {
                 "instrument": "hit",
-                "hit_epoch": int(mid_measurement),
+                "hit_epoch": int(met_to_ttj2000ns(mid_measurement)),
                 "hit_e_a_side_low_en": int(l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"]),
                 "hit_e_a_side_med_en": int(l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"]),
                 "hit_e_a_side_high_en": int(l1["IALRT_RATE_7"]),

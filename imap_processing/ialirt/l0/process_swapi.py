@@ -216,7 +216,7 @@ def process_swapi_ialirt(
             _populate_instrument_header_items(met)
             | {
                 "instrument": "swapi",
-                "swapi_epoch": int(mid_measurement),
+                "swapi_epoch": int(met_to_ttj2000ns(mid_measurement)),
                 "swapi_pseudo_proton_speed": Decimal(f"{pseudo_speed:.3f}"),
                 "swapi_pseudo_proton_density": Decimal(f"{pseudo_density:.3f}"),
                 "swapi_pseudo_proton_temperature": Decimal(f"{pseudo_temperature:.3f}"),
