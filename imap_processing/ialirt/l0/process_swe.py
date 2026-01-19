@@ -523,7 +523,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         cal_met = in_flight_cal_df["met_time"].to_numpy()
 
         group_time_first_half = (
-            grouped["time_seconds"].where(grouped["swe_seq"] == 0, drop=True).values
+            grouped["time_seconds"].where(grouped["swe_seq"] < 30, drop=True).values
         )
         group_time_first_half_mid = (
             group_time_first_half[0] + group_time_first_half[-1]
@@ -533,7 +533,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             [
                 float(
                     np.interp(
-                        int(group_time_first_half[0]),
+                        int(group_time_first_half_mid),
                         cal_met,
                         in_flight_cal_df[cem].to_numpy(),
                     )
@@ -543,17 +543,17 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             dtype=np.float64,
         )
         group_time_second_half = (
-            grouped["time_seconds"].where(grouped["swe_seq"] == 0, drop=True).values
+            grouped["time_seconds"].where(grouped["swe_seq"] >= 30, drop=True).values
         )
         group_time_second_half_mid = (
-            group_time_first_half[0] + group_time_first_half[-1]
+            group_time_second_half[0] + group_time_second_half[-1]
         ) // 2
 
         interp_cal_second_half = np.array(
             [
                 float(
                     np.interp(
-                        int(group_time_second_half[0]),
+                        int(group_time_second_half_mid),
                         cal_met,
                         in_flight_cal_df[cem].to_numpy(),
                     )
