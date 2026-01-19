@@ -157,7 +157,7 @@ def get_ialirt_energies() -> list:
     return energy
 
 
-def normalize_counts(counts: NDArray, latest_cal: pd.Series) -> NDArray:
+def normalize_counts(counts: NDArray, interp_cal: NDArray) -> NDArray:
     """
     Normalize the counts using the latest calibration factor.
 
@@ -165,18 +165,17 @@ def normalize_counts(counts: NDArray, latest_cal: pd.Series) -> NDArray:
     ----------
     counts : np.ndarray
         Array of counts.
-    latest_cal : pd.Series
-        Array of latest calibration factors.
+    interp_cal : np.ndarray
+        Array of calibration factors.
 
     Returns
     -------
     norm_counts : np.ndarray
         Array of normalized counts.
     """
-    latest_cal = latest_cal.to_numpy()
 
     # Norm counts where counts are non-negative
-    norm_counts = counts * (latest_cal / GEOMETRIC_FACTORS)[:, np.newaxis]
+    norm_counts = counts * (interp_cal / GEOMETRIC_FACTORS)[:, np.newaxis]
     norm_counts[norm_counts < 0] = 0
 
     return norm_counts
@@ -522,10 +521,22 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
 
         # Grab the latest calibration factor
         in_flight_cal_df = read_in_flight_cal_data(in_flight_cal_files)
-        latest_cal = in_flight_cal_df.sort_values("met_time").iloc[-1][1::]
+        group_time = int(
+            grouped["time_seconds"].where(grouped["swe_seq"] == 0, drop=True).values[0]
+        )
+        cal_cols = [f"cem{i}" for i in range(1, 8)]
+        cal_met = in_flight_cal_df["met_time"].to_numpy()
 
-        normalized_first_half = normalize_counts(corrected_first_half, latest_cal)
-        normalized_second_half = normalize_counts(corrected_second_half, latest_cal)
+        interp_cal = np.array(
+            [
+                float(np.interp(group_time, cal_met, in_flight_cal_df[cem].to_numpy()))
+                for cem in cal_cols
+            ],
+            dtype=np.float64,
+        )
+
+        normalized_first_half = normalize_counts(corrected_first_half, interp_cal)
+        normalized_second_half = normalize_counts(corrected_second_half, interp_cal)
 
         # Sum over the 7 detectors
         summed_first_half_cem = np.sum(normalized_first_half, axis=1)
