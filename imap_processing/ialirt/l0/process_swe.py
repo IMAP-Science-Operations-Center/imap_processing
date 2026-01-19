@@ -602,7 +602,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             _populate_instrument_header_items(met_first_half)
             | {
                 "instrument": "swe",
-                "swe_epoch": int(group_time_first_half_mid),
+                "swe_epoch": int(met_to_ttj2000ns(group_time_first_half_mid)),
                 "swe_normalized_counts": [int(val) for val in summed_first],
                 "swe_counterstreaming_electrons": bde_first_half,
             },
@@ -611,7 +611,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             _populate_instrument_header_items(met_second_half)
             | {
                 "instrument": "swe",
-                "swe_epoch": int(group_time_second_half_mid),
+                "swe_epoch": int(met_to_ttj2000ns(group_time_second_half_mid)),
                 "swe_normalized_counts": [int(val) for val in summed_second],
                 "swe_counterstreaming_electrons": bde_second_half,
             },
