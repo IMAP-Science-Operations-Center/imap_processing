@@ -519,22 +519,44 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
 
         # Grab the latest calibration factor
         in_flight_cal_df = read_in_flight_cal_data(in_flight_cal_files)
-        group_time = int(
-            grouped["time_seconds"].where(grouped["swe_seq"] == 0, drop=True).values[0]
-        )
         cal_cols = [f"cem{i}" for i in range(1, 8)]
         cal_met = in_flight_cal_df["met_time"].to_numpy()
 
-        interp_cal = np.array(
+        group_time_first_half = int(
+            grouped["time_seconds"].where(grouped["swe_seq"] == 0, drop=True).values[0]
+        )
+        interp_cal_first_half = np.array(
             [
-                float(np.interp(group_time, cal_met, in_flight_cal_df[cem].to_numpy()))
+                float(
+                    np.interp(
+                        group_time_first_half, cal_met, in_flight_cal_df[cem].to_numpy()
+                    )
+                )
+                for cem in cal_cols
+            ],
+            dtype=np.float64,
+        )
+        group_time_second_half = int(
+            grouped["time_seconds"].where(grouped["swe_seq"] == 0, drop=True).values[0]
+        )
+        interp_cal_second_half = np.array(
+            [
+                float(
+                    np.interp(
+                        group_time_first_half, cal_met, in_flight_cal_df[cem].to_numpy()
+                    )
+                )
                 for cem in cal_cols
             ],
             dtype=np.float64,
         )
 
-        normalized_first_half = normalize_counts(corrected_first_half, interp_cal)
-        normalized_second_half = normalize_counts(corrected_second_half, interp_cal)
+        normalized_first_half = normalize_counts(
+            corrected_first_half, interp_cal_first_half
+        )
+        normalized_second_half = normalize_counts(
+            corrected_second_half, interp_cal_second_half
+        )
 
         # Sum over the 7 detectors
         summed_first_half_cem = np.sum(normalized_first_half, axis=1)
@@ -568,6 +590,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             _populate_instrument_header_items(met_first_half)
             | {
                 "instrument": "swe",
+                "swe_epoch": group_time_first_half,
                 "swe_normalized_counts": [int(val) for val in summed_first],
                 "swe_counterstreaming_electrons": bde_first_half,
             },
@@ -576,6 +599,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             _populate_instrument_header_items(met_second_half)
             | {
                 "instrument": "swe",
+                "swe_epoch": group_time_second_half,
                 "swe_normalized_counts": [int(val) for val in summed_second],
                 "swe_counterstreaming_electrons": bde_second_half,
             },
