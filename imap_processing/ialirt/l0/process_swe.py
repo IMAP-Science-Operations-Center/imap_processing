@@ -3,7 +3,6 @@
 import logging
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
@@ -173,7 +172,6 @@ def normalize_counts(counts: NDArray, interp_cal: NDArray) -> NDArray:
     norm_counts : np.ndarray
         Array of normalized counts.
     """
-
     # Norm counts where counts are non-negative
     norm_counts = counts * (interp_cal / GEOMETRIC_FACTORS)[:, np.newaxis]
     norm_counts[norm_counts < 0] = 0
