@@ -101,6 +101,7 @@ def test_compute_geometric_factors_all_full_mode(mock_half_spin_per_esa_step):
             "rgfo_half_spin": (("epoch",), np.array([4, 4])),
             "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
         },
+        attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-angular_20250101_v001"},
     )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
@@ -150,6 +151,7 @@ def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_per_esa_step)
             "rgfo_half_spin": (("epoch",), np.array([1])),
             "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
         },
+        attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-angular_20250101_v001"},
     )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
@@ -169,6 +171,7 @@ def test_compute_geometric_factors_mixed(mock_half_spin_per_esa_step):
             "rgfo_half_spin": (("epoch",), np.array([2])),
             "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
         },
+        attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-angular_20250101_v001"},
     )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
