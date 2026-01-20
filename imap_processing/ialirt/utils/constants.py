@@ -112,7 +112,7 @@ IALIRT_DTYPES = {
     "swapi_pseudo_proton_speed": np.float32,
     "swapi_pseudo_proton_temperature": np.float32,
     # SWE
-    "swe_normalized_counts": np.uint32,
+    "swe_normalized_counts": np.int64,
     "swe_counterstreaming_electrons": np.uint8,
     # Spacecraft vectors
     "sc_position_GSM": np.float32,

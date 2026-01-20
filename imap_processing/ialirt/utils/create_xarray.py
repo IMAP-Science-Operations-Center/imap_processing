@@ -10,7 +10,6 @@ from imap_processing.codice.constants import (
     HI_IALIRT_ELEVATION_ANGLE,
 )
 from imap_processing.ialirt.utils.constants import (
-    HI_IALIRT_SPIN_ANGLE,
     IALIRT_DIMS,
     IALIRT_DTYPES,
     codice_hi_energy_center,
@@ -181,15 +180,6 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
-    spin_angle = xr.DataArray(
-        data=HI_IALIRT_SPIN_ANGLE.astype(np.float32),
-        name="codice_hi_spin_angle",
-        dims=["codice_hi_spin_sector", "codice_hi_elevation"],
-        attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_spin_angle", check_schema=False
-        ),
-    )
-
     spin_sector = xr.DataArray(
         data=np.arange(4, dtype=np.uint8),
         name="codice_hi_spin_sector",
@@ -233,7 +223,6 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "codice_hi_energy_plus": codice_energy_plus,
         "codice_hi_elevation": elevation,
         "codice_hi_elevation_labels": elevation_labels,
-        "codice_hi_spin_angle": spin_angle,
         "codice_hi_spin_sector": spin_sector,
         "codice_hi_spin_sector_labels": spin_sector_labels,
         "swe_electron_energy": swe_electron_energy,

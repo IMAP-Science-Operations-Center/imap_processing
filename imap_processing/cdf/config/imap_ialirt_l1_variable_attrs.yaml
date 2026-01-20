@@ -4,7 +4,7 @@ instrument_epoch: &instrument_epoch
   FIELDNAM: epoch
   LABLAXIS: epoch
   FILLVAL: -9223372036854775808
-  FORMAT: I20
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
   VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
   VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
   UNITS: ns
@@ -16,7 +16,7 @@ instrument_epoch: &instrument_epoch
   REFERENCE_POSITION: Rotating Earth Geoid
   RESOLUTION: ' '
   DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
-  dtype: int64
+  CDF_DATA_TYPE: "CDF_TIME_TT2000"
 
 codice_hi_epoch:
     <<: *instrument_epoch
@@ -242,20 +242,6 @@ codice_hi_spin_sector_labels:
   FORMAT: A8
   VAR_TYPE: metadata
   UNITS: " "
-
-codice_hi_spin_angle:
-  <<: *default_float32
-  VAR_TYPE: support_data
-  CATDESC: Spin Angle
-  FIELDNAM: Spin Angle
-  SCALETYP: linear
-  UNITS: degrees
-  VALIDMAX: 360.0
-  VALIDMIN: 0.0
-  DEPEND_0: codice_hi_spin_sector
-  DEPEND_1: codice_hi_elevation
-  LABL_PTR_1: codice_hi_spin_sector_labels
-  LABL_PTR_2: codice_hi_elevation_labels
 
 swe_electron_energy:
   CATDESC: SWE electron channels (nominal central energies)
@@ -606,7 +592,7 @@ swapi_pseudo_proton_temperature:
 
 # SWE Normalized Counts
 swe_normalized_counts:
-  <<: *default_uint32
+  <<: *default_int64
   CATDESC: Normalized electron counts
   FIELDNAM: Normalized electron counts
   UNITS: normalized counts
