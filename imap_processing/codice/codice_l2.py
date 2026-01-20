@@ -556,11 +556,13 @@ def process_lo_angular_intensity(
     )
     # add uncertainties to species list
     species_list = species_list + [f"unc_{var}" for var in species_list]
+
     # Take the mean across elevation angles and restore the original dimension order
     dataset_converted = (
         dataset[species_list]
         .groupby("elevation_angle")
-        .sum(keep_attrs=True)  # One position should always contain zeros so sum is safe
+        .sum(keep_attrs=True, skipna=False)  # One position should always contain zeros
+        # so sum is safe
         # Restore original dimension order because groupby moves the grouped
         # dimension to the front
         .transpose("epoch", "esa_step", "spin_sector", "elevation_angle", ...)
@@ -571,10 +573,12 @@ def process_lo_angular_intensity(
         spin_angle=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
     )
     dataset = dataset.drop_vars(species_list).merge(dataset_converted)
+
     # Positions 0 and 10 only observe half of the 24 spins for each esa step.
     # To account for this, we replicate the counts observed in position 0 and 10 for
     # each esa step to either spin angles 0-11 or 12-23, depending on the pixel
     # orientation (A/B). See section 11.2.2 of the CoDICE algorithm document
+    # TODO pixel orientationin l2!!
     a_inds = np.array(
         [pos for pos, orientation in PIXEL_ORIENTATIONS.items() if orientation == "A"]
     )
@@ -584,10 +588,13 @@ def process_lo_angular_intensity(
 
     position_index = position_index_to_adjust
     for species in species_list:
+        # Create a copy of the dataset to avoid modifying the original
+        species_data = dataset[species].data.copy()
         # Determine the correct spin indices based on the position
         spin_sectors = dataset["spin_sector"].data
         spin_inds_1 = np.where(spin_sectors >= 12)[0]
         spin_inds_2 = np.where(spin_sectors < 12)[0]
+
         # if position_index is 9, swap the spin indices
         if position_index == 9:
             spin_inds_1, spin_inds_2 = spin_inds_2, spin_inds_1
@@ -595,15 +602,11 @@ def process_lo_angular_intensity(
         # Assign the values to the correct positions and spin sectors
         dataset[species].values[
             :, a_inds[:, np.newaxis], spin_inds_1, position_index
-        ] = dataset[species].values[
-            :, a_inds[:, np.newaxis], spin_inds_2, position_index
-        ]
+        ] = species_data[:, a_inds[:, np.newaxis], spin_inds_2, position_index]
 
         dataset[species].values[
             :, b_inds[:, np.newaxis], spin_inds_2, position_index
-        ] = dataset[species].values[
-            :, b_inds[:, np.newaxis], spin_inds_1, position_index
-        ]
+        ] = species_data[:, b_inds[:, np.newaxis], spin_inds_1, position_index]
 
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_variable_attrs("codice", "l2-lo-angular")
@@ -638,6 +641,7 @@ def process_lo_angular_intensity(
     dataset["spin_sector"].attrs = cdf_attrs.get_variable_attributes(
         "spin_sector", check_schema=False
     )
+
     return dataset
 
 
@@ -1394,6 +1398,16 @@ def process_codice_l2(
             l2_dataset.attrs.update(
                 cdf_attrs.get_global_attributes("imap_codice_l2_lo-nsw-angular")
             )
+        # Drop vars not needed in L2
+        l2_dataset = l2_dataset.drop_vars(
+            [
+                "acquisition_time_per_esa_step",
+                "rgfo_half_spin",
+                "half_spin_per_esa_step",
+                "energy_table",
+            ]
+        )
+
     if dataset_name in [
         "imap_codice_l2_hi-counters-singles",
         "imap_codice_l2_hi-counters-aggregated",
