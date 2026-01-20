@@ -34,7 +34,6 @@ from imap_processing.codice.constants import (
     LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     NSW_POSITIONS,
-    PIXEL_ORIENTATIONS,
     PUI_POSITIONS,
     SOLAR_WIND_POSITIONS,
     SSD_ID_TO_ELEVATION,
@@ -578,13 +577,13 @@ def process_lo_angular_intensity(
     # To account for this, we replicate the counts observed in position 0 and 10 for
     # each esa step to either spin angles 0-11 or 12-23, depending on the pixel
     # orientation (A/B). See section 11.2.2 of the CoDICE algorithm document
-    # TODO pixel orientationin l2!!
-    a_inds = np.array(
-        [pos for pos, orientation in PIXEL_ORIENTATIONS.items() if orientation == "A"]
-    )
-    b_inds = np.array(
-        [pos for pos, orientation in PIXEL_ORIENTATIONS.items() if orientation == "B"]
-    )
+    # Use the variable "half_spin_per_esa_step" to determine the pixel orientations.
+    # When the half spin number is even, the configuration is A and when the half spin
+    # is odd, the configuration is B.
+    # TODO handle when half_spin_per_esa_step changes in the middle of the dataset
+    half_spin_per_esa_step = dataset["half_spin_per_esa_step"].data[0]
+    a_inds = np.where(half_spin_per_esa_step % 2 == 0)[0]
+    b_inds = np.where(half_spin_per_esa_step % 2 == 1)[0]
 
     position_index = position_index_to_adjust
     for species in species_list:
@@ -615,7 +614,7 @@ def process_lo_angular_intensity(
 
     # update species attrs
     for species in species_list:
-        attrs = unc_attrs if "unc" in unc_attrs else species_attrs
+        attrs = unc_attrs if "unc" in species else species_attrs
         # Replace {species} and {direction} in attrs
         attrs = apply_replacements_to_attrs(
             attrs, {"species": species, "direction": direction}
@@ -707,6 +706,16 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
         )
         # Store by replacing existing species data with omni-directional intensities
         l1b_dataset[species].values = omni_direction_intensities
+
+        # Calculate uncertainty if available
+        species_uncertainty = f"unc_{species}"
+        if species_uncertainty in l1b_dataset:
+            omni_uncertainties = l1b_dataset[species_uncertainty] / (
+                geometric_factor * species_efficiencies * energy_passbands
+            )
+            # Store by replacing existing uncertainty data with omni-directional
+            # uncertainties
+            l1b_dataset[species_uncertainty].values = omni_uncertainties
 
     # TODO: this may go away once Joey and I fix L1B CDF
     # Update global CDF attributes
@@ -965,6 +974,19 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
             dims=("epoch", f"energy_{species}", "spin_sector", "elevation_angle"),
             attrs=cdf_attrs.get_variable_attributes(species, check_schema=False),
         )
+        # Calculate uncertainty if available
+        species_uncertainty = f"unc_{species}"
+        if species_uncertainty in l1b_dataset:
+            sectored_uncertainties = l1b_dataset[species_uncertainty] / (
+                geometric_factor_da * species_efficiencies * energy_passbands
+            )
+            l2_dataset[species_uncertainty] = xr.DataArray(
+                sectored_uncertainties.data,
+                dims=("epoch", f"energy_{species}", "spin_sector", "elevation_angle"),
+                attrs=cdf_attrs.get_variable_attributes(
+                    species_uncertainty, check_schema=False
+                ),
+            )
 
     # Calculate spin angle
     # Formula:
@@ -998,17 +1020,6 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
                 l1b_dataset[variable].data,
                 dims=(f"energy_{variable.split('_')[1]}",),
                 attrs=cdf_attrs.get_variable_attributes(variable, check_schema=False),
-            )
-        elif variable.startswith("unc_"):
-            l2_dataset[variable] = xr.DataArray(
-                l1b_dataset[variable].data,
-                dims=(
-                    "epoch",
-                    f"energy_{variable.split('_')[1]}",
-                    "spin_sector",
-                    "elevation_angle",
-                ),
-                attrs=cdf_attrs.get_variable_attributes(variable),
             )
         elif variable == "data_quality":
             l2_dataset[variable] = l1b_dataset[variable]
