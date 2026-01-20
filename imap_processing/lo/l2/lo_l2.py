@@ -878,8 +878,9 @@ def calculate_all_rates_and_intensities(
     if cg_correction:
         logger.info("Interpolating map intensities to helio-frame energies")
         # Finish calculation of the exposure factor weighted projection of energy_sc
+        # and convert to units of keV
         dataset["energy_sc"] = (
-            dataset["energy_sc_exposure_factor"] / dataset["exposure_factor"]
+            dataset["energy_sc_exposure_factor"] / dataset["exposure_factor"] / 1e3
         )
         dataset = interpolate_map_flux_to_helio_frame(
             dataset,

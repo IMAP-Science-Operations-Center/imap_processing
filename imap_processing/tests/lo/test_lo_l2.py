@@ -2341,6 +2341,13 @@ class TestCalculateAllRatesAndIntensities:
                 dataset["energy"]
             )  # spacecraft frame energies
             assert call_args[0][2].equals(dataset["energy"])  # helio frame energies
+            # Check that s/c energies get computed in keV units
+            expected_sc_energies = (
+                dataset["energy_sc_exposure_factor"] / dataset["exposure_factor"] / 1e3
+            )
+            xr.testing.assert_allclose(
+                call_args[0][0]["energy_sc"], expected_sc_energies
+            )
             assert "ena_intensity" in call_args[0][3]  # variables to interpolate
             assert "bg_intensity" in call_args[0][3]
 
