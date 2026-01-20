@@ -52,6 +52,12 @@ class StationProperties(NamedTuple):
 
 # Verified by Observatory staff.
 STATIONS = {
+    "Formosa": StationProperties(
+        longitude=-47.256408,  # degrees East (negative = West)
+        latitude=-15.578032,  # degrees North (negative = South)
+        altitude=0.968,  # kilometers (~968 meters)
+        min_elevation_deg=5,  # 5 degrees is the requirement
+    ),
     "Kiel": StationProperties(
         longitude=10.1808,  # degrees East
         latitude=54.2632,  # degrees North
