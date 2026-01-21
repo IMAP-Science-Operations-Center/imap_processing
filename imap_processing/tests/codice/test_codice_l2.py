@@ -95,7 +95,7 @@ def mock_half_spin_per_esa_step():
 
 
 def test_compute_geometric_factors_all_full_mode(mock_half_spin_per_esa_step):
-    # rgfo_half_spin = 3 means all half_spin values (1 or 2) are < rgfo_half_spin
+    # rgfo_half_spin = 4 means all half_spin values (2 or 3) are < rgfo_half_spin
     dataset = xr.Dataset(
         {
             "rgfo_half_spin": (("epoch",), np.array([4, 4])),
@@ -115,7 +115,7 @@ def test_compute_geometric_factors_all_full_mode(mock_half_spin_per_esa_step):
 
 
 def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_per_esa_step):
-    # rgfo_half_spin = 0 means all half_spin values (>=1) are >= rgfo_half_spin
+    # rgfo_half_spin = 1 means all half_spin values (>=2) are >= rgfo_half_spin
     dataset = xr.Dataset(
         {
             "rgfo_half_spin": (("epoch",), np.array([1])),
@@ -135,7 +135,7 @@ def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_per_esa_step)
 
 
 def test_compute_geometric_factors_mixed(mock_half_spin_per_esa_step):
-    # rgfo_half_spin = 1
+    # rgfo_half_spin = 2
     dataset = xr.Dataset(
         {
             "rgfo_half_spin": (("epoch",), np.array([2])),

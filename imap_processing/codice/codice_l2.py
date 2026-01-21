@@ -318,7 +318,7 @@ def compute_geometric_factors(
     # false (full mode)
     # TODO: The mode calculation will need to be revisited after FW changes in january
     #  2026.
-    # After February 24th 2025 we need to do this step a different way.
+    # After November 24th 2025 we need to do this step a different way.
     date_switch = datetime.datetime(2025, 11, 24, 13, 53, 59)
     start_date = dataset.attrs.get("Logical_file_id", None)
     if start_date is None:
