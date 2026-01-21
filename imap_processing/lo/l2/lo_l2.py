@@ -1226,10 +1226,17 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
         j_c_prime > 0, dataset["bootstrap_intensity"] / j_c_prime * j_c_prime_err, 0
     )
 
+    valid_bootstrap = (dataset["bootstrap_intensity"] > 0) & np.isfinite(
+        dataset["bootstrap_intensity"]
+    )
     # Update the original intensity values
     # Equation 32 / 33
     # ena_intensity = ena_intensity (J_c) - (j_c_prime - J_b)
-    dataset["ena_intensity"] -= j_c_prime - dataset["bootstrap_intensity"]
+    dataset["ena_intensity"] = xr.where(
+        valid_bootstrap,
+        dataset["ena_intensity"] - j_c_prime + dataset["bootstrap_intensity"],
+        dataset["ena_intensity"],
+    )
 
     # Ensure corrected intensities are non-negative
     dataset["ena_intensity"] = dataset["ena_intensity"].where(
@@ -1243,9 +1250,6 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     # Equation 35 - systematic error for corrected intensity
     # Handle division by zero and ensure reasonable values
     dataset["ena_intensity_sys_err"] = xr.zeros_like(dataset["ena_intensity"])
-    valid_bootstrap = (dataset["bootstrap_intensity"] > 0) & np.isfinite(
-        dataset["bootstrap_intensity"]
-    )
 
     # Only compute where bootstrap intensity is valid
     dataset["ena_intensity_sys_err"] = xr.where(
