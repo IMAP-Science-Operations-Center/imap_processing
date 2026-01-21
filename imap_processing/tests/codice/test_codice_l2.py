@@ -88,8 +88,8 @@ def mock_half_spin_per_esa_step():
     """
     Mock half_spin_per_esa_step for testing.
     Example:
-      ESA steps 0–63 belong to half_spin=1
-      ESA steps 64–127 belong to half_spin=2
+      ESA steps 0–63 belong to half_spin=2
+      ESA steps 64–127 belong to half_spin=3
     """
     return np.repeat([2, 3], 64)
 

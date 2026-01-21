@@ -146,7 +146,7 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     #   Eventually we may have data from a day where the LUT changed. If this is the
     #  case, we need to split the data by epoch and assign different acquisition times
     half_spin_per_esa_step = np.tile(
-        np.asarray(half_spin_per_esa_step),
+        np.asarray(half_spin_per_esa_step).astype(np.uint8),
         (len(unpacked_dataset["acq_start_seconds"]), 1),
     )
     # Get acquisition time per esa step
@@ -164,10 +164,8 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_mask = np.broadcast_to(species_mask, species_data.shape)
     species_data = species_data.astype(np.float64)
     species_data[species_mask] = np.nan
-    # Set half_spin_per_esa_step to 63 which is the fill value
-    # half_spin_per_esa_step[nso_mask] = 63
-    # # Set acquisition time per esa step to nan where nso_mask is True
-    # acquisition_time_per_step[nso_mask] = np.nan
+    # Set half_spin_per_esa_step to 255 (uint8 fillval) where nso_mask is True
+    half_spin_per_esa_step[nso_mask] = 255
 
     # ========== Create CDF Dataset with Metadata ===========
     cdf_attrs = ImapCdfAttributes()

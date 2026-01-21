@@ -140,14 +140,13 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     half_spin_per_esa_step = np.tile(
         np.asarray(
             half_spin_per_esa_step,
-        ),
+        ).astype(np.uint8),
         (len(unpacked_dataset["acq_start_seconds"]), 1),
     )
     acquisition_time_per_step = np.tile(
         np.asarray(acquisition_time_per_step),
         (len(unpacked_dataset["acq_start_seconds"]), 1),
     )
-
     # For every energy after nso_half_spin, set data to fill values
     nso_half_spin = unpacked_dataset["nso_half_spin"].values
     nso_mask = half_spin_per_esa_step > nso_half_spin[:, np.newaxis]
@@ -156,10 +155,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_data = species_data.astype(np.float64)
     species_data[species_mask] = np.nan
 
-    # # Set half_spin_per_esa_step to 63 which is the fill value
-    # half_spin_per_esa_step[nso_mask] = 63
-    # # Set acquisition time per esa step to nan where nso_mask is True
-    # acquisition_time_per_step[nso_mask] = np.nan
+    # Set half_spin_per_esa_step to 255 (uint8 fillval) where nso_mask is True
+    half_spin_per_esa_step[nso_mask] = 255
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
