@@ -316,8 +316,9 @@ def compute_geometric_factors(
     # Perform the comparison and calculate modes
     # Modes will be true (reduced mode) anywhere half_spin > rgfo_half_spin otherwise
     # false (full mode)
-    # TODO after the 24th 2025 we need to do this step a different way. This will also
-    #   need to be revisited after FW changes in january 2026.
+    # TODO: The mode calculation will need to be revisited after FW changes in january
+    #  2026.
+    # After February 24th 2025 we need to do this step a different way.
     date_switch = datetime.datetime(2025, 11, 24, 13, 53, 59)
     start_date = dataset.attrs.get("Logical_file_id", None)
     if start_date is None:
