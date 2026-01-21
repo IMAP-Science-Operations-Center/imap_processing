@@ -53,7 +53,7 @@ def generate_coverage(
         Outage times per station.
     """
     duration_seconds = 24 * 60 * 60  # 86400 seconds in 24 hours
-    time_step = 3600  # 1 hr in seconds
+    time_step = 5 * 60  # 5 min in seconds
 
     stations = {
         "Kiel": STATIONS["Kiel"],
@@ -169,7 +169,7 @@ def format_coverage_summary(
     ]
 
     duration_seconds = 24 * 60 * 60  # 86400 seconds in 24 hours
-    time_step = 3600  # 1 hr in seconds
+    time_step = 5 * 60  # 5 min in seconds
 
     start_et_input = str_to_et(start_time)
     stop_et_input = start_et_input + duration_seconds
