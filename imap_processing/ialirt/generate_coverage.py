@@ -12,7 +12,7 @@ from imap_processing.spice.time import et_to_utc, str_to_et
 logger = logging.getLogger(__name__)
 
 ALL_STATIONS = [
-    *STATIONS.keys(),
+    "Kiel",
     "DSS-24",
     "DSS-25",
     "DSS-26",
@@ -57,9 +57,6 @@ def generate_coverage(
 
     stations = {
         "Kiel": STATIONS["Kiel"],
-        "Korea": STATIONS["Korea"],
-        "Manaus": STATIONS["Manaus"],
-        "SANSA": STATIONS["SANSA"],
     }
     coverage_dict = {}
     outage_dict = {}
