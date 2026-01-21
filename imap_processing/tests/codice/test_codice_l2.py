@@ -91,16 +91,17 @@ def mock_half_spin_per_esa_step():
       ESA steps 0–63 belong to half_spin=1
       ESA steps 64–127 belong to half_spin=2
     """
-    return np.repeat([1, 2], 64)
+    return np.repeat([2, 3], 64)
 
 
 def test_compute_geometric_factors_all_full_mode(mock_half_spin_per_esa_step):
     # rgfo_half_spin = 3 means all half_spin values (1 or 2) are < rgfo_half_spin
     dataset = xr.Dataset(
         {
-            "rgfo_half_spin": (("epoch",), np.array([3, 3])),
+            "rgfo_half_spin": (("epoch",), np.array([4, 4])),
             "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
         },
+        attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-angular_20250101_v001"},
     )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
@@ -117,9 +118,10 @@ def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_per_esa_step)
     # rgfo_half_spin = 0 means all half_spin values (>=1) are >= rgfo_half_spin
     dataset = xr.Dataset(
         {
-            "rgfo_half_spin": (("epoch",), np.array([0])),
+            "rgfo_half_spin": (("epoch",), np.array([1])),
             "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
         },
+        attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-angular_20250101_v001"},
     )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
@@ -136,9 +138,10 @@ def test_compute_geometric_factors_mixed(mock_half_spin_per_esa_step):
     # rgfo_half_spin = 1
     dataset = xr.Dataset(
         {
-            "rgfo_half_spin": (("epoch",), np.array([1])),
+            "rgfo_half_spin": (("epoch",), np.array([2])),
             "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
         },
+        attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-angular_20250101_v001"},
     )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
