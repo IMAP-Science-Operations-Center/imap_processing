@@ -66,6 +66,7 @@ def test_use_outages(furnish_kernels):
     )
 
     assert coverage_dict["Kiel"][0] == "2026-09-22T06:10:00.000"
+    assert coverage_dict["Kiel"][-1] == "2026-09-22T16:10:00.000"
     np.testing.assert_array_equal(outage_dict["Kiel"], expected_outages)
 
 
@@ -100,7 +101,6 @@ def test_dsn(furnish_kernels):
             "2026-09-22T00:00:00Z", outages=outages, dsn=dsn
         )
 
-        assert coverage_dict["Kiel"][0] == "2026-09-22T06:10:00.000"
         assert coverage_dict["DSS-75"][-1] == "2026-09-22T13:45:00.000"
 
         output = format_coverage_summary(
