@@ -189,14 +189,26 @@ bg_rate:
   FORMAT: F6.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-bg_rate_uncert:
+bg_rate_stat_uncert:
   <<: *default_float32
-  CATDESC: Uncertainty in the background count rate from non-ENA (non-heliospheric) sources.
-  FIELDNAM: Background Rate Uncertainty
+  CATDESC: Statistical uncertainty in the background count rate from non-ENA (non-heliospheric) sources.
+  FIELDNAM: Background Rate Stat Uncertainty
   UNITS: count s-1
   DEPEND_0: epoch
   VAR_TYPE: support_data
   LABLAXIS: Rate Uncertainty
+  DISPLAY_TYPE: map_image
+  FORMAT: F6.3
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+bg_rate_sys_err:
+  <<: *default_float32
+  CATDESC: Systematic error in the background count rate from non-ENA (non-heliospheric) sources.
+  FIELDNAM: Background Rate Sys Error
+  UNITS: count s-1
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  LABLAXIS: Rate Error
   DISPLAY_TYPE: map_image
   FORMAT: F6.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical

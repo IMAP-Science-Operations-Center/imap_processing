@@ -2475,6 +2475,10 @@ class TestIntegration:
         assert len(result) == 1
         assert isinstance(result[0], xr.Dataset)
 
+        # Make sure that bg_rate variables are present
+        for var in ["bg_rate", "bg_rate_stat_uncert", "bg_rate_sys_err"]:
+            assert var in result[0].data_vars
+
 
 # =============================================================================
 # ERROR HANDLING TESTS

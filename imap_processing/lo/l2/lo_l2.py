@@ -440,8 +440,8 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
     rename_map = {
         "exposure_time": "exposure_factor",
         f"{species}_counts": "counts",
-        f"{species}_background_rates": "bg_rates",
-        f"{species}_background_rates_stat_uncert": "bg_rates_stat_uncert",
+        f"{species}_background_rates": "bg_rate",
+        f"{species}_background_rates_stat_uncert": "bg_rate_stat_uncert",
     }
     pset_renamed = pset_renamed.rename_vars(rename_map)
 
@@ -528,10 +528,10 @@ def calculate_efficiency_corrected_quantities(
     pset["counts_over_eff_squared"] = pset["counts"] / (pset["efficiency"] ** 2)
 
     # background * exposure_factor for weighted average
-    pset["bg_rates_exposure_factor"] = pset["bg_rates"] * pset["exposure_factor"]
+    pset["bg_rate_exposure_factor"] = pset["bg_rate"] * pset["exposure_factor"]
     # background_uncertainty ** 2 * exposure_factor ** 2
-    pset["bg_rates_stat_uncert_exposure_factor2"] = (
-        pset["bg_rates_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
+    pset["bg_rate_stat_uncert_exposure_factor2"] = (
+        pset["bg_rate_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
     )
 
     return pset
@@ -570,10 +570,10 @@ def project_pset_to_map(
         "counts",
         "counts_over_eff",
         "counts_over_eff_squared",
-        "bg_rates",
-        "bg_rates_stat_uncert",
-        "bg_rates_exposure_factor",
-        "bg_rates_stat_uncert_exposure_factor2",
+        "bg_rate",
+        "bg_rate_stat_uncert",
+        "bg_rate_exposure_factor",
+        "bg_rate_stat_uncert_exposure_factor2",
     ]
     if cg_correct:
         value_keys.append("energy_sc_exposure_factor")
@@ -978,26 +978,24 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
     """
     # Equation 6 from mapping document (background rate)
     # exposure time weighted average of the background rates
-    dataset["bg_rates"] = (
-        dataset["bg_rates_exposure_factor"] / dataset["exposure_factor"]
-    )
+    dataset["bg_rate"] = dataset["bg_rate_exposure_factor"] / dataset["exposure_factor"]
     # Equation 7 from mapping document (background statistical uncertainty)
-    dataset["bg_rates_stat_uncert"] = np.sqrt(
-        dataset["bg_rates_stat_uncert_exposure_factor2"]
+    dataset["bg_rate_stat_uncert"] = np.sqrt(
+        dataset["bg_rate_stat_uncert_exposure_factor2"]
         / dataset["exposure_factor"] ** 2
     )
     # Equation 8 from mapping document (background systematic uncertainty)
-    dataset["bg_rates_sys_err"] = (
-        dataset["bg_rates"]
+    dataset["bg_rate_sys_err"] = (
+        dataset["bg_rate"]
         * dataset["geometric_factor_stat_uncert"]
         / dataset["geometric_factor"]
     )
 
     # Background intensity
-    dataset["bg_intensity"] = dataset["bg_rates"] / (
+    dataset["bg_intensity"] = dataset["bg_rate"] / (
         dataset["geometric_factor"] * dataset["energy"]
     )
-    dataset["bg_intensity_stat_uncert"] = dataset["bg_rates_stat_uncert"] / (
+    dataset["bg_intensity_stat_uncert"] = dataset["bg_rate_stat_uncert"] / (
         dataset["geometric_factor"] * dataset["energy"]
     )
     dataset["bg_intensity_sys_err"] = (
@@ -1335,8 +1333,8 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
         "geometric_factor_stat_uncert",
         "counts_over_eff",
         "counts_over_eff_squared",
-        "bg_rates_exposure_factor",
-        "bg_rates_stat_uncert_exposure_factor2",
+        "bg_rate_exposure_factor",
+        "bg_rate_stat_uncert_exposure_factor2",
     ]
 
     for potential_var in potential_vars:
