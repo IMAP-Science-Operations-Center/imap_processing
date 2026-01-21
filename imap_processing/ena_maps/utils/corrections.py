@@ -627,7 +627,7 @@ def _calculate_compton_getting_transform(
     pset["energy_sc"] = 0.5 * PROTON_MASS_GRAMS * (velocity_sc * 1e5) ** 2 / ERG_PER_EV
 
     # Calculate the velocity vector in the spacecraft frame
-    # v⃗_sc = |v_sc| * êₛ (velocity direction follows look direction)
+    # v⃗_sc = -|v_sc| * êₛ (velocity direction is opposite to look direction)
     velocity_vector_sc = -1 * velocity_sc * pset["look_direction"]
 
     # Calculate the ENA velocity vector in the heliosphere frame
