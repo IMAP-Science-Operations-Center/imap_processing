@@ -9,6 +9,7 @@ from imap_processing.codice.codice_l2 import process_codice_l2
 dataset = process_codice_l2(l1_filename)
 """
 
+import datetime
 import logging
 from pathlib import Path
 
@@ -315,7 +316,18 @@ def compute_geometric_factors(
     # Perform the comparison and calculate modes
     # Modes will be true (reduced mode) anywhere half_spin > rgfo_half_spin otherwise
     # false (full mode)
-    modes = half_spin_per_esa_step > rgfo_half_spin
+    # TODO after the 24th 2025 we need to do this step a different way. This will also
+    #   need to be revisited after FW changes in january 2026.
+    date_switch = datetime.datetime(2025, 11, 24, 13, 53, 59)
+    start_date = dataset.attrs.get("Logical_file_id", None)
+    if start_date is None:
+        raise ValueError("Dataset is missing Logical_file_id attribute.")
+    processing_date = datetime.datetime.strptime(start_date.split("_")[4], "%Y%m%d")
+    if processing_date < date_switch:
+        modes = (half_spin_per_esa_step > rgfo_half_spin) & (rgfo_half_spin > 0)
+    else:
+        # After November 24th, 2025, we should be using all half spin values.
+        modes = half_spin_per_esa_step.astype(bool)
 
     # Get the geometric factors based on the modes
     gf = np.where(
