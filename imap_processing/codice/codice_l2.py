@@ -301,8 +301,6 @@ def compute_geometric_factors(
         The L2 dataset containing rgfo_half_spin data variable.
     geometric_factor_lookup : dict
         A dict with a full and reduced mode array with shape (esa_steps, position).
-    start_date : str
-        The start date of the dataset in YYYYMMDD format.
 
     Returns
     -------
@@ -1322,11 +1320,9 @@ def process_codice_l2(
     # This should get science files since ancillary or spice doesn't have data_type
     # as data level.
     file_path = dependencies.get_file_paths(descriptor=descriptor)[0]
-    science_file = ScienceFilePath(file_path)
     # Now form product name from descriptor
-    descriptor = science_file.descriptor
+    descriptor = ScienceFilePath(file_path).descriptor
     dataset_name = f"imap_codice_l2_{descriptor}"
-
     # TODO: update list of datasets that need geometric factors (if needed)
     # Compute geometric factors needed for intensity calculations
     if dataset_name in [
@@ -1343,7 +1339,7 @@ def process_codice_l2(
         geometric_factor_lookup = get_geometric_factor_lut(dependencies)
         efficiency_lookup = get_efficiency_lut(dependencies)
         geometric_factors = compute_geometric_factors(
-            l2_dataset, geometric_factor_lookup, start_date
+            l2_dataset, geometric_factor_lookup
         )
 
         if dataset_name == "imap_codice_l2_lo-sw-species":
