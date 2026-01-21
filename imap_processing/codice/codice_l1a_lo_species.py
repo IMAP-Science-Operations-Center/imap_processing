@@ -121,7 +121,14 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         num_packets, num_species, esa_steps, *collapsed_shape
     )
 
+    # If data size is less than 128, pad with nan to make it 128
     half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
+    if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
+        pad_size = constants.NUM_ESA_STEPS - len(half_spin_per_esa_step)
+        half_spin_per_esa_step = np.concatenate(
+            (np.array(half_spin_per_esa_step), np.full(pad_size, np.nan))
+        )
+
     acquisition_time_per_step = calculate_acq_time_per_step(
         sci_lut_data["lo_stepping_tab"]
     )

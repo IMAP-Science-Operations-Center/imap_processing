@@ -111,7 +111,13 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         .transpose(0, 1, 3, 2)
     )
 
+    # If data size is less than 128, pad with nan to make it 128
     half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
+    if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
+        pad_size = constants.NUM_ESA_STEPS - len(half_spin_per_esa_step)
+        half_spin_per_esa_step = np.concatenate(
+            (np.array(half_spin_per_esa_step), np.full(pad_size, np.nan))
+        )
     # TODO: Handle epoch dependent acquisition time and half spin per esa step
     #   For now, just tile the same array for all epochs.
     #   Eventually we may have data from a day where the LUT changed. If this is the
