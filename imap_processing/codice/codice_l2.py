@@ -317,9 +317,9 @@ def compute_geometric_factors(
     # Modes will be true (reduced mode) anywhere half_spin > rgfo_half_spin otherwise
     # false (full mode)
     # TODO: The mode calculation will need to be revisited after FW changes in january
-    #  2026.
+    #  2026. We also need to fix this on days when the sci Lut changes.
     # After November 24th 2025 we need to do this step a different way.
-    date_switch = datetime.datetime(2025, 11, 24, 13, 53, 59)
+    date_switch = datetime.datetime(2025, 11, 24)
     start_date = dataset.attrs.get("Logical_file_id", None)
     if start_date is None:
         raise ValueError("Dataset is missing Logical_file_id attribute.")
@@ -327,8 +327,9 @@ def compute_geometric_factors(
     if processing_date < date_switch:
         modes = (half_spin_per_esa_step > rgfo_half_spin) & (rgfo_half_spin > 0)
     else:
-        # After November 24th, 2025, we should be using all half spin values.
-        modes = half_spin_per_esa_step.astype(bool)
+        # After November 24th, 2025, we no longer apply reduced geometric factors;
+        # always use the full geometric factor lookup.
+        modes = np.zeros_like(half_spin_per_esa_step, dtype=bool)
 
     # Get the geometric factors based on the modes
     gf = np.where(
