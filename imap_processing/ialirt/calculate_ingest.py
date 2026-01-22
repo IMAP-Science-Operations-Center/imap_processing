@@ -4,9 +4,9 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from imap_processing.ialirt.constants import STATIONS
-
 logger = logging.getLogger(__name__)
+
+STATIONS = ["Kiel"]
 
 
 def packets_created(start_file_creation: datetime, lines: list) -> list:
@@ -30,32 +30,46 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
     2  tlmrelay      001-00:00:00  020-19:57:14    0.0
     10  Kiel          021-09:57:58  021-08:40:39    2.0
     """
-    dict = {
+    station_dict = {
         station: {
             "last_data_received": [],
             "rate_kbps": [],
         }
-        for station in list(STATIONS) + ["tlmrelay"]
+        for station in list(STATIONS)
     }
 
-    year = start_file_creation.year
-    in_rate_table = False
+    station_year = {station: start_file_creation.year for station in station_dict}
+    prev_doy: dict[str, int | None] = {station: None for station in station_dict}
 
     for line in lines:
-        if "Rate (kbps)" in line:
-            in_rate_table = True
-            continue
-        if (in_rate_table and "tlmrelay" in line) or any(
-            station in line for station in STATIONS
-        ):
+        try :
+            int(line.split()[0])
             rate = float(line.split()[-1])
             data_last_received = line.split()[2]
+            doy = int(data_last_received[:3])
             station = line.split()[1]
-            dt = datetime.strptime(f"{year}/{data_last_received}", "%Y/%j-%H:%M:%S", )
-            dict[station]["last_data_received"].append(dt)
-            dict[station]["rate_kbps"].append(rate)
 
-    return dict
+            # Handle end of year rollover
+            if prev_doy[station] is not None and doy < prev_doy[station]:
+                station_year[station] += 1
+
+            prev_doy[station] = doy
+
+            dt = (
+                datetime.strptime(
+                    f"{station_year[station]}/{data_last_received}",
+                    "%Y/%j-%H:%M:%S",
+                )
+                .replace(tzinfo=timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z")
+            )
+            station_dict[station]["last_data_received"].append(dt)
+            station_dict[station]["rate_kbps"].append(rate)
+        except:
+            pass
+
+    return station_dict
 
 
 def format_ingest_data(last_filename: str, log_lines: list) -> dict:
@@ -82,22 +96,13 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
       "summary": "I-ALiRT Real-time Ingest Summary",
       "generated": "2025-08-07T21:36:09Z",
       "time_format": "UTC (ISOC)",
-      "stations": [
-        "Kiel"
-      ],
       "time_range": [
         "2025-07-30T23:00:00",
         "2025-07-31T02:00:00"
       ],
-      "packet_ingest": [
-        "2025-07-31T00:00:00",
-        "2025-07-31T02:01:00"
-      ],
+      "Kiel": {"last_data_received": ["2025-01-21T09:57:58Z", "2025-01-21T10:27:59Z"],
+      "rate_kbps": [2.0, 2.0]}}
     }
-
-    where time_range is the overall time range of the data,
-    packet_ingest contains timestamps when packets were finalized,
-    and tcp contains connection windows for each station.
     """
     # File creation time.
     last_timestamp_str = last_filename.split(".")[2]
@@ -109,6 +114,9 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
         minutes=5
     )
 
+    # Global packet ingest timestamps
+    station_dict = packets_created(start_of_time, log_lines)
+
     realtime_summary: dict[str, Any] = {
         "summary": "I-ALiRT Real-time Ingest Summary",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -117,14 +125,8 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
             start_of_time.isoformat(),
             end_of_time.isoformat(),
         ],  # Overall time range of the data
-        "packet_ingest": [],  # Global packet ingest times
+        station_dict
     }
-
-    # Global packet ingest timestamps
-    packet_times = packets_created(start_of_time, log_lines)
-    realtime_summary["packet_ingest"] = [
-        pkt_time.isoformat() for pkt_time in packet_times
-    ]
 
     logger.info(f"Created ingest files for {realtime_summary['time_range']}")
 
