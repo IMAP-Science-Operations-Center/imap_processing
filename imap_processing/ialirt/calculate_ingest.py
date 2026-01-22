@@ -1,4 +1,4 @@
-"""Packet ingest and tcp connection times for each station."""
+"""Packet ingest times and rates for each station."""
 
 import logging
 from datetime import datetime, timedelta, timezone
@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 STATIONS = ["Kiel"]
 
 
-def packets_created(start_file_creation: datetime, lines: list) -> list:
+def packets_created(start_file_creation: datetime, lines: list) -> dict:
     """
-    Find timestamps when packets were created based on log lines.
+    Find timestamps and rates when packets were ingested based on log lines.
 
     Parameters
     ----------
@@ -22,35 +22,35 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
 
     Returns
     -------
-    packet_times : list
-        List of datetime objects when packets were created.
-
-    Notes:
-    ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)
-    2  tlmrelay      001-00:00:00  020-19:57:14    0.0
-    10  Kiel          021-09:57:58  021-08:40:39    2.0
+    station_dict : dict
+        Timestamps and rates when packets were ingested.
     """
-    station_dict = {
-        station: {
-            "last_data_received": [],
-            "rate_kbps": [],
-        }
+    station_dict: dict[str, dict[str, list[Any]]] = {
+        station: {"last_data_received": [], "rate_kbps": []}
         for station in list(STATIONS)
     }
 
-    station_year = {station: start_file_creation.year for station in station_dict}
+    station_year: dict[str, int] = {
+        station: start_file_creation.year for station in station_dict
+    }
     prev_doy: dict[str, int | None] = {station: None for station in station_dict}
 
     for line in lines:
-        try :
-            int(line.split()[0])
+        # If line begins with a digit and the station is present.
+        if line.split()[0].isdigit() and line.split()[1] in STATIONS:
+            # Get bps rate.
             rate = float(line.split()[-1])
+            # Get last data received.
             data_last_received = line.split()[2]
+            # Get day of year.
             doy = int(data_last_received[:3])
+            # Get station.
             station = line.split()[1]
 
             # Handle end of year rollover
-            if prev_doy[station] is not None and doy < prev_doy[station]:
+            prev = prev_doy[station]
+
+            if prev is not None and doy < prev:
                 station_year[station] += 1
 
             prev_doy[station] = doy
@@ -66,15 +66,13 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
             )
             station_dict[station]["last_data_received"].append(dt)
             station_dict[station]["rate_kbps"].append(rate)
-        except:
-            pass
 
     return station_dict
 
 
 def format_ingest_data(last_filename: str, log_lines: list) -> dict:
     """
-    Format TCP connection and packet ingest data from multiple log files.
+    Format packet ingest times and rates from log file.
 
     Parameters
     ----------
@@ -86,8 +84,7 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
     Returns
     -------
     realtime_summary : dict
-        Structured output with TCP connection windows per station
-        and global packet ingest timestamps.
+        Structured output with packet receipt info per station.
 
     Notes
     -----
@@ -97,11 +94,11 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
       "generated": "2025-08-07T21:36:09Z",
       "time_format": "UTC (ISOC)",
       "time_range": [
-        "2025-07-30T23:00:00",
-        "2025-07-31T02:00:00"
+        "2025-01-21T09:50:58Z",
+        "2025-01-21T09:55:58Z"
       ],
-      "Kiel": {"last_data_received": ["2025-01-21T09:57:58Z", "2025-01-21T10:27:59Z"],
-      "rate_kbps": [2.0, 2.0]}}
+        "Kiel": {"last_data_received": ["2025-01-21T09:50:58Z", "2025-01-21T09:51:58Z"],
+        "rate_kbps": [2.0, 2.0]}
     }
     """
     # File creation time.
@@ -109,12 +106,12 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
     last_timestamp_str = last_timestamp_str.replace("_", ":")
     end_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S")
 
-    # File creation time.
+    # File is created every 5 minutes.
     start_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(
         minutes=5
     )
 
-    # Global packet ingest timestamps
+    # Parse file.
     station_dict = packets_created(start_of_time, log_lines)
 
     realtime_summary: dict[str, Any] = {
@@ -125,7 +122,7 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
             start_of_time.isoformat(),
             end_of_time.isoformat(),
         ],  # Overall time range of the data
-        station_dict
+        **station_dict,
     }
 
     logger.info(f"Created ingest files for {realtime_summary['time_range']}")

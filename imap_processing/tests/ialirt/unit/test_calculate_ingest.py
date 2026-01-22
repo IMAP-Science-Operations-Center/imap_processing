@@ -20,13 +20,17 @@ def test_packets_created():
 
     actual_output = packets_created(datetime(2025, 7, 31, 16, 33, 39, 0), lines)
 
-    # 2025/212-16:33:39.186
-    time_0 = datetime(2025, 7, 31, 16, 33, 39, 186000)
-    # 2025/212-16:34:40.199
-    time_1 = datetime(2025, 7, 31, 16, 34, 40, 199000)
+    expected = {
+        "Kiel": {
+            "last_data_received": [
+                "2025-01-21T09:57:58Z",
+                "2025-01-21T10:27:59Z",
+            ],
+            "rate_kbps": [2.0, 2.0],
+        }
+    }
 
-    assert actual_output[0] == time_0
-    assert actual_output[1] == time_1
+    assert actual_output == expected
 
 
 def test_format_ingest_data():
@@ -68,67 +72,24 @@ def test_format_ingest_data():
                 f"iois_1_packets_{pkt_time}.\n"
             )
 
+        if current_time == base_date + timedelta(hours=8):
+            log_lines.append(
+                "ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)\n"
+            )
+            log_lines.append("10  Kiel          365-08:00:00  365-08:00:00    2.0\n")
+
+        if current_time == base_date + timedelta(hours=15):
+            log_lines.append(
+                "ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)\n"
+            )
+            log_lines.append("10  Kiel          001-15:00:00  001-08:00:00    2.0\n")
+
         current_time += timedelta(seconds=1)
 
     filenames = sorted(filenames)
 
     data = format_ingest_data(filenames[-1], log_lines)
 
-    assert data["packet_ingest"][0] == "2025-07-31T08:00:00"
-    assert data["packet_ingest"][-1] == "2025-07-31T15:00:00"
-    assert data["connection_times"]["Kiel"][0]["start"] == "2025-07-31T08:00:00"
-    assert data["connection_times"]["Kiel"][0]["end"] == "2025-07-31T16:00:00"
-
-
-def test_format_ingest_data_edge_cases():
-    """Test the edge cases of the format_ingest_data function."""
-
-    # File names for a short 3 hour test window
-    filenames = [
-        "flight_iois_1.log.2025-212T00_00_00.000000",
-        "flight_iois_1.log.2025-212T01_00_00.000000",
-        "flight_iois_1.log.2025-212T02_00_00.000000",
-    ]
-
-    base_date = datetime(2025, 7, 31, 0, 0, 0)
-    log_lines = []
-
-    # Simulate case: log starts with a "down!" at 00:15 (no prior "up.")
-    timestamp_down = (base_date + timedelta(minutes=15)).strftime("%Y/%j-%H:%M:%S.%f")[
-        :-3
-    ]
-    log_lines.append(f"{timestamp_down} Kiel antenna partner connection is down!\n")
-
-    # Add packet event at 00:00
-    timestamp_pkt = base_date.strftime("%Y/%j-%H:%M:%S.%f")[:-3]
-    pkt_time = base_date.strftime("%Y_%j_%H_%M_%S")
-    log_lines.append(
-        f"{timestamp_pkt} Renamed iois_1_packets_{pkt_time}.partial to "
-        f"iois_1_packets_{pkt_time}.\n"
-    )
-
-    # Simulate case: "up." at 02:00 (no matching "down!" before end of file)
-    timestamp_up = (base_date + timedelta(hours=2)).strftime("%Y/%j-%H:%M:%S.%f")[:-3]
-    log_lines.append(f"{timestamp_up} Kiel antenna partner connection is up.\n")
-
-    # Add packet event at 02:01
-    timestamp_pkt = (base_date + timedelta(hours=2, minutes=1)).strftime(
-        "%Y/%j-%H:%M:%S.%f"
-    )[:-3]
-    pkt_time = (base_date + timedelta(hours=2, minutes=1)).strftime("%Y_%j_%H_%M_%S")
-    log_lines.append(
-        f"{timestamp_pkt} Renamed iois_1_packets_{pkt_time}.partial to "
-        f"iois_1_packets_{pkt_time}.\n"
-    )
-    filenames = sorted(filenames)
-
-    data = format_ingest_data(filenames[-1], log_lines)
-
-    assert data["connection_times"]["Kiel"][0]["start"] == "2025-07-29T02:00:00"
-    assert data["connection_times"]["Kiel"][0]["end"] == "2025-07-31T00:15:00"
-
-    assert data["connection_times"]["Kiel"][1]["start"] == "2025-07-31T02:00:00"
-    assert data["connection_times"]["Kiel"][1]["end"] == "2025-07-31T02:00:00"
-
-    assert data["packet_ingest"][0] == "2025-07-31T00:00:00"
-    assert data["packet_ingest"][1] == "2025-07-31T02:01:00"
+    assert data["Kiel"]["last_data_received"][0] == "2025-12-31T08:00:00Z"
+    assert data["Kiel"]["last_data_received"][-1] == "2026-01-01T15:00:00Z"
+    assert data["Kiel"]["rate_kbps"][0] == 2.0
