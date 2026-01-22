@@ -173,6 +173,13 @@ def process_swapi_ialirt(
         )
         mid_measurement = (measurement_time[0] + measurement_time[-1]) // 2
 
+        status_values = grouped_dataset["swapi_flag"][
+            (grouped_dataset["group"] == group).values
+        ]
+        if np.any(status_values == 0):
+            logger.info(f"Off-nominal value detected at {met_to_utc(mid_measurement)}")
+            continue
+
         # Ensure no duplicates and all values from 0 to 11 are present
         if not np.array_equal(seq_values.values.astype(int), np.arange(12)):
             incomplete_groups.append(group)
