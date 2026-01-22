@@ -1248,8 +1248,8 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     )
 
     # Ensure corrected intensities are non-negative
-    dataset["ena_intensity"] = dataset["ena_intensity"].where(
-        dataset["ena_intensity"] >= 0, 0
+    dataset["ena_intensity"] = xr.where(
+        dataset["ena_intensity"] < 0, 0, dataset["ena_intensity"]
     )
 
     # Equation 34 - statistical uncertainty
