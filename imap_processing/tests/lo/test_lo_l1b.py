@@ -9,6 +9,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.lo.l1b.lo_l1b import (
+    calculate_de_rates,
     calculate_histogram_rates,
     calculate_tof1_for_golden_triples,
     convert_start_end_acq_times,
@@ -1275,3 +1276,123 @@ def test_set_spin_cycle_from_spin_data_insufficient_spins():
 
     # Verify spin_cycle shape matches filtered data
     assert result["spin_cycle"].shape == (1, 7)
+
+
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+    return_value=(473389199, 473472001),
+)
+@patch(
+    "imap_processing.lo.l1b.lo_l1b._get_esa_level_indices",
+    return_value=np.arange(7),
+)
+def test_calculate_de_rates(
+    mock_get_esa_level_indices, mock_get_pointing_times, attr_mgr_l1b, anc_dependencies
+):
+    """Test the calculate_de_rates function."""
+    # Use MET times from the test sweep table (2025-01-01)
+    met_start = 473389200
+    epoch_time = met_to_ttj2000ns([met_start, met_start + 15 * 28])
+
+    # Create individual epochs for each direct event in TTJ2000ns
+    de_epochs = met_to_ttj2000ns(
+        [
+            met_start + 10,
+            met_start + 20,
+            met_start + 30,
+            met_start + 15 * 28 + 10,
+            met_start + 15 * 28 + 20,
+        ]
+    )
+
+    # Create a simple l1b_de dataset with a few direct events
+    l1b_de = xr.Dataset(
+        {
+            "spin_cycle": ("epoch", [7, 9, 11, 35, 37]),
+            "esa_step": ("epoch", [1, 2, 3, 1, 2]),
+            "spin_bin": ("epoch", [0, 120, 240, 60, 180]),
+            "species": ("epoch", ["H", "O", "H", "H", "O"]),
+            "coincidence_type": (
+                "epoch",
+                ["111111", "110100", "111000", "101000", "100100"],
+            ),
+            "avg_spin_durations": ("epoch", [15.0, 15.0, 15.0, 15.0, 15.0]),
+        },
+        coords={"epoch": de_epochs},
+    )
+
+    # Create l1a_spin dataset
+    l1a_spin = xr.Dataset(
+        {
+            "shcoarse": ("epoch", [met_start, met_start + 15 * 28]),
+            "num_completed": ("epoch", [28, 28]),
+            "acq_start_sec": ("epoch", [met_start, met_start + 15 * 28]),
+            "acq_start_subsec": ("epoch", [0, 0]),
+            "acq_end_sec": ("epoch", [met_start + 15 * 28, met_start + 2 * 15 * 28]),
+            "acq_end_subsec": ("epoch", [0, 0]),
+        },
+        coords={"epoch": epoch_time},
+    )
+
+    # Create l1b_nhk dataset with pivot angle information
+    l1b_nhk = xr.Dataset(
+        {"pcc_cumulative_cnt_pri": ("epoch", [45.0])},
+        coords={"epoch": epoch_time[:1]},
+    )
+
+    sci_dependencies = {
+        "imap_lo_l1b_de": l1b_de,
+        "imap_lo_l1a_spin": l1a_spin,
+        "imap_lo_l1b_nhk": l1b_nhk,
+    }
+
+    result = calculate_de_rates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
+
+    assert result.attrs["Logical_source"] == "imap_lo_l1b_derates"
+    assert "epoch" in result.coords
+    assert "esa_step" in result.coords
+    assert "spin_bin" in result.coords
+
+    # Check that all expected data variables are present
+    expected_vars = [
+        "h_counts",
+        "o_counts",
+        "triple_counts",
+        "double_counts",
+        "h_rates",
+        "o_rates",
+        "triple_rates",
+        "double_rates",
+        "exposure_time",
+        "spin_cycle",
+        "esa_mode",
+    ]
+    for var in expected_vars:
+        assert var in result.data_vars
+
+    # Check shapes
+    assert result["h_counts"].shape == (2, 7, 60)  # (num_asc, num_esa_steps, num_bins)
+    assert result["o_counts"].shape == (2, 7, 60)
+    assert result["exposure_time"].shape == (2, 7)
+
+    # Verify some counts are correct based on our test data
+    # First ASC (spin_cycle 0) has 3 events at esa_step 1, 2, 3
+    # Second ASC (spin_cycle 28) has 2 events at esa_step 1, 2
+    # H species: indices 0, 2, 3
+    # ASC 0 has 2 H (esa_step 1, 3), ASC 1 has 1 H (esa_step 1)
+    # O species: indices 1, 4
+    # ASC 0 has 1 O (esa_step 2), ASC 1 has 1 O (esa_step 2)
+    # First ASC, esa_step 1, spin_bin 0
+    assert result["h_counts"][0, 0, 0] == 1
+    # First ASC, esa_step 3, spin_bin 4 (240//60)
+    assert result["h_counts"][0, 2, 4] == 1
+    # First ASC, esa_step 2, spin_bin 2 (120//60)
+    assert result["o_counts"][0, 1, 2] == 1
+
+    # Check that pivot angle was set
+    assert result["pivot_angle"].values[0] == 45.0
+
+    # Test that lo_l1b() with descriptor="derates" produces the correct output
+    output_datasets = lo_l1b(sci_dependencies, anc_dependencies, descriptor="derates")
+    assert len(output_datasets) == 1
+    assert output_datasets[0].attrs["Logical_source"] == "imap_lo_l1b_derates"

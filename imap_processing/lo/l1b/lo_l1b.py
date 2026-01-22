@@ -1652,7 +1652,9 @@ def calculate_de_rates(
     l1a_spin = sci_dependencies["imap_lo_l1a_spin"]
     l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
     # Set the asc_start for each DE by removing the average spin cycle
-    # which is a function of esa_step
+    # which is a function of esa_step (see set_spin_cycle function)
+    # spin_cycle is an average over esa steps and spins per asc, so finding
+    # the "average" spin that an esa step occurred at.
     asc_start = l1b_de["spin_cycle"] - (7 + (l1b_de["esa_step"] - 1) * 2)
 
     # Get unique ASC values and create a mapping from asc_start to index
