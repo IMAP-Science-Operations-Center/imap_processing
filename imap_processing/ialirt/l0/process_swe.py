@@ -11,6 +11,7 @@ from imap_processing.ialirt.utils.grouping import (
     find_groups,
 )
 from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.swe.l1a.swe_science import decompressed_counts
 from imap_processing.swe.l1b.swe_l1b import (
     deadtime_correction,
