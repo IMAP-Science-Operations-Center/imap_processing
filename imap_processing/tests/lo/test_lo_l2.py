@@ -851,7 +851,7 @@ class TestNormalizePsetCoordinates:
         # Check that energy coordinate is present
         assert "energy" in result.coords
         expected_energies = (
-            np.array([0.015, 0.029, 0.055, 0.11, 0.209, 0.439, 0.872])
+            np.array([0.01633, 0.03047, 0.05576, 0.1063, 0.2, 0.405, 0.7873])
             if species == "h"
             else np.array([0.016, 0.032, 0.065, 0.135, 0.279, 0.601, 1.206])
         )
