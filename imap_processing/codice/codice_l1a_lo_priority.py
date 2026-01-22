@@ -166,6 +166,8 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_data[species_mask] = np.nan
     # Set half_spin_per_esa_step to 255 (uint8 fillval) where nso_mask is True
     half_spin_per_esa_step[nso_mask] = 255
+    # Set acquisition_time_per_step to nan where nso_mask is True
+    acquisition_time_per_step[nso_mask] = np.nan
 
     # ========== Create CDF Dataset with Metadata ===========
     cdf_attrs = ImapCdfAttributes()

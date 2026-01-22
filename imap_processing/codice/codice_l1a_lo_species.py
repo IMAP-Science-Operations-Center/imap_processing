@@ -157,6 +157,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # Set half_spin_per_esa_step to 255 (uint8 fillval) where nso_mask is True
     half_spin_per_esa_step[nso_mask] = 255
+    # Set acquisition_time_per_step to nan where nso_mask is True
+    acquisition_time_per_step[nso_mask] = np.nan
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.

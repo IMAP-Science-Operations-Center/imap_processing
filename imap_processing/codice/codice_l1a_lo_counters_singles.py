@@ -143,6 +143,8 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     counters_data[counters_mask] = np.nan
     # Set half_spin_per_esa_step to 255 (uint8 fillval) where nso_mask is True
     half_spin_per_esa_step[nso_mask] = 255
+    # Set acquisition_time_per_step to nan where nso_mask is True
+    acquisition_time_per_step[nso_mask] = np.nan
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta

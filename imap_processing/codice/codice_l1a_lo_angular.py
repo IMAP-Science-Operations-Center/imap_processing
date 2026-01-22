@@ -58,8 +58,7 @@ def _despin_species_data(
     # 24 is derived by multiplying spin sector dim from collapse table by 2
     spin_sector_len = constants.LO_DESPIN_SPIN_SECTORS
     despun_shape = (num_packets, num_species, esa_steps, spin_sector_len, inst_az_dim)
-    despun_data = np.full(despun_shape, np.nan)
-
+    despun_data = np.full(despun_shape, 0)
     # Pixel orientation array and mapping positions
     pixel_orientation = np.array(
         sci_lut_data["lo_stepping_tab"]["pixel_orientation"]["data"]
@@ -200,11 +199,11 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # If data size is less than 128, pad with nan to make it 128
     half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
-    # if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
-    #     pad_size = constants.NUM_ESA_STEPS - len(half_spin_per_esa_step)
-    #     half_spin_per_esa_step = np.concatenate(
-    #         (np.array(half_spin_per_esa_step), np.full(pad_size, np.nan))
-    #     )
+    if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
+        pad_size = constants.NUM_ESA_STEPS - len(half_spin_per_esa_step)
+        half_spin_per_esa_step = np.concatenate(
+            (np.array(half_spin_per_esa_step), np.full(pad_size, np.nan))
+        )
     # TODO: Handle epoch dependent acquisition time and half spin per esa step
     #   For now, just tile the same array for all epochs.
     #   Eventually we may have data from a day where the LUT changed. If this is the
@@ -230,7 +229,8 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_data[species_mask] = np.nan
     # Set half_spin_per_esa_step to 255 (uint8 fillval) where nso_mask is True
     half_spin_per_esa_step[nso_mask] = 255
-
+    # Set acquisition_time_per_step to nan where nso_mask is True
+    acquisition_time_per_step[nso_mask] = np.nan
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
     epoch_center, deltas = get_codice_epoch_time(
