@@ -96,6 +96,11 @@ def extract_initial_items_from_combined_packets(
 
         # Remove the first 20 bytes from event_data (header fields from above)
         # Then trim to the number of bytes indicated by byte_count
+        if byte_count[pkt_idx] > len(event_data) - 20:
+            raise ValueError(
+                f"Byte count {byte_count[pkt_idx]} exceeds available "
+                f"data length {len(event_data) - 20} for packet index {pkt_idx}."
+            )
         packets.event_data.data[pkt_idx] = event_data[20 : 20 + byte_count[pkt_idx]]
 
         if compressed[pkt_idx]:

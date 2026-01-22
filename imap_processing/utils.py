@@ -400,7 +400,10 @@ def combine_segmented_packets(
 
         # If multiple packets, concatenate into the first packet
         # [b"abc", b"def", b"ghi"] -> b"abcdefghi"
-        if len(group_indices) > 1:
+        if (
+            len(group_indices) > 1
+            or packets["seq_flgs"].data[group_indices[0]] != SequenceFlags.UNSEGMENTED
+        ):
             start_index = group_indices[0]
             # Lets do some quick validation on these packets since we've had
             # some missing packet groups in the past
