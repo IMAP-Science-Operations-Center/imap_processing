@@ -29,8 +29,6 @@ from imap_processing.ialirt.utils.grouping import (
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.spice.time import (
     et_to_utc,
-    met_to_ttj2000ns,
-    met_to_utc,
     ttj2000ns_to_et,
 )
 
