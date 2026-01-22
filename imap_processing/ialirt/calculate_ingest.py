@@ -25,7 +25,14 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
     packet_times : list
         List of datetime objects when packets were created.
     """
-    packet_times = {}
+    {
+        station: {
+            "last_data_received": [],
+            "rate_kbps": [],
+        }
+        for station in list(STATIONS) + ["tlmrelay"]
+    }
+
     in_rate_table = False
 
     for line in lines:
@@ -36,6 +43,7 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
             station in line for station in STATIONS
         ):
             rate = float(line.split()[-1])
+            print("hi")
 
     return packet_times
 
@@ -75,18 +83,6 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
         "2025-07-31T00:00:00",
         "2025-07-31T02:01:00"
       ],
-      "connection_times": {
-        "Kiel": [
-          {
-            "start": "2025-07-30T23:00:00",
-            "end": "2025-07-31T00:15:00"
-          },
-          {
-            "start": "2025-07-31T02:00:00",
-            "end": "2025-07-31T02:00:00"
-          }
-        ]
-      }
     }
 
     where time_range is the overall time range of the data,
@@ -98,24 +94,20 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
     last_timestamp_str = last_timestamp_str.replace("_", ":")
     end_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S")
 
-    # File creation time of last file minus 48 hrs.
+    # File creation time.
     start_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(
-        hours=48
+        minutes=5
     )
 
     realtime_summary: dict[str, Any] = {
         "summary": "I-ALiRT Real-time Ingest Summary",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "time_format": "UTC (ISOC)",
-        "stations": list(STATIONS),
         "time_range": [
             start_of_time.isoformat(),
             end_of_time.isoformat(),
         ],  # Overall time range of the data
         "packet_ingest": [],  # Global packet ingest times
-        "connection_times": {
-            station: [] for station in list(STATIONS)
-        },  # Per-station TCP connection windows
     }
 
     # Global packet ingest timestamps
