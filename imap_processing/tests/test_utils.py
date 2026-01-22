@@ -306,6 +306,58 @@ def test_combine_segmented_packets():
     xr.testing.assert_equal(combined_ds, expected_ds)
 
 
+def test_combine_single_segmented_packets(caplog):
+    """Test combine_segmented_packets function when there are missing segments."""
+
+    # Create a dataset with the MIDDLE and LAST segments missing.
+    # unsegmented, first, unsegmented
+    sequence_flags = xr.DataArray(np.array([3, 1, 3]), dims=["epoch"])
+
+    binary_data = xr.DataArray(
+        np.array(
+            [
+                b"ABC",
+                b"123",
+                b"abc",
+            ],
+            dtype=object,
+        ),
+        dims=["epoch"],
+    )
+    shcoarse = xr.DataArray(np.array([0, 1, 2]), dims=["epoch"])
+
+    ds = xr.Dataset(
+        data_vars={
+            "seq_flgs": sequence_flags,
+            "packetdata": binary_data,
+            "shcoarse": shcoarse,
+        }
+    )
+
+    combined_ds = utils.combine_segmented_packets(ds, "packetdata")
+
+    # The combined dataset should only have the unsegmented packets
+    # and a warning should be logged about the missing segments.
+    expected_ds = xr.Dataset(
+        data_vars={
+            "seq_flgs": xr.DataArray(np.array([3, 3]), dims=["epoch"]),
+            "packetdata": xr.DataArray(
+                np.array(
+                    [b"ABC", b"abc"],
+                    dtype=object,
+                ),
+                dims=["epoch"],
+            ),
+            "shcoarse": xr.DataArray(np.array([0, 2]), dims=["epoch"]),
+        }
+    )
+
+    xr.testing.assert_equal(combined_ds, expected_ds)
+
+    # check that a warning was logged
+    assert "Incorrect/incomplete sequence flags in group 2." in caplog.text
+
+
 def test_check_source_sequence_counter(caplog):
     """Test _check_source_sequence_counter function."""
     data_vars = {
