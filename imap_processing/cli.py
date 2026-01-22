@@ -1026,7 +1026,7 @@ class Lo(ProcessInstrument):
             for file in science_files:
                 dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = lo_l1b.lo_l1b(data_dict, ancillary_files)
+            datasets = lo_l1b.lo_l1b(data_dict, ancillary_files, self.descriptor)
 
         elif self.data_level == "l1c":
             data_dict = {}

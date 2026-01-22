@@ -34,7 +34,9 @@ from imap_processing.spice.time import (
 logger = logging.getLogger(__name__)
 
 
-def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
+def lo_l1b(
+    sci_dependencies: dict, anc_dependencies: list, descriptor: str
+) -> list[Path]:
     """
     Will process IMAP-Lo L1A data into L1B CDF data products.
 
@@ -44,6 +46,8 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         Dictionary of datasets needed for L1B data product creation in xarray Datasets.
     anc_dependencies : list
         List of ancillary file paths needed for L1B data product creation.
+    descriptor : str
+        Determines which datasets are produced.
 
     Returns
     -------
@@ -61,107 +65,157 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
 
     datasets_to_return = []
 
-    badtimes_ds = create_badtimes_dataset()
-    if badtimes_ds.data_vars:
-        # If it was an empty dataset, then we don't want to
+    if descriptor == "badtimes":
+        logger.info("\nProcessing IMAP-Lo L1B Bad Times...")
+        badtimes_ds = create_badtimes_dataset()
         badtimes_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_badtimes")
-        datasets_to_return.append(badtimes_ds)
+        if len(badtimes_ds["epoch"]) > 0:
+            # Only add the dataset if there are bad times added
+            datasets_to_return.append(badtimes_ds)
 
     # if the dependencies are used to create Annotated Direct Events
-    if "imap_lo_l1a_de" in sci_dependencies and "imap_lo_l1a_spin" in sci_dependencies:
+    if descriptor == "de":
         logger.info("\nProcessing IMAP-Lo L1B Direct Events...")
-        logical_source = "imap_lo_l1b_de"
-        # get the dependency dataset for l1b direct events
-        l1a_de = sci_dependencies["imap_lo_l1a_de"]
-        spin_data = sci_dependencies["imap_lo_l1a_spin"]
-
-        # Initialize the L1B DE dataset
-        l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
-        pointing_start_met, pointing_end_met = get_pointing_times(
-            l1a_de["met"].values[0].item()
-        )
-
-        # Get the average spin durations for each epoch
-        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
-        # set the spin cycle for each direct event
-        l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
-        # get spin start times for each event
-        spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data)
-
-        # get the absolute met for each event
-        l1b_de = set_event_met(
-            l1a_de, l1b_de, spin_start_time, avg_spin_durations_per_cycle
-        )
-        # set the epoch for each event
-        l1b_de = set_each_event_epoch(l1b_de)
-        # Set the ESA mode for each direct event
-        l1b_de = set_esa_mode(
-            pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
-        )
-        # Set the average spin duration for each direct event
-        l1b_de = set_avg_spin_durations_per_event(
-            l1a_de, l1b_de, avg_spin_durations_per_cycle
-        )
-        # calculate the TOF1 for golden triples
-        # store in the l1a dataset to use in l1b calculations
-        l1a_de = calculate_tof1_for_golden_triples(l1a_de)
-        # set the coincidence type string for each direct event
-        l1b_de = set_coincidence_type(l1a_de, l1b_de, attr_mgr_l1a)
-        # convert the TOFs to engineering units
-        l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)
-        # set the species for each direct event
-        l1b_de = identify_species(l1b_de)
-        # set the pointing direction for each direct event
-        l1b_de = set_pointing_direction(l1b_de)
-        # calculate and set the pointing bin based on the spin phase
-        # pointing bin is 3600 x 40 bins
-        l1b_de = set_pointing_bin(l1b_de)
-        # set the badtimes
-        l1b_de = set_bad_times(l1b_de, anc_dependencies)
-        datasets_to_return.append(l1b_de)
+        ds = l1b_de(sci_dependencies, anc_dependencies, attr_mgr_l1b, attr_mgr_l1a)
+        datasets_to_return.append(ds)
 
     # If dependencies are used to create Histogram Rates
-    if (
-        "imap_lo_l1a_histogram" in sci_dependencies
-        and "imap_lo_l1a_spin" in sci_dependencies
-    ):
+    if descriptor == "histrates":
         logger.info("\nProcessing IMAP-Lo L1B Histogram Rates...")
-        logical_source = "imap_lo_l1b_histrates"
-        # get the dependency dataset for l1b histogram rates
-        l1a_hist = sci_dependencies["imap_lo_l1a_histogram"]
-        spin_data = sci_dependencies["imap_lo_l1a_spin"]
-        # initialize the L1B Histogram Rates dataset from the L1A Histogram Rates
-        # This carries over the epoch and count fields from L1A
-        l1b_histrates = initialize_l1b_histrates(l1a_hist, attr_mgr_l1b, logical_source)
-        # set spin cycle and remove invalid spin ASCs
-        l1b_histrates = set_spin_cycle_from_spin_data(
-            l1a_hist, l1b_histrates, spin_data
-        )
-
-        pointing_start_met, pointing_end_met = get_pointing_times(
-            ttj2000ns_to_met(l1a_hist["epoch"].values[0].item())
-        )
-        l1b_histrates = set_esa_mode(
-            pointing_start_met, pointing_end_met, anc_dependencies, l1b_histrates
-        )
-        # resweep the histogram data
-        l1b_histrates, exposure_factor = resweep_histogram_data(
-            l1b_histrates, anc_dependencies
-        )
-        # Get the start and end times for each spin epoch
-        acq_start, acq_end = convert_start_end_acq_times(spin_data)
-        # Get the average spin durations for each epoch
-        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
-        l1b_histrates = calculate_histogram_rates(
-            l1b_histrates,
-            acq_start,
-            acq_end,
-            avg_spin_durations_per_cycle,
-            exposure_factor,
-        )
-        datasets_to_return.append(l1b_histrates)
+        ds = l1b_histrates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
+        datasets_to_return.append(ds)
 
     return datasets_to_return
+
+
+def l1b_de(
+    sci_dependencies: dict,
+    anc_dependencies: list,
+    attr_mgr_l1b: ImapCdfAttributes,
+    attr_mgr_l1a: ImapCdfAttributes,
+) -> xr.Dataset:
+    """
+    Create the IMAP-Lo L1B Direct Events dataset.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        Dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    anc_dependencies : list
+        List of ancillary file paths needed for L1B data product creation.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the global attributes.
+    attr_mgr_l1a : ImapCdfAttributes
+        Attribute manager used to get the variable attributes.
+
+    Returns
+    -------
+    l1b_de : xr.Dataset
+        The IMAP-Lo L1B Direct Events dataset.
+    """
+    logical_source = "imap_lo_l1b_de"
+    # get the dependency dataset for l1b direct events
+    l1a_de = sci_dependencies["imap_lo_l1a_de"]
+    spin_data = sci_dependencies["imap_lo_l1a_spin"]
+
+    # Initialize the L1B DE dataset
+    l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
+    pointing_start_met, pointing_end_met = get_pointing_times(
+        l1a_de["met"].values[0].item()
+    )
+
+    # Get the average spin durations for each epoch
+    avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
+    # set the spin cycle for each direct event
+    l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
+    # get spin start times for each event
+    spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data)
+
+    # get the absolute met for each event
+    l1b_de = set_event_met(
+        l1a_de, l1b_de, spin_start_time, avg_spin_durations_per_cycle
+    )
+    # set the epoch for each event
+    l1b_de = set_each_event_epoch(l1b_de)
+    # Set the ESA mode for each direct event
+    l1b_de = set_esa_mode(
+        pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
+    )
+    # Set the average spin duration for each direct event
+    l1b_de = set_avg_spin_durations_per_event(
+        l1a_de, l1b_de, avg_spin_durations_per_cycle
+    )
+    # calculate the TOF1 for golden triples
+    # store in the l1a dataset to use in l1b calculations
+    l1a_de = calculate_tof1_for_golden_triples(l1a_de)
+    # set the coincidence type string for each direct event
+    l1b_de = set_coincidence_type(l1a_de, l1b_de, attr_mgr_l1a)
+    # convert the TOFs to engineering units
+    l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)
+    # set the species for each direct event
+    l1b_de = identify_species(l1b_de)
+    # set the pointing direction for each direct event
+    l1b_de = set_pointing_direction(l1b_de)
+    # calculate and set the pointing bin based on the spin phase
+    # pointing bin is 3600 x 40 bins
+    l1b_de = set_pointing_bin(l1b_de)
+    # set the badtimes
+    l1b_de = set_bad_times(l1b_de, anc_dependencies)
+    return l1b_de
+
+
+def l1b_histrates(
+    sci_dependencies: dict, anc_dependencies: list, attr_mgr_l1b: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Create the IMAP-Lo L1B Histogram Rates dataset.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        Dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    anc_dependencies : list
+        List of ancillary file paths needed for L1B data product creation.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the global attributes.
+
+    Returns
+    -------
+    l1b_histrates : xr.Dataset
+        The IMAP-Lo L1B Histogram Rates dataset.
+    """
+    logical_source = "imap_lo_l1b_histrates"
+    # get the dependency dataset for l1b histogram rates
+    l1a_hist = sci_dependencies["imap_lo_l1a_histogram"]
+    spin_data = sci_dependencies["imap_lo_l1a_spin"]
+    # initialize the L1B Histogram Rates dataset from the L1A Histogram Rates
+    # This carries over the epoch and count fields from L1A
+    l1b_histrates = initialize_l1b_histrates(l1a_hist, attr_mgr_l1b, logical_source)
+    # set spin cycle and remove invalid spin ASCs
+    l1b_histrates = set_spin_cycle_from_spin_data(l1a_hist, l1b_histrates, spin_data)
+
+    pointing_start_met, pointing_end_met = get_pointing_times(
+        ttj2000ns_to_met(l1a_hist["epoch"].values[0].item())
+    )
+    l1b_histrates = set_esa_mode(
+        pointing_start_met, pointing_end_met, anc_dependencies, l1b_histrates
+    )
+    # resweep the histogram data
+    l1b_histrates, exposure_factor = resweep_histogram_data(
+        l1b_histrates, anc_dependencies
+    )
+    # Get the start and end times for each spin epoch
+    acq_start, acq_end = convert_start_end_acq_times(spin_data)
+    # Get the average spin durations for each epoch
+    avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
+    l1b_histrates = calculate_histogram_rates(
+        l1b_histrates,
+        acq_start,
+        acq_end,
+        avg_spin_durations_per_cycle,
+        exposure_factor,
+    )
+    return l1b_histrates
 
 
 def initialize_l1b_de(

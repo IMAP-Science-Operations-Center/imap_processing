@@ -174,7 +174,7 @@ def test_lo_l1b_de(
     expected_logical_source_de = "imap_lo_l1b_de"
 
     # Act
-    output_files = lo_l1b(data, anc_dependencies)
+    output_files = lo_l1b(data, anc_dependencies, descriptor="de")
 
     # Assert
     assert expected_logical_source_de == output_files[-1].attrs["Logical_source"]
@@ -210,7 +210,7 @@ def test_lo_l1b_histogram_rates(
     }
 
     # Act
-    l1b_datasets = lo_l1b(sci_dependencies, anc_dependencies)
+    l1b_datasets = lo_l1b(sci_dependencies, anc_dependencies, descriptor="histrates")
 
     # Assert
     assert "h_rates" in l1b_datasets[-1].data_vars
@@ -822,6 +822,15 @@ def test_badtimes_with_spin(spice_test_data_path, use_test_spin_data_csv):
         badtimes_ds["BadTime_start"], thruster_df["spin_start_sec_sclk"]
     )
     np.testing.assert_array_equal(badtimes_ds["badtime_flag"], 1)
+
+    # There should be a dataset returned from the main code in this case
+    datasets = lo_l1b({}, [], descriptor="badtimes")
+    assert len(datasets) == 1
+
+
+def test_l1b_badtimes_skipped_if_empty():
+    datasets = lo_l1b({}, [], descriptor="badtimes")
+    assert len(datasets) == 0
 
 
 def test_resweep_histogram_success(anc_dependencies):
