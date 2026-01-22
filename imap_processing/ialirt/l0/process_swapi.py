@@ -166,12 +166,10 @@ def process_swapi_ialirt(
         ]
         met = grouped_dataset["met"][(grouped_dataset["group"] == group).values]
 
-        measurement_time = (
-            grouped_dataset["swapi_acq"]
-            .where(grouped_dataset["swapi_seq_number"] == 0, drop=True)
-            .values
-        )
-        mid_measurement = (measurement_time[0] + measurement_time[-1]) // 2
+        swapi_met = grouped_dataset["swapi_acq"][
+            (grouped_dataset["group"] == group).values
+        ]
+        mid_measurement = int((swapi_met[0] + swapi_met[-1]) // 2)
 
         status_values = grouped_dataset["swapi_flag"][
             (grouped_dataset["group"] == group).values
