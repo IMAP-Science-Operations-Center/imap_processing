@@ -42,7 +42,6 @@ from imap_processing.codice.constants import (
     SW_POSITIONS,
 )
 from imap_processing.codice.utils import apply_replacements_to_attrs
-from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -320,11 +319,12 @@ def compute_geometric_factors(
     # TODO: The mode calculation will need to be revisited after FW changes in january
     #  2026. We also need to fix this on days when the sci Lut changes.
     # After November 24th 2025 we need to do this step a different way.
+    start_date = dataset.attrs.get("Logical_file_id", None)
+    if start_date is None:
+        raise ValueError("Dataset is missing Logical_file_id attribute.")
+    processing_date = datetime.datetime.strptime(start_date.split("_")[4], "%Y%m%d")
     date_switch = datetime.datetime(2025, 11, 24)
-    dataset_midpoint_ns = dataset["epoch"].values[dataset["epoch"].size // 2]
-    # Convert to datetime64 for comparison
-    dataset_midpoint = et_to_datetime64(ttj2000ns_to_et(dataset_midpoint_ns))
-    if dataset_midpoint < date_switch:
+    if processing_date < date_switch:
         modes = (half_spin_per_esa_step > rgfo_half_spin) & (rgfo_half_spin > 0)
     else:
         # After November 24th, 2025, we no longer apply reduced geometric factors;

@@ -1,5 +1,6 @@
 """Functions to support I-ALiRT CoDICE processing."""
 
+import datetime
 import logging
 from collections import namedtuple
 from decimal import Decimal
@@ -26,6 +27,12 @@ from imap_processing.ialirt.utils.grouping import (
     find_groups,
 )
 from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import (
+    et_to_utc,
+    met_to_ttj2000ns,
+    met_to_utc,
+    ttj2000ns_to_et,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -475,6 +482,14 @@ def process_codice(
                 l1a_lo,
                 "lo-ialirt",
             )
+            mid_measurement = int((l1b_lo["epoch"][0] + l1b_lo["epoch"][-1]) // 2)
+            yyyymmdd = datetime.datetime.strptime(
+                et_to_utc(ttj2000ns_to_et(mid_measurement)), "%Y-%m-%dT%H:%M:%S.%f"
+            ).strftime("%Y%m%d")
+            l1b_lo.attrs["Logical_file_id"] = (
+                f"imap_ialirt_l1_realtime_{yyyymmdd}_v000.cdf"
+            )
+
             l2_lo = calculate_ratios(l1b_lo, l2_lut_path, l2_geometric_factor_path)
 
             codice_lo_data.append(

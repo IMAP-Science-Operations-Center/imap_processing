@@ -741,6 +741,7 @@ def test_process_codice_lo(
     l2_lut_path,
     cod_lo_l2_test_data,
     l2_processing_dependencies,
+    furnish_kernels,
 ):
     """Test process_codice for hi."""
     eff_path, gf_path = l2_processing_dependencies
@@ -750,10 +751,14 @@ def test_process_codice_lo(
         sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
         sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
     )
-
-    cod_lo_data, _ = process_codice(
-        cod_lo_test_dataset, l1a_lut_path, eff_path, "codice_lo", gf_path
-    )
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0036.tsc",
+    ]
+    with furnish_kernels(kernels):
+        cod_lo_data, _ = process_codice(
+            cod_lo_test_dataset, l1a_lut_path, eff_path, "codice_lo", gf_path
+        )
 
     l2_products = [
         "codice_lo_c_over_o_abundance",
