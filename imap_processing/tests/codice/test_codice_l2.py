@@ -113,6 +113,36 @@ def test_compute_geometric_factors_all_full_mode(mock_half_spin_per_esa_step):
     np.testing.assert_array_equal(result, expected)
 
 
+def test_compute_geometric_factors_past_nov_24th(mock_half_spin_per_esa_step):
+    # rgfo_half_spin = 1 means all half_spin values (>=2) are >= rgfo_half_spin
+    # Although the rgfo_half_spin indicates reduced mode, the date is past Nov 24th,
+    # 2024 so we expect full mode to be used.
+    dataset = xr.Dataset(
+        {
+            "rgfo_half_spin": (("epoch",), np.array([1, 1])),
+            "half_spin_per_esa_step": (
+                (
+                    "epoch",
+                    "esa_step",
+                ),
+                np.tile(mock_half_spin_per_esa_step, (2, 1)),
+            ),
+        },
+    )
+    geometric_factor_lut = {
+        "full": np.zeros((128, 24)),
+        "reduced": np.ones((128, 24)),
+    }
+    # Make sure epoch is past Nov 24th, 2024
+    ns_past_nov_24 = 900000000000000000
+    dataset = dataset.assign_coords({"epoch": np.repeat(ns_past_nov_24, 2)})
+    result = compute_geometric_factors(dataset, geometric_factor_lut)
+
+    # Expect "full" values everywhere
+    expected = np.full((2, 128, 24), 0)
+    np.testing.assert_array_equal(result, expected)
+
+
 def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_per_esa_step):
     # rgfo_half_spin = 1 means all half_spin values (>=2) are >= rgfo_half_spin
     dataset = xr.Dataset(
