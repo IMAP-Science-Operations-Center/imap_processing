@@ -24,8 +24,13 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
     -------
     packet_times : list
         List of datetime objects when packets were created.
+
+    Notes:
+    ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)
+    2  tlmrelay      001-00:00:00  020-19:57:14    0.0
+    10  Kiel          021-09:57:58  021-08:40:39    2.0
     """
-    {
+    dict = {
         station: {
             "last_data_received": [],
             "rate_kbps": [],
@@ -33,6 +38,7 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
         for station in list(STATIONS) + ["tlmrelay"]
     }
 
+    year = start_file_creation.year
     in_rate_table = False
 
     for line in lines:
@@ -43,9 +49,13 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
             station in line for station in STATIONS
         ):
             rate = float(line.split()[-1])
-            print("hi")
+            data_last_received = line.split()[2]
+            station = line.split()[1]
+            dt = datetime.strptime(f"{year}/{data_last_received}", "%Y/%j-%H:%M:%S", )
+            dict[station]["last_data_received"].append(dt)
+            dict[station]["rate_kbps"].append(rate)
 
-    return packet_times
+    return dict
 
 
 def format_ingest_data(last_filename: str, log_lines: list) -> dict:
