@@ -142,6 +142,18 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     unique_groups = np.unique(grouped_data["group"])
 
     for group in unique_groups:
+        status_values = grouped_data["hit_status"][
+            (grouped_data["group"] == group).values
+        ]
+
+        if np.any(status_values == 0):
+            logger.info(
+                f"Off-nominal value detected at "
+                f"missing or duplicate pkt_counter values: "
+                f"{group}"
+            )
+            continue
+
         # Subcom values for the group should be 0-59 with no duplicates.
         subcom_values = grouped_data["hit_subcom"][
             (grouped_data["group"] == group).values
