@@ -5,7 +5,7 @@ import logging
 from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -478,9 +478,12 @@ def process_codice(
                 cod_lo_science_values, cod_lo_metadata_values, "lo"
             )
             l1a_lo = l1a_lo_species(cod_lo_dataset, l1a_lut_path)
-            l1b_lo = convert_to_rates(
-                l1a_lo,
-                "lo-ialirt",
+            l1b_lo = cast(
+                xr.Dataset,
+                convert_to_rates(
+                    l1a_lo,
+                    "lo-ialirt",
+                ),
             )
             mid_measurement = int((l1b_lo["epoch"][0] + l1b_lo["epoch"][-1]) // 2)
             yyyymmdd = datetime.datetime.strptime(
