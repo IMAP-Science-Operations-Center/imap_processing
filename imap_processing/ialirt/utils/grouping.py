@@ -145,7 +145,7 @@ def _populate_instrument_header_items(met: np.ndarray) -> dict:
     sc_met = (met[0] + met[-1]) // 2
     header = {
         "apid": 478,
-        "met": sc_met,
+        "met": int(sc_met),
         "met_in_utc": met_to_utc(sc_met).split(".")[0],
         "ttj2000ns": int(met_to_ttj2000ns(sc_met)),
     }
