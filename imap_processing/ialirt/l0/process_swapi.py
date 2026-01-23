@@ -15,7 +15,7 @@ from imap_processing.ialirt.utils.grouping import (
     find_groups,
 )
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.swapi.l1.swapi_l1 import process_sweep_data
 from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 
@@ -170,13 +170,6 @@ def process_swapi_ialirt(
             (grouped_dataset["group"] == group).values
         ]
         mid_measurement = int((swapi_met[0] + swapi_met[-1]) // 2)
-
-        status_values = grouped_dataset["swapi_flag"][
-            (grouped_dataset["group"] == group).values
-        ]
-        if np.any(status_values == 0):
-            logger.info(f"Off-nominal value detected at {met_to_utc(mid_measurement)}")
-            continue
 
         # Ensure no duplicates and all values from 0 to 11 are present
         if not np.array_equal(seq_values.values.astype(int), np.arange(12)):
