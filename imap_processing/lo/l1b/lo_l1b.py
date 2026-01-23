@@ -90,12 +90,7 @@ def lo_l1b(
         ds = calculate_de_rates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
         datasets_to_return.append(ds)
 
-    # If dependencies are used to create Star Sensor profile
-    if (
-        "imap_lo_l1a_star" in sci_dependencies
-        and "imap_lo_l1b_nhk" in sci_dependencies
-        and "imap_lo_l1a_spin" in sci_dependencies
-    ):
+    if descriptor == "star":
         logger.info("\nProcessing IMAP-Lo L1B Star Sensor Profile...")
         logical_source = "imap_lo_l1b_star"
 
@@ -2162,8 +2157,7 @@ def initialize_l1b_star(
     sampling_cadence = get_sampling_cadence_from_nhk(l1b_nhk)
 
     # Get spin duration from spin data
-    acq_start, acq_end = convert_start_end_acq_times(spin_data)
-    avg_spin_durations = get_avg_spin_durations_per_cycle(acq_start, acq_end)
+    avg_spin_durations = get_avg_spin_durations_per_cycle(spin_data)
     spin_duration = float(avg_spin_durations.mean().values)
     logger.info(f"Using spin duration from spin data: {spin_duration:.6f} s")
 

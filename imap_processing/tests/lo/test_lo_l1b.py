@@ -1417,6 +1417,7 @@ def test_calculate_de_rates(
     assert len(output_datasets) == 1
     assert output_datasets[0].attrs["Logical_source"] == "imap_lo_l1b_derates"
 
+
 # ============================================================================
 # Star Sensor L1B Tests
 # ============================================================================
@@ -1844,6 +1845,7 @@ class TestInitializeL1bStar:
                 "acq_start_subsec": ("epoch", [0]),
                 "acq_end_sec": ("epoch", [420]),  # 420s = 28 spins * 15s
                 "acq_end_subsec": ("epoch", [0]),
+                "num_completed": ("epoch", [28]),
             },
             coords={"epoch": [0]},
         )
