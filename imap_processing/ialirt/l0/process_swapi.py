@@ -150,16 +150,23 @@ def geometric_mean(
     # Find the index of the value 1 minute ago.
     index_0 = np.searchsorted(met_arr, met_arr[-1] - 60, side="right")
 
-    pseudo_speed_arr = np.asarray(pseudo_speed_list[index_0:])
+    # If any of the values are equal to nan then do not include that index.
+    valid = (
+        ~np.isnan(pseudo_speed_list[index_0:])
+        & ~np.isnan(pseudo_proton_density_list[index_0:])
+        & ~np.isnan(pseudo_proton_temperature_list[index_0:])
+    )
+
+    pseudo_speed_arr = np.asarray(pseudo_speed_list[index_0:])[valid]
     avg_pseudo_speed = np.exp(np.mean(np.log(pseudo_speed_arr)))
 
-    density_arr = np.asarray(pseudo_proton_density_list[index_0:])
+    density_arr = np.asarray(pseudo_proton_density_list[index_0:])[valid]
     avg_proton_density = np.exp(np.mean(np.log(density_arr)))
 
-    temperature_arr = np.asarray(pseudo_proton_temperature_list[index_0:])
+    temperature_arr = np.asarray(pseudo_proton_temperature_list[index_0:])[valid]
     avg_proton_temperature = np.exp(np.mean(np.log(temperature_arr)))
 
-    avg_swapi_met = np.mean(met_arr[index_0:])
+    avg_swapi_met = np.mean(met_arr[index_0:][valid])
 
     return avg_swapi_met, avg_proton_density, avg_pseudo_speed, avg_proton_temperature
 
@@ -194,7 +201,7 @@ def process_swapi_ialirt(
     sci_dataset["met"] = met
     incomplete_groups = []
     swapi_data = []
-    pseudo_speed_list = []
+    pseudo_proton_speed_list = []
     pseudo_proton_density_list = []
     pseudo_proton_temperature_list = []
     swapi_met_list = []
@@ -263,7 +270,7 @@ def process_swapi_ialirt(
             raw_coin_rate.squeeze(), count_rate_error.squeeze(), energy_passbands
         )
 
-        pseudo_speed_list.append(pseudo_speed)
+        pseudo_proton_speed_list.append(pseudo_speed)
         pseudo_proton_density_list.append(pseudo_density)
         pseudo_proton_temperature_list.append(pseudo_temperature)
         swapi_met_list.append(mid_measurement)
@@ -277,7 +284,7 @@ def process_swapi_ialirt(
                 avg_proton_temperature,
             ) = geometric_mean(
                 swapi_met_list,
-                pseudo_speed_list,
+                pseudo_proton_speed_list,
                 pseudo_proton_density_list,
                 pseudo_proton_temperature_list,
             )

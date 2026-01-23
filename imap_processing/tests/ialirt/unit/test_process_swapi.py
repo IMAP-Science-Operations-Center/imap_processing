@@ -285,6 +285,33 @@ def test_geometric_mean():
     assert np.isclose(avg_swapi_met, expected_met)
 
 
+def test_geometric_mean_nan():
+    """Test geometric_mean function."""
+
+    swapi_met_list = [12, 24, 36, 48, 60]
+
+    pseudo_speed_list = [400, 420, 440, 460, np.nan]
+    pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, np.nan]
+    pseudo_proton_temperature_list = [60000, 62000, 64000, 66000, np.nan]
+
+    avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
+        swapi_met_list,
+        pseudo_speed_list,
+        pseudo_proton_density_list,
+        pseudo_proton_temperature_list,
+    )
+
+    expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list[0:4])))
+    expected_speed = np.exp(np.mean(np.log(pseudo_speed_list[0:4])))
+    expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list[0:4])))
+    expected_met = np.mean(swapi_met_list[0:4])
+
+    assert np.isclose(avg_density, expected_density)
+    assert np.isclose(avg_speed, expected_speed)
+    assert np.isclose(avg_temperature, expected_temperature)
+    assert np.isclose(avg_swapi_met, expected_met)
+
+
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(
     esa_unit_conversion_table, swapi_postlaunch_sc_packet_path
@@ -304,18 +331,3 @@ def test_process_spacecraft_packet(
     )
 
     assert len(swapi_product) == 0
-
-    key_names = [
-        "apid",
-        "met",
-        "met_in_utc",
-        "ttj2000ns",
-        "swapi_pseudo_proton_density",
-        "swapi_pseudo_proton_speed",
-        "swapi_pseudo_proton_temperature",
-    ]
-
-    for key in key_names:
-        assert swapi_product[0][key] is not None, (
-            f"The expected attribute {key} was not filled in the result dict."
-        )
