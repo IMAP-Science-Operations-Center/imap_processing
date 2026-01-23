@@ -222,8 +222,7 @@ def process_swapi_ialirt(
         swapi_met = grouped_dataset["swapi_acq"][
             (grouped_dataset["group"] == group).values
         ]
-        # First measurement time of the sweep.
-        swapi_time = int(swapi_met[0])
+        mid_measurement = int((swapi_met[0] + swapi_met[-1]) // 2)
 
         # Ensure no duplicates and all values from 0 to 11 are present
         if not np.array_equal(seq_values.values.astype(int), np.arange(12)):
@@ -267,7 +266,7 @@ def process_swapi_ialirt(
         pseudo_speed_list.append(pseudo_speed)
         pseudo_proton_density_list.append(pseudo_density)
         pseudo_proton_temperature_list.append(pseudo_temperature)
-        swapi_met_list.append(swapi_time)
+        swapi_met_list.append(mid_measurement)
 
         # Begin averaging after 1 minute has passed (5 sweeps).
         if len(swapi_met_list) >= 5:
