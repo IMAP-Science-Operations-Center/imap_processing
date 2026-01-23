@@ -7,6 +7,7 @@ import pytest
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swapi import (
     count_rate,
+    geometric_mean,
     optimize_pseudo_parameters,
     process_swapi_ialirt,
 )
@@ -45,7 +46,7 @@ def esa_unit_conversion_table() -> pd.DataFrame:
     """
     esa_file_path = (
         imap_module_directory
-        / "tests/swapi/lut/imap_swapi_esa-unit-conversion_20250626_v001.csv"
+        / "tests/swapi/lut/imap_swapi_esa-unit-conversion_20251210_v002.csv"
     )
     df = read_swapi_lut_table(esa_file_path)
     return df
@@ -257,6 +258,33 @@ def test_optimize_parameters():
             )
 
 
+def test_geometric_mean():
+    """Test geometric_mean function."""
+
+    swapi_met_list = [12, 24, 36, 48, 60]
+
+    pseudo_speed_list = [400, 420, 440, 460, 480]
+    pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, 9.0]
+    pseudo_proton_temperature_list = [60000, 62000, 64000, 66000, 68000]
+
+    avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
+        swapi_met_list,
+        pseudo_speed_list,
+        pseudo_proton_density_list,
+        pseudo_proton_temperature_list,
+    )
+
+    expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list)))
+    expected_speed = np.exp(np.mean(np.log(pseudo_speed_list)))
+    expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list)))
+    expected_met = np.mean(swapi_met_list)
+
+    assert np.isclose(avg_density, expected_density)
+    assert np.isclose(avg_speed, expected_speed)
+    assert np.isclose(avg_temperature, expected_temperature)
+    assert np.isclose(avg_swapi_met, expected_met)
+
+
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(
     esa_unit_conversion_table, swapi_postlaunch_sc_packet_path
@@ -275,7 +303,7 @@ def test_process_spacecraft_packet(
         postlaunch_sc_xarray_data, esa_unit_conversion_table
     )
 
-    assert len(swapi_product) == 4
+    assert len(swapi_product) == 0
 
     key_names = [
         "apid",

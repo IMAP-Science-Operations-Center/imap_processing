@@ -115,14 +115,14 @@ def optimize_pseudo_parameters(
     return sol[0]
 
 
-def moving_average(
+def geometric_mean(
     swapi_met_list: list,
     pseudo_speed_list: list,
     pseudo_proton_density_list: list,
     pseudo_proton_temperature_list: list,
 ) -> tuple:
     """
-    Find moving average of SWAPI data.
+    Find moving geometric mean of SWAPI data.
 
     Parameters
     ----------
@@ -147,11 +147,18 @@ def moving_average(
         Average proton temperature value.
     """
     met_arr = np.asarray(swapi_met_list)
+    # Find the index of the value 1 minute ago.
     index_0 = np.searchsorted(met_arr, met_arr[-1] - 60, side="right")
 
-    avg_pseudo_speed = np.mean(pseudo_speed_list[index_0:])
-    avg_proton_density = np.mean(pseudo_proton_density_list[index_0:])
-    avg_proton_temperature = np.mean(pseudo_proton_temperature_list[index_0:])
+    pseudo_speed_arr = np.asarray(pseudo_speed_list[index_0:])
+    avg_pseudo_speed = np.exp(np.mean(np.log(pseudo_speed_arr)))
+
+    density_arr = np.asarray(pseudo_proton_density_list[index_0:])
+    avg_proton_density = np.exp(np.mean(np.log(density_arr)))
+
+    temperature_arr = np.asarray(pseudo_proton_temperature_list[index_0:])
+    avg_proton_temperature = np.exp(np.mean(np.log(temperature_arr)))
+
     avg_swapi_met = np.mean(met_arr[index_0:])
 
     return avg_swapi_met, avg_proton_density, avg_pseudo_speed, avg_proton_temperature
@@ -269,7 +276,7 @@ def process_swapi_ialirt(
                 avg_proton_density,
                 avg_pseudo_speed,
                 avg_proton_temperature,
-            ) = moving_average(
+            ) = geometric_mean(
                 swapi_met_list,
                 pseudo_speed_list,
                 pseudo_proton_density_list,
