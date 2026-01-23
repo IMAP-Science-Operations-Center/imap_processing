@@ -1897,6 +1897,77 @@ class TestL1bStar:
         assert l1b_star_ds.attrs["edge_bins_excluded"] == 2
         assert l1b_star_ds.attrs["min_count_threshold"] == 700
 
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_start_and_end_doy_variables(self, mock_repoint, attr_mgr_l1b):
+        """Test that start_doy and end_doy variables are computed correctly."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False]}
+        )
+        np.random.seed(42)
+        # Create epochs spanning 30 seconds
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720, 720, 720]),
+                "shcoarse": ("epoch", np.array([0.0, 15.0, 30.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.random.randint(100, 200, size=(3, 720), dtype=np.uint16),
+                ),
+            },
+            coords={
+                "epoch": met_to_ttj2000ns([0.0, 15.0, 30.0]),
+                "samples": np.arange(720),
+            },
+        )
+        l1b_nhk = xr.Dataset(
+            {
+                "ifb_data_interval": ("epoch", [21.0, 21.0, 21.0]),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+        spin_data = xr.Dataset(
+            {
+                "acq_start_sec": ("epoch", [0, 15]),
+                "acq_start_subsec": ("epoch", [0, 0]),
+                "acq_end_sec": ("epoch", [420, 435]),
+                "acq_end_subsec": ("epoch", [0, 0]),
+                "num_completed": ("epoch", [28, 28]),
+            },
+            coords={"epoch": [0, 1]},
+        )
+        sci_dependencies = {
+            "imap_lo_l1a_star": l1a_star,
+            "imap_lo_l1b_nhk": l1b_nhk,
+            "imap_lo_l1a_spin": spin_data,
+        }
+
+        # Act
+        l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
+
+        # Assert - Check that start_doy and end_doy exist
+        assert "start_doy" in l1b_star_ds.data_vars
+        assert "end_doy" in l1b_star_ds.data_vars
+
+        # Assert - Check dimensions
+        assert l1b_star_ds["start_doy"].dims == ("epoch",)
+        assert l1b_star_ds["end_doy"].dims == ("epoch",)
+
+        # Assert - Check values are valid day of year (1.0 to 366.x for leap years)
+        start_doy = l1b_star_ds["start_doy"].values[0]
+        end_doy = l1b_star_ds["end_doy"].values[0]
+        assert 1.0 <= start_doy <= 367.0
+        assert 1.0 <= end_doy <= 367.0
+
+        # Assert - end_doy should be >= start_doy (data spans 30 seconds)
+        assert end_doy >= start_doy
+
+        # Assert - Check attributes
+        assert l1b_star_ds["start_doy"].attrs["UNITS"] == "day"
+        assert l1b_star_ds["end_doy"].attrs["UNITS"] == "day"
+        assert "Fractional day of year" in l1b_star_ds["start_doy"].attrs["CATDESC"]
+        assert "Fractional day of year" in l1b_star_ds["end_doy"].attrs["CATDESC"]
+
 
 def test_star_integration(use_test_repoint_data_csv):
     """Temporary integration test for star data."""

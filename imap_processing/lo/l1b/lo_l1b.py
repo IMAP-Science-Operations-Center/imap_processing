@@ -25,6 +25,7 @@ from imap_processing.spice.geometry import (
 from imap_processing.spice.repoint import get_pointing_times, interpolate_repoint_data
 from imap_processing.spice.spin import get_spin_data, get_spin_number
 from imap_processing.spice.time import (
+    epoch_to_fractional_doy,
     et_to_utc,
     met_to_ttj2000ns,
     ttj2000ns_to_et,
@@ -2223,6 +2224,22 @@ def l1b_star(
         [epoch_delta],
         dims=["epoch"],
         attrs=attr_mgr_l1b.get_variable_attributes("epoch_delta"),
+    )
+
+    # Add start and end day of year as floating point values
+    start_doy = epoch_to_fractional_doy(start_epoch)
+    end_doy = epoch_to_fractional_doy(start_epoch + epoch_delta)
+
+    l1b_star_ds["start_doy"] = xr.DataArray(
+        [start_doy],
+        dims=["epoch"],
+        attrs=attr_mgr_l1b.get_variable_attributes("start_doy"),
+    )
+
+    l1b_star_ds["end_doy"] = xr.DataArray(
+        [end_doy],
+        dims=["epoch"],
+        attrs=attr_mgr_l1b.get_variable_attributes("end_doy"),
     )
 
     # Add processing parameters as metadata

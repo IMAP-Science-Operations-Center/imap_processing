@@ -407,3 +407,33 @@ def epoch_to_doy(epoch: np.ndarray) -> npt.NDArray:
     return np.array(
         [datetime.fromisoformat(date).timetuple().tm_yday for date in time_strings]
     )
+
+
+def epoch_to_fractional_doy(epoch_ttj2000ns: int) -> float:
+    """
+    Convert epoch in TTJ2000ns to floating point day of year.
+
+    Parameters
+    ----------
+    epoch_ttj2000ns : int
+        Epoch in TTJ2000ns format (nanoseconds since J2000).
+
+    Returns
+    -------
+    doy : float
+        Floating point day of year (1.0 = Jan 1 00:00:00).
+    """
+    # Convert to ephemeris time, then to UTC string
+    et = ttj2000ns_to_et(epoch_ttj2000ns)
+    utc_str = et_to_utc(et)  # Returns ISO format: "YYYY-MM-DDTHH:MM:SS.sss"
+
+    # Parse the datetime (remove trailing 'Z' if present)
+    dt = datetime.fromisoformat(utc_str.rstrip("Z"))
+
+    # Calculate day of year as floating point
+    # Day of year starts at 1, so Jan 1 00:00:00 = 1.0
+    start_of_year = datetime(dt.year, 1, 1)
+    delta = dt - start_of_year
+    doy = 1.0 + delta.total_seconds() / 86400.0
+
+    return doy
