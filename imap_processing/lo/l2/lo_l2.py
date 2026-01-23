@@ -1074,7 +1074,7 @@ def calculate_sputtering_corrections(
         j_o_prime_valid,
         small_dataset["ena_intensity_stat_uncert"] ** 2
         + (sputter_correction_factor**2) * j_o_prime_var,
-        small_dataset["ena_intensity_stat_uncert"],
+        small_dataset["ena_intensity_stat_uncert"] ** 2,
     )
 
     # Equation 13
