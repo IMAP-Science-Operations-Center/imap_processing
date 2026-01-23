@@ -312,6 +312,33 @@ def test_geometric_mean_nan():
     assert np.isclose(avg_swapi_met, expected_met)
 
 
+def test_geometric_gaps():
+    """Test geometric_mean function."""
+
+    swapi_met_list = [0, 12, 24, 36, 240, 252]
+
+    pseudo_speed_list = [400, 420, 440, 460, 480, 500]
+    pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+    pseudo_proton_temperature_list = [60000, 62000, 64000, 66000, 68000, 70000]
+
+    avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
+        swapi_met_list,
+        pseudo_speed_list,
+        pseudo_proton_density_list,
+        pseudo_proton_temperature_list,
+    )
+
+    expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list[4::])))
+    expected_speed = np.exp(np.mean(np.log(pseudo_speed_list[4::])))
+    expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list[4::])))
+    expected_met = np.mean(swapi_met_list[4::])
+
+    assert np.isclose(avg_density, expected_density)
+    assert np.isclose(avg_speed, expected_speed)
+    assert np.isclose(avg_temperature, expected_temperature)
+    assert np.isclose(avg_swapi_met, expected_met)
+
+
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(
     esa_unit_conversion_table, swapi_postlaunch_sc_packet_path
