@@ -1,4 +1,5 @@
 from collections import namedtuple
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -8,7 +9,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.lo.l1b.lo_l1b import (
     calculate_de_rates,
     calculate_histogram_rates,
@@ -24,7 +25,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     get_spin_start_times,
     identify_species,
     initialize_l1b_de,
-    initialize_l1b_star,
+    l1b_star,
     lo_l1b,
     resweep_histogram_data,
     set_avg_spin_durations_per_event,
@@ -1429,7 +1430,7 @@ class TestGetSamplingCadenceFromNhk:
         # Arrange
         l1b_nhk = xr.Dataset(
             {
-                "IFB_DATA_INTERVAL": ("epoch", [20.0, 20.5, 21.0]),
+                "ifb_data_interval": ("epoch", [20.0, 20.5, 21.0]),
             },
             coords={"epoch": [0, 1, 2]},
         )
@@ -1442,7 +1443,7 @@ class TestGetSamplingCadenceFromNhk:
         assert sampling_cadence == expected_cadence
 
     def test_raises_error_when_field_missing(self):
-        """Test error when IFB_DATA_INTERVAL field is missing."""
+        """Test error when ifb_data_interval field is missing."""
         # Arrange
         l1b_nhk = xr.Dataset(
             {
@@ -1454,7 +1455,7 @@ class TestGetSamplingCadenceFromNhk:
         # Act / Assert
         with pytest.raises(
             ValueError,
-            match="IFB_DATA_INTERVAL field not found in L1B NHK dataset",
+            match="ifb_data_interval field not found in L1B NHK dataset",
         ):
             get_sampling_cadence_from_nhk(l1b_nhk)
 
@@ -1748,8 +1749,8 @@ class TestCalculateStarSensorProfile:
         assert np.any(spin_angle < 100)  # Some angles wrapped to lower range
 
 
-class TestInitializeL1bStar:
-    """Tests for initialize_l1b_star function."""
+class TestL1bStar:
+    """Tests for l1b_star function."""
 
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
     def test_initializes_with_spin_data(self, mock_repoint, attr_mgr_l1b):
@@ -1775,7 +1776,7 @@ class TestInitializeL1bStar:
         )
         l1b_nhk = xr.Dataset(
             {
-                "IFB_DATA_INTERVAL": ("epoch", [21.0, 21.0, 21.0]),
+                "ifb_data_interval": ("epoch", [21.0, 21.0, 21.0]),
             },
             coords={"epoch": [0, 1, 2]},
         )
@@ -1790,32 +1791,43 @@ class TestInitializeL1bStar:
             },
             coords={"epoch": [0, 1]},
         )
-        logical_source = "imap_lo_l1b_star"
+        sci_dependencies = {
+            "imap_lo_l1a_star": l1a_star,
+            "imap_lo_l1b_nhk": l1b_nhk,
+            "imap_lo_l1a_spin": spin_data,
+        }
 
         # Act
-        l1b_star = initialize_l1b_star(
-            l1a_star, l1b_nhk, spin_data, attr_mgr_l1b, logical_source
-        )
+        l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
 
         # Assert
-        assert l1b_star.attrs["Logical_source"] == logical_source
-        assert "epoch" in l1b_star.coords
-        assert len(l1b_star.coords["epoch"]) == 1
-        assert "spin_angle_bin" in l1b_star.coords
-        assert len(l1b_star.coords["spin_angle_bin"]) == 720
-        assert "spin_angle" in l1b_star.data_vars
-        assert "avg_amplitude" in l1b_star.data_vars
-        assert "count_per_bin" in l1b_star.data_vars
-        assert "epoch_delta" in l1b_star.data_vars
+        assert l1b_star_ds.attrs["Logical_source"] == "imap_lo_l1b_star"
+        assert "epoch" in l1b_star_ds.coords
+        assert len(l1b_star_ds.coords["epoch"]) == 1
+        # spin_angle is now the coordinate (monotonically increasing)
+        assert "spin_angle" in l1b_star_ds.coords
+        assert len(l1b_star_ds.coords["spin_angle"]) == 720
+        # spin_angle_bin is now a data variable
+        assert "spin_angle_bin" in l1b_star_ds.data_vars
+        assert "avg_amplitude" in l1b_star_ds.data_vars
+        assert "count_per_bin" in l1b_star_ds.data_vars
+        assert "epoch_delta" in l1b_star_ds.data_vars
+        # Check that spin_angle is monotonically increasing
+        spin_angles = l1b_star_ds.coords["spin_angle"].values
+        assert np.all(np.diff(spin_angles) > 0), (
+            "spin_angle should be monotonically increasing"
+        )
+        assert spin_angles[0] >= 0.0
+        assert spin_angles[-1] < 360.0
         # Check attributes
-        assert "sampling_cadence_ms" in l1b_star.attrs
-        assert "spin_duration_sec" in l1b_star.attrs
-        assert l1b_star.attrs["sampling_cadence_ms"] == 21.0
-        assert l1b_star.attrs["spin_duration_sec"] == 15.0
-        # Check data shapes
-        assert l1b_star["spin_angle"].shape == (720,)
-        assert l1b_star["avg_amplitude"].shape == (720,)
-        assert l1b_star["count_per_bin"].shape == (720,)
+        assert "sampling_cadence_ms" in l1b_star_ds.attrs
+        assert "spin_duration_sec" in l1b_star_ds.attrs
+        assert l1b_star_ds.attrs["sampling_cadence_ms"] == 21.0
+        assert l1b_star_ds.attrs["spin_duration_sec"] == 15.0
+        # Check data shapes - all variables have epoch as first dimension
+        assert l1b_star_ds["spin_angle_bin"].shape == (1, 720)
+        assert l1b_star_ds["avg_amplitude"].shape == (1, 720)
+        assert l1b_star_ds["count_per_bin"].shape == (1, 720)
 
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
     def test_dataset_structure_and_attributes(self, mock_repoint, attr_mgr_l1b):
@@ -1835,7 +1847,7 @@ class TestInitializeL1bStar:
         )
         l1b_nhk = xr.Dataset(
             {
-                "IFB_DATA_INTERVAL": ("epoch", [21.0]),
+                "ifb_data_interval": ("epoch", [21.0]),
             },
             coords={"epoch": [0]},
         )
@@ -1849,33 +1861,66 @@ class TestInitializeL1bStar:
             },
             coords={"epoch": [0]},
         )
-        logical_source = "imap_lo_l1b_star"
+        sci_dependencies = {
+            "imap_lo_l1a_star": l1a_star,
+            "imap_lo_l1b_nhk": l1b_nhk,
+            "imap_lo_l1a_spin": spin_data,
+        }
 
         # Act
-        l1b_star = initialize_l1b_star(
-            l1a_star, l1b_nhk, spin_data, attr_mgr_l1b, logical_source
+        l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
+
+        # Assert - Check spin_angle coordinate attributes
+        assert l1b_star_ds.coords["spin_angle"].attrs["UNITS"] == "degrees"
+        assert l1b_star_ds.coords["spin_angle"].attrs["VALIDMIN"] == 0.0
+        assert l1b_star_ds.coords["spin_angle"].attrs["VALIDMAX"] == 360.0
+
+        # Assert - Check spin_angle_bin variable attributes (now a data variable)
+        assert (
+            "Original spin angle bin index"
+            in l1b_star_ds["spin_angle_bin"].attrs["CATDESC"]
         )
+        assert l1b_star_ds["spin_angle_bin"].attrs["VALIDMIN"] == 0
+        assert l1b_star_ds["spin_angle_bin"].attrs["VALIDMAX"] == 719
 
-        # Assert - Check coordinate attributes
-        assert l1b_star["spin_angle_bin"].attrs["CATDESC"] == "Spin angle bin index"
-        assert l1b_star["spin_angle_bin"].attrs["VALIDMIN"] == 0
-        assert l1b_star["spin_angle_bin"].attrs["VALIDMAX"] == 719
+        assert l1b_star_ds["avg_amplitude"].attrs["UNITS"] == "mV"
+        assert l1b_star_ds["avg_amplitude"].attrs["FILLVAL"] == -1.0e31
 
-        # Assert - Check variable attributes
-        assert l1b_star["spin_angle"].attrs["UNITS"] == "degrees"
-        assert l1b_star["spin_angle"].attrs["VALIDMIN"] == 0.0
-        assert l1b_star["spin_angle"].attrs["VALIDMAX"] == 360.0
-
-        assert l1b_star["avg_amplitude"].attrs["UNITS"] == "mV"
-        assert l1b_star["avg_amplitude"].attrs["FILLVAL"] == -1.0e31
-
-        assert l1b_star["count_per_bin"].attrs["VALIDMIN"] == 0
-        assert l1b_star["count_per_bin"].attrs["VALIDMAX"] == 100000
+        assert l1b_star_ds["count_per_bin"].attrs["VALIDMIN"] == 0
+        assert l1b_star_ds["count_per_bin"].attrs["VALIDMAX"] == 100000
 
         # Assert - Check processing parameter attributes
-        assert "start_angle_offset_deg" in l1b_star.attrs
-        assert "edge_bins_excluded" in l1b_star.attrs
-        assert "min_count_threshold" in l1b_star.attrs
-        assert l1b_star.attrs["start_angle_offset_deg"] == 62.0
-        assert l1b_star.attrs["edge_bins_excluded"] == 2
-        assert l1b_star.attrs["min_count_threshold"] == 700
+        assert "start_angle_offset_deg" in l1b_star_ds.attrs
+        assert "edge_bins_excluded" in l1b_star_ds.attrs
+        assert "min_count_threshold" in l1b_star_ds.attrs
+        assert l1b_star_ds.attrs["start_angle_offset_deg"] == 62.0
+        assert l1b_star_ds.attrs["edge_bins_excluded"] == 2
+        assert l1b_star_ds.attrs["min_count_threshold"] == 700
+
+
+def test_star_integration(use_test_repoint_data_csv):
+    """Temporary integration test for star data."""
+    use_test_repoint_data_csv(
+        Path(
+            "/Users/plummert/Projects/imap/data/prod/imap/spice/repoint/imap_2026_022_01.repoint"
+        )
+    )
+    star_path = Path(
+        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1a/2025/11/imap_lo_l1a_star_20251110-repoint00044_v001.cdf"
+    )
+    spin_path = Path(
+        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1a/2025/11/imap_lo_l1a_spin_20251110-repoint00044_v001.cdf"
+    )
+    nhk_path = Path(
+        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1b/2025/11/imap_lo_l1b_nhk_20251110-repoint00044_v001.cdf"
+    )
+    sci_dependencies = {
+        "imap_lo_l1a_star": load_cdf(star_path),
+        "imap_lo_l1a_spin": load_cdf(spin_path),
+        "imap_lo_l1b_nhk": load_cdf(nhk_path),
+    }
+    anc_dependencies = []
+    descriptor = "star"
+    result = lo_l1b(sci_dependencies, anc_dependencies, descriptor)
+    assert len(result) == 1
+    print(write_cdf(result[0]))

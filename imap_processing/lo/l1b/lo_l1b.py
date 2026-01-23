@@ -92,17 +92,8 @@ def lo_l1b(
 
     if descriptor == "star":
         logger.info("\nProcessing IMAP-Lo L1B Star Sensor Profile...")
-        logical_source = "imap_lo_l1b_star"
-
-        l1a_star = sci_dependencies["imap_lo_l1a_star"]
-        l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
-        spin_data = sci_dependencies["imap_lo_l1a_spin"]
-
-        l1b_star = initialize_l1b_star(
-            l1a_star, l1b_nhk, spin_data, attr_mgr_l1b, logical_source
-        )
-
-        datasets_to_return.append(l1b_star)
+        ds = l1b_star(sci_dependencies, attr_mgr_l1b)
+        datasets_to_return.append(ds)
 
     return datasets_to_return
 
@@ -1997,7 +1988,7 @@ def calculate_star_sensor_profile(
     l1a_star : xr.Dataset
         L1A star sensor data.
     sampling_cadence : float
-        Sampling period in milliseconds (IFB_DATA_INTERVAL).
+        Sampling period in milliseconds (ifb_data_interval).
     spin_period : float
         Spin period in seconds.
     time_window_offset : float
@@ -2093,10 +2084,10 @@ def calculate_star_sensor_profile(
 
 def get_sampling_cadence_from_nhk(l1b_nhk: xr.Dataset) -> float:
     """
-    Extract IFB_DATA_INTERVAL from NHK dataset.
+    Extract ifb_data_interval from NHK dataset.
 
     The sampling cadence is already in engineering units after L1B processing.
-    Formula applied in XTCE: IFB_DATA_INTERVAL = 13.3344 + 0.06945 * DN
+    Formula applied in XTCE: ifb_data_interval = 13.3344 + 0.06945 * DN
 
     Parameters
     ----------
@@ -2108,51 +2099,47 @@ def get_sampling_cadence_from_nhk(l1b_nhk: xr.Dataset) -> float:
     sampling_cadence : float
         Average sampling cadence in milliseconds.
     """
-    if "IFB_DATA_INTERVAL" not in l1b_nhk:
-        raise ValueError(
-            "IFB_DATA_INTERVAL field not found in L1B NHK dataset. "
+    if "ifb_data_interval" not in l1b_nhk:
+        raise KeyError(
+            "ifb_data_interval field not found in L1B NHK dataset. "
             "Cannot calculate sampling cadence."
         )
 
     # Get mean value across all epochs (should be relatively constant)
-    sampling_cadence = float(l1b_nhk["IFB_DATA_INTERVAL"].values.mean())
+    sampling_cadence = float(l1b_nhk["ifb_data_interval"].values.mean())
 
     logger.info(f"Sampling cadence from NHK: {sampling_cadence:.3f} ms")
     return sampling_cadence
 
 
-def initialize_l1b_star(
-    l1a_star: xr.Dataset,
-    l1b_nhk: xr.Dataset,
-    spin_data: xr.Dataset,
+def l1b_star(
+    sci_dependencies: dict,
     attr_mgr_l1b: ImapCdfAttributes,
-    logical_source: str,
 ) -> xr.Dataset:
     """
-    Initialize and process L1B star sensor dataset.
+    Create the IMAP-Lo L1B Star Sensor dataset.
 
     Creates an averaged spin profile from L1A star sensor data, computing
     the average amplitude per spin angle bin across all valid records.
 
     Parameters
     ----------
-    l1a_star : xr.Dataset
-        The L1A star sensor dataset containing SHCOARSE, COUNT, and DATA fields.
-    l1b_nhk : xr.Dataset
-        The L1B NHK dataset containing IFB_DATA_INTERVAL field for sampling cadence.
-    spin_data : xr.Dataset
-        The L1A spin dataset used to calculate spin duration.
+    sci_dependencies : dict
+        Dictionary of datasets needed for L1B data product creation in xarray Datasets.
     attr_mgr_l1b : ImapCdfAttributes
         Attribute manager for L1B dataset metadata.
-    logical_source : str
-        The logical source identifier (e.g., "imap_lo_l1b_star").
 
     Returns
     -------
-    l1b_star : xr.Dataset
+    l1b_star_ds : xr.Dataset
         L1B star sensor dataset with spin_angle, avg_amplitude, count_per_bin,
         and time range metadata.
     """
+    logical_source = "imap_lo_l1b_star"
+    l1a_star = sci_dependencies["imap_lo_l1a_star"]
+    l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
+    spin_data = sci_dependencies["imap_lo_l1a_spin"]
+
     # Get sampling cadence from NHK
     sampling_cadence = get_sampling_cadence_from_nhk(l1b_nhk)
 
@@ -2178,65 +2165,77 @@ def initialize_l1b_star(
         edge_bins_to_exclude,
     )
 
+    # Sort data so spin_angle is monotonically increasing from 0 to 360
+    # Use argsort to get indices that would sort spin_angle
+    sort_indices = np.argsort(spin_angle)
+    spin_angle_sorted = spin_angle[sort_indices]
+    avg_amplitude_sorted = avg_amplitude[sort_indices]
+    count_per_bin_sorted = count_per_bin[sort_indices]
+    # Original bin indices, reordered to match the sorted spin_angle
+    original_bin_indices = sort_indices.astype(np.uint16)
+
     # Get epoch times from L1A data
     start_epoch = l1a_star["epoch"].values[0]
     end_epoch = l1a_star["epoch"].values[-1]
     epoch_delta = end_epoch - start_epoch
 
-    # Create dataset with global attributes
-    l1b_star = xr.Dataset(
+    # Create dataset with spin_angle as the coordinate
+    l1b_star_ds = xr.Dataset(
         coords={
             "epoch": xr.DataArray(
                 [start_epoch],
                 dims=["epoch"],
                 attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
             ),
-            "spin_angle_bin": xr.DataArray(
-                np.arange(720, dtype=np.uint16),
-                dims=["spin_angle_bin"],
-                attrs=attr_mgr_l1b.get_variable_attributes("spin_angle_bin"),
+            "spin_angle": xr.DataArray(
+                spin_angle_sorted,
+                dims=["spin_angle"],
+                attrs=attr_mgr_l1b.get_variable_attributes(
+                    "spin_angle", check_schema=False
+                ),
             ),
         },
         attrs=attr_mgr_l1b.get_global_attributes(logical_source),
     )
 
-    # Add data variables
-    l1b_star["spin_angle"] = xr.DataArray(
-        spin_angle,
-        dims=["spin_angle_bin"],
-        attrs=attr_mgr_l1b.get_variable_attributes("spin_angle"),
+    # Add spin_angle_bin as a variable (original bin indices)
+    # All variables must have epoch as first dimension for SPDF CDF compliance
+    l1b_star_ds["spin_angle_bin"] = xr.DataArray(
+        original_bin_indices[np.newaxis, :],
+        dims=["epoch", "spin_angle"],
+        attrs=attr_mgr_l1b.get_variable_attributes("spin_angle_bin"),
     )
 
-    l1b_star["avg_amplitude"] = xr.DataArray(
-        avg_amplitude,
-        dims=["spin_angle_bin"],
+    l1b_star_ds["avg_amplitude"] = xr.DataArray(
+        avg_amplitude_sorted[np.newaxis, :],
+        dims=["epoch", "spin_angle"],
         attrs=attr_mgr_l1b.get_variable_attributes("avg_amplitude"),
     )
 
-    l1b_star["count_per_bin"] = xr.DataArray(
-        count_per_bin,
-        dims=["spin_angle_bin"],
+    l1b_star_ds["count_per_bin"] = xr.DataArray(
+        count_per_bin_sorted[np.newaxis, :],
+        dims=["epoch", "spin_angle"],
         attrs=attr_mgr_l1b.get_variable_attributes("count_per_bin"),
     )
 
     # Add epoch delta (duration in nanoseconds)
-    l1b_star["epoch_delta"] = xr.DataArray(
+    l1b_star_ds["epoch_delta"] = xr.DataArray(
         [epoch_delta],
         dims=["epoch"],
         attrs=attr_mgr_l1b.get_variable_attributes("epoch_delta"),
     )
 
     # Add processing parameters as metadata
-    l1b_star.attrs["sampling_cadence_ms"] = sampling_cadence
-    l1b_star.attrs["spin_duration_sec"] = spin_duration
-    l1b_star.attrs["start_angle_offset_deg"] = start_angle_offset
-    l1b_star.attrs["edge_bins_excluded"] = edge_bins_to_exclude
-    l1b_star.attrs["min_count_threshold"] = 700
-    l1b_star.attrs["time_window_offset_sec"] = time_window_offset
-    l1b_star.attrs["time_window_duration_sec"] = (
+    l1b_star_ds.attrs["sampling_cadence_ms"] = sampling_cadence
+    l1b_star_ds.attrs["spin_duration_sec"] = spin_duration
+    l1b_star_ds.attrs["start_angle_offset_deg"] = start_angle_offset
+    l1b_star_ds.attrs["edge_bins_excluded"] = edge_bins_to_exclude
+    l1b_star_ds.attrs["min_count_threshold"] = 700
+    l1b_star_ds.attrs["time_window_offset_sec"] = time_window_offset
+    l1b_star_ds.attrs["time_window_duration_sec"] = (
         "all_data" if time_window_duration is None else time_window_duration
     )
 
     logger.info("L1B star sensor dataset created successfully")
 
-    return l1b_star
+    return l1b_star_ds
