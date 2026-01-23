@@ -1,3 +1,5 @@
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -532,12 +534,25 @@ def test_livetime_fraction():
     np.testing.assert_allclose(livetime_fraction.values, expected_fractions, rtol=1e-6)
 
 
-@pytest.mark.xfail(reason="Need to update validation data for standard rates")
-def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
+@mock.patch("imap_processing.hit.l1b.hit_l1b.livetime_fraction_calculation")
+def test_validate_l1b_standard_rates_data(
+    livetime_fraction_calculation_mock, dependencies
+):
     """A test to validate the standard rates dataset created by the L1B processing."""
 
-    # This is old validation data and needs to be updated after the addition of
-    # a new livetime calculation method in L1B processing.
+    # Mock the livetime_fraction_calculation to use the old behavior (input / 270)
+    livetime_fraction_calculation_mock.side_effect = (
+        lambda livetime_counter: livetime_counter / 270
+    )
+
+    # Create the dataset with the mock in place
+    l1b_standard_rates_dataset = hit_l1b(
+        dependencies["standard-rates"], "standard-rates"
+    )
+
+    # TODO: This is old validation data and needs to be updated after the addition of
+    #       a new livetime calculation method in L1B processing.
+    #       For now we are mocking the old behavior to validate against this data.
     validation_data = pd.read_csv(
         imap_module_directory
         / "tests/hit/validation_data/hit_l1b_standard_sample2_nsrl_v4_3decimals.csv"
