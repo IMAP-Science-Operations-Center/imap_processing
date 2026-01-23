@@ -2,6 +2,7 @@ from collections import namedtuple
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -11,15 +12,19 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.lo.l1b.lo_l1b import (
     calculate_de_rates,
     calculate_histogram_rates,
+    calculate_star_sensor_profile,
     calculate_tof1_for_golden_triples,
     convert_start_end_acq_times,
     convert_tofs_to_eu,
     create_badtimes_dataset,
     create_datasets,
+    filter_valid_star_records,
     get_avg_spin_durations_per_cycle,
+    get_sampling_cadence_from_nhk,
     get_spin_start_times,
     identify_species,
     initialize_l1b_de,
+    initialize_l1b_star,
     lo_l1b,
     resweep_histogram_data,
     set_avg_spin_durations_per_event,
@@ -1411,3 +1416,464 @@ def test_calculate_de_rates(
     output_datasets = lo_l1b(sci_dependencies, anc_dependencies, descriptor="derates")
     assert len(output_datasets) == 1
     assert output_datasets[0].attrs["Logical_source"] == "imap_lo_l1b_derates"
+
+# ============================================================================
+# Star Sensor L1B Tests
+# ============================================================================
+class TestGetSamplingCadenceFromNhk:
+    """Tests for get_sampling_cadence_from_nhk function."""
+
+    def test_extracts_mean_cadence(self):
+        """Test extracting sampling cadence from NHK dataset."""
+        # Arrange
+        l1b_nhk = xr.Dataset(
+            {
+                "IFB_DATA_INTERVAL": ("epoch", [20.0, 20.5, 21.0]),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+        expected_cadence = 20.5  # Mean of [20.0, 20.5, 21.0]
+
+        # Act
+        sampling_cadence = get_sampling_cadence_from_nhk(l1b_nhk)
+
+        # Assert
+        assert sampling_cadence == expected_cadence
+
+    def test_raises_error_when_field_missing(self):
+        """Test error when IFB_DATA_INTERVAL field is missing."""
+        # Arrange
+        l1b_nhk = xr.Dataset(
+            {
+                "other_field": ("epoch", [1, 2, 3]),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+
+        # Act / Assert
+        with pytest.raises(
+            ValueError,
+            match="IFB_DATA_INTERVAL field not found in L1B NHK dataset",
+        ):
+            get_sampling_cadence_from_nhk(l1b_nhk)
+
+
+class TestFilterValidStarRecords:
+    """Tests for filter_valid_star_records function."""
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_filters_by_count_threshold(self, mock_repoint):
+        """Test filtering star records by COUNT >= 700."""
+        # Arrange - Mock repoint data (no repoints in progress)
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False, False, False]}
+        )
+
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [650, 700, 720, 699, 715]),
+                "shcoarse": (
+                    "epoch",
+                    np.arange(5, dtype=np.float64),
+                ),  # Already in seconds
+            },
+            coords={"epoch": [0, 1, 2, 3, 4]},
+        )
+        expected_mask = np.array([False, True, True, False, True])
+
+        # Act
+        valid_mask = filter_valid_star_records(l1a_star, min_count=700)
+
+        # Assert
+        np.testing.assert_array_equal(valid_mask, expected_mask)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_filters_by_count_and_time_window(self, mock_repoint):
+        """Test filtering star records by both COUNT and time window."""
+        # Arrange - Mock repoint data (no repoints in progress)
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False, False, False]}
+        )
+
+        # Create times: 0s, 10s, 20s, 30s, 40s (already in seconds)
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [700, 710, 720, 715, 720]),
+                "shcoarse": ("epoch", np.array([0, 10, 20, 30, 40], dtype=np.float64)),
+            },
+            coords={"epoch": [0, 1, 2, 3, 4]},
+        )
+        # Time window: [5s, 25s] - should include epochs 1 and 2
+        expected_mask = np.array([False, True, True, False, False])
+
+        # Act
+        valid_mask = filter_valid_star_records(
+            l1a_star,
+            min_count=700,
+            time_window_offset=5.0,
+            time_window_duration=20.0,
+        )
+
+        # Assert
+        np.testing.assert_array_equal(valid_mask, expected_mask)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_processes_all_data_without_time_window(self, mock_repoint):
+        """Test filtering without time window (process all data)."""
+        # Arrange - Mock repoint data (no repoints in progress)
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False]}
+        )
+
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [700, 710, 720]),
+                "shcoarse": ("epoch", np.array([0, 10, 20], dtype=np.float64)),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+        expected_mask = np.array([True, True, True])
+
+        # Act
+        valid_mask = filter_valid_star_records(
+            l1a_star, min_count=700, time_window_duration=None
+        )
+
+        # Assert
+        np.testing.assert_array_equal(valid_mask, expected_mask)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_excludes_records_during_repoint(self, mock_repoint):
+        """Test filtering records during repoint maneuvers."""
+        # Arrange - Mock repoint data with some repoints in progress
+        # Epochs 1 and 3 are during repoint maneuvers
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, True, False, True, False]}
+        )
+
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [700, 710, 720, 715, 720]),
+                "shcoarse": ("epoch", np.arange(5, dtype=np.float64)),
+            },
+            coords={"epoch": [0, 1, 2, 3, 4]},
+        )
+        # Expected: epochs 0, 2, 4 pass (COUNT >= 700 AND not during repoint)
+        # Epochs 1 and 3 fail because they are during repoint
+        expected_mask = np.array([True, False, True, False, True])
+
+        # Act
+        valid_mask = filter_valid_star_records(l1a_star, min_count=700)
+
+        # Assert
+        np.testing.assert_array_equal(valid_mask, expected_mask)
+
+
+class TestCalculateStarSensorProfile:
+    """Tests for calculate_star_sensor_profile function."""
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_basic_profile_calculation(self, mock_repoint):
+        """Test basic star sensor profile calculation."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False]}
+        )
+        # Create simple mock data with 3 records, each with 720 samples
+        np.random.seed(42)
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720, 720, 720]),
+                "shcoarse": ("epoch", np.array([0.0, 15.0, 30.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.random.randint(100, 200, size=(3, 720), dtype=np.uint16),
+                ),
+            },
+            coords={"epoch": [0, 1, 2], "samples": np.arange(720)},
+        )
+        sampling_cadence = 21.0  # ms
+        spin_duration = 15.0  # seconds
+
+        # Act
+        spin_angle, avg_amplitude, count_per_bin = calculate_star_sensor_profile(
+            l1a_star,
+            sampling_cadence,
+            spin_duration,
+            time_window_offset=0.0,
+            time_window_duration=None,
+            start_angle_offset=62.0,
+            edge_bins_to_exclude=0,  # No edge bins excluded for simplicity
+            min_count_threshold=700,
+        )
+
+        # Assert
+        assert len(spin_angle) == 720
+        assert len(avg_amplitude) == 720
+        assert len(count_per_bin) == 720
+        # All bins should have 3 samples (3 valid records)
+        np.testing.assert_array_equal(count_per_bin, np.full(720, 3))
+        # Spin angles should be in [0, 360)
+        assert np.all(spin_angle >= 0)
+        assert np.all(spin_angle < 360)
+        # Averages should be reasonable (between 100 and 200 from our mock data)
+        assert np.all(avg_amplitude >= 100)
+        assert np.all(avg_amplitude <= 200)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_edge_bins_excluded(self, mock_repoint):
+        """Test that edge bins are properly excluded."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False]}
+        )
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720, 720]),
+                "shcoarse": ("epoch", np.array([0.0, 15.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((2, 720), dtype=np.uint16) * 100,
+                ),
+            },
+            coords={"epoch": [0, 1], "samples": np.arange(720)},
+        )
+        sampling_cadence = 21.0
+        spin_duration = 15.0
+
+        # Act
+        spin_angle, avg_amplitude, count_per_bin = calculate_star_sensor_profile(
+            l1a_star,
+            sampling_cadence,
+            spin_duration,
+            edge_bins_to_exclude=2,  # Exclude 2 bins from each end
+        )
+
+        # Assert
+        # First 2 bins and last 2 bins should have count=0
+        assert count_per_bin[0] == 0
+        assert count_per_bin[1] == 0
+        assert count_per_bin[718] == 0
+        assert count_per_bin[719] == 0
+        # Middle bins should have count=2 (2 valid records)
+        assert np.all(count_per_bin[2:718] == 2)
+        # Edge bins should have FILLVAL
+        assert avg_amplitude[0] == -1.0e31
+        assert avg_amplitude[1] == -1.0e31
+        assert avg_amplitude[718] == -1.0e31
+        assert avg_amplitude[719] == -1.0e31
+        # Middle bins should have average value
+        assert np.all(avg_amplitude[2:718] == 100.0)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_handles_no_valid_records(self, mock_repoint):
+        """Test handling when no records pass the COUNT threshold."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False]}
+        )
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [650, 600, 699]),  # All below 700
+                "shcoarse": ("epoch", np.array([0.0, 15.0, 30.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((3, 720), dtype=np.uint16) * 100,
+                ),
+            },
+            coords={"epoch": [0, 1, 2], "samples": np.arange(720)},
+        )
+        sampling_cadence = 21.0
+        spin_duration = 15.0
+
+        # Act
+        spin_angle, avg_amplitude, count_per_bin = calculate_star_sensor_profile(
+            l1a_star,
+            sampling_cadence,
+            spin_duration,
+            min_count_threshold=700,
+        )
+
+        # Assert
+        # All bins should have count=0
+        np.testing.assert_array_equal(count_per_bin, np.zeros(720))
+        # All averages should be FILLVAL
+        np.testing.assert_array_equal(avg_amplitude, np.full(720, -1.0e31))
+        # Spin angles should still be calculated correctly
+        assert len(spin_angle) == 720
+        assert np.all(spin_angle >= 0)
+        assert np.all(spin_angle < 360)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_angle_wrapping(self, mock_repoint):
+        """Test that spin angles wrap correctly to [0, 360) range."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame({"repoint_in_progress": [False]})
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720]),
+                "shcoarse": ("epoch", np.array([0.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((1, 720), dtype=np.uint16) * 100,
+                ),
+            },
+            coords={"epoch": [0], "samples": np.arange(720)},
+        )
+        sampling_cadence = 21.0
+        spin_duration = 15.0
+        start_angle_offset = 350.0  # Large offset to test wrapping
+
+        # Act
+        spin_angle, _, _ = calculate_star_sensor_profile(
+            l1a_star,
+            sampling_cadence,
+            spin_duration,
+            start_angle_offset=start_angle_offset,
+        )
+
+        # Assert
+        # All angles should be in [0, 360)
+        assert np.all(spin_angle >= 0)
+        assert np.all(spin_angle < 360)
+        # Check that angles are properly wrapped (not just clamped)
+        # With offset=350°, first bin should be around 350°
+        # DEG_PER_BIN = 360 * 0.021 / 15 = 0.504 degrees
+        # So first bin (index 0.5) should be at 350° + 0.252° = 350.252°
+        assert 350.0 < spin_angle[0] < 351.0  # First bin near 350°
+        # Some bins will wrap to the lower range (angles < 100°)
+        # Check that we have angles both above 300° and below 100° (proof of wrapping)
+        assert np.any(spin_angle > 300)  # Some angles in upper range
+        assert np.any(spin_angle < 100)  # Some angles wrapped to lower range
+
+
+class TestInitializeL1bStar:
+    """Tests for initialize_l1b_star function."""
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_initializes_with_spin_data(self, mock_repoint, attr_mgr_l1b):
+        """Test successful initialization of L1B star dataset with spin data."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False]}
+        )
+        np.random.seed(42)
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720, 720, 720]),
+                "shcoarse": ("epoch", np.array([0.0, 15.0, 30.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.random.randint(100, 200, size=(3, 720), dtype=np.uint16),
+                ),
+            },
+            coords={
+                "epoch": met_to_ttj2000ns([0.0, 15.0, 30.0]),
+                "samples": np.arange(720),
+            },
+        )
+        l1b_nhk = xr.Dataset(
+            {
+                "IFB_DATA_INTERVAL": ("epoch", [21.0, 21.0, 21.0]),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+        # Create spin data with known spin durations
+        spin_data = xr.Dataset(
+            {
+                "acq_start_sec": ("epoch", [0, 15]),
+                "acq_start_subsec": ("epoch", [0, 0]),
+                "acq_end_sec": ("epoch", [420, 435]),  # 420s = 28 spins * 15s
+                "acq_end_subsec": ("epoch", [0, 0]),
+                "num_completed": ("epoch", [28, 28]),
+            },
+            coords={"epoch": [0, 1]},
+        )
+        logical_source = "imap_lo_l1b_star"
+
+        # Act
+        l1b_star = initialize_l1b_star(
+            l1a_star, l1b_nhk, spin_data, attr_mgr_l1b, logical_source
+        )
+
+        # Assert
+        assert l1b_star.attrs["Logical_source"] == logical_source
+        assert "epoch" in l1b_star.coords
+        assert len(l1b_star.coords["epoch"]) == 1
+        assert "spin_angle_bin" in l1b_star.coords
+        assert len(l1b_star.coords["spin_angle_bin"]) == 720
+        assert "spin_angle" in l1b_star.data_vars
+        assert "avg_amplitude" in l1b_star.data_vars
+        assert "count_per_bin" in l1b_star.data_vars
+        assert "epoch_delta" in l1b_star.data_vars
+        # Check attributes
+        assert "sampling_cadence_ms" in l1b_star.attrs
+        assert "spin_duration_sec" in l1b_star.attrs
+        assert l1b_star.attrs["sampling_cadence_ms"] == 21.0
+        assert l1b_star.attrs["spin_duration_sec"] == 15.0
+        # Check data shapes
+        assert l1b_star["spin_angle"].shape == (720,)
+        assert l1b_star["avg_amplitude"].shape == (720,)
+        assert l1b_star["count_per_bin"].shape == (720,)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_dataset_structure_and_attributes(self, mock_repoint, attr_mgr_l1b):
+        """Test that L1B star dataset has correct structure and attributes."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame({"repoint_in_progress": [False]})
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720]),
+                "shcoarse": ("epoch", np.array([0.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((1, 720), dtype=np.uint16) * 150,
+                ),
+            },
+            coords={"epoch": met_to_ttj2000ns([0.0]), "samples": np.arange(720)},
+        )
+        l1b_nhk = xr.Dataset(
+            {
+                "IFB_DATA_INTERVAL": ("epoch", [21.0]),
+            },
+            coords={"epoch": [0]},
+        )
+        spin_data = xr.Dataset(
+            {
+                "acq_start_sec": ("epoch", [0]),
+                "acq_start_subsec": ("epoch", [0]),
+                "acq_end_sec": ("epoch", [420]),  # 420s = 28 spins * 15s
+                "acq_end_subsec": ("epoch", [0]),
+            },
+            coords={"epoch": [0]},
+        )
+        logical_source = "imap_lo_l1b_star"
+
+        # Act
+        l1b_star = initialize_l1b_star(
+            l1a_star, l1b_nhk, spin_data, attr_mgr_l1b, logical_source
+        )
+
+        # Assert - Check coordinate attributes
+        assert l1b_star["spin_angle_bin"].attrs["CATDESC"] == "Spin angle bin index"
+        assert l1b_star["spin_angle_bin"].attrs["VALIDMIN"] == 0
+        assert l1b_star["spin_angle_bin"].attrs["VALIDMAX"] == 719
+
+        # Assert - Check variable attributes
+        assert l1b_star["spin_angle"].attrs["UNITS"] == "degrees"
+        assert l1b_star["spin_angle"].attrs["VALIDMIN"] == 0.0
+        assert l1b_star["spin_angle"].attrs["VALIDMAX"] == 360.0
+
+        assert l1b_star["avg_amplitude"].attrs["UNITS"] == "mV"
+        assert l1b_star["avg_amplitude"].attrs["FILLVAL"] == -1.0e31
+
+        assert l1b_star["count_per_bin"].attrs["VALIDMIN"] == 0
+        assert l1b_star["count_per_bin"].attrs["VALIDMAX"] == 100000
+
+        # Assert - Check processing parameter attributes
+        assert "start_angle_offset_deg" in l1b_star.attrs
+        assert "edge_bins_excluded" in l1b_star.attrs
+        assert "min_count_threshold" in l1b_star.attrs
+        assert l1b_star.attrs["start_angle_offset_deg"] == 62.0
+        assert l1b_star.attrs["edge_bins_excluded"] == 2
+        assert l1b_star.attrs["min_count_threshold"] == 700
