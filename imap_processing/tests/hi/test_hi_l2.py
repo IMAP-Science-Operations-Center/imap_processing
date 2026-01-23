@@ -644,7 +644,7 @@ def test_statistical_uncertainty_combination_correctness():
     # Manual calculation of expected statistical uncertainty combination
     # combined_stat_unc = sqrt(1/sum(1 / stat_unc**2))
     expected_combined_stat_unc = np.sqrt(1 / np.sum(1 / stat_unc_values**2))
-    flux_weights = 1.0 / (np.array([101, 101]) + np.array([4, 16]))
+    flux_weights = 1.0 / np.array([101, 101])
     expected_flux = np.sum(flux_values.squeeze() * flux_weights) / np.sum(flux_weights)
 
     np.testing.assert_almost_equal(

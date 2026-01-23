@@ -3,7 +3,6 @@
 import logging
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
@@ -12,6 +11,7 @@ from imap_processing.ialirt.utils.grouping import (
     find_groups,
 )
 from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.swe.l1a.swe_science import decompressed_counts
 from imap_processing.swe.l1b.swe_l1b import (
     deadtime_correction,
@@ -157,7 +157,7 @@ def get_ialirt_energies() -> list:
     return energy
 
 
-def normalize_counts(counts: NDArray, latest_cal: pd.Series) -> NDArray:
+def normalize_counts(counts: NDArray, interp_cal: NDArray) -> NDArray:
     """
     Normalize the counts using the latest calibration factor.
 
@@ -165,18 +165,16 @@ def normalize_counts(counts: NDArray, latest_cal: pd.Series) -> NDArray:
     ----------
     counts : np.ndarray
         Array of counts.
-    latest_cal : pd.Series
-        Array of latest calibration factors.
+    interp_cal : np.ndarray
+        Array of calibration factors.
 
     Returns
     -------
     norm_counts : np.ndarray
         Array of normalized counts.
     """
-    latest_cal = latest_cal.to_numpy()
-
     # Norm counts where counts are non-negative
-    norm_counts = counts * (latest_cal / GEOMETRIC_FACTORS)[:, np.newaxis]
+    norm_counts = counts * (interp_cal / GEOMETRIC_FACTORS)[:, np.newaxis]
     norm_counts[norm_counts < 0] = 0
 
     return norm_counts
@@ -520,12 +518,58 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         corrected_first_half = deadtime_correction(counts_first_half, 80 * 10**3)
         corrected_second_half = deadtime_correction(counts_second_half, 80 * 10**3)
 
-        # Grab the latest calibration factor
+        # Interpolate to find the correct calibration factor
         in_flight_cal_df = read_in_flight_cal_data(in_flight_cal_files)
-        latest_cal = in_flight_cal_df.sort_values("met_time").iloc[-1][1::]
+        # Get names of all 7 cems in the calibration file
+        cal_cols = [f"cem{i}" for i in range(1, 8)]
+        cal_met = in_flight_cal_df["met_time"].to_numpy()
 
-        normalized_first_half = normalize_counts(corrected_first_half, latest_cal)
-        normalized_second_half = normalize_counts(corrected_second_half, latest_cal)
+        # Find the middle timestamp of the first group
+        group_time_first_half = (
+            grouped["time_seconds"].where(grouped["swe_seq"] < 30, drop=True).values
+        )
+        group_time_first_half_mid = (
+            group_time_first_half[0] + group_time_first_half[-1]
+        ) // 2
+
+        # Interpolate to the appropriate calibration factor
+        interp_cal_first_half = np.array(
+            [
+                np.interp(
+                    int(group_time_first_half_mid),
+                    cal_met,
+                    in_flight_cal_df[cem].to_numpy(),
+                )
+                for cem in cal_cols
+            ],
+            dtype=np.float64,
+        )
+        # Find the middle timestamp of the second group
+        group_time_second_half = (
+            grouped["time_seconds"].where(grouped["swe_seq"] >= 30, drop=True).values
+        )
+        group_time_second_half_mid = (
+            group_time_second_half[0] + group_time_second_half[-1]
+        ) // 2
+        # Interpolate to the appropriate calibration factor
+        interp_cal_second_half = np.array(
+            [
+                np.interp(
+                    int(group_time_second_half_mid),
+                    cal_met,
+                    in_flight_cal_df[cem].to_numpy(),
+                )
+                for cem in cal_cols
+            ],
+            dtype=np.float64,
+        )
+
+        normalized_first_half = normalize_counts(
+            corrected_first_half, interp_cal_first_half
+        )
+        normalized_second_half = normalize_counts(
+            corrected_second_half, interp_cal_second_half
+        )
 
         # Sum over the 7 detectors
         summed_first_half_cem = np.sum(normalized_first_half, axis=1)
@@ -559,6 +603,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             _populate_instrument_header_items(met_first_half)
             | {
                 "instrument": "swe",
+                "swe_epoch": int(met_to_ttj2000ns(group_time_first_half_mid)),
                 "swe_normalized_counts": [int(val) for val in summed_first],
                 "swe_counterstreaming_electrons": bde_first_half,
             },
@@ -567,6 +612,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             _populate_instrument_header_items(met_second_half)
             | {
                 "instrument": "swe",
+                "swe_epoch": int(met_to_ttj2000ns(group_time_second_half_mid)),
                 "swe_normalized_counts": [int(val) for val in summed_second],
                 "swe_counterstreaming_electrons": bde_second_half,
             },
