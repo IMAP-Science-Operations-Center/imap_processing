@@ -46,7 +46,7 @@ def esa_unit_conversion_table() -> pd.DataFrame:
     """
     esa_file_path = (
         imap_module_directory
-        / "tests/swapi/lut/imap_swapi_esa-unit-conversion_20251210_v002.csv"
+        / "tests/swapi/lut/imap_swapi_esa-unit-conversion_20250626_v001.csv"
     )
     df = read_swapi_lut_table(esa_file_path)
     return df
