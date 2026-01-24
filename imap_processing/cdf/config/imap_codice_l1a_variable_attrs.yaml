@@ -191,13 +191,13 @@ half_spin_per_esa_step:
     DEPEND_0: epoch
     DEPEND_1: esa_step
     FIELDNAM: Half Spin Number
-    FILLVAL: 255
+    FILLVAL: 63
     FORMAT: I3
     LABLAXIS: Half Spin Number
     SCALETYP: linear
     UNITS: half spin number
     VALIDMIN: 0
-    VALIDMAX: 255
+    VALIDMAX: 63
     VAR_TYPE: support_data
 
 data_quality:

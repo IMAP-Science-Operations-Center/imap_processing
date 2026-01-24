@@ -154,9 +154,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_mask = np.repeat(species_mask, num_species, 1)
     species_data = species_data.astype(np.float64)
     species_data[species_mask] = np.nan
-
-    # Set half_spin_per_esa_step to 255 (uint8 fillval) where nso_mask is True
-    half_spin_per_esa_step[nso_mask] = 255
+    # Set half_spin_per_esa_step to (fillval) where nso_mask is True
+    half_spin_per_esa_step[nso_mask] = 63
     # Set acquisition_time_per_step to nan where nso_mask is True
     acquisition_time_per_step[nso_mask] = np.nan
 
