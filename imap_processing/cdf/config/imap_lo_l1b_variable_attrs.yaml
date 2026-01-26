@@ -121,6 +121,13 @@ direction:
   LABL_PTR_1: direction_vec_label
 
 # Star Sensor L1B Attributes
+met:
+  <<: *default
+  CATDESC: Start Mission Elapsed Time of averaging period
+  FIELDNAM: MET
+  FORMAT: I16
+  VAR_TYPE: support_data
+
 spin_angle:
   CATDESC: Spin angle in degrees
   FIELDNAM: Spin Angle
@@ -140,7 +147,7 @@ spin_angle_bin:
   VALIDMAX: 719
   VAR_TYPE: support_data
   UNITS: ' '
-  DEPEND_1: spin_angle
+  DEPEND_0: spin_angle
 
 avg_amplitude:
   <<: *default
@@ -162,39 +169,3 @@ count_per_bin:
   UNITS: ' '
   LABLAXIS: Sample Count
   DEPEND_1: spin_angle
-
-start_doy:
-  <<: *default
-  CATDESC: Fractional day of year for start of data range
-  FIELDNAM: Start Day of Year
-  FORMAT: F12.6
-  FILLVAL: -1.0000000E+31
-  VALIDMIN: 1.0
-  VALIDMAX: 367.0
-  UNITS: day
-  VAR_TYPE: support_data
-  LABLAXIS: Start DOY
-
-end_doy:
-  <<: *default
-  CATDESC: Fractional day of year for end of data range
-  FIELDNAM: End Day of Year
-  FORMAT: F12.6
-  FILLVAL: -1.0000000E+31
-  VALIDMIN: 1.0
-  VALIDMAX: 367.0
-  UNITS: day
-  VAR_TYPE: support_data
-  LABLAXIS: End DOY
-
-pointing_mid_met:
-  <<: *default
-  CATDESC: Mission Elapsed Time at the midpoint of the pointing
-  FIELDNAM: Pointing Mid MET
-  FORMAT: F15.6
-  FILLVAL: -1.0000000E+31
-  VALIDMIN: 0.0
-  VALIDMAX: 1.0E+10
-  UNITS: s
-  VAR_TYPE: support_data
-  LABLAXIS: Pointing Mid MET

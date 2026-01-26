@@ -21,6 +21,8 @@ from imap_processing.spice.geometry import (
     cartesian_to_latitudinal,
     frame_transform,
     lo_instrument_pointing,
+    get_spacecraft_to_instrument_spin_phase_offset,
+    instrument_pointing,
 )
 from imap_processing.spice.repoint import (
     get_pointing_mid_time,
@@ -1976,7 +1978,7 @@ def filter_valid_star_records(
 def calculate_star_sensor_profile_for_group(
     data: np.ndarray,
     counts: np.ndarray,
-    edge_bins_to_exclude: int = 2,
+    end_bins_to_exclude: int = 2,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate averaged star sensor amplitude profile for a group of records.
@@ -1987,8 +1989,8 @@ def calculate_star_sensor_profile_for_group(
         Star sensor data array, shape (n_records, 720).
     counts : np.ndarray
         Count values for each record, shape (n_records,).
-    edge_bins_to_exclude : int
-        Number of edge bins to exclude from each end of the data (default: 2).
+    end_bins_to_exclude : int
+        Number of bins to exclude from end of each row of data (default: 2).
 
     Returns
     -------
@@ -2001,21 +2003,16 @@ def calculate_star_sensor_profile_for_group(
         return np.full(720, -1.0e31, dtype=np.float64), np.zeros(720, dtype=np.int32)
 
     # Determine valid bin ranges for each record
-    use_edge_exclusion = (edge_bins_to_exclude > 0) & (
-        counts > 2 * edge_bins_to_exclude
-    )
-    start_bins = np.where(use_edge_exclusion, edge_bins_to_exclude, 0)
+    use_edge_exclusion = (end_bins_to_exclude > 0) & (counts > end_bins_to_exclude)
     end_bins = np.where(
         use_edge_exclusion,
-        np.minimum(counts - edge_bins_to_exclude, 720),
+        np.minimum(counts - end_bins_to_exclude, 720),
         np.minimum(counts, 720),
     )
 
     # Create mask for valid bins: shape (n_records, 720)
     bin_indices = np.arange(720)
-    valid_bin_mask = (bin_indices[None, :] >= start_bins[:, None]) & (
-        bin_indices[None, :] < end_bins[:, None]
-    )
+    valid_bin_mask = bin_indices[None, :] < end_bins[:, None]
 
     # Apply mask and sum across all records
     masked_data = np.where(valid_bin_mask, data, 0)
@@ -2023,7 +2020,7 @@ def calculate_star_sensor_profile_for_group(
     count_array = valid_bin_mask.sum(axis=0).astype(np.int32)
 
     # Compute average amplitude per bin
-    avg_amplitude = np.full(720, -1.0e31, dtype=np.float64)  # Initialize with FILLVAL
+    avg_amplitude = np.full(720, np.nan, dtype=np.float64)
     mask = count_array > 0
     avg_amplitude[mask] = sum_array[mask] / count_array[mask]
 
@@ -2036,7 +2033,7 @@ def calculate_star_sensor_profiles_by_group(
     spin_period: float,
     group_size: int = 64,
     start_angle_offset: float = 62.0,
-    edge_bins_to_exclude: int = 2,
+    end_bins_to_exclude: int = 2,
     min_count_threshold: int = 700,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -2057,8 +2054,8 @@ def calculate_star_sensor_profiles_by_group(
         Number of records per group (default: 64).
     start_angle_offset : float
         Starting angle offset in degrees (default: 62.0 = 90° - 28°).
-    edge_bins_to_exclude : int
-        Number of edge bins to exclude from each end of the data (default: 2).
+    end_bins_to_exclude : int
+        Number of ending bins to exclude from each average (default: 2).
     min_count_threshold : int
         Minimum COUNT value for valid record (default: 700).
 
@@ -2066,8 +2063,8 @@ def calculate_star_sensor_profiles_by_group(
     -------
     spin_angle : np.ndarray
         Spin angles in degrees [0-360], shape (720,).
-    group_epochs : np.ndarray
-        Start epoch for each group, shape (n_groups,).
+    group_mets : np.ndarray
+        Start MET for each group, shape (n_groups,).
     avg_amplitudes : np.ndarray
         Average amplitude in mV per bin per group, shape (n_groups, 720).
     counts_per_bin : np.ndarray
@@ -2098,10 +2095,8 @@ def calculate_star_sensor_profiles_by_group(
             np.empty((0, 720), dtype=np.int32),
         )
 
-    # Get valid data
-    valid_data = l1a_star["data"].values[valid_indices]
-    valid_counts = l1a_star["count"].values[valid_indices]
-    valid_epochs = l1a_star["epoch"].values[valid_indices]
+    # Keep valid data
+    l1a_star = l1a_star.isel(epoch=valid_indices)
 
     # Calculate number of groups (include partial groups)
     n_groups = (n_valid + group_size - 1) // group_size
@@ -2113,26 +2108,25 @@ def calculate_star_sensor_profiles_by_group(
     # Initialize output arrays
     avg_amplitudes = np.zeros((n_groups, 720), dtype=np.float64)
     counts_per_bin = np.zeros((n_groups, 720), dtype=np.int32)
-    group_epochs = np.zeros(n_groups, dtype=np.int64)
+    group_mets = np.zeros((n_groups,), dtype=np.int64)
 
     # Process each group
     for group_idx in range(n_groups):
         start_idx = group_idx * group_size
         end_idx = min(start_idx + group_size, n_valid)
 
-        group_data = valid_data[start_idx:end_idx]
-        group_counts = valid_counts[start_idx:end_idx]
+        group_data = l1a_star.isel(epoch=slice(start_idx, end_idx))
 
         # Calculate profile for this group
         avg_amp, count_arr = calculate_star_sensor_profile_for_group(
-            group_data, group_counts, edge_bins_to_exclude
+            group_data["data"], group_data["count"], end_bins_to_exclude
         )
 
         avg_amplitudes[group_idx] = avg_amp
         counts_per_bin[group_idx] = count_arr
-        group_epochs[group_idx] = valid_epochs[start_idx]
+        group_mets[group_idx] = group_data["shcoarse"].values[0]
 
-    return spin_angle, group_epochs, avg_amplitudes, counts_per_bin
+    return spin_angle, group_mets, avg_amplitudes, counts_per_bin
 
 
 def get_sampling_cadence_from_nhk(l1b_nhk: xr.Dataset) -> float:
@@ -2206,13 +2200,17 @@ def l1b_star(
     logger.info(f"Using spin duration from spin data: {spin_duration:.6f} s")
 
     # TODO: Read from ancillary config file when available
-    start_angle_offset = 62.0  # 90° - 28°
-    edge_bins_to_exclude = 2
+    lo_angle_offset = 2
+    sc_to_inst_angle_offset = (
+        360 * get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO)
+        + lo_angle_offset
+    )
+    end_bins_to_exclude = 2
 
     # Calculate profiles for each 64-spin group
     (
         spin_angle,
-        group_epochs,
+        group_mets,
         avg_amplitudes,
         counts_per_bin,
     ) = calculate_star_sensor_profiles_by_group(
@@ -2220,24 +2218,16 @@ def l1b_star(
         sampling_cadence,
         spin_duration,
         group_size=group_size,
-        start_angle_offset=start_angle_offset,
-        edge_bins_to_exclude=edge_bins_to_exclude,
+        start_angle_offset=sc_to_inst_angle_offset,
+        end_bins_to_exclude=end_bins_to_exclude,
     )
-
-    # Sort data so spin_angle is monotonically increasing from 0 to 360
-    sort_indices = np.argsort(spin_angle)
-    spin_angle_sorted = spin_angle[sort_indices]
-    # Apply sorting to all groups' data
-    avg_amplitudes_sorted = avg_amplitudes[:, sort_indices]
-    counts_per_bin_sorted = counts_per_bin[:, sort_indices]
-    # Original bin indices, reordered to match the sorted spin_angle
-    original_bin_indices = sort_indices.astype(np.uint16)
 
     # Get global epoch times from L1A data for start_doy and end_doy
     global_start_epoch = l1a_star["epoch"].values[0]
     global_end_epoch = l1a_star["epoch"].values[-1]
 
     # Create dataset with spin_angle as coordinate and multiple epochs
+    group_epochs = met_to_ttj2000ns(group_mets)
     l1b_star_ds = xr.Dataset(
         coords={
             "epoch": xr.DataArray(
@@ -2246,7 +2236,7 @@ def l1b_star(
                 attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
             ),
             "spin_angle": xr.DataArray(
-                spin_angle_sorted,
+                spin_angle,
                 dims=["spin_angle"],
                 attrs=attr_mgr_l1b.get_variable_attributes(
                     "spin_angle", check_schema=False
@@ -2257,55 +2247,52 @@ def l1b_star(
     )
 
     # Add spin_angle_bin as a variable (original bin indices)
-    # Broadcast to all epochs since bin mapping is the same for all groups
     l1b_star_ds["spin_angle_bin"] = xr.DataArray(
-        np.broadcast_to(original_bin_indices, (len(group_epochs), 720)),
-        dims=["epoch", "spin_angle"],
-        attrs=attr_mgr_l1b.get_variable_attributes("spin_angle_bin"),
+        np.arange(720, dtype=np.uint16),
+        dims=["spin_angle"],
+        attrs=attr_mgr_l1b.get_variable_attributes(
+            "spin_angle_bin", check_schema=False
+        ),
+    )
+
+    l1b_star_ds["met"] = xr.DataArray(
+        group_mets,
+        dims=["epoch"],
+        attrs=attr_mgr_l1b.get_variable_attributes("met"),
     )
 
     l1b_star_ds["avg_amplitude"] = xr.DataArray(
-        avg_amplitudes_sorted,
+        avg_amplitudes,
         dims=["epoch", "spin_angle"],
         attrs=attr_mgr_l1b.get_variable_attributes("avg_amplitude"),
     )
 
     l1b_star_ds["count_per_bin"] = xr.DataArray(
-        counts_per_bin_sorted,
+        counts_per_bin,
         dims=["epoch", "spin_angle"],
         attrs=attr_mgr_l1b.get_variable_attributes("count_per_bin"),
     )
 
+    # Sort the dataset by spin_angle
+    l1b_star_ds = l1b_star_ds.sortby("spin_angle")
+
     # Add pointing mid time (MET) as a scalar value
     # Use the first epoch to determine which pointing we're in
-    first_met = ttj2000ns_to_met(global_start_epoch)
+    first_met = l1a_star["shcoarse"].values[0]
     pointing_mid_met = get_pointing_mid_time(first_met)
-    l1b_star_ds["pointing_mid_met"] = xr.DataArray(
-        pointing_mid_met,
-        attrs=attr_mgr_l1b.get_variable_attributes(
-            "pointing_mid_met", check_schema=False
-        ),
-    )
 
     # Add global start and end day of year as scalar values
     start_doy = epoch_to_fractional_doy(global_start_epoch)
     end_doy = epoch_to_fractional_doy(global_end_epoch)
 
-    l1b_star_ds["start_doy"] = xr.DataArray(
-        start_doy,
-        attrs=attr_mgr_l1b.get_variable_attributes("start_doy"),
-    )
-
-    l1b_star_ds["end_doy"] = xr.DataArray(
-        end_doy,
-        attrs=attr_mgr_l1b.get_variable_attributes("end_doy"),
-    )
-
     # Add processing parameters as metadata
+    l1b_star_ds.attrs["start_doy"] = start_doy
+    l1b_star_ds.attrs["end_doy"] = end_doy
+    l1b_star_ds.attrs["pointing_mid_met"] = pointing_mid_met
     l1b_star_ds.attrs["sampling_cadence_ms"] = sampling_cadence
     l1b_star_ds.attrs["spin_duration_sec"] = spin_duration
-    l1b_star_ds.attrs["start_angle_offset_deg"] = start_angle_offset
-    l1b_star_ds.attrs["edge_bins_excluded"] = edge_bins_to_exclude
+    l1b_star_ds.attrs["lo_angle_offset_deg"] = lo_angle_offset
+    l1b_star_ds.attrs["end_bins_excluded"] = end_bins_to_exclude
     l1b_star_ds.attrs["min_count_threshold"] = 700
     l1b_star_ds.attrs["group_size"] = group_size
 

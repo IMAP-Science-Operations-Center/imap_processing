@@ -1455,7 +1455,7 @@ class TestGetSamplingCadenceFromNhk:
 
         # Act / Assert
         with pytest.raises(
-            ValueError,
+            KeyError,
             match="ifb_data_interval field not found in L1B NHK dataset",
         ):
             get_sampling_cadence_from_nhk(l1b_nhk)
@@ -1584,7 +1584,7 @@ class TestCalculateStarSensorProfile:
 
         # Act
         avg_amplitude, count_per_bin = calculate_star_sensor_profile_for_group(
-            data, counts, edge_bins_to_exclude=0
+            data, counts, end_bins_to_exclude=0
         )
 
         # Assert
@@ -1596,7 +1596,7 @@ class TestCalculateStarSensorProfile:
         assert np.all(avg_amplitude >= 100)
         assert np.all(avg_amplitude <= 200)
 
-    def test_profile_for_group_edge_bins_excluded(self):
+    def test_profile_for_group_end_bins_excluded(self):
         """Test that edge bins are properly excluded."""
         # Arrange - 2 records with uniform data
         data = np.ones((2, 720), dtype=np.uint16) * 100
@@ -1604,24 +1604,19 @@ class TestCalculateStarSensorProfile:
 
         # Act
         avg_amplitude, count_per_bin = calculate_star_sensor_profile_for_group(
-            data, counts, edge_bins_to_exclude=2
+            data, counts, end_bins_to_exclude=2
         )
 
         # Assert
-        # First 2 bins and last 2 bins should have count=0
-        assert count_per_bin[0] == 0
-        assert count_per_bin[1] == 0
+        # Last 2 bins should have count=0
         assert count_per_bin[718] == 0
         assert count_per_bin[719] == 0
-        # Middle bins should have count=2
-        assert np.all(count_per_bin[2:718] == 2)
-        # Edge bins should have FILLVAL
-        assert avg_amplitude[0] == -1.0e31
-        assert avg_amplitude[1] == -1.0e31
-        assert avg_amplitude[718] == -1.0e31
-        assert avg_amplitude[719] == -1.0e31
+        # All other bins should have count=2
+        assert np.all(count_per_bin[:718] == 2)
+        # End bins should have FILLVAL
+        assert np.all(np.isnan(avg_amplitude[718:]))
         # Middle bins should have average value
-        assert np.all(avg_amplitude[2:718] == 100.0)
+        assert np.all(avg_amplitude[:718] == 100.0)
 
     def test_profile_for_group_empty_data(self):
         """Test handling of empty data array."""
@@ -1831,7 +1826,7 @@ class TestL1bStar:
         assert "spin_angle_bin" in l1b_star_ds.data_vars
         assert "avg_amplitude" in l1b_star_ds.data_vars
         assert "count_per_bin" in l1b_star_ds.data_vars
-        assert "pointing_mid_met" in l1b_star_ds.data_vars
+        assert "pointing_mid_met" in l1b_star_ds.attrs
         # Check that spin_angle is monotonically increasing
         spin_angles = l1b_star_ds.coords["spin_angle"].values
         assert np.all(np.diff(spin_angles) > 0), (
@@ -1847,12 +1842,11 @@ class TestL1bStar:
         assert l1b_star_ds.attrs["spin_duration_sec"] == 15.0
         assert l1b_star_ds.attrs["group_size"] == 64
         # Check data shapes - all variables have epoch as first dimension
-        assert l1b_star_ds["spin_angle_bin"].shape == (3, 720)
+        assert l1b_star_ds["spin_angle_bin"].shape == (720,)
         assert l1b_star_ds["avg_amplitude"].shape == (3, 720)
         assert l1b_star_ds["count_per_bin"].shape == (3, 720)
         # Check pointing_mid_met is a scalar with expected value
-        assert l1b_star_ds["pointing_mid_met"].dims == ()
-        assert float(l1b_star_ds["pointing_mid_met"].values) == 1000.0
+        assert float(l1b_star_ds.attrs["pointing_mid_met"]) == 1000.0
 
     @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
@@ -1919,11 +1913,11 @@ class TestL1bStar:
         assert l1b_star_ds["count_per_bin"].attrs["VALIDMAX"] == 100000
 
         # Assert - Check processing parameter attributes
-        assert "start_angle_offset_deg" in l1b_star_ds.attrs
-        assert "edge_bins_excluded" in l1b_star_ds.attrs
+        assert "lo_angle_offset_deg" in l1b_star_ds.attrs
+        assert "end_bins_excluded" in l1b_star_ds.attrs
         assert "min_count_threshold" in l1b_star_ds.attrs
-        assert l1b_star_ds.attrs["start_angle_offset_deg"] == 62.0
-        assert l1b_star_ds.attrs["edge_bins_excluded"] == 2
+        assert l1b_star_ds.attrs["lo_angle_offset_deg"] == 2.0
+        assert l1b_star_ds.attrs["end_bins_excluded"] == 2
         assert l1b_star_ds.attrs["min_count_threshold"] == 700
 
     @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
@@ -1979,27 +1973,17 @@ class TestL1bStar:
         l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
 
         # Assert - Check that start_doy and end_doy exist as scalars (global values)
-        assert "start_doy" in l1b_star_ds.data_vars
-        assert "end_doy" in l1b_star_ds.data_vars
-
-        # Assert - Check they are scalar values (no dimensions)
-        assert l1b_star_ds["start_doy"].dims == ()
-        assert l1b_star_ds["end_doy"].dims == ()
+        assert "start_doy" in l1b_star_ds.attrs
+        assert "end_doy" in l1b_star_ds.attrs
 
         # Assert - Check values are valid day of year (1.0 to 366.x for leap years)
-        start_doy = float(l1b_star_ds["start_doy"].values)
-        end_doy = float(l1b_star_ds["end_doy"].values)
+        start_doy = float(l1b_star_ds.attrs["start_doy"])
+        end_doy = float(l1b_star_ds.attrs["end_doy"])
         assert 1.0 <= start_doy <= 367.0
         assert 1.0 <= end_doy <= 367.0
 
         # Assert - end_doy should be >= start_doy (data spans 30 seconds)
         assert end_doy >= start_doy
-
-        # Assert - Check attributes
-        assert l1b_star_ds["start_doy"].attrs["UNITS"] == "day"
-        assert l1b_star_ds["end_doy"].attrs["UNITS"] == "day"
-        assert "Fractional day of year" in l1b_star_ds["start_doy"].attrs["CATDESC"]
-        assert "Fractional day of year" in l1b_star_ds["end_doy"].attrs["CATDESC"]
 
     @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
@@ -2056,8 +2040,7 @@ class TestL1bStar:
         # Assert
         assert len(l1b_star_ds.coords["epoch"]) == 3
         # Check pointing_mid_met is present (scalar value)
-        assert "pointing_mid_met" in l1b_star_ds.data_vars
-        assert l1b_star_ds["pointing_mid_met"].dims == ()
+        assert "pointing_mid_met" in l1b_star_ds.attrs
         # First group epoch should be the first L1A epoch
         assert l1b_star_ds.coords["epoch"].values[0] == met_to_ttj2000ns([0.0])[0]
         # Second group epoch should be record 64
@@ -2076,13 +2059,13 @@ def test_star_integration(use_test_repoint_data_csv):
         )
     )
     star_path = Path(
-        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1a/2025/11/imap_lo_l1a_star_20251110-repoint00044_v001.cdf"
+        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1a/2026/01/imap_lo_l1a_star_20260121-repoint00133_v001.cdf"
     )
     spin_path = Path(
-        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1a/2025/11/imap_lo_l1a_spin_20251110-repoint00044_v001.cdf"
+        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1a/2026/01/imap_lo_l1a_spin_20260121-repoint00133_v001.cdf"
     )
     nhk_path = Path(
-        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1b/2025/11/imap_lo_l1b_nhk_20251110-repoint00044_v001.cdf"
+        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1b/2026/01/imap_lo_l1b_nhk_20260121-repoint00133_v001.cdf"
     )
     sci_dependencies = {
         "imap_lo_l1a_star": load_cdf(star_path),
