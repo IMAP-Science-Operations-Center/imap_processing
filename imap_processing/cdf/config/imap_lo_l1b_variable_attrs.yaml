@@ -157,6 +157,7 @@ avg_amplitude:
   FILLVAL: -1.0000000E+31
   UNITS: mV
   LABLAXIS: Amplitude
+  DEPEND_0: epoch
   DEPEND_1: spin_angle
 
 count_per_bin:
@@ -168,4 +169,5 @@ count_per_bin:
   VALIDMAX: 100000
   UNITS: ' '
   LABLAXIS: Sample Count
+  DEPEND_0: epoch
   DEPEND_1: spin_angle

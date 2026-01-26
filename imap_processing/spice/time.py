@@ -409,31 +409,36 @@ def epoch_to_doy(epoch: np.ndarray) -> npt.NDArray:
     )
 
 
-def epoch_to_fractional_doy(epoch_ttj2000ns: int) -> float:
+def epoch_to_fractional_doy(epoch: int | Iterable[int]) -> float | np.ndarray:
     """
-    Convert epoch in TTJ2000ns to floating point day of year.
+    Convert epoch in TTJ2000ns to floating point day-of-year.
+
+    Uses SPICE's timout function to directly extract day of year and  # codespell:ignore
+    time components, avoiding intermediate datetime parsing.
 
     Parameters
     ----------
-    epoch_ttj2000ns : int
+    epoch : int
         Epoch in TTJ2000ns format (nanoseconds since J2000).
 
     Returns
     -------
     doy : float
         Floating point day of year (1.0 = Jan 1 00:00:00).
+
+    References
+    ----------
+    https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/timout_c.html
     """
-    # Convert to ephemeris time, then to UTC string
-    et = ttj2000ns_to_et(epoch_ttj2000ns)
-    utc_str = et_to_utc(et)  # Returns ISO format: "YYYY-MM-DDTHH:MM:SS.sss"
+    # Convert to ephemeris time (ET/TDB)
+    et = ttj2000ns_to_et(epoch)
 
-    # Parse the datetime (remove trailing 'Z' if present)
-    dt = datetime.fromisoformat(utc_str.rstrip("Z"))
+    def single_et_to_fractional_doy(et: float) -> float:  # numpydoc ignore=GL08
+        # Use SPICE timout to extract DOY and time components  # codespell:ignore
+        # Format: "DOY.####" with ::UTC modifier for UTC-based output
+        # The ::UTC modifier converts ET to UTC but doesn't appear in output
+        return float(spiceypy.timout(et, "DOY.#### ::UTC", 30))  # codespell:ignore
 
-    # Calculate day of year as floating point
-    # Day of year starts at 1, so Jan 1 00:00:00 = 1.0
-    start_of_year = datetime(dt.year, 1, 1)
-    delta = dt - start_of_year
-    doy = 1.0 + delta.total_seconds() / 86400.0
+    vectorized_et_to_frac_doy = _vectorize(single_et_to_fractional_doy, otypes=[float])
 
-    return doy
+    return vectorized_et_to_frac_doy(et)

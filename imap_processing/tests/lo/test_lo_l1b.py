@@ -1631,7 +1631,8 @@ class TestCalculateStarSensorProfile:
 
         # Assert
         np.testing.assert_array_equal(count_per_bin, np.zeros(720))
-        np.testing.assert_array_equal(avg_amplitude, np.full(720, -1.0e31))
+        # Empty data returns NaN for all bins (consistent with bins having no samples)
+        assert np.all(np.isnan(avg_amplitude))
 
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
     def test_profiles_by_group_creates_correct_groups(self, mock_repoint):

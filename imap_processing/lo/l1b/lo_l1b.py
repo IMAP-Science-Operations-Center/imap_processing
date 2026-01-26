@@ -2000,7 +2000,7 @@ def calculate_star_sensor_profile_for_group(
         Number of samples accumulated per bin, shape (720,).
     """
     if len(data) == 0:
-        return np.full(720, -1.0e31, dtype=np.float64), np.zeros(720, dtype=np.int32)
+        return np.full(720, np.nan, dtype=np.float64), np.zeros(720, dtype=np.int32)
 
     # Determine valid bin ranges for each record
     use_edge_exclusion = (end_bins_to_exclude > 0) & (counts > end_bins_to_exclude)
@@ -2095,36 +2095,39 @@ def calculate_star_sensor_profiles_by_group(
             np.empty((0, 720), dtype=np.int32),
         )
 
-    # Keep valid data
+    # Keep valid data using xarray selection
     l1a_star = l1a_star.isel(epoch=valid_indices)
 
     # Calculate number of groups (include partial groups)
     n_groups = (n_valid + group_size - 1) // group_size
+    last_group_size = n_valid % group_size
 
     logger.info(
         f"Processing {n_valid} valid records into {n_groups} groups of {group_size}"
     )
+    if last_group_size != 0:
+        logger.debug(f"Last group contains {last_group_size} records (partial group)")
+
+    # Assign group labels to the dataset for xarray groupby operations
+    group_labels = np.repeat(np.arange(n_groups), group_size)[:n_valid]
+    l1a_star = l1a_star.assign_coords(group=("epoch", group_labels))
+
+    # Extract first MET for each group using xarray groupby
+    group_mets = l1a_star["shcoarse"].groupby("group").first().values.astype(np.int64)
 
     # Initialize output arrays
     avg_amplitudes = np.zeros((n_groups, 720), dtype=np.float64)
     counts_per_bin = np.zeros((n_groups, 720), dtype=np.int32)
-    group_mets = np.zeros((n_groups,), dtype=np.int64)
 
-    # Process each group
-    for group_idx in range(n_groups):
-        start_idx = group_idx * group_size
-        end_idx = min(start_idx + group_size, n_valid)
-
-        group_data = l1a_star.isel(epoch=slice(start_idx, end_idx))
-
+    # Process each group using xarray groupby
+    for group_label, group_data in l1a_star.groupby("group"):
         # Calculate profile for this group
         avg_amp, count_arr = calculate_star_sensor_profile_for_group(
-            group_data["data"], group_data["count"], end_bins_to_exclude
+            group_data["data"].values, group_data["count"].values, end_bins_to_exclude
         )
 
-        avg_amplitudes[group_idx] = avg_amp
-        counts_per_bin[group_idx] = count_arr
-        group_mets[group_idx] = group_data["shcoarse"].values[0]
+        avg_amplitudes[group_label] = avg_amp
+        counts_per_bin[group_label] = count_arr
 
     return spin_angle, group_mets, avg_amplitudes, counts_per_bin
 
@@ -2200,12 +2203,13 @@ def l1b_star(
     logger.info(f"Using spin duration from spin data: {spin_duration:.6f} s")
 
     # TODO: Read from ancillary config file when available
-    lo_angle_offset = 2
+    lo_angle_offset = 2.0
     sc_to_inst_angle_offset = (
         360 * get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO)
         + lo_angle_offset
     )
     end_bins_to_exclude = 2
+    min_count_threshold = 700
 
     # Calculate profiles for each 64-spin group
     (
@@ -2220,6 +2224,7 @@ def l1b_star(
         group_size=group_size,
         start_angle_offset=sc_to_inst_angle_offset,
         end_bins_to_exclude=end_bins_to_exclude,
+        min_count_threshold=min_count_threshold,
     )
 
     # Get global epoch times from L1A data for start_doy and end_doy
@@ -2293,7 +2298,7 @@ def l1b_star(
     l1b_star_ds.attrs["spin_duration_sec"] = spin_duration
     l1b_star_ds.attrs["lo_angle_offset_deg"] = lo_angle_offset
     l1b_star_ds.attrs["end_bins_excluded"] = end_bins_to_exclude
-    l1b_star_ds.attrs["min_count_threshold"] = 700
+    l1b_star_ds.attrs["min_count_threshold"] = min_count_threshold
     l1b_star_ds.attrs["group_size"] = group_size
 
     logger.info(

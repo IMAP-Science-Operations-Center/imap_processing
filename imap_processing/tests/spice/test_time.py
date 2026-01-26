@@ -8,6 +8,7 @@ from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.time import (
     TICK_DURATION,
     epoch_to_doy,
+    epoch_to_fractional_doy,
     et_to_datetime64,
     et_to_met,
     et_to_ttj2000ns,
@@ -297,3 +298,108 @@ def test_ttj2000ns_to_met():
     ttj2000ns_array = met_to_ttj2000ns(met_array)
     roundtrip_met_array = ttj2000ns_to_met(ttj2000ns_array)
     np.testing.assert_array_almost_equal(roundtrip_met_array, met_array)
+
+
+class TestEpochToFractionalDoy:
+    """Tests for epoch_to_fractional_doy function."""
+
+    def test_january_first_midnight(self):
+        """Test that January 1st 00:00:00 returns exactly 1.0."""
+        # January 1st at midnight should be DOY 1.0
+        utc = "2025-01-01T00:00:00.000"
+        et = spiceypy.str2et(utc)
+        epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
+
+        doy = epoch_to_fractional_doy(epoch)
+
+        assert doy == 1.0
+
+    def test_january_first_noon(self):
+        """Test that January 1st 12:00:00 returns 1.5."""
+        # January 1st at noon should be DOY 1.5
+        utc = "2025-01-01T12:00:00.000"
+        et = spiceypy.str2et(utc)
+        epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
+
+        doy = epoch_to_fractional_doy(epoch)
+
+        np.testing.assert_almost_equal(doy, 1.5, decimal=6)
+
+    def test_known_mid_year_date(self):
+        """Test a known mid-year date (July 1st = DOY 182 in non-leap year)."""
+        # July 1st 00:00:00 in 2025 (non-leap year) should be DOY 182.0
+        utc = "2025-07-01T00:00:00.000"
+        et = spiceypy.str2et(utc)
+        epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
+
+        doy = epoch_to_fractional_doy(epoch)
+
+        # July 1st is day 182 in a non-leap year
+        # Jan(31) + Feb(28) + Mar(31) + Apr(30) + May(31) + Jun(30) = 181 days
+        # So July 1 is day 182
+        assert doy == 182.0
+
+    def test_leap_year_date(self):
+        """Test leap year handling (Feb 29th exists in 2024)."""
+        # March 1st 00:00:00 in 2024 (leap year) should be DOY 61.0
+        utc = "2024-03-01T00:00:00.000"
+        et = spiceypy.str2et(utc)
+        epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
+
+        doy = epoch_to_fractional_doy(epoch)
+
+        # In leap year: Jan(31) + Feb(29) = 60 days, so March 1 is day 61
+        assert doy == 61.0
+
+    def test_end_of_year(self):
+        """Test December 31st returns DOY 365 (non-leap) or 366 (leap)."""
+        # December 31st 00:00:00 in 2025 (non-leap year) should be DOY 365.0
+        utc = "2025-12-31T00:00:00.000"
+        et = spiceypy.str2et(utc)
+        epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
+
+        doy = epoch_to_fractional_doy(epoch)
+
+        assert doy == 365.0
+
+    def test_fractional_time_components(self):
+        """Test that hours, minutes, and seconds contribute correctly."""
+        # January 2nd at 06:30:00 should be DOY 2.0 + 6.5/24 = 2.270833...
+        utc = "2025-01-02T06:30:00.000"
+        et = spiceypy.str2et(utc)
+        epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
+
+        doy = epoch_to_fractional_doy(epoch)
+
+        # Expected: 2.0 + 6/24 + 30/1440 = 2.0 + 0.25 + 0.02083... = 2.270833...
+        expected_doy = 2.0 + 6.0 / 24.0 + 30.0 / 1440.0
+        np.testing.assert_almost_equal(doy, expected_doy, decimal=4)
+
+    def test_subsecond_precision(self):
+        """Test that subsecond precision is preserved."""
+        # January 1st at 00:00:00.5 should be DOY 1.0 + 0.5/86400
+        utc = "2025-01-01T00:00:00.500"
+        et = spiceypy.str2et(utc)
+        epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
+
+        doy = epoch_to_fractional_doy(epoch)
+
+        # Expected: 1.0 + 0.5/86400 = 1.00000578703...
+        expected_doy = 1.0 + 0.5 / 86400.0
+        np.testing.assert_almost_equal(doy, expected_doy, decimal=4)
+
+    def test_array_input(self):
+        """Test that np.array as input works."""
+        # Test various dates throughout the year
+        test_dates = [
+            "2025-01-01T00:00:00.000",
+            "2025-06-15T12:30:45.123",
+            "2025-12-31T23:59:59.999",
+            "2024-02-29T12:00:00.000",  # Leap year
+        ]
+
+        ets = spiceypy.str2et(test_dates)
+        epochs = et_to_ttj2000ns(ets)
+        doys = epoch_to_fractional_doy(epochs)
+        assert np.all(doys >= 1.0)
+        assert np.all(doys < 367.0)
