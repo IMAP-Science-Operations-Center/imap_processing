@@ -1110,11 +1110,10 @@ class TestCalculateIntensities:
         # Check statistical uncertainty calculation
         expected_stat_uncert = np.sqrt(
             sample_dataset_with_geometric_factors["counts_over_eff_squared"]
-            / (
-                sample_dataset_with_geometric_factors["geometric_factor"]
-                * sample_dataset_with_geometric_factors["energy"]
-                * sample_dataset_with_geometric_factors["exposure_factor"]
-            )
+        ) / (
+            sample_dataset_with_geometric_factors["geometric_factor"]
+            * sample_dataset_with_geometric_factors["energy"]
+            * sample_dataset_with_geometric_factors["exposure_factor"]
         )
         xr.testing.assert_allclose(
             result["ena_intensity_stat_uncert"], expected_stat_uncert

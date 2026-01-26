@@ -948,8 +948,7 @@ def calculate_intensities(dataset: xr.Dataset) -> xr.Dataset:
     # the equation is for the variance
     dataset["ena_intensity_stat_uncert"] = np.sqrt(
         dataset["counts_over_eff_squared"]
-        / (dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"])
-    )
+    ) / (dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"])
 
     # Equation 5 from mapping document (systematic uncertainty)
     dataset["ena_intensity_sys_err"] = (
