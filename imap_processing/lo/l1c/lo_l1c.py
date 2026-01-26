@@ -5,15 +5,19 @@ from dataclasses import Field
 from enum import Enum
 
 import numpy as np
+import pandas as pd
 import xarray as xr
-from scipy.stats import binned_statistic_dd
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo import lo_ancillary
 from imap_processing.lo.l1b.lo_l1b import set_bad_or_goodtimes
-from imap_processing.spice.geometry import SpiceFrame, frame_transform_az_el
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    frame_transform_az_el,
+    lo_instrument_pointing,
+)
 from imap_processing.spice.repoint import get_pointing_times
-from imap_processing.spice.spin import get_spin_number
+from imap_processing.spice.spin import get_spin_data, get_spin_number
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
@@ -31,6 +35,14 @@ SPIN_ANGLE_BIN_EDGES = np.linspace(0, 360, N_SPIN_ANGLE_BINS + 1)
 SPIN_ANGLE_BIN_CENTERS = (SPIN_ANGLE_BIN_EDGES[:-1] + SPIN_ANGLE_BIN_EDGES[1:]) / 2
 OFF_ANGLE_BIN_EDGES = np.linspace(-2, 2, N_OFF_ANGLE_BINS + 1)
 OFF_ANGLE_BIN_CENTERS = (OFF_ANGLE_BIN_EDGES[:-1] + OFF_ANGLE_BIN_EDGES[1:]) / 2
+
+# Constants for statistical exposure time calculation
+# Number of time samples per spin to capture all potential timesteps
+N_SAMPLES_PER_SPIN = 4096
+# Default number of representative spins to sample across the pointing
+DEFAULT_N_REPRESENTATIVE_SPINS = 5
+# Nominal Lo pivot angle in degrees
+LO_NOMINAL_PIVOT_ANGLE = 90.0
 
 
 class FilterType(str, Enum):
@@ -127,8 +139,6 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             attrs=attr_mgr.get_variable_attributes("end_spin_number"),
         )
 
-        full_counts = create_pset_counts(l1b_de, FilterType.NONE)
-
         # Set the counts
         pset["triples_counts"] = create_pset_counts(
             l1b_goodtimes_only, FilterType.TRIPLES
@@ -139,9 +149,15 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         pset["h_counts"] = create_pset_counts(l1b_goodtimes_only, FilterType.HYDROGEN)
         pset["o_counts"] = create_pset_counts(l1b_goodtimes_only, FilterType.OXYGEN)
 
-        # Set the exposure time
+        # Read good-times for exposure time calculation
+        goodtimes_df = lo_ancillary.read_ancillary_file(
+            next(str(s) for s in anc_dependencies if "good-times" in str(s))
+        )
+
+        # Set the exposure time using statistical off-pointing sampling
+        # with good-times filtering applied
         pset["exposure_time"] = calculate_exposure_times(
-            full_counts, l1b_goodtimes_only
+            pointing_start_met, pointing_end_met, goodtimes_df
         )
 
         # Set backgrounds
@@ -320,48 +336,390 @@ def create_pset_counts(
     return counts
 
 
-def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.DataArray:
+def get_representative_spin_times(
+    pointing_start_met: float,
+    pointing_end_met: float,
+    n_spins: int = DEFAULT_N_REPRESENTATIVE_SPINS,
+) -> pd.DataFrame:
     """
-    Calculate the exposure times for the L1B Direct Event dataset.
+    Get evenly-spaced representative spin times from the pointing period.
 
-    The exposure times are calculated by binning the data into 3600 longitude bins,
-    40 latitude bins, and 7 energy bins. If more than one exposure time is in a bin,
-    the average is taken.
+    Selects N spins distributed evenly across the middle 80% of the pointing
+    duration (skipping the first and last 10%) by querying the spin table for
+    spins at evenly-spaced MET times.
 
     Parameters
     ----------
-    counts : xarray.DataArray
-        An event counts array with dimensions (epoch, lon_bins, lat_bins, energy_bins).
-    l1b_de : xarray.Dataset
-        L1B Direct Event dataset. This data contains the average spin durations.
+    pointing_start_met : float
+        The start MET time of the pointing.
+    pointing_end_met : float
+        The end MET time of the pointing.
+    n_spins : int, optional
+        Number of representative spins to select. Default is 5.
+
+    Returns
+    -------
+    representative_spins : pandas.DataFrame
+        DataFrame containing the spin table data for the selected representative
+        spins, including columns: spin_number, spin_start_met, actual_spin_period.
+    """
+    spin_df = get_spin_data()
+
+    # Filter spin table to only spins within the pointing period
+    pointing_spins = spin_df[
+        (spin_df["spin_start_met"] >= pointing_start_met)
+        & (spin_df["spin_start_met"] < pointing_end_met)
+    ]
+
+    if len(pointing_spins) == 0:
+        raise ValueError(
+            f"No spins found in spin table for pointing period "
+            f"[{pointing_start_met}, {pointing_end_met}]."
+        )
+
+    # Select evenly-spaced indices from the middle 80% of available spins
+    # Skip first 10% and last 10% to avoid boundary effects
+    total_spins = len(pointing_spins)
+    start_fraction = 0.1
+    end_fraction = 0.9
+    start_idx = int(total_spins * start_fraction)
+    end_idx = int(total_spins * end_fraction) - 1
+
+    # Ensure we have valid indices
+    start_idx = max(0, start_idx)
+    end_idx = max(start_idx, min(end_idx, total_spins - 1))
+
+    available_spins = end_idx - start_idx + 1
+    if available_spins <= n_spins:
+        # Use all available spins in the middle 80% if fewer than requested
+        selected_indices = np.arange(start_idx, end_idx + 1)
+    else:
+        # Select evenly-spaced indices from the middle 80%
+        selected_indices = np.linspace(start_idx, end_idx, n_spins, dtype=int)
+
+    representative_spins = pointing_spins.iloc[selected_indices]
+
+    logging.debug(
+        f"Selected {len(representative_spins)} representative spins from "
+        f"{total_spins} total spins in pointing period (using middle 80%)."
+    )
+
+    return representative_spins
+
+
+def sample_boresight_bins(
+    spin_start_met: float,
+    spin_period: float,
+    n_samples: int = N_SAMPLES_PER_SPIN,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Sample the Lo boresight look direction throughout a single spin.
+
+    Generates evenly-spaced time samples within a spin period, computes the
+    Lo boresight pointing direction in the IMAP_DPS frame, and returns the
+    spin_angle and off_angle for each sample.
+
+    Parameters
+    ----------
+    spin_start_met : float
+        The MET time at the start of the spin.
+    spin_period : float
+        The duration of the spin in seconds.
+    n_samples : int, optional
+        Number of time samples within the spin. Default is 4096.
+
+    Returns
+    -------
+    spin_angles : numpy.ndarray
+        Array of spin angles (0-360 degrees) for each sample time.
+    off_angles : numpy.ndarray
+        Array of off angles (elevation from DPS equatorial plane) for each sample.
+    """
+    # Generate evenly-spaced sample times within the spin
+    # Use the center of each time bin for sampling
+    sample_fractions = (np.arange(n_samples) + 0.5) / n_samples
+    sample_mets = spin_start_met + sample_fractions * spin_period
+
+    # Convert MET times to ephemeris time for SPICE
+    sample_ttj2000ns = met_to_ttj2000ns(sample_mets)
+    sample_ets = ttj2000ns_to_et(sample_ttj2000ns)
+
+    # Get the Lo boresight pointing in the DPS frame
+    # lo_instrument_pointing returns (longitude, latitude) in degrees
+    # longitude corresponds to spin_angle, latitude corresponds to off_angle
+    # Use nominal pivot angle of 90 degrees which rotates boresight to point
+    # approximately in the spacecraft spin plane (near-zero off-pointing)
+    pointing = lo_instrument_pointing(
+        sample_ets, LO_NOMINAL_PIVOT_ANGLE, SpiceFrame.IMAP_DPS
+    )
+
+    # Extract spin_angle (longitude) and off_angle (latitude)
+    spin_angles = pointing[:, 0]
+    off_angles = pointing[:, 1]
+
+    # Ensure spin angles are in [0, 360) range
+    spin_angles = np.mod(spin_angles, 360)
+
+    return spin_angles, off_angles
+
+
+def calculate_bin_weights(off_angles: np.ndarray) -> np.ndarray:
+    """
+    Calculate the probability weight for each off_angle bin.
+
+    Bins all sampled off angles into the 40-bin grid and normalizes
+    the counts to get probability weights that sum to 1. These weights
+    are applied uniformly across all spin_angle bins since the spacecraft
+    rotates evenly and we want smooth exposure across spin angles.
+
+    Parameters
+    ----------
+    off_angles : numpy.ndarray
+        Array of off angles (degrees) from all sampled times.
+
+    Returns
+    -------
+    bin_weights : numpy.ndarray
+        1D array of shape (N_OFF_ANGLE_BINS,) containing the probability
+        weight for each off_angle bin. Weights sum to 1.0.
+    """
+    # Create 1D histogram of off_angles only
+    bin_counts, _ = np.histogram(off_angles, bins=OFF_ANGLE_BIN_EDGES)
+
+    # Normalize to get probability weights
+    total_samples = len(off_angles)
+    if total_samples > 0:
+        bin_weights = bin_counts / total_samples
+    else:
+        # If no samples, return zero weights
+        bin_weights = np.zeros(N_OFF_ANGLE_BINS, dtype=np.float32)
+
+    return bin_weights
+
+
+def create_goodtimes_fraction(
+    goodtimes_df: pd.DataFrame,
+    pointing_start_met: float,
+    pointing_end_met: float,
+) -> np.ndarray:
+    """
+    Create fractional weights for spin_angle bins and ESA steps based on good-times.
+
+    The good-times ancillary file specifies which spin angle bins (in 6-degree
+    resolution) and ESA energy steps are valid during specific time periods.
+    This function calculates the fraction of the pointing duration that is
+    covered by good-times for each (ESA step, spin_angle bin) combination.
+
+    Parameters
+    ----------
+    goodtimes_df : pandas.DataFrame
+        DataFrame containing the good-times ancillary data with columns:
+        GoodTime_start, GoodTime_end, bin_start, bin_end, E-Step1 through E-Step7.
+    pointing_start_met : float
+        The start MET time of the pointing.
+    pointing_end_met : float
+        The end MET time of the pointing.
+
+    Returns
+    -------
+    goodtimes_fraction : numpy.ndarray
+        2D array of shape (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS) containing
+        the fraction of pointing duration covered by good-times for each
+        ESA step and spin angle bin. Values range from 0.0 to 1.0.
+    """
+    total_pointing_duration = pointing_end_met - pointing_start_met
+
+    # Initialize as all zeros (no good time)
+    goodtimes_fraction = np.zeros(
+        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS), dtype=np.float32
+    )
+
+    if total_pointing_duration <= 0:
+        logging.warning("Pointing duration is zero or negative.")
+        return goodtimes_fraction
+
+    # Filter good-times to only those overlapping with the pointing period
+    pointing_goodtimes = goodtimes_df[
+        (goodtimes_df["GoodTime_start"] < pointing_end_met)
+        & (goodtimes_df["GoodTime_end"] > pointing_start_met)
+    ]
+
+    if len(pointing_goodtimes) == 0:
+        logging.warning(
+            f"No good-times found for pointing period "
+            f"[{pointing_start_met}, {pointing_end_met}]. "
+            "All exposure times will be zero."
+        )
+        return goodtimes_fraction
+
+    # Process each good-time row and accumulate fractional coverage
+    for _, row in pointing_goodtimes.iterrows():
+        # Calculate the overlap between this good-time period and the pointing
+        goodtime_start = max(row["GoodTime_start"], pointing_start_met)
+        goodtime_end = min(row["GoodTime_end"], pointing_end_met)
+        overlap_duration = goodtime_end - goodtime_start
+
+        if overlap_duration <= 0:
+            continue
+
+        # Calculate fraction of pointing duration covered by this good-time
+        time_fraction = overlap_duration / total_pointing_duration
+
+        # Convert bin_start/bin_end from 6-degree to 0.1-degree resolution
+        # bin_start and bin_end are in units of 6-degree bins (0-59), inclusive
+        # We need to convert to 0.1-degree bins (0-3599)
+        bin_start_6deg = int(row["bin_start"])
+        bin_end_6deg = int(row["bin_end"])
+
+        # Convert to 0.1-degree resolution (multiply by 60)
+        # bin_end is inclusive, so add 1 after scaling for Python slice indexing
+        spin_bin_start = bin_start_6deg * 60
+        spin_bin_end = (bin_end_6deg + 1) * 60  # +1 because bin_end is inclusive
+
+        # For each ESA step, accumulate the fractional coverage
+        for esa_idx in range(N_ESA_ENERGY_STEPS):
+            esa_step_col = f"E-Step{esa_idx + 1}"
+            if row[esa_step_col] == 1:
+                # Add this time fraction to the affected bins
+                goodtimes_fraction[esa_idx, spin_bin_start:spin_bin_end] += (
+                    time_fraction
+                )
+
+    # Clip to [0, 1] in case of overlapping good-time periods
+    goodtimes_fraction = np.clip(goodtimes_fraction, 0.0, 1.0)
+
+    # Calculate average coverage for logging
+    avg_coverage = goodtimes_fraction.mean()
+    logging.debug(
+        f"Good-times coverage: average={100 * avg_coverage:.1f}%, "
+        f"min={100 * goodtimes_fraction.min():.1f}%, "
+        f"max={100 * goodtimes_fraction.max():.1f}%"
+    )
+
+    return goodtimes_fraction
+
+
+def calculate_exposure_times(
+    pointing_start_met: float,
+    pointing_end_met: float,
+    goodtimes_df: pd.DataFrame | None = None,
+    n_representative_spins: int = DEFAULT_N_REPRESENTATIVE_SPINS,
+) -> xr.DataArray:
+    """
+    Calculate exposure times using statistical off-pointing sampling.
+
+    Samples the Lo boresight look direction across representative spins to
+    determine which spin_angle × off_angle bins are observed. The total
+    pointing duration is then distributed across bins proportionally to
+    the observed probability weights. If good-times data is provided,
+    exposure times are zeroed for invalid spin_angle/ESA step combinations.
+
+    Parameters
+    ----------
+    pointing_start_met : float
+        The start MET time of the pointing.
+    pointing_end_met : float
+        The end MET time of the pointing.
+    goodtimes_df : pandas.DataFrame, optional
+        DataFrame containing the good-times ancillary data. If provided,
+        exposure times will be zeroed for invalid spin_angle bins and ESA steps.
+    n_representative_spins : int, optional
+        Number of representative spins to sample. Default is 5.
 
     Returns
     -------
     exposure_time : xarray.DataArray
-        The exposure times for the L1B Direct Event dataset.
+        The exposure times for each (esa_energy_step, spin_angle, off_angle) bin.
+        Shape is (1, N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS).
     """
-    data = np.column_stack(
-        (l1b_de["esa_step"], l1b_de["spin_bin"], l1b_de["off_angle_bin"])
+    # Calculate total pointing duration in seconds
+    total_pointing_duration = pointing_end_met - pointing_start_met
+
+    # Get representative spins from the pointing period
+    representative_spins = get_representative_spin_times(
+        pointing_start_met, pointing_end_met, n_representative_spins
     )
 
-    result = binned_statistic_dd(
-        data,
-        # exposure time equation from Lo Alg Document 10.1.1.4
-        4 * l1b_de["avg_spin_durations"].to_numpy() / 3600,
-        statistic="mean",
-        # NOTE: The l1b pointing_bin_lon is bin number, not actual angle
-        bins=[
-            np.arange(N_ESA_ENERGY_STEPS + 1),
-            np.arange(N_SPIN_ANGLE_BINS + 1),
-            np.arange(N_OFF_ANGLE_BINS + 1),
-        ],
+    # Collect all sampled spin angles and off angles across representative spins
+    all_spin_angles = []
+    all_off_angles = []
+
+    for _, spin_row in representative_spins.iterrows():
+        spin_start_met = spin_row["spin_start_met"]
+        spin_period = spin_row["actual_spin_period"]
+
+        spin_angles, off_angles = sample_boresight_bins(spin_start_met, spin_period)
+        all_spin_angles.append(spin_angles)
+        all_off_angles.append(off_angles)
+
+    # Concatenate all samples
+    all_spin_angles = np.concatenate(all_spin_angles)
+    all_off_angles = np.concatenate(all_off_angles)
+
+    # Log statistics about the sampled angles for debugging
+    logging.debug(
+        f"Sampled angles - spin_angle: min={all_spin_angles.min():.2f}, "
+        f"max={all_spin_angles.max():.2f}, mean={all_spin_angles.mean():.2f}"
+    )
+    logging.debug(
+        f"Sampled angles - off_angle: min={all_off_angles.min():.2f}, "
+        f"max={all_off_angles.max():.2f}, mean={all_off_angles.mean():.2f}"
     )
 
-    stat = result.statistic[np.newaxis, :, :, :]
+    # Calculate bin probability weights for off_angle only
+    # We use 1D histogram on off_angle because discrete spin sampling creates
+    # artifacts, but the spacecraft rotates evenly so spin_angle exposure
+    # should be uniform
+    off_angle_weights = calculate_bin_weights(all_off_angles)
+
+    # Calculate exposure time per ESA step
+    # Divide by N_ESA_ENERGY_STEPS because each ESA step is only active
+    # for 1/7 of the total pointing duration
+    # Divide by N_SPIN_ANGLE_BINS to distribute uniformly across spin angles
+    exposure_per_esa_step = total_pointing_duration / N_ESA_ENERGY_STEPS
+    exposure_per_spin_bin = exposure_per_esa_step / N_SPIN_ANGLE_BINS
+
+    # Apply off_angle weights: each spin_angle bin gets the same off_angle distribution
+    # Shape: (N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS)
+    exposure_per_bin = exposure_per_spin_bin * off_angle_weights[np.newaxis, :]
+
+    # Broadcast exposure across ESA energy steps (each ESA step has the same
+    # geometric exposure pattern, but only 1/7 of the total time)
+    # Need to make a copy since we may modify it with good-times mask
+    exposure_3d = np.broadcast_to(
+        exposure_per_bin[np.newaxis, :, :],
+        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),
+    ).copy()
+
+    # Apply good-times fraction if provided
+    if goodtimes_df is not None:
+        goodtimes_fraction = create_goodtimes_fraction(
+            goodtimes_df, pointing_start_met, pointing_end_met
+        )
+        # Expand fraction to include off_angle dimension
+        # (fraction is same for all off_angles)
+        # goodtimes_fraction shape: (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS)
+        # exposure_3d shape: (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS)
+        exposure_3d = exposure_3d * goodtimes_fraction[:, :, np.newaxis]
+
+        logging.debug(
+            f"Applied good-times mask: exposure sum reduced from "
+            f"{(exposure_per_bin.sum() * N_ESA_ENERGY_STEPS):.1f}s to "
+            f"{exposure_3d.sum():.1f}s"
+        )
+
+    # Add epoch dimension
+    exposure_4d = exposure_3d[np.newaxis, :, :, :]
 
     exposure_time = xr.DataArray(
-        data=stat.astype(np.float16),
+        data=exposure_4d.astype(np.float32),
         dims=PSET_DIMS,
+    )
+
+    logging.debug(
+        f"Calculated exposure times: total duration={total_pointing_duration:.1f}s, "
+        f"sampled {len(representative_spins)} spins x {N_SAMPLES_PER_SPIN} samples, "
+        f"exposure sum={exposure_per_bin.sum():.1f}s"
     )
 
     return exposure_time
