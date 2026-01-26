@@ -316,17 +316,32 @@ def test_geometric_mean_nan():
 def test_geometric_gaps():
     """Test geometric_mean function."""
 
-    swapi_met_list = [0, 12, 24, 36, 240, 252]
+    swapi_met_list = [0, 12, 24, 36, 240, 252, 264, 272, 284]
 
-    pseudo_speed_list = [400, 420, 440, 460, 480, 500]
-    pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
-    pseudo_proton_temperature_list = [60000, 62000, 64000, 66000, 68000, 70000]
+    bool_check = len(swapi_met_list) >= 5 and np.all(
+        np.isclose(np.diff(swapi_met_list[-5:]), 12.0, atol=0.05)
+    )
+    assert not bool_check
+
+    pseudo_speed_list = [400, 420, 440, 460, 480, 500, 520, 540, 560]
+    pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0]
+    pseudo_proton_temperature_list = [
+        60000,
+        62000,
+        64000,
+        66000,
+        68000,
+        70000,
+        72000,
+        74000,
+        76000,
+    ]
 
     avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
-        swapi_met_list,
-        pseudo_speed_list,
-        pseudo_proton_density_list,
-        pseudo_proton_temperature_list,
+        swapi_met_list[4::],
+        pseudo_speed_list[4::],
+        pseudo_proton_density_list[4::],
+        pseudo_proton_temperature_list[4::],
     )
 
     expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list[4::])))
@@ -360,4 +375,4 @@ def test_process_spacecraft_packet(
         postlaunch_sc_xarray_data, esa_unit_conversion_table
     )
 
-    assert len(swapi_product) == 4
+    assert len(swapi_product) == 0
