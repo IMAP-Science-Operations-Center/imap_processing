@@ -3,6 +3,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swapi import (
@@ -346,9 +347,11 @@ def test_process_spacecraft_packet(
     """Tests spacecraft packet processing."""
 
     packet_path, xtce_ialirt_path = swapi_postlaunch_sc_packet_path
-    postlaunch_sc_xarray_data = packet_file_to_datasets(
-        packet_path, xtce_ialirt_path, use_derived_value=False
-    )[478]
+    xarray_data = tuple(
+        packet_file_to_datasets(packet, xtce_ialirt_path, use_derived_value=False)[478]
+        for packet in packet_path
+    )
+    postlaunch_sc_xarray_data = xr.concat(xarray_data, dim="epoch")
 
     postlaunch_sc_xarray_data["swapi_version"].data = np.full_like(
         postlaunch_sc_xarray_data["swapi_version"].data, 2
@@ -357,4 +360,4 @@ def test_process_spacecraft_packet(
         postlaunch_sc_xarray_data, esa_unit_conversion_table
     )
 
-    assert len(swapi_product) == 0
+    assert len(swapi_product) == 4

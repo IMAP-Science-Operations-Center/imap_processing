@@ -22,19 +22,16 @@ def sc_packet_path():
 @pytest.fixture
 def swapi_postlaunch_sc_packet_path():
     """Returns the spacecraft packet directory."""
-    packet_path = (
-        imap_module_directory
-        / "tests"
-        / "ialirt"
-        / "data"
-        / "l0"
-        / "iois_1_packets_2025_344_05_57_56"
-    )
     xtce_ialirt_path = (
         imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
     )
 
-    return packet_path, xtce_ialirt_path
+    directory = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
+    filenames = [
+        "iois_1_packets_2025_344_05_57_56",
+        "iois_1_packets_2025_344_05_59_58",
+    ]
+    return tuple(directory / fname for fname in filenames), xtce_ialirt_path
 
 
 @pytest.fixture
