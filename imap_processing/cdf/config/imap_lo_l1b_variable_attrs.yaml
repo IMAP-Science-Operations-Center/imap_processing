@@ -163,16 +163,6 @@ count_per_bin:
   LABLAXIS: Sample Count
   DEPEND_1: spin_angle
 
-epoch_delta:
-  <<: *default
-  CATDESC: Duration of data range in nanoseconds from start epoch
-  FIELDNAM: Epoch Delta
-  FORMAT: I19
-  UNITS: ns
-  VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  TIME_SCALE: Terrestrial Time
-
 start_doy:
   <<: *default
   CATDESC: Fractional day of year for start of data range
@@ -196,3 +186,15 @@ end_doy:
   UNITS: day
   VAR_TYPE: support_data
   LABLAXIS: End DOY
+
+pointing_mid_met:
+  <<: *default
+  CATDESC: Mission Elapsed Time at the midpoint of the pointing
+  FIELDNAM: Pointing Mid MET
+  FORMAT: F15.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0E+10
+  UNITS: s
+  VAR_TYPE: support_data
+  LABLAXIS: Pointing Mid MET
