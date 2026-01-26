@@ -122,9 +122,14 @@ def l1b_de(
     # get the dependency dataset for l1b direct events
     l1a_de = sci_dependencies["imap_lo_l1a_de"]
     spin_data = sci_dependencies["imap_lo_l1a_spin"]
+    l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
 
     # Initialize the L1B DE dataset
     l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
+    # Get the pivot angle from the housekeeping dataset
+    pivot_angle = _get_nearest_pivot_angle(l1b_de["epoch"].values[0], l1b_nhk)
+    l1b_de["pivot_angle"] = xr.DataArray([pivot_angle], dims=["pivot_angle"])
+
     pointing_start_met, pointing_end_met = get_pointing_times(
         l1a_de["met"].values[0].item()
     )
@@ -1650,7 +1655,6 @@ def calculate_de_rates(
     """
     l1b_de = sci_dependencies["imap_lo_l1b_de"]
     l1a_spin = sci_dependencies["imap_lo_l1a_spin"]
-    l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
     # Set the asc_start for each DE by removing the average spin cycle
     # which is a function of esa_step (see set_spin_cycle function)
     # spin_cycle is an average over esa steps and spins per asc, so finding
@@ -1776,8 +1780,7 @@ def calculate_de_rates(
     # TODO: Add badtimes
     ds["badtime"] = xr.zeros_like(ds["epoch"], dtype=int)
 
-    pivot_angle = _get_nearest_pivot_angle(ds["epoch"].values[0], l1b_nhk)
-    ds["pivot_angle"] = xr.DataArray([pivot_angle], dims=["pivot_angle"])
+    ds["pivot_angle"] = l1b_de["pivot_angle"]
 
     pointing_start_met, pointing_end_met = get_pointing_times(
         ttj2000ns_to_met(ds["epoch"].values[0].item())

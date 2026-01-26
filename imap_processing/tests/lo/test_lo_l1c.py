@@ -79,6 +79,7 @@ def l1b_de_spin():
             "species": ("epoch", ["H", "O", "H", "H", "O"]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
+            "pivot_angle": ([45.0]),
         },
         coords={
             "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 902),
@@ -223,6 +224,9 @@ def test_lo_l1c(
 
     # Assert
     assert expected_logical_source == output_dataset[0].attrs["Logical_source"]
+    # Verify that pivot_angle is passed through from l1b_de
+    assert "pivot_angle" in output_dataset[0]
+    assert output_dataset[0]["pivot_angle"].values[0] == 45.0
 
 
 def test_filter_goodtimes(l1b_de, anc_dependencies):

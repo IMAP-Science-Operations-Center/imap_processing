@@ -172,6 +172,13 @@ def test_lo_l1b_de(
             dataset["num_completed"] = 28
         data[dataset.attrs["Logical_source"]] = dataset
 
+    # Add l1b_nhk dependency with pivot angle information
+    l1b_nhk = xr.Dataset(
+        {"pcc_cumulative_cnt_pri": ("epoch", [45.0])},
+        coords={"epoch": [met_to_ttj2000ns(473389200)]},
+    )
+    data["imap_lo_l1b_nhk"] = l1b_nhk
+
     expected_logical_source_de = "imap_lo_l1b_de"
 
     # Act
@@ -179,6 +186,9 @@ def test_lo_l1b_de(
 
     # Assert
     assert expected_logical_source_de == output_files[-1].attrs["Logical_source"]
+    # Verify that pivot_angle is present in the output
+    assert "pivot_angle" in output_files[-1]
+    assert output_files[-1]["pivot_angle"].values[0] == 45.0
 
 
 @patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
@@ -1339,6 +1349,9 @@ def test_calculate_de_rates(
         {"pcc_cumulative_cnt_pri": ("epoch", [45.0])},
         coords={"epoch": epoch_time[:1]},
     )
+
+    # Add pivot_angle to l1b_de (normally set from l1b_nhk in l1b_de function)
+    l1b_de["pivot_angle"] = xr.DataArray([45.0], dims=["pivot_angle"])
 
     sci_dependencies = {
         "imap_lo_l1b_de": l1b_de,

@@ -85,6 +85,9 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             attrs=attr_mgr.get_global_attributes(logical_source),
         )
 
+        # pass-through of the pivot_angle from L1B DE
+        pset["pivot_angle"] = l1b_de["pivot_angle"]
+
         # ESA mode needs to be added to L1B DE. Adding try statement
         # to avoid error until it's available in the dataset
         if "esa_mode" not in l1b_de:
