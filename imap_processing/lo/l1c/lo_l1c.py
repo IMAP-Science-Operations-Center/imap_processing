@@ -9,6 +9,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.ena_maps.utils.corrections import add_spacecraft_velocity_to_pset
 from imap_processing.lo import lo_ancillary
 from imap_processing.lo.l1b.lo_l1b import set_bad_or_goodtimes
 from imap_processing.spice.geometry import (
@@ -201,6 +202,9 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             "off_angle": OFF_ANGLE_BIN_CENTERS,
         }
     )
+
+    # add the spacecraft velocity and direction
+    pset = add_spacecraft_velocity_to_pset(pset)
 
     return [pset]
 
