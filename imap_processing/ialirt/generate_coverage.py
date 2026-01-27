@@ -32,7 +32,7 @@ NON_DSN_STATIONS = {
 }
 
 
-def generate_coverage(
+def generate_coverage(  # noqa: PLR0912
     start_time: str,
     outages: dict | None = None,
     dsn: dict | None = None,
@@ -73,16 +73,18 @@ def generate_coverage(
     dsn_outage_mask = np.zeros(time_range.shape, dtype=bool)
     if dsn:
         for dsn_station, dsn_contacts in dsn.items():
-            for start, end in dsn_contacts:
-                start_et = str_to_et(start)
-                end_et = str_to_et(end)
-                dsn_contact_mask |= (time_range >= start_et) & (time_range <= end_et)
+            for contact_start, contact_end in dsn_contacts:
+                contact_start_et = str_to_et(contact_start)
+                contact_end_et = str_to_et(contact_end)
+                dsn_contact_mask |= (time_range >= contact_start_et) & (
+                    time_range <= contact_end_et
+                )
 
-                if outages and dsn_station in outages:
-                    for start, end in outages[dsn_station]:
-                        dsn_outage_mask |= (time_range >= str_to_et(start)) & (
-                            time_range <= str_to_et(end)
-                        )
+            if outages and dsn_station in outages:
+                for outage_start, outage_end in outages[dsn_station]:
+                    dsn_outage_mask |= (time_range >= str_to_et(outage_start)) & (
+                        time_range <= str_to_et(outage_end)
+                    )
 
     dsn_occupied_mask = dsn_contact_mask & ~dsn_outage_mask
 
