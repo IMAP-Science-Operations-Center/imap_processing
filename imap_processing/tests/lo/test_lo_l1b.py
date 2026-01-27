@@ -47,7 +47,7 @@ from imap_processing.spice.time import (
 
 @pytest.fixture
 def dependencies():
-    return {
+    data = {
         "imap_lo_l1a_de": load_cdf(
             imap_module_directory
             / "tests/lo/test_cdfs/imap_lo_l1a_de_20241022_v002.cdf"
@@ -57,6 +57,16 @@ def dependencies():
             / "tests/lo/test_cdfs/imap_lo_l1a_spin_20241022_v002.cdf"
         ),
     }
+
+    # We have 0 for num_completed which causes issues downstream
+    # when calculating the average spin durations and cascading
+    # failures. Set to 28 for testing.
+    data["imap_lo_l1a_spin"]["num_completed"] = 28
+
+    # There are 3 shcoarse values for some reason, this is a bad
+    # set of test data, so modify in-place here rather than updating
+    data["imap_lo_l1a_de"]["shcoarse"] = data["imap_lo_l1a_de"]["shcoarse"].values[0]
+    return data
 
 
 @pytest.fixture
@@ -153,36 +163,22 @@ def test_lo_l1b_de(
     mocked_get_pointing_times,
     mock_spin_number,
     mock_cartesian_to_latitudinal,
+    dependencies,
     anc_dependencies,
 ):
     # Arrange
-    de_file = (
-        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_de_20241022_v002.cdf"
-    )
-    spin_file = (
-        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_spin_20241022_v002.cdf"
-    )
-    data = {}
-    for file in [de_file, spin_file]:
-        dataset = load_cdf(file)
-        if file == spin_file:
-            # We have 0 for num_completed which causes issues downstream
-            # when calculating the average spin durations and cascading
-            # failures. Set to 28 for testing.
-            dataset["num_completed"] = 28
-        data[dataset.attrs["Logical_source"]] = dataset
 
     # Add l1b_nhk dependency with pivot angle information
     l1b_nhk = xr.Dataset(
         {"pcc_cumulative_cnt_pri": ("epoch", [45.0])},
         coords={"epoch": [met_to_ttj2000ns(473389200)]},
     )
-    data["imap_lo_l1b_nhk"] = l1b_nhk
+    dependencies["imap_lo_l1b_nhk"] = l1b_nhk
 
     expected_logical_source_de = "imap_lo_l1b_de"
 
     # Act
-    output_files = lo_l1b(data, anc_dependencies, descriptor="de")
+    output_files = lo_l1b(dependencies, anc_dependencies, descriptor="de")
 
     # Assert
     assert expected_logical_source_de == output_files[-1].attrs["Logical_source"]
@@ -291,7 +287,7 @@ def test_initialize_dataset(dependencies, attr_mgr_l1b):
     # Assert
     assert l1b_de.attrs["Logical_source"] == logical_source
     assert list(l1b_de.coords.keys()) == []
-    assert len(l1b_de.data_vars) == 4
+    assert len(l1b_de.data_vars) == 5
     assert len(l1b_de.coords) == 0
     for l1b_name, l1a_name in {
         "pos": "pos",
@@ -301,6 +297,11 @@ def test_initialize_dataset(dependencies, attr_mgr_l1b):
     }.items():
         assert l1b_name in l1b_de.data_vars
         np.testing.assert_array_equal(l1b_de[l1b_name], l1a_de[l1a_name])
+
+    expected_l1b_shcoarse = np.repeat(
+        l1a_de["shcoarse"].values, l1a_de["de_count"].values
+    )
+    np.testing.assert_array_equal(l1b_de["shcoarse"], expected_l1b_shcoarse)
 
 
 def test_set_esa_mode(anc_dependencies, attr_mgr_l1b):

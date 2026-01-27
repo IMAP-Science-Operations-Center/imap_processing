@@ -280,6 +280,12 @@ def initialize_l1b_de(
         # TODO: Add esa_step to YAML file
         # attrs=attr_mgr.get_variable_attributes("esa_step"),
     )
+    l1b_de["shcoarse"] = xr.DataArray(
+        np.repeat(l1a_de["shcoarse"].values, l1a_de["de_count"].values),
+        dims=["epoch"],
+        # TODO: Add shcoarse to YAML file
+        # attrs=attr_mgr.get_variable_attributes("shcoarse"),
+    )
 
     return l1b_de
 
