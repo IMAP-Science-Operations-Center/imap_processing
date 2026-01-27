@@ -1,10 +1,12 @@
 """Test processEphemeris functions."""
 
 from datetime import datetime
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
+from imap_processing.ialirt.constants import STATIONS
 from imap_processing.ialirt.generate_coverage import (
     format_coverage_summary,
     generate_coverage,
@@ -109,3 +111,50 @@ def test_dsn(furnish_kernels):
 
         assert "I-ALiRT Coverage Summary" in output["summary"]
         assert 40.6 == output["total_coverage_percent"]
+
+
+@pytest.mark.external_kernel
+def test_non_dsn_priority_blocking_with_kernels(furnish_kernels):
+    "Test that non-dsn station block other non-dsn stations."
+    kernels = ["naif0012.tls", "pck00011.tpc", "de440s.bsp", "imap_spk_demo.bsp"]
+    start_time = "2026-09-22T00:00:00Z"
+
+    with furnish_kernels(kernels):
+        # Kiel-only coverage
+        with patch(
+            "imap_processing.ialirt.generate_coverage.NON_DSN_STATIONS",
+            new={"Kiel": STATIONS["Kiel"]},
+        ):
+            cov_kiel, _ = generate_coverage(start_time)
+
+        kiel_times = cov_kiel["Kiel"]
+
+        # Manaus-only coverage
+        with patch(
+            "imap_processing.ialirt.generate_coverage.NON_DSN_STATIONS",
+            new={"Manaus": STATIONS["Manaus"]},
+        ):
+            cov_manaus_only, _ = generate_coverage(start_time)
+
+        manaus_only_times = cov_manaus_only["Manaus"]
+
+        overlap = np.intersect1d(kiel_times, manaus_only_times)
+        # Assert the times overlap.
+        assert overlap.size > 0
+
+        # Kiel first, then Manaus
+        with patch(
+            "imap_processing.ialirt.generate_coverage.NON_DSN_STATIONS",
+            new={
+                "Kiel": STATIONS["Kiel"],
+                "Manaus": STATIONS["Manaus"],
+            },
+        ):
+            coverage, _ = generate_coverage(start_time)
+
+        manaus_coverage = coverage["Manaus"]
+
+        # Manaus should have no overlap with Kiel.
+        blocked_overlap = np.intersect1d(kiel_times, manaus_coverage)
+        assert blocked_overlap.size == 0
+        assert manaus_coverage[0] > kiel_times[-1]

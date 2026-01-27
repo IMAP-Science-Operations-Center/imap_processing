@@ -26,6 +26,10 @@ ALL_STATIONS = [
     "DSS-74",
     "DSS-75",
 ]
+# Non-DSN stations must be listed in order of priority.
+NON_DSN_STATIONS = {
+    "Kiel": STATIONS["Kiel"],
+}
 
 
 def generate_coverage(
@@ -55,10 +59,6 @@ def generate_coverage(
     duration_seconds = 24 * 60 * 60  # 86400 seconds in 24 hours
     time_step = 5 * 60  # 5 min in seconds
 
-    # Non-DSN stations must be listed in order of priority.
-    stations = {
-        "Kiel": STATIONS["Kiel"],
-    }
     coverage_dict = {}
     outage_dict = {}
 
@@ -79,7 +79,7 @@ def generate_coverage(
 
     # Blocks later stations.
     non_dsn_occupied_mask = np.zeros(time_range.shape, dtype=bool)
-    for station_name, (lon, lat, alt, min_elevation) in stations.items():
+    for station_name, (lon, lat, alt, min_elevation) in NON_DSN_STATIONS.items():
         _azimuth, elevation = calculate_azimuth_and_elevation(
             lon, lat, alt, time_range, obsref="IAU_EARTH"
         )
