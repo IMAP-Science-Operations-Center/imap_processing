@@ -581,7 +581,7 @@ def test_calculate_tof1_for_golden_triples():
             "coincidence_type": ("epoch", [0, 0, 0]),
             "mode": ("epoch", [0, 0, 1]),
             "tof0": ("epoch", [2, 4, 2]),
-            "tof1": ("epoch", [42, 36, 0]),
+            "tof1": ("epoch", [0, 0, 42]),
             "tof2": ("epoch", [2, 6, 2]),
             "tof3": ("epoch", [2, 8, 2]),
             "cksm": ("epoch", [2, 12, 2]),
@@ -592,7 +592,7 @@ def test_calculate_tof1_for_golden_triples():
     l1a_de = calculate_tof1_for_golden_triples(l1a_de)
 
     # Assert
-    assert l1a_de_expected.equals(l1a_de)
+    xr.testing.assert_equal(l1a_de, l1a_de_expected)
 
 
 def test_set_coincidence_type(attr_mgr_l1a):

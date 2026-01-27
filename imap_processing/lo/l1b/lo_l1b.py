@@ -828,7 +828,8 @@ def calculate_tof1_for_golden_triples(l1a_de: xr.Dataset) -> xr.Dataset:
         The L1A DE dataset with the TOF1 calculated for golden triples.
     """
     for idx, coin_type in enumerate(l1a_de["coincidence_type"].values):
-        if coin_type == 0 and l1a_de["mode"][idx] == 0:
+        # NOTE: mode bit of 1 is used to identify golden triple (event was compressed)
+        if coin_type == 0 and l1a_de["mode"][idx] == 1:
             # Calculate TOF1
             # TOF1 equation requires values to be right bit shifted. These values were
             # originally right bit shifted when packed in the telemetry packet, but were
