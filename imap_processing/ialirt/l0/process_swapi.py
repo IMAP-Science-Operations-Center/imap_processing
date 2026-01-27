@@ -273,15 +273,16 @@ def process_swapi_ialirt(
         pseudo_proton_temperature_list.append(pseudo_temperature)
         swapi_met_list.append(mid_measurement)
 
-        # Begin averaging after 1 minute has passed (5 sweeps).
+        # Begin averaging after 1 minute has passed (5 sweeps) and make certain that
+        # the data is sequential (~12 s cadence).
         if len(swapi_met_list) >= 5 and np.all(
             np.isclose(np.diff(swapi_met_list[-5:]), 12.0, atol=0.05)
         ):
             (
                 avg_swapi_met,
-                avg_proton_density,
-                avg_pseudo_speed,
-                avg_proton_temperature,
+                avg_pseudo_proton_density,
+                avg_pseudo_proton_speed,
+                avg_pseudo_proton_temperature,
             ) = geometric_mean(
                 swapi_met_list[-5:],
                 pseudo_proton_speed_list[-5:],
@@ -294,10 +295,14 @@ def process_swapi_ialirt(
                 | {
                     "instrument": "swapi",
                     "swapi_epoch": int(met_to_ttj2000ns(avg_swapi_met)),
-                    "swapi_pseudo_proton_speed": Decimal(f"{avg_pseudo_speed:.3f}"),
-                    "swapi_pseudo_proton_density": Decimal(f"{avg_proton_density:.3f}"),
+                    "swapi_pseudo_proton_speed": Decimal(
+                        f"{avg_pseudo_proton_speed:.3f}"
+                    ),
+                    "swapi_pseudo_proton_density": Decimal(
+                        f"{avg_pseudo_proton_density:.3f}"
+                    ),
                     "swapi_pseudo_proton_temperature": Decimal(
-                        f"{avg_proton_temperature:.3f}"
+                        f"{avg_pseudo_proton_temperature:.3f}"
                     ),
                 }
             )

@@ -264,19 +264,19 @@ def test_geometric_mean():
 
     swapi_met_list = [12, 24, 36, 48, 60]
 
-    pseudo_speed_list = [400, 420, 440, 460, 480]
+    pseudo_proton_speed_list = [400, 420, 440, 460, 480]
     pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, 9.0]
     pseudo_proton_temperature_list = [60000, 62000, 64000, 66000, 68000]
 
     avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
         swapi_met_list,
-        pseudo_speed_list,
+        pseudo_proton_speed_list,
         pseudo_proton_density_list,
         pseudo_proton_temperature_list,
     )
 
     expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list)))
-    expected_speed = np.exp(np.mean(np.log(pseudo_speed_list)))
+    expected_speed = np.exp(np.mean(np.log(pseudo_proton_speed_list)))
     expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list)))
     expected_met = np.mean(swapi_met_list)
 
@@ -291,19 +291,19 @@ def test_geometric_mean_nan():
 
     swapi_met_list = [12, 24, 36, 48, 60]
 
-    pseudo_speed_list = [400, 420, 440, 460, np.nan]
+    pseudo_proton_speed_list = [400, 420, 440, 460, np.nan]
     pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, np.nan]
     pseudo_proton_temperature_list = [60000, 62000, 64000, 66000, np.nan]
 
     avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
         swapi_met_list,
-        pseudo_speed_list,
+        pseudo_proton_speed_list,
         pseudo_proton_density_list,
         pseudo_proton_temperature_list,
     )
 
     expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list[0:4])))
-    expected_speed = np.exp(np.mean(np.log(pseudo_speed_list[0:4])))
+    expected_speed = np.exp(np.mean(np.log(pseudo_proton_speed_list[0:4])))
     expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list[0:4])))
     expected_met = np.mean(swapi_met_list[0:4])
 
@@ -323,7 +323,7 @@ def test_geometric_gaps():
     )
     assert not bool_check
 
-    pseudo_speed_list = [400, 420, 440, 460, 480, 500, 520, 540, 560]
+    pseudo_proton_speed_list = [400, 420, 440, 460, 480, 500, 520, 540, 560]
     pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0]
     pseudo_proton_temperature_list = [
         60000,
@@ -339,13 +339,13 @@ def test_geometric_gaps():
 
     avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
         swapi_met_list[4::],
-        pseudo_speed_list[4::],
+        pseudo_proton_speed_list[4::],
         pseudo_proton_density_list[4::],
         pseudo_proton_temperature_list[4::],
     )
 
     expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list[4::])))
-    expected_speed = np.exp(np.mean(np.log(pseudo_speed_list[4::])))
+    expected_speed = np.exp(np.mean(np.log(pseudo_proton_speed_list[4::])))
     expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list[4::])))
     expected_met = np.mean(swapi_met_list[4::])
 
