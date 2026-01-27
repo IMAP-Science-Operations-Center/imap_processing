@@ -55,6 +55,7 @@ def generate_coverage(
     duration_seconds = 24 * 60 * 60  # 86400 seconds in 24 hours
     time_step = 5 * 60  # 5 min in seconds
 
+    # Non-DSN stations must be listed in order of priority.
     stations = {
         "Kiel": STATIONS["Kiel"],
     }
@@ -67,20 +68,22 @@ def generate_coverage(
     time_range = np.arange(start_et_input, stop_et_input, time_step)
     total_visible_mask = np.zeros(time_range.shape, dtype=bool)
 
-    # Precompute DSN outage mask for non-DSN stations
-    dsn_outage_mask = np.zeros(time_range.shape, dtype=bool)
+    # Precompute DSN occupied mask for non-DSN stations
+    dsn_occupied_mask = np.zeros(time_range.shape, dtype=bool)
     if dsn:
         for dsn_contacts in dsn.values():
             for start, end in dsn_contacts:
                 start_et = str_to_et(start)
                 end_et = str_to_et(end)
-                dsn_outage_mask |= (time_range >= start_et) & (time_range <= end_et)
+                dsn_occupied_mask |= (time_range >= start_et) & (time_range <= end_et)
 
+    # Blocks later stations.
+    non_dsn_occupied_mask = np.zeros(time_range.shape, dtype=bool)
     for station_name, (lon, lat, alt, min_elevation) in stations.items():
         _azimuth, elevation = calculate_azimuth_and_elevation(
             lon, lat, alt, time_range, obsref="IAU_EARTH"
         )
-        visible = elevation > min_elevation
+        visible_unblocked = elevation > min_elevation
 
         outage_mask = np.zeros(time_range.shape, dtype=bool)
         if outages and station_name in outages:
@@ -89,9 +92,13 @@ def generate_coverage(
                 end_et = str_to_et(end)
                 outage_mask |= (time_range >= start_et) & (time_range <= end_et)
 
-        visible[outage_mask] = False
-        # DSN contacts block other stations
-        visible[dsn_outage_mask] = False
+        # Block this station if DSN is active OR already-occupied by earlier stations
+        unavailable_mask = outage_mask | dsn_occupied_mask | non_dsn_occupied_mask
+        visible = visible_unblocked & ~unavailable_mask
+
+        # This station now occupies these times and will block later stations
+        non_dsn_occupied_mask |= visible
+
         total_visible_mask |= visible
 
         coverage_dict[station_name] = et_to_utc(time_range[visible], format_str="ISOC")
