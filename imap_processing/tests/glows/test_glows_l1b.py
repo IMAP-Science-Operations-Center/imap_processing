@@ -317,8 +317,8 @@ def test_process_histogram(
     assert len(output) == len(dataclasses.asdict(test_l1b))
 
 
-def test_process_de(de_dataset, ancillary_dict):
-    output = process_de(de_dataset)
+def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
+    output = process_de(de_dataset, mock_ancillary_parameters)
 
     # Output has the same length as non-initvar fields in DirectEventL1B
     assert len(output) == len(dataclasses.fields(DirectEventL1B))
@@ -342,6 +342,7 @@ def test_glows_l1b(
     hist_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
+    mock_conversion_table_dict,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -352,6 +353,7 @@ def test_glows_l1b(
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
         mock_pipeline_settings,
+        mock_conversion_table_dict,
     )
 
     assert hist_output["histogram"].dims == ("epoch", "bins")
@@ -404,7 +406,7 @@ def test_glows_l1b(
     for key in expected_hist_data:
         assert key in hist_output
 
-    de_output = glows_l1b_de(de_dataset)
+    de_output = glows_l1b_de(de_dataset, mock_conversion_table_dict)
 
     # From table 15 in the algorithm document
     expected_de_data = [
@@ -428,7 +430,11 @@ def test_glows_l1b(
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_generate_histogram_dataset(
-    mock_spice_function, hist_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+    mock_spice_function,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -439,6 +445,7 @@ def test_generate_histogram_dataset(
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
         mock_pipeline_settings,
+        mock_conversion_table_dict,
     )
 
     output_path = write_cdf(l1b_data)
@@ -447,9 +454,12 @@ def test_generate_histogram_dataset(
 
 
 def test_generate_de_dataset(
-    de_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+    de_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
 ):
-    l1b_data = glows_l1b_de(de_dataset)
+    l1b_data = glows_l1b_de(de_dataset, mock_conversion_table_dict)
 
     output_path = write_cdf(l1b_data)
 

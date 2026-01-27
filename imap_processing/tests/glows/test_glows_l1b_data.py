@@ -83,7 +83,11 @@ def test_glows_l1b_de():
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_validation_data_histogram(
-    mock_spice_function, l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+    mock_spice_function,
+    l1a_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
     # Only test with histogram data (l1a_dataset[0])
@@ -94,6 +98,7 @@ def test_validation_data_histogram(
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
         mock_pipeline_settings,
+        mock_conversion_table_dict,
     )
     end_time = l1b["epoch"].data[-1]
 
@@ -161,11 +166,14 @@ def test_validation_data_histogram(
 
 
 def test_validation_data_de(
-    l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+    l1a_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
 ):
     de_data = l1a_dataset[1]
 
-    l1b = glows_l1b_de(de_data)
+    l1b = glows_l1b_de(de_data, mock_conversion_table_dict)
     validation_data = (
         Path(__file__).parent / "validation_data" / "imap_glows_l1b_de_output.json"
     )

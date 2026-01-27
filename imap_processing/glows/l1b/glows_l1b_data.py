@@ -1,9 +1,7 @@
 """Module for GLOWS L1B data products."""
 
 import dataclasses
-import json
 from dataclasses import InitVar, dataclass, field
-from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -231,13 +229,15 @@ class AncillaryParameters:
     """
     GLOWS L1B Ancillary Parameters for decoding ancillary histogram data points.
 
-    This class reads from a JSON file input which defines ancillary parameters.
-    It validates to ensure the input file has all the required parameters.
+    This class reads from either a dict (JSON input) or an xarray Dataset (from
+    GlowsAncillaryCombiner) which defines ancillary parameters. It validates to
+    ensure the input has all the required parameters.
 
     Parameters
     ----------
-    input_table : dict
-        Dictionary generated from input JSON file.
+    input_table : dict or xr.Dataset
+        Dictionary generated from input JSON file, or xarray Dataset from
+        GlowsAncillaryCombiner containing conversion table data.
 
     Attributes
     ----------
@@ -258,14 +258,28 @@ class AncillaryParameters:
         "p01", "p02", "p03", "p04"]
     """
 
-    def __init__(self, input_table: dict):
+    def __init__(self, input_table: dict) -> None:
         """
         Generate ancillary parameters from the given input.
 
         Validates parameters and will throw a KeyError if input data is incorrect.
+
+        Parameters
+        ----------
+        input_table : dict
+            Dictionary containing conversion parameters.
         """
-        full_keys = ["min", "max", "n_bits", "p01", "p02", "p03", "p04"]
-        spin_keys = ["min", "max", "n_bits"]
+        full_keys = [
+            "min",
+            "max",
+            "n_bits",
+            "p01",
+            "p02",
+            "p03",
+            "p04",
+            "physical_unit",
+        ]
+        spin_keys = ["min", "max", "n_bits", "physical_unit"]
 
         try:
             self.version = input_table["version"]
@@ -425,6 +439,8 @@ class DirectEventL1B:
         Flag for pulse test in progress, ends up in flags array
     memory_error_detected: InitVar[np.double]
         Flag for memory error detected, ends up in flags array
+    ancillary_parameters: InitVar[AncillaryParameters]
+        The ancillary parameters for decoding DE data
     flags: ndarray
         array of flags for extra information, per histogram. This is assembled from
         L1A variables.
@@ -460,6 +476,7 @@ class DirectEventL1B:
     hv_test_in_progress: InitVar[np.double]
     pulse_test_in_progress: InitVar[np.double]
     memory_error_detected: InitVar[np.double]
+    ancillary_parameters: InitVar[AncillaryParameters]
     # The following variables are created from the InitVar data
     de_flags: np.ndarray | None = field(init=False, default=None)
     # TODO: First two values of DE are sec/subsec
@@ -483,6 +500,7 @@ class DirectEventL1B:
         hv_test_in_progress: np.double,
         pulse_test_in_progress: np.double,
         memory_error_detected: np.double,
+        ancillary_parameters: AncillaryParameters,
     ) -> None:
         """
         Generate the L1B data for direct events using the inputs from InitVar.
@@ -515,6 +533,8 @@ class DirectEventL1B:
            Flag indicating if a pulse test is in progress.
         memory_error_detected : np.double
             Flag indicating if a memory error is detected.
+        ancillary_parameters : AncillaryParameters
+            The ancillary parameters for decoding DE data.
         """
         self.direct_event_glows_times, self.direct_event_pulse_lengths = (
             self.process_direct_events(direct_events)
@@ -530,22 +550,14 @@ class DirectEventL1B:
             int(self.glows_time_last_pps), glows_ssclk_last_pps
         ).to_seconds()
 
-        with open(
-            Path(__file__).parents[1] / "ancillary" / "l1b_conversion_table_v001.json"
-        ) as f:
-            self.ancillary_parameters = AncillaryParameters(json.loads(f.read()))
-
-        self.filter_temperature = self.ancillary_parameters.decode(
+        # Use passed-in ancillary parameters instead of loading from file
+        self.filter_temperature = ancillary_parameters.decode(
             "filter_temperature", self.filter_temperature
         )
-        self.hv_voltage = self.ancillary_parameters.decode(
-            "hv_voltage", self.hv_voltage
-        )
-        self.spin_period = self.ancillary_parameters.decode(
-            "spin_period", self.spin_period
-        )
+        self.hv_voltage = ancillary_parameters.decode("hv_voltage", self.hv_voltage)
+        self.spin_period = ancillary_parameters.decode("spin_period", self.spin_period)
 
-        self.spin_phase_at_next_pps = self.ancillary_parameters.decode(
+        self.spin_phase_at_next_pps = ancillary_parameters.decode(
             "spin_phase", self.spin_phase_at_next_pps
         )
 

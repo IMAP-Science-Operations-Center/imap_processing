@@ -1,8 +1,6 @@
 """Methods for processing GLOWS L1B data."""
 
 import dataclasses
-import json
-from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -26,6 +24,7 @@ def glows_l1b(
     suspected_transients: xr.Dataset,
     exclusions_by_instr_team: xr.Dataset,
     pipeline_settings_dataset: xr.Dataset,
+    conversion_table_dict: dict,
 ) -> xr.Dataset:
     """
     Will process the histogram GLOWS L1B data and format the output datasets.
@@ -47,8 +46,10 @@ def glows_l1b(
         Dataset containing manual exclusions by instrument team with time-based masks.
         This is the output from GlowsAncillaryCombiner.
     pipeline_settings_dataset : xr.Dataset
-        Dataset containing pipeline settings, including the L1B conversion table and
-        other ancillary parameters.
+        Dataset containing pipeline settings and other ancillary parameters.
+    conversion_table_dict : dict
+        Dict containing the L1B conversion table for decoding ancillary parameters.
+        This is read directly out of the JSON file.
 
     Returns
     -------
@@ -72,10 +73,8 @@ def glows_l1b(
         pipeline_settings_dataset.sel(epoch=day, method="nearest"),
     )
 
-    with open(
-        Path(__file__).parents[1] / "ancillary" / "l1b_conversion_table_v001.json"
-    ) as f:
-        ancillary_parameters = AncillaryParameters(json.loads(f.read()))
+    # Extract conversion table for the current day
+    ancillary_parameters = AncillaryParameters(conversion_table_dict)
 
     output_dataarrays = process_histogram(
         input_dataset, ancillary_exclusions, ancillary_parameters, pipeline_settings
@@ -89,6 +88,7 @@ def glows_l1b(
 
 def glows_l1b_de(
     input_dataset: xr.Dataset,
+    conversion_table_dict: dict,
 ) -> xr.Dataset:
     """
     Process GLOWS L1B direct events data.
@@ -97,6 +97,8 @@ def glows_l1b_de(
     ----------
     input_dataset : xr.Dataset
         The input dataset to process.
+    conversion_table_dict : dict
+        Dict containing the L1B conversion table for decoding ancillary parameters.
 
     Returns
     -------
@@ -107,12 +109,18 @@ def glows_l1b_de(
     cdf_attrs.add_instrument_global_attrs("glows")
     cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
 
-    output_dataset = create_l1b_de_output(input_dataset, cdf_attrs)
+    ancillary_parameters = AncillaryParameters(conversion_table_dict)
+
+    output_dataset = create_l1b_de_output(
+        input_dataset, cdf_attrs, ancillary_parameters
+    )
 
     return output_dataset
 
 
-def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
+def process_de(
+    l1a: xr.Dataset, ancillary_parameters: AncillaryParameters
+) -> tuple[xr.DataArray]:
     """
     Will process the direct event data from the L1A dataset and return the L1B dataset.
 
@@ -126,6 +134,8 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
     ----------
     l1a : xr.Dataset
         The L1A dataset to process.
+    ancillary_parameters : AncillaryParameters
+        The ancillary parameters for decoding DE data.
 
     Returns
     -------
@@ -164,8 +174,29 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
     # (input) variable.
     input_dims[0] = ["within_the_second", "direct_event_components"]
 
+    # Create a closure that captures the ancillary parameters
+    def create_direct_event_l1b(*args) -> tuple:  # type: ignore[no-untyped-def]
+        """
+        Create DirectEventL1B object with captured ancillary parameters.
+
+        Parameters
+        ----------
+        *args
+            Variable arguments passed from xr.apply_ufunc containing L1A data.
+
+        Returns
+        -------
+        tuple
+            Tuple of values from DirectEventL1B dataclass.
+        """
+        return tuple(
+            dataclasses.asdict(
+                DirectEventL1B(*args, ancillary_parameters)  # type: ignore[call-arg]
+            ).values()
+        )
+
     l1b_fields: tuple = xr.apply_ufunc(
-        lambda *args: tuple(dataclasses.asdict(DirectEventL1B(*args)).values()),
+        create_direct_event_l1b,
         *dataarrays,
         input_core_dims=input_dims,
         output_core_dims=output_dims,
@@ -387,7 +418,9 @@ def create_l1b_hist_output(
 
 
 def create_l1b_de_output(
-    input_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes
+    input_dataset: xr.Dataset,
+    cdf_attrs: ImapCdfAttributes,
+    ancillary_parameters: AncillaryParameters,
 ) -> xr.Dataset:
     """
     Create the output dataset for the L1B direct event data.
@@ -398,6 +431,8 @@ def create_l1b_de_output(
         The input dataset to process.
     cdf_attrs : ImapCdfAttributes
         The CDF attributes to use for the output dataset.
+    ancillary_parameters : AncillaryParameters
+        The ancillary parameters for decoding DE data.
 
     Returns
     -------
@@ -407,7 +442,7 @@ def create_l1b_de_output(
     data_epoch = input_dataset["epoch"]
     data_epoch.attrs = cdf_attrs.get_variable_attributes("epoch", check_schema=False)
 
-    output_dataarrays = process_de(input_dataset)
+    output_dataarrays = process_de(input_dataset, ancillary_parameters)
     within_the_second_data = xr.DataArray(
         input_dataset["within_the_second"],
         name="within_the_second",

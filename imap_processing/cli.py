@@ -13,6 +13,7 @@ Examples
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import re
 import sys
@@ -672,6 +673,21 @@ class Glows(ProcessInstrument):
                     f"{science_files}."
                 )
             input_dataset = load_cdf(science_files[0])
+
+            # Load conversion table (needed for both hist and DE)
+            conversion_table_file = dependencies.get_processing_inputs(
+                descriptor="conversion-table-for-anc-data"
+            )[0]
+
+            with open(conversion_table_file.imap_file_paths[0].construct_path()) as f:
+                conversion_table_dict = json.load(f)
+
+            # Use end date buffer for ancillary data
+            current_day = np.datetime64(
+                f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
+            )
+            day_buffer = current_day + np.timedelta64(3, "D")
+
             if "hist" in self.descriptor:
                 # Create file lists for each ancillary type
                 excluded_regions_files = dependencies.get_processing_inputs(
@@ -689,12 +705,6 @@ class Glows(ProcessInstrument):
                 pipeline_settings = dependencies.get_processing_inputs(
                     descriptor="pipeline-settings"
                 )[0]
-
-                # Use end date buffer for ancillary data
-                current_day = np.datetime64(
-                    f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
-                )
-                day_buffer = current_day + np.timedelta64(3, "D")
 
                 # Create combiners for each ancillary dataset
                 excluded_regions_combiner = GlowsAncillaryCombiner(
@@ -721,11 +731,12 @@ class Glows(ProcessInstrument):
                         suspected_transients_combiner.combined_dataset,
                         exclusions_by_instr_team_combiner.combined_dataset,
                         pipeline_settings_combiner.combined_dataset,
+                        conversion_table_dict,
                     )
                 ]
             else:
                 # Direct events
-                datasets = [glows_l1b_de(input_dataset)]
+                datasets = [glows_l1b_de(input_dataset, conversion_table_dict)]
 
         if self.data_level == "l2":
             science_files = dependencies.get_file_paths(source="glows")

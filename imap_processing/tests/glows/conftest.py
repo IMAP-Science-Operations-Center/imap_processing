@@ -47,7 +47,12 @@ def l1a_dataset(packet_path):
 
 
 @pytest.fixture
-def l1b_hist_dataset(l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings):
+def l1b_hist_dataset(
+    l1a_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
+):
     return glows_l1b(
         l1a_dataset[0],
         mock_ancillary_exclusions.excluded_regions,
@@ -55,6 +60,7 @@ def l1b_hist_dataset(l1a_dataset, mock_ancillary_exclusions, mock_pipeline_setti
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
         mock_pipeline_settings,
+        mock_conversion_table_dict,
     )
 
 
@@ -146,12 +152,24 @@ def mock_ancillary_exclusions():
 
 
 @pytest.fixture
-def mock_ancillary_parameters():
+def mock_ancillary_parameters(mock_conversion_table_dict):
     """Create a mock AncillaryParameters object for testing."""
-    mock_table = {
-        "description": "Table for conversion/decoding ancillary parameters collected "
-        "onboard by IMAP/GLOWS",
-        "version": "0.1",
+
+    return AncillaryParameters(mock_conversion_table_dict)
+
+
+@pytest.fixture
+def mock_conversion_table_dict():
+    """Create a mock conversion table dataset for testing.
+
+    This fixture creates an xarray Dataset with the structure expected by
+    AncillaryParameters._extract_from_dataset(), with an epoch dimension
+    so it can be selected by day using .sel(epoch=day, method="nearest").
+    """
+
+    mock_dict = {
+        "description": "Table for conversion/decoding ancillary parameters",
+        "version": "v001",
         "date_of_creation_yyyymmdd": "20230527",
         "filter_temperature": {
             "min": -30.0,
@@ -161,6 +179,7 @@ def mock_ancillary_parameters():
             "p02": 0.0,
             "p03": 0.0,
             "p04": 0.0,
+            "physical_unit": "Celsius degree",
         },
         "hv_voltage": {
             "min": 0.0,
@@ -170,9 +189,20 @@ def mock_ancillary_parameters():
             "p02": 0.0,
             "p03": 0.0,
             "p04": 0.0,
+            "physical_unit": "Celsius degree",
         },
-        "spin_period": {"min": 0.0, "max": 20.9712, "n_bits": 16},
-        "spin_phase": {"min": 0.0, "max": 360.0, "n_bits": 16},
+        "spin_period": {
+            "min": 0.0,
+            "max": 20.9712,
+            "n_bits": 16,
+            "physical_unit": "Celsius degree",
+        },
+        "spin_phase": {
+            "min": 0.0,
+            "max": 360.0,
+            "n_bits": 16,
+            "physical_unit": "Celsius degree",
+        },
         "pulse_length": {
             "min": 0.0,
             "max": 255.0,
@@ -181,9 +211,11 @@ def mock_ancillary_parameters():
             "p02": 0.0,
             "p03": 0.0,
             "p04": 0.0,
+            "physical_unit": "Celsius degree",
         },
     }
-    return AncillaryParameters(mock_table)
+
+    return mock_dict
 
 
 @pytest.fixture
