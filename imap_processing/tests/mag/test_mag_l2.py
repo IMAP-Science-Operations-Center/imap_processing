@@ -61,11 +61,11 @@ def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
             f"got '{logical_source_parts[2]}'"
         )
 
-        vectors_attrs = dataset["vectors"].attrs
-        assert "DICT_KEY" in vectors_attrs
-
         # Extract frame from logical source
         frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
+
+        vectors_attrs = dataset[f"b_{frame.lower()}"].attrs
+        assert "DICT_KEY" in vectors_attrs
 
         assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
 
@@ -75,6 +75,7 @@ def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
         assert dataset["range"].attrs["DICT_KEY"] == (
             "SPASE>Support>SupportQuantity:InstrumentMode"
         )
+        assert vectors_attrs["CDF_DATA_TYPE"] == "CDF_FLOAT"
 
 
 def test_mag_l2(norm_dataset, mag_test_l2_data):
@@ -105,7 +106,7 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
     )
 
     for i, dataset in enumerate(l2):
-        assert "vectors" in dataset.data_vars
+        assert expected_frames[i].var_name in dataset.data_vars
         assert expected_frames[i].name in dataset.attrs["Data_type"]
 
 
@@ -114,7 +115,7 @@ def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
         et, from_frame, to_frame, allow_spice_noframeconnect
     ):
         matrices = np.tile(np.eye(3), (len(et), 1, 1))
-        if to_frame == ValidFrames.DSRF.value:
+        if to_frame == ValidFrames.DSRF.spice_frame:
             for i in range(10, matrices.shape[0], 10):  # every 10th matrix is NaN
                 matrices[i] = np.full((3, 3), np.nan)
         return matrices
@@ -135,14 +136,18 @@ def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
 
     assert len(l2) == 5, "L2 should produce 5 frames"
 
+    all_vars = ["b_srf", "b_gse", "b_gsm", "b_rtn", "b_dsrf"]
+
     for dataset in l2:
-        assert "vectors" in dataset.data_vars
+        assert len(set(all_vars) & set(dataset.data_vars)) == 1, (
+            "Each dataset should have one of the expected vector variables"
+        )
 
     assert (
         l2[-1].attrs["Data_type"] == "L2_norm-dsrf>Level 2 normal rate data in DSRF"
     ), "Last frame should be DSRF"
 
-    dsrf_vectors = l2[-1]["vectors"].data
+    dsrf_vectors = l2[-1]["b_dsrf"].data
     for i in range(10, len(dsrf_vectors), 10):
         assert np.isnan(dsrf_vectors[i]).all(), f"Vectors at index {i} should be NaN"
 

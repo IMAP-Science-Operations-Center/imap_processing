@@ -78,11 +78,16 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l1b_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     # L2 LUT input data
-    ("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
-    ("imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
-    ("imap_codice_l2-hi-ialirt-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
-    ("imap_codice_l2-lo-gfactor_20251008_v001.csv", "codice/data/l2_lut/"),
-    ("imap_codice_l2-lo-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-omni-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-sectored-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-ialirt-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-gfactor_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-tof-table_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-energy-table_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-onboard-energy-bins_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-onboard-energy-table_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-onboard-mpq-cal_20250101_v001.csv", "codice/data/l2_lut/"),
 
     # L2 Validation data
     (f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
@@ -91,6 +96,8 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l2_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-nsw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_hi-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_hi-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
 
@@ -130,6 +137,11 @@ EXTERNAL_TEST_DATA = [
 
     # Lo
     ("imap_lo_l1c_pset_20260101-repoint01261_v001.cdf", "lo/test_cdfs"),
+
+    # Pointing Attitude Kernel
+    ("imap_2025_338_2025_339_001.ah.bc", "spice/test_data/"),
+    ("imap_2025_339_2025_339_001.ah.bc", "spice/test_data/"),
+    ("imap_2025_339_2025_340_001.ah.bc", "spice/test_data/"),
 
     # Ultra
     ("FM90_Startup_20230711T081655.CCSDS", "ultra/data/l0/"),

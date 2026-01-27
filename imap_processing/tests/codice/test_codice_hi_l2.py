@@ -39,7 +39,7 @@ def test_l2_hi_omni(mock_get_file_paths):
     sci_input = ScienceInput(
         f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf"
     )
-    anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv")
+    anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251212_v003.csv")
     dependencies = ProcessingInputCollection(anc_input, sci_input)
 
     processed_l2 = process_codice_l2("hi-omni", dependencies)

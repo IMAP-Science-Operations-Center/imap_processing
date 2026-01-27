@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import (
@@ -25,9 +26,9 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_energy_histogram,
     get_n_sigma,
     get_pulses_per_spin,
-    get_spin_and_duration,
     get_spin_data,
 )
+from imap_processing.ultra.l1b.ultra_l1b_extended import get_spin_info
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
@@ -173,18 +174,34 @@ def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_datas
 def test_get_duration(rates_l1_test_path, use_fake_spin_data_for_time):
     """Tests get_duration function."""
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
-
     df = pd.read_csv(rates_l1_test_path)
+
+    # Should be evenly spaced spins of 15 seconds each except the first one has 14.
+    num_spins = 15
+    spin_start_times = np.concatenate([[0], np.arange(14, 222, num_spins)])
+    spin_numbers = np.arange(127, 142)
+    num_spins = len(spin_numbers)
+
+    aux_ds = xr.Dataset(
+        data_vars={
+            "timespinstart": ("epoch", spin_start_times),
+            "timespinstartsub": ("epoch", np.ones_like(spin_start_times)),
+            "duration": ("epoch", np.full(num_spins, 15)),
+            "spinnumber": ("epoch", spin_numbers),
+        },
+        coords={"epoch": ("epoch", np.arange(num_spins))},
+    )
 
     met = df["TimeTag"] - df["TimeTag"].values[0]
     spin = df["Spin"]
-    spin_number, duration = get_spin_and_duration(met, spin)
-
+    spin_ds = get_spin_info(aux_ds, met)
+    spin_number = spin_ds["spin_number"].values
+    duration = spin_ds["spin_duration"].values
     assert np.array_equal(spin, spin_number)
     assert np.all(duration == 15)
 
 
-def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
+def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time, aux_dataset):
     """Tests get_pulses_per_spin function."""
     df = pd.read_csv(rates_l1_test_path)
 
@@ -214,7 +231,7 @@ def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
         "spin": df["Spin"],
     }
 
-    pulses = get_pulses_per_spin(pulse_dict)
+    pulses = get_pulses_per_spin(aux_dataset, pulse_dict)
     unique_spins = np.unique(pulse_dict["spin"])
 
     start_pulses_total = pulse_dict["start_rf"] + pulse_dict["start_lf"]

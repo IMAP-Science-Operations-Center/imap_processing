@@ -50,6 +50,7 @@ def find_groups(
     sequence_range: tuple,
     sequence_name: str,
     time_name: str,
+    check_src_seq_ctr: bool = True,
 ) -> xr.Dataset:
     """
     Group data based on time and sequence number values.
@@ -64,6 +65,8 @@ def find_groups(
         Name of the sequence variable.
     time_name : str
         Name of the time variable.
+    check_src_seq_ctr : bool | True
+        Check for incrementing src_seq_ctr.
 
     Returns
     -------
@@ -114,7 +117,10 @@ def find_groups(
     #     group    (epoch) int64 7kB 1 1 1 1 1 1 1 1 1 ... 15 15 15 15 15 15 15 15 15
     grouped_data = grouped_data.assign_coords(group=("epoch", group_labels))
 
-    # Filter out groups with non-sequential src_seq_ctr values.
-    filtered_data = filter_valid_groups(grouped_data)
+    if check_src_seq_ctr:
+        # Filter out groups with non-sequential src_seq_ctr values.
+        filtered_data = filter_valid_groups(grouped_data)
+    else:
+        filtered_data = grouped_data
 
     return filtered_data

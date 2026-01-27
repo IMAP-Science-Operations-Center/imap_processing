@@ -1770,6 +1770,9 @@ class TestPopulateGeometricFactors:
                 assert result["geometric_factor_stat_uncert"].values[i] == (
                     1.5e-5 * (i + 1)
                 )
+        # Ensure that energy_deltas are in units of keV
+        assert np.all(result["energy_delta_plus"].values < 1)
+        assert np.all(result["energy_delta_minus"].values < 1)
 
     def test_populate_geometric_factors_no_gf_species(self):
         """Test population for species without geometric factors."""
@@ -2317,6 +2320,7 @@ class TestCalculateAllRatesAndIntensities:
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.009,
         )
+        dataset["energy_sc_exposure_factor"] = xr.ones_like(dataset["ena_intensity"])
 
         # Mock the interpolation function
         with patch(
@@ -2337,6 +2341,13 @@ class TestCalculateAllRatesAndIntensities:
                 dataset["energy"]
             )  # spacecraft frame energies
             assert call_args[0][2].equals(dataset["energy"])  # helio frame energies
+            # Check that s/c energies get computed in keV units
+            expected_sc_energies = (
+                dataset["energy_sc_exposure_factor"] / dataset["exposure_factor"] / 1e3
+            )
+            xr.testing.assert_allclose(
+                call_args[0][0]["energy_sc"], expected_sc_energies
+            )
             assert "ena_intensity" in call_args[0][3]  # variables to interpolate
             assert "bg_intensity" in call_args[0][3]
 
@@ -2360,6 +2371,7 @@ class TestCalculateAllRatesAndIntensities:
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.009,
         )
+        dataset["energy_sc_exposure_factor"] = xr.ones_like(dataset["ena_intensity"])
 
         with patch(
             "imap_processing.lo.l2.lo_l2.interpolate_map_flux_to_helio_frame"
@@ -2664,6 +2676,9 @@ class TestProcessSinglePset:
         """Test that CG correction is applied for heliocentric frame."""
         pset = minimal_pset.copy()
         pset = pset.rename({"esa_energy_step": "energy"})
+        # apply_compton_getting_correction gets mocked out so we need to add the
+        # energy_sc variable to the pset
+        pset["energy_sc"] = xr.ones_like(pset["counts"])
 
         with (
             patch(

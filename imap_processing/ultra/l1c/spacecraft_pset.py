@@ -13,6 +13,7 @@ from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
 )
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
@@ -36,7 +37,7 @@ def calculate_spacecraft_pset(
     de_dataset: xr.Dataset,
     goodtimes_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
-    params_dataset: xr.Dataset,
+    aux_dataset: xr.Dataset,
     name: str,
     ancillary_files: dict,
     instrument_id: int,
@@ -53,8 +54,8 @@ def calculate_spacecraft_pset(
         Dataset containing goodtimes data.
     rates_dataset : xarray.Dataset
         Dataset containing image rates data.
-    params_dataset : xarray.Dataset
-        Dataset containing image parameters data.
+    aux_dataset : xarray.Dataset
+        Dataset containing auxiliary data.
     name : str
         Name of the dataset.
     ancillary_files : dict
@@ -118,10 +119,11 @@ def calculate_spacecraft_pset(
             phi_vals,
             ancillary_files,
             instrument_id,
+            reject_scattering,
         )
     )
     # Determine nside from the lookup table
-    nside = hp.npix2nside(len(for_indices_by_spin_phase))
+    nside = hp.npix2nside(for_indices_by_spin_phase.sizes["pixel"])
     counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
         species_dataset["energy_spacecraft"].values,
@@ -140,9 +142,9 @@ def calculate_spacecraft_pset(
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
         rates_dataset,
-        params_dataset,
         valid_spun_pixels,
         boundary_scale_factors,
+        aux_dataset,
         pointing_range_met,
         n_energy_bins=len(energy_bin_geometric_means),
         sensor_id=sensor_id,
@@ -165,6 +167,7 @@ def calculate_spacecraft_pset(
     # Calculate background rates
     background_rates = get_spacecraft_background_rates(
         rates_dataset,
+        aux_dataset,
         sensor_id,
         ancillary_files,
         intervals,
@@ -184,13 +187,12 @@ def calculate_spacecraft_pset(
     # use either the pointing end time + 30 mins or the max event time,
     # whichever is smaller.
     end = min(end + 1800, ttj2000ns_to_et(pointing_range_ns[1]))
-    # Time bins in 30 minute intervals
+    # Time bins in 30 minute intervals in et
     time_bins = np.arange(start, end, 1800)
-
     # Compute mask for culling the Earth
     compute_culling_mask(
         time_bins,
-        6378.1,  # Earth radius
+        UltraConstants.DEFAULT_EARTH_CULLING_RADIUS,
         spacecraft_pset_quality_flags,
         nside=nside,
     )

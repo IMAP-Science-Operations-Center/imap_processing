@@ -94,8 +94,9 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
         )
     # Should have: 4 norm frames + 4 burst frames + spin offsets + 2 gradiometry offsets
 
+    frame = l1d[0].attrs["Logical_source"].split("-")[-1].lower()
     assert len(l1d) == 11
-    assert "vectors" in l1d[0].data_vars
+    assert f"b_{frame}" in l1d[0].data_vars
 
     # Check that expected logical sources are present
     logical_sources = [ds.attrs.get("Logical_source", "") for ds in l1d]
@@ -181,10 +182,10 @@ def test_mag_l1d_attributes(
             f"got '{logical_source_parts[2]}'"
         )
 
-        vectors_attrs = dataset["vectors"].attrs
-        assert "DICT_KEY" in vectors_attrs
-
         frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
+
+        vectors_attrs = dataset[f"b_{frame.lower()}"].attrs
+        assert "DICT_KEY" in vectors_attrs
 
         assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
 
@@ -482,7 +483,7 @@ def test_mago_magi_swap_functionality(mag_l1d_test_class):
     assert np.array_equal(mag_l1d_test_class.vectors, mago_vectors)
     assert np.array_equal(mag_l1d_test_class.epoch, mago_epoch)
 
-    assert np.array_equal(result["vectors"].data, magi_vectors)
+    assert np.array_equal(result[mag_l1d_test_class.frame.var_name].data, magi_vectors)
     assert np.array_equal(result["epoch"].data, magi_epoch)
 
 
@@ -509,7 +510,7 @@ def test_mago_magi_no_swap_functionality(mag_l1d_test_class):
     assert np.array_equal(mag_l1d_test_class.vectors, mago_vectors)
     assert np.array_equal(mag_l1d_test_class.epoch, mago_epoch)
 
-    assert np.array_equal(result["vectors"].data, mago_vectors)
+    assert np.array_equal(result[mag_l1d_test_class.frame.var_name].data, mago_vectors)
     assert np.array_equal(result["epoch"].data, mago_epoch)
 
 
@@ -581,10 +582,8 @@ def test_rotate_frames(mag_l1d_test_class):
     def mock_frame_transform(
         epoch_et, vectors, from_frame, to_frame, allow_spice_noframeconnect
     ):
-        if from_frame == ValidFrames.MAGO.value:
+        if from_frame in [ValidFrames.MAGO.spice_frame, ValidFrames.MAGI.spice_frame]:
             return vectors + 100
-        elif from_frame == ValidFrames.MAGI.value:
-            return vectors + 200
         else:
             return vectors + 300
 
@@ -600,20 +599,22 @@ def test_rotate_frames(mag_l1d_test_class):
 
         # First call should be for MAGO vectors
         first_call_args = mock_transform_l1d.call_args_list[0]
-        assert first_call_args[1]["from_frame"] == ValidFrames.MAGO.value
-        assert first_call_args[1]["to_frame"] == ValidFrames.SRF.value
+        assert first_call_args[1]["from_frame"] == ValidFrames.MAGO.spice_frame
+        assert first_call_args[1]["to_frame"] == ValidFrames.SRF.spice_frame
 
         # Second call should be for MAGI vectors
         second_call_args = mock_transform_l1d.call_args_list[1]
-        assert second_call_args[1]["from_frame"] == ValidFrames.MAGI.value
-        assert second_call_args[1]["to_frame"] == ValidFrames.SRF.value
+        assert second_call_args[1]["from_frame"] == ValidFrames.MAGI.spice_frame
+        assert second_call_args[1]["to_frame"] == ValidFrames.SRF.spice_frame
 
-        # Check that MAGO vectors were transformed from MAGO frame (+100)
+        # MAGO frame and MAGi frame not necessarily different (and are now the same)
+
+        # Check that MAGO vectors were transformed (+100)
         expected_mago_vectors = initial_vectors + 100
         np.testing.assert_array_equal(mag_l1d_test_class.vectors, expected_mago_vectors)
 
-        # Check that MAGI vectors were transformed from MAGI frame (+200)
-        expected_magi_vectors = initial_magi_vectors + 200
+        # Check that MAGI vectors were transformed (+100)
+        expected_magi_vectors = initial_magi_vectors + 100
         np.testing.assert_array_equal(
             mag_l1d_test_class.magi_vectors, expected_magi_vectors
         )

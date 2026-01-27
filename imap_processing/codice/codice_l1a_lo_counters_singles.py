@@ -151,6 +151,13 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
             ),
+            "half_spin_per_esa_step": xr.DataArray(
+                sci_lut_data["lo_stepping_tab"]["row_number"].get("data"),
+                dims=("esa_step",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "half_spin_per_esa_step", check_schema=False
+                ),
+            ),
             "esa_step_label": xr.DataArray(
                 np.arange(esa_step, dtype=np.uint8).astype(str),
                 dims=("esa_step",),
@@ -164,7 +171,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
                 attrs=cdf_attrs.get_variable_attributes("inst_az", check_schema=False),
             ),
             "inst_az_label": xr.DataArray(
-                np.arange(inst_az, dtype=np.uint8).astype(str),
+                (np.arange(inst_az, dtype=np.uint8) + 1).astype(str),
                 dims=("inst_az",),
                 attrs=cdf_attrs.get_variable_attributes(
                     "inst_az_label", check_schema=False

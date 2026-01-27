@@ -473,9 +473,17 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
     # Add required parameters.
     accumulated_data["met"] = met
 
+    # Drop any off-nominal SWE groups
+    nominal_data = accumulated_data.where(
+        accumulated_data["swe_nom_flag"] != 0,
+        drop=True,
+    )
+
     # Get total full cycle data available for processing.
     # There are 60 packets in a set so (0, 59) is the range.
-    grouped_data = find_groups(accumulated_data, (0, 59), "swe_seq", "time_seconds")
+    grouped_data = find_groups(
+        nominal_data, (0, 59), "swe_seq", "met", check_src_seq_ctr=False
+    )
     unique_groups = np.unique(grouped_data["group"])
     swe_data: list[dict] = []
     incomplete_groups = []

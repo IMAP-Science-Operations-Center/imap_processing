@@ -54,7 +54,9 @@ def get_spin_data() -> pd.DataFrame:
             * `spin_start_subsec_sclk`: MET microseconds of spin start time.
             * `spin_start_met`: Floating point MET seconds of spin start.
             * `spin_start_utc`: UTC string of spin start time.
-            * `spin_period_sec`: Floating point spin period in seconds.
+            * `spin_period_sec`: Floating point spin period in seconds (estimated).
+            * `actual_spin_period`: Floating point actual spin period computed from
+              consecutive spin start times. More accurate than spin_period_sec.
             * `spin_period_valid`: Boolean indicating whether spin period is valid.
             * `spin_phase_valid`: Boolean indicating whether spin phase is valid.
             * `spin_period_source`: Source used for determining spin period.
@@ -106,6 +108,7 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
                 "spin_start_utc": str,
                 "spin_period_sec": float,
                 "spin_period_valid": bool,
+                "spin_phase_valid": bool,
                 "spin_period_source": int,
                 "thruster_firing": bool,
             },
@@ -124,6 +127,22 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
     # time in seconds. The spin start subseconds are in microseconds.
     combined_df["spin_start_met"] = (
         combined_df["spin_start_sec_sclk"] + combined_df["spin_start_subsec_sclk"] / 1e6
+    )
+    # Precompute actual spin periods from consecutive spin start times
+    # Only use actual periods when spin numbers increment by exactly 1
+    # This prevents invalid times from appearing valid when spins are missing
+    spin_numbers = combined_df["spin_number"].values
+    spin_number_diffs = np.diff(spin_numbers)
+    time_diffs = np.diff(combined_df["spin_start_met"].values)
+
+    # Use actual time diff only where spin numbers increment by 1
+    # Otherwise use the estimated spin_period_sec
+    actual_spin_periods = np.where(
+        spin_number_diffs == 1, time_diffs, combined_df["spin_period_sec"].values[:-1]
+    )
+    # For the last spin, use the provided spin_period_sec since there's no next spin
+    combined_df["actual_spin_period"] = np.append(
+        actual_spin_periods, combined_df["spin_period_sec"].values[-1]
     )
     return combined_df
 
@@ -159,11 +178,13 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
         # convert scalar to array
         query_met_times = np.atleast_1d(query_met_times)
 
+    # Cache frequently accessed arrays to avoid repeated .values calls
+    spin_start_met = spin_df["spin_start_met"].values
+    actual_spin_periods = spin_df["actual_spin_period"].values
+
     # Make sure input times are within the bounds of spin data
-    spin_df_start_time = spin_df["spin_start_met"].values[0]
-    spin_df_end_time = (
-        spin_df["spin_start_met"].values[-1] + spin_df["spin_period_sec"].values[-1]
-    )
+    spin_df_start_time = spin_start_met[0]
+    spin_df_end_time = spin_start_met[-1] + actual_spin_periods[-1]
     input_start_time = query_met_times.min()
     input_end_time = query_met_times.max()
     if input_start_time < spin_df_start_time or input_end_time >= spin_df_end_time:
@@ -180,15 +201,19 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
     # >>> np.searchsorted(df['a'], [0, 13, 15, 32, 70], side='right')
     # array([1, 1, 2, 3, 5])
     last_spin_indices = (
-        np.searchsorted(spin_df["spin_start_met"], query_met_times, side="right") - 1
+        np.searchsorted(spin_start_met, query_met_times, side="right") - 1
     )
-    # Generate a dataframe with one row per query time
-    out_df = spin_df.iloc[last_spin_indices]
 
-    # Calculate spin phase
-    spin_phases = (query_met_times - out_df["spin_start_met"].values) / out_df[
-        "spin_period_sec"
-    ].values
+    # Generate a dataframe with one row per query time
+    out_df = spin_df.iloc[last_spin_indices].copy()
+
+    # Get the precomputed actual spin period for each query time
+    spin_periods_for_query = actual_spin_periods[last_spin_indices]
+
+    # Calculate spin phase using actual computed periods
+    spin_phases = (
+        query_met_times - out_df["spin_start_met"].values
+    ) / spin_periods_for_query
 
     # Check for invalid spin phase using below checks:
     # 1. Check that the spin phase is in valid range, [0, 1).

@@ -169,6 +169,13 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
             ),
+            "half_spin_per_esa_step": xr.DataArray(
+                sci_lut_data["lo_stepping_tab"]["row_number"].get("data"),
+                dims=("esa_step",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "half_spin_per_esa_step", check_schema=False
+                ),
+            ),
             "esa_step_label": xr.DataArray(
                 np.arange(128).astype(str),
                 dims=("esa_step",),

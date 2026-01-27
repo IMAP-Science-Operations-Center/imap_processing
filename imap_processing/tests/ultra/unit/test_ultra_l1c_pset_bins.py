@@ -19,8 +19,8 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     calculate_exposure_time,
     get_deadtime_ratios,
     get_deadtime_ratios_by_spin_phase,
+    get_efficiencies_and_geometric_function,
     get_energy_delta_minus_plus,
-    get_helio_adjusted_data,
     get_sectored_rates,
     get_spacecraft_background_rates,
     get_spacecraft_count_rate_uncertainty,
@@ -30,6 +30,25 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+
+
+@pytest.fixture
+def spun_index_data(ancillary_files):
+    """Spun index test data fixture."""
+    nside = 8
+    pix = hp.nside2npix(nside)
+    steps = 500  # Reduced for testing
+    np.random.seed(42)
+    mock_theta = np.random.uniform(-60, 60, (steps, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, pix))
+    spin_phase_steps = xr.DataArray(
+        np.zeros((steps, pix)).astype(bool), dims=("spin_phase_step", "pixel")
+    )
+    # Simulate first 100 pixels are in the FOR for all spin phases
+    inside_inds = 100
+    spin_phase_steps[:, :inside_inds] = True
+
+    return mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps
 
 
 @pytest.fixture
@@ -129,54 +148,33 @@ def mock_imap_state(time, ref_frame):
     return np.array([0, 0, 0, 0, 0, 0])
 
 
-def test_get_sectored_rates():
+def test_get_sectored_rates(rates_dataset):
     """Tests get_sectored_rates function."""
+    sectored_rates = get_sectored_rates(rates_dataset)
+    expected_sectored_rates = rates_dataset.isel(epoch=slice(14, None))
+    xr.testing.assert_equal(sectored_rates, expected_sectored_rates)
 
-    # Simulate a test rates dataset.
-    epoch = 60
-    test_l1a_rates_dataset = xr.Dataset(
-        {
-            "test_data": (["epoch"], np.arange(epoch)),
-        },
-    )
-    # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
-    # each time the mode changes, it is recorded in the params packet.
-    # Create a test params dataset that simulates the mode changing to 3, 3 times.
-    modes = np.tile(np.array([1, 3]), 3)
-    test_l1a_params_dataset = xr.Dataset(
-        {
-            "imageratescadence": (["epoch"], modes),
-        },
-        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
-    )
-    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
-    np.testing.assert_array_equal(
-        sectored_rates["test_data"].data,
-        np.arange(
-            10, 20
-        ),  # Make sure duplicate epochs with the same mode are filtered out
-    )
-    # Test with one mode shift in the middle of the dataset.
-    modes = np.array([1, 3, 1])
-    test_l1a_params_dataset = xr.Dataset(
-        {
-            "imageratescadence": (["epoch"], modes),
-        },
-        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
-    )
-    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
-    np.testing.assert_array_equal(sectored_rates["test_data"].data, np.arange(20, 40))
 
-    # Test with one mode shift in the middle of the dataset.
-    modes = np.array([1, 3, 1])
-    test_l1a_params_dataset = xr.Dataset(
+def test_get_sectored_rates_manual():
+    """Tests get_sectored_rates function."""
+    # This dataset has 2 sections where it goes into sectored mode.
+    test_spins = np.concatenate([np.full(15, 0), np.array([10, 11]), np.full(15, 12)])
+    rates_dataset = xr.Dataset(
         {
-            "imageratescadence": (["epoch"], modes),
-        },
-        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+            "epoch": ("epoch", np.arange(32)),
+            "spin": ("epoch", test_spins),
+        }
     )
-    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
-    np.testing.assert_array_equal(sectored_rates["test_data"].data, np.arange(20, 40))
+    sectored_rates = get_sectored_rates(rates_dataset)
+    # The sectored rates should be the first and last 15 epochs.
+    expected_sectored_rates = xr.concat(
+        [
+            rates_dataset.isel(epoch=slice(0, 15)),
+            rates_dataset.isel(epoch=slice(17, 32)),
+        ],
+        dim="epoch",
+    )
+    xr.testing.assert_equal(sectored_rates, expected_sectored_rates)
 
 
 def test_get_deadtime_ratios():
@@ -196,14 +194,16 @@ def test_get_deadtime_ratios():
             "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
         }
     )
+    durations = np.full(epoch, 15)
+    sectored_rates_ds["spin_durations"] = (["epoch"], durations)
     deadtime_correction_factors = get_deadtime_ratios(sectored_rates_ds)
     assert deadtime_correction_factors.shape == (sectored_rates_ds.sizes["epoch"],)
     assert np.all(deadtime_correction_factors >= 0)
 
 
-def test_get_deadtime_interpolator(random_spin_data):
+def test_get_deadtime_interpolator(use_fake_spin_data_for_time, aux_dataset):
     """Tests get_deadtime_correction_factors function."""
-
+    use_fake_spin_data_for_time(1, 10)
     sector_rate_seconds = 20 * 60  # 20 minutes in seconds
     num_sectors = 3  # Number of sectors per pointing
     num_spins = sector_rate_seconds * num_sectors / 15  # 15 seconds per spin
@@ -214,13 +214,16 @@ def test_get_deadtime_interpolator(random_spin_data):
     deadtime_ratios = xr.DataArray(
         np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
     )
-    sectored_rates_ds = xr.Dataset({"epoch": ("epoch", np.ones_like(deadtime_ratios))})
+    sectored_rates_ds = xr.Dataset(
+        {"epoch": ("epoch", np.ones_like(deadtime_ratios))},
+        {"shcoarse": ("epoch", np.ones_like(deadtime_ratios))},
+    )
     with mock.patch(
         "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
         return_value=deadtime_ratios,
     ):
         deadtime_ratios = get_deadtime_ratios_by_spin_phase(
-            sectored_rates_ds, spin_steps=num_deadtimes
+            sectored_rates_ds, aux_dataset, spin_steps=num_deadtimes
         )
     np.testing.assert_array_equal(deadtime_ratios.shape, (num_deadtimes))
 
@@ -234,12 +237,12 @@ def test_get_deadtime_interpolator(random_spin_data):
             match="All dead time ratios are NaN, cannot interpolate",
         ):
             get_deadtime_ratios_by_spin_phase(
-                sectored_rates_ds, spin_steps=num_deadtimes
+                sectored_rates_ds, aux_dataset, spin_steps=num_deadtimes
             )
 
 
 @pytest.mark.external_test_data
-def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files):
+def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files, aux_dataset):
     """Tests get_deadtime_correction_factors function."""
 
     num_deadtimes = 15000  # Standard number of spin phases
@@ -248,6 +251,7 @@ def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files):
     # static deadtime ratios lookup.
     dt_ratios = get_deadtime_ratios_by_spin_phase(
         sectored_rates=None,
+        aux_dataset=aux_dataset,
         spin_steps=num_deadtimes,
         sensor_id=sensor,
         ancillary_files=ancillary_files,
@@ -265,20 +269,12 @@ def test_get_deadtime_interpolator_no_sectored_rates(ancillary_files):
 
 
 @pytest.mark.external_kernel
-def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
+def test_apply_deadtime_correction(
+    imap_ena_sim_metakernel, ancillary_files, spun_index_data
+):
     """Tests apply_deadtime_correction function."""
-    nside = 8
-    pix = hp.nside2npix(nside)
-    steps = 500  # Reduced for testing
-    np.random.seed(42)
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.zeros((pix, steps)).astype(bool)  # Spin phase steps 1-15000,
-    # Simulate first 100 pixels are in the FOR for all spin phases
-    inside_inds = 100
-    spin_phase_steps[:inside_inds, :] = True
+    mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps = spun_index_data
     deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
-
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
         calculate_fwhm_spun_scattering(
             spin_phase_steps,
@@ -296,8 +292,8 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
         boundary_sf,
         apply_bsf=True,
     )
-    # The adjusted exposure should be of shape (1,npix)
-    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (1, pix))
+    # The adjusted exposure should be of shape (46,npix)
+    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (46, pix))
     # Check that the pixels inside the FOR have adjusted exposure > 0.
     assert np.all(exposure_pointing_adjusted[:, :inside_inds] > 0)
     # Assert that pixels outside the FOR remain at 0.
@@ -305,19 +301,13 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
 
 
 @pytest.mark.external_kernel
-def test_apply_deadtime_correction_energy_dep(imap_ena_sim_metakernel, ancillary_files):
+def test_apply_deadtime_correction_energy_dep(
+    imap_ena_sim_metakernel, ancillary_files, spun_index_data
+):
     """Tests apply_deadtime_correction function when scattering rejection is on."""
-    nside = 8
-    pix = hp.nside2npix(nside)
-    steps = 500  # Reduced for testing
-    np.random.seed(42)
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.zeros((pix, steps)).astype(bool)  # Spin phase steps 1-15000,
-    # Simulate first 100 pixels are in the FOR for all spin phases
-    inside_inds = 100
-    spin_phase_steps[:inside_inds, :] = True
+    mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps = spun_index_data
     deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
+    boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
 
     valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
         calculate_fwhm_spun_scattering(
@@ -329,14 +319,14 @@ def test_apply_deadtime_correction_energy_dep(imap_ena_sim_metakernel, ancillary
             reject_scattering=True,
         )
     )
-    boundary_sf = xr.DataArray(np.ones((pix, steps)), dims=("pixel", "spin_phase_step"))
+
     exposure_pointing_adjusted = calculate_exposure_time(
         deadtime_ratios,
         valid_spun_pixels,
         boundary_sf,
         apply_bsf=True,
     )
-    # The adjusted exposure should be of shape (1,npix)
+    # The adjusted exposure should be of shape (46,npix)
     np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (46, pix))
     # Check that the pixels inside the FOR have adjusted exposure > 0.
     # Subset the energy dimension to check values in the last energy bin. These
@@ -348,27 +338,77 @@ def test_apply_deadtime_correction_energy_dep(imap_ena_sim_metakernel, ancillary
     assert np.all(exposure_pointing_adjusted[:, inside_inds:] == 0)
 
 
+@pytest.mark.external_kernel
+def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_data):
+    """Tests apply_deadtime_correction function when scattering rejection is on."""
+    nside = 8
+    pix = hp.nside2npix(nside)
+    steps = 5  # Reduced for testing
+    energy_dim = 46
+    np.random.seed(42)
+    mock_theta = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    spin_phase_steps = xr.DataArray(
+        np.zeros((steps, energy_dim, pix)).astype(bool),
+        dims=("spin_phase_step", "energy", "pixel"),
+    )
+    # Simulate first 100 pixels are in the FOR for all spin phases
+    inside_inds = 100
+    spin_phase_steps[:, :, :inside_inds] = True
+    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
+        calculate_fwhm_spun_scattering(
+            spin_phase_steps,
+            mock_theta,
+            mock_phi,
+            ancillary_files,
+            45,
+            reject_scattering=False,
+        )
+    )
+    boundary_sf = xr.DataArray(
+        np.ones((steps, energy_dim, pix)), dims=("spin_phase_step", "energy", "pixel")
+    )
+    eff, gf = get_efficiencies_and_geometric_function(
+        valid_spun_pixels,
+        boundary_sf,
+        mock_theta,
+        mock_phi,
+        npix=pix,
+        ancillary_files=ancillary_files,
+        apply_bsf=False,
+    )
+    # The efficiencies should be of shape (energy_dim,npix)
+    np.testing.assert_array_equal(eff.shape, (energy_dim, pix))
+    np.testing.assert_array_equal(gf.shape, (energy_dim, pix))
+    # Check that the pixels inside the FOR have efficiencies and geometric factors > 0.
+    assert np.all(eff[:, :inside_inds] > 0)
+    assert np.all(gf[:, :inside_inds] > 0)
+    # Assert that pixels outside the FOR remain at 0.
+    assert np.all(eff[:, inside_inds:] == 0)
+    assert np.all(gf[:, inside_inds:] == 0)
+
+
 @pytest.mark.external_test_data
 def test_get_spacecraft_exposure_times(
-    deadtime_datasets,
-    random_spin_data,
+    rates_dataset,
     imap_ena_sim_metakernel,
     ancillary_files,
     use_fake_spin_data_for_time,
+    aux_dataset,
 ):
     """Test get_spacecraft_exposure_times function."""
-    data_start_time = 453051293.0
+    data_start_time = 445015665.0
     data_end_time = 453070000.0
     use_fake_spin_data_for_time(data_start_time, data_end_time)
     steps = 500  # reduced for testing
-    rates = deadtime_datasets["rates"]
-    params = deadtime_datasets["params"]
 
     pix = 786
-    mock_theta = np.random.uniform(-60, 60, (pix, steps))
-    mock_phi = np.random.uniform(-60, 60, (pix, steps))
-    spin_phase_steps = np.random.randint(0, 2, (pix, steps)).astype(
-        bool
+    mock_theta = np.random.uniform(-60, 60, (steps, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, pix))
+    np.random.seed(42)
+    spin_phase_steps = xr.DataArray(
+        np.random.randint(0, 2, (steps, pix)).astype(bool),
+        dims=("spin_phase_step", "pixel"),
     )  # Spin phase steps, random 0 or 1
 
     pixels_below_threshold, fwhm_theta, fwhm_phi, thresholds = (
@@ -376,12 +416,12 @@ def test_get_spacecraft_exposure_times(
             spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
         )
     )
-    boundary_sf = xr.DataArray(np.ones((pix, steps)), dims=("pixel", "spin_phase_step"))
+    boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
     exposure_pointing, deadtimes = get_spacecraft_exposure_times(
-        rates,
-        params,
+        rates_dataset,
         pixels_below_threshold,
         boundary_sf,
+        aux_dataset,
         (
             data_start_time,
             data_start_time,
@@ -393,44 +433,29 @@ def test_get_spacecraft_exposure_times(
     np.testing.assert_array_equal(deadtimes.shape, (steps,))
 
 
-@pytest.mark.external_kernel
-def test_get_helio_exposure_time_and_sensitivity(imap_ena_sim_metakernel):
-    """Tests get_helio_exposure_times function."""
-
-    start_time = 829485054.185627
-    end_time = 829567884.185627
-
-    mid_time = np.average([start_time, end_time])
-
-    _, energy_midpoints, _ = build_energy_bins()
-    nside = 128
-    npix = hp.nside2npix(nside)
-    shape = (len(energy_midpoints), npix)
-    exposure = np.ones(shape)
-    eff = np.ones(shape)
-    gf = np.ones(shape)
-    mock_ra = np.random.uniform(-80, 80, (npix))
-    mock_dec = np.random.uniform(-80, 80, (npix))
-
-    helio_exposure, helio_eff, helio_gf = get_helio_adjusted_data(
-        mid_time, exposure, gf, eff, mock_ra, mock_dec
-    )
-
-    for helio_array, array in zip(
-        [helio_exposure, helio_eff, helio_gf], [exposure, eff, gf], strict=False
-    ):
-        total_input = np.sum(array)
-        total_output = np.sum(total_input)
-        assert np.allclose(total_input, total_output, atol=1e-6)
-        assert helio_array.shape == shape
-
-
 def test_get_spacecraft_background_rates(
     rates_l1_test_path, use_fake_spin_data_for_time, ancillary_files
 ):
     "Tests calculate_background_rates function."
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
+    # Should be evenly spaced spins of 15 seconds each except the first one has 14.
+    num_spins = 15
+    spin_start_times = np.concatenate([[0], np.arange(14, 222, num_spins)]) + 445015651
+    spin_numbers = np.arange(127, 142)
+    num_spins = len(spin_numbers)
+
+    aux_ds = xr.Dataset(
+        data_vars={
+            "timespinstart": ("epoch", spin_start_times),
+            "timespinstartsub": ("epoch", np.ones_like(spin_start_times)),
+            "duration": ("epoch", np.full(num_spins, 15)),
+            "spinnumber": ("epoch", spin_numbers),
+        },
+        coords={"epoch": ("epoch", np.arange(num_spins))},
+    )
+
     df = pd.read_csv(rates_l1_test_path)
 
     rates = {
@@ -459,7 +484,12 @@ def test_get_spacecraft_background_rates(
     goodtimes_spin_number = np.array([130, 131])
 
     background_rates = get_spacecraft_background_rates(
-        rates, "ultra45", ancillary_files, energy_bin_edges, goodtimes_spin_number
+        rates,
+        aux_ds,
+        "ultra45",
+        ancillary_files,
+        energy_bin_edges,
+        goodtimes_spin_number,
     )
 
     assert background_rates.shape == (len(energy_bin_edges), hp.nside2npix(128))

@@ -123,15 +123,24 @@ def ultra_l1a(  # noqa: PLR0912
 
     for i, datasets_by_apid in enumerate(decommutated_packet_datasets):
         for apid in apids:
+            logger.info(f"Processing APID: {apid}")
             if apid in ULTRA_AUX.apid:
                 decom_ultra_dataset = datasets_by_apid[apid]
                 gattr_key = ULTRA_AUX.logical_source[ULTRA_AUX.apid.index(apid)]
             elif apid in all_l1a_image_apids:
                 packet_props = all_l1a_image_apids[apid]
-                decom_ultra_dataset = process_ultra_tof(
-                    datasets_by_apid[apid], packet_props
-                )
-                gattr_key = packet_props.logical_source[packet_props.apid.index(apid)]
+                # TODO there is a known issue with the decom of some tof packets.
+                #   This is being tracked in issue #2557.
+                try:
+                    decom_ultra_dataset = process_ultra_tof(
+                        datasets_by_apid[apid], packet_props
+                    )
+                    gattr_key = packet_props.logical_source[
+                        packet_props.apid.index(apid)
+                    ]
+                except IndexError as e:
+                    logger.error(f"Error processing TOF data for APID {apid}: {e}")
+                    continue
             elif apid in ULTRA_RATES.apid:
                 decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])
                 decom_ultra_dataset = decom_ultra_dataset.drop_vars("fastdata_00")

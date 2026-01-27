@@ -1160,6 +1160,22 @@ class TestInterpolateMapFluxToHelioFrame:
             == map_ds["ena_intensity_sys_err"].shape
         )
 
+    def test_energy_unit_insensitivity(self):
+        """Test that units of eV or keV produce the same result."""
+
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset()
+
+        # Apply interpolation
+        ev_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+        kev_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies / 1000, helio_energies / 1000, ["ena_intensity"]
+        )
+
+        # Verify results are the same
+        xr.testing.assert_equal(ev_ds, kev_ds)
+
     def test_power_law_interpolation_accuracy(self):
         """Test that power-law interpolation formula is correct."""
 

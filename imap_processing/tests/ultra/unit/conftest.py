@@ -547,75 +547,25 @@ def ancillary_files():
 
 
 @pytest.fixture
-def deadtime_datasets():
-    """Fixture to create params and rates datasets needed to calculate the spacecraft
-    exposure time."""
-    # Simulate a test rates dataset.
-    epoch = 200
-    test_l1a_rates_dataset = xr.Dataset(
-        {
-            "fifo_valid_events": (["epoch"], np.random.randint(100, 200, epoch)),
-            "event_active_time": (["epoch"], np.random.uniform(0, 10, epoch)),
-            "start_pos": (["epoch"], np.random.randint(0, 5, epoch)),
-            "start_rf": (["epoch"], np.random.randint(0, 5, epoch)),
-            "start_lf": (["epoch"], np.random.randint(0, 5, epoch)),
-            "coin_tn": (["epoch"], np.random.randint(0, 5, epoch)),
-            "coin_bn": (["epoch"], np.random.randint(0, 5, epoch)),
-            "stop_tn": (["epoch"], np.random.randint(0, 5, epoch)),
-            "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
-            "shcoarse": (["epoch"], np.arange(epoch)),
-            "spin": (["epoch"], 127 + (np.arange(epoch) % (141 - 127))),
-        }
-    )
-    # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
-    # each time the mode changes, it is recorded in the params packet.
-    # Create a test params dataset that simulates the mode changing to 3, 3 times.
-    modes = np.tile(np.arange(4), 3)
-    test_l1a_params_dataset = xr.Dataset(
-        {
-            "imageratescadence": (["epoch"], modes),
-        },
-        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
-    )
-    return {"rates": test_l1a_rates_dataset, "params": test_l1a_params_dataset}
-
-
-@pytest.fixture
-def random_spin_data():
-    """Fixture for random spin data."""
-    with (
-        mock.patch(
-            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
-        ) as mock_spin_phases,
-        mock.patch(
-            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.ttj2000ns_to_met"
-        ) as mock_met,
-    ):
-        mock_spin_phases.side_effect = lambda time: np.random.random(time.shape)
-        mock_met.side_effect = lambda time: time
-        yield
-
-
-@pytest.fixture
 def mock_spacecraft_pointing_lookups():
     """Test lookup tables fixture."""
+    np.random.seed(42)
     pix = hp.nside2npix(128)  # reduced for testing
     steps = 2  # Reduced for testing
-    for_indices_by_spin_phase = np.random.choice(
-        [True, False], size=(pix, steps), p=[0.1, 0.9]
+    for_indices_by_spin_phase = xr.DataArray(
+        np.random.choice([True, False], size=(steps, pix), p=[0.1, 0.9]),
+        dims=("spin_phase_step", "pixel"),
     )
-    theta_vals = np.random.uniform(-60, 60, size=(pix, steps))
-    phi_vals = np.random.uniform(-60, 60, size=(pix, steps))
+    theta_vals = np.random.uniform(-60, 60, size=(steps, pix))
+    phi_vals = np.random.uniform(-60, 60, size=(steps, pix))
     # Ra and Dec pixel shape needs to be the default healpix pixel count
-    ra_and_dec = np.random.uniform(-80, 80, size=(pix, 2))
-    boundary_scale_factors = np.ones((pix, steps))
+    ra_and_dec = np.random.uniform(-80, 80, size=(steps, pix))
+    boundary_scale_factors = np.ones((steps, pix))
+
     with (
         mock.patch(
             "imap_processing.ultra.l1c.spacecraft_pset.get_spacecraft_pointing_lookup_tables"
         ) as mock_lookup,
-        mock.patch(
-            "imap_processing.ultra.l1c.helio_pset.get_spacecraft_pointing_lookup_tables"
-        ) as mock_lookup_helio,
     ):
         mock_lookup.return_value = (
             for_indices_by_spin_phase,
@@ -624,11 +574,60 @@ def mock_spacecraft_pointing_lookups():
             ra_and_dec,
             boundary_scale_factors,
         )
-        mock_lookup_helio.return_value = (
-            for_indices_by_spin_phase,
-            theta_vals,
-            phi_vals,
-            ra_and_dec,
-            boundary_scale_factors,
+        yield mock_lookup
+
+
+@pytest.fixture
+def mock_helio_pointing_lookups():
+    """Test lookup tables fixture returning an xarray Dataset."""
+    np.random.seed(42)
+    pix = hp.nside2npix(32)  # reduced for testing
+    steps = 2  # Reduced for testing
+    energy = 46
+
+    # Ra and Dec pixel shape needs to be the default healpix pixel count
+    ra_and_dec = np.random.uniform(-80, 80, size=(steps, pix))
+
+    index_map = np.random.choice([True, False], size=(steps, energy, pix), p=[0.1, 0.9])
+    index_map = index_map.astype(bool)
+    theta_map = np.random.uniform(-60, 60, size=(steps, energy, pix))
+    phi_map = np.random.uniform(-60, 60, size=(steps, energy, pix))
+    bsf_map = np.ones((steps, energy, pix))
+    with (
+        mock.patch(
+            "imap_processing.ultra.l1c.helio_pset.make_helio_index_maps_with_nominal_kernels"
+        ) as mock_lookup,
+    ):
+        ds = xr.Dataset(
+            data_vars={
+                "index": (
+                    ["spin_phase_step", "energy", "pixel"],
+                    index_map,
+                    {"long_name": "Pixel in FOV flag"},
+                ),
+                "theta": (
+                    ["spin_phase_step", "energy", "pixel"],
+                    theta_map,
+                    {"long_name": "Instrument theta angle", "units": "degrees"},
+                ),
+                "phi": (
+                    ["spin_phase_step", "energy", "pixel"],
+                    phi_map,
+                    {"long_name": "Instrument phi angle", "units": "degrees"},
+                ),
+                "bsf": (
+                    ["spin_phase_step", "energy", "pixel"],
+                    bsf_map,
+                    {"long_name": "Boundary scale factor", "units": "fractional"},
+                ),
+                "ra_and_dec": (["spin_phase_step", "pixel"], ra_and_dec),
+            },
+            coords={
+                "spin_phase_step": np.arange(steps),
+                "energy": np.arange(energy),
+                "pixel": np.arange(pix),
+            },
         )
+        mock_lookup.return_value = ds
+
         yield mock_lookup

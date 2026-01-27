@@ -398,19 +398,19 @@ def test_mag_l2_validation(test_number, mode):
 
         assert np.allclose(
             expected_output["x"].iloc[index],
-            l2["vectors"].data[index][0],
+            l2["b_srf"].data[index][0],
             atol=1e-5,
             rtol=0,
         )
         assert np.allclose(
             expected_output["y"].iloc[index],
-            l2["vectors"].data[index][1],
+            l2["b_srf"].data[index][1],
             atol=1e-5,
             rtol=0,
         )
         assert np.allclose(
             expected_output["z"].iloc[index],
-            l2["vectors"].data[index][2],
+            l2["b_srf"].data[index][2],
             atol=1e-5,
             rtol=0,
         )

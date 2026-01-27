@@ -262,6 +262,50 @@ def test_packet_file_to_datasets_flat_definition():
         utils.packet_file_to_datasets(packet_files, packet_definition)
 
 
+def test_combine_segmented_packets():
+    """Test combine_segmented_packets function."""
+
+    # unsegmented, first, middle, last, unsegmented
+    sequence_flags = xr.DataArray(np.array([3, 1, 0, 2, 3]), dims=["epoch"])
+
+    binary_data = xr.DataArray(
+        np.array(
+            [
+                b"ABC",
+                b"123",
+                b"456",
+                b"789",
+                b"abc",
+            ],
+            dtype=object,
+        ),
+        dims=["epoch"],
+    )
+
+    ds = xr.Dataset(data_vars={"seq_flgs": sequence_flags, "packetdata": binary_data})
+
+    combined_ds = utils.combine_segmented_packets(ds, "packetdata")
+
+    expected_ds = xr.Dataset(
+        data_vars={
+            "seq_flgs": xr.DataArray(np.array([3, 1, 3]), dims=["epoch"]),
+            "packetdata": xr.DataArray(
+                np.array(
+                    [
+                        b"ABC",
+                        b"123456789",
+                        b"abc",
+                    ],
+                    dtype=object,
+                ),
+                dims=["epoch"],
+            ),
+        }
+    )
+
+    xr.testing.assert_equal(combined_ds, expected_ds)
+
+
 def test_extract_data_dict():
     """Test extract_data_dict function."""
     data_vars = {

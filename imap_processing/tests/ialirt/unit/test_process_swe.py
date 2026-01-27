@@ -168,6 +168,7 @@ def test_process_spacecraft_packet(
         np.arange(462466219, 462466219 + n, dtype=np.uint32),
     )
     sc_xarray_data["swe_seq"] = ("epoch", np.arange(n) % 60)
+    sc_xarray_data["swe_nom_flag"] = xr.ones_like(sc_xarray_data["swe_nom_flag"])
 
     in_flight_cal_file = (
         imap_module_directory

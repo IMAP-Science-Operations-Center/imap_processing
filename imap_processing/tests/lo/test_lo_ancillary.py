@@ -135,20 +135,20 @@ def test_read_sweep_table():
         ANCILLARY_DIR / "imap_lo_sweep-table-small_20250101_20260301_v001.csv"
     )
     df = lo_ancillary.read_ancillary_file(ancillary_file)
-    assert len(df) == 10
+    assert len(df) == 11
 
     # spot check the first row
     np.testing.assert_array_equal(
         df.iloc[0],
         np.array(
             [
-                pd.Timestamp("2025-01-01"),
-                "ISN",
-                "HiRes Mode",
-                473389200,
-                473407618,
+                pd.Timestamp("2024-01-01"),
+                "ENA",
+                "Nominal Mode",
+                469024800,
+                469084200,
                 "Lo",
-                1,
+                20,
                 "HiRes",
                 1,
                 2,

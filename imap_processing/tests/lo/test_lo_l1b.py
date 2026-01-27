@@ -857,16 +857,16 @@ def test_resweep_histogram_success(l1b_histrates, anc_dependencies):
         str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
     )
     l1b_histrates["epoch"] = epoch_date
-    exposure_factor_init = np.full((2, 7, 60), 1)
-    exposure_factor_init[:, 0, :] = 2
-    exposure_factor_expected = dict()
-    for field in SPIN_BIN_6_FIELDS + SPIN_BIN_60_FIELDS:
-        exposure_factor_expected[field] = exposure_factor_init
+    exposure_factor_6deg = np.full((2, 7, 60), 1)
+    exposure_factor_60deg = np.full((2, 7, 6), 1)
+    exposure_factor_6deg[:, 0, :] = 2
+    exposure_factor_60deg[:, 0, :] = 2
+    exposure_factor_6deg[:, 1, :] = 0
+    exposure_factor_60deg[:, 1, :] = 0
 
     l1b_histrates.h_counts[0, 0, 0] = 5
     l1b_histrates.h_counts[0, 1, 0] = 10
     l1b_histrates.h_counts[0, 2, 0] = 2
-
     l1b_histrates.o_counts[1, 0, 0] = 2
     l1b_histrates.o_counts[1, 1, 0] = 3
     l1b_histrates.o_counts[1, 2, 0] = 4
@@ -885,6 +885,8 @@ def test_resweep_histogram_success(l1b_histrates, anc_dependencies):
 
     for field in SPIN_BIN_6_FIELDS + SPIN_BIN_60_FIELDS:
         assert np.array_equal(l1b_histrates[field], l1b_histrates[field])
+    assert np.array_equal(exposure_factor["6deg"], exposure_factor_6deg)
+    assert np.array_equal(exposure_factor["60deg"], exposure_factor_60deg)
 
 
 def test_resweep_histogram_no_date_in_sweep(l1b_histrates, anc_dependencies, caplog):
@@ -898,13 +900,7 @@ def test_resweep_histogram_no_date_in_sweep(l1b_histrates, anc_dependencies, cap
     l1b_histrates.h_counts[0, 1, 0] = 10
     l1b_histrates.h_counts[0, 2, 0] = 2
 
-    with caplog.at_level(logging.WARNING):
-        result, _ = resweep_histogram_data(l1b_histrates, anc_dependencies)
-
-    # Check that warning was logged
-    assert any(
-        "not found in sweep table" in record.message for record in caplog.records
-    )
+    pytest.raises(ValueError, resweep_histogram_data, l1b_histrates, anc_dependencies)
 
 
 def test_resweep_histogram_no_table_in_lut(l1b_histrates, anc_dependencies, caplog):
@@ -921,6 +917,7 @@ def test_resweep_histogram_no_table_in_lut(l1b_histrates, anc_dependencies, capl
     with caplog.at_level(logging.WARNING):
         result, _ = resweep_histogram_data(l1b_histrates, anc_dependencies)
 
+        resweep_histogram_data(l1b_histrates, anc_dependencies)
     # Check that warning was logged
     assert any(
         "No LUT entries for epoch" in record.message for record in caplog.records
@@ -959,15 +956,14 @@ def test_calculate_histogram_rates(l1b_histrates):
         ]
     )
     avg_spin_durations_per_cycle = xr.DataArray([30, 15])
-
-    exposure_factors = {}
     # default zeros then set a sample exposure as in original test intent
-    for field in SPIN_BIN_6_FIELDS:
-        arr = np.zeros((2, 7, 60))
-        arr[0, 0, 0] = 1
-        exposure_factors[field] = arr
-    for field in SPIN_BIN_60_FIELDS:
-        exposure_factors[field] = np.zeros((2, 7, 6))
+    exposure_factors_6deg = np.zeros((2, 7, 60))
+    exposure_factors_60deg = np.zeros((2, 7, 6))
+    exposure_factors_6deg[0, 0, 0] = 1
+    exposure_factors_60deg[0, 0, 0] = 1
+    exposure_factors = {}
+    exposure_factors["6deg"] = exposure_factors_6deg
+    exposure_factors["60deg"] = exposure_factors_60deg
 
     # Populate counts used by assertions
     l1b_histrates.h_counts[0, 0, 0] = 30
@@ -1028,8 +1024,11 @@ def test_calculate_histogram_rates_no_interval_found(l1b_histrates):
     )
     avg_spin_durations_per_cycle = xr.DataArray([30, 15])
 
-    exposure_factors = {f: np.zeros((2, 7, 60)) for f in SPIN_BIN_6_FIELDS}
-    exposure_factors.update({f: np.zeros((2, 7, 6)) for f in SPIN_BIN_60_FIELDS})
+    exposure_factors_6deg = np.zeros((2, 7, 60))
+    exposure_factors_60deg = np.zeros((2, 7, 6))
+    exposure_factors = {}
+    exposure_factors["6deg"] = exposure_factors_6deg
+    exposure_factors["60deg"] = exposure_factors_60deg
 
     l1b_histrate = calculate_histogram_rates(
         l1b_histrates,
@@ -1058,8 +1057,11 @@ def test_calculate_histogram_rates_zero_exposure_time(l1b_histrates):
     )
     avg_spin_durations_per_cycle = xr.DataArray([0, 15])
 
-    exposure_factors = {f: np.zeros((2, 7, 60)) for f in SPIN_BIN_6_FIELDS}
-    exposure_factors.update({f: np.zeros((2, 7, 6)) for f in SPIN_BIN_60_FIELDS})
+    exposure_factors_6deg = np.zeros((2, 7, 60))
+    exposure_factors_60deg = np.zeros((2, 7, 6))
+    exposure_factors = {}
+    exposure_factors["6deg"] = exposure_factors_6deg
+    exposure_factors["60deg"] = exposure_factors_60deg
 
     l1b_histrate = calculate_histogram_rates(
         l1b_histrates,

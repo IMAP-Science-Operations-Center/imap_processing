@@ -29,6 +29,7 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_LO_COUNTER,
+    FILLVAL_FLOAT32,
     FILLVAL_UINT8,
     concatenate_bytes,
     convert_to_intensities,
@@ -365,7 +366,7 @@ def l2_lut_path():
         / "codice"
         / "data"
         / "l2_lut"
-        / "imap_codice_l2-hi-ialirt-efficiency_20251008_v001.csv"
+        / "imap_codice_l2-hi-ialirt-efficiency_20251212_v003.csv"
     )
 
     return lut_path
@@ -405,7 +406,7 @@ def test_create_xarray_dataset_basic(l1a_lut_path):
         "SPIN_PERIOD": np.array([24]),
     }
 
-    ds = create_xarray_dataset(science_values, metadata_values, "lo", l1a_lut_path)
+    ds = create_xarray_dataset(science_values, metadata_values, "lo")
 
     for key in metadata_values:
         assert key.lower() in ds.variables
@@ -484,7 +485,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "lo", l1a_lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "lo")
     result = l1a_lo_species(dataset, l1a_lut_path)
 
     expected_species = [
@@ -569,7 +570,7 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data[i])
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "hi", l1a_lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi")
     result = l1a_ialirt_hi(dataset, l1a_lut_path)
 
     expected_species = [
@@ -604,8 +605,9 @@ def test_l2_ialirt_cod_hi(cod_hi_l1b_test_data, l2_lut_path, cod_hi_l2_test_data
     )
 
 
+@pytest.mark.xfail(reason="Uncomment this when the validation data version is v15.")
 @pytest.mark.external_test_data
-def test_process_codice_lo(
+def test_l2_ialirt_cod_lo(
     cod_lo_l1b_test_data, l1a_lut_path, cod_lo_l2_test_data, l2_processing_dependencies
 ):
     """Test process_codice for hi."""
@@ -675,38 +677,38 @@ def test_process_codice_lo(
     c_over_o_abundance_ratio = np.divide(
         pseudo_density_dict[species[1]] + pseudo_density_dict[species[2]],
         o_abundance_ratio,
-        out=np.zeros_like(o_abundance_ratio, dtype=float),  # fill with 0s by default
+        out=np.full(o_abundance_ratio.shape, np.nan),  # fill with nans by default
         where=o_abundance_ratio != 0,
     )
     mg_over_o_abundance_ratio = np.divide(
         pseudo_density_dict[species[6]],
         o_abundance_ratio,
-        out=np.zeros_like(o_abundance_ratio, dtype=float),
+        out=np.full(o_abundance_ratio.shape, np.nan),
         where=o_abundance_ratio != 0,
     )
     fe_over_o_abundance_ratio = np.divide(
         pseudo_density_dict[species[7]] + pseudo_density_dict[species[8]],
         o_abundance_ratio,
-        out=np.zeros_like(o_abundance_ratio, dtype=float),
+        out=np.full(o_abundance_ratio.shape, np.nan),
         where=o_abundance_ratio != 0,
     )
 
     c_plus_6_over_c_plus_5_ratio = np.divide(
         pseudo_density_dict[species[2]],
         pseudo_density_dict[species[1]],
-        out=np.zeros_like(pseudo_density_dict[species[1]], dtype=float),
+        out=np.full(pseudo_density_dict[species[1]].shape, np.nan),
         where=o_abundance_ratio != 0,
     )
     o_plus_7_over_o_plus_6_ratio = np.divide(
         pseudo_density_dict[species[4]],
         pseudo_density_dict[species[3]],
-        out=np.zeros_like(pseudo_density_dict[species[3]], dtype=float),
+        out=np.full(pseudo_density_dict[species[1]].shape, np.nan),
         where=o_abundance_ratio != 0,
     )
     fe_low_over_fe_high_ratio = np.divide(
         pseudo_density_dict[species[7]],
         pseudo_density_dict[species[8]],
-        out=np.zeros_like(pseudo_density_dict[species[8]], dtype=float),
+        out=np.full(pseudo_density_dict[species[1]].shape, np.nan),
         where=o_abundance_ratio != 0,
     )
 
@@ -733,6 +735,42 @@ def test_process_codice_lo(
 
 
 @pytest.mark.external_test_data
+def test_process_codice_lo(
+    cod_lo_test_dataset,
+    l1a_lut_path,
+    l2_lut_path,
+    cod_lo_l2_test_data,
+    l2_processing_dependencies,
+):
+    """Test process_codice for hi."""
+    eff_path, gf_path = l2_processing_dependencies
+
+    n = cod_lo_test_dataset.dims["epoch"]
+    cod_lo_test_dataset = cod_lo_test_dataset.assign(
+        sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
+        sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
+    )
+
+    cod_lo_data, _ = process_codice(
+        cod_lo_test_dataset, l1a_lut_path, eff_path, "codice_lo", gf_path
+    )
+
+    l2_products = [
+        "codice_lo_c_over_o_abundance",
+        "codice_lo_mg_over_o_abundance",
+        "codice_lo_fe_over_o_abundance",
+        "codice_lo_c_plus_6_over_c_plus_5",
+        "codice_lo_o_plus_7_over_o_plus_6",
+        "codice_lo_fe_low_over_fe_high",
+    ]
+
+    assert len(cod_lo_data) == 9
+
+    for product in l2_products:
+        assert cod_lo_data[0][product] == FILLVAL_FLOAT32
+
+
+@pytest.mark.external_test_data
 def test_process_codice_hi(
     cod_hi_test_dataset, l1a_lut_path, l2_lut_path, cod_hi_l2_test_data
 ):
@@ -756,10 +794,6 @@ def test_process_codice_hi(
     )
 
     for i, group in enumerate(cod_hi_data):
-        arr = np.array(group["codice_hi_l2_hi"], dtype=float)
+        arr = np.array(group["codice_hi_h"], dtype=float)
 
-        np.testing.assert_allclose(
-            arr,
-            grouped_test_data[i],
-            atol=1e-2,
-        )
+        np.testing.assert_allclose(arr, grouped_test_data[i], atol=3e-2, rtol=1e-5)

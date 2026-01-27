@@ -79,3 +79,20 @@ def test_find_groups(test_data):
     grouped_data = find_groups(test_data, (0, 3), "sequence", "time_seconds")
 
     assert np.all(np.unique(grouped_data["group"]) == np.array([1, 3]))
+
+
+def test_find_groups_no_valid(test_data):
+    """Tests the find_groups function when no valid groups are found."""
+
+    flag = np.ones(np.size(test_data["src_seq_ctr"]), dtype=int)
+    flag[-1] = 0
+
+    test_data["swe_nom_flag"] = ("epoch", flag)
+
+    nominal_data = test_data.where(
+        test_data["swe_nom_flag"] != 0,
+        drop=True,
+    )
+    grouped_data = find_groups(nominal_data, (0, 3), "sequence", "time_seconds")
+
+    assert np.all(np.unique(grouped_data["group"]) == np.array([1]))

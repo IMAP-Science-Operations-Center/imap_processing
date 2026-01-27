@@ -1,7 +1,7 @@
 """Functions to support I-ALiRT CoDICE processing."""
 
 import logging
-import pathlib
+from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -15,6 +15,12 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
+from imap_processing.codice.codice_l2 import (
+    compute_geometric_factors,
+    get_efficiency_lut,
+    get_geometric_factor_lut,
+    process_lo_species_intensity,
+)
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
@@ -27,6 +33,18 @@ COD_LO_COUNTER = 232
 COD_HI_COUNTER = 197
 COD_LO_RANGE = range(0, 15)
 COD_HI_RANGE = range(0, 5)
+
+COD_LO_L2 = namedtuple(
+    "COD_LO_L2",
+    [
+        "c_over_o_abundance",
+        "mg_over_o_abundance",
+        "fe_over_o_abundance",
+        "c_plus_6_over_c_plus_5",
+        "o_plus_7_over_o_plus_6",
+        "fe_low_over_fe_high",
+    ],
+)
 
 
 def process_ialirt_data_streams(
@@ -141,7 +159,6 @@ def create_xarray_dataset(
     science_values: list,
     metadata_values: dict,
     sensor: str,
-    lut_file: pathlib.Path,
 ) -> xr.Dataset:
     """
     Create a xarray Dataset from science and metadata values.
@@ -154,8 +171,6 @@ def create_xarray_dataset(
         Dictionary of metadata values.
     sensor : str
         The sensor type, either 'lo' or 'hi'.
-    lut_file : pathlib.Path
-        Path to the LUT file.
 
     Returns
     -------
@@ -190,7 +205,7 @@ def create_xarray_dataset(
 
 
 def convert_to_intensities(
-    cod_hi_l1b_data: xr.Dataset, l2_lut_path: pathlib.Path, species: str
+    cod_hi_l1b_data: xr.Dataset, l2_lut_path: Path, species: str
 ) -> NDArray:
     """
     Calculate intensities.
@@ -199,7 +214,7 @@ def convert_to_intensities(
     ----------
     cod_hi_l1b_data : xr.Dataset
         L1b data.
-    l2_lut_path : pathlib.Path
+    l2_lut_path : Path
         L2 LUT path.
     species : str
         CoDICE Hi species.
@@ -215,13 +230,17 @@ def convert_to_intensities(
     """
     # Average of the hydrogen efficiencies.
     efficiencies_df = pd.read_csv(l2_lut_path)
-    species_efficiency = efficiencies_df.sort_values(by="energy_bin")
+    species_efficiency = efficiencies_df.sort_values(by="energy_bin")[
+        efficiencies_df["species"] != "GF"
+    ]
     eps_ig = species_efficiency[["group_0", "group_1", "group_2", "group_3"]].to_numpy(
         float
     )
 
     # For omni over 3 SSDs:
-    g_g = constants.L2_GEOMETRIC_FACTOR * constants.IALIRT_HI_NUMBER_OF_SSD_PER_GROUP
+    g_g = efficiencies_df[efficiencies_df["species"] == "GF"][
+        ["group_0", "group_1", "group_2", "group_3"]
+    ].to_numpy(float)
 
     # Calculate energy passband from L1B data
     energy_passbands = (
@@ -242,10 +261,139 @@ def convert_to_intensities(
     return intensity
 
 
+def calculate_ratios(
+    cod_lo_l1b_data: xr.Dataset,
+    l2_lut_path: Path,
+    l2_geometric_factor_path: Path | None,
+) -> COD_LO_L2:
+    """
+    Calculate CoDICE-Lo L2 data products.
+
+    Parameters
+    ----------
+    cod_lo_l1b_data : xarray.Dataset
+        Data in xarray format.
+    l2_lut_path : Path
+        Efficiency lookup table.
+    l2_geometric_factor_path : Path
+        Geometric factor lookup table.
+
+    Returns
+    -------
+    c_over_o_abundance : float
+        Ratio of C over O.
+    mg_over_o_abundance : float
+        Ratio of Mg over O.
+    fe_over_o_abundance : float
+        Ratio of Fe over O.
+    c_plus_6_over_c_plus_5 : np.array
+        Ratio of C+6 over C+5.
+    o_plus_7_over_o_plus_6 : np.array
+        Ratio of O+7 over O+6.
+    fe_low_over_fe_high : np.array
+        Ratio of Fe low over Fe high.
+    """
+    geometric_factor_lookup = get_geometric_factor_lut(None, l2_geometric_factor_path)
+    geometric_factors = compute_geometric_factors(
+        cod_lo_l1b_data, geometric_factor_lookup
+    )
+
+    efficiency_lookup = get_efficiency_lut(None, l2_lut_path)
+    efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
+    intensity = process_lo_species_intensity(
+        cod_lo_l1b_data,
+        constants.LO_IALIRT_VARIABLE_NAMES,
+        geometric_factors,
+        efficiencies,
+        constants.SOLAR_WIND_POSITIONS,
+    )
+    pseudo_density_dict = {}
+
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
+        pseudo_density = (
+            intensity[species]
+            * np.sqrt(cod_lo_l1b_data["energy_table"])
+            * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
+        )  # (epoch, esa_step, spin_sector)
+
+        summed_pseudo_density = pseudo_density.sum(dim="esa_step").squeeze(
+            "spin_sector"
+        )  # (epoch,)
+        pseudo_density_dict[species] = summed_pseudo_density.values
+
+    # Denominator.
+    # Note that outside of this test a zero value denominator
+    # will lead to a null value.
+    # The use of zeros here is only to match the test data as
+    # confirmed by the instrument team.
+    o_abundance_denom = (
+        pseudo_density_dict["oplus6"]
+        + pseudo_density_dict["oplus7"]
+        + pseudo_density_dict["oplus8"]
+    )
+
+    c_over_o_abundance_num = (
+        pseudo_density_dict["cplus5"] + pseudo_density_dict["cplus6"]
+    )
+    mg_over_o_abundance_num = pseudo_density_dict["mg"]
+    fe_over_o_abundance_num = (
+        pseudo_density_dict["fe_loq"] + pseudo_density_dict["fe_hiq"]
+    )
+
+    if float(o_abundance_denom) != 0:
+        c_over_o_abundance = c_over_o_abundance_num / o_abundance_denom
+        mg_over_o_abundance = mg_over_o_abundance_num / o_abundance_denom
+        fe_over_o_abundance = fe_over_o_abundance_num / o_abundance_denom
+
+        c_over_o_abundance = Decimal(f"{c_over_o_abundance:.3f}")
+        mg_over_o_abundance = Decimal(f"{mg_over_o_abundance:.3f}")
+        fe_over_o_abundance = Decimal(f"{fe_over_o_abundance:.3f}")
+    else:
+        c_over_o_abundance, mg_over_o_abundance, fe_over_o_abundance = (
+            FILLVAL_FLOAT32,
+            FILLVAL_FLOAT32,
+            FILLVAL_FLOAT32,
+        )
+
+    if float(pseudo_density_dict["cplus5"]) != 0:
+        c_plus_6_over_c_plus_5 = (
+            pseudo_density_dict["cplus6"] / pseudo_density_dict["cplus5"]
+        )
+
+        c_plus_6_over_c_plus_5 = Decimal(f"{c_plus_6_over_c_plus_5:.3f}")
+    else:
+        c_plus_6_over_c_plus_5 = FILLVAL_FLOAT32
+
+    if float(pseudo_density_dict["oplus6"]) != 0:
+        o_plus_7_over_o_plus_6 = (
+            pseudo_density_dict["oplus7"] / pseudo_density_dict["oplus6"]
+        )
+        o_plus_7_over_o_plus_6 = Decimal(f"{o_plus_7_over_o_plus_6:.3f}")
+    else:
+        o_plus_7_over_o_plus_6 = FILLVAL_FLOAT32
+
+    if float(pseudo_density_dict["fe_hiq"]) != 0:
+        fe_low_over_fe_high = (
+            pseudo_density_dict["fe_loq"] / pseudo_density_dict["fe_hiq"]
+        )
+        fe_low_over_fe_high = Decimal(f"{fe_low_over_fe_high:.3f}")
+    else:
+        fe_low_over_fe_high = FILLVAL_FLOAT32
+
+    return COD_LO_L2(
+        c_over_o_abundance=c_over_o_abundance,
+        mg_over_o_abundance=mg_over_o_abundance,
+        fe_over_o_abundance=fe_over_o_abundance,
+        c_plus_6_over_c_plus_5=c_plus_6_over_c_plus_5,
+        o_plus_7_over_o_plus_6=o_plus_7_over_o_plus_6,
+        fe_low_over_fe_high=fe_low_over_fe_high,
+    )
+
+
 def process_codice(
     dataset: xr.Dataset,
-    l1a_lut_path: pathlib.Path,
-    l2_lut_path: pathlib.Path,
+    l1a_lut_path: Path,
+    l2_lut_path: Path,
     sensor: str,
     l2_geometric_factor_path: Path | None = None,
 ) -> tuple:
@@ -256,13 +404,13 @@ def process_codice(
     ----------
     dataset : xr.Dataset
         Decommed L0 data.
-    l1a_lut_path : pathlib.Path
+    l1a_lut_path : Path
         L1A LUT path.
-    l2_lut_path : pathlib.Path
+    l2_lut_path : Path
         L2 LUT path.
     sensor : str
         Sensor (codice_hi or codice_lo).
-    l2_geometric_factor_path : pathlib.Path
+    l2_geometric_factor_path : Path
         Optional geometric factor path based on the sensor (required by Lo).
 
     Returns
@@ -318,9 +466,30 @@ def process_codice(
                 [cod_lo_data_stream]
             )
             cod_lo_dataset = create_xarray_dataset(
-                cod_lo_science_values, cod_lo_metadata_values, "lo", l1a_lut_path
+                cod_lo_science_values, cod_lo_metadata_values, "lo"
             )
-            result = l1a_lo_species(cod_lo_dataset, l1a_lut_path)  # noqa
+            l1a_lo = l1a_lo_species(cod_lo_dataset, l1a_lut_path)
+            l1b_lo = convert_to_rates(
+                l1a_lo,
+                "lo-ialirt",
+            )
+            l2_lo = calculate_ratios(l1b_lo, l2_lut_path, l2_geometric_factor_path)
+
+            codice_lo_data.append(
+                {
+                    "apid": 478,
+                    "met": int(met[0]),
+                    "met_in_utc": met_to_utc(met[0]).split(".")[0],
+                    "ttj2000ns": int(met_to_ttj2000ns(met[0])),
+                    "instrument": f"{sensor}",
+                    f"{sensor}_c_over_o_abundance": l2_lo.c_over_o_abundance,
+                    f"{sensor}_mg_over_o_abundance": l2_lo.mg_over_o_abundance,
+                    f"{sensor}_fe_over_o_abundance": l2_lo.fe_over_o_abundance,
+                    f"{sensor}_c_plus_6_over_c_plus_5": l2_lo.c_plus_6_over_c_plus_5,
+                    f"{sensor}_o_plus_7_over_o_plus_6": l2_lo.o_plus_7_over_o_plus_6,
+                    f"{sensor}_fe_low_over_fe_high": l2_lo.fe_low_over_fe_high,
+                }
+            )
 
     if sensor == "codice_hi" and unique_cod_hi_groups.size > 0:
         for group in unique_cod_hi_groups:
@@ -335,7 +504,7 @@ def process_codice(
                 [cod_hi_data_stream]
             )
             cod_hi_dataset = create_xarray_dataset(
-                cod_hi_science_values, cod_hi_metadata_values, "hi", l1a_lut_path
+                cod_hi_science_values, cod_hi_metadata_values, "hi"
             )
             l1a_hi = l1a_ialirt_hi(cod_hi_dataset, l1a_lut_path)
             l1b_hi = convert_to_rates(
@@ -344,7 +513,7 @@ def process_codice(
             )
             l2_hi = convert_to_intensities(l1b_hi, l2_lut_path, "h")
             # Put in Decimal format so DynamoDB can read it.
-            dec_l2_hi = np.vectorize(lambda x: Decimal(f"{float(x):.3f}"))(
+            dec_l2_hi = np.vectorize(lambda x: Decimal(f"{float(x):.4f}"))(
                 l2_hi
             ).tolist()
 
@@ -356,7 +525,7 @@ def process_codice(
                     "ttj2000ns": int(met_to_ttj2000ns(met[0])),
                     "instrument": f"{sensor}",
                     f"{sensor}_epoch": [int(epoch) for epoch in l1b_hi["epoch"]],
-                    f"{sensor}_l2_hi": dec_l2_hi,
+                    f"{sensor}_h": dec_l2_hi,
                 }
             )
 

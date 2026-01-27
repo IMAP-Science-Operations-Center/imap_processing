@@ -9,7 +9,7 @@ TEST_DATA_L0_PATH = TEST_DATA_PATH / "l0_data"
 TEST_L0_FILE = TEST_DATA_L0_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
 VALIDATION_FILE_DATE = "20250814"
-VALIDATION_FILE_VERSION = "v011"
+VALIDATION_FILE_VERSION = "v013"
 
 
 @pytest.fixture(scope="session")
@@ -241,20 +241,44 @@ def codice_lut_path():
         elif descriptor == "l2-hi-omni-efficiency":
             return [
                 TEST_DATA_PATH
-                / "l2_lut/imap_codice_l2-hi-omni-efficiency_20251008_v001.csv"
+                / "l2_lut/imap_codice_l2-hi-omni-efficiency_20251212_v003.csv"
             ]
         elif descriptor == "l2-hi-sectored-efficiency":
             return [
                 TEST_DATA_PATH
-                / "l2_lut/imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
+                / "l2_lut/imap_codice_l2-hi-sectored-efficiency_20251212_v003.csv"
             ]
         elif descriptor == "l2-lo-efficiency":
             return [
-                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251008_v001.csv"
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251212_v003.csv"
             ]
         elif descriptor == "l2-lo-gfactor":
             return [
-                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251008_v001.csv"
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251212_v003.csv"
+            ]
+        elif descriptor == "l2-lo-onboard-mpq-cal":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-lo-onboard-mpq-cal_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-lo-onboard-energy-bins":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-lo-onboard-energy-bins_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-lo-onboard-energy-table":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-lo-onboard-energy-table_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-hi-energy-table":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-hi-energy-table_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-hi-tof-table":
+            return [
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-hi-tof-table_20250101_v001.csv"
             ]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")

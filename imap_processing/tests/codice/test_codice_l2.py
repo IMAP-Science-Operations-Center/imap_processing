@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 from imap_data_access import AncillaryInput, ProcessingInputCollection
+from sammi.validation import CDFValidator
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -18,6 +19,9 @@ from imap_processing.codice.codice_l2 import (
     compute_geometric_factors,
     get_efficiency_lut,
     get_geometric_factor_lut,
+    get_hi_de_luts,
+    get_mpq_calc_energy_conversion_vals,
+    get_mpq_calc_tof_conversion_vals,
     process_codice_l2,
     process_lo_angular_intensity,
     process_lo_species_intensity,
@@ -45,7 +49,10 @@ EXPECTED_LOGICAL_SOURCES = [
 def processing_dependencies(codice_lut_path):
     eff_file = "imap_codice_l2-lo-efficiency_20251008_v001.csv"
     gf_file = "imap_codice_l2-lo-gfactor_20251008_v001.csv"
-    return ProcessingInputCollection(AncillaryInput(gf_file), AncillaryInput(eff_file))
+    mpq_file = "imap_codice_lo-mpq-cal_20250101_v001.csv"
+    return ProcessingInputCollection(
+        AncillaryInput(gf_file), AncillaryInput(eff_file), AncillaryInput(mpq_file)
+    )
 
 
 @pytest.fixture
@@ -77,26 +84,24 @@ def mock_cdf_attrs():
 
 
 @pytest.fixture
-def mock_half_spin_lut(monkeypatch):
+def mock_half_spin_per_esa_step():
     """
-    Mock HALF_SPIN_LUT for testing.
+    Mock half_spin_per_esa_step for testing.
     Example:
       ESA steps 0–63 belong to half_spin=1
       ESA steps 64–127 belong to half_spin=2
     """
-    mock_lut = {
-        1: list(range(0, 64)),
-        2: list(range(64, 128)),
-    }
-    monkeypatch.setattr(
-        "imap_processing.codice.codice_l2.HALF_SPIN_LUT",
-        mock_lut,
-    )
+    return np.repeat([1, 2], 64)
 
 
-def test_compute_geometric_factors_all_full_mode(mock_half_spin_lut):
+def test_compute_geometric_factors_all_full_mode(mock_half_spin_per_esa_step):
     # rgfo_half_spin = 3 means all half_spin values (1 or 2) are < rgfo_half_spin
-    dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([3, 3]))})
+    dataset = xr.Dataset(
+        {
+            "rgfo_half_spin": (("epoch",), np.array([3, 3])),
+            "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
+        },
+    )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
         "reduced": np.ones((128, 24)),
@@ -108,9 +113,14 @@ def test_compute_geometric_factors_all_full_mode(mock_half_spin_lut):
     np.testing.assert_array_equal(result, expected)
 
 
-def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_lut):
+def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_per_esa_step):
     # rgfo_half_spin = 0 means all half_spin values (>=1) are >= rgfo_half_spin
-    dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([0]))})
+    dataset = xr.Dataset(
+        {
+            "rgfo_half_spin": (("epoch",), np.array([0])),
+            "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
+        },
+    )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
         "reduced": np.ones((128, 24)),
@@ -122,9 +132,14 @@ def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_lut):
     np.testing.assert_array_equal(result, expected)
 
 
-def test_compute_geometric_factors_mixed(mock_half_spin_lut):
+def test_compute_geometric_factors_mixed(mock_half_spin_per_esa_step):
     # rgfo_half_spin = 1
-    dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([1]))})
+    dataset = xr.Dataset(
+        {
+            "rgfo_half_spin": (("epoch",), np.array([1])),
+            "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
+        },
+    )
     geometric_factor_lut = {
         "full": np.zeros((128, 24)),
         "reduced": np.ones((128, 24)),
@@ -170,6 +185,37 @@ def test_get_efficiency_lut(processing_dependencies, mock_get_file_paths):
 
     for col in expected_colnames:
         assert col in efficiency_lut.columns, f"Missing column {col} in efficiency LUT"
+
+
+def test_get_tof_ns_from_mpq_lut(processing_dependencies, mock_get_file_paths):
+    tof_ns = get_mpq_calc_tof_conversion_vals(processing_dependencies)
+    assert tof_ns.shape == (1024,)
+    mpq_calc_lut_file = processing_dependencies.get_file_paths(
+        descriptor="l2-lo-onboard-mpq-cal"
+    )[0]
+    mpq_df = pd.read_csv(mpq_calc_lut_file, header=None)
+    expected_tof_ns = mpq_df.loc[6:, 1].to_numpy().astype(np.float64)
+    # Calculated values should be more precise than LUT but should be close
+    np.testing.assert_allclose(tof_ns, expected_tof_ns, atol=1e-5)
+
+
+def test_get_energy_kev_from_mpq_lut(processing_dependencies, mock_get_file_paths):
+    energy_kev = get_mpq_calc_energy_conversion_vals(processing_dependencies)
+    assert energy_kev.shape == (128,)
+    mpq_calc_lut_file = processing_dependencies.get_file_paths(
+        descriptor="l2-lo-onboard-mpq-cal"
+    )[0]
+    mpq_df = pd.read_csv(mpq_calc_lut_file, header=None)
+    expected_e_kev = mpq_df.loc[5, 4:].to_numpy().astype(np.float64)
+    # Calculated values should be more precise than LUT but should be close
+    np.testing.assert_allclose(energy_kev, expected_e_kev, rtol=0.01)
+
+
+def test_get_hi_de_luts(processing_dependencies, mock_get_file_paths):
+    # Mock get_file_paths to return specific files for hi-energy-table and hi-tof-table
+    energy_table, tof_table = get_hi_de_luts(processing_dependencies)
+    assert energy_table.shape == (2048, 48)
+    assert tof_table.shape == (1024, 2)
 
 
 def test_process_lo_species_intensity(mock_get_file_paths, codice_lut_path):
@@ -370,7 +416,7 @@ def test_codice_l2_nsw_species_intensity(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l2-lo-gfactor"),
         codice_lut_path(descriptor="l2-lo-efficiency"),
     ]
-    processed_2_ds = process_codice_l2("lo-nsw-angular", ProcessingInputCollection())
+    processed_2_ds = process_codice_l2("lo-nsw-species", ProcessingInputCollection())
     l2_val_data = (
         imap_module_directory
         / "tests"
@@ -476,3 +522,118 @@ def test_codice_l2_sw_angular_intensity(mock_get_file_paths, codice_lut_path):
     processed_2_ds.attrs["Data_version"] = "001"
     assert processed_2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-angular"
     write_cdf(processed_2_ds)
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-direct-events", data_type="l0")
+    ]
+    l1a_cdf = process_l1a(ProcessingInputCollection())[0]
+
+    processed_l1a_file = write_cdf(l1a_cdf)
+    file_path = processed_l1a_file.as_posix()
+    # Mock get_files for l2
+    mock_get_file_paths.side_effect = [
+        [file_path],
+        [file_path],
+        codice_lut_path(descriptor="l2-lo-onboard-energy-table"),
+        codice_lut_path(descriptor="l2-lo-onboard-energy-bins"),
+        codice_lut_path(descriptor="l2-lo-onboard-mpq-cal"),
+        codice_lut_path(descriptor="l2-lo-onboard-mpq-cal"),
+    ]
+
+    processed_l2_ds = process_codice_l2("lo-direct-events", ProcessingInputCollection())
+    l2_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / (
+            f"imap_codice_l2_lo-direct-events_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
+    )
+
+    l2_val_data = load_cdf(l2_val_data)
+
+    for variable in l2_val_data.data_vars:
+        if variable in ["spin_angle", "spin_sector"]:
+            # TODO remove this block when joey fixes spin_angle and spin_sector
+            #  calculation. Currently they are not setting spin sector and spin angles
+            #  to NaNs for invalid positions.
+            continue  # skip spin_angle
+        if "label" in variable:
+            np.testing.assert_array_equal(
+                processed_l2_ds[variable].values,
+                l2_val_data[variable].values,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        else:
+            np.testing.assert_allclose(
+                processed_l2_ds[variable].values,
+                l2_val_data[variable].values,
+                rtol=5e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+                equal_nan=True,
+            )
+    processed_l2_ds.attrs["Data_version"] = "001"
+    assert processed_l2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-direct-events"
+    file = write_cdf(processed_l2_ds)
+    errors = CDFValidator().validate(file)
+    assert not errors
+    load_cdf(file)
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="hi-direct-events", data_type="l0")
+    ]
+    l1a_cdf = process_l1a(ProcessingInputCollection())[0]
+
+    processed_l1a_file = write_cdf(l1a_cdf)
+    file_path = processed_l1a_file.as_posix()
+    # Mock get_files for l2
+    mock_get_file_paths.side_effect = [
+        [file_path],
+        [file_path],
+        codice_lut_path(descriptor="l2-hi-energy-table"),
+        codice_lut_path(descriptor="l2-hi-tof-table"),
+    ]
+
+    processed_l2_ds = process_codice_l2("hi-direct-events", ProcessingInputCollection())
+    l2_val_data = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / (
+            f"imap_codice_l2_hi-direct-events_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
+    )
+    l2_val_data = load_cdf(l2_val_data)
+    for variable in l2_val_data.data_vars:
+        if "label" in variable:
+            np.testing.assert_array_equal(
+                processed_l2_ds[variable].values,
+                l2_val_data[variable].values,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        else:
+            np.testing.assert_allclose(
+                processed_l2_ds[variable].values,
+                l2_val_data[variable].values,
+                rtol=5e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+
+    processed_l2_ds.attrs["Data_version"] = "001"
+    assert processed_l2_ds.attrs["Logical_source"] == "imap_codice_l2_hi-direct-events"
+    file = write_cdf(processed_l2_ds)
+    errors = CDFValidator().validate(file)
+    assert not errors
+    load_cdf(file)

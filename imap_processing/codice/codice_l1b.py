@@ -41,6 +41,8 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     rates_data : np.ndarray
         The converted data array.
     """
+    # No uncertainty calculation for diagnostic counters products
+    calculate_unc = False if "counters" in descriptor else True
     # Variables to convert based on descriptor
     variables_to_convert = getattr(
         constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
@@ -139,12 +141,13 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         # Carry over attrs and update as needed
         dataset[variable].attrs["UNITS"] = "counts/s"
 
-        # Uncertainty calculation
-        unc_variable = f"unc_{variable}"
-        dataset[unc_variable].data = (
-            dataset[unc_variable].astype(np.float64) / denominator
-        )
-        dataset[unc_variable].attrs["UNITS"] = "1/s"
+        if calculate_unc:
+            # Uncertainty calculation
+            unc_variable = f"unc_{variable}"
+            dataset[unc_variable].data = (
+                dataset[unc_variable].astype(np.float64) / denominator
+            )
+            dataset[unc_variable].attrs["UNITS"] = "1/s"
 
     # Drop spin_period
     if "spin_period" in dataset.variables:

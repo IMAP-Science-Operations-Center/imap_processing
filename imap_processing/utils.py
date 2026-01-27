@@ -10,6 +10,7 @@ import pandas as pd
 import space_packet_parser as spp
 import xarray as xr
 from space_packet_parser.exceptions import UnrecognizedPacketTypeError
+from space_packet_parser.generators.ccsds import SequenceFlags
 from space_packet_parser.xtce import definitions, encodings, parameter_types
 
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -347,6 +348,79 @@ def packet_file_to_datasets(
         dataset_by_apid[apid] = ds
 
     return dataset_by_apid
+
+
+def combine_segmented_packets(
+    packets: xr.Dataset, binary_field_name: str = "packetdata"
+) -> xr.Dataset:
+    """
+    Combine segmented packets into unsegmented packets.
+
+    To combine the segmented packets, we only concatenate along the `binary_field_name`
+    and place all values into the first packet of the group. The binary_field_name
+    is the name of the XTCE Parameter that contains the binary data for the packet.
+    The other fields are left as-is from the first packet of the group.
+
+    Parameters
+    ----------
+    packets : xarray.Dataset
+        Dataset containing the packets to combine.
+    binary_field_name : str, default "packetdata"
+        Name of the binary field in the dataset representing the packet data.
+        Defined in the XTCE definition for each instrument.
+
+    Returns
+    -------
+    combined_packets : xarray.Dataset
+        Dataset containing the combined packets.
+    """
+    # Identification of group starts
+    # NOTE: seq_flgs is the same variable name for all instruments on IMAP
+    #       but could be different for other missions depending on the XTCE definition.
+    is_group_start = (packets["seq_flgs"].data == SequenceFlags.UNSEGMENTED) | (
+        packets["seq_flgs"].data == SequenceFlags.FIRST
+    )
+
+    # Assign group IDs using cumulative sum - each group start increments the ID
+    group_ids = np.cumsum(is_group_start)
+
+    # Get indices of packets we'll keep (first packet of each group)
+    group_start_indices = np.where(is_group_start)[0]
+
+    # Concatenate binary data in-place for each group
+    for group_id in np.unique(group_ids):
+        # Find all packets belonging to this group
+        group_mask = group_ids == group_id
+        group_indices = np.where(group_mask)[0]
+
+        # If multiple packets, concatenate into the first packet
+        # [b"abc", b"def", b"ghi"] -> b"abcdefghi"
+        if len(group_indices) > 1:
+            start_index = group_indices[0]
+            # Lets do some quick validation on these packets since we've had
+            # some missing packet groups in the past
+            seq_flags = packets["seq_flgs"].data[group_indices]
+            if (
+                seq_flags[0] != SequenceFlags.FIRST
+                or seq_flags[-1] != SequenceFlags.LAST
+                or (
+                    len(seq_flags) > 2
+                    and not np.all(seq_flags[1:-1] == SequenceFlags.CONTINUATION)
+                )
+            ):
+                logger.warning(
+                    f"Incorrect/incomplete sequence flags in group {group_id}. "
+                    f"Flags: {seq_flags}, "
+                    f"SHCOARSEs: {packets['shcoarse'].data[group_indices]}"
+                )
+            packets[binary_field_name].data[start_index] = np.sum(
+                packets[binary_field_name].data[group_indices]
+            )
+
+    # Select only the first packet of each group (drop the middle/last packets)
+    combined_packets = packets.isel(epoch=group_start_indices)
+
+    return combined_packets
 
 
 def packet_generator(

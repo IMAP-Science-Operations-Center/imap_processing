@@ -185,6 +185,18 @@ acquisition_time_per_step:
     VALIDMAX: 625.000000
     VAR_TYPE: support_data
 
+half_spin_per_esa_step:
+    CATDESC: Half spin number for each step of energy
+    DEPEND_1: esa_step
+    FIELDNAM: Half Spin Number
+    FILLVAL: 255
+    FORMAT: I3
+    LABLAXIS: Half Spin Number
+    SCALETYP: linear
+    UNITS: half spin number
+    VALIDMIN: 0
+    VALIDMAX: 255
+    VAR_TYPE: support_data
 
 data_quality:
     CATDESC: Indicates whether data quality is suspect (1).
@@ -512,11 +524,6 @@ lo-dcr:
     <<: *lo_counters_aggregated_default
     CATDESC: Double Coincidence Rate (DCR)
     FIELDNAM: Event B - DCR
-
-lo-low_tof_cutoff:
-    <<: *lo_counters_aggregated_default
-    CATDESC: Low TOF Cutoff
-    FIELDNAM: Low TOF Cutoff
 
 lo-low_tof_cutoff:
     <<: *lo_counters_aggregated_default

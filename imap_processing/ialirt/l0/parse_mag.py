@@ -24,7 +24,7 @@ from imap_processing.mag.l1b.mag_l1b import (
     shift_time,
 )
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d
-from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase
+from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase, ValidFrames
 from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_spherical,
@@ -703,7 +703,7 @@ def process_packet(
             attitude_time,
             time_data["primary_epoch"],
             mago_out,
-            SpiceFrame.IMAP_MAG_O,
+            ValidFrames.MAGO.spice_frame,
         )
         magi_inertial_vector = transform_to_inertial(
             sc_spin_phase_rad.values,
@@ -712,7 +712,7 @@ def process_packet(
             attitude_time,
             time_data["secondary_epoch"],
             magi_out,
-            SpiceFrame.IMAP_MAG_I,
+            ValidFrames.MAGI.spice_frame,
         )
 
         met = grouped_data["met"][(grouped_data["group"] == group).values]
