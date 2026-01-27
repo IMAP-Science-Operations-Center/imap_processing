@@ -69,13 +69,22 @@ def generate_coverage(
     total_visible_mask = np.zeros(time_range.shape, dtype=bool)
 
     # Precompute DSN occupied mask for non-DSN stations
-    dsn_occupied_mask = np.zeros(time_range.shape, dtype=bool)
+    dsn_contact_mask = np.zeros(time_range.shape, dtype=bool)
+    dsn_outage_mask = np.zeros(time_range.shape, dtype=bool)
     if dsn:
-        for dsn_contacts in dsn.values():
+        for dsn_station, dsn_contacts in dsn.items():
             for start, end in dsn_contacts:
                 start_et = str_to_et(start)
                 end_et = str_to_et(end)
-                dsn_occupied_mask |= (time_range >= start_et) & (time_range <= end_et)
+                dsn_contact_mask |= (time_range >= start_et) & (time_range <= end_et)
+
+                if outages and dsn_station in outages:
+                    for start, end in outages[dsn_station]:
+                        dsn_outage_mask |= (time_range >= str_to_et(start)) & (
+                            time_range <= str_to_et(end)
+                        )
+
+    dsn_occupied_mask = dsn_contact_mask & ~dsn_outage_mask
 
     # Blocks later stations.
     non_dsn_occupied_mask = np.zeros(time_range.shape, dtype=bool)
