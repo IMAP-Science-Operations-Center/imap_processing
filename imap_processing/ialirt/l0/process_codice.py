@@ -352,9 +352,9 @@ def calculate_ratios(
         mg_over_o_abundance = mg_over_o_abundance_num / o_abundance_denom
         fe_over_o_abundance = fe_over_o_abundance_num / o_abundance_denom
 
-        c_over_o_abundance = Decimal(f"{c_over_o_abundance:.3f}")
-        mg_over_o_abundance = Decimal(f"{mg_over_o_abundance:.3f}")
-        fe_over_o_abundance = Decimal(f"{fe_over_o_abundance:.3f}")
+        c_over_o_abundance = Decimal(f"{float(c_over_o_abundance):.3f}")
+        mg_over_o_abundance = Decimal(f"{float(mg_over_o_abundance):.3f}")
+        fe_over_o_abundance = Decimal(f"{float(fe_over_o_abundance):.3f}")
     else:
         c_over_o_abundance, mg_over_o_abundance, fe_over_o_abundance = (
             FILLVAL_FLOAT32,
@@ -367,7 +367,7 @@ def calculate_ratios(
             pseudo_density_dict["cplus6"] / pseudo_density_dict["cplus5"]
         )
 
-        c_plus_6_over_c_plus_5 = Decimal(f"{c_plus_6_over_c_plus_5:.3f}")
+        c_plus_6_over_c_plus_5 = Decimal(f"{float(c_plus_6_over_c_plus_5):.3f}")
     else:
         c_plus_6_over_c_plus_5 = FILLVAL_FLOAT32
 
@@ -375,7 +375,7 @@ def calculate_ratios(
         o_plus_7_over_o_plus_6 = (
             pseudo_density_dict["oplus7"] / pseudo_density_dict["oplus6"]
         )
-        o_plus_7_over_o_plus_6 = Decimal(f"{o_plus_7_over_o_plus_6:.3f}")
+        o_plus_7_over_o_plus_6 = Decimal(f"{float(o_plus_7_over_o_plus_6):.3f}")
     else:
         o_plus_7_over_o_plus_6 = FILLVAL_FLOAT32
 
