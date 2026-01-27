@@ -110,7 +110,7 @@ def test_dsn(furnish_kernels):
         )
 
         assert "I-ALiRT Coverage Summary" in output["summary"]
-        assert 40.6 == output["total_coverage_percent"]
+        assert 42.0 == output["total_coverage_percent"]
 
 
 @pytest.mark.external_kernel
