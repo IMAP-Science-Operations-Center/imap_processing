@@ -125,18 +125,18 @@ def test_non_dsn_priority_blocking_with_kernels(furnish_kernels):
             "imap_processing.ialirt.generate_coverage.NON_DSN_STATIONS",
             new={"Kiel": STATIONS["Kiel"]},
         ):
-            cov_kiel, _ = generate_coverage(start_time)
+            coverage_kiel, _ = generate_coverage(start_time)
 
-        kiel_times = cov_kiel["Kiel"]
+        kiel_times = coverage_kiel["Kiel"]
 
         # Manaus-only coverage
         with patch(
             "imap_processing.ialirt.generate_coverage.NON_DSN_STATIONS",
             new={"Manaus": STATIONS["Manaus"]},
         ):
-            cov_manaus_only, _ = generate_coverage(start_time)
+            coverage_manaus_only, _ = generate_coverage(start_time)
 
-        manaus_only_times = cov_manaus_only["Manaus"]
+        manaus_only_times = coverage_manaus_only["Manaus"]
 
         overlap = np.intersect1d(kiel_times, manaus_only_times)
         # Assert the times overlap.
@@ -158,3 +158,59 @@ def test_non_dsn_priority_blocking_with_kernels(furnish_kernels):
         blocked_overlap = np.intersect1d(kiel_times, manaus_coverage)
         assert blocked_overlap.size == 0
         assert manaus_coverage[0] > kiel_times[-1]
+
+
+@pytest.mark.external_kernel
+def test_dsn_outage_allows_ground_station_coverage(furnish_kernels):
+    """
+    DSN contacts block non-DSN stations, but DSN outages remove blocking.
+    """
+    kernels = ["naif0012.tls", "pck00011.tpc", "de440s.bsp", "imap_spk_demo.bsp"]
+    start_time = "2026-09-22T00:00:00Z"
+
+    with furnish_kernels(kernels):
+        # Baseline Kiel-only coverage (no DSN)
+        with patch(
+            "imap_processing.ialirt.generate_coverage.NON_DSN_STATIONS",
+            new={"Kiel": STATIONS["Kiel"]},
+        ):
+            coverage_base, _ = generate_coverage(start_time)
+
+        kiel_times = coverage_base["Kiel"]
+
+        contact_start = kiel_times[10]  # inside Kiel coverage
+        contact_end = kiel_times[16]  # 30 min later (inclusive logic in your code)
+
+        # Outage inside the DSN contact
+        outage_start = kiel_times[12]
+        outage_end = kiel_times[14]
+
+        dsn = {"DSS-75": [(contact_start, contact_end)]}
+
+        # DSN contact, no DSN outage
+        # Kiel should be blocked during the full contact window
+        with patch(
+            "imap_processing.ialirt.generate_coverage.NON_DSN_STATIONS",
+            new={"Kiel": STATIONS["Kiel"]},
+        ):
+            coverage_blocked, _ = generate_coverage(start_time, dsn=dsn, outages=None)
+
+        kiel_blocked = coverage_blocked["Kiel"]
+
+        assert not np.any(np.isin(kiel_times[10:16], kiel_blocked))
+
+        # DSN contact + DSN outage
+        # Kiel allowed during outage sub-window
+        outages = {"DSS-75": [(outage_start, outage_end)]}
+
+        with patch(
+            "imap_processing.ialirt.generate_coverage.NON_DSN_STATIONS",
+            new={"Kiel": STATIONS["Kiel"]},
+        ):
+            coverage_punched, _ = generate_coverage(
+                start_time, dsn=dsn, outages=outages
+            )
+
+        kiel_punched = coverage_punched["Kiel"]
+
+        assert np.all(np.isin(kiel_times[12:14], kiel_punched))
