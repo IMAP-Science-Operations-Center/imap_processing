@@ -383,7 +383,7 @@ def calculate_ratios(
         fe_low_over_fe_high = (
             pseudo_density_dict["fe_loq"] / pseudo_density_dict["fe_hiq"]
         )
-        fe_low_over_fe_high = Decimal(f"{fe_low_over_fe_high:.3f}")
+        fe_low_over_fe_high = Decimal(f"{float(fe_low_over_fe_high):.3f}")
     else:
         fe_low_over_fe_high = FILLVAL_FLOAT32
 
