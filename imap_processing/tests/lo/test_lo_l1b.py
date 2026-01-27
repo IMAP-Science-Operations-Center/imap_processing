@@ -135,7 +135,7 @@ def l1a_hist():
     return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
 )
 @patch(
-    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    "imap_processing.lo.l1b.lo_l1b.lo_instrument_pointing",
     return_value=np.zeros((2000, 3)),
 )
 @patch(
@@ -149,7 +149,7 @@ def l1a_hist():
 )
 def test_lo_l1b_de(
     mock_frame_transform,
-    mock_instrument_pointing,
+    mock_lo_instrument_pointing,
     mocked_get_pointing_times,
     mock_spin_number,
     mock_cartesian_to_latitudinal,
@@ -730,13 +730,15 @@ def test_set_bad_or_goodtimes(anc_dependencies):
 
 
 @patch(
-    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    "imap_processing.lo.l1b.lo_l1b.lo_instrument_pointing",
     return_value=np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]),
 )
-def test_set_direction(imap_ena_sim_metakernel):
+def test_set_direction(mock_lo_instrument_pointing, imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
-        {},
+        {
+            "pivot_angle": ("epoch", [0, 0, 0, 0]),
+        },
         coords={
             "epoch": [0, 1, 2, 3],
         },
