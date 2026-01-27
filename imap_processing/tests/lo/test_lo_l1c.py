@@ -38,14 +38,19 @@ def l1b_de():
             "coincidence_type": (
                 "epoch",
                 [
-                    "111111",
-                    "111100",
-                    "111000",
-                    "110100",
-                    "110000",
+                    "111111",  # golden triple - H
+                    "111111",  # golden triple - O (based on TOF)
+                    "111000",  # triple
+                    "110100",  # double
+                    "110000",  # double
                 ],
             ),
-            "species": ("epoch", ["H", "O", "H", "H", "O"]),
+            # TOF data for species identification
+            # Event 0: H (tof0_s=45, tof1_s=30, tof2=25)
+            "tof0": ("epoch", [40, 185, 40, 40, 40]),
+            "tof1": ("epoch", [40, 105, 40, 40, 40]),
+            "tof2": ("epoch", [25, 105, 25, 25, 25]),
+            "tof3": ("epoch", [10, 10, 10, 10, 10]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
         },
@@ -78,14 +83,20 @@ def l1b_de_spin():
             "coincidence_type": (
                 "epoch",
                 [
-                    "111111",
-                    "111100",
-                    "111000",
-                    "110100",
-                    "110000",
+                    "111111",  # golden triple - H
+                    "111111",  # golden triple - O (based on TOF)
+                    "111000",  # triple
+                    "110100",  # double
+                    "110000",  # double
                 ],
             ),
-            "species": ("epoch", ["H", "O", "H", "H", "O"]),
+            # TOF data for species identification
+            # Event 0: H (tof0_s=45, tof1_s=30, tof2=25)
+            # Event 1: O (tof0_s=185, tof1_s=105, tof2=105)
+            "tof0": ("epoch", [40, 185, 40, 40, 40]),
+            "tof1": ("epoch", [40, 105, 40, 40, 40]),
+            "tof2": ("epoch", [25, 105, 25, 25, 25]),
+            "tof3": ("epoch", [10, 10, 10, 10, 10]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
             "pivot_angle": ([45.0]),
@@ -136,15 +147,15 @@ def counts():
 @pytest.fixture
 def h_counts(counts):
     h = counts.copy()
-    h[0, 0, 20, 20] = 2
-    h[0, 3, 2000, 20] = 1
+    # Only event 0 is H (golden triple with H TOF peaks)
+    h[0, 0, 20, 20] = 1
     return h
 
 
 @pytest.fixture
 def o_counts(counts):
     o = counts.copy()
-    o[0, 4, 3500, 20] = 1
+    # Only event 1 is O (golden triple with O TOF peaks)
     o[0, 1, 0, 20] = 1
     return o
 
@@ -152,8 +163,9 @@ def o_counts(counts):
 @pytest.fixture
 def triples_counts(counts):
     triples = counts.copy()
-    triples[0, 0, 20, 20] = 2
-    triples[0, 1, 0, 20] = 1
+    # Events 0, 1 are golden triples (111111), event 2 is regular triple (111000)
+    triples[0, 0, 20, 20] = 2  # events 0 and 2 (both esa_step=1)
+    triples[0, 1, 0, 20] = 1  # event 1 (esa_step=2)
     return triples
 
 
@@ -280,10 +292,14 @@ def test_create_pset_counts(l1b_de):
     # Arrange
     expected_counts = np.zeros((1, 7, 3600, 40))
     # ESA Indices are ESA step - 1
+    # Events 0 and 2 have esa_step=1, bin 20
     expected_counts[0, 0, 20, 20] = 2
-    expected_counts[0, 3, 2000, 20] = 1
-    expected_counts[0, 4, 3500, 20] = 1
+    # Event 1 has esa_step=2, bin 0
     expected_counts[0, 1, 0, 20] = 1
+    # Event 3 has esa_step=4, bin 2000
+    expected_counts[0, 3, 2000, 20] = 1
+    # Event 4 has esa_step=5, bin 3500
+    expected_counts[0, 4, 3500, 20] = 1
 
     # Act
     counts = create_pset_counts(l1b_de)

@@ -244,8 +244,173 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     return filtered_epochs
 
 
+def get_triple_coincidences(de: xr.Dataset) -> xr.Dataset:
+    """
+    Get only the triple coincidence events from the L1B Direct Event dataset.
+
+    Parameters
+    ----------
+    de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    Returns
+    -------
+    de_triples : xarray.Dataset
+        L1B Direct Event dataset with only triple coincidence events.
+    """
+    triple_types = ["111111", "111100", "111000"]
+    triple_idx = np.nonzero(np.isin(de["coincidence_type"], triple_types))[0]
+    de_triples = de.isel(epoch=triple_idx)
+
+    return de_triples
+
+
+def get_double_coincidences(de: xr.Dataset) -> xr.Dataset:
+    """
+    Get only the double coincidence events from the L1B Direct Event dataset.
+
+    Parameters
+    ----------
+    de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    Returns
+    -------
+    de_doubles : xarray.Dataset
+        L1B Direct Event dataset with only double coincidence events.
+    """
+    double_types = [
+        "110100",
+        "110000",
+        "101101",
+        "101100",
+        "101000",
+        "100100",
+        "100101",
+        "100000",
+        "011100",
+        "011000",
+        "010100",
+        "010101",
+        "010000",
+        "001100",
+        "001101",
+        "001000",
+    ]
+    double_idx = np.nonzero(np.isin(de["coincidence_type"], double_types))[0]
+    de_doubles = de.isel(epoch=double_idx)
+
+    return de_doubles
+
+
+def _get_peak_mask(
+    de: xr.Dataset, peak_lows: list[int], peak_highs: list[int]
+) -> np.ndarray:
+    """
+    Get a boolean mask for events within specified peak ranges.
+
+    Parameters
+    ----------
+    de : xarray.Dataset
+        L1B Direct Event dataset.
+    peak_lows : list[int]
+        List of low peak values for each TOF.
+    peak_highs : list[int]
+        List of high peak values for each TOF.
+
+    Returns
+    -------
+    peak_mask : numpy.ndarray
+        Boolean mask indicating events within the specified peak ranges.
+    """
+    tof0_s = de["tof0"] + 0.5 * de["tof3"]
+    tof1_s = de["tof1"] - 0.5 * de["tof3"]
+
+    peak_mask = (
+        (tof0_s >= peak_lows[0])
+        & (tof0_s <= peak_highs[0])
+        & (tof1_s >= peak_lows[1])
+        & (tof1_s <= peak_highs[1])
+        & (de["tof2"] >= peak_lows[2])
+        & (de["tof2"] <= peak_highs[2])
+    )
+
+    return peak_mask
+
+
+def _get_golden_triple_mask(de: xr.Dataset) -> np.ndarray:
+    """
+    Get a boolean mask for events within the golden triple coincidence types.
+
+    A golden triple coincidence is only one of the possible triples-types, so
+    we need to subset it separately from just triples.
+
+    Parameters
+    ----------
+    de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    Returns
+    -------
+    golden_triple_mask : numpy.ndarray
+        Boolean mask indicating events within the golden triple coincidence types.
+    """
+    return de["coincidence_type"] == "111111"
+
+
+def get_h_species(de: xr.Dataset) -> xr.Dataset:
+    """
+    Get only the hydrogen species from the L1B Direct Event dataset.
+
+    Parameters
+    ----------
+    de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    Returns
+    -------
+    de_h : xarray.Dataset
+        L1B Direct Event dataset with only hydrogen species.
+    """
+    h_peak_low = [20, 10, 10]
+    h_peak_high = [70, 50, 40]
+
+    golden_triple_mask = _get_golden_triple_mask(de)
+    h_peak_mask = _get_peak_mask(de, h_peak_low, h_peak_high)
+
+    h_idx = np.nonzero((golden_triple_mask & h_peak_mask).values)[0]
+
+    de_h = de.isel(epoch=h_idx)
+    return de_h
+
+
+def get_o_species(de: xr.Dataset) -> xr.Dataset:
+    """
+    Get only the oxygen species from the L1B Direct Event dataset.
+
+    Parameters
+    ----------
+    de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    Returns
+    -------
+    de_o : xarray.Dataset
+        L1B Direct Event dataset with only oxygen species.
+    """
+    co_peak_low = [100, 60, 60]
+    co_peak_high = [270, 150, 150]
+
+    golden_triple_mask = _get_golden_triple_mask(de)
+    o_peak_mask = _get_peak_mask(de, co_peak_low, co_peak_high)
+    o_idx = np.nonzero((golden_triple_mask & o_peak_mask).values)[0]
+
+    de_o = de.isel(epoch=o_idx)
+    return de_o
+
+
 def create_pset_counts(
-    de: xr.Dataset, filter: FilterType = FilterType.NONE
+    de: xr.Dataset, filter_type: FilterType = FilterType.NONE
 ) -> xr.DataArray:
     """
     Create the PSET counts for the L1B Direct Event dataset.
@@ -258,7 +423,7 @@ def create_pset_counts(
     ----------
     de : xarray.Dataset
         L1B Direct Event dataset.
-    filter : FilterType, optional
+    filter_type : FilterType, optional
         The event type to include in the counts.
         Can be "triples", "doubles", "h", or "o".
 
@@ -267,48 +432,18 @@ def create_pset_counts(
     counts : xarray.DataArray
         The counts for the specified filter.
     """
-    filter_options = {
-        # triples coincidence types
-        FilterType.TRIPLES: ["111111", "111100", "111000"],
-        # doubles coincidence types
-        FilterType.DOUBLES: [
-            "110100",
-            "110000",
-            "101101",
-            "101100",
-            "101000",
-            "100100",
-            "100101",
-            "100000",
-            "011100",
-            "011000",
-            "010100",
-            "010101",
-            "010000",
-            "001100",
-            "001101",
-            "001000",
-        ],
-        # hydrogen species identifier
-        FilterType.HYDROGEN: "H",
-        # oxygen species identifier
-        FilterType.OXYGEN: "O",
-    }
-
-    # if the filter string is triples or doubles, filter using the coincidence type
-    if filter in {FilterType.TRIPLES, FilterType.DOUBLES}:
-        filter_idx = np.where(np.isin(de["coincidence_type"], filter_options[filter]))[
-            0
-        ]
-    # if the filter is h or o, filter using the species
-    elif filter in {FilterType.HYDROGEN, FilterType.OXYGEN}:
-        filter_idx = np.where(np.isin(de["species"], filter_options[filter]))[0]
-    else:
-        # if no filter is specified, use all data
-        filter_idx = np.arange(len(de["epoch"]))
-
-    # Filter the dataset using the filter index
-    de_filtered = de.isel(epoch=filter_idx)
+    match filter_type:
+        case FilterType.TRIPLES:
+            de_filtered = get_triple_coincidences(de)
+        case FilterType.DOUBLES:
+            de_filtered = get_double_coincidences(de)
+        case FilterType.HYDROGEN:
+            de_filtered = get_h_species(de)
+        case FilterType.OXYGEN:
+            de_filtered = get_o_species(de)
+        case _:
+            # if no filter is specified, use all data
+            de_filtered = de
 
     # stack the filtered data into the 3D array
     data = np.column_stack(
