@@ -2158,7 +2158,7 @@ def get_sampling_cadence_from_nhk(l1b_nhk: xr.Dataset) -> float:
     # Get mean value across all epochs (should be relatively constant)
     sampling_cadence = float(l1b_nhk["ifb_data_interval"].values.mean())
 
-    logger.info(f"Sampling cadence from NHK: {sampling_cadence:.3f} ms")
+    logger.info(f"Star sensor sampling cadence from NHK: {sampling_cadence:.3f} ms")
     return sampling_cadence
 
 
@@ -2189,7 +2189,7 @@ def l1b_star(
         L1B star sensor dataset with spin_angle, avg_amplitude, count_per_bin,
         and time range metadata. Each epoch corresponds to a group of records.
     """
-    logical_source = "imap_lo_l1b_star"
+    logical_source = "imap_lo_l1b_prostar"
     l1a_star = sci_dependencies["imap_lo_l1a_star"]
     l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
     spin_data = sci_dependencies["imap_lo_l1a_spin"]

@@ -1,5 +1,4 @@
 from collections import namedtuple
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -9,7 +8,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.lo.l1b.lo_l1b import (
     calculate_de_rates,
     calculate_histogram_rates,
@@ -1816,7 +1815,7 @@ class TestL1bStar:
         l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b, group_size=64)
 
         # Assert
-        assert l1b_star_ds.attrs["Logical_source"] == "imap_lo_l1b_star"
+        assert l1b_star_ds.attrs["Logical_source"] == "imap_lo_l1b_prostar"
         assert "epoch" in l1b_star_ds.coords
         # 150 records / 64 group_size = 3 groups (64 + 64 + 22)
         assert len(l1b_star_ds.coords["epoch"]) == 3
@@ -2050,31 +2049,3 @@ class TestL1bStar:
         assert (
             l1b_star_ds.coords["epoch"].values[2] == met_to_ttj2000ns([128 * 15.0])[0]
         )
-
-
-def test_star_integration(use_test_repoint_data_csv):
-    """Temporary integration test for star data."""
-    use_test_repoint_data_csv(
-        Path(
-            "/Users/plummert/Projects/imap/data/prod/imap/spice/repoint/imap_2026_022_01.repoint"
-        )
-    )
-    star_path = Path(
-        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1a/2026/01/imap_lo_l1a_star_20260121-repoint00133_v001.cdf"
-    )
-    spin_path = Path(
-        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1a/2026/01/imap_lo_l1a_spin_20260121-repoint00133_v001.cdf"
-    )
-    nhk_path = Path(
-        "/Users/plummert/Projects/imap/data/prod/imap/lo/l1b/2026/01/imap_lo_l1b_nhk_20260121-repoint00133_v001.cdf"
-    )
-    sci_dependencies = {
-        "imap_lo_l1a_star": load_cdf(star_path),
-        "imap_lo_l1a_spin": load_cdf(spin_path),
-        "imap_lo_l1b_nhk": load_cdf(nhk_path),
-    }
-    anc_dependencies = []
-    descriptor = "star"
-    result = lo_l1b(sci_dependencies, anc_dependencies, descriptor)
-    assert len(result) == 1
-    print(write_cdf(result[0]))
