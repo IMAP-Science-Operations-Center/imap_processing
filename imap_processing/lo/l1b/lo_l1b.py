@@ -20,9 +20,8 @@ from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_latitudinal,
     frame_transform,
-    lo_instrument_pointing,
     get_spacecraft_to_instrument_spin_phase_offset,
-    instrument_pointing,
+    lo_instrument_pointing,
 )
 from imap_processing.spice.repoint import (
     get_pointing_mid_time,
