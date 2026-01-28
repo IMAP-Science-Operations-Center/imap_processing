@@ -558,7 +558,7 @@ mag_B_RTN:
 
 swapi_pseudo_proton_density:
   <<: *default_float32
-  CATDESC: Pseudo density of solar wind protons
+  CATDESC: Pseudo solar wind proton number density from SWAPI
   FIELDNAM: SW proton pseudo density
   LABLAXIS: SW p pseudo N
   DEPEND_0: swapi_epoch
@@ -569,7 +569,7 @@ swapi_pseudo_proton_density:
 
 swapi_pseudo_proton_speed:
   <<: *default_float32
-  CATDESC: Pseudo speed of solar wind protons in solar inertial frame
+  CATDESC: Pseudo solar wind proton speed from SWAPI
   FIELDNAM: SW proton pseudo V in solar inertial frame
   LABLAXIS: SW p pseudo V
   DEPEND_0: swapi_epoch
@@ -580,7 +580,7 @@ swapi_pseudo_proton_speed:
 
 swapi_pseudo_proton_temperature:
   <<: *default_float32
-  CATDESC: Pseudo temperature of solar wind protons in plasma frame
+  CATDESC: Pseudo solar wind proton temperature from SWAPI
   FIELDNAM: SW proton pseudo temperature
   LABLAXIS: SW p pseudo T
   DEPEND_0: swapi_epoch
