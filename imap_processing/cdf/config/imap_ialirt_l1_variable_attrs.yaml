@@ -258,7 +258,7 @@ swe_electron_energy:
 # Variables
 codice_hi_h:
   <<: *default_float32
-  CATDESC: Proton intensity in 4 epochs, 15 energy ranges, 4 spin sectors, and 4 elevations
+  CATDESC: Proton flux from CoDICE-Hi in 15 energy bins between 0.02 to 3.62 MeV over 4 spin sectors and 4 azimuth bins
   FIELDNAM: H+ intensity
   LABLAXIS: H+ intensity
   DEPEND_0: codice_hi_epoch
@@ -274,7 +274,7 @@ codice_hi_h:
 
 codice_lo_c_over_o_abundance:
   <<: *default_float32
-  CATDESC: C/O abundance ratio
+  CATDESC: C/O elemental abundance ratio from CoDICE-Lo
   FIELDNAM: C/O abundance ratio
   LABLAXIS: C/O ratio
   DEPEND_0: codice_lo_epoch
@@ -285,7 +285,7 @@ codice_lo_c_over_o_abundance:
 
 codice_lo_mg_over_o_abundance:
   <<: *default_float32
-  CATDESC: Mg/O abundance ratio
+  CATDESC: Mg/O elemental abundance ratio from CoDICE-Lo
   FIELDNAM: Mg/O abundance ratio
   LABLAXIS: Mg/O ratio
   DEPEND_0: codice_lo_epoch
@@ -296,7 +296,7 @@ codice_lo_mg_over_o_abundance:
 
 codice_lo_fe_over_o_abundance:
   <<: *default_float32
-  CATDESC: Fe/O abundance ratio
+  CATDESC: Fe/O elemental abundance ratio from CoDICE-Lo
   FIELDNAM: Fe/O abundance ratio
   LABLAXIS: Fe/O ratio
   DEPEND_0: codice_lo_epoch
@@ -307,7 +307,7 @@ codice_lo_fe_over_o_abundance:
 
 codice_lo_c_plus_6_over_c_plus_5:
   <<: *default_float32
-  CATDESC: C+6/C+5 charge state ratio
+  CATDESC: C+6/C+5 charge state ratio from CoDICE-Lo
   FIELDNAM: C+6/C+5 charge state ratio
   LABLAXIS: C+6/C+5 ratio
   DEPEND_0: codice_lo_epoch
@@ -318,7 +318,7 @@ codice_lo_c_plus_6_over_c_plus_5:
 
 codice_lo_o_plus_7_over_o_plus_6:
   <<: *default_float32
-  CATDESC: O+7/O+6 charge state ratio
+  CATDESC: O+7/O+6 charge state ratio from CoDICE-Lo
   FIELDNAM: O7+/O6+ charge state ratio
   LABLAXIS: O7+/O6+ ratio
   DEPEND_0: codice_lo_epoch
@@ -329,7 +329,7 @@ codice_lo_o_plus_7_over_o_plus_6:
 
 codice_lo_fe_low_over_fe_high:
   <<: *default_float32
-  CATDESC: Fe low/high charge state ratio (low=6 to 12, high=13 to 17)
+  CATDESC: Fe low/Fe high charge state ratio from CoDICE-Lo
   FIELDNAM: Fe low/high charge state ratio
   LABLAXIS: Fe low/high ratio
   DEPEND_0: codice_lo_epoch
