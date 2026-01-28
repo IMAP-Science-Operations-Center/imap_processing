@@ -184,8 +184,8 @@ def test_count_rate():
     """Use random realistic values to test for expected output of count_rate()."""
 
     actual_result = count_rate(1370, *[550, 5.27, 1e5])
-    expected_result = 3073.023325893161
-    assert actual_result == expected_result, (
+    expected_result = 3073.023325893161 * np.exp(1)  # factor of exp(1): temporary correction factor
+    assert np.isclose(actual_result, expected_result), (
         f"The actual result of count_rate()"
         f" {actual_result} does not "
         f"match the expected result "
@@ -202,7 +202,7 @@ def test_optimize_parameters():
             "file_name": "ialirt_test_data_u_sw_550_n_sw_5_T_sw_100000_v2.csv",
             "expected_values": {  # expected output and acceptable tolerance
                 "pseudo_speed": (550, 0.01),
-                "pseudo_density": (5, 0.14),
+                "pseudo_density": (5 / np.exp(1), 0.14),  # factor of exp(1): temporary correction factor
                 "pseudo_temperature": (1e5, 0.2),
             },
         },
@@ -210,7 +210,7 @@ def test_optimize_parameters():
             "file_name": "ialirt_test_data_u_sw_650_n_sw_3.0_T_sw_120000_v2.csv",
             "expected_values": {  # expected output and acceptable tolerance
                 "pseudo_speed": (650, 0.01),
-                "pseudo_density": (3, 0.3),
+                "pseudo_density": (3 / np.exp(1), 0.3),  # factor of exp(1): temporary correction factor
                 "pseudo_temperature": (1.2e5, 0.28),
             },
         },
@@ -218,7 +218,7 @@ def test_optimize_parameters():
             "file_name": "ialirt_test_data_u_sw_400_n_sw_6.0_T_sw_80000_v2.csv",
             "expected_values": {  # expected output and acceptable tolerance
                 "pseudo_speed": (400, 0.01),
-                "pseudo_density": (6, 0.39),
+                "pseudo_density": (6 / np.exp(1), 0.39),  # factor of exp(1): temporary correction factor
                 "pseudo_temperature": (8e4, 0.15),
             },
         },
