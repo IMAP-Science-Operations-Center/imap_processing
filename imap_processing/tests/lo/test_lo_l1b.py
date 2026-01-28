@@ -11,6 +11,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.lo.l1b.lo_l1b import (
+    DE_CLOCK_TICK_S,
     calculate_de_rates,
     calculate_histogram_rates,
     calculate_star_sensor_profile_for_group,
@@ -219,7 +220,9 @@ def l1a_hist():
     "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
     return_value=np.zeros((2000, 3)),
 )
+@patch("imap_processing.lo.l1b.lo_l1b.interpolate_spin_data")
 def test_lo_l1b_de(
+    mock_interpolate_spin_data,
     mock_frame_transform,
     mock_lo_instrument_pointing,
     mocked_get_pointing_times,
@@ -229,6 +232,15 @@ def test_lo_l1b_de(
     anc_dependencies,
 ):
     # Arrange
+    # Mock the spin data to provide spin start times
+    # Create a DataFrame covering the time range of the test data
+    num_events = 2000
+    mock_spin_df = pd.DataFrame(
+        {
+            "spin_start_met": np.ones(num_events),
+        }
+    )
+    mock_interpolate_spin_data.return_value = mock_spin_df
 
     # Add l1b_nhk dependency with pivot angle information
     l1b_nhk = xr.Dataset(
@@ -490,62 +502,37 @@ def test_spin_cycle(mock_get_spin_number):
     np.testing.assert_array_equal(spin_cycle_data["spin_cycle"], spin_cycle_expected)
 
 
-def test_get_spin_start_times():
+@patch("imap_processing.lo.l1b.lo_l1b.interpolate_spin_data")
+def test_get_spin_start_times(mock_interpolate_spin_data):
     # Arrange
-    l1b_de = xr.Dataset(
+    # Mock the spin data to return specific spin start times
+    mock_spin_df = pd.DataFrame(
         {
-            "spin_cycle": ("epoch", [0, 1, 2, 3, 4]),
-        },
-        coords={
-            "epoch": [
-                0,
-                1,
-                2,
-                3,
-                4,
-            ]
-        },
+            "spin_start_met": [10.5, 10.5, 30.1, 30.1, 30.1],
+        }
     )
+    mock_interpolate_spin_data.return_value = mock_spin_df
+
     l1a_de = xr.Dataset(
         {
-            "shcoarse": ("epoch", [0, 1]),
+            "shcoarse": ("epoch", [15, 35]),
             "de_count": ("epoch", [2, 3]),
-            "met": ("epoch", [0, 1]),  # MET per time epoch, not per direct event
-            "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
+            "de_time": ("direct_event", [0, 1000, 2000, 3000, 4000]),
         },
         coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
     )
-    spin = xr.Dataset(
-        {
-            "shcoarse": ("epoch", [0, 1]),
-            "acq_start_sec": (
-                "epoch",
-                [20, 25],
-            ),
-            "acq_start_subsec": (
-                "epoch",
-                [0, 0],
-            ),
-            "acq_end_sec": (
-                "epoch",
-                [25, 30],
-            ),
-            "acq_end_subsec": (
-                "epoch",
-                [0, 0],
-            ),
-            "num_completed": (
-                "epoch",
-                [28, 14],
-            ),
-        }
-    )
 
+    # Expected: shcoarse 15 should match spin at index 0 (10 < 15 < 20)
+    # shcoarse 35 should match spin at index 2 (30 < 35 < 40)
+    # Repeated by de_count: [2, 3] -> [index0, index0, index2, index2, index2]
     spin_start_times_expected = np.array(
-        [20, 20 + 5 / 28, 25 + 5 * 2 / 14, 25 + 5 * 3 / 14, 25 + 5 * 4 / 14]
+        [10.5, 10.5, 30.1, 30.1, 30.1]  # 10 + 0.5e6*1e-6  # 30 + 0.1e6*1e-6
     )
-    spin_start_times = get_spin_start_times(l1a_de, l1b_de, spin)
 
+    # Act
+    spin_start_times = get_spin_start_times(l1a_de)
+
+    # Assert
     np.testing.assert_allclose(
         spin_start_times,
         spin_start_times_expected,
@@ -553,31 +540,44 @@ def test_get_spin_start_times():
     )
 
 
-def test_set_event_met():
+@patch("imap_processing.lo.l1b.lo_l1b.interpolate_spin_data")
+def test_set_event_met(mock_interpolate_spin_data):
     # Arrange
+    # Mock the spin data
+    mock_spin_df = pd.DataFrame(
+        {
+            "spin_start_met": [10, 10, 30, 30, 30],
+        }
+    )
+    mock_interpolate_spin_data.return_value = mock_spin_df
+
     l1b_de = xr.Dataset()
     l1a_de = xr.Dataset(
         {
+            "shcoarse": ("epoch", [15, 35]),
             "de_count": ("epoch", [2, 3]),
-            "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
+            "de_time": ("direct_event", [0, 1000, 2000, 3000, 4000]),
         },
         coords={
             "epoch": [0, 1],
-            "direct_event": [
-                0,
-                1,
-                2,
-                3,
-                4,
-            ],
+            "direct_event": [0, 1, 2, 3, 4],
         },
     )
-    avg_spin_durations = xr.DataArray([5, 10])
-    spin_start_times = xr.DataArray([10, 20, 30, 40, 50])
-    expected_event_met = np.array([10, 21.2207, 34.8828, 47.3242, 59.7656])
+
+    # shcoarse 15 -> spin_start 10, shcoarse 35 -> spin_start 30
+    # event_met = spin_start + de_time * DE_CLOCK_TICK_S
+    expected_event_met = np.array(
+        [
+            10 + 0 * DE_CLOCK_TICK_S,  # 10.0
+            10 + 1000 * DE_CLOCK_TICK_S,  # 14.096
+            30 + 2000 * DE_CLOCK_TICK_S,  # 38.192
+            30 + 3000 * DE_CLOCK_TICK_S,  # 42.288
+            30 + 4000 * DE_CLOCK_TICK_S,  # 46.384
+        ]
+    )
 
     # Act
-    l1b_de = set_event_met(l1a_de, l1b_de, spin_start_times, avg_spin_durations)
+    l1b_de = set_event_met(l1a_de, l1b_de)
 
     # Assert
     np.testing.assert_allclose(
@@ -586,24 +586,25 @@ def test_set_event_met():
         atol=1e-4,
     )
 
-    def test_set_each_event_epoch():
-        l1b_de = xr.Dataset(
-            {
-                "event_met": ("epoch", [10, 20, 30, 40, 50]),
-            },
-            coords={
-                "epoch": [0, 1, 2, 3, 4],
-            },
-        )
-        epoch_expected = met_to_ttj2000ns(np.array([10, 20, 30, 40, 50]))
 
-        l1b_de = set_each_event_epoch(l1b_de)
+def test_set_each_event_epoch():
+    l1b_de = xr.Dataset(
+        {
+            "event_met": ("epoch", [10, 20, 30, 40, 50]),
+        },
+        coords={
+            "epoch": [0, 1, 2, 3, 4],
+        },
+    )
+    epoch_expected = met_to_ttj2000ns(np.array([10, 20, 30, 40, 50]))
 
-        np.testing.assert_allclose(
-            l1b_de["epoch"].values,
-            epoch_expected,
-            atol=1e-4,
-        )
+    l1b_de = set_each_event_epoch(l1b_de)
+
+    np.testing.assert_allclose(
+        l1b_de["epoch"].values,
+        epoch_expected,
+        atol=1e-4,
+    )
 
 
 def test_set_avg_spin_durations_per_event():
@@ -838,6 +839,8 @@ def test_set_direction(mock_lo_instrument_pointing, imap_ena_sim_metakernel):
 )
 @patch(
     "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
+    # Longitudes: -180 -> 180, 0 -> 0, 90 -> 90, 180 -> 180
+    # After shift to 0-360: 180, 0, 90, 180
     return_value=np.array([[0, -180, -2], [0, 0, 0], [0, 90, 1], [0, 180, 2]]),
 )
 def test_pointing_bins(mock_cartesian_to_latitudinal, mock_frame_transform):
@@ -859,7 +862,8 @@ def test_pointing_bins(mock_cartesian_to_latitudinal, mock_frame_transform):
     )
 
     expected_pointing_lats = np.array([0, 20, 30, 40])
-    expected_pointing_lons = np.array([0, 1800, 2700, 3600])
+    # Longitude bins are now in 0-360 range after the shift
+    expected_pointing_lons = np.array([1800, 0, 900, 1800])
 
     # Act
     l1b_de = set_pointing_bin(l1b_de)

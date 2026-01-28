@@ -305,3 +305,10 @@ def test_get_instrument_spin_phase(
     assert np.logical_and(
         0 <= inst_phase[~expected_nan_mask], inst_phase[~expected_nan_mask] < 1
     ).all()
+
+
+def test_get_spin_start_met(fake_spin_data):
+    # Make sure we aren't actually interpolating and rather repeating existing values
+    # when we have a linear ramp of data points between spins
+    start_mets = spin.interpolate_spin_data(np.linspace(32, 37, 3))["spin_start_met"]
+    np.testing.assert_array_equal(start_mets, [30, 30, 30])

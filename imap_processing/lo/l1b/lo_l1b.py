@@ -28,7 +28,11 @@ from imap_processing.spice.repoint import (
     get_pointing_times,
     interpolate_repoint_data,
 )
-from imap_processing.spice.spin import get_spin_data, get_spin_number
+from imap_processing.spice.spin import (
+    get_spin_data,
+    get_spin_number,
+    interpolate_spin_data,
+)
 from imap_processing.spice.time import (
     epoch_to_fractional_doy,
     et_to_utc,
@@ -166,6 +170,7 @@ MONITOR_RATE_FIELDS = [
     "spin_cycle",
 ]
 # -------------------------------------------------------------------
+DE_CLOCK_TICK_S = 4.096e-3  # seconds per DE clock tick
 
 
 def lo_l1b(
@@ -277,13 +282,9 @@ def l1b_de(
     avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
     # set the spin cycle for each direct event
     l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
-    # get spin start times for each event
-    spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data)
 
     # get the absolute met for each event
-    l1b_de = set_event_met(
-        l1a_de, l1b_de, spin_start_time, avg_spin_durations_per_cycle
-    )
+    l1b_de = set_event_met(l1a_de, l1b_de)
     # set the epoch for each event
     l1b_de = set_each_event_epoch(l1b_de)
     # Set the ESA mode for each direct event
@@ -794,7 +795,7 @@ def _check_sufficient_spins(spin_data: xr.Dataset) -> np.ndarray:
 
 
 def get_spin_start_times(
-    l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.Dataset
+    l1a_de: xr.Dataset,
 ) -> xr.DataArray:
     """
     Get the start time for the spin that each direct event is in.
@@ -807,59 +808,31 @@ def get_spin_start_times(
     ----------
     l1a_de : xr.Dataset
         The L1A DE dataset.
-    l1b_de : xr.Dataset
-        The L1B DE dataset.
-    spin_data : xr.Dataset
-        The L1A Spin dataset.
 
     Returns
     -------
-    spin_start_time : xr.DataArray
+    spin_start_time : np.ndarray
         The start time for the spin that each direct event is in.
     """
-    # align l1a_de packets with spin_data packets
-    de_to_spin_indices = match_science_to_spin_asc(
-        l1a_de["epoch"].values, spin_data["epoch"].values
-    )
-    # Repeat this for each direct event based on the de_count
-    de_to_spin_indices = np.repeat(de_to_spin_indices, l1a_de["de_count"])
+    # Get the actual spin start times from the spin data
+    # Use the individual spin start times rather than calculating from ASC averages
+    spin_start_times = interpolate_spin_data(l1a_de["shcoarse"].values)[
+        "spin_start_met"
+    ].values
 
-    # There are 28 spins per epoch (1 aggregated science cycle)
-    # Set the spin_cycle_num to the spin number relative to the
-    # start of the ASC
-    spin_cycle_num = l1b_de["spin_cycle"] % 28
-    asc_starts = spin_data["acq_start_sec"] + spin_data["acq_start_subsec"] * 1e-6
-    avg_spin_durations = get_avg_spin_durations_per_cycle(spin_data)
-
-    # Calculate the time based off of the start of the acquisition period
-    # then using an average spin duration to calculate the offset within the ASC
-    # NOTE: We don't want to use the spin start times directly from the ASC spin packet
-    #       because we are using an average spin_cycle for the ASC and there are
-    #       times when only half the spins were completed in an ASC. This allows us
-    #       to still get a valid spin_cycle start time for each direct event, even
-    #       if the average spin_cycle was after the end of the acquisition period.
-    # TODO: Can we do even better by knowing how many esa_steps and spins were complete?
-    #       i.e. change the spin_cycle calculation
-    spin_start_time = (
-        asc_starts[de_to_spin_indices]
-        + spin_cycle_num * avg_spin_durations[de_to_spin_indices]
-    )
-    return spin_start_time
+    return spin_start_times
 
 
 def set_event_met(
     l1a_de: xr.Dataset,
     l1b_de: xr.Dataset,
-    spin_start_time: xr.DataArray,
-    avg_spin_durations: xr.DataArray,
 ) -> xr.Dataset:
     """
     Get the event MET for each direct event.
 
     Each direct event is converted from a data number to engineering unit in seconds.
-    de_eu_time de_dn_time / 4096 * avg_spin_duration
-    where de_time is the direct event time Data Number (DN) and avg_spin_duration
-    is the average spin duration for the ASC that the event was measured in.
+    time_from_start_of_spin = de_time * DE_CLOCK_TICK_S
+    where de_time is the direct event time Data Number (DN).
 
     The direct event time is the time of direct event relative to the start of the spin.
     The event MET is the sum of the start time of the spin and the
@@ -871,26 +844,18 @@ def set_event_met(
         The L1A DE dataset.
     l1b_de : xr.Dataset
         The L1B DE dataset.
-    spin_start_time : np.ndarray
-        The start time for the spin that each direct event is in.
-    avg_spin_durations : xr.DataArray
-        The average spin duration for each epoch.
 
     Returns
     -------
     l1b_de : xr.Dataset
         The L1B DE dataset with the event MET.
     """
-    counts = l1a_de["de_count"].values
-    de_time_asc_groups = np.split(l1a_de["de_time"].values, np.cumsum(counts)[:-1])
-    de_times_eu = []
-    for i, de_time_asc in enumerate(de_time_asc_groups):
-        # DE Time is 12 bit DN. The max possible value is 4095
-        # divide by 4096 to get fraction of a spin duration
-        de_times_eu.extend(de_time_asc / 4096 * avg_spin_durations[i].values)
+    # get spin start times for each event
+    spin_start_times = get_spin_start_times(l1a_de)
 
+    # spin start + offset based on de_time ticks
     l1b_de["event_met"] = xr.DataArray(
-        spin_start_time + de_times_eu,
+        spin_start_times + l1a_de["de_time"].values * DE_CLOCK_TICK_S,
         dims=["epoch"],
         # attrs=attr_mgr.get_variable_attributes("epoch")
     )
@@ -1344,12 +1309,14 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     # first column: radius (Not needed)
     # second column: longitude
     lons = direction[:, 1]
+    # shift to 0-360 range (spin-phase 0 should be in bin 0)
+    lons = (lons + 360) % 360
     # third column: latitude
     lats = direction[:, 2]
 
     # Define bin edges
     # 3600 bins, 0.1° each
-    lon_bins = np.linspace(-180, 180, 3601)
+    lon_bins = np.linspace(0, 360, 3601)
     # 40 bins, 0.1° each
     lat_bins = np.linspace(-2, 2, 41)
 
