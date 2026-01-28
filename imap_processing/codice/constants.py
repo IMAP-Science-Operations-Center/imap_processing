@@ -1054,3 +1054,5 @@ SSD_ID_TO_SPIN_ANGLE = np.array(
         318.39,
     ]
 )
+
+HALF_SPIN_FILLVAL = 63

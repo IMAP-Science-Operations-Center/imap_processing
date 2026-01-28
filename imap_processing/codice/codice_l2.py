@@ -23,6 +23,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.constants import (
     GAIN_ID_TO_STR,
+    HALF_SPIN_FILLVAL,
     HI_L2_ELEVATION_ANGLE,
     HI_OMNI_VARIABLE_NAMES,
     HI_SECTORED_VARIABLE_NAMES,
@@ -323,8 +324,14 @@ def compute_geometric_factors(
         raise ValueError("Dataset is missing Logical_file_id attribute.")
     processing_date = datetime.datetime.strptime(start_date.split("_")[4], "%Y%m%d")
     date_switch = datetime.datetime(2025, 11, 24)
+    # Only consider valid half spins
+    valid_half_spin = half_spin_per_esa_step != 63
     if processing_date < date_switch:
-        modes = (half_spin_per_esa_step > rgfo_half_spin) & (rgfo_half_spin > 0)
+        modes = (
+            valid_half_spin
+            & (half_spin_per_esa_step > rgfo_half_spin)
+            & (rgfo_half_spin > 0)
+        )
     else:
         # After November 24th, 2025, we no longer apply reduced geometric factors;
         # always use the full geometric factor lookup.
@@ -582,8 +589,10 @@ def process_lo_angular_intensity(
     # is odd, the configuration is B.
     # TODO handle when half_spin_per_esa_step changes in the middle of the dataset
     half_spin_per_esa_step = dataset["half_spin_per_esa_step"].data[0]
-    a_inds = np.where(half_spin_per_esa_step % 2 == 0)[0]
-    b_inds = np.where(half_spin_per_esa_step % 2 == 1)[0]
+    # only consider valid half spin values
+    valid_half_spin = half_spin_per_esa_step != HALF_SPIN_FILLVAL
+    a_inds = np.where(valid_half_spin & (half_spin_per_esa_step % 2 == 0))[0]
+    b_inds = np.where(valid_half_spin & (half_spin_per_esa_step % 2 == 1))[0]
 
     position_index = position_index_to_adjust
     for species in species_list:

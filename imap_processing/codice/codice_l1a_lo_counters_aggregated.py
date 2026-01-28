@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
+from imap_processing.codice.constants import HALF_SPIN_FILLVAL
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     ViewTabInfo,
@@ -114,12 +115,12 @@ def l1a_lo_counters_aggregated(
         -1, esa_step, num_variables, spin_sector_pairs
     )
 
-    # If data size is less than 128, pad with nan to make it 128
+    # If data size is less than 128, pad with fillval to make it 128
     half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
     if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
         pad_size = constants.NUM_ESA_STEPS - len(half_spin_per_esa_step)
         half_spin_per_esa_step = np.concatenate(
-            (np.array(half_spin_per_esa_step), np.full(pad_size, np.nan))
+            (np.array(half_spin_per_esa_step), np.full(pad_size, HALF_SPIN_FILLVAL))
         )
     # TODO: Handle epoch dependent acquisition time and half spin per esa step
     #   For now, just tile the same array for all epochs.
@@ -145,7 +146,7 @@ def l1a_lo_counters_aggregated(
     counters_data = counters_data.astype(np.float64)
     counters_data[counters_mask] = np.nan
     # Set half_spin_per_esa_step to (fillval) where nso_mask is True
-    half_spin_per_esa_step[nso_mask] = 63
+    half_spin_per_esa_step[nso_mask] = HALF_SPIN_FILLVAL
     # Set acquisition_time_per_step to nan where nso_mask is True
     acquisition_time_per_step[nso_mask] = np.nan
 
