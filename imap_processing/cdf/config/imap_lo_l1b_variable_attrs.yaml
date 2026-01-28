@@ -119,3 +119,55 @@ direction:
   FORMAT: I1
   LABLAXIS: Direction
   LABL_PTR_1: direction_vec_label
+
+# Star Sensor L1B Attributes
+met:
+  <<: *default
+  CATDESC: Start Mission Elapsed Time of averaging period
+  FIELDNAM: MET
+  FORMAT: I16
+  VAR_TYPE: support_data
+
+spin_angle:
+  CATDESC: Spin angle in degrees
+  FIELDNAM: Spin Angle
+  FORMAT: F8.3
+  FILLVAL: -1.0e31
+  VALIDMIN: 0.0
+  VALIDMAX: 360.0
+  VAR_TYPE: support_data
+  UNITS: deg
+
+spin_angle_bin:
+  <<: *default
+  CATDESC: Original spin angle bin index (before sorting)
+  FIELDNAM: Spin Angle Bin
+  FORMAT: I3
+  VALIDMIN: 0
+  VALIDMAX: 719
+  VAR_TYPE: support_data
+  UNITS: ' '
+  DEPEND_0: spin_angle
+
+avg_amplitude:
+  <<: *default
+  CATDESC: Average star sensor amplitude per spin angle bin
+  FIELDNAM: Average Amplitude
+  FORMAT: F12.4
+  FILLVAL: -1.0000000E+31
+  UNITS: mV
+  LABLAXIS: Amplitude
+  DEPEND_0: epoch
+  DEPEND_1: spin_angle
+
+count_per_bin:
+  <<: *default
+  CATDESC: Number of samples per spin angle bin
+  FIELDNAM: Count Per Bin
+  FORMAT: I6
+  VALIDMIN: 0
+  VALIDMAX: 100000
+  UNITS: ' '
+  LABLAXIS: Sample Count
+  DEPEND_0: epoch
+  DEPEND_1: spin_angle

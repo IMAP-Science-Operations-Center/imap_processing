@@ -16,7 +16,6 @@ from imap_processing.hit.hit_utils import (
 from imap_processing.hit.l1b.constants import (
     FILLVAL_FLOAT32,
     FILLVAL_INT64,
-    LIVESTIM_PULSES,
     SECTORS,
     SUMMED_PARTICLE_ENERGY_RANGE_MAPPING,
 )
@@ -108,8 +107,7 @@ def process_science_data(
     logical_source = None
 
     # Calculate fractional livetime from the livetime counter
-    livetime = l1a_counts_dataset["livetime_counter"] / LIVESTIM_PULSES
-    livetime = livetime.rename("livetime")
+    livetime = livetime_fraction_calculation(l1a_counts_dataset["livetime_counter"])
 
     # Process counts data to an L1B dataset based on the descriptor
     if descriptor == "standard-rates":
@@ -465,3 +463,31 @@ def process_sectored_rates_data(
         l1b_sectored_rates_dataset = l1b_sectored_rates_dataset.rename(rename_map)
 
     return l1b_sectored_rates_dataset
+
+
+def livetime_fraction_calculation(livetime_counter: xr.DataArray) -> xr.DataArray:
+    """
+    Calculate livetime fraction from the livetime counter.
+
+    Parameters
+    ----------
+    livetime_counter : xr.DataArray
+        1D array of livetime counter values.
+
+    Returns
+    -------
+    xr.DataArray
+        1D array of livetime fraction values.
+    """
+    livetime_fraction = xr.zeros_like(livetime_counter, dtype=np.float32)
+
+    # Equation 8 in section 6.2 of the algorithm document
+    livetime1 = livetime_counter <= 4101
+    livetime2 = (livetime_counter > 4101) & (livetime_counter <= 16000)
+    livetime3 = livetime_counter > 16000
+
+    livetime_fraction[livetime1] = livetime_counter[livetime1] * 3.41e-5 + 0.14
+    livetime_fraction[livetime2] = livetime_counter[livetime2] * 6.827e-5
+    livetime_fraction[livetime3] = livetime_counter[livetime3] * 1.04e-9
+
+    return livetime_fraction

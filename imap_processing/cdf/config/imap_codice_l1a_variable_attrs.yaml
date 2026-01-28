@@ -1,7 +1,7 @@
 # <=== Useful Variables ===>
 int_fillval: &int_fillval -9223372036854775808
 uint32_fillval: &uint32_fillval 4294967295
-real_fillval: &real_fillval -1.0e+31
+real_fillval: &real_fillval -1.0E+31
 
 min_int: &min_int -9223372036854775808
 min_epoch: &min_epoch -315575942816000000
@@ -98,7 +98,7 @@ spin_sector_pairs:
 priority:
     CATDESC: Priority Level
     FIELDNAM: Priority Level
-    FILLVAL: -1
+    FILLVAL: *uint32_fillval
     FORMAT: I2
     LABLAXIS: " "
     SCALETYP: linear
@@ -172,8 +172,9 @@ energy_species_label:
     VAR_TYPE: metadata
 
 # <=== Dataset Variable Attributes ===>
-acquisition_time_per_step:
+acquisition_time_per_esa_step:
     CATDESC: Acquisition time for each step of energy
+    DEPEND_0: epoch
     DEPEND_1: esa_step
     FIELDNAM: Acquisition Time
     FILLVAL: *real_fillval
@@ -187,15 +188,16 @@ acquisition_time_per_step:
 
 half_spin_per_esa_step:
     CATDESC: Half spin number for each step of energy
+    DEPEND_0: epoch
     DEPEND_1: esa_step
     FIELDNAM: Half Spin Number
-    FILLVAL: 255
+    FILLVAL: 63
     FORMAT: I3
     LABLAXIS: Half Spin Number
     SCALETYP: linear
     UNITS: half spin number
     VALIDMIN: 0
-    VALIDMAX: 255
+    VALIDMAX: 63
     VAR_TYPE: support_data
 
 data_quality:
@@ -315,8 +317,8 @@ sw_bias_gain_mode:
 counters_base: &counters_base
     DEPEND_0: epoch
     DISPLAY_TYPE: time_series
-    FILLVAL: *uint32_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     SCALETYP: linear
     UNITS: counts
     VALIDMIN: 0
@@ -410,8 +412,8 @@ hi-species-attrs:
     DEPEND_1: energy_{species}
     DISPLAY_TYPE: time_series
     FIELDNAM: Species {species}
-    FILLVAL: *uint32_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     LABL_PTR_1: energy_{species}_label
     SCALETYP: linear
     UNITS: counts
@@ -425,13 +427,13 @@ hi-species-unc-attrs:
     DEPEND_1: energy_{species}
     DISPLAY_TYPE: time_series
     FIELDNAM: Species {species}
-    FILLVAL: *uint32_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     LABL_PTR_1: energy_{species}_label
     SCALETYP: linear
     UNITS: counts
     VALIDMAX: *max_uint32
-    VALIDMIN: 0
+    VALIDMIN: 0.0
     VAR_TYPE: data
 
 hi-energy-attrs:
@@ -468,11 +470,11 @@ hi-energy-delta-attrs:
 hi_priorities_attrs: &hi_priorities_default
     DEPEND_0: epoch
     DISPLAY_TYPE: time_series
-    FILLVAL: *uint32_fillval
-    FORMAT: I5
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     LABLAXIS: "events"
     UNITS: events
-    VALIDMAX: *max_uint32
+    VALIDMAX: *real_fillval
     VALIDMIN: 0
     VAR_TYPE: data
 
@@ -653,8 +655,8 @@ lo_counters_singles:
     DEPEND_3: inst_az
     DISPLAY_TYPE: time_series
     FIELDNAM: Rates - Single (APD)
-    FILLVAL: *uint32_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_pairs_label
     LABL_PTR_3: inst_az_label
@@ -673,8 +675,8 @@ lo-angular-attrs:
     DEPEND_3: inst_az
     DISPLAY_TYPE: time_series
     FIELDNAM: "SW - {species}"
-    FILLVAL: *int_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     LABL_PTR_3: inst_az_label
@@ -691,8 +693,8 @@ lo-angular-unc-attrs:
     DEPEND_3: inst_az
     DISPLAY_TYPE: time_series
     FIELDNAM: "NSW - {species}"
-    FILLVAL: *int_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F19
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     LABL_PTR_3: inst_az_label
@@ -707,8 +709,8 @@ lo_priority_base: &lo_priority_base
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
     DISPLAY_TYPE: time_series
-    FILLVAL: *uint32_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     SCALETYP: linear
@@ -762,8 +764,8 @@ lo-species-attrs:
     DEPEND_2: spin_sector
     DISPLAY_TYPE: time_series
     FIELDNAM: "{direction} - {species}"
-    FILLVAL: *int_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     UNITS: counts
@@ -778,8 +780,8 @@ lo-pui-species-attrs:
     DEPEND_2: spin_sector
     DISPLAY_TYPE: time_series
     FIELDNAM: "{direction} - {species}"
-    FILLVAL: *int_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F32.9
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     UNITS: counts

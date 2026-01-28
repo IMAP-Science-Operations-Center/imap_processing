@@ -12,6 +12,8 @@ from pathlib import Path
 
 import numpy as np
 
+from imap_processing.codice import constants
+
 
 @dataclass
 class ViewTabInfo:
@@ -360,7 +362,9 @@ def get_codice_epoch_time(
     return center_times_seconds, delta_times
 
 
-def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
+def calculate_acq_time_per_step(
+    low_stepping_tab: dict, esa_step_dim: int = 128
+) -> np.ndarray:
     """
     Calculate acquisition time per step from low stepping table.
 
@@ -368,12 +372,24 @@ def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
     ----------
     low_stepping_tab : dict
         The low stepping table from the SCI-LUT JSON.
+    esa_step_dim : int
+        The ESA step dimension size.
 
     Returns
     -------
     np.ndarray
         Array of acquisition times per step of shape (num_esa_steps,).
     """
+    # TODO: Handle time-varying num_steps_data length
+    #   The num_steps_data length can change over time (e.g., 6 → 3 steps) and is not
+    #   constant. E.g. at a day where the LUT changes we need to handle that. Update the
+    #   computation to:
+    #   Use the actual length of num_steps_data at each point in time instead of
+    #   assuming a constant value
+    #   - Make the calculation time-varying with epoch dependency
+    #   - Ensure values are divided by their corresponding epoch in L1B processing
+    #   - These tunable values are used to calculate acquisition time per step
+
     # These tunable values are used to calculate acquisition time per step
     tunable_values = low_stepping_tab["tunable_values"]
 
@@ -386,6 +402,10 @@ def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
     num_steps_data = np.array(
         low_stepping_tab["num_steps"].get("data"), dtype=np.float64
     )
+    # If num_steps_data is less than 128, pad with nan
+    if len(num_steps_data) < constants.NUM_ESA_STEPS:
+        pad_size = esa_step_dim - len(num_steps_data)
+        num_steps_data = np.concatenate((num_steps_data, np.full(pad_size, np.nan)))
     # Total non-acquisition time is in column (BD) of science LUT
     dwell_fraction_percentage = float(sector_time) * (100.0 - dwell_fraction) / 100.0
 
@@ -397,10 +417,11 @@ def calculate_acq_time_per_step(low_stepping_tab: dict) -> np.ndarray:
     hv_settle_per_step = np.minimum(
         np.maximum(non_adjusted_hv_settle_per_step, min_hv_settle_ms), max_hv_settle_ms
     )
-
+    # initialize array of nans for acquisition time per step
+    acq_time_per_step = np.full(esa_step_dim, np.nan, dtype=np.float64)
     # acquisition time per step in milliseconds
     # sector_time - sector_margin_ms / num_steps - hv_settle_per_step
-    acq_time_per_step = (
+    acq_time_per_step[: len(num_steps_data)] = (
         (sector_time - sector_margin_ms) / num_steps_data
     ) - hv_settle_per_step
     # Convert to seconds

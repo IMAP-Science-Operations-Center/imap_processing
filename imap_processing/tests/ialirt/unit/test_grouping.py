@@ -4,7 +4,11 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.ialirt.utils.grouping import filter_valid_groups, find_groups
+from imap_processing.ialirt.utils.grouping import (
+    _populate_instrument_header_items,
+    filter_valid_groups,
+    find_groups,
+)
 
 
 @pytest.fixture
@@ -96,3 +100,16 @@ def test_find_groups_no_valid(test_data):
     grouped_data = find_groups(nominal_data, (0, 3), "sequence", "time_seconds")
 
     assert np.all(np.unique(grouped_data["group"]) == np.array([1]))
+
+
+def test_populate_instrument_header_items_from_met_array():
+    """Test _populate_instrument_header_items."""
+
+    met = np.array([100.0, 101.0, 102.0, 103.0], dtype=float)
+
+    header = _populate_instrument_header_items(met)
+
+    expected_keys = {"apid", "met", "met_in_utc", "ttj2000ns"}
+    assert expected_keys.issubset(header.keys())
+
+    assert header["met"] == (met[0] + met[-1]) // 2

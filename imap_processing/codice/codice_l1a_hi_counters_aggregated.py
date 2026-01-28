@@ -101,6 +101,8 @@ def l1a_hi_counters_aggregated(
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         -1, num_variables
     )
+    # Convert counters data to float
+    counters_data = counters_data.astype(np.float64)
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta

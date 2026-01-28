@@ -473,6 +473,97 @@ def instrument_pointing(
     return np.rad2deg(spiceypy.reclat(pointing)[1:])
 
 
+def get_lo_pivot_boresight(pivot_angle: float) -> npt.NDArray:
+    """
+    Calculate IMAP-Lo boresight direction as a function of pivot angle.
+
+    IMAP-Lo has a pivot mechanism that rotates the instrument about its X-axis.
+    The base boresight direction in IMAP_LO_BASE frame is [0, -1, 0] (negative Y).
+    This function rotates that boresight about the X-axis by the specified
+    pivot angle to get the actual boresight direction.
+
+    At a pivot angle of 90 degrees, the boresight points in the -Z direction
+    in the IMAP_LO_BASE frame, which corresponds to near-zero off-pointing in the
+    despun (IMAP_DPS) frame.
+
+    Parameters
+    ----------
+    pivot_angle : float
+        The pivot angle in degrees. Nominal value is 90 degrees.
+
+    Returns
+    -------
+    boresight : np.ndarray
+        The boresight unit vector (shape (3,)) in the IMAP_LO_BASE frame.
+    """
+    # Base boresight direction in IMAP_LO_BASE frame (negative Y)
+    base_boresight = BORESIGHT_LOOKUP[SpiceFrame.IMAP_LO_BASE]
+
+    # Convert pivot angle to radians
+    # Negate the angle because the SPICE rotate function rotates counterclockwise
+    # when viewed from positive axis, but we want the physical pivot direction
+    # where 90 degrees gives us -Z direction (into the spin plane)
+    pivot_rad = np.deg2rad(-pivot_angle)
+
+    # Use SPICE rotate function to create rotation matrix about X-axis (axis 1)
+    # spiceypy.rotate returns a rotation matrix for the specified angle about
+    # the specified axis (1=X, 2=Y, 3=Z)
+    rotation_matrix = spiceypy.rotate(pivot_rad, 1)
+    boresight = spiceypy.mxv(rotation_matrix, base_boresight)
+
+    return np.asarray(boresight)
+
+
+def lo_instrument_pointing(
+    et: float | npt.NDArray,
+    pivot_angle: float,
+    to_frame: SpiceFrame,
+    cartesian: bool = False,
+) -> npt.NDArray:
+    """
+    Compute IMAP-Lo instrument pointing accounting for pivot angle.
+
+    This function computes the Lo boresight direction in the specified reference
+    frame, accounting for the instrument's pivot mechanism. The pivot rotates
+    the boresight about the instrument's X-axis.
+
+    By default, the coordinates returned are (Longitude, Latitude) coordinates in
+    the reference frame `to_frame`. In the IMAP_DPS frame, Longitude corresponds
+    to spin angle and Latitude corresponds to off-pointing angle.
+
+    Parameters
+    ----------
+    et : float or np.ndarray
+        Ephemeris time(s) at which to compute instrument pointing.
+    pivot_angle : float
+        The Lo pivot angle in degrees. Nominal value is 90 degrees.
+    to_frame : SpiceFrame
+        Reference frame in which the pointing is to be expressed.
+        Typically SpiceFrame.IMAP_DPS for spin angle / off-pointing calculations.
+    cartesian : bool
+        If set to True, the pointing is returned in Cartesian coordinates.
+        Defaults to False.
+
+    Returns
+    -------
+    pointing : np.ndarray
+        The instrument pointing at the specified times.
+        If cartesian=False (default): returns (longitude, latitude) in degrees.
+        If cartesian=True: returns (x, y, z) unit vectors.
+    """
+    # Get the pivot-adjusted boresight in IMAP_LO_BASE frame
+    boresight = get_lo_pivot_boresight(pivot_angle)
+
+    # Transform from IMAP_LO_BASE to the target frame
+    pointing = frame_transform(et, boresight, SpiceFrame.IMAP_LO_BASE, to_frame)
+
+    if cartesian:
+        return pointing
+    if isinstance(et, typing.Collection):
+        return np.rad2deg([spiceypy.reclat(vec)[1:] for vec in pointing])
+    return np.rad2deg(spiceypy.reclat(pointing)[1:])
+
+
 def basis_vectors(
     et: float | npt.NDArray,
     from_frame: SpiceFrame,

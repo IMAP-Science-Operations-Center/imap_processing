@@ -195,9 +195,12 @@ def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor):
         "k_factor": ("dim0", cod_lo_l1a_test_data["k_factor"].data),
         "voltage_table": ("esa_step", cod_lo_l1a_test_data["voltage_table"].data),
         "data_quality": ("epoch", cod_lo_l1a_test_data["data_quality"].data),
-        "acquisition_time_per_step": (
-            "esa_step",
-            cod_lo_l1a_test_data["acquisition_time_per_step"].data,
+        "acquisition_time_per_esa_step": (
+            (
+                "epoch",
+                "esa_step",
+            ),
+            cod_lo_l1a_test_data["acquisition_time_per_esa_step"].data,
         ),
         "epoch_delta_minus": ("epoch", cod_lo_l1a_test_data["epoch_delta_minus"].data),
         "epoch_delta_plus": ("epoch", cod_lo_l1a_test_data["epoch_delta_plus"].data),
@@ -605,7 +608,6 @@ def test_l2_ialirt_cod_hi(cod_hi_l1b_test_data, l2_lut_path, cod_hi_l2_test_data
     )
 
 
-@pytest.mark.xfail(reason="Uncomment this when the validation data version is v15.")
 @pytest.mark.external_test_data
 def test_l2_ialirt_cod_lo(
     cod_lo_l1b_test_data, l1a_lut_path, cod_lo_l2_test_data, l2_processing_dependencies
@@ -741,6 +743,7 @@ def test_process_codice_lo(
     l2_lut_path,
     cod_lo_l2_test_data,
     l2_processing_dependencies,
+    furnish_kernels,
 ):
     """Test process_codice for hi."""
     eff_path, gf_path = l2_processing_dependencies
@@ -750,10 +753,14 @@ def test_process_codice_lo(
         sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
         sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
     )
-
-    cod_lo_data, _ = process_codice(
-        cod_lo_test_dataset, l1a_lut_path, eff_path, "codice_lo", gf_path
-    )
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0036.tsc",
+    ]
+    with furnish_kernels(kernels):
+        cod_lo_data, _ = process_codice(
+            cod_lo_test_dataset, l1a_lut_path, eff_path, "codice_lo", gf_path
+        )
 
     l2_products = [
         "codice_lo_c_over_o_abundance",

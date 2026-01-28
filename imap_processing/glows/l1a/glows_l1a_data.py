@@ -1,11 +1,14 @@
 """Data classes to support GLOWS L1A processing."""
 
+import logging
 import struct
 from dataclasses import InitVar, dataclass, field
 
 from imap_processing.glows import __version__
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -261,8 +264,7 @@ class HistogramL1A:
         self.glows_time_offset = TimeTuple(l0.GLXOFFSEC, l0.GLXOFFSUBSEC)
 
         # In L1a, these are left as unit encoded values.
-        # TODO: This is plus one in validation code, why?
-        self.number_of_spins_per_block = l0.SPINS + 1
+        self.number_of_spins_per_block = l0.SPINS
         self.number_of_bins_per_histogram = l0.NBINS
         self.number_of_events = l0.EVENTS
         self.filter_temperature_average = l0.TEMPAVG
@@ -279,6 +281,16 @@ class HistogramL1A:
             "flags_set_onboard": l0.FLAGS,
             "is_generated_on_ground": False,
         }
+
+        # Remove the extra byte from some packets (if there are an odd number of bins)
+        if self.number_of_bins_per_histogram % 2 == 1:
+            self.histogram = self.histogram[:-1]
+
+        if self.number_of_bins_per_histogram != len(self.histogram):
+            logger.warning(
+                f"Number of bins {self.number_of_bins_per_histogram} does not match "
+                f"processed number of bins {len(self.histogram)}!"
+            )
 
 
 @dataclass

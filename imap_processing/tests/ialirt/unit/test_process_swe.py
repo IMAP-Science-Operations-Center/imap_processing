@@ -177,7 +177,7 @@ def test_process_spacecraft_packet(
 
     swe_product = process_swe(sc_xarray_data, [in_flight_cal_file])
 
-    assert len(swe_product[0].keys()) == 7
+    assert len(swe_product[0].keys()) == 8
 
 
 def test_get_energy():
@@ -324,19 +324,7 @@ def test_normalize_counts():
         dtype=np.uint8,
     )
 
-    latest_cal = pd.Series(
-        [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
-        index=[
-            "cem1",
-            "cem2",
-            "cem3",
-            "cem4",
-            "cem5",
-            "cem6",
-            "cem7",
-        ],  # Simulating real data structure
-        dtype=np.float64,
-    )
+    latest_cal = np.array([2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0])
     expected = np.zeros((2, 7, 3), dtype=np.float64)
 
     for i in range(2):

@@ -305,7 +305,11 @@ def calculate_ena_intensity(
     map_ds["ena_intensity_stat_uncert"] = (
         map_ds["ena_signal_rate_stat_unc"] / flux_conversion_divisor
     )
-    map_ds["ena_intensity_sys_err"] = map_ds["bg_rates_unc"] / flux_conversion_divisor
+    map_ds["ena_intensity_sys_err"] = (
+        np.sqrt(map_ds["bg_rates"] * map_ds["exposure_factor"])
+        / map_ds["exposure_factor"]
+        / flux_conversion_divisor
+    )
 
     # Combine calibration products using proper weighted averaging
     # as described in Hi Algorithm Document Section 3.1.2
@@ -367,16 +371,11 @@ def combine_calibration_products(
         map_ds, geometric_factors, esa_energies
     )
 
-    # Calculate total variance
-    # Note that sys_err contains uncertainty, so it must be squared to get
-    # the systematic variance needed in this equation.
-    total_variance = improved_stat_variance + sys_err**2
-
     # Perform inverse-variance weighted averaging
     # Handle divide by zero and invalid values
     with np.errstate(divide="ignore", invalid="ignore"):
         # Use total variance weights for flux combination
-        flux_weights = 1.0 / total_variance
+        flux_weights = 1.0 / improved_stat_variance
         weighted_flux_sum = (ena_flux * flux_weights).sum(dim="calibration_prod")
         combined_flux = weighted_flux_sum / flux_weights.sum(dim="calibration_prod")
 
@@ -449,11 +448,6 @@ def _calculate_improved_stat_variance(
     # Convert averaged signal rates back to flux uncertainties
     # Total count rates for Poisson uncertainty calculation
     total_count_rates_for_uncertainty = map_ds["bg_rates"] + averaged_signal_rates
-
-    # Ensure non-negative values for sqrt and minimum of 1 for uncertainty calculation
-    total_count_rates_for_uncertainty = xr.where(
-        total_count_rates_for_uncertainty < 1, 1, total_count_rates_for_uncertainty
-    )
 
     logger.debug("Computing improved flux uncertainties")
     # Statistical variance:

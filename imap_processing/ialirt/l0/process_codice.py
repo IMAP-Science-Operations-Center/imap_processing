@@ -1,10 +1,11 @@
 """Functions to support I-ALiRT CoDICE processing."""
 
+import datetime
 import logging
 from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -21,9 +22,15 @@ from imap_processing.codice.codice_l2 import (
     get_geometric_factor_lut,
     process_lo_species_intensity,
 )
-from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.grouping import (
+    _populate_instrument_header_items,
+    find_groups,
+)
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
+from imap_processing.spice.time import (
+    et_to_utc,
+    ttj2000ns_to_et,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -345,9 +352,9 @@ def calculate_ratios(
         mg_over_o_abundance = mg_over_o_abundance_num / o_abundance_denom
         fe_over_o_abundance = fe_over_o_abundance_num / o_abundance_denom
 
-        c_over_o_abundance = Decimal(f"{c_over_o_abundance:.3f}")
-        mg_over_o_abundance = Decimal(f"{mg_over_o_abundance:.3f}")
-        fe_over_o_abundance = Decimal(f"{fe_over_o_abundance:.3f}")
+        c_over_o_abundance = Decimal(f"{float(c_over_o_abundance):.3f}")
+        mg_over_o_abundance = Decimal(f"{float(mg_over_o_abundance):.3f}")
+        fe_over_o_abundance = Decimal(f"{float(fe_over_o_abundance):.3f}")
     else:
         c_over_o_abundance, mg_over_o_abundance, fe_over_o_abundance = (
             FILLVAL_FLOAT32,
@@ -360,7 +367,7 @@ def calculate_ratios(
             pseudo_density_dict["cplus6"] / pseudo_density_dict["cplus5"]
         )
 
-        c_plus_6_over_c_plus_5 = Decimal(f"{c_plus_6_over_c_plus_5:.3f}")
+        c_plus_6_over_c_plus_5 = Decimal(f"{float(c_plus_6_over_c_plus_5):.3f}")
     else:
         c_plus_6_over_c_plus_5 = FILLVAL_FLOAT32
 
@@ -368,7 +375,7 @@ def calculate_ratios(
         o_plus_7_over_o_plus_6 = (
             pseudo_density_dict["oplus7"] / pseudo_density_dict["oplus6"]
         )
-        o_plus_7_over_o_plus_6 = Decimal(f"{o_plus_7_over_o_plus_6:.3f}")
+        o_plus_7_over_o_plus_6 = Decimal(f"{float(o_plus_7_over_o_plus_6):.3f}")
     else:
         o_plus_7_over_o_plus_6 = FILLVAL_FLOAT32
 
@@ -376,7 +383,7 @@ def calculate_ratios(
         fe_low_over_fe_high = (
             pseudo_density_dict["fe_loq"] / pseudo_density_dict["fe_hiq"]
         )
-        fe_low_over_fe_high = Decimal(f"{fe_low_over_fe_high:.3f}")
+        fe_low_over_fe_high = Decimal(f"{float(fe_low_over_fe_high):.3f}")
     else:
         fe_low_over_fe_high = FILLVAL_FLOAT32
 
@@ -469,19 +476,28 @@ def process_codice(
                 cod_lo_science_values, cod_lo_metadata_values, "lo"
             )
             l1a_lo = l1a_lo_species(cod_lo_dataset, l1a_lut_path)
-            l1b_lo = convert_to_rates(
-                l1a_lo,
-                "lo-ialirt",
+            l1b_lo = cast(
+                xr.Dataset,
+                convert_to_rates(
+                    l1a_lo,
+                    "lo-ialirt",
+                ),
             )
+            mid_measurement = int((l1b_lo["epoch"][0] + l1b_lo["epoch"][-1]) // 2)
+            yyyymmdd = datetime.datetime.strptime(
+                et_to_utc(ttj2000ns_to_et(mid_measurement)), "%Y-%m-%dT%H:%M:%S.%f"
+            ).strftime("%Y%m%d")
+            l1b_lo.attrs["Logical_file_id"] = (
+                f"imap_ialirt_l1_realtime_{yyyymmdd}_v000.cdf"
+            )
+
             l2_lo = calculate_ratios(l1b_lo, l2_lut_path, l2_geometric_factor_path)
 
             codice_lo_data.append(
-                {
-                    "apid": 478,
-                    "met": int(met[0]),
-                    "met_in_utc": met_to_utc(met[0]).split(".")[0],
-                    "ttj2000ns": int(met_to_ttj2000ns(met[0])),
+                _populate_instrument_header_items(met)
+                | {
                     "instrument": f"{sensor}",
+                    "codice_lo_epoch": int(l1a_lo["epoch"]),
                     f"{sensor}_c_over_o_abundance": l2_lo.c_over_o_abundance,
                     f"{sensor}_mg_over_o_abundance": l2_lo.mg_over_o_abundance,
                     f"{sensor}_fe_over_o_abundance": l2_lo.fe_over_o_abundance,
@@ -518,11 +534,8 @@ def process_codice(
             ).tolist()
 
             codice_hi_data.append(
-                {
-                    "apid": 478,
-                    "met": int(met[0]),
-                    "met_in_utc": met_to_utc(met[0]).split(".")[0],
-                    "ttj2000ns": int(met_to_ttj2000ns(met[0])),
+                _populate_instrument_header_items(met)
+                | {
                     "instrument": f"{sensor}",
                     f"{sensor}_epoch": [int(epoch) for epoch in l1b_hi["epoch"]],
                     f"{sensor}_h": dec_l2_hi,

@@ -20,11 +20,17 @@ from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_latitudinal,
     frame_transform,
-    instrument_pointing,
+    get_spacecraft_to_instrument_spin_phase_offset,
+    lo_instrument_pointing,
 )
-from imap_processing.spice.repoint import get_pointing_times
+from imap_processing.spice.repoint import (
+    get_pointing_mid_time,
+    get_pointing_times,
+    interpolate_repoint_data,
+)
 from imap_processing.spice.spin import get_spin_data, get_spin_number
 from imap_processing.spice.time import (
+    epoch_to_fractional_doy,
     et_to_utc,
     met_to_ttj2000ns,
     ttj2000ns_to_et,
@@ -162,7 +168,9 @@ MONITOR_RATE_FIELDS = [
 # -------------------------------------------------------------------
 
 
-def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
+def lo_l1b(
+    sci_dependencies: dict, anc_dependencies: list, descriptor: str
+) -> list[Path]:
     """
     Will process IMAP-Lo L1A data into L1B CDF data products.
 
@@ -172,6 +180,8 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         Dictionary of datasets needed for L1B data product creation in xarray Datasets.
     anc_dependencies : list
         List of ancillary file paths needed for L1B data product creation.
+    descriptor : str
+        Determines which datasets are produced.
 
     Returns
     -------
@@ -189,113 +199,174 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
 
     datasets_to_return = []
 
-    badtimes_ds = create_badtimes_dataset()
-    if badtimes_ds.data_vars:
-        # If it was an empty dataset, then we don't want to
+    if descriptor == "badtimes":
+        logger.info("\nProcessing IMAP-Lo L1B Bad Times...")
+        badtimes_ds = create_badtimes_dataset()
         badtimes_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_badtimes")
-        datasets_to_return.append(badtimes_ds)
+        if len(badtimes_ds["epoch"]) > 0:
+            # Only add the dataset if there are bad times added
+            datasets_to_return.append(badtimes_ds)
 
     # if the dependencies are used to create Annotated Direct Events
-    if "imap_lo_l1a_de" in sci_dependencies and "imap_lo_l1a_spin" in sci_dependencies:
+    if descriptor == "de":
         logger.info("\nProcessing IMAP-Lo L1B Direct Events...")
-        logical_source = "imap_lo_l1b_de"
-        # get the dependency dataset for l1b direct events
-        l1a_de = sci_dependencies["imap_lo_l1a_de"]
-        spin_data = sci_dependencies["imap_lo_l1a_spin"]
-
-        # Initialize the L1B DE dataset
-        l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
-        pointing_start_met, pointing_end_met = get_pointing_times(
-            l1a_de["met"].values[0].item()
-        )
-        # Get the start and end times for each spin epoch
-        acq_start, acq_end = convert_start_end_acq_times(spin_data)
-        # Get the average spin durations for each epoch
-        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
-            acq_start, acq_end
-        )
-        # set the spin cycle for each direct event
-        l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
-        # get spin start times for each event
-        spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data, acq_end)
-        # get the absolute met for each event
-        l1b_de = set_event_met(
-            l1a_de, l1b_de, spin_start_time, avg_spin_durations_per_cycle
-        )
-        # set the epoch for each event
-        l1b_de = set_each_event_epoch(l1b_de)
-        # Set the ESA mode for each direct event
-        l1b_de = set_esa_mode(
-            pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
-        )
-        # Set the average spin duration for each direct event
-        l1b_de = set_avg_spin_durations_per_event(
-            l1a_de, l1b_de, avg_spin_durations_per_cycle
-        )
-        # calculate the TOF1 for golden triples
-        # store in the l1a dataset to use in l1b calculations
-        l1a_de = calculate_tof1_for_golden_triples(l1a_de)
-        # set the coincidence type string for each direct event
-        l1b_de = set_coincidence_type(l1a_de, l1b_de, attr_mgr_l1a)
-        # convert the TOFs to engineering units
-        l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)
-        # set the species for each direct event
-        l1b_de = identify_species(l1b_de)
-        # set the pointing direction for each direct event
-        l1b_de = set_pointing_direction(l1b_de)
-        # calculate and set the pointing bin based on the spin phase
-        # pointing bin is 3600 x 40 bins
-        l1b_de = set_pointing_bin(l1b_de)
-        # set the badtimes
-        l1b_de = set_bad_times(l1b_de, anc_dependencies)
-        datasets_to_return.append(l1b_de)
+        ds = l1b_de(sci_dependencies, anc_dependencies, attr_mgr_l1b, attr_mgr_l1a)
+        datasets_to_return.append(ds)
 
     # If dependencies are used to create Histogram Rates
-    if (
-        "imap_lo_l1a_histogram" in sci_dependencies
-        and "imap_lo_l1a_spin" in sci_dependencies
-    ):
+    if descriptor == "histrates":
         logger.info("\nProcessing IMAP-Lo L1B Histogram Rates...")
-        logical_source = "imap_lo_l1b_histrates"
-        # get the dependency dataset for l1b histogram rates
-        l1a_hist = sci_dependencies["imap_lo_l1a_histogram"]
-        spin_data = sci_dependencies["imap_lo_l1a_spin"]
-        # initialize the L1B Histogram Rates dataset from the L1A Histogram Rates
-        # This carries over the epoch and count fields from L1A
-        l1b_all_rates = initialize_all_rates(l1a_hist, attr_mgr_l1b)
-        # set spin cycle and remove invalid spin ASCs
-        l1b_all_rates = set_spin_cycle_from_spin_data(
-            l1a_hist, l1b_all_rates, spin_data
-        )
+        ds = l1b_histrates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
+        datasets_to_return.extend(ds)
 
-        pointing_start_met, pointing_end_met = get_pointing_times(
-            ttj2000ns_to_met(l1a_hist["epoch"].values[0].item())
-        )
-        l1b_all_rates = set_esa_mode(
-            pointing_start_met, pointing_end_met, anc_dependencies, l1b_all_rates
-        )
-        # resweep the histogram data
-        l1b_all_rates, exposure_factor = resweep_histogram_data(
-            l1b_all_rates, anc_dependencies
-        )
-        # Get the start and end times for each spin epoch
-        acq_start, acq_end = convert_start_end_acq_times(spin_data)
-        # Get the average spin durations for each epoch
-        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
-            acq_start, acq_end
-        )
-        l1b_all_rates = calculate_histogram_rates(
-            l1b_all_rates,
-            acq_start,
-            acq_end,
-            avg_spin_durations_per_cycle,
-            exposure_factor,
-        )
+    if descriptor == "derates":
+        logger.info("\nProcessing IMAP-Lo L1B DE Rates...")
+        ds = calculate_de_rates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
+        datasets_to_return.append(ds)
 
-        l1b_hist_rates, l1b_monitor_rates = split_rate_dataset(
-            l1b_all_rates, attr_mgr_l1b
-        )
-        datasets_to_return.extend([l1b_hist_rates, l1b_monitor_rates])
+    if descriptor == "star":
+        logger.info("\nProcessing IMAP-Lo L1B Star Sensor Profile...")
+        ds = l1b_star(sci_dependencies, attr_mgr_l1b)
+        datasets_to_return.append(ds)
+
+    return datasets_to_return
+
+
+def l1b_de(
+    sci_dependencies: dict,
+    anc_dependencies: list,
+    attr_mgr_l1b: ImapCdfAttributes,
+    attr_mgr_l1a: ImapCdfAttributes,
+) -> xr.Dataset:
+    """
+    Create the IMAP-Lo L1B Direct Events dataset.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        Dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    anc_dependencies : list
+        List of ancillary file paths needed for L1B data product creation.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the global attributes.
+    attr_mgr_l1a : ImapCdfAttributes
+        Attribute manager used to get the variable attributes.
+
+    Returns
+    -------
+    l1b_de : xr.Dataset
+        The IMAP-Lo L1B Direct Events dataset.
+    """
+    logical_source = "imap_lo_l1b_de"
+    # get the dependency dataset for l1b direct events
+    l1a_de = sci_dependencies["imap_lo_l1a_de"]
+    spin_data = sci_dependencies["imap_lo_l1a_spin"]
+    l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
+
+    # Initialize the L1B DE dataset
+    l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
+    # Get the pivot angle from the housekeeping dataset
+    pivot_angle = _get_nearest_pivot_angle(l1b_de["epoch"].values[0], l1b_nhk)
+    l1b_de["pivot_angle"] = xr.DataArray([pivot_angle], dims=["pivot_angle"])
+
+    pointing_start_met, pointing_end_met = get_pointing_times(
+        l1a_de["met"].values[0].item()
+    )
+
+    # Get the average spin durations for each epoch
+    avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
+    # set the spin cycle for each direct event
+    l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
+    # get spin start times for each event
+    spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data)
+
+    # get the absolute met for each event
+    l1b_de = set_event_met(
+        l1a_de, l1b_de, spin_start_time, avg_spin_durations_per_cycle
+    )
+    # set the epoch for each event
+    l1b_de = set_each_event_epoch(l1b_de)
+    # Set the ESA mode for each direct event
+    l1b_de = set_esa_mode(
+        pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
+    )
+    # Set the average spin duration for each direct event
+    l1b_de = set_avg_spin_durations_per_event(
+        l1a_de, l1b_de, avg_spin_durations_per_cycle
+    )
+    # calculate the TOF1 for golden triples
+    # store in the l1a dataset to use in l1b calculations
+    l1a_de = calculate_tof1_for_golden_triples(l1a_de)
+    # set the coincidence type string for each direct event
+    l1b_de = set_coincidence_type(l1a_de, l1b_de, attr_mgr_l1a)
+    # convert the TOFs to engineering units
+    l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)
+    # set the species for each direct event
+    l1b_de = identify_species(l1b_de)
+    # set the pointing direction for each direct event
+    l1b_de = set_pointing_direction(l1b_de)
+    # calculate and set the pointing bin based on the spin phase
+    # pointing bin is 3600 x 40 bins
+    l1b_de = set_pointing_bin(l1b_de)
+    # set the badtimes
+    l1b_de = set_bad_times(l1b_de, anc_dependencies)
+    return l1b_de
+
+
+def l1b_histrates(
+    sci_dependencies: dict, anc_dependencies: list, attr_mgr_l1b: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Create the IMAP-Lo L1B Histogram Rates dataset.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        Dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    anc_dependencies : list
+        List of ancillary file paths needed for L1B data product creation.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the global attributes.
+
+    Returns
+    -------
+    l1b_histrates : xr.Dataset
+        The IMAP-Lo L1B Histogram Rates dataset.
+    """
+    datasets_to_return = []
+    # get the dependency dataset for l1b histogram rates
+    l1a_hist = sci_dependencies["imap_lo_l1a_histogram"]
+    spin_data = sci_dependencies["imap_lo_l1a_spin"]
+    # initialize the L1B Histogram Rates dataset from the L1A Histogram Rates
+    # This carries over the epoch and count fields from L1A
+    l1b_all_rates = initialize_all_rates(l1a_hist, attr_mgr_l1b)
+    # set spin cycle and remove invalid spin ASCs
+    l1b_all_rates = set_spin_cycle_from_spin_data(l1a_hist, l1b_all_rates, spin_data)
+
+    pointing_start_met, pointing_end_met = get_pointing_times(
+        ttj2000ns_to_met(l1a_hist["epoch"].values[0].item())
+    )
+    l1b_all_rates = set_esa_mode(
+        pointing_start_met, pointing_end_met, anc_dependencies, l1b_all_rates
+    )
+    # resweep the histogram data
+    l1b_all_rates, exposure_factor = resweep_histogram_data(
+        l1b_all_rates, anc_dependencies
+    )
+    # Get the start and end times for each spin epoch
+    acq_start, acq_end = convert_start_end_acq_times(spin_data)
+    # Get the average spin durations for each epoch
+    avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
+    l1b_all_rates = calculate_histogram_rates(
+        l1b_all_rates,
+        acq_start,
+        acq_end,
+        avg_spin_durations_per_cycle,
+        exposure_factor,
+    )
+
+    l1b_hist_rates, l1b_monitor_rates = split_rate_dataset(l1b_all_rates, attr_mgr_l1b)
+    datasets_to_return.extend([l1b_hist_rates, l1b_monitor_rates])
 
     return datasets_to_return
 
@@ -351,6 +422,12 @@ def initialize_l1b_de(
         dims=["epoch"],
         # TODO: Add esa_step to YAML file
         # attrs=attr_mgr.get_variable_attributes("esa_step"),
+    )
+    l1b_de["shcoarse"] = xr.DataArray(
+        np.repeat(l1a_de["shcoarse"].values, l1a_de["de_count"].values),
+        dims=["epoch"],
+        # TODO: Add shcoarse to YAML file
+        # attrs=attr_mgr.get_variable_attributes("shcoarse"),
     )
 
     return l1b_de
@@ -441,26 +518,27 @@ def convert_start_end_acq_times(
 
 
 def get_avg_spin_durations_per_cycle(
-    acq_start: xr.DataArray, acq_end: xr.DataArray
+    spin_data: xr.Dataset,
 ) -> xr.DataArray:
     """
-    Get the average spin duration for each spin epoch.
+    Get the average spin duration for each aggregated science cycle.
 
     Parameters
     ----------
-    acq_start : xarray.DataArray
-        The start acquisition times for each spin epoch.
-    acq_end : xarray.DataArray
-        The end acquisition times for each spin epoch.
+    spin_data : xarray.Dataset
+        The L1A Spin dataset.
 
     Returns
     -------
     avg_spin_durations : xarray.DataArray
-        The average spin duration for each spin epoch.
+        The average spin duration for each ASC.
     """
+    acq_start = spin_data["acq_start_sec"] + spin_data["acq_start_subsec"] * 1e-6
+    acq_end = spin_data["acq_end_sec"] + spin_data["acq_end_subsec"] * 1e-6
     # Get the avg spin duration for each spin epoch
-    # There are 28 spins per epoch (1 aggregated science cycle)
-    avg_spin_durations_per_cycle = (acq_end - acq_start) / 28
+    # We need to use the number of spins that were actually in the ASC
+    # because there may be partial ASCs where only some of the spins were completed
+    avg_spin_durations_per_cycle = (acq_end - acq_start) / spin_data["num_completed"]
     return avg_spin_durations_per_cycle
 
 
@@ -716,7 +794,7 @@ def _check_sufficient_spins(spin_data: xr.Dataset) -> np.ndarray:
 
 
 def get_spin_start_times(
-    l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.Dataset, acq_end: xr.DataArray
+    l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.Dataset
 ) -> xr.DataArray:
     """
     Get the start time for the spin that each direct event is in.
@@ -733,40 +811,40 @@ def get_spin_start_times(
         The L1B DE dataset.
     spin_data : xr.Dataset
         The L1A Spin dataset.
-    acq_end : xr.DataArray
-        The end acquisition times for each spin ASC.
 
     Returns
     -------
     spin_start_time : xr.DataArray
         The start time for the spin that each direct event is in.
     """
-    # Get the MET times for each individual direct event
-    # l1a_de["met"] has one value per time epoch, but we need one per direct event
-    de_met = np.repeat(l1a_de["met"], l1a_de["de_count"])
-
-    # Find the closest stop_acq for each direct event
-    closest_stop_acq_indices = np.abs(de_met.values[:, None] - acq_end.values).argmin(
-        axis=1
+    # align l1a_de packets with spin_data packets
+    de_to_spin_indices = match_science_to_spin_asc(
+        l1a_de["epoch"].values, spin_data["epoch"].values
     )
+    # Repeat this for each direct event based on the de_count
+    de_to_spin_indices = np.repeat(de_to_spin_indices, l1a_de["de_count"])
+
     # There are 28 spins per epoch (1 aggregated science cycle)
     # Set the spin_cycle_num to the spin number relative to the
     # start of the ASC
     spin_cycle_num = l1b_de["spin_cycle"] % 28
-    # Get the seconds portion of the start time for each spin
-    start_sec_spins = spin_data["start_sec_spin"].values[
-        closest_stop_acq_indices, spin_cycle_num
-    ]
-    # Get the subseconds portion of the spin start time and convert from
-    # microseconds to seconds
-    start_subsec_spins = (
-        spin_data["start_subsec_spin"].values[closest_stop_acq_indices, spin_cycle_num]
-        * 1e-6
-    )
+    asc_starts = spin_data["acq_start_sec"] + spin_data["acq_start_subsec"] * 1e-6
+    avg_spin_durations = get_avg_spin_durations_per_cycle(spin_data)
 
-    # Combine the seconds and subseconds to get the start time for each spin
-    spin_start_time = start_sec_spins + start_subsec_spins
-    return xr.DataArray(spin_start_time)
+    # Calculate the time based off of the start of the acquisition period
+    # then using an average spin duration to calculate the offset within the ASC
+    # NOTE: We don't want to use the spin start times directly from the ASC spin packet
+    #       because we are using an average spin_cycle for the ASC and there are
+    #       times when only half the spins were completed in an ASC. This allows us
+    #       to still get a valid spin_cycle start time for each direct event, even
+    #       if the average spin_cycle was after the end of the acquisition period.
+    # TODO: Can we do even better by knowing how many esa_steps and spins were complete?
+    #       i.e. change the spin_cycle calculation
+    spin_start_time = (
+        asc_starts[de_to_spin_indices]
+        + spin_cycle_num * avg_spin_durations[de_to_spin_indices]
+    )
+    return spin_start_time
 
 
 def set_event_met(
@@ -899,7 +977,8 @@ def calculate_tof1_for_golden_triples(l1a_de: xr.Dataset) -> xr.Dataset:
         The L1A DE dataset with the TOF1 calculated for golden triples.
     """
     for idx, coin_type in enumerate(l1a_de["coincidence_type"].values):
-        if coin_type == 0 and l1a_de["mode"][idx] == 0:
+        # NOTE: mode bit of 1 is used to identify golden triple (event was compressed)
+        if coin_type == 0 and l1a_de["mode"][idx] == 1:
             # Calculate TOF1
             # TOF1 equation requires values to be right bit shifted. These values were
             # originally right bit shifted when packed in the telemetry packet, but were
@@ -1200,9 +1279,10 @@ def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
     # Get the pointing bin for each DE
     et = ttj2000ns_to_et(l1b_de["epoch"])
     # get the direction in HAE coordinates
-    direction = instrument_pointing(
-        et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_HAE, cartesian=True
+    direction = lo_instrument_pointing(
+        et, l1b_de["pivot_angle"].values[0], SpiceFrame.IMAP_HAE, cartesian=True
     )
+
     # TODO: Need to ask Lo what to do if a latitude is outside of the
     # +/-2 degree range. Is that possible?
     l1b_de["hae_x"] = xr.DataArray(
@@ -1708,6 +1788,191 @@ def calculate_histogram_rates(
     return l1b_histrates
 
 
+def calculate_de_rates(
+    sci_dependencies: dict,
+    anc_dependencies: list,
+    attr_mgr_l1b: ImapCdfAttributes,
+) -> xr.Dataset:
+    """
+    Calculate direct event rates histograms.
+
+    The histograms are per ASC (28 spins), so we need to
+    regroup the individual DEs from the l1b_de dataset into
+    their associated ASC and then bin them by ESA / spin bin.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        The science dependencies for the derates product.
+    anc_dependencies : list
+        List of ancillary file paths.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the L1B derates dataset attributes.
+
+    Returns
+    -------
+    l1b_derates : xr.Dataset
+        Dataset containing DE rates histograms.
+    """
+    l1b_de = sci_dependencies["imap_lo_l1b_de"]
+    l1a_spin = sci_dependencies["imap_lo_l1a_spin"]
+    # Set the asc_start for each DE by removing the average spin cycle
+    # which is a function of esa_step (see set_spin_cycle function)
+    # spin_cycle is an average over esa steps and spins per asc, so finding
+    # the "average" spin that an esa step occurred at.
+    asc_start = l1b_de["spin_cycle"] - (7 + (l1b_de["esa_step"] - 1) * 2)
+
+    # Get unique ASC values and create a mapping from asc_start to index
+    unique_asc, unique_idx, asc_idx = np.unique(
+        asc_start.values, return_index=True, return_inverse=True
+    )
+    num_asc = len(unique_asc)
+
+    # Pre-extract arrays for faster access (avoid repeated xarray indexing)
+    esa_step_idx = l1b_de["esa_step"].values - 1  # Convert to 0-based index
+    # Convert spin_bin from 0.1 degree bins to 6 degree bins for coarse histograms
+    spin_bin = l1b_de["spin_bin"].values // 60
+    species = l1b_de["species"].values
+    coincidence_type = l1b_de["coincidence_type"].values
+
+    if len(anc_dependencies) == 0:
+        logger.warning("No ancillary dependencies provided, using linear stepping.")
+        energy_step_mapping = np.arange(7)
+    else:
+        # An array mapping esa step index to esa level for resweeping
+        energy_step_mapping = _get_esa_level_indices(asc_start, anc_dependencies)
+
+    # exposure time shape: (num_asc, num_esa_steps)
+    exposure_time = np.zeros((num_asc, 7), dtype=float)
+    # exposure_time_6deg = 4 * avg_spin_per_asc / 60
+    # 4 sweeps per ASC (28 / 7) in 60 bins
+    asc_avg_spin_durations = 4 * l1b_de["avg_spin_durations"].data[unique_idx] / 60
+    np.add.at(
+        exposure_time,
+        (slice(None), energy_step_mapping),
+        asc_avg_spin_durations[:, np.newaxis],
+    )
+
+    # Create output arrays
+    output_shape = (num_asc, 7, 60)
+    h_counts = np.zeros(output_shape)
+    o_counts = np.zeros(output_shape)
+    triple_counts = np.zeros(output_shape)
+    double_counts = np.zeros(output_shape)
+
+    # Species masks
+    h_mask = species == "H"
+    o_mask = species == "O"
+
+    # Coincidence type masks
+    triple_types = ["111111", "111100", "111000"]
+    double_types = [
+        "110100",
+        "110000",
+        "101101",
+        "101100",
+        "101000",
+        "100100",
+        "100101",
+        "100000",
+        "011100",
+        "011000",
+        "010100",
+        "010101",
+        "010000",
+        "001100",
+        "001101",
+        "001000",
+    ]
+    triple_mask = np.isin(coincidence_type, triple_types)
+    double_mask = np.isin(coincidence_type, double_types)
+
+    # Vectorized histogramming using np.add.at with full index arrays
+    np.add.at(h_counts, (asc_idx[h_mask], esa_step_idx[h_mask], spin_bin[h_mask]), 1)
+    np.add.at(o_counts, (asc_idx[o_mask], esa_step_idx[o_mask], spin_bin[o_mask]), 1)
+    np.add.at(
+        triple_counts,
+        (asc_idx[triple_mask], esa_step_idx[triple_mask], spin_bin[triple_mask]),
+        1,
+    )
+    np.add.at(
+        double_counts,
+        (asc_idx[double_mask], esa_step_idx[double_mask], spin_bin[double_mask]),
+        1,
+    )
+
+    ds = xr.Dataset(
+        coords={
+            # ASC start time in TTJ2000ns
+            "epoch": l1a_spin["epoch"],
+            "esa_step": np.arange(7),
+            "spin_bin": np.arange(60),
+        },
+    )
+    ds["h_counts"] = xr.DataArray(
+        h_counts,
+        dims=["epoch", "esa_step", "spin_bin"],
+    )
+    ds["o_counts"] = xr.DataArray(
+        o_counts,
+        dims=["epoch", "esa_step", "spin_bin"],
+    )
+    ds["triple_counts"] = xr.DataArray(
+        triple_counts,
+        dims=["epoch", "esa_step", "spin_bin"],
+    )
+    ds["double_counts"] = xr.DataArray(
+        double_counts,
+        dims=["epoch", "esa_step", "spin_bin"],
+    )
+    ds["exposure_time"] = xr.DataArray(
+        exposure_time,
+        dims=["epoch", "esa_step"],
+    )
+    ds["h_rates"] = ds["h_counts"] / ds["exposure_time"]
+    ds["o_rates"] = ds["o_counts"] / ds["exposure_time"]
+    ds["triple_rates"] = ds["triple_counts"] / ds["exposure_time"]
+    ds["double_rates"] = ds["double_counts"] / ds["exposure_time"]
+
+    # (N, 7)
+    unique_asc = xr.DataArray(unique_asc, dims=["epoch"])
+    ds["spin_cycle"] = unique_asc + 7 + (ds["esa_step"] - 1) * 2
+
+    # TODO: Add badtimes
+    ds["badtime"] = xr.zeros_like(ds["epoch"], dtype=int)
+
+    ds["pivot_angle"] = l1b_de["pivot_angle"]
+
+    pointing_start_met, pointing_end_met = get_pointing_times(
+        ttj2000ns_to_met(ds["epoch"].values[0].item())
+    )
+    ds = set_esa_mode(pointing_start_met, pointing_end_met, anc_dependencies, ds)
+
+    ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_derates")
+    ds["epoch"].attrs = attr_mgr_l1b.get_variable_attributes("epoch")
+
+    return ds
+
+
+def _get_nearest_pivot_angle(epoch: int, ds_nhk: xr.Dataset) -> float:
+    """
+    Get the nearest pivot angle for the given epoch from the NHK dataset.
+
+    Parameters
+    ----------
+    epoch : int
+        The epoch in TTJ2000ns format.
+    ds_nhk : xr.Dataset
+        The NHK dataset containing pivot angle information.
+
+    Returns
+    -------
+    pivot_angle : float
+        The nearest pivot angle for the given epoch.
+    """
+    return ds_nhk["pcc_cumulative_cnt_pri"].sel(epoch=epoch, method="nearest").item()
+
+
 def _get_esa_level_indices(epochs: np.ndarray, anc_dependencies: list) -> np.ndarray:
     """
     Get the ESA level indices (reswept indices) for the given epochs.
@@ -1838,3 +2103,403 @@ def split_rate_dataset(
         )
 
     return l1b_hist_rates, l1b_monitor_rates
+
+
+# ============================================================================
+# Star Sensor L1B Processing Functions
+# ============================================================================
+
+
+def filter_valid_star_records(
+    l1a_star: xr.Dataset,
+    min_count: int = 700,
+    time_window_offset: float = 0.0,
+    time_window_duration: float | None = None,
+) -> np.ndarray:
+    """
+    Create boolean mask for valid star sensor records.
+
+    Records are valid if:
+    1. COUNT >= min_count (default 700, per algorithm Section 5)
+    2. Within specified time window (if provided)
+    3. Not during a repoint maneuver
+
+    Parameters
+    ----------
+    l1a_star : xr.Dataset
+        L1A star sensor dataset containing 'shcoarse' (MET seconds) and 'count'.
+    min_count : int
+        Minimum acceptable COUNT value (default: 700).
+    time_window_offset : float
+        Time offset in seconds from first record (default: 0.0).
+    time_window_duration : float | None
+        Duration of valid time window in seconds (None = no filter, default).
+
+    Returns
+    -------
+    valid_mask : np.ndarray
+        Boolean array indicating valid records.
+    """
+    # Section 5: Acceptance Criteria - COUNT >= 700
+    count_mask = l1a_star["count"].values >= min_count
+
+    # shcoarse is already in MET seconds
+    shcoarse_sec = l1a_star["shcoarse"].values.astype(np.float64)
+
+    # Section 2.2: Time window filter (if specified)
+    if time_window_duration is not None:
+        t0 = shcoarse_sec[0]
+        time_mask = (shcoarse_sec >= (t0 + time_window_offset)) & (
+            shcoarse_sec <= (t0 + time_window_offset + time_window_duration)
+        )
+        valid_mask = count_mask & time_mask
+    else:
+        valid_mask = count_mask
+
+    # Filter out repoint maneuvers
+    repoint_df = interpolate_repoint_data(shcoarse_sec)
+    # Exclude times where repoint_in_progress is True
+    repoint_mask = ~repoint_df["repoint_in_progress"].values
+    valid_mask = valid_mask & repoint_mask
+
+    n_valid = valid_mask.sum()
+    n_total = len(valid_mask)
+    logger.info(
+        f"Star sensor valid records: {n_valid}/{n_total} "
+        f"({100 * n_valid / n_total:.1f}%)"
+    )
+
+    return valid_mask
+
+
+def calculate_star_sensor_profile_for_group(
+    data: np.ndarray,
+    counts: np.ndarray,
+    end_bins_to_exclude: int = 2,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate averaged star sensor amplitude profile for a group of records.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Star sensor data array, shape (n_records, 720).
+    counts : np.ndarray
+        Count values for each record, shape (n_records,).
+    end_bins_to_exclude : int
+        Number of bins to exclude from end of each row of data (default: 2).
+
+    Returns
+    -------
+    avg_amplitude : np.ndarray
+        Average amplitude in mV per bin, shape (720,).
+    count_per_bin : np.ndarray
+        Number of samples accumulated per bin, shape (720,).
+    """
+    if len(data) == 0:
+        return np.full(720, np.nan, dtype=np.float64), np.zeros(720, dtype=np.int32)
+
+    # Determine valid bin ranges for each record
+    use_edge_exclusion = (end_bins_to_exclude > 0) & (counts > end_bins_to_exclude)
+    end_bins = np.where(
+        use_edge_exclusion,
+        np.minimum(counts - end_bins_to_exclude, 720),
+        np.minimum(counts, 720),
+    )
+
+    # Create mask for valid bins: shape (n_records, 720)
+    bin_indices = np.arange(720)
+    valid_bin_mask = bin_indices[None, :] < end_bins[:, None]
+
+    # Apply mask and sum across all records
+    masked_data = np.where(valid_bin_mask, data, 0)
+    sum_array = masked_data.sum(axis=0).astype(np.float64)
+    count_array = valid_bin_mask.sum(axis=0).astype(np.int32)
+
+    # Compute average amplitude per bin
+    avg_amplitude = np.full(720, np.nan, dtype=np.float64)
+    mask = count_array > 0
+    avg_amplitude[mask] = sum_array[mask] / count_array[mask]
+
+    return avg_amplitude, count_array
+
+
+def calculate_star_sensor_profiles_by_group(
+    l1a_star: xr.Dataset,
+    sampling_cadence: float,
+    spin_period: float,
+    group_size: int = 64,
+    start_angle_offset: float = 62.0,
+    end_bins_to_exclude: int = 2,
+    min_count_threshold: int = 700,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculate averaged star sensor amplitude profiles for groups of records.
+
+    Groups L1A star sensor records into chunks of `group_size` and calculates
+    an averaged profile for each group.
+
+    Parameters
+    ----------
+    l1a_star : xr.Dataset
+        L1A star sensor data.
+    sampling_cadence : float
+        Sampling period in milliseconds (ifb_data_interval).
+    spin_period : float
+        Spin period in seconds.
+    group_size : int
+        Number of records per group (default: 64).
+    start_angle_offset : float
+        Starting angle offset in degrees (default: 62.0 = 90° - 28°).
+    end_bins_to_exclude : int
+        Number of ending bins to exclude from each average (default: 2).
+    min_count_threshold : int
+        Minimum COUNT value for valid record (default: 700).
+
+    Returns
+    -------
+    spin_angle : np.ndarray
+        Spin angles in degrees [0-360], shape (720,).
+    group_mets : np.ndarray
+        Start MET for each group, shape (n_groups,).
+    avg_amplitudes : np.ndarray
+        Average amplitude in mV per bin per group, shape (n_groups, 720).
+    counts_per_bin : np.ndarray
+        Number of samples accumulated per bin per group, shape (n_groups, 720).
+    """
+    # Get valid record mask
+    valid_mask = filter_valid_star_records(
+        l1a_star, min_count_threshold, time_window_offset=0.0, time_window_duration=None
+    )
+
+    valid_indices = np.where(valid_mask)[0]
+    n_valid = len(valid_indices)
+
+    # Calculate spin angles (same for all groups)
+    deg_per_bin = 360.0 * (sampling_cadence / 1000.0) / spin_period
+    bin_indices = np.arange(720)
+    sample_centers = (bin_indices + 0.5) * deg_per_bin
+    spin_angle = (start_angle_offset + sample_centers) % 360.0
+
+    if n_valid == 0:
+        logger.warning(
+            "No valid star sensor records found. Returning empty profile with FILLVAL."
+        )
+        return (
+            spin_angle,
+            np.array([], dtype=np.int64),
+            np.empty((0, 720), dtype=np.float64),
+            np.empty((0, 720), dtype=np.int32),
+        )
+
+    # Keep valid data using xarray selection
+    l1a_star = l1a_star.isel(epoch=valid_indices)
+
+    # Calculate number of groups (include partial groups)
+    n_groups = (n_valid + group_size - 1) // group_size
+    last_group_size = n_valid % group_size
+
+    logger.info(
+        f"Processing {n_valid} valid records into {n_groups} groups of {group_size}"
+    )
+    if last_group_size != 0:
+        logger.debug(f"Last group contains {last_group_size} records (partial group)")
+
+    # Assign group labels to the dataset for xarray groupby operations
+    group_labels = np.repeat(np.arange(n_groups), group_size)[:n_valid]
+    l1a_star = l1a_star.assign_coords(group=("epoch", group_labels))
+
+    # Extract first MET for each group using xarray groupby
+    group_mets = l1a_star["shcoarse"].groupby("group").first().values.astype(np.int64)
+
+    # Initialize output arrays
+    avg_amplitudes = np.zeros((n_groups, 720), dtype=np.float64)
+    counts_per_bin = np.zeros((n_groups, 720), dtype=np.int32)
+
+    # Process each group using xarray groupby
+    for group_label, group_data in l1a_star.groupby("group"):
+        # Calculate profile for this group
+        avg_amp, count_arr = calculate_star_sensor_profile_for_group(
+            group_data["data"].values, group_data["count"].values, end_bins_to_exclude
+        )
+
+        avg_amplitudes[group_label] = avg_amp
+        counts_per_bin[group_label] = count_arr
+
+    return spin_angle, group_mets, avg_amplitudes, counts_per_bin
+
+
+def get_sampling_cadence_from_nhk(l1b_nhk: xr.Dataset) -> float:
+    """
+    Extract ifb_data_interval from NHK dataset.
+
+    The sampling cadence is already in engineering units after L1B processing.
+    Formula applied in XTCE: ifb_data_interval = 13.3344 + 0.06945 * DN
+
+    Parameters
+    ----------
+    l1b_nhk : xr.Dataset
+        L1B NHK dataset with derived values (engineering units).
+
+    Returns
+    -------
+    sampling_cadence : float
+        Average sampling cadence in milliseconds.
+    """
+    if "ifb_data_interval" not in l1b_nhk:
+        raise KeyError(
+            "ifb_data_interval field not found in L1B NHK dataset. "
+            "Cannot calculate sampling cadence."
+        )
+
+    # Get mean value across all epochs (should be relatively constant)
+    sampling_cadence = float(l1b_nhk["ifb_data_interval"].values.mean())
+
+    logger.info(f"Star sensor sampling cadence from NHK: {sampling_cadence:.3f} ms")
+    return sampling_cadence
+
+
+def l1b_star(
+    sci_dependencies: dict,
+    attr_mgr_l1b: ImapCdfAttributes,
+    group_size: int = 64,
+) -> xr.Dataset:
+    """
+    Create the IMAP-Lo L1B Star Sensor dataset.
+
+    Creates averaged spin profiles from L1A star sensor data, computing
+    the average amplitude per spin angle bin for each group of records.
+    Each group contains `group_size` consecutive valid records.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        Dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager for L1B dataset metadata.
+    group_size : int
+        Number of records to average per group (default: 64).
+
+    Returns
+    -------
+    l1b_star_ds : xr.Dataset
+        L1B star sensor dataset with spin_angle, avg_amplitude, count_per_bin,
+        and time range metadata. Each epoch corresponds to a group of records.
+    """
+    logical_source = "imap_lo_l1b_prostar"
+    l1a_star = sci_dependencies["imap_lo_l1a_star"]
+    l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
+    spin_data = sci_dependencies["imap_lo_l1a_spin"]
+
+    # Get sampling cadence from NHK
+    sampling_cadence = get_sampling_cadence_from_nhk(l1b_nhk)
+
+    # Get spin duration from spin data
+    avg_spin_durations = get_avg_spin_durations_per_cycle(spin_data)
+    spin_duration = float(avg_spin_durations.mean().values)
+    logger.info(f"Using spin duration from spin data: {spin_duration:.6f} s")
+
+    # TODO: Read from ancillary config file when available
+    lo_angle_offset = 2.0
+    sc_to_inst_angle_offset = (
+        360 * get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO)
+        + lo_angle_offset
+    )
+    end_bins_to_exclude = 2
+    min_count_threshold = 700
+
+    # Calculate profiles for each 64-spin group
+    (
+        spin_angle,
+        group_mets,
+        avg_amplitudes,
+        counts_per_bin,
+    ) = calculate_star_sensor_profiles_by_group(
+        l1a_star,
+        sampling_cadence,
+        spin_duration,
+        group_size=group_size,
+        start_angle_offset=sc_to_inst_angle_offset,
+        end_bins_to_exclude=end_bins_to_exclude,
+        min_count_threshold=min_count_threshold,
+    )
+
+    # Get global epoch times from L1A data for start_doy and end_doy
+    global_start_epoch = l1a_star["epoch"].values[0]
+    global_end_epoch = l1a_star["epoch"].values[-1]
+
+    # Create dataset with spin_angle as coordinate and multiple epochs
+    group_epochs = met_to_ttj2000ns(group_mets)
+    l1b_star_ds = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(
+                group_epochs,
+                dims=["epoch"],
+                attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
+            ),
+            "spin_angle": xr.DataArray(
+                spin_angle,
+                dims=["spin_angle"],
+                attrs=attr_mgr_l1b.get_variable_attributes(
+                    "spin_angle", check_schema=False
+                ),
+            ),
+        },
+        attrs=attr_mgr_l1b.get_global_attributes(logical_source),
+    )
+
+    # Add spin_angle_bin as a variable (original bin indices)
+    l1b_star_ds["spin_angle_bin"] = xr.DataArray(
+        np.arange(720, dtype=np.uint16),
+        dims=["spin_angle"],
+        attrs=attr_mgr_l1b.get_variable_attributes(
+            "spin_angle_bin", check_schema=False
+        ),
+    )
+
+    l1b_star_ds["met"] = xr.DataArray(
+        group_mets,
+        dims=["epoch"],
+        attrs=attr_mgr_l1b.get_variable_attributes("met"),
+    )
+
+    l1b_star_ds["avg_amplitude"] = xr.DataArray(
+        avg_amplitudes,
+        dims=["epoch", "spin_angle"],
+        attrs=attr_mgr_l1b.get_variable_attributes("avg_amplitude"),
+    )
+
+    l1b_star_ds["count_per_bin"] = xr.DataArray(
+        counts_per_bin,
+        dims=["epoch", "spin_angle"],
+        attrs=attr_mgr_l1b.get_variable_attributes("count_per_bin"),
+    )
+
+    # Sort the dataset by spin_angle
+    l1b_star_ds = l1b_star_ds.sortby("spin_angle")
+
+    # Add pointing mid time (MET) as a scalar value
+    # Use the first epoch to determine which pointing we're in
+    first_met = l1a_star["shcoarse"].values[0]
+    pointing_mid_met = get_pointing_mid_time(first_met)
+
+    # Add global start and end day of year as scalar values
+    start_doy = epoch_to_fractional_doy(global_start_epoch)
+    end_doy = epoch_to_fractional_doy(global_end_epoch)
+
+    # Add processing parameters as metadata
+    l1b_star_ds.attrs["start_doy"] = start_doy
+    l1b_star_ds.attrs["end_doy"] = end_doy
+    l1b_star_ds.attrs["pointing_mid_met"] = pointing_mid_met
+    l1b_star_ds.attrs["sampling_cadence_ms"] = sampling_cadence
+    l1b_star_ds.attrs["spin_duration_sec"] = spin_duration
+    l1b_star_ds.attrs["lo_angle_offset_deg"] = lo_angle_offset
+    l1b_star_ds.attrs["end_bins_excluded"] = end_bins_to_exclude
+    l1b_star_ds.attrs["min_count_threshold"] = min_count_threshold
+    l1b_star_ds.attrs["group_size"] = group_size
+
+    logger.info(
+        f"L1B star sensor dataset created successfully with {len(group_epochs)} groups"
+    )
+
+    return l1b_star_ds

@@ -9,6 +9,7 @@ from imap_processing.codice.codice_l2 import process_codice_l2
 dataset = process_codice_l2(l1_filename)
 """
 
+import datetime
 import logging
 from pathlib import Path
 
@@ -33,7 +34,6 @@ from imap_processing.codice.constants import (
     LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     NSW_POSITIONS,
-    PIXEL_ORIENTATIONS,
     PUI_POSITIONS,
     SOLAR_WIND_POSITIONS,
     SSD_ID_TO_ELEVATION,
@@ -315,7 +315,20 @@ def compute_geometric_factors(
     # Perform the comparison and calculate modes
     # Modes will be true (reduced mode) anywhere half_spin > rgfo_half_spin otherwise
     # false (full mode)
-    modes = half_spin_per_esa_step > rgfo_half_spin
+    # TODO: The mode calculation will need to be revisited after FW changes in january
+    #  2026. We also need to fix this on days when the sci Lut changes.
+    # After November 24th 2025 we need to do this step a different way.
+    start_date = dataset.attrs.get("Logical_file_id", None)
+    if start_date is None:
+        raise ValueError("Dataset is missing Logical_file_id attribute.")
+    processing_date = datetime.datetime.strptime(start_date.split("_")[4], "%Y%m%d")
+    date_switch = datetime.datetime(2025, 11, 24)
+    if processing_date < date_switch:
+        modes = (half_spin_per_esa_step > rgfo_half_spin) & (rgfo_half_spin > 0)
+    else:
+        # After November 24th, 2025, we no longer apply reduced geometric factors;
+        # always use the full geometric factor lookup.
+        modes = np.zeros_like(half_spin_per_esa_step, dtype=bool)
 
     # Get the geometric factors based on the modes
     gf = np.where(
@@ -542,11 +555,13 @@ def process_lo_angular_intensity(
     )
     # add uncertainties to species list
     species_list = species_list + [f"unc_{var}" for var in species_list]
+
     # Take the mean across elevation angles and restore the original dimension order
     dataset_converted = (
         dataset[species_list]
         .groupby("elevation_angle")
-        .sum(keep_attrs=True)  # One position should always contain zeros so sum is safe
+        .sum(keep_attrs=True, skipna=False)  # One position should always contain zeros
+        # so sum is safe
         # Restore original dimension order because groupby moves the grouped
         # dimension to the front
         .transpose("epoch", "esa_step", "spin_sector", "elevation_angle", ...)
@@ -557,23 +572,28 @@ def process_lo_angular_intensity(
         spin_angle=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
     )
     dataset = dataset.drop_vars(species_list).merge(dataset_converted)
+
     # Positions 0 and 10 only observe half of the 24 spins for each esa step.
     # To account for this, we replicate the counts observed in position 0 and 10 for
     # each esa step to either spin angles 0-11 or 12-23, depending on the pixel
     # orientation (A/B). See section 11.2.2 of the CoDICE algorithm document
-    a_inds = np.array(
-        [pos for pos, orientation in PIXEL_ORIENTATIONS.items() if orientation == "A"]
-    )
-    b_inds = np.array(
-        [pos for pos, orientation in PIXEL_ORIENTATIONS.items() if orientation == "B"]
-    )
+    # Use the variable "half_spin_per_esa_step" to determine the pixel orientations.
+    # When the half spin number is even, the configuration is A and when the half spin
+    # is odd, the configuration is B.
+    # TODO handle when half_spin_per_esa_step changes in the middle of the dataset
+    half_spin_per_esa_step = dataset["half_spin_per_esa_step"].data[0]
+    a_inds = np.where(half_spin_per_esa_step % 2 == 0)[0]
+    b_inds = np.where(half_spin_per_esa_step % 2 == 1)[0]
 
     position_index = position_index_to_adjust
     for species in species_list:
+        # Create a copy of the dataset to avoid modifying the original
+        species_data = dataset[species].data.copy()
         # Determine the correct spin indices based on the position
         spin_sectors = dataset["spin_sector"].data
         spin_inds_1 = np.where(spin_sectors >= 12)[0]
         spin_inds_2 = np.where(spin_sectors < 12)[0]
+
         # if position_index is 9, swap the spin indices
         if position_index == 9:
             spin_inds_1, spin_inds_2 = spin_inds_2, spin_inds_1
@@ -581,15 +601,11 @@ def process_lo_angular_intensity(
         # Assign the values to the correct positions and spin sectors
         dataset[species].values[
             :, a_inds[:, np.newaxis], spin_inds_1, position_index
-        ] = dataset[species].values[
-            :, a_inds[:, np.newaxis], spin_inds_2, position_index
-        ]
+        ] = species_data[:, a_inds[:, np.newaxis], spin_inds_2, position_index]
 
         dataset[species].values[
             :, b_inds[:, np.newaxis], spin_inds_2, position_index
-        ] = dataset[species].values[
-            :, b_inds[:, np.newaxis], spin_inds_1, position_index
-        ]
+        ] = species_data[:, b_inds[:, np.newaxis], spin_inds_1, position_index]
 
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_variable_attrs("codice", "l2-lo-angular")
@@ -598,7 +614,7 @@ def process_lo_angular_intensity(
 
     # update species attrs
     for species in species_list:
-        attrs = unc_attrs if "unc" in unc_attrs else species_attrs
+        attrs = unc_attrs if "unc" in species else species_attrs
         # Replace {species} and {direction} in attrs
         attrs = apply_replacements_to_attrs(
             attrs, {"species": species, "direction": direction}
@@ -624,6 +640,7 @@ def process_lo_angular_intensity(
     dataset["spin_sector"].attrs = cdf_attrs.get_variable_attributes(
         "spin_sector", check_schema=False
     )
+
     return dataset
 
 
@@ -689,6 +706,16 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
         )
         # Store by replacing existing species data with omni-directional intensities
         l1b_dataset[species].values = omni_direction_intensities
+
+        # Calculate uncertainty if available
+        species_uncertainty = f"unc_{species}"
+        if species_uncertainty in l1b_dataset:
+            omni_uncertainties = l1b_dataset[species_uncertainty] / (
+                geometric_factor * species_efficiencies * energy_passbands
+            )
+            # Store by replacing existing uncertainty data with omni-directional
+            # uncertainties
+            l1b_dataset[species_uncertainty].values = omni_uncertainties
 
     # TODO: this may go away once Joey and I fix L1B CDF
     # Update global CDF attributes
@@ -947,6 +974,19 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
             dims=("epoch", f"energy_{species}", "spin_sector", "elevation_angle"),
             attrs=cdf_attrs.get_variable_attributes(species, check_schema=False),
         )
+        # Calculate uncertainty if available
+        species_uncertainty = f"unc_{species}"
+        if species_uncertainty in l1b_dataset:
+            sectored_uncertainties = l1b_dataset[species_uncertainty] / (
+                geometric_factor_da * species_efficiencies * energy_passbands
+            )
+            l2_dataset[species_uncertainty] = xr.DataArray(
+                sectored_uncertainties.data,
+                dims=("epoch", f"energy_{species}", "spin_sector", "elevation_angle"),
+                attrs=cdf_attrs.get_variable_attributes(
+                    species_uncertainty, check_schema=False
+                ),
+            )
 
     # Calculate spin angle
     # Formula:
@@ -980,17 +1020,6 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
                 l1b_dataset[variable].data,
                 dims=(f"energy_{variable.split('_')[1]}",),
                 attrs=cdf_attrs.get_variable_attributes(variable, check_schema=False),
-            )
-        elif variable.startswith("unc_"):
-            l2_dataset[variable] = xr.DataArray(
-                l1b_dataset[variable].data,
-                dims=(
-                    "epoch",
-                    f"energy_{variable.split('_')[1]}",
-                    "spin_sector",
-                    "elevation_angle",
-                ),
-                attrs=cdf_attrs.get_variable_attributes(variable),
             )
         elif variable == "data_quality":
             l2_dataset[variable] = l1b_dataset[variable]
@@ -1294,7 +1323,6 @@ def process_codice_l2(
     # Now form product name from descriptor
     descriptor = ScienceFilePath(file_path).descriptor
     dataset_name = f"imap_codice_l2_{descriptor}"
-
     # TODO: update list of datasets that need geometric factors (if needed)
     # Compute geometric factors needed for intensity calculations
     if dataset_name in [
@@ -1380,6 +1408,16 @@ def process_codice_l2(
             l2_dataset.attrs.update(
                 cdf_attrs.get_global_attributes("imap_codice_l2_lo-nsw-angular")
             )
+        # Drop vars not needed in L2
+        l2_dataset = l2_dataset.drop_vars(
+            [
+                "acquisition_time_per_esa_step",
+                "rgfo_half_spin",
+                "half_spin_per_esa_step",
+                "energy_table",
+            ]
+        )
+
     if dataset_name in [
         "imap_codice_l2_hi-counters-singles",
         "imap_codice_l2_hi-counters-aggregated",

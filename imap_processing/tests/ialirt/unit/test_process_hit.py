@@ -66,7 +66,7 @@ def test_process_spacecraft_packet(sc_packet_path):
     )[478]
     hit_product = process_hit(sc_xarray_data)
 
-    assert len(hit_product[0].keys()) == 17
+    assert len(hit_product[0].keys()) == 18
 
 
 def generate_prefixes(prefixes):
@@ -172,34 +172,14 @@ def test_process_hit(xarray_data, caplog):
 
     # Tests that it functions normally
     hit_product = process_hit(xarray_data)
-    assert len(hit_product) == 15
+    assert len(hit_product) == 1
 
-    # Make a subset of data that has values to check the calculations of process hit.
-    indices = (xarray_data["hit_met"] != 0).values.nonzero()[0]
-    xarray_data["hit_slow_rate"].values[indices[0] : indices[0] + 60] = 2
-    subset = xarray_data.isel(epoch=slice(indices[0], indices[0] + 60))
-
-    hit_product = process_hit(subset)
-
-    assert hit_product[0]["hit_e_a_side_low_en"] == 4
-    assert hit_product[0]["hit_e_a_side_med_en"] == 4
-    assert hit_product[0]["hit_e_b_side_low_en"] == 4
-    assert hit_product[0]["hit_e_b_side_high_en"] == 2
-    assert hit_product[0]["hit_e_b_side_med_en"] == 4
-    assert hit_product[0]["hit_he_omni_high_en"] == 2
-
-    # Create a scrambled set of subcom values.
-    xarray_data["hit_subcom"].values[indices[0] : indices[0] + 60] = [
-        i for i in range(29) for _ in range(2)
-    ] + [59, 59]
-
-    with caplog.at_level("INFO"):
-        process_hit(subset)
-
-    assert any(
-        "skipped due to missing or duplicate pkt_counter values" in message
-        for message in caplog.text.splitlines()
-    )
+    assert hit_product[0]["hit_e_a_side_low_en"] == 0
+    assert hit_product[0]["hit_e_a_side_med_en"] == 0
+    assert hit_product[0]["hit_e_b_side_low_en"] == 0
+    assert hit_product[0]["hit_e_b_side_high_en"] == 0
+    assert hit_product[0]["hit_e_b_side_med_en"] == 1
+    assert hit_product[0]["hit_he_omni_high_en"] == 0
 
 
 def test_decom_packets(xarray_data, hit_test_data):

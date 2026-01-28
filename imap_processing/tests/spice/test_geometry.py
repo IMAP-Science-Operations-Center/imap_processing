@@ -19,6 +19,7 @@ from imap_processing.spice.geometry import (
     get_spacecraft_to_instrument_spin_phase_offset,
     imap_state,
     instrument_pointing,
+    lo_instrument_pointing,
     solar_longitude,
     spherical_to_cartesian,
 )
@@ -513,6 +514,39 @@ def test_instrument_pointing_lo_ck(frame, furnish_kernels):
     with furnish_kernels(kernels):
         et = spiceypy.utc2et("2025-06-12T12:00:00.000")
         _ = instrument_pointing(et, frame, SpiceFrame.ECLIPJ2000)
+
+
+@pytest.mark.parametrize(
+    "pivot_angle, expected",
+    [
+        (0, [0.0, 0.0, 1.0]),  # Aligned with SC +Z
+        (75, [0.483, 0.837, 0.259]),  # Rotated 75°
+        (90, [0.5, 0.866, 0.0]),  # Rotated 90° (perpendicular to SC +Z)
+        (105, [0.483, 0.837, -0.259]),  # Rotated 105°
+    ],
+)
+def test_lo_instrument_pointing_pivot_angle(pivot_angle, expected, furnish_kernels):
+    kernels = ["imap_130.tf"]
+    with furnish_kernels(kernels):
+        et = 0  # Use fixed frames, no time-dependent kernels needed
+
+        # Get Lo boresight in spacecraft frame
+        boresight_sc = lo_instrument_pointing(
+            et, pivot_angle, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+        )
+
+        # Verify angle from spacecraft +Z axis equals pivot angle
+        sc_z_axis = np.array([0, 0, 1])
+        angle_from_sc_z = np.rad2deg(
+            np.arccos(np.clip(np.dot(boresight_sc, sc_z_axis), -1, 1))
+        )
+        np.testing.assert_allclose(angle_from_sc_z, pivot_angle, atol=1e-8)
+
+        # Verify components match expected values
+        np.testing.assert_allclose(boresight_sc, expected, atol=1e-3)
+
+        # Verify boresight is a unit vector
+        np.testing.assert_allclose(np.linalg.norm(boresight_sc), 1.0, atol=1e-10)
 
 
 @pytest.mark.external_kernel

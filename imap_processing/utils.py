@@ -333,6 +333,9 @@ def packet_file_to_datasets(
             )
             ds = ds.isel(epoch=unique_indices)
 
+        # Log a warning if there are gaps in the source sequence counter
+        _check_source_sequence_counter(ds, apid)
+
         # Strip any leading characters before "." from the field names which was due
         # to the packet_name being a part of the variable name in the XTCE definition
         ds = ds.rename(
@@ -386,6 +389,8 @@ def combine_segmented_packets(
 
     # Get indices of packets we'll keep (first packet of each group)
     group_start_indices = np.where(is_group_start)[0]
+    # Keep track of the groups that don't have the expected sequences
+    bad_groups = []
 
     # Concatenate binary data in-place for each group
     for group_id in np.unique(group_ids):
@@ -395,7 +400,10 @@ def combine_segmented_packets(
 
         # If multiple packets, concatenate into the first packet
         # [b"abc", b"def", b"ghi"] -> b"abcdefghi"
-        if len(group_indices) > 1:
+        if (
+            len(group_indices) > 1
+            or packets["seq_flgs"].data[group_indices[0]] != SequenceFlags.UNSEGMENTED
+        ):
             start_index = group_indices[0]
             # Lets do some quick validation on these packets since we've had
             # some missing packet groups in the past
@@ -408,19 +416,68 @@ def combine_segmented_packets(
                     and not np.all(seq_flags[1:-1] == SequenceFlags.CONTINUATION)
                 )
             ):
+                bad_groups.append(start_index)
                 logger.warning(
                     f"Incorrect/incomplete sequence flags in group {group_id}. "
                     f"Flags: {seq_flags}, "
                     f"SHCOARSEs: {packets['shcoarse'].data[group_indices]}"
                 )
+
             packets[binary_field_name].data[start_index] = np.sum(
                 packets[binary_field_name].data[group_indices]
             )
 
+    # Remove any bad groups from the start indices we are keeping
+    group_start_indices = np.setdiff1d(group_start_indices, bad_groups)
     # Select only the first packet of each group (drop the middle/last packets)
     combined_packets = packets.isel(epoch=group_start_indices)
 
     return combined_packets
+
+
+def _check_source_sequence_counter(ds: xr.Dataset, apid: int) -> None:
+    """
+    Check for gaps in the source sequence counter.
+
+    Log a warning if gaps are found, but don't do anything else.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Dataset containing the packets to check.
+    apid : int
+        APID of the packets.
+    """
+    # Check for sequential source sequence counters
+    # CCSDS source sequence counter is a 14-bit field (0-16383)
+    counter_max = 16384
+    src_seq_ctr = ds["src_seq_ctr"].data
+
+    if len(src_seq_ctr) <= 1:
+        return
+
+    # Check if each counter equals (previous + 1) % counter_max
+    # This handles both normal increments and rollover (16383 -> 0)
+    expected = (src_seq_ctr[:-1] + 1) % counter_max
+    actual = src_seq_ctr[1:]
+    non_sequential = expected != actual
+
+    if np.any(non_sequential):
+        gap_indices = np.where(non_sequential)[0]
+        # Calculate total missing packets across all gaps
+        total_missing = sum(
+            (src_seq_ctr[idx + 1] - src_seq_ctr[idx] - 1) % counter_max
+            for idx in gap_indices
+        )
+        # Show the counter values before and after each gap
+        gap_starts = src_seq_ctr[gap_indices].tolist()
+        gap_ends = src_seq_ctr[gap_indices + 1].tolist()
+        gap_pairs = list(zip(gap_starts, gap_ends, strict=True))
+        logger.warning(
+            f"Found [{len(gap_indices)}] gap(s) in source sequence counter "
+            f"for APID {apid} at {gap_pairs} "
+            f"({total_missing} total missing packets)"
+        )
 
 
 def packet_generator(

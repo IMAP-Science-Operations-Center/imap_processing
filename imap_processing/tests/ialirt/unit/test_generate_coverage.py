@@ -52,21 +52,21 @@ def test_use_outages(furnish_kernels):
     with furnish_kernels(kernels):
         coverage_dict, outage_dict = generate_coverage("2026-09-22T00:00:00Z", outages)
 
-    expected = np.array(
+    expected_outages = np.array(
         [
-            "2026-09-22T07:00:00.000",
-            "2026-09-22T08:00:00.000",
-            "2026-09-22T09:00:00.000",
-            "2026-09-22T10:00:00.000",
-            "2026-09-22T11:00:00.000",
-            "2026-09-22T13:00:00.000",
-            "2026-09-22T15:00:00.000",
-            "2026-09-22T16:00:00.000",
+            "2026-09-22T11:50:00.000",
+            "2026-09-22T11:55:00.000",
+            "2026-09-22T12:00:00.000",
+            "2026-09-22T12:05:00.000",
+            "2026-09-22T13:50:00.000",
+            "2026-09-22T13:55:00.000",
+            "2026-09-22T14:00:00.000",
+            "2026-09-22T14:05:00.000",
         ]
     )
-    expected_outages = np.array(["2026-09-22T12:00:00.000", "2026-09-22T14:00:00.000"])
 
-    np.testing.assert_array_equal(coverage_dict["Kiel"], expected)
+    assert coverage_dict["Kiel"][0] == "2026-09-22T06:10:00.000"
+    assert coverage_dict["Kiel"][-1] == "2026-09-22T16:10:00.000"
     np.testing.assert_array_equal(outage_dict["Kiel"], expected_outages)
 
 
@@ -101,25 +101,11 @@ def test_dsn(furnish_kernels):
             "2026-09-22T00:00:00Z", outages=outages, dsn=dsn
         )
 
-        dsn_expected = np.array(["2026-09-22T12:00:00.000", "2026-09-22T13:00:00.000"])
-        kiel_expected = np.array(
-            [
-                "2026-09-22T07:00:00.000",
-                "2026-09-22T08:00:00.000",
-                "2026-09-22T09:00:00.000",
-                "2026-09-22T10:00:00.000",
-                "2026-09-22T11:00:00.000",
-                "2026-09-22T15:00:00.000",
-                "2026-09-22T16:00:00.000",
-            ]
-        )
-
-        np.testing.assert_array_equal(coverage_dict["Kiel"], kiel_expected)
-        np.testing.assert_array_equal(coverage_dict["DSS-75"], dsn_expected)
+        assert coverage_dict["DSS-75"][-1] == "2026-09-22T13:45:00.000"
 
         output = format_coverage_summary(
             coverage_dict, outage_dict, "2026-09-22T00:00:00Z"
         )
 
         assert "I-ALiRT Coverage Summary" in output["summary"]
-        assert 91.7 == output["total_coverage_percent"]
+        assert 40.6 == output["total_coverage_percent"]

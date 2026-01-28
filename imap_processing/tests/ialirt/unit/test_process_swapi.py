@@ -3,10 +3,12 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swapi import (
     count_rate,
+    geometric_mean,
     optimize_pseudo_parameters,
     process_swapi_ialirt,
 )
@@ -257,6 +259,102 @@ def test_optimize_parameters():
             )
 
 
+def test_geometric_mean():
+    """Test geometric_mean function."""
+
+    swapi_met_list = [12, 24, 36, 48, 60]
+
+    pseudo_proton_speed_list = [400, 420, 440, 460, 480]
+    pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, 9.0]
+    pseudo_proton_temperature_list = [60000, 62000, 64000, 66000, 68000]
+
+    avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
+        swapi_met_list,
+        pseudo_proton_speed_list,
+        pseudo_proton_density_list,
+        pseudo_proton_temperature_list,
+    )
+
+    expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list)))
+    expected_speed = np.exp(np.mean(np.log(pseudo_proton_speed_list)))
+    expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list)))
+    expected_met = np.mean(swapi_met_list)
+
+    assert np.isclose(avg_density, expected_density)
+    assert np.isclose(avg_speed, expected_speed)
+    assert np.isclose(avg_temperature, expected_temperature)
+    assert np.isclose(avg_swapi_met, expected_met)
+
+
+def test_geometric_mean_nan():
+    """Test geometric_mean function."""
+
+    swapi_met_list = [12, 24, 36, 48, 60]
+
+    pseudo_proton_speed_list = [400, 420, 440, 460, np.nan]
+    pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, np.nan]
+    pseudo_proton_temperature_list = [60000, 62000, 64000, 66000, np.nan]
+
+    avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
+        swapi_met_list,
+        pseudo_proton_speed_list,
+        pseudo_proton_density_list,
+        pseudo_proton_temperature_list,
+    )
+
+    expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list[0:4])))
+    expected_speed = np.exp(np.mean(np.log(pseudo_proton_speed_list[0:4])))
+    expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list[0:4])))
+    expected_met = np.mean(swapi_met_list[0:4])
+
+    assert np.isclose(avg_density, expected_density)
+    assert np.isclose(avg_speed, expected_speed)
+    assert np.isclose(avg_temperature, expected_temperature)
+    assert np.isclose(avg_swapi_met, expected_met)
+
+
+def test_geometric_gaps():
+    """Test geometric_mean function."""
+
+    swapi_met_list = [0, 12, 24, 36, 240, 252, 264, 272, 284]
+
+    bool_check = len(swapi_met_list) >= 5 and np.all(
+        np.isclose(np.diff(swapi_met_list[-5:]), 12.0, atol=0.05)
+    )
+    assert not bool_check
+
+    pseudo_proton_speed_list = [400, 420, 440, 460, 480, 500, 520, 540, 560]
+    pseudo_proton_density_list = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0]
+    pseudo_proton_temperature_list = [
+        60000,
+        62000,
+        64000,
+        66000,
+        68000,
+        70000,
+        72000,
+        74000,
+        76000,
+    ]
+
+    avg_swapi_met, avg_density, avg_speed, avg_temperature = geometric_mean(
+        swapi_met_list[4::],
+        pseudo_proton_speed_list[4::],
+        pseudo_proton_density_list[4::],
+        pseudo_proton_temperature_list[4::],
+    )
+
+    expected_density = np.exp(np.mean(np.log(pseudo_proton_density_list[4::])))
+    expected_speed = np.exp(np.mean(np.log(pseudo_proton_speed_list[4::])))
+    expected_temperature = np.exp(np.mean(np.log(pseudo_proton_temperature_list[4::])))
+    expected_met = np.mean(swapi_met_list[4::])
+
+    assert np.isclose(avg_density, expected_density)
+    assert np.isclose(avg_speed, expected_speed)
+    assert np.isclose(avg_temperature, expected_temperature)
+    assert np.isclose(avg_swapi_met, expected_met)
+
+
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(
     esa_unit_conversion_table, swapi_postlaunch_sc_packet_path
@@ -264,9 +362,11 @@ def test_process_spacecraft_packet(
     """Tests spacecraft packet processing."""
 
     packet_path, xtce_ialirt_path = swapi_postlaunch_sc_packet_path
-    postlaunch_sc_xarray_data = packet_file_to_datasets(
-        packet_path, xtce_ialirt_path, use_derived_value=False
-    )[478]
+    xarray_data = tuple(
+        packet_file_to_datasets(packet, xtce_ialirt_path, use_derived_value=False)[478]
+        for packet in packet_path
+    )
+    postlaunch_sc_xarray_data = xr.concat(xarray_data, dim="epoch")
 
     postlaunch_sc_xarray_data["swapi_version"].data = np.full_like(
         postlaunch_sc_xarray_data["swapi_version"].data, 2
@@ -275,19 +375,4 @@ def test_process_spacecraft_packet(
         postlaunch_sc_xarray_data, esa_unit_conversion_table
     )
 
-    assert len(swapi_product) == 4
-
-    key_names = [
-        "apid",
-        "met",
-        "met_in_utc",
-        "ttj2000ns",
-        "swapi_pseudo_proton_density",
-        "swapi_pseudo_proton_speed",
-        "swapi_pseudo_proton_temperature",
-    ]
-
-    for key in key_names:
-        assert swapi_product[0][key] is not None, (
-            f"The expected attribute {key} was not filled in the result dict."
-        )
+    assert len(swapi_product) == 0

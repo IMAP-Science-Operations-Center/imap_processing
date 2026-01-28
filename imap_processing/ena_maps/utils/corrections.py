@@ -612,7 +612,8 @@ def _calculate_compton_getting_transform(
     y = np.sqrt(pset["energy_hf"] / energy_u)
 
     # Velocity magnitude factor calculation (Equation 62)
-    # x_k = (êₛ · û_sc) + sqrt(y² + (êₛ · û_sc)² - 1)
+    # x_k = (-êₛ · û_sc) + sqrt(y² + (êₛ · û_sc)² - 1)
+    # dot_product = look_hat dot usc_hat = (-êₛ · û_sc)
     x = dot_product + np.sqrt(y**2 + dot_product**2 - 1)
     # Get the dimensions in the right order so that spatial is last
     x = x.transpose(dot_product.dims[0], y.dims[0], *dot_product.dims[1:])
@@ -621,21 +622,22 @@ def _calculate_compton_getting_transform(
     # |v⃗_sc| = x_k * U_sc
     velocity_sc = x * sc_velocity_km_per_sec
 
-    # Calculate the kinetic energy in the spacecraft frame
+    # Calculate the kinetic energy of the spacecraft
     # E_sc = (1/2) * M_p * v_sc² (convert km/s to cm/s with 1.0e5 factor)
     pset["energy_sc"] = 0.5 * PROTON_MASS_GRAMS * (velocity_sc * 1e5) ** 2 / ERG_PER_EV
 
     # Calculate the velocity vector in the spacecraft frame
-    # v⃗_sc = |v_sc| * êₛ (velocity direction follows look direction)
-    velocity_vector_sc = velocity_sc * pset["look_direction"]
+    # v⃗_sc = -|v_sc| * êₛ (velocity direction is opposite to look direction)
+    velocity_vector_sc = -1 * velocity_sc * pset["look_direction"]
 
     # Calculate the ENA velocity vector in the heliosphere frame
-    # v⃗_helio = v⃗_sc - U⃗_sc (simple velocity addition)
-    velocity_vector_helio = velocity_vector_sc - pset["sc_velocity"]
+    # v⃗_helio = v⃗_sc + U⃗_sc (simple velocity addition)
+    velocity_vector_helio = velocity_vector_sc + pset["sc_velocity"]
 
     # Convert to spherical coordinates to get ENA source directions
+    # Look direction is opposite of ENA direction
     ena_source_direction_helio = geometry.cartesian_to_spherical(
-        velocity_vector_helio.data
+        -1 * velocity_vector_helio.data
     )
 
     # Update the PSET hae_longitude and hae_latitude variables with the new

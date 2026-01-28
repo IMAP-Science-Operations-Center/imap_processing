@@ -133,6 +133,42 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         num_packets, num_species, esa_steps, collapse_shape[0]
     )
 
+    # If data size is less than 128, pad with nan to make it 128
+    half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
+    if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
+        pad_size = constants.NUM_ESA_STEPS - len(half_spin_per_esa_step)
+        half_spin_per_esa_step = np.concatenate(
+            (np.array(half_spin_per_esa_step), np.full(pad_size, np.nan))
+        )
+
+    # TODO: Handle epoch dependent acquisition time and half spin per esa step
+    #   For now, just tile the same array for all epochs.
+    #   Eventually we may have data from a day where the LUT changed. If this is the
+    #  case, we need to split the data by epoch and assign different acquisition times
+    half_spin_per_esa_step = np.tile(
+        np.asarray(half_spin_per_esa_step).astype(np.uint8),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    # Get acquisition time per esa step
+    acquisition_time_per_step = calculate_acq_time_per_step(
+        sci_lut_data["lo_stepping_tab"]
+    )
+    acquisition_time_per_step = np.tile(
+        np.asarray(acquisition_time_per_step),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    # For every energy after nso_half_spin, set data to fill values
+    nso_half_spin = unpacked_dataset["nso_half_spin"].values
+    nso_mask = half_spin_per_esa_step > nso_half_spin[:, np.newaxis]
+    species_mask = nso_mask[:, np.newaxis, :, np.newaxis]
+    species_mask = np.broadcast_to(species_mask, species_data.shape)
+    species_data = species_data.astype(np.float64)
+    species_data[species_mask] = np.nan
+    # Set half_spin_per_esa_step to (fillval) where nso_mask is True
+    half_spin_per_esa_step[nso_mask] = 63
+    # Set acquisition_time_per_step to nan where nso_mask is True
+    acquisition_time_per_step[nso_mask] = np.nan
+
     # ========== Create CDF Dataset with Metadata ===========
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
@@ -165,8 +201,11 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
             ),
             "half_spin_per_esa_step": xr.DataArray(
-                sci_lut_data["lo_stepping_tab"]["row_number"].get("data"),
-                dims=("esa_step",),
+                half_spin_per_esa_step,
+                dims=(
+                    "epoch",
+                    "esa_step",
+                ),
                 attrs=cdf_attrs.get_variable_attributes(
                     "half_spin_per_esa_step", check_schema=False
                 ),
@@ -223,11 +262,11 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
-    l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
-        dims=("esa_step",),
+    l1a_dataset["acquisition_time_per_esa_step"] = xr.DataArray(
+        acquisition_time_per_step,
+        dims=("epoch", "esa_step"),
         attrs=cdf_attrs.get_variable_attributes(
-            "acquisition_time_per_step", check_schema=False
+            "acquisition_time_per_esa_step", check_schema=False
         ),
     )
 
