@@ -418,13 +418,16 @@ def epoch_to_fractional_doy(epoch: int | Iterable[int]) -> float | np.ndarray:
 
     Parameters
     ----------
-    epoch : int
-        Epoch in TTJ2000ns format (nanoseconds since J2000).
+    epoch : int or Iterable[int]
+        Epoch in TTJ2000ns format (nanoseconds since J2000). Can be a single
+        integer or an iterable of integers.
 
     Returns
     -------
-    doy : float
-        Floating point day of year (1.0 = Jan 1 00:00:00).
+    doy : float or numpy.ndarray
+        Floating point day of year (1.0 = Jan 1 00:00:00). Returns a scalar
+        when `epoch` is a single integer, or a NumPy array when `epoch` is an
+        iterable.
 
     References
     ----------
