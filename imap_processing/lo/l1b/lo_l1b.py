@@ -1572,9 +1572,10 @@ def resweep_histogram_data(
     -------
     l1b_histrates : xr.Dataset
         The updated L1B histogram rates dataset with reswept counts.
-    exposure_factor : np.ndarray
-        3D array of exposure factors (epoch, azimuth, esa_step) indicating how many
-        ESA steps were reswept during resweeping.
+    exposure_factor : dict[str, np.ndarray]
+        Dictionary mapping bin types to their 3D exposure factor arrays
+        (epoch, esa_step, azimuth) indicating how many ESA steps were
+        reswept during resweeping.
     """
     epochs = l1b_histrates["epoch"].values
     energy_mapping = _get_esa_level_indices(epochs, anc_dependencies=anc_dependencies)
@@ -1590,12 +1591,15 @@ def resweep_histogram_data(
         )
         l1b_histrates[field].values = reswept
 
+    # Calculate exposure factors for each bin type
     exposure_factor_6deg = np.zeros_like(l1b_histrates["h_counts"].values, dtype=int)
     exposure_factor_60deg = np.zeros_like(
         l1b_histrates["start_a_counts"].values, dtype=int
     )
     np.add.at(exposure_factor_6deg, (slice(None), energy_mapping, slice(None)), 1)
     np.add.at(exposure_factor_60deg, (slice(None), energy_mapping, slice(None)), 1)
+
+    # Create a dictionary to hold exposure factors for both bin types
     exposure_factors = {}
     exposure_factors["6deg"] = exposure_factor_6deg
     exposure_factors["60deg"] = exposure_factor_60deg
@@ -1629,7 +1633,7 @@ def calculate_histogram_rates(
     avg_spin_durations_per_cycle : xr.DataArray
         Average spin duration for each cycle in seconds.
     exposure_factors : dict[str, np.ndarray]
-        Dictionary mapping field names to their 3D exposure factor arrays
+        Dictionary mapping bin types to their 3D exposure factor arrays
         (epoch, esa_step, azimuth) indicating how many ESA steps were
         reswept during resweeping.
 
