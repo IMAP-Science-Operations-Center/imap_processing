@@ -325,7 +325,7 @@ def compute_geometric_factors(
     processing_date = datetime.datetime.strptime(start_date.split("_")[4], "%Y%m%d")
     date_switch = datetime.datetime(2025, 11, 24)
     # Only consider valid half spins
-    valid_half_spin = half_spin_per_esa_step != 63
+    valid_half_spin = half_spin_per_esa_step != HALF_SPIN_FILLVAL
     if processing_date < date_switch:
         modes = (
             valid_half_spin
@@ -591,8 +591,8 @@ def process_lo_angular_intensity(
     half_spin_per_esa_step = dataset["half_spin_per_esa_step"].data[0]
     # only consider valid half spin values
     valid_half_spin = half_spin_per_esa_step != HALF_SPIN_FILLVAL
-    a_inds = np.where(valid_half_spin & (half_spin_per_esa_step % 2 == 0))[0]
-    b_inds = np.where(valid_half_spin & (half_spin_per_esa_step % 2 == 1))[0]
+    a_inds = np.nonzero(valid_half_spin & (half_spin_per_esa_step % 2 == 0))[0]
+    b_inds = np.nonzero(valid_half_spin & (half_spin_per_esa_step % 2 == 1))[0]
 
     position_index = position_index_to_adjust
     for species in species_list:
