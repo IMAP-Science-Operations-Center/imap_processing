@@ -472,7 +472,7 @@ hit_he_omni_high_en:
 
 mag_B_magnitude:
   <<: *default_float32
-  CATDESC: Magnitude of the magnetic field vector
+  CATDESC: Magnitude of the magnetic field vector from MAG
   FIELDNAM: B vector magnitude
   LABLAXIS: B Magnitude
   DEPEND_0: mag_epoch
@@ -482,7 +482,7 @@ mag_B_magnitude:
 
 mag_theta_B_GSE:
   <<: *default_float32
-  CATDESC: Elevation angle of the magnetic field in GSE coordinates
+  CATDESC: Elevation (theta) angle of the magnetic field in GSE coordinates from MAG
   FIELDNAM: B elevation angle in GSE coordinates
   LABLAXIS: B elevation (GSE)
   DEPEND_0: mag_epoch
@@ -492,7 +492,7 @@ mag_theta_B_GSE:
 
 mag_phi_B_GSE:
   <<: *default_float32
-  CATDESC: Azimuth angle of the magnetic field in GSE coordinates
+  CATDESC: Azimuth (phi) angle of the magnetic field in GSE coordinates from MAG
   FIELDNAM: B azimuth angle in GSE coordinates
   LABLAXIS: B azimuth (GSE)
   DEPEND_0: mag_epoch
@@ -502,7 +502,7 @@ mag_phi_B_GSE:
 
 mag_theta_B_GSM:
   <<: *default_float32
-  CATDESC: Elevation angle of the magnetic field in GSM coordinates
+  CATDESC: Elevation (theta) angle of the magnetic field in GSM coordinates from MAG
   FIELDNAM: B elevation angle in GSM coordinates
   LABLAXIS: B elevation (GSM)
   DEPEND_0: mag_epoch
@@ -512,7 +512,7 @@ mag_theta_B_GSM:
 
 mag_phi_B_GSM:
   <<: *default_float32
-  CATDESC: Azimuth angle of the magnetic field in GSM coordinates
+  CATDESC: Azimuth (phi) angle of the magnetic field in GSM coordinates from MAG
   FIELDNAM: B azimuth angle in GSM coordinates
   LABLAXIS: B azimuth (GSM)
   DEPEND_0: mag_epoch
@@ -522,7 +522,7 @@ mag_phi_B_GSM:
 
 mag_B_GSE:
   <<: *default_float32
-  CATDESC: Magnetic field vector in GSE coordinates
+  CATDESC: Magnetic field vector in GSE coordinates from MAG
   FIELDNAM: B vector in GSE coordinates
   LABLAXIS: B (GSE)
   DEPEND_0: mag_epoch
@@ -534,7 +534,7 @@ mag_B_GSE:
 
 mag_B_GSM:
   <<: *default_float32
-  CATDESC: Magnetic field vector in GSM coordinates
+  CATDESC: Magnetic field vector in GSM coordinates from MAG
   FIELDNAM: B vector in GSM coordinates
   LABLAXIS: B (GSM)
   DEPEND_0: mag_epoch
@@ -546,7 +546,7 @@ mag_B_GSM:
 
 mag_B_RTN:
   <<: *default_float32
-  CATDESC: Magnetic field vector in RTN coordinates
+  CATDESC: Magnetic field vector in RTN coordinates from MAG
   FIELDNAM: B vector in RTN coordinates
   LABLAXIS: B (RTN)
   DEPEND_0: mag_epoch
@@ -593,7 +593,7 @@ swapi_pseudo_proton_temperature:
 # SWE Normalized Counts
 swe_normalized_counts:
   <<: *default_int64
-  CATDESC: Normalized electron counts
+  CATDESC: Normalized electron counts from SWE in 8 energy bins between 100.4 to 1101 eV
   FIELDNAM: Normalized electron counts
   UNITS: normalized counts
   VALIDMIN: 0
@@ -606,7 +606,7 @@ swe_normalized_counts:
 
 swe_counterstreaming_electrons:
   <<: *default_uint8
-  CATDESC: Counterstreaming electrons flag (1=counterstreaming, 0=unidirectional)
+  CATDESC: Binary value from SWE indicating the presence (1) or absence (0) of counterstreaming electron flow
   FIELDNAM: Counterstreaming e- (1=counterstreaming)
   LABLAXIS: Counterstreaming e-
   DEPEND_0: swe_epoch
