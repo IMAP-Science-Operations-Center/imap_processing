@@ -2355,6 +2355,14 @@ def l1b_star(
     l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
     spin_data = sci_dependencies["imap_lo_l1a_spin"]
 
+    # L1A files have a coordinate of shcoarse due to DEPEND_0 issue.
+    # This is a temporary fix for that.
+    # TODO: Fix L1A shcoarse DEPEND_0 and then remove this
+    if "shcoarse" in l1a_star.dims:
+        var_shcoarse = xr.DataArray(l1a_star["shcoarse"].values, dims=("epoch",))
+        l1a_star = l1a_star.drop_vars("shcoarse")
+        l1a_star["shcoarse"] = var_shcoarse
+
     # Get sampling cadence from NHK
     sampling_cadence = get_sampling_cadence_from_nhk(l1b_nhk)
 
