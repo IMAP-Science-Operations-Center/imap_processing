@@ -1078,9 +1078,9 @@ def set_background_rates(
         # for each energy step, set the background rate and uncertainty
         for esa_step in range(0, 7):
             value = row[f"E-Step{esa_step + 1}"]
-            if row["type"] == "rate":
+            if row["rate/sigma"] == "rate":
                 bg_rates[esa_step, bin_start:bin_end, :] = value
-            elif row["type"] == "sigma":
+            elif row["rate/sigma"] == "sigma":
                 bg_sys_err[esa_step, bin_start:bin_end, :] = value
             else:
                 raise ValueError("Unknown background type in ancillary file.")
