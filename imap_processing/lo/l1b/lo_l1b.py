@@ -1816,7 +1816,9 @@ def calculate_de_rates(
         energy_step_mapping = np.arange(7)
     else:
         # An array mapping esa step index to esa level for resweeping
-        energy_step_mapping = _get_esa_level_indices(asc_start, anc_dependencies)
+        energy_step_mapping = _get_esa_level_indices(
+            l1b_de["epoch"].values[asc_idx], anc_dependencies
+        )
 
     # exposure time shape: (num_asc, num_esa_steps)
     exposure_time = np.zeros((num_asc, 7), dtype=float)
