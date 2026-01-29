@@ -214,9 +214,9 @@ def lo_l1b(
         datasets_to_return.append(ds)
 
     # If dependencies are used to create Histogram Rates
-    if descriptor == "histrates":
-        logger.info("\nProcessing IMAP-Lo L1B Histogram Rates...")
-        ds = l1b_histrates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
+    if descriptor == "all-rates":
+        logger.info("\nProcessing IMAP-Lo L1B Hist and Monitor Rates...")
+        ds = l1b_allrates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
         datasets_to_return.extend(ds)
 
     if descriptor == "derates":
@@ -313,7 +313,7 @@ def l1b_de(
     return l1b_de
 
 
-def l1b_histrates(
+def l1b_allrates(
     sci_dependencies: dict, anc_dependencies: list, attr_mgr_l1b: ImapCdfAttributes
 ) -> xr.Dataset:
     """
@@ -330,8 +330,8 @@ def l1b_histrates(
 
     Returns
     -------
-    l1b_histrates : xr.Dataset
-        The IMAP-Lo L1B Histogram Rates dataset.
+    [xr.Dataset, xr.Dataset]
+        The IMAP-Lo L1B Histogram and Monitor Rates datasets.
     """
     datasets_to_return = []
     # get the dependency dataset for l1b histogram rates
@@ -1738,7 +1738,7 @@ def calculate_histogram_rates(
         exposure_time_6deg[:, None, None] * exposure_factors["6deg"]
     )
 
-    # Calculate exposure time for 0.6-degree bins (600 bins per spin)
+    # Calculate exposure time for 60-degree bins (6 bins per spin)
     exposure_time_60deg = spin_durations / 6
     effective_exposure_60deg = (
         exposure_time_60deg[:, None, None] * exposure_factors["60deg"]
@@ -2080,27 +2080,12 @@ def split_rate_dataset(
         The L1B monitor rates dataset.
     """
     # Use centralized lists for fields to include in split datasets
-    l1b_hist_rates = xr.Dataset(
-        attrs=attr_mgr_l1b.get_global_attributes("imap_lo_l1b_histrates"),
-        coords=l1b_all_rates.coords,
+    l1b_hist_rates = l1b_all_rates[HIST_RATE_FIELDS]
+    l1b_hist_rates.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_histrates")
+    l1b_monitor_rates = l1b_all_rates[MONITOR_RATE_FIELDS]
+    l1b_monitor_rates.attrs = attr_mgr_l1b.get_global_attributes(
+        "imap_lo_l1b_monitorrates"
     )
-    l1b_monitor_rates = xr.Dataset(
-        attrs=attr_mgr_l1b.get_global_attributes("imap_lo_l1b_monitorrates"),
-        coords=l1b_all_rates.coords,
-    )
-
-    for field in HIST_RATE_FIELDS:
-        l1b_hist_rates[field] = xr.DataArray(
-            l1b_all_rates[field].values,
-            dims=l1b_all_rates[field].dims,
-            # attrs=attr_mgr_l1b.get_variable_attributes(field)
-        )
-    for field in MONITOR_RATE_FIELDS:
-        l1b_monitor_rates[field] = xr.DataArray(
-            l1b_all_rates[field].values,
-            dims=l1b_all_rates[field].dims,
-            # attrs=attr_mgr_l1b.get_variable_attributes(field)
-        )
 
     return l1b_hist_rates, l1b_monitor_rates
 

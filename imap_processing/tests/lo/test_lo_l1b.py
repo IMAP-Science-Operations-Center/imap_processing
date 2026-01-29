@@ -279,7 +279,7 @@ def test_lo_l1b_histogram_rates(
     }
 
     # Act
-    l1b_datasets = lo_l1b(sci_dependencies, anc_dependencies, descriptor="histrates")
+    l1b_datasets = lo_l1b(sci_dependencies, anc_dependencies, descriptor="all-rates")
 
     # Assert
     assert "h_rates" in l1b_datasets[-2].data_vars
