@@ -73,7 +73,7 @@ STATIONS = {
     "Manaus": StationProperties(
         longitude=-59.969319,  # degrees East (negative = West)
         latitude=-2.891215,  # degrees North (negative = South)
-        altitude=0.9578,  # approx 100 meters
+        altitude=0.9578,  # approx 957.8 meters
         min_elevation_deg=5,  # 5 degrees is the requirement
     ),
     "SANSA": StationProperties(
