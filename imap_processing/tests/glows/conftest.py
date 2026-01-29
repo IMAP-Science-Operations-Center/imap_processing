@@ -162,10 +162,7 @@ def mock_ancillary_parameters(mock_conversion_table_dict):
 def mock_conversion_table_dict():
     """Create a mock conversion table dataset for testing.
 
-    This fixture creates an xarray Dataset with the structure expected by
-    AncillaryParameters._extract_from_dataset(), with an epoch dimension
-    so it can be selected by day using .sel(epoch=day, method="nearest").
-    """
+    This aligns with the validation output for GLOWS unit testing."""
 
     mock_dict = {
         "description": "Table for conversion/decoding ancillary parameters",

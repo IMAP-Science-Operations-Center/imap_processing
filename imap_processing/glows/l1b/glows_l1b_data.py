@@ -235,7 +235,7 @@ class AncillaryParameters:
 
     Parameters
     ----------
-    input_table : dict or xr.Dataset
+    input_table : dict
         Dictionary generated from input JSON file, or xarray Dataset from
         GlowsAncillaryCombiner containing conversion table data.
 

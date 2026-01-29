@@ -73,7 +73,6 @@ def glows_l1b(
         pipeline_settings_dataset.sel(epoch=day, method="nearest"),
     )
 
-    # Extract conversion table for the current day
     ancillary_parameters = AncillaryParameters(conversion_table_dict)
 
     output_dataarrays = process_histogram(
