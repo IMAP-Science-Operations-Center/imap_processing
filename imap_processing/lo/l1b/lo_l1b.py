@@ -819,6 +819,7 @@ def get_spin_start_times(
     spin_start_times = interpolate_spin_data(l1a_de["shcoarse"].values)[
         "spin_start_met"
     ].values
+    spin_start_times = np.repeat(spin_start_times, l1a_de["de_count"].values)
 
     return spin_start_times
 

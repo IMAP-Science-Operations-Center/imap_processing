@@ -234,10 +234,9 @@ def test_lo_l1b_de(
     # Arrange
     # Mock the spin data to provide spin start times
     # Create a DataFrame covering the time range of the test data
-    num_events = 2000
     mock_spin_df = pd.DataFrame(
         {
-            "spin_start_met": np.ones(num_events),
+            "spin_start_met": np.ones([1]),
         }
     )
     mock_interpolate_spin_data.return_value = mock_spin_df
@@ -508,7 +507,7 @@ def test_get_spin_start_times(mock_interpolate_spin_data):
     # Mock the spin data to return specific spin start times
     mock_spin_df = pd.DataFrame(
         {
-            "spin_start_met": [10.5, 10.5, 30.1, 30.1, 30.1],
+            "spin_start_met": [10.5, 30.1],
         }
     )
     mock_interpolate_spin_data.return_value = mock_spin_df
@@ -546,7 +545,7 @@ def test_set_event_met(mock_interpolate_spin_data):
     # Mock the spin data
     mock_spin_df = pd.DataFrame(
         {
-            "spin_start_met": [10, 10, 30, 30, 30],
+            "spin_start_met": [10, 30],
         }
     )
     mock_interpolate_spin_data.return_value = mock_spin_df
