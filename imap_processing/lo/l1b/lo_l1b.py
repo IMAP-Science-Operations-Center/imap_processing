@@ -1313,6 +1313,14 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     lons = (lons + 360) % 360
     # third column: latitude
     lats = direction[:, 2]
+    # we want this relative to the pivot angle
+    # i.e. the off_angle is +/- 2 degrees from the pivot angle
+    lats = lats - (90 - l1b_de["pivot_angle"].values[0])
+    if np.any(lats < -2) or np.any(lats > 2):
+        logger.warning(
+            "Some latitude values are outside of the +/-2 degree range "
+            f"for off-angle binning. Range: ({np.min(lats)}, {np.max(lats)})"
+        )
 
     # Define bin edges
     # 3600 bins, 0.1° each

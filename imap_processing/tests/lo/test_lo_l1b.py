@@ -833,44 +833,59 @@ def test_set_direction(mock_lo_instrument_pointing, imap_ena_sim_metakernel):
     )
 
 
-@patch(
-    "imap_processing.lo.l1b.lo_l1b.frame_transform",
-    return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
-)
-@patch(
-    "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
-    # Longitudes: -180 -> 180, 0 -> 0, 90 -> 90, 180 -> 180
-    # After shift to 0-360: 180, 0, 90, 180
-    return_value=np.array([[0, -180, -2], [0, 0, 0], [0, 90, 1], [0, 180, 2]]),
-)
-def test_pointing_bins(mock_cartesian_to_latitudinal, mock_frame_transform):
-    # Arrange
-    l1b_de = xr.Dataset(
-        {
-            "hae_x": ("epoch", [1, 1, 1, 1]),
-            "hae_y": ("epoch", [0, 0, 0, 0]),
-            "hae_z": ("epoch", [0, 0, 0, 0]),
-        },
-        coords={
-            "epoch": [
-                7.9794907049e17,
-                7.9794907153e17,
-                7.9794907254e17,
-                7.9794907354e17,
-            ],
-        },
-    )
+@pytest.mark.parametrize("pivot_angle", [75, 90, 105])
+def test_pointing_bins(pivot_angle):
+    # Arrange - Mock returns depend on pivot_angle
+    # Calculate offset based on pivot angle: lats = lats - (90 - pivot_angle)
+    offset = 90 - pivot_angle
 
-    expected_pointing_lats = np.array([0, 20, 30, 40])
-    # Longitude bins are now in 0-360 range after the shift
-    expected_pointing_lons = np.array([1800, 0, 900, 1800])
+    with (
+        patch(
+            "imap_processing.lo.l1b.lo_l1b.frame_transform",
+            return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
+        ),
+        patch(
+            "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
+            # Adjust latitude values based on pivot angle offset
+            # Longitudes: -180 -> 180, 0 -> 0, 90 -> 90, 180 -> 180
+            # After shift to 0-360: 180, 0, 90, 180
+            return_value=np.array(
+                [
+                    [0, -180, -2 + offset],
+                    [0, 0, 0 + offset],
+                    [0, 90, 1 + offset],
+                    [0, 180, 2 + offset],
+                ]
+            ),
+        ),
+    ):
+        l1b_de = xr.Dataset(
+            {
+                "hae_x": ("epoch", [1, 1, 1, 1]),
+                "hae_y": ("epoch", [0, 0, 0, 0]),
+                "hae_z": ("epoch", [0, 0, 0, 0]),
+            },
+            coords={
+                "epoch": [
+                    7.9794907049e17,
+                    7.9794907153e17,
+                    7.9794907254e17,
+                    7.9794907354e17,
+                ],
+                "pivot_angle": [pivot_angle],
+            },
+        )
 
-    # Act
-    l1b_de = set_pointing_bin(l1b_de)
+        expected_pointing_lats = np.array([0, 20, 30, 40])
+        # Longitude bins are now in 0-360 range after the shift
+        expected_pointing_lons = np.array([1800, 0, 900, 1800])
 
-    # Assert
-    np.testing.assert_array_equal(l1b_de["off_angle_bin"], expected_pointing_lats)
-    np.testing.assert_array_equal(l1b_de["spin_bin"], expected_pointing_lons)
+        # Act
+        l1b_de = set_pointing_bin(l1b_de)
+
+        # Assert
+        np.testing.assert_array_equal(l1b_de["off_angle_bin"], expected_pointing_lats)
+        np.testing.assert_array_equal(l1b_de["spin_bin"], expected_pointing_lons)
 
 
 def test_badtimes_no_spin():
