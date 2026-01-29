@@ -927,6 +927,13 @@ def test_l1b_badtimes_skipped_if_empty():
     assert len(datasets) == 0
 
 
+def test_lo_l1b_unexpected_descriptor(caplog):
+    """Test that an unexpected descriptor logs a warning and returns empty list."""
+    datasets = lo_l1b({}, [], descriptor="unknown")
+    assert len(datasets) == 0
+    assert "Unexpected descriptor: 'unknown'" in caplog.text
+
+
 def test_resweep_histogram_success(l1b_histrates, anc_dependencies):
     # Arrange
     epoch_date = et_to_ttj2000ns(

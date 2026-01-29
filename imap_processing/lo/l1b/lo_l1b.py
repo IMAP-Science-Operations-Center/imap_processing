@@ -213,26 +213,29 @@ def lo_l1b(
             datasets_to_return.append(badtimes_ds)
 
     # if the dependencies are used to create Annotated Direct Events
-    if descriptor == "de":
+    elif descriptor == "de":
         logger.info("\nProcessing IMAP-Lo L1B Direct Events...")
         ds = l1b_de(sci_dependencies, anc_dependencies, attr_mgr_l1b, attr_mgr_l1a)
         datasets_to_return.append(ds)
 
     # If dependencies are used to create Histogram Rates
-    if descriptor == "all-rates":
+    elif descriptor == "all-rates":
         logger.info("\nProcessing IMAP-Lo L1B Hist and Monitor Rates...")
         ds = l1b_allrates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
         datasets_to_return.extend(ds)
 
-    if descriptor == "derates":
+    elif descriptor == "derates":
         logger.info("\nProcessing IMAP-Lo L1B DE Rates...")
         ds = calculate_de_rates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
         datasets_to_return.append(ds)
 
-    if descriptor == "star":
+    elif descriptor == "prostar":
         logger.info("\nProcessing IMAP-Lo L1B Star Sensor Profile...")
         ds = l1b_star(sci_dependencies, attr_mgr_l1b)
         datasets_to_return.append(ds)
+
+    else:
+        logger.warning(f"Unexpected descriptor: {descriptor!r}")
 
     return datasets_to_return
 
