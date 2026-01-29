@@ -190,7 +190,7 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         )
 
         pset["hae_longitude"], pset["hae_latitude"] = set_pointing_directions(
-            pset["epoch"].item(), attr_mgr
+            pset["epoch"].item(), attr_mgr, pset["pivot_angle"].values[0].item()
         )
 
     pset.attrs = attr_mgr.get_global_attributes(logical_source)
@@ -1109,7 +1109,9 @@ def set_background_rates(
 
 
 def set_pointing_directions(
-    epoch: float, attr_mgr: ImapCdfAttributes
+    epoch: float,
+    attr_mgr: ImapCdfAttributes,
+    pivot_angle: float,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Set the pointing directions for the given epoch.
@@ -1124,6 +1126,9 @@ def set_pointing_directions(
         The epoch time in TTJ2000ns.
     attr_mgr : ImapCdfAttributes
         Attribute manager used to get the L1C attributes.
+    pivot_angle : float
+        The pivot angle in degrees.
+        Off-angles are adjusted relative to this pivot angle before transformation.
 
     Returns
     -------
@@ -1137,6 +1142,8 @@ def set_pointing_directions(
     spin, off = np.meshgrid(
         SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
     )
+    # off_angles need to account for the pivot_angle
+    off += 90 - pivot_angle
     dps_az_el = np.stack([spin, off], axis=-1)
 
     # Transform from DPS Az/El to HAE lon/lat

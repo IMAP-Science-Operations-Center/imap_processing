@@ -12,6 +12,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     N_OFF_ANGLE_BINS,
     N_SAMPLES_PER_SPIN,
     N_SPIN_ANGLE_BINS,
+    OFF_ANGLE_BIN_CENTERS,
     PSET_SHAPE,
     FilterType,
     calculate_bin_weights,
@@ -701,7 +702,7 @@ def test_set_pointing_directions(attr_mgr):
         test_epoch = 1000000000.0
 
         # Call the function
-        hae_longitude, hae_latitude = set_pointing_directions(test_epoch, attr_mgr)
+        hae_longitude, hae_latitude = set_pointing_directions(test_epoch, attr_mgr, 90)
 
         # Verify ttj2000ns_to_et was called correctly
         mock_ttj2000ns_to_et.assert_called_once_with(test_epoch)
@@ -752,7 +753,7 @@ def test_set_pointing_directions_meshgrid(attr_mgr):
         )  # spin_angle x off_angle x 2
         mock_frame_transform.return_value = mock_hae_az_el
 
-        set_pointing_directions(1000000000.0, attr_mgr)
+        set_pointing_directions(1000000000.0, attr_mgr, 90)
 
         # Get the dps_az_el array that was passed to frame_transform_az_el
         call_args = mock_frame_transform.call_args
@@ -771,3 +772,37 @@ def test_set_pointing_directions_meshgrid(attr_mgr):
 
         # Check that off angles vary along the second dimension
         assert not np.allclose(dps_az_el[0, 0, 1], dps_az_el[0, 1, 1])
+
+
+@pytest.mark.parametrize("pivot_angle", [75, 90, 105])
+def test_set_pointing_directions_pivot_angle(attr_mgr, pivot_angle):
+    """Test that pivot_angle correctly adjusts off_angles before transformation."""
+    with (
+        patch("imap_processing.lo.l1c.lo_l1c.ttj2000ns_to_et") as mock_ttj2000ns_to_et,
+        patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el"
+        ) as mock_frame_transform,
+    ):
+        mock_ttj2000ns_to_et.return_value = 123456789.0
+        mock_hae_az_el = np.stack(
+            np.meshgrid(np.arange(3600), np.arange(40), indexing="ij"), axis=-1
+        )
+        mock_frame_transform.return_value = mock_hae_az_el
+
+        set_pointing_directions(1000000000.0, attr_mgr, pivot_angle=pivot_angle)
+
+        # Get the dps_az_el array that was passed to frame_transform_az_el
+        call_args = mock_frame_transform.call_args
+        dps_az_el = call_args[0][1]
+
+        # Calculate expected offset: off_angles should be adjusted by (90 - pivot_angle)
+        offset = 90 - pivot_angle
+
+        # OFF_ANGLE_BIN_CENTERS range from -1.95 to 1.95 (40 bins from -2 to 2)
+        # After offset, they should be shifted by the offset amount
+        expected_off_angles = OFF_ANGLE_BIN_CENTERS + offset
+
+        # Check that the off_angle component (index 1) was adjusted correctly
+        # dps_az_el[:, :, 1] should have the adjusted off angles repeated across spin
+        actual_off_angles = dps_az_el[0, :, 1]  # Take first spin angle
+        np.testing.assert_allclose(actual_off_angles, expected_off_angles, rtol=1e-10)
