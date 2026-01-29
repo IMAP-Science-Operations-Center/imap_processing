@@ -2,6 +2,7 @@
 
 import logging
 from decimal import Decimal
+from math import isfinite
 
 import numpy as np
 import pandas as pd
@@ -22,6 +23,7 @@ from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 logger = logging.getLogger(__name__)
 
 NUM_IALIRT_ENERGY_STEPS = 63
+FILLVAL_FLOAT32 = -1.0e31
 
 
 def count_rate(
@@ -57,6 +59,9 @@ def count_rate(
     speed = speed * 1000  # convert km/s to m/s
     density = density * 1e6  # convert 1/cm**3 to 1/m**3
 
+    # see comment on Consts.temporary_density_factor
+    density = density * Consts.temporary_density_factor
+    
     return (
         (density * Consts.eff_area * (beta / np.pi) ** (3 / 2))
         * (np.exp(-beta * (center_speed**2 + speed**2 - 2 * center_speed * speed)))
@@ -104,15 +109,42 @@ def optimize_pseudo_parameters(
             60000 * (initial_speed_guess / 400) ** 2,
         ]
     )
-    sol = curve_fit(
-        f=count_rate,
-        xdata=energy_passbands.take(range(max_index - 3, max_index + 3), mode="clip"),
-        ydata=count_rates.take(range(max_index - 3, max_index + 3), mode="clip"),
-        sigma=count_rate_error.take(range(max_index - 3, max_index + 3), mode="clip"),
-        p0=initial_param_guess,
-    )
+    
+    sol = None
+    
+    try:
+        five_point_range = range(max_index - 2, max_index + 2 + 1)
+        xdata = energy_passbands.take(five_point_range, mode="clip")
+        ydata = count_rates.take(five_point_range, mode="clip")
+        sigma = count_rate_error.take(five_point_range, mode="clip")
+        curve_fit_output = curve_fit(
+            f=count_rate,
+            xdata=xdata,
+            ydata=ydata,
+            sigma=sigma,
+            p0=initial_param_guess,
+        )
+        
+        # if covariance matrix is not finite, scipy failed to converge to a solution and could just be reporting the initial guess
+        covariance_matrix_is_finite = np.all(np.isfinite(curve_fit_output[1]))
 
-    return sol[0]
+        # fit has failed if R^2 < 0.7
+        yfit = count_rate(xdata, *curve_fit_output[0])
+        R2 = 1 - np.sum((ydata - yfit) ** 2) / np.sum((ydata - ydata.mean()) ** 2)
+        R2_is_acceptable = R2 >= 0.7
+        
+        if covariance_matrix_is_finite and R2_is_acceptable:
+            sol = curve_fit_output[0]
+    except RuntimeError as runtime_error:
+        logger.error(f"curve_fit failed", runtime_error)
+        sol = None
+
+    # report speed only if fit fails            
+    if sol is None:
+        sol = initial_param_guess.copy()
+        sol[1:] = FILLVAL_FLOAT32 
+    
+    return sol
 
 
 def geometric_mean(
@@ -237,8 +269,9 @@ def process_swapi_ialirt(
         grouped_subset = grouped_dataset.sel(epoch=grouped_dataset.group == group)
 
         raw_coin_count = process_sweep_data(grouped_subset, "swapi_coin_cnt")
-        # I-ALiRT packets are 16 times less than the regular science packets.
-        raw_coin_count = raw_coin_count * 16
+        # I-ALiRT packets have counts compressed by a factor of 16.
+        # Add 8 to avoid having counts truncated to 0 and to avoid counts being systematically too low
+        raw_coin_count = raw_coin_count * 16 + 8
         # Subset to only the relevant I-ALiRT energy steps
         raw_coin_count = raw_coin_count[:, :NUM_IALIRT_ENERGY_STEPS]
         raw_coin_rate = raw_coin_count / SWAPI_LIVETIME
