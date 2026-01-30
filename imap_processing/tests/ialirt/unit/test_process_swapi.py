@@ -182,6 +182,46 @@ def test_process_swapi_ialirt(
         )
 
 
+@pytest.mark.external_test_data
+@mock.patch("imap_processing.ialirt.l0.process_swapi.process_sweep_data")
+def test_process_swapi_ialirt_zero_counts(
+    mock_process_sweep_data,
+    xarray_data,
+    ialirt_test_data,
+    sc_xarray_data,
+    esa_unit_conversion_table,
+):
+    """Test that the process_swapi_ialirt() function returns expected keys."""
+
+    mock_process_sweep_data.return_value = ialirt_test_data[0]
+
+    # Adding necessary time variables from spacecraft packet
+    xarray_data = xarray_data.assign(sc_sclk_sec=sc_xarray_data["sc_sclk_sec"])
+    xarray_data["sc_sclk_sec"].data = sc_xarray_data["sc_sclk_sec"][
+        0 : xarray_data["swapi_flag"].shape[0]
+    ].data
+    xarray_data = xarray_data.assign(sc_sclk_sub_sec=sc_xarray_data["sc_sclk_sub_sec"])
+    xarray_data["sc_sclk_sub_sec"].data = sc_xarray_data["sc_sclk_sub_sec"][
+        0 : xarray_data["swapi_flag"].shape[0]
+    ].data
+
+    vars_to_zero = [
+        "swapi_coin_cnt0",
+        "swapi_coin_cnt1",
+        "swapi_coin_cnt2",
+        "swapi_coin_cnt3",
+        "swapi_coin_cnt4",
+        "swapi_coin_cnt5",
+    ]
+
+    for v in vars_to_zero:
+        xarray_data[v] = xr.zeros_like(xarray_data[v])
+
+    swapi_result = process_swapi_ialirt(xarray_data, esa_unit_conversion_table)
+
+    assert swapi_result == []
+
+
 def test_count_rate():
     """Use random realistic values to test for expected output of count_rate()."""
 
@@ -262,9 +302,10 @@ def test_optimize_parameters():
 
 
 def test_optimize_parameters_exception_handling():
-    """Test that the optimize_pseudo_parameters() function reports speed only when given data that causes curve_fit to fail."""
+    """Test that the optimize_pseudo_parameters() function reports
+    speed only when given data that causes curve_fit to fail."""
 
-    expected_speed = 557.279273 # peak passband speed
+    expected_speed = 557.279273  # peak passband speed
     file_name = "ialirt_test_data_u_sw_550_n_sw_5_T_sw_100000_v2.csv"
 
     calibration_test_file = pd.read_csv(
@@ -272,7 +313,9 @@ def test_optimize_parameters_exception_handling():
     )
     energy_passbands = calibration_test_file["Energy"][0:63].to_numpy().astype(float)
 
-    energy_data = pd.read_csv(f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}")
+    energy_data = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}"
+    )
     count_rates = energy_data["Count Rates [Hz]"].to_numpy()
     count_rates[0] = 0.0
     count_rates = np.tile(count_rates, (2, 1))
@@ -282,12 +325,19 @@ def test_optimize_parameters_exception_handling():
     code to select the random seed:
     for i in range(100):
     np.random.seed(i)
-    result = optimize_pseudo_parameters(count_rates * np.abs(np.random.standard_normal(size=count_rates.shape)), count_rates_errors, energy_passbands)
-    if np.isclose(result['pseudo_speed'][0], expected_speed, rtol=1e-6) and np.isnan(result['pseudo_density'][0]):
+    result = optimize_pseudo_parameters(count_rates *
+    np.abs(np.random.standard_normal(size=count_rates.shape)),
+    count_rates_errors, energy_passbands)
+    if np.isclose(result['pseudo_speed'][0], expected_speed,
+    rtol=1e-6) and np.isnan(result['pseudo_density'][0]):
         print(i)
     """
     np.random.seed(14)
-    speed, density, temperature = optimize_pseudo_parameters(count_rates * np.abs(np.random.standard_normal(size=count_rates.shape)), count_rates_errors, energy_passbands)
+    speed, density, temperature = optimize_pseudo_parameters(
+        count_rates * np.abs(np.random.standard_normal(size=count_rates.shape)),
+        count_rates_errors,
+        energy_passbands,
+    )
 
     np.testing.assert_allclose(speed, expected_speed, rtol=1e-6)
     np.testing.assert_allclose(density, FILLVAL_FLOAT32)
@@ -295,7 +345,8 @@ def test_optimize_parameters_exception_handling():
 
 
 def test_optimize_parameters_bad_fit_handling():
-    """Test that the optimize_pseudo_parameters() function reports speed only when the fit is too poor."""
+    """Test that the optimize_pseudo_parameters() function
+    reports speed only when the fit is too poor."""
 
     file_name = "ialirt_test_data_u_sw_550_n_sw_5_T_sw_100000_v2.csv"
 
@@ -304,18 +355,26 @@ def test_optimize_parameters_bad_fit_handling():
     )
     energy_passbands = calibration_test_file["Energy"][0:63].to_numpy().astype(float)
 
-    energy_data = pd.read_csv(f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}")
+    energy_data = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}"
+    )
     count_rates = energy_data["Count Rates [Hz]"].to_numpy()
     count_rates[0] = 0.0
     count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
 
     # add high-amplitude randomness to the count rates to make the fit poor
     np.random.seed(0)
-    count_rates = count_rates + np.abs(np.random.standard_normal(size=count_rates.shape) * count_rates.max())
+    count_rates = count_rates + np.abs(
+        np.random.standard_normal(size=count_rates.shape) * count_rates.max()
+    )
 
-    speed, density, temperature = optimize_pseudo_parameters(count_rates, count_rates_errors, energy_passbands)
+    speed, density, temperature = optimize_pseudo_parameters(
+        count_rates, count_rates_errors, energy_passbands
+    )
 
-    expected_speed = np.sqrt(energy_passbands[count_rates.argmax(axis=-1)]) * Consts.speed_coeff
+    expected_speed = (
+        np.sqrt(energy_passbands[count_rates.argmax(axis=-1)]) * Consts.speed_coeff
+    )
 
     np.testing.assert_allclose(speed, expected_speed, rtol=1e-6)
     np.testing.assert_allclose(density, FILLVAL_FLOAT32)
@@ -323,7 +382,8 @@ def test_optimize_parameters_bad_fit_handling():
 
 
 def test_optimize_parameters_bad_covariance_handling():
-    """Test that the optimize_pseudo_parameters() function reports speed only when output covariance is nonsensical."""
+    """Test that the optimize_pseudo_parameters() function
+    reports speed only when output covariance is nonsensical."""
 
     file_name = "ialirt_test_data_u_sw_550_n_sw_5_T_sw_100000_v2.csv"
 
@@ -332,7 +392,9 @@ def test_optimize_parameters_bad_covariance_handling():
     )
     energy_passbands = calibration_test_file["Energy"][0:63].to_numpy().astype(float)
 
-    energy_data = pd.read_csv(f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}")
+    energy_data = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}"
+    )
     count_rates = energy_data["Count Rates [Hz]"].to_numpy()
     count_rates[0] = 0.0
     count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
@@ -340,13 +402,18 @@ def test_optimize_parameters_bad_covariance_handling():
     # setting errors to 0 results in infinite covariance
     count_rates_errors *= 0
 
-    speed, density, temperature = optimize_pseudo_parameters(count_rates, count_rates_errors, energy_passbands)
+    speed, density, temperature = optimize_pseudo_parameters(
+        count_rates, count_rates_errors, energy_passbands
+    )
 
-    expected_speed = np.sqrt(energy_passbands[count_rates.argmax(axis=-1)]) * Consts.speed_coeff
+    expected_speed = (
+        np.sqrt(energy_passbands[count_rates.argmax(axis=-1)]) * Consts.speed_coeff
+    )
 
     np.testing.assert_allclose(speed, expected_speed, rtol=1e-6)
     np.testing.assert_allclose(density, FILLVAL_FLOAT32)
     np.testing.assert_allclose(temperature, FILLVAL_FLOAT32)
+
 
 def test_geometric_mean():
     """Test geometric_mean function."""
