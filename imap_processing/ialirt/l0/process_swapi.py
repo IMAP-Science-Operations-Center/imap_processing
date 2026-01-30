@@ -2,7 +2,6 @@
 
 import logging
 from decimal import Decimal
-from math import isfinite
 
 import numpy as np
 import pandas as pd
@@ -61,7 +60,7 @@ def count_rate(
 
     # see comment on Consts.temporary_density_factor
     density = density * Consts.temporary_density_factor
-    
+
     return (
         (density * Consts.eff_area * (beta / np.pi) ** (3 / 2))
         * (np.exp(-beta * (center_speed**2 + speed**2 - 2 * center_speed * speed)))
@@ -109,9 +108,9 @@ def optimize_pseudo_parameters(
             60000 * (initial_speed_guess / 400) ** 2,
         ]
     )
-    
+
     sol = None
-    
+
     try:
         five_point_range = range(max_index - 2, max_index + 2 + 1)
         xdata = energy_passbands.take(five_point_range, mode="clip")
@@ -124,26 +123,27 @@ def optimize_pseudo_parameters(
             sigma=sigma,
             p0=initial_param_guess,
         )
-        
-        # if covariance matrix is not finite, scipy failed to converge to a solution and could just be reporting the initial guess
+
+        # If covariance matrix is not finite, scipy failed to converge to a
+        # solution and could just be reporting the initial guess
         covariance_matrix_is_finite = np.all(np.isfinite(curve_fit_output[1]))
 
         # fit has failed if R^2 < 0.7
         yfit = count_rate(xdata, *curve_fit_output[0])
-        R2 = 1 - np.sum((ydata - yfit) ** 2) / np.sum((ydata - ydata.mean()) ** 2)
-        R2_is_acceptable = R2 >= 0.7
-        
-        if covariance_matrix_is_finite and R2_is_acceptable:
+        r2 = 1 - np.sum((ydata - yfit) ** 2) / np.sum((ydata - ydata.mean()) ** 2)
+        r2_is_acceptable = r2 >= 0.7
+
+        if covariance_matrix_is_finite and r2_is_acceptable:
             sol = curve_fit_output[0]
-    except RuntimeError as runtime_error:
-        logger.error(f"curve_fit failed", runtime_error)
+    except RuntimeError:
+        logger.error("curve_fit failed")
         sol = None
 
-    # report speed only if fit fails            
+    # report speed only if fit fails
     if sol is None:
         sol = initial_param_guess.copy()
-        sol[1:] = FILLVAL_FLOAT32 
-    
+        sol[1:] = FILLVAL_FLOAT32
+
     return sol
 
 
@@ -270,7 +270,8 @@ def process_swapi_ialirt(
 
         raw_coin_count = process_sweep_data(grouped_subset, "swapi_coin_cnt")
         # I-ALiRT packets have counts compressed by a factor of 16.
-        # Add 8 to avoid having counts truncated to 0 and to avoid counts being systematically too low
+        # Add 8 to avoid having counts truncated to 0 and to avoid
+        # counts being systematically too low
         raw_coin_count = raw_coin_count * 16 + 8
         # Subset to only the relevant I-ALiRT energy steps
         raw_coin_count = raw_coin_count[:, :NUM_IALIRT_ENERGY_STEPS]
