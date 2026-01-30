@@ -324,7 +324,8 @@ def process_swapi_ialirt(
                 pseudo_proton_temperature_list[-5:],
             )
 
-            # replace nans (resulting from geometric means that include fill values) with fill values
+            # replace nans (resulting from geometric means that
+            # include fill values) with fill values
             (
                 avg_pseudo_proton_speed,
                 avg_pseudo_proton_density,
