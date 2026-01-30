@@ -18,13 +18,13 @@ def test_packets_created():
     ) as f:
         lines = f.readlines()
 
-    actual_output = packets_created(datetime(2025, 7, 31, 16, 33, 39, 0), lines)
+    actual_output = packets_created(datetime(2026, 7, 31, 16, 33, 39, 0), lines)
 
     expected = {
         "Kiel": {
             "last_data_received": [
-                "2025-01-21T09:57:58Z",
-                "2025-01-21T10:27:59Z",
+                "2026-01-21T09:57:58Z",
+                "2026-01-21T10:27:59Z",
             ],
             "rate_kbps": [2.0, 2.0],
         }
