@@ -1655,8 +1655,10 @@ def resweep_histogram_data(
     exposure_factor_60deg = np.zeros_like(
         l1b_histrates["start_a_counts"].values, dtype=int
     )
-    np.add.at(exposure_factor_6deg, (slice(None), energy_mapping, slice(None)), 1)
-    np.add.at(exposure_factor_60deg, (slice(None), energy_mapping, slice(None)), 1)
+    # We have 4 spins per ESA step in an ASC, so we need to place
+    # 4 spins into each bin as our multiplication factor
+    np.add.at(exposure_factor_6deg, (slice(None), energy_mapping, slice(None)), 4)
+    np.add.at(exposure_factor_60deg, (slice(None), energy_mapping, slice(None)), 4)
 
     # Create a dictionary to hold exposure factors for both bin types
     exposure_factors = {}

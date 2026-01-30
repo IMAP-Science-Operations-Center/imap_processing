@@ -298,6 +298,9 @@ def test_lo_l1b_histogram_rates(
     assert "exposure_time_6deg" in l1b_datasets[-2].data_vars
     assert "h_counts" in l1b_datasets[-2].data_vars
     assert "o_counts" in l1b_datasets[-2].data_vars
+    assert l1b_datasets[-2]["exposure_time_6deg"].values[0, 0, 0] == 2
+    # Should be 10x as large
+    assert l1b_datasets[-1]["exposure_time_60deg"].values[0, 0, 0] == 20
 
 
 # @pytest.mark.external_kernel
@@ -940,10 +943,10 @@ def test_resweep_histogram_success(l1b_histrates, anc_dependencies):
         str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
     )
     l1b_histrates["epoch"] = epoch_date
-    exposure_factor_6deg = np.full((2, 7, 60), 1)
-    exposure_factor_60deg = np.full((2, 7, 6), 1)
-    exposure_factor_6deg[:, 0, :] = 2
-    exposure_factor_60deg[:, 0, :] = 2
+    exposure_factor_6deg = np.full((2, 7, 60), 4)
+    exposure_factor_60deg = np.full((2, 7, 6), 4)
+    exposure_factor_6deg[:, 0, :] = 8
+    exposure_factor_60deg[:, 0, :] = 8
     exposure_factor_6deg[:, 1, :] = 0
     exposure_factor_60deg[:, 1, :] = 0
 
@@ -967,9 +970,9 @@ def test_resweep_histogram_success(l1b_histrates, anc_dependencies):
     assert l1b_histrates.o_counts[1, 2, 0] == 4
 
     for field in SPIN_BIN_6_FIELDS + SPIN_BIN_60_FIELDS:
-        assert np.array_equal(l1b_histrates[field], l1b_histrates[field])
-    assert np.array_equal(exposure_factor["6deg"], exposure_factor_6deg)
-    assert np.array_equal(exposure_factor["60deg"], exposure_factor_60deg)
+        np.testing.assert_array_equal(l1b_histrates[field], l1b_histrates[field])
+    np.testing.assert_array_equal(exposure_factor["6deg"], exposure_factor_6deg)
+    np.testing.assert_array_equal(exposure_factor["60deg"], exposure_factor_60deg)
 
 
 def test_resweep_histogram_no_date_in_sweep(l1b_histrates, anc_dependencies, caplog):
