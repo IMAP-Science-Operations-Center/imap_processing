@@ -324,27 +324,29 @@ def process_swapi_ialirt(
                 pseudo_proton_temperature_list[-5:],
             )
 
-            if (
-                np.isfinite(avg_pseudo_proton_density)
-                and np.isfinite(avg_pseudo_proton_temperature)
-                and np.isfinite(avg_pseudo_proton_speed)
-            ):
-                swapi_data.append(
-                    _populate_instrument_header_items(met)
-                    | {
-                        "instrument": "swapi",
-                        "swapi_epoch": int(met_to_ttj2000ns(avg_swapi_met)),
-                        "swapi_pseudo_proton_speed": Decimal(
-                            f"{avg_pseudo_proton_speed:.3f}"
-                        ),
-                        "swapi_pseudo_proton_density": Decimal(
-                            f"{avg_pseudo_proton_density:.3f}"
-                        ),
-                        "swapi_pseudo_proton_temperature": Decimal(
-                            f"{avg_pseudo_proton_temperature:.3f}"
-                        ),
-                    }
-                )
+            # replace nans (resulting from geometric means that include fill values) with fill values
+            avg_pseudo_proton_speed, avg_pseudo_proton_density, avg_pseudo_proton_temperature = np.nan_to_num((
+                avg_pseudo_proton_speed,
+                avg_pseudo_proton_density,
+                avg_pseudo_proton_temperature
+            ), nan=FILLVAL_FLOAT32)
+
+            swapi_data.append(
+                _populate_instrument_header_items(met)
+                | {
+                    "instrument": "swapi",
+                    "swapi_epoch": int(met_to_ttj2000ns(avg_swapi_met)),
+                    "swapi_pseudo_proton_speed": Decimal(
+                        f"{avg_pseudo_proton_speed:.3f}"
+                    ),
+                    "swapi_pseudo_proton_density": Decimal(
+                        f"{avg_pseudo_proton_density:.3f}"
+                    ),
+                    "swapi_pseudo_proton_temperature": Decimal(
+                        f"{avg_pseudo_proton_temperature:.3f}"
+                    ),
+                }
+            )
     if incomplete_groups:
         logger.info(
             f"The following swapi groups were skipped due to "

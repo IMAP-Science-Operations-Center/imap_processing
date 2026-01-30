@@ -182,45 +182,6 @@ def test_process_swapi_ialirt(
         )
 
 
-@pytest.mark.external_test_data
-@mock.patch("imap_processing.ialirt.l0.process_swapi.process_sweep_data")
-def test_process_swapi_ialirt_zero_counts(
-    mock_process_sweep_data,
-    xarray_data,
-    ialirt_test_data,
-    sc_xarray_data,
-    esa_unit_conversion_table,
-):
-    """Test that the process_swapi_ialirt() function returns expected keys."""
-
-    mock_process_sweep_data.return_value = ialirt_test_data[0]
-
-    # Adding necessary time variables from spacecraft packet
-    xarray_data = xarray_data.assign(sc_sclk_sec=sc_xarray_data["sc_sclk_sec"])
-    xarray_data["sc_sclk_sec"].data = sc_xarray_data["sc_sclk_sec"][
-        0 : xarray_data["swapi_flag"].shape[0]
-    ].data
-    xarray_data = xarray_data.assign(sc_sclk_sub_sec=sc_xarray_data["sc_sclk_sub_sec"])
-    xarray_data["sc_sclk_sub_sec"].data = sc_xarray_data["sc_sclk_sub_sec"][
-        0 : xarray_data["swapi_flag"].shape[0]
-    ].data
-
-    vars_to_zero = [
-        "swapi_coin_cnt0",
-        "swapi_coin_cnt1",
-        "swapi_coin_cnt2",
-        "swapi_coin_cnt3",
-        "swapi_coin_cnt4",
-        "swapi_coin_cnt5",
-    ]
-
-    for v in vars_to_zero:
-        xarray_data[v] = xr.zeros_like(xarray_data[v])
-
-    swapi_result = process_swapi_ialirt(xarray_data, esa_unit_conversion_table)
-
-    assert swapi_result == []
-
 
 def test_count_rate():
     """Use random realistic values to test for expected output of count_rate()."""
