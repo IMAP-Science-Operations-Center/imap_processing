@@ -649,9 +649,7 @@ def process_lo_angular_intensity(
     dataset["spin_sector"].attrs = cdf_attrs.get_variable_attributes(
         "spin_sector", check_schema=False
     )
-    print(dataset.energy_table)
-    if "energy_table" in dataset:
-        print("HIII")
+
     return dataset
 
 
