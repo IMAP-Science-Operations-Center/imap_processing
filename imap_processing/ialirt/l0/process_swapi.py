@@ -325,11 +325,18 @@ def process_swapi_ialirt(
             )
 
             # replace nans (resulting from geometric means that include fill values) with fill values
-            avg_pseudo_proton_speed, avg_pseudo_proton_density, avg_pseudo_proton_temperature = np.nan_to_num((
+            (
                 avg_pseudo_proton_speed,
                 avg_pseudo_proton_density,
-                avg_pseudo_proton_temperature
-            ), nan=FILLVAL_FLOAT32)
+                avg_pseudo_proton_temperature,
+            ) = np.nan_to_num(
+                (
+                    avg_pseudo_proton_speed,
+                    avg_pseudo_proton_density,
+                    avg_pseudo_proton_temperature,
+                ),
+                nan=FILLVAL_FLOAT32,
+            )
 
             swapi_data.append(
                 _populate_instrument_header_items(met)

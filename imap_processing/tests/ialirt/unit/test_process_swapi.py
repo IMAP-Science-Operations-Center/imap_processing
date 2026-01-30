@@ -182,7 +182,6 @@ def test_process_swapi_ialirt(
         )
 
 
-
 def test_count_rate():
     """Use random realistic values to test for expected output of count_rate()."""
 
