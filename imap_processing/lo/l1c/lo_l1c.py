@@ -1080,12 +1080,6 @@ def set_background_rates(
         for esa_step in range(0, 7):
             value = row[f"E-Step{esa_step + 1}"]
             if row["rate/sigma"] == "rate":
-                logging.debug(
-                    "Setting background rates: bg_rates.shape=%s, bin_start=%d, bin_end=%d",
-                    bg_rates.shape,
-                    bin_start,
-                    bin_end,
-                )
                 bg_rates[esa_step, bin_start:bin_end, :] = value
             elif row["rate/sigma"] == "sigma":
                 bg_sys_err[esa_step, bin_start:bin_end, :] = value
