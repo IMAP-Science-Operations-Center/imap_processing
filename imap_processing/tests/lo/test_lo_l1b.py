@@ -1386,18 +1386,18 @@ def test_set_spin_cycle_from_spin_data_insufficient_spins():
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=np.array([28])
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number",
+        return_value=np.array([28, 26, 24]),
     ):
         result = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
 
-    # Assert - Only epoch 1 (science_met[1]=200) should remain
-    # (matched to spin with 28 spins)
-    assert len(result["epoch"]) == 1
-    expected_epochs = met_to_ttj2000ns([200])
-    np.testing.assert_array_equal(result["epoch"].values, expected_epochs)
+    assert len(result["epoch"]) == 3
+    np.testing.assert_array_equal(result["epoch"].values, epoch_date)
 
-    # Verify spin_cycle shape matches filtered data
-    assert result["spin_cycle"].shape == (1, 7)
+    # Verify spin_cycle shape has all valid ESA steps and all epochs
+    assert result["spin_cycle"].shape == (3, 7)
+    # We should have added a flag about an incomplete ASC
+    np.testing.assert_array_equal(result["incomplete_asc"], [True, False, True])
 
 
 @patch(

@@ -636,23 +636,12 @@ def set_spin_cycle_from_spin_data(
         science_met_per_asc, spin_met_per_asc
     )
 
+    # Add a flag for invalid ASCs
     valid_mask = find_valid_asc(science_to_spin_indices, spin_data)
+    l1b_science["incomplete_asc"] = xr.DataArray(~valid_mask, dims=["epoch"])
 
-    # If none valid, return an empty/filtered dataset
-    # (preserves dims & avoids misalignment)
-    if not valid_mask.any():
-        logger.warning(
-            "No valid ASCs remain after filtering; returning empty epoch set"
-        )
-        return l1b_science.isel(epoch=[])
-
-    # Filter the input datasets to only the valid ASCs so all subsequent arrays align
-    l1a_valid = l1a_science.isel(epoch=valid_mask)
-    l1b_valid = l1b_science.isel(epoch=valid_mask)
-
-    # Use the valid closest indices to get the corresponding acq_start rows
-    science_to_spin_indices_valid = science_to_spin_indices[valid_mask]
-    closest_start_acq_per_asc = acq_start.isel(epoch=science_to_spin_indices_valid)
+    # Use the closest indices to get the corresponding acq_start rows
+    closest_start_acq_per_asc = acq_start.isel(epoch=science_to_spin_indices)
 
     # compute spin start number for each remaining ASC
     spin_start_num_per_asc = np.atleast_1d(get_spin_number(closest_start_acq_per_asc))
@@ -661,29 +650,29 @@ def set_spin_cycle_from_spin_data(
     logical_src = l1a_science.attrs.get("Logical_source", "")
     if logical_src == "imap_lo_l1a_de":
         # For DE: expand per-event across ESA steps within each (valid) ASC
-        counts = l1a_valid["de_count"].values
+        counts = l1a_science["de_count"].values
         spin_cycle = []
         for asc_idx, _count in enumerate(counts):
-            esa_steps = l1a_valid["esa_step"].values[
+            esa_steps = l1a_science["esa_step"].values[
                 sum(counts[:asc_idx]) : sum(counts[: asc_idx + 1])
             ]
             spin_cycle.extend(
                 spin_start_num_per_asc[asc_idx, 0] + 7 + (esa_steps - 1) * 2
             )
         spin_cycle = np.array(spin_cycle)
-        l1b_valid["spin_cycle"] = xr.DataArray(spin_cycle, dims=["epoch"])
+        l1b_science["spin_cycle"] = xr.DataArray(spin_cycle, dims=["epoch"])
     elif logical_src == "imap_lo_l1a_histogram":
         # For histogram: keep 2D array (n_valid_epochs, esa_step)
-        esa_steps = l1b_valid["esa_step"].values  # shape: (7,)
+        esa_steps = l1b_science["esa_step"].values  # shape: (7,)
         spin_cycle = spin_start_num_per_asc + 7 + (esa_steps - 1) * 2
-        l1b_valid["spin_cycle"] = xr.DataArray(spin_cycle, dims=["epoch", "esa_step"])
+        l1b_science["spin_cycle"] = xr.DataArray(spin_cycle, dims=["epoch", "esa_step"])
     else:
         raise ValueError(
             "set spin cycle called with unsupported dataset with "
             "Logical_source: {logical_src}"
         )
 
-    return l1b_valid
+    return l1b_science
 
 
 def match_science_to_spin_asc(
@@ -744,12 +733,8 @@ def find_valid_asc(
     valid_indices = _check_valid_indices(science_to_spin_indices)
     valid_spin_count = _check_sufficient_spins(spin_data)[science_to_spin_indices]
 
-    # Combine only these two masks:
+    # Combine these two masks
     valid_mask = valid_indices & valid_spin_count
-
-    total_invalid = (~valid_mask).sum()
-    if total_invalid > 0:
-        logger.info(f"Dropping {total_invalid} invalid ASCs total")
 
     return valid_mask
 
