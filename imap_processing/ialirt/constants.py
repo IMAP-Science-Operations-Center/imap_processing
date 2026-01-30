@@ -39,7 +39,7 @@ class IalirtSwapiConstants:
     speed_ew = 0.5 * fwhm_width  # speed width of energy passband
     e_charge = 1.602176634e-19  # electronic charge, [C]
     speed_coeff = np.sqrt(2 * e_charge / prot_mass) / 1e3
-    
+
     # temporary correction factor based on WIND data available
     # overlapping with the first ~month of SWAPI data.
     # to be replaced once SWAPI's L3 processing pipeline is finalized
