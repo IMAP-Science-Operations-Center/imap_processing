@@ -1323,7 +1323,7 @@ def calculate_flux_corrections(dataset: xr.Dataset, flux_factors: Path) -> xr.Da
         ( dataset["bg_intensity"] * bg_logarithmic_stability_factor ) **2 )
     dataset["bg_intensity_sys_err"] = np.sqrt( 
         ( dataset["bg_intensity_sys_err"] ) **2 
-        + :where=
+        +
         ( dataset["bg_intensity"] * bg_logarithmic_stability_factor ) **2 )
 
     # Flux correction
