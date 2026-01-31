@@ -1311,8 +1311,10 @@ def calculate_flux_corrections(dataset: xr.Dataset, flux_factors: Path) -> xr.Da
 
     # Add in the background intensity to ensure that logarithms behave
     # properly in the flux corrector when intensities are zero or very low.
-    dataset["ena_intensity"] += ( dataset["bg_intensity"] * bg_logarithmic_stability_factor )
-    dataset["bg_intensity"] += ( dataset["bg_intensity"] * bg_logarithmic_stability_factor )
+    dataset["ena_intensity"] += ( 
+        dataset["bg_intensity"] * bg_logarithmic_stability_factor )
+    dataset["bg_intensity"] += ( 
+        dataset["bg_intensity"] * bg_logarithmic_stability_factor )
     
     # Commensurately, adjust the uncertainties to account for this addition
     dataset["ena_intensity_stat_uncert"] = np.sqrt( 
