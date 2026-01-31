@@ -35,7 +35,7 @@ from imap_processing.spice.time import (
 logger = logging.getLogger(__name__)
 
 COD_LO_COUNTER = 232
-COD_HI_COUNTER = 197
+COD_HI_COUNTER = 199
 COD_LO_RANGE = range(0, 15)
 COD_HI_RANGE = range(0, 5)
 
