@@ -383,6 +383,7 @@ class DirectEventL1A:
                 f"Sequence for direct event L1A is out of order or "
                 f"incorrect. Attempted to append sequence counter "
                 f"{second_l0.SEQ} after {self.most_recent_seq}."
+                f"New DE time: {second_l0.SEC}, current time: {self.l0.SEC}."
             )
 
         # Track any missing sequence counts

@@ -128,7 +128,15 @@ def process_de_l0(
                 continue
             first_de = DirectEventL1A(sorted_des[0])
             for each_de in sorted_des[1:]:
-                first_de.merge_de_packets(each_de)
+                try:
+                    first_de.merge_de_packets(each_de)
+                except (ValueError, IndexError) as e:
+                    # We don't want to stop processing for DE errors
+                    logger.warning(
+                        f"ERROR ENCOUNTERED in GLOWS DE processing. "
+                        f"Excluding packet from output. Error: {e}"
+                    )
+                    continue
 
             if sorted_des[-1].SEQ != first_de.l0.LEN:
                 first_de.finish_incomplete_packet()
