@@ -241,7 +241,7 @@ unc_cno:
   VAR_TYPE: data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   COORDINATE_SYSTEM: instrument frame
 
@@ -256,7 +256,7 @@ unc_fe:
   VAR_TYPE: data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: spectrogram
   COORDINATE_SYSTEM: instrument frame
 
@@ -271,7 +271,7 @@ unc_h:
   VAR_TYPE: data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: spectrogram
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -287,7 +287,7 @@ unc_he3he4:
   VAR_TYPE: data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: spectrogram
   COORDINATE_SYSTEM: instrument frame
 

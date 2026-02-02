@@ -27,7 +27,6 @@ from imap_processing.codice.codice_l2 import (
     process_lo_species_intensity,
 )
 from imap_processing.codice.constants import (
-    LO_NSW_ANGULAR_VARIABLE_NAMES,
     LO_SW_ANGULAR_VARIABLE_NAMES,
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     SW_POSITIONS,
@@ -503,9 +502,14 @@ def test_codice_l2_nsw_angular_intensity(mock_get_file_paths, codice_lut_path):
         )
     )
     l2_val_data = load_cdf(l2_val_data)
-    for variable in LO_NSW_ANGULAR_VARIABLE_NAMES:
+    for variable in l2_val_data.variables:
+        # TODO Ask joey to rename energy_per_charge to energy_table in validation data
+        if variable in ["energy_per_charge"]:
+            sdc_var = "energy_table"
+        else:
+            sdc_var = variable
         np.testing.assert_allclose(
-            processed_2_ds[variable].values,
+            processed_2_ds[sdc_var].values,
             l2_val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
@@ -542,9 +546,14 @@ def test_codice_l2_sw_angular_intensity(mock_get_file_paths, codice_lut_path):
         )
     )
     l2_val_data = load_cdf(l2_val_data)
-    for variable in LO_SW_ANGULAR_VARIABLE_NAMES:
+    for variable in l2_val_data.variables:
+        # TODO Ask joey to rename energy_per_charge to energy_table in validation data
+        if variable in ["energy_per_charge"]:
+            sdc_var = "energy_table"
+        else:
+            sdc_var = variable
         np.testing.assert_allclose(
-            processed_2_ds[variable].values,
+            processed_2_ds[sdc_var].values,
             l2_val_data[variable].values,
             # TODO is 1e-4 ok?
             rtol=1e-4,

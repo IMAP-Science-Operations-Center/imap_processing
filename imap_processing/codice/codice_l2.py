@@ -1423,7 +1423,6 @@ def process_codice_l2(
                 "acquisition_time_per_esa_step",
                 "rgfo_half_spin",
                 "half_spin_per_esa_step",
-                "energy_table",
             ]
         )
 
