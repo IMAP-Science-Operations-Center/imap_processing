@@ -7,7 +7,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swapi import (
-    FILLVAL_FLOAT32,
     Consts,
     count_rate,
     geometric_mean,
@@ -166,20 +165,9 @@ def test_process_swapi_ialirt(
 
     swapi_result = process_swapi_ialirt(xarray_data, esa_unit_conversion_table)
 
-    key_names = [
-        "apid",
-        "met",
-        "met_in_utc",
-        "ttj2000ns",
-        "swapi_pseudo_proton_density",
-        "swapi_pseudo_proton_speed",
-        "swapi_pseudo_proton_temperature",
-    ]
-
-    for key in key_names:
-        assert swapi_result[0][key] is not None, (
-            f"The expected attribute {key} was not filled in the result dict."
-        )
+    assert swapi_result[0]["swapi_pseudo_proton_speed"] is None
+    assert swapi_result[0]["swapi_pseudo_proton_density"] is None
+    assert swapi_result[0]["swapi_pseudo_proton_temperature"] is None
 
 
 def test_count_rate():
@@ -300,8 +288,8 @@ def test_optimize_parameters_exception_handling():
     )
 
     np.testing.assert_allclose(speed, expected_speed, rtol=1e-6)
-    np.testing.assert_allclose(density, FILLVAL_FLOAT32)
-    np.testing.assert_allclose(temperature, FILLVAL_FLOAT32)
+    np.testing.assert_allclose(density, np.nan)
+    np.testing.assert_allclose(temperature, np.nan)
 
 
 def test_optimize_parameters_bad_fit_handling():
@@ -337,8 +325,8 @@ def test_optimize_parameters_bad_fit_handling():
     )
 
     np.testing.assert_allclose(speed, expected_speed, rtol=1e-6)
-    np.testing.assert_allclose(density, FILLVAL_FLOAT32)
-    np.testing.assert_allclose(temperature, FILLVAL_FLOAT32)
+    np.testing.assert_allclose(density, np.nan)
+    np.testing.assert_allclose(temperature, np.nan)
 
 
 def test_optimize_parameters_bad_covariance_handling():
@@ -371,8 +359,8 @@ def test_optimize_parameters_bad_covariance_handling():
     )
 
     np.testing.assert_allclose(speed, expected_speed, rtol=1e-6)
-    np.testing.assert_allclose(density, FILLVAL_FLOAT32)
-    np.testing.assert_allclose(temperature, FILLVAL_FLOAT32)
+    np.testing.assert_allclose(density, np.nan)
+    np.testing.assert_allclose(temperature, np.nan)
 
 
 def test_geometric_mean():
