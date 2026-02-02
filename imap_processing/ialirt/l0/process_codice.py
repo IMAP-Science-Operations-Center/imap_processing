@@ -34,8 +34,6 @@ from imap_processing.spice.time import (
 
 logger = logging.getLogger(__name__)
 
-FILLVAL_UINT8 = 255
-FILLVAL_FLOAT32 = Decimal(str(-1.0e31))
 COD_LO_COUNTER = 232
 COD_HI_COUNTER = 197
 COD_LO_RANGE = range(0, 15)
@@ -357,9 +355,9 @@ def calculate_ratios(
         fe_over_o_abundance = Decimal(f"{float(fe_over_o_abundance):.3f}")
     else:
         c_over_o_abundance, mg_over_o_abundance, fe_over_o_abundance = (
-            FILLVAL_FLOAT32,
-            FILLVAL_FLOAT32,
-            FILLVAL_FLOAT32,
+            None,
+            None,
+            None,
         )
 
     if float(pseudo_density_dict["cplus5"]) != 0:
@@ -369,7 +367,7 @@ def calculate_ratios(
 
         c_plus_6_over_c_plus_5 = Decimal(f"{float(c_plus_6_over_c_plus_5):.3f}")
     else:
-        c_plus_6_over_c_plus_5 = FILLVAL_FLOAT32
+        c_plus_6_over_c_plus_5 = None
 
     if float(pseudo_density_dict["oplus6"]) != 0:
         o_plus_7_over_o_plus_6 = (
@@ -377,7 +375,7 @@ def calculate_ratios(
         )
         o_plus_7_over_o_plus_6 = Decimal(f"{float(o_plus_7_over_o_plus_6):.3f}")
     else:
-        o_plus_7_over_o_plus_6 = FILLVAL_FLOAT32
+        o_plus_7_over_o_plus_6 = None
 
     if float(pseudo_density_dict["fe_hiq"]) != 0:
         fe_low_over_fe_high = (
@@ -385,7 +383,7 @@ def calculate_ratios(
         )
         fe_low_over_fe_high = Decimal(f"{float(fe_low_over_fe_high):.3f}")
     else:
-        fe_low_over_fe_high = FILLVAL_FLOAT32
+        fe_low_over_fe_high = None
 
     return COD_LO_L2(
         c_over_o_abundance=c_over_o_abundance,
