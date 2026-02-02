@@ -340,6 +340,7 @@ class DirectEventL1A:
     -------
     merge_de_packets
         Add another Level0 instance.
+    finish_incomplete_packet
     """
 
     l0: DirectEventL0
