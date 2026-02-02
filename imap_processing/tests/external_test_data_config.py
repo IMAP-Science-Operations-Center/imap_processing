@@ -258,4 +258,7 @@ EXTERNAL_TEST_DATA = [
     ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0F_15.dat", "swe/l2_validation/"),
     ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1H_14_6.dat", "swe/l2_validation/"),
     ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat", "swe/l2_validation/"),
+
+    # GLOWS
+    ("combined_de_l1a.csv", "glows/validation_data")
 ]  # fmt: skip
