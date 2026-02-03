@@ -9,6 +9,7 @@ caused too much complexity.
 """
 
 import logging
+from unittest import mock
 from unittest.mock import patch
 
 import numpy as np
@@ -29,6 +30,50 @@ from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 pytestmark = pytest.mark.external_test_data
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_new_fsw_changes(mock_get_file_paths, codice_lut_path):
+    """Tests the new FSW changes (jan 2026)."""
+    xtce_file = (
+        imap_module_directory
+        / "codice/packet_definitions/codice_packet_definition_jan.xml"
+    )
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="fsw-changes", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+    ]
+
+    with mock.patch("imap_processing.codice.codice_l1a.XTCE_FILE", xtce_file):
+        process_l1a(dependency=ProcessingInputCollection())
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")

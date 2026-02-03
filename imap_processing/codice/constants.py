@@ -247,8 +247,8 @@ LO_COMPRESSION_ID_LOOKUP = {
     0: CoDICECompression.PACK_24_BIT,
     1: CoDICECompression.LOSSY_B_LOSSLESS,
     2: CoDICECompression.LOSSY_B_LOSSLESS,
-    3: CoDICECompression.LOSSY_A_LOSSLESS,
-    4: CoDICECompression.LOSSY_A_LOSSLESS,
+    3: CoDICECompression.LOSSLESS,
+    4: CoDICECompression.LOSSLESS,
     5: CoDICECompression.LOSSY_A_LOSSLESS,
     6: CoDICECompression.LOSSY_A_LOSSLESS,
     7: CoDICECompression.LOSSY_A_LOSSLESS,
@@ -264,7 +264,7 @@ HI_COMPRESSION_ID_LOOKUP = {
     6: CoDICECompression.LOSSY_A_LOSSLESS,
     7: CoDICECompression.LOSSY_A_LOSSLESS,
     8: CoDICECompression.LOSSY_A_LOSSLESS,
-    9: CoDICECompression.LOSSY_A_LOSSLESS,
+    9: CoDICECompression.LOSSLESS,
 }
 
 # Lookup tables for Lossy decompression algorithms "A" and "B"
@@ -793,7 +793,7 @@ LOSSY_B_TABLE = {
 HI_ACQUISITION_TIME = 0.59916
 
 # TODO: in the future, read from sci-lut
-LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
+LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq", "fe_hiq"]
 LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
 LO_SW_PRIORITY_VARIABLE_NAMES = [
     "p0_tcrs",

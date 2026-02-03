@@ -56,57 +56,77 @@ def extract_initial_items_from_combined_packets(
     spare_1 = np.zeros(n_packets, dtype=np.uint8)
     st_bias_gain_mode = np.zeros(n_packets, dtype=np.uint8)
     sw_bias_gain_mode = np.zeros(n_packets, dtype=np.uint8)
-    priority = np.zeros(n_packets, dtype=np.uint8)
     suspect = np.zeros(n_packets, dtype=np.uint8)
+    priority = np.zeros(n_packets, dtype=np.uint8)
     compressed = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_half_spin = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_esa_step = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_spin_sector = np.zeros(n_packets, dtype=np.uint8)
+    nso_half_spin = np.zeros(n_packets, dtype=np.uint8)
+    nso_spin_sector = np.zeros(n_packets, dtype=np.uint8)
+    nso_esa_step = np.zeros(n_packets, dtype=np.uint8)
+    spare_2 = np.zeros(n_packets, dtype=np.uint16)
     num_events = np.zeros(n_packets, dtype=np.uint32)
     byte_count = np.zeros(n_packets, dtype=np.uint32)
 
     # Extract fields from each packet
     for pkt_idx in range(n_packets):
         event_data = packets.event_data.data[pkt_idx]
-
-        # Byte-aligned fields using int.from_bytes
+        # Bytes 0-7: Byte-aligned fields
         packet_version[pkt_idx] = int.from_bytes(event_data[0:2], byteorder="big")
         spin_period[pkt_idx] = int.from_bytes(event_data[2:4], byteorder="big")
         acq_start_seconds[pkt_idx] = int.from_bytes(event_data[4:8], byteorder="big")
 
-        # Non-byte-aligned fields (bytes 8-12 contain mixed bit fields)
-        # Extract 4 bytes and unpack bit fields
+        # Bytes 8-11: Mixed bit fields (32 bits total)
         mixed_bytes = int.from_bytes(event_data[8:12], byteorder="big")
 
-        # acq_start_subseconds: 20 bits (MSB)
+        # acq_start_subseconds: 20 bits (bits 31-12)
         acq_start_subseconds[pkt_idx] = (mixed_bytes >> 12) & 0xFFFFF
-        # spare_1: 2 bits
+        # spare_1: 2 bits (bits 11-10)
         spare_1[pkt_idx] = (mixed_bytes >> 10) & 0x3
-        # st_bias_gain_mode: 2 bits
+        # st_bias_gain_mode: 2 bits (bits 9-8)
         st_bias_gain_mode[pkt_idx] = (mixed_bytes >> 8) & 0x3
-        # sw_bias_gain_mode: 2 bits
+        # sw_bias_gain_mode: 2 bits (bits 7-6)
         sw_bias_gain_mode[pkt_idx] = (mixed_bytes >> 6) & 0x3
-        # priority: 4 bits
+        # priority: 4 bits (bits 5-2)
         priority[pkt_idx] = (mixed_bytes >> 2) & 0xF
-        # suspect: 1 bit
+        print("priority:", priority[pkt_idx])
+        # suspect: 1 bit (bit 1)
         suspect[pkt_idx] = (mixed_bytes >> 1) & 0x1
-        # compressed: 1 bit (LSB)
+        # compressed: 1 bit (bit 0)
         compressed[pkt_idx] = mixed_bytes & 0x1
 
-        # Remaining byte-aligned fields
-        num_events[pkt_idx] = int.from_bytes(event_data[12:16], byteorder="big")
-        byte_count[pkt_idx] = int.from_bytes(event_data[16:20], byteorder="big")
+        # All of the fields below are single byte fields
+        rgfo_half_spin[pkt_idx] = event_data[12]
+        rgfo_spin_sector[pkt_idx] = event_data[13]
+        rgfo_esa_step[pkt_idx] = event_data[14]
+        nso_half_spin[pkt_idx] = event_data[15]
+        nso_spin_sector[pkt_idx] = event_data[16]
+        nso_esa_step[pkt_idx] = event_data[17]
 
-        # Remove the first 20 bytes from event_data (header fields from above)
+        # spare #2 is 16 bits
+        spare_2[pkt_idx] = int.from_bytes(event_data[18:20], byteorder="big")
+
+        # Bytes 20-23: NUM_EVENTS (32 bits)
+        num_events[pkt_idx] = int.from_bytes(event_data[20:24], byteorder="big")
+
+        # Bytes 24-27: BYTE_COUNT (32 bits)
+        byte_count[pkt_idx] = int.from_bytes(event_data[24:28], byteorder="big")
+
+        # Remove the first 28 bytes from event_data (header fields from above)
         # Then trim to the number of bytes indicated by byte_count
-        if byte_count[pkt_idx] > len(event_data) - 20:
+        if byte_count[pkt_idx] > len(event_data) - 28:
             raise ValueError(
                 f"Byte count {byte_count[pkt_idx]} exceeds available "
-                f"data length {len(event_data) - 20} for packet index {pkt_idx}."
+                f"data length {len(event_data) - 28} for packet index {pkt_idx}."
             )
-        packets.event_data.data[pkt_idx] = event_data[20 : 20 + byte_count[pkt_idx]]
 
+        packets.event_data.data[pkt_idx] = event_data[28 : byte_count[pkt_idx] + 28]
+        compression_dict = {item.value: item for item in CoDICECompression}
         if compressed[pkt_idx]:
             packets.event_data.data[pkt_idx] = decompress(
                 packets.event_data.data[pkt_idx],
-                CoDICECompression.LOSSLESS,
+                compression_dict[compressed[pkt_idx]],
             )
 
     # Add extracted fields to dataset
@@ -120,6 +140,13 @@ def extract_initial_items_from_combined_packets(
     packets["priority"] = xr.DataArray(priority, dims=["epoch"])
     packets["suspect"] = xr.DataArray(suspect, dims=["epoch"])
     packets["compressed"] = xr.DataArray(compressed, dims=["epoch"])
+    packets["rgfo_half_spin"] = xr.DataArray(rgfo_half_spin, dims=["epoch"])
+    packets["rgfo_spin_sector"] = xr.DataArray(rgfo_spin_sector, dims=["epoch"])
+    packets["rgfo_energy_step"] = xr.DataArray(rgfo_esa_step, dims=["epoch"])
+    packets["nso_half_spin"] = xr.DataArray(nso_half_spin, dims=["epoch"])
+    packets["nso_spin_sector"] = xr.DataArray(nso_spin_sector, dims=["epoch"])
+    packets["nso_energy_step"] = xr.DataArray(nso_esa_step, dims=["epoch"])
+    packets["spare_2"] = xr.DataArray(spare_2, dims=["epoch"])
     packets["num_events"] = xr.DataArray(num_events, dims=["epoch"])
     packets["byte_count"] = xr.DataArray(byte_count, dims=["epoch"])
 
@@ -316,9 +343,8 @@ def _unpack_and_store_events(
         n_events = int(num_events_arr[pkt_idx])
         if n_events == 0:
             continue
-
         # Extract and byte-reverse events for LSB unpacking
-        pkt_bytes = np.asarray(event_data_arr[pkt_idx], dtype=np.uint8)
+        pkt_bytes = np.asarray(event_data_arr[pkt_idx], dtype=np.uint32)
         pkt_bytes = pkt_bytes.reshape(n_events, 8)[:, ::-1]
         all_event_bytes[offset : offset + n_events] = pkt_bytes
 

@@ -34,6 +34,11 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 
 
+XTCE_FILE = (
+    imap_module_directory / "codice/packet_definitions/codice_packet_definition.xml"
+)
+
+
 def process_l1a(  # noqa: PLR0912
     dependency: ProcessingInputCollection,
 ) -> list[xr.Dataset]:
@@ -53,15 +58,11 @@ def process_l1a(  # noqa: PLR0912
     # Get science data which is L0 packet file
     science_file = dependency.get_file_paths(data_type="l0")[0]
 
-    xtce_file = (
-        imap_module_directory / "codice/packet_definitions/codice_packet_definition.xml"
-    )
     # Decom packet
     datasets_by_apid = packet_file_to_datasets(
         science_file,
-        xtce_file,
+        XTCE_FILE,
     )
-
     datasets = []
     for apid in datasets_by_apid:
         if apid not in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
@@ -132,7 +133,7 @@ def process_l1a(  # noqa: PLR0912
             logger.info("Processing l1b housekeeping data")
             l1b_ds = packet_file_to_datasets(
                 science_file,
-                xtce_file,
+                XTCE_FILE,
                 use_derived_value=True,
             )[apid]
             l1b_ds.attrs.update(cdf_attrs.get_global_attributes("imap_codice_l1b_hskp"))

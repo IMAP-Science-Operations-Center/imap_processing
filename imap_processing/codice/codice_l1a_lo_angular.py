@@ -197,7 +197,6 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         "lo_stepping"
     ]
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
-
     # If data size is less than 128, pad with fillval to make it 128
     half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
     if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
@@ -232,6 +231,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_data[species_mask] = np.nan
     # Set half_spin_per_esa_step to (fillval) where nso_mask is True
     half_spin_per_esa_step[nso_mask] = HALF_SPIN_FILLVAL
+
     # Set acquisition_time_per_step to nan where nso_mask is True
     acquisition_time_per_step[nso_mask] = np.nan
     # ========= Get Epoch Time Data ===========
