@@ -183,6 +183,7 @@ codice_hi_energy_center:
   FILLVAL: -1.0e31
   FORMAT: F12.6
   dtype: float32
+  LABLAXIS: Proton energy bin
 
 codice_hi_energy_minus:
   CATDESC: CoDICE-Hi proton energy bin lower delta (MeV)
@@ -194,6 +195,7 @@ codice_hi_energy_minus:
   FILLVAL: -1.0e31
   FORMAT: F12.6
   dtype: float32
+  LABLAXIS: Energy lower delta
 
 codice_hi_energy_plus:
   CATDESC: CoDICE-Hi proton energy bin upper delta (MeV)
@@ -205,6 +207,7 @@ codice_hi_energy_plus:
   FILLVAL: -1.0e31
   FORMAT: F12.6
   dtype: float32
+  LABLAXIS: Energy upper delta
 
 codice_hi_elevation:
   CATDESC: Elevation Angle
@@ -235,6 +238,7 @@ codice_hi_spin_sector:
   VALIDMIN: 0
   VALIDMAX: 3
   dtype: int32
+  LABLAXIS: Spin sector index
 
 codice_hi_spin_sector_labels:
   CATDESC: CoDICE-Hi spin sector labels
@@ -252,7 +256,7 @@ swe_electron_energy:
   VALIDMIN: 0.0
   VALIDMAX: 2000.0
   FILLVAL: -1.0e31
-  FORMAT: F12.6
+  FORMAT: F6.1
   dtype: float32
 
 # Variables
@@ -269,7 +273,7 @@ codice_hi_h:
   DEPEND_2: codice_hi_spin_sector
   DEPEND_3: codice_hi_elevation
   DISPLAY_TYPE: no_plot
-  FORMAT: F16.6
+  FORMAT: F6.1
   VAR_NOTES: Energy ranges (MeV) are 0.0200 to 0.0283, 0.0283 to 0.0400, 0.0400 to 0.0566, 0.0566 to 0.0800, 0.0800 to 0.113, 0.113 to 0.160, 0.160 to 0.226, 0.226 to 0.320, 0.320 to 0.453, 0.453 to 0.640, 0.640 to 0.905, 0.905 to 1.28, 1.28 to 1.81, 1.81 to 2.56, 2.56 to 3.62.
 
 codice_lo_c_over_o_abundance:
@@ -597,9 +601,10 @@ swe_normalized_counts:
   FIELDNAM: Normalized electron counts
   UNITS: normalized counts
   VALIDMIN: 0
-  VALIDMAX: 500000
+  VALIDMAX: 5000000000000
   DEPEND_1: swe_electron_energy
   DISPLAY_TYPE: stack_plot
+  SCALETYP: log
   LABLAXIS: Electron counts
   DEPEND_0: swe_epoch
   VAR_NOTES: The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
@@ -638,7 +643,7 @@ sc_velocity_GSE:
 
 sc_position_GSM:
   <<: *default_float32
-  CATDESC: Spacecraft position vector in GSM coordinates
+  CATDESC: Spacecraft position in GSM coordinates
   FIELDNAM: Spacecraft position in GSM coordinates
   LABLAXIS: SC position (GSM)
   UNITS: km

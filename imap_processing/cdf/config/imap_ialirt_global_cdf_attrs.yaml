@@ -9,7 +9,11 @@ instrument_base: &instrument_base
     HIT (High-energy Ion Telescope), MAG (Magnetometer),
     and SWAPI (Solar Wind and Pickup Ion).
     See https://imap.princeton.edu for more details.
-  Instrument_type: Particles (space), Magnetic Fields (space), Plasma and Solar Wind (space), Ephemeris/Attitude/Ancillary
+Instrument_type:
+    - "Particles (space)"
+    - "Magnetic Fields (space)"
+    - "Plasma and Solar Wind (space)"
+    - "Ephemeris/Attitude/Ancillary"
 
 imap_ialirt_l1_realtime:
     <<: *instrument_base
