@@ -35,44 +35,28 @@ pytestmark = pytest.mark.external_test_data
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_new_fsw_changes(mock_get_file_paths, codice_lut_path):
     """Tests the new FSW changes (jan 2026)."""
-    xtce_file = (
+    xtce_file_jan = (
         imap_module_directory
         / "codice/packet_definitions/codice_packet_definition_jan.xml"
     )
+    xtce_file_prev = (
+        imap_module_directory / "codice/packet_definitions/codice_packet_definition.xml"
+    )
+    codice_lut_path_jan = codice_lut_path(descriptor="l1a-sci-lut-jan")
     mock_get_file_paths.side_effect = [
         codice_lut_path(descriptor="fsw-changes", data_type="l0"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
-        codice_lut_path(descriptor="l1a-sci-lut-jan"),
+        *([codice_lut_path_jan] * 20),
     ]
 
-    with mock.patch("imap_processing.codice.codice_l1a.XTCE_FILE", xtce_file):
+    with mock.patch("imap_processing.codice.codice_l1a.XTCE_FILE", xtce_file_jan):
+        process_l1a(dependency=ProcessingInputCollection())
+
+    codice_lut_path_jan = codice_lut_path(descriptor="l1a-sci-lut-jan")
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="lo-direct-events", data_type="l0"),
+        *([codice_lut_path_jan] * 20),
+    ]
+    with mock.patch("imap_processing.codice.codice_l1a.XTCE_FILE", xtce_file_prev):
         process_l1a(dependency=ProcessingInputCollection())
 
 

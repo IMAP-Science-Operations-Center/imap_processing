@@ -12,6 +12,7 @@ from imap_processing.codice.constants import HALF_SPIN_FILLVAL
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
+    CoDICECompression,
     ViewTabInfo,
     calculate_acq_time_per_step,
     get_codice_epoch_time,
@@ -134,6 +135,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 0:
@@ -154,7 +156,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     else:
         raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
 
-    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values

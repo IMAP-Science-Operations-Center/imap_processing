@@ -26,6 +26,8 @@ class ViewTabInfo:
         The APID for the packet.
     collapse_table : int
         Collapse table id used to determine the collapse pattern.
+    compression : int
+        Compression algorithm used for the packet.
     sensor : int
         Sensor id (0 for LO, 1 for HI).
     three_d_collapsed : int
@@ -36,6 +38,7 @@ class ViewTabInfo:
 
     apid: int
     collapse_table: int
+    compression: int
     sensor: int
     three_d_collapsed: int
     view_id: int
@@ -145,8 +148,9 @@ def get_view_tab_info(json_data: dict, view_id: int, apid: int) -> dict:
     apid_hex = f"0x{apid:X}"
     # This is how we get view information that will be used to get
     # collapse pattern:
-    #  table_id -> view_tab -> (view_id, apid) -> sensor -> collapse_table
-    # 'view_tab': {'(0, 0x480)': {'collapse_table': 0, '3d_collapse': 1, 'sensor': 0}
+    #  table_id -> view_tab -> (view_id, apid) -> sensor -> collapse_table ->compression
+    # 'view_tab': {'(0, 0x480)': {'collapse_table': 0, '3d_collapse': 1, 'sensor': 0,
+    # 'compression':0}
     view_tab = json_data.get("view_tab").get(f"({view_id}, {apid_hex})")
     return view_tab
 

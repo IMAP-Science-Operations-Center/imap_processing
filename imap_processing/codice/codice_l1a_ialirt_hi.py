@@ -9,6 +9,7 @@ import xarray as xr
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
+    CoDICECompression,
     ViewTabInfo,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
@@ -59,13 +60,14 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["ialirt"]
     first_species = next(iter(species_data))
     centers, energy_minus, energy_plus = get_energy_info(species_data[first_species])
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
 
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values

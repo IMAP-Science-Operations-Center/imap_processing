@@ -10,6 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
+    CoDICECompression,
     ViewTabInfo,
     apply_replacements_to_attrs,
     get_codice_epoch_time,
@@ -61,6 +62,7 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 1:
@@ -71,7 +73,7 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_names = species_data.keys()
     logical_source_id = "imap_codice_l1a_hi-omni"
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values

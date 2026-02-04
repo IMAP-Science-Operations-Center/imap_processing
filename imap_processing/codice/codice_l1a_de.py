@@ -90,43 +90,50 @@ def extract_initial_items_from_combined_packets(
         sw_bias_gain_mode[pkt_idx] = (mixed_bytes >> 6) & 0x3
         # priority: 4 bits (bits 5-2)
         priority[pkt_idx] = (mixed_bytes >> 2) & 0xF
-        print("priority:", priority[pkt_idx])
         # suspect: 1 bit (bit 1)
         suspect[pkt_idx] = (mixed_bytes >> 1) & 0x1
         # compressed: 1 bit (bit 0)
         compressed[pkt_idx] = mixed_bytes & 0x1
+        # After packet version 1, the fields below are present in event_data
+        if packet_version[pkt_idx] > 1:
+            # All of the fields below are single byte fields
+            rgfo_half_spin[pkt_idx] = event_data[12]
+            rgfo_spin_sector[pkt_idx] = event_data[13]
+            rgfo_esa_step[pkt_idx] = event_data[14]
+            nso_half_spin[pkt_idx] = event_data[15]
+            nso_spin_sector[pkt_idx] = event_data[16]
+            nso_esa_step[pkt_idx] = event_data[17]
 
-        # All of the fields below are single byte fields
-        rgfo_half_spin[pkt_idx] = event_data[12]
-        rgfo_spin_sector[pkt_idx] = event_data[13]
-        rgfo_esa_step[pkt_idx] = event_data[14]
-        nso_half_spin[pkt_idx] = event_data[15]
-        nso_spin_sector[pkt_idx] = event_data[16]
-        nso_esa_step[pkt_idx] = event_data[17]
+            # spare_2 is 16 bits
+            spare_2[pkt_idx] = int.from_bytes(event_data[18:20], byteorder="big")
+            # Remaining byte-aligned fields
+            num_events[pkt_idx] = int.from_bytes(event_data[20:24], byteorder="big")
+            byte_count[pkt_idx] = int.from_bytes(event_data[24:28], byteorder="big")
+            # Header is 28 bytes total for version > 1
+            len_header = 28
+        else:
+            # Remaining byte-aligned fields
+            num_events[pkt_idx] = int.from_bytes(event_data[12:16], byteorder="big")
+            byte_count[pkt_idx] = int.from_bytes(event_data[16:20], byteorder="big")
+            # Header is 20 bytes total for version 1
+            len_header = 20
 
-        # spare #2 is 16 bits
-        spare_2[pkt_idx] = int.from_bytes(event_data[18:20], byteorder="big")
-
-        # Bytes 20-23: NUM_EVENTS (32 bits)
-        num_events[pkt_idx] = int.from_bytes(event_data[20:24], byteorder="big")
-
-        # Bytes 24-27: BYTE_COUNT (32 bits)
-        byte_count[pkt_idx] = int.from_bytes(event_data[24:28], byteorder="big")
-
-        # Remove the first 28 bytes from event_data (header fields from above)
+        # Remove the first len_header bytes from event_data (header fields from above)
         # Then trim to the number of bytes indicated by byte_count
-        if byte_count[pkt_idx] > len(event_data) - 28:
+        if byte_count[pkt_idx] > len(event_data) - len_header:
             raise ValueError(
                 f"Byte count {byte_count[pkt_idx]} exceeds available "
-                f"data length {len(event_data) - 28} for packet index {pkt_idx}."
+                f"data length {len(event_data) - len_header} for packet index"
+                f" {pkt_idx}."
             )
 
-        packets.event_data.data[pkt_idx] = event_data[28 : byte_count[pkt_idx] + 28]
-        compression_dict = {item.value: item for item in CoDICECompression}
+        packets.event_data.data[pkt_idx] = event_data[
+            len_header : byte_count[pkt_idx] + len_header
+        ]
         if compressed[pkt_idx]:
             packets.event_data.data[pkt_idx] = decompress(
                 packets.event_data.data[pkt_idx],
-                compression_dict[compressed[pkt_idx]],
+                CoDICECompression.LOSSLESS,
             )
 
     # Add extracted fields to dataset
@@ -230,6 +237,7 @@ def _create_dataset_coords(
         collapse_table=0,
         three_d_collapsed=0,
         view_id=0,
+        compression=CoDICECompression.LOSSLESS.value,  # DE data is always lossless
     )
     epochs, epochs_delta = get_codice_epoch_time(
         packets["acq_start_seconds"].isel(epoch=epoch_slice),
@@ -344,7 +352,12 @@ def _unpack_and_store_events(
         if n_events == 0:
             continue
         # Extract and byte-reverse events for LSB unpacking
-        pkt_bytes = np.asarray(event_data_arr[pkt_idx], dtype=np.uint32)
+        pkt_bytes = np.asarray(event_data_arr[pkt_idx], dtype=np.uint8)
+
+        # TODO can we fix processing so we dont have to recalculate n_events and trim?
+        n_events = len(pkt_bytes) // 8
+        # Trim to only complete events TODO why do we have extra bytes here???
+        pkt_bytes = pkt_bytes[: n_events * 8]
         pkt_bytes = pkt_bytes.reshape(n_events, 8)[:, ::-1]
         all_event_bytes[offset : offset + n_events] = pkt_bytes
 
@@ -560,6 +573,7 @@ def l1a_direct_event(unpacked_dataset: xr.Dataset, apid: int) -> xr.Dataset:
     packets = combine_segmented_packets(
         unpacked_dataset, binary_field_name="event_data"
     )
+
     packets = extract_initial_items_from_combined_packets(packets)
 
     # Gather the CDF attributes

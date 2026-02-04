@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 
-from imap_processing.codice.utils import CODICEAPID, CoDICECompression
+from imap_processing.codice.utils import CODICEAPID
 
 # -------L1A Constants-------
 # Numerical constants
@@ -238,34 +238,6 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     },
 }
 
-# Compression ID lookup tables
-# The key is the view_id and the value is the ID for the compression algorithm
-# (see utils.CoDICECompression to see how the values correspond)
-# These are defined in the "Views" tab of the "*-SCI-LUT-*.xml" spreadsheet that
-# largely defines CoDICE processing.
-LO_COMPRESSION_ID_LOOKUP = {
-    0: CoDICECompression.PACK_24_BIT,
-    1: CoDICECompression.LOSSY_B_LOSSLESS,
-    2: CoDICECompression.LOSSY_B_LOSSLESS,
-    3: CoDICECompression.LOSSLESS,
-    4: CoDICECompression.LOSSLESS,
-    5: CoDICECompression.LOSSY_A_LOSSLESS,
-    6: CoDICECompression.LOSSY_A_LOSSLESS,
-    7: CoDICECompression.LOSSY_A_LOSSLESS,
-    8: CoDICECompression.LOSSY_A_LOSSLESS,
-}
-HI_COMPRESSION_ID_LOOKUP = {
-    0: CoDICECompression.LOSSY_A,
-    1: CoDICECompression.LOSSY_A,
-    2: CoDICECompression.LOSSY_A,
-    3: CoDICECompression.LOSSY_B_LOSSLESS,
-    4: CoDICECompression.LOSSY_B_LOSSLESS,
-    5: CoDICECompression.LOSSY_A_LOSSLESS,
-    6: CoDICECompression.LOSSY_A_LOSSLESS,
-    7: CoDICECompression.LOSSY_A_LOSSLESS,
-    8: CoDICECompression.LOSSY_A_LOSSLESS,
-    9: CoDICECompression.LOSSLESS,
-}
 
 # Lookup tables for Lossy decompression algorithms "A" and "B"
 # These were provided by Greg Dunn via his sohis_cdh_utils.v script and then
