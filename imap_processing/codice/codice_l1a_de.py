@@ -72,27 +72,29 @@ def extract_initial_items_from_combined_packets(
     # Extract fields from each packet
     for pkt_idx in range(n_packets):
         event_data = packets.event_data.data[pkt_idx]
-        # Bytes 0-7: Byte-aligned fields
+
+        # Byte-aligned fields using int.from_bytes
         packet_version[pkt_idx] = int.from_bytes(event_data[0:2], byteorder="big")
         spin_period[pkt_idx] = int.from_bytes(event_data[2:4], byteorder="big")
         acq_start_seconds[pkt_idx] = int.from_bytes(event_data[4:8], byteorder="big")
 
-        # Bytes 8-11: Mixed bit fields (32 bits total)
+        # Non-byte-aligned fields (bytes 8-12 contain mixed bit fields)
+        # Extract 4 bytes and unpack bit fields
         mixed_bytes = int.from_bytes(event_data[8:12], byteorder="big")
 
-        # acq_start_subseconds: 20 bits (bits 31-12)
+        # acq_start_subseconds: 20 bits (MSB)
         acq_start_subseconds[pkt_idx] = (mixed_bytes >> 12) & 0xFFFFF
-        # spare_1: 2 bits (bits 11-10)
+        # spare_1: 2 bits
         spare_1[pkt_idx] = (mixed_bytes >> 10) & 0x3
-        # st_bias_gain_mode: 2 bits (bits 9-8)
+        # st_bias_gain_mode: 2 bits
         st_bias_gain_mode[pkt_idx] = (mixed_bytes >> 8) & 0x3
-        # sw_bias_gain_mode: 2 bits (bits 7-6)
+        # sw_bias_gain_mode: 2 bits
         sw_bias_gain_mode[pkt_idx] = (mixed_bytes >> 6) & 0x3
-        # priority: 4 bits (bits 5-2)
+        # priority: 4 bits
         priority[pkt_idx] = (mixed_bytes >> 2) & 0xF
-        # suspect: 1 bit (bit 1)
+        # suspect: 1 bit
         suspect[pkt_idx] = (mixed_bytes >> 1) & 0x1
-        # compressed: 1 bit (bit 0)
+        # compressed: 1 bit (LSB)
         compressed[pkt_idx] = mixed_bytes & 0x1
         # After packet version 1, the fields below are present in event_data
         if packet_version[pkt_idx] > 1:
@@ -353,11 +355,6 @@ def _unpack_and_store_events(
             continue
         # Extract and byte-reverse events for LSB unpacking
         pkt_bytes = np.asarray(event_data_arr[pkt_idx], dtype=np.uint8)
-
-        # TODO can we fix processing so we dont have to recalculate n_events and trim?
-        n_events = len(pkt_bytes) // 8
-        # Trim to only complete events TODO why do we have extra bytes here???
-        pkt_bytes = pkt_bytes[: n_events * 8]
         pkt_bytes = pkt_bytes.reshape(n_events, 8)[:, ::-1]
         all_event_bytes[offset : offset + n_events] = pkt_bytes
 

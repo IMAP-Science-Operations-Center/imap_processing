@@ -153,7 +153,6 @@ def decompress(compressed_bytes: bytes, algorithm: IntEnum) -> list[int]:
         decompressed_values = _apply_lossy_b(compressed_bytes)
     elif algorithm == CoDICECompression.LOSSLESS:
         decompressed_bytes = _apply_lzma_lossless(compressed_bytes)
-        decompressed_bytes = np.frombuffer(decompressed_bytes, dtype=np.uint32)
         decompressed_values = list(decompressed_bytes)
     elif algorithm == CoDICECompression.LOSSY_A_LOSSLESS:
         decompressed_bytes = _apply_lzma_lossless(compressed_bytes)

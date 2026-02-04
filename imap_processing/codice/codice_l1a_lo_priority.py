@@ -111,9 +111,14 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [
-        decompress(
-            packet_data[:byte_count],
-            compression_algorithm,
+        np.frombuffer(
+            bytes(
+                decompress(
+                    packet_data[:byte_count],
+                    compression_algorithm,
+                )
+            ),
+            dtype=np.uint32,
         )
         for (packet_data, byte_count) in zip(
             binary_data_list, byte_count_list, strict=False
@@ -162,7 +167,7 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
     # For every energy after nso_half_spin, set data to fill values
     nso_half_spin = unpacked_dataset["nso_half_spin"].values
-    nso_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+    nso_mask = (half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]) | (
         half_spin_per_esa_step == HALF_SPIN_FILLVAL
     )
     species_mask = nso_mask[:, np.newaxis, :, np.newaxis]

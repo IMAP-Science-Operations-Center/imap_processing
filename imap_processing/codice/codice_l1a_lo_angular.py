@@ -188,10 +188,6 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         num_packets, num_species, esa_steps, *collapsed_shape
     )
 
-    # Despinning
-    # ----------------
-    species_data = _despin_species_data(species_data, sci_lut_data, view_tab_obj)
-
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
     # Voltage data is (128,)
@@ -222,13 +218,35 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         np.asarray(acquisition_time_per_step),
         (len(unpacked_dataset["acq_start_seconds"]), 1),
     )
+    # After FSW changes on 20260129, The Lo L1A product contains variables that
+    # indicate the esa step and spin sector during which the RGFO or NSO limits are
+    # triggered. The spin sector variable ranges from 0-11 and is the instrument
+    # reported spin sector. The following algorithm defines when to assign NaN to the
+    # angular data product due to NSO
+    # operation:
+    # 1. For half_spin > NSO_half_spin a set all data to NaN
+    # 2. For half_spin = NSO_half_spin
+    #   a. For spin_sector > NSO_spin_sector a set all data to NaN
+    #   b. For spin_sector = NSO_spin_sector
+    #       i. For esa_step > NSO_esa_step a set all data to NaN
     # For every energy after nso_half_spin, set data to fill values
+    # For data before 20260129 ( packet_version <=1 ) set all data to NaN where
+    # half_spin > NSO_half_spin
     nso_half_spin = unpacked_dataset["nso_half_spin"].values
-    nso_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
-        half_spin_per_esa_step == HALF_SPIN_FILLVAL
-    )
-    species_mask = nso_mask[:, np.newaxis, :, np.newaxis, np.newaxis]
-    species_mask = np.broadcast_to(species_mask, species_data.shape)
+    # TODO handle boundary days where the FSW changed halfway through the dataset. E.g
+    # Some packet_version = 1 and some = 2
+    if unpacked_dataset["packet_version"].values[0] <= 1:
+        nso_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+            half_spin_per_esa_step == HALF_SPIN_FILLVAL
+        )
+        species_mask = nso_mask[:, np.newaxis, :, np.newaxis, np.newaxis]
+        species_mask = np.broadcast_to(species_mask, species_data.shape)
+    else:
+        nso_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+            half_spin_per_esa_step == HALF_SPIN_FILLVAL
+        )
+        species_mask = nso_mask[:, np.newaxis, :, np.newaxis, np.newaxis]
+        species_mask = np.broadcast_to(species_mask, species_data.shape)
     species_data = species_data.astype(np.float64)
     species_data[species_mask] = np.nan
     # Set half_spin_per_esa_step to (fillval) where nso_mask is True
@@ -236,6 +254,11 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # Set acquisition_time_per_step to nan where nso_mask is True
     acquisition_time_per_step[nso_mask] = np.nan
+
+    # Despinning
+    # ----------------
+    species_data = _despin_species_data(species_data, sci_lut_data, view_tab_obj)
+
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
     epoch_center, deltas = get_codice_epoch_time(
