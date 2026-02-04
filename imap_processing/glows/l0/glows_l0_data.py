@@ -163,8 +163,9 @@ class DirectEventL0(GlowsL0):
     # Sort by SEQ
     def __lt__(self, other: "DirectEventL0") -> bool:
         """
-        Define sorting algorithm for DirectEventL0.
+        Define less-than comparison for DirectEventL0.
 
+        This is used when sorting lists of DirectEvents.
         The L0 values should be sorted according to SEQ, which is the official
         sequencing value for packets.
 

@@ -1,6 +1,7 @@
 """Methods for GLOWS Level 1A processing and CDF writing."""
 
 import logging
+from itertools import groupby
 from pathlib import Path
 
 import numpy as np
@@ -97,27 +98,18 @@ def process_de_l0(
         Each day has one CDF file associated with it.
     """
     l1a_output: list[DirectEventL1A] = []
-    # Dict contains a mapping of SEC (imap_start_time_second) -> [L0 DEs]
-    de_tracker: dict = {}
 
-    # first, sort by SEC (imap_start_time_second)
-    for de in de_l0:
-        de_tracker[de.SEC] = (
-            [de] if de.SEC not in de_tracker.keys() else de_tracker[de.SEC] + [de]
-        )
+    # Sort by SEC, so groupby only has one instance of each SEC
+    sorted_l0 = sorted(de_l0, key=lambda x: x.SEC)
 
-    total_packets_found = 0
-    missing_end_packets = 0
-    missing_middle_packets = 0
-    for sec, de_list in de_tracker.items():
-        total_packets_found += len(de_list)
+    for sec, de in groupby(sorted_l0, lambda x: x.SEC):
+        de_list = list(de)
         if len(de_list) == 1:
             # Only one seq found
             new_de = DirectEventL1A(de_list[0])
             if new_de.l0.LEN != 1:
                 # We're missing packets off the end
                 new_de.finish_incomplete_packet()
-                missing_end_packets += 1
 
             l1a_output.append(new_de)
         else:
@@ -140,7 +132,6 @@ def process_de_l0(
 
             if sorted_des[-1].SEQ != first_de.l0.LEN:
                 first_de.finish_incomplete_packet()
-                missing_middle_packets += 1
 
             l1a_output.append(first_de)
 
