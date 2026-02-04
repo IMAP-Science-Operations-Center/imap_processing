@@ -643,8 +643,8 @@ def test_set_background_rates(
     l1b_de_spin, anc_dependencies, attr_mgr, species, expected_bg
 ):
     # Arrange
-    pointing_start_met = 473389100.0
-    pointing_end_met = 473472100.0
+    pointing_start_met = 473389200.0
+    pointing_end_met = 473472000.0
 
     # Act
     rates, uncert, err = set_background_rates(

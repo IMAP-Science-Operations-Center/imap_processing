@@ -1060,17 +1060,18 @@ def set_background_rates(
         )
 
     # find to the rows for the current pointing
+    # TODO: This assumes that the backgrounds will never change mid-pointing.
+    #    Is that a safe assumption?
     pointing_bg_df = background_df[
-        (background_df["GoodTime_start"] >= pointing_start_met)
-        & (background_df["GoodTime_end"] <= pointing_end_met)
+        (background_df["GoodTime_start"] <= pointing_start_met)
+        & (background_df["GoodTime_end"] >= pointing_end_met)
     ]
 
-    # convert the bin start and end resolution from 6 degrees to .1 degrees
+    # convert the bin start and end resolution from 6 degrees to 0.1 degrees
     pointing_bg_df["bin_start"] = pointing_bg_df["bin_start"] * 60
-    # The last bin end in the file is 0, which means 60 degrees. This is
-    # converted to 0.1 degree resolution of 3600
-    pointing_bg_df["bin_end"] = pointing_bg_df["bin_end"] * 60
-    pointing_bg_df.loc[pointing_bg_df["bin_end"] == 0, "bin_end"] = 3600
+    # The bin_end index is inclusive, so add one and convert to 0.1
+    # degree resolution
+    pointing_bg_df["bin_end"] = (pointing_bg_df["bin_end"] + 1) * 60
     # for each row in the bg ancillary file for this pointing
     for _, row in pointing_bg_df.iterrows():
         bin_start = int(row["bin_start"])

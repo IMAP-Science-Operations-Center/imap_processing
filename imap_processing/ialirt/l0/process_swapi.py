@@ -22,7 +22,6 @@ from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 logger = logging.getLogger(__name__)
 
 NUM_IALIRT_ENERGY_STEPS = 63
-FILLVAL_FLOAT32 = -1.0e31
 
 
 def count_rate(
@@ -142,7 +141,7 @@ def optimize_pseudo_parameters(
     # report speed only if fit fails
     if sol is None:
         sol = initial_param_guess.copy()
-        sol[1:] = FILLVAL_FLOAT32
+        sol[1:] = np.nan
 
     return sol
 
@@ -186,6 +185,10 @@ def geometric_mean(
         & ~np.isnan(pseudo_proton_density_list)
         & ~np.isnan(pseudo_proton_temperature_list)
     )
+
+    if not np.any(valid):
+        avg_swapi_met = np.mean(met_arr)
+        return avg_swapi_met, np.nan, np.nan, np.nan
 
     pseudo_speed_arr = np.asarray(pseudo_speed_list)[valid]
     avg_pseudo_speed = np.exp(np.mean(np.log(pseudo_speed_arr)))
@@ -324,19 +327,25 @@ def process_swapi_ialirt(
                 pseudo_proton_temperature_list[-5:],
             )
 
-            # replace nans (resulting from geometric means that
-            # include fill values) with fill values
-            (
-                avg_pseudo_proton_speed,
-                avg_pseudo_proton_density,
-                avg_pseudo_proton_temperature,
-            ) = np.nan_to_num(
-                (
-                    avg_pseudo_proton_speed,
-                    avg_pseudo_proton_density,
-                    avg_pseudo_proton_temperature,
-                ),
-                nan=FILLVAL_FLOAT32,
+            avg_pseudo_proton_speed = (
+                Decimal(f"{avg_pseudo_proton_speed:.3f}")
+                if avg_pseudo_proton_speed is not None
+                and np.isfinite(avg_pseudo_proton_speed)
+                else None
+            )
+
+            avg_pseudo_proton_density = (
+                Decimal(f"{avg_pseudo_proton_density:.3f}")
+                if avg_pseudo_proton_density is not None
+                and np.isfinite(avg_pseudo_proton_density)
+                else None
+            )
+
+            avg_pseudo_proton_temperature = (
+                Decimal(f"{avg_pseudo_proton_temperature:.3f}")
+                if avg_pseudo_proton_temperature is not None
+                and np.isfinite(avg_pseudo_proton_temperature)
+                else None
             )
 
             swapi_data.append(
@@ -344,15 +353,9 @@ def process_swapi_ialirt(
                 | {
                     "instrument": "swapi",
                     "swapi_epoch": int(met_to_ttj2000ns(avg_swapi_met)),
-                    "swapi_pseudo_proton_speed": Decimal(
-                        f"{avg_pseudo_proton_speed:.3f}"
-                    ),
-                    "swapi_pseudo_proton_density": Decimal(
-                        f"{avg_pseudo_proton_density:.3f}"
-                    ),
-                    "swapi_pseudo_proton_temperature": Decimal(
-                        f"{avg_pseudo_proton_temperature:.3f}"
-                    ),
+                    "swapi_pseudo_proton_speed": avg_pseudo_proton_speed,
+                    "swapi_pseudo_proton_density": avg_pseudo_proton_density,
+                    "swapi_pseudo_proton_temperature": avg_pseudo_proton_temperature,
                 }
             )
     if incomplete_groups:

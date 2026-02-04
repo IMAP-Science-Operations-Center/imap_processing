@@ -29,8 +29,6 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_LO_COUNTER,
-    FILLVAL_FLOAT32,
-    FILLVAL_UINT8,
     concatenate_bytes,
     convert_to_intensities,
     create_xarray_dataset,
@@ -434,7 +432,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
     # Verify that we grouped the values properly.
     counter_values = cod_lo_test_dataset["cod_lo_counter"].data
-    valid_values = counter_values[counter_values != FILLVAL_UINT8]
+    valid_values = counter_values[counter_values != 255]
     resets = np.where(valid_values == COD_LO_COUNTER)
 
     count = increment = 0
@@ -520,7 +518,7 @@ def test_group_and_decompress_ialirt_cod_hi(
 
     # Verify that we grouped the values properly.
     counter_values = cod_hi_test_dataset["cod_hi_counter"].data
-    valid_values = counter_values[counter_values != FILLVAL_UINT8]
+    valid_values = counter_values[counter_values != 255]
     resets = np.where(valid_values == COD_HI_COUNTER)
 
     count = increment = 0
@@ -774,7 +772,7 @@ def test_process_codice_lo(
     assert len(cod_lo_data) == 9
 
     for product in l2_products:
-        assert cod_lo_data[0][product] == FILLVAL_FLOAT32
+        assert cod_lo_data[0][product] is None
 
 
 @pytest.mark.external_test_data
