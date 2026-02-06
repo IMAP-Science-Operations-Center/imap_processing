@@ -768,7 +768,7 @@ def test_process_single_pset_renames_variables(
     # Mock the external functions to avoid needing SPICE kernels
     mock_add_velocity.side_effect = lambda ds: ds
     mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
-        ram_mask=xr.zeros_like(ds["counts"])
+        ram_mask=xr.zeros_like(ds["hae_longitude"], dtype=bool)
     )
 
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
@@ -856,7 +856,7 @@ def test_process_single_pset_calls_velocity_and_ram_mask(
         sc_velocity_x=xr.DataArray([1.0], dims=["epoch"])
     )
     mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
-        ram_mask=xr.zeros_like(ds["exposure_factor"])
+        ram_mask=xr.zeros_like(ds["hae_longitude"])
     )
 
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")

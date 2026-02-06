@@ -62,7 +62,7 @@ def hi_l2(
         values. Required keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
     descriptor : str
         The map descriptor to be produced
-        (e.g., "ihi90-ena-h-sf-nsp-full-hae-6deg-3mo").
+        (e.g., "h90-ena-h-sf-nsp-full-hae-6deg-3mo").
 
     Returns
     -------
@@ -143,7 +143,7 @@ def create_sky_map_from_psets(
     -------
     sky_map : RectangularSkyMap
         The sky map with all the PSET data projected into the map. Includes
-        energy_delta_minus, energy_delta_plus, and nominal_central_energy
+        an energy coordinate and energy_delta_minus and energy_delta_plus
         variables from ESA energy calibration data.
     """
     if len(psets) == 0:
@@ -321,11 +321,14 @@ def calculate_all_rates_and_intensities(
 
     # Step 3: Handle obs_date variable type conversion
     # TODO: Handle variable types correctly in RectangularSkyMap.build_cdf_dataset
-    map_ds["obs_date"].values = np.where(
-        np.isfinite(map_ds["obs_date"].values),
-        map_ds["obs_date"].values.astype(np.int64),
+    obs_date = map_ds["obs_date"]
+    # Replace non-finite values with the int64 sentinel before casting
+    obs_date_filled = xr.where(
+        np.isfinite(obs_date),
+        obs_date,
         np.int64(-9223372036854775808),
     )
+    map_ds["obs_date"] = obs_date_filled.astype("int64")
     # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
     map_ds["obs_date_range"] = xr.zeros_like(map_ds["obs_date"])
 
