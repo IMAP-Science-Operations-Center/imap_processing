@@ -520,11 +520,6 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
 
         # Interpolate to find the correct calibration factor
         in_flight_cal_df = read_in_flight_cal_data(in_flight_cal_files)
-        in_flight_cal_df = (
-            in_flight_cal_df.dropna(subset=["met_time"])
-            .sort_values("met_time")
-            .reset_index(drop=True)
-        )
         # Get names of all 7 cems in the calibration file
         cal_cols = [f"cem{i}" for i in range(1, 8)]
         cal_met = in_flight_cal_df["met_time"].to_numpy()
