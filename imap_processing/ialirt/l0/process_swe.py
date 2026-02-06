@@ -566,7 +566,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         bde_first_search = azimuthal_check_counterstreaming(
             summed_first_half_cem, summed_second_half_cem
         )
-        # Sum over azimuth.
+        # Sum over azimuth
         summed_first_half_az = np.sum(normalized_first_half, axis=2)
         summed_second_half_az = np.sum(normalized_second_half, axis=2)
         bde_second_search = polar_check_counterstreaming(
