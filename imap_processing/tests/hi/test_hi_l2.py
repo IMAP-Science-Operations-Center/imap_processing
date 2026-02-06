@@ -198,11 +198,8 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
     descriptor_str = "h90-ena-h-sf-nsp-full-hnu-2deg-3mo"
     rect_map = MapDescriptor.from_string(descriptor_str).to_empty_map()
-    # create_sky_map_from_psets now returns a tuple of (sky_map, esa_ds)
-    mock_esa_ds = xr.Dataset(
-        {"nominal_central_energy": xr.DataArray([1.0], dims=["esa_energy_step"])}
-    )
-    mock_create_sky_map_from_psets.return_value = (rect_map, mock_esa_ds)
+    # create_sky_map_from_psets returns just the sky_map
+    mock_create_sky_map_from_psets.return_value = rect_map
     # calculate_all_rates_and_intensities modifies and returns the map data
     mock_calculate_all_rates_and_intensities.side_effect = lambda ds, *args: ds
     mock_map_build_cdf_dataset.return_value = xr.Dataset()
@@ -244,7 +241,7 @@ def test_create_sky_map_from_psets(
         pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
         map_descriptor = MapDescriptor.from_string(descriptor_str)
-        sky_map, esa_ds = create_sky_map_from_psets(
+        sky_map = create_sky_map_from_psets(
             [pset_path],
             anc_path_dict,
             map_descriptor,
@@ -253,9 +250,10 @@ def test_create_sky_map_from_psets(
     assert sky_map.spacing_deg == 6
     assert sky_map.spice_reference_frame == SpiceFrame.IMAP_GCS
 
-    # Check that esa_ds was returned with expected data
-    assert esa_ds is not None
-    assert "nominal_central_energy" in esa_ds
+    # Check that ESA energy data was added to the map
+    assert "energy_delta_minus" in sky_map.data_1d
+    assert "energy_delta_plus" in sky_map.data_1d
+    assert "energy" in sky_map.data_1d.coords
 
     # Test that we got some non-zero values
     for var_name in ["counts", "exposure_factor", "obs_date"]:
@@ -944,27 +942,42 @@ def test_process_single_pset_no_cg_for_sf_frame(
 
 @pytest.fixture
 def mock_map_dataset_for_rates():
-    """Create a mock map dataset for testing calculate_all_rates_and_intensities."""
+    """Create a mock map dataset for testing calculate_all_rates_and_intensities.
+
+    This fixture includes the ESA energy data (energy_delta_minus, energy_delta_plus,
+    energy coordinate) that would normally be added by create_sky_map_from_psets.
+    """
+    # ESA energy data (would be added by create_sky_map_from_psets)
+    bandpass_fwhm = np.array([0.1, 0.15, 0.2])
+    energy_delta = bandpass_fwhm / 2
+    energy_kev = np.array([0.5, 0.75, 1.1])
+
     coords = {
         "epoch": [0],
         "esa_energy_step": [1, 2, 3],
         "calibration_prod": [1, 2],
         "longitude": np.arange(4),
         "latitude": np.arange(2),
+        # Energy as auxiliary coordinate indexed by esa_energy_step
+        "energy": ("esa_energy_step", energy_kev),
     }
     shape = (1, 3, 2, 4, 2)
     exposure_shape = (1, 3, 4, 2)  # no calibration_prod dim
 
     map_ds = xr.Dataset(
         {
-            "counts": xr.DataArray(np.ones(shape) * 100.0, dims=list(coords.keys())),
+            "counts": xr.DataArray(
+                np.ones(shape) * 100.0, dims=list(coords.keys())[:5]
+            ),
             "exposure_factor": xr.DataArray(
                 np.ones(exposure_shape) * 10.0,
                 dims=["epoch", "esa_energy_step", "longitude", "latitude"],
             ),
-            "bg_rates": xr.DataArray(np.ones(shape) * 2.0, dims=list(coords.keys())),
+            "bg_rates": xr.DataArray(
+                np.ones(shape) * 2.0, dims=list(coords.keys())[:5]
+            ),
             "bg_rates_unc": xr.DataArray(
-                np.ones(shape) * 0.5, dims=list(coords.keys())
+                np.ones(shape) * 0.5, dims=list(coords.keys())[:5]
             ),
             "obs_date": xr.DataArray(
                 np.ones(exposure_shape) * 1e18,
@@ -973,28 +986,17 @@ def mock_map_dataset_for_rates():
             "esa_energy_step_label": xr.DataArray(
                 ["1", "2", "3"], dims=["esa_energy_step"]
             ),
+            # ESA energy data added by create_sky_map_from_psets
+            "energy_delta_minus": xr.DataArray(energy_delta, dims=["esa_energy_step"]),
+            "energy_delta_plus": xr.DataArray(energy_delta, dims=["esa_energy_step"]),
         },
         coords=coords,
     )
     return map_ds
 
 
-@pytest.fixture
-def mock_esa_dataset():
-    """Create a mock ESA energy dataset."""
-    return xr.Dataset(
-        {
-            "nominal_central_energy": xr.DataArray(
-                [0.5, 0.75, 1.1], dims=["esa_energy_step"]
-            ),
-            "bandpass_fwhm": xr.DataArray([0.1, 0.15, 0.2], dims=["esa_energy_step"]),
-        },
-        coords={"esa_energy_step": [1, 2, 3]},
-    )
-
-
 def test_calculate_all_rates_and_intensities_basic(
-    mock_map_dataset_for_rates, mock_esa_dataset, anc_path_dict
+    mock_map_dataset_for_rates, anc_path_dict
 ):
     """Test basic functionality of calculate_all_rates_and_intensities."""
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
@@ -1003,7 +1005,6 @@ def test_calculate_all_rates_and_intensities_basic(
         mock_map_dataset_for_rates,
         anc_path_dict,
         descriptor,
-        mock_esa_dataset,
     )
 
     # Check that signal rates were calculated
@@ -1017,7 +1018,7 @@ def test_calculate_all_rates_and_intensities_basic(
 
 
 def test_calculate_all_rates_and_intensities_renames_energy_coord(
-    mock_map_dataset_for_rates, mock_esa_dataset, anc_path_dict
+    mock_map_dataset_for_rates, anc_path_dict
 ):
     """Test that esa_energy_step is renamed to energy."""
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
@@ -1026,7 +1027,6 @@ def test_calculate_all_rates_and_intensities_renames_energy_coord(
         mock_map_dataset_for_rates,
         anc_path_dict,
         descriptor,
-        mock_esa_dataset,
     )
 
     # energy coordinate should exist
@@ -1037,34 +1037,34 @@ def test_calculate_all_rates_and_intensities_renames_energy_coord(
     assert "esa_energy_step_label" not in result
 
 
-def test_calculate_all_rates_and_intensities_adds_energy_deltas(
-    mock_map_dataset_for_rates, mock_esa_dataset, anc_path_dict
+def test_calculate_all_rates_and_intensities_preserves_energy_deltas(
+    mock_map_dataset_for_rates, anc_path_dict
 ):
-    """Test that energy delta variables are added."""
+    """Test that energy delta variables are preserved through calculation."""
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+
+    # Get the original energy deltas from the input dataset
+    original_deltas = mock_map_dataset_for_rates["energy_delta_minus"].values.copy()
 
     result = calculate_all_rates_and_intensities(
         mock_map_dataset_for_rates,
         anc_path_dict,
         descriptor,
-        mock_esa_dataset,
     )
 
-    # Energy delta variables should be present
+    # Energy delta variables should be present and unchanged
     assert "energy_delta_minus" in result
     assert "energy_delta_plus" in result
-    # They should be half the bandpass FWHM
-    expected_deltas = mock_esa_dataset["bandpass_fwhm"].values / 2
     np.testing.assert_array_almost_equal(
-        result["energy_delta_minus"].values, expected_deltas
+        result["energy_delta_minus"].values, original_deltas
     )
     np.testing.assert_array_almost_equal(
-        result["energy_delta_plus"].values, expected_deltas
+        result["energy_delta_plus"].values, original_deltas
     )
 
 
 def test_calculate_all_rates_and_intensities_adds_obs_date_range(
-    mock_map_dataset_for_rates, mock_esa_dataset, anc_path_dict
+    mock_map_dataset_for_rates, anc_path_dict
 ):
     """Test that obs_date_range is added."""
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
@@ -1073,7 +1073,6 @@ def test_calculate_all_rates_and_intensities_adds_obs_date_range(
         mock_map_dataset_for_rates,
         anc_path_dict,
         descriptor,
-        mock_esa_dataset,
     )
 
     # obs_date_range should be present
@@ -1082,7 +1081,7 @@ def test_calculate_all_rates_and_intensities_adds_obs_date_range(
 
 @mock.patch("imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame")
 def test_calculate_all_rates_and_intensities_cg_correction(
-    mock_interp_flux, mock_map_dataset_for_rates, mock_esa_dataset, anc_path_dict
+    mock_interp_flux, mock_map_dataset_for_rates, anc_path_dict
 ):
     """Test that CG interpolation is applied for heliocentric frame."""
     mock_interp_flux.side_effect = lambda ds, *args: ds
@@ -1093,7 +1092,6 @@ def test_calculate_all_rates_and_intensities_cg_correction(
         mock_map_dataset_for_rates,
         anc_path_dict,
         descriptor,
-        mock_esa_dataset,
     )
 
     # interpolate_map_flux_to_helio_frame should have been called for hf frame
@@ -1102,7 +1100,7 @@ def test_calculate_all_rates_and_intensities_cg_correction(
 
 @mock.patch("imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame")
 def test_calculate_all_rates_and_intensities_no_cg_for_sf(
-    mock_interp_flux, mock_map_dataset_for_rates, mock_esa_dataset, anc_path_dict
+    mock_interp_flux, mock_map_dataset_for_rates, anc_path_dict
 ):
     """Test that CG interpolation is NOT applied for spacecraft frame."""
     mock_interp_flux.side_effect = lambda ds, *args: ds
@@ -1113,7 +1111,6 @@ def test_calculate_all_rates_and_intensities_no_cg_for_sf(
         mock_map_dataset_for_rates,
         anc_path_dict,
         descriptor,
-        mock_esa_dataset,
     )
 
     # interpolate_map_flux_to_helio_frame should NOT have been called for sf frame

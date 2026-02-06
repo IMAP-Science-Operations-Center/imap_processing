@@ -90,7 +90,7 @@ def hi_l2(
         )
 
     logger.info(f"Step 1: Creating sky map from {len(psets)} pointing sets")
-    sky_map, esa_ds = create_sky_map_from_psets(
+    sky_map = create_sky_map_from_psets(
         psets,
         l2_ancillary_path_dict,
         map_descriptor,
@@ -101,7 +101,6 @@ def hi_l2(
         sky_map.data_1d,
         l2_ancillary_path_dict,
         map_descriptor,
-        esa_ds,
     )
 
     logger.info("Step 3: Finalizing dataset with attributes")
@@ -125,7 +124,7 @@ def create_sky_map_from_psets(
     psets: list[str | Path],
     l2_ancillary_path_dict: dict[str, Path],
     descriptor: MapDescriptor,
-) -> tuple[RectangularSkyMap, xr.Dataset]:
+) -> RectangularSkyMap:
     """
     Project Hi PSET data into a sky map.
 
@@ -143,10 +142,13 @@ def create_sky_map_from_psets(
     Returns
     -------
     sky_map : RectangularSkyMap
-        The sky map with all the PSET data projected into the map.
-    esa_ds : xarray.Dataset
-        ESA energy dataset containing energy step information.
+        The sky map with all the PSET data projected into the map. Includes
+        energy_delta_minus, energy_delta_plus, and nominal_central_energy
+        variables from ESA energy calibration data.
     """
+    if len(psets) == 0:
+        raise ValueError("No PSETs provided for map creation")
+
     output_map = descriptor.to_empty_map()
 
     if not isinstance(output_map, RectangularSkyMap):
@@ -159,18 +161,14 @@ def create_sky_map_from_psets(
     )
     vars_to_exposure_time_average = FULL_EXPOSURE_TIME_AVERAGE_SET & vars_to_bin
 
-    cached_esa_steps = None
-    esa_ds: xr.Dataset | None = None
-    energy_kev: xr.DataArray | None = None
-
-    for pset_path in psets:
+    for i_pset, pset_path in enumerate(psets):
         logger.debug(f"Processing {pset_path}")
         pset_ds = load_cdf(pset_path)
 
         # Store the first PSET esa_energy_step values and make sure every PSET
         # contains the same set of esa_energy_step values.
         # TODO: Correctly handle PSETs with different esa_energy_step values.
-        if cached_esa_steps is None:
+        if i_pset == 0:
             cached_esa_steps = pset_ds["esa_energy_step"].values.copy()
             esa_ds = esa_energy_df(
                 l2_ancillary_path_dict["esa-energies"],
@@ -182,7 +180,6 @@ def create_sky_map_from_psets(
                 "All PSETs must have the same set of esa_energy_step values."
             )
 
-        # Process the PSET
         pset_processed = process_single_pset(
             pset_ds,
             energy_kev,
@@ -205,7 +202,16 @@ def create_sky_map_from_psets(
         for var in vars_to_exposure_time_average:
             output_map.data_1d[var] /= output_map.data_1d["exposure_factor"]
 
-    return output_map, esa_ds
+    # Add ESA energy data to the map dataset for use in rate/intensity calculations
+    energy_delta = esa_ds["bandpass_fwhm"] / 2
+    output_map.data_1d["energy_delta_minus"] = energy_delta
+    output_map.data_1d["energy_delta_plus"] = energy_delta
+    # Add energy as an auxiliary coordinate (keV values indexed by esa_energy_step)
+    output_map.data_1d = output_map.data_1d.assign_coords(
+        energy=("esa_energy_step", esa_ds["nominal_central_energy"].values)
+    )
+
+    return output_map
 
 
 # =============================================================================
@@ -280,7 +286,6 @@ def calculate_all_rates_and_intensities(
     map_ds: xr.Dataset,
     l2_ancillary_path_dict: dict[str, Path],
     descriptor: MapDescriptor,
-    esa_ds: xr.Dataset,
 ) -> xr.Dataset:
     """
     Calculate rates and intensities with proper error propagation.
@@ -292,22 +297,20 @@ def calculate_all_rates_and_intensities(
     Parameters
     ----------
     map_ds : xarray.Dataset
-        Map dataset with projected PSET data (counts, exposure_factor, bg_rates, etc.).
+        Map dataset with projected PSET data (counts, exposure_factor, bg_rates,
+        energy_delta_minus, energy_delta_plus, etc.) and an `energy` coordinate
+        containing the ESA nominal central energies in keV.
     l2_ancillary_path_dict : dict[str, pathlib.Path]
         Mapping containing ancillary file descriptors as keys and file paths as
         values. Required keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
     descriptor : imap_processing.ena_maps.utils.naming.MapDescriptor
         Map descriptor containing processing configuration.
-    esa_ds : xarray.Dataset
-        ESA energy dataset containing energy step information.
 
     Returns
     -------
     map_ds : xarray.Dataset
         Map dataset with calculated rates, intensities, and uncertainties.
     """
-    energy_kev = esa_ds["nominal_central_energy"]
-
     # Step 1: Calculate ENA signal rates
     logger.debug("Calculating ENA signal rates")
     map_ds = calculate_ena_signal_rates(map_ds)
@@ -326,28 +329,25 @@ def calculate_all_rates_and_intensities(
     # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
     map_ds["obs_date_range"] = xr.zeros_like(map_ds["obs_date"])
 
-    # Step 4: Set the energy_step_delta values to the energy bandpass
-    # half-width-half-max
-    energy_delta = esa_ds["bandpass_fwhm"] / 2
-    map_ds["energy_delta_minus"] = energy_delta
-    map_ds["energy_delta_plus"] = energy_delta
+    # Step 4: Swap esa_energy_step dimension for energy coordinate
+    map_ds = map_ds.swap_dims({"esa_energy_step": "energy"})
+    map_ds = map_ds.drop_vars(
+        ["esa_energy_step", "esa_energy_step_label"], errors="ignore"
+    )
 
-    # Step 5: Rename and convert coordinate from esa_energy_step to energy
-    map_ds = map_ds.rename({"esa_energy_step": "energy"})
-    map_ds = map_ds.assign_coords(energy=energy_kev.values)
-    map_ds = map_ds.drop_vars("esa_energy_step_label")
-
-    # Step 6: Apply Compton-Getting interpolation for heliocentric frame maps
+    # Step 5: Apply Compton-Getting interpolation for heliocentric frame maps
     if descriptor.frame_descriptor == "hf":
         logger.debug("Applying Compton-Getting interpolation for heliocentric frame")
-        esa_energy_ev = (energy_kev * 1000).rename({"esa_energy_step": "energy"})
-        esa_energy_ev = esa_energy_ev.assign_coords(energy=energy_kev.values)
+        # Convert energy coordinate from keV to eV for interpolation
+        esa_energy_ev = map_ds["energy"] * 1000
         map_ds = interpolate_map_flux_to_helio_frame(
             map_ds,
-            map_ds["energy"] * 1000,  # Convert ESA energies to eV
+            esa_energy_ev,  # ESA energies in eV
             esa_energy_ev,  # heliocentric energies (same as ESA energies)
             ["ena_intensity"],
         )
+        # Drop any esa_energy_step_label that may have been re-added
+        map_ds = map_ds.drop_vars(["esa_energy_step_label"], errors="ignore")
 
     return map_ds
 
