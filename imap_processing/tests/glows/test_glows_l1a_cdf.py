@@ -43,9 +43,13 @@ def test_generate_histogram_dataset(l1a_test_data):
 def test_generate_de_dataset(l1a_test_data):
     _, de_l1a = l1a_test_data
     glows_attrs = create_glows_attr_obj()
-    dataset = generate_de_dataset(de_l1a, glows_attrs)
-    assert len(dataset["epoch"].values) == len(de_l1a)
 
+    dataset = generate_de_dataset(de_l1a, glows_attrs)
+    non_none_len = len([de for de in de_l1a if de.de_data is not None])
+    assert len(dataset["epoch"].values) == non_none_len
+
+    # Output dataarrays are padded to the longest length in the entire set of packets.
+    # Test data for the first and last DE need to be padded to this length
     assert (
         dataset["direct_events"].data[0]
         == np.pad(

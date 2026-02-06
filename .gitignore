@@ -191,6 +191,7 @@ test_data/
 /imap_processing/tests/swe/l1_validation/
 /imap_processing/tests/swe/l2_validation/
 imap_processing/tests/lo/test_cdfs/imap_lo_l1c_pset_20260101-repoint01261_v001.cdf
+/imap_processing/tests/glows/validation_data/combined_de_l1a.csv
 # Ignore specific SPICE kernels that get downloaded from NAIF automatically for tests
 # marked with @pytest.mark.external_kernel
 **/de440*.bsp

@@ -1,5 +1,7 @@
 """Methods for GLOWS Level 1A processing and CDF writing."""
 
+import logging
+from itertools import groupby
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +15,8 @@ from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def create_glows_attr_obj() -> ImapCdfAttributes:
@@ -93,18 +97,48 @@ def process_de_l0(
         Dictionary with keys of days and values of lists of DirectEventL1A objects.
         Each day has one CDF file associated with it.
     """
-    de_list: list[DirectEventL1A] = []
+    l1a_output: list[DirectEventL1A] = []
 
-    for de in de_l0:
-        # Putting not first data int o last direct event list.
-        if de.SEQ != 0:
-            # If the direct event is part of a sequence and is not the first,
-            # add it to the last direct event in the list
-            de_list[-1].merge_de_packets(de)
+    # Sort by SEC, so groupby only has one instance of each SEC
+    sorted_l0 = sorted(de_l0, key=lambda x: x.SEC)
+
+    for sec, de in groupby(sorted_l0, lambda x: x.SEC):
+        de_list = list(de)
+        if len(de_list) == 1:
+            # Only one seq found
+            new_de = DirectEventL1A(de_list[0])
+            if new_de.l0.LEN != 1:
+                # We're missing packets off the end
+                new_de.finish_incomplete_packet()
+
+            l1a_output.append(new_de)
         else:
-            de_list.append(DirectEventL1A(de))
+            sorted_des = sorted(de_list)
+            if sorted_des[0].SEQ != 0:
+                logger.warning(f"GLOWS: First SEQ not found for DE SEC {sec}")
+                # Processing cannot be run on this packet.
+                continue
+            first_de = DirectEventL1A(sorted_des[0])
+            for each_de in sorted_des[1:]:
+                try:
+                    first_de.merge_de_packets(each_de)
+                except (ValueError, IndexError) as e:
+                    # We don't want to stop processing for DE errors
+                    logger.warning(
+                        f"ERROR ENCOUNTERED in GLOWS DE processing. "
+                        f"Excluding packet from output. Error: {e}"
+                    )
+                    continue
 
-    return de_list
+            if sorted_des[-1].SEQ != first_de.l0.LEN:
+                first_de.finish_incomplete_packet()
+
+            l1a_output.append(first_de)
+
+    # Filter out DE records with no direct_events (incomplete packet sequences)
+    l1a_output = [de for de in l1a_output if de.direct_events is not None]
+
+    return l1a_output
 
 
 def generate_de_dataset(
@@ -127,9 +161,6 @@ def generate_de_dataset(
         Dataset containing the GLOWS L1A direct event CDF output.
     """
     # TODO: Block header per second, or global attribute?
-
-    # Filter out DE records with no direct_events (incomplete packet sequences)
-    de_l1a_list = [de for de in de_l1a_list if de.direct_events is not None]
 
     # Store timestamps for each DirectEventL1a object.
     time_data = np.zeros(len(de_l1a_list), dtype=np.int64)

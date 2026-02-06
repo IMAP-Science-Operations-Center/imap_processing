@@ -539,7 +539,7 @@ def pset_exposure(
 
     # Get a subset of the l1b_de_dataset that contains only the second
     # of each pair of packets at an ESA step.
-    data_subset = find_second_de_packet_data(l1b_de_dataset)
+    data_subset = find_last_de_packet_data(l1b_de_dataset)
 
     # Get the pandas dataframe with spin data
     spin_df = get_spin_data()
@@ -586,9 +586,9 @@ def pset_exposure(
     return exposure_var
 
 
-def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
+def find_last_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """
-    Find the telemetry entries for the second packet at an ESA step.
+    Find the telemetry entries for the last packet at an ESA step.
 
     Parameters
     ----------
@@ -598,51 +598,38 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     reduced_dataset : xarray.Dataset
-        A dataset containing only the entries for the second packet at an ESA step.
+        A dataset containing only the entries for the last packet at an ESA step.
     """
     epoch_dataset = l1b_dataset.drop_dims("event_met")
-    # We should get two CCSDS packets per 8-spin ESA step.
+    # We should get 2, 4, or 8 CCSDS packets per 8-spin ESA step.
     # Get the indices of the packet before each ESA change.
     esa_step = epoch_dataset["esa_step"].values
     esa_energy_step = epoch_dataset["esa_energy_step"].values
-    # A change in esa_step should indicate the location of the second packet in
+    # A change in esa_step should indicate the location of the last packet in
     # each pair of DE packets at an esa_energy_step. In practice, during some
     # calibration activities, it was observed that the esa_energy_step can change
     # when the esa_step did not. So, we look for either to change and use the
-    # indices of those changes to identify the second packet in each pair. We
-    # also need to add the last packet index and assume an energy step change
-    # occurs after the last packet.
-    second_esa_packet_idx = np.append(
+    # indices of those changes to identify the last packet in each set. We
+    # also need to add the final packet index and assume an energy step change
+    # occurs after the final packet.
+    last_esa_packet_idx = np.append(
         np.flatnonzero((np.diff(esa_step) != 0) | (np.diff(esa_energy_step) != 0)),
         len(esa_step) - 1,
     )
     # Remove esa energy steps at 0 - these are calibrations
-    keep_mask = esa_energy_step[second_esa_packet_idx] != 0
+    keep_mask = esa_energy_step[last_esa_packet_idx] != 0
     # Remove esa energy steps at FILLVAL - these are unidentified
     keep_mask &= (
-        esa_energy_step[second_esa_packet_idx]
+        esa_energy_step[last_esa_packet_idx]
         != l1b_dataset["esa_energy_step"].attrs["FILLVAL"]
     )
-    second_esa_packet_idx = second_esa_packet_idx[keep_mask]
-    # Remove indices where we don't have two consecutive packets at the same ESA
-    if second_esa_packet_idx[0] == 0:
-        logger.warning(
-            f"Removing packet 0 with ESA step: {esa_step[0]} from"
-            f"calculation of exposure time due to missing matched pair."
-        )
-        second_esa_packet_idx = second_esa_packet_idx[1:]
-    missing_esa_pair_mask = (
-        esa_energy_step[second_esa_packet_idx - 1]
-        != esa_energy_step[second_esa_packet_idx]
-    )
-    if missing_esa_pair_mask.any():
-        logger.warning(
-            f"Removing {missing_esa_pair_mask.sum()} packets from exposure "
-            f"time calculation due to missing ESA step DE packet pairs."
-        )
-    second_esa_packet_idx = second_esa_packet_idx[~missing_esa_pair_mask]
-    # Reduce the dataset to just the second packet entries
-    data_subset = epoch_dataset.isel(epoch=second_esa_packet_idx)
+    last_esa_packet_idx = last_esa_packet_idx[keep_mask]
+
+    # We don't need to worry about checking that the right number of packets
+    # is present for each ESA step because that is done in the Goodtimes processing.
+
+    # Reduce the dataset to just the last packet entries
+    data_subset = epoch_dataset.isel(epoch=last_esa_packet_idx)
     return data_subset
 
 

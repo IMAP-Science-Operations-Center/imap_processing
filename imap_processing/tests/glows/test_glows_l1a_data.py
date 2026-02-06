@@ -1,4 +1,3 @@
-import ast
 import dataclasses
 import json
 from pathlib import Path
@@ -424,26 +423,25 @@ def test_generate_status_data():
     assert dataclasses.asdict(output) == expected
 
 
+@pytest.mark.external_test_data
 def test_expected_de_results(l1a_test_data):
     _, de_data = l1a_test_data
 
     # Validation data is generated from the code sent over by GLOWS team. Contains the
     # first 20 packets
     validation_data = pd.read_csv(
-        Path(__file__).parent
-        / "validation_data"
-        / "direct_events_validation_data_l1a.csv",
-        converters={"de_data": ast.literal_eval},
+        Path(__file__).parent / "validation_data" / "combined_de_l1a.csv",
+        converters={
+            "de_data": lambda x: [
+                [int(i) for i in n.split(" ") if i != ""] for n in x.split("\n")
+            ]
+        },
     )
-    assert validation_data.index.size == 5703
 
     for index in validation_data.index:
-        de = de_data[validation_data["packet_counter"][index]]
+        de = de_data[index]
 
-        assert (
-            de.l0.ccsds_header.SRC_SEQ_CTR
-            == validation_data["seq_count_in_pkts_file"][index]
-        )
+        assert de.l0.SEC == validation_data["imap_start_time_seconds"][index]
         assert (
             de.status_data.imap_sclk_last_pps
             == validation_data["imap_sclk_last_pps"][index]
@@ -521,26 +519,11 @@ def test_expected_de_results(l1a_test_data):
 
         assert de.l0.LEN == validation_data["number_of_de_packets"][index]
 
-        assert (
-            de.direct_events[
-                validation_data["de_data_counter"][index]
-            ].timestamp.seconds
-            == validation_data["de_data"][index][0]
-        )
-        assert (
-            de.direct_events[
-                validation_data["de_data_counter"][index]
-            ].timestamp.subseconds
-            == validation_data["de_data"][index][1]
-        )
-        assert (
-            de.direct_events[validation_data["de_data_counter"][index]].impulse_length
-            == validation_data["de_data"][index][2]
-        )
-        assert (
-            de.direct_events[validation_data["de_data_counter"][index]].multi_event
-            == validation_data["de_data"][index][3]
-        )
+        de_val = validation_data["de_data"][index]
+        for de_counter, direct_event in enumerate(de.direct_events):
+            assert direct_event.timestamp.seconds == de_val[de_counter][0]
+            assert direct_event.timestamp.subseconds == de_val[de_counter][1]
+            assert direct_event.impulse_length == de_val[de_counter][2]
 
 
 def test_expected_hist_results(l1a_dataset):

@@ -140,10 +140,6 @@ def test_create_dataset():
         np.zeros(8, dtype=np.uint32),
     )
     np.testing.assert_allclose(
-        dataset["hit_e_a_side_low_en"].values,
-        [0.0],
-    )
-    np.testing.assert_allclose(
         dataset["mag_B_GSE"].sel(mag_epoch=123456789000001).values,
         [5.0, -3.2, 1.1],
     )
@@ -165,6 +161,8 @@ def test_create_dataset():
     # Tests that you can write to a cdf.
     dataset.attrs["Data_version"] = "001"
     dataset.attrs["Start_date"] = "20260114"
-    test_data_path = write_cdf(dataset, istp=True, compression=None)
+    test_data_path = write_cdf(
+        dataset, istp=True, auto_fix_depends=False, compression=None
+    )
 
     assert test_data_path.exists()

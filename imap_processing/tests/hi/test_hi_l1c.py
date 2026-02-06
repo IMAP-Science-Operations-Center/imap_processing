@@ -455,9 +455,9 @@ def test_pset_backgrounds():
 @mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)
 @mock.patch("imap_processing.hi.hi_l1c.get_instrument_spin_phase")
 @mock.patch("imap_processing.hi.hi_l1c.get_de_clock_ticks_for_esa_step")
-@mock.patch("imap_processing.hi.hi_l1c.find_second_de_packet_data")
+@mock.patch("imap_processing.hi.hi_l1c.find_last_de_packet_data")
 def test_pset_exposure(
-    mock_find_second_de_packet_data,
+    mock_find_last_de_packet_data,
     mock_de_clock_ticks,
     mock_spin_phase,
     mock_spin_data,
@@ -471,10 +471,10 @@ def test_pset_exposure(
     empty_pset = hi_l1c.empty_pset_dataset(
         100, l1b_energy_steps, np.array([0, 1]), HIAPID.H90_SCI_DE.sensor
     )
-    # Set the mock of find_second_de_packet_data to return a xr.Dataset
+    # Set the mock of find_last_de_packet_data to return a xr.Dataset
     # with some dummy data. ESA 1 will get binned data once, ESA 2 will get
     # binned data twice.
-    mock_find_second_de_packet_data.return_value = xr.Dataset(
+    mock_find_last_de_packet_data.return_value = xr.Dataset(
         coords={"epoch": xr.DataArray(np.arange(3), dims=["epoch"])},
         data_vars={
             "ccsds_met": xr.DataArray(np.arange(3), dims=["epoch"]),
@@ -527,11 +527,9 @@ def test_find_second_de_packet_data():
     # esa_step:   1  2  2  2  2  4  5  5  6  6  0  0  7  7
     # esa_energy: 1  2  2  3  3  4  5  5  6  6  0  0  7  7
     #
-    # Expected second packet indices from diff logic: [0, 2, 4, 5, 7, 9, 11, 13]
-    # Remove index 0: missing pair (first packet in series)
-    # Remove index 5: esa_energy_step 4 doesn't match previous packet's 3
+    # Expected last packet indices from diff logic: [0, 2, 4, 5, 7, 9, 11, 13]
     # Remove index 11: esa_energy_step is 0 (calibration)
-    # Expected final indices: [2, 4, 7, 9, 13]
+    # Expected final indices: [0, 2, 4, 5, 7, 9, 13]
     esa_steps = np.array([1, 2, 2, 2, 2, 4, 5, 5, 6, 6, 0, 0, 7, 7])
     esa_energy_steps = np.array([1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 0, 0, 7, 7])
     l1b_dataset = xr.Dataset(
@@ -561,8 +559,8 @@ def test_find_second_de_packet_data():
             ),
         },
     )
-    subset = hi_l1c.find_second_de_packet_data(l1b_dataset)
-    np.testing.assert_array_equal(subset.epoch.data, np.array([2, 4, 7, 9, 13]))
+    subset = hi_l1c.find_last_de_packet_data(l1b_dataset)
+    np.testing.assert_array_equal(subset.epoch.data, np.array([0, 2, 4, 5, 7, 9, 13]))
 
 
 @pytest.fixture(scope="module")

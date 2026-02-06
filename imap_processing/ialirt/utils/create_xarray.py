@@ -267,22 +267,34 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     for i, record in enumerate(by_inst.get("codice_lo", [])):
         for key in IALIRT_DIMS.keys():
-            if key.startswith("codice_lo_"):
-                dataset[key].data[i] = np.float32(record[key])
+            val = record.get(key)
+            if (
+                key.startswith("codice_lo_")
+                and key != "codice_lo_epoch"
+                and val is not None
+            ):
+                dataset[key].data[i] = np.float32(val)
 
     for i, record in enumerate(by_inst.get("hit", [])):
         for key in IALIRT_DIMS.keys():
-            if key.startswith("hit_") and key not in hit_restricted_fields:
-                dataset[key].data[i] = np.uint32(record[key])
+            val = record.get(key)
+            if (
+                key.startswith("hit_")
+                and key != "hit_epoch"
+                and val is not None
+                and key not in hit_restricted_fields
+            ):
+                dataset[key].data[i] = np.float32(val)
 
     for i, record in enumerate(by_inst.get("swapi", [])):
         for key in IALIRT_DIMS.keys():
-            if key.startswith("swapi_"):
-                dataset[key].data[i] = np.float32(record[key])
+            val = record.get(key)
+            if key.startswith("swapi_") and key != "swapi_epoch" and val is not None:
+                dataset[key].data[i] = np.float32(val)
 
     for i, record in enumerate(by_inst.get("swe", [])):
         dataset["swe_normalized_counts"].data[i, :] = np.asarray(
-            record["swe_normalized_counts"], dtype=np.uint32
+            record["swe_normalized_counts"], dtype=np.int64
         )
         dataset["swe_counterstreaming_electrons"].data[i] = np.uint8(
             record["swe_counterstreaming_electrons"]

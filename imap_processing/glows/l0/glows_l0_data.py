@@ -160,6 +160,28 @@ class DirectEventL0(GlowsL0):
                 int(self.DE_DATA, 2).to_bytes(len(self.DE_DATA) // 8, "big")
             )
 
+    # Sort by SEQ
+    def __lt__(self, other: "DirectEventL0") -> bool:
+        """
+        Define less-than comparison for DirectEventL0.
+
+        This is used when sorting lists of DirectEvents.
+        The L0 values should be sorted according to SEQ, which is the official
+        sequencing value for packets.
+
+        Parameters
+        ----------
+        other : DirectEventL0
+            Another DirectEventL0 object for comparison.
+
+        Returns
+        -------
+        bool:
+            If the current object's SEQ is less than the other object's SEQ (i.e.
+            sorts SEQ in traditional ascending order).
+        """
+        return self.SEQ < other.SEQ
+
     def within_same_sequence(self, other: "DirectEventL0") -> bool:
         """
         Compare fields for L0 which should be the same for packets within one sequence.

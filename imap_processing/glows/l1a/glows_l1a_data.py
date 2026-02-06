@@ -340,6 +340,7 @@ class DirectEventL1A:
     -------
     merge_de_packets
         Add another Level0 instance.
+    finish_incomplete_packet
     """
 
     l0: DirectEventL0
@@ -383,6 +384,7 @@ class DirectEventL1A:
                 f"Sequence for direct event L1A is out of order or "
                 f"incorrect. Attempted to append sequence counter "
                 f"{second_l0.SEQ} after {self.most_recent_seq}."
+                f"New DE time: {second_l0.SEC}, current time: {self.l0.SEC}."
             )
 
         # Track any missing sequence counts
@@ -392,7 +394,6 @@ class DirectEventL1A:
         # Determine if new L0 packet matches existing L0 packet
         match = self.l0.within_same_sequence(second_l0)
 
-        # TODO: Should this raise an error? Log? something else?
         if not match:
             raise ValueError(
                 f"While attempting to merge L0 packet {second_l0} "
@@ -404,9 +405,18 @@ class DirectEventL1A:
 
         self.most_recent_seq = second_l0.SEQ
         # if this is the last packet in the sequence, process the DE data
-        # TODO: What if the last packet never arrives?
         if self.l0.LEN == self.most_recent_seq + 1:
             self._process_de_data()
+
+    def finish_incomplete_packet(self) -> None:
+        """
+        Finish an incomplete packet.
+
+        This will fill out the missing sequences and status data, but no DEs. This can
+        only run with at least the first packet.
+        """
+        self.missing_seq += [i for i in range(self.most_recent_seq + 1, self.l0.LEN)]
+        self.status_data = StatusData(self.de_data[:40])
 
     def _process_de_data(self) -> None:
         """

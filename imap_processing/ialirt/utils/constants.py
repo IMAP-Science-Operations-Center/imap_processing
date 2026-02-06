@@ -26,12 +26,8 @@ IALIRT_DIMS = {
     "codice_lo_o_plus_7_over_o_plus_6": ["codice_lo_epoch"],
     # Fe low/Fe high charge state ratio
     "codice_lo_fe_low_over_fe_high": ["codice_lo_epoch"],
-    # Low energy (>0.5 MeV) electrons (A-side)
-    "hit_e_a_side_low_en": ["hit_epoch"],
     # Medium energy (<1 MeV) electrons (A-side)
     "hit_e_a_side_med_en": ["hit_epoch"],
-    # Low energy (>0.5 MeV) electrons (B-side)
-    "hit_e_b_side_low_en": ["hit_epoch"],
     # Medium energy (<1 MeV) electrons (B-side)
     "hit_e_b_side_med_en": ["hit_epoch"],
     # Low energy (6 to 8 MeV) protons (Omnidirectional)
@@ -89,16 +85,13 @@ IALIRT_DTYPES = {
     "codice_lo_o_plus_7_over_o_plus_6": np.float32,
     "codice_lo_fe_low_over_fe_high": np.float32,
     # HIT scalars
-    "hit_e_a_side_low_en": np.uint32,
-    "hit_e_a_side_med_en": np.uint32,
-    "hit_e_b_side_low_en": np.uint32,
-    "hit_e_b_side_med_en": np.uint32,
-    "hit_h_omni_low_en": np.uint32,
-    "hit_h_omni_med_en": np.uint32,
-    "hit_he_omni_low_en": np.uint32,
-    "hit_he_omni_high_en": np.uint32,
+    "hit_e_a_side_med_en": np.float32,
+    "hit_e_b_side_med_en": np.float32,
+    "hit_h_omni_low_en": np.float32,
+    "hit_h_omni_med_en": np.float32,
+    "hit_he_omni_low_en": np.float32,
+    "hit_he_omni_high_en": np.float32,
     # MAG
-    "mag_epoch": np.int64,  # if you are treating this as a data variable
     "mag_B_magnitude": np.float32,
     "mag_B_RTN": np.float32,
     "mag_B_GSE": np.float32,
@@ -126,6 +119,8 @@ hit_restricted_fields = {
     "hit_e_b_side_high_en",
     "hit_h_a_side_high_en",
     "hit_h_b_side_high_en",
+    "hit_e_a_side_low_en",
+    "hit_e_b_side_low_en",
 }
 
 codice_hi_energy_center = [
