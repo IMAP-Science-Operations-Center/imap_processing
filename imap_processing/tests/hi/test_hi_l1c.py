@@ -527,7 +527,7 @@ def test_find_second_de_packet_data():
     # esa_step:   1  2  2  2  2  4  5  5  6  6  0  0  7  7
     # esa_energy: 1  2  2  3  3  4  5  5  6  6  0  0  7  7
     #
-    # Expected second packet indices from diff logic: [0, 2, 4, 5, 7, 9, 11, 13]
+    # Expected last packet indices from diff logic: [0, 2, 4, 5, 7, 9, 11, 13]
     # Remove index 11: esa_energy_step is 0 (calibration)
     # Expected final indices: [0, 2, 4, 5, 7, 9, 13]
     esa_steps = np.array([1, 2, 2, 2, 2, 4, 5, 5, 6, 6, 0, 0, 7, 7])
