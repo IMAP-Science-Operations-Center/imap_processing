@@ -628,7 +628,7 @@ def find_last_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     # We don't need to worry about checking that the right number of packets
     # is present for each ESA step because that is done in the Goodtimes processing.
 
-    # Reduce the dataset to just the second packet entries
+    # Reduce the dataset to just the last packet entries
     data_subset = epoch_dataset.isel(epoch=last_esa_packet_idx)
     return data_subset
 
