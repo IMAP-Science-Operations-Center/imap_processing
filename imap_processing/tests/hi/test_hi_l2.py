@@ -1077,12 +1077,14 @@ def test_calculate_all_rates_and_intensities_adds_obs_date_range(
     assert "obs_date_range" in result
 
 
-@mock.patch("imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame")
+@mock.patch(
+    "imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame", autospec=True
+)
 def test_calculate_all_rates_and_intensities_cg_correction(
     mock_interp_flux, mock_map_dataset_for_rates, anc_path_dict
 ):
     """Test that CG interpolation is applied for heliocentric frame."""
-    mock_interp_flux.side_effect = lambda ds, *args: ds
+    mock_interp_flux.side_effect = lambda ds, *args, **kwargs: ds
 
     descriptor = MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
 

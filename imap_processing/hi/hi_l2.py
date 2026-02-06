@@ -343,11 +343,14 @@ def calculate_all_rates_and_intensities(
         logger.debug("Applying Compton-Getting interpolation for heliocentric frame")
         # Convert energy coordinate from keV to eV for interpolation
         esa_energy_ev = map_ds["energy"] * 1000
+
+        # Hi does not want to apply the flux correction to the systematic error.
         map_ds = interpolate_map_flux_to_helio_frame(
             map_ds,
             esa_energy_ev,  # ESA energies in eV
             esa_energy_ev,  # heliocentric energies (same as ESA energies)
             ["ena_intensity"],
+            update_sys_err=False,  # Hi does not update the systematic error
         )
         # Drop any esa_energy_step_label that may have been re-added
         map_ds = map_ds.drop_vars(["esa_energy_step_label"], errors="ignore")
