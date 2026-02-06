@@ -799,7 +799,7 @@ def test_process_single_pset_adds_obs_date(
     """Test that process_single_pset adds obs_date variable."""
     mock_add_velocity.side_effect = lambda ds: ds
     mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
-        ram_mask=xr.zeros_like(ds["counts"])
+        ram_mask=xr.zeros_like(ds["hae_longitude"])
     )
 
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
@@ -828,7 +828,7 @@ def test_process_single_pset_exposure_time_weighting(
     """Test that variables are multiplied by exposure_factor for weighted averaging."""
     mock_add_velocity.side_effect = lambda ds: ds
     mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
-        ram_mask=xr.zeros_like(ds["counts"])
+        ram_mask=xr.zeros_like(ds["hae_longitude"])
     )
 
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")

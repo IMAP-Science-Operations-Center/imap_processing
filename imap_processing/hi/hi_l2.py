@@ -362,7 +362,7 @@ def calculate_ena_signal_rates(map_ds: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     map_ds : xarray.Dataset
-        Map dataset that has counts, exposure_times, and background_rates calculated.
+        Map dataset that has counts, exposure_factor, and bg_rates calculated.
 
     Returns
     -------
