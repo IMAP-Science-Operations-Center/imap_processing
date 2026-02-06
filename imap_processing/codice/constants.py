@@ -78,8 +78,8 @@ LO_IALIRT_M_OVER_Q = {
     "oplus7": 2.28,
     "oplus8": 2.0,
     "mg": 3.5,
-    "fe_loq": 3.85,
-    "fe_hiq": 7.25,
+    "fe_loq": 7.25,
+    "fe_hiq": 3.85,
 }
 
 HI_IALIRT_ELEVATION_ANGLE = np.array(
