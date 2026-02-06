@@ -274,7 +274,7 @@ def l1b_de(
     # Initialize the L1B DE dataset
     l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
     # Get the pivot angle from the housekeeping dataset
-    pivot_angle = _get_nearest_pivot_angle(l1b_de["epoch"].values[0], l1b_nhk)
+    pivot_angle = get_pivot_angle_from_nhk(l1b_nhk)
     l1b_de["pivot_angle"] = xr.DataArray([pivot_angle], dims=["pivot_angle"])
 
     pointing_start_met, pointing_end_met = get_pointing_times(
@@ -1922,14 +1922,15 @@ def calculate_de_rates(
     return ds
 
 
-def _get_nearest_pivot_angle(epoch: int, ds_nhk: xr.Dataset) -> float:
+def get_pivot_angle_from_nhk(ds_nhk: xr.Dataset) -> float:
     """
-    Get the nearest pivot angle for the given epoch from the NHK dataset.
+    Get the middle pivot angle from the NHK dataset.
+
+    The pivot platform moves at the beginning of each pointing period, so we
+    don't want to be near one of the start/end times, so just grab the middle value.
 
     Parameters
     ----------
-    epoch : int
-        The epoch in TTJ2000ns format.
     ds_nhk : xr.Dataset
         The NHK dataset containing pivot angle information.
 
@@ -1938,7 +1939,8 @@ def _get_nearest_pivot_angle(epoch: int, ds_nhk: xr.Dataset) -> float:
     pivot_angle : float
         The nearest pivot angle for the given epoch.
     """
-    return ds_nhk["pcc_cumulative_cnt_pri"].sel(epoch=epoch, method="nearest").item()
+    nitems = len(ds_nhk["pcc_cumulative_cnt_pri"])
+    return ds_nhk["pcc_cumulative_cnt_pri"].isel(epoch=nitems // 2).item()
 
 
 def _get_esa_level_indices(epochs: np.ndarray, anc_dependencies: list) -> np.ndarray:
