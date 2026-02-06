@@ -657,8 +657,8 @@ class HiPointingSet(LoHiBasePointingSet):
     # renamed to match L2 variables
     l1c_to_l2_var_mapping: ClassVar[dict[str, str]] = {
         "exposure_times": "exposure_factor",
-        "background_rates": "bg_rates",
-        "background_rates_uncertainty": "bg_rates_unc",
+        "background_rates": "bg_rate",
+        "background_rates_uncertainty": "bg_rate_sys_err",
     }
 
     def __init__(self, dataset: xr.Dataset | str | Path):

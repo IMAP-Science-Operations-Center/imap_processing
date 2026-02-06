@@ -28,13 +28,13 @@ logger = logging.getLogger(__name__)
 SC_FRAME_VARS_TO_PROJECT = {
     "counts",
     "exposure_factor",
-    "bg_rates",
-    "bg_rates_unc",
+    "bg_rate",
+    "bg_rate_sys_err",
     "obs_date",
 }
 HELIO_FRAME_VARS_TO_PROJECT = SC_FRAME_VARS_TO_PROJECT | {"energy_sc"}
 # TODO: is an exposure time weighted average for obs_date appropriate?
-FULL_EXPOSURE_TIME_AVERAGE_SET = {"bg_rates", "bg_rates_unc", "obs_date", "energy_sc"}
+FULL_EXPOSURE_TIME_AVERAGE_SET = {"bg_rate", "bg_rate_sys_err", "obs_date", "energy_sc"}
 
 
 # =============================================================================
@@ -297,7 +297,7 @@ def calculate_all_rates_and_intensities(
     Parameters
     ----------
     map_ds : xarray.Dataset
-        Map dataset with projected PSET data (counts, exposure_factor, bg_rates,
+        Map dataset with projected PSET data (counts, exposure_factor, bg_rate,
         energy_delta_minus, energy_delta_plus, etc.) and an `energy` coordinate
         containing the ESA nominal central energies in keV.
     l2_ancillary_path_dict : dict[str, pathlib.Path]
@@ -362,7 +362,7 @@ def calculate_ena_signal_rates(map_ds: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     map_ds : xarray.Dataset
-        Map dataset that has counts, exposure_factor, and bg_rates calculated.
+        Map dataset that has counts, exposure_factor, and bg_rate calculated.
 
     Returns
     -------
@@ -373,7 +373,7 @@ def calculate_ena_signal_rates(map_ds: xr.Dataset) -> xr.Dataset:
     with np.errstate(divide="ignore"):
         # Calculate the ENA Signal Rate
         map_ds["ena_signal_rates"] = (
-            map_ds["counts"] / map_ds["exposure_factor"] - map_ds["bg_rates"]
+            map_ds["counts"] / map_ds["exposure_factor"] - map_ds["bg_rate"]
         )
         # Calculate the ENA Signal Rate Uncertainties
         # The minimum count uncertainty is 1 for any pixel that has non-zero
@@ -440,7 +440,7 @@ def calculate_ena_intensity(
         map_ds["ena_signal_rate_stat_unc"] / flux_conversion_divisor
     )
     map_ds["ena_intensity_sys_err"] = (
-        np.sqrt(map_ds["bg_rates"] * map_ds["exposure_factor"])
+        np.sqrt(map_ds["bg_rate"] * map_ds["exposure_factor"])
         / map_ds["exposure_factor"]
         / flux_conversion_divisor
     )
@@ -562,7 +562,7 @@ def _calculate_improved_stat_variance(
 
     logger.debug("Computing geometric factor normalized signal rates")
 
-    # signal_rates = counts / exposure_factor - bg_rates
+    # signal_rates = counts / exposure_factor - bg_rate
     # signal_rates shape is: (n_epoch, n_energy, n_cal_prod, n_spatial_pixels)
     signal_rates = map_ds["ena_signal_rates"]
 
@@ -581,7 +581,7 @@ def _calculate_improved_stat_variance(
     logger.debug("Including background rates in uncertainty calculation")
     # Convert averaged signal rates back to flux uncertainties
     # Total count rates for Poisson uncertainty calculation
-    total_count_rates_for_uncertainty = map_ds["bg_rates"] + averaged_signal_rates
+    total_count_rates_for_uncertainty = map_ds["bg_rate"] + averaged_signal_rates
 
     logger.debug("Computing improved flux uncertainties")
     # Statistical variance:
