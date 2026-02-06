@@ -166,18 +166,23 @@ def read_in_flight_cal_data(in_flight_cal_files: list) -> pd.DataFrame:
         "cem6",
         "cem7",
     ]
-    in_flight_cal_df = pd.concat(
-        [
-            pd.read_csv(file_path, header=0, names=column_names)
-            for file_path in in_flight_cal_files
-        ]
+    in_flight_cal_df = (
+        pd.concat(
+            [
+                pd.read_csv(file_path, header=0, names=column_names)
+                for file_path in in_flight_cal_files
+            ],
+            ignore_index=True,
+        )
+        # Remove rows without MET
+        .dropna(subset=["met_time"])
+        # Sort once so "keep=last" is meaningful
+        .sort_values("met_time")
+        # Drop duplicate METs, keeping most recent entry
+        .drop_duplicates(subset=["met_time"], keep="last")
+        # Clean index
+        .reset_index(drop=True)
     )
-    # Drop duplicates and keep only last occurrence
-    in_flight_cal_df = in_flight_cal_df.drop_duplicates(
-        subset=["met_time"], keep="last"
-    )
-    # Sort by 'met_time' column
-    in_flight_cal_df = in_flight_cal_df.sort_values(by="met_time")
     return in_flight_cal_df
 
 

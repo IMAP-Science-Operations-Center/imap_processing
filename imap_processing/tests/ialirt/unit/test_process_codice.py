@@ -27,7 +27,6 @@ from imap_processing.codice.codice_l2 import (
 )
 from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
-    COD_HI_COUNTER,
     COD_LO_COUNTER,
     concatenate_bytes,
     convert_to_intensities,
@@ -43,6 +42,27 @@ from imap_processing.tests.codice.conftest import (
 from imap_processing.utils import packet_file_to_datasets
 
 pytestmark = pytest.mark.external_test_data
+
+OLD_IAL_BIT_STRUCTURE = {
+    "SHCOARSE": 32,
+    "PACKET_VERSION": 16,
+    "SPIN_PERIOD": 16,
+    "ACQ_START_SECONDS": 32,
+    "ACQ_START_SUBSECONDS": 20,
+    "SPARE_00": 8,
+    "ST_BIAS_GAIN_MODE": 2,
+    "SW_BIAS_GAIN_MODE": 2,
+    "TABLE_ID": 32,
+    "PLAN_ID": 16,
+    "PLAN_STEP": 4,
+    "VIEW_ID": 4,
+    "RGFO_HALF_SPIN": 6,
+    "NSO_HALF_SPIN": 6,
+    "SPARE_01": 1,
+    "SUSPECT": 1,
+    "COMPRESSION": 3,
+    "BYTE_COUNT": 23,
+}
 
 
 @pytest.fixture(scope="session")
@@ -421,6 +441,10 @@ def test_create_xarray_dataset_basic(l1a_lut_path):
 
 
 @pytest.mark.external_test_data
+@patch(
+    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
+    OLD_IAL_BIT_STRUCTURE,
+)
 def test_group_and_decompress_ialirt_cod_lo(
     cod_lo_test_dataset, cod_lo_decom_test_file, l1a_lut_path, cod_lo_l1a_test_data
 ):
@@ -507,25 +531,30 @@ def test_group_and_decompress_ialirt_cod_lo(
 
 
 @pytest.mark.external_test_data
+@patch(
+    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
+    OLD_IAL_BIT_STRUCTURE,
+)
 def test_group_and_decompress_ialirt_cod_hi(
     cod_hi_test_dataset, cod_hi_decom_test_file, l1a_lut_path, cod_hi_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Hi data can be grouped and decompressed properly."
 
+    codice_hi_counter = 197
     grouped_cod_hi_data = find_groups(
-        cod_hi_test_dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
+        cod_hi_test_dataset, (0, codice_hi_counter), "cod_hi_counter", "cod_hi_acq"
     )
 
     # Verify that we grouped the values properly.
     counter_values = cod_hi_test_dataset["cod_hi_counter"].data
     valid_values = counter_values[counter_values != 255]
-    resets = np.where(valid_values == COD_HI_COUNTER)
+    resets = np.where(valid_values == codice_hi_counter)
 
     count = increment = 0
     for reset in resets[0]:
         group = valid_values[increment : reset + 1]
         np.testing.assert_array_equal(
-            group, np.arange(0, COD_HI_COUNTER + 1, dtype=np.uint8)
+            group, np.arange(0, codice_hi_counter + 1, dtype=np.uint8)
         )
         increment = reset + 1
         count = count + 1
@@ -735,6 +764,10 @@ def test_l2_ialirt_cod_lo(
 
 
 @pytest.mark.external_test_data
+@patch(
+    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
+    OLD_IAL_BIT_STRUCTURE,
+)
 def test_process_codice_lo(
     cod_lo_test_dataset,
     l1a_lut_path,
@@ -776,6 +809,11 @@ def test_process_codice_lo(
 
 
 @pytest.mark.external_test_data
+@patch("imap_processing.ialirt.l0.process_codice.COD_HI_COUNTER", 197)
+@patch(
+    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
+    OLD_IAL_BIT_STRUCTURE,
+)
 def test_process_codice_hi(
     cod_hi_test_dataset, l1a_lut_path, l2_lut_path, cod_hi_l2_test_data
 ):

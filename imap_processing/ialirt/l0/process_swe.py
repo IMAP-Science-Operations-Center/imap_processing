@@ -533,15 +533,10 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         ) // 2
 
         # Interpolate to the appropriate calibration factor
+        idx = np.searchsorted(cal_met, group_time_first_half_mid, side="right") - 1
+
         interp_cal_first_half = np.array(
-            [
-                np.interp(
-                    int(group_time_first_half_mid),
-                    cal_met,
-                    in_flight_cal_df[cem].to_numpy(),
-                )
-                for cem in cal_cols
-            ],
+            [in_flight_cal_df[cem].iloc[idx] for cem in cal_cols],
             dtype=np.float64,
         )
         # Find the middle timestamp of the second group
@@ -551,16 +546,10 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         group_time_second_half_mid = (
             group_time_second_half[0] + group_time_second_half[-1]
         ) // 2
-        # Interpolate to the appropriate calibration factor
+        idx = np.searchsorted(cal_met, group_time_second_half_mid, side="right") - 1
+
         interp_cal_second_half = np.array(
-            [
-                np.interp(
-                    int(group_time_second_half_mid),
-                    cal_met,
-                    in_flight_cal_df[cem].to_numpy(),
-                )
-                for cem in cal_cols
-            ],
+            [in_flight_cal_df[cem].iloc[idx] for cem in cal_cols],
             dtype=np.float64,
         )
 
@@ -577,7 +566,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         bde_first_search = azimuthal_check_counterstreaming(
             summed_first_half_cem, summed_second_half_cem
         )
-        # Sum over azimuth.
+        # Sum over azimuth
         summed_first_half_az = np.sum(normalized_first_half, axis=2)
         summed_second_half_az = np.sum(normalized_second_half, axis=2)
         bde_second_search = polar_check_counterstreaming(

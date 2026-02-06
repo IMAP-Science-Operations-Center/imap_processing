@@ -23,6 +23,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     create_datasets,
     filter_valid_star_records,
     get_avg_spin_durations_per_cycle,
+    get_pivot_angle_from_nhk,
     get_sampling_cadence_from_nhk,
     get_spin_start_times,
     identify_species,
@@ -2156,3 +2157,22 @@ class TestL1bStar:
         assert (
             l1b_star_ds.coords["epoch"].values[2] == met_to_ttj2000ns([128 * 15.0])[0]
         )
+
+
+def test_get_pivot_angle_from_nhk():
+    """Test get_pivot_angle_from_nhk function."""
+    # Arrange - Create a mock NHK dataset with pivot angle information
+    l1b_nhk = xr.Dataset(
+        {
+            # Previous 90 degrees at the beginning, then shifted to 75 degrees
+            "pcc_cumulative_cnt_pri": ("epoch", [90, 90, 75, 75, 75, 75, 75]),
+        },
+        coords={"epoch": [0, 1, 2, 3, 4, 5, 6]},
+    )
+    expected_pivot_angle = 75
+
+    # Act
+    pivot_angle = get_pivot_angle_from_nhk(l1b_nhk)
+
+    # Assert
+    assert pivot_angle == expected_pivot_angle
