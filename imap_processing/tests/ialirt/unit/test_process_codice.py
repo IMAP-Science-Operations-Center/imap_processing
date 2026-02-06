@@ -27,7 +27,6 @@ from imap_processing.codice.codice_l2 import (
 )
 from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
-    COD_HI_COUNTER,
     COD_LO_COUNTER,
     concatenate_bytes,
     convert_to_intensities,
