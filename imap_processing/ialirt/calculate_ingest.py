@@ -64,8 +64,9 @@ def packets_created(start_file_creation: datetime, lines: list) -> dict:
                 .isoformat()
                 .replace("+00:00", "Z")
             )
-            station_dict[station]["last_data_received"].append(dt)
-            station_dict[station]["rate_kbps"].append(rate)
+            if dt not in station_dict[station]["last_data_received"]:
+                station_dict[station]["last_data_received"].append(dt)
+                station_dict[station]["rate_kbps"].append(rate)
 
     return station_dict
 

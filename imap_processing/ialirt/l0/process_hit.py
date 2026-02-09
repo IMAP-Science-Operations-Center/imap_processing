@@ -1,6 +1,7 @@
 """Functions to support HIT processing."""
 
 import logging
+from decimal import Decimal
 
 import numpy as np
 import xarray as xr
@@ -196,18 +197,26 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
             | {
                 "instrument": "hit",
                 "hit_epoch": int(met_to_ttj2000ns(mid_measurement)),
-                "hit_e_a_side_low_en": int(l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"]),
-                "hit_e_a_side_med_en": int(l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"]),
-                "hit_e_a_side_high_en": int(l1["IALRT_RATE_7"]),
-                "hit_e_b_side_low_en": int(l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"]),
-                "hit_e_b_side_med_en": int(l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"]),
-                "hit_e_b_side_high_en": int(l1["IALRT_RATE_17"]),
-                "hit_h_omni_low_en": int(l1["H_06_08"]),
-                "hit_h_omni_med_en": int(l1["H_12_15"]),
-                "hit_h_a_side_high_en": int(l1["IALRT_RATE_8"]),
-                "hit_h_b_side_high_en": int(l1["IALRT_RATE_18"]),
-                "hit_he_omni_low_en": int(l1["HE4_06_08"]),
-                "hit_he_omni_high_en": int(l1["HE4_15_70"]),
+                "hit_e_a_side_low_en": Decimal(
+                    f"{l1['IALRT_RATE_1'] + l1['IALRT_RATE_2']:.3f}"
+                ),
+                "hit_e_a_side_med_en": Decimal(
+                    f"{l1['IALRT_RATE_5'] + l1['IALRT_RATE_6']:.3f}"
+                ),
+                "hit_e_a_side_high_en": Decimal(f"{l1['IALRT_RATE_7']:.3f}"),
+                "hit_e_b_side_low_en": Decimal(
+                    f"{l1['IALRT_RATE_11'] + l1['IALRT_RATE_12']:.3f}"
+                ),
+                "hit_e_b_side_med_en": Decimal(
+                    f"{l1['IALRT_RATE_15'] + l1['IALRT_RATE_16']:.3f}"
+                ),
+                "hit_e_b_side_high_en": Decimal(f"{l1['IALRT_RATE_17']:.3f}"),
+                "hit_h_omni_low_en": Decimal(f"{l1['H_06_08']:.3f}"),
+                "hit_h_omni_med_en": Decimal(f"{l1['H_12_15']:.3f}"),
+                "hit_h_a_side_high_en": Decimal(f"{l1['IALRT_RATE_8']:.3f}"),
+                "hit_h_b_side_high_en": Decimal(f"{l1['IALRT_RATE_18']:.3f}"),
+                "hit_he_omni_low_en": Decimal(f"{l1['HE4_06_08']:.3f}"),
+                "hit_he_omni_high_en": Decimal(f"{l1['HE4_15_70']:.3f}"),
             }
         )
 
