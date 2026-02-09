@@ -78,9 +78,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             dataset.acquisition_time_per_esa_step
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
         )
-        if "heplusplus" in variables_to_convert:
-            # For heplusplus, also multiply by 2 to account for double charge state
-            print(dataset["heplusplus"].data[0, 75, 0])
 
         # Do not carry these variable attributes from L1a to L1b for above products
         drop_variables = [

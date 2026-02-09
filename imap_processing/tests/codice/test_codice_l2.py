@@ -588,7 +588,7 @@ def test_codice_l2_sw_angular_intensity_rgfo_masking(
         codice_lut_path(descriptor="l2-lo-efficiency"),
     ]
     # TODO verify the results using validation data once we have some
-    process_codice_l2("lo-nsw-species", ProcessingInputCollection())
+    process_codice_l2("lo-nsw-angular", ProcessingInputCollection())
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")

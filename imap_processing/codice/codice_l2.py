@@ -364,8 +364,8 @@ def compute_geometric_factors(
                         # b. OR the spin sector mod 12 equals rgfo_spin_sector AND the
                         # esa step is greater than rgfo_esa_step
                         (
-                            (spin_sector % 12)
-                            == rgfo_spin_sector & (esa_step > rgfo_esa_step)
+                            ((spin_sector % 12) == rgfo_spin_sector)
+                            & (esa_step > rgfo_esa_step)
                         )
                     )
                 )

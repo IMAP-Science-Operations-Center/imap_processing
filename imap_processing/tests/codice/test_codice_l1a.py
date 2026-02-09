@@ -60,23 +60,6 @@ def test_updated_packet_version(mock_get_file_paths, codice_lut_path):
             assert var in ds.data_vars, (
                 f"Expected variable '{var}' not found in dataset"
             )
-    # ang_datasets = [ds for ds in datasets if "angular" in ds.attrs["Data_type"]]
-    # # process the first angular dataset
-    # processed_l1a_file = write_cdf(ang_datasets[0])
-    # processed_l1b_file = write_cdf(process_codice_l1b(processed_l1a_file))
-    # # Mock get_files for l2
-    # mock_get_file_paths.side_effect = [
-    #     [processed_l1b_file.as_posix()],
-    #     codice_lut_path(descriptor="l2-lo-gfactor"),
-    #     codice_lut_path(descriptor="l2-lo-efficiency"),
-    # ]
-    # processed_2_ds = process_codice_l2("lo-nsw-species", ProcessingInputCollection())
-    # codice_lut_path_jan = codice_lut_path(descriptor="l1a-sci-lut-jan")
-    # mock_get_file_paths.side_effect = [
-    #     codice_lut_path(descriptor="lo-direct-events", data_type="l0"),
-    #     *([codice_lut_path_jan] * 20),
-    # ]
-    # process_l1a(dependency=ProcessingInputCollection())
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")

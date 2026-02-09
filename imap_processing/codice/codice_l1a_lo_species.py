@@ -303,6 +303,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         "st_bias_gain_mode",
         "rgfo_half_spin",
         "nso_half_spin",
+        "packet_version",
         *l1a_additional_vars,
     ]
     # Loop through them since we need to set their attrs too
