@@ -249,8 +249,8 @@ def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int
 
 
 def calculate_idex_event_time(
-    fine_time_subs: np.ndarray,
     coarse_time_sec: np.ndarray,
+    fine_time_subs: np.ndarray,
 ) -> npt.NDArray[np.int64]:
     """
     Calculate the epoch time from the FPGA header time variables.
@@ -262,10 +262,10 @@ def calculate_idex_event_time(
 
     Parameters
     ----------
-    fine_time_subs : numpy.ndarray
-        The fine event time in 20-microsecond intervals.
     coarse_time_sec : numpy.ndarray
         The coarse event time (seconds).
+    fine_time_subs : numpy.ndarray
+        The fine event time in 20-microsecond intervals.
 
     Returns
     -------
@@ -362,9 +362,9 @@ class RawDustEvent:
         # remaining seconds within that range. This necessitates bit shifting the upper
         # word by 16 bits when reconstructing the full seconds counter.
         self.impact_time = calculate_idex_event_time(
-            header_packet["IDX__TXHDRTIMESUBS"],
             (header_packet["IDX__TXHDRTIMESEC1"] << 16)
             + header_packet["IDX__TXHDRTIMESEC2"],
+            header_packet["IDX__TXHDRTIMESUBS"],
         )
 
         self.event_number = header_packet["IDX__SCI0EVTNUM"]
