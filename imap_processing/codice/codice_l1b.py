@@ -152,9 +152,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
                 dataset[unc_variable].astype(np.float64) / denominator
             )
             dataset[unc_variable].attrs["UNITS"] = "1/s"
-        if "heplusplus" == variable:
-            # For heplusplus, also multiply by 2 to account for double charge state
-            print(dataset["heplusplus"].data[0, 75, 0])
+
     # Drop spin_period
     if "spin_period" in dataset.variables:
         dataset = dataset.drop_vars("spin_period")
