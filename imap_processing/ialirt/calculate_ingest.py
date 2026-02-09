@@ -16,7 +16,7 @@ def packets_created(start_file_creation: datetime, lines: list) -> dict:
     Parameters
     ----------
     start_file_creation : datetime
-        File creation time of last file minus 5 minutes.
+        File creation time of last file minus 48 hrs.
     lines : list
         All lines of log files.
 
