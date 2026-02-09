@@ -279,7 +279,7 @@ def get_species_efficiency(species: str, efficiency: pd.DataFrame) -> xr.DataArr
 
 
 def compute_geometric_factors(
-    dataset: xr.Dataset, geometric_factor_lookup: dict
+    dataset: xr.Dataset, geometric_factor_lookup: dict, angular_product: bool = False
 ) -> xr.DataArray:
     """
     Calculate geometric factors needed for intensity calculations.
@@ -290,10 +290,18 @@ def compute_geometric_factors(
 
     If the half-spin value is less than the corresponding rgfo_half_spin value,
     the geometric factor is set to 0.75 (full mode); otherwise, it is set to 0.5
-    (reduced mode).
+    (reduced mode). If the data is from after November 24th 2025, then reduced
+    mode is no longer applied and the geometric factor is always set to full mode.
 
     NOTE: Half spin values are associated with ESA steps which corresponds to the
     index of the energy_per_charge dimension that is between 0 and 127.
+
+    NOTE: If packet_version = 2, the Lo L1B product now contains variables that indicate
+    the esa step and spin sector during which the RGFO or NSO limits are triggered.
+    The spin sector variable ranges from 0-11 and is the instrument reported spin
+    sector. In the following algorithm, spin_angle refers to the L1B angular bin
+    (0 – 23) which is despun and spin_sector refers to the non-despun spin sector
+    reported from the instrument (0-11).
 
     Parameters
     ----------
@@ -301,6 +309,10 @@ def compute_geometric_factors(
         The L2 dataset containing rgfo_half_spin data variable.
     geometric_factor_lookup : dict
         A dict with a full and reduced mode array with shape (esa_steps, position).
+    angular_product : bool
+        Whether the product being processed is an angular product. If True, then
+        the geometric factor calculation has additional steps to determine the exact
+        rgfo boundary.
 
     Returns
     -------
@@ -308,16 +320,11 @@ def compute_geometric_factors(
         A 3D array of geometric factors with shape (epoch, esa_steps, positions).
     """
     # Get half spin values per esa step from the dataset
-    half_spin_per_esa_step = dataset.half_spin_per_esa_step.values
-
+    # add a new dimension for spin_sector
+    half_spin_per_esa_step = dataset.half_spin_per_esa_step.values[:, :, np.newaxis]
     # Expand dimensions to compare each rgfo_half_spin value against
-    # all half_spin_values
-    rgfo_half_spin = dataset.rgfo_half_spin.data[:, np.newaxis]  # Shape: (epoch, 1)
-    # Perform the comparison and calculate modes
-    # Modes will be true (reduced mode) anywhere half_spin > rgfo_half_spin otherwise
-    # false (full mode)
-    # TODO: The mode calculation will need to be revisited after FW changes in january
-    #  2026. We also need to fix this on days when the sci Lut changes.
+    # all half_spin_values and spin_sectors. Shape: (epoch, 1, 1)
+    rgfo_half_spin = dataset.rgfo_half_spin.data[:, np.newaxis, np.newaxis]
     # After November 24th 2025 we need to do this step a different way.
     start_date = dataset.attrs.get("Logical_file_id", None)
     if start_date is None:
@@ -326,7 +333,47 @@ def compute_geometric_factors(
     date_switch = datetime.datetime(2025, 11, 24)
     # Only consider valid half spins
     valid_half_spin = half_spin_per_esa_step != HALF_SPIN_FILLVAL
-    if processing_date < date_switch:
+    # TODO: Fix this calculation on days when the sci Lut changes. There may be
+    #   different packet versions in the same dataset.
+    # Perform the comparison and calculate modes
+    if angular_product and dataset.packet_version.data[0] > 1:
+        # For angular products with packet version > 1, we have spin sector information
+        # to determine the exact boundary of the RGFO mode. Shape: (epoch, 1, 1)
+        rgfo_spin_sector = dataset.rgfo_spin_sector.data[:, np.newaxis, np.newaxis]
+        rgfo_esa_step = dataset.rgfo_energy_step.data[:, np.newaxis, np.newaxis]
+        # Shape: (1, 1, spin_sector (24))
+        spin_sector = dataset.spin_sector.data[np.newaxis, np.newaxis, :]
+        # Shape: (1, esa_step (128), 1)
+        esa_step = dataset.esa_step.data[np.newaxis, :, np.newaxis]
+        at_boundary = half_spin_per_esa_step == rgfo_half_spin
+        modes = (
+            # Reduced mode is applied where:
+            # 1. Half spin is valid.
+            valid_half_spin
+            & (
+                # 2. Half spin is greater than rgfo_half_spin.
+                (half_spin_per_esa_step > rgfo_half_spin)
+                | (
+                    # 3. Where half_spin_per_esa_step equals rgfo_half_spin AND
+                    at_boundary
+                    & (
+                        # a. The spin sector mod 12 is greater than rgfo_spin_sector
+                        (spin_sector % 12)
+                        > rgfo_spin_sector
+                        |
+                        # b. OR the spin sector mod 12 equals rgfo_spin_sector AND the
+                        # esa step is greater than rgfo_esa_step
+                        (
+                            (spin_sector % 12)
+                            == rgfo_spin_sector & (esa_step > rgfo_esa_step)
+                        )
+                    )
+                )
+            )
+        )
+    elif processing_date < date_switch:
+        # Modes will be true (reduced mode) anywhere half_spin > rgfo_half_spin
+        # otherwise false (full mode)
         modes = (
             valid_half_spin
             & (half_spin_per_esa_step > rgfo_half_spin)
@@ -336,10 +383,9 @@ def compute_geometric_factors(
         # After November 24th, 2025, we no longer apply reduced geometric factors;
         # always use the full geometric factor lookup.
         modes = np.zeros_like(half_spin_per_esa_step, dtype=bool)
-
     # Get the geometric factors based on the modes
     gf = np.where(
-        modes[:, :, np.newaxis],  # Shape (epoch, esa_step, 1)
+        modes,  # Shape (epoch, esa_step, 1)
         geometric_factor_lookup["reduced"],  # Shape (1, esa_step, 24) - reduced mode
         geometric_factor_lookup["full"],  # Shape (1, esa_step, 24) - full mode
     )  # Shape: (epoch, esa_step, inst_az)
@@ -497,6 +543,20 @@ def process_lo_species_intensity(
         # Replace {species} and {direction} in attrs
         attrs = apply_replacements_to_attrs(attrs, {"species": species})
         dataset[species].attrs.update(attrs)
+
+    # Since the RGFO mode is implemented within a half-spin at a given esa step and spin
+    # sector and since the species data is summed over all spin sectors, the data during
+    # this half spin cannot be de-convolved. Thus, the intensity during the
+    # half_spin = RGFO_half_spin should be set to fill values. This only applies to
+    # datasets with packet version > 1 since that's when the RGFO spin sector and esa
+    # step information is included.
+    if dataset.packet_version.data[0] > 1:
+        at_boundary = (
+            dataset.half_spin_per_esa_step.data
+            == dataset.rgfo_half_spin.data[:, np.newaxis]
+        )
+        for species in species_list:
+            dataset[species].data[at_boundary] = np.nan
 
     return dataset
 
@@ -1347,11 +1407,11 @@ def process_codice_l2(
 
         geometric_factor_lookup = get_geometric_factor_lut(dependencies)
         efficiency_lookup = get_efficiency_lut(dependencies)
-        geometric_factors = compute_geometric_factors(
-            l2_dataset, geometric_factor_lookup
-        )
 
         if dataset_name == "imap_codice_l2_lo-sw-species":
+            geometric_factors = compute_geometric_factors(
+                l2_dataset, geometric_factor_lookup
+            )
             # Filter the efficiency lookup table for solar wind efficiencies
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
             # Calculate the pickup ion sunward solar wind intensities using equation
@@ -1376,6 +1436,9 @@ def process_codice_l2(
                 cdf_attrs.get_global_attributes("imap_codice_l2_lo-sw-species")
             )
         elif dataset_name == "imap_codice_l2_lo-nsw-species":
+            geometric_factors = compute_geometric_factors(
+                l2_dataset, geometric_factor_lookup
+            )
             # Filter the efficiency lookup table for non-solar wind efficiencies
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
             # Calculate the non-sunward species intensities using equation
@@ -1391,6 +1454,9 @@ def process_codice_l2(
                 cdf_attrs.get_global_attributes("imap_codice_l2_lo-nsw-species")
             )
         elif dataset_name == "imap_codice_l2_lo-sw-angular":
+            geometric_factors = compute_geometric_factors(
+                l2_dataset, geometric_factor_lookup, angular_product=True
+            )
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
             # Calculate the sunward solar wind angular intensities using equation
             # described in section 11.2.2 of algorithm document.
@@ -1405,6 +1471,9 @@ def process_codice_l2(
                 cdf_attrs.get_global_attributes("imap_codice_l2_lo-sw-angular")
             )
         if dataset_name == "imap_codice_l2_lo-nsw-angular":
+            geometric_factors = compute_geometric_factors(
+                l2_dataset, geometric_factor_lookup, angular_product=True
+            )
             # Calculate the non sunward angular intensities
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
             l2_dataset = process_lo_angular_intensity(

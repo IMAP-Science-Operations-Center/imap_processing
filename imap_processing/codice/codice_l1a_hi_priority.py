@@ -86,7 +86,7 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
-
+    packet_version = unpacked_dataset["packet_version"].values[0]
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [
         np.frombuffer(
@@ -98,12 +98,17 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             ),
             dtype=np.uint32,
         )
+        # For newer packet versions, the decompressed data needs to be converted to
+        # uint32
+        if packet_version > 1
+        else decompress(
+            packet_data[:byte_count],
+            compression_algorithm,
+        )
         for (packet_data, byte_count) in zip(
             binary_data_list, byte_count_list, strict=False
         )
     ]
-    # Decompression returns np.uint8
-    # TODO priority should be returned as np.uint32
 
     num_packets = len(binary_data_list)
 

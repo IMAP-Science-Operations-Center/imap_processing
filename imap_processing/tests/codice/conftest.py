@@ -170,7 +170,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_hskp_20250814_v001.pkts"
+                / "imap_codice_l0_hskp_20250814_v001.pkts"
             ]
         if descriptor == "lo-nsw-species" and data_type == "l1b":
             return [
@@ -287,10 +287,7 @@ def codice_lut_path():
                 TEST_DATA_PATH / "l2_lut/imap_codice_l2-hi-tof-table_20250101_v001.csv"
             ]
         elif descriptor == "fsw-changes":
-            return [
-                TEST_DATA_PATH
-                / "l1a_input/raw_ccsds_20260126_092625Z_rgf-data.pkts.bin"
-            ]
+            return [TEST_DATA_PATH / "l1a_input/imap_codice_l0_raw_20260130_v001.pkts"]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")
 

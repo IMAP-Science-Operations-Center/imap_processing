@@ -765,8 +765,8 @@ LOSSY_B_TABLE = {
 HI_ACQUISITION_TIME = 0.59916
 
 # TODO: in the future, read from sci-lut
-LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq", "fe_hiq"]
-LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
+LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq", "heplus"]
+LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus", "heplus"]
 LO_SW_PRIORITY_VARIABLE_NAMES = [
     "p0_tcrs",
     "p1_hplus",

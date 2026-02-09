@@ -182,10 +182,11 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # 24 includes despinning spin sector. Then at later steps,
     # we handle despinning.
     num_packets = len(binary_data_list)
-    esa_steps = constants.NUM_ESA_STEPS
+    num_esa_steps = constants.NUM_ESA_STEPS
     num_species = len(species_names)
+    num_spin_sectors = collapsed_shape[0]
     species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        num_packets, num_species, esa_steps, *collapsed_shape
+        num_packets, num_species, num_esa_steps, *collapsed_shape
     )
 
     # ========== Get Voltage Data from LUT ===========
@@ -197,8 +198,8 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
     # If data size is less than 128, pad with fillval to make it 128
     half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
-    if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
-        pad_size = constants.NUM_ESA_STEPS - len(half_spin_per_esa_step)
+    if len(half_spin_per_esa_step) < num_esa_steps:
+        pad_size = num_esa_steps - len(half_spin_per_esa_step)
         half_spin_per_esa_step = np.concatenate(
             (np.array(half_spin_per_esa_step), np.full(pad_size, HALF_SPIN_FILLVAL))
         )
@@ -218,42 +219,84 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         np.asarray(acquisition_time_per_step),
         (len(unpacked_dataset["acq_start_seconds"]), 1),
     )
+    # ========== Apply NSO/RGFO Masking ===========
     # After FSW changes on 20260129, The Lo L1A product contains variables that
     # indicate the esa step and spin sector during which the RGFO or NSO limits are
     # triggered. The spin sector variable ranges from 0-11 and is the instrument
     # reported spin sector. The following algorithm defines when to assign NaN to the
     # angular data product due to NSO
     # operation:
-    # 1. For half_spin > NSO_half_spin a set all data to NaN
-    # 2. For half_spin = NSO_half_spin
-    #   a. For spin_sector > NSO_spin_sector a set all data to NaN
-    #   b. For spin_sector = NSO_spin_sector
-    #       i. For esa_step > NSO_esa_step a set all data to NaN
+    # 1. For half_spin > nso_half_spin a set all data to NaN
+    # 2. For half_spin = nso_half_spin
+    #   a. For spin_sector > nso_spin_sector a set all data to NaN
+    #   b. For spin_sector = nso_spin_sector
+    #       i. For esa_step > nso_esa_step a set all data to NaN
     # For every energy after nso_half_spin, set data to fill values
     # For data before 20260129 ( packet_version <=1 ) set all data to NaN where
-    # half_spin > NSO_half_spin
+    # half_spin > nso_half_spin
+    packet_versions = unpacked_dataset["packet_version"].values
     nso_half_spin = unpacked_dataset["nso_half_spin"].values
     # TODO handle boundary days where the FSW changed halfway through the dataset. E.g
     # Some packet_version = 1 and some = 2
-    if unpacked_dataset["packet_version"].values[0] <= 1:
-        nso_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+    if packet_versions[0] <= 1:
+        # For half_spin >= NSO_half_spin, set to NaN
+        half_spin_mask = (half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]) | (
             half_spin_per_esa_step == HALF_SPIN_FILLVAL
         )
-        species_mask = nso_mask[:, np.newaxis, :, np.newaxis, np.newaxis]
+        species_mask = half_spin_mask[:, np.newaxis, :, np.newaxis, np.newaxis]
         species_mask = np.broadcast_to(species_mask, species_data.shape)
     else:
-        nso_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+        # nso_spin_sector and nso_esa_step for comparison. Shape (epoch, 1, 1)
+        # to broadcast
+        nso_spin_sector = unpacked_dataset["nso_spin_sector"].values[
+            :, np.newaxis, np.newaxis
+        ]
+        nso_esa_step = unpacked_dataset["nso_energy_step"].values[
+            :, np.newaxis, np.newaxis
+        ]
+        # Create arrays for spin sectors and esa steps to compare with nso values.
+        # Shape (1, 1, spin_sector) and (1, esa_step, 1)
+        spin_sectors = np.arange(num_spin_sectors)[np.newaxis, np.newaxis, :]
+        esa_steps = np.arange(num_esa_steps)[np.newaxis, :, np.newaxis]
+        # Create a mask for half_spin > nso_half_spin. Shape (epoch, esa_step))
+        # This will be used below to set half_spin_per_esa_step to fillval and
+        # acquisition_time_per_step to NaN for those steps.
+        half_spin_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
             half_spin_per_esa_step == HALF_SPIN_FILLVAL
         )
-        species_mask = nso_mask[:, np.newaxis, :, np.newaxis, np.newaxis]
-        species_mask = np.broadcast_to(species_mask, species_data.shape)
+        # Create a mask for the boundary condition where half_spin == nso_half_spin.
+        at_boundary = (
+            half_spin_per_esa_step[:, :, np.newaxis]
+            == nso_half_spin[:, np.newaxis, np.newaxis]
+        )
+        boundary_half_spin_mask = (
+            at_boundary
+            &
+            # For spin_sector > nso_spin_sector, set to NaN
+            (
+                (spin_sectors > nso_spin_sector)
+                |
+                # For spin_sector = nso_spin_sector and esa_step > nso_esa_step,
+                # set to NaN
+                ((spin_sectors == nso_spin_sector) & (esa_steps > nso_esa_step))
+            )
+        )
+
+        # Combine masks. Shape (epoch, esa_step, spin_sector). This mask is True
+        # where data should be set to NaN
+        nso_mask = half_spin_mask[:, :, np.newaxis] | boundary_half_spin_mask
+        # Expand nso_mask to (epoch, 1, esa_step, spin_sector, 1) to apply to
+        # species_data.
+        species_mask = np.broadcast_to(
+            nso_mask[:, np.newaxis, :, :, np.newaxis], species_data.shape
+        )
+
     species_data = species_data.astype(np.float64)
     species_data[species_mask] = np.nan
-    # Set half_spin_per_esa_step to (fillval) where nso_mask is True
-    half_spin_per_esa_step[nso_mask] = HALF_SPIN_FILLVAL
-
-    # Set acquisition_time_per_step to nan where nso_mask is True
-    acquisition_time_per_step[nso_mask] = np.nan
+    # Set half_spin_per_esa_step to (fillval) where half_spin mask is True
+    half_spin_per_esa_step[half_spin_mask] = HALF_SPIN_FILLVAL
+    # Set acquisition_time_per_step to nan where half_spin_mask is True
+    acquisition_time_per_step[half_spin_mask] = np.nan
 
     # Despinning
     # ----------------
@@ -380,6 +423,22 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             "acquisition_time_per_esa_step", check_schema=False
         ),
     )
+    # These variables were added to the packet definition after 20260129, so they only
+    # exist in the unpacked dataset if packet_version > 1
+    # If they don't exist, initialize them with fill val arrays since they won't be
+    # used in the NSO/RGFO masking logic but should still exist in l1a for SPDF
+    # compliance/consistency.
+    l1a_additional_vars = [
+        "rgfo_spin_sector",
+        "rgfo_energy_step",
+        "nso_spin_sector",
+        "nso_energy_step",
+    ]
+    for var in l1a_additional_vars:
+        if var not in unpacked_dataset:
+            unpacked_dataset[var] = np.full(
+                unpacked_dataset.sizes["epoch"], fill_value=np.nan
+            )
 
     # Carry over these variables from unpacked data to l1a_dataset
     l1a_carryover_vars = [
@@ -387,6 +446,8 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         "st_bias_gain_mode",
         "rgfo_half_spin",
         "nso_half_spin",
+        "packet_version",
+        *l1a_additional_vars,
     ]
     # Loop through them since we need to set their attrs too
     for var in l1a_carryover_vars:

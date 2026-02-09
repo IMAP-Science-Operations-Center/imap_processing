@@ -67,7 +67,6 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         collapse_table=view_tab_info["collapse_table"],
         compression=view_tab_info["compression"],
     )
-
     if view_tab_obj.sensor != 0:
         raise ValueError("Unsupported sensor ID for Lo species processing.")
 
@@ -152,7 +151,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     )
     # For every energy after nso_half_spin, set data to fill values
     nso_half_spin = unpacked_dataset["nso_half_spin"].values
-    nso_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+    nso_mask = (half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]) | (
         half_spin_per_esa_step == HALF_SPIN_FILLVAL
     )
     species_mask = nso_mask[:, np.newaxis, :, np.newaxis]
@@ -281,6 +280,22 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             "acquisition_time_per_esa_step", check_schema=False
         ),
     )
+    # These variables were added to the packet definition after 20260129, so they only
+    # exist in the unpacked dataset if packet_version > 1
+    # If they don't exist, initialize them with fill val arrays since they won't be
+    # used in the NSO/RGFO masking logic but should still exist in l1a for SPDF
+    # compliance/consistency.
+    l1a_additional_vars = [
+        "rgfo_spin_sector",
+        "rgfo_energy_step",
+        "nso_spin_sector",
+        "nso_energy_step",
+    ]
+    for var in l1a_additional_vars:
+        if var not in unpacked_dataset:
+            unpacked_dataset[var] = np.full(
+                unpacked_dataset.sizes["epoch"], fill_value=np.nan
+            )
 
     # Carry over these variables from unpacked data to l1a_dataset
     l1a_carryover_vars = [
@@ -288,6 +303,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         "st_bias_gain_mode",
         "rgfo_half_spin",
         "nso_half_spin",
+        *l1a_additional_vars,
     ]
     # Loop through them since we need to set their attrs too
     for var in l1a_carryover_vars:

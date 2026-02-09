@@ -489,7 +489,7 @@ def test_codice_l2_nsw_angular_intensity(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l2-lo-gfactor"),
         codice_lut_path(descriptor="l2-lo-efficiency"),
     ]
-    processed_2_ds = process_codice_l2("lo-nsw-species", ProcessingInputCollection())
+    processed_2_ds = process_codice_l2("lo-nsw-angular", ProcessingInputCollection())
     l2_val_data = (
         imap_module_directory
         / "tests"
@@ -563,6 +563,32 @@ def test_codice_l2_sw_angular_intensity(mock_get_file_paths, codice_lut_path):
     processed_2_ds.attrs["Data_version"] = "001"
     assert processed_2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-angular"
     write_cdf(processed_2_ds)
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_codice_l2_sw_angular_intensity_rgfo_masking(
+    mock_get_file_paths, codice_lut_path
+):
+    """Tests RGFO masking after FSW changes (jan 2026)."""
+    codice_lut_path_jan = codice_lut_path(descriptor="l1a-sci-lut-jan")
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="fsw-changes", data_type="l0"),
+        *([codice_lut_path_jan] * 20),
+    ]
+    datasets = process_l1a(dependency=ProcessingInputCollection())
+
+    ang_dataset = next(ds for ds in datasets if "angular" in ds.attrs["Data_type"])
+    # process the first angular dataset
+    processed_l1a_file = write_cdf(ang_dataset)
+    processed_l1b_file = write_cdf(process_codice_l1b(processed_l1a_file))
+    # Mock get_files for l2
+    mock_get_file_paths.side_effect = [
+        [processed_l1b_file.as_posix()],
+        codice_lut_path(descriptor="l2-lo-gfactor"),
+        codice_lut_path(descriptor="l2-lo-efficiency"),
+    ]
+    # TODO verify the results using validation data once we have some
+    process_codice_l2("lo-nsw-species", ProcessingInputCollection())
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
