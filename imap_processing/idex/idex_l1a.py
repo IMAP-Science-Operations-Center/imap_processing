@@ -356,7 +356,6 @@ class RawDustEvent:
         """
         # Calculate the impact time in seconds since epoch
         self.impact_time = 0
-
         # The elapsed seconds are stored as a 32-bit unsigned integer that is split
         # across two 16-bit words for packetization. As a result, idx__txhdrtimesec1
         # represents multiples of 2^16 seconds, while idx_txhdrtimesec2 represents the
