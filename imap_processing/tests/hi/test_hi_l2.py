@@ -12,12 +12,14 @@ from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.hi_l2 import (
     _calculate_improved_stat_variance,
+    calculate_all_rates_and_intensities,
     calculate_ena_intensity,
     calculate_ena_signal_rates,
     combine_calibration_products,
+    create_sky_map_from_psets,
     esa_energy_df,
-    generate_hi_map,
     hi_l2,
+    process_single_pset,
 )
 from imap_processing.spice.geometry import SpiceFrame
 
@@ -185,16 +187,21 @@ def test_hi_l2(
     "imap_processing.ena_maps.ena_maps.RectangularSkyMap.build_cdf_dataset",
     autospec=True,
 )
-@patch("imap_processing.hi.hi_l2.generate_hi_map")
+@patch("imap_processing.hi.hi_l2.calculate_all_rates_and_intensities")
+@patch("imap_processing.hi.hi_l2.create_sky_map_from_psets")
 def test_hi_l2_uses_descriptor_to_setup_map(
-    mock_generate_hi_map,
+    mock_create_sky_map_from_psets,
+    mock_calculate_all_rates_and_intensities,
     mock_map_build_cdf_dataset,
     hi_l1_test_data_path,
 ):
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
     descriptor_str = "h90-ena-h-sf-nsp-full-hnu-2deg-3mo"
     rect_map = MapDescriptor.from_string(descriptor_str).to_empty_map()
-    mock_generate_hi_map.return_value = rect_map
+    # create_sky_map_from_psets returns just the sky_map
+    mock_create_sky_map_from_psets.return_value = rect_map
+    # calculate_all_rates_and_intensities modifies and returns the map data
+    mock_calculate_all_rates_and_intensities.side_effect = lambda ds, *args: ds
     mock_map_build_cdf_dataset.return_value = xr.Dataset()
 
     _ = hi_l2([pset_path], None, descriptor_str)[0]
@@ -215,23 +222,14 @@ def test_hi_l2_uses_descriptor_to_setup_map(
         "h90-ena-h-hf-nsp-ram-gcs-6deg-3mo",
     ],
 )
-@mock.patch("imap_processing.hi.hi_l2.calculate_ena_intensity", autospec=True)
-@mock.patch(
-    "imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame", autospec=True
-)
 @pytest.mark.external_test_data
-def test_genarate_hi_map(
-    mock_interp_flux,
-    mock_calc_ena_intensity,
+def test_create_sky_map_from_psets(
     hi_l1_test_data_path,
     anc_path_dict,
     furnish_kernels,
     descriptor_str,
 ):
-    """Test coverage for genarate_hi_map()"""
-    mock_calc_ena_intensity.side_effect = lambda x, y, z: x
-    mock_interp_flux.side_effect = lambda a, b, c, d: a
-
+    """Test coverage for create_sky_map_from_psets()"""
     kernels = [
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
@@ -242,18 +240,20 @@ def test_genarate_hi_map(
     with furnish_kernels(kernels):
         pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
-        rect_map = MapDescriptor.from_string(descriptor_str)
-        sky_map = generate_hi_map(
+        map_descriptor = MapDescriptor.from_string(descriptor_str)
+        sky_map = create_sky_map_from_psets(
             [pset_path],
             anc_path_dict,
-            rect_map,
+            map_descriptor,
         )
     assert isinstance(sky_map, RectangularSkyMap)
     assert sky_map.spacing_deg == 6
     assert sky_map.spice_reference_frame == SpiceFrame.IMAP_GCS
 
-    # Check that calculate_ena_intensities was called
-    mock_calc_ena_intensity.assert_called_once()
+    # Check that ESA energy data was added to the map
+    assert "energy_delta_minus" in sky_map.data_1d
+    assert "energy_delta_plus" in sky_map.data_1d
+    assert "energy" in sky_map.data_1d.coords
 
     # Test that we got some non-zero values
     for var_name in ["counts", "exposure_factor", "obs_date"]:
@@ -274,13 +274,12 @@ def test_genarate_hi_map(
     if "-hf-" in descriptor_str:
         assert "energy_sc" in sky_map.data_1d.data_vars
         assert np.nanmax(sky_map.data_1d["energy_sc"].data) > 0
-        mock_interp_flux.assert_called_once()
 
 
 def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     """Test coverage for calculate_ena_signal_rates"""
     # Start with an empty (coords only) dataset
-    map_ds = empty_rectangular_map_dataset
+    map_ds = empty_rectangular_map_dataset.copy()
     # Add some data_vars needed for the signal rates calculations
     counts_shape = tuple(map_ds.sizes.values())
     exposure_sizes = {k: v for k, v in map_ds.sizes.items() if k != "calibration_prod"}
@@ -310,18 +309,20 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
             ),
         }
     )
-    signal_rates_vars = calculate_ena_signal_rates(map_ds)
+    result_ds = calculate_ena_signal_rates(map_ds)
+    # Function now returns the modified dataset
+    assert isinstance(result_ds, xr.Dataset)
     for var_name in ["ena_signal_rates", "ena_signal_rate_stat_unc"]:
-        assert var_name in signal_rates_vars
-        assert signal_rates_vars[var_name].shape == counts_shape
+        assert var_name in result_ds
+        assert result_ds[var_name].shape == counts_shape
     # Verify that there are no negative signal rates. The synthetic data combination
     # where counts = 0, exposure_factor = 1, and bg_rates = 1 would result in
     # an ena_signal_rate of (0 / 1) - 1 = -1
-    assert np.nanmin(signal_rates_vars["ena_signal_rates"].values) >= 0
+    assert np.nanmin(result_ds["ena_signal_rates"].values) >= 0
     # Verify that the minimum finite uncertainty is sqrt(1) / exposure_factor.
     # The max exposure factor is 2, so we can expect the minimum finite
     # uncertainty value to be 1/2.
-    assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1 / 2
+    assert np.nanmin(result_ds["ena_signal_rate_stat_unc"].values) == 1 / 2
 
 
 @pytest.fixture(scope="module")
@@ -698,3 +699,419 @@ def test_combine_calibration_products_edge_cases():
     # Check that calibration_prod dimension was removed
     for var in ["ena_intensity", "ena_intensity_stat_uncert", "ena_intensity_sys_err"]:
         assert "calibration_prod" not in result_ds[var].dims
+
+
+# =============================================================================
+# PSET PROCESSING TESTS
+# =============================================================================
+
+
+@pytest.fixture
+def mock_pset_dataset():
+    """Create a mock PSET dataset for testing process_single_pset."""
+    n_spin_bins = 10
+    n_energy = 3
+    n_cal_prod = 2
+
+    coords = {
+        "epoch": [0],
+        "esa_energy_step": [1, 2, 3],
+        "calibration_prod": [1, 2],
+        "spin_angle_bin": np.arange(n_spin_bins),
+    }
+
+    # exposure_times has dims: epoch, esa_energy_step,
+    # spin_angle_bin (no calibration_prod)
+    exposure_shape = (1, n_energy, n_spin_bins)
+    # Other variables have all dims
+    full_shape = (1, n_energy, n_cal_prod, n_spin_bins)
+
+    pset = xr.Dataset(
+        {
+            # Variables that get renamed by l1c_to_l2_var_mapping
+            "exposure_times": xr.DataArray(
+                np.ones(exposure_shape) * 100.0,
+                dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+            ),
+            "background_rates": xr.DataArray(
+                np.ones(full_shape) * 5.0,
+                dims=["epoch", "esa_energy_step", "calibration_prod", "spin_angle_bin"],
+            ),
+            "background_rates_uncertainty": xr.DataArray(
+                np.ones(full_shape) * 1.0,
+                dims=["epoch", "esa_energy_step", "calibration_prod", "spin_angle_bin"],
+            ),
+            "counts": xr.DataArray(
+                np.ones(full_shape) * 50.0,
+                dims=["epoch", "esa_energy_step", "calibration_prod", "spin_angle_bin"],
+            ),
+            "epoch_delta": xr.DataArray([1000000000], dims=["epoch"]),  # 1 second in ns
+            "hae_latitude": xr.DataArray(
+                np.zeros((1, n_spin_bins)), dims=["epoch", "spin_angle_bin"]
+            ),
+            "hae_longitude": xr.DataArray(
+                np.linspace(0, 360, n_spin_bins).reshape(1, -1),
+                dims=["epoch", "spin_angle_bin"],
+            ),
+        },
+        coords=coords,
+    )
+    return pset
+
+
+@mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+def test_process_single_pset_renames_variables(
+    mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
+):
+    """Test that process_single_pset renames L1C variables to L2 names."""
+    # Mock the external functions to avoid needing SPICE kernels
+    mock_add_velocity.side_effect = lambda ds: ds
+    mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
+        ram_mask=xr.zeros_like(ds["hae_longitude"], dtype=bool)
+    )
+
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+    energy_kev = xr.DataArray([0.5, 0.75, 1.1], dims=["esa_energy_step"])
+
+    result = process_single_pset(
+        mock_pset_dataset,
+        energy_kev,
+        descriptor,
+        vars_to_exposure_time_average=set(),
+    )
+
+    # Check that variables were renamed
+    assert "exposure_factor" in result
+    assert "bg_rates" in result
+    assert "bg_rates_unc" in result
+    # Original names should not exist
+    assert "exposure_times" not in result
+    assert "background_rates" not in result
+    assert "background_rates_uncertainty" not in result
+
+
+@mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+def test_process_single_pset_adds_obs_date(
+    mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
+):
+    """Test that process_single_pset adds obs_date variable."""
+    mock_add_velocity.side_effect = lambda ds: ds
+    mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
+        ram_mask=xr.zeros_like(ds["hae_longitude"])
+    )
+
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+    energy_kev = xr.DataArray([0.5, 0.75, 1.1], dims=["esa_energy_step"])
+
+    result = process_single_pset(
+        mock_pset_dataset,
+        energy_kev,
+        descriptor,
+        vars_to_exposure_time_average=set(),
+    )
+
+    assert "obs_date" in result
+    # obs_date should be the midpoint of the epoch (epoch + epoch_delta/2)
+    expected_mid_time = (
+        mock_pset_dataset["epoch"].values[0] + 500000000
+    )  # half of 1 second
+    assert result["obs_date"].values.flat[0] == expected_mid_time
+
+
+@mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+def test_process_single_pset_exposure_time_weighting(
+    mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
+):
+    """Test that variables are multiplied by exposure_factor for weighted averaging."""
+    mock_add_velocity.side_effect = lambda ds: ds
+    mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
+        ram_mask=xr.zeros_like(ds["hae_longitude"])
+    )
+
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+    energy_kev = xr.DataArray([0.5, 0.75, 1.1], dims=["esa_energy_step"])
+
+    # bg_rates should be multiplied by exposure_factor
+    result = process_single_pset(
+        mock_pset_dataset,
+        energy_kev,
+        descriptor,
+        vars_to_exposure_time_average={"bg_rates"},
+    )
+
+    # bg_rates was 5.0, exposure_factor is 100.0, so result should be 500.0
+    assert np.allclose(result["bg_rates"].values, 500.0)
+
+
+@mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+def test_process_single_pset_calls_velocity_and_ram_mask(
+    mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
+):
+    """Test that spacecraft velocity and ram mask functions are called."""
+    mock_add_velocity.side_effect = lambda ds: ds.assign(
+        sc_velocity_x=xr.DataArray([1.0], dims=["epoch"])
+    )
+    mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
+        ram_mask=xr.zeros_like(ds["hae_longitude"])
+    )
+
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+    energy_kev = xr.DataArray([0.5, 0.75, 1.1], dims=["esa_energy_step"])
+
+    result = process_single_pset(
+        mock_pset_dataset,
+        energy_kev,
+        descriptor,
+        vars_to_exposure_time_average=set(),
+    )
+
+    # Both functions should have been called
+    mock_add_velocity.assert_called_once()
+    mock_calc_ram_mask.assert_called_once()
+    # Check that their outputs are in the result
+    assert "sc_velocity_x" in result
+    assert "ram_mask" in result
+
+
+@mock.patch("imap_processing.hi.hi_l2.apply_compton_getting_correction")
+@mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+def test_process_single_pset_applies_cg_for_hf_frame(
+    mock_add_velocity, mock_calc_ram_mask, mock_apply_cg, mock_pset_dataset
+):
+    """Test that CG correction is applied for heliocentric frame."""
+    mock_add_velocity.side_effect = lambda ds: ds
+    mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
+        ram_mask=xr.zeros_like(ds["exposure_factor"])
+    )
+    mock_apply_cg.side_effect = lambda ds, energies: ds.assign(
+        energy_sc=xr.full_like(ds["exposure_factor"], 1000.0)
+    )
+
+    # Use hf (heliocentric frame) descriptor
+    descriptor = MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
+    energy_kev = xr.DataArray([0.5, 0.75, 1.1], dims=["esa_energy_step"])
+
+    result = process_single_pset(
+        mock_pset_dataset,
+        energy_kev,
+        descriptor,
+        vars_to_exposure_time_average=set(),
+    )
+
+    # CG correction should have been called for hf frame
+    mock_apply_cg.assert_called_once()
+    assert "energy_sc" in result
+
+
+@mock.patch("imap_processing.hi.hi_l2.apply_compton_getting_correction")
+@mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+def test_process_single_pset_no_cg_for_sf_frame(
+    mock_add_velocity, mock_calc_ram_mask, mock_apply_cg, mock_pset_dataset
+):
+    """Test that CG correction is NOT applied for spacecraft frame."""
+    mock_add_velocity.side_effect = lambda ds: ds
+    mock_calc_ram_mask.side_effect = lambda ds: ds.assign(
+        ram_mask=xr.zeros_like(ds["exposure_factor"])
+    )
+
+    # Use sf (spacecraft frame) descriptor
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+    energy_kev = xr.DataArray([0.5, 0.75, 1.1], dims=["esa_energy_step"])
+
+    _ = process_single_pset(
+        mock_pset_dataset,
+        energy_kev,
+        descriptor,
+        vars_to_exposure_time_average=set(),
+    )
+
+    # CG correction should NOT have been called for sf frame
+    mock_apply_cg.assert_not_called()
+
+
+# =============================================================================
+# CALCULATE ALL RATES AND INTENSITIES TESTS
+# =============================================================================
+
+
+@pytest.fixture
+def mock_map_dataset_for_rates():
+    """Create a mock map dataset for testing calculate_all_rates_and_intensities.
+
+    This fixture includes the ESA energy data (energy_delta_minus, energy_delta_plus,
+    energy coordinate) that would normally be added by create_sky_map_from_psets.
+    """
+    # ESA energy data (would be added by create_sky_map_from_psets)
+    bandpass_fwhm = np.array([0.1, 0.15, 0.2])
+    energy_delta = bandpass_fwhm / 2
+    energy_kev = np.array([0.5, 0.75, 1.1])
+
+    coords = {
+        "epoch": [0],
+        "esa_energy_step": [1, 2, 3],
+        "calibration_prod": [1, 2],
+        "longitude": np.arange(4),
+        "latitude": np.arange(2),
+        # Energy as auxiliary coordinate indexed by esa_energy_step
+        "energy": ("esa_energy_step", energy_kev),
+    }
+    shape = (1, 3, 2, 4, 2)
+    exposure_shape = (1, 3, 4, 2)  # no calibration_prod dim
+
+    map_ds = xr.Dataset(
+        {
+            "counts": xr.DataArray(
+                np.ones(shape) * 100.0, dims=list(coords.keys())[:5]
+            ),
+            "exposure_factor": xr.DataArray(
+                np.ones(exposure_shape) * 10.0,
+                dims=["epoch", "esa_energy_step", "longitude", "latitude"],
+            ),
+            "bg_rates": xr.DataArray(
+                np.ones(shape) * 2.0, dims=list(coords.keys())[:5]
+            ),
+            "bg_rates_unc": xr.DataArray(
+                np.ones(shape) * 0.5, dims=list(coords.keys())[:5]
+            ),
+            "obs_date": xr.DataArray(
+                np.ones(exposure_shape) * 1e18,
+                dims=["epoch", "esa_energy_step", "longitude", "latitude"],
+            ),
+            "esa_energy_step_label": xr.DataArray(
+                ["1", "2", "3"], dims=["esa_energy_step"]
+            ),
+            # ESA energy data added by create_sky_map_from_psets
+            "energy_delta_minus": xr.DataArray(energy_delta, dims=["esa_energy_step"]),
+            "energy_delta_plus": xr.DataArray(energy_delta, dims=["esa_energy_step"]),
+        },
+        coords=coords,
+    )
+    return map_ds
+
+
+def test_calculate_all_rates_and_intensities_basic(
+    mock_map_dataset_for_rates, anc_path_dict
+):
+    """Test basic functionality of calculate_all_rates_and_intensities."""
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+
+    result = calculate_all_rates_and_intensities(
+        mock_map_dataset_for_rates,
+        anc_path_dict,
+        descriptor,
+    )
+
+    # Check that signal rates were calculated
+    assert "ena_signal_rates" in result
+    assert "ena_signal_rate_stat_unc" in result
+
+    # Check that intensities were calculated
+    assert "ena_intensity" in result
+    assert "ena_intensity_stat_uncert" in result
+    assert "ena_intensity_sys_err" in result
+
+
+def test_calculate_all_rates_and_intensities_renames_energy_coord(
+    mock_map_dataset_for_rates, anc_path_dict
+):
+    """Test that esa_energy_step is renamed to energy."""
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+
+    result = calculate_all_rates_and_intensities(
+        mock_map_dataset_for_rates,
+        anc_path_dict,
+        descriptor,
+    )
+
+    # energy coordinate should exist
+    assert "energy" in result.coords
+    # esa_energy_step should not exist as a coordinate
+    assert "esa_energy_step" not in result.coords
+    # esa_energy_step_label should be dropped
+    assert "esa_energy_step_label" not in result
+
+
+def test_calculate_all_rates_and_intensities_preserves_energy_deltas(
+    mock_map_dataset_for_rates, anc_path_dict
+):
+    """Test that energy delta variables are preserved through calculation."""
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+
+    # Get the original energy deltas from the input dataset
+    original_deltas = mock_map_dataset_for_rates["energy_delta_minus"].values.copy()
+
+    result = calculate_all_rates_and_intensities(
+        mock_map_dataset_for_rates,
+        anc_path_dict,
+        descriptor,
+    )
+
+    # Energy delta variables should be present and unchanged
+    assert "energy_delta_minus" in result
+    assert "energy_delta_plus" in result
+    np.testing.assert_array_almost_equal(
+        result["energy_delta_minus"].values, original_deltas
+    )
+    np.testing.assert_array_almost_equal(
+        result["energy_delta_plus"].values, original_deltas
+    )
+
+
+def test_calculate_all_rates_and_intensities_adds_obs_date_range(
+    mock_map_dataset_for_rates, anc_path_dict
+):
+    """Test that obs_date_range is added."""
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+
+    result = calculate_all_rates_and_intensities(
+        mock_map_dataset_for_rates,
+        anc_path_dict,
+        descriptor,
+    )
+
+    # obs_date_range should be present
+    assert "obs_date_range" in result
+
+
+@mock.patch("imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame")
+def test_calculate_all_rates_and_intensities_cg_correction(
+    mock_interp_flux, mock_map_dataset_for_rates, anc_path_dict
+):
+    """Test that CG interpolation is applied for heliocentric frame."""
+    mock_interp_flux.side_effect = lambda ds, *args: ds
+
+    descriptor = MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
+
+    _ = calculate_all_rates_and_intensities(
+        mock_map_dataset_for_rates,
+        anc_path_dict,
+        descriptor,
+    )
+
+    # interpolate_map_flux_to_helio_frame should have been called for hf frame
+    mock_interp_flux.assert_called_once()
+
+
+@mock.patch("imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame")
+def test_calculate_all_rates_and_intensities_no_cg_for_sf(
+    mock_interp_flux, mock_map_dataset_for_rates, anc_path_dict
+):
+    """Test that CG interpolation is NOT applied for spacecraft frame."""
+    mock_interp_flux.side_effect = lambda ds, *args: ds
+
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+
+    _ = calculate_all_rates_and_intensities(
+        mock_map_dataset_for_rates,
+        anc_path_dict,
+        descriptor,
+    )
+
+    # interpolate_map_flux_to_helio_frame should NOT have been called for sf frame
+    mock_interp_flux.assert_not_called()
