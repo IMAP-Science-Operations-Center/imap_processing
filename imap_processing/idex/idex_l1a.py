@@ -250,35 +250,22 @@ def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int
 
 def calculate_idex_event_time(
     fine_time_subs: np.ndarray,
-    coarse_time_sec1: np.ndarray,
-    coarse_time_sec2: np.ndarray | None = None,
+    coarse_time_sec: np.ndarray,
 ) -> npt.NDArray[np.int64]:
     """
     Calculate the epoch time from the FPGA header time variables.
 
-    For science packets, we are given the MET seconds, we need to convert it to
-    nanoseconds in j2000. The idx__txhdrtimesec1 and idx__txhdrtimesec2 variables count
-    the number of whole seconds elapsed since the epoch (Jan 1st 2010), while
-    idx__txhdrtimesubs time counts the number of additional 20-microsecond intervals
-    beyond the whole seconds. Together, these time measurements establish when a dust
-    event took place.
-
-    The elapsed seconds are stored as a 32-bit unsigned integer that is split across
-    two 16-bit words for packetization. As a result, idx__txhdrtimesec1 represents
-    multiples of 2^16 seconds, while idx_txhdrtimesec2 represents the remaining seconds
-    within that range. This necessitates scaling the upper word by 2^16 = 65,536 when
-    reconstructing the full seconds counter.
-
-    For housekeeping packets, use the shcoarse and shfine variables instead.
+    Coarse_time_sec counts the number of whole seconds elapsed since the epoch
+    (Jan 1st 2010), while fine_time_subs counts the number of additional 20-microsecond
+    intervals beyond the whole seconds. Together, these time measurements establish
+    when a dust event took place.
 
     Parameters
     ----------
-    fine_time_subs : numpy.ndarray, optional
-        The lower 16 bits of the coarse event time.
-    coarse_time_sec1 : numpy.ndarray
+    fine_time_subs : numpy.ndarray
         The fine event time in 20-microsecond intervals.
-    coarse_time_sec2 : numpy.ndarray
-        The upper 16 bits of the coarse event time.
+    coarse_time_sec : numpy.ndarray
+        The coarse event time (seconds).
 
     Returns
     -------
@@ -286,17 +273,9 @@ def calculate_idex_event_time(
         The mission elapsed time converted to nanoseconds since the J2000 epoch
         in the terrestrial time (TT) timescale.
     """
-    if coarse_time_sec2 is not None:
-        # Reconstruct the total seconds from the two 16-bit words
-        coarse_event_time = 65536 * coarse_time_sec1 + coarse_time_sec2
-    else:
-        # Use coarse_time_sec1 as the full coarse time (e.g., for housekeeping)
-        coarse_event_time = coarse_time_sec1
-
     # Calculate the fine event time in seconds
     fine_event_time = fine_time_subs * 20e-6
-
-    return met_to_ttj2000ns(coarse_event_time + fine_event_time)
+    return met_to_ttj2000ns(coarse_time_sec + fine_event_time)
 
 
 class RawDustEvent:
@@ -377,11 +356,18 @@ class RawDustEvent:
         """
         # Calculate the impact time in seconds since epoch
         self.impact_time = 0
+
+        # The elapsed seconds are stored as a 32-bit unsigned integer that is split
+        # across two 16-bit words for packetization. As a result, idx__txhdrtimesec1
+        # represents multiples of 2^16 seconds, while idx_txhdrtimesec2 represents the
+        # remaining seconds within that range. This necessitates bit shifting the upper
+        # word by 16 bits when reconstructing the full seconds counter.
         self.impact_time = calculate_idex_event_time(
             header_packet["IDX__TXHDRTIMESUBS"],
-            header_packet["IDX__TXHDRTIMESEC1"],
-            header_packet["IDX__TXHDRTIMESEC2"],
+            (header_packet["IDX__TXHDRTIMESEC1"] << 16)
+            + header_packet["IDX__TXHDRTIMESEC2"],
         )
+
         self.event_number = header_packet["IDX__SCI0EVTNUM"]
 
         # The actual trigger time for the low and high sample rate in
