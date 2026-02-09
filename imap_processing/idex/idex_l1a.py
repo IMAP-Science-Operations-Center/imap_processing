@@ -96,7 +96,7 @@ class PacketParser:
                     f"imap_idex_{level}_evt"
                 )
                 data["epoch"] = calculate_idex_event_time(
-                    data["shfine"].data, data["shcoarse"].data
+                    data["shcoarse"].data, data["shfine"].data
                 )
                 data["epoch"].attrs = epoch_attrs
                 self.data.append(data)
@@ -108,7 +108,7 @@ class PacketParser:
                     f"imap_idex_{level}_catlst"
                 )
                 data["epoch"] = calculate_idex_event_time(
-                    data["shfine"].data, data["shcoarse"].data
+                    data["shcoarse"].data, data["shfine"].data
                 )
                 data["epoch"].attrs = epoch_attrs
                 self.data.append(data)
