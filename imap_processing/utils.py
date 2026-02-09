@@ -426,7 +426,6 @@ def combine_segmented_packets(
             packets[binary_field_name].data[start_index] = np.sum(
                 packets[binary_field_name].data[group_indices]
             )
-            group_ids = np.cumsum(is_group_start)
 
     # Remove any bad groups from the start indices we are keeping
     group_start_indices = np.setdiff1d(group_start_indices, bad_groups)
