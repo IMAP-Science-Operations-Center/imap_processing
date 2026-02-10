@@ -307,14 +307,13 @@ def calculate_ratios(
     efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
     intensity = process_lo_species_intensity(
         cod_lo_l1b_data,
-        constants.LO_IALIRT_VARIABLE_NAMES,
         geometric_factors,
         efficiencies,
         constants.SOLAR_WIND_POSITIONS,
     )
     pseudo_density_dict = {}
 
-    for species in constants.LO_IALIRT_VARIABLE_NAMES:
+    for species in cod_lo_l1b_data["product_names"].data:
         pseudo_density = (
             intensity[species]
             * np.sqrt(cod_lo_l1b_data["energy_table"])

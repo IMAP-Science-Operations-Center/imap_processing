@@ -417,7 +417,7 @@ def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path, caplog):
+def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
         codice_lut_path(descriptor="lo-sw-species", data_type="l0"),
         codice_lut_path(descriptor="l1a-sci-lut"),

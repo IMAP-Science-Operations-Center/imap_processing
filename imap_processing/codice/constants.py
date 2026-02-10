@@ -56,18 +56,18 @@ IAL_BIT_STRUCTURE = {
     "BYTE_COUNT": 23,
 }
 
-LO_IALIRT_VARIABLE_NAMES = [
-    "heplusplus",
-    "cplus5",
-    "cplus6",
-    "oplus6",
-    "oplus7",
-    "oplus8",
-    "mg",
-    "fe_loq",
-    "fe_hiq",
-]
-HI_IALIRT_VARIABLE_NAMES = ["h"]
+# LO_IALIRT_VARIABLE_NAMES = [
+#     "heplusplus",
+#     "cplus5",
+#     "cplus6",
+#     "oplus6",
+#     "oplus7",
+#     "oplus8",
+#     "mg",
+#     "fe_loq",
+#     "fe_hiq",
+# ]
+# HI_IALIRT_VARIABLE_NAMES = ["h"]
 # Mass over charge (AMU/e)
 # Section 13.2 of Algorithm Document.
 LO_IALIRT_M_OVER_Q = {

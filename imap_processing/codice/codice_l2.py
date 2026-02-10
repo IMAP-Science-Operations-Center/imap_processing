@@ -1482,14 +1482,6 @@ def process_codice_l2(
             l2_dataset.attrs.update(
                 cdf_attrs.get_global_attributes("imap_codice_l2_lo-nsw-angular")
             )
-        # Drop vars not needed in L2
-        l2_dataset = l2_dataset.drop_vars(
-            [
-                "acquisition_time_per_esa_step",
-                "rgfo_half_spin",
-                "half_spin_per_esa_step",
-            ]
-        )
 
     if dataset_name in [
         "imap_codice_l2_hi-counters-singles",
@@ -1539,6 +1531,22 @@ def process_codice_l2(
         # See section 11.1.2 of algorithm document
         l2_dataset = process_lo_direct_events(dependencies)
 
-    # logger.info(f"\nFinal data product:\n{l2_dataset}\n")
+    # make sure we drop vars not needed in l2 products
+    vars_to_drop = [
+        "acquisition_time_per_esa_step",
+        "rgfo_half_spin",
+        "half_spin_per_esa_step",
+        "nso_half_spin",
+        "nso_energy_step",
+        "nso_spin_sector",
+        "rgfo_energy_step",
+        "rgfo_spin_sector",
+        "product_names",
+    ]
+    for var in vars_to_drop:
+        if var in l2_dataset.data_vars:
+            l2_dataset = l2_dataset.drop_vars(var)
+
+    logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 
     return l2_dataset

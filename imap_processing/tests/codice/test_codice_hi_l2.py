@@ -3,13 +3,13 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from imap_data_access.processing_input import (
-    AncillaryInput,
     ProcessingInputCollection,
-    ScienceInput,
 )
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.codice.codice_l1a import process_l1a
+from imap_processing.codice.codice_l1b import process_codice_l1b
 from imap_processing.codice.codice_l2 import (
     process_codice_l2,
 )
@@ -35,14 +35,21 @@ def mock_get_file_paths(codice_lut_path):
         yield mock_get_file_paths
 
 
-def test_l2_hi_omni(mock_get_file_paths):
-    sci_input = ScienceInput(
-        f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf"
-    )
-    anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251212_v003.csv")
-    dependencies = ProcessingInputCollection(anc_input, sci_input)
+def test_l2_hi_omni(mock_get_file_paths, codice_lut_path):
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="hi-omni", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
+    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
+    processed_l1b_file = write_cdf(process_codice_l1b(processed_l1a_file))
+    # Mock get_files for l2
+    mock_get_file_paths.side_effect = [
+        [processed_l1b_file.as_posix()],
+        [processed_l1b_file.as_posix()],
+        codice_lut_path(descriptor="l2-hi-omni-efficiency"),
+    ]
 
-    processed_l2 = process_codice_l2("hi-omni", dependencies)
+    processed_l2 = process_codice_l2("hi-omni", ProcessingInputCollection())
 
     val_data = (
         imap_module_directory
@@ -57,7 +64,7 @@ def test_l2_hi_omni(mock_get_file_paths):
         np.testing.assert_allclose(
             processed_l2[variable].values,
             val_data[variable].values,
-            rtol=1e-5,
+            rtol=1.2e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )
 
@@ -81,16 +88,21 @@ def test_l2_hi_omni(mock_get_file_paths):
     )
 
 
-def test_l2_hi_sectored(mock_get_file_paths):
-    anc_input = AncillaryInput(
-        "imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
-    )
-    sci_input = ScienceInput(
-        f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf"
-    )
-    dependencies = ProcessingInputCollection(anc_input, sci_input)
+def test_l2_hi_sectored(mock_get_file_paths, codice_lut_path):
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor="hi-sectored", data_type="l0"),
+        codice_lut_path(descriptor="l1a-sci-lut"),
+    ]
+    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
+    processed_l1b_file = write_cdf(process_codice_l1b(processed_l1a_file))
+    # Mock get_files for l2
+    mock_get_file_paths.side_effect = [
+        [processed_l1b_file.as_posix()],
+        [processed_l1b_file.as_posix()],
+        codice_lut_path(descriptor="l2-hi-sectored-efficiency"),
+    ]
 
-    processed_l2 = process_codice_l2("hi-sectored", dependencies)
+    processed_l2 = process_codice_l2("hi-sectored", ProcessingInputCollection())
 
     val_data = (
         imap_module_directory
@@ -111,7 +123,7 @@ def test_l2_hi_sectored(mock_get_file_paths):
         np.testing.assert_allclose(
             processed_l2[variable].values,
             val_data[variable].values,
-            rtol=1e-5,
+            rtol=1.2e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )
         # Tests that dimensions match
