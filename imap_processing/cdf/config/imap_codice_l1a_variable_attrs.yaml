@@ -107,6 +107,18 @@ priority:
     VALIDMAX: 7
     VAR_TYPE: support_data
 
+products:
+    CATDESC: Products
+    FIELDNAM: Products
+    FILLVAL: *uint32_fillval
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 255
+    VAR_TYPE: support_data
+
 k_factor_attrs:
     CATDESC: K Factor constant that is used to convert voltages to energies
     DEPEND_1: k_factor
@@ -159,6 +171,13 @@ priority_label:
     CATDESC: Priority Level
     DEPEND_1: priority
     FIELDNAM: Priority Level
+    FORMAT: A2
+    VAR_TYPE: metadata
+
+product_names:
+    CATDESC: Product Names
+    DEPEND_1: products
+    FIELDNAM: Product Names
     FORMAT: A2
     VAR_TYPE: metadata
 

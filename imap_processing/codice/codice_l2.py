@@ -25,13 +25,8 @@ from imap_processing.codice.constants import (
     GAIN_ID_TO_STR,
     HALF_SPIN_FILLVAL,
     HI_L2_ELEVATION_ANGLE,
-    HI_OMNI_VARIABLE_NAMES,
-    HI_SECTORED_VARIABLE_NAMES,
     L2_HI_SECTORED_ANGLE,
-    LO_NSW_ANGULAR_VARIABLE_NAMES,
-    LO_NSW_SPECIES_VARIABLE_NAMES,
     LO_POSITION_TO_ELEVATION_ANGLE,
-    LO_SW_ANGULAR_VARIABLE_NAMES,
     LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     NSW_POSITIONS,
@@ -488,7 +483,6 @@ def calculate_intensity(
 
 def process_lo_species_intensity(
     dataset: xr.Dataset,
-    species_list: list,
     geometric_factors: xr.DataArray,
     efficiency: pd.DataFrame,
     positions: list,
@@ -500,8 +494,6 @@ def process_lo_species_intensity(
     ----------
     dataset : xarray.Dataset
         The L2 dataset to process.
-    species_list : list
-        List of species variable names to calculate intensity.
     geometric_factors : xarray.DataArray
         The geometric factors array with shape (epoch, esa_steps).
     efficiency : pandas.DataFrame
@@ -515,6 +507,28 @@ def process_lo_species_intensity(
     xarray.Dataset
         The updated L2 dataset with species intensities calculated.
     """
+    species_list = list(dataset["product_names"].data)
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2-lo-species")
+    if positions == SOLAR_WIND_POSITIONS:
+        species_list = [
+            species
+            for species in species_list
+            if species in LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES
+        ]
+        species_attrs = cdf_attrs.get_variable_attributes("lo-sw-species-attrs")
+        unc_attrs = cdf_attrs.get_variable_attributes("lo-sw-species-unc-attrs")
+    elif positions == PUI_POSITIONS:
+        species_list = [
+            species
+            for species in species_list
+            if species in LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES
+        ]
+        species_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-attrs")
+        unc_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-unc-attrs")
+    else:
+        species_attrs = cdf_attrs.get_variable_attributes("lo-species-attrs")
+        unc_attrs = cdf_attrs.get_variable_attributes("lo-species-unc-attrs")
     # Calculate the species intensities using the provided geometric factors and
     # efficiency.
     dataset = calculate_intensity(
@@ -525,17 +539,6 @@ def process_lo_species_intensity(
         positions,
         average_across_positions=True,
     )
-    cdf_attrs = ImapCdfAttributes()
-    cdf_attrs.add_instrument_variable_attrs("codice", "l2-lo-species")
-    if positions == SOLAR_WIND_POSITIONS:
-        species_attrs = cdf_attrs.get_variable_attributes("lo-sw-species-attrs")
-        unc_attrs = cdf_attrs.get_variable_attributes("lo-sw-species-unc-attrs")
-    elif positions == PUI_POSITIONS:
-        species_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-attrs")
-        unc_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-unc-attrs")
-    else:
-        species_attrs = cdf_attrs.get_variable_attributes("lo-species-attrs")
-        unc_attrs = cdf_attrs.get_variable_attributes("lo-species-unc-attrs")
 
     # update species attrs
     for species in species_list:
@@ -563,7 +566,6 @@ def process_lo_species_intensity(
 
 def process_lo_angular_intensity(
     dataset: xr.Dataset,
-    species_list: list,
     geometric_factors: xr.DataArray,
     efficiency: pd.DataFrame,
     positions: list,
@@ -575,8 +577,6 @@ def process_lo_angular_intensity(
     ----------
     dataset : xarray.Dataset
         The L2 dataset to process.
-    species_list : list
-        List of species variable names to calculate intensity.
     geometric_factors : xarray.DataArray
         The geometric factors array with shape (epoch, esa_steps).
     efficiency : pandas.DataFrame
@@ -590,6 +590,7 @@ def process_lo_angular_intensity(
     xarray.Dataset
         The updated L2 dataset with angular intensities calculated.
     """
+    species_list = list(dataset["product_names"].data)
     # Calculate the angular intensities using the provided geometric factors and
     # efficiency.
     dataset = calculate_intensity(
@@ -600,7 +601,6 @@ def process_lo_angular_intensity(
         positions,
         average_across_positions=False,
     )
-
     # transform positions to elevation angles
     if positions == SW_POSITIONS:
         pos_to_el = LO_POSITION_TO_ELEVATION_ANGLE["sw"]
@@ -742,7 +742,7 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
     """
     l1b_file = dependencies.get_file_paths(descriptor="hi-omni")[0]
     l1b_dataset = load_cdf(l1b_file)
-
+    variable_names = l1b_dataset["product_names"].data
     # Read the efficiencies data from the CSV file
     efficiencies_file = dependencies.get_file_paths(descriptor="l2-hi-omni-efficiency")[
         0
@@ -758,7 +758,7 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # omni-directional intensities separately.
     # Read geometric factor. It is labeled as GF in the CSV file
     geometric_factor = efficiencies_df[efficiencies_df["species"] == "GF"].values[0][-1]
-    for species in HI_OMNI_VARIABLE_NAMES:
+    for species in variable_names:
         # replace '_' with '-' to match CSV species naming
         species_csv_name = species.replace("_", "-")
         species_data = efficiencies_df[efficiencies_df["species"] == species_csv_name]
@@ -917,7 +917,7 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     """
     file_path = dependencies.get_file_paths(descriptor="hi-sectored")[0]
     l1b_dataset = load_cdf(file_path)
-
+    variable_names = l1b_dataset["product_names"].data
     # Update global CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
@@ -994,7 +994,7 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # Similar to hi-omni, each species has different shape.
     # Because of that, we need to loop over each species and calculate
     # sectored intensities separately.
-    for species in HI_SECTORED_VARIABLE_NAMES:
+    for species in variable_names:
         # Efficiencies from dataframe maps to different dimension in L1B data.
         # For example:
         #   l1b species 'h' has shape:
@@ -1418,7 +1418,6 @@ def process_codice_l2(
             # described in section 11.2.3 of algorithm document.
             l2_dataset = process_lo_species_intensity(
                 l2_dataset,
-                LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
                 geometric_factors,
                 efficiencies,
                 PUI_POSITIONS,
@@ -1427,7 +1426,6 @@ def process_codice_l2(
             # described in section 11.2.3 of algorithm document.
             l2_dataset = process_lo_species_intensity(
                 l2_dataset,
-                LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
                 geometric_factors,
                 efficiencies,
                 SOLAR_WIND_POSITIONS,
@@ -1435,6 +1433,7 @@ def process_codice_l2(
             l2_dataset.attrs.update(
                 cdf_attrs.get_global_attributes("imap_codice_l2_lo-sw-species")
             )
+
         elif dataset_name == "imap_codice_l2_lo-nsw-species":
             geometric_factors = compute_geometric_factors(
                 l2_dataset, geometric_factor_lookup
@@ -1445,7 +1444,6 @@ def process_codice_l2(
             # described in section 11.2.3 of algorithm document.
             l2_dataset = process_lo_species_intensity(
                 l2_dataset,
-                LO_NSW_SPECIES_VARIABLE_NAMES,
                 geometric_factors,
                 efficiencies,
                 NSW_POSITIONS,
@@ -1462,7 +1460,6 @@ def process_codice_l2(
             # described in section 11.2.2 of algorithm document.
             l2_dataset = process_lo_angular_intensity(
                 l2_dataset,
-                LO_SW_ANGULAR_VARIABLE_NAMES,
                 geometric_factors,
                 efficiencies,
                 SW_POSITIONS,
@@ -1478,7 +1475,6 @@ def process_codice_l2(
             efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
             l2_dataset = process_lo_angular_intensity(
                 l2_dataset,
-                LO_NSW_ANGULAR_VARIABLE_NAMES,
                 geometric_factors,
                 efficiencies,
                 NSW_POSITIONS,

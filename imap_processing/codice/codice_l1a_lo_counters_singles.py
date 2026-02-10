@@ -75,7 +75,9 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         "lo_stepping"
     ]
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
-
+    variable_names = sci_lut_data["data_product_lo_tab"]["0"]["counters-singles"][
+        "species_names"
+    ]
     # ========= Decompress and Reshape Data ===========
     logical_source_id = "imap_codice_l1a_lo-counters-singles"
 
@@ -265,6 +267,16 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         attrs=cdf_attrs.get_variable_attributes(
             "acquisition_time_per_esa_step", check_schema=False
         ),
+    )
+    l1a_dataset["products"] = xr.DataArray(
+        np.arange(len(variable_names)),
+        dims=("products",),
+        attrs=cdf_attrs.get_variable_attributes("products", check_schema=False),
+    )
+    l1a_dataset["product_names"] = xr.DataArray(
+        np.array(list(variable_names)),
+        dims=("products",),
+        attrs=cdf_attrs.get_variable_attributes("product_names", check_schema=False),
     )
     # These variables were added to the packet definition after 20260129, so they only
     # exist in the unpacked dataset if packet_version > 1

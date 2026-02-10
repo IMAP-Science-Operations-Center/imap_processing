@@ -44,10 +44,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     # No uncertainty calculation for diagnostic counters products
     calculate_unc = False if "counters" in descriptor else True
     # Variables to convert based on descriptor
-    variables_to_convert = getattr(
-        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
-    )
-
+    variables_to_convert = dataset["product_names"].data
     if descriptor.startswith("lo-"):
         # Calculate energy_table using voltage_table and k_factor
         energy_attrs = dataset["voltage_table"].attrs | {

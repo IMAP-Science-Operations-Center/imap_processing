@@ -27,7 +27,6 @@ from imap_processing.codice.codice_l2 import (
     process_lo_species_intensity,
 )
 from imap_processing.codice.constants import (
-    LO_SW_ANGULAR_VARIABLE_NAMES,
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     SW_POSITIONS,
 )
@@ -90,7 +89,9 @@ def mock_half_spin_per_esa_step():
       ESA steps 0–63 belong to half_spin=2
       ESA steps 64–127 belong to half_spin=3
     """
-    return np.repeat([2, 3], 64)
+    half_spin_per_esa = np.repeat([2, 3], 64)
+    # repeat along epoch dimension to create shape (2, 128) for testing
+    return np.tile(half_spin_per_esa, (2, 1))
 
 
 def test_compute_geometric_factors_all_full_mode(mock_half_spin_per_esa_step):
@@ -98,7 +99,13 @@ def test_compute_geometric_factors_all_full_mode(mock_half_spin_per_esa_step):
     dataset = xr.Dataset(
         {
             "rgfo_half_spin": (("epoch",), np.array([4, 4])),
-            "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
+            "half_spin_per_esa_step": (
+                (
+                    "epoch",
+                    "esa_step",
+                ),
+                mock_half_spin_per_esa_step,
+            ),
         },
         attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-species_20250101_v001"},
     )
@@ -125,7 +132,7 @@ def test_compute_geometric_factors_past_nov_24th(mock_half_spin_per_esa_step):
                     "epoch",
                     "esa_step",
                 ),
-                np.tile(mock_half_spin_per_esa_step, (2, 1)),
+                mock_half_spin_per_esa_step,
             ),
         },
         # Make sure epoch is past Nov 24th, 2025
@@ -147,7 +154,13 @@ def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_per_esa_step)
     dataset = xr.Dataset(
         {
             "rgfo_half_spin": (("epoch",), np.array([1])),
-            "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
+            "half_spin_per_esa_step": (
+                (
+                    "epoch",
+                    "esa_step",
+                ),
+                mock_half_spin_per_esa_step[0:1],
+            ),
         },
         attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-species_20250101_v001"},
     )
@@ -167,7 +180,13 @@ def test_compute_geometric_factors_mixed(mock_half_spin_per_esa_step):
     dataset = xr.Dataset(
         {
             "rgfo_half_spin": (("epoch",), np.array([2])),
-            "half_spin_per_esa_step": (("esa_step",), mock_half_spin_per_esa_step),
+            "half_spin_per_esa_step": (
+                (
+                    "epoch",
+                    "esa_step",
+                ),
+                mock_half_spin_per_esa_step[0:1],
+            ),
         },
         attrs={"Logical_file_id": "imap_codice_l1b_lo-sw-species_20250101_v001"},
     )
@@ -268,7 +287,6 @@ def test_process_lo_species_intensity(mock_get_file_paths, codice_lut_path):
         len_pos = 5
         process_lo_species_intensity(
             l1b_val_data_processed,
-            LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
             gf,
             None,
             list(np.arange(0, len_pos)),
@@ -295,6 +313,11 @@ def test_process_lo_missing_species_intensity():
         {
             "epoch": ("epoch", np.ones(5)),
             "energy_table": (("esa_step",), np.ones(128) * 10),
+            "packet_version": ("epoch", np.ones(5)),
+            "product_names": (
+                "product",
+                np.array(LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES),
+            ),
         }
     )
 
@@ -312,7 +335,6 @@ def test_process_lo_missing_species_intensity():
         len_pos = 5
         process_lo_species_intensity(
             l1b_val_data_processed,
-            LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
             gf,
             None,
             list(np.arange(0, len_pos)),
@@ -344,13 +366,16 @@ def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
     ):
         l1b_val_data_processed = process_lo_angular_intensity(
             l1b_val_data_processed,
-            LO_SW_ANGULAR_VARIABLE_NAMES,
             gf,
             None,
             SW_POSITIONS,
         )
 
-    for var in LO_SW_ANGULAR_VARIABLE_NAMES:
+    for var in l1b_val_data_processed["product_names"].values:
+        # Heplus is not in older CDFs
+        # TODO figure out if we need to backfill those cdfs with heplus nan array
+        if var == "heplus" and var not in l1b_val_data_processed:
+            continue
         assert var in l1b_val_data_processed, f"Missing variable {var} after processing"
         # Check that values are non-negative
         assert np.all(l1b_val_data_processed[var].values >= 0), (
@@ -392,7 +417,7 @@ def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
+def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path, caplog):
     mock_get_file_paths.side_effect = [
         codice_lut_path(descriptor="lo-sw-species", data_type="l0"),
         codice_lut_path(descriptor="l1a-sci-lut"),

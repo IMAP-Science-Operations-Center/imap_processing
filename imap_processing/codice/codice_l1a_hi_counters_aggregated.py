@@ -156,6 +156,16 @@ def l1a_hi_counters_aggregated(
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
+    l1a_dataset["products"] = xr.DataArray(
+        np.arange(len(non_reserved_variables)),
+        dims=("products",),
+        attrs=cdf_attrs.get_variable_attributes("products", check_schema=False),
+    )
+    l1a_dataset["product_names"] = xr.DataArray(
+        np.array(list(non_reserved_variables)),
+        dims=("products",),
+        attrs=cdf_attrs.get_variable_attributes("product_names", check_schema=False),
+    )
 
     # Finally, add data variables
     for idx, variable in enumerate(non_reserved_variables):

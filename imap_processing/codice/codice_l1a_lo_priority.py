@@ -350,6 +350,16 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             "acquisition_time_per_esa_step", check_schema=False
         ),
     )
+    l1a_dataset["products"] = xr.DataArray(
+        np.arange(len(species_names)),
+        dims=("products",),
+        attrs=cdf_attrs.get_variable_attributes("products", check_schema=False),
+    )
+    l1a_dataset["product_names"] = xr.DataArray(
+        np.array(list(species_names)),
+        dims=("products",),
+        attrs=cdf_attrs.get_variable_attributes("product_names", check_schema=False),
+    )
     # These variables were added to the packet definition after 20260129, so they only
     # exist in the unpacked dataset if packet_version > 1
     # If they don't exist, initialize them with fill val arrays since they won't be

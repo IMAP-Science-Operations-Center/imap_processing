@@ -162,6 +162,16 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
+    l1a_dataset["products"] = xr.DataArray(
+        np.arange(len(variable_names)),
+        dims=("products",),
+        attrs=cdf_attrs.get_variable_attributes("products", check_schema=False),
+    )
+    l1a_dataset["product_names"] = xr.DataArray(
+        np.array(list(variable_names)),
+        dims=("products",),
+        attrs=cdf_attrs.get_variable_attributes("product_names", check_schema=False),
+    )
 
     # Finally, add species data variables and their uncertainties
     for idx, species in enumerate(variable_names):
