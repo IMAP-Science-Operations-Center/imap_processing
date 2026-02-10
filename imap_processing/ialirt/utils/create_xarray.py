@@ -1,6 +1,7 @@
 """Creates xarray based on structure of queried DynamoDB."""
 
 from collections import defaultdict
+from datetime import datetime, timedelta
 
 import numpy as np
 import xarray as xr
@@ -18,6 +19,7 @@ from imap_processing.ialirt.utils.constants import (
     hit_restricted_fields,
     swe_energy,
 )
+from imap_processing.spice.time import et_to_ttj2000ns, str_to_et
 
 
 def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0912
@@ -43,6 +45,19 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     epochs: dict[str, list[int]] = {inst: [] for inst in (one_epoch | multi_epoch)}
     by_inst: dict[str, list[dict]] = defaultdict(list)
+
+    # Get the start and end ttj2000ns.
+    date = records[0]["time_utc"]  # e.g. "2025-06-20T08:00:00Z"
+
+    # Parse as UTC
+    dt = datetime.fromisoformat(date.replace("Z", "+00:00"))
+
+    # Start and end of that UTC day
+    start_str = dt.date().isoformat() + "T00:00:00Z"
+    end_str = (dt.date() + timedelta(days=1)).isoformat() + "T00:00:00Z"
+
+    start_ttj2000 = et_to_ttj2000ns(str_to_et(start_str))
+    end_ttj2000 = et_to_ttj2000ns(str_to_et(end_str))
 
     for record in records:
         inst = record.get("instrument")
@@ -304,5 +319,17 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         for key in IALIRT_DIMS.keys():
             if key.startswith("sc_"):
                 dataset[key].data[i, :] = np.asarray(record[key], dtype=np.float32)
+
+    # Trim data that does not fit within the UTC day.
+    for inst in epochs.keys():
+        if inst == "spacecraft":
+            dim = "ephemeris_epoch"
+        else:
+            dim = f"{inst}_epoch"
+
+        if dim in dataset.coords:
+            dataset = dataset.sel(
+                {dim: (dataset[dim] >= start_ttj2000) & (dataset[dim] < end_ttj2000)}
+            )
 
     return dataset
