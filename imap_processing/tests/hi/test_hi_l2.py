@@ -8,7 +8,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.ena_maps.ena_maps import RectangularSkyMap
+from imap_processing.ena_maps.ena_maps import HealpixSkyMap, RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.hi_l2 import (
     _calculate_improved_stat_variance,
@@ -287,6 +287,25 @@ def test_create_sky_map_from_psets(
         pset_midpoint,
         atol=60,
     )
+
+
+def test_create_sky_map_from_psets_healpix_not_supported():
+    """Test that NotImplementedError is raised when HealpixSkyMap is returned."""
+    # Create a mock descriptor that returns a HealpixSkyMap
+    mock_descriptor = mock.Mock()
+    mock_descriptor.frame_descriptor = "sf"
+    mock_descriptor.spin_phase = "full"
+
+    # Create a mock HealpixSkyMap
+    mock_healpix_map = mock.Mock(spec=HealpixSkyMap)
+    mock_descriptor.to_empty_map.return_value = mock_healpix_map
+
+    with pytest.raises(NotImplementedError, match="Healpix map output not supported"):
+        create_sky_map_from_psets(
+            ["fake_pset.cdf"],  # non-empty psets list
+            {},  # empty ancillary dict
+            mock_descriptor,
+        )
 
 
 def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):

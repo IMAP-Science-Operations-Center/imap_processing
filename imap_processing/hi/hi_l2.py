@@ -169,6 +169,10 @@ def create_sky_map_from_psets(
 
     if not all([isinstance(map, RectangularSkyMap) for map in output_maps.values()]):
         raise NotImplementedError("Healpix map output not supported for Hi")
+    # Needed for mypy type narrowing
+    rect_maps: dict[str, RectangularSkyMap] = {
+        k: v for k, v in output_maps.items() if isinstance(v, RectangularSkyMap)
+    }
 
     vars_to_bin = (
         HELIO_FRAME_VARS_TO_PROJECT
@@ -205,14 +209,14 @@ def create_sky_map_from_psets(
 
         hi_pset = HiPointingSet(pset_processed)
 
-        for spin_phase, map in output_maps.items():
+        for spin_phase, map in rect_maps.items():
             # Project (bin) the PSET variables into the map pixels
             directional_mask = get_pset_directional_mask(pset_processed, spin_phase)
             map.project_pset_values_to_map(
                 hi_pset, list(vars_to_bin), pset_valid_mask=directional_mask
             )
 
-    for map in output_maps.values():
+    for map in rect_maps.values():
         # Finish the exposure time weighted mean calculation of backgrounds
         # Allow divide by zero to fill set pixels with zero exposure time to NaN
         with np.errstate(divide="ignore"):
@@ -228,7 +232,7 @@ def create_sky_map_from_psets(
             energy=("esa_energy_step", esa_ds["nominal_central_energy"].values)
         )
 
-    return output_maps
+    return rect_maps
 
 
 # =============================================================================
