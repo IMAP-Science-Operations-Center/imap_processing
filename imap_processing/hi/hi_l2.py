@@ -344,13 +344,11 @@ def calculate_all_rates_and_intensities(
     # TODO: Handle variable types correctly in RectangularSkyMap.build_cdf_dataset
     obs_date = map_ds["obs_date"]
     # Replace non-finite values with the int64 sentinel before casting
-    obs_date_filled = xr.where(
+    map_ds["obs_date"] = xr.where(
         np.isfinite(obs_date),
-        obs_date,
+        obs_date.astype("int64"),
         np.int64(-9223372036854775808),
     )
-    map_ds["obs_date"] = obs_date_filled.astype("int64")
-    # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
     map_ds["obs_date_range"] = xr.zeros_like(map_ds["obs_date"])
 
     # Step 4: Swap esa_energy_step dimension for energy coordinate
@@ -643,6 +641,21 @@ def combine_maps(sky_maps: dict[str, RectangularSkyMap]) -> RectangularSkyMap:
         ) / (total_exp**2)
         combined["obs_date_range"] = np.sqrt(within_variance + between_variance)
 
+    # Re-cast obs_date and obs_date_range back to int64 after float arithmetic.
+    # Replace non-finite values with the int64 sentinel value.
+    # TODO: Handle variable types correctly in RectangularSkyMap.build_cdf_dataset
+    int64_sentinel = np.int64(-9223372036854775808)
+    combined["obs_date"] = xr.where(
+        np.isfinite(combined["obs_date"]),
+        combined["obs_date"].astype("int64"),
+        int64_sentinel,
+    )
+    combined["obs_date_range"] = xr.where(
+        np.isfinite(combined["obs_date_range"]),
+        combined["obs_date_range"].astype("int64"),
+        int64_sentinel,
+    )
+
     combined_map.data_1d = combined
     return combined_map
 
@@ -728,12 +741,12 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
 
     Parameters
     ----------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         Dataset containing intermediate calculation variables.
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         Cleaned dataset with intermediate variables removed.
     """
     # Remove the intermediate variables from the map

@@ -1403,11 +1403,13 @@ def test_combine_maps_obs_date_exposure_weighted():
     result = combine_maps(sky_maps)
 
     # Exposure-weighted average: (1000*10 + 2000*30) / (10+30) = 70000/40 = 1750
-    expected_obs_date = (1000 * 10 + 2000 * 30) / 40
-    np.testing.assert_array_almost_equal(
+    expected_obs_date = (1000 * 10 + 2000 * 30) // 40  # Integer division
+
+    # obs_date is cast to int64 after combining
+    assert result.data_1d["obs_date"].dtype == np.int64
+    np.testing.assert_array_equal(
         result.data_1d["obs_date"].values.flat[0],
         expected_obs_date,
-        decimal=5,
     )
 
 
@@ -1485,10 +1487,11 @@ def test_combine_maps_obs_date_range():
     between_variance = (w1 * w2 * (mu1 - mu2) ** 2) / (total_exp**2)
     expected_range = np.sqrt(within_variance + between_variance)
 
-    np.testing.assert_array_almost_equal(
+    # obs_date_range is cast to int64 after combining, so compare with truncated value
+    assert result.data_1d["obs_date_range"].dtype == np.int64
+    np.testing.assert_array_equal(
         result.data_1d["obs_date_range"].values.flat[0],
-        expected_range,
-        decimal=5,
+        int(expected_range),
     )
 
 
