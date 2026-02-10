@@ -615,13 +615,14 @@ def combine_maps(sky_maps: dict[str, RectangularSkyMap]) -> RectangularSkyMap:
 
         combined["ena_intensity_stat_uncert"] = np.sqrt(1 / total_weight)
 
-    # Quadrature sum for systematic error
-    combined["ena_intensity_sys_err"] = np.sqrt(
-        ram_ds["ena_intensity_sys_err"] ** 2 + anti_ds["ena_intensity_sys_err"] ** 2
-    )
+    # Exposure-weighted average for systematic error
+    total_exp = combined["exposure_factor"]
+    combined["ena_intensity_sys_err"] = (
+        ram_ds["ena_intensity_sys_err"] * ram_ds["exposure_factor"]
+        + anti_ds["ena_intensity_sys_err"] * anti_ds["exposure_factor"]
+    ) / total_exp
 
     # Exposure-weighted average for obs_date
-    total_exp = combined["exposure_factor"]
     with np.errstate(divide="ignore", invalid="ignore"):
         combined["obs_date"] = (
             ram_ds["obs_date"] * ram_ds["exposure_factor"]

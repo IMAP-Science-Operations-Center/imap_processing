@@ -1313,23 +1313,29 @@ def test_combine_maps_intensity_weighting(mock_sky_map_for_combine):
     )
 
 
-def test_combine_maps_sys_err_quadrature(mock_sky_map_for_combine):
-    """Test that systematic errors are combined in quadrature."""
+def test_combine_maps_sys_err_exposure_weighted(mock_sky_map_for_combine):
+    """Test that systematic errors are combined with exposure weighting."""
     ram_map = mock_sky_map_for_combine()
     anti_map = mock_sky_map_for_combine()
 
-    # Set specific sys_err values
+    # Set specific sys_err and exposure_factor values
     ram_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
-        ram_map.data_1d["ena_intensity_sys_err"], 3.0
+        ram_map.data_1d["ena_intensity_sys_err"], 5.0
+    )
+    ram_map.data_1d["exposure_factor"] = xr.full_like(
+        ram_map.data_1d["exposure_factor"], 1.0
     )
     anti_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
-        anti_map.data_1d["ena_intensity_sys_err"], 4.0
+        anti_map.data_1d["ena_intensity_sys_err"], 5.0
+    )
+    anti_map.data_1d["exposure_factor"] = xr.full_like(
+        anti_map.data_1d["exposure_factor"], 4.0
     )
 
     sky_maps = {"ram": ram_map, "anti": anti_map}
     result = combine_maps(sky_maps)
 
-    # Quadrature sum: sqrt(3^2 + 4^2) = sqrt(9 + 16) = 5
+    # Exposure weighted sum: (5 * 1 + 5 * 4) / (1 + 4)
     expected_sys_err = 5.0
     np.testing.assert_array_almost_equal(
         result.data_1d["ena_intensity_sys_err"].values.flat[0],
@@ -1338,65 +1344,21 @@ def test_combine_maps_sys_err_quadrature(mock_sky_map_for_combine):
     )
 
 
-def test_combine_maps_obs_date_exposure_weighted():
+def test_combine_maps_obs_date_exposure_weighted(mock_sky_map_for_combine):
     """Test that obs_date is combined with exposure weighting."""
-    descriptor = MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
-
-    ram_map = descriptor.to_empty_map()
-    anti_map = descriptor.to_empty_map()
-
-    shape = (1, 1, 1, 1)
-    base_ds = xr.Dataset(
-        coords={
-            "epoch": [0],
-            "energy": [1.0],
-            "longitude": [0],
-            "latitude": [0],
-        }
-    )
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine()
 
     # Ram: obs_date=1000, exposure=10
-    ram_map.data_1d = base_ds.copy()
-    ram_map.data_1d["counts"] = xr.DataArray(np.ones(shape) * 100, dims=base_ds.coords)
-    ram_map.data_1d["exposure_factor"] = xr.DataArray(
-        np.ones(shape) * 10, dims=base_ds.coords
-    )
-    ram_map.data_1d["obs_date"] = xr.DataArray(
-        np.ones(shape) * 1000, dims=base_ds.coords
-    )
-    ram_map.data_1d["obs_date_range"] = xr.DataArray(
-        np.ones(shape) * 100, dims=base_ds.coords
-    )
-    ram_map.data_1d["ena_intensity"] = xr.DataArray(
-        np.ones(shape) * 50, dims=base_ds.coords
-    )
-    ram_map.data_1d["ena_intensity_stat_uncert"] = xr.DataArray(
-        np.ones(shape) * 5, dims=base_ds.coords
-    )
-    ram_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
-        np.ones(shape) * 2, dims=base_ds.coords
+    ram_map.data_1d["obs_date"] = xr.full_like(ram_map.data_1d["obs_date"], 1000)
+    ram_map.data_1d["exposure_factor"] = xr.full_like(
+        ram_map.data_1d["exposure_factor"], 10
     )
 
     # Anti: obs_date=2000, exposure=30
-    anti_map.data_1d = base_ds.copy()
-    anti_map.data_1d["counts"] = xr.DataArray(np.ones(shape) * 100, dims=base_ds.coords)
-    anti_map.data_1d["exposure_factor"] = xr.DataArray(
-        np.ones(shape) * 30, dims=base_ds.coords
-    )
-    anti_map.data_1d["obs_date"] = xr.DataArray(
-        np.ones(shape) * 2000, dims=base_ds.coords
-    )
-    anti_map.data_1d["obs_date_range"] = xr.DataArray(
-        np.ones(shape) * 200, dims=base_ds.coords
-    )
-    anti_map.data_1d["ena_intensity"] = xr.DataArray(
-        np.ones(shape) * 70, dims=base_ds.coords
-    )
-    anti_map.data_1d["ena_intensity_stat_uncert"] = xr.DataArray(
-        np.ones(shape) * 5, dims=base_ds.coords
-    )
-    anti_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
-        np.ones(shape) * 2, dims=base_ds.coords
+    anti_map.data_1d["obs_date"] = xr.full_like(anti_map.data_1d["obs_date"], 2000)
+    anti_map.data_1d["exposure_factor"] = xr.full_like(
+        anti_map.data_1d["exposure_factor"], 30
     )
 
     sky_maps = {"ram": ram_map, "anti": anti_map}
@@ -1413,65 +1375,27 @@ def test_combine_maps_obs_date_exposure_weighted():
     )
 
 
-def test_combine_maps_obs_date_range():
+def test_combine_maps_obs_date_range(mock_sky_map_for_combine):
     """Test that obs_date_range accounts for within and between-group variance."""
-    descriptor = MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
-
-    ram_map = descriptor.to_empty_map()
-    anti_map = descriptor.to_empty_map()
-
-    shape = (1, 1, 1, 1)
-    base_ds = xr.Dataset(
-        coords={
-            "epoch": [0],
-            "energy": [1.0],
-            "longitude": [0],
-            "latitude": [0],
-        }
-    )
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine()
 
     # Ram: obs_date=1000, obs_date_range=100, exposure=10
-    ram_map.data_1d = base_ds.copy()
-    ram_map.data_1d["counts"] = xr.DataArray(np.ones(shape) * 100, dims=base_ds.coords)
-    ram_map.data_1d["exposure_factor"] = xr.DataArray(
-        np.ones(shape) * 10, dims=base_ds.coords
+    ram_map.data_1d["obs_date"] = xr.full_like(ram_map.data_1d["obs_date"], 1000)
+    ram_map.data_1d["obs_date_range"] = xr.full_like(
+        ram_map.data_1d["obs_date_range"], 100
     )
-    ram_map.data_1d["obs_date"] = xr.DataArray(
-        np.ones(shape) * 1000, dims=base_ds.coords
-    )
-    ram_map.data_1d["obs_date_range"] = xr.DataArray(
-        np.ones(shape) * 100, dims=base_ds.coords
-    )
-    ram_map.data_1d["ena_intensity"] = xr.DataArray(
-        np.ones(shape) * 50, dims=base_ds.coords
-    )
-    ram_map.data_1d["ena_intensity_stat_uncert"] = xr.DataArray(
-        np.ones(shape) * 5, dims=base_ds.coords
-    )
-    ram_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
-        np.ones(shape) * 2, dims=base_ds.coords
+    ram_map.data_1d["exposure_factor"] = xr.full_like(
+        ram_map.data_1d["exposure_factor"], 10
     )
 
     # Anti: obs_date=2000, obs_date_range=200, exposure=30
-    anti_map.data_1d = base_ds.copy()
-    anti_map.data_1d["counts"] = xr.DataArray(np.ones(shape) * 100, dims=base_ds.coords)
-    anti_map.data_1d["exposure_factor"] = xr.DataArray(
-        np.ones(shape) * 30, dims=base_ds.coords
+    anti_map.data_1d["obs_date"] = xr.full_like(anti_map.data_1d["obs_date"], 2000)
+    anti_map.data_1d["obs_date_range"] = xr.full_like(
+        anti_map.data_1d["obs_date_range"], 200
     )
-    anti_map.data_1d["obs_date"] = xr.DataArray(
-        np.ones(shape) * 2000, dims=base_ds.coords
-    )
-    anti_map.data_1d["obs_date_range"] = xr.DataArray(
-        np.ones(shape) * 200, dims=base_ds.coords
-    )
-    anti_map.data_1d["ena_intensity"] = xr.DataArray(
-        np.ones(shape) * 70, dims=base_ds.coords
-    )
-    anti_map.data_1d["ena_intensity_stat_uncert"] = xr.DataArray(
-        np.ones(shape) * 5, dims=base_ds.coords
-    )
-    anti_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
-        np.ones(shape) * 2, dims=base_ds.coords
+    anti_map.data_1d["exposure_factor"] = xr.full_like(
+        anti_map.data_1d["exposure_factor"], 30
     )
 
     sky_maps = {"ram": ram_map, "anti": anti_map}
