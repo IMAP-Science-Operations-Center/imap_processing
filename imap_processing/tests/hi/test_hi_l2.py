@@ -128,10 +128,10 @@ def sample_map_dataset():
             "ena_intensity_sys_err": xr.DataArray(
                 np.random.rand(*shape) * 5 + 1, dims=list(coords.keys())
             ),
-            "bg_rates": xr.DataArray(
+            "bg_rate": xr.DataArray(
                 np.random.rand(*shape) * 20 + 5, dims=list(coords.keys())
             ),
-            "bg_rates_unc": xr.DataArray(
+            "bg_rate_sys_err": xr.DataArray(
                 np.random.rand(*shape) * 2 + 1, dims=list(coords.keys())
             ),
             "exposure_factor": xr.DataArray(
@@ -301,10 +301,10 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
                 name="exposure_factor",
                 dims=list(exposure_sizes.keys()),
             ),
-            "bg_rates": xr.DataArray(
+            "bg_rate": xr.DataArray(
                 np.arange(np.prod(tuple(map_ds.sizes.values()))).reshape(counts_shape)
                 % 2,
-                name="bg_rates",
+                name="bg_rate",
                 dims=list(map_ds.sizes.keys()),
             ),
         }
@@ -316,7 +316,7 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
         assert var_name in result_ds
         assert result_ds[var_name].shape == counts_shape
     # Verify that there are no negative signal rates. The synthetic data combination
-    # where counts = 0, exposure_factor = 1, and bg_rates = 1 would result in
+    # where counts = 0, exposure_factor = 1, and bg_rate = 1 would result in
     # an ena_signal_rate of (0 / 1) - 1 = -1
     assert np.nanmin(result_ds["ena_signal_rates"].values) >= 0
     # Verify that the minimum finite uncertainty is sqrt(1) / exposure_factor.
@@ -345,9 +345,9 @@ def ena_intensity_map_ds(empty_rectangular_map_dataset):
                 name="ena_signal_rate_stat_unc",
                 dims=list(map_ds.sizes.keys()),
             ),
-            "bg_rates_unc": xr.DataArray(
+            "bg_rate_sys_err": xr.DataArray(
                 np.arange(np.prod(tuple(map_ds.sizes.values()))).reshape(var_shape) % 3,
-                name="bg_rates_unc",
+                name="bg_rate_sys_err",
                 dims=list(map_ds.sizes.keys()),
             ),
         }
@@ -359,7 +359,7 @@ def ena_intensity_map_ds(empty_rectangular_map_dataset):
     )
     map_ds.update(
         {
-            "bg_rates": xr.DataArray(
+            "bg_rate": xr.DataArray(
                 np.ones(bg_shape) * 5.0,
                 dims=[d for d in map_ds.sizes.keys() if d != "calibration_prod"],
             ),
@@ -566,7 +566,7 @@ def test_weighted_average_mathematical_correctness():
                 np.array([100.0, 400.0]).reshape(1, 1, 2, 1, 1),
                 dims=list(coords.keys()),
             ),
-            "bg_rates": xr.DataArray(
+            "bg_rate": xr.DataArray(
                 np.array([5.0]).reshape(1, 1, 1, 1),
                 dims=[d for d in coords.keys() if d != "calibration_prod"],
             ),
@@ -624,7 +624,7 @@ def test_statistical_uncertainty_combination_correctness():
                 sys_err_values, dims=list(coords.keys())
             ),
             "ena_signal_rates": xr.DataArray(flux_values, dims=list(coords.keys())),
-            "bg_rates": xr.DataArray(
+            "bg_rate": xr.DataArray(
                 np.array([1.0, 2.0]).reshape(1, 1, 2, 1, 1), dims=list(coords.keys())
             ),
             "exposure_factor": xr.DataArray(
@@ -783,8 +783,8 @@ def test_process_single_pset_renames_variables(
 
     # Check that variables were renamed
     assert "exposure_factor" in result
-    assert "bg_rates" in result
-    assert "bg_rates_unc" in result
+    assert "bg_rate" in result
+    assert "bg_rate_sys_err" in result
     # Original names should not exist
     assert "exposure_times" not in result
     assert "background_rates" not in result
@@ -834,16 +834,16 @@ def test_process_single_pset_exposure_time_weighting(
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
     energy_kev = xr.DataArray([0.5, 0.75, 1.1], dims=["esa_energy_step"])
 
-    # bg_rates should be multiplied by exposure_factor
+    # bg_rate should be multiplied by exposure_factor
     result = process_single_pset(
         mock_pset_dataset,
         energy_kev,
         descriptor,
-        vars_to_exposure_time_average={"bg_rates"},
+        vars_to_exposure_time_average={"bg_rate"},
     )
 
-    # bg_rates was 5.0, exposure_factor is 100.0, so result should be 500.0
-    assert np.allclose(result["bg_rates"].values, 500.0)
+    # bg_rate was 5.0, exposure_factor is 100.0, so result should be 500.0
+    assert np.allclose(result["bg_rate"].values, 500.0)
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
@@ -973,10 +973,8 @@ def mock_map_dataset_for_rates():
                 np.ones(exposure_shape) * 10.0,
                 dims=["epoch", "esa_energy_step", "longitude", "latitude"],
             ),
-            "bg_rates": xr.DataArray(
-                np.ones(shape) * 2.0, dims=list(coords.keys())[:5]
-            ),
-            "bg_rates_unc": xr.DataArray(
+            "bg_rate": xr.DataArray(np.ones(shape) * 2.0, dims=list(coords.keys())[:5]),
+            "bg_rate_sys_err": xr.DataArray(
                 np.ones(shape) * 0.5, dims=list(coords.keys())[:5]
             ),
             "obs_date": xr.DataArray(

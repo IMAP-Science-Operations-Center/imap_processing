@@ -154,7 +154,7 @@ class TestHiPointingSet:
         assert hi_pset.num_points == 3600
         np.testing.assert_array_equal(hi_pset.az_el_points.shape, (3600, 2))
 
-        for var_name in ["exposure_factor", "bg_rates", "bg_rates_unc"]:
+        for var_name in ["exposure_factor", "bg_rate", "bg_rate_sys_err"]:
             assert var_name in hi_pset.data
 
     def test_from_cdf(self, hi_pset_cdf_path):
