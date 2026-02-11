@@ -220,8 +220,7 @@ def create_sky_map_from_psets(
         # Finish the exposure time weighted mean calculation of backgrounds
         # Allow divide by zero to fill set pixels with zero exposure time to NaN
         with np.errstate(divide="ignore"):
-            for var in vars_to_exposure_time_average:
-                map.data_1d[var] /= map.data_1d["exposure_factor"]
+            map.data_1d[vars_to_exposure_time_average] /= map.data_1d["exposure_factor"]
 
         # Add ESA energy data to the map dataset for use in rate/intensity calculations
         energy_delta = esa_ds["bandpass_fwhm"] / 2
