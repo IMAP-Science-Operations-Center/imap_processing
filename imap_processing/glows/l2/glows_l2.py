@@ -8,11 +8,18 @@ from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows import FLAG_LENGTH
-from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
+from imap_processing.glows.l1b.glows_l1b_data import (
+    HistogramL1B,
+    PipelineSettings,
+)
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
+from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
 
 
-def glows_l2(input_dataset: xr.Dataset) -> list[xr.Dataset]:
+def glows_l2(
+    input_dataset: xr.Dataset,
+    pipeline_settings_dataset: xr.Dataset,
+) -> list[xr.Dataset]:
     """
     Will process GLoWS L2 data from L1 data.
 
@@ -20,23 +27,36 @@ def glows_l2(input_dataset: xr.Dataset) -> list[xr.Dataset]:
     ----------
     input_dataset : xarray.Dataset
         Input L1B dataset.
+    pipeline_settings_dataset : xarray.Dataset
+        Dataset containing pipeline settings from
+        GlowsAncillaryCombiner.
 
     Returns
     -------
-    xarray.Dataset
-     Glows L2 Dataset.
+    list[xarray.Dataset]
+        Glows L2 Dataset.
     """
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("glows")
     cdf_attrs.add_instrument_variable_attrs("glows", "l2")
 
-    l2 = generate_l2(input_dataset)
+    # Select pipeline settings for the day matching
+    # the first epoch in the L1B data. Convert from
+    # TT J2000 nanoseconds to datetime64 for indexing.
+    day = et_to_datetime64(ttj2000ns_to_et(input_dataset["epoch"].data[0]))
+    pipeline_settings = PipelineSettings(
+        pipeline_settings_dataset.sel(epoch=day, method="nearest")
+    )
+
+    l2 = generate_l2(input_dataset, pipeline_settings)
 
     return [create_l2_dataset(l2, cdf_attrs)]
 
 
-# TODO: filter good times out
-def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
+def generate_l2(
+    l1b_dataset: xr.Dataset,
+    pipeline_settings: PipelineSettings,
+) -> HistogramL2:
     """
     Generate L2 data from L1B data.
 
@@ -46,15 +66,18 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
     ----------
     l1b_dataset : xarray.Dataset
         Input L1B dataset.
+    pipeline_settings : PipelineSettings
+        Pipeline settings for active flags and offsets.
 
     Returns
     -------
     HistogramL2
         L2 data in the form of a HistogramL2 dataclass.
     """
+    active_flags = np.array(pipeline_settings.active_bad_time_flags, dtype=float)
     # most of the values from L1B are averaged over a day
     good_data = l1b_dataset.isel(
-        epoch=return_good_times(l1b_dataset["flags"], np.ones((FLAG_LENGTH,)))
+        epoch=return_good_times(l1b_dataset["flags"], active_flags)
     )
     # todo: bad angle filter
     # TODO filter bad bins out. Needs to happen here while everything is still

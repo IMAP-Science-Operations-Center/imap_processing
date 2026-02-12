@@ -5,13 +5,17 @@ import pytest
 import xarray as xr
 
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
-from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
+from imap_processing.glows.l1b.glows_l1b_data import (
+    HistogramL1B,
+    PipelineSettings,
+)
 from imap_processing.glows.l2.glows_l2 import (
     generate_l2,
     glows_l2,
     return_good_times,
 )
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve
+from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
@@ -52,7 +56,7 @@ def test_glows_l2(
         mock_pipeline_settings,
         mock_conversion_table_dict,
     )
-    l2 = glows_l2(l1b_hist_dataset)[0]
+    l2 = glows_l2(l1b_hist_dataset, mock_pipeline_settings)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
 
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
@@ -91,7 +95,11 @@ def test_generate_l2(
         mock_pipeline_settings,
         mock_conversion_table_dict,
     )
-    l2 = generate_l2(l1b_hist_dataset)
+    day = et_to_datetime64(ttj2000ns_to_et(l1b_hist_dataset["epoch"].data[0]))
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(epoch=day, method="nearest")
+    )
+    l2 = generate_l2(l1b_hist_dataset, pipeline_settings)
 
     expected_values = {
         "filter_temperature_average": [57.59],

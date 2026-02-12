@@ -65,8 +65,8 @@ def l1b_hist_dataset(
 
 
 @pytest.fixture
-def l2_hist_dataset(l1b_datasets):
-    return glows_l2(l1b_datasets)
+def l2_hist_dataset(l1b_hist_dataset, mock_pipeline_settings):
+    return glows_l2(l1b_hist_dataset, mock_pipeline_settings)
 
 
 @pytest.fixture

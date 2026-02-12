@@ -742,11 +742,27 @@ class Glows(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="glows")
             if len(science_files) != 1:
                 raise ValueError(
-                    f"GLOWS L1A requires exactly one input science file, received: "
-                    f"{science_files}."
+                    f"GLOWS L2 requires exactly one input science file, "
+                    f"received: {science_files}."
                 )
             input_dataset = load_cdf(science_files[0])
-            datasets = glows_l2(input_dataset)
+
+            # Load pipeline settings for L2 processing
+            current_day = np.datetime64(
+                f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
+            )
+            day_buffer = current_day + np.timedelta64(3, "D")
+            pipeline_settings_input = dependencies.get_processing_inputs(
+                descriptor="pipeline-settings"
+            )[0]
+            pipeline_settings_combiner = GlowsAncillaryCombiner(
+                pipeline_settings_input, day_buffer
+            )
+
+            datasets = glows_l2(
+                input_dataset,
+                pipeline_settings_combiner.combined_dataset,
+            )
 
         return datasets
 
