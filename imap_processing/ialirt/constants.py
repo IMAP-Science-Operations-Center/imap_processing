@@ -49,8 +49,8 @@ class StationProperties(NamedTuple):
     latitude: float  # latitude in degrees
     altitude: float  # altitude in kilometers
     min_elevation_deg: float  # minimum elevation angle in degrees
-    schedule_start: time | None  # station schedule start
-    schedule_end: time | None  # station schedule end
+    schedule_start: time | None = None  # station schedule start
+    schedule_end: time | None = None  # station schedule end
 
 
 # Verified by Kiel and KSWC Observatory staff.
