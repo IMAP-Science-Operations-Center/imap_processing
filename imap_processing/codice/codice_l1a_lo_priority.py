@@ -119,8 +119,7 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                     compression_algorithm,
                 )
             ),
-            dtype=">u4",
-            # '>' means big-endian, 'u4' means unsigned 4-byte integer (uint32)
+            dtype=">u4",  # Big endian
         )
         # For newer packet versions, the decompressed data needs to be converted to
         # uint32
