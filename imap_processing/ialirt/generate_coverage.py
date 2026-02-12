@@ -4,7 +4,7 @@ import logging
 
 import numpy as np
 
-from imap_processing.ialirt.constants import STATIONS
+from imap_processing.ialirt.constants import STATIONS, StationProperties
 from imap_processing.ialirt.process_ephemeris import calculate_azimuth_and_elevation
 from imap_processing.spice.time import et_to_utc, str_to_et
 
@@ -26,6 +26,55 @@ ALL_STATIONS = [
     "DSS-74",
     "DSS-75",
 ]
+
+
+def create_schedule_mask(
+    station: StationProperties, time_range: np.ndarray
+) -> np.ndarray:
+    """
+    Create a boolean mask based on the static daily operating schedule.
+
+    Parameters
+    ----------
+    station : StationProperties
+        Ground station configuration.
+    time_range : np.ndarray
+        Array of ephemeris time (ET) values corresponding to the
+        coverage time.
+
+    Returns
+    -------
+    schedule_mask : np.ndarray
+        Boolean array True is operating window.
+    """
+    if station.schedule_start is None and station.schedule_end is None:
+        return np.ones(time_range.shape, dtype=bool)
+
+    utc_times = et_to_utc(time_range, format_str="ISOC")
+    utc_dt = utc_times.astype("datetime64[s]")
+
+    # seconds since midnight (UTC), vectorized
+    sec_of_day = (utc_dt - utc_dt.astype("datetime64[D]")) / np.timedelta64(1, "s")
+
+    schedule_mask = np.ones(time_range.shape, dtype=bool)
+
+    if station.schedule_start is not None:
+        start_sec = (
+            station.schedule_start.hour * 3600
+            + station.schedule_start.minute * 60
+            + station.schedule_start.second
+        )
+        schedule_mask &= sec_of_day >= start_sec
+
+    if station.schedule_end is not None:
+        end_sec = (
+            station.schedule_end.hour * 3600
+            + station.schedule_end.minute * 60
+            + station.schedule_end.second
+        )
+        schedule_mask &= sec_of_day <= end_sec
+
+    return schedule_mask
 
 
 def generate_coverage(
@@ -76,11 +125,18 @@ def generate_coverage(
                 end_et = str_to_et(end)
                 dsn_outage_mask |= (time_range >= start_et) & (time_range <= end_et)
 
-    for station_name, (lon, lat, alt, min_elevation) in stations.items():
+    for station_name, station in stations.items():
         _azimuth, elevation = calculate_azimuth_and_elevation(
-            lon, lat, alt, time_range, obsref="IAU_EARTH"
+            station.longitude,
+            station.latitude,
+            station.altitude,
+            time_range,
+            obsref="IAU_EARTH",
         )
-        visible = elevation > min_elevation
+        visible = elevation > station.min_elevation_deg
+
+        schedule_mask = create_schedule_mask(station, time_range)
+        visible &= schedule_mask
 
         outage_mask = np.zeros(time_range.shape, dtype=bool)
         if outages and station_name in outages:
@@ -133,9 +189,9 @@ def generate_coverage(
     coverage_dict["total_coverage_percent"] = total_coverage_percent
 
     # Ensure all stations are present in both dicts
-    for station in ALL_STATIONS:
-        coverage_dict.setdefault(station, np.array([], dtype="<U23"))
-        outage_dict.setdefault(station, np.array([], dtype="<U23"))
+    for station_name in ALL_STATIONS:
+        coverage_dict.setdefault(station_name, np.array([], dtype="<U23"))
+        outage_dict.setdefault(station_name, np.array([], dtype="<U23"))
 
     return coverage_dict, outage_dict
 
