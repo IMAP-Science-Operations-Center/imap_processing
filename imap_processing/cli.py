@@ -703,7 +703,7 @@ class Glows(ProcessInstrument):
                     descriptor="exclusions-by-instr-team"
                 )[0]
                 pipeline_settings = dependencies.get_processing_inputs(
-                    descriptor="pipeline-settings"
+                    descriptor="lxx-pipeline-settings"
                 )[0]
 
                 # Create combiners for each ancillary dataset
@@ -753,7 +753,7 @@ class Glows(ProcessInstrument):
             )
             day_buffer = current_day + np.timedelta64(3, "D")
             pipeline_settings_input = dependencies.get_processing_inputs(
-                descriptor="pipeline-settings"
+                descriptor="lxx-pipeline-settings"
             )[0]
             pipeline_settings_combiner = GlowsAncillaryCombiner(
                 pipeline_settings_input, day_buffer
