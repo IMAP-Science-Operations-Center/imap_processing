@@ -775,6 +775,7 @@ def interpolate_map_flux_to_helio_frame(
     esa_energies: xr.DataArray,
     helio_energies: xr.DataArray,
     vars_to_interpolate: list[str],
+    update_sys_err: bool = True,
 ) -> xr.Dataset:
     """
     Interpolate flux from spacecraft frame to heliocentric frame energies.
@@ -806,6 +807,9 @@ def interpolate_map_flux_to_helio_frame(
         dataset and will be interpolated as well. For example, if ["ena_intensity"]
         is input, then the variables "ena_intensity", "ena_intensity_stat_uncert",
         and "ena_intensity_sys_err" will be interpolated.
+    update_sys_err : bool, optional
+        Flag indicating whether to update the systematic error variables as part
+        of the flux interpolation. Defaults to True.
 
     Returns
     -------
@@ -912,7 +916,8 @@ def interpolate_map_flux_to_helio_frame(
         # Update the dataset with interpolated values
         map_ds[var_name] = flux_helio
         map_ds[f"{var_name}_stat_uncert"] = stat_unc_helio
-        map_ds[f"{var_name}_sys_err"] = sys_err_helio
+        if update_sys_err:
+            map_ds[f"{var_name}_sys_err"] = sys_err_helio
 
     return map_ds
 

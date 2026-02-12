@@ -618,7 +618,7 @@ class LoHiBasePointingSet(PointingSet):
         The values stored in the "hae_longitude" and "hae_latitude" variables
         are used to construct the azimuth and elevation coordinates.
         """
-        logger.info(
+        logger.debug(
             "Updating az/el points based on data in hae_longitude and"
             "hae_latitude variables."
         )

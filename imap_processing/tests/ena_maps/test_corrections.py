@@ -1291,6 +1291,25 @@ class TestInterpolateMapFluxToHelioFrame:
         assert np.all(rel_sys_err > 0)
         assert np.all(rel_sys_err < 0.5)  # Should be reasonable
 
+    def test_systematic_uncertainty_update_flag(self):
+        """Test that systematic error is unchanged when flag is set False."""
+
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=1
+        )
+        sys_err_input = map_ds["ena_intensity_sys_err"].copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds,
+            esa_energies,
+            helio_energies,
+            ["ena_intensity"],
+            update_sys_err=False,
+        )
+
+        # Systematic uncertainty should be positive and finite
+        xr.testing.assert_equal(result_ds["ena_intensity_sys_err"], sys_err_input)
+
     def test_energy_scaling_transformation(self):
         """Test Liouville theorem: flux_helio = flux_sc * (E_helio / E_sc)."""
 

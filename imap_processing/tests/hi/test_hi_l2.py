@@ -8,14 +8,16 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.ena_maps.ena_maps import RectangularSkyMap
+from imap_processing.ena_maps.ena_maps import HealpixSkyMap, RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.hi_l2 import (
     _calculate_improved_stat_variance,
     calculate_all_rates_and_intensities,
     calculate_ena_intensity,
     calculate_ena_signal_rates,
+    cleanup_intermediate_variables,
     combine_calibration_products,
+    combine_maps,
     create_sky_map_from_psets,
     esa_energy_df,
     hi_l2,
@@ -198,8 +200,8 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
     descriptor_str = "h90-ena-h-sf-nsp-full-hnu-2deg-3mo"
     rect_map = MapDescriptor.from_string(descriptor_str).to_empty_map()
-    # create_sky_map_from_psets returns just the sky_map
-    mock_create_sky_map_from_psets.return_value = rect_map
+    # create_sky_map_from_psets returns a dict with spin_phase key
+    mock_create_sky_map_from_psets.return_value = {"full": rect_map}
     # calculate_all_rates_and_intensities modifies and returns the map data
     mock_calculate_all_rates_and_intensities.side_effect = lambda ds, *args: ds
     mock_map_build_cdf_dataset.return_value = xr.Dataset()
@@ -215,11 +217,12 @@ def test_hi_l2_uses_descriptor_to_setup_map(
 
 
 @pytest.mark.parametrize(
-    "descriptor_str",
+    "descriptor_str, expected_keys",
     [
-        "h90-ena-h-sf-nsp-full-gcs-6deg-3mo",
-        "h90-ena-h-sf-nsp-ram-gcs-6deg-3mo",
-        "h90-ena-h-hf-nsp-ram-gcs-6deg-3mo",
+        ("h90-ena-h-sf-nsp-full-gcs-6deg-3mo", ["full"]),
+        ("h90-ena-h-sf-nsp-ram-gcs-6deg-3mo", ["ram"]),
+        ("h90-ena-h-hf-nsp-ram-gcs-6deg-3mo", ["ram"]),
+        ("h90-ena-h-hf-nsp-full-gcs-6deg-3mo", ["ram", "anti"]),
     ],
 )
 @pytest.mark.external_test_data
@@ -228,6 +231,7 @@ def test_create_sky_map_from_psets(
     anc_path_dict,
     furnish_kernels,
     descriptor_str,
+    expected_keys,
 ):
     """Test coverage for create_sky_map_from_psets()"""
     kernels = [
@@ -241,39 +245,67 @@ def test_create_sky_map_from_psets(
         pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
         map_descriptor = MapDescriptor.from_string(descriptor_str)
-        sky_map = create_sky_map_from_psets(
+        sky_maps = create_sky_map_from_psets(
             [pset_path],
             anc_path_dict,
             map_descriptor,
         )
-    assert isinstance(sky_map, RectangularSkyMap)
-    assert sky_map.spacing_deg == 6
-    assert sky_map.spice_reference_frame == SpiceFrame.IMAP_GCS
 
-    # Check that ESA energy data was added to the map
-    assert "energy_delta_minus" in sky_map.data_1d
-    assert "energy_delta_plus" in sky_map.data_1d
-    assert "energy" in sky_map.data_1d.coords
+    # Check that returned dict has expected keys
+    assert isinstance(sky_maps, dict)
+    assert set(sky_maps.keys()) == set(expected_keys)
 
-    # Test that we got some non-zero values
-    for var_name in ["counts", "exposure_factor", "obs_date"]:
-        assert var_name in sky_map.data_1d.data_vars
-        assert np.nanmax(sky_map.data_1d[var_name].data) > 0
+    # Check each map in the dict
+    for sky_map in sky_maps.values():
+        assert isinstance(sky_map, RectangularSkyMap)
+        assert sky_map.spacing_deg == 6
+        assert sky_map.spice_reference_frame == SpiceFrame.IMAP_GCS
+
+        # Check that ESA energy data was added to the map
+        assert "energy_delta_minus" in sky_map.data_1d
+        assert "energy_delta_plus" in sky_map.data_1d
+        assert "energy" in sky_map.data_1d.coords
+
+        # Test that we got some non-zero values
+        for var_name in ["counts", "exposure_factor", "obs_date"]:
+            assert var_name in sky_map.data_1d.data_vars
+            assert np.nanmax(sky_map.data_1d[var_name].data) > 0
+
+        # If the CG correction ran, check that the energy_sc variable is present
+        if "-hf-" in descriptor_str:
+            assert "energy_sc" in sky_map.data_1d.data_vars
+            assert np.nanmax(sky_map.data_1d["energy_sc"].data) > 0
+
     # With a single PSET input, the valid obs_date values should be very close
     # to the PSET midpoint. Convert to seconds to set reasonable comparison
     # tolerance.
+    first_map = next(iter(sky_maps.values()))
     pset = load_cdf(pset_path)
     pset_midpoint = (pset["epoch"].values[0] + pset["epoch_delta"].values[0] / 2) / 1e9
     np.testing.assert_allclose(
-        np.nanmax(sky_map.data_1d["obs_date"].data) / 1e9,
+        np.nanmax(first_map.data_1d["obs_date"].data) / 1e9,
         pset_midpoint,
         atol=60,
     )
-    # If the CG correction ran, check that the energy_sc variable is present
-    # in the map
-    if "-hf-" in descriptor_str:
-        assert "energy_sc" in sky_map.data_1d.data_vars
-        assert np.nanmax(sky_map.data_1d["energy_sc"].data) > 0
+
+
+def test_create_sky_map_from_psets_healpix_not_supported():
+    """Test that NotImplementedError is raised when HealpixSkyMap is returned."""
+    # Create a mock descriptor that returns a HealpixSkyMap
+    mock_descriptor = mock.Mock()
+    mock_descriptor.frame_descriptor = "sf"
+    mock_descriptor.spin_phase = "full"
+
+    # Create a mock HealpixSkyMap
+    mock_healpix_map = mock.Mock(spec=HealpixSkyMap)
+    mock_descriptor.to_empty_map.return_value = mock_healpix_map
+
+    with pytest.raises(NotImplementedError, match="Healpix map output not supported"):
+        create_sky_map_from_psets(
+            ["fake_pset.cdf"],  # non-empty psets list
+            {},  # empty ancillary dict
+            mock_descriptor,
+        )
 
 
 def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
@@ -1005,10 +1037,6 @@ def test_calculate_all_rates_and_intensities_basic(
         descriptor,
     )
 
-    # Check that signal rates were calculated
-    assert "ena_signal_rates" in result
-    assert "ena_signal_rate_stat_unc" in result
-
     # Check that intensities were calculated
     assert "ena_intensity" in result
     assert "ena_intensity_stat_uncert" in result
@@ -1077,12 +1105,14 @@ def test_calculate_all_rates_and_intensities_adds_obs_date_range(
     assert "obs_date_range" in result
 
 
-@mock.patch("imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame")
+@mock.patch(
+    "imap_processing.hi.hi_l2.interpolate_map_flux_to_helio_frame", autospec=True
+)
 def test_calculate_all_rates_and_intensities_cg_correction(
     mock_interp_flux, mock_map_dataset_for_rates, anc_path_dict
 ):
     """Test that CG interpolation is applied for heliocentric frame."""
-    mock_interp_flux.side_effect = lambda ds, *args: ds
+    mock_interp_flux.side_effect = lambda ds, *args, **kwargs: ds
 
     descriptor = MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
 
@@ -1113,3 +1143,286 @@ def test_calculate_all_rates_and_intensities_no_cg_for_sf(
 
     # interpolate_map_flux_to_helio_frame should NOT have been called for sf frame
     mock_interp_flux.assert_not_called()
+
+
+# =============================================================================
+# CLEANUP INTERMEDIATE VARIABLES TESTS
+# =============================================================================
+
+
+def test_cleanup_intermediate_variables():
+    """Test that cleanup_intermediate_variables removes expected variables."""
+    # Create a dataset with intermediate variables
+    ds = xr.Dataset(
+        {
+            "bg_rate": xr.DataArray([1, 2, 3], dims=["x"]),
+            "energy_sc": xr.DataArray([4, 5, 6], dims=["x"]),
+            "ena_signal_rates": xr.DataArray([7, 8, 9], dims=["x"]),
+            "ena_signal_rate_stat_unc": xr.DataArray([0.1, 0.2, 0.3], dims=["x"]),
+            "ena_intensity": xr.DataArray([10, 20, 30], dims=["x"]),
+            "exposure_factor": xr.DataArray([100, 200, 300], dims=["x"]),
+        }
+    )
+
+    result = cleanup_intermediate_variables(ds)
+
+    # Intermediate variables should be removed
+    assert "bg_rate" not in result
+    assert "energy_sc" not in result
+    assert "ena_signal_rates" not in result
+    assert "ena_signal_rate_stat_unc" not in result
+
+    # Non-intermediate variables should remain
+    assert "ena_intensity" in result
+    assert "exposure_factor" in result
+
+
+def test_cleanup_intermediate_variables_missing_vars():
+    """Test cleanup works when some intermediate variables don't exist."""
+    # Create a dataset without all intermediate variables
+    ds = xr.Dataset(
+        {
+            "bg_rate": xr.DataArray([1, 2, 3], dims=["x"]),
+            "ena_intensity": xr.DataArray([10, 20, 30], dims=["x"]),
+        }
+    )
+
+    # Should not raise an error
+    result = cleanup_intermediate_variables(ds)
+
+    assert "bg_rate" not in result
+    assert "ena_intensity" in result
+
+
+# =============================================================================
+# COMBINE MAPS TESTS
+# =============================================================================
+
+
+@pytest.fixture
+def mock_sky_map_for_combine():
+    """Create a mock RectangularSkyMap for testing combine_maps."""
+
+    def _create_map(intensity_offset=0, exposure_offset=0):
+        """Helper to create a map with configurable values."""
+        descriptor = MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
+        sky_map = descriptor.to_empty_map()
+
+        # Create simple test data
+        shape = (1, 3, 4, 2)  # epoch, energy, lon, lat
+        sky_map.data_1d = xr.Dataset(
+            {
+                "counts": xr.DataArray(
+                    np.ones(shape) * (100 + intensity_offset),
+                    dims=["epoch", "energy", "longitude", "latitude"],
+                ),
+                "exposure_factor": xr.DataArray(
+                    np.ones(shape) * (10 + exposure_offset),
+                    dims=["epoch", "energy", "longitude", "latitude"],
+                ),
+                "obs_date": xr.DataArray(
+                    np.ones(shape) * (1e18 + intensity_offset * 1e15),
+                    dims=["epoch", "energy", "longitude", "latitude"],
+                ),
+                "obs_date_range": xr.DataArray(
+                    np.ones(shape) * (1e14 + intensity_offset * 1e13),
+                    dims=["epoch", "energy", "longitude", "latitude"],
+                ),
+                "ena_intensity": xr.DataArray(
+                    np.ones(shape) * (50 + intensity_offset),
+                    dims=["epoch", "energy", "longitude", "latitude"],
+                ),
+                "ena_intensity_stat_uncert": xr.DataArray(
+                    np.ones(shape) * 5.0,
+                    dims=["epoch", "energy", "longitude", "latitude"],
+                ),
+                "ena_intensity_sys_err": xr.DataArray(
+                    np.ones(shape) * 2.0,
+                    dims=["epoch", "energy", "longitude", "latitude"],
+                ),
+            },
+            coords={
+                "epoch": [0],
+                "energy": [0.5, 0.75, 1.1],
+                "longitude": np.arange(4),
+                "latitude": np.arange(2),
+            },
+        )
+        return sky_map
+
+    return _create_map
+
+
+def test_combine_maps_single_map(mock_sky_map_for_combine):
+    """Test combine_maps with a single map returns it unchanged."""
+    sky_map = mock_sky_map_for_combine()
+    sky_maps = {"full": sky_map}
+
+    result = combine_maps(sky_maps)
+
+    # Should return the same map
+    assert result is sky_map
+
+
+def test_combine_maps_two_maps(mock_sky_map_for_combine):
+    """Test combine_maps properly combines ram and anti-ram maps."""
+    ram_map = mock_sky_map_for_combine(intensity_offset=0, exposure_offset=0)
+    anti_map = mock_sky_map_for_combine(intensity_offset=20, exposure_offset=5)
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+
+    result = combine_maps(sky_maps)
+
+    # Check that result is a RectangularSkyMap
+    assert isinstance(result, RectangularSkyMap)
+
+    # Check additive variables
+    expected_counts = 100 + 120  # 100 + (100 + 20)
+    np.testing.assert_array_almost_equal(
+        result.data_1d["counts"].values,
+        np.ones_like(result.data_1d["counts"].values) * expected_counts,
+    )
+
+    expected_exposure = 10 + 15  # 10 + (10 + 5)
+    np.testing.assert_array_almost_equal(
+        result.data_1d["exposure_factor"].values,
+        np.ones_like(result.data_1d["exposure_factor"].values) * expected_exposure,
+    )
+
+
+def test_combine_maps_intensity_weighting(mock_sky_map_for_combine):
+    """Test that ena_intensity is combined with inverse-variance weighting."""
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine(intensity_offset=20)
+
+    # Give anti map higher uncertainty (lower weight)
+    anti_map.data_1d["ena_intensity_stat_uncert"] = xr.full_like(
+        anti_map.data_1d["ena_intensity_stat_uncert"], 10.0
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    # Ram has uncertainty 5, anti has uncertainty 10
+    # Weights: ram = 1/25 = 0.04, anti = 1/100 = 0.01
+    # Weighted average: (50 * 0.04 + 70 * 0.01) / (0.04 + 0.01) = (2 + 0.7) / 0.05 = 54
+    expected_intensity = (50 * 0.04 + 70 * 0.01) / (0.04 + 0.01)
+    np.testing.assert_array_almost_equal(
+        result.data_1d["ena_intensity"].values.flat[0],
+        expected_intensity,
+        decimal=5,
+    )
+
+
+def test_combine_maps_sys_err_exposure_weighted(mock_sky_map_for_combine):
+    """Test that systematic errors are combined with exposure weighting."""
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine()
+
+    # Set specific sys_err and exposure_factor values
+    ram_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
+        ram_map.data_1d["ena_intensity_sys_err"], 5.0
+    )
+    ram_map.data_1d["exposure_factor"] = xr.full_like(
+        ram_map.data_1d["exposure_factor"], 1.0
+    )
+    anti_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
+        anti_map.data_1d["ena_intensity_sys_err"], 5.0
+    )
+    anti_map.data_1d["exposure_factor"] = xr.full_like(
+        anti_map.data_1d["exposure_factor"], 4.0
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    # Exposure weighted sum: (5 * 1 + 5 * 4) / (1 + 4)
+    expected_sys_err = 5.0
+    np.testing.assert_array_almost_equal(
+        result.data_1d["ena_intensity_sys_err"].values.flat[0],
+        expected_sys_err,
+        decimal=10,
+    )
+
+
+def test_combine_maps_obs_date_exposure_weighted(mock_sky_map_for_combine):
+    """Test that obs_date is combined with exposure weighting."""
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine()
+
+    # Ram: obs_date=1000, exposure=10
+    ram_map.data_1d["obs_date"] = xr.full_like(ram_map.data_1d["obs_date"], 1000)
+    ram_map.data_1d["exposure_factor"] = xr.full_like(
+        ram_map.data_1d["exposure_factor"], 10
+    )
+
+    # Anti: obs_date=2000, exposure=30
+    anti_map.data_1d["obs_date"] = xr.full_like(anti_map.data_1d["obs_date"], 2000)
+    anti_map.data_1d["exposure_factor"] = xr.full_like(
+        anti_map.data_1d["exposure_factor"], 30
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    # Exposure-weighted average: (1000*10 + 2000*30) / (10+30) = 70000/40 = 1750
+    expected_obs_date = (1000 * 10 + 2000 * 30) // 40  # Integer division
+
+    # obs_date is cast to int64 after combining
+    assert result.data_1d["obs_date"].dtype == np.int64
+    np.testing.assert_array_equal(
+        result.data_1d["obs_date"].values.flat[0],
+        expected_obs_date,
+    )
+
+
+def test_combine_maps_obs_date_range(mock_sky_map_for_combine):
+    """Test that obs_date_range accounts for within and between-group variance."""
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine()
+
+    # Ram: obs_date=1000, obs_date_range=100, exposure=10
+    ram_map.data_1d["obs_date"] = xr.full_like(ram_map.data_1d["obs_date"], 1000)
+    ram_map.data_1d["obs_date_range"] = xr.full_like(
+        ram_map.data_1d["obs_date_range"], 100
+    )
+    ram_map.data_1d["exposure_factor"] = xr.full_like(
+        ram_map.data_1d["exposure_factor"], 10
+    )
+
+    # Anti: obs_date=2000, obs_date_range=200, exposure=30
+    anti_map.data_1d["obs_date"] = xr.full_like(anti_map.data_1d["obs_date"], 2000)
+    anti_map.data_1d["obs_date_range"] = xr.full_like(
+        anti_map.data_1d["obs_date_range"], 200
+    )
+    anti_map.data_1d["exposure_factor"] = xr.full_like(
+        anti_map.data_1d["exposure_factor"], 30
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    # Calculate expected combined variance
+    w1, w2 = 10, 30
+    sigma1, sigma2 = 100, 200
+    mu1, mu2 = 1000, 2000
+    total_exp = w1 + w2
+
+    within_variance = (w1 * sigma1**2 + w2 * sigma2**2) / total_exp
+    between_variance = (w1 * w2 * (mu1 - mu2) ** 2) / (total_exp**2)
+    expected_range = np.sqrt(within_variance + between_variance)
+
+    # obs_date_range is cast to int64 after combining, so compare with truncated value
+    assert result.data_1d["obs_date_range"].dtype == np.int64
+    np.testing.assert_array_equal(
+        result.data_1d["obs_date_range"].values.flat[0],
+        int(expected_range),
+    )
+
+
+def test_combine_maps_invalid_length():
+    """Test that combine_maps raises error for invalid number of maps."""
+    descriptor = MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
+    sky_map = descriptor.to_empty_map()
+
+    with pytest.raises(ValueError, match="Expected 1 or 2 sky maps"):
+        combine_maps({"a": sky_map, "b": sky_map, "c": sky_map})
