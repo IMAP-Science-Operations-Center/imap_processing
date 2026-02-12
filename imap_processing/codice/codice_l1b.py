@@ -117,8 +117,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
-            "nso_esa_step",
-            "nso_spin_sector",
             # TODO: undo this when I get new validation file from Joey
             # "acquisition_time_per_esa_step",
         ]

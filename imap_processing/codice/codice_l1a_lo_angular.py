@@ -8,7 +8,11 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
-from imap_processing.codice.constants import HALF_SPIN_FILLVAL
+from imap_processing.codice.constants import (
+    HALF_SPIN_FILLVAL,
+    LO_NSW_ANGULAR_VARIABLE_NAMES,
+    LO_SW_ANGULAR_VARIABLE_NAMES,
+)
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
@@ -149,17 +153,23 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
             "sw"
         ]["species_names"]
-        desired_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
-            "sw"
-        ]["desired_species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["angular"]["sw"][
+                "desired_species_names"
+            ]
+            + LO_SW_ANGULAR_VARIABLE_NAMES
+        )
         logical_source_id = "imap_codice_l1a_lo-sw-angular"
     elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
             "nsw"
         ]["species_names"]
-        desired_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
-            "nsw"
-        ]["desired_species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["angular"]["nsw"][
+                "desired_species_names"
+            ]
+            + LO_NSW_ANGULAR_VARIABLE_NAMES
+        )
         logical_source_id = "imap_codice_l1a_lo-nsw-angular"
     else:
         raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
@@ -433,7 +443,14 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
     )
     # Rename vars
     unpacked_dataset = unpacked_dataset.rename(
-        {"rgfo_energy_step": "rgfo_esa_step", "nso_energy_step": "nso_esa_step"}
+        {
+            k: v
+            for k, v in [
+                ("rgfo_energy_step", "rgfo_esa_step"),
+                ("nso_energy_step", "nso_esa_step"),
+            ]
+            if k in unpacked_dataset
+        }
     )
     # These variables were added to the packet definition after 20260129, so they only
     # exist in the unpacked dataset if packet_version > 1

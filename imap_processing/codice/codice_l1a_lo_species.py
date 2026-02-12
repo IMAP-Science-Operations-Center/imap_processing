@@ -8,7 +8,12 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
-from imap_processing.codice.constants import HALF_SPIN_FILLVAL
+from imap_processing.codice.constants import (
+    HALF_SPIN_FILLVAL,
+    LO_IALIRT_VARIABLE_NAMES,
+    LO_NSW_SPECIES_VARIABLE_NAMES,
+    LO_SW_SPECIES_VARIABLE_NAMES,
+)
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
@@ -76,17 +81,23 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
             "sw"
         ]["species_names"]
-        desired_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
-            "sw"
-        ]["desired_species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["species"]["sw"][
+                "desired_species_names"
+            ]
+            + LO_SW_SPECIES_VARIABLE_NAMES
+        )
         logical_source_id = "imap_codice_l1a_lo-sw-species"
     elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
             "nsw"
         ]["species_names"]
-        desired_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
-            "nsw"
-        ]["desired_species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["species"]["nsw"][
+                "desired_species_names"
+            ]
+            + LO_NSW_SPECIES_VARIABLE_NAMES
+        )
         logical_source_id = "imap_codice_l1a_lo-nsw-species"
         # Rename "cnoplus" to "junk" if we are processing NSW angular data. Although
         # cnoplus is in desired, and actual species name in the LUT, it is referencing
@@ -103,9 +114,12 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
             "species_names"
         ]
-        desired_species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"][
-            "sw"
-        ]["desired_species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
+                "desired_species_names"
+            ]
+            + LO_IALIRT_VARIABLE_NAMES
+        )
         # Note: ialirt does not produce a cdf for l1a so this is arbitrary.
         logical_source_id = "imap_codice_l1a_lo-sw-species"
     else:
@@ -302,7 +316,14 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
     )
     # Rename vars
     unpacked_dataset = unpacked_dataset.rename(
-        {"rgfo_energy_step": "rgfo_esa_step", "nso_energy_step": "nso_esa_step"}
+        {
+            k: v
+            for k, v in [
+                ("rgfo_energy_step", "rgfo_esa_step"),
+                ("nso_energy_step", "nso_esa_step"),
+            ]
+            if k in unpacked_dataset
+        }
     )
     # These variables were added to the packet definition after 20260129, so they only
     # exist in the unpacked dataset if packet_version > 1

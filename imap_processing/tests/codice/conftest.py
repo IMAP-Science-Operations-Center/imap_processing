@@ -236,13 +236,13 @@ def codice_lut_path():
             return [
                 TEST_DATA_PATH
                 / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v004.json"
+                / "imap_codice_l1a-sci-lut_20251007_v005.json"
             ]
         elif descriptor == "l1a-sci-lut-jan":
             return [
                 TEST_DATA_PATH
                 / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20260129_v001.json"
+                / "imap_codice_l1a-sci-lut_20260129_v002.json"
             ]
         elif descriptor == "l2-hi-omni-efficiency":
             return [

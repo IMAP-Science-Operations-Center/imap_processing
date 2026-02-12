@@ -473,10 +473,7 @@ def calculate_intensity(
         # (epoch, esa_step) if averaged
         denominator = scalar * geometric_factors * species_eff * dataset["energy_table"]
         if species not in dataset:
-            logger.warning(
-                f"Species {species} not found in dataset. Filling with NaNS."
-            )
-            dataset[species] = np.full(dataset["esa_step"].data.shape, np.nan)
+            raise ValueError(f"Species {species} not found in dataset.")
         else:
             # Only replace the data with calculated intensity to keep the attributes
             dataset[species].data = (dataset[species] / denominator).data
@@ -1227,7 +1224,18 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         kev.astype(np.float32).reshape(l2_dataset["energy_step"].shape),
     )
     # Drop unused variables
-    vars_to_drop = ["spare", "sw_bias_gain_mode", "st_bias_gain_mode", "k_factor"]
+    vars_to_drop = [
+        "spare",
+        "sw_bias_gain_mode",
+        "st_bias_gain_mode",
+        "k_factor",
+        "rgfo_esa_step",
+        "rgfo_spin_sector",
+        "rgfo_half_spin",
+        "nso_esa_step",
+        "nso_spin_sector",
+        "nso_half_spin",
+    ]
     l2_dataset = l2_dataset.drop_vars(vars_to_drop)
     # Update variable attributes
     l2_dataset.attrs.update(
@@ -1346,7 +1354,17 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         dims=l2_dataset["tof"].dims,
     ).astype(np.float32)
     # Drop unused variables
-    vars_to_drop = ["spare", "sw_bias_gain_mode", "st_bias_gain_mode"]
+    vars_to_drop = [
+        "spare",
+        "sw_bias_gain_mode",
+        "st_bias_gain_mode",
+        "rgfo_esa_step",
+        "rgfo_spin_sector",
+        "rgfo_half_spin",
+        "nso_esa_step",
+        "nso_spin_sector",
+        "nso_half_spin",
+    ]
     l2_dataset = l2_dataset.drop_vars(vars_to_drop)
     # Update variable attributes
     l2_dataset.attrs.update(

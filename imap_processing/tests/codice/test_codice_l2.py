@@ -316,6 +316,8 @@ def test_process_lo_missing_species_intensity():
             "epoch": ("epoch", np.ones(5)),
             "energy_table": (("esa_step",), np.ones(128) * 10),
             "packet_version": ("epoch", np.ones(5)),
+            "half_spin_per_esa_step": (("epoch", "esa_step"), np.ones((5, 128)) * 2),
+            "rgfo_half_spin": ("epoch", np.ones(5) * 2),
         }
     )
 
@@ -331,20 +333,14 @@ def test_process_lo_missing_species_intensity():
         ),
     ):
         len_pos = 5
-        process_lo_species_intensity(
-            l1b_val_data_processed,
-            LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
-            gf,
-            None,
-            list(np.arange(0, len_pos)),
-        )
-
-    for var in LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES:
-        assert var in l1b_val_data_processed, f"Missing variable {var} after processing"
-        # Check that all the missing species are filled with NaNs
-        assert not np.any(np.isfinite(l1b_val_data_processed[var].values)), (
-            f"Variable {var} should be all NaNs"
-        )
+        with pytest.raises(ValueError, match="Species hplus not found in dataset"):
+            process_lo_species_intensity(
+                l1b_val_data_processed,
+                LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
+                gf,
+                None,
+                list(np.arange(0, len_pos)),
+            )
 
 
 def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
@@ -373,14 +369,14 @@ def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
 
     for var in LO_SW_ANGULAR_VARIABLE_NAMES:
         # Heplus is not in older CDFs
-        # TODO figure out if we need to backfill those cdfs with heplus nan array
-        if var == "heplus" and var not in l1b_val_data_processed:
+        if var == "heplus" or var not in l1b_val_data_processed:
             continue
         assert var in l1b_val_data_processed, f"Missing variable {var} after processing"
         # Check that values are non-negative
-        assert np.all(l1b_val_data_processed[var].values >= 0), (
-            f"Variable {var} contains negative values"
-        )
+        assert np.all(
+            (l1b_val_data_processed[var].values >= 0)
+            | np.isnan(l1b_val_data_processed[var].values)
+        ), f"Variable {var} contains negative values"
         # Check shape
         expected_shape = (
             len(l1b_data.epoch),

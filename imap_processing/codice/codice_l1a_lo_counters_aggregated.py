@@ -259,7 +259,14 @@ def l1a_lo_counters_aggregated(
     )
     # Rename vars
     unpacked_dataset = unpacked_dataset.rename(
-        {"rgfo_energy_step": "rgfo_esa_step", "nso_energy_step": "nso_esa_step"}
+        {
+            k: v
+            for k, v in [
+                ("rgfo_energy_step", "rgfo_esa_step"),
+                ("nso_energy_step", "nso_esa_step"),
+            ]
+            if k in unpacked_dataset
+        }
     )
     # These variables were added to the packet definition after 20260129, so they only
     # exist in the unpacked dataset if packet_version > 1
