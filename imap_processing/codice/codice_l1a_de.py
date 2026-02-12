@@ -151,10 +151,10 @@ def extract_initial_items_from_combined_packets(
     packets["compressed"] = xr.DataArray(compressed, dims=["epoch"])
     packets["rgfo_half_spin"] = xr.DataArray(rgfo_half_spin, dims=["epoch"])
     packets["rgfo_spin_sector"] = xr.DataArray(rgfo_spin_sector, dims=["epoch"])
-    packets["rgfo_energy_step"] = xr.DataArray(rgfo_esa_step, dims=["epoch"])
+    packets["rgfo_esa_step"] = xr.DataArray(rgfo_esa_step, dims=["epoch"])
     packets["nso_half_spin"] = xr.DataArray(nso_half_spin, dims=["epoch"])
     packets["nso_spin_sector"] = xr.DataArray(nso_spin_sector, dims=["epoch"])
-    packets["nso_energy_step"] = xr.DataArray(nso_esa_step, dims=["epoch"])
+    packets["nso_esa_step"] = xr.DataArray(nso_esa_step, dims=["epoch"])
     packets["spare_2"] = xr.DataArray(spare_2, dims=["epoch"])
     packets["num_events"] = xr.DataArray(num_events, dims=["epoch"])
     packets["byte_count"] = xr.DataArray(byte_count, dims=["epoch"])
@@ -486,7 +486,16 @@ def process_de_data(
 
     # Add per-epoch metadata from first packet of each epoch
     epoch_slice = slice(None, None, num_priorities)
-    for var in ["sw_bias_gain_mode", "st_bias_gain_mode"]:
+    for var in [
+        "sw_bias_gain_mode",
+        "st_bias_gain_mode",
+        "rgfo_esa_step",
+        "rgfo_half_spin",
+        "rgfo_spin_sector",
+        "nso_esa_step",
+        "nso_half_spin",
+        "nso_spin_sector",
+    ]:
         de_data[var] = xr.DataArray(
             packets[var].isel(epoch=epoch_slice).values,
             dims=["epoch"],
@@ -518,7 +527,6 @@ def process_de_data(
             dims=["epoch", "priority"],
             attrs=cdf_attrs.get_variable_attributes("de_2d_attrs"),
         )
-
     # Reshape packet arrays for validation and assignment
     priorities_2d = packets.priority.values.reshape(num_epochs, num_priorities)
     num_events_2d = packets.num_events.values.reshape(num_epochs, num_priorities)

@@ -81,7 +81,7 @@ class UltraConstants:
     CULLING_RPM_MIN = 2.0
     CULLING_RPM_MAX = 6.0
 
-    # Thresholds for culling based on counts (keV).
+    # Energy Bounds for culling (keV).
     CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [
         3.0,
         10.0,

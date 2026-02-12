@@ -56,18 +56,18 @@ IAL_BIT_STRUCTURE = {
     "BYTE_COUNT": 23,
 }
 
-# LO_IALIRT_VARIABLE_NAMES = [
-#     "heplusplus",
-#     "cplus5",
-#     "cplus6",
-#     "oplus6",
-#     "oplus7",
-#     "oplus8",
-#     "mg",
-#     "fe_loq",
-#     "fe_hiq",
-# ]
-# HI_IALIRT_VARIABLE_NAMES = ["h"]
+LO_IALIRT_VARIABLE_NAMES = [
+    "heplusplus",
+    "cplus5",
+    "cplus6",
+    "oplus6",
+    "oplus7",
+    "oplus8",
+    "mg",
+    "fe_hiq",
+    "fe_loq",
+]
+HI_IALIRT_VARIABLE_NAMES = ["h"]
 # Mass over charge (AMU/e)
 # Section 13.2 of Algorithm Document.
 LO_IALIRT_M_OVER_Q = {
@@ -764,6 +764,54 @@ LOSSY_B_TABLE = {
 # ------L1B Constants------
 HI_ACQUISITION_TIME = 0.59916
 
+# TODO: in the future, read from sci-lut
+LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq", "heplus"]
+LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus", "heplus"]
+LO_SW_PRIORITY_VARIABLE_NAMES = [
+    "p0_tcrs",
+    "p1_hplus",
+    "p2_heplusplus",
+    "p3_heavies",
+    "p4_dcrs",
+]
+LO_NSW_PRIORITY_VARIABLE_NAMES = ["p5_heavies", "p6_hplus_heplusplus"]
+LO_SW_SPECIES_VARIABLE_NAMES = [
+    "hplus",
+    "heplusplus",
+    "cplus4",
+    "cplus5",
+    "cplus6",
+    "oplus5",
+    "oplus6",
+    "oplus7",
+    "oplus8",
+    "ne",
+    "mg",
+    "si",
+    "fe_loq",
+    "fe_hiq",
+    "heplus",
+    "cnoplus",
+]
+LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    "tcr",
+    "dcr",
+    "sta",
+    "stb",
+    "sp",
+    "total_position_count",
+]
+HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    "dcr",
+    "mst",
+    "starts_only",
+    "stops_only",
+    "singles_starts",
+    "singles_stops",
+    "low_tof_cutoff",
+]
+LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
+HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 # Various configurations to support L1b processing of individual data products
 # Much of these are described in the algorithm document in chapter 11 ("Data
 # Level 1B")
@@ -835,12 +883,32 @@ LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES = [
     "ne",
     "mg",
     "si",
-    "fe_loq",
     "fe_hiq",
+    "fe_loq",
 ]
 LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES = [
     "heplus",
     "cnoplus",
+]
+LO_NSW_SPECIES_VARIABLE_NAMES = [
+    "hplus",
+    "heplusplus",
+    "c",
+    "o",
+    "ne_si_mg",
+    "fe",
+    "heplus",
+    "cnoplus",
+]
+HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh", "junk"]
+HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
+HI_PRIORITY_VARIABLE_NAMES = [
+    "priority0",
+    "priority1",
+    "priority2",
+    "priority3",
+    "priority4",
+    "priority5",
 ]
 
 NSW_POSITIONS = [x for x in range(3, 22)]

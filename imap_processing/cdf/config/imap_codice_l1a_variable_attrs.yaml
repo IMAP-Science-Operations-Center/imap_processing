@@ -107,18 +107,6 @@ priority:
     VALIDMAX: 7
     VAR_TYPE: support_data
 
-products:
-    CATDESC: Products
-    FIELDNAM: Products
-    FILLVAL: *uint32_fillval
-    FORMAT: I2
-    LABLAXIS: " "
-    SCALETYP: linear
-    UNITS: " "
-    VALIDMIN: 0
-    VALIDMAX: 255
-    VAR_TYPE: support_data
-
 k_factor_attrs:
     CATDESC: K Factor constant that is used to convert voltages to energies
     DEPEND_1: k_factor
@@ -173,14 +161,6 @@ priority_label:
     FIELDNAM: Priority Level
     FORMAT: A2
     VAR_TYPE: metadata
-
-product_names:
-    CATDESC: Product Names
-    DEPEND_1: products
-    FIELDNAM: Product Names
-    FORMAT: A2
-    VAR_TYPE: metadata
-
 
 # Common energy labels for species for omni and sectored data
 energy_species_label:
@@ -301,7 +281,7 @@ nso_spin_sector:
     VAR_NOTES: Indicates the spin sector when No Scan Operation (NSO) was activated. In NSO, the ESA voltage is set to the first step in the scan and remains fixed until the next cycle boundary.
     VAR_TYPE: data
 
-nso_energy_step:
+nso_esa_step:
     CATDESC: Energy Step When No Scan Operation (NSO) was activated
     DEPEND_0: epoch
     DISPLAY_TYPE: time_series
@@ -346,7 +326,7 @@ rgfo_spin_sector:
     VAR_NOTES: Indicates the spin sector when Reduced Gain Factor Operation (RGFO) was activated. In RGFO, the Entrance ESA voltage is reduced in order to limit the number of ions that reach the detectors.
     VAR_TYPE: data
 
-rgfo_energy_step:
+rgfo_esa_step:
     CATDESC: Energy Step When Reduced Gain Factor Operation (RGFO) was activated
     DEPEND_0: epoch
     DISPLAY_TYPE: time_series

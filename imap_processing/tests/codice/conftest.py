@@ -292,17 +292,3 @@ def codice_lut_path():
             raise ValueError(f"Unknown descriptor: {descriptor}")
 
     return _side_effect
-
-
-LO_IALIRT_VARIABLE_NAMES = [
-    "heplusplus",
-    "cplus5",
-    "cplus6",
-    "oplus6",
-    "oplus7",
-    "oplus8",
-    "mg",
-    "fe_loq",
-    "fe_hiq",
-]
-HI_IALIRT_VARIABLE_NAMES = ["h"]

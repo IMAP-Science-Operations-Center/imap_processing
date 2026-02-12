@@ -60,7 +60,7 @@ def _despin_species_data(
     # 24 is derived by multiplying spin sector dim from collapse table by 2
     spin_sector_len = constants.LO_DESPIN_SPIN_SECTORS
     despun_shape = (num_packets, num_species, esa_steps, spin_sector_len, inst_az_dim)
-    despun_data = np.full(despun_shape, 0)
+    despun_data = np.full(despun_shape, 0.0, dtype=np.float64)
     # Pixel orientation array and mapping positions
     pixel_orientation = np.array(
         sci_lut_data["lo_stepping_tab"]["pixel_orientation"]["data"]
@@ -95,7 +95,7 @@ def _despin_species_data(
     return despun_data
 
 
-def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:  # noqa: PLR0912
     """
     L1A processing code.
 
@@ -143,15 +143,23 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # ========= Decompress and Reshape Data ===========
     # Lookup SW or NSW species based on APID
+    # We also need to determine if there are any species that should be backfilled
+    # with fill values
     if view_tab_obj.apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"]["sw"][
-            "species_names"
-        ]
+        actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
+            "sw"
+        ]["species_names"]
+        desired_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
+            "sw"
+        ]["desired_species_names"]
         logical_source_id = "imap_codice_l1a_lo-sw-angular"
     elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"]["nsw"][
-            "species_names"
-        ]
+        actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
+            "nsw"
+        ]["species_names"]
+        desired_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
+            "nsw"
+        ]["desired_species_names"]
         logical_source_id = "imap_codice_l1a_lo-nsw-angular"
     else:
         raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
@@ -183,7 +191,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # we handle despinning.
     num_packets = len(binary_data_list)
     num_esa_steps = constants.NUM_ESA_STEPS
-    num_species = len(species_names)
+    num_species = len(actual_species_names)
     num_spin_sectors = collapsed_shape[0]
     species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets, num_species, num_esa_steps, *collapsed_shape
@@ -423,15 +431,9 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             "acquisition_time_per_esa_step", check_schema=False
         ),
     )
-    l1a_dataset["products"] = xr.DataArray(
-        np.arange(len(species_names)),
-        dims=("products",),
-        attrs=cdf_attrs.get_variable_attributes("products", check_schema=False),
-    )
-    l1a_dataset["product_names"] = xr.DataArray(
-        np.array(species_names),
-        dims=("products",),
-        attrs=cdf_attrs.get_variable_attributes("product_names", check_schema=False),
+    # Rename vars
+    unpacked_dataset = unpacked_dataset.rename(
+        {"rgfo_energy_step": "rgfo_esa_step", "nso_energy_step": "nso_esa_step"}
     )
     # These variables were added to the packet definition after 20260129, so they only
     # exist in the unpacked dataset if packet_version > 1
@@ -440,9 +442,9 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # compliance/consistency.
     l1a_additional_vars = [
         "rgfo_spin_sector",
-        "rgfo_energy_step",
+        "rgfo_esa_step",
         "nso_spin_sector",
-        "nso_energy_step",
+        "nso_esa_step",
     ]
     for var in l1a_additional_vars:
         if var not in unpacked_dataset:
@@ -466,12 +468,24 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             dims=("epoch",),
             attrs=cdf_attrs.get_variable_attributes(var),
         )
+    # Loop through the species we want in the final dataset (desired_species_names) and
+    # add them if they exist in the actual species names from the LUT.
+    # This is to handle the bug in which the spacecraft was sending data down "off by
+    # one" and getting mislabeled.
+    for species in desired_species_names:
+        if species not in actual_species_names:
+            logger.warning(
+                f"Desired species {species} not found in actual species names from "
+                f"LUT. This species will be filled with fill values in the final "
+                f"dataset. Actual species names: {actual_species_names}"
+            )
+            species_data_individual = np.full(species_data[:, 0, :, :, :].shape, np.nan)
+        else:
+            species_idx = actual_species_names.index(species)
+            species_data_individual = species_data[:, species_idx, :, :, :]
 
-    # Finally, add species data variables and their uncertainties
-    for species_data_idx, species in enumerate(species_names):
         species_attrs = cdf_attrs.get_variable_attributes("lo-angular-attrs")
         unc_attrs = cdf_attrs.get_variable_attributes("lo-angular-unc-attrs")
-
         direction = (
             "Sunward"
             if view_tab_obj.apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS
@@ -485,7 +499,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             species=species, direction=direction
         )
         l1a_dataset[species] = xr.DataArray(
-            species_data[:, species_data_idx, :, :, :],
+            species_data_individual,
             dims=("epoch", "esa_step", "spin_sector", "inst_az"),
             attrs=species_attrs,
         )

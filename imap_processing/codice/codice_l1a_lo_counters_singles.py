@@ -75,9 +75,6 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         "lo_stepping"
     ]
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
-    variable_names = sci_lut_data["data_product_lo_tab"]["0"]["counters-singles"][
-        "species_names"
-    ]
     # ========= Decompress and Reshape Data ===========
     logical_source_id = "imap_codice_l1a_lo-counters-singles"
 
@@ -268,15 +265,9 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
             "acquisition_time_per_esa_step", check_schema=False
         ),
     )
-    l1a_dataset["products"] = xr.DataArray(
-        np.arange(len(variable_names)),
-        dims=("products",),
-        attrs=cdf_attrs.get_variable_attributes("products", check_schema=False),
-    )
-    l1a_dataset["product_names"] = xr.DataArray(
-        np.array(list(variable_names)),
-        dims=("products",),
-        attrs=cdf_attrs.get_variable_attributes("product_names", check_schema=False),
+    # Rename vars
+    unpacked_dataset = unpacked_dataset.rename(
+        {"rgfo_energy_step": "rgfo_esa_step", "nso_energy_step": "nso_esa_step"}
     )
     # These variables were added to the packet definition after 20260129, so they only
     # exist in the unpacked dataset if packet_version > 1
@@ -285,9 +276,9 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     # compliance/consistency.
     l1a_additional_vars = [
         "rgfo_spin_sector",
-        "rgfo_energy_step",
+        "rgfo_esa_step",
         "nso_spin_sector",
-        "nso_energy_step",
+        "nso_esa_step",
     ]
     for var in l1a_additional_vars:
         if var not in unpacked_dataset:
@@ -310,7 +301,6 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
             dims=("epoch",),
             attrs=cdf_attrs.get_variable_attributes(var),
         )
-
     # Finally, add species data variables and their uncertainties.
     # Since singles only has one variable, we can directly add it here.
     l1a_dataset["apd_singles"] = xr.DataArray(

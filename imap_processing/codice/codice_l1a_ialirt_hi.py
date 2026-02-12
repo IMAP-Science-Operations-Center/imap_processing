@@ -176,8 +176,5 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         np.repeat(unpacked_dataset["suspect"].values, n_spins),
         dims=("epoch",),
     )
-    l1a_dataset["product_names"] = xr.DataArray(
-        np.array([first_species]), dims=("product",)
-    )
 
     return l1a_dataset

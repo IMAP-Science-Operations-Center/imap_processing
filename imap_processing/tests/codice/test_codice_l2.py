@@ -27,6 +27,7 @@ from imap_processing.codice.codice_l2 import (
     process_lo_species_intensity,
 )
 from imap_processing.codice.constants import (
+    LO_SW_ANGULAR_VARIABLE_NAMES,
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
     SW_POSITIONS,
 )
@@ -287,6 +288,7 @@ def test_process_lo_species_intensity(mock_get_file_paths, codice_lut_path):
         len_pos = 5
         process_lo_species_intensity(
             l1b_val_data_processed,
+            LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
             gf,
             None,
             list(np.arange(0, len_pos)),
@@ -314,10 +316,6 @@ def test_process_lo_missing_species_intensity():
             "epoch": ("epoch", np.ones(5)),
             "energy_table": (("esa_step",), np.ones(128) * 10),
             "packet_version": ("epoch", np.ones(5)),
-            "product_names": (
-                "product",
-                np.array(LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES),
-            ),
         }
     )
 
@@ -335,6 +333,7 @@ def test_process_lo_missing_species_intensity():
         len_pos = 5
         process_lo_species_intensity(
             l1b_val_data_processed,
+            LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
             gf,
             None,
             list(np.arange(0, len_pos)),
@@ -366,12 +365,13 @@ def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
     ):
         l1b_val_data_processed = process_lo_angular_intensity(
             l1b_val_data_processed,
+            LO_SW_ANGULAR_VARIABLE_NAMES,
             gf,
             None,
             SW_POSITIONS,
         )
 
-    for var in l1b_val_data_processed["product_names"].values:
+    for var in LO_SW_ANGULAR_VARIABLE_NAMES:
         # Heplus is not in older CDFs
         # TODO figure out if we need to backfill those cdfs with heplus nan array
         if var == "heplus" and var not in l1b_val_data_processed:
@@ -486,6 +486,10 @@ def test_codice_l2_nsw_species_intensity(mock_get_file_paths, codice_lut_path):
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in l2_val_data.data_vars:
+        # Skip cnopus because this variable should be thrown out for lo nsw species
+        # for table_ids <= 3978152295
+        if "cnoplus" in variable:
+            continue
         # NOTE: Replace nan with 0 for comparison as the validation data uses 0
         processed_val = processed_2_ds[variable].values
         processed_val[np.isnan(processed_val)] = 0.0

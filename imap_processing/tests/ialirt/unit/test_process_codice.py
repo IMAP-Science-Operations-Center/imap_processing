@@ -36,8 +36,6 @@ from imap_processing.ialirt.l0.process_codice import (
 )
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.tests.codice.conftest import (
-    HI_IALIRT_VARIABLE_NAMES,
-    LO_IALIRT_VARIABLE_NAMES,
     VALIDATION_FILE_DATE,
     VALIDATION_FILE_VERSION,
 )
@@ -126,8 +124,7 @@ def cod_lo_l1a_test_data():
     )
 
     data = load_cdf(data_path)
-    # add product_names array to mock a l1a file
-    data["product_names"] = xr.DataArray(np.array(LO_IALIRT_VARIABLE_NAMES))
+
     return data
 
 
@@ -202,10 +199,6 @@ def cod_lo_l1b_test_data():
 
     data = load_cdf(data_path)
 
-    # add product_names array to mock a l1b file
-    data["product_names"] = np.array(LO_IALIRT_VARIABLE_NAMES)
-    # Add packet version
-    data["packet_version"] = xr.DataArray(np.full(len(data.epoch), 1))
     return data
 
 
@@ -229,10 +222,11 @@ def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor):
         ),
         "epoch_delta_minus": ("epoch", cod_lo_l1a_test_data["epoch_delta_minus"].data),
         "epoch_delta_plus": ("epoch", cod_lo_l1a_test_data["epoch_delta_plus"].data),
-        "product_names": ("product", cod_lo_l1a_test_data["product_names"].data),
     }
 
-    variables_to_convert = cod_lo_l1a_test_data["product_names"].data
+    variables_to_convert = getattr(
+        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    )
 
     for variable in variables_to_convert:
         data_vars[variable] = (
@@ -258,7 +252,9 @@ def test_l1b_ialirt_cod_lo(cod_lo_l1a_test_data, cod_lo_l1b_test_data):
         dataset,
         descriptor,
     )
-    variables_to_convert = dataset["product_names"].data
+    variables_to_convert = getattr(
+        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    )
     for variable in variables_to_convert:
         actual = l1b[variable].data
         expected = cod_lo_l1b_test_data[variable].data
@@ -282,8 +278,7 @@ def cod_hi_l1a_test_data():
     )
 
     data = load_cdf(data_path)
-    # add product_names array to mock a l1a file
-    data["product_names"] = np.array(HI_IALIRT_VARIABLE_NAMES)
+
     return data
 
 
@@ -303,8 +298,6 @@ def cod_hi_l1b_test_data():
     )
 
     data = load_cdf(data_path)
-    # add product_names array to mock a l1b file
-    data["product_names"] = np.array(HI_IALIRT_VARIABLE_NAMES)
 
     return data
 
@@ -360,7 +353,9 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
         cod_hi_l1a_test_data,
         descriptor,
     )
-    variables_to_convert = cod_hi_l1a_test_data["product_names"].data
+    variables_to_convert = getattr(
+        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    )
     for variable in variables_to_convert:
         actual = l1b[variable].data
         expected = cod_hi_l1b_test_data[variable].data
@@ -659,7 +654,7 @@ def test_l2_ialirt_cod_lo(
     cod_lo_l1b_test_data["energy_table"] = cod_lo_l1b_test_data["energy_table"].rename(
         {"energy_table": "esa_step"}
     )
-    for species in cod_lo_l1b_test_data["product_names"].data:
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
         if "energy_table" in cod_lo_l1b_test_data[species].dims:
             cod_lo_l1b_test_data[species] = cod_lo_l1b_test_data[species].rename(
                 {"energy_table": "esa_step"}
@@ -675,6 +670,7 @@ def test_l2_ialirt_cod_lo(
 
     intensity = process_lo_species_intensity(
         cod_lo_l1b_test_data,
+        constants.LO_IALIRT_VARIABLE_NAMES,
         geometric_factors,
         efficiencies,
         constants.SOLAR_WIND_POSITIONS,
@@ -682,7 +678,7 @@ def test_l2_ialirt_cod_lo(
 
     pseudo_density_dict = {}
 
-    for species in cod_lo_l1b_test_data["product_names"].data:
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
         pseudo_density = (
             intensity[species]
             * np.sqrt(cod_lo_l1b_test_data["energy_table"])
@@ -694,7 +690,7 @@ def test_l2_ialirt_cod_lo(
         )  # (epoch,)
         pseudo_density_dict[species] = summed_pseudo_density.values
 
-    species = cod_lo_l1b_test_data["product_names"].data
+    species = constants.LO_IALIRT_VARIABLE_NAMES
 
     # Denominator.
     # Note that outside of this test a zero value denominator

@@ -32,7 +32,7 @@ pytestmark = pytest.mark.external_test_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_updated_packet_version(mock_get_file_paths, codice_lut_path):
+def test_updated_packet_version(mock_get_file_paths, codice_lut_path, caplog):
     """Tests the new FSW changes (jan 2026)."""
     codice_lut_path_jan = codice_lut_path(descriptor="l1a-sci-lut-jan")
     mock_get_file_paths.side_effect = [
@@ -53,13 +53,31 @@ def test_updated_packet_version(mock_get_file_paths, codice_lut_path):
         expected_vars = [
             "rgfo_spin_sector",
             "nso_spin_sector",
-            "rgfo_energy_step",
-            "nso_energy_step",
+            "rgfo_esa_step",
+            "nso_esa_step",
         ]
         for var in expected_vars:
             assert var in ds.data_vars, (
                 f"Expected variable '{var}' not found in dataset"
             )
+
+        # check that warnings are logged for missing "desired" species
+        assert (
+            "Desired species heplusplus not found in actual species names from LUT"
+            in caplog.text
+        )
+        assert (
+            "Desired species oplus6 not found in actual species names from LUT"
+            in caplog.text
+        )
+        assert (
+            "Desired species heplus not found in actual species names from LUT"
+            in caplog.text
+        )
+        assert (
+            "Desired species cnoplus not found in actual species names from LUT"
+            in caplog.text
+        )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -373,6 +391,10 @@ def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     # Compare only the common variables
     for variable in val_data.data_vars:
+        # Skip cnopus because this variable should be thrown out for lo nsw species
+        # for table_ids <= 3978152295
+        if "cnoplus" in variable:
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
