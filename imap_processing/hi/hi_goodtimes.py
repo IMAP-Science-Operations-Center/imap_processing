@@ -764,36 +764,45 @@ def mark_overflow_packets(
     for coin_types in config_df["coincidence_type_values"]:
         all_valid_coin_types.update(coin_types)
 
-    # Track packets to cull
-    mets_to_cull = []
+    # Find the last event index for each packet (vectorized)
+    # We need to find, for each full packet, the index of its final event.
+    # Since events within a packet appear consecutively in the array, the
+    # "last" event for packet P is the event with the largest array index
+    # where ccsds_indices == P.
+    #
+    # We use np.maximum.at to efficiently compute this:
+    # - last_event_per_packet[P] will hold the max event index for packet P
+    # - np.maximum.at updates last_event_per_packet[ccsds_indices[i]] with
+    #   event_indices[i] if it's larger than the current value
+    # - After processing all events, last_event_per_packet[P] contains the
+    #   index of the last event belonging to packet P
+    max_packet_idx = int(np.max(ccsds_indices))
+    last_event_per_packet = np.full(max_packet_idx + 1, -1, dtype=np.intp)
+    event_indices = np.arange(len(ccsds_indices))
+    np.maximum.at(last_event_per_packet, ccsds_indices, event_indices)
 
-    for packet_idx in full_packet_indices:
-        # Find all events belonging to this packet
-        event_mask = ccsds_indices == packet_idx
-        packet_event_indices = np.nonzero(event_mask)[0]
+    # Get the final event indices for full packets
+    final_event_indices = last_event_per_packet[full_packet_indices]
 
-        # Get the final event (last one in the list for this packet)
-        final_event_idx = packet_event_indices[-1]
+    # Get coincidence types for final events
+    final_coin_types = coincidence_types[final_event_indices]
 
-        # Check if the final event's coincidence type is in a calibration product
-        final_coin_type = coincidence_types[final_event_idx]
-
+    # Log each full packet
+    for i, packet_idx in enumerate(full_packet_indices):
         log_per_packet(
-            f"Packet {packet_idx} is full with qualified final event "
-            f"(coincidence_type={final_coin_type})"
+            f"Packet {packet_idx} is full with final event "
+            f"(coincidence_type={final_coin_types[i]})"
         )
 
-        if final_coin_type in all_valid_coin_types:
-            # This packet has a qualified final event - mark as bad
-            # Use the event MET to find the corresponding goodtimes MET
-            final_event_met = event_mets[final_event_idx]
-            mets_to_cull.append(final_event_met)
+    # Check which final events are qualified (in a calibration product)
+    qualified_mask = np.isin(final_coin_types, list(all_valid_coin_types))
+
+    # Get METs for qualified packets
+    mets_to_cull = event_mets[final_event_indices[qualified_mask]]
 
     # Mark all identified times as bad (all spin bins)
-    if mets_to_cull:
-        goodtimes_ds.goodtimes.mark_bad_times(
-            met=np.array(mets_to_cull), cull=cull_code
-        )
+    if len(mets_to_cull) > 0:
+        goodtimes_ds.goodtimes.mark_bad_times(met=mets_to_cull, cull=cull_code)
 
     logger.info(
         f"Found {len(full_packet_indices)} full packet(s), "
