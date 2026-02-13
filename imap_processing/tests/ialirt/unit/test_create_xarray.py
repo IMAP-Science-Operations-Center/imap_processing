@@ -155,7 +155,7 @@ def test_create_dataset():
         "codice_hi_epoch",
         "codice_hi_energy_center",
         "codice_hi_spin_sector",
-        "codice_hi_elevation",
+        "codice_hi_polar",
     )
 
     # Tests that you can write to a cdf.
