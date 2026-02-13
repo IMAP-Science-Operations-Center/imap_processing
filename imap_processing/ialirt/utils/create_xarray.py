@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import xarray as xr
+from cdflib.epochs import CDFepoch
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice.constants import (
@@ -19,7 +20,6 @@ from imap_processing.ialirt.utils.constants import (
     hit_restricted_fields,
     swe_energy,
 )
-from imap_processing.spice.time import et_to_ttj2000ns, str_to_et
 
 
 def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0912
@@ -53,11 +53,39 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     dt = datetime.fromisoformat(date)
 
     # Start and end of that UTC day
-    start_str = dt.date().isoformat() + "T00:00:00Z"
-    end_str = (dt.date() + timedelta(days=1)).isoformat() + "T00:00:00Z"
+    start_dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_dt = start_dt + timedelta(days=1)
 
-    start_ttj2000 = et_to_ttj2000ns(str_to_et(start_str))
-    end_ttj2000 = et_to_ttj2000ns(str_to_et(end_str))
+    start_ttj2000 = int(
+        CDFepoch.compute_tt2000(
+            [
+                start_dt.year,
+                start_dt.month,
+                start_dt.day,
+                start_dt.hour,
+                start_dt.minute,
+                start_dt.second,
+                0,
+                0,
+                0,  # ms, us, ns
+            ]
+        )
+    )
+    end_ttj2000 = int(
+        CDFepoch.compute_tt2000(
+            [
+                end_dt.year,
+                end_dt.month,
+                end_dt.day,
+                end_dt.hour,
+                end_dt.minute,
+                end_dt.second,
+                0,
+                0,
+                0,  # ms, us, ns
+            ]
+        )
+    )
 
     for record in records:
         inst = record.get("instrument")
