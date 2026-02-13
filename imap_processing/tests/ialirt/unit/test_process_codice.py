@@ -372,7 +372,7 @@ def l1a_lut_path():
         / "codice"
         / "data"
         / "l1a_lut"
-        / "imap_codice_l1a-sci-lut_20251007_v004.json"
+        / "imap_codice_l1a-sci-lut_20251007_v005.json"
     )
 
     return lut_path
