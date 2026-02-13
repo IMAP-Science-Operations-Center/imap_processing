@@ -50,7 +50,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     date = records[0]["time_utc"]  # e.g. "2025-06-20T08:00:00Z"
 
     # Parse as UTC
-    dt = datetime.fromisoformat(date.replace("Z", "+00:00"))
+    dt = datetime.fromisoformat(date)
 
     # Start and end of that UTC day
     start_str = dt.date().isoformat() + "T00:00:00Z"
@@ -177,21 +177,21 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         ),
     )
 
-    elevation = xr.DataArray(
+    polar = xr.DataArray(
         HI_IALIRT_ELEVATION_ANGLE,
-        name="codice_hi_elevation",
-        dims=["codice_hi_elevation"],
+        name="codice_hi_polar",
+        dims=["codice_hi_polar"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_elevation", check_schema=False
+            "codice_hi_polar", check_schema=False
         ),
     )
 
-    elevation_labels = xr.DataArray(
-        [f"{float(v):.1f}deg" for v in elevation.values],
-        name="codice_hi_elevation_labels",
-        dims=["codice_hi_elevation"],
+    polar_labels = xr.DataArray(
+        [f"{float(v):.1f}deg" for v in polar.values],
+        name="codice_hi_polar_labels",
+        dims=["codice_hi_polar"],
         attrs=cdf_manager.get_variable_attributes(
-            "codice_hi_elevation_labels", check_schema=False
+            "codice_hi_polar_labels", check_schema=False
         ),
     )
 
@@ -236,8 +236,8 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         "codice_hi_energy_center": codice_hi_energy_centers,
         "codice_hi_energy_minus": codice_energy_minus,
         "codice_hi_energy_plus": codice_energy_plus,
-        "codice_hi_elevation": elevation,
-        "codice_hi_elevation_labels": elevation_labels,
+        "codice_hi_polar": polar,
+        "codice_hi_polar_labels": polar_labels,
         "codice_hi_spin_sector": spin_sector,
         "codice_hi_spin_sector_labels": spin_sector_labels,
         "swe_electron_energy": swe_electron_energy,
