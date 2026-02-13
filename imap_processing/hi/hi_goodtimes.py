@@ -6,6 +6,7 @@ from enum import IntEnum
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing.hi.utils import parse_sensor_number
@@ -679,4 +680,122 @@ def mark_drf_times(
 
     logger.info(
         f"Dropped times during {len(transition_indices)} DRF restabilization period(s)"
+    )
+
+
+def mark_overflow_packets(
+    goodtimes_ds: xr.Dataset,
+    l1b_de: xr.Dataset,
+    config_df: pd.DataFrame,
+    cull_code: int = CullCode.LOOSE,
+) -> None:
+    """
+    Remove times when DE packets overflow with qualified events.
+
+    Filters out 8-spin periods where a Direct Event packet contains the maximum
+    number of events (664) and the final event qualifies for a calibration product.
+    When a packet is full and ends with a qualified event, additional events may
+    have been lost, making the count data incomplete.
+
+    Algorithm Document Reference:
+        Section 2.3.2.2: Good Times Exclusions due to High Count Rate
+
+    Background:
+        Each DE packet can hold a maximum of 664 direct events. When a packet fills
+        completely, any additional events that occur are lost. If the final event
+        in a full packet has a coincidence type that is part of a defined calibration
+        product, the packet is considered to have potentially lost science-quality
+        events, and the entire 8-spin period should be excluded from analysis.
+
+    Parameters
+    ----------
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset to update with cull flags.
+    l1b_de : xarray.Dataset
+        L1B Direct Event data containing:
+        - ccsds_index: Index mapping each event to its packet
+        - coincidence_type: Coincidence type bitmap for each event
+        - event_met: MET timestamp for each event
+    config_df : pandas.DataFrame
+        Calibration product configuration DataFrame with coincidence_type_values
+        column containing tuples of valid coincidence type integers for each
+        calibration product. Use CalibrationProductConfig.from_csv() to load.
+    cull_code : int, optional
+        Cull code to use for marking bad times (default: CullCode.LOOSE).
+
+    Notes
+    -----
+    This function modifies goodtimes_ds in place by calling mark_bad_times()
+    for MET timestamps with overflow packets containing qualified final events.
+
+    The check for qualified events uses the coincidence_type_values from the
+    calibration product configuration, which defines which coincidence types
+    are considered valid for science analysis.
+    """
+    logger.info("Running mark_overflow_packets culling")
+
+    ccsds_indices = l1b_de["ccsds_index"].values
+    coincidence_types = l1b_de["coincidence_type"].values
+    event_mets = l1b_de["event_met"].values
+
+    if len(ccsds_indices) == 0:
+        logger.info("No events in L1B DE data")
+        return
+
+    # Maximum number of DEs per packet
+    max_des_per_packet = 664
+
+    # Count events per packet using bincount
+    # bincount[i] = number of events with ccsds_index == i
+    packet_event_counts = np.bincount(ccsds_indices)
+
+    # Find packets that are full (have exactly 664 events)
+    full_packet_indices = np.nonzero(packet_event_counts == max_des_per_packet)[0]
+
+    if len(full_packet_indices) == 0:
+        logger.info("No full packets found")
+        return
+
+    # Use DEBUG level for per-packet logging if more than 10 full packets
+    log_per_packet = logger.info if len(full_packet_indices) <= 10 else logger.debug
+
+    # Build set of all valid coincidence types from calibration products
+    all_valid_coin_types = set()
+    for coin_types in config_df["coincidence_type_values"]:
+        all_valid_coin_types.update(coin_types)
+
+    # Track packets to cull
+    mets_to_cull = []
+
+    for packet_idx in full_packet_indices:
+        # Find all events belonging to this packet
+        event_mask = ccsds_indices == packet_idx
+        packet_event_indices = np.nonzero(event_mask)[0]
+
+        # Get the final event (last one in the list for this packet)
+        final_event_idx = packet_event_indices[-1]
+
+        # Check if the final event's coincidence type is in a calibration product
+        final_coin_type = coincidence_types[final_event_idx]
+
+        log_per_packet(
+            f"Packet {packet_idx} is full with qualified final event "
+            f"(coincidence_type={final_coin_type})"
+        )
+
+        if final_coin_type in all_valid_coin_types:
+            # This packet has a qualified final event - mark as bad
+            # Use the event MET to find the corresponding goodtimes MET
+            final_event_met = event_mets[final_event_idx]
+            mets_to_cull.append(final_event_met)
+
+    # Mark all identified times as bad (all spin bins)
+    if mets_to_cull:
+        goodtimes_ds.goodtimes.mark_bad_times(
+            met=np.array(mets_to_cull), cull=cull_code
+        )
+
+    logger.info(
+        f"Found {len(full_packet_indices)} full packet(s), "
+        f"dropped {len(mets_to_cull)} 8-spin period(s) due to overflow packets"
     )

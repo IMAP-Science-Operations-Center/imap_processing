@@ -1,6 +1,7 @@
 """Test coverage for imap_processing.hi.hi_goodtimes.py"""
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -10,6 +11,7 @@ from imap_processing.hi.hi_goodtimes import (
     create_goodtimes_dataset,
     mark_drf_times,
     mark_incomplete_spin_sets,
+    mark_overflow_packets,
 )
 
 
@@ -1218,3 +1220,217 @@ class TestDropDrfTimes:
         n_culled = np.sum(gt["cull_flags"].values[:, 0] == CullCode.LOOSE)
         assert n_culled > 0  # Some should be culled
         assert n_culled <= 31  # But not all (only last ~30 minutes)
+
+
+class TestMarkOverflowPackets:
+    """Test suite for mark_overflow_packets function."""
+
+    @pytest.fixture
+    def mock_config_df(self):
+        """Create a mock calibration product configuration DataFrame."""
+        # Create a minimal config with coincidence types
+        # ABC1C2 = 15, ABC1 = 14, AB = 12
+        data = {
+            "coincidence_type_list": [("ABC1C2", "ABC1"), ("AB",)],
+            "tof_ab_low": [0, 0],
+            "tof_ab_high": [100, 100],
+            "tof_ac1_low": [0, 0],
+            "tof_ac1_high": [100, 100],
+            "tof_bc1_low": [-50, -50],
+            "tof_bc1_high": [50, 50],
+            "tof_c1c2_low": [0, 0],
+            "tof_c1c2_high": [100, 100],
+        }
+        df = pd.DataFrame(
+            data,
+            index=pd.MultiIndex.from_tuples(
+                [(1, 1), (2, 1)], names=["calibration_prod", "esa_energy_step"]
+            ),
+        )
+        # Add coincidence_type_values column (converted from strings to ints)
+        # ABC1C2=15, ABC1=14, AB=12
+        df["coincidence_type_values"] = [(15, 14), (12,)]
+        return df
+
+    @pytest.fixture
+    def mock_goodtimes(self):
+        """Create a mock goodtimes dataset."""
+        met_values = np.arange(1000.0, 1100.0, 10.0)
+        return xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((len(met_values), 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                ),
+                "esa_step": xr.DataArray(
+                    np.ones(len(met_values), dtype=np.uint8), dims=["met"]
+                ),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+            attrs={"sensor": "Hi45", "pointing": 1},
+        )
+
+    def test_no_full_packets(self, mock_goodtimes, mock_config_df):
+        """Test that no culling occurs when no packets are full."""
+        # Create L1B DE with packets having < 664 events
+        n_events = 100
+        l1b_de = xr.Dataset(
+            {
+                "ccsds_index": (["event_met"], np.zeros(n_events, dtype=np.uint16)),
+                "coincidence_type": (
+                    ["event_met"],
+                    np.full(n_events, 15, dtype=np.uint8),
+                ),
+            },
+            coords={"event_met": np.linspace(1000.0, 1010.0, n_events)},
+        )
+
+        mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
+
+        # No times should be culled
+        assert np.all(mock_goodtimes["cull_flags"].values == 0)
+
+    def test_full_packet_with_qualified_event(self, mock_goodtimes, mock_config_df):
+        """Test that full packet with qualified final event is culled."""
+        # Create L1B DE with one packet having exactly 664 events
+        n_events = 664
+        event_mets = np.linspace(1005.0, 1006.0, n_events)
+        l1b_de = xr.Dataset(
+            {
+                "ccsds_index": (["event_met"], np.zeros(n_events, dtype=np.uint16)),
+                # Final event has coincidence_type=15 (ABC1C2), which is qualified
+                "coincidence_type": (
+                    ["event_met"],
+                    np.full(n_events, 15, dtype=np.uint8),
+                ),
+            },
+            coords={"event_met": event_mets},
+        )
+
+        mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
+
+        # MET ~1006 should be culled (maps to goodtimes MET 1000)
+        # The MET 1000 bin should have all spin bins culled
+        assert mock_goodtimes["cull_flags"].values[0, :].sum() > 0
+
+    def test_full_packet_with_unqualified_event(self, mock_goodtimes, mock_config_df):
+        """Test that full packet with unqualified final event is NOT culled."""
+        # Create L1B DE with one packet having exactly 664 events
+        n_events = 664
+        event_mets = np.linspace(1005.0, 1006.0, n_events)
+        l1b_de = xr.Dataset(
+            {
+                "ccsds_index": (["event_met"], np.zeros(n_events, dtype=np.uint16)),
+                # Final event has coincidence_type=3 (not in any cal product)
+                "coincidence_type": (
+                    ["event_met"],
+                    np.full(n_events, 3, dtype=np.uint8),
+                ),
+            },
+            coords={"event_met": event_mets},
+        )
+
+        mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
+
+        # No times should be culled since final event is unqualified
+        assert np.all(mock_goodtimes["cull_flags"].values == 0)
+
+    def test_multiple_full_packets(self, mock_goodtimes, mock_config_df):
+        """Test handling of multiple full packets."""
+        # Create L1B DE with two packets, each having 664 events
+        n_events_per_packet = 664
+        n_packets = 2
+
+        ccsds_indices = np.concatenate(
+            [np.full(n_events_per_packet, i, dtype=np.uint16) for i in range(n_packets)]
+        )
+        # Packet 0: final event qualified (15)
+        # Packet 1: final event unqualified (3)
+        coincidence_types = np.concatenate(
+            [
+                np.concatenate(
+                    [np.full(n_events_per_packet - 1, 3, dtype=np.uint8), [15]]
+                ),
+                np.full(n_events_per_packet, 3, dtype=np.uint8),
+            ]
+        )
+        event_mets = np.concatenate(
+            [
+                np.linspace(1005.0, 1006.0, n_events_per_packet),  # Packet 0
+                np.linspace(1015.0, 1016.0, n_events_per_packet),  # Packet 1
+            ]
+        )
+
+        l1b_de = xr.Dataset(
+            {
+                "ccsds_index": (["event_met"], ccsds_indices),
+                "coincidence_type": (["event_met"], coincidence_types),
+            },
+            coords={"event_met": event_mets},
+        )
+
+        mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
+
+        # Only packet 0's MET should be culled (MET 1000)
+        # Packet 1 has unqualified final event, so MET 1010 should not be culled
+        assert np.sum(mock_goodtimes["cull_flags"].values[0, :] > 0) == 90  # All bins
+        assert np.all(mock_goodtimes["cull_flags"].values[1, :] == 0)  # MET 1010
+
+    def test_empty_de_data(self, mock_goodtimes, mock_config_df):
+        """Test handling of empty L1B DE data."""
+        l1b_de = xr.Dataset(
+            {
+                "ccsds_index": (["event_met"], np.array([], dtype=np.uint16)),
+                "coincidence_type": (["event_met"], np.array([], dtype=np.uint8)),
+            },
+            coords={"event_met": np.array([])},
+        )
+
+        # Should not raise, just return without culling
+        mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
+        assert np.all(mock_goodtimes["cull_flags"].values == 0)
+
+    def test_custom_cull_code(self, mock_goodtimes, mock_config_df):
+        """Test using a custom cull code."""
+        n_events = 664
+        event_mets = np.linspace(1005.0, 1006.0, n_events)
+        l1b_de = xr.Dataset(
+            {
+                "ccsds_index": (["event_met"], np.zeros(n_events, dtype=np.uint16)),
+                "coincidence_type": (
+                    ["event_met"],
+                    np.concatenate([np.full(n_events - 1, 3, dtype=np.uint8), [15]]),
+                ),
+            },
+            coords={"event_met": event_mets},
+        )
+
+        custom_cull = 5
+        mark_overflow_packets(
+            mock_goodtimes, l1b_de, mock_config_df, cull_code=custom_cull
+        )
+
+        # Check that the custom cull code was used
+        assert np.any(mock_goodtimes["cull_flags"].values == custom_cull)
+
+    def test_final_event_is_last_in_list(self, mock_goodtimes, mock_config_df):
+        """Test that the final event is the last one in the list for the packet."""
+        n_events = 664
+        event_mets = np.linspace(1005.0, 1006.0, n_events)
+
+        # All events have unqualified type except the last one in the list
+        coincidence_types = np.full(n_events, 3, dtype=np.uint8)
+        coincidence_types[-1] = 12  # Last event is qualified
+
+        l1b_de = xr.Dataset(
+            {
+                "ccsds_index": (["event_met"], np.zeros(n_events, dtype=np.uint16)),
+                "coincidence_type": (["event_met"], coincidence_types),
+            },
+            coords={"event_met": event_mets},
+        )
+
+        mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
+
+        # Should be culled because the final event (last in list) is qualified
+        assert np.sum(mock_goodtimes["cull_flags"].values > 0) > 0
