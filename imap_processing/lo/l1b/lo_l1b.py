@@ -428,7 +428,7 @@ def initialize_l1b_de(
         # attrs=attr_mgr.get_variable_attributes("esa_step"),
     )
     l1b_de["shcoarse"] = xr.DataArray(
-        np.repeat(l1a_de["shcoarse"].values, l1a_de["de_count"].values),
+        np.repeat(l1a_de["met"].values, l1a_de["de_count"].values),
         dims=["epoch"],
         # TODO: Add shcoarse to YAML file
         # attrs=attr_mgr.get_variable_attributes("shcoarse"),
@@ -804,7 +804,7 @@ def get_spin_start_times(
     """
     # Get the actual spin start times from the spin data
     # Use the individual spin start times rather than calculating from ASC averages
-    spin_start_times = interpolate_spin_data(l1a_de["shcoarse"].values)[
+    spin_start_times = interpolate_spin_data(l1a_de["met"].values)[
         "spin_start_met"
     ].values
     spin_start_times = np.repeat(spin_start_times, l1a_de["de_count"].values)
