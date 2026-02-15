@@ -107,9 +107,9 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
     last_timestamp_str = last_timestamp_str.replace("_", ":")
     end_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S")
 
-    # File is created every 5 minutes.
+    # File creation time of last file minus 48 hrs.
     start_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(
-        minutes=5
+        hours=48
     )
 
     # Parse file.

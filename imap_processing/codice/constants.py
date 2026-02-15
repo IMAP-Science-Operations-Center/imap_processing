@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 
-from imap_processing.codice.utils import CODICEAPID, CoDICECompression
+from imap_processing.codice.utils import CODICEAPID
 
 # -------L1A Constants-------
 # Numerical constants
@@ -64,8 +64,8 @@ LO_IALIRT_VARIABLE_NAMES = [
     "oplus7",
     "oplus8",
     "mg",
-    "fe_loq",
     "fe_hiq",
+    "fe_loq",
 ]
 HI_IALIRT_VARIABLE_NAMES = ["h"]
 # Mass over charge (AMU/e)
@@ -238,34 +238,6 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     },
 }
 
-# Compression ID lookup tables
-# The key is the view_id and the value is the ID for the compression algorithm
-# (see utils.CoDICECompression to see how the values correspond)
-# These are defined in the "Views" tab of the "*-SCI-LUT-*.xml" spreadsheet that
-# largely defines CoDICE processing.
-LO_COMPRESSION_ID_LOOKUP = {
-    0: CoDICECompression.PACK_24_BIT,
-    1: CoDICECompression.LOSSY_B_LOSSLESS,
-    2: CoDICECompression.LOSSY_B_LOSSLESS,
-    3: CoDICECompression.LOSSY_A_LOSSLESS,
-    4: CoDICECompression.LOSSY_A_LOSSLESS,
-    5: CoDICECompression.LOSSY_A_LOSSLESS,
-    6: CoDICECompression.LOSSY_A_LOSSLESS,
-    7: CoDICECompression.LOSSY_A_LOSSLESS,
-    8: CoDICECompression.LOSSY_A_LOSSLESS,
-}
-HI_COMPRESSION_ID_LOOKUP = {
-    0: CoDICECompression.LOSSY_A,
-    1: CoDICECompression.LOSSY_A,
-    2: CoDICECompression.LOSSY_A,
-    3: CoDICECompression.LOSSY_B_LOSSLESS,
-    4: CoDICECompression.LOSSY_B_LOSSLESS,
-    5: CoDICECompression.LOSSY_A_LOSSLESS,
-    6: CoDICECompression.LOSSY_A_LOSSLESS,
-    7: CoDICECompression.LOSSY_A_LOSSLESS,
-    8: CoDICECompression.LOSSY_A_LOSSLESS,
-    9: CoDICECompression.LOSSY_A_LOSSLESS,
-}
 
 # Lookup tables for Lossy decompression algorithms "A" and "B"
 # These were provided by Greg Dunn via his sohis_cdh_utils.v script and then
@@ -793,8 +765,8 @@ LOSSY_B_TABLE = {
 HI_ACQUISITION_TIME = 0.59916
 
 # TODO: in the future, read from sci-lut
-LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
-LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
+LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq", "heplus"]
+LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus", "heplus"]
 LO_SW_PRIORITY_VARIABLE_NAMES = [
     "p0_tcrs",
     "p1_hplus",
@@ -911,8 +883,8 @@ LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES = [
     "ne",
     "mg",
     "si",
-    "fe_loq",
     "fe_hiq",
+    "fe_loq",
 ]
 LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES = [
     "heplus",

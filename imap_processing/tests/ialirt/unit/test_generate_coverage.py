@@ -1,11 +1,14 @@
 """Test processEphemeris functions."""
 
-from datetime import datetime
+from datetime import datetime, time
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 from imap_processing.ialirt.generate_coverage import (
+    create_schedule_mask,
     format_coverage_summary,
     generate_coverage,
 )
@@ -109,3 +112,58 @@ def test_dsn(furnish_kernels):
 
         assert "I-ALiRT Coverage Summary" in output["summary"]
         assert 40.6 == output["total_coverage_percent"]
+
+
+@patch("imap_processing.ialirt.generate_coverage.et_to_utc")
+def test_create_schedule_mask(mock_et_to_utc):
+    """
+    Test create_schedule_mask.
+    """
+
+    mock_et_to_utc.return_value = np.array(
+        [
+            "2026-09-22T11:30:00.000",
+            "2026-09-22T11:35:00.000",
+            "2026-09-22T11:40:00.000",
+            "2026-09-22T11:45:00.000",
+            "2026-09-22T11:50:00.000",
+            "2026-09-22T11:55:00.000",
+            "2026-09-22T12:00:00.000",
+            "2026-09-22T12:05:00.000",
+            "2026-09-22T12:10:00.000",
+            "2026-09-22T12:15:00.000",
+            "2026-09-22T12:20:00.000",
+            "2026-09-22T12:25:00.000",
+            "2026-09-22T12:30:00.000",
+        ]
+    )
+
+    time_range = np.arange(13)
+
+    station = SimpleNamespace(
+        schedule_start=time(12, 0),
+        schedule_end=None,
+    )
+
+    mask = create_schedule_mask(station, time_range)
+
+    expected = np.array(
+        [
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            True,
+            True,
+            True,
+            True,
+            True,
+            True,
+            True,
+        ],
+        dtype=bool,
+    )
+
+    np.testing.assert_array_equal(mask, expected)

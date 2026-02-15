@@ -10,6 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
+    CoDICECompression,
     ViewTabInfo,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
@@ -62,6 +63,7 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 1:
@@ -80,15 +82,27 @@ def l1a_hi_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["priority"]
     species_names = species_data.keys()
     logical_source_id = "imap_codice_l1a_hi-priority"
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
-
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
-
+    packet_version = unpacked_dataset["packet_version"].values[0]
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [
-        decompress(
+        np.frombuffer(
+            bytes(
+                decompress(
+                    packet_data[:byte_count],
+                    compression_algorithm,
+                )
+            ),
+            dtype=">u4",
+            # '>' means big-endian, 'u4' means unsigned 4-byte integer (uint32)
+        )
+        # For newer packet versions, the decompressed data needs to be converted to
+        # uint32
+        if packet_version > 1
+        else decompress(
             packet_data[:byte_count],
             compression_algorithm,
         )

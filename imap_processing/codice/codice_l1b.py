@@ -47,7 +47,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     variables_to_convert = getattr(
         constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
     )
-
     if descriptor.startswith("lo-"):
         # Calculate energy_table using voltage_table and k_factor
         energy_attrs = dataset["voltage_table"].attrs | {
@@ -87,6 +86,8 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
+            "nso_esa_step",
+            "nso_spin_sector",
             # TODO: undo this when I get new validation file from Joey
             # "acquisition_time_per_esa_step",
         ]
@@ -190,6 +191,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
 
     # Update the global attributes
     l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
+
     return convert_to_rates(
         l1b_dataset,
         descriptor,

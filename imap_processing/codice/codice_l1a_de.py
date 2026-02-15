@@ -56,9 +56,16 @@ def extract_initial_items_from_combined_packets(
     spare_1 = np.zeros(n_packets, dtype=np.uint8)
     st_bias_gain_mode = np.zeros(n_packets, dtype=np.uint8)
     sw_bias_gain_mode = np.zeros(n_packets, dtype=np.uint8)
-    priority = np.zeros(n_packets, dtype=np.uint8)
     suspect = np.zeros(n_packets, dtype=np.uint8)
+    priority = np.zeros(n_packets, dtype=np.uint8)
     compressed = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_half_spin = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_esa_step = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_spin_sector = np.zeros(n_packets, dtype=np.uint8)
+    nso_half_spin = np.zeros(n_packets, dtype=np.uint8)
+    nso_spin_sector = np.zeros(n_packets, dtype=np.uint8)
+    nso_esa_step = np.zeros(n_packets, dtype=np.uint8)
+    spare_2 = np.zeros(n_packets, dtype=np.uint16)
     num_events = np.zeros(n_packets, dtype=np.uint32)
     byte_count = np.zeros(n_packets, dtype=np.uint32)
 
@@ -89,20 +96,42 @@ def extract_initial_items_from_combined_packets(
         suspect[pkt_idx] = (mixed_bytes >> 1) & 0x1
         # compressed: 1 bit (LSB)
         compressed[pkt_idx] = mixed_bytes & 0x1
+        # After packet version 1, the fields below are present in event_data
+        if packet_version[pkt_idx] > 1:
+            # All of the fields below are single byte fields
+            rgfo_half_spin[pkt_idx] = event_data[12]
+            rgfo_spin_sector[pkt_idx] = event_data[13]
+            rgfo_esa_step[pkt_idx] = event_data[14]
+            nso_half_spin[pkt_idx] = event_data[15]
+            nso_spin_sector[pkt_idx] = event_data[16]
+            nso_esa_step[pkt_idx] = event_data[17]
 
-        # Remaining byte-aligned fields
-        num_events[pkt_idx] = int.from_bytes(event_data[12:16], byteorder="big")
-        byte_count[pkt_idx] = int.from_bytes(event_data[16:20], byteorder="big")
+            # spare_2 is 16 bits
+            spare_2[pkt_idx] = int.from_bytes(event_data[18:20], byteorder="big")
+            # Remaining byte-aligned fields
+            num_events[pkt_idx] = int.from_bytes(event_data[20:24], byteorder="big")
+            byte_count[pkt_idx] = int.from_bytes(event_data[24:28], byteorder="big")
+            # Header is 28 bytes total for version > 1
+            len_header = 28
+        else:
+            # Remaining byte-aligned fields
+            num_events[pkt_idx] = int.from_bytes(event_data[12:16], byteorder="big")
+            byte_count[pkt_idx] = int.from_bytes(event_data[16:20], byteorder="big")
+            # Header is 20 bytes total for version 1
+            len_header = 20
 
-        # Remove the first 20 bytes from event_data (header fields from above)
+        # Remove the first len_header bytes from event_data (header fields from above)
         # Then trim to the number of bytes indicated by byte_count
-        if byte_count[pkt_idx] > len(event_data) - 20:
+        if byte_count[pkt_idx] > len(event_data) - len_header:
             raise ValueError(
                 f"Byte count {byte_count[pkt_idx]} exceeds available "
-                f"data length {len(event_data) - 20} for packet index {pkt_idx}."
+                f"data length {len(event_data) - len_header} for packet index"
+                f" {pkt_idx}."
             )
-        packets.event_data.data[pkt_idx] = event_data[20 : 20 + byte_count[pkt_idx]]
 
+        packets.event_data.data[pkt_idx] = event_data[
+            len_header : byte_count[pkt_idx] + len_header
+        ]
         if compressed[pkt_idx]:
             packets.event_data.data[pkt_idx] = decompress(
                 packets.event_data.data[pkt_idx],
@@ -120,6 +149,13 @@ def extract_initial_items_from_combined_packets(
     packets["priority"] = xr.DataArray(priority, dims=["epoch"])
     packets["suspect"] = xr.DataArray(suspect, dims=["epoch"])
     packets["compressed"] = xr.DataArray(compressed, dims=["epoch"])
+    packets["rgfo_half_spin"] = xr.DataArray(rgfo_half_spin, dims=["epoch"])
+    packets["rgfo_spin_sector"] = xr.DataArray(rgfo_spin_sector, dims=["epoch"])
+    packets["rgfo_esa_step"] = xr.DataArray(rgfo_esa_step, dims=["epoch"])
+    packets["nso_half_spin"] = xr.DataArray(nso_half_spin, dims=["epoch"])
+    packets["nso_spin_sector"] = xr.DataArray(nso_spin_sector, dims=["epoch"])
+    packets["nso_esa_step"] = xr.DataArray(nso_esa_step, dims=["epoch"])
+    packets["spare_2"] = xr.DataArray(spare_2, dims=["epoch"])
     packets["num_events"] = xr.DataArray(num_events, dims=["epoch"])
     packets["byte_count"] = xr.DataArray(byte_count, dims=["epoch"])
 
@@ -203,6 +239,7 @@ def _create_dataset_coords(
         collapse_table=0,
         three_d_collapsed=0,
         view_id=0,
+        compression=CoDICECompression.LOSSLESS.value,  # DE data is always lossless
     )
     epochs, epochs_delta = get_codice_epoch_time(
         packets["acq_start_seconds"].isel(epoch=epoch_slice),
@@ -316,7 +353,6 @@ def _unpack_and_store_events(
         n_events = int(num_events_arr[pkt_idx])
         if n_events == 0:
             continue
-
         # Extract and byte-reverse events for LSB unpacking
         pkt_bytes = np.asarray(event_data_arr[pkt_idx], dtype=np.uint8)
         pkt_bytes = pkt_bytes.reshape(n_events, 8)[:, ::-1]
@@ -450,7 +486,16 @@ def process_de_data(
 
     # Add per-epoch metadata from first packet of each epoch
     epoch_slice = slice(None, None, num_priorities)
-    for var in ["sw_bias_gain_mode", "st_bias_gain_mode"]:
+    for var in [
+        "sw_bias_gain_mode",
+        "st_bias_gain_mode",
+        "rgfo_esa_step",
+        "rgfo_half_spin",
+        "rgfo_spin_sector",
+        "nso_esa_step",
+        "nso_half_spin",
+        "nso_spin_sector",
+    ]:
         de_data[var] = xr.DataArray(
             packets[var].isel(epoch=epoch_slice).values,
             dims=["epoch"],
@@ -482,7 +527,6 @@ def process_de_data(
             dims=["epoch", "priority"],
             attrs=cdf_attrs.get_variable_attributes("de_2d_attrs"),
         )
-
     # Reshape packet arrays for validation and assignment
     priorities_2d = packets.priority.values.reshape(num_epochs, num_priorities)
     num_events_2d = packets.num_events.values.reshape(num_epochs, num_priorities)
@@ -534,6 +578,7 @@ def l1a_direct_event(unpacked_dataset: xr.Dataset, apid: int) -> xr.Dataset:
     packets = combine_segmented_packets(
         unpacked_dataset, binary_field_name="event_data"
     )
+
     packets = extract_initial_items_from_combined_packets(packets)
 
     # Gather the CDF attributes

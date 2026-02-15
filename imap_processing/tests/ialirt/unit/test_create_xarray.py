@@ -16,8 +16,8 @@ def test_create_dataset():
         {
             "instrument": "mag",
             "time_utc": "2025-06-20T08:00:00",
-            "ttj2000ns": 123456789000001,
-            "mag_epoch": 123456789000001,
+            "ttj2000ns": 803692869184000000,
+            "mag_epoch": 803692869184000000,
             "mag_B_GSE": [Decimal("5.0"), Decimal("-3.2"), Decimal("1.1")],
             "mag_B_GSM": [Decimal("4.8"), Decimal("-3.0"), Decimal("1.0")],
             "mag_B_RTN": [Decimal("5.1"), Decimal("-3.3"), Decimal("1.2")],
@@ -30,12 +30,12 @@ def test_create_dataset():
         {
             "instrument": "codice_hi",
             "time_utc": "2025-06-20T08:00:00",
-            "ttj2000ns": 123456789000000,
+            "ttj2000ns": 803692869184000000,
             "codice_hi_epoch": [
-                123456789000000,
-                123456789000000,
-                123456789000000,
-                123456789000000,
+                803692869184000000,
+                803692869184000000,
+                803692869184000000,
+                803692869184000000,
             ],
             "codice_hi_h": [
                 [
@@ -48,8 +48,8 @@ def test_create_dataset():
         {
             "instrument": "codice_lo",
             "time_utc": "2025-06-20T08:00:00",
-            "ttj2000ns": 123456789000000,
-            "codice_lo_epoch": 123456789000000,
+            "ttj2000ns": 803692869184000000,
+            "codice_lo_epoch": 803692869184000000,
             "codice_lo_c_over_o_abundance": Decimal("0.5"),
             "codice_lo_mg_over_o_abundance": Decimal("0.3"),
             "codice_lo_fe_over_o_abundance": Decimal("0.2"),
@@ -60,8 +60,8 @@ def test_create_dataset():
         {
             "instrument": "hit",
             "time_utc": "2025-06-20T08:00:00",
-            "ttj2000ns": 123456789000002,
-            "hit_epoch": 123456789000002,
+            "ttj2000ns": 803692869184000000,
+            "hit_epoch": 803692869184000000,
             "hit_e_a_side_low_en": Decimal("0.0"),
             "hit_e_a_side_med_en": Decimal("0.0"),
             "hit_e_a_side_high_en": Decimal("0.0"),
@@ -78,8 +78,8 @@ def test_create_dataset():
         {
             "instrument": "swapi",
             "time_utc": "2025-06-20T08:00:00",
-            "ttj2000ns": 123456789000002,
-            "swapi_epoch": 123456789000002,
+            "ttj2000ns": 803692869184000000,
+            "swapi_epoch": 803692869184000000,
             "swapi_pseudo_proton_speed": Decimal("400.0"),
             "swapi_pseudo_proton_density": Decimal("5.0"),
             "swapi_pseudo_proton_temperature": Decimal("100000.0"),
@@ -87,8 +87,8 @@ def test_create_dataset():
         {
             "instrument": "swe",
             "time_utc": "2025-06-20T08:00:00",
-            "ttj2000ns": 123456789000002,
-            "swe_epoch": 123456789000002,
+            "ttj2000ns": 803692869184000000,
+            "swe_epoch": 803692869184000000,
             "swe_normalized_counts": [Decimal("0.0") for _ in range(8)],
             "swe_counterstreaming_electrons": Decimal("1.0"),
         },
@@ -140,7 +140,7 @@ def test_create_dataset():
         np.zeros(8, dtype=np.uint32),
     )
     np.testing.assert_allclose(
-        dataset["mag_B_GSE"].sel(mag_epoch=123456789000001).values,
+        dataset["mag_B_GSE"].sel(mag_epoch=803692869184000000).values,
         [5.0, -3.2, 1.1],
     )
 
@@ -155,7 +155,7 @@ def test_create_dataset():
         "codice_hi_epoch",
         "codice_hi_energy_center",
         "codice_hi_spin_sector",
-        "codice_hi_elevation",
+        "codice_hi_polar",
     )
 
     # Tests that you can write to a cdf.

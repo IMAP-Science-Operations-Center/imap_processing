@@ -11,6 +11,7 @@ from imap_processing.codice import constants
 from imap_processing.codice.constants import HALF_SPIN_FILLVAL
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
+    CoDICECompression,
     ViewTabInfo,
     calculate_acq_time_per_step,
     get_codice_epoch_time,
@@ -61,6 +62,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 0:
@@ -73,7 +75,6 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         "lo_stepping"
     ]
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
-
     # ========= Decompress and Reshape Data ===========
     logical_source_id = "imap_codice_l1a_lo-counters-singles"
 
@@ -90,7 +91,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     inst_az = collapse_shape[1]
     esa_step = len(voltage_data)
 
-    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
@@ -137,7 +138,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     )
     # For every energy after nso_half_spin, set data to fill values
     nso_half_spin = unpacked_dataset["nso_half_spin"].values
-    nso_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+    nso_mask = (half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]) | (
         half_spin_per_esa_step == HALF_SPIN_FILLVAL
     )
     counters_mask = nso_mask[:, :, np.newaxis, np.newaxis]
@@ -264,6 +265,33 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
             "acquisition_time_per_esa_step", check_schema=False
         ),
     )
+    # Rename vars
+    unpacked_dataset = unpacked_dataset.rename(
+        {
+            k: v
+            for k, v in [
+                ("rgfo_energy_step", "rgfo_esa_step"),
+                ("nso_energy_step", "nso_esa_step"),
+            ]
+            if k in unpacked_dataset
+        }
+    )
+    # These variables were added to the packet definition after 20260129, so they only
+    # exist in the unpacked dataset if packet_version > 1
+    # If they don't exist, initialize them with fill val arrays since they won't be
+    # used in the NSO/RGFO masking logic but should still exist in l1a for SPDF
+    # compliance/consistency.
+    l1a_additional_vars = [
+        "rgfo_spin_sector",
+        "rgfo_esa_step",
+        "nso_spin_sector",
+        "nso_esa_step",
+    ]
+    for var in l1a_additional_vars:
+        if var not in unpacked_dataset:
+            unpacked_dataset[var] = np.full(
+                unpacked_dataset.sizes["epoch"], fill_value=np.nan
+            )
 
     # Carry over these variables from unpacked data to l1a_dataset
     l1a_carryover_vars = [
@@ -271,6 +299,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         "st_bias_gain_mode",
         "rgfo_half_spin",
         "nso_half_spin",
+        *l1a_additional_vars,
     ]
     # Loop through them since we need to set their attrs too
     for var in l1a_carryover_vars:
@@ -279,7 +308,6 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
             dims=("epoch",),
             attrs=cdf_attrs.get_variable_attributes(var),
         )
-
     # Finally, add species data variables and their uncertainties.
     # Since singles only has one variable, we can directly add it here.
     l1a_dataset["apd_singles"] = xr.DataArray(

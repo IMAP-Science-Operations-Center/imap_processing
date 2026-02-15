@@ -10,6 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
+    CoDICECompression,
     ViewTabInfo,
     get_codice_epoch_time,
     get_counters_aggregated_pattern,
@@ -61,6 +62,7 @@ def l1a_hi_counters_aggregated(
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 1:
@@ -86,7 +88,7 @@ def l1a_hi_counters_aggregated(
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
 
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [

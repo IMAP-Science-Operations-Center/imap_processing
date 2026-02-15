@@ -33,10 +33,12 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l0_hi-sectored_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_hskp_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hskp_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_raw_20260130_v001.pkts", "codice/data/l1a_input/"),
 
     # L1A LUT
-    ("imap_codice_l1a-sci-lut_20251007_v004.json", "codice/data/l1a_lut/"),
+    ("imap_codice_l1a-sci-lut_20251007_v005.json", "codice/data/l1a_lut/"),
+    ("imap_codice_l1a-sci-lut_20260129_v002.json", "codice/data/l1a_lut/"),
 
     # L1A validation data
     (f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),

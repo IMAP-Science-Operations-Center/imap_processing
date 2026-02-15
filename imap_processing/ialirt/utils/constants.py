@@ -12,7 +12,7 @@ IALIRT_DIMS = {
         "codice_hi_epoch",
         "codice_hi_energy_center",
         "codice_hi_spin_sector",
-        "codice_hi_elevation",
+        "codice_hi_polar",
     ],
     # C/O abundance ratio
     "codice_lo_c_over_o_abundance": ["codice_lo_epoch"],

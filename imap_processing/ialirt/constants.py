@@ -1,6 +1,7 @@
 """Module for constants and useful shared classes used in I-ALiRT processing."""
 
 from dataclasses import dataclass
+from datetime import time
 from typing import NamedTuple
 
 import numpy as np
@@ -55,6 +56,8 @@ class StationProperties(NamedTuple):
     latitude: float  # latitude in degrees
     altitude: float  # altitude in kilometers
     min_elevation_deg: float  # minimum elevation angle in degrees
+    schedule_start: time | None = None  # station schedule start
+    schedule_end: time | None = None  # station schedule end
 
 
 # Verified by Observatory staff.
@@ -70,23 +73,31 @@ STATIONS = {
         latitude=54.2632,  # degrees North
         altitude=0.1,  # approx 100 meters
         min_elevation_deg=5,  # 5 degrees is the requirement
+        schedule_start=None,
+        schedule_end=None,
     ),
     "Korea": StationProperties(
         longitude=126.2958,  # degrees East
         latitude=33.4273,  # degrees North
         altitude=0.1,  # approx 100 meters
         min_elevation_deg=5,  # 5 degrees is the requirement
+        schedule_start=None,
+        schedule_end=None,
     ),
     "Manaus": StationProperties(
         longitude=-59.969319,  # degrees East (negative = West)
         latitude=-2.891215,  # degrees North (negative = South)
         altitude=0.9578,  # approx 957.8 meters
         min_elevation_deg=5,  # 5 degrees is the requirement
+        schedule_start=None,
+        schedule_end=None,
     ),
     "SANSA": StationProperties(
         longitude=27.714,  # degrees East (negative = West)
         latitude=-25.888,  # degrees North (negative = South)
         altitude=1.542,  # approx 1542 meters
         min_elevation_deg=2,  # 5 degrees is the requirement
+        schedule_start=None,
+        schedule_end=None,
     ),
 }

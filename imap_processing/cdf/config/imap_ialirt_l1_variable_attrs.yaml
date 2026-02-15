@@ -209,10 +209,10 @@ codice_hi_energy_plus:
   dtype: float32
   LABLAXIS: Energy upper delta
 
-codice_hi_elevation:
-  CATDESC: Elevation Angle
-  FIELDNAM: Elevation Angle
-  LABLAXIS: Elevation Angle
+codice_hi_polar:
+  CATDESC: Polar Angle
+  FIELDNAM: Polar Angle
+  LABLAXIS: Polar Angle
   SCALETYP: linear
   UNITS: degrees
   VALIDMIN: 0.0
@@ -222,9 +222,9 @@ codice_hi_elevation:
   FORMAT: F12.6
   dtype: float32
 
-codice_hi_elevation_labels:
-  CATDESC: CoDICE-Hi elevation labels
-  FIELDNAM: CoDICE-Hi elevation labels
+codice_hi_polar_labels:
+  CATDESC: CoDICE-Hi polar labels
+  FIELDNAM: CoDICE-Hi polar labels
   FORMAT: A12
   VAR_TYPE: metadata
   UNITS: " "
@@ -262,7 +262,7 @@ swe_electron_energy:
 # Variables
 codice_hi_h:
   <<: *default_float32
-  CATDESC: Proton flux from CoDICE-Hi in 15 energy bins between 0.02 to 3.62 MeV over 4 spin sectors and 4 azimuth bins
+  CATDESC: Proton flux from CoDICE-Hi in 15 energy bins between 0.02 to 3.62 MeV over 4 spin sectors and 4 polar angle bins
   FIELDNAM: H+ intensity
   LABLAXIS: H+ intensity
   DEPEND_0: codice_hi_epoch
@@ -271,9 +271,9 @@ codice_hi_h:
   VALIDMAX: 100000000.0
   DEPEND_1: codice_hi_energy_center
   DEPEND_2: codice_hi_spin_sector
-  DEPEND_3: codice_hi_elevation
+  DEPEND_3: codice_hi_polar
   DISPLAY_TYPE: no_plot
-  FORMAT: F6.1
+  FORMAT: F11.1
   VAR_NOTES: Energy ranges (MeV) are 0.0200 to 0.0283, 0.0283 to 0.0400, 0.0400 to 0.0566, 0.0566 to 0.0800, 0.0800 to 0.113, 0.113 to 0.160, 0.160 to 0.226, 0.226 to 0.320, 0.320 to 0.453, 0.453 to 0.640, 0.640 to 0.905, 0.905 to 1.28, 1.28 to 1.81, 1.81 to 2.56, 2.56 to 3.62.
 
 codice_lo_c_over_o_abundance:
@@ -362,6 +362,7 @@ hit_e_a_side_med_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  FORMAT: F17.6
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_a_side_high_en:
@@ -395,6 +396,7 @@ hit_e_b_side_med_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  FORMAT: F17.6
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_b_side_high_en:
@@ -417,6 +419,7 @@ hit_h_omni_low_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  FORMAT: F17.6
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_h_omni_med_en:
@@ -428,6 +431,7 @@ hit_h_omni_med_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  FORMAT: F17.6
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_h_a_side_high_en:
@@ -461,6 +465,7 @@ hit_he_omni_low_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  FORMAT: F17.6
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_he_omni_high_en:
@@ -472,6 +477,7 @@ hit_he_omni_high_en:
   UNITS: counts per second
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  FORMAT: F17.6
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 mag_B_magnitude:

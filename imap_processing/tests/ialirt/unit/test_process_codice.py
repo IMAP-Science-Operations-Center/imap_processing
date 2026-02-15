@@ -372,7 +372,7 @@ def l1a_lut_path():
         / "codice"
         / "data"
         / "l1a_lut"
-        / "imap_codice_l1a-sci-lut_20251007_v004.json"
+        / "imap_codice_l1a-sci-lut_20251007_v005.json"
     )
 
     return lut_path
@@ -401,7 +401,7 @@ def l2_processing_dependencies():
         / "codice"
         / "data"
         / "l2_lut"
-        / "imap_codice_l2-lo-efficiency_20251008_v001.csv"
+        / "imap_codice_l2-lo-efficiency_20251212_v003.csv"
     )
     gf_path = (
         imap_module_directory
@@ -409,7 +409,7 @@ def l2_processing_dependencies():
         / "codice"
         / "data"
         / "l2_lut"
-        / "imap_codice_l2-lo-gfactor_20251008_v001.csv"
+        / "imap_codice_l2-lo-gfactor_20251212_v003.csv"
     )
 
     return eff_path, gf_path

@@ -1,6 +1,8 @@
 """CoDICE L1A processing functions."""
 
+import datetime
 import logging
+import os
 
 import xarray as xr
 from imap_data_access import ProcessingInputCollection
@@ -52,16 +54,22 @@ def process_l1a(  # noqa: PLR0912
     """
     # Get science data which is L0 packet file
     science_file = dependency.get_file_paths(data_type="l0")[0]
+    # TODO get the exact time the FSW changed on january 29 and relabel the xml file
+    # On January 29, 2026, the CoDICE flight software was updated to a new version.
+    # This update included changes to the packet definitions.
+    start_date = datetime.datetime.strptime(
+        os.path.basename(science_file).split("_")[4], "%Y%m%d"
+    )  # Extract the date from the filename
+    path = imap_module_directory / "codice/packet_definitions/"
+    if start_date >= datetime.datetime(2026, 1, 29):
+        xtce_file = path / "imap_codice_packet-definition_20260129_v001.xml"
+    else:
+        xtce_file = path / "imap_codice_packet-definition_20250101_v001.xml"
 
-    xtce_file = (
-        imap_module_directory / "codice/packet_definitions/codice_packet_definition.xml"
-    )
-    # Decom packet
     datasets_by_apid = packet_file_to_datasets(
         science_file,
         xtce_file,
     )
-
     datasets = []
     for apid in datasets_by_apid:
         if apid not in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
