@@ -516,17 +516,20 @@ def test_get_spin_start_times(mock_interpolate_spin_data):
     )
     mock_interpolate_spin_data.return_value = mock_spin_df
 
+    # shcoarse is longer than met, simulating when segmented packets have
+    # occurred
     l1a_de = xr.Dataset(
         {
-            "shcoarse": ("epoch", [15, 35]),
+            "met": ("epoch", [15, 35]),
+            "shcoarse": ("shcoarse", [15, 16, 35]),
             "de_count": ("epoch", [2, 3]),
             "de_time": ("direct_event", [0, 1000, 2000, 3000, 4000]),
         },
         coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
     )
 
-    # Expected: shcoarse 15 should match spin at index 0 (10 < 15 < 20)
-    # shcoarse 35 should match spin at index 2 (30 < 35 < 40)
+    # Expected: met 15 should match spin at index 0 (10 < 15 < 20)
+    # met 35 should match spin at index 2 (30 < 35 < 40)
     # Repeated by de_count: [2, 3] -> [index0, index0, index2, index2, index2]
     spin_start_times_expected = np.array(
         [10.5, 10.5, 30.1, 30.1, 30.1]  # 10 + 0.5e6*1e-6  # 30 + 0.1e6*1e-6
@@ -554,10 +557,13 @@ def test_set_event_met(mock_interpolate_spin_data):
     )
     mock_interpolate_spin_data.return_value = mock_spin_df
 
+    # shcoarse is longer than met, simulating when segmented packets have
+    # occurred
     l1b_de = xr.Dataset()
     l1a_de = xr.Dataset(
         {
-            "shcoarse": ("epoch", [15, 35]),
+            "met": ("epoch", [15, 35]),
+            "shcoarse": ("shcoarse", [15, 16, 35]),
             "de_count": ("epoch", [2, 3]),
             "de_time": ("direct_event", [0, 1000, 2000, 3000, 4000]),
         },
@@ -567,7 +573,7 @@ def test_set_event_met(mock_interpolate_spin_data):
         },
     )
 
-    # shcoarse 15 -> spin_start 10, shcoarse 35 -> spin_start 30
+    # met 15 -> spin_start 10, met 35 -> spin_start 30
     # event_met = spin_start + de_time * DE_CLOCK_TICK_S
     expected_event_met = np.array(
         [
