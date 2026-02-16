@@ -173,6 +173,80 @@ class MapDescriptor:
             ]
         )
 
+    def to_catdesc(self) -> str:
+        """
+        Convert the MapDescriptor instance to a human-readable CATDESC string.
+
+        Returns
+        -------
+        str
+            Information in descriptor converted to SPDF CATDESC attribute. This
+            is normally used for plot titles and should be under about 80 characters.
+        """
+        instrument_names = {
+            "l": "Lo",
+            "t": "Lo",
+            "ilo": "Lo",
+            "h": "Hi",
+            "u": "Ultra",
+            "idx": "IDEX",
+            "glx": "GLOWS",
+        }
+        instrument = next(
+            (
+                name
+                for desc, name in instrument_names.items()
+                if self.instrument_descriptor.startswith(desc)
+            )
+        )
+        sensor = "Comb" if self.sensor == "combined" else self.sensor
+        m = re.match(
+            r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
+        )
+        quantity = {
+            "drt": "Rate",
+            "ena": "Inten",
+            "int": "Inten",
+            "isn": "ISN Rate",
+            "spx": "Spectral",
+        }[m.group(1)]
+        extras = m.group(2)
+        species = self.species.title()
+        if species == "Uv":
+            species = "UV"
+        coord = self.coordinate_system.upper()
+        frame = {
+            "hf": "Helio",
+            "hk": "Helio Kin",
+            "sf": "SC",
+        }[self.frame_descriptor]
+        survival = "Surv Corr" if self.survival_corrected == "sp" else "No Surv Corr"
+        spin_phase = self.spin_phase.title()
+        if spin_phase == "Full":
+            spin_phase = "Full Spin"
+        m = re.match(r"^(\d+)deg|nside(\d+)", self.resolution_str)
+        resolution = f"{m.group(1)} deg" if m.group(1) else f"NSide {m.group(2)}"
+        if isinstance(self.duration, int):
+            duration = f"{self.duration} Day"
+        else:
+            m = re.match(r"^(\d+)(.*)$", self.duration)
+            duration = f"{m.group(1)} {m.group(2).title()}"
+            if duration.endswith("Mo"):
+                duration += "n"
+        catdesc = (
+            f"IMAP {instrument}{sensor} {quantity} {species}, {coord} "
+            f"{frame} Frame, {survival}, {spin_phase}, {resolution}, {duration}"
+        )
+        possible_extras = [
+            ("nbs", "No sputter/bootstrap"),
+            ("nbkgnd", "No bkgnd sub"),
+        ]
+        for extra, long_description in possible_extras:
+            if extras.startswith(extra):
+                catdesc += f", {long_description}"
+                break
+        return catdesc
+
     # Methods for parsing and building parts of the map descriptor string
     @staticmethod
     def get_instrument_descriptor(
