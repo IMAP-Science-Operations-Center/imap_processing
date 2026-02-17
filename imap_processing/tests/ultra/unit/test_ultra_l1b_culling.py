@@ -28,7 +28,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_scattering,
     get_binned_spins_edges,
     get_de_rejection_mask,
-    get_energy_and_spin_dependent_rejection_mask,
+    get_energy_bin_flags,
     get_energy_histogram,
     get_n_sigma,
     get_pulses_per_spin,

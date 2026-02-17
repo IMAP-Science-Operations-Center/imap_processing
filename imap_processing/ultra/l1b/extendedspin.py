@@ -70,17 +70,9 @@ def calculate_extendedspin(
     inst_qf = flag_imap_instruments(de_dataset["spin"].values)
 
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    spin_tbin_edges = get_binned_spins_edges(
-        spin, spin_period, spin_starttime, spin_bin_size
+    voltage_qf = flag_low_voltage(
+        spin, spin_starttime, spin_period, status_dataset, spin_bin_size
     )
-    voltage_qf = flag_low_voltage(spin_tbin_edges, status_dataset)
-    # Get energy bins used at l1c
-    intervals, _, _ = build_energy_bins()
-    # Get the energy ranges
-    energy_ranges = get_binned_energy_ranges(intervals)
-    energy_bin_flags = get_binned_energy_range_flags(energy_ranges)
-    # TODO do not include low voltage spins in the calculation of the rest of the flag!!
-
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
 
@@ -128,19 +120,15 @@ def calculate_extendedspin(
     extendedspin_dict["quality_ena_rates"] = rates_qf
     extendedspin_dict["quality_hk"] = hk_qf
     extendedspin_dict["quality_instruments"] = inst_qf
-    extendedspin_dict["quality_low_voltage"] = voltage_qf  # shape (nspin,)
+    extendedspin_dict["quality_low_voltage"] = voltage_qf
     # TODO calculate flags for high energy (SEPS) and statistics culling
     # Initialize these flags to NONE for now.
     extendedspin_dict["quality_statistics"] = np.full_like(
         voltage_qf, ImapRatesUltraFlags.NONE.value, np.uint16
-    )  # shape (nspin,)
+    )
     extendedspin_dict["quality_high_energy"] = np.full_like(
         voltage_qf, ImapRatesUltraFlags.NONE.value, np.uint16
-    )  # shape (nspin,)
-    # Add an array of flags for each energy bin. Shape: (n_energy_bins)
-    extendedspin_dict["energy_range_flags"] = energy_bin_flags
-    # Add energy ranges  Shape: (n_energy_bins + 1)
-    extendedspin_dict["energy_range_edges"] = np.array(energy_ranges)
+    )
 
     extendedspin_dataset = create_dataset(extendedspin_dict, name, "l1b")
 
