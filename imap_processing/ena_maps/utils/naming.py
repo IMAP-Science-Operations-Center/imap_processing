@@ -199,7 +199,10 @@ class MapDescriptor:
                 if self.instrument_descriptor.startswith(desc)
             )
         )
-        sensor = "Comb" if self.sensor == "combined" else self.sensor
+        sensor = " Combined" if self.sensor == "combined" else self.sensor
+        species = self.species.title()
+        if species == "Uv":
+            species = "UV"
         m = re.match(
             r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
         )
@@ -207,13 +210,12 @@ class MapDescriptor:
             "drt": "Rate",
             "ena": "Inten",
             "int": "Inten",
-            "isn": "ISN Rate",
+            "isn": "Rate",
             "spx": "Spectral",
         }[m.group(1)]
+        if m.group(1) == "isn":
+            species = "ISN " + species
         extras = m.group(2)
-        species = self.species.title()
-        if species == "Uv":
-            species = "UV"
         coord = self.coordinate_system.upper()
         frame = {
             "hf": "Helio",
@@ -234,7 +236,7 @@ class MapDescriptor:
             if duration.endswith("Mo"):
                 duration += "n"
         catdesc = (
-            f"IMAP {instrument}{sensor} {quantity} {species}, {coord} "
+            f"IMAP {instrument}{sensor} {species} {quantity}, {coord} "
             f"{frame} Frame, {survival}, {spin_phase}, {resolution}, {duration}"
         )
         possible_extras = [

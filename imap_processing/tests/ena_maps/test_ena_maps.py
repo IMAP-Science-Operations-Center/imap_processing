@@ -974,7 +974,7 @@ class TestRectangularSkyMap:
         # Check CATDESC made from descriptor
         assert (
             cdf_dataset["ena_intensity"].attrs["CATDESC"]
-            == "IMAP Hi45 Inten H, HAE SC Frame, No Surv Corr, Ram, 6 deg, 6 Mon"
+            == "IMAP Hi45 H Inten, HAE SC Frame, No Surv Corr, Ram, 6 deg, 6 Mon"
         )
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")

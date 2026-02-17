@@ -309,64 +309,65 @@ class TestMapDescriptor:
         cases = [
             (
                 "h45-spx-h-hf-sp-ram-hae-4deg-3mo",
-                "IMAP Hi45 Spectral H, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+                "IMAP Hi45 H Spectral, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
             ),
             (
                 "h45-spx0305-h-hf-sp-ram-hae-4deg-3mo",
-                "IMAP Hi45 Spectral H, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+                "IMAP Hi45 H Spectral, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
             ),
             (
                 "hic-ena-h-hf-sp-ram-hae-4deg-3mo",
-                "IMAP HiComb Inten H, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+                "IMAP Hi Combined H Inten, HAE Helio Frame, Surv Corr, Ram,"
+                " 4 deg, 3 Mon",
             ),
             (
                 "u45-ena-h-hf-sp-ram-hae-4deg-3mo",
-                "IMAP Ultra45 Inten H, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+                "IMAP Ultra45 H Inten, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
             ),
             (
                 "u45-ena-h-hf-sp-full-hae-4deg-3mo",
-                "IMAP Ultra45 Inten H, HAE Helio Frame, Surv Corr, Full Spin,"
+                "IMAP Ultra45 H Inten, HAE Helio Frame, Surv Corr, Full Spin,"
                 " 4 deg, 3 Mon",
             ),
             (
                 "u45-ena-h-hf-sp-ram-hae-nside128-3mo",
-                "IMAP Ultra45 Inten H, HAE Helio Frame, Surv Corr, Ram, NSide 128,"
+                "IMAP Ultra45 H Inten, HAE Helio Frame, Surv Corr, Ram, NSide 128,"
                 " 3 Mon",
             ),
             (
                 "u45-enaCUSTOM-h-hf-sp-ram-hae-4deg-3mo",
-                "IMAP Ultra45 Inten H, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+                "IMAP Ultra45 H Inten, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
             ),
             (
                 "l090-enanbs-h-sf-nsp-ram-hae-6deg-1yr",
-                "IMAP Lo90 Inten H, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr,"
+                "IMAP Lo90 H Inten, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr,"
                 " No sputter/bootstrap",
             ),
             (
                 "t090-ena-o-sf-nsp-ram-hae-6deg-1yr",
-                "IMAP Lo90 Inten O, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
+                "IMAP Lo90 O Inten, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
             ),
             (
                 "l090-ena-h-hf-nsp-ram-gcs-6deg-1yr",
-                "IMAP Lo90 Inten H, GCS Helio Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
+                "IMAP Lo90 H Inten, GCS Helio Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
             ),
             (
                 "l090-isn-h-sf-nsp-ram-hae-6deg-1yr",
-                "IMAP Lo90 ISN Rate H, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
+                "IMAP Lo90 ISN H Rate, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
             ),
             (
                 "l090-isnnbkgnd-h-sf-nsp-ram-hae-6deg-1yr",
-                "IMAP Lo90 ISN Rate H, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr,"
+                "IMAP Lo90 ISN H Rate, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr,"
                 " No bkgnd sub",
             ),
             (
                 "glx-int-uv-sf-nsp-full-hae-6deg-1yr",
-                "IMAP GLOWS Inten UV, HAE SC Frame, No Surv Corr, Full Spin, 6 deg,"
+                "IMAP GLOWS UV Inten, HAE SC Frame, No Surv Corr, Full Spin, 6 deg,"
                 " 1 Yr",
             ),
             (
                 "idx-drt-dust-sf-nsp-full-hae-6deg-1yr",
-                "IMAP IDEX Rate Dust, HAE SC Frame, No Surv Corr, Full Spin, 6 deg,"
+                "IMAP IDEX Dust Rate, HAE SC Frame, No Surv Corr, Full Spin, 6 deg,"
                 " 1 Yr",
             ),
         ]
