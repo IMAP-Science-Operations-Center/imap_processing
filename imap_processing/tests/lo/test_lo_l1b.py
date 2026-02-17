@@ -516,12 +516,9 @@ def test_get_spin_start_times(mock_interpolate_spin_data):
     )
     mock_interpolate_spin_data.return_value = mock_spin_df
 
-    # shcoarse is longer than met, simulating when segmented packets have
-    # occurred
     l1a_de = xr.Dataset(
         {
             "met": ("epoch", [15, 35]),
-            "shcoarse": ("shcoarse", [15, 16, 35]),
             "de_count": ("epoch", [2, 3]),
             "de_time": ("direct_event", [0, 1000, 2000, 3000, 4000]),
         },
@@ -557,13 +554,10 @@ def test_set_event_met(mock_interpolate_spin_data):
     )
     mock_interpolate_spin_data.return_value = mock_spin_df
 
-    # shcoarse is longer than met, simulating when segmented packets have
-    # occurred
     l1b_de = xr.Dataset()
     l1a_de = xr.Dataset(
         {
             "met": ("epoch", [15, 35]),
-            "shcoarse": ("shcoarse", [15, 16, 35]),
             "de_count": ("epoch", [2, 3]),
             "de_time": ("direct_event", [0, 1000, 2000, 3000, 4000]),
         },
