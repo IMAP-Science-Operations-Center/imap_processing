@@ -24,7 +24,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_rates,
     flag_scattering,
     get_de_rejection_mask,
-    get_energy_bin_flags,
+    get_energy_and_spin_dependent_rejection_mask,
     get_energy_histogram,
     get_n_sigma,
     get_pulses_per_spin,
@@ -327,7 +327,7 @@ def test_flag_low_voltage(test_data):
             "leftdeflection_v": np.full(n_spins, 1.5),
         }
     )
-    flagged = sum(get_energy_bin_flags())
+    flagged = 65535
     spins = np.arange(n_spins)
     spin_bin_size = 5
     spin_period = np.full(n_spins, 15.0)
@@ -378,6 +378,49 @@ def test_flag_low_voltage_incomplete_bins(test_data):
     # Check that every spin is flagged for low voltage
     # Even the last incomplete bin should be flagged since it contains low voltage
     # events
-    flagged = sum(get_energy_bin_flags())
+    flagged = 65535
     # TODO Bobs code skips the last bin if it is incomplete.
     assert np.all(quality_flags == flagged)
+
+
+def test_get_energy_and_spin_dependent_rejection_mask():
+    """Tests get_energy_and_spin_dependent_rejection_mask function."""
+    n_spins = 10
+    goodtimes_dataset = xr.Dataset(
+        data_vars={
+            "spin_number": np.arange(n_spins),
+            "quality_low_voltage": np.full(n_spins, 0),
+            "quality_high_energy": np.full(n_spins, 0),
+            "quality_statistics": np.full(n_spins, 0),
+            "energy_bin_flags": np.array(
+                [2**1, 2**2, 2**3]
+            ),  # Example flags for energy bins
+        }
+    )
+    # update quality flags to test that events get rejected
+    # For spin 0, set energy bin 0 to be bad (flag = 2)
+    goodtimes_dataset["quality_low_voltage"].data[0] = 2
+    # For spin 2, set energy bin 1 to be bad (flag = 4)
+    goodtimes_dataset["quality_high_energy"].data[2] = 4
+    # For spin 4, set energy bin 2 to be bad (flag = 8)
+    # Energy corresponding to spin 5 will not be rejected since it is not
+    # within an energy bin
+    # TODO check this behavior
+    goodtimes_dataset["quality_high_energy"].data[4] = 8
+    # Create 6 fake events
+    energy = np.array(
+        [4, 7, 8, 9, 11, 15]
+    )  # Energy values that fall into different bins
+    spin_number = np.arange(6)
+    energy_bin_edges = [
+        (3, 5),
+        (7, 10),
+        (12, 18),
+    ]
+    rejected = get_energy_and_spin_dependent_rejection_mask(
+        goodtimes_dataset, energy, spin_number, energy_bin_edges
+    )
+
+    np.testing.assert_array_equal(
+        rejected, np.array([True, False, True, False, False, False])
+    )
