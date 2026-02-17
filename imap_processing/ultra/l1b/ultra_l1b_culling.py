@@ -529,6 +529,7 @@ def get_energy_and_spin_dependent_rejection_mask(
     goodtimes_dataset: xr.Dataset,
     energy: np.ndarray,
     spin_number: np.ndarray,
+    energy_bin_edges: list[tuple[float, float]],
 ) -> NDArray:
     """
     Create boolean mask where event is rejected due to relevant flags.
@@ -541,6 +542,8 @@ def get_energy_and_spin_dependent_rejection_mask(
         The particle energy.
     spin_number : np.ndarray
         Spin number at each direct event.
+    energy_bin_edges : list[tuple[float, float]]
+        List of tuples containing the energy bin edges for each energy bin.
 
     Returns
     -------
@@ -548,36 +551,33 @@ def get_energy_and_spin_dependent_rejection_mask(
         Rejected events where True = rejected.
     """
     # Get the ebin flags for each energy bin from the goodtimes dataset.
-    energy_range_edges = goodtimes_dataset["energy_range_edges"].values
-    # Get the quality flag arrays "turned on" for energy dependent culling from the
-    # goodtimes dataset.
-    flag_arrays = [
-        goodtimes_dataset[flag_name].values
-        for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
-    ]
-    ebin_flags = goodtimes_dataset["energy_range_flags"].values
+    ebin_flags = goodtimes_dataset["energy_bin_flags"].values
+    low_voltage = goodtimes_dataset["quality_low_voltage"].values
+    high_energy = goodtimes_dataset["quality_high_energy"].values
+    statistics = goodtimes_dataset["quality_statistics"].values
     # Create a dict of spin_number to index in the goodtimes dataset
     spin_to_idx = {
         spin: idx for idx, spin in enumerate(goodtimes_dataset["spin_number"].values)
     }
 
     # Initialize all events to not rejected
+    # TODO should this be rejected? energies that fall outside the energy bins
+    #  should be rejected, but currently they will just be ignored
     rejected = np.full(energy.shape, False, dtype=bool)
     # loop through each energy bin and flag events that fall within an energy
     # bin and have the corresponding energy bin flag set in the goodtimes dataset.
-    for i in range(len(energy_range_edges) - 1):
-        mask = (energy >= energy_range_edges[i]) & (energy < energy_range_edges[i + 1])
+    for i, (e_min, e_max) in enumerate(energy_bin_edges):
+        mask = (energy >= e_min) & (energy < e_max)
         goodtimes_inds = [spin_to_idx[spin] for spin in spin_number[mask]]
         # Get the flag value for the current energy bin
         energy_bin_flag = ebin_flags[i]
         # If the flag is set for any of the quality arrays, then reject
         # the event.
         flagged_at_spins = (
-            np.bitwise_or.reduce(
-                [qf[goodtimes_inds] & energy_bin_flag for qf in flag_arrays]
-            )
-            > 0
-        )
+            (low_voltage[goodtimes_inds] & energy_bin_flag)
+            | (high_energy[goodtimes_inds] & energy_bin_flag)
+            | (statistics[goodtimes_inds] & energy_bin_flag)
+        ) > 0
 
         # Mark flagged events as rejected
         mask_indices = np.where(mask)[0]
@@ -627,6 +627,7 @@ def flag_low_voltage(
     status_dataset: xr.Dataset,
     spin_bin_size: int = UltraConstants.SPIN_BIN_SIZE,
     voltage_threshold: float = UltraConstants.LOW_VOLTAGE_CULL_THRESHOLD,
+    low_voltage_flag: int = 65535,  # default is max uint16
 ) -> NDArray:
     """
     Flag low voltage events.
@@ -645,13 +646,14 @@ def flag_low_voltage(
         The number of spins to group together in a bin.
     voltage_threshold : float
         Voltage threshold below which to flag low voltage events.
+    low_voltage_flag : int
+        The flag value to set for low voltage events.
 
     Returns
     -------
     quality_flags : NDArray
         Quality flags.
     """
-    low_voltage_flag = sum(get_energy_bin_flags())
     # initialize all spins to have no low voltage flag
     quality_flags = np.full(len(spins), ImapRatesUltraFlags.NONE.value, dtype=np.uint16)
     # Get the min voltage across both deflection plate at each epoch
@@ -674,7 +676,7 @@ def flag_low_voltage(
     low_voltage_times = status_dataset["epoch"].data[low_voltage_inds]
     # For each low voltage time, find the corresponding spin time
     lv_spin_inds = np.atleast_1d(
-        np.searchsorted(spin_start_times, low_voltage_times) - 1
+        np.searchsorted(spin_start_times, low_voltage_times, side="right") - 1
     )
     # Ensure that the indices are within the valid range of spin bins
     valid_spin_inds = (lv_spin_inds <= len(spins) - 1) & (lv_spin_inds >= 0)
@@ -701,31 +703,61 @@ def flag_low_voltage(
     return quality_flags
 
 
-def get_binned_energies_for_culling() -> NDArray:
-    """
-    Get the binned energy values for energy dependent culling.
-
-    Returns
-    -------
-    energy_bin_geometric_means : NDArray
-        Geometric mean of the energy bins.
-    """
-    pass
-
-
-def get_energy_bin_flags() -> NDArray:
+def get_binned_energy_range_flags(energy_ranges: list[tuple[float, float]]) -> NDArray:
     """
     Get the energy bin flags for energy dependent culling.
+
+    Parameters
+    ----------
+    energy_ranges : list[tuple[float, float]]
+        List of (start, stop) tuples for each energy range.
 
     Returns
     -------
     energy_bin_flags : NDArray
         Energy bin flags.
     """
-    n_ebins = UltraConstants.N_CULL_EBINS
-    if n_ebins > 16:
+    num_bins = len(energy_ranges)
+    if num_bins > 16:
         raise ValueError(
-            f"Number of culling energy bins ({n_ebins}) "
+            f"Number of culling energy bins ({num_bins}) "
             f"cannot exceed 16 due to uint16 bit limitations."
         )
-    return np.array([2**bit for bit in range(n_ebins)], dtype=np.uint16)
+    return np.array([2**bit for bit in range(num_bins)], dtype=np.uint16)
+
+
+def get_binned_energy_ranges(
+    energy_bin_edges: list[tuple[float, float]],
+) -> list[tuple[float, float]]:
+    """
+    Create L1C energy ranges by grouping energy bins.
+
+    Parameters
+    ----------
+    energy_bin_edges : list[tuple[float, float]]
+        List of (start, stop) tuples for each energy bin.
+
+    Returns
+    -------
+    energy_ranges : list[tuple[float, float]]
+        List of (start, stop) tuples for each grouped energy range.
+    """
+    # Get indices for group starts
+    group_start_inds = np.arange(
+        UltraConstants.BASE_CULL_EBIN,
+        len(energy_bin_edges),
+        UltraConstants.N_CULL_EBINS,
+    )
+    # Get indices for group ends
+    group_end_inds = np.append(group_start_inds[1:] - 1, len(energy_bin_edges) - 1)
+    # Calculate the number of complete groups
+    n_complete_groups = len(group_start_inds) - 1
+    # Build a list of start and stop energy ranges for each complete group
+    energy_ranges = [
+        (
+            energy_bin_edges[group_start_inds[i]][0],
+            energy_bin_edges[group_end_inds[i]][1],
+        )
+        for i in range(n_complete_groups)
+    ]
+    return energy_ranges

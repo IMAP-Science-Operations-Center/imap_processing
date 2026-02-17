@@ -15,6 +15,7 @@ from imap_processing.spice.time import (
 )
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    get_binned_energy_ranges,
     get_de_rejection_mask,
     get_energy_and_spin_dependent_rejection_mask,
 )
@@ -99,9 +100,21 @@ def calculate_spacecraft_pset(
     # Check if spin_number is in the goodtimes dataset, if not then we can
     #  reject all events for that spin without checking energy bin flags.
     spin_rejected = ~np.isin(
-        species_dataset["spin"].values, goodtimes_dataset["spin_number"].values
+        species_dataset["spin_number"].values, goodtimes_dataset["spin_number"].values
     )
     species_dataset = species_dataset.isel(epoch=~spin_rejected)
+
+    intervals, _, energy_bin_geometric_means = build_energy_bins()
+
+    energy_bin_ranges = get_binned_energy_ranges(intervals)
+
+    energy_dependent_rejected = get_energy_and_spin_dependent_rejection_mask(
+        goodtimes_dataset,
+        species_dataset["energy_spacecraft"].values,
+        species_dataset["spin_number"].values,
+        energy_bin_ranges,
+    )
+    species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
 
     intervals, _, energy_bin_geometric_means = build_energy_bins()
 
