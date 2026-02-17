@@ -130,7 +130,7 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
     data_vars = processed_vars | waveforms_converted | trigger_settings | spice_data
     l1b_dataset = setup_dataset(l1a_dataset, prefixes, idex_attrs, data_vars)
-    l1b_dataset.attrsf = idex_attrs.get_global_attributes("imap_idex_l1b_sci")
+    l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_sci")
 
     # Convert variables
     l1b_dataset = convert_raw_to_eu(

@@ -15,8 +15,6 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_low_voltage,
     flag_rates,
     get_binned_energy_range_flags,
-    get_binned_energy_ranges,
-    get_binned_spins_edges,
     get_energy_histogram,
     get_pulses_per_spin,
 )
@@ -73,6 +71,9 @@ def calculate_extendedspin(
     voltage_qf = flag_low_voltage(
         spin, spin_starttime, spin_period, status_dataset, spin_bin_size
     )
+    # Get energy bins used at l1c
+    intervals, _, _ = build_energy_bins()
+    energy_bin_flags = get_binned_energy_range_flags(intervals)
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
 
@@ -129,6 +130,8 @@ def calculate_extendedspin(
     extendedspin_dict["quality_high_energy"] = np.full_like(
         voltage_qf, ImapRatesUltraFlags.NONE.value, np.uint16
     )
+    # Add an array of flags for each energy bin
+    extendedspin_dict["energy_bin_flags"] = energy_bin_flags
 
     extendedspin_dataset = create_dataset(extendedspin_dict, name, "l1b")
 

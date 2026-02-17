@@ -108,6 +108,7 @@ def calculate_spacecraft_pset(
 
     energy_bin_ranges = get_binned_energy_ranges(intervals)
 
+    # Now check energy dependent flags.
     energy_dependent_rejected = get_energy_and_spin_dependent_rejection_mask(
         goodtimes_dataset,
         species_dataset["energy_spacecraft"].values,
