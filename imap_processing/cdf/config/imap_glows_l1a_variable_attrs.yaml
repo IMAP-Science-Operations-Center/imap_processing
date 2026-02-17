@@ -104,8 +104,6 @@ pkts_file_name:
   FILLVAL: # TBD: what is fillval for strings?
   FORMAT: S256 # TBC
   LABLAXIS: File name
-  VALIDMAX: # TBD: what is validmax for a string?
-  VALIDMIN: # TBD: what is validmin for a string?
   VAR_TYPE: metadata
 
 first_spin_id:
