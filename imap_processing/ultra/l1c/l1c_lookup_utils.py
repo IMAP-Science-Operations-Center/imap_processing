@@ -408,10 +408,6 @@ def build_energy_bins(
     # Create energy bins.
     if energy_bin_edges is None:
         energy_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)
-        logger.info(
-            f"No energy bin file found, using default pointing bin energy"
-            f" edges {energy_bin_edges}"
-        )
 
     energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 

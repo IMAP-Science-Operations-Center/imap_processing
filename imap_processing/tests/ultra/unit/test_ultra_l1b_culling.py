@@ -20,9 +20,11 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_attitude,
     flag_hk,
     flag_imap_instruments,
+    flag_low_voltage,
     flag_rates,
     flag_scattering,
     get_de_rejection_mask,
+    get_energy_bin_flags,
     get_energy_histogram,
     get_n_sigma,
     get_pulses_per_spin,
@@ -312,3 +314,70 @@ def test_count_rejected_events_per_spin():
     )
 
     np.testing.assert_array_equal(counted, np.array([2, 2, 2]))
+
+
+def test_flag_low_voltage(test_data):
+    """Tests flag_low_voltage function."""
+    n_spins = 20
+    mock_status_dataset = xr.Dataset(
+        data_vars={
+            "epoch": np.arange(n_spins),
+            # Set Voltage below threshold
+            "rightdeflection_v": np.full(n_spins, 0.5),
+            "leftdeflection_v": np.full(n_spins, 1.5),
+        }
+    )
+    flagged = sum(get_energy_bin_flags())
+    spins = np.arange(n_spins)
+    spin_bin_size = 5
+    spin_period = np.full(n_spins, 15.0)
+    spin_starttime = np.arange(n_spins)
+    quality_flags = flag_low_voltage(
+        spins, spin_starttime, spin_period, mock_status_dataset, spin_bin_size
+    )
+
+    # check quality flag
+    assert quality_flags.shape == spins.shape
+    # Check that every spin is flagged for low voltage
+    assert np.all(quality_flags == flagged)
+
+    # Set only the first spin to be below threshold
+    mock_status_dataset["rightdeflection_v"].data[1:] += 5000
+    mock_status_dataset["leftdeflection_v"].data[1:] += 5000
+    quality_flags = flag_low_voltage(
+        spins, spin_starttime, spin_period, mock_status_dataset, spin_bin_size
+    )
+    # Check that only the first spin is flagged for low voltage
+    assert np.all(quality_flags[0:spin_bin_size] == flagged)
+    # The rest should not be flagged
+    assert np.all(quality_flags[spin_bin_size:] == 0)
+
+
+def test_flag_low_voltage_incomplete_bins(test_data):
+    """Tests flag_low_voltage function when there is an incomplete spin bin."""
+    n_spins = 12  # Not a multiple of spin_bin_size to test incomplete bins
+    mock_status_dataset = xr.Dataset(
+        data_vars={
+            "epoch": np.arange(n_spins),
+            # Set Voltage below threshold
+            "rightdeflection_v": np.full(n_spins, 0.5),
+            "leftdeflection_v": np.full(n_spins, 1.5),
+        }
+    )
+
+    spins = np.arange(n_spins)
+    spin_bin_size = 5
+    spin_period = np.full(n_spins, 15.0)
+    spin_starttime = np.arange(n_spins)
+    quality_flags = flag_low_voltage(
+        spins, spin_starttime, spin_period, mock_status_dataset, spin_bin_size
+    )
+
+    # check quality flag
+    assert quality_flags.shape == spins.shape
+    # Check that every spin is flagged for low voltage
+    # Even the last incomplete bin should be flagged since it contains low voltage
+    # events
+    flagged = sum(get_energy_bin_flags())
+    # TODO Bobs code skips the last bin if it is incomplete.
+    assert np.all(quality_flags == flagged)

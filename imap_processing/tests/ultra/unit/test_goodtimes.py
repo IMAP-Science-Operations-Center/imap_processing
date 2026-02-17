@@ -22,11 +22,14 @@ def test_calculate_goodtimes_attitude():
         ImapRatesUltraFlags.NONE.value,
         dtype=np.uint16,
     )
-
+    quality_low_voltage = np.full_like(
+        quality_attitude, ImapAttitudeUltraFlags.NONE.value
+    )
     ds = xr.Dataset(
         {
             "epoch": (("spin_number",), np.array([0, 1], dtype="datetime64[ns]")),
             "quality_attitude": (("spin_number",), quality_attitude),
+            "quality_low_voltage": (("spin_number",), quality_low_voltage),
             "quality_ena_rates": (
                 ("energy_bin_geometric_mean", "spin_number"),
                 quality_ena_rates,
@@ -40,6 +43,8 @@ def test_calculate_goodtimes_attitude():
     )
 
     result_ds = calculate_goodtimes(ds, name="imap_ultra_l1b_45sensor-goodtimes")
+    for var in ["quality_attitude", "quality_low_voltage", "quality_ena_rates"]:
+        assert var in result_ds
 
     np.testing.assert_array_equal(result_ds["spin_number"].values, np.array([0, 1]))
 
