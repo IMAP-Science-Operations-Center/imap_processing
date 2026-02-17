@@ -621,35 +621,39 @@ def count_rejected_events_per_spin(
 
 
 def flag_low_voltage(
-    spin_tbin_edges: NDArray,
+    spins: NDArray,
+    spin_start_times: NDArray,
+    spin_periods: NDArray,
     status_dataset: xr.Dataset,
+    spin_bin_size: int = UltraConstants.SPIN_BIN_SIZE,
     voltage_threshold: float = UltraConstants.LOW_VOLTAGE_CULL_THRESHOLD,
-    low_voltage_flag: int = 65535,  # default is max uint16
 ) -> NDArray:
     """
     Flag low voltage events.
 
     Parameters
     ----------
-    spin_tbin_edges : NDArray
-        Edges of the spin time bins.
+    spins : NDArray
+        Spin time bin edges for grouping spins together.
+    spin_start_times : NDArray
+        Spin start times corresponding to the unique spin numbers.
+    spin_periods : NDArray
+        Spin periods corresponding to the unique spin numbers.
     status_dataset : xarray.Dataset
         Status dataset containing voltage information.
+    spin_bin_size : int
+        The number of spins to group together in a bin.
     voltage_threshold : float
         Voltage threshold below which to flag low voltage events.
-    low_voltage_flag : int
-        The flag value to set for low voltage events.
 
     Returns
     -------
     quality_flags : NDArray
         Quality flags.
     """
-    spin_bin_size = len(spin_tbin_edges) - 1
+    low_voltage_flag = sum(get_energy_bin_flags())
     # initialize all spins to have no low voltage flag
-    quality_flags = np.full(
-        spin_bin_size, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
-    )
+    quality_flags = np.full(len(spins), ImapRatesUltraFlags.NONE.value, dtype=np.uint16)
     # Get the min voltage across both deflection plate at each epoch
     min_voltage = np.minimum(
         status_dataset["rightdeflection_v"].data,
@@ -661,149 +665,67 @@ def flag_low_voltage(
     if not low_voltage_inds.size:
         return quality_flags
 
-    low_voltage_times = status_dataset["shcoarse"].data[low_voltage_inds]
+    # Append the last start time plus the spin period to account for low voltage times
+    # that occur after the last spin start time
+    spin_start_times = np.append(
+        spin_start_times, spin_start_times[-1] + spin_periods[-1]
+    )
+
+    low_voltage_times = status_dataset["epoch"].data[low_voltage_inds]
     # For each low voltage time, find the corresponding spin time
     lv_spin_inds = np.atleast_1d(
-        np.searchsorted(spin_tbin_edges, low_voltage_times, side="right") - 1
+        np.searchsorted(spin_start_times, low_voltage_times) - 1
     )
-    # Ensure that the indices are within the valid range of spin groups
-    valid_bin_inds = (lv_spin_inds >= 0) & (lv_spin_inds < spin_bin_size)
-    lv_spin_inds = lv_spin_inds[valid_bin_inds]
-    # For each low voltage ind, flag the corresponding flag
-    quality_flags[lv_spin_inds] = low_voltage_flag
+    # Ensure that the indices are within the valid range of spin bins
+    valid_spin_inds = (lv_spin_inds <= len(spins) - 1) & (lv_spin_inds >= 0)
+    lv_spin_inds = lv_spin_inds[valid_spin_inds]
+    # For each low voltage ind, flag the corresponding spins that fall within the same
+    # spin time bin with the LOW_VOLTAGE flag
+    for ind in lv_spin_inds:
+        # e.g. if ind = 2 and spin_bin_size = 4, then this maps to the first bin
+        # (spins at 0-4)
+        start_idx = (ind // spin_bin_size) * spin_bin_size
+        end_idx = start_idx + spin_bin_size
+        # Handle edge case where the last bin may not be full
+        # e.g. there are 12 spins, and spin_bin_size is 5, if ind is 10, then start_idx
+        # is 10 and end_idx is 15, but we only have spins up to index 11, so we need
+        # to cap the end_idx at 12
+        end_idx = min(end_idx, len(spins))
+        flag_inds = np.arange(start_idx, end_idx)
+        # Flag all the spins in the bin with all energy flags (voltage culling is
+        # independent of energy, so we flag all energy bins for the spins in the bin).
+        # We want to keep voltage quality flags consistent with stat culling and high
+        # energy culling flags
+        quality_flags[flag_inds] = low_voltage_flag
 
     return quality_flags
 
 
-def get_binned_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
+def get_binned_energies_for_culling() -> NDArray:
+    """
+    Get the binned energy values for energy dependent culling.
+
+    Returns
+    -------
+    energy_bin_geometric_means : NDArray
+        Geometric mean of the energy bins.
+    """
+    pass
+
+
+def get_energy_bin_flags() -> NDArray:
     """
     Get the energy bin flags for energy dependent culling.
-
-    Parameters
-    ----------
-    energy_ranges_edges : NDArray
-        Array of energy range edges.
 
     Returns
     -------
     energy_bin_flags : NDArray
         Energy bin flags.
     """
-    num_bins = len(energy_ranges_edges) - 1
-    if num_bins > 16:
+    n_ebins = UltraConstants.N_CULL_EBINS
+    if n_ebins > 16:
         raise ValueError(
-            f"Number of culling energy bins ({num_bins}) "
+            f"Number of culling energy bins ({n_ebins}) "
             f"cannot exceed 16 due to uint16 bit limitations."
         )
-    return np.array([2**bit for bit in range(num_bins)], dtype=np.uint16)
-
-
-def get_binned_energy_ranges(
-    energy_bin_edges: list[tuple[float, float]],
-) -> NDArray:
-    """
-    Create L1C energy ranges by grouping energy bins.
-
-    Parameters
-    ----------
-    energy_bin_edges : list[tuple[float, float]]
-        List of (start, stop) tuples for each energy bin.
-
-    Returns
-    -------
-    energy_range_edges : NDArray
-        Array of bin edges. For N energy ranges, returns N+1 edge values.
-        Range i spans from energy_range_edges[i] to energy_range_edges[i+1].
-    """
-    # Get indices for group starts
-    group_start_inds = np.arange(
-        UltraConstants.BASE_CULL_EBIN,
-        len(energy_bin_edges),
-        UltraConstants.N_CULL_EBINS,
-    )
-    energy_starts = [energy_bin_edges[i][0] for i in group_start_inds]
-    # Append the stop energy of the last bin to cover the full range
-    last_group_end_ind = min(
-        group_start_inds[-1] + UltraConstants.N_CULL_EBINS, len(energy_bin_edges)
-    )
-    energy_ranges = np.append(
-        energy_starts, energy_bin_edges[last_group_end_ind - 1][1]
-    )
-    return energy_ranges
-
-
-def get_binned_spins_edges(
-    spins: NDArray,
-    spin_periods: NDArray,
-    spin_start_times: NDArray,
-    spin_bin_size: int = UltraConstants.SPIN_BIN_SIZE,
-) -> NDArray:
-    """
-    Create spin bins for grouping spins together.
-
-    Parameters
-    ----------
-    spins : NDArray
-        Unique spin numbers.
-    spin_periods : NDArray
-        Spin periods corresponding to the unique spin numbers.
-    spin_start_times : NDArray
-        Spin start times corresponding to the unique spin numbers.
-    spin_bin_size : int
-        Number of spins to group together for voltage flagging.
-
-    Returns
-    -------
-    spin_tbin_edges : NDArray
-        Spin time bin edges.
-    """
-    # Create bins based on the number of spins per bin
-    # We will only use complete bins for culling so use integer division.
-    n_spin_bins = len(spins) // spin_bin_size
-    # Get the start time of each bin
-    spin_tbin_edges = spin_start_times[::spin_bin_size][:n_spin_bins]
-    if spin_tbin_edges.size == 0:
-        # If there are no valid spin bins, return an array with a single edge at 0
-        raise ValueError(
-            f"No valid spin bins found for bin size: {spin_bin_size}"
-            f" and number of spins: {len(spins)}."
-        )
-    # Append the last start time plus the spin period to account for low times
-    # that occur after the last spin start time
-    spin_tbin_edges = np.append(spin_tbin_edges, spin_tbin_edges[-1] + spin_periods[-1])
-    return spin_tbin_edges
-
-
-def expand_bin_flags_to_spins(
-    n_spins: int, binned_quality_flags: NDArray, spin_bin_size: int
-) -> NDArray:
-    """
-    Map binned spin flags back to individual spins.
-
-    Parameters
-    ----------
-    n_spins : int
-        Number of unique spin numbers.
-    binned_quality_flags : NDArray
-        Quality flags for each spin bin.
-    spin_bin_size : int
-        Number of spins that were grouped together for the binned quality flags.
-
-    Returns
-    -------
-    quality_flags : NDArray
-        Quality flags mapped to each individual spin.
-    """
-    quality_flags = np.full(n_spins, ImapRatesUltraFlags.NONE.value, dtype=np.uint16)
-    # Repeat each binned flag for the number of spins in each bin
-    repeated_flags = np.repeat(binned_quality_flags, spin_bin_size)
-    if len(repeated_flags) > n_spins:
-        logger.warning(
-            f"Found incomplete spin bin at the end with"
-            f" {len(repeated_flags) - n_spins} spins. These spins will be "
-            f"ignored."
-        )
-        repeated_flags = repeated_flags[:n_spins]
-    quality_flags[: len(repeated_flags)] = repeated_flags
-
-    return quality_flags
+    return np.array([2**bit for bit in range(n_ebins)], dtype=np.uint16)
