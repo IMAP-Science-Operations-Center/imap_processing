@@ -33,6 +33,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 def test_calculate_spacecraft_pset(
     aux_dataset,
     rates_dataset,
+    mock_goodtimes_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
     ancillary_files,
@@ -102,7 +103,7 @@ def test_calculate_spacecraft_pset(
     ):
         spacecraft_pset = calculate_spacecraft_pset(
             test_l1b_de_dataset,
-            test_l1b_de_dataset,  # placeholder for goodtimes_dataset
+            mock_goodtimes_dataset,
             rates_dataset,
             aux_dataset,
             "imap_ultra_l1c_45sensor-spacecraftpset",
@@ -121,6 +122,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     ancillary_files,
     aux_dataset,
     rates_dataset,
+    mock_goodtimes_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
     mock_spacecraft_pointing_lookups,
@@ -171,7 +173,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         de_dict["velocity_dps_sc"] = sc_dps_velocity
         de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
         # Made up data for spin_number and energy_bin_geometric_mean
-        de_dict["spin_number"] = np.full(len(sc_dps_velocity), 128)
+        de_dict["spin_number"] = np.full(len(sc_dps_velocity), 0)
         de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
         de_dict["quality_scattering"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["quality_outliers"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
@@ -189,7 +191,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         ):
             spacecraft_pset = calculate_spacecraft_pset(
                 dataset,
-                dataset,  # placeholder for goodtimes_dataset
+                mock_goodtimes_dataset,
                 rates_dataset,
                 aux_dataset,
                 "imap_ultra_l1c_45sensor-spacecraftpset",

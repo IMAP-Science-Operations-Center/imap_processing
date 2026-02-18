@@ -8,12 +8,15 @@ from imap_processing.quality_flags import ImapRatesUltraFlags
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     count_rejected_events_per_spin,
+    expand_bin_flags_to_spins,
     flag_attitude,
     flag_hk,
     flag_imap_instruments,
     flag_low_voltage,
     flag_rates,
     get_binned_energy_range_flags,
+    get_binned_energy_ranges,
+    get_binned_spins_edges,
     get_energy_histogram,
     get_pulses_per_spin,
 )
@@ -67,12 +70,15 @@ def calculate_extendedspin(
     inst_qf = flag_imap_instruments(de_dataset["spin"].values)
 
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    voltage_qf = flag_low_voltage(
-        spin, spin_starttime, spin_period, status_dataset, spin_bin_size
+    spin_tbin_edges = get_binned_spins_edges(
+        spin, spin_period, spin_starttime, spin_bin_size
     )
+    voltage_qf = flag_low_voltage(spin_tbin_edges, status_dataset)
     # Get energy bins used at l1c
     intervals, _, _ = build_energy_bins()
-    energy_bin_flags = get_binned_energy_range_flags(intervals)
+    # Get the
+    energy_ranges = get_binned_energy_ranges(intervals)
+    energy_bin_flags = get_binned_energy_range_flags(energy_ranges)
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
 
@@ -109,6 +115,8 @@ def calculate_extendedspin(
     stop_per_spin[valid] = pulses.stop_per_spin[idx[valid]]
     coin_per_spin[valid] = pulses.coin_per_spin[idx[valid]]
 
+    # Expand binned quality flags to individual spins.
+    voltage_qf = expand_bin_flags_to_spins(len(spin), voltage_qf, spin_bin_size)
     # account for rates spins which are not in the direct event spins
     extendedspin_dict["start_pulses_per_spin"] = start_per_spin
     extendedspin_dict["stop_pulses_per_spin"] = stop_per_spin
