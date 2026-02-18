@@ -1422,20 +1422,10 @@ class RectangularSkyMap(AbstractSkyMap):
         )
 
         # And CATDESC for principal data
-        possible_principal_data = (
-            "dust_rate",
-            "ena_intensity",
-            "ena_spectral_index",
-            "glows_rate",
-            "isn_rate",
-            "isn_rate_bg_subtracted",
-        )
-        for principal_data in possible_principal_data:
-            if principal_data in cdf_ds:
-                catdesc = naming.MapDescriptor.from_string(descriptor).to_catdesc()
-                cdf_ds[principal_data].attrs["CATDESC"] = catdesc
-                # Only one principal variable
-                break
+        md = naming.MapDescriptor.from_string(descriptor)
+        principal_data = md.principal_data_var
+        if principal_data in cdf_ds:
+            cdf_ds[principal_data].attrs["CATDESC"] = md.to_catdesc()
 
         return cdf_ds
 

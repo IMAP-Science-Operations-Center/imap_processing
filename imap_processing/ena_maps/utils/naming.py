@@ -234,6 +234,26 @@ class MapDescriptor:
                 break
         return catdesc
 
+    @property
+    def principal_data_var(self) -> str:
+        """
+        The name of the variable containing the principal data for the map.
+
+        Returns
+        -------
+        principal_data_var : str
+            CDF (dataset) variable name expected to contain the principal data.
+        """
+        if self.principal_data.startswith("isnnbkgnd"):
+            return "isn_rate"
+        return {
+            "drt": "dust_rate",
+            "ena": "ena_intensity",
+            "int": "glows_rate",
+            "isn": "isn_rate_bg_subtracted",
+            "spx": "ena_spectral_index",
+        }[self.principal_data[:3]]
+
     # Methods for parsing and building parts of the map descriptor string
     @staticmethod
     def get_instrument_descriptor(

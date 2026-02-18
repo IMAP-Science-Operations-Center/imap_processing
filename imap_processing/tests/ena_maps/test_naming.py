@@ -378,3 +378,18 @@ class TestMapDescriptor:
         md = MapDescriptor.from_string(descriptor_str)
         actual_catdesc = md.to_catdesc()
         assert actual_catdesc == expected_catdesc
+
+    @pytest.mark.parametrize(
+        "descriptor_str, expected_principal_data_var",
+        [
+            ("hic-ena-h-hf-sp-ram-hae-4deg-3mo", "ena_intensity"),
+            ("h45-spx0305-h-hf-sp-ram-hae-4deg-3mo", "ena_spectral_index"),
+            ("idx-drt-dust-sf-nsp-full-hae-6deg-1yr", "dust_rate"),
+            ("glx-int-uv-sf-nsp-full-hae-6deg-1yr", "glows_rate"),
+            ("l090-isnnbkgnd-h-sf-nsp-ram-hae-6deg-1yr", "isn_rate"),
+            ("l090-isn-h-sf-nsp-ram-hae-6deg-1yr", "isn_rate_bg_subtracted"),
+        ],
+    )
+    def test_principal_data_var(self, descriptor_str, expected_principal_data_var):
+        md = MapDescriptor.from_string(descriptor_str)
+        assert md.principal_data_var == expected_principal_data_var
