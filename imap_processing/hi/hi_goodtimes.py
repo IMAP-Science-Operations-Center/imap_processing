@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from imap_processing.hi.utils import parse_sensor_number
+from imap_processing.hi.utils import CoincidenceBitmap, parse_sensor_number
 
 logger = logging.getLogger(__name__)
 
@@ -808,3 +808,270 @@ def mark_overflow_packets(
         f"Found {len(full_packet_indices)} full packet(s), "
         f"dropped {len(mets_to_cull)} 8-spin period(s) due to overflow packets"
     )
+
+
+def _get_sweep_indices(esa_step: np.ndarray) -> np.ndarray:
+    """
+    Assign sweep indices to each MET based on ESA step transitions.
+
+    A new sweep starts when ESA step transitions from high to low
+    (e.g., 9 -> 1), detected using np.diff().
+
+    Parameters
+    ----------
+    esa_step : numpy.ndarray
+        ESA step values for each MET (epoch dimension).
+
+    Returns
+    -------
+    sweep_indices : numpy.ndarray
+        Sweep index for each MET. First sweep is index 0.
+    """
+    if len(esa_step) == 0:
+        return np.array([], dtype=np.int32)
+
+    # Find sweep boundaries where ESA step transitions from high to low
+    esa_diff = np.diff(esa_step.astype(np.int32))
+    # Negative diff indicates high-to-low transition (e.g., 9 -> 1 = -8)
+    sweep_boundaries = esa_diff < 0
+
+    # Create sweep indices using cumsum on boundaries
+    # Prepend False so first MET is in sweep 0
+    sweep_indices = (
+        np.concatenate([[False], sweep_boundaries]).cumsum().astype(np.int32)
+    )
+
+    return sweep_indices
+
+
+def _add_sweep_indices(l1b_de: xr.Dataset) -> xr.Dataset:
+    """
+    Add esa_sweep coordinate to the dataset based on ESA step transitions.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset with esa_sweep coordinate added on epoch dimension.
+    """
+    sweep_indices = _get_sweep_indices(l1b_de["esa_step"].values)
+    return l1b_de.assign_coords(esa_sweep=("epoch", sweep_indices))
+
+
+def _compute_normalized_counts_per_sweep(
+    l1b_de: xr.Dataset,
+    tof_ab_limit_ns: int,
+) -> xr.Dataset:
+    """
+    Compute normalized AB coincidence counts per ESA sweep and reshape dataset.
+
+    This function:
+    1. Computes normalized AB coincidence counts per sweep
+    2. Removes all data associated with the event_met coordinate
+    3. Reshapes the dataset so esa_sweep becomes a dimension (removing epoch)
+    4. Returns the updated dataset with all epoch-based variables
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event dataset with esa_sweep coordinate on epoch dimension.
+    tof_ab_limit_ns : int
+        Maximum absolute value of tof_ab in nanoseconds.
+
+    Returns
+    -------
+    xarray.Dataset
+        Reshaped dataset with esa_sweep as a dimension containing:
+        - normalized_count: normalized AB coincidence counts per sweep
+        - All other variables from the input dataset (first value per sweep)
+    """
+    if "esa_sweep" not in l1b_de.coords:
+        raise ValueError("Dataset must have esa_sweep coordinate")
+
+    # Filter to valid AB coincidences
+    tof_ab = l1b_de["tof_ab"]
+    coincidence_type = l1b_de["coincidence_type"]
+    ccsds_index = l1b_de["ccsds_index"]
+
+    ab_coincidence_type = CoincidenceBitmap.detector_hit_str_to_int("AB")
+    is_valid_ab = (coincidence_type == ab_coincidence_type) & (
+        np.abs(tof_ab) <= tof_ab_limit_ns
+    )
+
+    # Map events to sweeps via ccsds_index -> esa_sweep
+    event_epoch_idx = ccsds_index.values
+    event_sweep_idx = l1b_de["esa_sweep"].values[event_epoch_idx]
+
+    # Count valid AB events per sweep
+    n_sweeps = int(l1b_de["esa_sweep"].max().values) + 1
+    counts_per_sweep = np.zeros(n_sweeps, dtype=np.int64)
+    np.add.at(counts_per_sweep, event_sweep_idx[is_valid_ab.values], 1)
+
+    # Normalize by number of unique ESA steps
+    n_unique_esa_steps = len(np.unique(l1b_de["esa_step"].values))
+    normalized_counts = counts_per_sweep / n_unique_esa_steps
+
+    # Remove all variables that depend on event_met dimension
+    ds = l1b_de.drop_dims("event_met", errors="ignore")
+
+    # Set esa_sweep and esa_step as a multi-index on epoch dimension
+    ds = ds.set_index(epoch=["esa_sweep", "esa_step"])
+
+    # Unstack to make esa_sweep and esa_step into separate dimensions
+    # This creates a 2D array with dimensions (esa_sweep, esa_step)
+    # Where multiple epoch values map to the same (esa_sweep, esa_step), take first
+    ds_reshaped = ds.unstack("epoch")
+
+    # Add normalized_count as a new variable
+    # It only has esa_sweep dimension (no esa_step variation within a sweep)
+    ds_reshaped["normalized_count"] = xr.DataArray(
+        normalized_counts,
+        dims=["esa_sweep"],
+        coords={"esa_sweep": np.arange(n_sweeps)},
+    )
+
+    return ds_reshaped
+
+
+def mark_statistical_filter_0(
+    goodtimes_ds: xr.Dataset,
+    l1b_de_datasets: list[xr.Dataset],
+    current_index: int,
+    threshold_factor: float = 1.5,
+    tof_ab_limit_ns: int = 15,
+    cull_code: int = CullCode.LOOSE,
+    min_pointings: int = 4,
+) -> None:
+    """
+    Apply Statistical Filter 0 to detect drastic penetrating background changes.
+
+    Statistical Filter 0 from Algorithm Document Section 2.3.2.3 detects when
+    the penetrating background rate has changed drastically, compromising
+    background subtraction accuracy. For each ESA sweep across all input
+    Pointings, it computes the normalized AB coincidence count (total count
+    divided by number of ESA steps). It then marks ESA sweeps in the current
+    Pointing where the normalized count exceeds 150% of the median.
+
+    Parameters
+    ----------
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset for the current Pointing to update.
+    l1b_de_datasets : list[xarray.Dataset | None]
+        List of L1B DE datasets for surrounding Pointings. Missing Pointings
+        should be None. Typically includes current plus preceding and following
+        Pointings (e.g., [P-3, P-2, P-1, P(current), P+1, P+2, P+3]).
+    current_index : int
+        Index of the current Pointing in l1b_de_datasets.
+    threshold_factor : float, optional
+        Multiplier for median comparison. Default is 1.5 (150% of median).
+    tof_ab_limit_ns : int, optional
+        Maximum |tof_ab| in nanoseconds for AB coincidences. Default is 15.
+    cull_code : int, optional
+        Cull code to use for marking bad times. Default is CullCode.LOOSE.
+    min_pointings : int, optional
+        Minimum number of valid (non-None) Pointings required. Default is 4.
+
+    Raises
+    ------
+    ValueError
+        If current_index is out of range, if the current Pointing is None,
+        or if fewer than min_pointings valid datasets are provided.
+
+    Notes
+    -----
+    This function modifies goodtimes_ds in place. Only ESA sweeps in the
+    current Pointing where the normalized count exceeds `threshold_factor *
+    median` are marked as bad. Other sweeps remain unaffected.
+
+    Algorithm:
+    1. For each complete ESA sweep across all Pointings, count AB coincidences
+       where |tof_ab| <= 15ns and divide by number of ESA steps
+    2. Calculate median of all normalized sweep counts
+    3. For each sweep in current Pointing, mark all METs in that sweep as bad
+       if normalized count > threshold_factor * median
+    """
+    logger.info("Running mark_statistical_filter_0 culling")
+
+    # Validate current_index is in range
+    if current_index < 0 or current_index >= len(l1b_de_datasets):
+        raise ValueError(
+            f"current_index {current_index} out of range for list of "
+            f"length {len(l1b_de_datasets)}"
+        )
+
+    # Validate that we have the minimum number of datasets
+    if len(l1b_de_datasets) < min_pointings:
+        raise ValueError(
+            f"At least {min_pointings} valid Pointings required, "
+            f"got {len(l1b_de_datasets)}"
+        )
+
+    # Add esa_sweep coordinate, reshape, and compute normalized_count for each dataset
+    all_normalized_counts: list[np.ndarray] = []
+    reshaped_datasets: dict[int, xr.Dataset] = {}
+
+    for i, l1b_de in enumerate(l1b_de_datasets):
+        # Add esa_sweep coordinate
+        l1b_de_with_sweep = _add_sweep_indices(l1b_de)
+
+        # Compute normalized counts and reshape dataset. This removes epoch
+        # dimension, adds esa_sweep dimension, and includes normalized_count.
+        reshaped_ds = _compute_normalized_counts_per_sweep(
+            l1b_de_with_sweep, tof_ab_limit_ns
+        )
+
+        # Store reshaped dataset and normalized counts
+        reshaped_datasets[i] = reshaped_ds
+        all_normalized_counts.append(reshaped_ds["normalized_count"].values)
+
+        offset = i - current_index
+        logger.debug(
+            f"Pointing {offset:+d}: "
+            f"{len(reshaped_ds['normalized_count'])} complete ESA sweeps"
+        )
+
+    current_ds = reshaped_datasets[current_index]
+
+    # Calculate median from all sweep counts
+    all_counts = np.concatenate(all_normalized_counts)
+    median_count = float(np.median(all_counts))
+    threshold = median_count * threshold_factor
+
+    logger.info(
+        f"Statistical Filter 0: median={median_count:.2f}, "
+        f"threshold={threshold:.2f} ({len(all_counts)} sweeps)"
+    )
+
+    # Find and mark bad sweeps in current dataset
+    bad_sweep_mask = current_ds["normalized_count"] > threshold
+    n_bad_sweeps = int(bad_sweep_mask.sum())
+
+    # Get MET time ranges for bad sweeps using xarray boolean indexing
+    # Select only the bad sweeps using the mask
+    bad_sweeps_ds = current_ds.isel(esa_sweep=bad_sweep_mask)
+
+    # For each bad sweep, mark the time range from first to last ccsds_met
+    for sweep_idx in range(len(bad_sweeps_ds["esa_sweep"])):
+        # Get all ccsds_met values for this sweep across all esa_steps
+        sweep_mets = bad_sweeps_ds["ccsds_met"].isel(esa_sweep=sweep_idx).values
+
+        # Get min and max MET values, ignoring NaNs
+        met_start: float = float(np.nanmin(sweep_mets))
+        met_end: float = float(np.nanmax(sweep_mets))
+
+        # Mark the entire time range for this sweep as bad
+        goodtimes_ds.goodtimes.mark_bad_times(
+            met=(met_start, met_end), bins=None, cull=cull_code
+        )
+
+    if n_bad_sweeps > 0:
+        logger.info(
+            f"Statistical Filter 0: Marked {n_bad_sweeps}/"
+            f"{len(current_ds['normalized_count'])} ESA sweeps as bad"
+        )
+    else:
+        logger.info("No bad ESA sweeps identified by Statistical Filter 0")

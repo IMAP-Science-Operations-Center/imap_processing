@@ -8,10 +8,14 @@ import xarray as xr
 from imap_processing.hi.hi_goodtimes import (
     INTERVAL_DTYPE,
     CullCode,
+    _add_sweep_indices,
+    _compute_normalized_counts_per_sweep,
+    _get_sweep_indices,
     create_goodtimes_dataset,
     mark_drf_times,
     mark_incomplete_spin_sets,
     mark_overflow_packets,
+    mark_statistical_filter_0,
 )
 
 
@@ -1434,3 +1438,477 @@ class TestMarkOverflowPackets:
 
         # Should be culled because the final event (last in list) is qualified
         assert np.sum(mock_goodtimes["cull_flags"].values > 0) > 0
+
+
+class TestGetSweepIndices:
+    """Test suite for _get_sweep_indices() helper function."""
+
+    def test_empty_array(self):
+        """Test with empty input."""
+        result = _get_sweep_indices(np.array([]))
+        assert len(result) == 0
+        assert result.dtype == np.int32
+
+    def test_single_sweep(self):
+        """Test with single complete ESA sweep (no transitions)."""
+        esa_step = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        result = _get_sweep_indices(esa_step)
+
+        # All should be in sweep 0
+        np.testing.assert_array_equal(result, np.zeros(9, dtype=np.int32))
+
+    def test_two_sweeps_standard_transition(self):
+        """Test with two sweeps with standard 9->1 transition."""
+        esa_step = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        result = _get_sweep_indices(esa_step)
+
+        # First 9 should be sweep 0, next 9 should be sweep 1
+        expected = np.array(
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.int32
+        )
+        np.testing.assert_array_equal(result, expected)
+
+    def test_multiple_sweeps(self):
+        """Test with multiple sweeps."""
+        esa_step = np.array([3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3])
+        result = _get_sweep_indices(esa_step)
+
+        # Transitions at index 6->7 (9->1) and 15->16 (9->1)
+        expected = np.array(
+            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2], dtype=np.int32
+        )
+        np.testing.assert_array_equal(result, expected)
+
+    def test_non_standard_transition(self):
+        """Test with non-standard ESA step decrease (e.g., 5->2)."""
+        esa_step = np.array([5, 6, 7, 8, 9, 2, 3, 4, 5])
+        result = _get_sweep_indices(esa_step)
+
+        # Transition at index 4->5 (9->2, diff=-7, negative so boundary)
+        expected = np.array([0, 0, 0, 0, 0, 1, 1, 1, 1], dtype=np.int32)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_no_decreases_only_increases(self):
+        """Test with only increasing steps (no sweep boundaries)."""
+        esa_step = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        result = _get_sweep_indices(esa_step)
+
+        # All in sweep 0
+        np.testing.assert_array_equal(result, np.zeros(9, dtype=np.int32))
+
+    def test_constant_esa_step(self):
+        """Test with constant ESA step (no transitions)."""
+        esa_step = np.array([5, 5, 5, 5, 5])
+        result = _get_sweep_indices(esa_step)
+
+        # All in sweep 0
+        np.testing.assert_array_equal(result, np.zeros(5, dtype=np.int32))
+
+
+class TestAddSweepIndices:
+    """Test suite for _add_sweep_indices() helper function."""
+
+    def test_adds_coordinate(self):
+        """Test that esa_sweep coordinate is added."""
+        ds = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], np.array([1000.0, 1060.0, 1120.0])),
+                "esa_step": (["epoch"], np.array([1, 2, 3], dtype=np.uint8)),
+            },
+            coords={"epoch": np.arange(3)},
+        )
+
+        result = _add_sweep_indices(ds)
+
+        assert "esa_sweep" in result.coords
+        assert result.coords["esa_sweep"].dims == ("epoch",)
+
+    def test_coordinate_values(self):
+        """Test that sweep indices are correctly calculated."""
+        ds = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], np.arange(1000.0, 1000.0 + 18 * 60, 60)),
+                "esa_step": (
+                    ["epoch"],
+                    np.tile([1, 2, 3, 4, 5, 6, 7, 8, 9], 2).astype(np.uint8),
+                ),
+            },
+            coords={"epoch": np.arange(18)},
+        )
+
+        result = _add_sweep_indices(ds)
+
+        # First 9 should be sweep 0, next 9 should be sweep 1
+        expected = np.array(
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.int32
+        )
+        np.testing.assert_array_equal(result.coords["esa_sweep"].values, expected)
+
+    def test_preserves_original_data(self):
+        """Test that original dataset variables are preserved."""
+        ds = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], np.array([1000.0, 1060.0, 1120.0])),
+                "esa_step": (["epoch"], np.array([1, 2, 1], dtype=np.uint8)),
+                "other_var": (["epoch"], np.array([10, 20, 30])),
+            },
+            coords={"epoch": np.arange(3)},
+        )
+
+        result = _add_sweep_indices(ds)
+
+        assert "ccsds_met" in result.data_vars
+        assert "esa_step" in result.data_vars
+        assert "other_var" in result.data_vars
+        np.testing.assert_array_equal(
+            result["ccsds_met"].values, ds["ccsds_met"].values
+        )
+
+
+class TestComputeNormalizedCountsPerSweep:
+    """Test suite for _compute_normalized_counts_per_sweep() helper function."""
+
+    def _create_test_dataset(
+        self,
+        n_sweeps: int = 2,
+        n_esa_steps: int = 9,
+        events_per_packet: int = 10,
+        tof_ab_range: tuple[int, int] = (-15, 15),
+    ) -> xr.Dataset:
+        """Create a test L1B DE dataset with esa_sweep coordinate."""
+        n_packets = n_sweeps * n_esa_steps
+        n_events = n_packets * events_per_packet
+
+        # Create ESA steps
+        esa_step = np.tile(np.arange(1, n_esa_steps + 1), n_sweeps).astype(np.uint8)
+
+        # Create METs
+        ccsds_met = np.arange(1000.0, 1000.0 + n_packets * 60, 60)
+
+        # Create events
+        tof_ab = np.random.randint(tof_ab_range[0], tof_ab_range[1], n_events).astype(
+            np.int32
+        )
+        coincidence_type = np.full(n_events, 12, dtype=np.uint8)  # AB = 12
+        ccsds_index = np.repeat(np.arange(n_packets), events_per_packet).astype(
+            np.uint16
+        )
+
+        ds = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], ccsds_met),
+                "esa_step": (["epoch"], esa_step),
+                "tof_ab": (["event_met"], tof_ab),
+                "coincidence_type": (["event_met"], coincidence_type),
+                "ccsds_index": (["event_met"], ccsds_index),
+            },
+            coords={
+                "epoch": np.arange(n_packets),
+                "event_met": np.arange(n_events),
+            },
+        )
+
+        # Add sweep indices
+        return _add_sweep_indices(ds)
+
+    def test_output_dimensions(self):
+        """Test that output has correct dimensions."""
+        np.random.seed(42)
+        ds = self._create_test_dataset(n_sweeps=2)
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        assert "esa_sweep" in result.dims
+        assert "esa_step" in result.dims
+        assert "epoch" not in result.dims
+        assert "event_met" not in result.dims
+
+    def test_normalized_count_added(self):
+        """Test that normalized_count variable is added."""
+        np.random.seed(42)
+        ds = self._create_test_dataset(n_sweeps=2)
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        assert "normalized_count" in result.data_vars
+        assert result["normalized_count"].dims == ("esa_sweep",)
+
+    def test_normalized_count_calculation(self):
+        """Test that normalized counts are calculated correctly."""
+        np.random.seed(42)
+        # Create dataset where we know exact counts
+        n_sweeps = 2
+        n_esa_steps = 9
+        events_per_packet = 10
+
+        # All events within ±15ns
+        ds = self._create_test_dataset(
+            n_sweeps=n_sweeps,
+            n_esa_steps=n_esa_steps,
+            events_per_packet=events_per_packet,
+            tof_ab_range=(-10, 10),
+        )
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        # Allow some tolerance for randomness in tof_ab values
+        assert len(result["normalized_count"]) == n_sweeps
+        assert np.all(result["normalized_count"].values >= 0)
+
+    def test_filters_by_tof_ab_limit(self):
+        """Test that events outside tof_ab limit are excluded."""
+        np.random.seed(42)
+        # Create dataset with events outside limit
+        ds = self._create_test_dataset(n_sweeps=2, tof_ab_range=(20, 100))
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        # All events have |tof_ab| > 15, so counts should be 0
+        np.testing.assert_array_equal(result["normalized_count"].values, np.zeros(2))
+
+    def test_preserves_epoch_variables(self):
+        """Test that epoch-based variables are preserved."""
+        np.random.seed(42)
+        ds = self._create_test_dataset(n_sweeps=2)
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        assert "ccsds_met" in result.data_vars
+        # esa_step becomes a coordinate (dimension) after unstack
+        assert "esa_step" in result.coords
+
+    def test_removes_event_met_variables(self):
+        """Test that event_met dimension variables are removed."""
+        np.random.seed(42)
+        ds = self._create_test_dataset(n_sweeps=2)
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        # Variables that were on event_met dimension should be gone
+        assert "tof_ab" not in result.data_vars
+        assert "coincidence_type" not in result.data_vars
+        assert "ccsds_index" not in result.data_vars
+
+    def test_raises_without_esa_sweep_coordinate(self):
+        """Test that function raises error without esa_sweep coordinate."""
+        ds = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], np.array([1000.0, 1060.0])),
+                "esa_step": (["epoch"], np.array([1, 2], dtype=np.uint8)),
+            },
+            coords={"epoch": np.arange(2)},
+        )
+
+        with pytest.raises(ValueError, match="must have esa_sweep coordinate"):
+            _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+    def test_multiple_sweeps(self):
+        """Test with multiple sweeps."""
+        np.random.seed(42)
+        ds = self._create_test_dataset(n_sweeps=5)
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        assert len(result["normalized_count"]) == 5
+        assert result.dims["esa_sweep"] == 5
+
+
+class TestStatisticalFilter0:
+    """Test suite for mark_statistical_filter_0() integration tests."""
+
+    @pytest.fixture
+    def goodtimes_for_filter(self):
+        """Create a goodtimes dataset for testing statistical filter 0."""
+        # Create 2 complete ESA sweeps (9 METs each = 18 total)
+        n_mets = 18
+        met_values = np.arange(1000.0, 1000.0 + n_mets * 60, 60)
+
+        gt = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((n_mets, 90), dtype=np.uint8), dims=["met", "spin_bin"]
+                ),
+                "esa_step": xr.DataArray(
+                    np.tile(np.arange(1, 10), 2).astype(np.uint8), dims=["met"]
+                ),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+            attrs={"sensor": "Hi45", "pointing": 1},
+        )
+        return gt
+
+    def _create_l1b_de_dataset(
+        self,
+        n_sweeps: int = 2,
+        events_per_met: int = 10,
+        tof_ab_range: tuple[int, int] = (-15, 15),
+        base_met: float = 1000.0,
+    ) -> xr.Dataset:
+        """
+        Create a mock L1B DE dataset with complete ESA sweeps.
+
+        Parameters
+        ----------
+        n_sweeps : int
+            Number of complete ESA sweeps (each sweep = 9 METs for ESA 1-9).
+        events_per_met : int
+            Number of events per MET.
+        tof_ab_range : tuple[int, int]
+            Range for random tof_ab values.
+        base_met : float
+            Base MET value for the dataset.
+
+        Returns
+        -------
+        xr.Dataset
+            Mock L1B DE dataset with complete ESA sweeps.
+        """
+        n_esa_steps = 9  # ESA steps 1-9
+        n_packets = n_sweeps * n_esa_steps
+        n_events = n_packets * events_per_met
+
+        # Create ESA steps cycling through 1-9 for each sweep
+        esa_step = np.tile(np.arange(1, n_esa_steps + 1), n_sweeps).astype(np.uint8)
+
+        # Create ccsds_met for packets
+        ccsds_met = np.arange(base_met, base_met + n_packets * 60, 60, dtype=np.float64)
+
+        # Create events distributed across packets
+        tof_ab_values = np.random.randint(
+            tof_ab_range[0], tof_ab_range[1], n_events
+        ).astype(np.int32)
+        coincidence_type = np.full(n_events, 12, dtype=np.uint8)  # AB coincidence
+        ccsds_index = np.repeat(np.arange(n_packets), events_per_met).astype(np.uint16)
+
+        return xr.Dataset(
+            data_vars={
+                "tof_ab": (["event_met"], tof_ab_values, {"FILLVAL": -2147483648}),
+                "coincidence_type": (["event_met"], coincidence_type),
+                "ccsds_index": (["event_met"], ccsds_index),
+                "ccsds_met": (["epoch"], ccsds_met),
+                "esa_step": (["epoch"], esa_step, {"FILLVAL": 255}),
+            },
+            coords={
+                "event_met": np.arange(n_events),
+                "epoch": np.arange(n_packets),
+            },
+        )
+
+    def test_passes_normal_sweeps(self, goodtimes_for_filter):
+        """Test that similar counts across sweeps passes the filter."""
+        np.random.seed(42)
+        # Create 5 datasets with 2 sweeps each, similar event counts
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(n_sweeps=2, events_per_met=10) for _ in range(5)
+        ]
+
+        mark_statistical_filter_0(
+            goodtimes_for_filter, l1b_de_datasets, current_index=2
+        )
+
+        # All times should still be good (no sweeps exceed threshold)
+        assert np.all(goodtimes_for_filter["cull_flags"].values == CullCode.GOOD)
+
+    def test_fails_anomalous_sweep(self, goodtimes_for_filter):
+        """Test that sweeps exceeding 150% median are marked as culled."""
+        np.random.seed(42)
+        l1b_de_datasets = []
+
+        for i in range(5):
+            if i == 2:  # Current pointing - create many more events
+                ds = self._create_l1b_de_dataset(n_sweeps=2, events_per_met=50)
+            else:
+                ds = self._create_l1b_de_dataset(n_sweeps=2, events_per_met=10)
+            l1b_de_datasets.append(ds)
+
+        mark_statistical_filter_0(
+            goodtimes_for_filter, l1b_de_datasets, current_index=2
+        )
+
+        # Current sweeps have 5x the events, should be culled
+        # Check that at least some METs are culled
+        assert np.any(goodtimes_for_filter["cull_flags"].values == CullCode.LOOSE)
+
+    def test_insufficient_pointings(self, goodtimes_for_filter):
+        """Test that fewer than min_pointings raises ValueError."""
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(),
+            self._create_l1b_de_dataset(),  # Current
+            self._create_l1b_de_dataset(),
+        ]
+
+        with pytest.raises(ValueError, match="At least 4 valid Pointings required"):
+            mark_statistical_filter_0(
+                goodtimes_for_filter, l1b_de_datasets, current_index=2
+            )
+
+    def test_current_index_out_of_range(self, goodtimes_for_filter):
+        """Test that current_index out of range raises ValueError."""
+        l1b_de_datasets = [self._create_l1b_de_dataset()] * 5
+
+        with pytest.raises(ValueError, match="current_index.*out of range"):
+            mark_statistical_filter_0(
+                goodtimes_for_filter, l1b_de_datasets, current_index=10
+            )
+
+    def test_partial_sweep_culling(self, goodtimes_for_filter):
+        """Test that only bad sweeps are culled, not entire Pointing."""
+        np.random.seed(42)
+
+        # Create current pointing with one normal sweep and one anomalous sweep
+        n_esa_steps = 9
+        n_packets = 2 * n_esa_steps  # 2 sweeps
+
+        # First sweep: normal count (10 events/MET)
+        # Second sweep: high count (100 events/MET)
+        events_sweep1 = 10 * n_esa_steps
+        events_sweep2 = 100 * n_esa_steps
+        n_events = events_sweep1 + events_sweep2
+
+        esa_step = np.tile(np.arange(1, 10), 2).astype(np.uint8)
+        ccsds_met = np.arange(1000.0, 1000.0 + n_packets * 60, 60, dtype=np.float64)
+
+        # Events for first sweep (packets 0-8)
+        ccsds_index_1 = np.repeat(np.arange(n_esa_steps), 10).astype(np.uint16)
+        # Events for second sweep (packets 9-17)
+        ccsds_index_2 = np.repeat(np.arange(n_esa_steps, 2 * n_esa_steps), 100).astype(
+            np.uint16
+        )
+        ccsds_index = np.concatenate([ccsds_index_1, ccsds_index_2])
+
+        tof_ab = np.random.randint(-10, 10, n_events).astype(np.int32)
+        coincidence_type = np.full(n_events, 12, dtype=np.uint8)
+
+        current_ds = xr.Dataset(
+            data_vars={
+                "tof_ab": (["event_met"], tof_ab, {"FILLVAL": -2147483648}),
+                "coincidence_type": (["event_met"], coincidence_type),
+                "ccsds_index": (["event_met"], ccsds_index),
+                "ccsds_met": (["epoch"], ccsds_met),
+                "esa_step": (["epoch"], esa_step, {"FILLVAL": 255}),
+            },
+            coords={
+                "event_met": np.arange(n_events),
+                "epoch": np.arange(n_packets),
+            },
+        )
+
+        # Other pointings: all normal (10 events/MET)
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(n_sweeps=2, events_per_met=10),
+            self._create_l1b_de_dataset(n_sweeps=2, events_per_met=10),
+            current_ds,  # Current with mixed sweeps
+            self._create_l1b_de_dataset(n_sweeps=2, events_per_met=10),
+            self._create_l1b_de_dataset(n_sweeps=2, events_per_met=10),
+        ]
+
+        mark_statistical_filter_0(
+            goodtimes_for_filter, l1b_de_datasets, current_index=2
+        )
+
+        # First 9 METs (sweep 1) should be good, last 9 METs (sweep 2) should be bad
+        first_sweep_flags = goodtimes_for_filter["cull_flags"].values[:9, :]
+        second_sweep_flags = goodtimes_for_filter["cull_flags"].values[9:, :]
+
+        assert np.all(first_sweep_flags == CullCode.GOOD)
+        assert np.all(second_sweep_flags == CullCode.LOOSE)
