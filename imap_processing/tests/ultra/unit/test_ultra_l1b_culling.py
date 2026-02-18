@@ -443,6 +443,7 @@ def test_get_energy_and_spin_dependent_rejection_mask():
     )
 
 
+@pytest.mark.external_test_data
 def test_validate_voltage_cull():
     """Validate that low voltage spins are correctly flagged"""
     # read test data from csv files
