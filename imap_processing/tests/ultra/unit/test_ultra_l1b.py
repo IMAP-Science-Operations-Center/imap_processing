@@ -227,7 +227,7 @@ def test_ultra_l1b_extendedspin(
 def test_cdf_extendedspin(
     use_fake_spin_data_for_time, aux_dataset, rates_dataset, status_dataset
 ):
-    use_fake_spin_data_for_time(0, 141 * 150)
+    use_fake_spin_data_for_time(0, 141 * 15)
     l1b_de_dataset_path = (
         TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
     )

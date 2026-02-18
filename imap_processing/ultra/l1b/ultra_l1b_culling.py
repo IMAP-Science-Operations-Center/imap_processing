@@ -136,9 +136,7 @@ def flag_attitude(
     spin_starttime = spin_df.loc[
         spin_df.spin_number.isin(spins), "spin_start_met"
     ].values
-    spin_phase_valid = spin_df.loc[
-        spin_df.spin_number.isin(spins), "spin_phase_valid"
-    ].values
+    spin_phase_valid = spin_df.loc[spin_df.spin_number.isin(spins), "spin_phase_valid"]
     spin_period_valid = spin_df.loc[
         spin_df.spin_number.isin(spins), "spin_period_valid"
     ]
@@ -534,7 +532,6 @@ def get_energy_and_spin_dependent_rejection_mask(
     goodtimes_dataset: xr.Dataset,
     energy: np.ndarray,
     spin_number: np.ndarray,
-    energy_bin_edges: list[tuple[float, float]],
 ) -> NDArray:
     """
     Create boolean mask where event is rejected due to relevant flags.
@@ -547,8 +544,6 @@ def get_energy_and_spin_dependent_rejection_mask(
         The particle energy.
     spin_number : np.ndarray
         Spin number at each direct event.
-    energy_bin_edges : list[tuple[float, float]]
-        List of tuples containing the energy bin edges for each energy bin.
 
     Returns
     -------
@@ -556,6 +551,7 @@ def get_energy_and_spin_dependent_rejection_mask(
         Rejected events where True = rejected.
     """
     # Get the ebin flags for each energy bin from the goodtimes dataset.
+    energy_range_edges = goodtimes_dataset["energy_range_edges"].values
     ebin_flags = goodtimes_dataset["energy_bin_flags"].values
     low_voltage = goodtimes_dataset["quality_low_voltage"].values
     high_energy = goodtimes_dataset["quality_high_energy"].values
@@ -566,13 +562,11 @@ def get_energy_and_spin_dependent_rejection_mask(
     }
 
     # Initialize all events to not rejected
-    # TODO should this be rejected? energies that fall outside the energy bins
-    #  should be rejected, but currently they will just be ignored
     rejected = np.full(energy.shape, False, dtype=bool)
     # loop through each energy bin and flag events that fall within an energy
     # bin and have the corresponding energy bin flag set in the goodtimes dataset.
-    for i, (e_min, e_max) in enumerate(energy_bin_edges):
-        mask = (energy >= e_min) & (energy < e_max)
+    for i in range(len(energy_range_edges) - 1):
+        mask = (energy >= energy_range_edges[i]) & (energy < energy_range_edges[i + 1])
         goodtimes_inds = [spin_to_idx[spin] for spin in spin_number[mask]]
         # Get the flag value for the current energy bin
         energy_bin_flag = ebin_flags[i]
@@ -705,7 +699,7 @@ def get_binned_energy_range_flags(energy_ranges: list[tuple[float, float]]) -> N
 
 def get_binned_energy_ranges(
     energy_bin_edges: list[tuple[float, float]],
-) -> list[tuple[float, float]]:
+) -> NDArray:
     """
     Create L1C energy ranges by grouping energy bins.
 
@@ -716,8 +710,9 @@ def get_binned_energy_ranges(
 
     Returns
     -------
-    energy_ranges : list[tuple[float, float]]
-        List of (start, stop) tuples for each grouped energy range.
+    energy_range_edges : NDArray
+        Array of bin edges. For N energy ranges, returns N+1 edge values.
+        Range i spans from energy_range_edges[i] to energy_range_edges[i+1].
     """
     # Get indices for group starts
     group_start_inds = np.arange(
@@ -725,18 +720,14 @@ def get_binned_energy_ranges(
         len(energy_bin_edges),
         UltraConstants.N_CULL_EBINS,
     )
-    # Get indices for group ends
-    group_end_inds = np.append(group_start_inds[1:] - 1, len(energy_bin_edges) - 1)
-    # Calculate the number of complete groups
-    n_complete_groups = len(group_start_inds) - 1
-    # Build a list of start and stop energy ranges for each complete group
-    energy_ranges = [
-        (
-            energy_bin_edges[group_start_inds[i]][0],
-            energy_bin_edges[group_end_inds[i]][1],
-        )
-        for i in range(n_complete_groups)
-    ]
+    energy_starts = [energy_bin_edges[i][0] for i in group_start_inds]
+    # Append the stop energy of the last bin to cover the full range
+    last_group_end_ind = min(
+        group_start_inds[-1] + UltraConstants.N_CULL_EBINS, len(energy_bin_edges)
+    )
+    energy_ranges = np.append(
+        energy_starts, energy_bin_edges[last_group_end_ind - 1][1]
+    )
     return energy_ranges
 
 
@@ -766,9 +757,8 @@ def get_binned_spins_edges(
         Spin time bin edges.
     """
     # Create bins based on the number of spins per bin
-    n_spin_bins = len(spins) // spin_bin_size  # No partial bins
-    # TODO do we want to truncate and potentially miss the last few spins if they don't
-    #  fill a whole bin?
+    # We will only use complete bins for culling so use integer division.
+    n_spin_bins = len(spins) // spin_bin_size
     # Get the start time of each bin
     spin_tbin_edges = spin_start_times[::spin_bin_size][:n_spin_bins]
     if spin_tbin_edges.size == 0:
@@ -808,7 +798,7 @@ def expand_bin_flags_to_spins(
     repeated_flags = np.repeat(binned_quality_flags, spin_bin_size)
     if len(repeated_flags) > n_spins:
         logger.warning(
-            f"Found impartial spin bin at the end with"
+            f"Found incomplete spin bin at the end with"
             f" {len(repeated_flags) - n_spins} spins. These spins will be "
             f"ignored."
         )
