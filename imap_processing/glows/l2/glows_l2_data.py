@@ -121,6 +121,13 @@ class HistogramL2:
 
     This class collects multiple HistogramL1B classes into one L2 per observational day.
 
+    Parameters
+    ----------
+        l1b_dataset : xr.Dataset
+            GLOWS histogram L1B dataset, as produced by glows_l1b.py.
+        pipeline_settings : PipelineSettings
+            Pipeline settings object read from ancillary file.
+
     Attributes
     ----------
     number_of_good_l1b_inputs : int
