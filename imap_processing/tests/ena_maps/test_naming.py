@@ -305,8 +305,9 @@ class TestMapDescriptor:
         descriptor_str_ultra_combined = md_ultra_combined.to_string()
         assert descriptor_str_ultra_combined == "ulc-ena-h-sf-nsp-full-hae-nside32-1yr"
 
-    def test_to_catdesc(self):
-        cases = [
+    @pytest.mark.parametrize(
+        "descriptor_str, expected_catdesc",
+        [
             (
                 "h45-spx-h-hf-sp-ram-hae-4deg-3mo",
                 "IMAP Hi45 H Spectral, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
@@ -370,9 +371,10 @@ class TestMapDescriptor:
                 "IMAP IDEX Dust Rate, HAE SC Frame, No Surv Corr, Full Spin, 6 deg,"
                 " 1 Yr",
             ),
-        ]
-        for descriptor_str, expected_catdesc in cases:
-            # Use case is primarily from descriptor str to CATDESC
-            md = MapDescriptor.from_string(descriptor_str)
-            actual_catdesc = md.to_catdesc()
-            assert actual_catdesc == expected_catdesc
+        ],
+    )
+    def test_to_catdesc(self, descriptor_str, expected_catdesc):
+        # Use case is primarily from descriptor str to CATDESC
+        md = MapDescriptor.from_string(descriptor_str)
+        actual_catdesc = md.to_catdesc()
+        assert actual_catdesc == expected_catdesc

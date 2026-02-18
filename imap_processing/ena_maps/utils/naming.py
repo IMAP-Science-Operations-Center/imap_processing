@@ -183,26 +183,11 @@ class MapDescriptor:
             Information in descriptor converted to SPDF CATDESC attribute. This
             is normally used for plot titles and should be under about 80 characters.
         """
-        instrument_names = {
-            "l": "Lo",
-            "t": "Lo",
-            "ilo": "Lo",
-            "h": "Hi",
-            "u": "Ultra",
-            "idx": "IDEX",
-            "glx": "GLOWS",
-        }
-        instrument = next(
-            (
-                name
-                for desc, name in instrument_names.items()
-                if self.instrument_descriptor.startswith(desc)
-            )
-        )
+        instrument = self.instrument.name.split("_")[0]
+        if instrument not in ("IDEX", "GLOWS"):
+            instrument = instrument.title()
         sensor = " Combined" if self.sensor == "combined" else self.sensor
-        species = self.species.title()
-        if species == "Uv":
-            species = "UV"
+        species = "UV" if self.species == "uv" else self.species.title()
         m = re.match(
             r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
         )
