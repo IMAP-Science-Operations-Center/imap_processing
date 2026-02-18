@@ -1311,7 +1311,7 @@ class TestMarkOverflowPackets:
 
         # MET ~1006 should be culled (maps to goodtimes MET 1000)
         # The MET 1000 bin should have all spin bins culled
-        assert mock_goodtimes["cull_flags"].values[0, :].sum() > 0
+        assert mock_goodtimes["cull_flags"].values[0, :].sum() == 90
 
     def test_full_packet_with_unqualified_event(self, mock_goodtimes, mock_config_df):
         """Test that full packet with unqualified final event is NOT culled."""
