@@ -168,15 +168,16 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
             incomplete_groups.append(group)
             continue
 
-        hit_met = grouped_data["hit_met"][(grouped_data["group"] == group).values]
-        mid_measurement = int((hit_met[0] + hit_met[-1]) // 2)
+        hit_met = int(
+            grouped_data["hit_met"][(grouped_data["group"] == group).values].values[0]
+        )
 
         status_values = grouped_data["hit_status"][
             (grouped_data["group"] == group).values
         ]
 
         if np.any(status_values == 0):
-            logger.info(f"Off-nominal value detected at {met_to_utc(mid_measurement)}")
+            logger.info(f"Off-nominal value detected at {met_to_utc(hit_met)}")
             continue
 
         fast_rate_1 = grouped_data["hit_fast_rate_1"][
@@ -196,7 +197,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
             _populate_instrument_header_items(met)
             | {
                 "instrument": "hit",
-                "hit_epoch": int(met_to_ttj2000ns(mid_measurement)),
+                "hit_epoch": int(met_to_ttj2000ns(hit_met)),
                 "hit_e_a_side_low_en": Decimal(
                     f"{l1['IALRT_RATE_1'] + l1['IALRT_RATE_2']:.3f}"
                 ),
