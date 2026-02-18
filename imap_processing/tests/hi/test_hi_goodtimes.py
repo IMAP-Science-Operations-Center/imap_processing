@@ -1572,17 +1572,21 @@ class TestComputeNormalizedCountsPerSweep:
         self,
         n_sweeps: int = 2,
         n_esa_steps: int = 9,
+        packets_per_esa_step: int = 2,
         events_per_packet: int = 10,
         tof_ab_range: tuple[int, int] = (-15, 15),
     ) -> xr.Dataset:
         """Create a test L1B DE dataset with esa_sweep coordinate."""
-        n_packets = n_sweeps * n_esa_steps
+        n_packets = n_sweeps * n_esa_steps * packets_per_esa_step
         n_events = n_packets * events_per_packet
 
-        # Create ESA steps
-        esa_step = np.tile(np.arange(1, n_esa_steps + 1), n_sweeps).astype(np.uint8)
+        # Create ESA steps: each step repeated packets_per_esa_step times per sweep
+        # e.g., [1,1,2,2,3,3,...,9,9, 1,1,2,2,3,3,...,9,9] for 2 sweeps, 2 packets/step
+        esa_step = np.tile(
+            np.repeat(np.arange(1, n_esa_steps + 1), packets_per_esa_step), n_sweeps
+        ).astype(np.uint8)
 
-        # Create METs
+        # Create METs with unique incrementing values for each packet
         ccsds_met = np.arange(1000.0, 1000.0 + n_packets * 60, 60)
 
         # Create events
@@ -1833,7 +1837,7 @@ class TestStatisticalFilter0:
         """Test that fewer than min_pointings raises ValueError."""
         l1b_de_datasets = [
             self._create_l1b_de_dataset(),
-            self._create_l1b_de_dataset(),  # Current
+            self._create_l1b_de_dataset(),
             self._create_l1b_de_dataset(),
         ]
 

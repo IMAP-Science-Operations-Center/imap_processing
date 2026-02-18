@@ -921,9 +921,12 @@ def _compute_normalized_counts_per_sweep(
     # Set esa_sweep and esa_step as a multi-index on epoch dimension
     ds = ds.set_index(epoch=["esa_sweep", "esa_step"])
 
+    # Drop duplicates, keeping first occurrence of each (esa_sweep, esa_step) pair
+    # This handles cases where multiple packets have the same esa_sweep and esa_step
+    ds = ds.drop_duplicates(dim="epoch", keep="first")
+
     # Unstack to make esa_sweep and esa_step into separate dimensions
     # This creates a 2D array with dimensions (esa_sweep, esa_step)
-    # Where multiple epoch values map to the same (esa_sweep, esa_step), take first
     ds_reshaped = ds.unstack("epoch")
 
     # Add normalized_count as a new variable
@@ -960,10 +963,10 @@ def mark_statistical_filter_0(
     ----------
     goodtimes_ds : xarray.Dataset
         Goodtimes dataset for the current Pointing to update.
-    l1b_de_datasets : list[xarray.Dataset | None]
-        List of L1B DE datasets for surrounding Pointings. Missing Pointings
-        should be None. Typically includes current plus preceding and following
-        Pointings (e.g., [P-3, P-2, P-1, P(current), P+1, P+2, P+3]).
+    l1b_de_datasets : list[xarray.Dataset]
+        List of L1B DE datasets for surrounding Pointings. Typically includes
+        current plus preceding and following Pointings
+        (e.g., [P-3, P-2, P-1, P(current), P+1, P+2, P+3]).
     current_index : int
         Index of the current Pointing in l1b_de_datasets.
     threshold_factor : float, optional
@@ -973,13 +976,13 @@ def mark_statistical_filter_0(
     cull_code : int, optional
         Cull code to use for marking bad times. Default is CullCode.LOOSE.
     min_pointings : int, optional
-        Minimum number of valid (non-None) Pointings required. Default is 4.
+        Minimum number of Pointings required. Default is 4.
 
     Raises
     ------
     ValueError
-        If current_index is out of range, if the current Pointing is None,
-        or if fewer than min_pointings valid datasets are provided.
+        If current_index is out of range or if fewer than min_pointings
+        datasets are provided.
 
     Notes
     -----
