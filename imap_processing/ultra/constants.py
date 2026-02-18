@@ -179,5 +179,5 @@ class UltraConstants:
 
     # For spatiotemporal culling
     EARTH_RADIUS_KM: float = 6378.1
-    N_RE = 50
+    N_RE = 60
     DEFAULT_EARTH_CULLING_RADIUS = EARTH_RADIUS_KM * N_RE
