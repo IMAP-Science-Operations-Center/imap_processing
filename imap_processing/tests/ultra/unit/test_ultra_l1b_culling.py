@@ -381,10 +381,7 @@ def test_flag_low_voltage_incomplete_bins(test_data):
     # check quality flag
     assert quality_flags.shape == (n_spins // spin_bin_size,)
     # Check that every spin is flagged for low voltage
-    # Even the last incomplete bin should be flagged since it contains low voltage
-    # events
     flagged = 65535
-    # TODO Bobs code skips the last bin if it is incomplete.
     assert np.all(quality_flags == flagged)
 
 
@@ -403,9 +400,9 @@ def test_expand_bin_flags_to_spins(caplog):
     # bin
     assert np.all(quality_flags[10:] == 0)
     binned_qf = np.full((n_spins // spin_bin_size) + 1, 1)
-    # test that a warning is logged when there are impartial bins found
+    # test that a warning is logged when there are incomplete bins found
     expand_bin_flags_to_spins(n_spins, binned_qf, spin_bin_size)
-    assert "Found impartial spin bin at the end with 3 spins" in caplog.text
+    assert "Found incomplete spin bin at the end with 3 spins" in caplog.text
 
 
 def test_get_energy_and_spin_dependent_rejection_mask():
@@ -420,6 +417,7 @@ def test_get_energy_and_spin_dependent_rejection_mask():
             "energy_bin_flags": np.array(
                 [2**1, 2**2, 2**3]
             ),  # Example flags for energy bins
+            "energy_range_edges": np.array([3, 5, 7, 18]),  # Example energy bin edges
         }
     )
     # update quality flags to test that events get rejected
@@ -430,22 +428,50 @@ def test_get_energy_and_spin_dependent_rejection_mask():
     # For spin 4, set energy bin 2 to be bad (flag = 8)
     # Energy corresponding to spin 5 will not be rejected since it is not
     # within an energy bin
-    # TODO check this behavior
     goodtimes_dataset["quality_high_energy"].data[4] = 8
     # Create 6 fake events
     energy = np.array(
-        [4, 7, 8, 9, 11, 15]
+        [4, 5, 6, 9, 18, 15]
     )  # Energy values that fall into different bins
     spin_number = np.arange(6)
-    energy_bin_edges = [
-        (3, 5),
-        (7, 10),
-        (12, 18),
-    ]
     rejected = get_energy_and_spin_dependent_rejection_mask(
-        goodtimes_dataset, energy, spin_number, energy_bin_edges
+        goodtimes_dataset, energy, spin_number
     )
 
     np.testing.assert_array_equal(
         rejected, np.array([True, False, True, False, False, False])
     )
+
+
+def test_validate_voltage_cull():
+    """Validate that low voltage spins are correctly flagged"""
+    # read test data from csv files
+    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
+    validation_low_voltage_qf = np.loadtxt(
+        TEST_PATH / "voltage_culling_results_repoint00047.csv",
+        delimiter=",",
+        dtype=np.uint16,
+    )
+    status_df = pd.read_csv(TEST_PATH / "status_test_data_repoint00047.csv")
+    # build the status dataset including the variables needed for the low voltage flag
+    status_ds = xr.Dataset(
+        {
+            "shcoarse": ("epoch", status_df.shcoarse.values),
+            "rightdeflection_v": ("epoch", status_df.rightdeflection_v.values),
+            "leftdeflection_v": ("epoch", status_df.leftdeflection_v.values),
+        }
+    )
+    # Use constants from the code to ensure consistency with the actual culling code
+    spin_bin_size = UltraConstants.SPIN_BIN_SIZE
+    lv_threshold = UltraConstants.LOW_VOLTAGE_CULL_THRESHOLD
+    spin_tbin_edges = get_binned_spins_edges(
+        xspin.spin_number.values,
+        xspin.spin_period.values,
+        xspin.spin_start_time.values,
+        spin_bin_size,
+    )
+    lv_flags = flag_low_voltage(
+        spin_tbin_edges, status_ds, lv_threshold, low_voltage_flag=1
+    )
+
+    assert np.array_equal(lv_flags, validation_low_voltage_qf)

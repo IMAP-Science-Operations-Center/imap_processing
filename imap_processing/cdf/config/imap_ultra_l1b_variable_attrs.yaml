@@ -526,3 +526,46 @@ quality_scattering:
   LABLAXIS: quality_scattering
   # TODO: come back to format
   UNITS: " "
+
+quality_low_voltage:
+  <<: *default_uint16
+  CATDESC: Quality flag for low voltage spins.
+  FIELDNAM: quality_low_voltage
+  LABLAXIS: quality_low_voltage
+  # TODO: come back to format
+  UNITS: " "
+
+quality_high_energy:
+  <<: *default_uint16
+  CATDESC: Quality flag for high energy spins.
+  FIELDNAM: quality_high_energy
+  LABLAXIS: quality_high_energy
+  # TODO: come back to format
+  UNITS: " "
+
+quality_statistics:
+  <<: *default_uint16
+  CATDESC: Quality flag for spins that are statistically inconsistent.
+  FIELDNAM: quality_statistics
+  LABLAXIS: quality_statistics
+  # TODO: come back to format
+  UNITS: " "
+
+
+energy_range_edges:
+  <<: *default_float64
+  CATDESC: Energy range edges for culling data at l1b.
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Energy Range Edges
+  LABLAXIS: Energy Edges
+  UNITS: keV
+  VALIDMIN: 0.0
+  VALIDMAX: 9223372036854775807
+
+energy_range_flags:
+  <<: *default_float64
+  CATDESC: Bit flags for each culling energy range
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Energy Range Flags
+  LABLAXIS: Range Flags
+  UNITS: " "
