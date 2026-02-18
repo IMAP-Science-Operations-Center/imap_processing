@@ -579,28 +579,6 @@ class TestUltraL2:
         assert exposure_attrs["VAR_TYPE"] == "data"
         assert exposure_attrs["UNITS"] == "s"
 
-    @pytest.mark.external_test_data
-    @pytest.mark.usefixtures("_setup_spice_kernels_list")
-    def test_ultra_l2_rectangular_from_descriptor(
-        self, mock_data_dict, furnish_kernels
-    ):
-        with furnish_kernels(self.required_kernel_names):
-            [
-                rect_map_dataset,
-            ] = ultra_l2.ultra_l2(
-                data_dict=mock_data_dict,
-                energy_bin_edges_file=ENERGY_BIN_EDGES_PATH,
-                descriptor="u90-ena-h-hf-nsp-full-hae-6deg-1yr",
-                store_subdivision_depth=False,
-            )
-
-        # Variable Metadata spot checks
-        assert (
-            rect_map_dataset["ena_intensity"].attrs["CATDESC"]
-            == "IMAP Ultra90 H Inten, HAE Helio Frame, No Surv Corr, Full Spin,"
-            " 6 deg, 1 Yr"
-        )
-
     @pytest.mark.parametrize(
         "tiling",
         [
@@ -734,6 +712,12 @@ class TestUltraL2:
 
         assert output_map.attrs["Spice_reference_frame"] == "IMAP_HAE"
         assert output_map.attrs["Spacing_degrees"] == "6.0"
+        # Variable Metadata spot checks
+        assert (
+            output_map["ena_intensity"].attrs["CATDESC"]
+            == "IMAP Ultra90 H Inten, HAE Helio Frame, No Surv Corr, Full Spin,"
+            " 6 deg, 6 Mon"
+        )
         write_cdf(output_map)
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
