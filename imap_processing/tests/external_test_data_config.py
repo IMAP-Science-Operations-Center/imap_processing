@@ -149,6 +149,9 @@ EXTERNAL_TEST_DATA = [
     # Ultra
     ("FM90_Startup_20230711T081655.CCSDS", "ultra/data/l0/"),
     ("IMAP-Ultra45_r1_L1_V0_shortened.csv", "ultra/data/l1/"),
+    ("extendedspin_test_data_repoint00047.csv", "ultra/data/l1/"),
+    ("status_test_data_repoint00047.csv", "ultra/data/l1/"),
+    ("voltage_culling_results_repoint00047.csv", "ultra/data/l1/"),
     ("FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS", "ultra/data/l0/"),
     ("ultra45_raw_sc_rawnrgevnt_19840122_00.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_enaphxtofhnrgimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv",
