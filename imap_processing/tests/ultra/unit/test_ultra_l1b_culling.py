@@ -323,7 +323,7 @@ def test_flag_low_voltage(test_data):
     n_spins = 20
     mock_status_dataset = xr.Dataset(
         data_vars={
-            "epoch": np.arange(n_spins),
+            "shcoarse": np.arange(n_spins),
             # Set Voltage below threshold
             "rightdeflection_v": np.full(n_spins, 0.5),
             "leftdeflection_v": np.full(n_spins, 1.5),
@@ -334,25 +334,27 @@ def test_flag_low_voltage(test_data):
     spin_bin_size = 5
     spin_period = np.full(n_spins, 15.0)
     spin_starttime = np.arange(n_spins)
-    quality_flags = flag_low_voltage(
-        spins, spin_starttime, spin_period, mock_status_dataset, spin_bin_size
+    spin_tbin_edges = get_binned_spins_edges(
+        spins, spin_period, spin_starttime, spin_bin_size
     )
+    quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset)
 
-    # check quality flag
-    assert quality_flags.shape == spins.shape
+    # There should be an extra bin edge for the last bin to indicate the end of the last
+    # spin bin
+    assert len(spin_tbin_edges) == (n_spins // 5) + 1
+    # Check quality flag shape
+    assert quality_flags.shape == (len(spin_tbin_edges) - 1,)
     # Check that every spin is flagged for low voltage
     assert np.all(quality_flags == flagged)
 
     # Set only the first spin to be below threshold
     mock_status_dataset["rightdeflection_v"].data[1:] += 5000
     mock_status_dataset["leftdeflection_v"].data[1:] += 5000
-    quality_flags = flag_low_voltage(
-        spins, spin_starttime, spin_period, mock_status_dataset, spin_bin_size
-    )
+    quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset)
     # Check that only the first spin is flagged for low voltage
-    assert np.all(quality_flags[0:spin_bin_size] == flagged)
+    assert np.all(quality_flags[0] == flagged)
     # The rest should not be flagged
-    assert np.all(quality_flags[spin_bin_size:] == 0)
+    assert np.all(quality_flags[1:] == 0)
 
 
 def test_flag_low_voltage_incomplete_bins(test_data):
@@ -360,7 +362,7 @@ def test_flag_low_voltage_incomplete_bins(test_data):
     n_spins = 12  # Not a multiple of spin_bin_size to test incomplete bins
     mock_status_dataset = xr.Dataset(
         data_vars={
-            "epoch": np.arange(n_spins),
+            "shcoarse": np.arange(n_spins),
             # Set Voltage below threshold
             "rightdeflection_v": np.full(n_spins, 0.5),
             "leftdeflection_v": np.full(n_spins, 1.5),
@@ -371,18 +373,39 @@ def test_flag_low_voltage_incomplete_bins(test_data):
     spin_bin_size = 5
     spin_period = np.full(n_spins, 15.0)
     spin_starttime = np.arange(n_spins)
-    quality_flags = flag_low_voltage(
-        spins, spin_starttime, spin_period, mock_status_dataset, spin_bin_size
+    spin_tbin_edges = get_binned_spins_edges(
+        spins, spin_period, spin_starttime, spin_bin_size
     )
+    quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset)
 
     # check quality flag
-    assert quality_flags.shape == spins.shape
+    assert quality_flags.shape == (n_spins // spin_bin_size,)
     # Check that every spin is flagged for low voltage
     # Even the last incomplete bin should be flagged since it contains low voltage
     # events
     flagged = 65535
     # TODO Bobs code skips the last bin if it is incomplete.
     assert np.all(quality_flags == flagged)
+
+
+def test_expand_bin_flags_to_spins(caplog):
+    """Tests expand_bin_flags_to_spins function."""
+    spin_bin_size = 5
+    n_spins = 12
+    # Mock the shape of binned quality flags for 12 spins and a bin size of 5
+    binned_qf = np.full((n_spins // spin_bin_size), 1)
+    quality_flags = expand_bin_flags_to_spins(n_spins, binned_qf, spin_bin_size)
+    # Check the size
+    assert quality_flags.shape == (n_spins,)
+    # The first 10 spins should be flagged since they fall into the first two bins
+    assert np.all(quality_flags[:10] == 1)
+    # The last 2 spins should not be flagged since they fall into the last incomplete
+    # bin
+    assert np.all(quality_flags[10:] == 0)
+    binned_qf = np.full((n_spins // spin_bin_size) + 1, 1)
+    # test that a warning is logged when there are impartial bins found
+    expand_bin_flags_to_spins(n_spins, binned_qf, spin_bin_size)
+    assert "Found impartial spin bin at the end with 3 spins" in caplog.text
 
 
 def test_get_energy_and_spin_dependent_rejection_mask():

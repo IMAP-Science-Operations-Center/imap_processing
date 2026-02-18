@@ -15,6 +15,8 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_low_voltage,
     flag_rates,
     get_binned_energy_range_flags,
+    get_binned_energy_ranges,
+    get_binned_spins_edges,
     get_energy_histogram,
     get_pulses_per_spin,
 )
@@ -68,12 +70,15 @@ def calculate_extendedspin(
     inst_qf = flag_imap_instruments(de_dataset["spin"].values)
 
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    voltage_qf = flag_low_voltage(
-        spin, spin_starttime, spin_period, status_dataset, spin_bin_size
+    spin_tbin_edges = get_binned_spins_edges(
+        spin, spin_period, spin_starttime, spin_bin_size
     )
+    voltage_qf = flag_low_voltage(spin_tbin_edges, status_dataset)
     # Get energy bins used at l1c
     intervals, _, _ = build_energy_bins()
-    energy_bin_flags = get_binned_energy_range_flags(intervals)
+    # Get the
+    energy_ranges = get_binned_energy_ranges(intervals)
+    energy_bin_flags = get_binned_energy_range_flags(energy_ranges)
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
 

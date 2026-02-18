@@ -185,16 +185,10 @@ def create_dataset(  # noqa: PLR0912
                 dims=["spin_phase_step"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key in {"energy_range_edges"}:
+        elif key in {"energy_bin_flags"}:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_range_edges"],
-                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
-            )
-        elif key in {"energy_range_flags"}:
-            dataset[key] = xr.DataArray(
-                data,
-                dims=["energy_ranges"],
+                dims=["energy_bins_for_culling"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:

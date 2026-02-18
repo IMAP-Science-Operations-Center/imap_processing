@@ -173,7 +173,8 @@ def test_calculate_spacecraft_pset_with_cdf(
         de_dict["velocity_dps_sc"] = sc_dps_velocity
         de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
         # Made up data for spin_number and energy_bin_geometric_mean
-        de_dict["spin"] = np.full(len(sc_dps_velocity), 0)
+        de_dict["spin_number"] = np.full(len(sc_dps_velocity), 0)
+        de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
         de_dict["quality_scattering"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["quality_outliers"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["ebin"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
