@@ -407,6 +407,9 @@ photon_flux:
   FORMAT: F8.2
   VALIDMIN: 0.0
   VALIDMAX: 30000.0 # max 30000 cps in FDIR / from 1 to 3.37 cps-per-R
+  # uncertainties are symmetrcial, so same value is used for +/-
+  DELTA_MINUS_VAR: flux_uncertainties
+  DELTA_PLUS_VAR: flux_uncertainties
   # SPASE data pulled from TWINS 1 LAD metadata
   DICT_KEY: SPASE>Wave>WaveType:Electromagnetic,WaveQuantity:Intensity,Qualifier:Scalar
 
