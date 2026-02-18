@@ -467,7 +467,9 @@ def calculate_intensity(
             species_eff = species_eff.mean(dim="inst_az")
         # Shape: (epoch, esa_step, inst_az) or
         # (epoch, esa_step) if averaged
-        denominator = scalar * geometric_factors * species_eff * dataset["energy_table"]
+        denominator = (
+            scalar * geometric_factors * species_eff * dataset["energy_per_charge"]
+        )
         if species not in dataset:
             raise ValueError(f"Species {species} not found in dataset.")
         else:

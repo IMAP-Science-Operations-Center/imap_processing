@@ -650,23 +650,18 @@ def test_l2_ialirt_cod_lo(
     efficiency_lookup = get_efficiency_lut(None, eff_path)
     efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
 
-    # Fix to the test data coordinate name.
-    cod_lo_l1b_test_data["energy_table"] = cod_lo_l1b_test_data["energy_table"].rename(
-        {"energy_table": "esa_step"}
+    # Temporarily store energy_per_charge values from energy_table variable.
+    energy_per_charge_values = cod_lo_l1b_test_data["energy_table"].values
+
+    # L1B validation data is missing esa_step coordinate. Create esa_step coordinate.
+    # Also, all variables in l1b validation data is using energy_table as coordinate.
+    # Update both to match the processing code expectations with rename().
+    cod_lo_l1b_test_data = cod_lo_l1b_test_data.rename({"energy_table": "esa_step"})
+    # Now, create variable in data_vars with name energy_per_charge and values from
+    # energy_table variable.
+    cod_lo_l1b_test_data["energy_per_charge"] = xr.DataArray(
+        energy_per_charge_values, dims=["esa_step"]
     )
-    for species in constants.LO_IALIRT_VARIABLE_NAMES:
-        if "energy_table" in cod_lo_l1b_test_data[species].dims:
-            cod_lo_l1b_test_data[species] = cod_lo_l1b_test_data[species].rename(
-                {"energy_table": "esa_step"}
-            )
-        unc_var = f"unc_{species}"
-        if (
-            unc_var in cod_lo_l1b_test_data
-            and "energy_table" in cod_lo_l1b_test_data[unc_var].dims
-        ):
-            cod_lo_l1b_test_data[unc_var] = cod_lo_l1b_test_data[unc_var].rename(
-                {"energy_table": "esa_step"}
-            )
 
     intensity = process_lo_species_intensity(
         cod_lo_l1b_test_data,
@@ -681,7 +676,7 @@ def test_l2_ialirt_cod_lo(
     for species in constants.LO_IALIRT_VARIABLE_NAMES:
         pseudo_density = (
             intensity[species]
-            * np.sqrt(cod_lo_l1b_test_data["energy_table"])
+            * np.sqrt(cod_lo_l1b_test_data["energy_per_charge"])
             * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
         )  # (epoch, esa_step, spin_sector)
 

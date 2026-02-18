@@ -48,7 +48,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
     )
     if descriptor.startswith("lo-"):
-        # Calculate energy_table using voltage_table and k_factor
+        # Calculate energy_per_charge using voltage_table and k_factor
         energy_attrs = dataset["voltage_table"].attrs | {
             "UNITS": "keV/e",
             "LABLAXIS": "E/q",
@@ -56,7 +56,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "FIELDNAM": "Energy per charge",
         }
         # 1e3 is to convert eV to keV
-        dataset["energy_table"] = xr.DataArray(
+        dataset["energy_per_charge"] = xr.DataArray(
             dataset["voltage_table"].values * dataset["k_factor"].values * 1e-3,
             dims=[
                 "esa_step",
@@ -117,8 +117,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
-            # TODO: undo this when I get new validation file from Joey
-            # "acquisition_time_per_esa_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
 

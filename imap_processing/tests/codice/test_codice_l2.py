@@ -303,7 +303,9 @@ def test_process_lo_species_intensity(mock_get_file_paths, codice_lut_path):
         # Check that values match expected calculation
         expected_intensity = (
             l1b_data[var]
-            / (len_pos * 4 * l1b_data["energy_table"].data)[np.newaxis, :, np.newaxis]
+            / (len_pos * 4 * l1b_data["energy_per_charge"].data)[
+                np.newaxis, :, np.newaxis
+            ]
         )
         np.testing.assert_allclose(
             l1b_val_data_processed[var].values, expected_intensity.values, rtol=1e-5
@@ -314,7 +316,7 @@ def test_process_lo_missing_species_intensity():
     l1b_val_data = xr.Dataset(
         {
             "epoch": ("epoch", np.ones(5)),
-            "energy_table": (("esa_step",), np.ones(128) * 10),
+            "energy_per_charge": (("esa_step",), np.ones(128) * 10),
             "packet_version": ("epoch", np.ones(5)),
             "half_spin_per_esa_step": (("epoch", "esa_step"), np.ones((5, 128)) * 2),
             "rgfo_half_spin": ("epoch", np.ones(5) * 2),
@@ -324,12 +326,12 @@ def test_process_lo_missing_species_intensity():
     l1b_val_data_processed = l1b_val_data.copy()
     gf = xr.DataArray(
         np.ones((len(l1b_val_data.epoch), 128, 24)) * 2,
-        dims=("epoch", "energy_table", "inst_az"),
+        dims=("epoch", "energy_per_charge", "inst_az"),
     )
     with mock.patch(
         "imap_processing.codice.codice_l2.get_species_efficiency",
         return_value=xr.DataArray(
-            np.ones((128, 24)) * 2, dims=("energy_table", "inst_az")
+            np.ones((128, 24)) * 2, dims=("energy_per_charge", "inst_az")
         ),
     ):
         len_pos = 5
@@ -380,7 +382,7 @@ def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
         # Check shape
         expected_shape = (
             len(l1b_data.epoch),
-            len(l1b_data.energy_table),
+            len(l1b_data.energy_per_charge),
             len(l1b_data.spin_sector),
             3,  # 3 elevation angles map to 5 positions
         )
@@ -390,7 +392,9 @@ def test_process_lo_angular_intensity(mock_get_file_paths, codice_lut_path):
         # Check that values match expected calculation
         expected_intensity = (
             l1b_data[var]
-            / (4 * l1b_data["energy_table"].data)[np.newaxis, :, np.newaxis, np.newaxis]
+            / (4 * l1b_data["energy_per_charge"].data)[
+                np.newaxis, :, np.newaxis, np.newaxis
+            ]
         )
         # convert pos to el
         expected_intensity = (
@@ -528,13 +532,8 @@ def test_codice_l2_nsw_angular_intensity(mock_get_file_paths, codice_lut_path):
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in l2_val_data.variables:
-        # TODO Ask joey to rename energy_per_charge to energy_table in validation data
-        if variable in ["energy_per_charge"]:
-            sdc_var = "energy_table"
-        else:
-            sdc_var = variable
         np.testing.assert_allclose(
-            processed_2_ds[sdc_var].values,
+            processed_2_ds[variable].values,
             l2_val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
@@ -572,15 +571,9 @@ def test_codice_l2_sw_angular_intensity(mock_get_file_paths, codice_lut_path):
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in l2_val_data.variables:
-        # TODO Ask joey to rename energy_per_charge to energy_table in validation data
-        if variable in ["energy_per_charge"]:
-            sdc_var = "energy_table"
-        else:
-            sdc_var = variable
         np.testing.assert_allclose(
-            processed_2_ds[sdc_var].values,
+            processed_2_ds[variable].values,
             l2_val_data[variable].values,
-            # TODO is 1e-4 ok?
             rtol=1e-4,
             err_msg=f"Mismatch in variable '{variable}'",
         )

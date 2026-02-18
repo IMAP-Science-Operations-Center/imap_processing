@@ -317,7 +317,7 @@ def calculate_ratios(
     for species in constants.LO_IALIRT_VARIABLE_NAMES:
         pseudo_density = (
             intensity[species]
-            * np.sqrt(cod_lo_l1b_data["energy_table"])
+            * np.sqrt(cod_lo_l1b_data["energy_per_charge"])
             * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
         )  # (epoch, esa_step, spin_sector)
 

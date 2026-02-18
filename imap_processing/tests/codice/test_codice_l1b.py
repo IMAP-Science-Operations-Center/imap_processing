@@ -61,6 +61,14 @@ def test_l1b_lo_sw_species(mock_get_file_paths, codice_lut_path):
                 l1b_val_data[variable].values,
             ), f"Mismatch in coordinate '{variable}'"
             continue
+        elif variable == "energy_table":
+            np.testing.assert_allclose(
+                processed_data["energy_per_charge"].values,
+                l1b_val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             l1b_val_data[variable].values,
@@ -121,6 +129,14 @@ def test_l1b_lo_nsw_species(mock_get_file_paths, codice_lut_path):
                 l1b_val_data[variable].values,
             ), f"Mismatch in coordinate '{variable}'"
             continue
+        elif variable == "energy_table":
+            np.testing.assert_allclose(
+                processed_data["energy_per_charge"].values,
+                l1b_val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             l1b_val_data[variable].values,
@@ -177,6 +193,14 @@ def test_l1b_lo_sw_angular(mock_get_file_paths, codice_lut_path):
                 l1b_val_data[variable].values,
             ), f"Mismatch in coordinate '{variable}'"
             continue
+        elif variable == "energy_table":
+            np.testing.assert_allclose(
+                processed_data["energy_per_charge"].values,
+                l1b_val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             l1b_val_data[variable].values,
@@ -231,6 +255,14 @@ def test_l1b_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
                 processed_data[variable].values,
                 l1b_val_data[variable].values,
             ), f"Mismatch in coordinate '{variable}'"
+            continue
+        elif variable == "energy_table":
+            np.testing.assert_allclose(
+                processed_data["energy_per_charge"].values,
+                l1b_val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
             continue
         np.testing.assert_allclose(
             processed_data[variable].values,
