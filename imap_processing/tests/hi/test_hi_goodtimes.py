@@ -1998,6 +1998,58 @@ class TestIdentifyCullPattern:
             cull_mask.coords["esa_step"].values, counts.coords["esa_step"].values
         )
 
+    def test_consecutive_run_at_first_esa_edge(self):
+        """Test that consecutive run at first ESA step passes neighbor check at edge."""
+        counts, median, sigma = self._create_test_data(n_sweeps=10, n_esa_steps=5)
+        # threshold = 10 + 1.8 * 3 = 15.4
+
+        # Create 4 consecutive high counts at ESA step 1 (first ESA step)
+        counts.loc[2:5, 1] = 20
+        # No ESA neighbor below (edge), but edge should pass the check
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # Sweeps 2-5 at ESA 1 should be marked (edge passes neighbor check)
+        assert cull_mask.sel(esa_sweep=2, esa_step=1).values
+        assert cull_mask.sel(esa_sweep=3, esa_step=1).values
+        assert cull_mask.sel(esa_sweep=4, esa_step=1).values
+        assert cull_mask.sel(esa_sweep=5, esa_step=1).values
+
+    def test_consecutive_run_at_last_esa_edge(self):
+        """Test that consecutive run at last ESA step passes neighbor check at edge."""
+        counts, median, sigma = self._create_test_data(n_sweeps=10, n_esa_steps=5)
+        # threshold = 10 + 1.8 * 3 = 15.4
+
+        # Create 4 consecutive high counts at ESA step 5 (last ESA step)
+        counts.loc[2:5, 5] = 20
+        # No ESA neighbor above (edge), but edge should pass the check
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # Sweeps 2-5 at ESA 5 should be marked (edge passes neighbor check)
+        assert cull_mask.sel(esa_sweep=2, esa_step=5).values
+        assert cull_mask.sel(esa_sweep=3, esa_step=5).values
+        assert cull_mask.sel(esa_sweep=4, esa_step=5).values
+        assert cull_mask.sel(esa_sweep=5, esa_step=5).values
+
+    def test_orphan_not_marked_at_time_edge(self):
+        """Test that positions at time edges are not marked as orphans."""
+        counts, median, sigma = self._create_test_data(n_sweeps=10, n_esa_steps=5)
+
+        # Create bad intervals at sweeps 1 and 3, leaving sweep 0 as "orphan-like"
+        # But sweep 0 is at edge and should NOT be marked as orphan
+        counts.loc[1:3, 3] = 20  # Consecutive run
+        counts.loc[1:3, 2] = 20  # ESA neighbor
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # Sweep 0 should NOT be marked (edge, not a true orphan)
+        assert not cull_mask.sel(esa_sweep=0, esa_step=3).values
+        # Sweeps 1-3 should be marked (consecutive with neighbor)
+        assert cull_mask.sel(esa_sweep=1, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=2, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=3, esa_step=3).values
+
 
 class TestComputeQualifiedCountsPerSweep:
     """Test suite for _compute_qualified_counts_per_sweep() helper function."""

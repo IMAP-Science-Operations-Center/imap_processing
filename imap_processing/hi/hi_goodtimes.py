@@ -1313,9 +1313,11 @@ def _identify_cull_pattern(
 
     # Check ESA neighbors at same time position using convolution along ESA axis
     # Kernel [1, 0, 1] sums neighbors without counting self
+    # Use cval=1 so edges pass the neighbor check (matches C implementation where
+    # edges are treated as "not good", i.e., the check passes at boundaries)
     esa_neighbor_kernel = np.array([1, 0, 1])
     esa_neighbor_exceeds = convolve1d(
-        exceeds_arr, esa_neighbor_kernel, axis=1, mode="constant"
+        exceeds_arr, esa_neighbor_kernel, axis=1, mode="constant", cval=1
     )
     has_esa_neighbor = esa_neighbor_exceeds >= 1
 
