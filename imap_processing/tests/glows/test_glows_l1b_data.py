@@ -4,12 +4,14 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
     DirectEventL1B,
     HistogramL1B,
+    PipelineSettings,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
@@ -221,3 +223,61 @@ def test_validation_data_de(
 def test_deserialize_flags(flags, expected):
     output = HistogramL1B.deserialize_flags(flags)
     assert np.array_equal(output, expected)
+
+
+def test_pipeline_settings_from_flattened_json():
+    """PipelineSettings correctly reads flags from flattened JSON format.
+
+    convert_json_to_dataset flattens nested dicts, so
+    active_bad_time_flags.is_night -> active_bad_time_flags_is_night.
+    PipelineSettings must reconstruct the ordered flag lists from these keys.
+    """
+    data_vars = {
+        "active_bad_time_flags_is_pps_missing": ([], True),
+        "active_bad_time_flags_is_time_status_missing": ([], True),
+        "active_bad_time_flags_is_phase_missing": ([], True),
+        "active_bad_time_flags_is_spin_period_missing": ([], True),
+        "active_bad_time_flags_is_overexposed": ([], True),
+        "active_bad_time_flags_is_direct_event_non_monotonic": ([], True),
+        "active_bad_time_flags_is_night": ([], False),
+        "active_bad_time_flags_is_hv_test_in_progress": ([], True),
+        "active_bad_time_flags_is_test_pulse_in_progress": ([], True),
+        "active_bad_time_flags_is_memory_error_detected": ([], True),
+        "active_bad_time_flags_is_generated_on_ground": ([], True),
+        "active_bad_time_flags_is_beyond_daily_statistical_error": (
+            [],
+            True,
+        ),
+        "active_bad_time_flags_is_temperature_std_dev_beyond_threshold": (
+            [],
+            True,
+        ),
+        "active_bad_time_flags_is_hv_voltage_std_dev_beyond_threshold": (
+            [],
+            True,
+        ),
+        "active_bad_time_flags_is_spin_period_std_dev_beyond_threshold": (
+            [],
+            True,
+        ),
+        "active_bad_time_flags_is_pulse_length_std_dev_beyond_threshold": (
+            [],
+            True,
+        ),
+        "active_bad_time_flags_is_spin_period_difference_beyond_threshold": (
+            [],
+            False,
+        ),
+        "active_bad_angle_flags_is_close_to_uv_source": ([], True),
+        "active_bad_angle_flags_is_inside_excluded_region": ([], True),
+        "active_bad_angle_flags_is_excluded_by_instr_team": ([], True),
+        "active_bad_angle_flags_is_suspected_transient": ([], False),
+    }
+    settings = PipelineSettings(xr.Dataset(data_vars))
+
+    assert len(settings.active_bad_time_flags) == 17
+    assert settings.active_bad_time_flags[6] is False  # is_night
+    assert settings.active_bad_time_flags[16] is False  # is_spin_period_diff
+
+    assert len(settings.active_bad_angle_flags) == 4
+    assert settings.active_bad_angle_flags[3] is False  # is_suspected_transient
