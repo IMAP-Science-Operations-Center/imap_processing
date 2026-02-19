@@ -739,7 +739,7 @@ class Glows(ProcessInstrument):
                 datasets = [glows_l1b_de(input_dataset, conversion_table_dict)]
 
         if self.data_level == "l2":
-            science_files = dependencies.get_file_paths(source="glows")
+            science_files = dependencies.get_file_paths(source="glows", data_type="l1b")
             if len(science_files) != 1:
                 raise ValueError(
                     f"GLOWS L2 requires exactly one input science file, "

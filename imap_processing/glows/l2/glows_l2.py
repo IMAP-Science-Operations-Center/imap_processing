@@ -314,6 +314,7 @@ def return_good_times(flags: xr.DataArray, active_flags: NDArray) -> NDArray:
     """
     if len(active_flags) != flags.shape[1]:
         print("Active flags don't matched expected length")
+        print(f"Active flags: {active_flags}")
 
     # A good time is where all the active flags are equal to one.
     # Here, we mask the active indices using active_flags, and then return the times

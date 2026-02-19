@@ -99,22 +99,66 @@ class PipelineSettings:  # numpydoc ignore=PR02
             Dataset containing pipeline settings data variables.
         """
         # Extract active bad-angle flags (default to all True if not present)
+        _angle_flag_names = [
+            "is_close_to_uv_source",
+            "is_inside_excluded_region",
+            "is_excluded_by_instr_team",
+            "is_suspected_transient",
+        ]
         if "active_bad_angle_flags" in pipeline_dataset.data_vars:
             self.active_bad_angle_flags = list(
                 pipeline_dataset["active_bad_angle_flags"].values
             )
+        elif any(
+            f"active_bad_angle_flags_{n}" in pipeline_dataset.data_vars
+            for n in _angle_flag_names
+        ):
+            # Flattened format from convert_json_to_dataset
+            self.active_bad_angle_flags = [
+                bool(pipeline_dataset[f"active_bad_angle_flags_{name}"].values)
+                for name in _angle_flag_names
+            ]
         else:
             # Default: all 4 bad-angle flags are active
             self.active_bad_angle_flags = [True, True, True, True]
 
         # Extract active bad-time flags (default to all True if not present)
+        _time_flag_names = [
+            "is_pps_missing",
+            "is_time_status_missing",
+            "is_phase_missing",
+            "is_spin_period_missing",
+            "is_overexposed",
+            "is_direct_event_non_monotonic",
+            "is_night",
+            "is_hv_test_in_progress",
+            "is_test_pulse_in_progress",
+            "is_memory_error_detected",
+            "is_generated_on_ground",
+            "is_beyond_daily_statistical_error",
+            "is_temperature_std_dev_beyond_threshold",
+            "is_hv_voltage_std_dev_beyond_threshold",
+            "is_spin_period_std_dev_beyond_threshold",
+            "is_pulse_length_std_dev_beyond_threshold",
+            "is_spin_period_difference_beyond_threshold",
+        ]
         if "active_bad_time_flags" in pipeline_dataset.data_vars:
             self.active_bad_time_flags = list(
                 pipeline_dataset["active_bad_time_flags"].values
             )
+        elif any(
+            f"active_bad_time_flags_{n}" in pipeline_dataset.data_vars
+            for n in _time_flag_names
+        ):
+            # Flattened format from convert_json_to_dataset
+            self.active_bad_time_flags = [
+                bool(pipeline_dataset[f"active_bad_time_flags_{name}"].values)
+                for name in _time_flag_names
+            ]
+            print(self.active_bad_time_flags)
         else:
             # Default: assume all bad-time flags are active
-            self.active_bad_time_flags = [True] * 16  # Typical number of bad-time flags
+            self.active_bad_time_flags = [True] * FLAG_LENGTH
 
         # Extract sunrise/sunset offsets (default to 0.0 if not present)
         self.sunrise_offset = float(pipeline_dataset.get("sunrise_offset", 0.0))
