@@ -2210,29 +2210,6 @@ class TestBuildPerSweepDatasets:
 class TestComputeMedianAndSigmaPerEsa:
     """Test suite for _compute_median_and_sigma_per_esa() helper function."""
 
-    def _create_per_sweep_dataset(
-        self, counts: np.ndarray, esa_steps: np.ndarray
-    ) -> xr.Dataset:
-        """Create a per-sweep dataset with specified counts."""
-        n_sweeps = 1
-        counts_2d = np.zeros((n_sweeps, int(esa_steps.max()) + 1))
-        for i, esa in enumerate(esa_steps):
-            counts_2d[0, esa] = counts[i] if i < len(counts) else 0
-
-        return xr.Dataset(
-            {
-                "qualified_count": (["esa_sweep", "esa_step"], counts_2d),
-                "ccsds_met": (
-                    ["esa_sweep", "esa_step"],
-                    np.full_like(counts_2d, 1000.0),
-                ),
-            },
-            coords={
-                "esa_sweep": np.arange(n_sweeps),
-                "esa_step": np.arange(counts_2d.shape[1]),
-            },
-        )
-
     def test_basic_calculation(self):
         """Test basic median and sigma calculation."""
         # Create dataset with counts where median is 4 for each ESA step

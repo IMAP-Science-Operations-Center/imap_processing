@@ -1120,7 +1120,7 @@ def _compute_qualified_counts_per_sweep(
     # Count qualified events per (esa_sweep, esa_step) using 2D array
     n_sweeps = int(esa_sweep.max()) + 1
     n_esa_steps = int(esa_step.max()) + 1
-    counts_2d = np.zeros((n_sweeps, n_esa_steps), dtype=np.int64)
+    counts_2d = np.zeros((n_sweeps, n_esa_steps), dtype=np.float64)
     np.add.at(counts_2d, (qualified_sweep, qualified_step), 1)
 
     # Remove event_met dimension and reshape using multi-index
@@ -1139,8 +1139,9 @@ def _compute_qualified_counts_per_sweep(
         },
     )
 
-    # Select only the esa_step values present in the data
-    ds_reshaped = ds_reshaped.sel(esa_step=ds_reshaped.coords["esa_step"])
+    # Set missing (sweep, step) pairs to NaN so they don't affect statistics
+    missing_mask = ds_reshaped["ccsds_met"].isnull()
+    ds_reshaped["qualified_count"] = ds_reshaped["qualified_count"].where(~missing_mask)
 
     return ds_reshaped
 
@@ -1181,7 +1182,7 @@ def _compute_median_and_sigma_per_esa(
     per_sweep_datasets: dict[int, xr.Dataset],
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """
-    Compute median and sigma for each ESA step using np.nanmedian.
+    Compute median and sigma for each ESA step using xarray.
 
     Combines all per-sweep datasets and computes the median qualified count
     per ESA step across all sweeps and pointings.
@@ -1436,17 +1437,12 @@ def mark_statistical_filter_1(
         l1b_de_datasets, qualified_coincidence_types
     )
 
-    # Step 2: Compute median and sigma per ESA step using np.nanmedian
+    # Step 2: Compute median and sigma per ESA step using xarray
     median_per_esa, sigma_per_esa = _compute_median_and_sigma_per_esa(
         per_sweep_datasets
     )
 
-    # Get valid ESA steps (non-NaN median)
-    valid_esa_steps = median_per_esa.coords["esa_step"].values[
-        ~np.isnan(median_per_esa.values)
-    ]
-
-    if len(valid_esa_steps) == 0:
+    if np.all(np.isnan(median_per_esa.values)):
         logger.warning(
             "Statistical Filter 1: No valid ESA steps with non-zero median, skipping"
         )
