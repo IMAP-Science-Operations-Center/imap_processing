@@ -37,6 +37,9 @@ default_attrs: &default_attrs
   FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
 
+  derived_from_spice_kernels: &derived_from_spice_kernels
+    VAR_NOTES: Derived from SPICE Kernels
+
 support_data_defaults: &support_data_defaults
   <<: *default_attrs
   DEPEND_0: epoch
@@ -370,6 +373,7 @@ pulse_length_std_dev:
 
 position_angle_offset_average:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   CATDESC: Spin-block-averaged position-angle offset
   FIELDNAM: Average position-angle offset
   FILLVAL: 1.0E+31
@@ -381,6 +385,7 @@ position_angle_offset_average:
 
 position_angle_offset_std_dev:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   CATDESC: Standard deviation of position-angle offset
   FIELDNAM: Std dev of position-angle offset
   FILLVAL: 1.0E+31
@@ -392,6 +397,7 @@ position_angle_offset_std_dev:
 
 spin_axis_orientation_average: # this is a two-element variable, DEPEND needed?
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   CATDESC: Spin-block-averaged spin-axis pointing (ecliptic lon and lat)
   FIELDNAM: Average spin-axis pointing
   FILLVAL: 1.0E+31
@@ -403,6 +409,7 @@ spin_axis_orientation_average: # this is a two-element variable, DEPEND needed?
 
 spin_axis_orientation_std_dev: # this is a two-element variable, DEPEND needed?
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   CATDESC: Standard deviation of spin axis pointing
   FIELDNAM: Std dev of spin axis pointing
   FILLVAL: 1.0E+31
@@ -414,6 +421,7 @@ spin_axis_orientation_std_dev: # this is a two-element variable, DEPEND needed?
 
 spacecraft_location_average:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
   CATDESC: Spin-block-averaged spacecraft location (ecliptic frame)
@@ -427,6 +435,7 @@ spacecraft_location_average:
 
 spacecraft_location_std_dev:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
   CATDESC: Standard deviation of spacecraft location
@@ -440,6 +449,7 @@ spacecraft_location_std_dev:
 
 spacecraft_velocity_average:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
   CATDESC: Spin-block-averaged spacecraft velocity (ecliptic frame)
@@ -552,6 +562,7 @@ spin_period:
 # TODO: Review this
 imap_spin_angle_bin_cntr:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   DISPLAY_TYPE: no_plot
   DEPEND_1: bins
   CATDESC: IMAP spin angle for bin centers

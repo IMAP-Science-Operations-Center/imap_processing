@@ -54,6 +54,9 @@ lightcurve_defaults: &lightcurve_defaults
   VAR_TYPE: data
   LABL_PTR_1: bins_label
 
+  derived_from_spice_kernels: &derived_from_spice_kernels
+    VAR_NOTES: Derived from SPICE Kernels
+
 bins_dim:
   <<: *default_attrs
   VALIDMIN: 0
@@ -267,6 +270,7 @@ pulse_length_std_dev:
 
 position_angle_offset_average:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   CATDESC: Position angle offset averaged over observational day
   FIELDNAM: Average position angle offset
   FILLVAL: 1.0e+31
@@ -279,6 +283,7 @@ position_angle_offset_average:
 
 position_angle_offset_std_dev:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   CATDESC: Standard deviation of position angle offset
   FIELDNAM: Std dev of position angle offset
   FILLVAL: 1.0e+31
@@ -291,6 +296,7 @@ position_angle_offset_std_dev:
 
 spin_axis_orientation_average:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   CATDESC: Spin axis pointing averaged over observational day (ecliptic lon and lat)
   FIELDNAM: Average spin axis pointing
   FILLVAL: 1.0e+31
@@ -303,6 +309,7 @@ spin_axis_orientation_average:
 
 spin_axis_orientation_std_dev:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   CATDESC: Standard deviation of spin axis pointing
   FIELDNAM: Std dev of spin axis pointing
   FILLVAL: 1.0e+31
@@ -315,6 +322,7 @@ spin_axis_orientation_std_dev:
 
 spacecraft_location_average:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
   CATDESC: Spacecraft location averaged over observational day (ecliptic frame)
@@ -330,6 +338,7 @@ spacecraft_location_average:
 
 spacecraft_location_std_dev:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
   CATDESC: Standard deviation of spacecraft location
@@ -344,6 +353,7 @@ spacecraft_location_std_dev:
 
 spacecraft_velocity_average:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
   CATDESC: Spacecraft velocity averaged over observational day (ecliptic frame)
@@ -358,6 +368,7 @@ spacecraft_velocity_average:
 
 spacecraft_velocity_std_dev:
   <<: *support_data_defaults
+  <<: *derived_from_spice_kernels
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
   CATDESC: Standard deviation of spacecraft velocity
