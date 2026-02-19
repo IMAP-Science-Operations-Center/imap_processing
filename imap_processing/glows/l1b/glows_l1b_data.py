@@ -155,7 +155,6 @@ class PipelineSettings:  # numpydoc ignore=PR02
                 bool(pipeline_dataset[f"active_bad_time_flags_{name}"].values)
                 for name in _time_flag_names
             ]
-            print(self.active_bad_time_flags)
         else:
             # Default: assume all bad-time flags are active
             self.active_bad_time_flags = [True] * FLAG_LENGTH
