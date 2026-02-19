@@ -9,13 +9,18 @@ from imap_processing.hi.hi_goodtimes import (
     INTERVAL_DTYPE,
     CullCode,
     _add_sweep_indices,
+    _build_per_sweep_datasets,
+    _compute_median_and_sigma_per_esa,
     _compute_normalized_counts_per_sweep,
+    _compute_qualified_counts_per_sweep,
     _get_sweep_indices,
+    _identify_cull_pattern,
     create_goodtimes_dataset,
     mark_drf_times,
     mark_incomplete_spin_sets,
     mark_overflow_packets,
     mark_statistical_filter_0,
+    mark_statistical_filter_1,
 )
 from imap_processing.quality_flags import ImapHiL1bDeFlags
 
@@ -1853,3 +1858,577 @@ class TestStatisticalFilter0:
 
         assert np.all(first_sweep_flags == CullCode.GOOD)
         assert np.all(second_sweep_flags == CullCode.LOOSE)
+
+
+class TestIdentifyCullPattern:
+    """Test suite for _identify_cull_pattern() convolution-based pattern detection."""
+
+    def _create_test_data(
+        self, n_sweeps: int = 10, n_esa_steps: int = 5
+    ) -> tuple[xr.DataArray, xr.DataArray, xr.DataArray]:
+        """Create test counts, median, and sigma DataArrays."""
+        # Create counts array (esa_sweep x esa_step)
+        counts = xr.DataArray(
+            np.zeros((n_sweeps, n_esa_steps)),
+            dims=["esa_sweep", "esa_step"],
+            coords={
+                "esa_sweep": np.arange(n_sweeps),
+                "esa_step": np.arange(1, n_esa_steps + 1),
+            },
+        )
+
+        # Create median and sigma per ESA (all valid)
+        median = xr.DataArray(
+            np.full(n_esa_steps, 10.0),
+            dims=["esa_step"],
+            coords={"esa_step": np.arange(1, n_esa_steps + 1)},
+        )
+        sigma = xr.DataArray(
+            np.full(n_esa_steps, 3),
+            dims=["esa_step"],
+            coords={"esa_step": np.arange(1, n_esa_steps + 1)},
+        )
+
+        return counts, median, sigma
+
+    def test_no_exceedances(self):
+        """Test with counts below all thresholds."""
+        counts, median, sigma = self._create_test_data()
+        # All counts are 0, well below threshold of ~15 (10 + 1.8*3)
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        assert cull_mask.dims == ("esa_sweep", "esa_step")
+        assert not cull_mask.any()
+
+    def test_consecutive_run_with_esa_neighbor(self):
+        """Test finding 3+ consecutive high counts with ESA neighbor confirmation."""
+        counts, median, sigma = self._create_test_data(n_sweeps=10, n_esa_steps=5)
+        # threshold = 10 + 1.8 * 3 = 15.4
+
+        # Create 4 consecutive high counts at ESA step 3 (sweeps 2-5)
+        counts.loc[2:5, 3] = 20
+        # Also make ESA step 2 high at same time positions (neighbor at same time)
+        counts.loc[2:5, 2] = 20
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # Sweeps 2-5 at ESA 3 should be marked
+        # (consecutive run with neighbor at same time)
+        assert cull_mask.sel(esa_sweep=2, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=3, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=4, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=5, esa_step=3).values
+        # ESA 2 should also be marked (consecutive run with ESA 3 as neighbor)
+        assert cull_mask.sel(esa_sweep=2, esa_step=2).values
+        assert cull_mask.sel(esa_sweep=3, esa_step=2).values
+        assert cull_mask.sel(esa_sweep=4, esa_step=2).values
+        assert cull_mask.sel(esa_sweep=5, esa_step=2).values
+
+    def test_consecutive_run_no_esa_neighbor(self):
+        """Test that consecutive run without ESA neighbor is not marked."""
+        counts, median, sigma = self._create_test_data(n_sweeps=10, n_esa_steps=5)
+
+        # Create 4 consecutive high counts at ESA step 3, but no neighbors high
+        counts.loc[2:5, 3] = 20
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # Without ESA neighbor confirmation, consecutive runs alone don't trigger
+        # (but extreme outliers at 5-sigma would - threshold = 10 + 5*3 = 25)
+        assert not cull_mask.sel(esa_step=3).any()
+
+    def test_isolated_interval_marked(self):
+        """Test that good interval surrounded by bad is marked."""
+        counts, median, sigma = self._create_test_data(n_sweeps=10, n_esa_steps=5)
+
+        # Create pattern: bad - good - bad at ESA step 3
+        # First create a setup that triggers consecutive culling
+        counts.loc[0:3, 3] = 20  # 4 consecutive high
+        counts.loc[0:3, 2] = 20  # ESA neighbor
+        counts.loc[5:8, 3] = 20  # Another 4 consecutive high
+        counts.loc[5:8, 2] = 20  # ESA neighbor
+        # Sweep 4 at ESA 3 is good (low count) but surrounded by bad
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # Sweep 4 should be marked as isolated
+        assert cull_mask.sel(esa_sweep=4, esa_step=3).values
+
+    def test_extreme_outlier(self):
+        """Test detection of extreme outliers (5-sigma)."""
+        counts, median, sigma = self._create_test_data()
+        # extreme threshold = 10 + 5 * 3 = 25
+
+        # Single extreme outlier at sweep 5, ESA 3
+        counts.loc[5, 3] = 30
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # Only the extreme outlier should be marked
+        assert cull_mask.sel(esa_sweep=5, esa_step=3).values
+        # Other positions should not be marked
+        assert not cull_mask.sel(esa_sweep=4, esa_step=3).values
+        assert not cull_mask.sel(esa_sweep=6, esa_step=3).values
+
+    def test_nan_handling(self):
+        """Test that NaN values in counts are handled correctly."""
+        counts, median, sigma = self._create_test_data()
+
+        # Set some counts to NaN
+        counts.loc[3, 2] = np.nan
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # NaN positions should not be marked (treated as not exceeding)
+        assert not cull_mask.sel(esa_sweep=3, esa_step=2).values
+
+    def test_returns_dataarray_with_correct_coords(self):
+        """Test that returned mask has correct dimensions and coordinates."""
+        counts, median, sigma = self._create_test_data(n_sweeps=8, n_esa_steps=4)
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        assert isinstance(cull_mask, xr.DataArray)
+        assert cull_mask.dims == counts.dims
+        np.testing.assert_array_equal(
+            cull_mask.coords["esa_sweep"].values, counts.coords["esa_sweep"].values
+        )
+        np.testing.assert_array_equal(
+            cull_mask.coords["esa_step"].values, counts.coords["esa_step"].values
+        )
+
+
+class TestComputeQualifiedCountsPerSweep:
+    """Test suite for _compute_qualified_counts_per_sweep() helper function."""
+
+    def _create_test_dataset(
+        self,
+        n_packets: int = 10,
+        events_per_packet: int = 5,
+        coincidence_types: list[int] | None = None,
+    ) -> xr.Dataset:
+        """Create a test L1B DE dataset with esa_sweep coordinate."""
+        n_events = n_packets * events_per_packet
+
+        if coincidence_types is None:
+            # Default: mix of types, 12 (AB) is qualified
+            coincidence_types = [12, 4, 8, 12, 4] * (n_events // 5 + 1)
+            coincidence_types = coincidence_types[:n_events]
+
+        ccsds_index = np.repeat(np.arange(n_packets), events_per_packet).astype(
+            np.uint16
+        )
+
+        # Create ESA steps: 2 packets per ESA step, ESA steps 1-5
+        esa_step = np.repeat(np.arange(1, n_packets // 2 + 1), 2)[:n_packets].astype(
+            np.uint8
+        )
+
+        ds = xr.Dataset(
+            {
+                "coincidence_type": (
+                    ["event_met"],
+                    np.array(coincidence_types, dtype=np.uint8),
+                ),
+                "ccsds_index": (["event_met"], ccsds_index),
+                "ccsds_met": (
+                    ["epoch"],
+                    np.arange(1000.0, 1000.0 + n_packets * 60, 60),
+                ),
+                "esa_step": (["epoch"], esa_step),
+            },
+            coords={
+                "event_met": np.arange(n_events),
+                "epoch": np.arange(n_packets),
+            },
+        )
+
+        # Add esa_sweep coordinate
+        return _add_sweep_indices(ds)
+
+    def test_sums_counts_per_eight_spin(self):
+        """Test that counts are summed per 8-spin interval (esa_sweep, esa_step)."""
+        # 10 packets, 2 packets per ESA step = 5 unique (esa_sweep, esa_step) combos
+        # All in same sweep (no high-to-low transition), ESA steps 1-5
+        ds = self._create_test_dataset(n_packets=10, events_per_packet=10)
+        qualified_types = {12}
+
+        result = _compute_qualified_counts_per_sweep(ds, qualified_types)
+
+        assert "qualified_count" in result.data_vars
+        assert "esa_sweep" in result.dims
+        assert "esa_step" in result.dims
+
+        # Each packet has 10 events, 4 are type 12 (from pattern [12,4,8,12,4] * 2)
+        # 2 packets per 8-spin set = 8 qualified counts per (esa_sweep, esa_step)
+        # Select only the valid ESA steps (1-5)
+        for esa in range(1, 6):
+            count = result["qualified_count"].sel(esa_sweep=0, esa_step=esa).values
+            assert count == 8
+
+    def test_raises_without_coordinate(self):
+        """Test that function raises error without esa_sweep coordinate."""
+        ds = xr.Dataset(
+            {
+                "coincidence_type": (["event_met"], np.array([12, 4], dtype=np.uint8)),
+                "ccsds_index": (["event_met"], np.array([0, 0], dtype=np.uint16)),
+                "ccsds_met": (["epoch"], np.array([1000.0])),
+                "esa_step": (["epoch"], np.array([1], dtype=np.uint8)),
+            },
+            coords={"event_met": np.arange(2), "epoch": np.arange(1)},
+        )
+
+        with pytest.raises(ValueError, match="must have esa_sweep coordinate"):
+            _compute_qualified_counts_per_sweep(ds, {12})
+
+
+class TestBuildPerSweepDatasets:
+    """Test suite for _build_per_sweep_datasets() helper function."""
+
+    def _create_test_dataset(
+        self, n_packets: int = 18, base_met: float = 1000.0
+    ) -> xr.Dataset:
+        """Create a test L1B DE dataset with 2 packets per ESA step (9 ESA steps)."""
+        events_per_packet = 10
+        n_events = n_packets * events_per_packet
+
+        # All events are type 12 (qualified)
+        coincidence_types = np.full(n_events, 12, dtype=np.uint8)
+        ccsds_index = np.repeat(np.arange(n_packets), events_per_packet).astype(
+            np.uint16
+        )
+
+        # 2 packets per ESA step: [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9]
+        esa_step = np.repeat(np.arange(1, 10), 2).astype(np.uint8)
+
+        return xr.Dataset(
+            {
+                "coincidence_type": (["event_met"], coincidence_types),
+                "ccsds_index": (["event_met"], ccsds_index),
+                "ccsds_met": (
+                    ["epoch"],
+                    np.arange(base_met, base_met + n_packets * 60, 60),
+                ),
+                "esa_step": (["epoch"], esa_step),
+            },
+            coords={
+                "event_met": np.arange(n_events),
+                "epoch": np.arange(n_packets),
+            },
+        )
+
+    def test_builds_per_sweep_datasets(self):
+        """Test that per-sweep datasets are built correctly."""
+        ds = self._create_test_dataset()
+        qualified_types = {12}
+
+        per_sweep_datasets = _build_per_sweep_datasets([ds], qualified_types)
+
+        # Should have per-sweep dataset for index 0 with 2D structure
+        assert 0 in per_sweep_datasets
+        assert "esa_sweep" in per_sweep_datasets[0].dims
+        assert "esa_step" in per_sweep_datasets[0].dims
+        # 9 ESA steps (1-9) in the data
+        assert len(per_sweep_datasets[0].coords["esa_step"]) == 9
+
+        # Each (esa_sweep, esa_step) should have 20 qualified counts
+        # 2 packets per ESA step, 10 events each = 20 qualified counts per 8-spin
+        for esa in range(1, 10):
+            count = (
+                per_sweep_datasets[0]["qualified_count"]
+                .sel(esa_sweep=0, esa_step=esa)
+                .values
+            )
+            assert count == 20
+
+    def test_multiple_datasets(self):
+        """Test with multiple datasets."""
+        ds1 = self._create_test_dataset(base_met=1000.0)
+        ds2 = self._create_test_dataset(base_met=2000.0)
+        qualified_types = {12}
+
+        per_sweep_datasets = _build_per_sweep_datasets([ds1, ds2], qualified_types)
+
+        # Should have per-sweep datasets for both indices
+        assert 0 in per_sweep_datasets
+        assert 1 in per_sweep_datasets
+
+
+class TestComputeMedianAndSigmaPerEsa:
+    """Test suite for _compute_median_and_sigma_per_esa() helper function."""
+
+    def _create_per_sweep_dataset(
+        self, counts: np.ndarray, esa_steps: np.ndarray
+    ) -> xr.Dataset:
+        """Create a per-sweep dataset with specified counts."""
+        n_sweeps = 1
+        counts_2d = np.zeros((n_sweeps, int(esa_steps.max()) + 1))
+        for i, esa in enumerate(esa_steps):
+            counts_2d[0, esa] = counts[i] if i < len(counts) else 0
+
+        return xr.Dataset(
+            {
+                "qualified_count": (["esa_sweep", "esa_step"], counts_2d),
+                "ccsds_met": (
+                    ["esa_sweep", "esa_step"],
+                    np.full_like(counts_2d, 1000.0),
+                ),
+            },
+            coords={
+                "esa_sweep": np.arange(n_sweeps),
+                "esa_step": np.arange(counts_2d.shape[1]),
+            },
+        )
+
+    def test_basic_calculation(self):
+        """Test basic median and sigma calculation."""
+        # Create dataset with counts where median is 4 for each ESA step
+        # Using 5 sweeps with counts [2, 4, 6, 4, 4] for ESA steps 1-9
+        n_sweeps = 5
+        counts_per_sweep = [2, 4, 6, 4, 4]
+        counts_2d = np.zeros((n_sweeps, 10))  # ESA steps 0-9
+        for sweep_idx, count in enumerate(counts_per_sweep):
+            for esa in range(1, 10):
+                counts_2d[sweep_idx, esa] = count
+
+        per_sweep_datasets = {
+            0: xr.Dataset(
+                {
+                    "qualified_count": (["esa_sweep", "esa_step"], counts_2d),
+                    "ccsds_met": (
+                        ["esa_sweep", "esa_step"],
+                        np.full_like(counts_2d, 1000.0),
+                    ),
+                },
+                coords={
+                    "esa_sweep": np.arange(n_sweeps),
+                    "esa_step": np.arange(10),
+                },
+            )
+        }
+
+        median_per_esa, sigma_per_esa = _compute_median_and_sigma_per_esa(
+            per_sweep_datasets
+        )
+
+        for esa in range(1, 10):
+            assert median_per_esa.sel(esa_step=esa).values == 4.0
+            # sigma = round(sqrt(4 + 1)) = round(2.236) = 2
+            assert sigma_per_esa.sel(esa_step=esa).values == 2
+
+    def test_zero_median_excluded(self):
+        """Test that ESA steps with zero median are excluded."""
+        # ESA step 1: all zeros, ESA step 2: median 4
+        n_sweeps = 5
+        counts_2d = np.zeros((n_sweeps, 10))
+        # ESA 1 stays at 0
+        # ESA 2 gets counts [2, 4, 6, 4, 4]
+        for sweep_idx, count in enumerate([2, 4, 6, 4, 4]):
+            counts_2d[sweep_idx, 2] = count
+
+        per_sweep_datasets = {
+            0: xr.Dataset(
+                {
+                    "qualified_count": (["esa_sweep", "esa_step"], counts_2d),
+                    "ccsds_met": (
+                        ["esa_sweep", "esa_step"],
+                        np.full_like(counts_2d, 1000.0),
+                    ),
+                },
+                coords={
+                    "esa_sweep": np.arange(n_sweeps),
+                    "esa_step": np.arange(10),
+                },
+            )
+        }
+
+        median_per_esa, sigma_per_esa = _compute_median_and_sigma_per_esa(
+            per_sweep_datasets
+        )
+
+        # ESA step 1 should have NaN median (zero counts excluded)
+        assert np.isnan(median_per_esa.sel(esa_step=1).values)
+        # ESA step 2 should have valid median
+        assert median_per_esa.sel(esa_step=2).values == 4.0
+
+    def test_empty_datasets_handled(self):
+        """Test that empty datasets result in empty DataArrays."""
+        # Empty per_sweep_datasets
+        per_sweep_datasets: dict[int, xr.Dataset] = {}
+
+        median_per_esa, sigma_per_esa = _compute_median_and_sigma_per_esa(
+            per_sweep_datasets
+        )
+
+        assert len(median_per_esa) == 0
+        assert len(sigma_per_esa) == 0
+
+
+class TestStatisticalFilter1:
+    """Test suite for mark_statistical_filter_1() integration tests."""
+
+    @pytest.fixture
+    def goodtimes_for_filter1(self):
+        """Create a goodtimes dataset for testing statistical filter 1."""
+        # Create 18 METs (2 complete ESA sweeps)
+        n_mets = 18
+        met_values = np.arange(1000.0, 1000.0 + n_mets * 60, 60)
+
+        gt = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((n_mets, 90), dtype=np.uint8), dims=["met", "spin_bin"]
+                ),
+                "esa_step": xr.DataArray(
+                    np.tile(np.arange(1, 10), 2).astype(np.uint8), dims=["met"]
+                ),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+            attrs={"sensor": "Hi45", "pointing": 1},
+        )
+        return gt
+
+    def _create_l1b_de_dataset(
+        self,
+        n_packets: int = 18,
+        events_per_packet: int = 10,
+        base_met: float = 1000.0,
+        coincidence_type: int = 12,
+    ) -> xr.Dataset:
+        """Create a mock L1B DE dataset."""
+        n_events = n_packets * events_per_packet
+
+        # ESA steps cycling 1-9 for each sweep
+        esa_step = np.tile(np.arange(1, 10), n_packets // 9 + 1)[:n_packets].astype(
+            np.uint8
+        )
+        ccsds_met = np.arange(base_met, base_met + n_packets * 60, 60, dtype=np.float64)
+        coincidence_types = np.full(n_events, coincidence_type, dtype=np.uint8)
+        ccsds_index = np.repeat(np.arange(n_packets), events_per_packet).astype(
+            np.uint16
+        )
+
+        return xr.Dataset(
+            data_vars={
+                "coincidence_type": (["event_met"], coincidence_types),
+                "ccsds_index": (["event_met"], ccsds_index),
+                "ccsds_met": (["epoch"], ccsds_met),
+                "esa_step": (["epoch"], esa_step),
+            },
+            coords={
+                "event_met": np.arange(n_events),
+                "epoch": np.arange(n_packets),
+            },
+        )
+
+    def test_passes_normal_data(self, goodtimes_for_filter1):
+        """Test that normal data with consistent counts passes the filter."""
+        # Current pointing at index 2 must have METs matching goodtimes (1000.0-2020.0)
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=0.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=500.0),
+            self._create_l1b_de_dataset(
+                events_per_packet=10, base_met=1000.0
+            ),  # Current
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=2500.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=3500.0),
+        ]
+        qualified_types = {12}
+
+        mark_statistical_filter_1(
+            goodtimes_for_filter1,
+            l1b_de_datasets,
+            current_index=2,
+            qualified_coincidence_types=qualified_types,
+        )
+
+        # All times should still be good
+        assert np.all(goodtimes_for_filter1["cull_flags"].values == CullCode.GOOD)
+
+    def test_fails_extreme_outlier(self, goodtimes_for_filter1):
+        """Test that extreme outliers (>5-sigma) are marked as bad."""
+        # Create datasets - current pointing at index 2 must have
+        # METs matching goodtimes
+        # goodtimes has METs from 1000.0 to ~2020.0 (18 METs, 60s apart)
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=0.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=500.0),
+            self._create_l1b_de_dataset(
+                events_per_packet=10, base_met=1000.0
+            ),  # Current - matches goodtimes
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=2500.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=3500.0),
+        ]
+
+        # Make current pointing have extreme counts for one interval
+        current_ds = l1b_de_datasets[2]
+        # Add many more events to first packet only
+        extra_events = 100
+        new_coincidence = np.concatenate(
+            [
+                current_ds["coincidence_type"].values,
+                np.full(extra_events, 12, dtype=np.uint8),
+            ]
+        )
+        new_ccsds_index = np.concatenate(
+            [
+                current_ds["ccsds_index"].values,
+                np.zeros(extra_events, dtype=np.uint16),  # All to first packet
+            ]
+        )
+
+        l1b_de_datasets[2] = xr.Dataset(
+            data_vars={
+                "coincidence_type": (["event_met"], new_coincidence),
+                "ccsds_index": (["event_met"], new_ccsds_index),
+                "ccsds_met": current_ds["ccsds_met"],
+                "esa_step": current_ds["esa_step"],
+            },
+            coords={
+                "event_met": np.arange(len(new_coincidence)),
+                "epoch": current_ds["epoch"],
+            },
+        )
+
+        qualified_types = {12}
+
+        mark_statistical_filter_1(
+            goodtimes_for_filter1,
+            l1b_de_datasets,
+            current_index=2,
+            qualified_coincidence_types=qualified_types,
+        )
+
+        # At least the first MET should be marked bad (extreme outlier)
+        assert np.any(goodtimes_for_filter1["cull_flags"].values == CullCode.LOOSE)
+
+    def test_insufficient_pointings(self, goodtimes_for_filter1):
+        """Test that fewer than min_pointings raises ValueError."""
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(),
+            self._create_l1b_de_dataset(),
+            self._create_l1b_de_dataset(),
+        ]
+        qualified_types = {12}
+
+        with pytest.raises(ValueError, match="At least 4 valid Pointings required"):
+            mark_statistical_filter_1(
+                goodtimes_for_filter1,
+                l1b_de_datasets,
+                current_index=1,
+                qualified_coincidence_types=qualified_types,
+            )
+
+    def test_current_index_out_of_range(self, goodtimes_for_filter1):
+        """Test that current_index out of range raises ValueError."""
+        l1b_de_datasets = [self._create_l1b_de_dataset()] * 5
+        qualified_types = {12}
+
+        with pytest.raises(ValueError, match="current_index.*out of range"):
+            mark_statistical_filter_1(
+                goodtimes_for_filter1,
+                l1b_de_datasets,
+                current_index=10,
+                qualified_coincidence_types=qualified_types,
+            )
