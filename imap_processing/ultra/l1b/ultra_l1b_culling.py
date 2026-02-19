@@ -552,10 +552,13 @@ def get_energy_and_spin_dependent_rejection_mask(
     """
     # Get the ebin flags for each energy bin from the goodtimes dataset.
     energy_range_edges = goodtimes_dataset["energy_range_edges"].values
+    # Get the quality flag arrays "turned on" for energy dependent culling from the
+    # goodtimes dataset.
+    flag_arrays = [
+        goodtimes_dataset[flag_name].values
+        for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
+    ]
     ebin_flags = goodtimes_dataset["energy_bin_flags"].values
-    low_voltage = goodtimes_dataset["quality_low_voltage"].values
-    high_energy = goodtimes_dataset["quality_high_energy"].values
-    statistics = goodtimes_dataset["quality_statistics"].values
     # Create a dict of spin_number to index in the goodtimes dataset
     spin_to_idx = {
         spin: idx for idx, spin in enumerate(goodtimes_dataset["spin_number"].values)
@@ -573,10 +576,11 @@ def get_energy_and_spin_dependent_rejection_mask(
         # If the flag is set for any of the quality arrays, then reject
         # the event.
         flagged_at_spins = (
-            (low_voltage[goodtimes_inds] & energy_bin_flag)
-            | (high_energy[goodtimes_inds] & energy_bin_flag)
-            | (statistics[goodtimes_inds] & energy_bin_flag)
-        ) > 0
+            np.bitwise_or.reduce(
+                [qf[goodtimes_inds] & energy_bin_flag for qf in flag_arrays]
+            )
+            > 0
+        )
 
         # Mark flagged events as rejected
         mask_indices = np.where(mask)[0]
@@ -674,21 +678,21 @@ def flag_low_voltage(
     return quality_flags
 
 
-def get_binned_energy_range_flags(energy_ranges: list[tuple[float, float]]) -> NDArray:
+def get_binned_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
     """
     Get the energy bin flags for energy dependent culling.
 
     Parameters
     ----------
-    energy_ranges : list[tuple[float, float]]
-        List of (start, stop) tuples for each energy range.
+    energy_ranges_edges : NDArray
+        Array of energy range edges.
 
     Returns
     -------
     energy_bin_flags : NDArray
         Energy bin flags.
     """
-    num_bins = len(energy_ranges)
+    num_bins = len(energy_ranges_edges) - 1
     if num_bins > 16:
         raise ValueError(
             f"Number of culling energy bins ({num_bins}) "
