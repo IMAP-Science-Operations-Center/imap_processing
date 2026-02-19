@@ -262,7 +262,7 @@ swe_electron_energy:
 # Variables
 codice_hi_h:
   <<: *default_float32
-  CATDESC: Proton flux from CoDICE-Hi in 15 energy bins between 0.02 to 3.62 MeV over 4 spin sectors and 4 polar angle bins
+  CATDESC: Proton flux from CoDICE-Hi in 15 energy bins between 0.02 to 3.62 MeV over 4 spin angles and 4 polar angles
   FIELDNAM: H+ intensity
   LABLAXIS: H+ intensity
   DEPEND_0: codice_hi_epoch
