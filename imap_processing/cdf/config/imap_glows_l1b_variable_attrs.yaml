@@ -37,8 +37,8 @@ default_attrs: &default_attrs
   FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
 
-  derived_from_spice_kernels: &derived_from_spice_kernels
-    VAR_NOTES: Derived from SPICE Kernels
+derived_from_spice_kernels: &derived_from_spice_kernels
+  VAR_NOTES: Derived from SPICE Kernels
 
 support_data_defaults: &support_data_defaults
   <<: *default_attrs
