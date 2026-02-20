@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+import numpy as np
+
 from imap_processing import imap_module_directory
 
 SPICE_DATA_SIM_PATH = imap_module_directory / "ultra/l1c/sim_spice_kernels"
@@ -191,3 +193,5 @@ class UltraConstants:
     N_CULL_EBINS = 8
     # Bin to start culling at
     BASE_CULL_EBIN = 4
+    # Angle threshold in radians for 45 degree culling.
+    EARTH_ANGLE_45_THRESHOLD = np.radians(15)

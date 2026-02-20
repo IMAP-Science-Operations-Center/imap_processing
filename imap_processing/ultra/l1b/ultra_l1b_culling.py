@@ -680,25 +680,9 @@ def flag_low_voltage(
     return quality_flags
 
 
-def flag_high_energy() -> NDArray:
-    """
-    Flag high energy events.
-
-    Returns
-    -------
-    quality_flags : NDArray
-        Quality flags.
-    """
-    # Placeholder implementation, as the actual logic for high energy flagging
-    # is not provided in the original code snippet.
-    quality_flags = np.full(
-        0, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
-    )  # Adjust size as needed
-    return quality_flags
-
-
 def get_valid_earth_angle_events(
-    de_dataset: xr.Dataset, earth_ang_45: float
+    de_dataset: xr.Dataset,
+    earth_ang_45: float = UltraConstants.EARTH_ANGLE_45_THRESHOLD,
 ) -> NDArray:
     """
     Get events in which Earth is outside the specified angle for ULTRA 45.
@@ -708,7 +692,7 @@ def get_valid_earth_angle_events(
     de_dataset : xr.Dataset
         Direct event dataset.
     earth_ang_45 : float
-        Earth angle threshold for ULTRA 45 in degrees.
+        Earth angle threshold for ULTRA 45 in radians.
 
     Returns
     -------
@@ -729,11 +713,10 @@ def get_valid_earth_angle_events(
     cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (1)
     cos_sep = np.clip(cos_sep, -1.0, 1.0)
     sep_angle = np.arccos(cos_sep)
-
     # An event is valid if the separation angle between the particle look
     # direction and Earth direction is greater than the Earth angle limit
     # (i.e., the Earth is outside the field of view).
-    return sep_angle < earth_ang_45
+    return sep_angle > earth_ang_45
 
 
 def get_binned_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
