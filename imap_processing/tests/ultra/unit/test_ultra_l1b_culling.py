@@ -414,7 +414,7 @@ def test_get_energy_and_spin_dependent_rejection_mask():
             "quality_low_voltage": np.full(n_spins, 0),
             "quality_high_energy": np.full(n_spins, 0),
             "quality_statistics": np.full(n_spins, 0),
-            "energy_bin_flags": np.array(
+            "energy_range_flags": np.array(
                 [2**1, 2**2, 2**3]
             ),  # Example flags for energy bins
             "energy_range_edges": np.array([3, 5, 7, 18]),  # Example energy bin edges

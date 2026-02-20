@@ -647,7 +647,7 @@ def mock_goodtimes_dataset():
     return xr.Dataset(
         {
             "spin_number": ("epoch", np.zeros(5)),
-            "energy_bin_flags": ("energy_flags", np.zeros(10, dtype=np.uint16)),
+            "energy_range_flags": ("energy_flags", np.zeros(10, dtype=np.uint16)),
             "quality_low_voltage": ("spin_number", np.zeros(5, dtype=np.uint16)),
             "quality_high_energy": ("spin_number", np.zeros(5, dtype=np.uint16)),
             "quality_statistics": ("spin_number", np.zeros(5, dtype=np.uint16)),
