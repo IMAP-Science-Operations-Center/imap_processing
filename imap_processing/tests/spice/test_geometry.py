@@ -674,7 +674,7 @@ def test_compute_unit_target_vectors(mock_state):
     # example et times
     et = np.array([798033670, 798033770])
     unit_t_vecs, distance = compute_unit_target_vectors(
-        et, ref_frame=SpiceFrame.IMAP_DPS, observer=SpiceBody.EARTH
+        et, ref_frame=SpiceFrame.IMAP_DPS, target=SpiceBody.EARTH
     )
 
     # Check shapes

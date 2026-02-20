@@ -494,14 +494,15 @@ def test_get_valid_earth_angle_events(mock_state):
     )
     earth_angle_threshold = np.radians(45)
     np.random.seed(0)
-    mock_imap_state = np.random.random((1, 3))  # Mock IMAP state for testing
+    mock_imap_state = np.random.random((1, 6))  # Mock IMAP state for testing
     mock_state.return_value = mock_imap_state
     # Calculate the expected flag exactly the way ULTRA IT does to ensure we are
     # getting the same results.
-    # First negate the state vector since the state is from IMAP to Earth, but the
-    # ULTRA code wants it from Earth to IMAP
-    state_1d = -mock_imap_state.squeeze()
-    upos = state_1d / np.sqrt(np.sum(state_1d**2))
+    # First negate the state vector: the state from imap_state(observer=EARTH)
+    # gives the position of IMAP as seen from Earth (Earth to IMAP), while
+    # the ULTRA code below expects the vector from IMAP to Earth.
+    pos = -mock_imap_state.squeeze()[:3]
+    upos = pos / np.sqrt(np.sum(pos**2))
     zax0 = np.cross(upos, [0, 1, 0])
     zax = zax0 / np.sqrt(np.sum(zax0**2))
     yax = np.cross(zax, upos)

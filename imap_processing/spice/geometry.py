@@ -767,10 +767,10 @@ def solar_longitude(
 def compute_unit_target_vectors(
     et: NDArray,
     ref_frame: SpiceFrame = SpiceFrame.IMAP_DPS,
-    observer: SpiceBody = SpiceBody.EARTH,
+    target: SpiceBody = SpiceBody.EARTH,
 ) -> tuple[NDArray, NDArray]:
     """
-    Compute unit vectors for the given observer.
+    Compute unit vectors from IMAP for the given observer.
 
     Parameters
     ----------
@@ -778,19 +778,19 @@ def compute_unit_target_vectors(
         Ephemeris times in TDB seconds past J2000.
     ref_frame : SpiceFrame, optional
         Reference frame in which to compute the vectors. Default is SpiceFrame.IMAP_DPS.
-    observer : SpiceBody, optional
-        Body from which IMAP is observed.
+    target : SpiceBody, optional
+        Body to compute the vectors to. Default is SpiceBody.EARTH.
 
     Returns
     -------
-    unit_target_vecs : NDArray
+    unit_target_vecs : numpy.ndarray
         Unit vectors from IMAP to the target body
         (e.g., Earth), shape (len(et), 3).
-    distance : NDArray
+    distance : numpy.ndarray
         Distance from IMAP to the target body (e.g., Earth) in kilometers.
     """
-    # Compute IMAP to observer position in the pointing frame.
-    state = imap_state(et, ref_frame=ref_frame, observer=observer)
+    # Compute IMAP to target position in the pointing frame.
+    state = imap_state(et, ref_frame=ref_frame, observer=target)
     # Flip to get vector from IMAP to target
     # position.shape = (len(et), 3)
     position = -state[:, :3]
