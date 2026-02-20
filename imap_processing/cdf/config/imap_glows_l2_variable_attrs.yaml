@@ -514,16 +514,3 @@ number_of_bins:
   VALIDMIN: 225
   VALIDMAX: 3600
   DICT_KEY: SPASE>Support>SupportQuantity:Other
-
-# M. Strumik comment: this variable is obsolete and should not be used
-raw_uncertainties:
-  <<: *lightcurve_defaults
-  CATDESC: Statistical uncertainties for counts histogram
-  FIELDNAM: Counts-histogram uncertainties
-  VAR_TYPE: support_data
-  FILLVAL: *max_uint16
-  LABLAXIS: Counts
-  UNITS: '#'
-  FORMAT: I4
-  VALIDMIN: 0
-  VALIDMAX: 6000 # sqrt(VALIDMAX for raw_histogram)
