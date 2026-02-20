@@ -111,9 +111,6 @@ def calculate_spacecraft_pset(
         species_dataset["energy_spacecraft"].values,
         species_dataset["spin"].values,
     )
-    print("HI")
-    print(np.where(energy_dependent_rejected))
-    print(species_dataset["spin"].values[~energy_dependent_rejected])
     species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
     v_mag_dps_spacecraft = np.linalg.norm(
         species_dataset["velocity_dps_sc"].values, axis=1
