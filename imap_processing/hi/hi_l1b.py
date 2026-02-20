@@ -11,7 +11,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.hi_l1a import HALF_CLOCK_TICK_S
+from imap_processing.hi.hi_l1a import HALF_CLOCK_TICK_S, MILLISECOND_TO_S
 from imap_processing.hi.utils import (
     HIAPID,
     CoincidenceBitmap,
@@ -20,6 +20,7 @@ from imap_processing.hi.utils import (
     create_dataset_variables,
     parse_sensor_number,
 )
+from imap_processing.quality_flags import ImapHiL1bDeFlags
 from imap_processing.spice.geometry import (
     SpiceFrame,
     instrument_pointing,
@@ -133,6 +134,8 @@ def annotate_direct_events(
             att_manager_lookup_str="hi_de_{0}",
         )
     )
+    l1b_de_dataset.update(de_esa_step_met(l1b_de_dataset))
+    l1b_de_dataset.update(de_ccsds_qf(l1b_de_dataset))
     l1b_de_dataset = l1b_de_dataset.drop_vars(
         [
             "src_seq_ctr",
@@ -531,3 +534,75 @@ def get_esa_to_esa_energy_step_lut(
                 matching_esa_energy["esa_energy_step"].values[0],
             )
     return esa_energy_step_lut
+
+
+def de_esa_step_met(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+    """
+    Compute esa_step_met for each CCSDS packet.
+
+    The esa_step_met is the MET time when the ESA was stepped, computed from
+    esa_step_seconds and esa_step_milliseconds.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The L1A/B dataset containing esa_step_seconds and esa_step_milliseconds.
+
+    Returns
+    -------
+    new_vars : dict[str, xarray.DataArray]
+        Dictionary with "esa_step_met" key and float64 DataArray value.
+    """
+    new_vars = create_dataset_variables(
+        ["esa_step_met"],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+
+    # Compute esa_step_met from esa_step_seconds and esa_step_milliseconds
+    new_vars["esa_step_met"].values = (
+        dataset["esa_step_seconds"].values.astype(np.float64)
+        + dataset["esa_step_milliseconds"].values * MILLISECOND_TO_S
+    )
+
+    return new_vars
+
+
+def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+    """
+    Compute ccsds_qf quality flag for each CCSDS packet.
+
+    The ccsds_qf is a quality flag bitmask indicating packet characteristics.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The L1A/B dataset containing ccsds_index for mapping events to packets.
+
+    Returns
+    -------
+    new_vars : dict[str, xarray.DataArray]
+        Dictionary with "ccsds_qf" key and uint8 DataArray value.
+    """
+    max_events_per_packet = 664
+
+    new_vars = create_dataset_variables(
+        ["ccsds_qf"],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+
+    # Initialize all values to 0 (no flags set)
+    new_vars["ccsds_qf"].values[:] = 0
+
+    # Count events per CCSDS packet
+    # ccsds_index maps each event to its originating packet
+    ccsds_indices = dataset["ccsds_index"].values
+    n_packets = len(dataset.epoch)
+    event_counts = np.bincount(ccsds_indices, minlength=n_packets)
+
+    # Set PACKET_FULL flag for packets with 664 events
+    full_packet_mask = event_counts == max_events_per_packet
+    new_vars["ccsds_qf"].values[full_packet_mask] = ImapHiL1bDeFlags.PACKET_FULL
+
+    return new_vars

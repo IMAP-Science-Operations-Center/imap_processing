@@ -428,6 +428,26 @@ hi_de_nominal_bin:
   VALIDMIN: 0
   VALIDMAX: 89
 
+hi_de_esa_step_met:
+  <<: *default_float64
+  CATDESC: Mission Elapsed Time (MET) in seconds of when the ESA was stepped
+  FIELDNAM: ESA Start MET
+  LABLAXIS: ESA Start MET
+  UNITS: seconds
+  VAR_TYPE: support_data
+
+hi_de_ccsds_qf:
+  <<: *default_uint8
+  CATDESC: CCSDS packet quality flag bitmask
+  FIELDNAM: CCSDS Quality Flag
+  FORMAT: I3
+  LABLAXIS: CCSDS QF
+  VALIDMIN: 0
+  VALIDMAX: 255
+  VAR_NOTES: >
+    Bitwise quality flag for CCSDS packet. Bit 0 (value 1): packet was full
+    (contained 664 events).
+
 # ======= L1C PSET Section =======
 
 # Define override values for epoch as defined in imap_constant_attrs.yaml

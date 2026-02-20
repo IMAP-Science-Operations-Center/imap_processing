@@ -13,7 +13,9 @@ from imap_processing.hi.hi_l1b import (
     any_good_direct_events,
     compute_coincidence_type_and_tofs,
     compute_hae_coordinates,
+    de_ccsds_qf,
     de_esa_energy_step,
+    de_esa_step_met,
     de_nominal_bin_and_spin_phase,
     get_esa_to_esa_energy_step_lut,
     housekeeping,
@@ -23,6 +25,7 @@ from imap_processing.hi.utils import (
     EsaEnergyStepLookupTable,
     HiConstants,
 )
+from imap_processing.quality_flags import ImapHiL1bDeFlags
 from imap_processing.spice.geometry import SpiceFrame
 
 
@@ -66,7 +69,7 @@ def test_hi_annotate_direct_events(
     l1b_datasets = annotate_direct_events(l1a_dataset, xr.Dataset(), esa_energies_csv)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
-    assert len(l1b_datasets[0].data_vars) == 15
+    assert len(l1b_datasets[0].data_vars) == 17
 
 
 @pytest.mark.parametrize(
@@ -128,7 +131,10 @@ def test_annotate_direct_events_with_hk(
     l1b_datasets = annotate_direct_events(l1a_dataset, hk_dataset, esa_energies_csv)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_90sensor-de"
-    assert len(l1b_datasets[0].data_vars) == 15
+    assert len(l1b_datasets[0].data_vars) == 17
+    # Verify new L1B variables exist
+    assert "esa_step_met" in l1b_datasets[0].data_vars
+    assert "ccsds_qf" in l1b_datasets[0].data_vars
 
 
 @pytest.fixture
@@ -640,3 +646,91 @@ class TestGetEsaToEsaEnergyStepLut:
         # Check the generated lookup table
         # We expect 1 dataframe entry per esa step in the range [1, 9]
         np.testing.assert_array_equal(lut.df["esa_step"].values, np.arange(9) + 1)
+
+
+class TestDeEsaStepMet:
+    """Tests for de_esa_step_met function."""
+
+    def test_computes_esa_step_met(self):
+        """Test that esa_step_met calculation from seconds and milliseconds."""
+        ds = xr.Dataset(
+            coords={"epoch": [0, 1, 2], "event_met": [0.0, 1.0]},
+            data_vars={
+                "esa_step_seconds": (
+                    ["epoch"],
+                    np.array([100, 200, 300], dtype=np.uint32),
+                ),
+                "esa_step_milliseconds": (
+                    ["epoch"],
+                    np.array([500, 250, 750], dtype=np.uint16),
+                ),
+                "trigger_id": xr.DataArray(
+                    [1, 2], dims=["event_met"], attrs={"FILLVAL": 0}
+                ),
+            },
+        )
+        result = de_esa_step_met(ds)
+        expected = np.array([100.5, 200.25, 300.75])
+        np.testing.assert_array_almost_equal(result["esa_step_met"].values, expected)
+
+
+class TestDeCcsdsQf:
+    """Tests for de_ccsds_qf function."""
+
+    def test_packet_full_flag_set(self):
+        """Test that PACKET_FULL flag is set for packets with 664 events."""
+        n_packets = 3
+        # Create events: packet 0 has 664 events, packet 1 has 100, packet 2 has 664
+        ccsds_indices = np.concatenate(
+            [
+                np.zeros(664, dtype=np.uint16),  # 664 events for packet 0
+                np.ones(100, dtype=np.uint16),  # 100 events for packet 1
+                np.full(664, 2, dtype=np.uint16),  # 664 events for packet 2
+            ]
+        )
+        ds = xr.Dataset(
+            coords={
+                "epoch": np.arange(n_packets),
+                "event_met": np.arange(len(ccsds_indices), dtype=np.float64),
+            },
+            data_vars={
+                "ccsds_index": (["event_met"], ccsds_indices),
+                "trigger_id": xr.DataArray(
+                    np.ones(len(ccsds_indices), dtype=np.uint8),
+                    dims=["event_met"],
+                    attrs={"FILLVAL": 0},
+                ),
+            },
+        )
+        result = de_ccsds_qf(ds)
+        # Packet 0 and 2 should have PACKET_FULL flag (1), packet 1 should be 0
+        assert result["ccsds_qf"].values[0] == ImapHiL1bDeFlags.PACKET_FULL
+        assert result["ccsds_qf"].values[1] == 0
+        assert result["ccsds_qf"].values[2] == ImapHiL1bDeFlags.PACKET_FULL
+
+    def test_no_full_packets(self):
+        """Test that no flags are set when no packets are full."""
+        n_packets = 2
+        ccsds_indices = np.concatenate(
+            [
+                np.zeros(100, dtype=np.uint16),
+                np.ones(200, dtype=np.uint16),
+            ]
+        )
+        ds = xr.Dataset(
+            coords={
+                "epoch": np.arange(n_packets),
+                "event_met": np.arange(len(ccsds_indices), dtype=np.float64),
+            },
+            data_vars={
+                "ccsds_index": (["event_met"], ccsds_indices),
+                "trigger_id": xr.DataArray(
+                    np.ones(len(ccsds_indices), dtype=np.uint8),
+                    dims=["event_met"],
+                    attrs={"FILLVAL": 0},
+                ),
+            },
+        )
+        result = de_ccsds_qf(ds)
+        assert result["ccsds_qf"].values[0] == 0
+        assert result["ccsds_qf"].values[1] == 0
