@@ -702,15 +702,18 @@ def get_valid_earth_angle_events(
     """
     de_dps_velocity = de_dataset["de_dps_velocity"].values
     et = np.mean(de_dataset["event_times"].values)
+    # Compute the unit vector from IMAP to Earth in the DPS frame at the time of the
+    # events.
     earth_unit_vector = compute_unit_target_vectors(
         np.array(et), ref_frame=SpiceFrame.IMAP_DPS, observer=SpiceBody.EARTH
     )[0].squeeze()  # shape (3,)
-
-    # Normalize and flip to get where the particle is looking.
+    # Calculate the magnitude of the velocity vector for each event
     particle_mag = np.linalg.norm(de_dps_velocity, axis=1)
+    # Normalize and flip to get where each particle is looking.
     unit_look_dirs = -de_dps_velocity / particle_mag[:, np.newaxis]  # shape (3)
-    # cos(theta) between each particle look direction and Earth direction
-    cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (1)
+    # Get cos(theta) between each particle look direction and Earth direction
+    cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (n_events,)
+    # Clip cos_sep to the valid range of [-1, 1]
     cos_sep = np.clip(cos_sep, -1.0, 1.0)
     sep_angle = np.arccos(cos_sep)
     # An event is valid if the separation angle between the particle look
