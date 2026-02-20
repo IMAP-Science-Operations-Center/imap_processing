@@ -734,3 +734,62 @@ class TestDeCcsdsQf:
         result = de_ccsds_qf(ds)
         assert result["ccsds_qf"].values[0] == 0
         assert result["ccsds_qf"].values[1] == 0
+
+    def test_no_valid_direct_events_all_fill_trigger_id(self):
+        """de_ccsds_qf returns all zeros when trigger_id is entirely FILLVAL."""
+        n_packets = 3
+        # Some arbitrary, in-range CCSDS indices that would normally map to packets
+        ccsds_indices = np.array(
+            [0, 0, 1, 1, 2, 2, 0, 1, 2], dtype=np.uint16
+        )
+        n_events = len(ccsds_indices)
+        # All trigger_id values are set to the FILLVAL (0), meaning no valid direct events
+        trigger_fillval = 0
+        ds = xr.Dataset(
+            coords={
+                "epoch": np.arange(n_packets),
+                "event_met": np.arange(n_events, dtype=np.float64),
+            },
+            data_vars={
+                "ccsds_index": (["event_met"], ccsds_indices),
+                "trigger_id": xr.DataArray(
+                    np.full(n_events, trigger_fillval, dtype=np.uint8),
+                    dims=["event_met"],
+                    attrs={"FILLVAL": trigger_fillval},
+                ),
+            },
+        )
+        result = de_ccsds_qf(ds)
+        # With no valid direct events, all CCSDS quality flags should be zero
+        assert "ccsds_qf" in result
+        assert result["ccsds_qf"].shape[0] == n_packets
+        assert np.all(result["ccsds_qf"].values == 0)
+
+    def test_ccsds_index_fillvals_ignored(self):
+        """de_ccsds_qf returns all zeros when ccsds_index includes FILLVALs (65535)."""
+        n_packets = 2
+        fillval = np.uint16(65535)
+        # Include some events with CCSDS index FILLVAL that should be ignored
+        ccsds_indices = np.array(
+            [fillval, fillval, 0, 0, 1, 1], dtype=np.uint16
+        )
+        n_events = len(ccsds_indices)
+        ds = xr.Dataset(
+            coords={
+                "epoch": np.arange(n_packets),
+                "event_met": np.arange(n_events, dtype=np.float64),
+            },
+            data_vars={
+                "ccsds_index": (["event_met"], ccsds_indices),
+                "trigger_id": xr.DataArray(
+                    np.ones(n_events, dtype=np.uint8),
+                    dims=["event_met"],
+                    attrs={"FILLVAL": 0},
+                ),
+            },
+        )
+        result = de_ccsds_qf(ds)
+        # No packet reaches the full-packet threshold; FILLVAL indices must not cause errors
+        assert "ccsds_qf" in result
+        assert result["ccsds_qf"].shape[0] == n_packets
+        assert np.all(result["ccsds_qf"].values == 0)

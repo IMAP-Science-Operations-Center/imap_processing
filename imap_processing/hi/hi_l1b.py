@@ -599,8 +599,19 @@ def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     # ccsds_index maps each event to its originating packet
     ccsds_indices = dataset["ccsds_index"].values
     n_packets = len(dataset.epoch)
-    event_counts = np.bincount(ccsds_indices, minlength=n_packets)
 
+    # Filter out fill/out-of-range indices (e.g., uint16 FILLVAL 65535)
+    valid_mask = (ccsds_indices >= 0) & (ccsds_indices < n_packets)
+
+    # If there are no valid events, all packets keep default quality flag 0
+    if not np.any(valid_mask):
+        return new_vars
+
+    # Compute event counts per valid CCSDS packet
+    event_counts = np.bincount(
+        ccsds_indices[valid_mask].astype(np.int64),
+        minlength=n_packets,
+    )
     # Set PACKET_FULL flag for packets with 664 events
     full_packet_mask = event_counts == max_events_per_packet
     new_vars["ccsds_qf"].values[full_packet_mask] = ImapHiL1bDeFlags.PACKET_FULL
