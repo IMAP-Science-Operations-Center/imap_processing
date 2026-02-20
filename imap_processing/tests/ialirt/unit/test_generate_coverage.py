@@ -184,7 +184,14 @@ def test_create_schedule_mask(mock_et_to_utc):
     np.testing.assert_array_equal(mask, expected)
 
 
-def test_incorporate_individual_coverage(schedule_path):
+def test_incorporate_individual_coverage(schedule_path, furnish_kernels):
+    kernels = [
+        "naif0012.tls",
+        "pck00011.tpc",
+        "de440s.bsp",
+        "imap_spk_demo.bsp",
+    ]
+
     data = pd.read_excel(schedule_path)
 
     start_dt = (
@@ -226,3 +233,18 @@ def test_incorporate_individual_coverage(schedule_path):
 
     start_dt[truncate_setup] += setup_delta  # start later
     stop_dt[truncate_teardown] -= teardown_delta  # end earlier
+
+    start_str = np.datetime_as_string(start_dt, unit="ms")
+    stop_str = np.datetime_as_string(stop_dt, unit="ms")
+
+    uksa_contacts = [
+        (f"{s}Z", f"{e}Z") for s, e in zip(start_str, stop_str, strict=False)
+    ]
+
+    with furnish_kernels(kernels):
+        coverage_dict, outage_dict = generate_coverage(
+            "2026-01-29T00:00:00Z", uksa=uksa_contacts
+        )
+
+    assert coverage_dict["UKSA"][0] == "2026-01-29T14:45:00.000"
+    assert coverage_dict["UKSA"][-1] == "2026-01-29T16:50:00.000"
