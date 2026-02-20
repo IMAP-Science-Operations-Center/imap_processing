@@ -558,7 +558,10 @@ def get_energy_and_spin_dependent_rejection_mask(
         goodtimes_dataset[flag_name].values
         for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
     ]
-    ebin_flags = goodtimes_dataset["energy_bin_flags"].values
+    flagged = np.where(flag_arrays[0] != 0)
+    print(flagged)
+    print(goodtimes_dataset["spin_number"].values[flagged])
+    ebin_flags = goodtimes_dataset["energy_range_flags"].values
     # Create a dict of spin_number to index in the goodtimes dataset
     spin_to_idx = {
         spin: idx for idx, spin in enumerate(goodtimes_dataset["spin_number"].values)
