@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
@@ -13,6 +12,7 @@ from imap_processing.ialirt.generate_coverage import (
     create_schedule_mask,
     format_coverage_summary,
     generate_coverage,
+    parse_uksa_schedule_xlsx,
 )
 
 
@@ -184,7 +184,8 @@ def test_create_schedule_mask(mock_et_to_utc):
     np.testing.assert_array_equal(mask, expected)
 
 
-def test_incorporate_individual_coverage(schedule_path, furnish_kernels):
+def test_incorporate_uksa_coverage(schedule_path, furnish_kernels):
+    "Test to parse UKSA schedule."
     kernels = [
         "naif0012.tls",
         "pck00011.tpc",
@@ -192,54 +193,7 @@ def test_incorporate_individual_coverage(schedule_path, furnish_kernels):
         "imap_spk_demo.bsp",
     ]
 
-    data = pd.read_excel(schedule_path)
-
-    start_dt = (
-        data["Date"]
-        + pd.to_timedelta(
-            data["GHY-6 Start Availability Times  (5degrees) (UTC)"].astype(str)
-        )
-    ).to_numpy("datetime64[s]")
-
-    stop_dt = (
-        data["Date"]
-        + pd.to_timedelta(
-            data["GHY-6 Stop Availability Times  (5degrees) (UTC)"].astype(str)
-        )
-    ).to_numpy("datetime64[s]")
-
-    truncate_setup = (
-        data["Short due to existing booking "]
-        .eq("Yes- setup needs to be included with the window")
-        .to_numpy()
-    )
-
-    truncate_teardown = (
-        data["Short due to existing booking "]
-        .eq("Yes- tear down needs to be included within the window")
-        .to_numpy()
-    )
-
-    setup_time = data["Setup time"].iloc[0]
-    teardown_time = data["Tear down time"].iloc[0]
-
-    setup_seconds = setup_time.hour * 3600 + setup_time.minute * 60 + setup_time.second
-    teardown_seconds = (
-        teardown_time.hour * 3600 + teardown_time.minute * 60 + teardown_time.second
-    )
-
-    setup_delta = np.timedelta64(setup_seconds, "s")
-    teardown_delta = np.timedelta64(teardown_seconds, "s")
-
-    start_dt[truncate_setup] += setup_delta  # start later
-    stop_dt[truncate_teardown] -= teardown_delta  # end earlier
-
-    start_str = np.datetime_as_string(start_dt, unit="ms")
-    stop_str = np.datetime_as_string(stop_dt, unit="ms")
-
-    uksa_contacts = [
-        (f"{s}Z", f"{e}Z") for s, e in zip(start_str, stop_str, strict=False)
-    ]
+    uksa_contacts = parse_uksa_schedule_xlsx(schedule_path)
 
     with furnish_kernels(kernels):
         coverage_dict, outage_dict = generate_coverage(
