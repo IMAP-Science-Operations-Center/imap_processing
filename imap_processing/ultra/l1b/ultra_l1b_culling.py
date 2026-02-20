@@ -132,14 +132,11 @@ def flag_attitude(
     spins = np.unique(spin_number)  # Get unique spins
     spin_df = get_spin_data()  # Load spin data
 
-    spin_period = spin_df.loc[spin_df.spin_number.isin(spins), "spin_period_sec"].values
-    spin_starttime = spin_df.loc[
-        spin_df.spin_number.isin(spins), "spin_start_met"
-    ].values
-    spin_phase_valid = spin_df.loc[spin_df.spin_number.isin(spins), "spin_phase_valid"]
-    spin_period_valid = spin_df.loc[
-        spin_df.spin_number.isin(spins), "spin_period_valid"
-    ]
+    spin_df = spin_df[spin_df.spin_number.isin(spins)]
+    spin_period = spin_df["spin_period_sec"].values
+    spin_starttime = spin_df["spin_start_met"].values
+    spin_phase_valid = spin_df["spin_phase_valid"].values
+    spin_period_valid = spin_df["spin_period_valid"].values
     spin_rates = 60 / spin_period  # 60 seconds in a minute
     bad_spin_rate_indices = (spin_rates < UltraConstants.CULLING_RPM_MIN) | (
         spin_rates > UltraConstants.CULLING_RPM_MAX
@@ -558,9 +555,6 @@ def get_energy_and_spin_dependent_rejection_mask(
         goodtimes_dataset[flag_name].values
         for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
     ]
-    flagged = np.where(flag_arrays[0] != 0)
-    print(flagged)
-    print(goodtimes_dataset["spin_number"].values[flagged])
     ebin_flags = goodtimes_dataset["energy_range_flags"].values
     # Create a dict of spin_number to index in the goodtimes dataset
     spin_to_idx = {
