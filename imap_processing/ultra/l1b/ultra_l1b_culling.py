@@ -685,7 +685,7 @@ def get_valid_earth_angle_events(
     earth_ang_45: float = UltraConstants.EARTH_ANGLE_45_THRESHOLD,
 ) -> NDArray:
     """
-    Get events in which Earth is outside the specified angle for ULTRA 45.
+    Get events where the particle look direction is outside the Earth keepout angle.
 
     Parameters
     ----------
