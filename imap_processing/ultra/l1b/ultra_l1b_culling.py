@@ -15,6 +15,11 @@ from imap_processing.quality_flags import (
     ImapInstrumentUltraFlags,
     ImapRatesUltraFlags,
 )
+from imap_processing.spice.geometry import (
+    SpiceBody,
+    SpiceFrame,
+    compute_unit_target_vectors,
+)
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -673,6 +678,62 @@ def flag_low_voltage(
     quality_flags[lv_spin_inds] = low_voltage_flag
 
     return quality_flags
+
+
+def flag_high_energy() -> NDArray:
+    """
+    Flag high energy events.
+
+    Returns
+    -------
+    quality_flags : NDArray
+        Quality flags.
+    """
+    # Placeholder implementation, as the actual logic for high energy flagging
+    # is not provided in the original code snippet.
+    quality_flags = np.full(
+        0, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
+    )  # Adjust size as needed
+    return quality_flags
+
+
+def get_valid_earth_angle_events(
+    de_dataset: xr.Dataset, earth_ang_45: float
+) -> NDArray:
+    """
+    Get events in which Earth is outside the specified angle for ULTRA 45.
+
+    Parameters
+    ----------
+    de_dataset : xr.Dataset
+        Direct event dataset.
+    earth_ang_45 : float
+        Earth angle threshold for ULTRA 45 in degrees.
+
+    Returns
+    -------
+    valid_earth_angle_events : NDArray
+        A boolean array indicating which events have Earth angle greater than the
+        specified threshold.
+    """
+    de_dps_velocity = de_dataset["de_dps_velocity"].values
+    et = np.mean(de_dataset["event_times"].values)
+    earth_unit_vector = compute_unit_target_vectors(
+        np.array(et), ref_frame=SpiceFrame.IMAP_DPS, observer=SpiceBody.EARTH
+    )[0].squeeze()  # shape (3,)
+
+    # Normalize and flip to get where the particle is looking.
+    particle_mag = np.linalg.norm(de_dps_velocity, axis=1)
+    unit_look_dirs = -de_dps_velocity / particle_mag[:, np.newaxis]  # shape (3)
+    # cos(theta) between each particle look direction and Earth direction
+    cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (1)
+    cos_sep = np.clip(cos_sep, -1.0, 1.0)
+    sep_angle = np.arccos(cos_sep)
+
+    # An event is valid if the separation angle between the particle look
+    # direction and Earth direction is greater than the Earth angle limit
+    # (i.e., the Earth is outside the field of view).
+    return sep_angle < earth_ang_45
 
 
 def get_binned_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:

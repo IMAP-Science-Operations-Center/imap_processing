@@ -8,7 +8,7 @@ from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
-    imap_state,
+    compute_unit_target_vectors,
 )
 
 
@@ -50,23 +50,12 @@ def compute_culling_mask(
     # Compute number of HEALPix pixels
     npix = hp.nside2npix(nside)
 
-    # Compute IMAP to Earth position in the pointing frame.
-    state = imap_state(et, ref_frame=SpiceFrame.IMAP_DPS, observer=observer)
-    # Flip to get vector from IMAP to Earth
-    # position.shape = (len(et), 3)
-    position = -state[:, :3]
-
-    # Distance from IMAP to target (e.g. Earth) (km):
-    # distance.shape = (len(et),)
-    distance = np.linalg.norm(position, axis=1)  # shape (len(et),)
-
+    unit_target_vecs, distance = compute_unit_target_vectors(
+        et, SpiceFrame.IMAP_DPS, observer
+    )
     # Calculate the keepout angle (radians).
     # keepout_angle.shape = (len(et),)
     keepout_angle = np.arcsin(keepout_radius_km / distance)  # radians
-
-    # Calculate the direction from IMAP to Earth. (shape: [N, 3])
-    # unit_target_vecs.shape = (len(et), 3)
-    unit_target_vecs = position / distance[:, np.newaxis]
 
     # Get pixel unit vectors pointing from the center of the
     # HEALPix sphere to the center of each pixel on the sky.
