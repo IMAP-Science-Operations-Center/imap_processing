@@ -739,11 +739,10 @@ class TestDeCcsdsQf:
         """de_ccsds_qf returns all zeros when trigger_id is entirely FILLVAL."""
         n_packets = 3
         # Some arbitrary, in-range CCSDS indices that would normally map to packets
-        ccsds_indices = np.array(
-            [0, 0, 1, 1, 2, 2, 0, 1, 2], dtype=np.uint16
-        )
+        ccsds_indices = np.array([0, 0, 1, 1, 2, 2, 0, 1, 2], dtype=np.uint16)
         n_events = len(ccsds_indices)
-        # All trigger_id values are set to the FILLVAL (0), meaning no valid direct events
+        # All trigger_id values are set to the FILLVAL (0),
+        # meaning no valid direct events
         trigger_fillval = 0
         ds = xr.Dataset(
             coords={
@@ -770,9 +769,7 @@ class TestDeCcsdsQf:
         n_packets = 2
         fillval = np.uint16(65535)
         # Include some events with CCSDS index FILLVAL that should be ignored
-        ccsds_indices = np.array(
-            [fillval, fillval, 0, 0, 1, 1], dtype=np.uint16
-        )
+        ccsds_indices = np.array([fillval, fillval, 0, 0, 1, 1], dtype=np.uint16)
         n_events = len(ccsds_indices)
         ds = xr.Dataset(
             coords={
@@ -789,7 +786,8 @@ class TestDeCcsdsQf:
             },
         )
         result = de_ccsds_qf(ds)
-        # No packet reaches the full-packet threshold; FILLVAL indices must not cause errors
+        # No packet reaches the full-packet threshold;
+        # FILLVAL indices must not cause errors
         assert "ccsds_qf" in result
         assert result["ccsds_qf"].shape[0] == n_packets
         assert np.all(result["ccsds_qf"].values == 0)
