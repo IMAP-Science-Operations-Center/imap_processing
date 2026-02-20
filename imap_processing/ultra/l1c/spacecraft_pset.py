@@ -99,7 +99,7 @@ def calculate_spacecraft_pset(
     # Check if spin_number is in the goodtimes dataset, if not then we can
     #  reject all events for that spin without checking energy bin flags.
     spin_rejected = ~np.isin(
-        species_dataset["spin_number"].values, goodtimes_dataset["spin_number"].values
+        species_dataset["spin"].values, goodtimes_dataset["spin_number"].values
     )
     species_dataset = species_dataset.isel(epoch=~spin_rejected)
 
@@ -109,10 +109,12 @@ def calculate_spacecraft_pset(
     energy_dependent_rejected = get_energy_and_spin_dependent_rejection_mask(
         goodtimes_dataset,
         species_dataset["energy_spacecraft"].values,
-        species_dataset["spin_number"].values,
+        species_dataset["spin"].values,
     )
+    print("HI")
+    print(np.where(energy_dependent_rejected))
+    print(species_dataset["spin"].values[~energy_dependent_rejected])
     species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
-
     v_mag_dps_spacecraft = np.linalg.norm(
         species_dataset["velocity_dps_sc"].values, axis=1
     )
