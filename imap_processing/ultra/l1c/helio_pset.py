@@ -100,7 +100,7 @@ def calculate_helio_pset(
     # Check if spin_number is in the goodtimes dataset, if not then we can
     #  reject all events for that spin without checking energy bin flags.
     spin_rejected = ~np.isin(
-        species_dataset["spin_number"].values, goodtimes_dataset["spin_number"].values
+        species_dataset["spin"].values, goodtimes_dataset["spin_number"].values
     )
     species_dataset = species_dataset.isel(epoch=~spin_rejected)
 
@@ -110,7 +110,7 @@ def calculate_helio_pset(
     energy_dependent_rejected = get_energy_and_spin_dependent_rejection_mask(
         goodtimes_dataset,
         species_dataset["energy_heliosphere"].values,
-        species_dataset["spin_number"].values,
+        species_dataset["spin"].values,
     )
     species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
     v_mag_helio_spacecraft = np.linalg.norm(
