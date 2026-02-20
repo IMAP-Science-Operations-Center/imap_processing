@@ -184,6 +184,16 @@ def test_create_schedule_mask(mock_et_to_utc):
     np.testing.assert_array_equal(mask, expected)
 
 
+def test_parse_uksa_schedule_xlsx(schedule_path):
+    "Test parse_uksa_schedule_xlsx."
+
+    uksa_contacts = parse_uksa_schedule_xlsx(schedule_path)
+
+    # Verify that setup time and teardown time are properly accounted for.
+    assert uksa_contacts[1] == ("2026-01-29T14:40:00.000", "2026-01-29T16:54:26.000")
+    assert uksa_contacts[2] == ("2026-01-30T08:54:52.000", "2026-01-30T12:54:00.000")
+
+
 def test_incorporate_uksa_coverage(schedule_path, furnish_kernels):
     "Test to parse UKSA schedule."
     kernels = [
