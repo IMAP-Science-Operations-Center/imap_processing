@@ -446,7 +446,8 @@ hi_de_ccsds_qf:
   VALIDMAX: 255
   VAR_NOTES: >
     Bitwise quality flag for CCSDS packet. Bit 0 (value 1): packet was full
-    (contained 664 events).
+    (contained 664 events). Bit 2 (value 4): packet contained events from an
+    invalid spin.
 
 # ======= L1C PSET Section =======
 

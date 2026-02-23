@@ -602,10 +602,10 @@ def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     # Filter out fill/out-of-range indices (e.g., uint16 FILLVAL 65535)
     valid_mask = (ccsds_indices >= 0) & (ccsds_indices < n_packets)
 
-    # Set SPIN_INVALID flag for packets with nonzero spin_invalids
+    # Set BADSPIN flag for packets with nonzero spin_invalids
     spin_invalid_mask = dataset["spin_invalids"].values != 0
     new_vars["ccsds_qf"].values[spin_invalid_mask] |= np.uint8(
-        ImapHiL1bDeFlags.SPIN_INVALID
+        ImapHiL1bDeFlags.BADSPIN
     )
 
     # If there are no valid events, skip the PACKET_FULL check

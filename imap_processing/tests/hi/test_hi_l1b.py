@@ -738,7 +738,7 @@ class TestDeCcsdsQf:
         assert result["ccsds_qf"].values[1] == 0
 
     def test_spin_invalid_flag_set(self):
-        """Test that SPIN_INVALID flag is set for packets with nonzero spin_invalids."""
+        """Test that BADSPIN flag is set for packets with nonzero spin_invalids."""
         n_packets = 3
         ccsds_indices = np.concatenate(
             [
@@ -768,11 +768,11 @@ class TestDeCcsdsQf:
         )
         result = de_ccsds_qf(ds)
         np.testing.assert_array_equal(
-            result["ccsds_qf"].values, [0, ImapHiL1bDeFlags.SPIN_INVALID, 0]
+            result["ccsds_qf"].values, [0, ImapHiL1bDeFlags.BADSPIN, 0]
         )
 
     def test_spin_invalid_and_packet_full_flags_combined(self):
-        """Test that SPIN_INVALID and PACKET_FULL flags can be set together."""
+        """Test that BADSPIN and PACKET_FULL flags can be set together."""
         n_packets = 2
         ccsds_indices = np.concatenate(
             [
@@ -802,7 +802,7 @@ class TestDeCcsdsQf:
         result = de_ccsds_qf(ds)
         np.testing.assert_array_equal(
             result["ccsds_qf"].values,
-            [ImapHiL1bDeFlags.PACKET_FULL | ImapHiL1bDeFlags.SPIN_INVALID, 0],
+            [ImapHiL1bDeFlags.PACKET_FULL | ImapHiL1bDeFlags.BADSPIN, 0],
         )
 
     def test_no_valid_direct_events_all_fill_trigger_id(self):
