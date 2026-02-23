@@ -20,33 +20,32 @@ from imap_processing.hi.hi_goodtimes import (
 
 
 @pytest.fixture
-def mock_l1a_de():
-    """Create a mock L1A Direct Event dataset for testing."""
+def mock_l1b_de():
+    """Create a mock L1B Direct Event dataset for testing."""
     # Create 10 unique MET times, each appearing twice (paired)
     # Plus 2 unpaired MET times
     n_paired = 10
 
     # Paired METs: each appears twice
     paired_mets = np.arange(1000.0, 1000.0 + n_paired * 10, 10)
-    met_seconds = np.repeat(paired_mets.astype(int), 2)
-    met_subseconds = np.zeros(len(met_seconds))
+    esa_step_met = np.repeat(paired_mets, 2)
 
     # Add unpaired METs
     unpaired_mets = np.array([2000.0, 3000.0])
-    met_seconds = np.concatenate([met_seconds, unpaired_mets.astype(int)])
-    met_subseconds = np.concatenate([met_subseconds, np.zeros(len(unpaired_mets))])
+    esa_step_met = np.concatenate([esa_step_met, unpaired_mets])
 
-    # ESA step cycles through values
-    esa_step = np.tile(np.arange(1, 11), len(met_seconds) // 10 + 1)[: len(met_seconds)]
+    # ESA energy step cycles through values
+    esa_energy_step = np.tile(np.arange(1, 11), len(esa_step_met) // 10 + 1)[
+        : len(esa_step_met)
+    ]
 
     ds = xr.Dataset(
         {
-            "meta_seconds": (["epoch"], met_seconds),
-            "meta_subseconds": (["epoch"], met_subseconds),
-            "esa_step": (["epoch"], esa_step.astype(np.uint8)),
+            "esa_step_met": (["epoch"], esa_step_met),
+            "esa_energy_step": (["epoch"], esa_energy_step.astype(np.uint8)),
         },
         attrs={
-            "Logical_source": "imap_hi_l1a_45sensor-de",
+            "Logical_source": "imap_hi_l1b_45sensor-de",
             "Repointing": "repoint00042",
         },
     )
@@ -54,9 +53,9 @@ def mock_l1a_de():
 
 
 @pytest.fixture
-def goodtimes_instance(mock_l1a_de):
+def goodtimes_instance(mock_l1b_de):
     """Create a goodtimes dataset for testing."""
-    return create_goodtimes_dataset(mock_l1a_de)
+    return create_goodtimes_dataset(mock_l1b_de)
 
 
 class TestCullCode:
@@ -73,29 +72,29 @@ class TestCullCode:
         assert isinstance(CullCode.LOOSE, int)
 
 
-class TestGoodtimesFromL1aDe:
-    """Test suite for Goodtimes.from_l1a_de() classmethod."""
+class TestGoodtimesFromL1bDe:
+    """Test suite for create_goodtimes_dataset() from L1B DE."""
 
-    def test_from_l1a_de_basic(self, mock_l1a_de):
-        """Test basic creation from L1A DE data."""
-        gt = create_goodtimes_dataset(mock_l1a_de)
+    def test_from_l1b_de_basic(self, mock_l1b_de):
+        """Test basic creation from L1B DE data."""
+        gt = create_goodtimes_dataset(mock_l1b_de)
 
         assert isinstance(gt, xr.Dataset)
 
-    def test_from_l1a_de_keeps_unique_mets(self, mock_l1a_de):
+    def test_from_l1b_de_keeps_unique_mets(self, mock_l1b_de):
         """Test that all unique METs are included."""
-        gt = create_goodtimes_dataset(mock_l1a_de)
+        gt = create_goodtimes_dataset(mock_l1b_de)
 
         # Should have 12 unique METs (10 paired + 2 unpaired)
         assert len(gt.coords["met"]) == 12
 
-    def test_from_l1a_de_dimensions(self, goodtimes_instance):
+    def test_from_l1b_de_dimensions(self, goodtimes_instance):
         """Test that dimensions are correct."""
         assert "met" in goodtimes_instance.dims
         assert "spin_bin" in goodtimes_instance.dims
         assert goodtimes_instance.dims["spin_bin"] == 90
 
-    def test_from_l1a_de_coordinates(self, goodtimes_instance):
+    def test_from_l1b_de_coordinates(self, goodtimes_instance):
         """Test that coordinates are set correctly."""
         assert "met" in goodtimes_instance.coords
         assert "spin_bin" in goodtimes_instance.coords
@@ -105,32 +104,32 @@ class TestGoodtimesFromL1aDe:
             goodtimes_instance.coords["spin_bin"].values, np.arange(90)
         )
 
-    def test_from_l1a_de_data_variables(self, goodtimes_instance):
+    def test_from_l1b_de_data_variables(self, goodtimes_instance):
         """Test that data variables are created."""
         assert "cull_flags" in goodtimes_instance.data_vars
         assert "esa_step" in goodtimes_instance.data_vars
 
-    def test_from_l1a_de_cull_flags_initialized_to_zero(self, goodtimes_instance):
+    def test_from_l1b_de_cull_flags_initialized_to_zero(self, goodtimes_instance):
         """Test that cull_flags are initialized to 0 (good)."""
         assert np.all(goodtimes_instance["cull_flags"].values == 0)
 
-    def test_from_l1a_de_cull_flags_shape(self, goodtimes_instance):
+    def test_from_l1b_de_cull_flags_shape(self, goodtimes_instance):
         """Test cull_flags array shape."""
         n_met = len(goodtimes_instance.coords["met"])
         assert goodtimes_instance["cull_flags"].shape == (n_met, 90)
 
-    def test_from_l1a_de_esa_step_preserved(self, mock_l1a_de, goodtimes_instance):
+    def test_from_l1b_de_esa_step_preserved(self, mock_l1b_de, goodtimes_instance):
         """Test that ESA step values are preserved for all unique METs."""
         # Get first occurrence of each unique MET
-        met_all = mock_l1a_de["meta_seconds"].values.astype(float)
+        met_all = mock_l1b_de["esa_step_met"].values
         unique_mets, first_indices = np.unique(met_all, return_index=True)
-        expected_esa_steps = mock_l1a_de["esa_step"].values[first_indices]
+        expected_esa_steps = mock_l1b_de["esa_energy_step"].values[first_indices]
 
         np.testing.assert_array_equal(
             goodtimes_instance["esa_step"].values, expected_esa_steps
         )
 
-    def test_from_l1a_de_attributes(self, goodtimes_instance):
+    def test_from_l1b_de_attributes(self, goodtimes_instance):
         """Test that attributes are set correctly."""
         assert goodtimes_instance.attrs["sensor"] == "Hi45"
         assert goodtimes_instance.attrs["pointing"] == 42
@@ -537,239 +536,213 @@ class TestIntervalDtype:
         assert INTERVAL_DTYPE["esa_step"] == np.uint8
 
 
+def _create_l1b_de_dataset(
+    esa_step_met: list[float],
+    last_spin_num: list[int],
+    esa_energy_step: list[int],
+    ccsds_qf: list[int] | None = None,
+    repointing: str = "repoint00001",
+) -> xr.Dataset:
+    """
+    Helper function to create L1B DE datasets for testing.
+
+    Parameters
+    ----------
+    esa_step_met : list[float]
+        MET timestamps for each packet.
+    last_spin_num : list[int]
+        Last spin number (1-8) for each packet.
+    esa_energy_step : list[int]
+        ESA energy step values for each packet.
+    ccsds_qf : list[int] | None
+        Quality flags for each packet. If None, all zeros (valid).
+    repointing : str
+        Repointing attribute value.
+
+    Returns
+    -------
+    xr.Dataset
+        Mock L1B DE dataset.
+    """
+    n_packets = len(esa_step_met)
+    if ccsds_qf is None:
+        ccsds_qf = [0] * n_packets
+
+    return xr.Dataset(
+        {
+            "esa_step_met": (["epoch"], np.array(esa_step_met, dtype=np.float64)),
+            "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
+            "esa_energy_step": (["epoch"], np.array(esa_energy_step, dtype=np.uint8)),
+            "ccsds_qf": (["epoch"], np.array(ccsds_qf, dtype=np.uint8)),
+        },
+        attrs={
+            "Logical_source": "imap_hi_l1b_45sensor-de",
+            "Repointing": repointing,
+        },
+    )
+
+
 class TestDropIncompleteSpinSets:
     """Test suite for mark_incomplete_spin_sets() function."""
 
     @pytest.fixture
-    def l1a_de_complete_4th_spin(self):
-        """Create L1A DE data with complete 4th spin cadence (last_spin_num 4,8)."""
+    def l1b_de_complete_4th_spin(self):
+        """Create L1B DE data with complete 4th spin cadence (last_spin_num 4,8)."""
         # 5 unique METs, each with 2 packets (last_spin_num 4 and 8)
         # 60 second intervals between METs (every 4th spin)
         n_mets = 5
         mets = np.arange(1000.0, 1000.0 + n_mets * 60, 60)
 
-        met_seconds = []
-        met_subseconds = []
+        esa_step_met = []
         last_spin_num = []
-        spin_invalids = []
-        esa_step = []
+        esa_energy_step = []
 
-        for _i, met in enumerate(mets):
+        for met in mets:
             # Add two packets per MET: last_spin_num 4 and 8
-            met_seconds.extend([int(met), int(met)])
-            met_subseconds.extend([0, 0])
+            esa_step_met.extend([met, met])
             last_spin_num.extend([4, 8])
-            spin_invalids.extend([0, 0])  # No invalid spins
-            esa_step.extend([1, 1])  # Same ESA step for both packets
+            esa_energy_step.extend([1, 1])
 
-        ds = xr.Dataset(
-            {
-                "meta_seconds": (["epoch"], np.array(met_seconds)),
-                "meta_subseconds": (["epoch"], np.array(met_subseconds)),
-                "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-                "spin_invalids": (["epoch"], np.array(spin_invalids, dtype=np.uint8)),
-                "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
-            },
-            attrs={
-                "Logical_source": "imap_hi_l1a_45sensor-de",
-                "Repointing": "repoint00001",
-            },
+        return _create_l1b_de_dataset(
+            esa_step_met, last_spin_num, esa_energy_step, repointing="repoint00001"
         )
-        return ds
 
     @pytest.fixture
-    def l1a_de_complete_2nd_spin(self):
-        """Create L1A DE data with complete 2nd spin cadence (last_spin_num 2,4,6,8)."""
+    def l1b_de_complete_2nd_spin(self):
+        """Create L1B DE data with complete 2nd spin cadence (last_spin_num 2,4,6,8)."""
         # 3 unique METs, each with 4 packets
         # 30 second intervals between METs (every 2nd spin)
         n_mets = 3
         mets = np.arange(2000.0, 2000.0 + n_mets * 30, 30)
 
-        met_seconds = []
-        met_subseconds = []
+        esa_step_met = []
         last_spin_num = []
-        spin_invalids = []
-        esa_step = []
+        esa_energy_step = []
 
-        for _i, met in enumerate(mets):
+        for met in mets:
             # Add four packets per MET: last_spin_num 2,4,6,8
-            met_seconds.extend([int(met)] * 4)
-            met_subseconds.extend([0] * 4)
+            esa_step_met.extend([met] * 4)
             last_spin_num.extend([2, 4, 6, 8])
-            spin_invalids.extend([0] * 4)  # No invalid spins
-            esa_step.extend([2] * 4)
+            esa_energy_step.extend([2] * 4)
 
-        ds = xr.Dataset(
-            {
-                "meta_seconds": (["epoch"], np.array(met_seconds)),
-                "meta_subseconds": (["epoch"], np.array(met_subseconds)),
-                "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-                "spin_invalids": (["epoch"], np.array(spin_invalids, dtype=np.uint8)),
-                "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
-            },
-            attrs={
-                "Logical_source": "imap_hi_l1a_45sensor-de",
-                "Repointing": "repoint00002",
-            },
+        return _create_l1b_de_dataset(
+            esa_step_met, last_spin_num, esa_energy_step, repointing="repoint00002"
         )
-        return ds
 
     @pytest.fixture
-    def l1a_de_complete_every_spin(self):
-        """Create L1A DE data with complete every spin cadence (last_spin_num 1-8)."""
+    def l1b_de_complete_every_spin(self):
+        """Create L1B DE data with complete every spin cadence (last_spin_num 1-8)."""
         # 2 unique METs, each with 8 packets
         # 15 second intervals between METs (every spin)
         n_mets = 2
         mets = np.arange(3000.0, 3000.0 + n_mets * 15, 15)
 
-        met_seconds = []
-        met_subseconds = []
+        esa_step_met = []
         last_spin_num = []
-        spin_invalids = []
-        esa_step = []
+        esa_energy_step = []
 
-        for _i, met in enumerate(mets):
+        for met in mets:
             # Add eight packets per MET: last_spin_num 1-8
-            met_seconds.extend([int(met)] * 8)
-            met_subseconds.extend([0] * 8)
+            esa_step_met.extend([met] * 8)
             last_spin_num.extend(range(1, 9))
-            spin_invalids.extend([0] * 8)  # No invalid spins
-            esa_step.extend([3] * 8)
+            esa_energy_step.extend([3] * 8)
 
-        ds = xr.Dataset(
-            {
-                "meta_seconds": (["epoch"], np.array(met_seconds)),
-                "meta_subseconds": (["epoch"], np.array(met_subseconds)),
-                "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-                "spin_invalids": (["epoch"], np.array(spin_invalids, dtype=np.uint8)),
-                "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
-            },
-            attrs={
-                "Logical_source": "imap_hi_l1a_45sensor-de",
-                "Repointing": "repoint00003",
-            },
+        return _create_l1b_de_dataset(
+            esa_step_met, last_spin_num, esa_energy_step, repointing="repoint00003"
         )
-        return ds
 
     @pytest.fixture
-    def l1a_de_incomplete(self):
-        """Create L1A DE data with incomplete 8-spin periods."""
+    def l1b_de_incomplete(self):
+        """Create L1B DE data with incomplete 8-spin periods."""
         # 4 METs: 2 complete (4,8), 2 incomplete (missing spin 8)
         # 60 second intervals (every 4th spin cadence)
         mets = [1000.0, 1060.0, 1120.0, 1180.0]
 
-        met_seconds = []
-        met_subseconds = []
+        esa_step_met = []
         last_spin_num = []
-        spin_invalids = []
-        esa_step = []
+        esa_energy_step = []
 
         # Complete METs
         for met in mets[:2]:
-            met_seconds.extend([int(met), int(met)])
-            met_subseconds.extend([0, 0])
+            esa_step_met.extend([met, met])
             last_spin_num.extend([4, 8])
-            spin_invalids.extend([0, 0])  # No invalid spins
-            esa_step.extend([1, 1])
+            esa_energy_step.extend([1, 1])
 
         # Incomplete METs (only spin 4, missing spin 8)
         for met in mets[2:]:
-            met_seconds.append(int(met))
-            met_subseconds.append(0)
+            esa_step_met.append(met)
             last_spin_num.append(4)
-            spin_invalids.append(0)  # No invalid spins
-            esa_step.append(1)
+            esa_energy_step.append(1)
 
-        ds = xr.Dataset(
-            {
-                "meta_seconds": (["epoch"], np.array(met_seconds)),
-                "meta_subseconds": (["epoch"], np.array(met_subseconds)),
-                "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-                "spin_invalids": (["epoch"], np.array(spin_invalids, dtype=np.uint8)),
-                "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
-            },
-            attrs={
-                "Logical_source": "imap_hi_l1a_45sensor-de",
-                "Repointing": "repoint00004",
-            },
+        return _create_l1b_de_dataset(
+            esa_step_met, last_spin_num, esa_energy_step, repointing="repoint00004"
         )
-        return ds
 
     @pytest.fixture
-    def l1a_de_with_invalid_spins(self):
-        """Create L1A DE data with spin_invalids flag set."""
+    def l1b_de_with_invalid_spins(self):
+        """Create L1B DE data with ccsds_qf spin invalid flag set."""
         # 60 second intervals (every 4th spin cadence)
         mets = [1000.0, 1060.0]
 
-        met_seconds = []
-        met_subseconds = []
+        esa_step_met = []
         last_spin_num = []
-        spin_invalids = []
-        esa_step = []
+        esa_energy_step = []
+        ccsds_qf = []
 
-        # First MET: complete but with invalid spins
-        met_seconds.extend([int(mets[0]), int(mets[0])])
-        met_subseconds.extend([0, 0])
+        # First MET: complete but with spin invalid flag (bit 1 set = 0x02)
+        esa_step_met.extend([mets[0], mets[0]])
         last_spin_num.extend([4, 8])
-        spin_invalids.extend([1, 0])  # First packet has invalid spins
-        esa_step.extend([1, 1])
+        esa_energy_step.extend([1, 1])
+        ccsds_qf.extend([0x02, 0])  # First packet has spin invalid flag
 
         # Second MET: complete and valid
-        met_seconds.extend([int(mets[1]), int(mets[1])])
-        met_subseconds.extend([0, 0])
+        esa_step_met.extend([mets[1], mets[1]])
         last_spin_num.extend([4, 8])
-        spin_invalids.extend([0, 0])
-        esa_step.extend([1, 1])
+        esa_energy_step.extend([1, 1])
+        ccsds_qf.extend([0, 0])
 
-        ds = xr.Dataset(
-            {
-                "meta_seconds": (["epoch"], np.array(met_seconds)),
-                "meta_subseconds": (["epoch"], np.array(met_subseconds)),
-                "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-                "spin_invalids": (["epoch"], np.array(spin_invalids, dtype=np.uint8)),
-                "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
-            },
-            attrs={
-                "Logical_source": "imap_hi_l1a_45sensor-de",
-                "Repointing": "repoint00005",
-            },
+        return _create_l1b_de_dataset(
+            esa_step_met,
+            last_spin_num,
+            esa_energy_step,
+            ccsds_qf=ccsds_qf,
+            repointing="repoint00005",
         )
-        return ds
 
     def test_mark_incomplete_spin_sets_complete_4th_spin(
-        self, l1a_de_complete_4th_spin
+        self, l1b_de_complete_4th_spin
     ):
         """Test that complete 4th spin cadence is accepted."""
-        gt = create_goodtimes_dataset(l1a_de_complete_4th_spin)
-        mark_incomplete_spin_sets(gt, l1a_de_complete_4th_spin)
+        gt = create_goodtimes_dataset(l1b_de_complete_4th_spin)
+        mark_incomplete_spin_sets(gt, l1b_de_complete_4th_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
     def test_mark_incomplete_spin_sets_complete_2nd_spin(
-        self, l1a_de_complete_2nd_spin
+        self, l1b_de_complete_2nd_spin
     ):
         """Test that complete 2nd spin cadence is accepted."""
-        gt = create_goodtimes_dataset(l1a_de_complete_2nd_spin)
-        mark_incomplete_spin_sets(gt, l1a_de_complete_2nd_spin)
+        gt = create_goodtimes_dataset(l1b_de_complete_2nd_spin)
+        mark_incomplete_spin_sets(gt, l1b_de_complete_2nd_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
     def test_mark_incomplete_spin_sets_complete_every_spin(
-        self, l1a_de_complete_every_spin
+        self, l1b_de_complete_every_spin
     ):
         """Test that complete every-spin cadence is accepted."""
-        gt = create_goodtimes_dataset(l1a_de_complete_every_spin)
-        mark_incomplete_spin_sets(gt, l1a_de_complete_every_spin)
+        gt = create_goodtimes_dataset(l1b_de_complete_every_spin)
+        mark_incomplete_spin_sets(gt, l1b_de_complete_every_spin)
 
         # All times should still be good (no culling)
         assert np.all(gt["cull_flags"].values == CullCode.GOOD)
 
-    def test_mark_incomplete_spin_sets_incomplete(self, l1a_de_incomplete):
+    def test_mark_incomplete_spin_sets_incomplete(self, l1b_de_incomplete):
         """Test that incomplete 8-spin periods are culled."""
-        gt = create_goodtimes_dataset(l1a_de_incomplete)
-        mark_incomplete_spin_sets(gt, l1a_de_incomplete)
+        gt = create_goodtimes_dataset(l1b_de_incomplete)
+        mark_incomplete_spin_sets(gt, l1b_de_incomplete)
 
         # First 2 METs should be good, last 2 should be culled
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.GOOD)
@@ -778,41 +751,28 @@ class TestDropIncompleteSpinSets:
         assert np.all(gt["cull_flags"].values[3, :] == CullCode.LOOSE)
 
     def test_mark_incomplete_spin_sets_with_invalid_spins(
-        self, l1a_de_with_invalid_spins
+        self, l1b_de_with_invalid_spins
     ):
-        """Test that times with invalid spins are culled."""
-        gt = create_goodtimes_dataset(l1a_de_with_invalid_spins)
-        mark_incomplete_spin_sets(gt, l1a_de_with_invalid_spins)
+        """Test that times with spin invalid flag in ccsds_qf are culled."""
+        gt = create_goodtimes_dataset(l1b_de_with_invalid_spins)
+        mark_incomplete_spin_sets(gt, l1b_de_with_invalid_spins)
 
-        # First MET should be culled (has invalid spins), second should be good
+        # First MET should be culled (has spin invalid flag), second should be good
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.GOOD)
 
     def test_mark_incomplete_spin_sets_no_de_packets(self):
         """Test that MET times with no DE packets are culled."""
-        # Create L1A DE with packets at 1000.0 and 1120.0
+        # Create L1B DE with packets at 1000.0 and 1120.0
         # (60 second intervals for 4th spin)
-        met_seconds = [1000, 1000, 1120, 1120]
-        met_subseconds = [0, 0, 0, 0]
-        last_spin_num = [4, 8, 4, 8]
-        spin_invalids = [0, 0, 0, 0]
-        esa_step = [1, 1, 1, 1]
-
-        l1a_de = xr.Dataset(
-            {
-                "meta_seconds": (["epoch"], np.array(met_seconds)),
-                "meta_subseconds": (["epoch"], np.array(met_subseconds)),
-                "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-                "spin_invalids": (["epoch"], np.array(spin_invalids, dtype=np.uint8)),
-                "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
-            },
-            attrs={
-                "Logical_source": "imap_hi_l1a_45sensor-de",
-                "Repointing": "repoint00006",
-            },
+        l1b_de = _create_l1b_de_dataset(
+            esa_step_met=[1000.0, 1000.0, 1120.0, 1120.0],
+            last_spin_num=[4, 8, 4, 8],
+            esa_energy_step=[1, 1, 1, 1],
+            repointing="repoint00006",
         )
 
-        gt = create_goodtimes_dataset(l1a_de)
+        gt = create_goodtimes_dataset(l1b_de)
 
         # Manually add a MET time with no packets (insert in sorted order)
         # Original METs are [1000.0, 1120.0], insert 1060.0 at index 1
@@ -831,7 +791,7 @@ class TestDropIncompleteSpinSets:
             attrs=gt.attrs,
         )
 
-        mark_incomplete_spin_sets(gt, l1a_de)
+        mark_incomplete_spin_sets(gt, l1b_de)
 
         # First and last METs should be good, middle one should be culled
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.GOOD)
@@ -841,28 +801,15 @@ class TestDropIncompleteSpinSets:
     def test_mark_incomplete_spin_sets_mixed_cadence(self):
         """Test that mixed/invalid cadence patterns are culled."""
         # Create packets with invalid pattern: has spins 4,8,1 (mixing cadences)
-        met_seconds = [1000, 1000, 1000]
-        met_subseconds = [0, 0, 0]
-        last_spin_num = [4, 8, 1]  # Invalid - mixing cadences
-        spin_invalids = [0, 0, 0]
-        esa_step = [1, 1, 1]
-
-        l1a_de = xr.Dataset(
-            {
-                "meta_seconds": (["epoch"], np.array(met_seconds)),
-                "meta_subseconds": (["epoch"], np.array(met_subseconds)),
-                "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-                "spin_invalids": (["epoch"], np.array(spin_invalids, dtype=np.uint8)),
-                "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
-            },
-            attrs={
-                "Logical_source": "imap_hi_l1a_45sensor-de",
-                "Repointing": "repoint00007",
-            },
+        l1b_de = _create_l1b_de_dataset(
+            esa_step_met=[1000.0, 1000.0, 1000.0],
+            last_spin_num=[4, 8, 1],  # Invalid - mixing cadences
+            esa_energy_step=[1, 1, 1],
+            repointing="repoint00007",
         )
 
-        gt = create_goodtimes_dataset(l1a_de)
-        mark_incomplete_spin_sets(gt, l1a_de)
+        gt = create_goodtimes_dataset(l1b_de)
+        mark_incomplete_spin_sets(gt, l1b_de)
 
         # Should be culled (invalid pattern)
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
@@ -870,50 +817,37 @@ class TestDropIncompleteSpinSets:
     def test_mark_incomplete_spin_sets_duplicate_spin_num(self):
         """Test that duplicate last_spin_num values are culled."""
         # Create packets with duplicate spin: has spins 4,4 (should be 4,8)
-        met_seconds = [1000, 1000]
-        met_subseconds = [0, 0]
-        last_spin_num = [4, 4]  # Duplicate - invalid
-        spin_invalids = [0, 0]
-        esa_step = [1, 1]
-
-        l1a_de = xr.Dataset(
-            {
-                "meta_seconds": (["epoch"], np.array(met_seconds)),
-                "meta_subseconds": (["epoch"], np.array(met_subseconds)),
-                "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-                "spin_invalids": (["epoch"], np.array(spin_invalids, dtype=np.uint8)),
-                "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
-            },
-            attrs={
-                "Logical_source": "imap_hi_l1a_45sensor-de",
-                "Repointing": "repoint00008",
-            },
+        l1b_de = _create_l1b_de_dataset(
+            esa_step_met=[1000.0, 1000.0],
+            last_spin_num=[4, 4],  # Duplicate - invalid
+            esa_energy_step=[1, 1],
+            repointing="repoint00008",
         )
 
-        gt = create_goodtimes_dataset(l1a_de)
-        mark_incomplete_spin_sets(gt, l1a_de)
+        gt = create_goodtimes_dataset(l1b_de)
+        mark_incomplete_spin_sets(gt, l1b_de)
 
         # Should be culled (duplicate spin numbers)
         assert np.all(gt["cull_flags"].values[0, :] == CullCode.LOOSE)
 
-    def test_mark_incomplete_spin_sets_custom_cull_code(self, l1a_de_incomplete):
+    def test_mark_incomplete_spin_sets_custom_cull_code(self, l1b_de_incomplete):
         """Test that custom cull code is used."""
-        gt = create_goodtimes_dataset(l1a_de_incomplete)
+        gt = create_goodtimes_dataset(l1b_de_incomplete)
         custom_cull_code = 5
-        mark_incomplete_spin_sets(gt, l1a_de_incomplete, cull_code=custom_cull_code)
+        mark_incomplete_spin_sets(gt, l1b_de_incomplete, cull_code=custom_cull_code)
 
         # Incomplete METs should be culled with custom code
         assert np.all(gt["cull_flags"].values[2, :] == custom_cull_code)
         assert np.all(gt["cull_flags"].values[3, :] == custom_cull_code)
 
-    def test_mark_incomplete_spin_sets_preserves_good_times(self, l1a_de_incomplete):
+    def test_mark_incomplete_spin_sets_preserves_good_times(self, l1b_de_incomplete):
         """Test that previously good times remain untouched."""
-        gt = create_goodtimes_dataset(l1a_de_incomplete)
+        gt = create_goodtimes_dataset(l1b_de_incomplete)
 
         # Manually mark first MET as culled with code 2
         gt["cull_flags"].values[0, :] = 2
 
-        mark_incomplete_spin_sets(gt, l1a_de_incomplete)
+        mark_incomplete_spin_sets(gt, l1b_de_incomplete)
 
         # Check that complete times are good
         assert np.all(gt["cull_flags"].values[1, :] == CullCode.GOOD)

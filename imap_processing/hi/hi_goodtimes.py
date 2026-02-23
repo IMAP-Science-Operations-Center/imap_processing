@@ -10,6 +10,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.hi.utils import CoincidenceBitmap, parse_sensor_number
+from imap_processing.quality_flags import ImapHiL1bDeFlags
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +34,19 @@ class CullCode(IntEnum):
     LOOSE = 1
 
 
-def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
+def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
     """
-    Create goodtimes dataset from L1A Direct Event data.
+    Create goodtimes dataset from L1B Direct Event data.
 
     Initializes all times and spin bins as good (cull_flags=0). The goodtimes
     dataset is created with one entry per unique MET timestamp found in the
-    L1A DE data. Culling functions (e.g., mark_incomplete_spin_sets) should be
+    L1B DE data. Culling functions (e.g., mark_incomplete_spin_sets) should be
     called after creation to identify and flag bad times.
 
     Parameters
     ----------
-    l1a_de : xarray.Dataset
-        L1A direct event data for this pointing. Used to extract MET timestamps
+    l1b_de : xarray.Dataset
+        L1B direct event data for this pointing. Used to extract MET timestamps
         for each 8-spin interval.
 
     Returns
@@ -55,16 +56,12 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
         Access goodtimes methods via the .goodtimes accessor
         (e.g., dataset.goodtimes.remove_times()).
     """
-    logger.info("Creating Goodtimes from L1A Direct Event data")
+    logger.info("Creating Goodtimes from L1B Direct Event data")
 
-    # Extract MET times from packet metadata
+    # Extract MET times from esa_step_met
     # Each MET represents one 8-spin histogram packet interval
-    # Format: seconds + subseconds/1000
-    met_all = (
-        l1a_de["meta_seconds"].astype(float)
-        + l1a_de["meta_subseconds"].astype(float) / 1000
-    )
-    logger.debug(f"Extracted {len(met_all)} total MET entries from L1A DE data")
+    met_all = l1b_de["esa_step_met"]
+    logger.debug(f"Extracted {len(met_all)} total MET entries from L1B DE data")
 
     # Find unique MET values and indices of first occurrences
     unique_mets, first_indices = np.unique(met_all.values, return_index=True)
@@ -72,7 +69,7 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
 
     # Extract data for unique METs (use first occurrence of each)
     met = met_all.isel(epoch=first_indices)
-    esa_step = l1a_de["esa_step"].isel(epoch=first_indices)
+    esa_step = l1b_de["esa_step"].isel(epoch=first_indices)
 
     # Create coordinates
     coords = {
@@ -94,12 +91,12 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
     }
 
     # Create attributes
-    sensor_number = parse_sensor_number(l1a_de.attrs["Logical_source"])
-    match = re.match(r"repoint(?P<pointing_num>\d{5})", l1a_de.attrs["Repointing"])
+    sensor_number = parse_sensor_number(l1b_de.attrs["Logical_source"])
+    match = re.match(r"repoint(?P<pointing_num>\d{5})", l1b_de.attrs["Repointing"])
     if not match:
         raise ValueError(
-            f"Unable to parse pointing number from l1a_de Repointing "
-            f"attribute: {l1a_de.attrs['Repointing']}"
+            f"Unable to parse pointing number from l1b_de Repointing "
+            f"attribute: {l1b_de.attrs['Repointing']}"
         )
     attrs = {
         "sensor": f"Hi{sensor_number}",
@@ -156,7 +153,7 @@ class GoodtimesAccessor:
 
     Examples
     --------
-    >>> gt_dataset = create_goodtimes_dataset(l1a_de)
+    >>> gt_dataset = create_goodtimes_dataset(l1b_de)
     >>> gt_dataset.goodtimes.mark_bad_times(met=1000.5, cull=CullCode.LOOSE)
     >>> intervals = gt_dataset.goodtimes.get_good_intervals()
     """
@@ -496,7 +493,7 @@ class GoodtimesAccessor:
 
 def mark_incomplete_spin_sets(
     goodtimes_ds: xr.Dataset,
-    l1a_de: xr.Dataset,
+    l1b_de: xr.Dataset,
     cull_code: int = CullCode.LOOSE,
 ) -> None:
     """
@@ -525,25 +522,23 @@ def mark_incomplete_spin_sets(
     ----------
     goodtimes_ds : xarray.Dataset
         Goodtimes dataset to update with cull flags.
-    l1a_de : xarray.Dataset
-        L1A Direct Event data containing DE packets with last_spin_num field.
+    l1b_de : xarray.Dataset
+        L1B Direct Event data containing DE packets with last_spin_num field
+        and ccsds_qf quality flag.
     cull_code : int, optional
         Cull code to use for marking bad times (default: CullCode.LOOSE).
 
     Notes
     -----
-    This function modifies goodtimes_ds in place by calling remove_times()
+    This function modifies goodtimes_ds in place by calling mark_bad_times()
     for MET timestamps with incomplete spin coverage.
     """
     logger.info("Running mark_incomplete_spin_sets culling")
 
     met_values = goodtimes_ds.coords["met"].values
 
-    # Calculate DE packet MET times
-    de_met = (
-        l1a_de["meta_seconds"].astype(float)
-        + l1a_de["meta_subseconds"].astype(float) / 1000
-    )
+    # Get DE packet MET times directly from esa_step_met
+    de_met = l1b_de["esa_step_met"]
 
     # Assign each DE packet to nearest goodtimes MET using searchsorted
     # This maps each DE packet to a MET index
@@ -557,11 +552,11 @@ def mark_incomplete_spin_sets(
     distances = np.abs(de_met.values - met_values[met_indices])
     valid_assignment = distances <= time_slop
 
-    # Create a new coordinate in l1a_de for grouping
-    l1a_de_with_group = l1a_de.assign_coords(met_group=("epoch", met_indices))
+    # Create a new coordinate in l1b_de for grouping
+    l1b_de_with_group = l1b_de.assign_coords(met_group=("epoch", met_indices))
 
     # Only keep packets with valid time assignment
-    l1a_de_valid = l1a_de_with_group.isel(epoch=valid_assignment)
+    l1b_de_valid = l1b_de_with_group.isel(epoch=valid_assignment)
 
     # Valid pattern bitmasks
     valid_pattern_1 = 0b10001000  # bits 3,7: every 4th spin (last_spin_num 4,8)
@@ -572,11 +567,11 @@ def mark_incomplete_spin_sets(
     # Group by MET and validate each group
     bad_mets = []
 
-    for met_idx, group in l1a_de_valid.groupby("met_group"):
+    for met_idx, group in l1b_de_valid.groupby("met_group"):
         met_time = met_values[met_idx]
 
-        # Check for invalid spins flag
-        if np.any(group["spin_invalids"].values != 0):
+        # Check for invalid spins flag (bit 1 in ccsds_qf)
+        if np.any((group["ccsds_qf"].values & ImapHiL1bDeFlags.SPIN_INVALID) != 0):
             bad_mets.append(met_time)
             continue
 
