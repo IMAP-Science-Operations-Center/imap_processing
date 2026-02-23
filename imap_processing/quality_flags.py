@@ -155,3 +155,4 @@ class ImapHiL1bDeFlags(FlagNameMixin):
 
     NONE = CommonFlags.NONE
     PACKET_FULL = 2**0  # bit 0, packet contained 664 events (max capacity)
+    SPIN_INVALID = 2**1  # bit 1, packet contained events from an invalid spin
