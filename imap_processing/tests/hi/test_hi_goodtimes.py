@@ -42,7 +42,7 @@ def mock_l1b_de():
     ds = xr.Dataset(
         {
             "esa_step_met": (["epoch"], esa_step_met),
-            "esa_energy_step": (["epoch"], esa_energy_step.astype(np.uint8)),
+            "esa_step": (["epoch"], esa_energy_step.astype(np.uint8)),
         },
         attrs={
             "Logical_source": "imap_hi_l1b_45sensor-de",
@@ -123,7 +123,7 @@ class TestGoodtimesFromL1bDe:
         # Get first occurrence of each unique MET
         met_all = mock_l1b_de["esa_step_met"].values
         unique_mets, first_indices = np.unique(met_all, return_index=True)
-        expected_esa_steps = mock_l1b_de["esa_energy_step"].values[first_indices]
+        expected_esa_steps = mock_l1b_de["esa_step"].values[first_indices]
 
         np.testing.assert_array_equal(
             goodtimes_instance["esa_step"].values, expected_esa_steps
@@ -539,7 +539,7 @@ class TestIntervalDtype:
 def _create_l1b_de_dataset(
     esa_step_met: list[float],
     last_spin_num: list[int],
-    esa_energy_step: list[int],
+    esa_step: list[int],
     ccsds_qf: list[int] | None = None,
     repointing: str = "repoint00001",
 ) -> xr.Dataset:
@@ -552,7 +552,7 @@ def _create_l1b_de_dataset(
         MET timestamps for each packet.
     last_spin_num : list[int]
         Last spin number (1-8) for each packet.
-    esa_energy_step : list[int]
+    esa_step : list[int]
         ESA energy step values for each packet.
     ccsds_qf : list[int] | None
         Quality flags for each packet. If None, all zeros (valid).
@@ -572,7 +572,7 @@ def _create_l1b_de_dataset(
         {
             "esa_step_met": (["epoch"], np.array(esa_step_met, dtype=np.float64)),
             "last_spin_num": (["epoch"], np.array(last_spin_num, dtype=np.uint8)),
-            "esa_energy_step": (["epoch"], np.array(esa_energy_step, dtype=np.uint8)),
+            "esa_step": (["epoch"], np.array(esa_step, dtype=np.uint8)),
             "ccsds_qf": (["epoch"], np.array(ccsds_qf, dtype=np.uint8)),
         },
         attrs={
@@ -595,16 +595,16 @@ class TestDropIncompleteSpinSets:
 
         esa_step_met = []
         last_spin_num = []
-        esa_energy_step = []
+        esa_step = []
 
         for met in mets:
             # Add two packets per MET: last_spin_num 4 and 8
             esa_step_met.extend([met, met])
             last_spin_num.extend([4, 8])
-            esa_energy_step.extend([1, 1])
+            esa_step.extend([1, 1])
 
         return _create_l1b_de_dataset(
-            esa_step_met, last_spin_num, esa_energy_step, repointing="repoint00001"
+            esa_step_met, last_spin_num, esa_step, repointing="repoint00001"
         )
 
     @pytest.fixture
@@ -768,7 +768,7 @@ class TestDropIncompleteSpinSets:
         l1b_de = _create_l1b_de_dataset(
             esa_step_met=[1000.0, 1000.0, 1120.0, 1120.0],
             last_spin_num=[4, 8, 4, 8],
-            esa_energy_step=[1, 1, 1, 1],
+            esa_step=[1, 1, 1, 1],
             repointing="repoint00006",
         )
 
@@ -804,7 +804,7 @@ class TestDropIncompleteSpinSets:
         l1b_de = _create_l1b_de_dataset(
             esa_step_met=[1000.0, 1000.0, 1000.0],
             last_spin_num=[4, 8, 1],  # Invalid - mixing cadences
-            esa_energy_step=[1, 1, 1],
+            esa_step=[1, 1, 1],
             repointing="repoint00007",
         )
 
@@ -820,7 +820,7 @@ class TestDropIncompleteSpinSets:
         l1b_de = _create_l1b_de_dataset(
             esa_step_met=[1000.0, 1000.0],
             last_spin_num=[4, 4],  # Duplicate - invalid
-            esa_energy_step=[1, 1],
+            esa_step=[1, 1],
             repointing="repoint00008",
         )
 
