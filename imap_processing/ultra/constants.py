@@ -186,7 +186,7 @@ class UltraConstants:
     DEFAULT_EARTH_CULLING_RADIUS = EARTH_RADIUS_KM * N_RE
 
     # L1b extended spin culling parameters
-    LOW_VOLTAGE_CULL_THRESHOLD = 3000.0
+    LOW_VOLTAGE_CULL_THRESHOLD = 3400.0
     SPIN_BIN_SIZE = 20
     # TODO add thresholds for energies (different for 45 and 90)
     # Number of energy bins to use in energy dependent culling

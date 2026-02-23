@@ -774,7 +774,7 @@ def compute_unit_target_vectors(
 
     Parameters
     ----------
-    et : NDArray
+    et : numpy.ndarray
         Ephemeris times in TDB seconds past J2000.
     ref_frame : SpiceFrame, optional
         Reference frame in which to compute the vectors. Default is SpiceFrame.IMAP_DPS.
