@@ -194,6 +194,7 @@ def test_parse_uksa_schedule_xlsx(schedule_path):
     assert uksa_contacts[2] == ("2026-01-30T08:54:52.000", "2026-01-30T12:54:00.000")
 
 
+@pytest.mark.external_kernel
 def test_incorporate_uksa_coverage(schedule_path, furnish_kernels):
     "Test to parse UKSA schedule."
     kernels = [
