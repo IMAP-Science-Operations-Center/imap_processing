@@ -140,7 +140,7 @@ class GoodtimesAccessor:
         * cull_flags : xarray.DataArray (met, spin_bin)
           Cull flags where 0=good time, non-zero=bad time with cull reason code
         * esa_step : xarray.DataArray (met,)
-          ESA energy step for each MET timestamp
+          ESA step for each MET timestamp
       * Attributes
         * sensor : str
          Sensor identifier ('Hi45' or 'Hi90')
@@ -302,7 +302,7 @@ class GoodtimesAccessor:
             - spin_bin_low: Lowest good spin bin in interval
             - spin_bin_high: Highest good spin bin in interval
             - n_good_bins: Number of good bins
-            - esa_step: ESA energy step for this MET
+            - esa_step: ESA step for this MET
 
         Notes
         -----
@@ -354,7 +354,7 @@ class GoodtimesAccessor:
         pattern : numpy.ndarray
             Cull flags pattern for spin bins.
         esa_step : int
-            ESA energy step for this MET.
+            ESA step for this MET.
         """
         good_bins = np.nonzero(pattern == 0)[0]
 
@@ -907,26 +907,27 @@ def _compute_normalized_counts_per_sweep(
     counts_per_sweep = np.zeros(n_sweeps, dtype=np.int64)
     np.add.at(counts_per_sweep, event_sweep_idx[is_valid_ab.values], 1)
 
-    # Normalize by number of unique ESA steps
-    n_unique_esa_steps = len(np.unique(l1b_de["esa_step"].values))
-    normalized_counts = counts_per_sweep / n_unique_esa_steps
+    # Normalize by number of unique ESA energy steps
+    n_unique_esa_energy_steps = len(np.unique(l1b_de["esa_energy_step"].values))
+    normalized_counts = counts_per_sweep / n_unique_esa_energy_steps
 
     # Remove all variables that depend on event_met dimension
     ds = l1b_de.drop_dims("event_met", errors="ignore")
 
-    # Set esa_sweep and esa_step as a multi-index on epoch dimension
-    ds = ds.set_index(epoch=["esa_sweep", "esa_step"])
+    # Set esa_sweep and esa_energy_step as a multi-index on epoch dimension
+    ds = ds.set_index(epoch=["esa_sweep", "esa_energy_step"])
 
-    # Drop duplicates, keeping first occurrence of each (esa_sweep, esa_step) pair
-    # This handles cases where multiple packets have the same esa_sweep and esa_step
+    # Drop duplicates, keeping first occurrence of each (esa_sweep, esa_energy_step)
+    # pair. This handles cases where multiple packets have the same esa_sweep
+    # and esa_energy_step.
     ds = ds.drop_duplicates(dim="epoch", keep="first")
 
-    # Unstack to make esa_sweep and esa_step into separate dimensions
-    # This creates a 2D array with dimensions (esa_sweep, esa_step)
+    # Unstack to make esa_sweep and esa_energy_step into separate dimensions
+    # This creates a 2D array with dimensions (esa_sweep, esa_energy_step)
     ds_reshaped = ds.unstack("epoch")
 
     # Add normalized_count as a new variable
-    # It only has esa_sweep dimension (no esa_step variation within a sweep)
+    # It only has esa_sweep dimension (no esa_energy_step variation within a sweep)
     ds_reshaped["normalized_count"] = xr.DataArray(
         normalized_counts,
         dims=["esa_sweep"],
@@ -1055,7 +1056,7 @@ def mark_statistical_filter_0(
 
     # For each bad sweep, mark the time range from first to last ccsds_met
     for sweep_idx in range(len(bad_sweeps_ds["esa_sweep"])):
-        # Get all ccsds_met values for this sweep across all esa_steps
+        # Get all ccsds_met values for this sweep across all esa_energy_steps
         sweep_mets = bad_sweeps_ds["ccsds_met"].isel(esa_sweep=sweep_idx).values
 
         # Get min and max MET values, ignoring NaNs
@@ -1083,7 +1084,7 @@ def _compute_qualified_counts_per_sweep(
     """
     Compute qualified calibration product counts per 8-spin interval and reshape.
 
-    Uses the (esa_sweep, esa_step) multi-index to identify unique 8-spin sets,
+    Uses the (esa_sweep, esa_energy_step) multi-index to identify unique 8-spin sets,
     following the same pattern as _compute_normalized_counts_per_sweep.
 
     Parameters
@@ -1096,7 +1097,7 @@ def _compute_qualified_counts_per_sweep(
     Returns
     -------
     xarray.Dataset
-        Reshaped dataset with dimensions (esa_sweep, esa_step) containing:
+        Reshaped dataset with dimensions (esa_sweep, esa_energy_step) containing:
         - qualified_count: total qualified counts per 8-spin interval
         - ccsds_met: first MET for each 8-spin interval
     """
@@ -1107,39 +1108,39 @@ def _compute_qualified_counts_per_sweep(
     coincidence_type = l1b_de["coincidence_type"].values
     ccsds_index = l1b_de["ccsds_index"].values
     esa_sweep = l1b_de.coords["esa_sweep"].values
-    esa_step = l1b_de["esa_step"].values
+    esa_energy_step = l1b_de["esa_energy_step"].values
 
     # Identify qualified events
     is_qualified = np.isin(coincidence_type, list(qualified_coincidence_types))
 
-    # Map qualified events to their packet's (esa_sweep, esa_step)
+    # Map qualified events to their packet's (esa_sweep, esa_energy_step)
     qualified_packet_idx = ccsds_index[is_qualified]
     qualified_sweep = esa_sweep[qualified_packet_idx]
-    qualified_step = esa_step[qualified_packet_idx]
+    qualified_energy_step = esa_energy_step[qualified_packet_idx]
 
-    # Count qualified events per (esa_sweep, esa_step) using 2D array
+    # Count qualified events per (esa_sweep, esa_energy_step) using 2D array
     n_sweeps = int(esa_sweep.max()) + 1
-    n_esa_steps = int(esa_step.max()) + 1
-    counts_2d = np.zeros((n_sweeps, n_esa_steps), dtype=np.float64)
-    np.add.at(counts_2d, (qualified_sweep, qualified_step), 1)
+    n_esa_energy_steps = int(esa_energy_step.max()) + 1
+    counts_2d = np.zeros((n_sweeps, n_esa_energy_steps), dtype=np.float64)
+    np.add.at(counts_2d, (qualified_sweep, qualified_energy_step), 1)
 
     # Remove event_met dimension and reshape using multi-index
     ds = l1b_de.drop_dims("event_met", errors="ignore")
-    ds = ds.set_index(epoch=["esa_sweep", "esa_step"])
+    ds = ds.set_index(epoch=["esa_sweep", "esa_energy_step"])
     ds = ds.drop_duplicates(dim="epoch", keep="first")
     ds_reshaped = ds.unstack("epoch")
 
-    # Add qualified_count - aligns with (esa_sweep, esa_step) coordinates
+    # Add qualified_count - aligns with (esa_sweep, esa_energy_step) coordinates
     ds_reshaped["qualified_count"] = xr.DataArray(
         counts_2d,
-        dims=["esa_sweep", "esa_step"],
+        dims=["esa_sweep", "esa_energy_step"],
         coords={
             "esa_sweep": np.arange(n_sweeps),
-            "esa_step": np.arange(n_esa_steps),
+            "esa_energy_step": np.arange(n_esa_energy_steps),
         },
     )
 
-    # Set missing (sweep, step) pairs to NaN so they don't affect statistics
+    # Set missing (sweep, energy_step) pairs to NaN so they don't affect statistics
     missing_mask = ds_reshaped["ccsds_met"].isnull()
     ds_reshaped["qualified_count"] = ds_reshaped["qualified_count"].where(~missing_mask)
 
@@ -1163,7 +1164,8 @@ def _build_per_sweep_datasets(
     Returns
     -------
     dict[int, xarray.Dataset]
-        Dictionary mapping dataset index to 2D Dataset with (esa_sweep, esa_step) dims.
+        Dictionary mapping dataset index to 2D Dataset with
+        (esa_sweep, esa_energy_step) dims.
     """
     per_sweep_datasets: dict[int, xr.Dataset] = {}
 
@@ -1182,28 +1184,32 @@ def _compute_median_and_sigma_per_esa(
     per_sweep_datasets: dict[int, xr.Dataset],
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """
-    Compute median and sigma for each ESA step using xarray.
+    Compute median and sigma for each ESA energy step using xarray.
 
     Combines all per-sweep datasets and computes the median qualified count
-    per ESA step across all sweeps and pointings.
+    per ESA energy step across all sweeps and pointings.
 
     Parameters
     ----------
     per_sweep_datasets : dict[int, xarray.Dataset]
-        Dictionary mapping dataset index to 2D Dataset with (esa_sweep, esa_step) dims.
+        Dictionary mapping dataset index to 2D Dataset with
+        (esa_sweep, esa_energy_step) dims.
 
     Returns
     -------
     tuple[xarray.DataArray, xarray.DataArray]
-        Tuple of (median_per_esa, sigma_per_esa) DataArrays with esa_step coordinate.
-        ESA steps with zero/nan median or esa_step=0 are set to NaN/0.
+        Tuple of (median_per_esa, sigma_per_esa) DataArrays with esa_energy_step
+        coordinate. ESA energy steps with zero/nan median or esa_energy_step=0
+        are set to NaN/0.
     """
     if not per_sweep_datasets:
-        empty = xr.DataArray([], dims=["esa_step"], coords={"esa_step": []})
+        empty = xr.DataArray(
+            [], dims=["esa_energy_step"], coords={"esa_energy_step": []}
+        )
         return empty, empty.astype(int)
 
-    # Concatenate datasets along esa_sweep dimension using xarray
-    # This handles different esa_step coordinates by aligning and filling with NaN
+    # Concatenate datasets along esa_sweep dimension using xarray. This handles
+    # different esa_energy_step coordinates by aligning and filling with NaN.
     combined = xr.concat(
         [ds["qualified_count"] for ds in per_sweep_datasets.values()],
         dim="esa_sweep",
@@ -1215,31 +1221,31 @@ def _compute_median_and_sigma_per_esa(
     # Compute sigma: sigma ≈ √(median + 1) rounded to closest integer
     sigma_per_esa = np.sqrt(median_per_esa + 1).round().astype(int)
 
-    # Set invalid ESA steps (zero/nan median or esa_step=0) to NaN/0
-    esa_step_coords = median_per_esa.coords["esa_step"]
+    # Set invalid ESA energy steps (zero/nan median or esa_energy_step=0) to NaN/0
+    esa_energy_step_coords = median_per_esa.coords["esa_energy_step"]
     invalid_mask = (
-        (esa_step_coords == 0) | (median_per_esa <= 0) | median_per_esa.isnull()
+        (esa_energy_step_coords == 0) | (median_per_esa <= 0) | median_per_esa.isnull()
     )
     median_per_esa = median_per_esa.where(~invalid_mask)
     sigma_per_esa = sigma_per_esa.where(~invalid_mask, 0)
 
-    # Log warnings for invalid ESA steps (excluding esa_step=0)
-    invalid_esa_steps = esa_step_coords.values[
-        (esa_step_coords != 0).values & invalid_mask.values
+    # Log warnings for invalid ESA energy steps (excluding esa_energy_step=0)
+    invalid_esa_energy_steps = esa_energy_step_coords.values[
+        (esa_energy_step_coords != 0).values & invalid_mask.values
     ]
-    for esa in invalid_esa_steps:
+    for esa in invalid_esa_energy_steps:
         logger.warning(
-            f"Statistical Filter 1: Median is zero/nan for ESA step {esa}, "
-            "skipping this ESA step"
+            f"Statistical Filter 1: Median is zero/nan for ESA energy step {esa}, "
+            "skipping this ESA energy step"
         )
 
-    # Log valid ESA steps
-    valid_esa_steps = esa_step_coords.values[~invalid_mask.values]
-    for esa in valid_esa_steps:
+    # Log valid ESA energy steps
+    valid_esa_energy_steps = esa_energy_step_coords.values[~invalid_mask.values]
+    for esa in valid_esa_energy_steps:
         logger.debug(
             f"Statistical Filter 1: ESA {esa}: "
-            f"median={median_per_esa.sel(esa_step=esa).values:.2f}, "
-            f"sigma={sigma_per_esa.sel(esa_step=esa).values}"
+            f"median={median_per_esa.sel(esa_energy_step=esa).values:.2f}, "
+            f"sigma={sigma_per_esa.sel(esa_energy_step=esa).values}"
         )
 
     return median_per_esa, sigma_per_esa
@@ -1265,11 +1271,11 @@ def _identify_cull_pattern(
     Parameters
     ----------
     current_counts : xr.DataArray
-        2D array of qualified counts with dims (esa_sweep, esa_step).
+        2D array of qualified counts with dims (esa_sweep, esa_energy_step).
     median_per_esa : xr.DataArray
-        Median counts per ESA step.
+        Median counts per ESA energy step.
     sigma_per_esa : xr.DataArray
-        Sigma values per ESA step.
+        Sigma values per ESA energy step.
     consecutive_threshold_sigma : float
         Sigma multiplier for consecutive interval check. Default is 1.8.
     extreme_threshold_sigma : float
@@ -1280,7 +1286,8 @@ def _identify_cull_pattern(
     Returns
     -------
     xr.DataArray
-        Boolean mask with dims (esa_sweep, esa_step) where True = cull this position.
+        Boolean mask with dims (esa_sweep, esa_energy_step) where
+        True = cull this position.
     """
     # Compute thresholds using xarray broadcasting
     consecutive_threshold = median_per_esa + consecutive_threshold_sigma * sigma_per_esa
@@ -1290,7 +1297,7 @@ def _identify_cull_pattern(
     exceeds_consecutive = (current_counts > consecutive_threshold).fillna(False)
     exceeds_extreme = (current_counts > extreme_threshold).fillna(False)
 
-    # Get underlying numpy arrays for convolution (dims: esa_sweep x esa_step)
+    # Get underlying numpy arrays for convolution (dims: esa_sweep x esa_energy_step)
     exceeds_arr = exceeds_consecutive.values.astype(int)
 
     # Initialize cull mask
@@ -1437,18 +1444,19 @@ def mark_statistical_filter_1(
         l1b_de_datasets, qualified_coincidence_types
     )
 
-    # Step 2: Compute median and sigma per ESA step using xarray
+    # Step 2: Compute median and sigma per ESA energy step using xarray
     median_per_esa, sigma_per_esa = _compute_median_and_sigma_per_esa(
         per_sweep_datasets
     )
 
     if np.all(np.isnan(median_per_esa.values)):
         logger.warning(
-            "Statistical Filter 1: No valid ESA steps with non-zero median, skipping"
+            "Statistical Filter 1: No valid ESA energy steps "
+            "with non-zero median, skipping"
         )
         return
 
-    # Get current Pointing's per-sweep data (2D: esa_sweep x esa_step)
+    # Get current Pointing's per-sweep data (2D: esa_sweep x esa_energy_step)
     current_ds = per_sweep_datasets[current_index]
     current_counts = current_ds["qualified_count"]
 

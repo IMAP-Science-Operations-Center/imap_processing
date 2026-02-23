@@ -1528,6 +1528,10 @@ class TestComputeNormalizedCountsPerSweep:
             np.repeat(np.arange(1, n_esa_steps + 1), packets_per_esa_step), n_sweeps
         ).astype(np.uint8)
 
+        # esa_energy_step same as esa_step for test purposes
+        # (in real data they can differ)
+        esa_energy_step = esa_step.copy()
+
         # Create METs with unique incrementing values for each packet
         ccsds_met = np.arange(1000.0, 1000.0 + n_packets * 60, 60)
 
@@ -1544,6 +1548,7 @@ class TestComputeNormalizedCountsPerSweep:
             {
                 "ccsds_met": (["epoch"], ccsds_met),
                 "esa_step": (["epoch"], esa_step),
+                "esa_energy_step": (["epoch"], esa_energy_step),
                 "tof_ab": (["event_met"], tof_ab),
                 "coincidence_type": (["event_met"], coincidence_type),
                 "ccsds_index": (["event_met"], ccsds_index),
@@ -1565,7 +1570,7 @@ class TestComputeNormalizedCountsPerSweep:
         result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
 
         assert "esa_sweep" in result.dims
-        assert "esa_step" in result.dims
+        assert "esa_energy_step" in result.dims
         assert "epoch" not in result.dims
         assert "event_met" not in result.dims
 
@@ -1621,7 +1626,7 @@ class TestComputeNormalizedCountsPerSweep:
 
         assert "ccsds_met" in result.data_vars
         # esa_step becomes a coordinate (dimension) after unstack
-        assert "esa_step" in result.coords
+        assert "esa_energy_step" in result.coords
 
     def test_removes_event_met_variables(self):
         """Test that event_met dimension variables are removed."""
@@ -1715,6 +1720,8 @@ class TestStatisticalFilter0:
 
         # Create ESA steps cycling through 1-9 for each sweep
         esa_step = np.tile(np.arange(1, n_esa_steps + 1), n_sweeps).astype(np.uint8)
+        # esa_energy_step same as esa_step for test purposes
+        esa_energy_step = esa_step.copy()
 
         # Create ccsds_met for packets
         ccsds_met = np.arange(base_met, base_met + n_packets * 60, 60, dtype=np.float64)
@@ -1733,6 +1740,7 @@ class TestStatisticalFilter0:
                 "ccsds_index": (["event_met"], ccsds_index),
                 "ccsds_met": (["epoch"], ccsds_met),
                 "esa_step": (["epoch"], esa_step, {"FILLVAL": 255}),
+                "esa_energy_step": (["epoch"], esa_energy_step, {"FILLVAL": 255}),
             },
             coords={
                 "event_met": np.arange(n_events),
@@ -1812,6 +1820,7 @@ class TestStatisticalFilter0:
         n_events = events_sweep1 + events_sweep2
 
         esa_step = np.tile(np.arange(1, 10), 2).astype(np.uint8)
+        esa_energy_step = esa_step.copy()
         ccsds_met = np.arange(1000.0, 1000.0 + n_packets * 60, 60, dtype=np.float64)
 
         # Events for first sweep (packets 0-8)
@@ -1832,6 +1841,7 @@ class TestStatisticalFilter0:
                 "ccsds_index": (["event_met"], ccsds_index),
                 "ccsds_met": (["epoch"], ccsds_met),
                 "esa_step": (["epoch"], esa_step, {"FILLVAL": 255}),
+                "esa_energy_step": (["epoch"], esa_energy_step, {"FILLVAL": 255}),
             },
             coords={
                 "event_met": np.arange(n_events),
@@ -1867,26 +1877,26 @@ class TestIdentifyCullPattern:
         self, n_sweeps: int = 10, n_esa_steps: int = 5
     ) -> tuple[xr.DataArray, xr.DataArray, xr.DataArray]:
         """Create test counts, median, and sigma DataArrays."""
-        # Create counts array (esa_sweep x esa_step)
+        # Create counts array (esa_sweep x esa_energy_step)
         counts = xr.DataArray(
             np.zeros((n_sweeps, n_esa_steps)),
-            dims=["esa_sweep", "esa_step"],
+            dims=["esa_sweep", "esa_energy_step"],
             coords={
                 "esa_sweep": np.arange(n_sweeps),
-                "esa_step": np.arange(1, n_esa_steps + 1),
+                "esa_energy_step": np.arange(1, n_esa_steps + 1),
             },
         )
 
-        # Create median and sigma per ESA (all valid)
+        # Create median and sigma per ESA energy step (all valid)
         median = xr.DataArray(
             np.full(n_esa_steps, 10.0),
-            dims=["esa_step"],
-            coords={"esa_step": np.arange(1, n_esa_steps + 1)},
+            dims=["esa_energy_step"],
+            coords={"esa_energy_step": np.arange(1, n_esa_steps + 1)},
         )
         sigma = xr.DataArray(
             np.full(n_esa_steps, 3),
-            dims=["esa_step"],
-            coords={"esa_step": np.arange(1, n_esa_steps + 1)},
+            dims=["esa_energy_step"],
+            coords={"esa_energy_step": np.arange(1, n_esa_steps + 1)},
         )
 
         return counts, median, sigma
@@ -1898,7 +1908,7 @@ class TestIdentifyCullPattern:
 
         cull_mask = _identify_cull_pattern(counts, median, sigma)
 
-        assert cull_mask.dims == ("esa_sweep", "esa_step")
+        assert cull_mask.dims == ("esa_sweep", "esa_energy_step")
         assert not cull_mask.any()
 
     def test_consecutive_run_with_esa_neighbor(self):
@@ -1915,15 +1925,15 @@ class TestIdentifyCullPattern:
 
         # Sweeps 2-5 at ESA 3 should be marked
         # (consecutive run with neighbor at same time)
-        assert cull_mask.sel(esa_sweep=2, esa_step=3).values
-        assert cull_mask.sel(esa_sweep=3, esa_step=3).values
-        assert cull_mask.sel(esa_sweep=4, esa_step=3).values
-        assert cull_mask.sel(esa_sweep=5, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=2, esa_energy_step=3).values
+        assert cull_mask.sel(esa_sweep=3, esa_energy_step=3).values
+        assert cull_mask.sel(esa_sweep=4, esa_energy_step=3).values
+        assert cull_mask.sel(esa_sweep=5, esa_energy_step=3).values
         # ESA 2 should also be marked (consecutive run with ESA 3 as neighbor)
-        assert cull_mask.sel(esa_sweep=2, esa_step=2).values
-        assert cull_mask.sel(esa_sweep=3, esa_step=2).values
-        assert cull_mask.sel(esa_sweep=4, esa_step=2).values
-        assert cull_mask.sel(esa_sweep=5, esa_step=2).values
+        assert cull_mask.sel(esa_sweep=2, esa_energy_step=2).values
+        assert cull_mask.sel(esa_sweep=3, esa_energy_step=2).values
+        assert cull_mask.sel(esa_sweep=4, esa_energy_step=2).values
+        assert cull_mask.sel(esa_sweep=5, esa_energy_step=2).values
 
     def test_consecutive_run_no_esa_neighbor(self):
         """Test that consecutive run without ESA neighbor is not marked."""
@@ -1936,7 +1946,7 @@ class TestIdentifyCullPattern:
 
         # Without ESA neighbor confirmation, consecutive runs alone don't trigger
         # (but extreme outliers at 5-sigma would - threshold = 10 + 5*3 = 25)
-        assert not cull_mask.sel(esa_step=3).any()
+        assert not cull_mask.sel(esa_energy_step=3).any()
 
     def test_isolated_interval_marked(self):
         """Test that good interval surrounded by bad is marked."""
@@ -1953,7 +1963,7 @@ class TestIdentifyCullPattern:
         cull_mask = _identify_cull_pattern(counts, median, sigma)
 
         # Sweep 4 should be marked as isolated
-        assert cull_mask.sel(esa_sweep=4, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=4, esa_energy_step=3).values
 
     def test_extreme_outlier(self):
         """Test detection of extreme outliers (5-sigma)."""
@@ -1966,10 +1976,10 @@ class TestIdentifyCullPattern:
         cull_mask = _identify_cull_pattern(counts, median, sigma)
 
         # Only the extreme outlier should be marked
-        assert cull_mask.sel(esa_sweep=5, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=5, esa_energy_step=3).values
         # Other positions should not be marked
-        assert not cull_mask.sel(esa_sweep=4, esa_step=3).values
-        assert not cull_mask.sel(esa_sweep=6, esa_step=3).values
+        assert not cull_mask.sel(esa_sweep=4, esa_energy_step=3).values
+        assert not cull_mask.sel(esa_sweep=6, esa_energy_step=3).values
 
     def test_nan_handling(self):
         """Test that NaN values in counts are handled correctly."""
@@ -1981,7 +1991,7 @@ class TestIdentifyCullPattern:
         cull_mask = _identify_cull_pattern(counts, median, sigma)
 
         # NaN positions should not be marked (treated as not exceeding)
-        assert not cull_mask.sel(esa_sweep=3, esa_step=2).values
+        assert not cull_mask.sel(esa_sweep=3, esa_energy_step=2).values
 
     def test_returns_dataarray_with_correct_coords(self):
         """Test that returned mask has correct dimensions and coordinates."""
@@ -1995,7 +2005,8 @@ class TestIdentifyCullPattern:
             cull_mask.coords["esa_sweep"].values, counts.coords["esa_sweep"].values
         )
         np.testing.assert_array_equal(
-            cull_mask.coords["esa_step"].values, counts.coords["esa_step"].values
+            cull_mask.coords["esa_energy_step"].values,
+            counts.coords["esa_energy_step"].values,
         )
 
     def test_consecutive_run_at_first_esa_edge(self):
@@ -2010,10 +2021,10 @@ class TestIdentifyCullPattern:
         cull_mask = _identify_cull_pattern(counts, median, sigma)
 
         # Sweeps 2-5 at ESA 1 should be marked (edge passes neighbor check)
-        assert cull_mask.sel(esa_sweep=2, esa_step=1).values
-        assert cull_mask.sel(esa_sweep=3, esa_step=1).values
-        assert cull_mask.sel(esa_sweep=4, esa_step=1).values
-        assert cull_mask.sel(esa_sweep=5, esa_step=1).values
+        assert cull_mask.sel(esa_sweep=2, esa_energy_step=1).values
+        assert cull_mask.sel(esa_sweep=3, esa_energy_step=1).values
+        assert cull_mask.sel(esa_sweep=4, esa_energy_step=1).values
+        assert cull_mask.sel(esa_sweep=5, esa_energy_step=1).values
 
     def test_consecutive_run_at_last_esa_edge(self):
         """Test that consecutive run at last ESA step passes neighbor check at edge."""
@@ -2027,10 +2038,10 @@ class TestIdentifyCullPattern:
         cull_mask = _identify_cull_pattern(counts, median, sigma)
 
         # Sweeps 2-5 at ESA 5 should be marked (edge passes neighbor check)
-        assert cull_mask.sel(esa_sweep=2, esa_step=5).values
-        assert cull_mask.sel(esa_sweep=3, esa_step=5).values
-        assert cull_mask.sel(esa_sweep=4, esa_step=5).values
-        assert cull_mask.sel(esa_sweep=5, esa_step=5).values
+        assert cull_mask.sel(esa_sweep=2, esa_energy_step=5).values
+        assert cull_mask.sel(esa_sweep=3, esa_energy_step=5).values
+        assert cull_mask.sel(esa_sweep=4, esa_energy_step=5).values
+        assert cull_mask.sel(esa_sweep=5, esa_energy_step=5).values
 
     def test_orphan_not_marked_at_time_edge(self):
         """Test that positions at time edges are not marked as orphans."""
@@ -2044,11 +2055,11 @@ class TestIdentifyCullPattern:
         cull_mask = _identify_cull_pattern(counts, median, sigma)
 
         # Sweep 0 should NOT be marked (edge, not a true orphan)
-        assert not cull_mask.sel(esa_sweep=0, esa_step=3).values
+        assert not cull_mask.sel(esa_sweep=0, esa_energy_step=3).values
         # Sweeps 1-3 should be marked (consecutive with neighbor)
-        assert cull_mask.sel(esa_sweep=1, esa_step=3).values
-        assert cull_mask.sel(esa_sweep=2, esa_step=3).values
-        assert cull_mask.sel(esa_sweep=3, esa_step=3).values
+        assert cull_mask.sel(esa_sweep=1, esa_energy_step=3).values
+        assert cull_mask.sel(esa_sweep=2, esa_energy_step=3).values
+        assert cull_mask.sel(esa_sweep=3, esa_energy_step=3).values
 
 
 class TestComputeQualifiedCountsPerSweep:
@@ -2076,6 +2087,8 @@ class TestComputeQualifiedCountsPerSweep:
         esa_step = np.repeat(np.arange(1, n_packets // 2 + 1), 2)[:n_packets].astype(
             np.uint8
         )
+        # esa_energy_step same as esa_step for test purposes
+        esa_energy_step = esa_step.copy()
 
         ds = xr.Dataset(
             {
@@ -2089,6 +2102,7 @@ class TestComputeQualifiedCountsPerSweep:
                     np.arange(1000.0, 1000.0 + n_packets * 60, 60),
                 ),
                 "esa_step": (["epoch"], esa_step),
+                "esa_energy_step": (["epoch"], esa_energy_step),
             },
             coords={
                 "event_met": np.arange(n_events),
@@ -2110,13 +2124,15 @@ class TestComputeQualifiedCountsPerSweep:
 
         assert "qualified_count" in result.data_vars
         assert "esa_sweep" in result.dims
-        assert "esa_step" in result.dims
+        assert "esa_energy_step" in result.dims
 
         # Each packet has 10 events, 4 are type 12 (from pattern [12,4,8,12,4] * 2)
         # 2 packets per 8-spin set = 8 qualified counts per (esa_sweep, esa_step)
         # Select only the valid ESA steps (1-5)
         for esa in range(1, 6):
-            count = result["qualified_count"].sel(esa_sweep=0, esa_step=esa).values
+            count = (
+                result["qualified_count"].sel(esa_sweep=0, esa_energy_step=esa).values
+            )
             assert count == 8
 
     def test_raises_without_coordinate(self):
@@ -2153,6 +2169,8 @@ class TestBuildPerSweepDatasets:
 
         # 2 packets per ESA step: [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9]
         esa_step = np.repeat(np.arange(1, 10), 2).astype(np.uint8)
+        # esa_energy_step same as esa_step for test purposes
+        esa_energy_step = esa_step.copy()
 
         return xr.Dataset(
             {
@@ -2163,6 +2181,7 @@ class TestBuildPerSweepDatasets:
                     np.arange(base_met, base_met + n_packets * 60, 60),
                 ),
                 "esa_step": (["epoch"], esa_step),
+                "esa_energy_step": (["epoch"], esa_energy_step),
             },
             coords={
                 "event_met": np.arange(n_events),
@@ -2180,16 +2199,16 @@ class TestBuildPerSweepDatasets:
         # Should have per-sweep dataset for index 0 with 2D structure
         assert 0 in per_sweep_datasets
         assert "esa_sweep" in per_sweep_datasets[0].dims
-        assert "esa_step" in per_sweep_datasets[0].dims
-        # 9 ESA steps (1-9) in the data
-        assert len(per_sweep_datasets[0].coords["esa_step"]) == 9
+        assert "esa_energy_step" in per_sweep_datasets[0].dims
+        # 9 ESA energy steps (1-9) in the data
+        assert len(per_sweep_datasets[0].coords["esa_energy_step"]) == 9
 
-        # Each (esa_sweep, esa_step) should have 20 qualified counts
+        # Each (esa_sweep, esa_energy_step) should have 20 qualified counts
         # 2 packets per ESA step, 10 events each = 20 qualified counts per 8-spin
         for esa in range(1, 10):
             count = (
                 per_sweep_datasets[0]["qualified_count"]
-                .sel(esa_sweep=0, esa_step=esa)
+                .sel(esa_sweep=0, esa_energy_step=esa)
                 .values
             )
             assert count == 20
@@ -2212,11 +2231,11 @@ class TestComputeMedianAndSigmaPerEsa:
 
     def test_basic_calculation(self):
         """Test basic median and sigma calculation."""
-        # Create dataset with counts where median is 4 for each ESA step
-        # Using 5 sweeps with counts [2, 4, 6, 4, 4] for ESA steps 1-9
+        # Create dataset with counts where median is 4 for each ESA energy step
+        # Using 5 sweeps with counts [2, 4, 6, 4, 4] for ESA energy steps 1-9
         n_sweeps = 5
         counts_per_sweep = [2, 4, 6, 4, 4]
-        counts_2d = np.zeros((n_sweeps, 10))  # ESA steps 0-9
+        counts_2d = np.zeros((n_sweeps, 10))  # ESA energy steps 0-9
         for sweep_idx, count in enumerate(counts_per_sweep):
             for esa in range(1, 10):
                 counts_2d[sweep_idx, esa] = count
@@ -2224,15 +2243,15 @@ class TestComputeMedianAndSigmaPerEsa:
         per_sweep_datasets = {
             0: xr.Dataset(
                 {
-                    "qualified_count": (["esa_sweep", "esa_step"], counts_2d),
+                    "qualified_count": (["esa_sweep", "esa_energy_step"], counts_2d),
                     "ccsds_met": (
-                        ["esa_sweep", "esa_step"],
+                        ["esa_sweep", "esa_energy_step"],
                         np.full_like(counts_2d, 1000.0),
                     ),
                 },
                 coords={
                     "esa_sweep": np.arange(n_sweeps),
-                    "esa_step": np.arange(10),
+                    "esa_energy_step": np.arange(10),
                 },
             )
         }
@@ -2242,13 +2261,13 @@ class TestComputeMedianAndSigmaPerEsa:
         )
 
         for esa in range(1, 10):
-            assert median_per_esa.sel(esa_step=esa).values == 4.0
+            assert median_per_esa.sel(esa_energy_step=esa).values == 4.0
             # sigma = round(sqrt(4 + 1)) = round(2.236) = 2
-            assert sigma_per_esa.sel(esa_step=esa).values == 2
+            assert sigma_per_esa.sel(esa_energy_step=esa).values == 2
 
     def test_zero_median_excluded(self):
-        """Test that ESA steps with zero median are excluded."""
-        # ESA step 1: all zeros, ESA step 2: median 4
+        """Test that ESA energy steps with zero median are excluded."""
+        # ESA energy step 1: all zeros, ESA energy step 2: median 4
         n_sweeps = 5
         counts_2d = np.zeros((n_sweeps, 10))
         # ESA 1 stays at 0
@@ -2259,15 +2278,15 @@ class TestComputeMedianAndSigmaPerEsa:
         per_sweep_datasets = {
             0: xr.Dataset(
                 {
-                    "qualified_count": (["esa_sweep", "esa_step"], counts_2d),
+                    "qualified_count": (["esa_sweep", "esa_energy_step"], counts_2d),
                     "ccsds_met": (
-                        ["esa_sweep", "esa_step"],
+                        ["esa_sweep", "esa_energy_step"],
                         np.full_like(counts_2d, 1000.0),
                     ),
                 },
                 coords={
                     "esa_sweep": np.arange(n_sweeps),
-                    "esa_step": np.arange(10),
+                    "esa_energy_step": np.arange(10),
                 },
             )
         }
@@ -2276,10 +2295,10 @@ class TestComputeMedianAndSigmaPerEsa:
             per_sweep_datasets
         )
 
-        # ESA step 1 should have NaN median (zero counts excluded)
-        assert np.isnan(median_per_esa.sel(esa_step=1).values)
-        # ESA step 2 should have valid median
-        assert median_per_esa.sel(esa_step=2).values == 4.0
+        # ESA energy step 1 should have NaN median (zero counts excluded)
+        assert np.isnan(median_per_esa.sel(esa_energy_step=1).values)
+        # ESA energy step 2 should have valid median
+        assert median_per_esa.sel(esa_energy_step=2).values == 4.0
 
     def test_empty_datasets_handled(self):
         """Test that empty datasets result in empty DataArrays."""
@@ -2332,6 +2351,8 @@ class TestStatisticalFilter1:
         esa_step = np.tile(np.arange(1, 10), n_packets // 9 + 1)[:n_packets].astype(
             np.uint8
         )
+        # esa_energy_step same as esa_step for test purposes
+        esa_energy_step = esa_step.copy()
         ccsds_met = np.arange(base_met, base_met + n_packets * 60, 60, dtype=np.float64)
         coincidence_types = np.full(n_events, coincidence_type, dtype=np.uint8)
         ccsds_index = np.repeat(np.arange(n_packets), events_per_packet).astype(
@@ -2344,6 +2365,7 @@ class TestStatisticalFilter1:
                 "ccsds_index": (["event_met"], ccsds_index),
                 "ccsds_met": (["epoch"], ccsds_met),
                 "esa_step": (["epoch"], esa_step),
+                "esa_energy_step": (["epoch"], esa_energy_step),
             },
             coords={
                 "event_met": np.arange(n_events),
@@ -2413,6 +2435,7 @@ class TestStatisticalFilter1:
                 "ccsds_index": (["event_met"], new_ccsds_index),
                 "ccsds_met": current_ds["ccsds_met"],
                 "esa_step": current_ds["esa_step"],
+                "esa_energy_step": current_ds["esa_energy_step"],
             },
             coords={
                 "event_met": np.arange(len(new_coincidence)),
