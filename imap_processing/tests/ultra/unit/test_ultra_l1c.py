@@ -124,6 +124,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     ancillary_files,
     rates_dataset,
     aux_dataset,
+    mock_goodtimes_dataset,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
     mock_spacecraft_pointing_lookups,
@@ -175,8 +176,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     de_dict["velocity_dps_sc"] = sc_dps_velocity
     de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
     # Made up data for spin_number and energy_bin_geometric_mean
-    de_dict["spin_number"] = np.full(len(sc_dps_velocity), 128)
-    de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
+    de_dict["spin"] = np.full(len(sc_dps_velocity), 0)
     de_dict["species"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
     de_dict["ebin"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
     de_dict["event_times"] = df_subset["tdb"].values
@@ -187,7 +187,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": dataset,  # placeholder
-        "imap_ultra_l1b_45sensor-goodtimes": dataset,  # placeholder
+        "imap_ultra_l1b_45sensor-goodtimes": mock_goodtimes_dataset,  # placeholder
         "imap_ultra_l1a_45sensor-rates": rates_dataset,
         "imap_ultra_l1a_45sensor-aux": aux_dataset,
     }
@@ -220,6 +220,7 @@ def test_calculate_helio_pset_with_cdf(
     mock_helio_pointing_lookups,
     aux_dataset,
     rates_dataset,
+    mock_goodtimes_dataset,
     use_fake_spin_data_for_time,
 ):
     """Tests ultra_l1c function with imported test data."""
@@ -240,6 +241,7 @@ def test_calculate_helio_pset_with_cdf(
     de_dict = {}
 
     de_dict["epoch"] = df_subset["epoch"].values
+    de_dict["spin"] = np.full((len(df_subset["epoch"].values)), 0)
     # Fake SCLK in seconds that matches SPICE.
     de_dict["event_times"] = np.full(len(df_subset), 2.41187e13)
     de_dict["ebin"] = np.ones(len(df_subset), dtype=np.uint8)
@@ -275,17 +277,14 @@ def test_calculate_helio_pset_with_cdf(
     de_dict["quality_outliers"] = np.zeros(len(helio_dps_velocity), dtype=np.uint16)
     de_dict["species"] = np.ones(len(helio_dps_velocity), dtype=np.uint8)
     de_dict["event_times"] = df_subset["tdb"].values
+
     name = "imap_ultra_l1b_45sensor-de"
     dataset = create_dataset(de_dict, name, "l1b")
     dataset.attrs["Repointing"] = "repoint00001"
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
-        "imap_ultra_l1b_45sensor-goodtimes": xr.Dataset(
-            {
-                "spin_number": ("epoch", np.zeros(5)),
-            }
-        ),  # placeholder
+        "imap_ultra_l1b_45sensor-goodtimes": mock_goodtimes_dataset,
         "imap_ultra_l1a_45sensor-rates": rates_dataset,
         "imap_ultra_l1a_45sensor-aux": aux_dataset,
     }

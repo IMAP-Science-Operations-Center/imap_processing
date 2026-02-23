@@ -90,6 +90,7 @@ class UltraConstants:
         300.0,
         1e5,
     ]
+
     PSET_ENERGY_BIN_EDGES: ClassVar[list] = [
         3.0,
         3.4,
@@ -181,3 +182,12 @@ class UltraConstants:
     EARTH_RADIUS_KM: float = 6378.1
     N_RE = 60
     DEFAULT_EARTH_CULLING_RADIUS = EARTH_RADIUS_KM * N_RE
+
+    # L1b extended spin culling parameters
+    LOW_VOLTAGE_CULL_THRESHOLD = 3000.0
+    SPIN_BIN_SIZE = 20
+    # TODO add thresholds for energies (different for 45 and 90)
+    # Number of energy bins to use in energy dependent culling
+    N_CULL_EBINS = 8
+    # Bin to start culling at
+    BASE_CULL_EBIN = 4

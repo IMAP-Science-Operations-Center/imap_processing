@@ -27,6 +27,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_EXTOF_HIGH_ANGULAR,
     ULTRA_EXTOF_HIGH_ENERGY,
     ULTRA_EXTOF_HIGH_TIME,
+    ULTRA_HK,
     ULTRA_MACROS_CHECKSUM,
     ULTRA_PHXTOF_HIGH_ANGULAR,
     ULTRA_PHXTOF_HIGH_ENERGY,
@@ -439,6 +440,13 @@ def aux_dataset(ccsds_path_theta_0):
 
 
 @pytest.fixture
+def status_dataset(ccsds_path_theta_0):
+    """L1A test data"""
+    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_HK.apid[3])
+    return test_data[0]
+
+
+@pytest.fixture
 def faux_aux_dataset():
     """Fixture to compute and return aux test data."""
 
@@ -631,3 +639,18 @@ def mock_helio_pointing_lookups():
         mock_lookup.return_value = ds
 
         yield mock_lookup
+
+
+@pytest.fixture
+def mock_goodtimes_dataset():
+    """Create a mock goodtimes dataset."""
+    return xr.Dataset(
+        {
+            "spin_number": ("epoch", np.zeros(5)),
+            "energy_range_flags": ("energy_flags", np.zeros(10, dtype=np.uint16)),
+            "quality_low_voltage": ("spin_number", np.zeros(5, dtype=np.uint16)),
+            "quality_high_energy": ("spin_number", np.zeros(5, dtype=np.uint16)),
+            "quality_statistics": ("spin_number", np.zeros(5, dtype=np.uint16)),
+            "energy_range_edges": ("energy_ranges", np.zeros(11, dtype=np.uint16)),
+        }
+    )

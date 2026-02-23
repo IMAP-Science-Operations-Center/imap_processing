@@ -14,7 +14,10 @@ from imap_processing.spice.time import (
     ttj2000ns_to_et,
 )
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
+from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    get_de_rejection_mask,
+    get_energy_and_spin_dependent_rejection_mask,
+)
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
     calculate_fwhm_spun_scattering,
@@ -94,7 +97,22 @@ def calculate_helio_pset(
         reject_scattering,
     )
     species_dataset = species_dataset.isel(epoch=~rejected)
+    # Check if spin_number is in the goodtimes dataset, if not then we can
+    #  reject all events for that spin without checking energy bin flags.
+    spin_rejected = ~np.isin(
+        species_dataset["spin"].values, goodtimes_dataset["spin_number"].values
+    )
+    species_dataset = species_dataset.isel(epoch=~spin_rejected)
 
+    intervals, _, energy_bin_geometric_means = build_energy_bins()
+
+    # Now check energy dependent flags.
+    energy_dependent_rejected = get_energy_and_spin_dependent_rejection_mask(
+        goodtimes_dataset,
+        species_dataset["energy_heliosphere"].values,
+        species_dataset["spin"].values,
+    )
+    species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
     v_mag_helio_spacecraft = np.linalg.norm(
         species_dataset["velocity_dps_helio"].values, axis=1
     )
@@ -125,8 +143,6 @@ def calculate_helio_pset(
     theta_vals = helio_pointing_ds.theta
     phi_vals = helio_pointing_ds.phi
     fov_index = helio_pointing_ds.index
-
-    intervals, _, energy_bin_geometric_means = build_energy_bins()
 
     logger.info("calculating spun FWHM scattering values.")
     pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = (

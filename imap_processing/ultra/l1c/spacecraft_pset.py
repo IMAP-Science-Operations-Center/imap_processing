@@ -14,7 +14,10 @@ from imap_processing.spice.time import (
     ttj2000ns_to_et,
 )
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
+from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    get_de_rejection_mask,
+    get_energy_and_spin_dependent_rejection_mask,
+)
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
     calculate_fwhm_spun_scattering,
@@ -85,22 +88,36 @@ def calculate_spacecraft_pset(
         logger.info(f"No data available for {name}")
         return None
 
+    ################ Reject events based on quality flags ################
     # Before we use the de_dataset to calculate the pointing set grid we need to filter.
-    rejected = get_de_rejection_mask(
+    de_rejected = get_de_rejection_mask(
         species_dataset["quality_scattering"].values,
         species_dataset["quality_outliers"].values,
         reject_scattering,
     )
-    species_dataset = species_dataset.isel(epoch=~rejected)
+    species_dataset = species_dataset.isel(epoch=~de_rejected)
+    # Check if spin_number is in the goodtimes dataset, if not then we can
+    #  reject all events for that spin without checking energy bin flags.
+    spin_rejected = ~np.isin(
+        species_dataset["spin"].values, goodtimes_dataset["spin_number"].values
+    )
+    species_dataset = species_dataset.isel(epoch=~spin_rejected)
 
+    intervals, _, energy_bin_geometric_means = build_energy_bins()
+
+    # Now check energy dependent flags.
+    energy_dependent_rejected = get_energy_and_spin_dependent_rejection_mask(
+        goodtimes_dataset,
+        species_dataset["energy_spacecraft"].values,
+        species_dataset["spin"].values,
+    )
+    species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
     v_mag_dps_spacecraft = np.linalg.norm(
         species_dataset["velocity_dps_sc"].values, axis=1
     )
     vhat_dps_spacecraft = (
         species_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
     )
-
-    intervals, _, energy_bin_geometric_means = build_energy_bins()
 
     # Get lookup table for FOR indices by spin phase step
     (
