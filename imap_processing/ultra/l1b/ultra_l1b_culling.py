@@ -681,7 +681,7 @@ def flag_low_voltage(
 
 
 def get_valid_earth_angle_events(
-    de_dataset: xr.Dataset,
+    de_dataset_subset: xr.Dataset,
     earth_ang_45: float = UltraConstants.EARTH_ANGLE_45_THRESHOLD,
 ) -> NDArray:
     """
@@ -689,8 +689,9 @@ def get_valid_earth_angle_events(
 
     Parameters
     ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
+    de_dataset_subset : xr.Dataset
+        Subset of the direct event dataset. Should contain events within a single
+        energy bin.
     earth_ang_45 : float
         Earth keepout angle threshold (in radians) for ULTRA 45 instrument.
 
@@ -700,8 +701,10 @@ def get_valid_earth_angle_events(
         A boolean array indicating which events have Earth angle greater than the
         specified threshold.
     """
-    de_dps_velocity = de_dataset["de_dps_velocity"].values
-    et = np.mean(de_dataset["event_times"].values)
+    de_dps_velocity = de_dataset_subset["de_dps_velocity"].values
+    # Use the mean event time to compute the Earth unit vector since the spacecraft
+    # position doesn't change significantly over the course of the energy bin.
+    et = np.mean(de_dataset_subset["event_times"].values)
     # Compute the unit vector from IMAP to Earth in the DPS frame at the time of the
     # events.
     earth_unit_vector = compute_unit_target_vectors(
@@ -715,7 +718,7 @@ def get_valid_earth_angle_events(
     )  # shape (n_events, 3)
     # Get cos(theta) between each particle look direction and Earth direction
     cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (n_events,)
-    # Clip cos_sep to the valid range of [-1, 1]
+    # Clip cos_sep to the valid range of [-1, 1] to avoid numerical issues with arccos
     cos_sep = np.clip(cos_sep, -1.0, 1.0)
     sep_angle = np.arccos(cos_sep)
     # An event is valid if the separation angle between the particle look

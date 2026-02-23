@@ -193,5 +193,6 @@ class UltraConstants:
     N_CULL_EBINS = 8
     # Bin to start culling at
     BASE_CULL_EBIN = 4
-    # Angle threshold in radians for 45 degree culling.
+    # Angle threshold in radians for ULTRA 45 degree culling.
+    # This is only needed for ULTRA 45 since earth may be in the FOV.
     EARTH_ANGLE_45_THRESHOLD = np.radians(15)
