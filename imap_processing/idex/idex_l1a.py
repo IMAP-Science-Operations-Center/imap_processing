@@ -137,9 +137,6 @@ class PacketParser:
                 if scitype == Scitype.FIRST_PACKET:
                     # Initial packet for new dust event
                     # Further packets will fill in data
-                    print("IDX__TXHDRFSWAIDCOPY:", packet["IDX__TXHDRFSWAIDCOPY"])
-                    print("IDX__SCI0TYPE:", packet["IDX__SCI0TYPE"])
-                    print("IDX__SCI0EVTNUM", packet["IDX__SCI0EVTNUM"])
                     dust_events[event_number] = RawDustEvent(packet)
                 elif event_number not in dust_events:
                     raise KeyError(
