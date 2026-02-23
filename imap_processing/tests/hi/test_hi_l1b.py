@@ -767,9 +767,7 @@ class TestDeCcsdsQf:
             },
         )
         result = de_ccsds_qf(ds)
-        assert result["ccsds_qf"].values[0] == 0
-        assert result["ccsds_qf"].values[1] == ImapHiL1bDeFlags.SPIN_INVALID
-        assert result["ccsds_qf"].values[2] == 0
+        np.testing.assert_equal(result["ccsds_qf"].values, [0, ImapHiL1bDeFlags.SPIN_INVALID, 0])
 
     def test_spin_invalid_and_packet_full_flags_combined(self):
         """Test that SPIN_INVALID and PACKET_FULL flags can be set together."""
@@ -800,9 +798,10 @@ class TestDeCcsdsQf:
             },
         )
         result = de_ccsds_qf(ds)
-        expected = ImapHiL1bDeFlags.PACKET_FULL | ImapHiL1bDeFlags.SPIN_INVALID
-        assert result["ccsds_qf"].values[0] == expected
-        assert result["ccsds_qf"].values[1] == 0
+        np.testing.assert_array_equal(
+            result["ccsds_qf"].values,
+            [ImapHiL1bDeFlags.PACKET_FULL | ImapHiL1bDeFlags.SPIN_INVALID, 0],
+        )
 
     def test_no_valid_direct_events_all_fill_trigger_id(self):
         """de_ccsds_qf returns all zeros when trigger_id is entirely FILLVAL."""
