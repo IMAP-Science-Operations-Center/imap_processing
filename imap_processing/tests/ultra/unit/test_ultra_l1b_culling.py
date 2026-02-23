@@ -467,7 +467,7 @@ def test_validate_voltage_cull():
     )
     # Use constants from the code to ensure consistency with the actual culling code
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    lv_threshold = UltraConstants.LOW_VOLTAGE_CULL_THRESHOLD
+    lv_threshold = 3000
     spin_tbin_edges = get_binned_spins_edges(
         xspin.spin_number.values,
         xspin.spin_period.values,
