@@ -18,6 +18,9 @@ from imap_processing.spice.spin import (
 )
 from imap_processing.spice.time import met_to_datetime64, met_to_sclkticks, sct_to_et
 
+from imap_processing.quality_flags import GLOWSL1bFlags
+from imap_processing.spice.geometry import instrument_pointing
+
 
 @dataclass
 class PipelineSettings:  # numpydoc ignore=PR02
@@ -819,8 +822,9 @@ class HistogramL1B:
 
         # Add SPICE related variables
         self.update_spice_parameters()
-        # Will require some additional inputs
-        self.imap_spin_angle_bin_cntr = np.zeros((3600,))
+        # Calculate the spin angle bin center
+        phi = (np.arange(self.number_of_bins_per_histogram, dtype=np.float64) + 0.5) / self.number_of_bins_per_histogram
+        self.imap_spin_angle_bin_cntr = phi * 360.0
 
         # TODO: This should probably be an AWS file
         # TODO Pass in AncillaryParameters object instead of reading here.
@@ -970,6 +974,62 @@ class HistogramL1B:
 
         return flags
 
+    def flag_uv_source(self, exclusions: AncillaryExclusions):
+
+        effective_spin_angle_deg = (self.imap_spin_angle_bin_cntr + self.position_angle_offset_average) % 360.0
+
+        data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
+        time_for_each_bin = np.full(self.number_of_bins_per_histogram, data_start_time_et)
+
+        uv_lon = np.deg2rad(exclusions.uv_sources["ecliptic_longitude_deg"].values)
+        uv_lat = np.deg2rad(exclusions.uv_sources["ecliptic_latitude_deg"].values)
+        uv_rad = np.deg2rad(exclusions.uv_sources["angular_radius_for_masking"].values)
+
+        uv_vecs = np.stack(
+            [
+                np.cos(uv_lat) * np.cos(uv_lon),
+                np.cos(uv_lat) * np.sin(uv_lon),
+                np.sin(uv_lat),
+            ],
+            axis=1,
+        )  # (n_src, 3)
+
+        # Get GLOWS boresight lon/lat in DPS at block start time.
+        # In DPS, latitude is the off-pointing of the boresight; treat it as constant across bins.
+        look_lonlat_dps = geometry.instrument_pointing(
+            data_start_time_et, SpiceFrame.IMAP_GLOWS, SpiceFrame.IMAP_DPS
+        )  # shape (2,) for scalar et
+        offpoint_deg = float(look_lonlat_dps[1])
+
+        # Build per-bin (az, el) in DPS: az = spin angle bin center, el = offpoint
+        look_az_el_dps = np.column_stack(
+            [effective_spin_angle_deg, np.full(self.number_of_bins_per_histogram, offpoint_deg)]
+        )  # (nbin, 2)
+
+        # Convert DPS az/el -> DPS cartesian unit vectors
+        # frame_transform_az_el uses spherical_to_cartesian under the hood with r=1;
+        # doing it explicitly is often clearer:
+        look_sph_dps = np.column_stack(
+            [np.ones(self.number_of_bins_per_histogram), look_az_el_dps]
+        )  # (nbin, 3) : (r, az, el)
+        look_vecs_dps = geometry.spherical_to_cartesian(look_sph_dps)  # (nbin, 3)
+
+        # Transform look vectors into ECLIPJ2000 to compare with UV sources (which are ecliptic lon/lat)
+        look_vecs = geometry.frame_transform(
+            time_for_each_bin,
+            look_vecs_dps,
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.ECLIPJ2000,
+        )  # (nbin, 3)
+
+        cos_sep = look_vecs @ uv_vecs.T  # (nbin, n_src)
+        cos_sep = np.clip(cos_sep, -1.0, 1.0)
+        sep_angle = np.arccos(cos_sep)  # radians, (nbin, n_src)
+
+        return sep_angle, uv_rad
+
+
+
     def _compute_histogram_flag_array(
         self, exclusions: AncillaryExclusions
     ) -> np.ndarray:
@@ -992,5 +1052,16 @@ class HistogramL1B:
         np.ndarray
             Array of shape (4, 3600) with bad-angle flags for each bin.
         """
-        # TODO: fill out once spice data is available
-        return np.zeros((4, 3600), dtype=np.uint8)
+        histogram_flags = np.full(
+            self.number_of_bins_per_histogram, GLOWSL1bFlags.NONE.value, dtype=np.uint8
+        )
+
+        sep_angle, uv_rad = self.flag_uv_source(exclusions)
+
+        # close if within radius of any UV source
+        close_any = np.any(sep_angle <= uv_rad[None, :], axis=1)  # (nbin,)
+        histogram_flags[close_any] |= GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
+
+        return histogram_flags
+
+
