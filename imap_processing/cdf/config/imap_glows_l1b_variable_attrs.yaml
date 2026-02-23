@@ -131,15 +131,9 @@ histogram:
   VAR_TYPE: data
 
 pkts_file_name:
-  <<: *support_data_defaults
   CATDESC: Name of input file with L0 CCSDS packets data
-  DISPLAY_TYPE: no_plot
   FIELDNAM: L0 data input filename
-  FILLVAL: # TBD: what is fillval for strings?
-  FORMAT: S256 # TBC
-  LABLAXIS: File name # MS: is this needed for no_plot?
-  VALIDMAX: # TBD: what is validmax for a string?
-  VALIDMIN: # TBD: what is validmin for a string?
+  FORMAT: A49
   VAR_TYPE: metadata
 
 first_spin_id:

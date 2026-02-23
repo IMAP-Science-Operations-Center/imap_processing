@@ -129,6 +129,22 @@ identifier:
   VALIDMAX: 99999
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
+flight_software_version:
+  <<: *support_data_defaults
+  CATDESC: GLOWS flight software version
+  FIELDNAM: GLOWS flight software version
+  FILLVAL: *max_uint32
+  FORMAT: I8
+  LABLAXIS: FSW ver
+  VALIDMAX: 16777215
+
+pkts_file_name:
+  VAR_TYPE: metadata
+  CATDESC: Name of L0 packets file data originated
+  FIELDNAM: Packets File Name
+  FILLVAL: ' '
+  FORMAT: A49
+
 start_time:
   <<: *time_data_defaults
   CATDESC: Start time (UTC) of observational day
