@@ -767,7 +767,7 @@ class TestDeCcsdsQf:
             },
         )
         result = de_ccsds_qf(ds)
-        np.testing.assert_equal(result["ccsds_qf"].values, [0, ImapHiL1bDeFlags.SPIN_INVALID, 0])
+        np.testing.assert_array_equal(result["ccsds_qf"].values, [0, ImapHiL1bDeFlags.SPIN_INVALID, 0])
 
     def test_spin_invalid_and_packet_full_flags_combined(self):
         """Test that SPIN_INVALID and PACKET_FULL flags can be set together."""
