@@ -5,6 +5,7 @@ from collections import namedtuple
 
 import numpy as np
 import pandas as pd
+import spiceypy as sp
 import xarray as xr
 from numpy.typing import NDArray
 
@@ -18,7 +19,6 @@ from imap_processing.quality_flags import (
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
-    compute_unit_target_vectors,
 )
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
@@ -707,9 +707,17 @@ def get_valid_earth_angle_events(
     et = np.mean(de_dataset_subset["event_times"].values)
     # Compute the unit vector from IMAP to Earth in the DPS frame at the time of the
     # events.
-    earth_unit_vector = compute_unit_target_vectors(
-        np.array(et), ref_frame=SpiceFrame.IMAP_DPS, target=SpiceBody.EARTH
-    )[0].squeeze()  # shape (3,)
+    # call spkezr to get the state vector from Earth to IMAP in the IMAP_DPS frame
+    body_state, _ = sp.spkezr(
+        target=SpiceBody.EARTH.name,
+        et=et,
+        ref=SpiceFrame.IMAP_DPS.name,
+        abcorr="NONE",
+        observer=SpiceBody.IMAP.name,
+    )
+    position = body_state[:3]
+    distance = np.linalg.norm(position)
+    earth_unit_vector = position / distance
     # Calculate the magnitude of the velocity vector for each event
     particle_mag = np.linalg.norm(de_dps_velocity, axis=1)
     # Normalize and flip to get where each particle is looking.

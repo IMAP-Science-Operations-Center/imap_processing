@@ -12,7 +12,6 @@ from imap_processing.spice.geometry import (
     basis_vectors,
     cartesian_to_latitudinal,
     cartesian_to_spherical,
-    compute_unit_target_vectors,
     frame_transform,
     frame_transform_az_el,
     get_instrument_mounting_az_el,
@@ -664,25 +663,3 @@ def test_solar_longitude(mock_state):
     et = np.tile(et, (10, 1))
     lon = solar_longitude(et, degrees=True)
     assert lon.shape == (10,)
-
-
-@mock.patch("imap_processing.spice.geometry.imap_state")
-def test_compute_unit_target_vectors(mock_state):
-    """Test compute_unit_target_vectors()."""
-    mock_state_values = np.arange(12).reshape((2, 6))
-    mock_state.return_value = np.arange(12).reshape((2, 6))
-    # example et times
-    et = np.array([798033670, 798033770])
-    unit_t_vecs, distance = compute_unit_target_vectors(
-        et, ref_frame=SpiceFrame.IMAP_DPS, target=SpiceBody.EARTH
-    )
-
-    # Check shapes
-    assert unit_t_vecs.shape == (2, 3)
-    assert distance.shape == (2,)
-
-    expected_distance = np.sum(mock_state_values[:, :3] ** 2, axis=1) ** 0.5
-    np.testing.assert_allclose(distance, expected_distance, atol=1e-5)
-
-    expected_unit_t_vecs = -mock_state_values[:, :3] / expected_distance[:, np.newaxis]
-    np.testing.assert_allclose(unit_t_vecs, expected_unit_t_vecs)

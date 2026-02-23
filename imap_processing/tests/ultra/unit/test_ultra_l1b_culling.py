@@ -481,8 +481,8 @@ def test_validate_voltage_cull():
     assert np.array_equal(lv_flags, validation_low_voltage_qf)
 
 
-@mock.patch("imap_processing.spice.geometry.imap_state")
-def test_get_valid_earth_angle_events(mock_state):
+@mock.patch("imap_processing.ultra.l1b.ultra_l1b_culling.sp.spkezr")
+def test_get_valid_earth_angle_events(mock_spkezr):
     """Tests get_valid_earth_angle_events function."""
     np.random.seed(0)
     de_dps_velocity = np.random.random((12, 3))
@@ -494,14 +494,14 @@ def test_get_valid_earth_angle_events(mock_state):
     )
     earth_angle_threshold = np.radians(45)
     np.random.seed(0)
-    mock_imap_state = np.random.random((1, 6))  # Mock IMAP state for testing
-    mock_state.return_value = mock_imap_state
+    mock_imap_state = np.random.random(6)  # Mock IMAP state for testing
+    mock_spkezr.return_value = (mock_imap_state, None)
     # Calculate the expected flag exactly the way ULTRA IT does to ensure we are
     # getting the same results.
     # First negate the state vector: the state from imap_state(observer=EARTH)
     # gives the position of IMAP as seen from Earth (Earth to IMAP), while
     # the ULTRA code below expects the vector from IMAP to Earth.
-    pos = -mock_imap_state.squeeze()[:3]
+    pos = mock_imap_state[:3]
     upos = pos / np.sqrt(np.sum(pos**2))
     zax0 = np.cross(upos, [0, 1, 0])
     zax = zax0 / np.sqrt(np.sum(zax0**2))
