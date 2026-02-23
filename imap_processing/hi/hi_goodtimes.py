@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from scipy.ndimage import convolve1d
 
-from imap_processing.hi.utils import CoincidenceBitmap, parse_sensor_number
+from imap_processing.hi.utils import CoincidenceBitmap, HiConstants, parse_sensor_number
 from imap_processing.quality_flags import ImapHiL1bDeFlags
 
 logger = logging.getLogger(__name__)
@@ -941,10 +941,10 @@ def mark_statistical_filter_0(
     goodtimes_ds: xr.Dataset,
     l1b_de_datasets: list[xr.Dataset],
     current_index: int,
-    threshold_factor: float = 1.5,
-    tof_ab_limit_ns: int = 15,
+    threshold_factor: float = HiConstants.STAT_FILTER_0_THRESHOLD_FACTOR,
+    tof_ab_limit_ns: int = HiConstants.STAT_FILTER_0_TOF_AB_LIMIT_NS,
     cull_code: int = CullCode.LOOSE,
-    min_pointings: int = 4,
+    min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
 ) -> None:
     """
     Apply Statistical Filter 0 to detect drastic penetrating background changes.
@@ -967,13 +967,16 @@ def mark_statistical_filter_0(
     current_index : int
         Index of the current Pointing in l1b_de_datasets.
     threshold_factor : float, optional
-        Multiplier for median comparison. Default is 1.5 (150% of median).
+        Multiplier for median comparison.
+        Default is HiConstants.STAT_FILTER_0_THRESHOLD_FACTOR.
     tof_ab_limit_ns : int, optional
-        Maximum |tof_ab| in nanoseconds for AB coincidences. Default is 15.
+        Maximum |tof_ab| in nanoseconds for AB coincidences.
+        Default is HiConstants.STAT_FILTER_0_TOF_AB_LIMIT_NS.
     cull_code : int, optional
         Cull code to use for marking bad times. Default is CullCode.LOOSE.
     min_pointings : int, optional
-        Minimum number of Pointings required. Default is 4.
+        Minimum number of Pointings required.
+        Default is HiConstants.STAT_FILTER_MIN_POINTINGS.
 
     Raises
     ------
@@ -989,7 +992,7 @@ def mark_statistical_filter_0(
 
     Algorithm:
     1. For each complete ESA sweep across all Pointings, count AB coincidences
-       where |tof_ab| <= 15ns and divide by number of ESA steps
+       where |tof_ab| <= tof_ab_limit_ns and divide by number of ESA steps
     2. Calculate median of all normalized sweep counts
     3. For each sweep in current Pointing, mark all METs in that sweep as bad
        if normalized count > threshold_factor * median
@@ -1255,9 +1258,9 @@ def _identify_cull_pattern(
     current_counts: xr.DataArray,
     median_per_esa: xr.DataArray,
     sigma_per_esa: xr.DataArray,
-    consecutive_threshold_sigma: float = 1.8,
-    extreme_threshold_sigma: float = 5.0,
-    min_consecutive: int = 3,
+    consecutive_threshold_sigma: float = HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA,
+    extreme_threshold_sigma: float = HiConstants.STAT_FILTER_1_EXTREME_SIGMA,
+    min_consecutive: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
 ) -> xr.DataArray:
     """
     Identify 2D cull pattern for statistical filter 1 using convolution.
@@ -1277,11 +1280,14 @@ def _identify_cull_pattern(
     sigma_per_esa : xr.DataArray
         Sigma values per ESA energy step.
     consecutive_threshold_sigma : float
-        Sigma multiplier for consecutive interval check. Default is 1.8.
+        Sigma multiplier for consecutive interval check.
+        Default is HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA.
     extreme_threshold_sigma : float
-        Sigma multiplier for extreme outlier check. Default is 5.0.
+        Sigma multiplier for extreme outlier check.
+        Default is HiConstants.STAT_FILTER_1_EXTREME_SIGMA.
     min_consecutive : int
-        Minimum consecutive intervals above threshold. Default is 3.
+        Minimum consecutive intervals above threshold.
+        Default is HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE.
 
     Returns
     -------
@@ -1371,11 +1377,11 @@ def mark_statistical_filter_1(
     l1b_de_datasets: list[xr.Dataset],
     current_index: int,
     qualified_coincidence_types: set[int],
-    consecutive_threshold_sigma: float = 1.8,
-    extreme_threshold_sigma: float = 5.0,
-    min_consecutive_intervals: int = 3,
+    consecutive_threshold_sigma: float = HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA,
+    extreme_threshold_sigma: float = HiConstants.STAT_FILTER_1_EXTREME_SIGMA,
+    min_consecutive_intervals: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
     cull_code: int = CullCode.LOOSE,
-    min_pointings: int = 4,
+    min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
 ) -> None:
     """
     Apply Statistical Filter 1 to detect isotropic count rate increases.
@@ -1386,10 +1392,10 @@ def mark_statistical_filter_1(
     interval, summing counts over all angles.
 
     The filter applies three passes:
-    1. Mark intervals where counts exceed median + 1.8 sigma for at least 3
-       consecutive intervals AND in at least one adjacent ESA step.
+    1. Mark intervals where counts exceed median + consecutive_threshold_sigma
+       for at least min_consecutive_intervals AND in at least one adjacent ESA step.
     2. Remove isolated good intervals (good sandwiched between two bad).
-    3. Mark remaining intervals where counts exceed median + 5-sigmas.
+    3. Mark remaining intervals where counts exceed median + extreme_threshold_sigma.
 
     Parameters
     ----------
@@ -1403,15 +1409,19 @@ def mark_statistical_filter_1(
     qualified_coincidence_types : set[int]
         Set of coincidence type integers that qualify for calibration products.
     consecutive_threshold_sigma : float, optional
-        Sigma multiplier for consecutive interval check. Default is 1.8.
+        Sigma multiplier for consecutive interval check.
+        Default is HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA.
     extreme_threshold_sigma : float, optional
-        Sigma multiplier for extreme outlier check. Default is 5.0.
+        Sigma multiplier for extreme outlier check.
+        Default is HiConstants.STAT_FILTER_1_EXTREME_SIGMA.
     min_consecutive_intervals : int, optional
-        Minimum consecutive intervals above threshold. Default is 3.
+        Minimum consecutive intervals above threshold.
+        Default is HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE.
     cull_code : int, optional
         Cull code to use for marking bad times. Default is CullCode.LOOSE.
     min_pointings : int, optional
-        Minimum number of Pointings required. Default is 4.
+        Minimum number of Pointings required.
+        Default is HiConstants.STAT_FILTER_MIN_POINTINGS.
 
     Raises
     ------
