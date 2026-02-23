@@ -571,7 +571,7 @@ def mark_incomplete_spin_sets(
         met_time = met_values[met_idx]
 
         # Check for invalid spins flag (bit 1 in ccsds_qf)
-        if np.any((group["ccsds_qf"].values & ImapHiL1bDeFlags.SPIN_INVALID) != 0):
+        if np.any((group["ccsds_qf"].values & ImapHiL1bDeFlags.BADSPIN) != 0):
             bad_mets.append(met_time)
             continue
 

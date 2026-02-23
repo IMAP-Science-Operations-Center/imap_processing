@@ -17,6 +17,7 @@ from imap_processing.hi.hi_goodtimes import (
     mark_overflow_packets,
     mark_statistical_filter_0,
 )
+from imap_processing.quality_flags import ImapHiL1bDeFlags
 
 
 @pytest.fixture
@@ -693,7 +694,9 @@ class TestDropIncompleteSpinSets:
         esa_step_met.extend([mets[0], mets[0]])
         last_spin_num.extend([4, 8])
         esa_energy_step.extend([1, 1])
-        ccsds_qf.extend([0x02, 0])  # First packet has spin invalid flag
+        ccsds_qf.extend(
+            [ImapHiL1bDeFlags.BADSPIN, 0]
+        )  # First packet has spin invalid flag
 
         # Second MET: complete and valid
         esa_step_met.extend([mets[1], mets[1]])
