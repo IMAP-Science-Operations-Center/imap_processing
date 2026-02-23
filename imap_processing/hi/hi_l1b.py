@@ -604,9 +604,7 @@ def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
 
     # Set BADSPIN flag for packets with nonzero spin_invalids
     spin_invalid_mask = dataset["spin_invalids"].values != 0
-    new_vars["ccsds_qf"].values[spin_invalid_mask] |= np.uint8(
-        ImapHiL1bDeFlags.BADSPIN
-    )
+    new_vars["ccsds_qf"].values[spin_invalid_mask] |= np.uint8(ImapHiL1bDeFlags.BADSPIN)
 
     # If there are no valid events, skip the PACKET_FULL check
     if not np.any(valid_mask):
