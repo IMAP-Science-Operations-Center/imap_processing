@@ -72,6 +72,8 @@ def hist_dataset():
         coords={"epoch": epoch, "bins": bins},
     )
 
+    ds.attrs["Parent"] = ["test_packet_file.pkts", "test_spice_file.tls"]
+
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
@@ -146,6 +148,8 @@ def de_dataset():
             "direct_event_components": direct_event,
         },
     )
+
+    ds.attrs["Parent"] = ["test_packet_file.pkts", "test_spice_file.tls"]
 
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})

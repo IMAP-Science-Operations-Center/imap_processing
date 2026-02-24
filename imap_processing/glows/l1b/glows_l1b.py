@@ -486,9 +486,10 @@ def create_l1b_de_output(
         )
 
     parents = input_dataset.attrs.get("Parent", "")
-    output_dataset["pkts_file_name"] = [
-        parent for parent in parents if parent.endswith("pkts")
-    ]
+    output_dataset["pkts_file_name"] = xr.DataArray(
+        [parent for parent in parents if parent.endswith("pkts")],
+        attrs=cdf_attrs.get_variable_attributes("pkts_file_name", check_schema=False),
+    )
 
     output_dataset["within_the_second"] = within_the_second_data
     output_dataset.attrs["missing_packets_sequence"] = input_dataset.attrs.get(
