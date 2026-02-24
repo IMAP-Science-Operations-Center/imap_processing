@@ -974,45 +974,41 @@ class HistogramL1B:
 
         return flags
 
-    def flag_uv_source(self, exclusions: AncillaryExclusions):
+    def flag_uv_source(self, exclusions: AncillaryExclusions) -> np.ndarray:
+        """
+        Returns a boolean mask (nbin,) where True means the bin is within the
+        masking radius of any UV source.
+        """
+        # Spin angle for each histogram bin (deg)
+        lon_deg = (self.imap_spin_angle_bin_cntr + self.position_angle_offset_average) % 360.0
 
-        # 1) Spin angle for each histogram bin (deg) — you already have this
-        effective_spin_angle_deg = (
-                                           self.imap_spin_angle_bin_cntr + self.position_angle_offset_average
-                                   ) % 360.0
-
-        # 2) Choose an off-pointing (latitude in DPS). If you don't model it, use 0 deg.
+        # If you aren't modeling off-pointing yet, keep it constant
         offpoint_deg = 0.0
 
-        # 3) Build per-bin look unit vectors in DPS from (lon, lat)
-        lon = np.deg2rad(effective_spin_angle_deg)  # (nbin,)
+        # Look vectors in DPS
+        lon = np.deg2rad(lon_deg)  # (nbin,)
         lat = np.deg2rad(offpoint_deg)  # scalar
-
+        coslat = np.cos(lat)
         look_vecs = np.column_stack(
-            (
-                np.cos(lat) * np.cos(lon),
-                np.cos(lat) * np.sin(lon),
-                np.sin(lat) * np.ones_like(lon),
-            )
-        )  # shape (nbin, 3)
+            (coslat * np.cos(lon), coslat * np.sin(lon), np.sin(lat) * np.ones_like(lon))
+        )  # (nbin, 3)
 
+        # UV source vectors (assumed already in DPS lon/lat)
         uv_lon = np.deg2rad(exclusions.uv_sources["ecliptic_longitude_deg"].values)  # (n_src,)
         uv_lat = np.deg2rad(exclusions.uv_sources["ecliptic_latitude_deg"].values)  # (n_src,)
         uv_rad = np.deg2rad(exclusions.uv_sources["angular_radius_for_masking"].values)  # (n_src,)
 
         uv_vecs = np.column_stack(
-            (
-                np.cos(uv_lat) * np.cos(uv_lon),
-                np.cos(uv_lat) * np.sin(uv_lon),
-                np.sin(uv_lat),
-            )
+            (np.cos(uv_lat) * np.cos(uv_lon), np.cos(uv_lat) * np.sin(uv_lon), np.sin(uv_lat))
         )  # (n_src, 3)
 
+        # Cosine of separation angles
         cos_sep = look_vecs @ uv_vecs.T  # (nbin, n_src)
-        cos_sep = np.clip(cos_sep, -1.0, 1.0)
-        sep_angle = np.arccos(cos_sep)
 
-        return sep_angle, uv_rad
+        # Close if within any source radius
+        close_any = np.any(cos_sep >= np.cos(uv_rad)[None, :], axis=1)  # (nbin,)
+
+        return close_any
 
 
 
