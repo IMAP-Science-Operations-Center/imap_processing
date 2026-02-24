@@ -991,8 +991,8 @@ class HistogramL1B:
 
         Returns
         -------
-        close_any : np.ndarray
-            Boolean mask.
+        close_to_uv_source : np.ndarray
+            Boolean mask for uv source.
         """
         # Rotate spin-angle bin centers by the instrument position-angle offset
         # so azimuth=0 aligns with the instrument pointing direction.
@@ -1055,9 +1055,11 @@ class HistogramL1B:
         cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
 
         # Determine if the pixel is too close to any of the source radii.
-        close_any = np.any(cos_sep >= np.cos(uv_radius)[None, :], axis=1)  # (nbin,)
+        close_to_uv_source = np.any(
+            cos_sep >= np.cos(uv_radius)[None, :], axis=1
+        )  # (nbin,)
 
-        return close_any
+        return close_to_uv_source
 
     def _compute_histogram_flag_array(
         self, exclusions: AncillaryExclusions
@@ -1067,9 +1069,9 @@ class HistogramL1B:
 
         Creates a (4, 3600) array where each row represents a different flag type:
         - Row 0: is_close_to_uv_source
-        - Row 1: is_inside_excluded_region
-        - Row 2: is_excluded_by_instr_team
-        - Row 3: is_suspected_transient
+        - Row 1: is_inside_excluded_region (TODO)
+        - Row 2: is_excluded_by_instr_team (TODO)
+        - Row 3: is_suspected_transient (TODO)
 
         Parameters
         ----------
