@@ -976,55 +976,41 @@ class HistogramL1B:
 
     def flag_uv_source(self, exclusions: AncillaryExclusions):
 
-        effective_spin_angle_deg = (self.imap_spin_angle_bin_cntr + self.position_angle_offset_average) % 360.0
+        # 1) Spin angle for each histogram bin (deg) — you already have this
+        effective_spin_angle_deg = (
+                                           self.imap_spin_angle_bin_cntr + self.position_angle_offset_average
+                                   ) % 360.0
 
-        data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
-        time_for_each_bin = np.full(self.number_of_bins_per_histogram, data_start_time_et)
+        # 2) Choose an off-pointing (latitude in DPS). If you don't model it, use 0 deg.
+        offpoint_deg = 0.0
 
-        uv_lon = np.deg2rad(exclusions.uv_sources["ecliptic_longitude_deg"].values)
-        uv_lat = np.deg2rad(exclusions.uv_sources["ecliptic_latitude_deg"].values)
-        uv_rad = np.deg2rad(exclusions.uv_sources["angular_radius_for_masking"].values)
+        # 3) Build per-bin look unit vectors in DPS from (lon, lat)
+        lon = np.deg2rad(effective_spin_angle_deg)  # (nbin,)
+        lat = np.deg2rad(offpoint_deg)  # scalar
 
-        uv_vecs = np.stack(
-            [
+        look_vecs = np.column_stack(
+            (
+                np.cos(lat) * np.cos(lon),
+                np.cos(lat) * np.sin(lon),
+                np.sin(lat) * np.ones_like(lon),
+            )
+        )  # shape (nbin, 3)
+
+        uv_lon = np.deg2rad(exclusions.uv_sources["ecliptic_longitude_deg"].values)  # (n_src,)
+        uv_lat = np.deg2rad(exclusions.uv_sources["ecliptic_latitude_deg"].values)  # (n_src,)
+        uv_rad = np.deg2rad(exclusions.uv_sources["angular_radius_for_masking"].values)  # (n_src,)
+
+        uv_vecs = np.column_stack(
+            (
                 np.cos(uv_lat) * np.cos(uv_lon),
                 np.cos(uv_lat) * np.sin(uv_lon),
                 np.sin(uv_lat),
-            ],
-            axis=1,
+            )
         )  # (n_src, 3)
-
-        # Get GLOWS boresight lon/lat in DPS at block start time.
-        # In DPS, latitude is the off-pointing of the boresight; treat it as constant across bins.
-        look_lonlat_dps = geometry.instrument_pointing(
-            data_start_time_et, SpiceFrame.IMAP_GLOWS, SpiceFrame.IMAP_DPS
-        )  # shape (2,) for scalar et
-        offpoint_deg = float(look_lonlat_dps[1])
-
-        # Build per-bin (az, el) in DPS: az = spin angle bin center, el = offpoint
-        look_az_el_dps = np.column_stack(
-            [effective_spin_angle_deg, np.full(self.number_of_bins_per_histogram, offpoint_deg)]
-        )  # (nbin, 2)
-
-        # Convert DPS az/el -> DPS cartesian unit vectors
-        # frame_transform_az_el uses spherical_to_cartesian under the hood with r=1;
-        # doing it explicitly is often clearer:
-        look_sph_dps = np.column_stack(
-            [np.ones(self.number_of_bins_per_histogram), look_az_el_dps]
-        )  # (nbin, 3) : (r, az, el)
-        look_vecs_dps = geometry.spherical_to_cartesian(look_sph_dps)  # (nbin, 3)
-
-        # Transform look vectors into ECLIPJ2000 to compare with UV sources (which are ecliptic lon/lat)
-        look_vecs = geometry.frame_transform(
-            time_for_each_bin,
-            look_vecs_dps,
-            SpiceFrame.IMAP_DPS,
-            SpiceFrame.ECLIPJ2000,
-        )  # (nbin, 3)
 
         cos_sep = look_vecs @ uv_vecs.T  # (nbin, n_src)
         cos_sep = np.clip(cos_sep, -1.0, 1.0)
-        sep_angle = np.arccos(cos_sep)  # radians, (nbin, n_src)
+        sep_angle = np.arccos(cos_sep)
 
         return sep_angle, uv_rad
 
