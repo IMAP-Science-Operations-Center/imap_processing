@@ -631,29 +631,30 @@ def test_get_valid_events_per_energy_range_ultra45(mock_spkezr):
     assert not np.any(valid_events)
 
 
+@mock.patch(
+    "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_CULL_CHANNEL",
+    2,
+)
 def test_flag_high_energy():
     """Tests flag_high_energy function."""
-    # Assign energy values to fall into different energy bins
-    # - Spin bin #1 (events 1,2,3,4) 1,2 and 3 fall into the first energy bin
-    #   - this means that the first quality flag should be set with the first energy
-    #   range flag (1) since it is equal to the threshold at that e bin (3).
-    #   - Event 4 falls into the second bin threshold (1) so the spin bin should also
-    #   get an energy bin 2 flag
-    # - Spin bin #2 (events 5,6,7,8) 5 and 6 and 7 fall into the third energy bin
-    #   - this means that the second qf should be set with the third energy
-    #   range flag (8) since it is above the threshold (2). Event 8 falls into the
-    #   fourth energy bin and since the threshold is 1 for that bin, it should also be
-    #   flagged with the fourth energy range flag (16)
-    # - Spin bin #3 (events 9,10,11,12) the first three fall outside of the energy
-    #   - bins and should not be flagged for high energy, while event 12 falls into the
-    # fourth energy bin (threshold 1) but should NOT be flagged because it has
-    # an invalid ebin marked below
+    # 7-18 is the culling energy bin and shown in the mock.patch above
+    # Flag energy ranges will compare the counts from this energy range at each spin bin
+    # to the culling threshold to determine if the spin bin should be flagged for high
+    # energy.
     energy_range_edges = np.array([3, 5, 7, 18, 25])  # Example energy bin edges
-    energy = np.array([4, 4, 3, 5, 12, 9, 2, 19, 1, 1, 1, 20])
-    cull_thresholds = np.array([3, 1, 2, 1])
+    # Spin bin 1 (events 0-3) 4 events fall within the culling energy bin
+    #   - This is above all the energy thresholds except the second one (10),
+    #   so it should be flagged for all energy ranges except flag #2
+    # Spin bin 2 (events 4-7) only 1 event falls within the culling energy bin
+    #   - This is above the lowest energy threshold (1) but below the rest, so
+    #   it should only be flagged with the last energy range flag (#3)
+    # Spin bin 3 (events 8-11) No events fall within the culling energy bin,
+    #   so it should not be flagged for any energy range
+    energy = np.array([17, 16, 12, 15, 5, 8, 4, 6, 4, 1, 22, 20])
+    cull_thresholds = np.array([3, 10, 2, 1])
     de_dataset = xr.Dataset(
         {
-            "event_times": ("epoch", np.arange(len(energy))),
+            "de_event_met": ("epoch", np.arange(len(energy))),
             "energy_spacecraft": ("epoch", energy),
             "quality_outliers": ("epoch", np.full(len(energy), 0)),
             "quality_scattering": ("epoch", np.full(len(energy), 0)),
@@ -677,16 +678,65 @@ def test_flag_high_energy():
 
     # check shape
     assert len(quality_flags) == len(spin_tbin_edges) - 1
-    # check that the first spin bin is flagged  with the first energy range flag (1)
-    assert quality_flags[0] & energy_range_flags[0] == energy_range_flags[0]
-    # check that the first spin bin is flagged  with the second energy range flag (2)
-    assert quality_flags[0] & energy_range_flags[1] == energy_range_flags[1]
-    # check that the second spin bin is flagged with the third energy range flag (4)
-    assert quality_flags[1] & energy_range_flags[2] == energy_range_flags[2]
-    # check that the second spin bin is flagged with the fourth energy range flag (8)
-    assert quality_flags[1] & energy_range_flags[3] == energy_range_flags[3]
-    # The final spin bin should nto be flagged
+    # Assert that the first spin bin is flagged for high energy for all energy ranges
+    # except the second one
+    assert quality_flags[0] == (2**0 | 2**2 | 2**3)
+    # Assert that the second spin bin is only flagged for high energy for the last
+    # energy range
+    assert quality_flags[1] == 2**3
+    # Assert that the third spin bin is not flagged for any energy range
     assert quality_flags[2] == 0
+
+
+@pytest.mark.external_test_data
+def test_validate_high_energy_cull():
+    """Validate that high energy spins are correctly flagged"""
+    # Mock thresholds to match the test data (I used fake ones to create more
+    # complexity)
+    mock_thresholds = np.array([0.05, 1.5, 0.6, 119.2, 0.2, 0.25]) * 20
+    # read test data from csv files
+    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
+    expected_qf = pd.read_csv(
+        TEST_PATH / "validate_high_energy_culling_results_repoint00047.csv"
+    ).to_numpy()
+    de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
+    de_ds = xr.Dataset(
+        {
+            "de_event_met": ("epoch", de_df.event_times.values),
+            "energy_spacecraft": ("epoch", de_df.energy_spacecraft.values),
+            "quality_outliers": ("epoch", de_df.quality_outliers.values),
+            "quality_scattering": ("epoch", de_df.quality_scattering.values),
+            "ebin": ("epoch", de_df.ebin.values),
+        }
+    )
+    # Use constants from the code to ensure consistency with the actual culling code
+    spin_bin_size = UltraConstants.SPIN_BIN_SIZE
+    spin_tbin_edges = get_binned_spins_edges(
+        xspin.spin_number.values,
+        xspin.spin_period.values,
+        xspin.spin_start_time.values,
+        spin_bin_size,
+    )
+    intervals, _, _ = build_energy_bins()
+    # Get the energy ranges
+    energy_ranges = get_binned_energy_ranges(intervals)
+    flags = get_energy_range_flags(energy_ranges)
+    e_flags = flag_high_energy(
+        de_ds, spin_tbin_edges, energy_ranges, flags, mock_thresholds
+    )
+    # The ULTRA IT flags are shaped n_energy_ranges, spin_bin while the SDC
+    # is only spin_bin but different flags are set for different energy ranges, so we
+    # need to check each energy separately
+    # We also need to invert the expected flags since the ULTRA IT mask is True
+    # for good spins (counts below threshold) while the SDC quality flags are set
+    # for bad spins (counts exceed threshold).
+    for i in range(expected_qf.shape[0]):
+        np.testing.assert_array_equal(
+            (e_flags & 2**i) > 0,
+            ~expected_qf[i, :].astype(bool),
+            err_msg=f"High energy flag mismatch for energy range {i} with edges"
+            f" {energy_ranges[i]}-{energy_ranges[i + 1]}",
+        )
 
 
 def test_get_energy_range_flags():

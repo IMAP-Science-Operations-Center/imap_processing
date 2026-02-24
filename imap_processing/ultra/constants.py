@@ -199,4 +199,8 @@ class UltraConstants:
     # the number of energy bins used.
     # n_bins=len(PSET_ENERGY_BIN_EDGES)[BASE_CULL_EBIN:] // N_CULL_EBINS
     # an error will be raised if this does not match n_bins
-    HIGH_ENERGY_CULL_THRESHOLDS = np.array([2.0, 1.5, 0.6, 0.25, 0.25, 0.25])
+    HIGH_ENERGY_CULL_THRESHOLDS = (
+        np.array([2.0, 1.5, 0.6, 0.25, 0.25, 0.25]) * SPIN_BIN_SIZE
+    )
+    # Use the channel defined below to determine which spins are contaminated
+    HIGH_ENERGY_CULL_CHANNEL = 4

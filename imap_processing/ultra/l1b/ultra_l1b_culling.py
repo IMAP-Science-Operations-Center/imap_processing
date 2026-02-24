@@ -686,7 +686,7 @@ def flag_high_energy(
     energy_ranges: NDArray,
     energy_range_flags: np.ndarray,
     energy_thresholds: np.ndarray = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS,
-    sensor_id: int = 45,
+    sensor_id: int = 90,
 ) -> NDArray:
     """
     Flag high energy events.
@@ -715,11 +715,6 @@ def flag_high_energy(
     valid_events_per_energy = get_valid_events_per_energy_range(
         de_dataset, energy_ranges, UltraConstants.EARTH_ANGLE_45_THRESHOLD, sensor_id
     )
-    # Ensure that the indices are within the valid range of spin groups
-    valid_bin_inds = (lv_spin_inds >= 0) & (lv_spin_inds < spin_bin_size)
-    lv_spin_inds = lv_spin_inds[valid_bin_inds]
-    # For each low voltage ind, flag the corresponding flag
-    quality_flags[lv_spin_inds] = low_voltage_flag
     # check to make sure the number of energy ranges matches the number of energy range
     # flags
     num_e_ranges = valid_events_per_energy.shape[0]
@@ -738,22 +733,18 @@ def flag_high_energy(
     quality_flags = np.full(
         spin_bin_size, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
     )
+    # Get valid events and counts at each spin bin for the
+    # designated culling channel. This channel
+    cull_channel_events = valid_events_per_energy[
+        UltraConstants.HIGH_ENERGY_CULL_CHANNEL
+    ]
+    # get each valid event count per spin bin for the culling channel
+    cull_channel_counts = np.histogram(
+        de_dataset["de_event_met"].values[cull_channel_events], spin_tbin_edges
+    )[0]
     # loop through each energy range
-    for flag, valid_events_at_energy, e_threshold in zip(
-        energy_range_flags, valid_events_per_energy, energy_thresholds, strict=False
-    ):
-        valid_event_mets = de_dataset["event_times"].values[valid_events_at_energy]
-        # loop through each spin bin
-        for i in range(spin_bin_size):
-            count: int = np.sum(
-                np.logical_and(
-                    valid_event_mets >= spin_tbin_edges[i],
-                    valid_event_mets < spin_tbin_edges[i + 1],
-                )
-            )
-            # Flag the spin if the counts exceed the threshold for that energy range
-            if count >= e_threshold:
-                quality_flags[i] |= flag
+    for flag, e_threshold in zip(energy_range_flags, energy_thresholds, strict=False):
+        quality_flags[cull_channel_counts >= e_threshold] |= flag
 
     return quality_flags
 
