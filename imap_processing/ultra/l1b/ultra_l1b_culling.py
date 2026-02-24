@@ -680,6 +680,145 @@ def flag_low_voltage(
     return quality_flags
 
 
+def flag_high_energy(
+    de_dataset: xr.Dataset,
+    spin_tbin_edges: NDArray,
+    energy_ranges: NDArray,
+    energy_range_flags: np.ndarray,
+    energy_thresholds: np.ndarray = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS,
+    sensor_id: int = 45,
+) -> NDArray:
+    """
+    Flag high energy events.
+
+    Parameters
+    ----------
+    de_dataset : xr.Dataset
+        Direct event dataset.
+    spin_tbin_edges : NDArray
+        Edges of the spin time bins.
+    energy_ranges : numpy.ndarray
+        Array of energy range edges.
+    energy_range_flags : numpy.ndarray
+        Array of quality flag values corresponding to each energy range.
+    energy_thresholds : numpy.ndarray
+        Array of count thresholds for flagging high energy events corresponding to
+         each energy range.
+    sensor_id : int
+        Sensor ID (e.g., 45 or 90).
+
+    Returns
+    -------
+    quality_flags : numpy.ndarray
+        Quality flags.
+    """
+    valid_events_per_energy = get_valid_events_per_energy_range(
+        de_dataset, energy_ranges, UltraConstants.EARTH_ANGLE_45_THRESHOLD, sensor_id
+    )
+    # Ensure that the indices are within the valid range of spin groups
+    valid_bin_inds = (lv_spin_inds >= 0) & (lv_spin_inds < spin_bin_size)
+    lv_spin_inds = lv_spin_inds[valid_bin_inds]
+    # For each low voltage ind, flag the corresponding flag
+    quality_flags[lv_spin_inds] = low_voltage_flag
+    # check to make sure the number of energy ranges matches the number of energy range
+    # flags
+    num_e_ranges = valid_events_per_energy.shape[0]
+    if num_e_ranges != len(energy_range_flags) or num_e_ranges != len(
+        energy_thresholds
+    ):
+        raise ValueError(
+            f"Number of energy ranges ({num_e_ranges}) does not match number of energy"
+            f" range flags ({len(energy_range_flags)}) or expected number of "
+            f"energy range thresholds ({len(energy_thresholds)})."
+        )
+
+    # Initialize all events to have no high energy flag
+    spin_bin_size = len(spin_tbin_edges) - 1
+    # initialize all spins to have no low voltage flag
+    quality_flags = np.full(
+        spin_bin_size, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
+    )
+    # loop through each energy range
+    for flag, valid_events_at_energy, e_threshold in zip(
+        energy_range_flags, valid_events_per_energy, energy_thresholds, strict=False
+    ):
+        valid_event_mets = de_dataset["event_times"].values[valid_events_at_energy]
+        # loop through each spin bin
+        for i in range(spin_bin_size):
+            count: int = np.sum(
+                np.logical_and(
+                    valid_event_mets >= spin_tbin_edges[i],
+                    valid_event_mets < spin_tbin_edges[i + 1],
+                )
+            )
+            # Flag the spin if the counts exceed the threshold for that energy range
+            if count >= e_threshold:
+                quality_flags[i] |= flag
+
+    return quality_flags
+
+
+def get_valid_events_per_energy_range(
+    de_dataset: xr.Dataset, energy_ranges: NDArray, earth_ang_45: float, sensor_id: int
+) -> NDArray:
+    """
+    Get valid events per energy range.
+
+    Parameters
+    ----------
+    de_dataset : xr.Dataset
+        Direct event dataset.
+    energy_ranges : numpy.ndarray
+        Array of energy range edges.
+    earth_ang_45 : float
+        Earth angle to use for culling in ULTRA 45.
+    sensor_id : int
+        Sensor ID (e.g., 45 or 90).
+
+    Returns
+    -------
+    valid_events_per_range : numpy.ndarray
+        A boolean array of shape (n_energy_ranges, n_events).
+    """
+    event_energies = de_dataset["energy_spacecraft"].values
+    valid_events_per_range = []
+    for i in range(len(energy_ranges) - 1):
+        valid_events = np.full(de_dataset.dims["epoch"], False, dtype=bool)
+        # TODO what about energy_heliosphere?
+        energy_mask = (event_energies >= energy_ranges[i]) & (
+            event_energies < energy_ranges[i + 1]
+        )
+        if not np.any(energy_mask):
+            valid_events_per_range.append(valid_events)
+            continue
+        # subset the dataset to events within the energy range
+        de_dataset_subset = de_dataset.isel(epoch=energy_mask)
+        valid_outliers = de_dataset_subset["quality_outliers"].values == 0
+        valid_scattering = de_dataset_subset["quality_scattering"].values == 0
+        # TODO what about species non-proton? For those psets dont cull based on
+        #   High energy?
+        ebin = de_dataset_subset["ebin"].values
+        valid_ebin = np.isin(ebin, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"])
+        valid_earth_angle = np.full(valid_ebin.shape, True, dtype=bool)
+        # For ultra45, also apply an Earth angle cut to remove times when
+        # the Earth is in the field of view. ULTRA 90 does not require this since Earth
+        # is always outside the field of view.
+        if sensor_id == 45:
+            valid_earth_angle = get_valid_earth_angle_events(
+                de_dataset_subset, earth_ang_45
+            )
+
+        # Flag events at the valid energy ranges if they meet all the criteria for
+        # valid events: not flagged as outliers, not flagged as scattering,
+        # in a valid ebin, and (for ultra45) have a valid Earth angle.
+        valid_events[energy_mask] = np.logical_and.reduce(
+            [valid_ebin, valid_outliers, valid_scattering, valid_earth_angle]
+        )
+        valid_events_per_range.append(valid_events)
+
+    return np.array(valid_events_per_range)
+
+
 def get_valid_earth_angle_events(
     de_dataset_subset: xr.Dataset,
     earth_ang_45: float = UltraConstants.EARTH_ANGLE_45_THRESHOLD,
@@ -735,7 +874,7 @@ def get_valid_earth_angle_events(
     return sep_angle > earth_ang_45
 
 
-def get_binned_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
+def get_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
     """
     Get the energy bin flags for energy dependent culling.
 

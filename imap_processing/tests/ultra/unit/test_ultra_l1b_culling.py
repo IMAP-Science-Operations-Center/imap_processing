@@ -21,21 +21,26 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     count_rejected_events_per_spin,
     expand_bin_flags_to_spins,
     flag_attitude,
+    flag_high_energy,
     flag_hk,
     flag_imap_instruments,
     flag_low_voltage,
     flag_rates,
     flag_scattering,
+    get_binned_energy_ranges,
     get_binned_spins_edges,
     get_de_rejection_mask,
-    get_energy_bin_flags,
+    get_energy_and_spin_dependent_rejection_mask,
     get_energy_histogram,
+    get_energy_range_flags,
     get_n_sigma,
     get_pulses_per_spin,
     get_spin_data,
     get_valid_earth_angle_events,
+    get_valid_events_per_energy_range,
 )
 from imap_processing.ultra.l1b.ultra_l1b_extended import get_spin_info
+from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
@@ -514,3 +519,182 @@ def test_get_valid_earth_angle_events(mock_spkezr):
 
     actual_flags = get_valid_earth_angle_events(de_dataset, earth_angle_threshold)
     np.testing.assert_array_equal(actual_flags, expected_flags)
+
+
+def test_get_valid_events_per_energy_range():
+    """Tests get_valid_events_per_energy_range function."""
+    np.random.seed(0)
+    energy_range_edges = np.array([3, 5, 7, 18])  # 3 example energy bins
+    # example energy values that fall into different bins
+    # - Events 1-3 and 8 fall into the second bin (5-7)
+    # - Events 4-7 fall into the third bin (7-18)
+    # - The rest of the event energies don't fall into any bins and should be
+    # invalid for that energy range
+    energy = np.array([5, 5, 6, 9, 10, 11, 12, 6, 7, 1, 20, 63])
+    # Mark event 2 (energy bin 2) and 5 (energy bin 3) as outliers
+    quality_outliers = np.array([0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0])
+    # Mark event 1 (energy bin 2), 9 (energy bin 3), and 11 and 12 (No energy bin)
+    quality_scattering = np.array([1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1])
+    ebin = np.full(len(energy), 10)
+    # mark event 6 as having an invalid ebin
+    ebin[5] = -1
+    de_dps_velocity = np.random.random((len(energy), 3))
+
+    de_dataset = xr.Dataset(
+        {
+            "de_dps_velocity": (("epoch", "component"), de_dps_velocity),
+            "event_times": ("epoch", np.arange(len(energy))),
+            "energy_spacecraft": ("epoch", energy),
+            "quality_outliers": ("epoch", quality_outliers),
+            "quality_scattering": ("epoch", quality_scattering),
+            "ebin": ("epoch", ebin),
+        }
+    )
+    keepout_angle = np.radians(180)
+    valid_events = get_valid_events_per_energy_range(
+        de_dataset, energy_range_edges, keepout_angle, 90
+    )
+
+    # Assert that for the first energy bin (3-5), all are false
+    assert np.array_equal(valid_events[0], np.full(len(valid_events[0]), False))
+    # Assert that for the second energy bin (5-7), all are false except
+    # events 3 and 8 (event 1 had an outlier flag, event 2 had a scattering flag)
+    expected_flags_ebin2 = np.array(
+        [
+            False,
+            False,
+            True,
+            False,
+            False,
+            False,
+            False,
+            True,
+            False,
+            False,
+            False,
+            False,
+        ]
+    )
+    assert np.array_equal(valid_events[1], expected_flags_ebin2)
+    # Assert that for the second energy bin (5-7), all are false except
+    # events 4, 5, and 7 (6 had an invalid ebin and 5 was marked as an outlier)
+    expected_flags_ebin2 = np.array(
+        [
+            False,
+            False,
+            False,
+            True,
+            False,
+            False,
+            True,
+            False,
+            False,
+            False,
+            False,
+            False,
+        ]
+    )
+    assert np.array_equal(valid_events[2], expected_flags_ebin2)
+
+
+@mock.patch("imap_processing.ultra.l1b.ultra_l1b_culling.sp.spkezr")
+def test_get_valid_events_per_energy_range_ultra45(mock_spkezr):
+    """Tests get_valid_events_per_energy_range function."""
+    np.random.seed(0)
+    mock_imap_state = np.random.random(6)  # Mock IMAP state for testing
+    mock_spkezr.return_value = (mock_imap_state, None)
+    energy_range_edges = np.array([3, 5, 7, 18])  # 3 example energy bins
+    energy = np.arange(18)
+
+    # mark all events with valid outlier and scattering flags and valid ebins.
+    de_dps_velocity = np.random.random((len(energy), 3))
+
+    de_dataset = xr.Dataset(
+        {
+            "de_dps_velocity": (("epoch", "component"), de_dps_velocity),
+            "event_times": ("epoch", np.full(len(energy), 798033671)),
+            "energy_spacecraft": ("epoch", energy),
+            "quality_outliers": ("epoch", np.full(len(energy), 0)),
+            "quality_scattering": ("epoch", np.full(len(energy), 0)),
+            "ebin": ("epoch", np.full(len(energy), 10)),
+        }
+    )
+    # ensure that all events fail the earth angle check by setting a very large
+    # keepout angle
+    keepout_angle = np.radians(360)
+    valid_events = get_valid_events_per_energy_range(
+        de_dataset, energy_range_edges, keepout_angle, 45
+    )
+
+    # although all events were valid for outliers, scattering, and ebin, all events
+    # failed the earth angle check for ultra45
+    assert not np.any(valid_events)
+
+
+def test_flag_high_energy():
+    """Tests flag_high_energy function."""
+    # Assign energy values to fall into different energy bins
+    # - Spin bin #1 (events 1,2,3,4) 1,2 and 3 fall into the first energy bin
+    #   - this means that the first quality flag should be set with the first energy
+    #   range flag (1) since it is equal to the threshold at that e bin (3).
+    #   - Event 4 falls into the second bin threshold (1) so the spin bin should also
+    #   get an energy bin 2 flag
+    # - Spin bin #2 (events 5,6,7,8) 5 and 6 and 7 fall into the third energy bin
+    #   - this means that the second qf should be set with the third energy
+    #   range flag (8) since it is above the threshold (2). Event 8 falls into the
+    #   fourth energy bin and since the threshold is 1 for that bin, it should also be
+    #   flagged with the fourth energy range flag (16)
+    # - Spin bin #3 (events 9,10,11,12) the first three fall outside of the energy
+    #   - bins and should not be flagged for high energy, while event 12 falls into the
+    # fourth energy bin (threshold 1) but should NOT be flagged because it has
+    # an invalid ebin marked below
+    energy_range_edges = np.array([3, 5, 7, 18, 25])  # Example energy bin edges
+    energy = np.array([4, 4, 3, 5, 12, 9, 2, 19, 1, 1, 1, 20])
+    cull_thresholds = np.array([3, 1, 2, 1])
+    de_dataset = xr.Dataset(
+        {
+            "event_times": ("epoch", np.arange(len(energy))),
+            "energy_spacecraft": ("epoch", energy),
+            "quality_outliers": ("epoch", np.full(len(energy), 0)),
+            "quality_scattering": ("epoch", np.full(len(energy), 0)),
+            "ebin": ("epoch", np.full(len(energy), 10)),
+        }
+    )
+    # make one ebin invalid to make sure the valid events filtering is working
+    de_dataset["ebin"].data[-1] = -1
+    spin_tbin_edges = np.arange(
+        start=0, stop=len(energy) + 1, step=4
+    )  # create spin bins of 4 seconds
+    energy_range_flags = get_energy_range_flags(energy_range_edges)
+    quality_flags = flag_high_energy(
+        de_dataset,
+        spin_tbin_edges,
+        energy_range_edges,
+        energy_range_flags,
+        cull_thresholds,
+        90,
+    )
+
+    # check shape
+    assert len(quality_flags) == len(spin_tbin_edges) - 1
+    # check that the first spin bin is flagged  with the first energy range flag (1)
+    assert quality_flags[0] & energy_range_flags[0] == energy_range_flags[0]
+    # check that the first spin bin is flagged  with the second energy range flag (2)
+    assert quality_flags[0] & energy_range_flags[1] == energy_range_flags[1]
+    # check that the second spin bin is flagged with the third energy range flag (4)
+    assert quality_flags[1] & energy_range_flags[2] == energy_range_flags[2]
+    # check that the second spin bin is flagged with the fourth energy range flag (8)
+    assert quality_flags[1] & energy_range_flags[3] == energy_range_flags[3]
+    # The final spin bin should nto be flagged
+    assert quality_flags[2] == 0
+
+
+def test_get_energy_range_flags():
+    """Tests get_binned_energy_range_flags function."""
+    # Get energy bins used at l1c
+    intervals, _, _ = build_energy_bins()
+    # Get the energy ranges
+    energy_ranges = get_binned_energy_ranges(intervals)
+    flags = get_energy_range_flags(energy_ranges)
+
+    np.testing.assert_array_equal(flags, 2 ** np.arange(6))
