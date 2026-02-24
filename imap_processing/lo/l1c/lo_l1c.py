@@ -87,7 +87,13 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         logical_source = "imap_lo_l1c_pset"
         l1b_de = sci_dependencies["imap_lo_l1b_de"]
         l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
-        # TODO: Need to handle case where no good times are found
+
+        # Handle case where no good times are found; if we don't bail
+        # here, then later background rates determination will fail
+        if l1b_goodtimes_only["epoch"].size == 0:
+            logging.warning("No good times found for L1B DE dataset.")
+            return []
+
         # Set the pointing start and end times based on the first epoch
         pointing_start_met, pointing_end_met = get_pointing_times(
             ttj2000ns_to_met(l1b_goodtimes_only["epoch"][0].item())
@@ -228,7 +234,7 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     l1b_de : xarray.Dataset
         Filtered L1B Direct Event dataset.
     """
-    # the goodtimes are currently the only ancillary file needed for L1C processing
+    # The goodtimes are one of several ancillary files needed for L1C processing
     goodtimes_table_df = lo_ancillary.read_ancillary_file(
         next(str(s) for s in anc_dependencies if "good-times" in str(s))
     )
@@ -1063,8 +1069,8 @@ def set_background_rates(
     # TODO: This assumes that the backgrounds will never change mid-pointing.
     #    Is that a safe assumption?
     pointing_bg_df = background_df[
-        (background_df["GoodTime_start"] <= pointing_start_met)
-        & (background_df["GoodTime_end"] >= pointing_end_met)
+        (background_df["GoodTime_start"] < pointing_end_met)
+        & (background_df["GoodTime_end"] > pointing_start_met)
     ]
 
     # convert the bin start and end resolution from 6 degrees to 0.1 degrees
