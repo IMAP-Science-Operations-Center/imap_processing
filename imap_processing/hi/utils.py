@@ -69,7 +69,7 @@ class HiConstants:
         Multiplier for median comparison in Statistical Filter 0.
         Values exceeding threshold_factor * median are culled.
     STAT_FILTER_0_TOF_AB_LIMIT_NS : int
-        Maximum |tof_ab| in nanoseconds for AB coincidences in Filter 0.
+        Maximum abs(tof_ab) in nanoseconds for AB coincidences in Filter 0.
     STAT_FILTER_1_CONSECUTIVE_SIGMA : float
         Sigma multiplier for consecutive interval check in Filter 1.
     STAT_FILTER_1_EXTREME_SIGMA : float
