@@ -976,15 +976,24 @@ class HistogramL1B:
 
     def flag_uv_source(self, exclusions: AncillaryExclusions) -> np.ndarray:
         """
-        Returns a boolean mask (nbin,) where True means the bin is within the
-        masking radius of any UV source.
+        Create boolean mask where True means bin is within radius of UV source.
+
+        Parameters
+        ----------
+        exclusions : AncillaryExclusions
+            Ancillary exclusions data filtered for the current day.
+
+        Returns
+        -------
+        close_any : np.ndarray
+            Boolean mask.
         """
         # Rotate spin-angle bin centers by the instrument position-angle offset
         # so azimuth=0 aligns with the instrument pointing direction.
         azimuth = (
             self.imap_spin_angle_bin_cntr + self.position_angle_offset_average
         ) % 360.0
-        # Ephemeris start time of the spin.
+        # Ephemeris start time of the histogram accumulation.
         data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
 
         # Instrument pointing direction in the DPS frame.
