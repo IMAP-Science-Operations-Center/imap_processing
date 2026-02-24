@@ -46,9 +46,9 @@ def glows_l2(
         pipeline_settings_dataset.sel(epoch=day, method="nearest")
     )
 
-    l2 = HistogramL2(input_dataset, pipeline_settings)
-
-    return [create_l2_dataset(l2, cdf_attrs)]
+    # TODO: log returning no data if l2 is None
+    l2 = HistogramL2.create(input_dataset, pipeline_settings)
+    return [create_l2_dataset(l2, cdf_attrs)] if l2 else []
 
 
 def create_l2_dataset(
