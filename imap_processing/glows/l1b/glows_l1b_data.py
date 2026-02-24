@@ -999,9 +999,11 @@ class HistogramL1B:
             (coslat * np.cos(lon), coslat * np.sin(lon), np.sin(lat) * np.ones_like(lon))
         )  # (nbin, 3)
 
+        et_bins = np.full(self.number_of_bins_per_histogram, data_start_time_et, dtype=np.float64)
+
         # Transform look vectors to ECLIPJ2000
         look_vecs_ecl = geometry.frame_transform(
-            data_start_time_et,
+            et_bins,
             look_vecs_dps,
             SpiceFrame.IMAP_DPS,
             SpiceFrame.ECLIPJ2000,
@@ -1032,11 +1034,11 @@ class HistogramL1B:
         """
         Compute the histogram flag array for bad-angle flags.
 
-        Creates a (4, 3600) array where each row represents a different flag type:
-        - Row 0: is_close_to_uv_source
-        - Row 1: is_inside_excluded_region
-        - Row 2: is_excluded_by_instr_team
-        - Row 3: is_suspected_transient
+        Creates a n = 3600 array for flag types:
+        - is_close_to_uv_source
+        - is_inside_excluded_region (TODO)
+        - is_excluded_by_instr_team (TODO)
+        - is_suspected_transient (TODO)
 
         Parameters
         ----------
@@ -1046,16 +1048,15 @@ class HistogramL1B:
         Returns
         -------
         np.ndarray
-            Array of shape (4, 3600) with bad-angle flags for each bin.
+            Array of shape n = 3600 with bad-angle flags for each bin.
         """
         histogram_flags = np.full(
             self.number_of_bins_per_histogram, GLOWSL1bFlags.NONE.value, dtype=np.uint8
         )
 
-        sep_angle, uv_rad = self.flag_uv_source(exclusions)
+        close_any = self.flag_uv_source(exclusions)
 
         # close if within radius of any UV source
-        close_any = np.any(sep_angle <= uv_rad[None, :], axis=1)  # (nbin,)
         histogram_flags[close_any] |= GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
 
         return histogram_flags
