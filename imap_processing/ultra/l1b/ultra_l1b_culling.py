@@ -709,11 +709,11 @@ def get_valid_earth_angle_events(
     # events.
     # call spkezr to get the state vector from Earth to IMAP in the IMAP_DPS frame
     body_state, _ = sp.spkezr(
-        target=SpiceBody.EARTH.name,
-        et=et,
-        ref=SpiceFrame.IMAP_DPS.name,
-        abcorr="NONE",
-        observer=SpiceBody.IMAP.name,
+        SpiceBody.EARTH.name,
+        et,
+        SpiceFrame.IMAP_DPS.name,
+        "NONE",
+        SpiceBody.IMAP.name,
     )
     position = body_state[:3]
     distance = np.linalg.norm(position)
