@@ -981,19 +981,33 @@ class HistogramL1B:
         """
         # Spin angle for each histogram bin (deg)
         lon_deg = (self.imap_spin_angle_bin_cntr + self.position_angle_offset_average) % 360.0
+        # Start time of the spin.
+        data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
 
-        # If you aren't modeling off-pointing yet, keep it constant
-        offpoint_deg = 0.0
+        look_lonlat = geometry.instrument_pointing(
+            data_start_time_et,
+            SpiceFrame.IMAP_GLOWS,
+            SpiceFrame.IMAP_DPS,
+        )
+        offpoint_deg = look_lonlat[1]
 
         # Look vectors in DPS
         lon = np.deg2rad(lon_deg)  # (nbin,)
         lat = np.deg2rad(offpoint_deg)  # scalar
         coslat = np.cos(lat)
-        look_vecs = np.column_stack(
+        look_vecs_dps = np.column_stack(
             (coslat * np.cos(lon), coslat * np.sin(lon), np.sin(lat) * np.ones_like(lon))
         )  # (nbin, 3)
 
-        # UV source vectors (assumed already in DPS lon/lat)
+        # Transform look vectors to ECLIPJ2000
+        look_vecs_ecl = geometry.frame_transform(
+            data_start_time_et,
+            look_vecs_dps,
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.ECLIPJ2000,
+        )
+
+        # UV source vectors
         uv_lon = np.deg2rad(exclusions.uv_sources["ecliptic_longitude_deg"].values)  # (n_src,)
         uv_lat = np.deg2rad(exclusions.uv_sources["ecliptic_latitude_deg"].values)  # (n_src,)
         uv_rad = np.deg2rad(exclusions.uv_sources["angular_radius_for_masking"].values)  # (n_src,)
@@ -1003,7 +1017,7 @@ class HistogramL1B:
         )  # (n_src, 3)
 
         # Cosine of separation angles
-        cos_sep = look_vecs @ uv_vecs.T  # (nbin, n_src)
+        cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
 
         # Close if within any source radius
         close_any = np.any(cos_sep >= np.cos(uv_rad)[None, :], axis=1)  # (nbin,)
