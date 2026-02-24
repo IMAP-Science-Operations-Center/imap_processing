@@ -20,6 +20,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
+from imap_processing.spice.time import met_to_datetime64
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
@@ -532,6 +533,11 @@ def test_hist_spice_output(
     with furnish_kernels(kernels):
         hist_data = HistogramL1B(**params)
 
+        day = met_to_datetime64(hist_data.imap_start_time)
+        day_exclusions = mock_ancillary_exclusions.limit_by_day(day)
+
+        mask = hist_data.flag_uv_source(day_exclusions)
+
         # Assert that all these variables are the correct shape:
         assert isinstance(hist_data.spin_period_ground_average, np.float64)
         assert isinstance(hist_data.spin_period_ground_std_dev, np.float64)
@@ -543,5 +549,8 @@ def test_hist_spice_output(
         assert hist_data.spacecraft_location_std_dev.shape == (3,)
         assert hist_data.spacecraft_velocity_average.shape == (3,)
         assert hist_data.spacecraft_velocity_std_dev.shape == (3,)
+        assert mask.shape == (3600,)
+        # For 2 degree radius: 20 + 20 + 1(center) ≈ 41 bins.
+        assert np.count_nonzero(mask) == 41
 
         # TODO: Maxine will validate actual data with GLOWS team

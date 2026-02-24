@@ -11,7 +11,13 @@ from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
 from imap_processing.quality_flags import GLOWSL1bFlags
 from imap_processing.spice import geometry
-from imap_processing.spice.geometry import SpiceBody, SpiceFrame
+from imap_processing.spice.geometry import (
+    SpiceBody,
+    SpiceFrame,
+    frame_transform,
+    instrument_pointing,
+    spherical_to_cartesian,
+)
 from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spin_angle,
@@ -997,7 +1003,7 @@ class HistogramL1B:
         data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
 
         # Instrument pointing direction in the DPS frame.
-        dps_pointing = geometry.instrument_pointing(
+        dps_pointing = instrument_pointing(
             data_start_time_et,
             SpiceFrame.IMAP_GLOWS,
             SpiceFrame.IMAP_DPS,
@@ -1010,14 +1016,14 @@ class HistogramL1B:
         )  # (nbin, 3)
 
         # Convert to unit cartesian vectors.
-        look_vecs_dps = geometry.spherical_to_cartesian(spherical)  # (nbin, 3)
+        look_vecs_dps = spherical_to_cartesian(spherical)  # (nbin, 3)
         # Create ephemeris time array.
         et_bins = np.full(
             self.number_of_bins_per_histogram, data_start_time_et, dtype=np.float64
         )
 
         # Transform unit cartesian vectors to ECLIPJ2000 frame.
-        look_vecs_ecl = geometry.frame_transform(
+        look_vecs_ecl = frame_transform(
             et_bins,
             look_vecs_dps,
             SpiceFrame.IMAP_DPS,
@@ -1038,7 +1044,7 @@ class HistogramL1B:
             axis=-1,
         )  # (n_src, 3): (r, azimuth, elevation) in degrees
 
-        uv_vecs = geometry.spherical_to_cartesian(uv_spherical)  # (n_src, 3)
+        uv_vecs = spherical_to_cartesian(uv_spherical)  # (n_src, 3)
 
         # Dot product of unit vectors gives cos(separation_angle) for each
         # histogram bin vs. each UV source -> shape (nbin, n_src).

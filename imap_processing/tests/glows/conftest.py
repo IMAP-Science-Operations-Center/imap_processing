@@ -103,7 +103,7 @@ def mock_ancillary_exclusions():
             "ecliptic_longitude_deg": (
                 ["epoch", "source"],
                 np.tile(
-                    np.array([10.0, 120.0, 250.0], dtype=np.float64),
+                    np.array([202.0812, 120.0, 250.0], dtype=np.float64),
                     (len(epoch_range), 1),
                 ),
             ),
@@ -111,7 +111,7 @@ def mock_ancillary_exclusions():
             "ecliptic_latitude_deg": (
                 ["epoch", "source"],
                 np.tile(
-                    np.array([-20.0, 0.0, 35.0], dtype=np.float64),
+                    np.array([18.4119, 0.0, 35.0], dtype=np.float64),
                     (len(epoch_range), 1),
                 ),
             ),
@@ -119,7 +119,7 @@ def mock_ancillary_exclusions():
             "angular_radius_for_masking": (
                 ["epoch", "source"],
                 np.tile(
-                    np.array([2.0, 5.0, 1.0], dtype=np.float64), (len(epoch_range), 1)
+                    np.array([2.0, 0.0, 0.0], dtype=np.float64), (len(epoch_range), 1)
                 ),
             ),
         },
