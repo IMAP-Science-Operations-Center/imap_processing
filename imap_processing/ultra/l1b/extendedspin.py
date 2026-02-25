@@ -81,7 +81,7 @@ def calculate_extendedspin(
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(intervals)
     energy_bin_flags = get_energy_range_flags(energy_ranges)
-    # Calculate the high energy quality flags using the de dataset with high voltage
+    # Calculate the high energy quality flags using the de dataset with low voltage
     # events removed. Use the same spin and energy bins that
     # were used for low voltage flags to maintain consistency in the flags.
     valid_voltage_spins = spin[np.where(voltage_qf == 0)]
@@ -133,7 +133,6 @@ def calculate_extendedspin(
     coin_per_spin[valid] = pulses.coin_per_spin[idx[valid]]
 
     # Expand binned quality flags to individual spins.
-    voltage_qf = expand_bin_flags_to_spins(len(spin), voltage_qf, spin_bin_size)
     high_energy_qf = expand_bin_flags_to_spins(len(spin), high_energy_qf, spin_bin_size)
     # account for rates spins which are not in the direct event spins
     extendedspin_dict["start_pulses_per_spin"] = start_per_spin

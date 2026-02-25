@@ -712,6 +712,7 @@ def flag_high_energy(
     quality_flags : numpy.ndarray
         Quality flags.
     """
+    cull_channel = UltraConstants.HIGH_ENERGY_CULL_CHANNEL
     valid_events_per_energy = get_valid_events_per_energy_range(
         de_dataset, energy_ranges, UltraConstants.EARTH_ANGLE_45_THRESHOLD, sensor_id
     )
@@ -726,18 +727,20 @@ def flag_high_energy(
             f" range flags ({len(energy_range_flags)}) or expected number of "
             f"energy range thresholds ({len(energy_thresholds)})."
         )
+    if cull_channel >= num_e_ranges:
+        raise ValueError(
+            f"HIGH_ENERGY_CULL_CHANNEL ({cull_channel}) is out of bounds"
+            f" for {num_e_ranges} energy ranges."
+        )
 
-    # Initialize all events to have no high energy flag
+    # Initialize all spin bins to have no high energy flag
     spin_bin_size = len(spin_tbin_edges) - 1
-    # initialize all spins to have no low voltage flag
     quality_flags = np.full(
         spin_bin_size, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
     )
     # Get valid events and counts at each spin bin for the
     # designated culling channel.
-    cull_channel_events = valid_events_per_energy[
-        UltraConstants.HIGH_ENERGY_CULL_CHANNEL
-    ]
+    cull_channel_events = valid_events_per_energy[cull_channel]
     # get each valid event count per spin bin for the culling channel
     cull_channel_counts = np.histogram(
         de_dataset["de_event_met"].values[cull_channel_events], spin_tbin_edges

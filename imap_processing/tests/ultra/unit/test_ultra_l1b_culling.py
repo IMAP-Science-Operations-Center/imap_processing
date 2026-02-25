@@ -576,9 +576,9 @@ def test_get_valid_events_per_energy_range():
         ]
     )
     assert np.array_equal(valid_events[1], expected_flags_ebin2)
-    # Assert that for the second energy bin (5-7), all are false except
-    # events 4, 5, and 7 (6 had an invalid ebin and 5 was marked as an outlier)
-    expected_flags_ebin2 = np.array(
+    # Assert that for the third energy bin (7-18), all are false except events 4 and 7
+    # (event 5 was marked as an outlier and event 6 has an invalid ebin)
+    expected_flags_ebin3 = np.array(
         [
             False,
             False,
@@ -594,7 +594,7 @@ def test_get_valid_events_per_energy_range():
             False,
         ]
     )
-    assert np.array_equal(valid_events[2], expected_flags_ebin2)
+    assert np.array_equal(valid_events[2], expected_flags_ebin3)
 
 
 @mock.patch("imap_processing.ultra.l1b.ultra_l1b_culling.sp.spkezr")
