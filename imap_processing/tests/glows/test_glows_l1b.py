@@ -26,7 +26,6 @@ from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 @pytest.fixture
 def hist_dataset():
     variables = {
-        "flight_software_version": np.zeros((20,)),
         "seq_count_in_pkts_file": np.zeros((20,)),
         "first_spin_id": np.zeros((20,)),
         "last_spin_id": np.zeros((20,)),
@@ -72,7 +71,9 @@ def hist_dataset():
         coords={"epoch": epoch, "bins": bins},
     )
 
-    ds.attrs["Parent"] = ["test_packet_file.pkts", "test_spice_file.tls"]
+    ds["flight_software_version"] = np.uint32(67)
+
+    ds.attrs["Parent"] = ["test_packet_file.cdf", "test_spice_file.tls"]
 
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
@@ -149,7 +150,7 @@ def de_dataset():
         },
     )
 
-    ds.attrs["Parent"] = ["test_packet_file.pkts", "test_spice_file.tls"]
+    ds.attrs["Parent"] = ["test_packet_file.cdf", "test_spice_file.tls"]
 
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
@@ -205,14 +206,12 @@ def test_histogram_mapping(
     mock_pipeline_settings,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
-    time_val = 1111111.11
-    # A = 2.318
-    # B = 69.5454
+    time_val = np.double(1111111.11)
     expected_temp = 100
 
     test_hists = np.zeros((200, 3600))
     # For temp
-    encoded_val = expected_temp * 2.318 + 69.5454
+    encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
     # For now, testing types and number of inputs
     pipeline_settings = PipelineSettings(
@@ -225,7 +224,7 @@ def test_histogram_mapping(
         dataclasses.asdict(
             HistogramL1B(
                 test_hists,
-                "test",
+                np.uint32(67),
                 0,
                 0,
                 0,
@@ -253,10 +252,12 @@ def test_histogram_mapping(
         ).values()
     )
 
-    assert output[18] == time_val
+    # Correctly decoded temperatures
+    assert np.isclose(output[10], expected_temp, 0.1)
 
-    # Correctly decoded temperature
-    assert output[10] - expected_temp < 0.1
+    # Ensure time values are correctly mapped
+    assert output[18] == time_val
+    assert output[21] == time_val
 
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
@@ -269,14 +270,12 @@ def test_process_histogram(
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
-    time_val = np.single(1111111.11)
-    # A = 2.318
-    # B = 69.5454
+    time_val = np.double(1111111.11)
     expected_temp = 100
 
     test_hists = np.zeros((200,))
     # For temp
-    encoded_val = np.single(expected_temp * 2.318 + 69.5454)
+    encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(
@@ -286,7 +285,7 @@ def test_process_histogram(
 
     test_l1b = HistogramL1B(
         test_hists,
-        "test",
+        np.uint32(67),
         0,
         0,
         0,
@@ -366,8 +365,6 @@ def test_glows_l1b(
     # This needs to be added eventually, but is skipped for now.
     expected_de_data = [
         "flight_software_version",
-        "ground_software_version",
-        "pkts_file_name",
         "seq_count_in_pkts_file",
         "l1a_file_name",
         "ancillary_data_files",
@@ -405,6 +402,7 @@ def test_glows_l1b(
         "spacecraft_velocity_average",
         "spacecraft_velocity_std_dev",
         "flags",
+        "flight_software_version",
     ]
 
     for key in expected_hist_data:
@@ -494,7 +492,7 @@ def test_hist_spice_output(
     use_fake_spin_data_for_time(data_start_time)
     params = {
         "histogram": np.zeros((1, 3600)),
-        "flight_software_version": "v0.0.1",
+        "flight_software_version": np.uint32(67),
         "seq_count_in_pkts_file": 0,
         "first_spin_id": 0,
         "last_spin_id": 0,

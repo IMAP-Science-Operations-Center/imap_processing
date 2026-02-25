@@ -492,6 +492,8 @@ class DirectEventL1B:
         float. From direct_events.
     direct_event_pulse_lengths: ndarray
         array of pulse lengths [μs] for direct events. From direct_events
+    l1a_file_name
+        Name of the input L1a file
     """
 
     direct_events: InitVar[np.ndarray]
@@ -526,6 +528,7 @@ class DirectEventL1B:
     direct_event_glows_times: np.ndarray | None = field(init=False, default=None)
     # 3rd value is pulse length
     direct_event_pulse_lengths: np.ndarray | None = field(init=False, default=None)
+    # l1a_file_name: str = ""
     # TODO: where does the multi-event flag go?
 
     def __post_init__(
@@ -662,7 +665,8 @@ class HistogramL1B:
     ----------
     histogram
         array of block-accumulated count numbers
-    flight_software_version: str
+    flight_software_version
+        The version of the flight software, copied from L1A
     seq_count_in_pkts_file: int
     first_spin_id: int
         The start ID
@@ -731,10 +735,12 @@ class HistogramL1B:
     flags
         flags for extra information, per histogram. This should be a human-readable
         structure.
+    l1a_file_name
+        The name of the input L1A file
     """
 
     histogram: np.ndarray
-    flight_software_version: str
+    flight_software_version: np.uint32
     seq_count_in_pkts_file: int
     first_spin_id: int
     last_spin_id: int
@@ -777,6 +783,7 @@ class HistogramL1B:
     ancillary_exclusions: InitVar[AncillaryExclusions]
     ancillary_parameters: InitVar[AncillaryParameters]
     pipeline_settings: InitVar[PipelineSettings]
+    # l1a_file_name: str = ""
     # TODO:
     # - Determine a good way to output flags as "human readable"
     # - Bad angle algorithm using SPICE locations

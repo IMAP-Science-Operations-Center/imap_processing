@@ -203,8 +203,6 @@ class HistogramL1A:
     histogram: list[int] = field(init=False)
     # next four are in block header
     flight_software_version: int = field(init=False)
-    ground_software_version: str = field(init=False)
-    pkts_file_name: str = field(init=False)
     seq_count_in_pkts_file: int = field(init=False)
     first_spin_id: int = field(init=False)
     last_spin_id: int = field(init=False)
@@ -225,6 +223,8 @@ class HistogramL1A:
     pulse_length_average: int = field(init=False)
     pulse_length_variance: int = field(init=False)
     flags: dict = field(init=False)
+    ground_software_version: str = field(init=False)
+    pkts_file_name: str = field(init=False)
 
     def __post_init__(self, l0: HistogramL0) -> None:
         """
@@ -383,7 +383,7 @@ class DirectEventL1A:
             raise ValueError(
                 f"Sequence for direct event L1A is out of order or "
                 f"incorrect. Attempted to append sequence counter "
-                f"{second_l0.SEQ} after {self.most_recent_seq}."
+                f"{second_l0.SEQ} after {self.most_recent_seq}. "
                 f"New DE time: {second_l0.SEC}, current time: {self.l0.SEC}."
             )
 
@@ -397,7 +397,7 @@ class DirectEventL1A:
         if not match:
             raise ValueError(
                 f"While attempting to merge L0 packet {second_l0} "
-                f"with {self.l0} mismatched values"
+                f"with {self.l0} mismatched values "
                 f"were found. "
             )
 
@@ -534,7 +534,7 @@ class DirectEventL1A:
 
         else:
             raise ValueError(
-                f"Incorrect length {len(raw)} for {raw}, expecting 2 or 3"
+                f"Incorrect length {len(raw)} for {raw}, expecting 2 or 3 "
                 f"bit compressed direct event data"
             )
 

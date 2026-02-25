@@ -82,6 +82,18 @@ def glows_l1b(
         output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
     )
 
+    output_dataset["flight_software_version"] = np.uint32(
+        input_dataset["flight_software_version"].data
+    )
+    parents = input_dataset.attrs.get("Parent", "")
+    # output_dataset["l1a_file_name"] = xr.DataArray(
+    #    [parent for parent in parents if parent.endswith("cdf")],
+    #    attrs=cdf_attrs.get_variable_attributes("l1a_file_name", check_schema=False),
+    # )
+    output_dataset["l1a_file_name"] = [
+        parent for parent in parents if parent.endswith("cdf")
+    ]
+
     return output_dataset
 
 
@@ -113,6 +125,10 @@ def glows_l1b_de(
     output_dataset = create_l1b_de_output(
         input_dataset, cdf_attrs, ancillary_parameters
     )
+
+    # output_dataset["flight_software_version"] = np.uint32(
+    #   input_dataset["flight_software_version"].data
+    # )
 
     return output_dataset
 
@@ -159,6 +175,7 @@ def process_de(
         "de_flags": ["flag_dim"],
         "direct_event_glows_times": ["within_the_second"],
         "direct_event_pulse_lengths": ["within_the_second"],
+        "flight_software_version": ["flight_software_version"],
     }
 
     # For each attribute, retrieve the dims from output_dimension_mapping or use an
@@ -485,11 +502,15 @@ def create_l1b_de_output(
             fields[index].name
         )
 
-    parents = input_dataset.attrs.get("Parent", "")
-    output_dataset["pkts_file_name"] = xr.DataArray(
-        [parent for parent in parents if parent.endswith("pkts")],
-        attrs=cdf_attrs.get_variable_attributes("pkts_file_name", check_schema=False),
-    )
+    # TODO: Not sure if this is requested in this product...
+    # parents = input_dataset.attrs.get("Parent", "")
+    # output_dataset["l1a_file_name"] = xr.DataArray(
+    #   [parent for parent in parents if parent.endswith("cdf")],
+    #   attrs=cdf_attrs.get_variable_attributes("l1a_file_name", check_schema=False),
+    #   )
+    # output_dataset["l1a_file_name"] = [
+    #   parent for parent in parents if parent.endswith("cdf")
+    # ]
 
     output_dataset["within_the_second"] = within_the_second_data
     output_dataset.attrs["missing_packets_sequence"] = input_dataset.attrs.get(

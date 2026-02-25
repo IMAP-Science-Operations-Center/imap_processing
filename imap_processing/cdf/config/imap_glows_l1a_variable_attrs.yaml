@@ -101,9 +101,17 @@ pkts_file_name:
   CATDESC: Name of input file with CCSDS packets data
   DISPLAY_TYPE: no_plot
   FIELDNAM: Packets-data input filename
-  FILLVAL: # TBD: what is fillval for strings?
-  FORMAT: S256 # TBC
-  LABLAXIS: File name
+  FILLVAL: " "
+  FORMAT: A49
+  VAR_TYPE: metadata
+
+ground_software_version:
+  <<: *support_data_defaults
+  CATDESC: Version of ground software used for processing
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Ground Software Version
+  FILLVAL: " "
+  FORMAT: A4
   VAR_TYPE: metadata
 
 first_spin_id:
