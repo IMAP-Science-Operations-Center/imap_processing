@@ -1664,49 +1664,41 @@ def mark_statistical_filter_2(
     # Add esa_sweep coordinate to group packets into 8-spin sets
     l1b_de_with_sweep = _add_sweep_indices(l1b_de)
 
-    # Extract required variables
+    # Get packet-level arrays
     ccsds_index = l1b_de_with_sweep["ccsds_index"].values
-    coincidence_type = l1b_de_with_sweep["coincidence_type"].values
-    nominal_bin = l1b_de_with_sweep["nominal_bin"].values
-    l1b_event_met = l1b_de_with_sweep["event_met"].values
-
-    # Get esa_sweep and esa_step for each event via ccsds_index
     esa_sweep = l1b_de_with_sweep.coords["esa_sweep"].values
     esa_step = l1b_de_with_sweep["esa_step"].values
-    ccsds_met = l1b_de_with_sweep["ccsds_met"].values
 
-    # Map events to their packet's (esa_sweep, esa_step)
-    event_sweep = esa_sweep[ccsds_index]
-    event_step = esa_step[ccsds_index]
+    # Add event-level coordinates for grouping
+    l1b_de_with_sweep = l1b_de_with_sweep.assign_coords(
+        event_sweep=("event", esa_sweep[ccsds_index]),
+        event_step=("event", esa_step[ccsds_index]),
+    )
 
     # Filter to qualified events
+    coincidence_type = l1b_de_with_sweep["coincidence_type"].values
     is_qualified = np.isin(coincidence_type, list(qualified_coincidence_types))
 
     if not np.any(is_qualified):
         logger.info("Statistical Filter 2: No qualified events found")
         return
 
-    # Get unique (esa_sweep, esa_step) combinations
-    sweep_step_pairs = np.unique(np.column_stack([event_sweep, event_step]), axis=0)
+    qualified_events = l1b_de_with_sweep.isel(event=is_qualified)
 
     n_clusters_found = 0
     n_bins_marked = 0
 
-    # Process each 8-spin set
-    for sweep_idx, step_idx in sweep_step_pairs:
-        # Get qualified events for this 8-spin set
-        set_mask = (event_sweep == sweep_idx) & (event_step == step_idx) & is_qualified
-        if np.sum(set_mask) < min_events:
+    # Process each 8-spin set using xarray groupby
+    for (sweep_idx, step_idx), group in qualified_events.groupby(
+        ["event_sweep", "event_step"]
+    ):
+        if len(group.event) < min_events:
             continue
 
-        # Get event data for this 8-spin set
-        set_event_mets = l1b_event_met[set_mask]
-        set_bins = nominal_bin[set_mask]
-
         # Sort by event_met
-        sort_order = np.argsort(set_event_mets)
-        sorted_mets = set_event_mets[sort_order]
-        sorted_bins = set_bins[sort_order]
+        sorted_group = group.sortby("event_met")
+        sorted_mets = sorted_group["event_met"].values
+        sorted_bins = sorted_group["nominal_bin"].values
 
         # Find clusters
         clusters = _find_event_clusters(sorted_mets, min_events, max_time_delta)
@@ -1715,7 +1707,9 @@ def mark_statistical_filter_2(
             continue
 
         # Get all METs for this 8-spin set (to mark all packets in the set)
-        set_mets = ccsds_met[(esa_sweep == sweep_idx) & (esa_step == step_idx)]
+        set_mets = l1b_de_with_sweep["ccsds_met"].values[
+            (esa_sweep == sweep_idx) & (esa_step == step_idx)
+        ]
 
         # Mark bins for each cluster
         for cluster_start, cluster_end in clusters:
