@@ -15,7 +15,7 @@ from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     frame_transform,
-    instrument_pointing,
+    get_instrument_mounting_az_el,
     spherical_to_cartesian,
 )
 from imap_processing.spice.spin import (
@@ -1003,12 +1003,8 @@ class HistogramL1B:
         data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
 
         # Instrument pointing direction in the DPS frame.
-        dps_pointing = instrument_pointing(
-            data_start_time_et,
-            SpiceFrame.IMAP_GLOWS,
-            SpiceFrame.IMAP_DPS,
-        )
-        elevation = dps_pointing[1]
+        az_el = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
+        elevation = az_el[1]
 
         spherical = np.stack(
             [np.ones_like(azimuth), azimuth, np.full_like(azimuth, elevation)],
