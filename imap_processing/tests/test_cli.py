@@ -281,11 +281,12 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
 
 
 @pytest.mark.parametrize(
-    "data_level, function_name, science_input, anc_input, n_prods",
+    "data_level, data_descriptor, function_name, science_input, anc_input, n_prods",
     [
-        ("l1a", "hi_l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        ("l1a", "sci", "hi_l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
         (
             "l1b",
+            "90sensor-de",
             "annotate_direct_events",
             [
                 "imap_hi_l1a_90sensor-de_20241105_v001.cdf",
@@ -294,9 +295,10 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
             ["imap_hi_90sensor-esa-energies_20240101_v001.csv"],
             1,
         ),
-        ("l1b", "housekeeping", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        ("l1b", "sci", "housekeeping", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
         (
             "l1c",
+            "45sensor-pset",
             "hi_l1c",
             ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"],
             ["imap_hi_calibration-prod-config_20240101_v001.csv"],
@@ -304,6 +306,7 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
         ),
         (
             "l2",
+            "h90-ena-h-sf-nsp-full-hae-4deg-3mo",
             "hi_l2",
             [
                 "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
@@ -321,6 +324,7 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
 def test_hi(
     mock_instrument_dependencies,
     data_level,
+    data_descriptor,
     function_name,
     science_input,
     anc_input,
@@ -346,12 +350,68 @@ def test_hi(
             '[{"type": "science","files": ["imap_hi_l0_raw_20231212_v001.pkts"]}]'
         )
         instrument = Hi(
-            data_level, "sci", dependency_str, "20231212", "20231213", "v005", False
+            data_level,
+            data_descriptor,
+            dependency_str,
+            "20231212",
+            "20231213",
+            "v005",
+            False,
         )
 
         instrument.process()
         assert mock_hi.call_count == 1
         assert mock_instrument_dependencies["mock_write_cdf"].call_count == n_prods
+
+
+@mock.patch("imap_processing.cli.hi_goodtimes.hi_goodtimes", autospec=True)
+def test_hi_l1c_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
+    """Test coverage for cli.Hi class with l1c goodtimes descriptor"""
+    mocks = mock_instrument_dependencies
+    # goodtimes returns paths directly, not datasets
+    expected_output_path = Path("/path/to/goodtimes_output.txt")
+    mock_hi_goodtimes.return_value = [expected_output_path]
+
+    # Set up the input collection with required dependencies
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00001_v001.cdf"),
+        ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00002_v001.cdf"),
+        ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00003_v001.cdf"),
+        ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00004_v001.cdf"),
+        ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00005_v001.cdf"),
+        ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00006_v001.cdf"),
+        ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00007_v001.cdf"),
+        ScienceInput("imap_hi_l1b_45sensor-hk_20250415-repoint00004_v001.cdf"),
+        AncillaryInput("imap_hi_45sensor-cal-prod_20240101_v001.json"),
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    dependency_str = input_collection.serialize()
+    instrument = Hi(
+        "l1c",
+        "goodtimes",
+        dependency_str,
+        "20250415",
+        "repoint00004",
+        "v005",
+        False,
+    )
+
+    instrument.process()
+
+    # Verify hi_goodtimes was called with correct arguments
+    assert mock_hi_goodtimes.call_count == 1
+    call_args = mock_hi_goodtimes.call_args
+
+    # Check that start_date and version were passed correctly
+    assert call_args.args[5] == "20250415"  # start_date
+    assert call_args.args[6] == "v005"  # version
+    assert call_args.args[1] == "repoint00004"  # current_repointing
+
+    # goodtimes returns paths directly, so write_cdf should not be called for
+    # the goodtimes output itself, but post_processing handles Path objects
+    # by just passing them through for upload
+    assert mocks["mock_write_cdf"].call_count == 0
 
 
 @mock.patch("imap_processing.cli.lo_l2.lo_l2", autospec=True)
