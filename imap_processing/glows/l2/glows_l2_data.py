@@ -334,7 +334,7 @@ class HistogramL2:
             A HistogramL2 object if there are good times in the dataset,
             or None if there are no good times.
         """
-        # Check if dataset contains good
+        # Check if dataset contains good times
         good_idx = cls.return_good_times(
             l1b_dataset["flags"],
             np.array(pipeline_settings.active_bad_time_flags, dtype=float),
