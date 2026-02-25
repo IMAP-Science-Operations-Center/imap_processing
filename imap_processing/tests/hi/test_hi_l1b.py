@@ -69,7 +69,7 @@ def test_hi_annotate_direct_events(
     l1b_datasets = annotate_direct_events(l1a_dataset, xr.Dataset(), esa_energies_csv)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
-    assert len(l1b_datasets[0].data_vars) == 17
+    assert len(l1b_datasets[0].data_vars) == 18
 
 
 @pytest.mark.parametrize(
@@ -131,7 +131,7 @@ def test_annotate_direct_events_with_hk(
     l1b_datasets = annotate_direct_events(l1a_dataset, hk_dataset, esa_energies_csv)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_90sensor-de"
-    assert len(l1b_datasets[0].data_vars) == 17
+    assert len(l1b_datasets[0].data_vars) == 18
     # Verify new L1B variables exist
     assert "esa_step_met" in l1b_datasets[0].data_vars
     assert "ccsds_qf" in l1b_datasets[0].data_vars
@@ -700,6 +700,7 @@ class TestDeCcsdsQf:
                     dims=["event_met"],
                     attrs={"FILLVAL": 0},
                 ),
+                "spin_invalids": (["epoch"], np.zeros(n_packets, dtype=np.uint8)),
             },
         )
         result = de_ccsds_qf(ds)
@@ -729,11 +730,80 @@ class TestDeCcsdsQf:
                     dims=["event_met"],
                     attrs={"FILLVAL": 0},
                 ),
+                "spin_invalids": (["epoch"], np.zeros(n_packets, dtype=np.uint8)),
             },
         )
         result = de_ccsds_qf(ds)
         assert result["ccsds_qf"].values[0] == 0
         assert result["ccsds_qf"].values[1] == 0
+
+    def test_spin_invalid_flag_set(self):
+        """Test that BADSPIN flag is set for packets with nonzero spin_invalids."""
+        n_packets = 3
+        ccsds_indices = np.concatenate(
+            [
+                np.zeros(10, dtype=np.uint16),
+                np.ones(10, dtype=np.uint16),
+                np.full(10, 2, dtype=np.uint16),
+            ]
+        )
+        ds = xr.Dataset(
+            coords={
+                "epoch": np.arange(n_packets),
+                "event_met": np.arange(len(ccsds_indices), dtype=np.float64),
+            },
+            data_vars={
+                "ccsds_index": (["event_met"], ccsds_indices),
+                "trigger_id": xr.DataArray(
+                    np.ones(len(ccsds_indices), dtype=np.uint8),
+                    dims=["event_met"],
+                    attrs={"FILLVAL": 0},
+                ),
+                # Packet 1 has an invalid spin, packets 0 and 2 do not
+                "spin_invalids": (
+                    ["epoch"],
+                    np.array([0, 1, 0], dtype=np.uint8),
+                ),
+            },
+        )
+        result = de_ccsds_qf(ds)
+        np.testing.assert_array_equal(
+            result["ccsds_qf"].values, [0, ImapHiL1bDeFlags.BADSPIN, 0]
+        )
+
+    def test_spin_invalid_and_packet_full_flags_combined(self):
+        """Test that BADSPIN and PACKET_FULL flags can be set together."""
+        n_packets = 2
+        ccsds_indices = np.concatenate(
+            [
+                np.zeros(664, dtype=np.uint16),  # 664 events for packet 0
+                np.ones(10, dtype=np.uint16),
+            ]
+        )
+        ds = xr.Dataset(
+            coords={
+                "epoch": np.arange(n_packets),
+                "event_met": np.arange(len(ccsds_indices), dtype=np.float64),
+            },
+            data_vars={
+                "ccsds_index": (["event_met"], ccsds_indices),
+                "trigger_id": xr.DataArray(
+                    np.ones(len(ccsds_indices), dtype=np.uint8),
+                    dims=["event_met"],
+                    attrs={"FILLVAL": 0},
+                ),
+                # Packet 0 is both full and has an invalid spin
+                "spin_invalids": (
+                    ["epoch"],
+                    np.array([1, 0], dtype=np.uint8),
+                ),
+            },
+        )
+        result = de_ccsds_qf(ds)
+        np.testing.assert_array_equal(
+            result["ccsds_qf"].values,
+            [ImapHiL1bDeFlags.PACKET_FULL | ImapHiL1bDeFlags.BADSPIN, 0],
+        )
 
     def test_no_valid_direct_events_all_fill_trigger_id(self):
         """de_ccsds_qf returns all zeros when trigger_id is entirely FILLVAL."""
@@ -756,6 +826,7 @@ class TestDeCcsdsQf:
                     dims=["event_met"],
                     attrs={"FILLVAL": trigger_fillval},
                 ),
+                "spin_invalids": (["epoch"], np.zeros(n_packets, dtype=np.uint8)),
             },
         )
         result = de_ccsds_qf(ds)
@@ -783,6 +854,7 @@ class TestDeCcsdsQf:
                     dims=["event_met"],
                     attrs={"FILLVAL": 0},
                 ),
+                "spin_invalids": (["epoch"], np.zeros(n_packets, dtype=np.uint8)),
             },
         )
         result = de_ccsds_qf(ds)

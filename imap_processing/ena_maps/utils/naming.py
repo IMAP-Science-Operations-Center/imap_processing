@@ -173,6 +173,87 @@ class MapDescriptor:
             ]
         )
 
+    def to_catdesc(self) -> str:
+        """
+        Convert the MapDescriptor instance to a human-readable CATDESC string.
+
+        Returns
+        -------
+        str
+            Information in descriptor converted to SPDF CATDESC attribute. This
+            is normally used for plot titles and should be under about 80 characters.
+        """
+        instrument = self.instrument.name.split("_")[0]
+        if instrument not in ("IDEX", "GLOWS"):
+            instrument = instrument.title()
+        sensor = " Combined" if self.sensor == "combined" else self.sensor
+        species = "UV" if self.species == "uv" else self.species.title()
+        m = re.match(
+            r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
+        )
+        quantity = {
+            "drt": "Rate",
+            "ena": "Inten",
+            "int": "Inten",
+            "isn": "Rate",
+            "spx": "Spectral",
+        }[m.group(1)]
+        if m.group(1) == "isn":
+            species = "ISN " + species
+        extras = m.group(2)
+        coord = self.coordinate_system.upper()
+        frame = {
+            "hf": "Helio",
+            "hk": "Helio Kin",
+            "sf": "SC",
+        }[self.frame_descriptor]
+        survival = "Surv Corr" if self.survival_corrected == "sp" else "No Surv Corr"
+        spin_phase = self.spin_phase.title()
+        if spin_phase == "Full":
+            spin_phase = "Full Spin"
+        m = re.match(r"^(\d+)deg|nside(\d+)", self.resolution_str)
+        resolution = f"{m.group(1)} deg" if m.group(1) else f"NSide {m.group(2)}"
+        if isinstance(self.duration, int):
+            duration = f"{self.duration} Day"
+        else:
+            m = re.match(r"^(\d+)(.*)$", self.duration)
+            duration = f"{m.group(1)} {m.group(2).title()}"
+            if duration.endswith("Mo"):
+                duration += "n"
+        catdesc = (
+            f"IMAP {instrument}{sensor} {species} {quantity}, {coord} "
+            f"{frame} Frame, {survival}, {spin_phase}, {resolution}, {duration}"
+        )
+        possible_extras = [
+            ("nbs", "No sputter/bootstrap"),
+            ("nbkgnd", "No bkgnd sub"),
+        ]
+        for extra, long_description in possible_extras:
+            if extras.startswith(extra):
+                catdesc += f", {long_description}"
+                break
+        return catdesc
+
+    @property
+    def principal_data_var(self) -> str:
+        """
+        The name of the variable containing the principal data for the map.
+
+        Returns
+        -------
+        principal_data_var : str
+            CDF (dataset) variable name expected to contain the principal data.
+        """
+        if self.principal_data.startswith("isnnbkgnd"):
+            return "isn_rate"
+        return {
+            "drt": "dust_rate",
+            "ena": "ena_intensity",
+            "int": "glows_rate",
+            "isn": "isn_rate_bg_subtracted",
+            "spx": "ena_spectral_index",
+        }[self.principal_data[:3]]
+
     # Methods for parsing and building parts of the map descriptor string
     @staticmethod
     def get_instrument_descriptor(

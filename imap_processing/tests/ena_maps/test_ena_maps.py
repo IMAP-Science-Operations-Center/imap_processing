@@ -921,7 +921,11 @@ class TestRectangularSkyMap:
         skymap.min_epoch = 10
         skymap.max_epoch = 15
         cdf_dataset = skymap.build_cdf_dataset(
-            "hi", "l2", "foo_descriptor", sensor="45", drop_vars_with_no_attributes=True
+            "hi",
+            "l2",
+            "h45-ena-h-sf-nsp-ram-hae-6deg-6mo",
+            sensor="45",
+            drop_vars_with_no_attributes=True,
         )
 
         # Check that expected vars gets removed
@@ -967,6 +971,12 @@ class TestRectangularSkyMap:
                     f"attr '{attr}' should not be in variable attributes for '{var}'"
                 )
 
+        # Check CATDESC made from descriptor
+        assert (
+            cdf_dataset["ena_intensity"].attrs["CATDESC"]
+            == "IMAP Hi45 H Inten, HAE SC Frame, No Surv Corr, Ram, 6 deg, 6 Mon"
+        )
+
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
     def test_build_cdf_dataset_external_dataset(
         self, mock_to_dataset, mock_data_for_build_cdf_dataset
@@ -979,12 +989,16 @@ class TestRectangularSkyMap:
         skymap.min_epoch = 10
         skymap.max_epoch = 15
         cdf_dataset_standard = skymap.build_cdf_dataset(
-            "hi", "l2", "foo_descriptor", sensor="45", drop_vars_with_no_attributes=True
+            "hi",
+            "l2",
+            "h45-ena-h-sf-nsp-ram-hae-6deg-6mo",
+            sensor="45",
+            drop_vars_with_no_attributes=True,
         )
         cdf_dataset_external = skymap.build_cdf_dataset(
             "hi",
             "l2",
-            "foo_descriptor",
+            "h45-ena-h-sf-nsp-ram-hae-6deg-6mo",
             sensor="45",
             drop_vars_with_no_attributes=True,
             external_map_dataset=mock_data_for_build_cdf_dataset,
@@ -1019,7 +1033,9 @@ class TestRectangularSkyMap:
             KeyError,
             match="Required variable 'energy_delta_minus' not found in cdf Dataset.",
         ):
-            _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
+            _ = skymap.build_cdf_dataset(
+                "hi", "l2", "h45-ena-h-sf-nsp-ram-hae-6deg-6mo", sensor="45"
+            )
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
     def test_keep_vars_with_no_attributes(
@@ -1035,7 +1051,7 @@ class TestRectangularSkyMap:
         cdf_dataset = skymap.build_cdf_dataset(
             "hi",
             "l2",
-            "foo_descriptor",
+            "h45-ena-h-sf-nsp-ram-hae-6deg-6mo",
             sensor="45",
             drop_vars_with_no_attributes=False,
         )

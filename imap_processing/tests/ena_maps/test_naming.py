@@ -304,3 +304,92 @@ class TestMapDescriptor:
         )
         descriptor_str_ultra_combined = md_ultra_combined.to_string()
         assert descriptor_str_ultra_combined == "ulc-ena-h-sf-nsp-full-hae-nside32-1yr"
+
+    @pytest.mark.parametrize(
+        "descriptor_str, expected_catdesc",
+        [
+            (
+                "h45-spx-h-hf-sp-ram-hae-4deg-3mo",
+                "IMAP Hi45 H Spectral, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "h45-spx0305-h-hf-sp-ram-hae-4deg-3mo",
+                "IMAP Hi45 H Spectral, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "hic-ena-h-hf-sp-ram-hae-4deg-3mo",
+                "IMAP Hi Combined H Inten, HAE Helio Frame, Surv Corr, Ram,"
+                " 4 deg, 3 Mon",
+            ),
+            (
+                "u45-ena-h-hf-sp-ram-hae-4deg-3mo",
+                "IMAP Ultra45 H Inten, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "u45-ena-h-hf-sp-full-hae-4deg-3mo",
+                "IMAP Ultra45 H Inten, HAE Helio Frame, Surv Corr, Full Spin,"
+                " 4 deg, 3 Mon",
+            ),
+            (
+                "u45-ena-h-hf-sp-ram-hae-nside128-3mo",
+                "IMAP Ultra45 H Inten, HAE Helio Frame, Surv Corr, Ram, NSide 128,"
+                " 3 Mon",
+            ),
+            (
+                "u45-enaCUSTOM-h-hf-sp-ram-hae-4deg-3mo",
+                "IMAP Ultra45 H Inten, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "l090-enanbs-h-sf-nsp-ram-hae-6deg-1yr",
+                "IMAP Lo90 H Inten, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr,"
+                " No sputter/bootstrap",
+            ),
+            (
+                "t090-ena-o-sf-nsp-ram-hae-6deg-1yr",
+                "IMAP Lo90 O Inten, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
+            ),
+            (
+                "l090-ena-h-hf-nsp-ram-gcs-6deg-1yr",
+                "IMAP Lo90 H Inten, GCS Helio Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
+            ),
+            (
+                "l090-isn-h-sf-nsp-ram-hae-6deg-1yr",
+                "IMAP Lo90 ISN H Rate, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr",
+            ),
+            (
+                "l090-isnnbkgnd-h-sf-nsp-ram-hae-6deg-1yr",
+                "IMAP Lo90 ISN H Rate, HAE SC Frame, No Surv Corr, Ram, 6 deg, 1 Yr,"
+                " No bkgnd sub",
+            ),
+            (
+                "glx-int-uv-sf-nsp-full-hae-6deg-1yr",
+                "IMAP GLOWS UV Inten, HAE SC Frame, No Surv Corr, Full Spin, 6 deg,"
+                " 1 Yr",
+            ),
+            (
+                "idx-drt-dust-sf-nsp-full-hae-6deg-1yr",
+                "IMAP IDEX Dust Rate, HAE SC Frame, No Surv Corr, Full Spin, 6 deg,"
+                " 1 Yr",
+            ),
+        ],
+    )
+    def test_to_catdesc(self, descriptor_str, expected_catdesc):
+        # Use case is primarily from descriptor str to CATDESC
+        md = MapDescriptor.from_string(descriptor_str)
+        actual_catdesc = md.to_catdesc()
+        assert actual_catdesc == expected_catdesc
+
+    @pytest.mark.parametrize(
+        "descriptor_str, expected_principal_data_var",
+        [
+            ("hic-ena-h-hf-sp-ram-hae-4deg-3mo", "ena_intensity"),
+            ("h45-spx0305-h-hf-sp-ram-hae-4deg-3mo", "ena_spectral_index"),
+            ("idx-drt-dust-sf-nsp-full-hae-6deg-1yr", "dust_rate"),
+            ("glx-int-uv-sf-nsp-full-hae-6deg-1yr", "glows_rate"),
+            ("l090-isnnbkgnd-h-sf-nsp-ram-hae-6deg-1yr", "isn_rate"),
+            ("l090-isn-h-sf-nsp-ram-hae-6deg-1yr", "isn_rate_bg_subtracted"),
+        ],
+    )
+    def test_principal_data_var(self, descriptor_str, expected_principal_data_var):
+        md = MapDescriptor.from_string(descriptor_str)
+        assert md.principal_data_var == expected_principal_data_var

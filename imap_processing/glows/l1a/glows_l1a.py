@@ -325,6 +325,11 @@ def generate_histogram_dataset(
     output : xarray.Dataset
         Dataset containing the GLOWS L1A histogram CDF output.
     """
+    # Filter out empty histogram objects (those with no bins).
+    hist_l1a_list = [
+        hist for hist in hist_l1a_list if hist.number_of_bins_per_histogram > 0
+    ]
+
     # Store timestamps for each HistogramL1A object.
     time_data = np.zeros(len(hist_l1a_list), dtype=np.int64)
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A

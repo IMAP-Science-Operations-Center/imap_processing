@@ -8,8 +8,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
+from scipy.ndimage import convolve1d
 
-from imap_processing.hi.utils import CoincidenceBitmap, parse_sensor_number
+from imap_processing.hi.utils import CoincidenceBitmap, HiConstants, parse_sensor_number
+from imap_processing.quality_flags import ImapHiL1bDeFlags
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +35,19 @@ class CullCode(IntEnum):
     LOOSE = 1
 
 
-def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
+def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
     """
-    Create goodtimes dataset from L1A Direct Event data.
+    Create goodtimes dataset from L1B Direct Event data.
 
     Initializes all times and spin bins as good (cull_flags=0). The goodtimes
     dataset is created with one entry per unique MET timestamp found in the
-    L1A DE data. Culling functions (e.g., mark_incomplete_spin_sets) should be
+    L1B DE data. Culling functions (e.g., mark_incomplete_spin_sets) should be
     called after creation to identify and flag bad times.
 
     Parameters
     ----------
-    l1a_de : xarray.Dataset
-        L1A direct event data for this pointing. Used to extract MET timestamps
+    l1b_de : xarray.Dataset
+        L1B direct event data for this pointing. Used to extract MET timestamps
         for each 8-spin interval.
 
     Returns
@@ -55,16 +57,12 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
         Access goodtimes methods via the .goodtimes accessor
         (e.g., dataset.goodtimes.remove_times()).
     """
-    logger.info("Creating Goodtimes from L1A Direct Event data")
+    logger.info("Creating Goodtimes from L1B Direct Event data")
 
-    # Extract MET times from packet metadata
+    # Extract MET times from esa_step_met
     # Each MET represents one 8-spin histogram packet interval
-    # Format: seconds + subseconds/1000
-    met_all = (
-        l1a_de["meta_seconds"].astype(float)
-        + l1a_de["meta_subseconds"].astype(float) / 1000
-    )
-    logger.debug(f"Extracted {len(met_all)} total MET entries from L1A DE data")
+    met_all = l1b_de["esa_step_met"]
+    logger.debug(f"Extracted {len(met_all)} total MET entries from L1B DE data")
 
     # Find unique MET values and indices of first occurrences
     unique_mets, first_indices = np.unique(met_all.values, return_index=True)
@@ -72,7 +70,7 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
 
     # Extract data for unique METs (use first occurrence of each)
     met = met_all.isel(epoch=first_indices)
-    esa_step = l1a_de["esa_step"].isel(epoch=first_indices)
+    esa_step = l1b_de["esa_step"].isel(epoch=first_indices)
 
     # Create coordinates
     coords = {
@@ -94,12 +92,12 @@ def create_goodtimes_dataset(l1a_de: xr.Dataset) -> xr.Dataset:
     }
 
     # Create attributes
-    sensor_number = parse_sensor_number(l1a_de.attrs["Logical_source"])
-    match = re.match(r"repoint(?P<pointing_num>\d{5})", l1a_de.attrs["Repointing"])
+    sensor_number = parse_sensor_number(l1b_de.attrs["Logical_source"])
+    match = re.match(r"repoint(?P<pointing_num>\d{5})", l1b_de.attrs["Repointing"])
     if not match:
         raise ValueError(
-            f"Unable to parse pointing number from l1a_de Repointing "
-            f"attribute: {l1a_de.attrs['Repointing']}"
+            f"Unable to parse pointing number from l1b_de Repointing "
+            f"attribute: {l1b_de.attrs['Repointing']}"
         )
     attrs = {
         "sensor": f"Hi{sensor_number}",
@@ -142,7 +140,7 @@ class GoodtimesAccessor:
         * cull_flags : xarray.DataArray (met, spin_bin)
           Cull flags where 0=good time, non-zero=bad time with cull reason code
         * esa_step : xarray.DataArray (met,)
-          ESA energy step for each MET timestamp
+          ESA step for each MET timestamp
       * Attributes
         * sensor : str
          Sensor identifier ('Hi45' or 'Hi90')
@@ -156,7 +154,7 @@ class GoodtimesAccessor:
 
     Examples
     --------
-    >>> gt_dataset = create_goodtimes_dataset(l1a_de)
+    >>> gt_dataset = create_goodtimes_dataset(l1b_de)
     >>> gt_dataset.goodtimes.mark_bad_times(met=1000.5, cull=CullCode.LOOSE)
     >>> intervals = gt_dataset.goodtimes.get_good_intervals()
     """
@@ -304,7 +302,7 @@ class GoodtimesAccessor:
             - spin_bin_low: Lowest good spin bin in interval
             - spin_bin_high: Highest good spin bin in interval
             - n_good_bins: Number of good bins
-            - esa_step: ESA energy step for this MET
+            - esa_step: ESA step for this MET
 
         Notes
         -----
@@ -356,7 +354,7 @@ class GoodtimesAccessor:
         pattern : numpy.ndarray
             Cull flags pattern for spin bins.
         esa_step : int
-            ESA energy step for this MET.
+            ESA step for this MET.
         """
         good_bins = np.nonzero(pattern == 0)[0]
 
@@ -496,7 +494,7 @@ class GoodtimesAccessor:
 
 def mark_incomplete_spin_sets(
     goodtimes_ds: xr.Dataset,
-    l1a_de: xr.Dataset,
+    l1b_de: xr.Dataset,
     cull_code: int = CullCode.LOOSE,
 ) -> None:
     """
@@ -525,25 +523,23 @@ def mark_incomplete_spin_sets(
     ----------
     goodtimes_ds : xarray.Dataset
         Goodtimes dataset to update with cull flags.
-    l1a_de : xarray.Dataset
-        L1A Direct Event data containing DE packets with last_spin_num field.
+    l1b_de : xarray.Dataset
+        L1B Direct Event data containing DE packets with last_spin_num field
+        and ccsds_qf quality flag.
     cull_code : int, optional
         Cull code to use for marking bad times (default: CullCode.LOOSE).
 
     Notes
     -----
-    This function modifies goodtimes_ds in place by calling remove_times()
+    This function modifies goodtimes_ds in place by calling mark_bad_times()
     for MET timestamps with incomplete spin coverage.
     """
     logger.info("Running mark_incomplete_spin_sets culling")
 
     met_values = goodtimes_ds.coords["met"].values
 
-    # Calculate DE packet MET times
-    de_met = (
-        l1a_de["meta_seconds"].astype(float)
-        + l1a_de["meta_subseconds"].astype(float) / 1000
-    )
+    # Get DE packet MET times directly from esa_step_met
+    de_met = l1b_de["esa_step_met"]
 
     # Assign each DE packet to nearest goodtimes MET using searchsorted
     # This maps each DE packet to a MET index
@@ -557,11 +553,11 @@ def mark_incomplete_spin_sets(
     distances = np.abs(de_met.values - met_values[met_indices])
     valid_assignment = distances <= time_slop
 
-    # Create a new coordinate in l1a_de for grouping
-    l1a_de_with_group = l1a_de.assign_coords(met_group=("epoch", met_indices))
+    # Create a new coordinate in l1b_de for grouping
+    l1b_de_with_group = l1b_de.assign_coords(met_group=("epoch", met_indices))
 
     # Only keep packets with valid time assignment
-    l1a_de_valid = l1a_de_with_group.isel(epoch=valid_assignment)
+    l1b_de_valid = l1b_de_with_group.isel(epoch=valid_assignment)
 
     # Valid pattern bitmasks
     valid_pattern_1 = 0b10001000  # bits 3,7: every 4th spin (last_spin_num 4,8)
@@ -572,11 +568,11 @@ def mark_incomplete_spin_sets(
     # Group by MET and validate each group
     bad_mets = []
 
-    for met_idx, group in l1a_de_valid.groupby("met_group"):
+    for met_idx, group in l1b_de_valid.groupby("met_group"):
         met_time = met_values[met_idx]
 
-        # Check for invalid spins flag
-        if np.any(group["spin_invalids"].values != 0):
+        # Check for invalid spins flag (bit 1 in ccsds_qf)
+        if np.any((group["ccsds_qf"].values & ImapHiL1bDeFlags.BADSPIN) != 0):
             bad_mets.append(met_time)
             continue
 
@@ -911,26 +907,27 @@ def _compute_normalized_counts_per_sweep(
     counts_per_sweep = np.zeros(n_sweeps, dtype=np.int64)
     np.add.at(counts_per_sweep, event_sweep_idx[is_valid_ab.values], 1)
 
-    # Normalize by number of unique ESA steps
-    n_unique_esa_steps = len(np.unique(l1b_de["esa_step"].values))
-    normalized_counts = counts_per_sweep / n_unique_esa_steps
+    # Normalize by number of unique ESA energy steps
+    n_unique_esa_energy_steps = len(np.unique(l1b_de["esa_energy_step"].values))
+    normalized_counts = counts_per_sweep / n_unique_esa_energy_steps
 
     # Remove all variables that depend on event_met dimension
     ds = l1b_de.drop_dims("event_met", errors="ignore")
 
-    # Set esa_sweep and esa_step as a multi-index on epoch dimension
-    ds = ds.set_index(epoch=["esa_sweep", "esa_step"])
+    # Set esa_sweep and esa_energy_step as a multi-index on epoch dimension
+    ds = ds.set_index(epoch=["esa_sweep", "esa_energy_step"])
 
-    # Drop duplicates, keeping first occurrence of each (esa_sweep, esa_step) pair
-    # This handles cases where multiple packets have the same esa_sweep and esa_step
+    # Drop duplicates, keeping first occurrence of each (esa_sweep, esa_energy_step)
+    # pair. This handles cases where multiple packets have the same esa_sweep
+    # and esa_energy_step.
     ds = ds.drop_duplicates(dim="epoch", keep="first")
 
-    # Unstack to make esa_sweep and esa_step into separate dimensions
-    # This creates a 2D array with dimensions (esa_sweep, esa_step)
+    # Unstack to make esa_sweep and esa_energy_step into separate dimensions
+    # This creates a 2D array with dimensions (esa_sweep, esa_energy_step)
     ds_reshaped = ds.unstack("epoch")
 
     # Add normalized_count as a new variable
-    # It only has esa_sweep dimension (no esa_step variation within a sweep)
+    # It only has esa_sweep dimension (no esa_energy_step variation within a sweep)
     ds_reshaped["normalized_count"] = xr.DataArray(
         normalized_counts,
         dims=["esa_sweep"],
@@ -944,10 +941,10 @@ def mark_statistical_filter_0(
     goodtimes_ds: xr.Dataset,
     l1b_de_datasets: list[xr.Dataset],
     current_index: int,
-    threshold_factor: float = 1.5,
-    tof_ab_limit_ns: int = 15,
+    threshold_factor: float = HiConstants.STAT_FILTER_0_THRESHOLD_FACTOR,
+    tof_ab_limit_ns: int = HiConstants.STAT_FILTER_0_TOF_AB_LIMIT_NS,
     cull_code: int = CullCode.LOOSE,
-    min_pointings: int = 4,
+    min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
 ) -> None:
     """
     Apply Statistical Filter 0 to detect drastic penetrating background changes.
@@ -970,13 +967,16 @@ def mark_statistical_filter_0(
     current_index : int
         Index of the current Pointing in l1b_de_datasets.
     threshold_factor : float, optional
-        Multiplier for median comparison. Default is 1.5 (150% of median).
+        Multiplier for median comparison.
+        Default is HiConstants.STAT_FILTER_0_THRESHOLD_FACTOR.
     tof_ab_limit_ns : int, optional
-        Maximum |tof_ab| in nanoseconds for AB coincidences. Default is 15.
+        Maximum |tof_ab| in nanoseconds for AB coincidences.
+        Default is HiConstants.STAT_FILTER_0_TOF_AB_LIMIT_NS.
     cull_code : int, optional
         Cull code to use for marking bad times. Default is CullCode.LOOSE.
     min_pointings : int, optional
-        Minimum number of Pointings required. Default is 4.
+        Minimum number of Pointings required.
+        Default is HiConstants.STAT_FILTER_MIN_POINTINGS.
 
     Raises
     ------
@@ -992,7 +992,7 @@ def mark_statistical_filter_0(
 
     Algorithm:
     1. For each complete ESA sweep across all Pointings, count AB coincidences
-       where |tof_ab| <= 15ns and divide by number of ESA steps
+       where |tof_ab| <= tof_ab_limit_ns and divide by number of ESA steps
     2. Calculate median of all normalized sweep counts
     3. For each sweep in current Pointing, mark all METs in that sweep as bad
        if normalized count > threshold_factor * median
@@ -1059,7 +1059,7 @@ def mark_statistical_filter_0(
 
     # For each bad sweep, mark the time range from first to last ccsds_met
     for sweep_idx in range(len(bad_sweeps_ds["esa_sweep"])):
-        # Get all ccsds_met values for this sweep across all esa_steps
+        # Get all ccsds_met values for this sweep across all esa_energy_steps
         sweep_mets = bad_sweeps_ds["ccsds_met"].isel(esa_sweep=sweep_idx).values
 
         # Get min and max MET values, ignoring NaNs
@@ -1078,3 +1078,420 @@ def mark_statistical_filter_0(
         )
     else:
         logger.info("No bad ESA sweeps identified by Statistical Filter 0")
+
+
+def _compute_qualified_counts_per_sweep(
+    l1b_de: xr.Dataset,
+    qualified_coincidence_types: set[int],
+) -> xr.Dataset:
+    """
+    Compute qualified calibration product counts per 8-spin interval and reshape.
+
+    Uses the (esa_sweep, esa_energy_step) multi-index to identify unique 8-spin sets,
+    following the same pattern as _compute_normalized_counts_per_sweep.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event dataset with esa_sweep coordinate on epoch dimension.
+    qualified_coincidence_types : set[int]
+        Set of coincidence type integers that qualify for calibration products.
+
+    Returns
+    -------
+    xarray.Dataset
+        Reshaped dataset with dimensions (esa_sweep, esa_energy_step) containing:
+        - qualified_count: total qualified counts per 8-spin interval
+        - ccsds_met: first MET for each 8-spin interval
+    """
+    if "esa_sweep" not in l1b_de.coords:
+        raise ValueError("Dataset must have esa_sweep coordinate")
+
+    # Get values needed for counting
+    coincidence_type = l1b_de["coincidence_type"].values
+    ccsds_index = l1b_de["ccsds_index"].values
+    esa_sweep = l1b_de.coords["esa_sweep"].values
+    esa_energy_step = l1b_de["esa_energy_step"].values
+
+    # Identify qualified events
+    is_qualified = np.isin(coincidence_type, list(qualified_coincidence_types))
+
+    # Map qualified events to their packet's (esa_sweep, esa_energy_step)
+    qualified_packet_idx = ccsds_index[is_qualified]
+    qualified_sweep = esa_sweep[qualified_packet_idx]
+    qualified_energy_step = esa_energy_step[qualified_packet_idx]
+
+    # Count qualified events per (esa_sweep, esa_energy_step) using 2D array
+    n_sweeps = int(esa_sweep.max()) + 1
+    n_esa_energy_steps = int(esa_energy_step.max()) + 1
+    counts_2d = np.zeros((n_sweeps, n_esa_energy_steps), dtype=np.float64)
+    np.add.at(counts_2d, (qualified_sweep, qualified_energy_step), 1)
+
+    # Remove event_met dimension and reshape using multi-index
+    ds = l1b_de.drop_dims("event_met", errors="ignore")
+    ds = ds.set_index(epoch=["esa_sweep", "esa_energy_step"])
+    ds = ds.drop_duplicates(dim="epoch", keep="first")
+    ds_reshaped = ds.unstack("epoch")
+
+    # Add qualified_count - aligns with (esa_sweep, esa_energy_step) coordinates
+    ds_reshaped["qualified_count"] = xr.DataArray(
+        counts_2d,
+        dims=["esa_sweep", "esa_energy_step"],
+        coords={
+            "esa_sweep": np.arange(n_sweeps),
+            "esa_energy_step": np.arange(n_esa_energy_steps),
+        },
+    )
+
+    # Set missing (sweep, energy_step) pairs to NaN so they don't affect statistics
+    missing_mask = ds_reshaped["ccsds_met"].isnull()
+    ds_reshaped["qualified_count"] = ds_reshaped["qualified_count"].where(~missing_mask)
+
+    return ds_reshaped
+
+
+def _build_per_sweep_datasets(
+    l1b_de_datasets: list[xr.Dataset],
+    qualified_coincidence_types: set[int],
+) -> dict[int, xr.Dataset]:
+    """
+    Build per-sweep datasets with qualified counts for each Pointing.
+
+    Parameters
+    ----------
+    l1b_de_datasets : list[xarray.Dataset]
+        List of L1B DE datasets for multiple Pointings.
+    qualified_coincidence_types : set[int]
+        Set of coincidence type integers that qualify for calibration products.
+
+    Returns
+    -------
+    dict[int, xarray.Dataset]
+        Dictionary mapping dataset index to 2D Dataset with
+        (esa_sweep, esa_energy_step) dims.
+    """
+    per_sweep_datasets: dict[int, xr.Dataset] = {}
+
+    for i, l1b_de in enumerate(l1b_de_datasets):
+        # Add esa_sweep coordinate and compute counts per 8-spin interval
+        l1b_de_with_sweep = _add_sweep_indices(l1b_de)
+        per_sweep = _compute_qualified_counts_per_sweep(
+            l1b_de_with_sweep, qualified_coincidence_types
+        )
+        per_sweep_datasets[i] = per_sweep
+
+    return per_sweep_datasets
+
+
+def _compute_median_and_sigma_per_esa(
+    per_sweep_datasets: dict[int, xr.Dataset],
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """
+    Compute median and sigma for each ESA energy step using xarray.
+
+    Combines all per-sweep datasets and computes the median qualified count
+    per ESA energy step across all sweeps and pointings.
+
+    Parameters
+    ----------
+    per_sweep_datasets : dict[int, xarray.Dataset]
+        Dictionary mapping dataset index to 2D Dataset with
+        (esa_sweep, esa_energy_step) dims.
+
+    Returns
+    -------
+    tuple[xarray.DataArray, xarray.DataArray]
+        Tuple of (median_per_esa, sigma_per_esa) DataArrays with esa_energy_step
+        coordinate. ESA energy steps with zero/nan median or esa_energy_step=0
+        are set to NaN/0.
+    """
+    if not per_sweep_datasets:
+        empty = xr.DataArray(
+            [], dims=["esa_energy_step"], coords={"esa_energy_step": []}
+        )
+        return empty, empty.astype(int)
+
+    # Concatenate datasets along esa_sweep dimension using xarray. This handles
+    # different esa_energy_step coordinates by aligning and filling with NaN.
+    combined = xr.concat(
+        [ds["qualified_count"] for ds in per_sweep_datasets.values()],
+        dim="esa_sweep",
+    )
+
+    # Compute median along esa_sweep dimension using xarray
+    median_per_esa = combined.median(dim="esa_sweep", skipna=True)
+
+    # Compute sigma: sigma ≈ √(median + 1) rounded to closest integer
+    sigma_per_esa = np.sqrt(median_per_esa + 1).round().astype(int)
+
+    # Set invalid ESA energy steps (zero/nan median or esa_energy_step=0) to NaN/0
+    esa_energy_step_coords = median_per_esa.coords["esa_energy_step"]
+    invalid_mask = (
+        (esa_energy_step_coords == 0) | (median_per_esa <= 0) | median_per_esa.isnull()
+    )
+    median_per_esa = median_per_esa.where(~invalid_mask)
+    sigma_per_esa = sigma_per_esa.where(~invalid_mask, 0)
+
+    # Log warnings for invalid ESA energy steps (excluding esa_energy_step=0)
+    invalid_esa_energy_steps = esa_energy_step_coords.values[
+        (esa_energy_step_coords != 0).values & invalid_mask.values
+    ]
+    for esa in invalid_esa_energy_steps:
+        logger.warning(
+            f"Statistical Filter 1: Median is zero/nan for ESA energy step {esa}, "
+            "skipping this ESA energy step"
+        )
+
+    # Log valid ESA energy steps
+    valid_esa_energy_steps = esa_energy_step_coords.values[~invalid_mask.values]
+    for esa in valid_esa_energy_steps:
+        logger.debug(
+            f"Statistical Filter 1: ESA {esa}: "
+            f"median={median_per_esa.sel(esa_energy_step=esa).values:.2f}, "
+            f"sigma={sigma_per_esa.sel(esa_energy_step=esa).values}"
+        )
+
+    return median_per_esa, sigma_per_esa
+
+
+def _identify_cull_pattern(
+    current_counts: xr.DataArray,
+    median_per_esa: xr.DataArray,
+    sigma_per_esa: xr.DataArray,
+    consecutive_threshold_sigma: float = HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA,
+    extreme_threshold_sigma: float = HiConstants.STAT_FILTER_1_EXTREME_SIGMA,
+    min_consecutive: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
+) -> xr.DataArray:
+    """
+    Identify 2D cull pattern for statistical filter 1 using convolution.
+
+    Detects three patterns:
+    1. Consecutive runs: 3+ consecutive sweeps exceeding threshold with ESA neighbor
+       confirmation (isotropic excursion pattern from C implementation)
+    2. Isolated intervals: Good intervals surrounded by bad on both sides in time
+    3. Extreme outliers: Any position exceeding 5-sigma threshold
+
+    Parameters
+    ----------
+    current_counts : xr.DataArray
+        2D array of qualified counts with dims (esa_sweep, esa_energy_step).
+    median_per_esa : xr.DataArray
+        Median counts per ESA energy step.
+    sigma_per_esa : xr.DataArray
+        Sigma values per ESA energy step.
+    consecutive_threshold_sigma : float
+        Sigma multiplier for consecutive interval check.
+        Default is HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA.
+    extreme_threshold_sigma : float
+        Sigma multiplier for extreme outlier check.
+        Default is HiConstants.STAT_FILTER_1_EXTREME_SIGMA.
+    min_consecutive : int
+        Minimum consecutive intervals above threshold.
+        Default is HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE.
+
+    Returns
+    -------
+    xr.DataArray
+        Boolean mask with dims (esa_sweep, esa_energy_step) where
+        True = cull this position.
+    """
+    # Compute thresholds using xarray broadcasting
+    consecutive_threshold = median_per_esa + consecutive_threshold_sigma * sigma_per_esa
+    extreme_threshold = median_per_esa + extreme_threshold_sigma * sigma_per_esa
+
+    # Compute exceeds masks - handle NaN by treating as False
+    exceeds_consecutive = (current_counts > consecutive_threshold).fillna(False)
+    exceeds_extreme = (current_counts > extreme_threshold).fillna(False)
+
+    # Get underlying numpy arrays for convolution (dims: esa_sweep x esa_energy_step)
+    exceeds_arr = exceeds_consecutive.values.astype(int)
+
+    # Initialize cull mask
+    cull_arr = np.zeros_like(exceeds_arr, dtype=bool)
+
+    # === Pass 1: Find consecutive runs with ESA neighbor confirmation ===
+    # Use convolution to find runs of min_consecutive in time (axis=0 = esa_sweep)
+    time_kernel = np.ones(min_consecutive)
+    consecutive_sum = convolve1d(exceeds_arr, time_kernel, axis=0, mode="constant")
+
+    # Dilate the consecutive detection to mark all positions in runs
+    # convolve1d centers the kernel, so we dilate to capture run edges
+    run_kernel = np.ones(min_consecutive)
+    run_positions = convolve1d(
+        (consecutive_sum >= min_consecutive).astype(int),
+        run_kernel,
+        axis=0,
+        mode="constant",
+    )
+    in_consecutive_run = (run_positions >= 1) & exceeds_arr.astype(bool)
+
+    # Check ESA neighbors at same time position using convolution along ESA axis
+    # Kernel [1, 0, 1] sums neighbors without counting self
+    # Use cval=1 so edges pass the neighbor check (matches C implementation where
+    # edges are treated as "not good", i.e., the check passes at boundaries)
+    esa_neighbor_kernel = np.array([1, 0, 1])
+    esa_neighbor_exceeds = convolve1d(
+        exceeds_arr, esa_neighbor_kernel, axis=1, mode="constant", cval=1
+    )
+    has_esa_neighbor = esa_neighbor_exceeds >= 1
+
+    # Combine: in a consecutive run AND has ESA neighbor exceeding at same time
+    cull_arr |= in_consecutive_run & has_esa_neighbor
+
+    # === Pass 2: Mark isolated good intervals (orphans) ===
+    # Pattern: [bad, good, bad] in time dimension
+    # Sum neighbors in time - if both neighbors are bad (in cull_arr), sum = 2
+    # Kernel [1, 0, 1] sums neighbors without counting self
+    neighbor_kernel = np.array([1, 0, 1])
+    bad_neighbor_sum = convolve1d(
+        cull_arr.astype(int), neighbor_kernel, axis=0, mode="constant"
+    )
+    # Current position is good (not in cull_arr) but both time neighbors are bad
+    isolated = ~cull_arr & (bad_neighbor_sum == 2)
+    cull_arr |= isolated
+
+    # Log isolated intervals found
+    n_isolated = int(isolated.sum())
+    if n_isolated > 0:
+        logger.debug(f"Statistical Filter 1: Found {n_isolated} isolated intervals")
+
+    # === Pass 3: Mark extreme outliers (5-sigma) ===
+    extreme_arr = exceeds_extreme.values
+    n_extreme = int((extreme_arr & ~cull_arr).sum())
+    if n_extreme > 0:
+        logger.debug(f"Statistical Filter 1: Found {n_extreme} extreme outliers")
+    cull_arr |= extreme_arr
+
+    # Convert back to xarray DataArray with same coordinates
+    cull_mask = xr.DataArray(
+        cull_arr,
+        dims=current_counts.dims,
+        coords=current_counts.coords,
+    )
+
+    return cull_mask
+
+
+def mark_statistical_filter_1(
+    goodtimes_ds: xr.Dataset,
+    l1b_de_datasets: list[xr.Dataset],
+    current_index: int,
+    qualified_coincidence_types: set[int],
+    consecutive_threshold_sigma: float = HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA,
+    extreme_threshold_sigma: float = HiConstants.STAT_FILTER_1_EXTREME_SIGMA,
+    min_consecutive_intervals: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
+    cull_code: int = CullCode.LOOSE,
+    min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
+) -> None:
+    """
+    Apply Statistical Filter 1 to detect isotropic count rate increases.
+
+    Statistical Filter 1 from Algorithm Document Section 2.3.2.3 detects times
+    when qualified calibration product counts increase fairly isotropically for
+    a limited time. It operates per sensor, per ESA energy step, per 8-spin
+    interval, summing counts over all angles.
+
+    The filter applies three passes:
+    1. Mark intervals where counts exceed median + consecutive_threshold_sigma
+       for at least min_consecutive_intervals AND in at least one adjacent ESA step.
+    2. Remove isolated good intervals (good sandwiched between two bad).
+    3. Mark remaining intervals where counts exceed median + extreme_threshold_sigma.
+
+    Parameters
+    ----------
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset for the current Pointing to update.
+    l1b_de_datasets : list[xarray.Dataset]
+        List of L1B DE datasets for surrounding Pointings. Typically includes
+        current plus 3 preceding and 3 following Pointings.
+    current_index : int
+        Index of the current Pointing in l1b_de_datasets.
+    qualified_coincidence_types : set[int]
+        Set of coincidence type integers that qualify for calibration products.
+    consecutive_threshold_sigma : float, optional
+        Sigma multiplier for consecutive interval check.
+        Default is HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA.
+    extreme_threshold_sigma : float, optional
+        Sigma multiplier for extreme outlier check.
+        Default is HiConstants.STAT_FILTER_1_EXTREME_SIGMA.
+    min_consecutive_intervals : int, optional
+        Minimum consecutive intervals above threshold.
+        Default is HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE.
+    cull_code : int, optional
+        Cull code to use for marking bad times. Default is CullCode.LOOSE.
+    min_pointings : int, optional
+        Minimum number of Pointings required.
+        Default is HiConstants.STAT_FILTER_MIN_POINTINGS.
+
+    Raises
+    ------
+    ValueError
+        If current_index is out of range or if fewer than min_pointings
+        datasets are provided.
+
+    Notes
+    -----
+    This function modifies goodtimes_ds in place. Should be called after
+    Statistical Filter 0 and other angle-independent filters.
+    """
+    logger.info("Running mark_statistical_filter_1 culling")
+
+    # Validate inputs
+    if current_index < 0 or current_index >= len(l1b_de_datasets):
+        raise ValueError(
+            f"current_index {current_index} out of range for list of "
+            f"length {len(l1b_de_datasets)}"
+        )
+
+    if len(l1b_de_datasets) < min_pointings:
+        raise ValueError(
+            f"At least {min_pointings} valid Pointings required, "
+            f"got {len(l1b_de_datasets)}"
+        )
+
+    # Step 1: Build per-sweep datasets with qualified counts for each Pointing
+    per_sweep_datasets = _build_per_sweep_datasets(
+        l1b_de_datasets, qualified_coincidence_types
+    )
+
+    # Step 2: Compute median and sigma per ESA energy step using xarray
+    median_per_esa, sigma_per_esa = _compute_median_and_sigma_per_esa(
+        per_sweep_datasets
+    )
+
+    if np.all(np.isnan(median_per_esa.values)):
+        logger.warning(
+            "Statistical Filter 1: No valid ESA energy steps "
+            "with non-zero median, skipping"
+        )
+        return
+
+    # Get current Pointing's per-sweep data (2D: esa_sweep x esa_energy_step)
+    current_ds = per_sweep_datasets[current_index]
+    current_counts = current_ds["qualified_count"]
+
+    # Identify cull pattern using convolution-based detection
+    cull_mask = _identify_cull_pattern(
+        current_counts,
+        median_per_esa,
+        sigma_per_esa,
+        consecutive_threshold_sigma=consecutive_threshold_sigma,
+        extreme_threshold_sigma=extreme_threshold_sigma,
+        min_consecutive=min_consecutive_intervals,
+    )
+
+    # Apply culling to goodtimes - get METs where cull_mask is True
+    if cull_mask.any():
+        # Use xarray's where to get METs for culled intervals, then flatten
+        mets_to_cull = current_ds["ccsds_met"].where(cull_mask).values.ravel()
+        # Remove NaN values
+        mets_to_cull = mets_to_cull[~np.isnan(mets_to_cull)]
+
+        if len(mets_to_cull) > 0:
+            goodtimes_ds.goodtimes.mark_bad_times(met=mets_to_cull, cull=cull_code)
+
+        logger.info(
+            f"Statistical Filter 1: Marked {len(mets_to_cull)} 8-spin intervals as bad"
+        )
+    else:
+        logger.info("Statistical Filter 1: No bad intervals identified")

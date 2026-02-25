@@ -140,7 +140,6 @@ def annotate_direct_events(
         [
             "src_seq_ctr",
             "pkt_len",
-            "last_spin_num",
             "spin_invalids",
             "esa_step_seconds",
             "esa_step_milliseconds",
@@ -603,7 +602,11 @@ def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     # Filter out fill/out-of-range indices (e.g., uint16 FILLVAL 65535)
     valid_mask = (ccsds_indices >= 0) & (ccsds_indices < n_packets)
 
-    # If there are no valid events, all packets keep default quality flag 0
+    # Set BADSPIN flag for packets with nonzero spin_invalids
+    spin_invalid_mask = dataset["spin_invalids"].values != 0
+    new_vars["ccsds_qf"].values[spin_invalid_mask] |= np.uint8(ImapHiL1bDeFlags.BADSPIN)
+
+    # If there are no valid events, skip the PACKET_FULL check
     if not np.any(valid_mask):
         return new_vars
 
@@ -614,6 +617,8 @@ def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     )
     # Set PACKET_FULL flag for packets with 664 events
     full_packet_mask = event_counts == max_events_per_packet
-    new_vars["ccsds_qf"].values[full_packet_mask] = ImapHiL1bDeFlags.PACKET_FULL
+    new_vars["ccsds_qf"].values[full_packet_mask] |= np.uint8(
+        ImapHiL1bDeFlags.PACKET_FULL
+    )
 
     return new_vars

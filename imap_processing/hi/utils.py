@@ -63,6 +63,19 @@ class HiConstants:
         Tuple of values indicating TOF2 does not contain a valid time.
     TOF3_BAD_VALUES : tuple[int]
         Tuple of values indicating TOF3 does not contain a valid time.
+    STAT_FILTER_MIN_POINTINGS : int
+        Minimum number of Pointings required for statistical filters.
+    STAT_FILTER_0_THRESHOLD_FACTOR : float
+        Multiplier for median comparison in Statistical Filter 0.
+        Values exceeding threshold_factor * median are culled.
+    STAT_FILTER_0_TOF_AB_LIMIT_NS : int
+        Maximum abs(tof_ab) in nanoseconds for AB coincidences in Filter 0.
+    STAT_FILTER_1_CONSECUTIVE_SIGMA : float
+        Sigma multiplier for consecutive interval check in Filter 1.
+    STAT_FILTER_1_EXTREME_SIGMA : float
+        Sigma multiplier for extreme outlier check in Filter 1.
+    STAT_FILTER_1_MIN_CONSECUTIVE : int
+        Minimum consecutive intervals above threshold in Filter 1.
     """
 
     TOF1_TICK_DUR = 1  # 1 ns
@@ -75,6 +88,15 @@ class HiConstants:
     TOF1_BAD_VALUES = (511,)
     TOF2_BAD_VALUES = (511,)
     TOF3_BAD_VALUES = (1023,)
+
+    # Statistical Filter tuning parameters
+    # See IMAP-Hi Algorithm Document Section 2.3.2.3
+    STAT_FILTER_MIN_POINTINGS = 4
+    STAT_FILTER_0_THRESHOLD_FACTOR = 1.5
+    STAT_FILTER_0_TOF_AB_LIMIT_NS = 15
+    STAT_FILTER_1_CONSECUTIVE_SIGMA = 1.8
+    STAT_FILTER_1_EXTREME_SIGMA = 5.0
+    STAT_FILTER_1_MIN_CONSECUTIVE = 3
 
 
 def parse_sensor_number(full_string: str) -> int:
