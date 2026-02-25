@@ -34,7 +34,7 @@ def hist_dataset():
         "flags_set_onboard": np.zeros((20,)),
         "is_generated_on_ground": np.zeros((20,)),
         "number_of_spins_per_block": np.zeros((20,)),
-        "number_of_bins_per_histogram": np.zeros((20,)),
+        "number_of_bins_per_histogram": np.full((20,), 3600),
         "number_of_events": np.zeros((20,)),
         "filter_temperature_average": np.zeros((20,)),
         "filter_temperature_variance": np.zeros((20,)),
@@ -194,9 +194,11 @@ def ancillary_dict():
     return dictionary
 
 
+@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_histogram_mapping(
     mock_spice_function,
+    mock_flag_uv_source,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
     mock_pipeline_settings,
@@ -229,7 +231,7 @@ def test_histogram_mapping(
                 0,
                 0,
                 0,
-                0,
+                3600,
                 0,
                 encoded_val,
                 encoded_val,
@@ -256,9 +258,11 @@ def test_histogram_mapping(
     assert output[10] - expected_temp < 0.1
 
 
+@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_process_histogram(
     mock_spice_function,
+    mock_flag_uv_source,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
@@ -290,7 +294,7 @@ def test_process_histogram(
         0,
         0,
         0,
-        0,
+        3600,
         0,
         encoded_val,
         encoded_val,
@@ -336,9 +340,11 @@ def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
     assert np.isclose(output[8].data[0], expected_temp)
 
 
+@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_glows_l1b(
     mock_spice_function,
+    mock_flag_uv_source,
     de_dataset,
     hist_dataset,
     mock_ancillary_exclusions,
@@ -429,9 +435,11 @@ def test_glows_l1b(
         assert key in de_output
 
 
+@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_generate_histogram_dataset(
     mock_spice_function,
+    mock_flag_uv_source,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
