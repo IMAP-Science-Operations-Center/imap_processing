@@ -775,25 +775,22 @@ def get_valid_events_per_energy_range(
         A boolean array of shape (n_energy_ranges, n_events).
     """
     event_energies = de_dataset["energy_spacecraft"].values
-    valid_events_per_range = []
+    valid_events = np.zeros((len(energy_ranges) - 1, len(event_energies)), dtype=bool)
+    valid_outliers = de_dataset["quality_outliers"].values == 0
+    valid_scattering = de_dataset["quality_scattering"].values == 0
+    # TODO what about species non-proton? For those psets dont cull based on
+    #   High energy?
+    ebin = de_dataset["ebin"].values
+    valid_ebin = np.isin(ebin, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"])
     for i in range(len(energy_ranges) - 1):
-        valid_events = np.full(de_dataset.dims["epoch"], False, dtype=bool)
-        # TODO what about energy_heliosphere?
         energy_mask = (event_energies >= energy_ranges[i]) & (
             event_energies < energy_ranges[i + 1]
         )
         if not np.any(energy_mask):
-            valid_events_per_range.append(valid_events)
             continue
         # subset the dataset to events within the energy range
         de_dataset_subset = de_dataset.isel(epoch=energy_mask)
-        valid_outliers = de_dataset_subset["quality_outliers"].values == 0
-        valid_scattering = de_dataset_subset["quality_scattering"].values == 0
-        # TODO what about species non-proton? For those psets dont cull based on
-        #   High energy?
-        ebin = de_dataset_subset["ebin"].values
-        valid_ebin = np.isin(ebin, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"])
-        valid_earth_angle = np.full(valid_ebin.shape, True, dtype=bool)
+        valid_earth_angle = np.full(np.sum(energy_mask), True, dtype=bool)
         # For ultra45, also apply an Earth angle cut to remove times when
         # the Earth is in the field of view. ULTRA 90 does not require this since Earth
         # is always outside the field of view.
@@ -805,12 +802,16 @@ def get_valid_events_per_energy_range(
         # Flag events at the valid energy ranges if they meet all the criteria for
         # valid events: not flagged as outliers, not flagged as scattering,
         # in a valid ebin, and (for ultra45) have a valid Earth angle.
-        valid_events[energy_mask] = np.logical_and.reduce(
-            [valid_ebin, valid_outliers, valid_scattering, valid_earth_angle]
+        valid_events[i, energy_mask] = np.logical_and.reduce(
+            [
+                valid_outliers[energy_mask],
+                valid_scattering[energy_mask],
+                valid_ebin[energy_mask],
+                valid_earth_angle,
+            ]
         )
-        valid_events_per_range.append(valid_events)
 
-    return np.array(valid_events_per_range)
+    return valid_events
 
 
 def get_valid_earth_angle_events(
