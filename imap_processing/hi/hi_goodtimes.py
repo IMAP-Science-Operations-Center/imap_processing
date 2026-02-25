@@ -1655,9 +1655,11 @@ def mark_statistical_filter_2(
     bins as bad, unlike Filters 0 and 1 which mark entire time intervals.
     Bin marking wraps around (e.g., bin 91 becomes bin 1).
 
-    The default parameters (min_events=6, max_time_delta=10.0) imply that
-    seeing 6+ qualified events in a 10-second window has probability
-    < 0.06% under normal conditions (background rate ~0.1/s).
+    The default parameters (min_events=6,
+    max_time_delta=HiConstants.STAT_FILTER_2_MAX_TIME_DELTA ≈ 9.995 s)
+    imply that seeing 6+ qualified events in an approximately 10-second
+    window has probability < 0.06% under normal conditions
+    (background rate ~0.1/s).
     """
     logger.info("Running mark_statistical_filter_2 culling")
 
