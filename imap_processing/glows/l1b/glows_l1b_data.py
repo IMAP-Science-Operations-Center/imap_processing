@@ -1017,14 +1017,10 @@ class HistogramL1B:
 
         # Convert to unit cartesian vectors.
         look_vecs_dps = spherical_to_cartesian(spherical)  # (nbin, 3)
-        # Create ephemeris time array.
-        et_bins = np.full(
-            self.number_of_bins_per_histogram, data_start_time_et, dtype=np.float64
-        )
 
         # Transform unit cartesian vectors to ECLIPJ2000 frame.
         look_vecs_ecl = frame_transform(
-            et_bins,
+            data_start_time_et,
             look_vecs_dps,
             SpiceFrame.IMAP_DPS,
             SpiceFrame.ECLIPJ2000,
