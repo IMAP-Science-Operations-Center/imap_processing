@@ -83,9 +83,11 @@ def test_glows_l1b_de():
     assert np.allclose(pulse_len, expected_pulse)
 
 
+@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_validation_data_histogram(
     mock_spice_function,
+    mock_flag_uv_source,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
