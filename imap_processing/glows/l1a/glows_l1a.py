@@ -336,12 +336,7 @@ def generate_histogram_dataset(
     )
 
     # First variable is the output data type, second is the list of values
-    support_data_str: dict = {
-        "ground_software_version": [object, []],
-        "pkts_file_name": [object, []],
-    }
     support_data: dict = {
-        "flight_software_version": [np.uint32, []],
         "seq_count_in_pkts_file": [np.uint16, []],
         "first_spin_id": [np.uint32, []],
         "last_spin_id": [np.uint32, []],
@@ -378,8 +373,6 @@ def generate_histogram_dataset(
         )
 
         # Add support_data keys to the support_data dictionary
-        for key, support_val in support_data_str.items():
-            support_val[1].append(hist.__getattribute__(key)[0])
         for key, support_val in support_data.items():
             if key not in ["flags_set_onboard", "is_generated_on_ground"]:
                 support_val[1].append(hist.__getattribute__(key))
@@ -434,13 +427,33 @@ def generate_histogram_dataset(
 
     output["histogram"] = hist
 
-    for key, value in support_data_str.items():
-        output[key] = xr.DataArray(
-            np.array([value[1][0]], dtype=value[0]),
-            attrs=glows_cdf_attributes.get_variable_attributes(
-                "pkts_file_name", check_schema=False
-            ),
-        )
+    # These attributes are the same for each record, so we don't
+    # need to store them per epoch like most of the other fields
+    output["flight_software_version"] = xr.DataArray(
+        np.array([hist_l1a_list[0].flight_software_version], dtype=np.uint32),
+        name="flight_software_version",
+        dims=["flight_software_version"],
+        attrs=glows_cdf_attributes.get_variable_attributes(
+            "flight_software_version", check_schema=False
+        ),
+    )
+    output["pkts_file_name"] = xr.DataArray(
+        np.array([hist_l1a_list[0].pkts_file_name], dtype=object),
+        name="pkts_file_name",
+        dims=["pkts_file_name"],
+        attrs=glows_cdf_attributes.get_variable_attributes(
+            "pkts_file_name", check_schema=False
+        ),
+    )
+    output["ground_software_version"] = xr.DataArray(
+        np.array([hist_l1a_list[0].ground_software_version], dtype=object),
+        name="ground_software_version",
+        dims=["ground_software_version"],
+        attrs=glows_cdf_attributes.get_variable_attributes(
+            "ground_software_version", check_schema=False
+        ),
+    )
+
     for key, value in support_data.items():
         output[key] = xr.DataArray(
             np.array(value[1], dtype=value[0]),

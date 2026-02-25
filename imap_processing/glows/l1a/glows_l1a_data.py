@@ -223,8 +223,8 @@ class HistogramL1A:
     pulse_length_average: int = field(init=False)
     pulse_length_variance: int = field(init=False)
     flags: dict = field(init=False)
-    ground_software_version: str = field(init=False)
-    pkts_file_name: str = field(init=False)
+    ground_software_version: str = ""
+    pkts_file_name: str = ""
 
     def __post_init__(self, l0: HistogramL0) -> None:
         """

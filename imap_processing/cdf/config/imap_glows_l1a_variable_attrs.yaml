@@ -97,7 +97,6 @@ histogram:
   VAR_TYPE: data
 
 pkts_file_name:
-  <<: *support_data_defaults
   CATDESC: Name of input file with CCSDS packets data
   DISPLAY_TYPE: no_plot
   FIELDNAM: Packets-data input filename
@@ -106,7 +105,6 @@ pkts_file_name:
   VAR_TYPE: metadata
 
 ground_software_version:
-  <<: *support_data_defaults
   CATDESC: Version of ground software used for processing
   DISPLAY_TYPE: no_plot
   FIELDNAM: Ground Software Version
