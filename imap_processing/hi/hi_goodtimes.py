@@ -10,8 +10,15 @@ import pandas as pd
 import xarray as xr
 from scipy.ndimage import convolve1d
 
-from imap_processing.hi.utils import CoincidenceBitmap, HiConstants, parse_sensor_number
+from imap_processing.cdf.utils import load_cdf
+from imap_processing.hi.utils import (
+    CalibrationProductConfig,
+    CoincidenceBitmap,
+    HiConstants,
+    parse_sensor_number,
+)
 from imap_processing.quality_flags import ImapHiL1bDeFlags
+from imap_processing.spice.repoint import get_repoint_data
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +40,310 @@ class CullCode(IntEnum):
 
     GOOD = 0
     LOOSE = 1
+
+
+def hi_goodtimes(
+    l1b_de_paths: list[Path],
+    current_repointing: str,
+    l1b_hk_path: Path,
+    cal_product_config_path: Path,
+    output_dir: Path,
+    start_date: str,
+    version: str,
+) -> list[Path]:
+    """
+    Generate goodtimes file for IMAP-Hi L1C processing.
+
+    This is the top-level function that orchestrates all goodtimes culling
+    operations for a single pointing. It applies the following filters in order:
+
+    1. mark_incomplete_spin_sets - Remove incomplete 8-spin histogram periods
+    2. mark_drf_times - Remove times during spacecraft drift restabilization
+    3. mark_overflow_packets - Remove times when DE packets overflow
+    4. mark_statistical_filter_0 - Detect drastic penetrating background changes
+    5. mark_statistical_filter_1 - Detect isotropic count rate increases
+    6. mark_statistical_filter_2 - Detect short-lived event pulses
+
+    Parameters
+    ----------
+    l1b_de_paths : list[Path]
+        Paths to L1B DE files for surrounding pointings. Typically includes
+        current plus 3 preceding and 3 following pointings (7 total).
+        Statistical filters 0 and 1 use all datasets; other filters use
+        only the current pointing.
+    current_repointing : str
+        Repointing identifier for the current pointing (e.g., "repoint00001").
+        Used to identify which dataset in l1b_de_paths is the current one.
+    l1b_hk_path : Path
+        Path to L1B housekeeping file containing DRF status.
+    cal_product_config_path : Path
+        Path to calibration product configuration CSV file.
+    output_dir : Path
+        Directory where the goodtimes text file will be written.
+    start_date : str
+        Start date in YYYYMMDD format for the output filename.
+    version : str
+        Version string (e.g., "v001") for the output filename.
+
+    Returns
+    -------
+    list[Path]
+        List containing the path to the generated goodtimes text file,
+        or an empty list if processing cannot proceed yet.
+
+    Notes
+    -----
+    The output filename follows the pattern:
+    imap_hi_sensor{45|90}-goodtimes_{start_date}_{start_date}_{version}.txt
+
+    TODO: Add repointing to filename when it is allowed in ancillary filenames.
+
+    See IMAP-Hi Algorithm Document Sections 2.2.4 and 2.3.2 for details
+    on each culling algorithm.
+
+    Processing requires that repointing + 3 has occurred (so that statistical
+    filters can use surrounding pointings). Due to challenges with dependency
+    management in the batch starter, it was decided to design the Hi goodtimes
+    to set the L1B DE dependencies as not required and handle the final logic for
+    checking L1B DE dependencies in this function. If repointing + 3 has not yet
+    completed, an empty list is returned. If repointing + 3 has occurred but
+    not all 7 DE files are available, all times are marked as bad.
+    """
+    logger.info("Starting Hi goodtimes processing")
+
+    # Parse the current repoint ID and check if we can process yet
+    current_repoint_id = int(current_repointing.replace("repoint", ""))
+    future_repoint_id = current_repoint_id + 3
+
+    # Check if the future repointing has finished by checking that the next
+    # repoint is in the repoint dataframe.
+    repoint_df = get_repoint_data()
+    required_repoints_complete = (
+        future_repoint_id + 1 in repoint_df["repoint_id"].values
+    )
+
+    if not required_repoints_complete:
+        logger.info(
+            f"Goodtimes cannot yet be processed for {current_repointing}: "
+            f"repoint{future_repoint_id:05d} has not yet been completed."
+        )
+        return []
+
+    # Load DE datasets and find current pointing
+    l1b_de_datasets, current_index = _load_l1b_de_datasets(
+        l1b_de_paths, current_repointing
+    )
+    current_l1b_de = l1b_de_datasets[current_index]
+
+    # Create the goodtimes dataset from the current pointing
+    goodtimes_ds = create_goodtimes_dataset(current_l1b_de)
+
+    # Check if we have the full set of 7 DE files for nominal processing
+    if len(l1b_de_paths) == 7:
+        _apply_goodtimes_filters(
+            goodtimes_ds,
+            l1b_de_datasets,
+            current_index,
+            l1b_hk_path,
+            cal_product_config_path,
+        )
+    else:
+        # Incomplete DE file set - mark all times as bad
+        logger.warning(
+            f"Incomplete DE file set for {current_repointing}: "
+            f"expected 7 files, got {len(l1b_de_paths)}. "
+            "Marking all times as bad."
+        )
+        goodtimes_ds["cull_flags"][:, :] = CullCode.LOOSE
+
+    # Generate output
+    output_path = _write_goodtimes_output(goodtimes_ds, output_dir, start_date, version)
+    return [output_path]
+
+
+def _load_l1b_de_datasets(
+    l1b_de_paths: list[Path],
+    current_repointing: str,
+) -> tuple[list[xr.Dataset], int]:
+    """
+    Load L1B DE datasets and find the index of the current pointing.
+
+    Parameters
+    ----------
+    l1b_de_paths : list[Path]
+        Paths to L1B DE files.
+    current_repointing : str
+        Repointing identifier for the current pointing.
+
+    Returns
+    -------
+    l1b_de_datasets : list[xr.Dataset]
+        Loaded L1B DE datasets.
+    current_index : int
+        Index of the current pointing in the datasets list.
+
+    Raises
+    ------
+    ValueError
+        If the current repointing is not found in the datasets.
+    """
+    logger.info(f"Loading {len(l1b_de_paths)} L1B DE files")
+    l1b_de_datasets = [load_cdf(path) for path in l1b_de_paths]
+
+    current_index = None
+    for i, ds in enumerate(l1b_de_datasets):
+        if ds.attrs.get("Repointing") == current_repointing:
+            current_index = i
+            break
+
+    if current_index is None:
+        raise ValueError(
+            f"Could not find current repointing {current_repointing} "
+            f"in L1B DE datasets. Available repointings: "
+            f"{[ds.attrs.get('Repointing') for ds in l1b_de_datasets]}"
+        )
+
+    logger.info(f"Current pointing index: {current_index} of {len(l1b_de_datasets)}")
+    return l1b_de_datasets, current_index
+
+
+def _apply_goodtimes_filters(
+    goodtimes_ds: xr.Dataset,
+    l1b_de_datasets: list[xr.Dataset],
+    current_index: int,
+    l1b_hk_path: Path,
+    cal_product_config_path: Path,
+) -> None:
+    """
+    Apply all goodtimes culling filters to the dataset.
+
+    Modifies goodtimes_ds in place by applying filters 1-6.
+
+    Parameters
+    ----------
+    goodtimes_ds : xr.Dataset
+        Goodtimes dataset to modify.
+    l1b_de_datasets : list[xr.Dataset]
+        All L1B DE datasets (current + surrounding pointings).
+    current_index : int
+        Index of the current pointing in l1b_de_datasets.
+    l1b_hk_path : Path
+        Path to L1B housekeeping file.
+    cal_product_config_path : Path
+        Path to calibration product configuration CSV file.
+    """
+    current_l1b_de = l1b_de_datasets[current_index]
+
+    # Load L1B HK
+    logger.info(f"Loading L1B HK: {l1b_hk_path}")
+    l1b_hk = load_cdf(l1b_hk_path)
+
+    # Load calibration product config
+    logger.info(f"Loading cal product config: {cal_product_config_path}")
+    cal_product_config = CalibrationProductConfig.from_csv(cal_product_config_path)
+
+    # Log initial statistics
+    stats = goodtimes_ds.goodtimes.get_cull_statistics()
+    logger.info(f"Initial good bins: {stats['good_bins']}/{stats['total_bins']}")
+
+    # Build set of qualified coincidence types from calibration product config
+    qualified_coincidence_types: set[int] = set()
+    for coin_types in cal_product_config["coincidence_type_values"]:
+        qualified_coincidence_types.update(coin_types)
+    logger.debug(f"Qualified coincidence types: {qualified_coincidence_types}")
+
+    # === Apply culling filters ===
+
+    # 1. Mark incomplete spin sets
+    logger.info("Applying filter: mark_incomplete_spin_sets")
+    mark_incomplete_spin_sets(goodtimes_ds, current_l1b_de)
+
+    # 2. Mark DRF times (drift restabilization)
+    logger.info("Applying filter: mark_drf_times")
+    mark_drf_times(goodtimes_ds, l1b_hk)
+
+    # 3. Mark overflow packets
+    logger.info("Applying filter: mark_overflow_packets")
+    mark_overflow_packets(goodtimes_ds, current_l1b_de, cal_product_config)
+
+    # 4. Statistical Filter 0 - drastic background changes
+    logger.info("Applying filter: mark_statistical_filter_0")
+    try:
+        mark_statistical_filter_0(goodtimes_ds, l1b_de_datasets, current_index)
+    except ValueError as e:
+        logger.warning(f"Skipping Statistical Filter 0: {e}")
+
+    # 5. Statistical Filter 1 - isotropic count rate increases
+    logger.info("Applying filter: mark_statistical_filter_1")
+    try:
+        mark_statistical_filter_1(
+            goodtimes_ds,
+            l1b_de_datasets,
+            current_index,
+            qualified_coincidence_types,
+        )
+    except ValueError as e:
+        logger.warning(f"Skipping Statistical Filter 1: {e}")
+
+    # 6. Statistical Filter 2 - short-lived event pulses
+    logger.info("Applying filter: mark_statistical_filter_2")
+    mark_statistical_filter_2(
+        goodtimes_ds,
+        current_l1b_de,
+        qualified_coincidence_types,
+    )
+
+
+def _write_goodtimes_output(
+    goodtimes_ds: xr.Dataset,
+    output_dir: Path,
+    start_date: str,
+    version: str,
+) -> Path:
+    """
+    Write goodtimes dataset to output file.
+
+    Parameters
+    ----------
+    goodtimes_ds : xr.Dataset
+        Goodtimes dataset to write.
+    output_dir : Path
+        Directory where the output file will be written.
+    start_date : str
+        Start date in YYYYMMDD format.
+    version : str
+        Version string (e.g., "v001").
+
+    Returns
+    -------
+    Path
+        Path to the generated goodtimes text file.
+    """
+    # Log final statistics
+    stats = goodtimes_ds.goodtimes.get_cull_statistics()
+    logger.info(
+        f"Final statistics: {stats['good_bins']}/{stats['total_bins']} good "
+        f"({stats['fraction_good'] * 100:.1f}%)"
+    )
+    if stats["cull_code_counts"]:
+        logger.info(f"Cull code counts: {stats['cull_code_counts']}")
+
+    # Generate output filename
+    # Pattern: imap_hi_{sensor}-goodtimes_{YYYYMMDD}_{YYYYMMDD}_{version}.txt
+    # TODO: Add repointing to filename when it is allowed in ancillary filenames.
+    #       Pattern should be:
+    #       imap_hi_{sensor}-goodtimes_{YYYYMMDD}_{YYYYMMDD}_{repointing}_{version}.txt
+    sensor = goodtimes_ds.attrs["sensor"]
+    output_filename = (
+        f"imap_hi_{sensor}-goodtimes_{start_date}_{start_date}_{version}.txt"
+    )
+    output_path = output_dir / output_filename
+
+    # Write goodtimes to text file
+    goodtimes_ds.goodtimes.write_txt(output_path)
+
+    logger.info(f"Hi goodtimes processing complete: {output_path}")
+    return output_path
 
 
 def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
@@ -100,7 +411,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
             f"attribute: {l1b_de.attrs['Repointing']}"
         )
     attrs = {
-        "sensor": f"Hi{sensor_number}",
+        "sensor": f"sensor{sensor_number}",
         "pointing": int(match["pointing_num"]),
     }
 

@@ -1,5 +1,7 @@
 """Test coverage for imap_processing.hi.hi_goodtimes.py"""
 
+from unittest.mock import MagicMock, patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,6 +11,7 @@ from imap_processing.hi.hi_goodtimes import (
     INTERVAL_DTYPE,
     CullCode,
     _add_sweep_indices,
+    _apply_goodtimes_filters,
     _build_per_sweep_datasets,
     _compute_bins_for_cluster,
     _compute_median_and_sigma_per_esa,
@@ -17,7 +20,10 @@ from imap_processing.hi.hi_goodtimes import (
     _find_event_clusters,
     _get_sweep_indices,
     _identify_cull_pattern,
+    _load_l1b_de_datasets,
+    _write_goodtimes_output,
     create_goodtimes_dataset,
+    hi_goodtimes,
     mark_drf_times,
     mark_incomplete_spin_sets,
     mark_overflow_packets,
@@ -140,7 +146,7 @@ class TestGoodtimesFromL1bDe:
 
     def test_from_l1b_de_attributes(self, goodtimes_instance):
         """Test that attributes are set correctly."""
-        assert goodtimes_instance.attrs["sensor"] == "Hi45"
+        assert goodtimes_instance.attrs["sensor"] == "sensor45"
         assert goodtimes_instance.attrs["pointing"] == 42
 
 
@@ -358,7 +364,7 @@ class TestGetGoodIntervals:
                 "esa_step": xr.DataArray(np.array([], dtype=np.uint8), dims=["met"]),
             },
             coords={"met": np.array([]), "spin_bin": np.arange(90)},
-            attrs={"sensor": "Hi45", "pointing": 0},
+            attrs={"sensor": "sensor45", "pointing": 0},
         )
 
         intervals = gt.goodtimes.get_good_intervals()
@@ -450,7 +456,7 @@ class TestToTxt:
         parts = lines[0].strip().split()
         assert len(parts) == 7
         assert parts[0] == "00042"  # pointing
-        assert parts[5] == "Hi45"  # sensor
+        assert parts[5] == "sensor45"  # sensor
 
     def test_to_txt_values(self, goodtimes_instance, tmp_path):
         """Test the values in the output file."""
@@ -468,7 +474,7 @@ class TestToTxt:
         assert int(met_end) == int(goodtimes_instance.coords["met"].values[0])
         assert int(bin_low) == 0
         assert int(bin_high) == 89
-        assert sensor == "Hi45"
+        assert sensor == "sensor45"
         assert int(esa_step) == goodtimes_instance["esa_step"].values[0]
 
     def test_to_txt_with_culled_bins(self, goodtimes_instance, tmp_path):
@@ -882,7 +888,7 @@ class TestDropDrfTimes:
                 "esa_step": xr.DataArray(np.ones(n_mets, dtype=np.uint8), dims=["met"]),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "Hi45", "pointing": 1},
+            attrs={"sensor": "sensor45", "pointing": 1},
         )
         return gt
 
@@ -1098,7 +1104,7 @@ class TestDropDrfTimes:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "Hi45", "pointing": 1},
+            attrs={"sensor": "sensor45", "pointing": 1},
         )
 
         # HK with DRF active for first 30 samples, then transition
@@ -1145,7 +1151,7 @@ class TestDropDrfTimes:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "Hi45", "pointing": 1},
+            attrs={"sensor": "sensor45", "pointing": 1},
         )
 
         # HK with DRF becoming active mid-way, then transition at end
@@ -1216,7 +1222,7 @@ class TestMarkOverflowPackets:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "Hi45", "pointing": 1},
+            attrs={"sensor": "sensor45", "pointing": 1},
         )
 
     def test_no_full_packets(self, mock_goodtimes, mock_config_df):
@@ -1687,7 +1693,7 @@ class TestStatisticalFilter0:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "Hi45", "pointing": 1},
+            attrs={"sensor": "sensor45", "pointing": 1},
         )
         return gt
 
@@ -2336,7 +2342,7 @@ class TestStatisticalFilter1:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "Hi45", "pointing": 1},
+            attrs={"sensor": "sensor45", "pointing": 1},
         )
         return gt
 
@@ -2627,7 +2633,7 @@ class TestStatisticalFilter2:
                 "met": met_values,
                 "spin_bin": np.arange(90),
             },
-            attrs={"sensor": "Hi45", "pointing": 1},
+            attrs={"sensor": "sensor45", "pointing": 1},
         )
         return ds
 
@@ -2952,3 +2958,460 @@ class TestStatisticalFilter2:
 
         cull_flags = goodtimes_for_filter2["cull_flags"].sel(met=1000.0).values
         assert np.all(cull_flags[39:45] == CullCode.LOOSE)
+
+
+class TestLoadL1bDeDatasets:
+    """Test suite for _load_l1b_de_datasets helper function."""
+
+    def test_loads_datasets_and_finds_current_index(self, tmp_path):
+        """Test that datasets are loaded and current index is found."""
+        ds1 = MagicMock()
+        ds1.attrs = {"Repointing": "repoint00001"}
+        ds2 = MagicMock()
+        ds2.attrs = {"Repointing": "repoint00002"}
+        ds3 = MagicMock()
+        ds3.attrs = {"Repointing": "repoint00003"}
+
+        with patch("imap_processing.cdf.utils.load_cdf") as mock_load:
+            mock_load.side_effect = [ds1, ds2, ds3]
+            paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf", tmp_path / "f3.cdf"]
+
+            datasets, current_index = _load_l1b_de_datasets(paths, "repoint00002")
+
+            assert len(datasets) == 3
+            assert current_index == 1
+            assert mock_load.call_count == 3
+
+    def test_finds_first_matching_repointing(self, tmp_path):
+        """Test that the first matching repointing is returned."""
+        ds1 = MagicMock()
+        ds1.attrs = {"Repointing": "repoint00005"}
+        ds2 = MagicMock()
+        ds2.attrs = {"Repointing": "repoint00005"}
+
+        with patch("imap_processing.cdf.utils.load_cdf") as mock_load:
+            mock_load.side_effect = [ds1, ds2]
+            paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf"]
+
+            datasets, current_index = _load_l1b_de_datasets(paths, "repoint00005")
+
+            assert current_index == 0
+
+    def test_raises_when_repointing_not_found(self, tmp_path):
+        """Test that ValueError is raised when repointing not found."""
+        ds1 = MagicMock()
+        ds1.attrs = {"Repointing": "repoint00001"}
+        ds2 = MagicMock()
+        ds2.attrs = {"Repointing": "repoint00002"}
+
+        with patch("imap_processing.cdf.utils.load_cdf") as mock_load:
+            mock_load.side_effect = [ds1, ds2]
+            paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf"]
+
+            with pytest.raises(ValueError, match="Could not find current repointing"):
+                _load_l1b_de_datasets(paths, "repoint00099")
+
+
+class TestWriteGoodtimesOutput:
+    """Test suite for _write_goodtimes_output helper function."""
+
+    def test_generates_correct_filename_sensor45(self, tmp_path):
+        """Test filename generation for sensor45."""
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 100,
+            "total_bins": 100,
+            "fraction_good": 1.0,
+            "cull_code_counts": {},
+        }
+
+        output_path = _write_goodtimes_output(
+            mock_goodtimes,
+            tmp_path,
+            start_date="20260115",
+            version="v001",
+        )
+
+        assert (
+            output_path.name == "imap_hi_sensor45-goodtimes_20260115_20260115_v001.txt"
+        )
+        mock_goodtimes.goodtimes.write_txt.assert_called_once_with(output_path)
+
+    def test_generates_correct_filename_sensor90(self, tmp_path):
+        """Test filename generation for sensor90."""
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.attrs = {"sensor": "sensor90"}
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 50,
+            "total_bins": 100,
+            "fraction_good": 0.5,
+            "cull_code_counts": {1: 50},
+        }
+
+        output_path = _write_goodtimes_output(
+            mock_goodtimes,
+            tmp_path,
+            start_date="20260201",
+            version="v002",
+        )
+
+        assert (
+            output_path.name == "imap_hi_sensor90-goodtimes_20260201_20260201_v002.txt"
+        )
+
+    def test_returns_path_in_output_dir(self, tmp_path):
+        """Test that returned path is in the output directory."""
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 100,
+            "total_bins": 100,
+            "fraction_good": 1.0,
+            "cull_code_counts": {},
+        }
+
+        output_path = _write_goodtimes_output(
+            mock_goodtimes,
+            tmp_path,
+            start_date="20260101",
+            version="v001",
+        )
+
+        assert output_path.parent == tmp_path
+        assert output_path.suffix == ".txt"
+
+    def test_calls_write_txt(self, tmp_path):
+        """Test that write_txt accessor is called with correct path."""
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 100,
+            "total_bins": 100,
+            "fraction_good": 1.0,
+            "cull_code_counts": {},
+        }
+
+        output_path = _write_goodtimes_output(
+            mock_goodtimes,
+            tmp_path,
+            start_date="20260101",
+            version="v001",
+        )
+
+        mock_goodtimes.goodtimes.write_txt.assert_called_once_with(output_path)
+
+
+class TestApplyGoodtimesFilters:
+    """Test suite for _apply_goodtimes_filters helper function."""
+
+    def test_loads_hk_and_cal_config(self, tmp_path):
+        """Test that HK and cal config are loaded."""
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 100,
+            "total_bins": 100,
+        }
+        mock_l1b_de = MagicMock()
+        mock_hk = MagicMock()
+        mock_cal = {"coincidence_type_values": [{12}]}
+
+        hk_path = tmp_path / "hk.cdf"
+        cal_path = tmp_path / "cal.csv"
+
+        with (
+            patch("imap_processing.cdf.utils.load_cdf") as mock_load,
+            patch(
+                "imap_processing.hi.utils.CalibrationProductConfig.from_csv"
+            ) as mock_cal_load,
+            patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
+            patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
+            patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
+            patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_0"),
+            patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_1"),
+            patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"),
+        ):
+            mock_load.return_value = mock_hk
+            mock_cal_load.return_value = mock_cal
+
+            _apply_goodtimes_filters(
+                mock_goodtimes,
+                [mock_l1b_de],
+                current_index=0,
+                l1b_hk_path=hk_path,
+                cal_product_config_path=cal_path,
+            )
+
+            mock_load.assert_called_once_with(hk_path)
+            mock_cal_load.assert_called_once_with(cal_path)
+
+    def test_calls_all_filters(self, tmp_path):
+        """Test that all 6 filters are called."""
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 100,
+            "total_bins": 100,
+        }
+        mock_l1b_de = MagicMock()
+        mock_hk = MagicMock()
+        mock_cal = {"coincidence_type_values": [{12}]}
+
+        with (
+            patch("imap_processing.cdf.utils.load_cdf", return_value=mock_hk),
+            patch(
+                "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
+                return_value=mock_cal,
+            ),
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"
+            ) as mock_f1,
+            patch("imap_processing.hi.hi_goodtimes.mark_drf_times") as mock_f2,
+            patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets") as mock_f3,
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_0"
+            ) as mock_f4,
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_1"
+            ) as mock_f5,
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"
+            ) as mock_f6,
+        ):
+            _apply_goodtimes_filters(
+                mock_goodtimes,
+                [mock_l1b_de],
+                current_index=0,
+                l1b_hk_path=tmp_path / "hk.cdf",
+                cal_product_config_path=tmp_path / "cal.csv",
+            )
+
+            mock_f1.assert_called_once()
+            mock_f2.assert_called_once()
+            mock_f3.assert_called_once()
+            mock_f4.assert_called_once()
+            mock_f5.assert_called_once()
+            mock_f6.assert_called_once()
+
+    def test_handles_statistical_filter_errors(self, tmp_path):
+        """Test that ValueError from statistical filters is caught."""
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 100,
+            "total_bins": 100,
+        }
+        mock_l1b_de = MagicMock()
+        mock_cal = {"coincidence_type_values": [{12}]}
+
+        with (
+            patch("imap_processing.cdf.utils.load_cdf", return_value=MagicMock()),
+            patch(
+                "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
+                return_value=mock_cal,
+            ),
+            patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
+            patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
+            patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_0",
+                side_effect=ValueError("test"),
+            ),
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_1",
+                side_effect=ValueError("test"),
+            ),
+            patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"),
+        ):
+            # Should not raise - errors are caught and logged
+            _apply_goodtimes_filters(
+                mock_goodtimes,
+                [mock_l1b_de],
+                current_index=0,
+                l1b_hk_path=tmp_path / "hk.cdf",
+                cal_product_config_path=tmp_path / "cal.csv",
+            )
+
+
+class TestHiGoodtimes:
+    """Test suite for hi_goodtimes top-level function."""
+
+    def test_returns_empty_list_when_repoint_not_complete(self, tmp_path):
+        """Test that empty list is returned when repoint+3 has not occurred."""
+        mock_repoint_df = pd.DataFrame(
+            {
+                "repoint_id": [1, 2, 3],
+            }
+        )
+
+        with patch(
+            "imap_processing.spice.repoint.get_repoint_data"
+        ) as mock_get_repoint:
+            mock_get_repoint.return_value = mock_repoint_df
+
+            result = hi_goodtimes(
+                l1b_de_paths=[tmp_path / "de1.cdf"],
+                current_repointing="repoint00001",
+                l1b_hk_path=tmp_path / "hk.cdf",
+                cal_product_config_path=tmp_path / "cal.csv",
+                output_dir=tmp_path,
+                start_date="20260101",
+                version="v001",
+            )
+
+            assert result == []
+
+    def test_calls_load_datasets_when_repoint_complete(self, tmp_path):
+        """Test that _load_l1b_de_datasets is called when repoint check passes."""
+        mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_goodtimes.__getitem__ = MagicMock()
+
+        with (
+            patch(
+                "imap_processing.spice.repoint.get_repoint_data",
+                return_value=mock_repoint_df,
+            ),
+            patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes.create_goodtimes_dataset",
+                return_value=mock_goodtimes,
+            ),
+            patch("imap_processing.hi.hi_goodtimes._apply_goodtimes_filters"),
+            patch(
+                "imap_processing.hi.hi_goodtimes._write_goodtimes_output",
+                return_value=tmp_path / "out.txt",
+            ),
+        ):
+            mock_de = MagicMock()
+            mock_load.return_value = ([mock_de] * 7, 3)
+
+            hi_goodtimes(
+                l1b_de_paths=[tmp_path / f"de{i}.cdf" for i in range(7)],
+                current_repointing="repoint00004",
+                l1b_hk_path=tmp_path / "hk.cdf",
+                cal_product_config_path=tmp_path / "cal.csv",
+                output_dir=tmp_path,
+                start_date="20260101",
+                version="v001",
+            )
+
+            mock_load.assert_called_once()
+
+    def test_marks_all_bad_when_incomplete_de_set(self, tmp_path):
+        """Test that cull_flags are set when DE set is incomplete."""
+        mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_cull_flags = MagicMock()
+        mock_goodtimes.__getitem__ = MagicMock(return_value=mock_cull_flags)
+
+        with (
+            patch(
+                "imap_processing.spice.repoint.get_repoint_data",
+                return_value=mock_repoint_df,
+            ),
+            patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes.create_goodtimes_dataset",
+                return_value=mock_goodtimes,
+            ),
+            patch(
+                "imap_processing.hi.hi_goodtimes._write_goodtimes_output",
+                return_value=tmp_path / "out.txt",
+            ),
+        ):
+            mock_de = MagicMock()
+            mock_load.return_value = ([mock_de], 0)
+
+            hi_goodtimes(
+                l1b_de_paths=[tmp_path / f"de{i}.cdf" for i in range(3)],  # Less than 7
+                current_repointing="repoint00001",
+                l1b_hk_path=tmp_path / "hk.cdf",
+                cal_product_config_path=tmp_path / "cal.csv",
+                output_dir=tmp_path,
+                start_date="20260101",
+                version="v001",
+            )
+
+            # Verify cull_flags were set to LOOSE (all bad)
+            mock_goodtimes.__getitem__.assert_called_with("cull_flags")
+
+    def test_calls_apply_filters_when_full_de_set(self, tmp_path):
+        """Test that _apply_goodtimes_filters is called with 7 DE files."""
+        mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.attrs = {"sensor": "sensor45"}
+
+        with (
+            patch(
+                "imap_processing.spice.repoint.get_repoint_data",
+                return_value=mock_repoint_df,
+            ),
+            patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes.create_goodtimes_dataset",
+                return_value=mock_goodtimes,
+            ),
+            patch(
+                "imap_processing.hi.hi_goodtimes._apply_goodtimes_filters"
+            ) as mock_apply,
+            patch(
+                "imap_processing.hi.hi_goodtimes._write_goodtimes_output",
+                return_value=tmp_path / "out.txt",
+            ),
+        ):
+            mock_datasets = [MagicMock() for _ in range(7)]
+            mock_load.return_value = (mock_datasets, 3)
+
+            hi_goodtimes(
+                l1b_de_paths=[tmp_path / f"de{i}.cdf" for i in range(7)],
+                current_repointing="repoint00004",
+                l1b_hk_path=tmp_path / "hk.cdf",
+                cal_product_config_path=tmp_path / "cal.csv",
+                output_dir=tmp_path,
+                start_date="20260101",
+                version="v001",
+            )
+
+            mock_apply.assert_called_once()
+
+    def test_calls_write_output(self, tmp_path):
+        """Test that _write_goodtimes_output is called."""
+        mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        expected_path = tmp_path / "output.txt"
+
+        with (
+            patch(
+                "imap_processing.spice.repoint.get_repoint_data",
+                return_value=mock_repoint_df,
+            ),
+            patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes.create_goodtimes_dataset",
+                return_value=mock_goodtimes,
+            ),
+            patch("imap_processing.hi.hi_goodtimes._apply_goodtimes_filters"),
+            patch(
+                "imap_processing.hi.hi_goodtimes._write_goodtimes_output",
+                return_value=expected_path,
+            ) as mock_write,
+        ):
+            mock_datasets = [MagicMock() for _ in range(7)]
+            mock_load.return_value = (mock_datasets, 3)
+
+            result = hi_goodtimes(
+                l1b_de_paths=[tmp_path / f"de{i}.cdf" for i in range(7)],
+                current_repointing="repoint00004",
+                l1b_hk_path=tmp_path / "hk.cdf",
+                cal_product_config_path=tmp_path / "cal.csv",
+                output_dir=tmp_path,
+                start_date="20260115",
+                version="v002",
+            )
+
+            mock_write.assert_called_once_with(
+                mock_goodtimes, tmp_path, "20260115", "v002"
+            )
+            assert result == [expected_path]
