@@ -15,6 +15,7 @@ from imap_processing.idex.idex_l1b import (
     get_trigger_mode_and_level,
     unpack_instrument_settings,
 )
+from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.tests.idex import conftest
 
 
@@ -149,48 +150,45 @@ def test_get_trigger_settings_success(decom_test_data_sci):
     # correct when the modes and levels vary from event to event
     decom_test_data_sci["idx__txhdrmgtrigmode"][0] = 1
     decom_test_data_sci["idx__txhdrhgtrigmode"][0] = 0
-
+    idex_attrs = get_idex_attrs("l1b")
     n_epochs = len(decom_test_data_sci["epoch"])
-    trigger_settings = get_trigger_mode_and_level(decom_test_data_sci)
+    trigger_settings = get_trigger_mode_and_level(decom_test_data_sci, idex_attrs)
 
-    expected_modes = np.full(n_epochs, "HGThreshold")
-    expected_modes[0] = "MGThreshold"
-    expected_levels = np.full(n_epochs, 0.16762)
-    expected_levels[0] = 1023.0 * 1.13e-2
+    expected_modes_lg = np.full(n_epochs, None)
+    expected_modes_hg = expected_modes_lg.copy()
+    expected_modes_hg[1:] = "HGThreshold"
+    expected_modes_mg = np.full(n_epochs, None)
+    expected_modes_mg[0] = "MGThreshold"
+    expected_levels_lg = np.full(n_epochs, np.nan)
+    expected_levels_hg = expected_levels_lg.copy()
+    expected_levels_hg[1:] = 0.16762
+    expected_levels_mg = expected_levels_lg.copy()
+    expected_levels_mg[0] = 1023.0 * 1.13e-2
 
-    assert (trigger_settings["triggermode"].data == expected_modes).all(), (
-        f"The dict entry 'triggermode' values did not match the expected values: "
-        f"{expected_modes}. Found: {trigger_settings['triggermode'].data}"
-    )
-
-    assert (trigger_settings["triggerlevel"].data == expected_levels).all(), (
-        f"The dict entry 'triggerlevel' values did not match the expected values: "
-        f"{expected_levels}. Found: {trigger_settings['triggerlevel'].data}"
-    )
-
-
-def test_get_trigger_settings_failure(decom_test_data_sci):
-    """
-    Check that an error is thrown when there are more than one valid trigger for an
-    event
-
-    Parameters
-    ----------
-    decom_test_data_sci : xarray.Dataset
-        L1a dataset
-    """
-    decom_test_data_sci["idx__txhdrhgtrigmode"][0] = 1
-    decom_test_data_sci["idx__txhdrmgtrigmode"][0] = 2
-
-    error_ms = (
-        "Only one channel can trigger a dust event. Please make sure there is "
-        "only one valid trigger value per event. This caused Merge Error: "
-        "conflicting values for variable 'trigger_mode' on objects to be "
-        "combined. You can skip this check by specifying compat='override'."
-    )
-
-    with pytest.raises(ValueError, match=error_ms):
-        get_trigger_mode_and_level(decom_test_data_sci)
+    var_names = ["trigger_mode_lg", "trigger_mode_mg", "trigger_mode_hg"]
+    expected_modes = [expected_modes_lg, expected_modes_mg, expected_modes_hg]
+    for expected_mode, mode_name in zip(expected_modes, var_names, strict=False):
+        (
+            np.testing.assert_array_equal(
+                trigger_settings[mode_name].data, expected_mode
+            ),
+            (
+                f"The dict entry {mode_name} values did not match the expected values: "
+                f"{expected_mode}. Found: {trigger_settings[mode_name].data}"
+            ),
+        )
+    var_names = ["trigger_level_lg", "trigger_level_mg", "trigger_level_hg"]
+    expected_levels = [expected_levels_lg, expected_levels_mg, expected_levels_hg]
+    for expected_level, level_name in zip(expected_levels, var_names, strict=False):
+        (
+            np.testing.assert_array_equal(
+                trigger_settings[level_name].data, expected_level
+            ),
+            (
+                f"The dict entry {level_name} values did not match the expected "
+                f"values: {expected_level}. Found: {trigger_settings[level_name].data}"
+            ),
+        )
 
 
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")

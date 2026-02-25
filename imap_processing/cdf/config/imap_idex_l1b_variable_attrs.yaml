@@ -53,15 +53,37 @@ spice_base: &spice_base
   VALIDMAX: *spice_data_max
 
 # <=== Instrument Setting Attributes ===>
-trigger_mode:
+trigger_mode_lg:
   <<: *string_base
   FIELDNAM: Trigger Mode
   CATDESC: Channel and mode that triggered the event
 
-trigger_level:
+trigger_level_lg:
   <<: *trigger_base
   FIELDNAM: Trigger Level
   CATDESC: Threshold signal level that triggered the event
+
+trigger_mode_mg:
+  <<: *string_base
+  FIELDNAM: Trigger Mode
+  CATDESC: Channel and mode that triggered the event
+
+trigger_level_mg:
+  <<: *trigger_base
+  FIELDNAM: Trigger Level
+  CATDESC: Threshold signal level that triggered the event
+
+
+trigger_mode_hg:
+  <<: *string_base
+  FIELDNAM: Trigger Mode
+  CATDESC: Channel and mode that triggered the event
+
+trigger_level_hg:
+  <<: *trigger_base
+  FIELDNAM: Trigger Level
+  CATDESC: Threshold signal level that triggered the event
+
 
 tof_high:
   <<: *l1b_tof_base

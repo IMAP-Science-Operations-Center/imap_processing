@@ -130,6 +130,13 @@ class PacketParser:
             Dataset containing processed dust events.
         """
         dust_events = {}
+        # To handle duplicate packets received from the POC, calculate a unique ID
+        # for each packet and find the duplicate indexes. Then, only process the unique
+        # packets to create the dataset.
+        # packet_ids = [
+        #     (p["IDX__SCI0TYPE"], p["IDX__SCI0EVTNUM"])
+        #     for p in science_decom_packet_list
+        # ]
         for packet in science_decom_packet_list:
             if "IDX__SCI0TYPE" in packet:
                 scitype = packet["IDX__SCI0TYPE"]

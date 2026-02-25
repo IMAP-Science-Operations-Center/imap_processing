@@ -117,14 +117,7 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     # used for calculations yet but are saved in the CDF for reference.
     spice_data = get_spice_data(l1a_dataset, idex_attrs)
 
-    trigger_settings = get_trigger_mode_and_level(l1a_dataset)
-    if trigger_settings:
-        trigger_settings["triggerlevel"].attrs = idex_attrs.get_variable_attributes(
-            "trigger_level"
-        )
-        trigger_settings["triggermode"].attrs = idex_attrs.get_variable_attributes(
-            "trigger_mode"
-        )
+    trigger_settings = get_trigger_mode_and_level(l1a_dataset, idex_attrs)
 
     # Create l1b Dataset
     prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
@@ -225,6 +218,7 @@ def convert_waveforms(
 
 def get_trigger_mode_and_level(
     l1a_dataset: xr.Dataset,
+    idex_attrs: ImapCdfAttributes,
 ) -> dict[str, xr.DataArray] | dict:
     """
     Determine the trigger mode and threshold level for each event.
@@ -233,6 +227,8 @@ def get_trigger_mode_and_level(
     ----------
     l1a_dataset : xarray.Dataset
         IDEX L1a dataset containing the six waveform arrays and instrument settings.
+    idex_attrs : ImapCdfAttributes
+        CDF attribute manager object.
 
     Returns
     -------
@@ -243,8 +239,8 @@ def get_trigger_mode_and_level(
     channels = ["lg", "mg", "hg"]
     # 10 bit mask
     mask = 0b1111111111
-    trigger_modes = []
-    trigger_levels = []
+    # Initialize a dict to hold the mode labels and threshold levels for each channel
+    data_dict = {}
 
     def compute_trigger_values(
         trigger_mode: int, trigger_controls: int, gain_channel: str
@@ -302,28 +298,18 @@ def get_trigger_mode_and_level(
             vectorize=True,
             output_dtypes=[object, float],
         )
-        trigger_modes.append(mode_array.rename("trigger_mode"))
-        trigger_levels.append(level_array.rename("trigger_level"))
-
-    try:
         # There should be an array of modes and threshold levels for each channel.
-        # At each index (event) only one of the three arrays should have a value that is
-        # not 'None' because each event can only be triggered by one channel.
-        # By merging the three arrays, we get value for each event.
-        merged_modes = xr.merge([trigger_modes[0], xr.merge(trigger_modes[1:])])
-        merged_levels = xr.merge([trigger_levels[0], xr.merge(trigger_levels[1:])])
+        # write each of them out as separate variables because there may be
+        # multiple channels that can trigger an event. The trigger origin variable
+        # can be used to determine which channel(s) triggered the event.
+        mode_array.attrs = idex_attrs.get_variable_attributes(f"trigger_mode_{channel}")
+        data_dict[f"trigger_mode_{channel}"] = mode_array
+        level_array.attrs = idex_attrs.get_variable_attributes(
+            f"trigger_level_{channel}"
+        )
+        data_dict[f"trigger_level_{channel}"] = level_array
 
-        return {
-            "triggermode": merged_modes.trigger_mode,
-            "triggerlevel": merged_levels.trigger_level,
-        }
-
-    except xr.MergeError as e:
-        raise ValueError(
-            f"Only one channel can trigger a dust event. Please make sure "
-            f"there is only one valid trigger value per event. This "
-            f"caused Merge Error: {e}"
-        ) from e
+    return data_dict
 
 
 def get_spice_data(
