@@ -84,7 +84,9 @@ def calculate_extendedspin(
     # Calculate the high energy quality flags using the de dataset with high voltage
     # events removed. Use the same spin and energy bins that
     # were used for low voltage flags to maintain consistency in the flags.
-    de_dataset_filtered = de_dataset.isel(epoch=np.where(voltage_qf == 0)[0])
+    valid_voltage_spins = spin[np.where(voltage_qf == 0)]
+    valid_de_spins = np.isin(de_dataset["spin"].values, valid_voltage_spins)
+    de_dataset_filtered = de_dataset.isel(epoch=valid_de_spins)
     energy_thresholds = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS
     high_energy_qf = flag_high_energy(
         de_dataset_filtered,

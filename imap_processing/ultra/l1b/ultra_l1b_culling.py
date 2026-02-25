@@ -734,7 +734,7 @@ def flag_high_energy(
         spin_bin_size, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
     )
     # Get valid events and counts at each spin bin for the
-    # designated culling channel. This channel
+    # designated culling channel.
     cull_channel_events = valid_events_per_energy[
         UltraConstants.HIGH_ENERGY_CULL_CHANNEL
     ]
