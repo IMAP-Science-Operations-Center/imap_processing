@@ -41,8 +41,12 @@ def pipeline_settings():
     ]
     pipeline_dataset = xr.Dataset(
         {
-            "active_bad_time_flags": xr.DataArray(active_bad_time_flags),
-            "active_bad_angle_flags": xr.DataArray(active_bad_angle_flags),
+            "active_bad_time_flags": xr.DataArray(
+                active_bad_time_flags, dims=["flags"]
+            ),
+            "active_bad_angle_flags": xr.DataArray(
+                active_bad_angle_flags, dims=["angle_flags"]
+            ),
         }
     )
     return PipelineSettings(pipeline_dataset)
@@ -151,3 +155,13 @@ def test_filter_good_times():
     expected_good_times = [0, 2, 3]
 
     assert np.array_equal(good_times, expected_good_times)
+
+
+def test_create_returns_none_when_no_good_times(pipeline_settings, l1b_dataset):
+    """L1B dataset with no good times, returns None for HistogramL2 dataset."""
+    # All flags set to 0 -> all bad times
+    test_flags = np.zeros((l1b_dataset["epoch"].size, 17), dtype=bool)
+    l1b_dataset["flags"] = xr.DataArray(test_flags, dims=["epoch", "flags"])
+    ds = HistogramL2.create(l1b_dataset, pipeline_settings)
+    expected_ds = None
+    assert np.array_equal(ds, expected_ds)

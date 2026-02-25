@@ -391,7 +391,7 @@ class HistogramL2:
             An array of indices for good times.
         """
         if len(active_flags) != flags.shape[1]:
-            print("Active flags don't matched expected length")
+            print("Active flags don't match expected length")
 
         # A good time is where all the active flags are equal to one.
         # Here, we mask the active indices using active_flags, and then return the times
