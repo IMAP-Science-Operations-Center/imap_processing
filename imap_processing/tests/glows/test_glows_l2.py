@@ -87,7 +87,9 @@ def test_generate_l2(
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(epoch=day, method="nearest")
     )
-    l2 = HistogramL2(l1b_hist_dataset, pipeline_settings)
+
+    # Test case 1: L1B dataset has good times
+    l2 = HistogramL2.create(l1b_hist_dataset, pipeline_settings)
 
     expected_values = {
         "filter_temperature_average": [57.59],
@@ -112,6 +114,12 @@ def test_generate_l2(
     assert np.isclose(
         l2.hv_voltage_std_dev, expected_values["hv_voltage_std_dev"], 0.01
     )
+
+    # Test case 2: L1B dataset has no good times (all flags 0)
+    l1b_hist_dataset["flags"].values = np.zeros(l1b_hist_dataset.flags.shape)
+    ds = HistogramL2.create(l1b_hist_dataset, pipeline_settings)
+    expected_ds = None
+    assert ds == expected_ds
 
 
 def test_bin_exclusions(l1b_hists):
