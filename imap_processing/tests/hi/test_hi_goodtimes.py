@@ -2905,6 +2905,9 @@ class TestStatisticalFilter2:
         assert np.all(cull_flags[88:90] == CullCode.LOOSE)
         # Middle bins should be unmarked
         assert np.all(cull_flags[5:88] == 0)
+        # Check that no cull_flags were set on any other METs
+        other_mets = goodtimes_for_filter2["cull_flags"].drop_sel(met=1000.0)
+        assert np.all(other_mets.values == 0)
 
     def test_custom_parameters(self, goodtimes_for_filter2):
         """Test with custom min_events and max_time_delta."""
