@@ -2972,7 +2972,7 @@ class TestLoadL1bDeDatasets:
         ds3 = MagicMock()
         ds3.attrs = {"Repointing": "repoint00003"}
 
-        with patch("imap_processing.cdf.utils.load_cdf") as mock_load:
+        with patch("imap_processing.hi.hi_goodtimes.load_cdf") as mock_load:
             mock_load.side_effect = [ds1, ds2, ds3]
             paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf", tmp_path / "f3.cdf"]
 
@@ -2989,7 +2989,7 @@ class TestLoadL1bDeDatasets:
         ds2 = MagicMock()
         ds2.attrs = {"Repointing": "repoint00005"}
 
-        with patch("imap_processing.cdf.utils.load_cdf") as mock_load:
+        with patch("imap_processing.hi.hi_goodtimes.load_cdf") as mock_load:
             mock_load.side_effect = [ds1, ds2]
             paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf"]
 
@@ -3004,7 +3004,7 @@ class TestLoadL1bDeDatasets:
         ds2 = MagicMock()
         ds2.attrs = {"Repointing": "repoint00002"}
 
-        with patch("imap_processing.cdf.utils.load_cdf") as mock_load:
+        with patch("imap_processing.hi.hi_goodtimes.load_cdf") as mock_load:
             mock_load.side_effect = [ds1, ds2]
             paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf"]
 
@@ -3120,7 +3120,7 @@ class TestApplyGoodtimesFilters:
         cal_path = tmp_path / "cal.csv"
 
         with (
-            patch("imap_processing.cdf.utils.load_cdf") as mock_load,
+            patch("imap_processing.hi.hi_goodtimes.load_cdf") as mock_load,
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv"
             ) as mock_cal_load,
@@ -3157,7 +3157,7 @@ class TestApplyGoodtimesFilters:
         mock_cal = {"coincidence_type_values": [{12}]}
 
         with (
-            patch("imap_processing.cdf.utils.load_cdf", return_value=mock_hk),
+            patch("imap_processing.hi.hi_goodtimes.load_cdf", return_value=mock_hk),
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
@@ -3203,7 +3203,7 @@ class TestApplyGoodtimesFilters:
         mock_cal = {"coincidence_type_values": [{12}]}
 
         with (
-            patch("imap_processing.cdf.utils.load_cdf", return_value=MagicMock()),
+            patch("imap_processing.hi.hi_goodtimes.load_cdf", return_value=MagicMock()),
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
@@ -3243,7 +3243,7 @@ class TestHiGoodtimes:
         )
 
         with patch(
-            "imap_processing.spice.repoint.get_repoint_data"
+            "imap_processing.hi.hi_goodtimes.get_repoint_data"
         ) as mock_get_repoint:
             mock_get_repoint.return_value = mock_repoint_df
 
@@ -3268,7 +3268,7 @@ class TestHiGoodtimes:
 
         with (
             patch(
-                "imap_processing.spice.repoint.get_repoint_data",
+                "imap_processing.hi.hi_goodtimes.get_repoint_data",
                 return_value=mock_repoint_df,
             ),
             patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
@@ -3307,7 +3307,7 @@ class TestHiGoodtimes:
 
         with (
             patch(
-                "imap_processing.spice.repoint.get_repoint_data",
+                "imap_processing.hi.hi_goodtimes.get_repoint_data",
                 return_value=mock_repoint_df,
             ),
             patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
@@ -3344,7 +3344,7 @@ class TestHiGoodtimes:
 
         with (
             patch(
-                "imap_processing.spice.repoint.get_repoint_data",
+                "imap_processing.hi.hi_goodtimes.get_repoint_data",
                 return_value=mock_repoint_df,
             ),
             patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
@@ -3384,7 +3384,7 @@ class TestHiGoodtimes:
 
         with (
             patch(
-                "imap_processing.spice.repoint.get_repoint_data",
+                "imap_processing.hi.hi_goodtimes.get_repoint_data",
                 return_value=mock_repoint_df,
             ),
             patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
