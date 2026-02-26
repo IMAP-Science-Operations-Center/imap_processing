@@ -1694,9 +1694,6 @@ def mark_statistical_filter_2(
     for (sweep_idx, step_idx), group in qualified_events.groupby(
         ["event_sweep", "event_step"]
     ):
-        if len(group.event) < min_events:
-            continue
-
         # Sort by event_met
         sorted_group = group.sortby("event_met")
         sorted_mets = sorted_group["event_met"].values
