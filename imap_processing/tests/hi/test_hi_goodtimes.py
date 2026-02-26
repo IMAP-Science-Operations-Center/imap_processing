@@ -17,10 +17,10 @@ from imap_processing.hi.hi_goodtimes import (
     _compute_median_and_sigma_per_esa,
     _compute_normalized_counts_per_sweep,
     _compute_qualified_counts_per_sweep,
+    _find_current_pointing_index,
     _find_event_clusters,
     _get_sweep_indices,
     _identify_cull_pattern,
-    _load_l1b_de_datasets,
     _write_goodtimes_output,
     create_goodtimes_dataset,
     hi_goodtimes,
@@ -2960,11 +2960,11 @@ class TestStatisticalFilter2:
         assert np.all(cull_flags[39:45] == CullCode.LOOSE)
 
 
-class TestLoadL1bDeDatasets:
-    """Test suite for _load_l1b_de_datasets helper function."""
+class TestFindCurrentPointingIndex:
+    """Test suite for _find_current_pointing_index helper function."""
 
-    def test_loads_datasets_and_finds_current_index(self, tmp_path):
-        """Test that datasets are loaded and current index is found."""
+    def test_finds_current_index(self):
+        """Test that current index is found correctly."""
         ds1 = MagicMock()
         ds1.attrs = {"Repointing": "repoint00001"}
         ds2 = MagicMock()
@@ -2972,44 +2972,33 @@ class TestLoadL1bDeDatasets:
         ds3 = MagicMock()
         ds3.attrs = {"Repointing": "repoint00003"}
 
-        with patch("imap_processing.hi.hi_goodtimes.load_cdf") as mock_load:
-            mock_load.side_effect = [ds1, ds2, ds3]
-            paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf", tmp_path / "f3.cdf"]
+        datasets = [ds1, ds2, ds3]
+        current_index = _find_current_pointing_index(datasets, "repoint00002")
 
-            datasets, current_index = _load_l1b_de_datasets(paths, "repoint00002")
+        assert current_index == 1
 
-            assert len(datasets) == 3
-            assert current_index == 1
-            assert mock_load.call_count == 3
-
-    def test_finds_first_matching_repointing(self, tmp_path):
+    def test_finds_first_matching_repointing(self):
         """Test that the first matching repointing is returned."""
         ds1 = MagicMock()
         ds1.attrs = {"Repointing": "repoint00005"}
         ds2 = MagicMock()
         ds2.attrs = {"Repointing": "repoint00005"}
 
-        with patch("imap_processing.hi.hi_goodtimes.load_cdf") as mock_load:
-            mock_load.side_effect = [ds1, ds2]
-            paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf"]
+        datasets = [ds1, ds2]
+        current_index = _find_current_pointing_index(datasets, "repoint00005")
 
-            datasets, current_index = _load_l1b_de_datasets(paths, "repoint00005")
+        assert current_index == 0
 
-            assert current_index == 0
-
-    def test_raises_when_repointing_not_found(self, tmp_path):
+    def test_raises_when_repointing_not_found(self):
         """Test that ValueError is raised when repointing not found."""
         ds1 = MagicMock()
         ds1.attrs = {"Repointing": "repoint00001"}
         ds2 = MagicMock()
         ds2.attrs = {"Repointing": "repoint00002"}
 
-        with patch("imap_processing.hi.hi_goodtimes.load_cdf") as mock_load:
-            mock_load.side_effect = [ds1, ds2]
-            paths = [tmp_path / "f1.cdf", tmp_path / "f2.cdf"]
-
-            with pytest.raises(ValueError, match="Could not find current repointing"):
-                _load_l1b_de_datasets(paths, "repoint00099")
+        datasets = [ds1, ds2]
+        with pytest.raises(ValueError, match="Could not find current repointing"):
+            _find_current_pointing_index(datasets, "repoint00099")
 
 
 class TestWriteGoodtimesOutput:
@@ -3105,8 +3094,8 @@ class TestWriteGoodtimesOutput:
 class TestApplyGoodtimesFilters:
     """Test suite for _apply_goodtimes_filters helper function."""
 
-    def test_loads_hk_and_cal_config(self, tmp_path):
-        """Test that HK and cal config are loaded."""
+    def test_loads_cal_config(self, tmp_path):
+        """Test that cal config is loaded."""
         mock_goodtimes = MagicMock()
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
             "good_bins": 100,
@@ -3116,11 +3105,9 @@ class TestApplyGoodtimesFilters:
         mock_hk = MagicMock()
         mock_cal = {"coincidence_type_values": [{12}]}
 
-        hk_path = tmp_path / "hk.cdf"
         cal_path = tmp_path / "cal.csv"
 
         with (
-            patch("imap_processing.hi.hi_goodtimes.load_cdf") as mock_load,
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv"
             ) as mock_cal_load,
@@ -3131,18 +3118,16 @@ class TestApplyGoodtimesFilters:
             patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_1"),
             patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"),
         ):
-            mock_load.return_value = mock_hk
             mock_cal_load.return_value = mock_cal
 
             _apply_goodtimes_filters(
                 mock_goodtimes,
                 [mock_l1b_de],
                 current_index=0,
-                l1b_hk_path=hk_path,
+                l1b_hk=mock_hk,
                 cal_product_config_path=cal_path,
             )
 
-            mock_load.assert_called_once_with(hk_path)
             mock_cal_load.assert_called_once_with(cal_path)
 
     def test_calls_all_filters(self, tmp_path):
@@ -3157,7 +3142,6 @@ class TestApplyGoodtimesFilters:
         mock_cal = {"coincidence_type_values": [{12}]}
 
         with (
-            patch("imap_processing.hi.hi_goodtimes.load_cdf", return_value=mock_hk),
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
@@ -3181,7 +3165,7 @@ class TestApplyGoodtimesFilters:
                 mock_goodtimes,
                 [mock_l1b_de],
                 current_index=0,
-                l1b_hk_path=tmp_path / "hk.cdf",
+                l1b_hk=mock_hk,
                 cal_product_config_path=tmp_path / "cal.csv",
             )
 
@@ -3200,10 +3184,10 @@ class TestApplyGoodtimesFilters:
             "total_bins": 100,
         }
         mock_l1b_de = MagicMock()
+        mock_hk = MagicMock()
         mock_cal = {"coincidence_type_values": [{12}]}
 
         with (
-            patch("imap_processing.hi.hi_goodtimes.load_cdf", return_value=MagicMock()),
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
@@ -3226,7 +3210,7 @@ class TestApplyGoodtimesFilters:
                 mock_goodtimes,
                 [mock_l1b_de],
                 current_index=0,
-                l1b_hk_path=tmp_path / "hk.cdf",
+                l1b_hk=mock_hk,
                 cal_product_config_path=tmp_path / "cal.csv",
             )
 
@@ -3241,6 +3225,8 @@ class TestHiGoodtimes:
                 "repoint_id": [1, 2, 3],
             }
         )
+        mock_de = MagicMock()
+        mock_hk = MagicMock()
 
         with patch(
             "imap_processing.hi.hi_goodtimes.get_repoint_data"
@@ -3248,9 +3234,9 @@ class TestHiGoodtimes:
             mock_get_repoint.return_value = mock_repoint_df
 
             result = hi_goodtimes(
-                l1b_de_paths=[tmp_path / "de1.cdf"],
+                l1b_de_datasets=[mock_de],
                 current_repointing="repoint00001",
-                l1b_hk_path=tmp_path / "hk.cdf",
+                l1b_hk=mock_hk,
                 cal_product_config_path=tmp_path / "cal.csv",
                 output_dir=tmp_path,
                 start_date="20260101",
@@ -3259,19 +3245,24 @@ class TestHiGoodtimes:
 
             assert result == []
 
-    def test_calls_load_datasets_when_repoint_complete(self, tmp_path):
-        """Test that _load_l1b_de_datasets is called when repoint check passes."""
+    def test_calls_find_current_index_when_repoint_complete(self, tmp_path):
+        """Test that _find_current_pointing_index is called when repoint passes."""
         mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
         mock_goodtimes = MagicMock()
         mock_goodtimes.attrs = {"sensor": "sensor45"}
         mock_goodtimes.__getitem__ = MagicMock()
+        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_hk = MagicMock()
 
         with (
             patch(
                 "imap_processing.hi.hi_goodtimes.get_repoint_data",
                 return_value=mock_repoint_df,
             ),
-            patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes._find_current_pointing_index",
+                return_value=3,
+            ) as mock_find,
             patch(
                 "imap_processing.hi.hi_goodtimes.create_goodtimes_dataset",
                 return_value=mock_goodtimes,
@@ -3282,20 +3273,17 @@ class TestHiGoodtimes:
                 return_value=tmp_path / "out.txt",
             ),
         ):
-            mock_de = MagicMock()
-            mock_load.return_value = ([mock_de] * 7, 3)
-
             hi_goodtimes(
-                l1b_de_paths=[tmp_path / f"de{i}.cdf" for i in range(7)],
+                l1b_de_datasets=mock_datasets,
                 current_repointing="repoint00004",
-                l1b_hk_path=tmp_path / "hk.cdf",
+                l1b_hk=mock_hk,
                 cal_product_config_path=tmp_path / "cal.csv",
                 output_dir=tmp_path,
                 start_date="20260101",
                 version="v001",
             )
 
-            mock_load.assert_called_once()
+            mock_find.assert_called_once_with(mock_datasets, "repoint00004")
 
     def test_marks_all_bad_when_incomplete_de_set(self, tmp_path):
         """Test that cull_flags are set when DE set is incomplete."""
@@ -3304,13 +3292,18 @@ class TestHiGoodtimes:
         mock_goodtimes.attrs = {"sensor": "sensor45"}
         mock_cull_flags = MagicMock()
         mock_goodtimes.__getitem__ = MagicMock(return_value=mock_cull_flags)
+        mock_datasets = [MagicMock() for _ in range(3)]  # Less than 7
+        mock_hk = MagicMock()
 
         with (
             patch(
                 "imap_processing.hi.hi_goodtimes.get_repoint_data",
                 return_value=mock_repoint_df,
             ),
-            patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes._find_current_pointing_index",
+                return_value=0,
+            ),
             patch(
                 "imap_processing.hi.hi_goodtimes.create_goodtimes_dataset",
                 return_value=mock_goodtimes,
@@ -3320,13 +3313,10 @@ class TestHiGoodtimes:
                 return_value=tmp_path / "out.txt",
             ),
         ):
-            mock_de = MagicMock()
-            mock_load.return_value = ([mock_de], 0)
-
             hi_goodtimes(
-                l1b_de_paths=[tmp_path / f"de{i}.cdf" for i in range(3)],  # Less than 7
+                l1b_de_datasets=mock_datasets,
                 current_repointing="repoint00001",
-                l1b_hk_path=tmp_path / "hk.cdf",
+                l1b_hk=mock_hk,
                 cal_product_config_path=tmp_path / "cal.csv",
                 output_dir=tmp_path,
                 start_date="20260101",
@@ -3337,17 +3327,22 @@ class TestHiGoodtimes:
             mock_goodtimes.__getitem__.assert_called_with("cull_flags")
 
     def test_calls_apply_filters_when_full_de_set(self, tmp_path):
-        """Test that _apply_goodtimes_filters is called with 7 DE files."""
+        """Test that _apply_goodtimes_filters is called with 7 DE datasets."""
         mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
         mock_goodtimes = MagicMock()
         mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_hk = MagicMock()
 
         with (
             patch(
                 "imap_processing.hi.hi_goodtimes.get_repoint_data",
                 return_value=mock_repoint_df,
             ),
-            patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes._find_current_pointing_index",
+                return_value=3,
+            ),
             patch(
                 "imap_processing.hi.hi_goodtimes.create_goodtimes_dataset",
                 return_value=mock_goodtimes,
@@ -3360,13 +3355,10 @@ class TestHiGoodtimes:
                 return_value=tmp_path / "out.txt",
             ),
         ):
-            mock_datasets = [MagicMock() for _ in range(7)]
-            mock_load.return_value = (mock_datasets, 3)
-
             hi_goodtimes(
-                l1b_de_paths=[tmp_path / f"de{i}.cdf" for i in range(7)],
+                l1b_de_datasets=mock_datasets,
                 current_repointing="repoint00004",
-                l1b_hk_path=tmp_path / "hk.cdf",
+                l1b_hk=mock_hk,
                 cal_product_config_path=tmp_path / "cal.csv",
                 output_dir=tmp_path,
                 start_date="20260101",
@@ -3381,13 +3373,18 @@ class TestHiGoodtimes:
         mock_goodtimes = MagicMock()
         mock_goodtimes.attrs = {"sensor": "sensor45"}
         expected_path = tmp_path / "output.txt"
+        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_hk = MagicMock()
 
         with (
             patch(
                 "imap_processing.hi.hi_goodtimes.get_repoint_data",
                 return_value=mock_repoint_df,
             ),
-            patch("imap_processing.hi.hi_goodtimes._load_l1b_de_datasets") as mock_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes._find_current_pointing_index",
+                return_value=3,
+            ),
             patch(
                 "imap_processing.hi.hi_goodtimes.create_goodtimes_dataset",
                 return_value=mock_goodtimes,
@@ -3398,13 +3395,10 @@ class TestHiGoodtimes:
                 return_value=expected_path,
             ) as mock_write,
         ):
-            mock_datasets = [MagicMock() for _ in range(7)]
-            mock_load.return_value = (mock_datasets, 3)
-
             result = hi_goodtimes(
-                l1b_de_paths=[tmp_path / f"de{i}.cdf" for i in range(7)],
+                l1b_de_datasets=mock_datasets,
                 current_repointing="repoint00004",
-                l1b_hk_path=tmp_path / "hk.cdf",
+                l1b_hk=mock_hk,
                 cal_product_config_path=tmp_path / "cal.csv",
                 output_dir=tmp_path,
                 start_date="20260115",

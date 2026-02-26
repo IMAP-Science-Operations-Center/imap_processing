@@ -789,6 +789,10 @@ class Hi(ProcessInstrument):
         print(f"Processing IMAP-Hi {self.data_level}")
         datasets: list[xr.Dataset] = []
 
+        # Check self.repointing is not None (for mypy type checking)
+        if self.repointing is None:
+            raise ValueError("Repointing must be provided for Hi processing.")
+
         if self.data_level == "l1a":
             science_files = dependencies.get_file_paths(source="hi")
             if len(science_files) != 1:
@@ -838,10 +842,14 @@ class Hi(ProcessInstrument):
                         f"got {len(cal_prod_paths)}"
                     )
 
+                # Load CDFs before passing to hi_goodtimes
+                l1b_de_datasets = [load_cdf(path) for path in l1b_de_paths]
+                l1b_hk = load_cdf(l1b_hk_paths[0])
+
                 output_paths = hi_goodtimes.hi_goodtimes(
-                    l1b_de_paths,
+                    l1b_de_datasets,
                     self.repointing,
-                    l1b_hk_paths[0],
+                    l1b_hk,
                     cal_prod_paths[0],
                     Path(imap_data_access.config["DATA_DIR"]),
                     self.start_date,

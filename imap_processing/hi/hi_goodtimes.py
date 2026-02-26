@@ -10,7 +10,6 @@ import pandas as pd
 import xarray as xr
 from scipy.ndimage import convolve1d
 
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.utils import (
     CalibrationProductConfig,
     CoincidenceBitmap,
@@ -43,9 +42,9 @@ class CullCode(IntEnum):
 
 
 def hi_goodtimes(
-    l1b_de_paths: list[Path],
+    l1b_de_datasets: list[xr.Dataset],
     current_repointing: str,
-    l1b_hk_path: Path,
+    l1b_hk: xr.Dataset,
     cal_product_config_path: Path,
     output_dir: Path,
     start_date: str,
@@ -66,16 +65,16 @@ def hi_goodtimes(
 
     Parameters
     ----------
-    l1b_de_paths : list[Path]
-        Paths to L1B DE files for surrounding pointings. Typically includes
+    l1b_de_datasets : list[xr.Dataset]
+        L1B DE datasets for surrounding pointings. Typically includes
         current plus 3 preceding and 3 following pointings (7 total).
         Statistical filters 0 and 1 use all datasets; other filters use
         only the current pointing.
     current_repointing : str
         Repointing identifier for the current pointing (e.g., "repoint00001").
-        Used to identify which dataset in l1b_de_paths is the current one.
-    l1b_hk_path : Path
-        Path to L1B housekeeping file containing DRF status.
+        Used to identify which dataset in l1b_de_datasets is the current one.
+    l1b_hk : xr.Dataset
+        L1B housekeeping dataset containing DRF status.
     cal_product_config_path : Path
         Path to calibration product configuration CSV file.
     output_dir : Path
@@ -129,29 +128,27 @@ def hi_goodtimes(
         )
         return []
 
-    # Load DE datasets and find current pointing
-    l1b_de_datasets, current_index = _load_l1b_de_datasets(
-        l1b_de_paths, current_repointing
-    )
+    # Find the current pointing index in the datasets
+    current_index = _find_current_pointing_index(l1b_de_datasets, current_repointing)
     current_l1b_de = l1b_de_datasets[current_index]
 
     # Create the goodtimes dataset from the current pointing
     goodtimes_ds = create_goodtimes_dataset(current_l1b_de)
 
     # Check if we have the full set of 7 DE files for nominal processing
-    if len(l1b_de_paths) == 7:
+    if len(l1b_de_datasets) == 7:
         _apply_goodtimes_filters(
             goodtimes_ds,
             l1b_de_datasets,
             current_index,
-            l1b_hk_path,
+            l1b_hk,
             cal_product_config_path,
         )
     else:
         # Incomplete DE file set - mark all times as bad
         logger.warning(
             f"Incomplete DE file set for {current_repointing}: "
-            f"expected 7 files, got {len(l1b_de_paths)}. "
+            f"expected 7 files, got {len(l1b_de_datasets)}. "
             "Marking all times as bad."
         )
         goodtimes_ds["cull_flags"][:, :] = CullCode.LOOSE
@@ -161,24 +158,22 @@ def hi_goodtimes(
     return [output_path]
 
 
-def _load_l1b_de_datasets(
-    l1b_de_paths: list[Path],
+def _find_current_pointing_index(
+    l1b_de_datasets: list[xr.Dataset],
     current_repointing: str,
-) -> tuple[list[xr.Dataset], int]:
+) -> int:
     """
-    Load L1B DE datasets and find the index of the current pointing.
+    Find the index of the current pointing in the datasets list.
 
     Parameters
     ----------
-    l1b_de_paths : list[Path]
-        Paths to L1B DE files.
+    l1b_de_datasets : list[xr.Dataset]
+        L1B DE datasets.
     current_repointing : str
         Repointing identifier for the current pointing.
 
     Returns
     -------
-    l1b_de_datasets : list[xr.Dataset]
-        Loaded L1B DE datasets.
     current_index : int
         Index of the current pointing in the datasets list.
 
@@ -187,31 +182,23 @@ def _load_l1b_de_datasets(
     ValueError
         If the current repointing is not found in the datasets.
     """
-    logger.info(f"Loading {len(l1b_de_paths)} L1B DE files")
-    l1b_de_datasets = [load_cdf(path) for path in l1b_de_paths]
-
-    current_index = None
     for i, ds in enumerate(l1b_de_datasets):
         if ds.attrs.get("Repointing") == current_repointing:
-            current_index = i
-            break
+            logger.info(f"Current pointing index: {i} of {len(l1b_de_datasets)}")
+            return i
 
-    if current_index is None:
-        raise ValueError(
-            f"Could not find current repointing {current_repointing} "
-            f"in L1B DE datasets. Available repointings: "
-            f"{[ds.attrs.get('Repointing') for ds in l1b_de_datasets]}"
-        )
-
-    logger.info(f"Current pointing index: {current_index} of {len(l1b_de_datasets)}")
-    return l1b_de_datasets, current_index
+    raise ValueError(
+        f"Could not find current repointing {current_repointing} "
+        f"in L1B DE datasets. Available repointings: "
+        f"{[ds.attrs.get('Repointing') for ds in l1b_de_datasets]}"
+    )
 
 
 def _apply_goodtimes_filters(
     goodtimes_ds: xr.Dataset,
     l1b_de_datasets: list[xr.Dataset],
     current_index: int,
-    l1b_hk_path: Path,
+    l1b_hk: xr.Dataset,
     cal_product_config_path: Path,
 ) -> None:
     """
@@ -227,16 +214,12 @@ def _apply_goodtimes_filters(
         All L1B DE datasets (current + surrounding pointings).
     current_index : int
         Index of the current pointing in l1b_de_datasets.
-    l1b_hk_path : Path
-        Path to L1B housekeeping file.
+    l1b_hk : xr.Dataset
+        L1B housekeeping dataset.
     cal_product_config_path : Path
         Path to calibration product configuration CSV file.
     """
     current_l1b_de = l1b_de_datasets[current_index]
-
-    # Load L1B HK
-    logger.info(f"Loading L1B HK: {l1b_hk_path}")
-    l1b_hk = load_cdf(l1b_hk_path)
 
     # Load calibration product config
     logger.info(f"Loading cal product config: {cal_product_config_path}")
