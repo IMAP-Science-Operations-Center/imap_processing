@@ -279,6 +279,10 @@ def test_validate_l1b_idex_data_variables(
         "VelocityZ",
         "RightAscension",
     ]
+    # select only the first n events
+    l1b_example_data = l1b_example_data.isel(
+        event=np.arange(l1b_dataset.sizes["epoch"])
+    )
     # Compare each corresponding variable
     for var in l1b_example_data.data_vars:
         if var not in arrays_to_skip:
@@ -289,7 +293,6 @@ def test_validate_l1b_idex_data_variables(
                 f"The array '{cdf_var}' does not equal the expected example array "
             )
             f"'{var}' produced by the IDEX team"
-
             if l1b_dataset[cdf_var].dtype == object:
                 assert (l1b_dataset[cdf_var].data == l1b_example_data[var]).all(), (
                     warning

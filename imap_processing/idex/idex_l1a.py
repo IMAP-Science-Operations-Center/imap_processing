@@ -464,8 +464,28 @@ class RawDustEvent:
         # 20 positions to the right, and the mask (0b1111111111) keeps only the least
         # significant 10 bits.
         # TODO use the delay corresponding to the trigger
-        high_gain_delay = (packet["IDX__TXHDRSAMPDELAY"] >> 22) & 0b1111111111
+        # high_gain_delay = (packet["IDX__TXHDRSAMPDELAY"] >> 22) & 0b1111111111
         n_blocks = packet["IDX__TXHDRBLOCKS"]
+        trigger_item = packet["IDX__TXHDRTRIGID"]
+
+        # Account for HS trigger delay
+        tofdelay = packet["IDX__TXHDRSAMPDELAY"]  # last two bits are padding
+
+        # mask to extract 10-bit values
+        mask = 0b1111111111
+
+        hgdelay = (tofdelay) & mask  # first 10 bits (0-9)
+        mgdelay = (tofdelay >> 10) & mask  # next 10 bits (10-19)
+        lgdelay = (tofdelay >> 20) & mask  # next 10 bits (20-29)
+        u10 = trigger_item & 0x3FF
+        if (u10 >> 0) & 1:
+            delay = hgdelay
+        elif (u10 >> 1) & 1:
+            delay = lgdelay
+        elif (u10 >> 2) & 1:
+            delay = mgdelay
+        else:
+            delay = hgdelay
 
         # Retrieve number of low/high sample pre-trigger blocks
 
@@ -489,7 +509,7 @@ class RawDustEvent:
             self.HIGH_SAMPLE_RATE
             * (num_high_sample_pretrigger_blocks + 1)
             * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
-            - self.HIGH_SAMPLE_RATE * high_gain_delay
+            - self.HIGH_SAMPLE_RATE * delay
         )
 
     def _parse_high_sample_waveform(self, waveform_raw: str) -> list[int]:
