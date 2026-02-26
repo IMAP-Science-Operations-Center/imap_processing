@@ -510,7 +510,6 @@ missing_packets_sequence: # Used to be missing_packets_sequence
   VAR_TYPE: metadata
 
 flight_software_version:
-  <<: *support_data_defaults
   CATDESC: GLOWS flight software version
   FIELDNAM: GLOWS flight software version
   FILLVAL: *max_uint32

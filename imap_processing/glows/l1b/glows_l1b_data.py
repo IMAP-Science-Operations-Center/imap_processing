@@ -740,7 +740,6 @@ class HistogramL1B:
     """
 
     histogram: np.ndarray
-    flight_software_version: np.uint32
     seq_count_in_pkts_file: int
     first_spin_id: int
     last_spin_id: int
@@ -780,10 +779,12 @@ class HistogramL1B:
     spacecraft_velocity_average: np.ndarray = field(init=False)  # from SPICE
     spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # from SPICE
     flags: np.ndarray = field(init=False)
+    flight_software_version: np.ndarray
+    l1a_file_name: np.ndarray
+    ground_software_version: np.ndarray
     ancillary_exclusions: InitVar[AncillaryExclusions]
     ancillary_parameters: InitVar[AncillaryParameters]
     pipeline_settings: InitVar[PipelineSettings]
-    # l1a_file_name: str = ""
     # TODO:
     # - Determine a good way to output flags as "human readable"
     # - Bad angle algorithm using SPICE locations

@@ -171,7 +171,6 @@ def generate_de_dataset(
 
     # First variable is the output data type, second is the list of values
     support_data: dict = {
-        # "flight_software_version": [],
         "seq_count_in_pkts_file": [np.uint16, []],
         "number_of_de_packets": [np.uint32, []],
     }
@@ -432,7 +431,7 @@ def generate_histogram_dataset(
     output["flight_software_version"] = xr.DataArray(
         np.array([hist_l1a_list[0].flight_software_version], dtype=np.uint32),
         name="flight_software_version",
-        dims=["flight_software_version"],
+        dims=["scalar"],
         attrs=glows_cdf_attributes.get_variable_attributes(
             "flight_software_version", check_schema=False
         ),
@@ -440,7 +439,7 @@ def generate_histogram_dataset(
     output["pkts_file_name"] = xr.DataArray(
         np.array([hist_l1a_list[0].pkts_file_name], dtype=object),
         name="pkts_file_name",
-        dims=["pkts_file_name"],
+        dims=["scalar"],
         attrs=glows_cdf_attributes.get_variable_attributes(
             "pkts_file_name", check_schema=False
         ),
@@ -448,7 +447,7 @@ def generate_histogram_dataset(
     output["ground_software_version"] = xr.DataArray(
         np.array([hist_l1a_list[0].ground_software_version], dtype=object),
         name="ground_software_version",
-        dims=["ground_software_version"],
+        dims=["scalar"],
         attrs=glows_cdf_attributes.get_variable_attributes(
             "ground_software_version", check_schema=False
         ),

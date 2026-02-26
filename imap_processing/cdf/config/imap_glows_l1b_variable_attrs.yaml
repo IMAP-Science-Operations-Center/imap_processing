@@ -131,7 +131,6 @@ histogram:
   VAR_TYPE: data
 
 l1a_file_name:
-  <<: *support_data_defaults
   CATDESC: Name of input file with l1a data
   DISPLAY_TYPE: no_plot
   FIELDNAM: L1a data input filename
@@ -687,13 +686,20 @@ missing_packets_sequence: # Used to be missing_packets_sequence
   VAR_TYPE: metadata
 
 flight_software_version:
-  <<: *support_data_defaults
   CATDESC: GLOWS flight software version
   FIELDNAM: GLOWS flight software version
   FILLVAL: *max_uint32
   FORMAT: I8
   LABLAXIS: FSW ver
   VALIDMAX: 16777215
+
+ground_software_version:
+  CATDESC: Version of ground software used for processing
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Ground Software Version
+  FILLVAL: " "
+  FORMAT: A4
+  VAR_TYPE: metadata
 
 # Flags
 # MS: this needs to be thoroughly discussed

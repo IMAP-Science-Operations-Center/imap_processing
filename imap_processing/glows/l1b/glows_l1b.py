@@ -82,17 +82,19 @@ def glows_l1b(
         output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
     )
 
-    output_dataset["flight_software_version"] = np.uint32(
-        input_dataset["flight_software_version"].data
-    )
-    parents = input_dataset.attrs.get("Parent", "")
-    # output_dataset["l1a_file_name"] = xr.DataArray(
-    #    [parent for parent in parents if parent.endswith("cdf")],
-    #    attrs=cdf_attrs.get_variable_attributes("l1a_file_name", check_schema=False),
-    # )
-    output_dataset["l1a_file_name"] = [
-        parent for parent in parents if parent.endswith("cdf")
-    ]
+    #    output_dataset["flight_software_version"] = xr.DataArray(
+    #        input_dataset["flight_software_version"].data,
+    #    )
+    #
+    #    parents = input_dataset.attrs.get("Parent", "")
+    #    l1a_file_name = [parent for parent in parents if parent.endswith("cdf")]
+    #    output_dataset["l1a_file_name"] = xr.DataArray(
+    #        np.array([l1a_file_name], dtype=object),
+    #        name="l1a_file_name",
+    #        attrs=cdf_attrs.get_variable_attributes(
+    #            "l1a_file_name", check_schema=False
+    #        ),
+    #    )
 
     return output_dataset
 
@@ -175,7 +177,6 @@ def process_de(
         "de_flags": ["flag_dim"],
         "direct_event_glows_times": ["within_the_second"],
         "direct_event_pulse_lengths": ["within_the_second"],
-        "flight_software_version": ["flight_software_version"],
     }
 
     # For each attribute, retrieve the dims from output_dimension_mapping or use an
@@ -284,7 +285,7 @@ def process_histogram(
 
     # histograms is the only multi dimensional input variable, so we set the non-epoch
     # dimension ("bins").
-    # The rest of the input vars are epoch only, so they have an empty list.
+    # The rest of the non-scalar input vars are epoch only, so they have an empty list.
     input_dims[0] = ["bins"]
 
     # Create a closure that captures the ancillary objects
@@ -428,6 +429,7 @@ def create_l1b_hist_output(
         output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
             fields[index].name
         )
+        print(f"Output dataarray {index}: {fields[index].name}")
 
     output_dataset["bins"] = bin_data
     return output_dataset
