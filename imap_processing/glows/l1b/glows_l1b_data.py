@@ -826,10 +826,9 @@ class HistogramL1B:
 
         # Add SPICE related variables
         self.update_spice_parameters()
-        # Calculate the spin angle bin center
-        phi = (
-            np.arange(self.number_of_bins_per_histogram, dtype=np.float64) + 0.5
-        ) / self.number_of_bins_per_histogram
+        # Calculate the spin angle bin center using actual histogram length from L1A
+        n_bins = len(self.histogram)
+        phi = (np.arange(n_bins, dtype=np.float64) + 0.5) / n_bins
         self.imap_spin_angle_bin_cntr = phi * 360.0
 
         # TODO: This should probably be an AWS file
@@ -1076,7 +1075,7 @@ class HistogramL1B:
             Array of shape (4, 3600) with bad-angle flags for each bin.
         """
         histogram_flags = np.full(
-            (4, self.number_of_bins_per_histogram),
+            (4, len(self.histogram)),
             GLOWSL1bFlags.NONE.value,
             dtype=np.uint8,
         )
