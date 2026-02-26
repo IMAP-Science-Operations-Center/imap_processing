@@ -492,8 +492,8 @@ class DirectEventL1B:
         float. From direct_events.
     direct_event_pulse_lengths: ndarray
         array of pulse lengths [μs] for direct events. From direct_events
-    l1a_file_name
-        Name of the input L1a file
+    pkts_file_name
+        Name of the input CCSDS packets file
     """
 
     direct_events: InitVar[np.ndarray]
@@ -528,7 +528,7 @@ class DirectEventL1B:
     direct_event_glows_times: np.ndarray | None = field(init=False, default=None)
     # 3rd value is pulse length
     direct_event_pulse_lengths: np.ndarray | None = field(init=False, default=None)
-    # l1a_file_name: str = ""
+    # pkts_file_name: str = ""
     # TODO: where does the multi-event flag go?
 
     def __post_init__(
@@ -735,15 +735,15 @@ class HistogramL1B:
         structure.
     flight_software_version
         The version of the flight software, copied from L1A
-    l1a_file_name
-        The name of the input L1A file
+    pkts_file_name
+        The name of the input CCSDS packets file
     ground_software_version
         The version of the ground software, copied from L1A
     """
 
     histogram: np.ndarray
     flight_software_version: np.ndarray
-    l1a_file_name: np.ndarray
+    pkts_file_name: np.ndarray
     ground_software_version: np.ndarray
     seq_count_in_pkts_file: int
     first_spin_id: int

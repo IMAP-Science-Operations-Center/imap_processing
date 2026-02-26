@@ -90,6 +90,7 @@ def glows_l1b(
             "flight_software_version", check_schema=False
         ),
     )
+
     output_dataset["ground_software_version"] = xr.DataArray(
         input_dataset["ground_software_version"].data,
         name="ground_software_version",
@@ -99,11 +100,11 @@ def glows_l1b(
         ),
     )
 
-    output_dataset["l1a_file_name"] = xr.DataArray(
+    output_dataset["pkts_file_name"] = xr.DataArray(
         input_dataset["pkts_file_name"].data,
-        name="l1a_file_name",
+        name="pkts_file_name",
         dims=["scalar"],
-        attrs=cdf_attrs.get_variable_attributes("l1a_file_name", check_schema=False),
+        attrs=cdf_attrs.get_variable_attributes("pkts_file_name", check_schema=False),
     )
 
     return output_dataset
@@ -511,11 +512,11 @@ def create_l1b_de_output(
 
     # TODO: Not sure if this is requested in this product...
     # parents = input_dataset.attrs.get("Parent", "")
-    # output_dataset["l1a_file_name"] = xr.DataArray(
+    # output_dataset["pkts_file_name"] = xr.DataArray(
     #   [parent for parent in parents if parent.endswith("cdf")],
-    #   attrs=cdf_attrs.get_variable_attributes("l1a_file_name", check_schema=False),
+    #   attrs=cdf_attrs.get_variable_attributes("pkts_file_name", check_schema=False),
     #   )
-    # output_dataset["l1a_file_name"] = [
+    # output_dataset["pkts_file_name"] = [
     #   parent for parent in parents if parent.endswith("cdf")
     # ]
 

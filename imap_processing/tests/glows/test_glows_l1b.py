@@ -27,6 +27,9 @@ from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 @pytest.fixture
 def hist_dataset():
     variables = {
+        "flight_software_version": np.array([67], dtype=np.uint32),
+        "pkts_file_name": np.array(["test_packet_file.pkts"], dtype=object),
+        "ground_software_version": np.array(["v999"], dtype=object),
         "seq_count_in_pkts_file": np.zeros((20,)),
         "first_spin_id": np.zeros((20,)),
         "last_spin_id": np.zeros((20,)),
@@ -47,9 +50,6 @@ def hist_dataset():
         "imap_time_offset": np.zeros((20,)),
         "glows_start_time": np.zeros((20,)),
         "glows_time_offset": np.zeros((20,)),
-        "flight_software_version": np.array([67], dtype=np.uint32),
-        "pkts_file_name": np.array(["test_packet_file.pkts"], dtype=object),
-        "ground_software_version": np.array(["v999"], dtype=object),
     }
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("glows")
@@ -77,8 +77,8 @@ def hist_dataset():
     for var, data in variables.items():
         if 1 != len(data):
             ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
-        # else:
-        #    ds[var] = xr.DataArray(data, dims=["scalar"])
+        else:
+            ds[var] = xr.DataArray(data, dims="scalar")
 
     return ds
 
@@ -226,29 +226,29 @@ def test_histogram_mapping(
         dataclasses.asdict(
             HistogramL1B(
                 test_hists,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                time_val,
-                time_val,
-                time_val,
-                time_val,
                 np.array([67], dtype=np.uint32),
                 np.array(["test_packet_file.pkts"], dtype=object),
                 np.array(["v999"], dtype=object),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                encoded_val,
+                encoded_val,
+                encoded_val,
+                encoded_val,
+                encoded_val,
+                encoded_val,
+                encoded_val,
+                encoded_val,
+                time_val,
+                time_val,
+                time_val,
+                time_val,
                 mock_ancillary_exclusions,
                 mock_ancillary_parameters,
                 pipeline_settings,
@@ -256,12 +256,12 @@ def test_histogram_mapping(
         ).values()
     )
 
-    # Correctly decoded temperatures
-    assert np.isclose(output[9], expected_temp, 0.1)
+    # Correctly decoded temperature
+    assert np.isclose(output[12], expected_temp, 0.1)
 
     # Ensure time values are correctly mapped
-    assert output[17] == time_val
     assert output[20] == time_val
+    assert output[23] == time_val
 
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
@@ -289,29 +289,29 @@ def test_process_histogram(
 
     test_l1b = HistogramL1B(
         test_hists,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        time_val,
-        time_val,
-        time_val,
-        time_val,
         np.array([67], dtype=np.uint32),
         np.array(["test_packet_file.pkts"], dtype=object),
         np.array(["v999"], dtype=object),
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        time_val,
+        time_val,
+        time_val,
+        time_val,
         mock_ancillary_exclusions,
         mock_ancillary_parameters,
         pipeline_settings,
@@ -365,14 +365,14 @@ def test_glows_l1b(
         mock_conversion_table_dict,
     )
 
-    assert hist_output["histogram"].dims == ("epoch", "bins")
-    assert hist_output["histogram"].shape == (20, 3600)
+    assert hist_output["histogram"].dims == ("epoch", "scalar", "bins")
+    assert hist_output["histogram"].shape == (20, 1, 3600)
 
     # This needs to be added eventually, but is skipped for now.
     expected_de_data = [
         "flight_software_version",
         "seq_count_in_pkts_file",
-        "l1a_file_name",
+        "pkts_file_name",
         "ancillary_data_files",
     ]
 
@@ -410,7 +410,7 @@ def test_glows_l1b(
         "flags",
         "flight_software_version",
         "ground_software_version",
-        "l1a_file_name",
+        "pkts_file_name",
     ]
 
     for key in expected_hist_data:
@@ -500,6 +500,9 @@ def test_hist_spice_output(
     use_fake_spin_data_for_time(data_start_time)
     params = {
         "histogram": np.zeros((1, 3600)),
+        "flight_software_version": np.array([67], dtype=np.uint32),
+        "pkts_file_name": np.array(["test_packet_file.pkts"], dtype=object),
+        "ground_software_version": np.array(["v999"], dtype=object),
         "seq_count_in_pkts_file": 0,
         "first_spin_id": 0,
         "last_spin_id": 0,
@@ -520,9 +523,6 @@ def test_hist_spice_output(
         "imap_time_offset": 200.0,
         "glows_start_time": 504975603.125,
         "glows_time_offset": 200.0,
-        "flight_software_version": np.array([67], dtype=np.uint32),
-        "pkts_file_name": np.array(["test_packet_file.pkts"], dtype=object),
-        "ground_software_version": np.array(["v999"], dtype=object),
         "ancillary_exclusions": mock_ancillary_exclusions,
         "ancillary_parameters": mock_ancillary_parameters,
         "pipeline_settings": PipelineSettings(

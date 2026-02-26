@@ -130,10 +130,10 @@ histogram:
   UNITS: '#'
   VAR_TYPE: data
 
-l1a_file_name:
-  CATDESC: Name of input file with l1a data
+pkts_file_name:
+  CATDESC: Name of input file with CCSDS packet data
   DISPLAY_TYPE: no_plot
-  FIELDNAM: L1a data input filename
+  FIELDNAM: CCSDS packet data input filename
   FILLVAL: " "
   FORMAT: A49
   VAR_TYPE: metadata
