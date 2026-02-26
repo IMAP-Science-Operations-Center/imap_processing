@@ -354,7 +354,7 @@ def test_hi(
             data_descriptor,
             dependency_str,
             "20231212",
-            "20231213",
+            "repoint00001",
             "v005",
             False,
         )
