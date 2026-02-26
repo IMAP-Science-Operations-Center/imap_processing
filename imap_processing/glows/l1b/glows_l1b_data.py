@@ -665,8 +665,6 @@ class HistogramL1B:
     ----------
     histogram
         array of block-accumulated count numbers
-    flight_software_version
-        The version of the flight software, copied from L1A
     seq_count_in_pkts_file: int
     first_spin_id: int
         The start ID
@@ -735,11 +733,18 @@ class HistogramL1B:
     flags
         flags for extra information, per histogram. This should be a human-readable
         structure.
+    flight_software_version
+        The version of the flight software, copied from L1A
     l1a_file_name
         The name of the input L1A file
+    ground_software_version
+        The version of the ground software, copied from L1A
     """
 
     histogram: np.ndarray
+    flight_software_version: np.ndarray
+    l1a_file_name: np.ndarray
+    ground_software_version: np.ndarray
     seq_count_in_pkts_file: int
     first_spin_id: int
     last_spin_id: int
@@ -779,9 +784,6 @@ class HistogramL1B:
     spacecraft_velocity_average: np.ndarray = field(init=False)  # from SPICE
     spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # from SPICE
     flags: np.ndarray = field(init=False)
-    flight_software_version: np.ndarray
-    l1a_file_name: np.ndarray
-    ground_software_version: np.ndarray
     ancillary_exclusions: InitVar[AncillaryExclusions]
     ancillary_parameters: InitVar[AncillaryParameters]
     pipeline_settings: InitVar[PipelineSettings]

@@ -75,10 +75,10 @@ def hist_dataset():
     )
 
     for var, data in variables.items():
-        if 1 == len(data):
-            ds[var] = xr.DataArray(data, dims=["scalar"])
-        else:
+        if 1 != len(data):
             ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
+        # else:
+        #    ds[var] = xr.DataArray(data, dims=["scalar"])
 
     return ds
 

@@ -82,19 +82,29 @@ def glows_l1b(
         output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
     )
 
-    #    output_dataset["flight_software_version"] = xr.DataArray(
-    #        input_dataset["flight_software_version"].data,
-    #    )
-    #
-    #    parents = input_dataset.attrs.get("Parent", "")
-    #    l1a_file_name = [parent for parent in parents if parent.endswith("cdf")]
-    #    output_dataset["l1a_file_name"] = xr.DataArray(
-    #        np.array([l1a_file_name], dtype=object),
-    #        name="l1a_file_name",
-    #        attrs=cdf_attrs.get_variable_attributes(
-    #            "l1a_file_name", check_schema=False
-    #        ),
-    #    )
+    output_dataset["flight_software_version"] = xr.DataArray(
+        input_dataset["flight_software_version"].data,
+        name="flight_software_version",
+        dims=["scalar"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "flight_software_version", check_schema=False
+        ),
+    )
+    output_dataset["ground_software_version"] = xr.DataArray(
+        input_dataset["ground_software_version"].data,
+        name="ground_software_version",
+        dims=["scalar"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "ground_software_version", check_schema=False
+        ),
+    )
+
+    output_dataset["l1a_file_name"] = xr.DataArray(
+        input_dataset["pkts_file_name"].data,
+        name="l1a_file_name",
+        dims=["scalar"],
+        attrs=cdf_attrs.get_variable_attributes("l1a_file_name", check_schema=False),
+    )
 
     return output_dataset
 
@@ -127,10 +137,6 @@ def glows_l1b_de(
     output_dataset = create_l1b_de_output(
         input_dataset, cdf_attrs, ancillary_parameters
     )
-
-    # output_dataset["flight_software_version"] = np.uint32(
-    #   input_dataset["flight_software_version"].data
-    # )
 
     return output_dataset
 
@@ -429,7 +435,6 @@ def create_l1b_hist_output(
         output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
             fields[index].name
         )
-        print(f"Output dataarray {index}: {fields[index].name}")
 
     output_dataset["bins"] = bin_data
     return output_dataset
