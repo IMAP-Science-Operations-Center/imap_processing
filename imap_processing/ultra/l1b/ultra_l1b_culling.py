@@ -629,7 +629,6 @@ def flag_low_voltage(
     spin_tbin_edges: NDArray,
     status_dataset: xr.Dataset,
     voltage_threshold: float = UltraConstants.LOW_VOLTAGE_CULL_THRESHOLD,
-    low_voltage_flag: int = 65535,  # default is max uint16
 ) -> NDArray:
     """
     Flag low voltage events.
@@ -642,8 +641,6 @@ def flag_low_voltage(
         Status dataset containing voltage information.
     voltage_threshold : float
         Voltage threshold below which to flag low voltage events.
-    low_voltage_flag : int
-        The flag value to set for low voltage events.
 
     Returns
     -------
@@ -652,9 +649,7 @@ def flag_low_voltage(
     """
     spin_bin_size = len(spin_tbin_edges) - 1
     # initialize all spins to have no low voltage flag
-    quality_flags = np.full(
-        spin_bin_size, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
-    )
+    quality_flags = np.zeros(spin_bin_size, dtype=bool)
     # Get the min voltage across both deflection plate at each epoch
     min_voltage = np.minimum(
         status_dataset["rightdeflection_v"].data,
@@ -675,7 +670,7 @@ def flag_low_voltage(
     valid_bin_inds = (lv_spin_inds >= 0) & (lv_spin_inds < spin_bin_size)
     lv_spin_inds = lv_spin_inds[valid_bin_inds]
     # For each low voltage ind, flag the corresponding flag
-    quality_flags[lv_spin_inds] = low_voltage_flag
+    quality_flags[lv_spin_inds] = True
 
     #  TODO add log summary.
 
