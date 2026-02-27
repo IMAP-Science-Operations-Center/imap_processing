@@ -101,7 +101,7 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         else:
             # Set the pointing start and end times based on the first epoch
             pointing_start_met, pointing_end_met = get_pointing_times(
-                ttj2000ns_to_met(l1b_goodtimes_only["epoch"][0].item()).item()
+                int(ttj2000ns_to_met(l1b_goodtimes_only["epoch"][0].item()).item())
             )
 
         pset = xr.Dataset(
