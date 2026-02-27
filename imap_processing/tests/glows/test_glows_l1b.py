@@ -209,7 +209,7 @@ def test_histogram_mapping(
     # B = 69.5454
     expected_temp = 100
 
-    test_hists = np.zeros((200, 3600))
+    test_hists = np.zeros(3600)
     # For temp
     encoded_val = expected_temp * 2.318 + 69.5454
 
@@ -275,7 +275,7 @@ def test_process_histogram(
     # B = 69.5454
     expected_temp = 100
 
-    test_hists = np.zeros((200,))
+    test_hists = np.zeros(3600)
     # For temp
     encoded_val = np.single(expected_temp * 2.318 + 69.5454)
 
@@ -320,6 +320,38 @@ def test_process_histogram(
         pipeline_settings,
     )
     assert len(output) == len(dataclasses.asdict(test_l1b))
+
+
+@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_bins_from_histogram_not_nbins(
+    mock_spice_function,
+    mock_flag_uv_source,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+    mock_pipeline_settings,
+):
+    """Output bin arrays should use len(histogram), not number_of_bins_per_histogram."""
+    mock_spice_function.side_effect = mock_update_spice_parameters
+    # Set NBINS to a value that differs from the actual histogram length (3600)
+    hist_dataset["number_of_bins_per_histogram"][:] = 225
+
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
+    output = process_histogram(
+        hist_dataset,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
+        pipeline_settings,
+    )
+    # All output variables with a bins dimension must use len(histogram), not NBINS
+    for da in output:
+        if "bins" in da.sizes:
+            assert da.sizes["bins"] == 3600
 
 
 def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
@@ -498,7 +530,7 @@ def test_hist_spice_output(
     data_start_time = 504975600.125  # 2026-01-01T15:00:00.125
     use_fake_spin_data_for_time(data_start_time)
     params = {
-        "histogram": np.zeros((1, 3600)),
+        "histogram": np.zeros(3600),
         "flight_software_version": "v0.0.1",
         "seq_count_in_pkts_file": 0,
         "first_spin_id": 0,
