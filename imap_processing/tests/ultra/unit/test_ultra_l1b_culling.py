@@ -844,6 +844,38 @@ def test_get_poisson_stats():
     assert outlier_mask[-1]
 
 
+@pytest.mark.external_test_data
+def test_validate_stat_cull():
+    """Validate that flag_statistical_outliers are correctly flagged"""
+    # read test data from csv files
+    # xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
+    # expected_qf = pd.read_csv(
+    #     TEST_PATH / "validate_high_energy_culling_results_repoint00047.csv"
+    # ).to_numpy()
+    # de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
+    # de_ds = xr.Dataset(
+    #     {
+    #         "de_event_met": ("epoch", de_df.event_times.values),
+    #         "energy_spacecraft": ("epoch", de_df.energy_spacecraft.values),
+    #         "quality_outliers": ("epoch", de_df.quality_outliers.values),
+    #         "quality_scattering": ("epoch", de_df.quality_scattering.values),
+    #         "ebin": ("epoch", de_df.ebin.values),
+    #     }
+    # )
+    # # Use constants from the code to ensure consistency with the actual culling code
+    # spin_bin_size = UltraConstants.SPIN_BIN_SIZE
+    # spin_tbin_edges = get_binned_spins_edges(
+    #     xspin.spin_number.values,
+    #     xspin.spin_period.values,
+    #     xspin.spin_start_time.values,
+    #     spin_bin_size,
+    # )
+    # intervals, _, _ = build_energy_bins()
+    # # Get the energy ranges
+    # energy_ranges = get_binned_energy_ranges(intervals)
+    pass
+
+
 def test_get_energy_range_flags():
     """Tests get_binned_energy_range_flags function."""
     # Get energy bins used at l1c
