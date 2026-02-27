@@ -339,7 +339,6 @@ def test_flag_low_voltage(test_data):
             "leftdeflection_v": np.full(n_spins, 1.5),
         }
     )
-    flagged = 65535
     spins = np.arange(n_spins)
     spin_bin_size = 5
     spin_period = np.full(n_spins, 15.0)
@@ -355,14 +354,14 @@ def test_flag_low_voltage(test_data):
     # Check quality flag shape
     assert quality_flags.shape == (len(spin_tbin_edges) - 1,)
     # Check that every spin is flagged for low voltage
-    assert np.all(quality_flags == flagged)
+    assert np.all(quality_flags)
 
     # Set only the first spin to be below threshold
     mock_status_dataset["rightdeflection_v"].data[1:] += 5000
     mock_status_dataset["leftdeflection_v"].data[1:] += 5000
     quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset)
     # Check that only the first spin is flagged for low voltage
-    assert np.all(quality_flags[0] == flagged)
+    assert np.all(quality_flags[0])
     # The rest should not be flagged
     assert np.all(quality_flags[1:] == 0)
 
@@ -390,9 +389,7 @@ def test_flag_low_voltage_incomplete_bins(test_data):
 
     # check quality flag
     assert quality_flags.shape == (n_spins // spin_bin_size,)
-    # Check that every spin is flagged for low voltage
-    flagged = 65535
-    assert np.all(quality_flags == flagged)
+    assert np.all(quality_flags)
 
 
 def test_expand_bin_flags_to_spins(caplog):
@@ -481,9 +478,7 @@ def test_validate_voltage_cull():
         xspin.spin_start_time.values,
         spin_bin_size,
     )
-    lv_flags = flag_low_voltage(
-        spin_tbin_edges, status_ds, lv_threshold, low_voltage_flag=1
-    )
+    lv_flags = flag_low_voltage(spin_tbin_edges, status_ds, lv_threshold)
 
     assert np.array_equal(lv_flags, validation_low_voltage_qf)
 
