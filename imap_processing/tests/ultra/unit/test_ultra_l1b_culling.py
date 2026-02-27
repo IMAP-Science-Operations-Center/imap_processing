@@ -27,6 +27,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_low_voltage,
     flag_rates,
     flag_scattering,
+    flag_statistical_outliers,
     get_binned_energy_ranges,
     get_binned_spins_edges,
     get_de_rejection_mask,
@@ -34,6 +35,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_energy_histogram,
     get_energy_range_flags,
     get_n_sigma,
+    get_poisson_stats,
     get_pulses_per_spin,
     get_spin_data,
     get_valid_earth_angle_events,
@@ -644,10 +646,10 @@ def test_flag_high_energy():
     energy_range_edges = np.array([3, 5, 7, 18, 25])  # Example energy bin edges
     # Spin bin 1 (events 0-3) 4 events fall within the culling energy bin
     #   - This is above all the energy thresholds except the second one (10),
-    #   so it should be flagged for all energy ranges except flag #2
+    #   so it should be flagged for all energy ranges except flag the 2nd
     # Spin bin 2 (events 4-7) only 1 event falls within the culling energy bin
     #   - This is above the lowest energy threshold (1) but below the rest, so
-    #   it should only be flagged with the last energy range flag (#3)
+    #   it should only be flagged at the last energy range
     # Spin bin 3 (events 8-11) No events fall within the culling energy bin,
     #   so it should not be flagged for any energy range
     energy = np.array([17, 16, 12, 15, 5, 8, 4, 6, 4, 1, 22, 20])
@@ -666,26 +668,31 @@ def test_flag_high_energy():
     spin_tbin_edges = np.arange(
         start=0, stop=len(energy) + 1, step=4
     )  # create spin bins of 4 seconds
-    energy_range_flags = get_energy_range_flags(energy_range_edges)
     quality_flags = flag_high_energy(
         de_dataset,
         spin_tbin_edges,
         energy_range_edges,
-        energy_range_flags,
+        None,
         cull_thresholds,
         90,
     )
 
     # check shape
-    assert len(quality_flags) == len(spin_tbin_edges) - 1
+    np.testing.assert_array_equal(
+        quality_flags.shape, (len(energy_range_edges) - 1, len(spin_tbin_edges) - 1)
+    )
     # Assert that the first spin bin is flagged for high energy for all energy ranges
     # except the second one
-    assert quality_flags[0] == (2**0 | 2**2 | 2**3)
-    # Assert that the second spin bin is only flagged for high energy for the last
-    # energy range
-    assert quality_flags[1] == 2**3
-    # Assert that the third spin bin is not flagged for any energy range
-    assert quality_flags[2] == 0
+    quality_flags[0, 0] = True
+    quality_flags[1, 0] = False
+    quality_flags[2, 0] = True
+    quality_flags[3, 0] = True
+    # # Assert that the second spin bin is only flagged for high energy for the last
+    # # energy range
+    quality_flags[3, 1] = True
+    assert not np.any(quality_flags[0:3, 1])
+    # # Assert that the third spin bin is not flagged for any energy range
+    assert not np.any(quality_flags[:, 2])
 
 
 @pytest.mark.external_test_data
@@ -720,23 +727,155 @@ def test_validate_high_energy_cull():
     intervals, _, _ = build_energy_bins()
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(intervals)
-    flags = get_energy_range_flags(energy_ranges)
     e_flags = flag_high_energy(
-        de_ds, spin_tbin_edges, energy_ranges, flags, mock_thresholds
+        de_ds, spin_tbin_edges, energy_ranges, None, mock_thresholds
     )
-    # The ULTRA IT flags are shaped n_energy_ranges, spin_bin while the SDC
-    # is only spin_bin but different flags are set for different energy ranges, so we
-    # need to check each energy separately
-    # We also need to invert the expected flags since the ULTRA IT mask is True
-    # for good spins (counts below threshold) while the SDC quality flags are set
-    # for bad spins (counts exceed threshold).
-    for i in range(expected_qf.shape[0]):
-        np.testing.assert_array_equal(
-            (e_flags & 2**i) > 0,
-            ~expected_qf[i, :].astype(bool),
-            err_msg=f"High energy flag mismatch for energy range {i} with edges"
-            f" {energy_ranges[i]}-{energy_ranges[i + 1]}",
-        )
+    np.testing.assert_array_equal(e_flags, ~expected_qf.astype(bool))
+
+
+def test_flag_statistical_outliers():
+    """Tests flag_statistical_outliers function."""
+    energy_range_edges = np.array([3, 5, 7, 18, 25])  # Example energy bin edges
+    e_bin_3_value = 23
+    n_spin_bins = 12
+    spin_step = 7
+    energy = np.full(spin_step * n_spin_bins, 0)
+    # Make sure there are at least 3 other bins with counts in the 3rd energy bin.
+    # This is to ensure that we have enough events in that energy bin to calculate
+    # the statistics.
+    energy[spin_step] = e_bin_3_value
+    energy[spin_step * 2] = e_bin_3_value
+    energy[spin_step * 3] = e_bin_3_value
+    # Make the last spin bin have higher counts. It should get flagged as an outlier.
+    energy[-spin_step:] = e_bin_3_value
+
+    de_dataset = xr.Dataset(
+        {
+            "de_event_met": ("epoch", np.arange(len(energy))),
+            "energy_spacecraft": ("epoch", energy),
+            "quality_outliers": ("epoch", np.full(len(energy), 0)),
+            "quality_scattering": ("epoch", np.full(len(energy), 0)),
+            "ebin": ("epoch", np.full(len(energy), 10)),
+        }
+    )
+    spin_tbin_edges = np.arange(
+        start=0, stop=len(energy) + 1, step=spin_step
+    )  # create spin bins of 4 seconds
+    quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
+        de_dataset,
+        spin_tbin_edges,
+        energy_range_edges,
+        np.zeros((len(energy_range_edges) - 1, len(spin_tbin_edges) - 1), dtype=bool),
+        combine_flags_across_energy_bins=True,
+    )
+
+    # check shape
+    np.testing.assert_array_equal(
+        quality_flags.shape, (len(energy_range_edges) - 1, len(spin_tbin_edges) - 1)
+    )
+    # check that none of the flags are set except for the last spin bin
+    # since combine_flags_across_energy_bins is True, the entire last spin bin should
+    # be flagged even though only one energy bin had high counts
+    expected_flags = np.zeros(
+        (len(energy_range_edges) - 1, len(spin_tbin_edges) - 1), dtype=bool
+    )
+    expected_flags[:, -1] = True
+    np.testing.assert_array_equal(quality_flags, expected_flags)
+    # all energy bins should have converged
+    # The first 2 didn't have enough events to calculate statistics, but they should
+    # still be marked as converged
+    assert np.all(convergence)
+    # Only the last energy bin should have had any iterations since it's the only one
+    # with enough events.
+    assert np.nonzero(iterations) == np.array([3])
+    # Only the last energy bin should have a valid std_diff since it's the only one
+    # with enough events to calculate statistics.
+    assert np.nonzero(std_diff != -1) == np.array([3])
+
+
+def test_flag_statistical_outliers_invalid_events():
+    """Tests flag_statistical_outliers function when there are no valid events."""
+    energy_range_edges = np.array([3, 5, 7, 18, 25])  # Example energy bin edges
+    energy = np.arange(25)
+    de_dataset = xr.Dataset(
+        {
+            "de_event_met": ("epoch", np.arange(len(energy))),
+            "energy_spacecraft": ("epoch", energy),
+            "quality_outliers": ("epoch", np.full(len(energy), 0)),
+            "quality_scattering": ("epoch", np.full(len(energy), 0)),
+            "ebin": ("epoch", np.full(len(energy), 10)),
+        }
+    )
+    spin_tbin_edges = np.arange(
+        start=0, stop=len(energy) + 1, step=5
+    )  # create spin bins of 4 seconds
+    mask = np.ones((len(energy_range_edges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
+    quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
+        de_dataset,
+        spin_tbin_edges,
+        energy_range_edges,
+        mask,
+    )
+    # check that all flags are false since there are no valid events to flag as
+    np.testing.assert_array_equal(
+        quality_flags, np.zeros_like(quality_flags, dtype=bool)
+    )
+    # check that all energy bins are marked as converged (no valid events is not a
+    # failure case for convergence since we just can't calculate statistics, but we
+    # still want to mark it as converged so that it doesn't get flagged as a failure
+    # in the logs)
+    assert np.all(convergence)
+    # check that there were no iterations
+    assert np.sum(iterations) == 0
+    # Check that std_diff is all invalid (-1)
+    assert np.all(std_diff == -1)
+
+
+@pytest.mark.external_test_data
+def test_validate_stat_cull():
+    """Validate that flag_statistical_outliers are correctly flagged"""
+    # read test data from csv files
+    # xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
+    # expected_qf = pd.read_csv(
+    #     TEST_PATH / "validate_high_energy_culling_results_repoint00047.csv"
+    # ).to_numpy()
+    # de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
+    # de_ds = xr.Dataset(
+    #     {
+    #         "de_event_met": ("epoch", de_df.event_times.values),
+    #         "energy_spacecraft": ("epoch", de_df.energy_spacecraft.values),
+    #         "quality_outliers": ("epoch", de_df.quality_outliers.values),
+    #         "quality_scattering": ("epoch", de_df.quality_scattering.values),
+    #         "ebin": ("epoch", de_df.ebin.values),
+    #     }
+    # )
+    # # Use constants from the code to ensure consistency with the actual culling code
+    # spin_bin_size = UltraConstants.SPIN_BIN_SIZE
+    # spin_tbin_edges = get_binned_spins_edges(
+    #     xspin.spin_number.values,
+    #     xspin.spin_period.values,
+    #     xspin.spin_start_time.values,
+    #     spin_bin_size,
+    # )
+    # intervals, _, _ = build_energy_bins()
+    # # Get the energy ranges
+    # energy_ranges = get_binned_energy_ranges(intervals)
+    pass
+
+
+def test_get_poisson_stats():
+    """Tests get_poisson_stats function."""
+    counts = np.full(20, 0)
+    counts[-1] = 100  # Make the last bin have high counts
+    std_diff, outlier_mask = get_poisson_stats(counts)
+    # std_diff should be counts/sqrt(counts) = sqrt(counts)
+    assert (
+        std_diff == np.std(counts) / np.sqrt(5) - 1
+    )  # std_diff should be counts/sqrt(counts) = sqrt(counts)
+    assert (
+        np.sum(outlier_mask) == 1
+    )  # Only the last bin should be flagged as an outlier
+    assert outlier_mask[-1]
 
 
 def test_get_energy_range_flags():

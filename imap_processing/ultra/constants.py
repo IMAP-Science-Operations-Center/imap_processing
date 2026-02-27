@@ -204,3 +204,7 @@ class UltraConstants:
     )
     # Use the channel defined below to determine which spins are contaminated
     HIGH_ENERGY_CULL_CHANNEL = 4
+    # Number of iterations to perform for statistical outlier culling.
+    STAT_CULLING_N_ITER = 5
+    # Sigma threshold to use for statistical outlier culling.
+    STAT_CULLING_STD_THRESHOLD = 0.05
