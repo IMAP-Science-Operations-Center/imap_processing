@@ -69,28 +69,6 @@ def l1b_de():
 
 
 @pytest.fixture
-def l1b_de_no_goodtimes():
-    l1b_de = xr.Dataset(
-        {
-            "spin_bin": ("epoch", []),
-            "off_angle_bin": ("epoch", []),
-            "esa_step": ("epoch", []),
-            "coincidence_type": ("epoch", []),
-            "tof0": ("epoch", []),
-            "tof1": ("epoch", []),
-            "tof2": ("epoch", []),
-            "tof3": ("epoch", []),
-            "spin_cycle": ("epoch", []),
-            "avg_spin_durations": ("epoch", []),
-        },
-        coords={
-            "epoch": [],
-        },
-    )
-    return l1b_de
-
-
-@pytest.fixture
 def repoint_met():
     met = np.arange(511000000, 511000000 + 86400 * 5, 86400)
     return met
