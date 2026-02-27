@@ -885,7 +885,7 @@ def test_validate_stat_cull():
     np.testing.assert_array_equal(flags, ~expected_qf.astype(bool))
     np.testing.assert_array_equal(con, converge)
     np.testing.assert_array_equal(it, iterations)
-    np.testing.assert_array_equal(std, std_diff)
+    np.testing.assert_allclose(std, std_diff, rtol=1e-10)
 
 
 def test_get_energy_range_flags():

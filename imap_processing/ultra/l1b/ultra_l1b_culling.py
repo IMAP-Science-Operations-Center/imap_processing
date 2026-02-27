@@ -880,7 +880,6 @@ def flag_statistical_outliers(
                 # Select counts that have not been flagged in any channel.
                 counts = count_summary[e_idx, ~combined_mask]
                 std_ratio, _ = get_poisson_stats(counts)
-                std_diff[e_idx] = std_ratio
                 if std_ratio < std_threshold:
                     convergence[e_idx] = True
 
