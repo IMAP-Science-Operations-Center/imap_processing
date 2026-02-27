@@ -468,11 +468,23 @@ def add_spacecraft_velocity_to_pset(
             f"add_spacecraft_velocity_to_pset does not support PSETs with "
             f"Logical_source: {pset.attrs['Logical_source']}"
         )
-    et = ttj2000ns_to_et(pset["epoch"].values[0] + pointing_duration_ns / 2)
 
-    # Get spacecraft state in HAE frame
-    sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
-    sc_velocity_vector = sc_state[3:6]
+    # Handle case where pointing duration is zero or negative to avoid invalid
+    # ephemeris time (this is used, for example, for empty psets due to
+    # goodtimes filtering)
+    if pointing_duration_ns <= 0:
+        logger.warning(
+            "Pointing duration is zero or negative. "
+            "Setting spacecraft velocity to zero."
+        )
+        sc_velocity_vector = np.zeros(3)  # Zero velocity vector
+    else:
+        # Compute ephemeris time (J2000 seconds) of PSET midpoint
+        et = ttj2000ns_to_et(pset["epoch"].values[0] + pointing_duration_ns / 2)
+
+        # Get spacecraft state in HAE frame
+        sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
+        sc_velocity_vector = sc_state[3:6]
 
     # Store spacecraft velocity as DataArray
     pset["sc_velocity"] = xr.DataArray(
