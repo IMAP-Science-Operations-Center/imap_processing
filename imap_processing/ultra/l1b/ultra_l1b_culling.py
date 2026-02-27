@@ -645,7 +645,7 @@ def flag_low_voltage(
     Returns
     -------
     quality_flags : NDArray
-        Quality flags.
+        Boolean quality flags shaped (n_spin_bins,).
     """
     spin_bin_size = len(spin_tbin_edges) - 1
     # initialize all spins to have no low voltage flag
@@ -708,7 +708,7 @@ def flag_high_energy(
     Returns
     -------
     quality_flags : numpy.ndarray
-        Quality flags shaped (n_energy_bins, n_spin_bins).
+        Boolean quality flags shaped (n_energy_bins, n_spin_bins).
     """
     # expand energy thresholds to have shape (n_energy_bins, 1) for comparison with
     # the counts per spin
@@ -761,19 +761,15 @@ def flag_statistical_outliers(
     After low voltage and high energy spins have been flagged, there still appears to
     be some time dependency in the signal. This algorithm identifies those outliers.
 
-    Stat culling steps:
-    1.  Compute the count rate per spin bin and energy range.
-    2.  Flag spins and energy ranges where there are less than 3 bins with counts
-    3.  Check how close the data is to poisson stats:
-        - For a perfect poisson distribution, the standard deviation should be the
-        square root of the mean. So we calculate the difference between the
-        observed standard deviation and the expected standard deviation (sqrt of mean)
-        to see how well the data follows a Poisson distribution.
-    4. Flag bins where the count is more than 3 standard deviations from the mean. This
-        will be a different quality flag array as step #3
-    5. If combine_flags_across_energy_bins is True, then if a spin bin is flagged in
-        any energy channel, flag it in all. Recalculate the convergence after combining
-        flags across energy bins.
+    Iterative algorithm to identify areas consistent with Poisson statistics
+        For each pointing and energy,
+        1. Flag where there are less than 3 bins with counts
+        2. Calculate the mean (μ) and standard deviation (σ) of the counts in each bin.
+        3. Find bins where the counts, c, yield |(c-μ)/σ|>3,  cull these bins
+        4. Calculate ε=σ/√μ-1
+        5. If ε is less than a threshold value (0.05 for now) stop iterating
+        6. If number of iterations exceeds threshold (5 for now), stop iterating
+        7. Return to step 1
 
     Parameters
     ----------
@@ -835,7 +831,7 @@ def flag_statistical_outliers(
             # Step 1. check if any energy bins have less than 3 spin bins with counts.
             # If so, flag all spins for that energy bin and skip to the next iteration
             if np.sum(counts > 0) < 3:
-                quality_stats[e_idx] = False
+                quality_stats[e_idx] = True
                 convergence[e_idx] = True
                 std_diff[e_idx] = -1
                 break
