@@ -35,11 +35,15 @@ def l1b_hists():
     return input
 
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_glows_l2(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
@@ -62,11 +66,15 @@ def test_glows_l2(
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
 
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_generate_l2(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,

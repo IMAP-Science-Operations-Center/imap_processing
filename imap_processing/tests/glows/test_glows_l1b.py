@@ -194,11 +194,15 @@ def ancillary_dict():
     return dictionary
 
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_histogram_mapping(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
     mock_pipeline_settings,
@@ -258,11 +262,15 @@ def test_histogram_mapping(
     assert output[10] - expected_temp < 0.1
 
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_process_histogram(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
@@ -322,11 +330,15 @@ def test_process_histogram(
     assert len(output) == len(dataclasses.asdict(test_l1b))
 
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_bins_from_histogram_not_nbins(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
@@ -372,11 +384,15 @@ def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
     assert np.isclose(output[8].data[0], expected_temp)
 
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_glows_l1b(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     de_dataset,
     hist_dataset,
     mock_ancillary_exclusions,
@@ -467,11 +483,15 @@ def test_glows_l1b(
         assert key in de_output
 
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_generate_histogram_dataset(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
@@ -576,7 +596,7 @@ def test_hist_spice_output(
         day = met_to_datetime64(hist_data.imap_start_time)
         day_exclusions = mock_ancillary_exclusions.limit_by_day(day)
 
-        mask = hist_data.flag_uv_source(day_exclusions)
+        uv_mask, region_mask = hist_data.flag_uv_and_excluded(day_exclusions)
 
         # Assert that all these variables are the correct shape:
         assert isinstance(hist_data.spin_period_ground_average, np.float64)
@@ -589,8 +609,11 @@ def test_hist_spice_output(
         assert hist_data.spacecraft_location_std_dev.shape == (3,)
         assert hist_data.spacecraft_velocity_average.shape == (3,)
         assert hist_data.spacecraft_velocity_std_dev.shape == (3,)
-        assert mask.shape == (3600,)
+        assert uv_mask.shape == (3600,)
         # For 2 degree radius: 20 + 20 + 1(center) ≈ 41 bins.
-        assert np.count_nonzero(mask) == 41
+        assert np.count_nonzero(uv_mask) == 41
+        # Each individual excluded region center can only flag 0 or 1 bins
+        # (since the 0.05° threshold is exactly half the 0.1° bin spacing.
+        assert np.count_nonzero(region_mask) == 1
 
         # TODO: Maxine will validate actual data with GLOWS team
