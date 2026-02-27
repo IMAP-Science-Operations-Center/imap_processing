@@ -159,6 +159,11 @@ def calculate_extendedspin(
     stat_outliers_qf = np.bitwise_or.reduce(
         stat_outliers_qf * energy_bin_flags[:, np.newaxis], axis=1
     )
+    # Low voltage flag is shape (n_spin_bins,) but we want to convert from a boolean
+    # to a bitwise flag to be consistent with the other flags, where each spin that
+    # is flagged will have the bitflag of all the energy flags combined.
+    voltage_qf = voltage_qf * np.bitwise_or.reduce(energy_bin_flags)
+    # Expand binned quality flags to individual spins.
     high_energy_qf = expand_bin_flags_to_spins(len(spin), high_energy_qf, spin_bin_size)
     voltage_qf = expand_bin_flags_to_spins(len(spin), voltage_qf, spin_bin_size)
     stat_outliers_qf = expand_bin_flags_to_spins(
