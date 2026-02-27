@@ -849,9 +849,9 @@ def test_validate_stat_cull():
     """Validate that flag_statistical_outliers are correctly flagged"""
     # read test data from csv files
     xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
-    expected_qf = pd.read_csv(
+    results_df = pd.read_csv(
         TEST_PATH / "validate_stat_culling_results_repoint00047.csv"
-    ).to_numpy()
+    )
     de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
     de_ds = xr.Dataset(
         {
@@ -874,11 +874,18 @@ def test_validate_stat_cull():
     # Use the actual energy ranges that were used for the test data
     energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
-    flags, _, _, _ = flag_statistical_outliers(
+    flags, con, it, std = flag_statistical_outliers(
         de_ds, spin_tbin_edges, energy_ranges, mask, 90
     )
-
+    expected_qf = results_df.iloc[:, :-3].values.astype(bool)
+    converge = results_df["converge"].values
+    iterations = results_df["iterations"].values
+    std_diff = results_df["std_diff"].values
+    # check that the flags match the expected results
     np.testing.assert_array_equal(flags, ~expected_qf.astype(bool))
+    np.testing.assert_array_equal(con, converge)
+    np.testing.assert_array_equal(it, iterations)
+    np.testing.assert_array_equal(std, std_diff)
 
 
 def test_get_energy_range_flags():
