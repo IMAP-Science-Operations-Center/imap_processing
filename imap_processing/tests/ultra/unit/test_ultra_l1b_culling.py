@@ -847,10 +847,10 @@ def test_get_poisson_stats():
 @pytest.mark.external_test_data
 def test_validate_stat_cull():
     """Validate that flag_statistical_outliers are correctly flagged"""
-    # read test data from csv files
+    # #read test data from csv files
     # xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
     # expected_qf = pd.read_csv(
-    #     TEST_PATH / "validate_high_energy_culling_results_repoint00047.csv"
+    #     TEST_PATH / "validate_stat_culling_results_repoint00047.csv"
     # ).to_numpy()
     # de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
     # de_ds = xr.Dataset(
@@ -873,6 +873,10 @@ def test_validate_stat_cull():
     # intervals, _, _ = build_energy_bins()
     # # Get the energy ranges
     # energy_ranges = get_binned_energy_ranges(intervals)
+    # flags, _,_,_ = flag_statistical_outliers(
+    #     de_ds, spin_tbin_edges, energy_ranges, get_energy_range_flags(energy_ranges),
+    #     6
+    # )
     pass
 
 
