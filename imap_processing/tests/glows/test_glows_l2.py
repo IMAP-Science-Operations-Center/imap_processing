@@ -98,7 +98,7 @@ def test_generate_l2(
     )
 
     # Test case 1: L1B dataset has good times
-    l2 = HistogramL2.create(l1b_hist_dataset, pipeline_settings)
+    l2 = HistogramL2(l1b_hist_dataset, pipeline_settings)
 
     expected_values = {
         "filter_temperature_average": [57.59],
@@ -126,9 +126,9 @@ def test_generate_l2(
 
     # Test case 2: L1B dataset has no good times (all flags 0)
     l1b_hist_dataset["flags"].values = np.zeros(l1b_hist_dataset.flags.shape)
-    ds = HistogramL2.create(l1b_hist_dataset, pipeline_settings)
-    expected_ds = None
-    assert ds == expected_ds
+    ds = HistogramL2(l1b_hist_dataset, pipeline_settings)
+    expected_number_of_good_l1b_inputs = 0
+    assert ds.number_of_good_l1b_inputs == expected_number_of_good_l1b_inputs
 
 
 def test_bin_exclusions(l1b_hists):

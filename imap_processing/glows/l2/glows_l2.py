@@ -49,8 +49,8 @@ def glows_l2(
         pipeline_settings_dataset.sel(epoch=day, method="nearest")
     )
 
-    l2 = HistogramL2.create(input_dataset, pipeline_settings)
-    if l2 is None:
+    l2 = HistogramL2(input_dataset, pipeline_settings)
+    if l2.number_of_good_l1b_inputs == 0:
         logger.warning("No good data found in L1B dataset. Returning empty list.")
         return []
     else:

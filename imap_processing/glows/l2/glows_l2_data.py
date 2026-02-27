@@ -1,7 +1,5 @@
 """Module containing the class definition for the HistogramL2 class."""
 
-from __future__ import annotations
-
 from dataclasses import InitVar, dataclass, field
 
 import numpy as np
@@ -125,8 +123,10 @@ class HistogramL2:
 
     Parameters
     ----------
-        good_l1b_data : xr.Dataset
-            GLOWS histogram L1B dataset filtered by good times.
+        l1b_dataset : xr.Dataset
+            GLOWS histogram L1B dataset, as produced by glows_l1b.py.
+        pipeline_settings : PipelineSettings
+            Pipeline settings object read from ancillary file.
 
     Attributes
     ----------
@@ -210,116 +210,9 @@ class HistogramL2:
     spin_axis_orientation_average: np.ndarray[np.double]
     bad_time_flag_occurrences: np.ndarray
 
-    def __init__(self, good_l1b_data: xr.Dataset):
+    def __init__(self, l1b_dataset: xr.Dataset, pipeline_settings: PipelineSettings):
         """
         Given an L1B dataset, process data into an output HistogramL2 object.
-
-        Parameters
-        ----------
-        good_l1b_data : xr.Dataset
-            GLOWS histogram L1B dataset filtered by good times.
-        """
-        # TODO: bad angle filter
-        # TODO filter bad bins out. Needs to happen here while everything is still
-        #  per-timestamp.
-
-        self.daily_lightcurve = DailyLightcurve(good_l1b_data)
-
-        self.total_l1b_inputs = len(good_l1b_data["epoch"])
-        self.number_of_good_l1b_inputs = len(good_l1b_data["epoch"])
-        self.identifier = -1  # TODO: retrieve from spin table
-        # TODO fill this in
-        self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH))
-
-        # Generate outputs that are passed in directly from L1B
-        self.start_time = good_l1b_data["epoch"].data[0]
-        self.end_time = good_l1b_data["epoch"].data[-1]
-
-        self.filter_temperature_average = (
-            good_l1b_data["filter_temperature_average"]
-            .mean(dim="epoch", keepdims=True)
-            .data
-        )
-        self.filter_temperature_std_dev = (
-            good_l1b_data["filter_temperature_average"]
-            .std(dim="epoch", keepdims=True)
-            .data
-        )
-        self.hv_voltage_average = (
-            good_l1b_data["hv_voltage_average"].mean(dim="epoch", keepdims=True).data
-        )
-        self.hv_voltage_std_dev = (
-            good_l1b_data["hv_voltage_average"].std(dim="epoch", keepdims=True).data
-        )
-        self.spin_period_average = (
-            good_l1b_data["spin_period_average"].mean(dim="epoch", keepdims=True).data
-        )
-        self.spin_period_std_dev = (
-            good_l1b_data["spin_period_average"].std(dim="epoch", keepdims=True).data
-        )
-        self.pulse_length_average = (
-            good_l1b_data["pulse_length_average"].mean(dim="epoch", keepdims=True).data
-        )
-        self.pulse_length_std_dev = (
-            good_l1b_data["pulse_length_average"].std(dim="epoch", keepdims=True).data
-        )
-        self.spin_period_ground_average = (
-            good_l1b_data["spin_period_ground_average"]
-            .mean(dim="epoch", keepdims=True)
-            .data
-        )
-        self.spin_period_ground_std_dev = (
-            good_l1b_data["spin_period_ground_average"]
-            .std(dim="epoch", keepdims=True)
-            .data
-        )
-        self.position_angle_offset_average = (
-            good_l1b_data["position_angle_offset_average"]
-            .mean(dim="epoch", keepdims=True)
-            .data
-        )
-        self.position_angle_offset_std_dev = (
-            good_l1b_data["position_angle_offset_average"]
-            .std(dim="epoch", keepdims=True)
-            .data
-        )
-        self.spacecraft_location_average = (
-            good_l1b_data["spacecraft_location_average"]
-            .mean(dim="epoch")
-            .data[np.newaxis, :]
-        )
-        self.spacecraft_location_std_dev = (
-            good_l1b_data["spacecraft_location_average"]
-            .std(dim="epoch")
-            .data[np.newaxis, :]
-        )
-        self.spacecraft_velocity_average = (
-            good_l1b_data["spacecraft_velocity_average"]
-            .mean(dim="epoch")
-            .data[np.newaxis, :]
-        )
-        self.spacecraft_velocity_std_dev = (
-            good_l1b_data["spacecraft_velocity_average"]
-            .std(dim="epoch")
-            .data[np.newaxis, :]
-        )
-        self.spin_axis_orientation_average = (
-            good_l1b_data["spin_axis_orientation_average"]
-            .mean(dim="epoch")
-            .data[np.newaxis, :]
-        )
-        self.spin_axis_orientation_std_dev = (
-            good_l1b_data["spin_axis_orientation_average"]
-            .std(dim="epoch")
-            .data[np.newaxis, :]
-        )
-
-    @classmethod
-    def create(
-        cls, l1b_dataset: xr.Dataset, pipeline_settings: PipelineSettings
-    ) -> HistogramL2 | None:
-        """
-        Create a HistogramL2 object from an L1B dataset, filtering out bad times.
 
         Parameters
         ----------
@@ -327,24 +220,112 @@ class HistogramL2:
             GLOWS histogram L1B dataset, as produced by glows_l1b.py.
         pipeline_settings : PipelineSettings
             Pipeline settings object read from ancillary file.
-
-        Returns
-        -------
-        HistogramL2 or None
-            A HistogramL2 object if there are good times in the dataset,
-            or None if there are no good times.
         """
-        # Check if dataset contains good times
-        good_idx = cls.return_good_times(
-            l1b_dataset["flags"],
-            np.array(pipeline_settings.active_bad_time_flags, dtype=float),
-        )
-        if len(good_idx) == 0:
-            return None
+        active_flags = np.array(pipeline_settings.active_bad_time_flags, dtype=float)
 
-        # Proceed with creating the HistogramL2 object using only the good data
-        filtered_data = l1b_dataset.isel(epoch=good_idx)
-        return cls(filtered_data)
+        # Select the good blocks (i.e. epoch values) according to the flags. Drop any
+        # bad blocks before processing.
+        good_data = l1b_dataset.isel(
+            epoch=self.return_good_times(l1b_dataset["flags"], active_flags)
+        )
+        # TODO: bad angle filter
+        # TODO: filter bad bins out. Needs to happen here while everything is still
+        #       per-timestamp.
+
+        self.daily_lightcurve = DailyLightcurve(good_data)
+
+        self.total_l1b_inputs = len(l1b_dataset["epoch"])
+        self.number_of_good_l1b_inputs = len(good_data["epoch"])
+        self.identifier = -1  # TODO: retrieve from spin table
+        # TODO fill this in
+        self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH))
+
+        if len(good_data["epoch"]) != 0:
+            # Generate outputs that are passed in directly from L1B
+            self.start_time = good_data["epoch"].data[0]
+            self.end_time = good_data["epoch"].data[-1]
+        else:
+            # No good times in the file
+            self.start_time = l1b_dataset["imap_start_time"].data[0]
+            self.end_time = (
+                l1b_dataset["imap_start_time"].data[0]
+                + l1b_dataset["imap_time_offset"].data[0]
+            )
+
+        self.filter_temperature_average = (
+            good_data["filter_temperature_average"]
+            .mean(dim="epoch", keepdims=True)
+            .data
+        )
+        self.filter_temperature_std_dev = (
+            good_data["filter_temperature_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.hv_voltage_average = (
+            good_data["hv_voltage_average"].mean(dim="epoch", keepdims=True).data
+        )
+        self.hv_voltage_std_dev = (
+            good_data["hv_voltage_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.spin_period_average = (
+            good_data["spin_period_average"].mean(dim="epoch", keepdims=True).data
+        )
+        self.spin_period_std_dev = (
+            good_data["spin_period_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.pulse_length_average = (
+            good_data["pulse_length_average"].mean(dim="epoch", keepdims=True).data
+        )
+        self.pulse_length_std_dev = (
+            good_data["pulse_length_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.spin_period_ground_average = (
+            good_data["spin_period_ground_average"]
+            .mean(dim="epoch", keepdims=True)
+            .data
+        )
+        self.spin_period_ground_std_dev = (
+            good_data["spin_period_ground_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.position_angle_offset_average = (
+            good_data["position_angle_offset_average"]
+            .mean(dim="epoch", keepdims=True)
+            .data
+        )
+        self.position_angle_offset_std_dev = (
+            good_data["position_angle_offset_average"]
+            .std(dim="epoch", keepdims=True)
+            .data
+        )
+        self.spacecraft_location_average = (
+            good_data["spacecraft_location_average"]
+            .mean(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spacecraft_location_std_dev = (
+            good_data["spacecraft_location_average"]
+            .std(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spacecraft_velocity_average = (
+            good_data["spacecraft_velocity_average"]
+            .mean(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spacecraft_velocity_std_dev = (
+            good_data["spacecraft_velocity_average"]
+            .std(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spin_axis_orientation_average = (
+            good_data["spin_axis_orientation_average"]
+            .mean(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spin_axis_orientation_std_dev = (
+            good_data["spin_axis_orientation_average"]
+            .std(dim="epoch")
+            .data[np.newaxis, :]
+        )
 
     def filter_bad_bins(self, histograms: NDArray, bin_exclusions: NDArray) -> NDArray:
         """
