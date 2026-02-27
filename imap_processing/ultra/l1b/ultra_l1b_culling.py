@@ -762,7 +762,7 @@ def flag_statistical_outliers(
     be some time dependency in the signal. This algorithm identifies those outliers.
 
     Iterative algorithm to identify areas consistent with Poisson statistics
-        For each pointing and energy,
+        For each energy range:
         1. Flag where there are less than 3 bins with counts
         2. Calculate the mean (μ) and standard deviation (σ) of the counts in each bin.
         3. Find bins where the counts, c, yield |(c-μ)/σ|>3,  cull these bins
@@ -782,14 +782,16 @@ def flag_statistical_outliers(
     mask : numpy.ndarray
         Mask indicating which events to consider for statistical outlier flagging.
         This should be a 2d boolean array of shape (n_energy_bins, n_spin_bins) where
-        True indicates the spin bins to consider for outlier flagging for each energy
-         bin (e.g., after low voltage and high energy culling).
+        True indicates the spin bins that have been flagged in previous steps (e.g.,
+        after low voltage and high energy culling) and should be excluded from the
+        outlier flagging process.
     sensor_id : int
         Sensor ID (e.g., 45 or 90).
     n_iterations : int
         Maximum number of iterations to perform for outlier flagging.
     std_threshold : float
-        Threshold for standard deviation difference from Poisson stats to determine.
+        Threshold for standard deviation difference from Poisson stats to determine
+        convergence.
     combine_flags_across_energy_bins : bool
         Whether to link energy channels such that if a spin bin is flagged in any energy
         channel, it is flagged in all energy channels.
@@ -808,7 +810,7 @@ def flag_statistical_outliers(
         Array of shape (n_energy_bins,) containing the final standard deviation
          difference from Poisson stats for each energy bin.
     """
-    # Initialize all spin bins to have no high energy flag
+    # Initialize all spin bins to have no outlier flag
     spin_bin_size = len(spin_tbin_edges) - 1
     n_energy_bins = len(energy_ranges) - 1
     # make a copy of the mask to avoid modifying the original mask passed in
@@ -864,8 +866,8 @@ def flag_statistical_outliers(
         # Recalculate convergence with the combined mask.
         for e_idx in range(n_energy_bins):
             if not convergence[e_idx]:
-                valid_inds = np.where(combined_mask)[0]
-                counts = count_summary[e_idx, valid_inds]
+                # Select counts that have not been flagged in any channel.
+                counts = count_summary[e_idx, ~combined_mask]
                 std_ratio, _ = get_poisson_stats(counts)
                 std_diff[e_idx] = std_ratio
                 if std_ratio < std_threshold:

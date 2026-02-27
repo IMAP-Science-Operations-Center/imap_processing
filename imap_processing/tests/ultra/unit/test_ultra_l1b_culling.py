@@ -678,13 +678,13 @@ def test_flag_high_energy():
     )
     # Assert that the first spin bin is flagged for high energy for all energy ranges
     # except the second one
-    quality_flags[0, 0] = True
-    quality_flags[1, 0] = False
-    quality_flags[2, 0] = True
-    quality_flags[3, 0] = True
+    assert quality_flags[0, 0]
+    assert not quality_flags[1, 0]
+    assert quality_flags[2, 0]
+    assert quality_flags[3, 0]
     # # Assert that the second spin bin is only flagged for high energy for the last
     # # energy range
-    quality_flags[3, 1] = True
+    assert quality_flags[3, 1]
     assert not np.any(quality_flags[0:3, 1])
     # # Assert that the third spin bin is not flagged for any energy range
     assert not np.any(quality_flags[:, 2])
@@ -754,7 +754,7 @@ def test_flag_statistical_outliers():
     )
     spin_tbin_edges = np.arange(
         start=0, stop=len(energy) + 1, step=spin_step
-    )  # create spin bins of 4 seconds
+    )  # create spin bins of 7 seconds
     quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
         de_dataset,
         spin_tbin_edges,
@@ -802,7 +802,7 @@ def test_flag_statistical_outliers_invalid_events():
     )
     spin_tbin_edges = np.arange(
         start=0, stop=len(energy) + 1, step=5
-    )  # create spin bins of 4 seconds
+    )  # create spin bins of 5 seconds
     mask = np.ones((len(energy_range_edges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
     quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
         de_dataset,
