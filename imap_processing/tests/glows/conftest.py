@@ -134,15 +134,16 @@ def mock_ancillary_exclusions():
         coords={"epoch": epoch_range},
     )
 
+    # Mask array based on data in imap_glows_suspected-transients_20250923_v002.dat.
     mock_suspected_transients = xr.Dataset(
         {
             "l1b_unique_block_identifier": (
                 ["epoch", "time_block"],
-                [["block1", "block2"]] * len(epoch_range),
+                [["2026-01-01T15:00:00", "2026-01-01T15:01:00"]] * len(epoch_range),
             ),
             "histogram_mask_array": (
                 ["epoch", "time_block"],
-                [["mask1", "mask2"]] * len(epoch_range),
+                [["0" * 3600, "0" * 600 + "1" * 100 + "0" * 2900]] * len(epoch_range),
             ),
         },
         coords={"epoch": epoch_range},
@@ -152,11 +153,11 @@ def mock_ancillary_exclusions():
         {
             "l1b_unique_block_identifier": (
                 ["epoch", "time_block"],
-                [["block1", "block2"]] * len(epoch_range),
+                [["2026-01-01T15:00:00", "2026-01-01T15:01:00"]] * len(epoch_range),
             ),
             "histogram_mask_array": (
                 ["epoch", "time_block"],
-                [["mask1", "mask2"]] * len(epoch_range),
+                [["0" * 100 + "1" * 10 + "0" * 3490, "0" * 3600]] * len(epoch_range),
             ),
         },
         coords={"epoch": epoch_range},
