@@ -682,7 +682,7 @@ def test_flag_high_energy():
     assert not quality_flags[1, 0]
     assert quality_flags[2, 0]
     assert quality_flags[3, 0]
-    # # Assert that the second spin bin is only flagged for high energy for the last
+    # Assert that the second spin bin is only flagged for high energy for the last
     # # energy range
     assert quality_flags[3, 1]
     assert not np.any(quality_flags[0:3, 1])

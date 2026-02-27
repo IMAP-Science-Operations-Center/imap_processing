@@ -698,7 +698,8 @@ def flag_high_energy(
         Array of energy range edges.
     mask : numpy.ndarray, optional
         Mask indicating which events to consider for high energy flagging
-         (e.g., after low voltage culling).
+         (e.g., after low voltage culling). True indicates the spin bins that should
+         NOT be considered for high energy flagging.
     energy_thresholds : numpy.ndarray
         Array of count thresholds for flagging high energy events corresponding to
          each energy range.
@@ -737,7 +738,7 @@ def flag_high_energy(
     )  # (n_energy_bins, n_spin_bins)
 
     if mask is not None:
-        quality_flags[:, mask] = flagged[:, mask]
+        quality_flags[:, ~mask] = flagged[:, ~mask]
     else:
         quality_flags = flagged
     # TODO add log summary. E.g Tim's hi goodtimes code
@@ -826,7 +827,7 @@ def flag_statistical_outliers(
     count_summary = get_valid_de_count_summary(
         de_dataset, energy_ranges, spin_tbin_edges, sensor_id
     )  # shape (n_energy_bins, n_spin_bins)
-    for e_idx in np.arange(n_energy_bins):  # shape: (n_energy_bins,)
+    for e_idx in np.arange(n_energy_bins):
         for it in range(n_iterations):
             # only consider bins that are currently unflagged for this energy bin
             counts = count_summary[e_idx, ~iter_mask[e_idx]]
@@ -909,6 +910,10 @@ def get_poisson_stats(counts: NDArray) -> tuple[float, NDArray]:
         a statistical outlier (more than 3 sigma from the mean).
     """
     std = np.std(counts)
+    if std == 0:
+        # If std is 0, then all counts are the same. In this case, we can consider
+        # there to be no outliers and the distribution to perfectly match Poisson
+        return 0, np.zeros_like(counts, dtype=bool)
     std_ratio = std / np.sqrt(np.mean(counts)) - 1
     sub_mask = np.abs((counts - np.mean(counts)) / std) > 3
     return std_ratio, sub_mask

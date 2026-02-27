@@ -92,7 +92,7 @@ def calculate_extendedspin(
     )
     # Combine high energy and voltage flags to use for statistical outlier flagging.
     mask = (
-        voltage_qf[np.newaxis, :] & high_energy_qf
+        voltage_qf[np.newaxis, :] | high_energy_qf
     )  # Shape (n_energy_bins, n_spins_bins)
     stat_outliers_qf, _, _, _ = flag_statistical_outliers(
         de_dataset,
