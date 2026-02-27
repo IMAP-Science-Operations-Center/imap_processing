@@ -979,7 +979,7 @@ class HistogramL1B:
 
         return flags
 
-    def flag_uv_source(self, exclusions: AncillaryExclusions) -> np.ndarray:
+    def flag_uv_and_excluded(self, exclusions: AncillaryExclusions) -> tuple:
         """
         Create boolean mask where True means bin is within radius of UV source.
 
@@ -992,6 +992,8 @@ class HistogramL1B:
         -------
         close_to_uv_source : np.ndarray
             Boolean mask for uv source.
+        inside_excluded_region : np.ndarray
+            Boolean mask for inside excluded region.
         """
         # Rotate spin-angle bin centers by the instrument position-angle offset
         # so azimuth=0 aligns with the instrument pointing direction.
@@ -1043,14 +1045,40 @@ class HistogramL1B:
         # If dot product -> 1 the two vectors point in almost
         # the same direction and needs mask.
         # If dot product -> 0 the two directions are perpendicular on the sky.
-        cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
+        uv_cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
 
         # Determine if the pixel is too close to any of the source radii.
         close_to_uv_source = np.any(
-            cos_sep >= np.cos(uv_radius)[None, :], axis=1
+            uv_cos_sep >= np.cos(uv_radius)[None, :], axis=1
         )  # (nbin,)
 
-        return close_to_uv_source
+        # Excluded region pixel centers.
+        region_longitude = exclusions.excluded_regions[
+            "ecliptic_longitude_deg"
+        ].values  # (n_region,)
+        region_latitude = exclusions.excluded_regions[
+            "ecliptic_latitude_deg"
+        ].values  # (n_region,)
+
+        region_spherical = np.stack(
+            [np.ones_like(region_longitude), region_longitude, region_latitude],
+            axis=-1,
+        )  # (n_region, 3)
+
+        region_vecs = spherical_to_cartesian(region_spherical)  # (n_region, 3)
+
+        # (nbin, 3) @ (3, n_region) -> (nbin, n_region)
+        region_cos_sep = look_vecs_ecl @ region_vecs.T
+
+        # Flag any bin whose pointing direction falls within half a bin width
+        # (0.1° / 2 = 0.05°) of an excluded sky direction.
+        half_bin_rad = np.deg2rad(0.1 / 2)
+
+        inside_excluded_region = np.any(
+            region_cos_sep >= np.cos(half_bin_rad), axis=1
+        )  # (nbin,)
+
+        return close_to_uv_source, inside_excluded_region
 
     def _compute_histogram_flag_array(
         self, exclusions: AncillaryExclusions
@@ -1060,7 +1088,7 @@ class HistogramL1B:
 
         Creates a (4, 3600) array where each row represents a different flag type:
         - Row 0: is_close_to_uv_source
-        - Row 1: is_inside_excluded_region (TODO)
+        - Row 1: is_inside_excluded_region
         - Row 2: is_excluded_by_instr_team (TODO)
         - Row 3: is_suspected_transient (TODO)
 
@@ -1080,9 +1108,18 @@ class HistogramL1B:
             dtype=np.uint8,
         )
 
-        close_any = self.flag_uv_source(exclusions)
+        close_to_uv_source, inside_excluded_region = self.flag_uv_and_excluded(
+            exclusions
+        )
 
         # close if within radius of any UV source
-        histogram_flags[0][close_any] |= GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
+        histogram_flags[0][close_to_uv_source] |= (
+            GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
+        )
+
+        # inside if within half pixel size of any excluded region center
+        histogram_flags[1][inside_excluded_region] |= (
+            GLOWSL1bFlags.IS_INSIDE_EXCLUDED_REGION.value
+        )
 
         return histogram_flags
