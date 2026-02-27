@@ -10,9 +10,11 @@ from imap_processing.hi.hi_goodtimes import (
     CullCode,
     _add_sweep_indices,
     _build_per_sweep_datasets,
+    _compute_bins_for_cluster,
     _compute_median_and_sigma_per_esa,
     _compute_normalized_counts_per_sweep,
     _compute_qualified_counts_per_sweep,
+    _find_event_clusters,
     _get_sweep_indices,
     _identify_cull_pattern,
     create_goodtimes_dataset,
@@ -21,6 +23,7 @@ from imap_processing.hi.hi_goodtimes import (
     mark_overflow_packets,
     mark_statistical_filter_0,
     mark_statistical_filter_1,
+    mark_statistical_filter_2,
 )
 from imap_processing.quality_flags import ImapHiL1bDeFlags
 
@@ -2484,3 +2487,468 @@ class TestStatisticalFilter1:
                 current_index=10,
                 qualified_coincidence_types=qualified_types,
             )
+
+
+class TestFindEventClusters:
+    """Test suite for _find_event_clusters() helper function."""
+
+    def test_empty_array(self):
+        """Test with empty input."""
+        result = _find_event_clusters(np.array([]), min_events=3, max_time_delta=100)
+        assert result == []
+
+    def test_too_few_events(self):
+        """Test with fewer events than min_events."""
+        de_tags = np.array([10, 50])
+        result = _find_event_clusters(de_tags, min_events=3, max_time_delta=100)
+        assert result == []
+
+    def test_events_too_spread(self):
+        """Test with events spread beyond max_time_delta."""
+        de_tags = np.array([0, 1000, 2000, 3000, 4000, 5000])
+        result = _find_event_clusters(de_tags, min_events=3, max_time_delta=100)
+        assert result == []
+
+    def test_single_cluster(self):
+        """Test detection of a single cluster."""
+        de_tags = np.array([100, 110, 120, 130, 140, 150])
+        result = _find_event_clusters(de_tags, min_events=3, max_time_delta=100)
+        assert len(result) == 1
+        assert result[0] == (0, 5)
+
+    def test_multiple_clusters(self):
+        """Test detection of multiple separate clusters."""
+        de_tags = np.array([100, 110, 120, 1000, 1010, 1020])
+        result = _find_event_clusters(de_tags, min_events=3, max_time_delta=50)
+        assert len(result) == 2
+        assert result[0] == (0, 2)
+        assert result[1] == (3, 5)
+
+    def test_cluster_merge(self):
+        """Test that overlapping clusters are merged."""
+        # Events that form overlapping windows
+        de_tags = np.array([0, 10, 20, 30, 40, 50])
+        result = _find_event_clusters(de_tags, min_events=3, max_time_delta=30)
+        # All events should merge into one cluster
+        assert len(result) == 1
+        assert result[0] == (0, 5)
+
+    def test_exact_threshold(self):
+        """Test cluster detection at exact min_events threshold."""
+        de_tags = np.array([0, 10, 20])  # Exactly 3 events within 20 ticks
+        result = _find_event_clusters(de_tags, min_events=3, max_time_delta=20)
+        assert len(result) == 1
+        assert result[0] == (0, 2)
+
+
+class TestComputeBinsForCluster:
+    """Test suite for _compute_bins_for_cluster() helper function."""
+
+    def test_basic_range(self):
+        """Test basic bin range computation."""
+        nominal_bins = np.array([40, 42, 44, 46])
+        bins = _compute_bins_for_cluster(
+            nominal_bins, cluster_start=0, cluster_end=3, bin_padding=1
+        )
+        expected = np.arange(39, 48)  # 40-1 to 46+1
+        np.testing.assert_array_equal(bins, expected)
+
+    def test_wrapping_at_zero(self):
+        """Test that bins wrap around at 0."""
+        nominal_bins = np.array([0, 1, 2])
+        bins = _compute_bins_for_cluster(
+            nominal_bins, cluster_start=0, cluster_end=2, bin_padding=2, n_bins=90
+        )
+        # Should wrap: -2, -1, 0, 1, 2, 3, 4 -> 88, 89, 0, 1, 2, 3, 4
+        expected = np.array([88, 89, 0, 1, 2, 3, 4])
+        np.testing.assert_array_equal(bins, expected)
+
+    def test_wrapping_at_max(self):
+        """Test that bins wrap around at n_bins."""
+        nominal_bins = np.array([87, 88, 89])
+        bins = _compute_bins_for_cluster(
+            nominal_bins, cluster_start=0, cluster_end=2, bin_padding=2, n_bins=90
+        )
+        # Should wrap: 85, 86, 87, 88, 89, 90, 91 -> 85, 86, 87, 88, 89, 0, 1
+        expected = np.array([85, 86, 87, 88, 89, 0, 1])
+        np.testing.assert_array_equal(bins, expected)
+
+    def test_partial_cluster(self):
+        """Test range computation for partial cluster."""
+        nominal_bins = np.array([10, 20, 30, 40, 50])
+        bins = _compute_bins_for_cluster(
+            nominal_bins, cluster_start=1, cluster_end=3, bin_padding=1
+        )
+        expected = np.arange(19, 42)  # 20-1 to 40+1
+        np.testing.assert_array_equal(bins, expected)
+
+    def test_no_wrapping_needed(self):
+        """Test middle bins that don't need wrapping."""
+        nominal_bins = np.array([44, 45, 46])
+        bins = _compute_bins_for_cluster(
+            nominal_bins, cluster_start=0, cluster_end=2, bin_padding=1
+        )
+        expected = np.arange(43, 48)  # 44-1 to 46+1
+        np.testing.assert_array_equal(bins, expected)
+
+    def test_cluster_spanning_zero_boundary(self):
+        """Test cluster that spans across the 0/89 boundary."""
+        # Cluster bins span from 87 to 2 (wrapping around)
+        nominal_bins = np.array([87, 88, 89, 0, 1, 2])
+        bins = _compute_bins_for_cluster(
+            nominal_bins, cluster_start=0, cluster_end=5, bin_padding=1, n_bins=90
+        )
+        # Should mark 86-89 and 0-3 (cluster 87-2 plus padding of 1)
+        expected = np.array([86, 87, 88, 89, 0, 1, 2, 3])
+        np.testing.assert_array_equal(bins, expected)
+
+
+class TestStatisticalFilter2:
+    """Test suite for mark_statistical_filter_2() function."""
+
+    @pytest.fixture
+    def goodtimes_for_filter2(self):
+        """Create a goodtimes dataset for filter 2 testing."""
+        n_mets = 10
+        met_values = np.arange(1000.0, 1000.0 + n_mets * 120, 120)
+
+        ds = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((n_mets, 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                ),
+                "esa_step": xr.DataArray(
+                    np.tile(np.arange(1, 11), 1)[:n_mets].astype(np.uint8),
+                    dims=["met"],
+                ),
+            },
+            coords={
+                "met": met_values,
+                "spin_bin": np.arange(90),
+            },
+            attrs={"sensor": "Hi45", "pointing": 1},
+        )
+        return ds
+
+    def _create_l1b_de_for_filter2(
+        self,
+        n_packets: int = 10,
+        events_per_packet: int = 20,
+        base_met: float = 1000.0,
+        esa_step: int = 1,
+    ) -> xr.Dataset:
+        """Create L1B DE dataset for filter 2 testing.
+
+        Creates a dataset with proper epoch and event_met dimensions:
+        - epoch: packet-level variables (ccsds_met, esa_step)
+        - event_met: event-level variables (ccsds_index, event_met, etc.)
+        """
+        n_events = n_packets * events_per_packet
+
+        # Spread events across packets
+        ccsds_index = np.repeat(np.arange(n_packets), events_per_packet).astype(
+            np.uint16
+        )
+
+        # Packet-level METs (120 seconds apart)
+        packet_mets = np.arange(base_met, base_met + n_packets * 120, 120)
+
+        # Default: events spread out in time within each packet (no clusters)
+        # Each packet spans ~120 seconds, events spread across that time
+        event_met_values = np.zeros(n_events, dtype=np.float64)
+        for i in range(n_packets):
+            start_idx = i * events_per_packet
+            end_idx = start_idx + events_per_packet
+            # Events spread 0-100 seconds within each packet
+            event_met_values[start_idx:end_idx] = packet_mets[i] + np.linspace(
+                0, 100, events_per_packet
+            )
+
+        # All events are qualified type 12
+        coincidence_type = np.full(n_events, 12, dtype=np.uint8)
+
+        # Spread events across spin bins
+        nominal_bin = np.tile(
+            np.linspace(0, 89, events_per_packet).astype(np.uint8), n_packets
+        )
+
+        # All packets at same ESA step (single 8-spin set)
+        packet_esa_steps = np.full(n_packets, esa_step, dtype=np.uint8)
+
+        return xr.Dataset(
+            {
+                # Event-level variables (event dimension)
+                "ccsds_index": (["event"], ccsds_index),
+                "event_met": (["event"], event_met_values),
+                "coincidence_type": (["event"], coincidence_type),
+                "nominal_bin": (["event"], nominal_bin),
+                # Packet-level variables (epoch dimension)
+                "ccsds_met": (["epoch"], packet_mets),
+                "esa_step": (["epoch"], packet_esa_steps),
+            },
+            coords={
+                "event": np.arange(n_events),
+                "epoch": np.arange(n_packets),
+            },
+        )
+
+    def test_no_qualified_events(self, goodtimes_for_filter2):
+        """Test with no qualified events."""
+        l1b_de = self._create_l1b_de_for_filter2()
+        # Change all events to unqualified type
+        l1b_de["coincidence_type"] = xr.DataArray(
+            np.full(len(l1b_de["event"]), 4, dtype=np.uint8),
+            dims=["event"],
+        )
+
+        qualified_types = {12}  # Type 12 is qualified, but no events have it
+
+        mark_statistical_filter_2(
+            goodtimes_for_filter2,
+            l1b_de,
+            qualified_types,
+            min_events=6,
+            max_time_delta=10.0,
+        )
+
+        # No bins should be marked
+        assert np.all(goodtimes_for_filter2["cull_flags"].values == 0)
+
+    def test_no_clusters(self, goodtimes_for_filter2):
+        """Test with qualified events but no clusters."""
+        # Create l1b_de with different esa_steps per packet
+        # This ensures events are in different 8-spin sets and don't get pooled
+        n_packets = 10
+        events_per_packet = 20
+        n_events = n_packets * events_per_packet
+        base_met = 1000.0
+
+        ccsds_index = np.repeat(np.arange(n_packets), events_per_packet).astype(
+            np.uint16
+        )
+        # Events spread out in time within each packet (no clusters)
+        # Events at 0, 5, 10, ... 95 seconds - more than 0.2s apart
+        packet_mets = np.arange(base_met, base_met + n_packets * 120, 120)
+        event_met_values = np.zeros(n_events, dtype=np.float64)
+        for i in range(n_packets):
+            start_idx = i * events_per_packet
+            end_idx = start_idx + events_per_packet
+            event_met_values[start_idx:end_idx] = packet_mets[i] + np.linspace(
+                0, 95, events_per_packet
+            )
+        coincidence_type = np.full(n_events, 12, dtype=np.uint8)
+        nominal_bin = np.tile(
+            np.linspace(0, 89, events_per_packet).astype(np.uint8), n_packets
+        )
+        # Each packet has a different esa_step (different 8-spin sets)
+        packet_esa_steps = np.arange(1, n_packets + 1, dtype=np.uint8)
+
+        l1b_de = xr.Dataset(
+            {
+                "ccsds_index": (["event"], ccsds_index),
+                "event_met": (["event"], event_met_values),
+                "coincidence_type": (["event"], coincidence_type),
+                "nominal_bin": (["event"], nominal_bin),
+                "ccsds_met": (["epoch"], packet_mets),
+                "esa_step": (["epoch"], packet_esa_steps),
+            },
+            coords={
+                "event": np.arange(n_events),
+                "epoch": np.arange(n_packets),
+            },
+        )
+
+        qualified_types = {12}
+
+        mark_statistical_filter_2(
+            goodtimes_for_filter2,
+            l1b_de,
+            qualified_types,
+            min_events=6,
+            max_time_delta=0.2,
+        )
+
+        # Events are spread out within each 8-spin set, no clusters should form
+        assert np.all(goodtimes_for_filter2["cull_flags"].values == 0)
+
+    def test_cluster_detected(self, goodtimes_for_filter2):
+        """Test that a cluster is detected and bins are marked."""
+        l1b_de = self._create_l1b_de_for_filter2(n_packets=1, events_per_packet=10)
+
+        # Create a cluster: 6 events within 0.1 seconds, all at bins 40-45
+        # Events at 0.01, 0.02, ..., 0.06 seconds (cluster) and
+        # 10, 11, 12, 13 seconds (spread out)
+        l1b_de["event_met"] = xr.DataArray(
+            np.array(
+                [
+                    1000.01,
+                    1000.02,
+                    1000.03,
+                    1000.04,
+                    1000.05,
+                    1000.06,
+                    1010.0,
+                    1011.0,
+                    1012.0,
+                    1013.0,
+                ],
+                dtype=np.float64,
+            ),
+            dims=["event"],
+        )
+        l1b_de["nominal_bin"] = xr.DataArray(
+            np.array([40, 41, 42, 43, 44, 45, 10, 20, 30, 50], dtype=np.uint8),
+            dims=["event"],
+        )
+
+        qualified_types = {12}
+
+        mark_statistical_filter_2(
+            goodtimes_for_filter2,
+            l1b_de,
+            qualified_types,
+            min_events=6,
+            max_time_delta=0.1,
+            bin_padding=1,
+        )
+
+        # Bins 39-46 should be marked for MET 1000.0 (first MET)
+        cull_flags = goodtimes_for_filter2["cull_flags"].sel(met=1000.0).values
+        assert np.all(cull_flags[39:47] == CullCode.LOOSE)
+        # Other bins should be unmarked
+        assert np.all(cull_flags[:39] == 0)
+        assert np.all(cull_flags[47:] == 0)
+
+    def test_multiple_clusters_same_packet(self, goodtimes_for_filter2):
+        """Test detection of multiple clusters in the same packet."""
+        l1b_de = self._create_l1b_de_for_filter2(n_packets=1, events_per_packet=12)
+
+        # Two clusters: one at 0.01-0.06s (bins 10-15), one at 10.0-10.05s (bins 70-75)
+        l1b_de["event_met"] = xr.DataArray(
+            np.array(
+                [
+                    1000.01,
+                    1000.02,
+                    1000.03,
+                    1000.04,
+                    1000.05,
+                    1000.06,
+                    1010.00,
+                    1010.01,
+                    1010.02,
+                    1010.03,
+                    1010.04,
+                    1010.05,
+                ],
+                dtype=np.float64,
+            ),
+            dims=["event"],
+        )
+        l1b_de["nominal_bin"] = xr.DataArray(
+            np.array([10, 11, 12, 13, 14, 15, 70, 71, 72, 73, 74, 75], dtype=np.uint8),
+            dims=["event"],
+        )
+
+        qualified_types = {12}
+
+        mark_statistical_filter_2(
+            goodtimes_for_filter2,
+            l1b_de,
+            qualified_types,
+            min_events=6,
+            max_time_delta=0.1,
+            bin_padding=1,
+        )
+
+        cull_flags = goodtimes_for_filter2["cull_flags"].sel(met=1000.0).values
+        # First cluster: bins 9-16
+        assert np.all(cull_flags[9:17] == CullCode.LOOSE)
+        # Second cluster: bins 69-76
+        assert np.all(cull_flags[69:77] == CullCode.LOOSE)
+        # Middle bins should be unmarked
+        assert np.all(cull_flags[17:69] == 0)
+
+    def test_bin_padding_with_wrapping(self, goodtimes_for_filter2):
+        """Test that bin padding wraps at array boundaries."""
+        l1b_de = self._create_l1b_de_for_filter2(n_packets=1, events_per_packet=6)
+
+        # Cluster at bins 0-2 with padding=2: bins -2 to 4 wrap to
+        # [88, 89, 0, 1, 2, 3, 4]
+        # 6 events clustered within 0.1 seconds
+        l1b_de["event_met"] = xr.DataArray(
+            np.array(
+                [1000.01, 1000.02, 1000.03, 1000.04, 1000.05, 1000.06], dtype=np.float64
+            ),
+            dims=["event"],
+        )
+        l1b_de["nominal_bin"] = xr.DataArray(
+            np.array([0, 0, 1, 1, 2, 2], dtype=np.uint8),
+            dims=["event"],
+        )
+
+        qualified_types = {12}
+
+        mark_statistical_filter_2(
+            goodtimes_for_filter2,
+            l1b_de,
+            qualified_types,
+            min_events=6,
+            max_time_delta=0.1,
+            bin_padding=2,
+        )
+
+        cull_flags = goodtimes_for_filter2["cull_flags"].sel(met=1000.0).values
+        # Bins 0-4 should be marked (cluster at 0-2 + padding of 2)
+        assert np.all(cull_flags[0:5] == CullCode.LOOSE)
+        # Bins 88-89 should also be marked due to wrapping (bin -2 and -1)
+        assert np.all(cull_flags[88:90] == CullCode.LOOSE)
+        # Middle bins should be unmarked
+        assert np.all(cull_flags[5:88] == 0)
+        # Check that no cull_flags were set on any other METs
+        other_mets = goodtimes_for_filter2["cull_flags"].drop_sel(met=1000.0)
+        assert np.all(other_mets.values == 0)
+
+    def test_custom_parameters(self, goodtimes_for_filter2):
+        """Test with custom min_events and max_time_delta."""
+        l1b_de = self._create_l1b_de_for_filter2(n_packets=1, events_per_packet=10)
+
+        # Create events: 4 close together (not enough for default min_events=6)
+        # First 4 events at 0.01-0.04s (cluster), rest spread out
+        l1b_de["event_met"] = xr.DataArray(
+            np.array(
+                [
+                    1000.01,
+                    1000.02,
+                    1000.03,
+                    1000.04,
+                    1010.0,
+                    1011.0,
+                    1012.0,
+                    1013.0,
+                    1014.0,
+                    1015.0,
+                ],
+                dtype=np.float64,
+            ),
+            dims=["event"],
+        )
+        l1b_de["nominal_bin"] = xr.DataArray(
+            np.array([40, 41, 42, 43, 10, 20, 30, 50, 60, 70], dtype=np.uint8),
+            dims=["event"],
+        )
+
+        qualified_types = {12}
+
+        # With min_events=4, should detect cluster
+        mark_statistical_filter_2(
+            goodtimes_for_filter2,
+            l1b_de,
+            qualified_types,
+            min_events=4,
+            max_time_delta=0.1,
+            bin_padding=1,
+        )
+
+        cull_flags = goodtimes_for_filter2["cull_flags"].sel(met=1000.0).values
+        assert np.all(cull_flags[39:45] == CullCode.LOOSE)

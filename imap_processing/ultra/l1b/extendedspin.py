@@ -10,14 +10,15 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     count_rejected_events_per_spin,
     expand_bin_flags_to_spins,
     flag_attitude,
+    flag_high_energy,
     flag_hk,
     flag_imap_instruments,
     flag_low_voltage,
     flag_rates,
-    get_binned_energy_range_flags,
     get_binned_energy_ranges,
     get_binned_spins_edges,
     get_energy_histogram,
+    get_energy_range_flags,
     get_pulses_per_spin,
 )
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
@@ -74,13 +75,27 @@ def calculate_extendedspin(
         spin, spin_period, spin_starttime, spin_bin_size
     )
     voltage_qf = flag_low_voltage(spin_tbin_edges, status_dataset)
+    voltage_qf = expand_bin_flags_to_spins(len(spin), voltage_qf, spin_bin_size)
     # Get energy bins used at l1c
     intervals, _, _ = build_energy_bins()
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(intervals)
-    energy_bin_flags = get_binned_energy_range_flags(energy_ranges)
-    # TODO do not include low voltage spins in the calculation of the rest of the flag!!
-
+    energy_bin_flags = get_energy_range_flags(energy_ranges)
+    # Calculate the high energy quality flags using the de dataset with low voltage
+    # events removed. Use the same spin and energy bins that
+    # were used for low voltage flags to maintain consistency in the flags.
+    valid_voltage_spins = spin[np.where(voltage_qf == 0)]
+    valid_de_spins = np.isin(de_dataset["spin"].values, valid_voltage_spins)
+    de_dataset_filtered = de_dataset.isel(epoch=valid_de_spins)
+    energy_thresholds = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS
+    high_energy_qf = flag_high_energy(
+        de_dataset_filtered,
+        spin_tbin_edges,
+        energy_ranges,
+        energy_bin_flags,
+        energy_thresholds,
+        instrument_id,
+    )
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
 
@@ -118,7 +133,7 @@ def calculate_extendedspin(
     coin_per_spin[valid] = pulses.coin_per_spin[idx[valid]]
 
     # Expand binned quality flags to individual spins.
-    voltage_qf = expand_bin_flags_to_spins(len(spin), voltage_qf, spin_bin_size)
+    high_energy_qf = expand_bin_flags_to_spins(len(spin), high_energy_qf, spin_bin_size)
     # account for rates spins which are not in the direct event spins
     extendedspin_dict["start_pulses_per_spin"] = start_per_spin
     extendedspin_dict["stop_pulses_per_spin"] = stop_per_spin
@@ -134,9 +149,7 @@ def calculate_extendedspin(
     extendedspin_dict["quality_statistics"] = np.full_like(
         voltage_qf, ImapRatesUltraFlags.NONE.value, np.uint16
     )  # shape (nspin,)
-    extendedspin_dict["quality_high_energy"] = np.full_like(
-        voltage_qf, ImapRatesUltraFlags.NONE.value, np.uint16
-    )  # shape (nspin,)
+    extendedspin_dict["quality_high_energy"] = high_energy_qf  # shape (nspin,)
     # Add an array of flags for each energy bin. Shape: (n_energy_bins)
     extendedspin_dict["energy_range_flags"] = energy_bin_flags
     # Add energy ranges  Shape: (n_energy_bins + 1)

@@ -148,6 +148,7 @@ class GLOWSL1bFlags(FlagNameMixin):
     """Glows L1b flags."""
 
     NONE = CommonFlags.NONE
+    IS_CLOSE_TO_UV_SOURCE = 2**0  # Is the bin close to a UV source.
 
 
 class ImapHiL1bDeFlags(FlagNameMixin):

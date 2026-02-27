@@ -14,12 +14,9 @@ from numpy._typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.hi_l1a import (
-    DE_CLOCK_TICK_S,
-    HALF_CLOCK_TICK_S,
-)
 from imap_processing.hi.utils import (
     CalibrationProductConfig,
+    HiConstants,
     create_dataset_variables,
     full_dataarray,
     parse_sensor_number,
@@ -557,7 +554,7 @@ def pset_exposure(
         # for a given clock tick, add 1/2 clock tick and compute spin-phase.
         spin_phases = np.atleast_1d(
             get_instrument_spin_phase(
-                clock_tick_mets + HALF_CLOCK_TICK_S,
+                clock_tick_mets + HiConstants.HALF_CLOCK_TICK_S,
                 SpiceFrame[f"IMAP_HI_{sensor_number}"],
             )
         )
@@ -581,7 +578,7 @@ def pset_exposure(
         exposure_var["exposure_times"].values[:, i_esa] += new_exposure_times
 
     # Convert exposure clock ticks to seconds
-    exposure_var["exposure_times"].values *= DE_CLOCK_TICK_S
+    exposure_var["exposure_times"].values *= HiConstants.DE_CLOCK_TICK_S
 
     return exposure_var
 
@@ -693,7 +690,7 @@ def get_de_clock_ticks_for_esa_step(
     clock_tick_mets = np.arange(
         spin_start_mets[end_time_ind - 8],
         spin_start_mets[end_time_ind],
-        DE_CLOCK_TICK_S,
+        HiConstants.DE_CLOCK_TICK_S,
         dtype=float,
     )
     # The final clock-tick bin has less exposure time because the next spin
@@ -705,7 +702,7 @@ def get_de_clock_ticks_for_esa_step(
     clock_tick_weights = np.ones_like(clock_tick_mets, dtype=float)
     clock_tick_weights[-1] = (
         spin_start_mets[end_time_ind] - clock_tick_mets[-1]
-    ) / DE_CLOCK_TICK_S
+    ) / HiConstants.DE_CLOCK_TICK_S
     return clock_tick_mets, clock_tick_weights
 
 

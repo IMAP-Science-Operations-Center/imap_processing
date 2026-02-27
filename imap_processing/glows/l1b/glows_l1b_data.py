@@ -9,8 +9,15 @@ from scipy.stats import circmean, circstd
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
+from imap_processing.quality_flags import GLOWSL1bFlags
 from imap_processing.spice import geometry
-from imap_processing.spice.geometry import SpiceBody, SpiceFrame
+from imap_processing.spice.geometry import (
+    SpiceBody,
+    SpiceFrame,
+    frame_transform,
+    get_instrument_mounting_az_el,
+    spherical_to_cartesian,
+)
 from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spin_angle,
@@ -819,8 +826,11 @@ class HistogramL1B:
 
         # Add SPICE related variables
         self.update_spice_parameters()
-        # Will require some additional inputs
-        self.imap_spin_angle_bin_cntr = np.zeros((3600,))
+        # Calculate the spin angle bin center
+        phi = (
+            np.arange(self.number_of_bins_per_histogram, dtype=np.float64) + 0.5
+        ) / self.number_of_bins_per_histogram
+        self.imap_spin_angle_bin_cntr = phi * 360.0
 
         # TODO: This should probably be an AWS file
         # TODO Pass in AncillaryParameters object instead of reading here.
@@ -970,6 +980,79 @@ class HistogramL1B:
 
         return flags
 
+    def flag_uv_source(self, exclusions: AncillaryExclusions) -> np.ndarray:
+        """
+        Create boolean mask where True means bin is within radius of UV source.
+
+        Parameters
+        ----------
+        exclusions : AncillaryExclusions
+            Ancillary exclusions data filtered for the current day.
+
+        Returns
+        -------
+        close_to_uv_source : np.ndarray
+            Boolean mask for uv source.
+        """
+        # Rotate spin-angle bin centers by the instrument position-angle offset
+        # so azimuth=0 aligns with the instrument pointing direction.
+        azimuth = (
+            self.imap_spin_angle_bin_cntr + self.position_angle_offset_average
+        ) % 360.0
+        # Ephemeris start time of the histogram accumulation.
+        data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
+
+        # Instrument pointing direction in the DPS frame.
+        az_el = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
+        elevation = az_el[1]
+
+        spherical = np.stack(
+            [np.ones_like(azimuth), azimuth, np.full_like(azimuth, elevation)],
+            axis=-1,
+        )  # (nbin, 3)
+
+        # Convert to unit cartesian vectors.
+        look_vecs_dps = spherical_to_cartesian(spherical)  # (nbin, 3)
+
+        # Transform unit cartesian vectors to ECLIPJ2000 frame.
+        look_vecs_ecl = frame_transform(
+            data_start_time_et,
+            look_vecs_dps,
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.ECLIPJ2000,
+        )
+
+        # UV source vectors.
+        uv_longitude = exclusions.uv_sources[
+            "ecliptic_longitude_deg"
+        ].values  # (n_src,)
+        uv_latitude = exclusions.uv_sources["ecliptic_latitude_deg"].values  # (n_src,)
+        uv_radius = np.deg2rad(
+            exclusions.uv_sources["angular_radius_for_masking"].values
+        )
+
+        uv_spherical = np.stack(
+            [np.ones_like(uv_longitude), uv_longitude, uv_latitude],
+            axis=-1,
+        )  # (n_src, 3): (r, azimuth, elevation) in degrees
+
+        uv_vecs = spherical_to_cartesian(uv_spherical)  # (n_src, 3)
+
+        # Dot product of unit vectors gives cos(separation_angle) for each
+        # histogram bin vs. each UV source -> shape (nbin, n_src).
+        # (nbin, 3) @ (3, n_src) -> (nbin, n_src)
+        # If dot product -> 1 the two vectors point in almost
+        # the same direction and needs mask.
+        # If dot product -> 0 the two directions are perpendicular on the sky.
+        cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
+
+        # Determine if the pixel is too close to any of the source radii.
+        close_to_uv_source = np.any(
+            cos_sep >= np.cos(uv_radius)[None, :], axis=1
+        )  # (nbin,)
+
+        return close_to_uv_source
+
     def _compute_histogram_flag_array(
         self, exclusions: AncillaryExclusions
     ) -> np.ndarray:
@@ -978,9 +1061,9 @@ class HistogramL1B:
 
         Creates a (4, 3600) array where each row represents a different flag type:
         - Row 0: is_close_to_uv_source
-        - Row 1: is_inside_excluded_region
-        - Row 2: is_excluded_by_instr_team
-        - Row 3: is_suspected_transient
+        - Row 1: is_inside_excluded_region (TODO)
+        - Row 2: is_excluded_by_instr_team (TODO)
+        - Row 3: is_suspected_transient (TODO)
 
         Parameters
         ----------
@@ -992,5 +1075,15 @@ class HistogramL1B:
         np.ndarray
             Array of shape (4, 3600) with bad-angle flags for each bin.
         """
-        # TODO: fill out once spice data is available
-        return np.zeros((4, 3600), dtype=np.uint8)
+        histogram_flags = np.full(
+            (4, self.number_of_bins_per_histogram),
+            GLOWSL1bFlags.NONE.value,
+            dtype=np.uint8,
+        )
+
+        close_any = self.flag_uv_source(exclusions)
+
+        # close if within radius of any UV source
+        histogram_flags[0][close_any] |= GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
+
+        return histogram_flags

@@ -188,7 +188,6 @@ class UltraConstants:
     # L1b extended spin culling parameters
     LOW_VOLTAGE_CULL_THRESHOLD = 3400.0
     SPIN_BIN_SIZE = 20
-    # TODO add thresholds for energies (different for 45 and 90)
     # Number of energy bins to use in energy dependent culling
     N_CULL_EBINS = 8
     # Bin to start culling at
@@ -196,3 +195,12 @@ class UltraConstants:
     # Angle threshold in radians for ULTRA 45 degree culling.
     # This is only needed for ULTRA 45 since earth may be in the FOV.
     EARTH_ANGLE_45_THRESHOLD = np.radians(15)
+    # An array of energy thresholds to use for culling. Each one corresponds to
+    # the number of energy bins used.
+    # n_bins=len(PSET_ENERGY_BIN_EDGES)[BASE_CULL_EBIN:] // N_CULL_EBINS
+    # an error will be raised if this does not match n_bins
+    HIGH_ENERGY_CULL_THRESHOLDS = (
+        np.array([2.0, 1.5, 0.6, 0.25, 0.25, 0.25]) * SPIN_BIN_SIZE
+    )
+    # Use the channel defined below to determine which spins are contaminated
+    HIGH_ENERGY_CULL_CHANNEL = 4

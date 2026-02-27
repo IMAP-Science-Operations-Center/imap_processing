@@ -680,6 +680,140 @@ def flag_low_voltage(
     return quality_flags
 
 
+def flag_high_energy(
+    de_dataset: xr.Dataset,
+    spin_tbin_edges: NDArray,
+    energy_ranges: NDArray,
+    energy_range_flags: np.ndarray,
+    energy_thresholds: np.ndarray = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS,
+    sensor_id: int = 90,
+) -> NDArray:
+    """
+    Flag high energy events.
+
+    Parameters
+    ----------
+    de_dataset : xr.Dataset
+        Direct event dataset.
+    spin_tbin_edges : NDArray
+        Edges of the spin time bins.
+    energy_ranges : numpy.ndarray
+        Array of energy range edges.
+    energy_range_flags : numpy.ndarray
+        Array of quality flag values corresponding to each energy range.
+    energy_thresholds : numpy.ndarray
+        Array of count thresholds for flagging high energy events corresponding to
+         each energy range.
+    sensor_id : int
+        Sensor ID (e.g., 45 or 90).
+
+    Returns
+    -------
+    quality_flags : numpy.ndarray
+        Quality flags.
+    """
+    cull_channel = UltraConstants.HIGH_ENERGY_CULL_CHANNEL
+    valid_events_per_energy = get_valid_events_per_energy_range(
+        de_dataset, energy_ranges, UltraConstants.EARTH_ANGLE_45_THRESHOLD, sensor_id
+    )
+    # check to make sure the number of energy ranges matches the number of energy range
+    # flags
+    num_e_ranges = valid_events_per_energy.shape[0]
+    if num_e_ranges != len(energy_range_flags) or num_e_ranges != len(
+        energy_thresholds
+    ):
+        raise ValueError(
+            f"Number of energy ranges ({num_e_ranges}) does not match number of energy"
+            f" range flags ({len(energy_range_flags)}) or expected number of "
+            f"energy range thresholds ({len(energy_thresholds)})."
+        )
+    if cull_channel >= num_e_ranges:
+        raise ValueError(
+            f"HIGH_ENERGY_CULL_CHANNEL ({cull_channel}) is out of bounds"
+            f" for {num_e_ranges} energy ranges."
+        )
+
+    # Initialize all spin bins to have no high energy flag
+    spin_bin_size = len(spin_tbin_edges) - 1
+    quality_flags = np.full(
+        spin_bin_size, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
+    )
+    # Get valid events and counts at each spin bin for the
+    # designated culling channel.
+    cull_channel_events = valid_events_per_energy[cull_channel]
+    # get each valid event count per spin bin for the culling channel
+    cull_channel_counts = np.histogram(
+        de_dataset["de_event_met"].values[cull_channel_events], spin_tbin_edges
+    )[0]
+    # loop through each energy range
+    for flag, e_threshold in zip(energy_range_flags, energy_thresholds, strict=False):
+        quality_flags[cull_channel_counts >= e_threshold] |= flag
+
+    return quality_flags
+
+
+def get_valid_events_per_energy_range(
+    de_dataset: xr.Dataset, energy_ranges: NDArray, earth_ang_45: float, sensor_id: int
+) -> NDArray:
+    """
+    Get valid events per energy range.
+
+    Parameters
+    ----------
+    de_dataset : xr.Dataset
+        Direct event dataset.
+    energy_ranges : numpy.ndarray
+        Array of energy range edges.
+    earth_ang_45 : float
+        Earth angle to use for culling in ULTRA 45.
+    sensor_id : int
+        Sensor ID (e.g., 45 or 90).
+
+    Returns
+    -------
+    valid_events_per_range : numpy.ndarray
+        A boolean array of shape (n_energy_ranges, n_events).
+    """
+    event_energies = de_dataset["energy_spacecraft"].values
+    valid_events = np.zeros((len(energy_ranges) - 1, len(event_energies)), dtype=bool)
+    valid_outliers = de_dataset["quality_outliers"].values == 0
+    valid_scattering = de_dataset["quality_scattering"].values == 0
+    # TODO what about species non-proton? For those psets dont cull based on
+    #   High energy?
+    ebin = de_dataset["ebin"].values
+    valid_ebin = np.isin(ebin, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"])
+    for i in range(len(energy_ranges) - 1):
+        energy_mask = (event_energies >= energy_ranges[i]) & (
+            event_energies < energy_ranges[i + 1]
+        )
+        if not np.any(energy_mask):
+            continue
+        # subset the dataset to events within the energy range
+        de_dataset_subset = de_dataset.isel(epoch=energy_mask)
+        valid_earth_angle = np.full(np.sum(energy_mask), True, dtype=bool)
+        # For ultra45, also apply an Earth angle cut to remove times when
+        # the Earth is in the field of view. ULTRA 90 does not require this since Earth
+        # is always outside the field of view.
+        if sensor_id == 45:
+            valid_earth_angle = get_valid_earth_angle_events(
+                de_dataset_subset, earth_ang_45
+            )
+
+        # Flag events at the valid energy ranges if they meet all the criteria for
+        # valid events: not flagged as outliers, not flagged as scattering,
+        # in a valid ebin, and (for ultra45) have a valid Earth angle.
+        valid_events[i, energy_mask] = np.logical_and.reduce(
+            [
+                valid_outliers[energy_mask],
+                valid_scattering[energy_mask],
+                valid_ebin[energy_mask],
+                valid_earth_angle,
+            ]
+        )
+
+    return valid_events
+
+
 def get_valid_earth_angle_events(
     de_dataset_subset: xr.Dataset,
     earth_ang_45: float = UltraConstants.EARTH_ANGLE_45_THRESHOLD,
@@ -735,7 +869,7 @@ def get_valid_earth_angle_events(
     return sep_angle > earth_ang_45
 
 
-def get_binned_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
+def get_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
     """
     Get the energy bin flags for energy dependent culling.
 
