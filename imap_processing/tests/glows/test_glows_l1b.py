@@ -27,9 +27,9 @@ from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 @pytest.fixture
 def hist_dataset():
     variables = {
-        "flight_software_version": np.array([67], dtype=np.uint32),
-        "pkts_file_name": np.array(["test_packet_file.pkts"], dtype=object),
-        "ground_software_version": np.array(["v999"], dtype=object),
+        "flight_software_version": 67,
+        "pkts_file_name": ["test_packet_file.pkts"],
+        "ground_software_version": ["v999"],
         "seq_count_in_pkts_file": np.zeros((20,)),
         "first_spin_id": np.zeros((20,)),
         "last_spin_id": np.zeros((20,)),
@@ -75,10 +75,18 @@ def hist_dataset():
     )
 
     for var, data in variables.items():
-        if 1 != len(data):
-            ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
+        if var in [
+            "flight_software_version",
+            "pkts_file_name",
+            "ground_software_version",
+        ]:
+            if isinstance(data, int):
+                list = [data]  # Convert to list for consistent handling
+            else:
+                list = data
+            ds[var] = xr.DataArray(list, dims="scalar", coords={"scalar": [0]})
         else:
-            ds[var] = xr.DataArray(data, dims="scalar")
+            ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
     return ds
 
@@ -226,9 +234,9 @@ def test_histogram_mapping(
         dataclasses.asdict(
             HistogramL1B(
                 test_hists,
-                np.array([67], dtype=np.uint32),
-                np.array(["test_packet_file.pkts"], dtype=object),
-                np.array(["v999"], dtype=object),
+                67,
+                "test_packet_file.pkts",
+                "v999",
                 0,
                 0,
                 0,
@@ -289,9 +297,9 @@ def test_process_histogram(
 
     test_l1b = HistogramL1B(
         test_hists,
-        np.array([67], dtype=np.uint32),
-        np.array(["test_packet_file.pkts"], dtype=object),
-        np.array(["v999"], dtype=object),
+        67,
+        "test_packet_file.pkts",
+        "v999",
         0,
         0,
         0,
@@ -365,8 +373,8 @@ def test_glows_l1b(
         mock_conversion_table_dict,
     )
 
-    assert hist_output["histogram"].dims == ("epoch", "scalar", "bins")
-    assert hist_output["histogram"].shape == (20, 1, 3600)
+    assert hist_output["histogram"].dims == ("epoch", "bins")
+    assert hist_output["histogram"].shape == (20, 3600)
 
     # This needs to be added eventually, but is skipped for now.
     expected_de_data = [
@@ -500,9 +508,9 @@ def test_hist_spice_output(
     use_fake_spin_data_for_time(data_start_time)
     params = {
         "histogram": np.zeros((1, 3600)),
-        "flight_software_version": np.array([67], dtype=np.uint32),
-        "pkts_file_name": np.array(["test_packet_file.pkts"], dtype=object),
-        "ground_software_version": np.array(["v999"], dtype=object),
+        "flight_software_version": 67,
+        "pkts_file_name": "test_packet_file.pkts",
+        "ground_software_version": "v999",
         "seq_count_in_pkts_file": 0,
         "first_spin_id": 0,
         "last_spin_id": 0,
@@ -528,7 +536,7 @@ def test_hist_spice_output(
         "pipeline_settings": PipelineSettings(
             mock_pipeline_settings.sel(
                 epoch=mock_pipeline_settings.epoch[0], method="nearest"
-            )
+            ),
         ),
     }
 

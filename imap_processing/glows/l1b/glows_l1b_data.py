@@ -742,9 +742,9 @@ class HistogramL1B:
     """
 
     histogram: np.ndarray
-    flight_software_version: np.ndarray
-    pkts_file_name: np.ndarray
-    ground_software_version: np.ndarray
+    flight_software_version: int
+    pkts_file_name: str
+    ground_software_version: str
     seq_count_in_pkts_file: int
     first_spin_id: int
     last_spin_id: int

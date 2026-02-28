@@ -271,6 +271,9 @@ def process_histogram(
     # Only non-1D variables need to be in this mapping.
     output_dimension_mapping = {
         "histogram": ["bins"],
+        "flight_software_version": ["scalar"],
+        "pkts_file_name": ["scalar"],
+        "ground_software_version": ["scalar"],
         "imap_spin_angle_bin_cntr": ["bins"],
         "histogram_flag_array": ["bad_angle_flags", "bins"],
         "spacecraft_location_average": ["ecliptic"],
@@ -291,9 +294,11 @@ def process_histogram(
     ]
 
     # histograms is the only multi dimensional input variable, so we set the non-epoch
-    # dimension ("bins").
-    # The rest of the non-scalar input vars are epoch only, so they have an empty list.
+    # dimension ("bins"). Also, the three scalar inputs only have a non-epoch dimension.
     input_dims[0] = ["bins"]
+    input_dims[1] = ["scalar"]
+    input_dims[2] = ["scalar"]
+    input_dims[3] = ["scalar"]
 
     # Create a closure that captures the ancillary objects
     def create_histogram_l1b(*args) -> tuple:  # type: ignore[no-untyped-def]
@@ -322,6 +327,7 @@ def process_histogram(
         vectorize=True,
         keep_attrs=True,
     )
+    # exclude_dims={"scalar"},
 
     # This is a tuple of dataarrays and not a dataset yet
     return l1b_fields

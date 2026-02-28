@@ -131,6 +131,7 @@ histogram:
   VAR_TYPE: data
 
 pkts_file_name:
+  DEPEND_0:
   CATDESC: Name of input file with CCSDS packet data
   DISPLAY_TYPE: no_plot
   FIELDNAM: CCSDS packet data input filename

@@ -430,6 +430,7 @@ def generate_histogram_dataset(
     # need to store them per epoch like most of the other fields
     output["flight_software_version"] = xr.DataArray(
         np.array([hist_l1a_list[0].flight_software_version], dtype=np.uint32),
+        coords={"scalar": [0]},
         name="flight_software_version",
         dims=["scalar"],
         attrs=glows_cdf_attributes.get_variable_attributes(
@@ -438,6 +439,7 @@ def generate_histogram_dataset(
     )
     output["pkts_file_name"] = xr.DataArray(
         np.array([hist_l1a_list[0].pkts_file_name], dtype=object),
+        coords={"scalar": [0]},
         name="pkts_file_name",
         dims=["scalar"],
         attrs=glows_cdf_attributes.get_variable_attributes(
@@ -446,6 +448,7 @@ def generate_histogram_dataset(
     )
     output["ground_software_version"] = xr.DataArray(
         np.array([hist_l1a_list[0].ground_software_version], dtype=object),
+        coords={"scalar": [0]},
         name="ground_software_version",
         dims=["scalar"],
         attrs=glows_cdf_attributes.get_variable_attributes(
