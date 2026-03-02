@@ -29,6 +29,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import xarray as xr
+from numpy._typing import NDArray
 
 from imap_processing.ena_maps.ena_maps import SkyTilingType
 from imap_processing.ena_maps.utils.spatial_utils import AzElSkyGrid
@@ -129,8 +130,10 @@ def idex_l2b(
         counts_by_mass_map,
         daily_epoch,
     ) = compute_counts_by_charge_and_mass(l2a_dataset, epoch_doy_unique)
+    # Get science acquisition start and stop times
+    _, evt_time, evt_values = get_science_acquisition_timestamps(evt_dataset)
     # Get science acquisition percentage for each day
-    daily_on_percentage = get_science_acquisition_on_percentage(evt_dataset)
+    daily_on_percentage = get_science_acquisition_on_percentage(evt_time, evt_values)
     (
         rate_by_charge,
         rate_by_mass,
@@ -149,7 +152,8 @@ def idex_l2b(
     charge_bin_means = np.sqrt(CHARGE_BIN_EDGES[:-1] * CHARGE_BIN_EDGES[1:])
     mass_bin_means = np.sqrt(MASS_BIN_EDGES[:-1] * MASS_BIN_EDGES[1:])
     spin_phase_means = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) / 2
-
+    # convert to integers
+    spin_phase_means = spin_phase_means.astype(np.uint16)
     # Define xarrays that are shared between l2b and l2c
     epoch = xr.DataArray(
         name="epoch",
@@ -158,6 +162,22 @@ def idex_l2b(
         attrs=idex_l2b_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     common_vars = {
+        "on_off_times": xr.DataArray(
+            name="on_off_times",
+            data=evt_time,
+            dims="on_off_times",
+            attrs=idex_l2b_attrs.get_variable_attributes(
+                "on_off_times", check_schema=False
+            ),
+        ),
+        "on_off_events": xr.DataArray(
+            name="on_off_events",
+            data=np.asarray(evt_values, dtype=np.uint8),
+            dims="on_off_times",
+            attrs=idex_l2b_attrs.get_variable_attributes(
+                "on_off_events", check_schema=False
+            ),
+        ),
         "impact_day_of_year": xr.DataArray(
             name="impact_day_of_year",
             data=epoch_doy_unique,
@@ -342,7 +362,6 @@ def idex_l2b(
     l2c_dataset.attrs.update(map_attrs)
 
     logger.info("IDEX L2B and L2C science data processing completed.")
-
     return [l2b_dataset, l2c_dataset]
 
 
@@ -632,14 +651,18 @@ def get_science_acquisition_timestamps(
     )
 
 
-def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
+def get_science_acquisition_on_percentage(
+    evt_time: NDArray, evt_values: NDArray
+) -> dict:
     """
     Calculate the percentage of time science acquisition was occurring for each day.
 
     Parameters
     ----------
-    evt_dataset : xarray.Dataset
-        Contains IDEX event message data.
+    evt_time : np.ndarray
+        Array of timestamps for science acquisition start and stop events.
+    evt_values : np.ndarray
+        Array of values indicating if the event is a start (1) or stop (0).
 
     Returns
     -------
@@ -647,8 +670,6 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
         Percentages of time the instrument was in science acquisition mode for each day
          of year.
     """
-    # Get science acquisition start and stop times
-    _evt_logs, evt_time, evt_values = get_science_acquisition_timestamps(evt_dataset)
     if len(evt_time) == 0:
         logger.warning(
             "No science acquisition events found in event dataset. Returning empty "
