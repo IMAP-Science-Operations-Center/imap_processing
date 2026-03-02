@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+import numpy as np
+
 from imap_processing import imap_module_directory
 
 SPICE_DATA_SIM_PATH = imap_module_directory / "ultra/l1c/sim_spice_kernels"
@@ -184,10 +186,13 @@ class UltraConstants:
     DEFAULT_EARTH_CULLING_RADIUS = EARTH_RADIUS_KM * N_RE
 
     # L1b extended spin culling parameters
-    LOW_VOLTAGE_CULL_THRESHOLD = 3000.0
+    LOW_VOLTAGE_CULL_THRESHOLD = 3400.0
     SPIN_BIN_SIZE = 20
     # TODO add thresholds for energies (different for 45 and 90)
     # Number of energy bins to use in energy dependent culling
     N_CULL_EBINS = 8
     # Bin to start culling at
     BASE_CULL_EBIN = 4
+    # Angle threshold in radians for ULTRA 45 degree culling.
+    # This is only needed for ULTRA 45 since earth may be in the FOV.
+    EARTH_ANGLE_45_THRESHOLD = np.radians(15)

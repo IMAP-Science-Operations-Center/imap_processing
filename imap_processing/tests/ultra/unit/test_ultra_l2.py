@@ -712,6 +712,12 @@ class TestUltraL2:
 
         assert output_map.attrs["Spice_reference_frame"] == "IMAP_HAE"
         assert output_map.attrs["Spacing_degrees"] == "6.0"
+        # Variable Metadata spot checks
+        assert (
+            output_map["ena_intensity"].attrs["CATDESC"]
+            == "IMAP Ultra90 H Inten, HAE Helio Frame, No Surv Corr, Full Spin,"
+            " 6 deg, 6 Mon"
+        )
         write_cdf(output_map)
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")

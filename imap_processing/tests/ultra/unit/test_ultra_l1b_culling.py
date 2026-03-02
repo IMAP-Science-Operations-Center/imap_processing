@@ -1,5 +1,7 @@
 """Tests Culling for ULTRA L1b."""
 
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -31,6 +33,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_n_sigma,
     get_pulses_per_spin,
     get_spin_data,
+    get_valid_earth_angle_events,
 )
 from imap_processing.ultra.l1b.ultra_l1b_extended import get_spin_info
 
@@ -464,7 +467,7 @@ def test_validate_voltage_cull():
     )
     # Use constants from the code to ensure consistency with the actual culling code
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    lv_threshold = UltraConstants.LOW_VOLTAGE_CULL_THRESHOLD
+    lv_threshold = 3000
     spin_tbin_edges = get_binned_spins_edges(
         xspin.spin_number.values,
         xspin.spin_period.values,
@@ -476,3 +479,38 @@ def test_validate_voltage_cull():
     )
 
     assert np.array_equal(lv_flags, validation_low_voltage_qf)
+
+
+@mock.patch("imap_processing.ultra.l1b.ultra_l1b_culling.sp.spkezr")
+def test_get_valid_earth_angle_events(mock_spkezr):
+    """Tests get_valid_earth_angle_events function."""
+    np.random.seed(0)
+    de_dps_velocity = np.random.random((12, 3))
+    de_dataset = xr.Dataset(
+        {
+            "de_dps_velocity": (("epoch", "component"), de_dps_velocity),
+            "event_times": ("epoch", np.arange(12)),
+        }
+    )
+    earth_angle_threshold = np.radians(45)
+    np.random.seed(0)
+    mock_imap_state = np.random.random(6)  # Mock IMAP state for testing
+    mock_spkezr.return_value = (mock_imap_state, None)
+    # Calculate the expected flag exactly the way ULTRA IT does to ensure we are
+    # getting the same results.
+    # First negate the state vector: the state from imap_state(observer=EARTH)
+    # gives the position of IMAP as seen from Earth (Earth to IMAP), while
+    # the ULTRA code below expects the vector from IMAP to Earth.
+    pos = mock_imap_state[:3]
+    upos = pos / np.sqrt(np.sum(pos**2))
+    zax0 = np.cross(upos, [0, 1, 0])
+    zax = zax0 / np.sqrt(np.sum(zax0**2))
+    yax = np.cross(zax, upos)
+
+    vde = np.sqrt(np.sum(de_dps_velocity**2, 1))
+    uv = de_dps_velocity / vde[:, np.newaxis]
+    local_uv = np.array([upos, yax, zax]) @ np.transpose(-uv)
+    expected_flags = local_uv[0, :] < np.cos(earth_angle_threshold)
+
+    actual_flags = get_valid_earth_angle_events(de_dataset, earth_angle_threshold)
+    np.testing.assert_array_equal(actual_flags, expected_flags)

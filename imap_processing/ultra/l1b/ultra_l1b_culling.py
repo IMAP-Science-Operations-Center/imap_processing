@@ -5,6 +5,7 @@ from collections import namedtuple
 
 import numpy as np
 import pandas as pd
+import spiceypy as sp
 import xarray as xr
 from numpy.typing import NDArray
 
@@ -14,6 +15,10 @@ from imap_processing.quality_flags import (
     ImapHkUltraFlags,
     ImapInstrumentUltraFlags,
     ImapRatesUltraFlags,
+)
+from imap_processing.spice.geometry import (
+    SpiceBody,
+    SpiceFrame,
 )
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
@@ -673,6 +678,61 @@ def flag_low_voltage(
     quality_flags[lv_spin_inds] = low_voltage_flag
 
     return quality_flags
+
+
+def get_valid_earth_angle_events(
+    de_dataset_subset: xr.Dataset,
+    earth_ang_45: float = UltraConstants.EARTH_ANGLE_45_THRESHOLD,
+) -> NDArray:
+    """
+    Get events where the particle look direction is outside the Earth keepout angle.
+
+    Parameters
+    ----------
+    de_dataset_subset : xr.Dataset
+        Subset of the direct event dataset. Should contain events within a single
+        energy bin.
+    earth_ang_45 : float
+        Earth keepout angle threshold (in radians) for ULTRA 45 instrument.
+
+    Returns
+    -------
+    valid_earth_angle_events : NDArray
+        A boolean array indicating which events have Earth angle greater than the
+        specified threshold.
+    """
+    de_dps_velocity = de_dataset_subset["de_dps_velocity"].values
+    # Use the mean event time to compute the Earth unit vector since the spacecraft
+    # position doesn't change significantly over the course of the energy bin.
+    et = np.mean(de_dataset_subset["event_times"].values)
+    # Compute the unit vector from IMAP to Earth in the DPS frame at the time of the
+    # events.
+    # call spkezr to get the state vector from Earth to IMAP in the IMAP_DPS frame
+    body_state, _ = sp.spkezr(
+        SpiceBody.EARTH.name,
+        et,
+        SpiceFrame.IMAP_DPS.name,
+        "NONE",
+        SpiceBody.IMAP.name,
+    )
+    position = body_state[:3]
+    distance = np.linalg.norm(position)
+    earth_unit_vector = position / distance
+    # Calculate the magnitude of the velocity vector for each event
+    particle_mag = np.linalg.norm(de_dps_velocity, axis=1)
+    # Normalize and flip to get where each particle is looking.
+    unit_look_dirs = (
+        -de_dps_velocity / particle_mag[:, np.newaxis]
+    )  # shape (n_events, 3)
+    # Get cos(theta) between each particle look direction and Earth direction
+    cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (n_events,)
+    # Clip cos_sep to the valid range of [-1, 1] to avoid numerical issues with arccos
+    cos_sep = np.clip(cos_sep, -1.0, 1.0)
+    sep_angle = np.arccos(cos_sep)
+    # An event is valid if the separation angle between the particle look
+    # direction and Earth direction is greater than the Earth angle limit
+    # (i.e., the Earth is outside the field of view).
+    return sep_angle > earth_ang_45
 
 
 def get_binned_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:

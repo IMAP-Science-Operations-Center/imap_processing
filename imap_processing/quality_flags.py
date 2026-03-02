@@ -148,3 +148,11 @@ class GLOWSL1bFlags(FlagNameMixin):
     """Glows L1b flags."""
 
     NONE = CommonFlags.NONE
+
+
+class ImapHiL1bDeFlags(FlagNameMixin):
+    """IMAP Hi L1B Direct Event CCSDS packet quality flags."""
+
+    NONE = CommonFlags.NONE
+    PACKET_FULL = 2**0  # bit 0, packet contained 664 events (max capacity)
+    BADSPIN = ENAFlags.BADSPIN  # bit 2, packet contained events from an invalid spin

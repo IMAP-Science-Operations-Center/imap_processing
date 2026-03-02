@@ -1,4 +1,5 @@
 import dataclasses
+from unittest.mock import MagicMock
 
 import numpy as np
 
@@ -38,6 +39,24 @@ def test_generate_histogram_dataset(l1a_test_data):
 
     for i in range(len(dataset["histogram"].data)):
         assert (dataset["histogram"].data[i] == histogram_l1a[i].histogram).all()
+
+
+def test_generate_histogram_dataset_filters_empty(l1a_test_data):
+    histogram_l1a, _ = l1a_test_data
+    glows_attrs = create_glows_attr_obj()
+
+    # Create an empty histogram (number_of_bins_per_histogram == 0)
+    empty_hist = MagicMock()
+    empty_hist.number_of_bins_per_histogram = 0
+    empty_hist.histogram = []
+
+    # Mix empty histograms into the list
+    mixed_list = [empty_hist, histogram_l1a[0], empty_hist, histogram_l1a[1]]
+
+    dataset = generate_histogram_dataset(mixed_list, glows_attrs)
+
+    # Only the two non-empty histograms should appear in the output
+    assert len(dataset["epoch"].values) == 2
 
 
 def test_generate_de_dataset(l1a_test_data):

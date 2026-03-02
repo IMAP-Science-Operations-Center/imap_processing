@@ -16,7 +16,7 @@ from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.ena_maps.utils import map_utils, spatial_utils
+from imap_processing.ena_maps.utils import map_utils, naming, spatial_utils
 
 # The coordinate names can vary between L1C and L2 data (e.g. azimuth vs longitude),
 # so we define an enum to handle the coordinate names.
@@ -1420,6 +1420,12 @@ class RectangularSkyMap(AbstractSkyMap):
         cdf_ds["epoch"].attrs.update(
             {"DELTA_PLUS_VAR": "epoch_delta", "BIN_LOCATION": 0}
         )
+
+        # And CATDESC for principal data
+        md = naming.MapDescriptor.from_string(descriptor)
+        principal_data = md.principal_data_var
+        if principal_data in cdf_ds:
+            cdf_ds[principal_data].attrs["CATDESC"] = md.to_catdesc()
 
         return cdf_ds
 
