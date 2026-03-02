@@ -35,15 +35,20 @@ def l1b_hists():
     return input
 
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_glows_l2(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
     mock_conversion_table_dict,
+    caplog,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -56,17 +61,29 @@ def test_glows_l2(
         mock_pipeline_settings,
         mock_conversion_table_dict,
     )
+
+    # Test case 1: L1B dataset has good times
     l2 = glows_l2(l1b_hist_dataset, mock_pipeline_settings)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
-
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
 
+    # Test case 2: L1B dataset has no good times (all flags 0)
+    l1b_hist_dataset["flags"].values = np.zeros(l1b_hist_dataset.flags.shape)
+    caplog.set_level("WARNING")
+    result = glows_l2(l1b_hist_dataset, mock_pipeline_settings)
+    assert result == []
+    assert any(record.levelname == "WARNING" for record in caplog.records)
 
-@patch.object(HistogramL1B, "flag_uv_source", return_value=np.zeros(3600, dtype=bool))
+
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_generate_l2(
     mock_spice_function,
-    mock_flag_uv_source,
+    mock_flag_uv_and_excluded,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
@@ -87,6 +104,8 @@ def test_generate_l2(
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(epoch=day, method="nearest")
     )
+
+    # Test case 1: L1B dataset has good times
     l2 = HistogramL2(l1b_hist_dataset, pipeline_settings)
 
     expected_values = {
@@ -112,6 +131,12 @@ def test_generate_l2(
     assert np.isclose(
         l2.hv_voltage_std_dev, expected_values["hv_voltage_std_dev"], 0.01
     )
+
+    # Test case 2: L1B dataset has no good times (all flags 0)
+    l1b_hist_dataset["flags"].values = np.zeros(l1b_hist_dataset.flags.shape)
+    ds = HistogramL2(l1b_hist_dataset, pipeline_settings)
+    expected_number_of_good_l1b_inputs = 0
+    assert ds.number_of_good_l1b_inputs == expected_number_of_good_l1b_inputs
 
 
 def test_bin_exclusions(l1b_hists):

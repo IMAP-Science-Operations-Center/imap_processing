@@ -228,13 +228,13 @@ class HistogramL2:
         good_data = l1b_dataset.isel(
             epoch=self.return_good_times(l1b_dataset["flags"], active_flags)
         )
-        # todo: bad angle filter
-        # TODO filter bad bins out. Needs to happen here while everything is still
-        # per-timestamp.
+        # TODO: bad angle filter
+        # TODO: filter bad bins out. Needs to happen here while everything is still
+        #       per-timestamp.
 
         self.daily_lightcurve = DailyLightcurve(good_data)
 
-        self.total_l1b_inputs = len(good_data["epoch"])
+        self.total_l1b_inputs = len(l1b_dataset["epoch"])
         self.number_of_good_l1b_inputs = len(good_data["epoch"])
         self.identifier = -1  # TODO: retrieve from spin table
         # TODO fill this in
@@ -372,7 +372,7 @@ class HistogramL2:
             An array of indices for good times.
         """
         if len(active_flags) != flags.shape[1]:
-            print("Active flags don't matched expected length")
+            print("Active flags don't match expected length")
 
         # A good time is where all the active flags are equal to one.
         # Here, we mask the active indices using active_flags, and then return the times

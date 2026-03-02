@@ -149,6 +149,7 @@ class GLOWSL1bFlags(FlagNameMixin):
 
     NONE = CommonFlags.NONE
     IS_CLOSE_TO_UV_SOURCE = 2**0  # Is the bin close to a UV source.
+    IS_INSIDE_EXCLUDED_REGION = 2**1  # Is the bin inside an excluded sky region.
 
 
 class ImapHiL1bDeFlags(FlagNameMixin):
