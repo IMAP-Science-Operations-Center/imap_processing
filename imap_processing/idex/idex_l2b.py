@@ -116,7 +116,12 @@ def idex_l2b(
 
     # Concat all the l2a datasets together
     l2a_dataset = xr.concat(l2a_datasets, dim="epoch")
-    epoch_doy_unique = np.unique(epoch_to_doy(l2a_dataset["epoch"].data))
+    epoch_doy = epoch_to_doy(l2a_dataset["epoch"].data)
+    # Use dict.fromkeys to preserve order while getting unique DOYs. We want to make
+    # sure the order of DOYs stays the same in case we are dealing with data that
+    # spans over the new year. E.g., we want 365 to come before 1 if we have data from
+    # Dec and Jan.
+    epoch_doy_unique = np.array(list(dict.fromkeys(epoch_doy)))
     (
         counts_by_charge,
         counts_by_mass,
@@ -152,7 +157,6 @@ def idex_l2b(
         dims="epoch",
         attrs=idex_l2b_attrs.get_variable_attributes("epoch", check_schema=False),
     )
-
     common_vars = {
         "impact_day_of_year": xr.DataArray(
             name="impact_day_of_year",
@@ -319,7 +323,6 @@ def idex_l2b(
             attrs=idex_l2c_attrs.get_variable_attributes("rate_by_mass_map"),
         ),
     }
-
     l2b_dataset = xr.Dataset(
         coords={"epoch": epoch},
         data_vars=l2b_vars,
