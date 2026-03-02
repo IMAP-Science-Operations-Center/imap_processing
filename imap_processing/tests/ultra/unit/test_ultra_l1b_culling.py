@@ -862,3 +862,12 @@ def test_get_binned_energy_ranges():
 
     expected_energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
     np.testing.assert_array_equal(energy_ranges, expected_energy_ranges)
+
+
+def test_get_binned_energy_ranges():
+    """Tests get_binned_energy_ranges function."""
+    intervals, _, _ = build_energy_bins()
+    energy_ranges = get_binned_energy_ranges(intervals)
+
+    expected_energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
+    np.testing.assert_array_equal(energy_ranges, expected_energy_ranges)
