@@ -97,6 +97,7 @@ def test_l2c_attrs_and_vars(
         l2c_dataset["counts_by_mass_map"].sum(), len(l2a_dataset.epoch) * 2
     )
     assert l2c_dataset.sizes == {
+        "on_off_times": 4,
         "epoch": 2,
         "impact_charge": 10,
         "mass": 10,
@@ -200,7 +201,8 @@ def test_science_acquisition_times(decom_test_data_evt: list[xr.Dataset]):
 
 def test_get_science_acquisition_on_percentage(decom_test_data_evt: list[xr.Dataset]):
     """Test the function that calculates the percentage of uptime."""
-    on_percentages = get_science_acquisition_on_percentage(decom_test_data_evt[1])
+    _, evt_time, evt_event = get_science_acquisition_timestamps(decom_test_data_evt[1])
+    on_percentages = get_science_acquisition_on_percentage(evt_time, evt_event)
     # We expect 1 DOY and ~87% uptime for the science acquisition.
     assert len(on_percentages) == 1
     # The DOY should be 8 for this test dataset.
@@ -211,7 +213,8 @@ def test_get_science_acquisition_on_percentage(decom_test_data_evt: list[xr.Data
     evt_ds_shifted["epoch"] = evt_ds["epoch"] + NANOSECONDS_IN_DAY
     combined_ds = xr.concat([evt_ds, evt_ds_shifted], dim="epoch")
     # expect a second DOY.
-    on_percentages = get_science_acquisition_on_percentage(combined_ds)
+    _, evt_time, evt_event = get_science_acquisition_timestamps(combined_ds)
+    on_percentages = get_science_acquisition_on_percentage(evt_time, evt_event)
     # We expect 2 DOYs
     assert len(on_percentages) == 2
     # The uptime should be less than 1% for both
@@ -225,7 +228,9 @@ def test_get_science_acquisition_on_percentage_no_acquisition(caplog):
         "imap_processing.idex.idex_l2b.get_science_acquisition_timestamps",
         return_value=([], [], []),
     ):
-        on_percentages = get_science_acquisition_on_percentage(xr.Dataset())
+        on_percentages = get_science_acquisition_on_percentage(
+            np.array([]), np.array([])
+        )
     assert not on_percentages
     assert "No science acquisition events found" in caplog.text
 
