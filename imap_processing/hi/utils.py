@@ -51,6 +51,16 @@ class HiConstants:
 
     Attributes
     ----------
+    DE_CLOCK_TICK_US : int
+        Duration of Direct Event clock tick in microseconds. This is the time
+        resolution of the Direct Event time tags. See IMAP-Hi Algorithm Document
+        Section 2.2.5 Annotated Direct Events for more details.
+    DE_CLOCK_TICK_S : float
+        Duration of Direct Event clock tick in seconds.
+        This is derived from DE_CLOCK_TICK_US.
+    HALF_CLOCK_TICK_S : float
+        Half of the Direct Event clock tick duration in seconds. This is derived
+        from DE_CLOCK_TICK_S.
     TOF1_TICK_DUR : int
         Duration of Time-of-Flight 1 clock tick in nanoseconds.
     TOF2_TICK_DUR : int
@@ -76,7 +86,23 @@ class HiConstants:
         Sigma multiplier for extreme outlier check in Filter 1.
     STAT_FILTER_1_MIN_CONSECUTIVE : int
         Minimum consecutive intervals above threshold in Filter 1.
+    STAT_FILTER_2_MIN_EVENTS : int
+        Minimum events to form a pulse cluster in Filter 2.
+    STAT_FILTER_2_MAX_TIME_DELTA : float
+        Maximum time span in seconds for events to be considered clustered
+        in Filter 2.
+    STAT_FILTER_2_BIN_PADDING : int
+        Number of bins to add on each side of pulse angle range in Filter 2.
     """
+
+    # TODO: read DE_CLOCK_TICK_US from
+    # instrument status summary later. This value
+    # is rarely change but want to be able to change
+    # it if needed. It stores information about how
+    # fast the time was ticking. It is in microseconds.
+    DE_CLOCK_TICK_US = 1999
+    DE_CLOCK_TICK_S = DE_CLOCK_TICK_US / 1e6
+    HALF_CLOCK_TICK_S = DE_CLOCK_TICK_S / 2
 
     TOF1_TICK_DUR = 1  # 1 ns
     TOF2_TICK_DUR = 1  # 1 ns
@@ -97,6 +123,9 @@ class HiConstants:
     STAT_FILTER_1_CONSECUTIVE_SIGMA = 1.8
     STAT_FILTER_1_EXTREME_SIGMA = 5.0
     STAT_FILTER_1_MIN_CONSECUTIVE = 3
+    STAT_FILTER_2_MIN_EVENTS = 6
+    STAT_FILTER_2_MAX_TIME_DELTA = 5000 * DE_CLOCK_TICK_S
+    STAT_FILTER_2_BIN_PADDING = 1
 
 
 def parse_sensor_number(full_string: str) -> int:

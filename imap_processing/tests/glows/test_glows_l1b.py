@@ -20,6 +20,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
+from imap_processing.spice.time import met_to_datetime64
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
@@ -36,7 +37,7 @@ def hist_dataset():
         "flags_set_onboard": np.zeros((20,)),
         "is_generated_on_ground": np.zeros((20,)),
         "number_of_spins_per_block": np.zeros((20,)),
-        "number_of_bins_per_histogram": np.zeros((20,)),
+        "number_of_bins_per_histogram": np.full((20,), 3600),
         "number_of_events": np.zeros((20,)),
         "filter_temperature_average": np.zeros((20,)),
         "filter_temperature_variance": np.zeros((20,)),
@@ -208,9 +209,15 @@ def ancillary_dict():
     return dictionary
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_histogram_mapping(
     mock_spice_function,
+    mock_flag_uv_and_excluded,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
     mock_pipeline_settings,
@@ -219,7 +226,7 @@ def test_histogram_mapping(
     time_val = np.double(1111111.11)
     expected_temp = 100
 
-    test_hists = np.zeros((200, 3600))
+    test_hists = np.zeros(3600)
     # For temp
     encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
@@ -243,7 +250,7 @@ def test_histogram_mapping(
                 0,
                 0,
                 0,
-                0,
+                3600,
                 0,
                 encoded_val,
                 encoded_val,
@@ -272,9 +279,15 @@ def test_histogram_mapping(
     assert output[23] == time_val
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_process_histogram(
     mock_spice_function,
+    mock_flag_uv_and_excluded,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
@@ -285,7 +298,7 @@ def test_process_histogram(
     time_val = np.double(1111111.11)
     expected_temp = 100
 
-    test_hists = np.zeros((200,))
+    test_hists = np.zeros(3600)
     # For temp
     encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
@@ -306,7 +319,7 @@ def test_process_histogram(
         0,
         0,
         0,
-        0,
+        3600,
         0,
         encoded_val,
         encoded_val,
@@ -334,6 +347,42 @@ def test_process_histogram(
     assert len(output) == len(dataclasses.asdict(test_l1b))
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_bins_from_histogram_not_nbins(
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+    mock_pipeline_settings,
+):
+    """Output bin arrays should use len(histogram), not number_of_bins_per_histogram."""
+    mock_spice_function.side_effect = mock_update_spice_parameters
+    # Set NBINS to a value that differs from the actual histogram length (3600)
+    hist_dataset["number_of_bins_per_histogram"][:] = 225
+
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
+    output = process_histogram(
+        hist_dataset,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
+        pipeline_settings,
+    )
+    # All output variables with a bins dimension must use len(histogram), not NBINS
+    for da in output:
+        if "bins" in da.sizes:
+            assert da.sizes["bins"] == 3600
+
+
 def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
     output = process_de(de_dataset, mock_ancillary_parameters)
 
@@ -352,9 +401,15 @@ def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
     assert np.isclose(output[8].data[0], expected_temp)
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_glows_l1b(
     mock_spice_function,
+    mock_flag_uv_and_excluded,
     de_dataset,
     hist_dataset,
     mock_ancillary_exclusions,
@@ -446,9 +501,15 @@ def test_glows_l1b(
         assert key in de_output
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_generate_histogram_dataset(
     mock_spice_function,
+    mock_flag_uv_and_excluded,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
@@ -507,7 +568,7 @@ def test_hist_spice_output(
     data_start_time = 504975600.125  # 2026-01-01T15:00:00.125
     use_fake_spin_data_for_time(data_start_time)
     params = {
-        "histogram": np.zeros((1, 3600)),
+        "histogram": np.zeros(3600),
         "flight_software_version": 67,
         "pkts_file_name": "test_packet_file.pkts",
         "ground_software_version": "v999",
@@ -552,6 +613,11 @@ def test_hist_spice_output(
     with furnish_kernels(kernels):
         hist_data = HistogramL1B(**params)
 
+        day = met_to_datetime64(hist_data.imap_start_time)
+        day_exclusions = mock_ancillary_exclusions.limit_by_day(day)
+
+        uv_mask, region_mask = hist_data.flag_uv_and_excluded(day_exclusions)
+
         # Assert that all these variables are the correct shape:
         assert isinstance(hist_data.spin_period_ground_average, np.float64)
         assert isinstance(hist_data.spin_period_ground_std_dev, np.float64)
@@ -563,5 +629,11 @@ def test_hist_spice_output(
         assert hist_data.spacecraft_location_std_dev.shape == (3,)
         assert hist_data.spacecraft_velocity_average.shape == (3,)
         assert hist_data.spacecraft_velocity_std_dev.shape == (3,)
+        assert uv_mask.shape == (3600,)
+        # For 2 degree radius: 20 + 20 + 1(center) ≈ 41 bins.
+        assert np.count_nonzero(uv_mask) == 41
+        # Each individual excluded region center can only flag 0 or 1 bins
+        # (since the 0.05° threshold is exactly half the 0.1° bin spacing.
+        assert np.count_nonzero(region_mask) == 1
 
         # TODO: Maxine will validate actual data with GLOWS team

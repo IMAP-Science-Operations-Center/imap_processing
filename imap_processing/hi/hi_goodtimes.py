@@ -1495,3 +1495,246 @@ def mark_statistical_filter_1(
         )
     else:
         logger.info("Statistical Filter 1: No bad intervals identified")
+
+
+def _find_event_clusters(
+    event_times: np.ndarray,
+    min_events: int,
+    max_time_delta: float,
+) -> list[tuple[int, int]]:
+    """
+    Find clusters of events that occur within a maximum time window.
+
+    Uses vectorized numpy operations to find groups of min_events or more
+    events that all occur within max_time_delta seconds of each other.
+
+    Parameters
+    ----------
+    event_times : np.ndarray
+        Sorted array of event times (event_met values in seconds).
+    min_events : int
+        Minimum number of events to form a cluster.
+    max_time_delta : float
+        Maximum time span in seconds for events to be considered clustered.
+
+    Returns
+    -------
+    list[tuple[int, int]]
+        List of (start_idx, end_idx) tuples marking cluster boundaries
+        in the input array. Indices are inclusive.
+    """
+    if len(event_times) < min_events:
+        return []
+
+    # Compute time span for each window of min_events consecutive events
+    # window_spans[i] = event_times[i + min_events - 1] - event_times[i]
+    window_spans = event_times[min_events - 1 :] - event_times[: -(min_events - 1)]
+
+    # Mask where windows fit within max_time_delta
+    cluster_mask = window_spans <= max_time_delta
+
+    if not np.any(cluster_mask):
+        return []
+
+    # Find contiguous regions of True in the mask. Each contiguous region
+    # [i, j] in the mask corresponds to cluster [i, j + min_events - 1]
+
+    # Pad with False to handle edge cases
+    padded = np.concatenate(([False], cluster_mask, [False]))
+
+    # Find transitions: +1 = start of group, -1 = end of group
+    diff = np.diff(padded.astype(int))
+    starts = np.flatnonzero(diff == 1)
+    ends = np.flatnonzero(diff == -1) + min_events - 2  # Adjust for window size
+
+    return list(zip(starts.tolist(), ends.tolist(), strict=False))
+
+
+def _compute_bins_for_cluster(
+    nominal_bins: np.ndarray,
+    cluster_start: int,
+    cluster_end: int,
+    bin_padding: int,
+    n_bins: int = 90,
+) -> np.ndarray:
+    """
+    Compute the spin bins to cull for a cluster of events, with wrapping.
+
+    Parameters
+    ----------
+    nominal_bins : np.ndarray
+        Array of nominal_bin values for events.
+    cluster_start : int
+        Start index of cluster in nominal_bins array.
+    cluster_end : int
+        End index of cluster (inclusive).
+    bin_padding : int
+        Number of bins to add on each side.
+    n_bins : int
+        Total number of spin bins (default 90).
+
+    Returns
+    -------
+    np.ndarray
+        Array of bin indices to cull, with wrapping handled.
+        For example, if cluster spans bins 88-91 with n_bins=90,
+        returns [87, 88, 89, 0, 1, 2] (with padding=1).
+    """
+    cluster_bins = nominal_bins[cluster_start : cluster_end + 1].astype(np.int32)
+
+    # Unwrap to handle clusters spanning the 0/n_bins boundary
+    unwrapped = np.unwrap(cluster_bins, period=n_bins)
+    bin_min = int(np.min(unwrapped))
+    bin_max = int(np.max(unwrapped))
+
+    # Add padding
+    bin_low = bin_min - bin_padding
+    bin_high = bin_max + bin_padding
+
+    # Generate bin indices with wrapping using modulo
+    bins_to_mark = np.arange(bin_low, bin_high + 1) % n_bins
+
+    return bins_to_mark
+
+
+def mark_statistical_filter_2(
+    goodtimes_ds: xr.Dataset,
+    l1b_de: xr.Dataset,
+    qualified_coincidence_types: set[int],
+    min_events: int = HiConstants.STAT_FILTER_2_MIN_EVENTS,
+    max_time_delta: float = HiConstants.STAT_FILTER_2_MAX_TIME_DELTA,
+    bin_padding: int = HiConstants.STAT_FILTER_2_BIN_PADDING,
+    cull_code: int = CullCode.LOOSE,
+) -> None:
+    """
+    Apply Statistical Filter 2 to detect short-lived event pulses.
+
+    Statistical Filter 2 from Algorithm Document Section 2.3.2.3 removes
+    occasional short-lived "pulses" of qualified counts that may be
+    temporally correlated between sensors. These pulses are usually visible
+    only at the highest few energy steps and are not caught by Filter 1.
+
+    For each 8-spin set (grouped by esa_sweep and esa_step), this filter:
+    1. Keeps only events qualifying as calibration product 1 or 2
+    2. Sorts events by event_met
+    3. Finds time ranges where min_events or more events occur within
+       max_time_delta seconds
+    4. Marks the angle range covered by each pulse (plus bin_padding bins
+       on each side, with wrapping) as not good for all METs in that 8-spin set
+
+    Parameters
+    ----------
+    goodtimes_ds : xr.Dataset
+        Goodtimes dataset for the current Pointing to update.
+    l1b_de : xr.Dataset
+        L1B Direct Event dataset for the current Pointing containing:
+        - ccsds_index: packet index for each event
+        - ccsds_met: MET timestamp for each packet
+        - event_met: MET timestamp for each event
+        - coincidence_type: detector coincidence bitmap
+        - nominal_bin: spacecraft spin bin (0-89)
+        - esa_step: ESA energy step for each packet
+    qualified_coincidence_types : set[int]
+        Set of coincidence type integers qualifying as calibration
+        products 1 or 2.
+    min_events : int, optional
+        Minimum events to form a pulse cluster.
+        Default is HiConstants.STAT_FILTER_2_MIN_EVENTS.
+    max_time_delta : float, optional
+        Maximum time span in seconds for events to be considered clustered.
+        Default is HiConstants.STAT_FILTER_2_MAX_TIME_DELTA.
+    bin_padding : int, optional
+        Number of 4-degree bins to add on each side of the pulse angle range.
+        Default is HiConstants.STAT_FILTER_2_BIN_PADDING.
+    cull_code : int, optional
+        Cull code to use for marking bad times. Default is CullCode.LOOSE.
+
+    Notes
+    -----
+    This function modifies goodtimes_ds in place. It marks specific spin
+    bins as bad, unlike Filters 0 and 1 which mark entire time intervals.
+    Bin marking wraps around (e.g., bin 91 becomes bin 1).
+
+    The default parameters (min_events=6,
+    max_time_delta=HiConstants.STAT_FILTER_2_MAX_TIME_DELTA ≈ 9.995 s)
+    imply that seeing 6+ qualified events in an approximately 10-second
+    window has probability < 0.06% under normal conditions
+    (background rate ~0.1/s).
+    """
+    logger.info("Running mark_statistical_filter_2 culling")
+
+    # Add esa_sweep coordinate to group packets into 8-spin sets
+    l1b_de_with_sweep = _add_sweep_indices(l1b_de)
+
+    # Get packet-level arrays
+    ccsds_index = l1b_de_with_sweep["ccsds_index"].values
+    esa_sweep = l1b_de_with_sweep.coords["esa_sweep"].values
+    esa_step = l1b_de_with_sweep["esa_step"].values
+
+    # Add event-level coordinates for grouping
+    l1b_de_with_sweep = l1b_de_with_sweep.assign_coords(
+        event_sweep=("event", esa_sweep[ccsds_index]),
+        event_step=("event", esa_step[ccsds_index]),
+    )
+
+    # Filter to qualified events
+    coincidence_type = l1b_de_with_sweep["coincidence_type"].values
+    is_qualified = np.isin(coincidence_type, list(qualified_coincidence_types))
+
+    if not np.any(is_qualified):
+        logger.info("Statistical Filter 2: No qualified events found")
+        return
+
+    qualified_events = l1b_de_with_sweep.isel(event=is_qualified)
+
+    n_clusters_found = 0
+    n_bins_marked = 0
+
+    # Process each 8-spin set using xarray groupby
+    for (sweep_idx, step_idx), group in qualified_events.groupby(
+        ["event_sweep", "event_step"]
+    ):
+        # Sort by event_met
+        sorted_group = group.sortby("event_met")
+        sorted_mets = sorted_group["event_met"].values
+        sorted_bins = sorted_group["nominal_bin"].values
+
+        # Find clusters
+        clusters = _find_event_clusters(sorted_mets, min_events, max_time_delta)
+
+        if not clusters:
+            continue
+
+        # Get all METs for this 8-spin set (to mark all packets in the set)
+        set_mets = l1b_de_with_sweep["ccsds_met"].values[
+            (esa_sweep == sweep_idx) & (esa_step == step_idx)
+        ]
+
+        # Mark bins for each cluster
+        for cluster_start, cluster_end in clusters:
+            bins_to_mark = _compute_bins_for_cluster(
+                sorted_bins, cluster_start, cluster_end, bin_padding
+            )
+
+            # Mark the bins as bad for all METs in this 8-spin set
+            for met in set_mets:
+                goodtimes_ds.goodtimes.mark_bad_times(
+                    met=met, bins=bins_to_mark, cull=cull_code
+                )
+
+            n_clusters_found += 1
+            n_bins_marked += len(bins_to_mark) * len(set_mets)
+
+            logger.debug(
+                f"Statistical Filter 2: ESA sweep={sweep_idx}, step={step_idx}, "
+                f"cluster of {cluster_end - cluster_start + 1} events, "
+                f"marking {len(bins_to_mark)} bins across {len(set_mets)} METs"
+            )
+
+    if n_clusters_found > 0:
+        logger.info(
+            f"Statistical Filter 2: Found {n_clusters_found} pulse cluster(s), "
+            f"marked {n_bins_marked} bin-intervals as bad"
+        )
+    else:
+        logger.info("Statistical Filter 2: No pulse clusters identified")

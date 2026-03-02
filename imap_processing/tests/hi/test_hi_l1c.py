@@ -14,8 +14,7 @@ import imap_processing.hi.utils
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi import hi_l1c
-from imap_processing.hi.hi_l1a import DE_CLOCK_TICK_S
-from imap_processing.hi.utils import HIAPID
+from imap_processing.hi.utils import HIAPID, HiConstants
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 
@@ -511,11 +510,11 @@ def test_pset_exposure(
         ]
     ).astype(float)[None, :, :]
     # Convert expected clock ticks to seconds
-    expected_values *= DE_CLOCK_TICK_S
+    expected_values *= HiConstants.DE_CLOCK_TICK_S
     np.testing.assert_allclose(
         exposure_dict["exposure_times"].data,
         expected_values,
-        atol=DE_CLOCK_TICK_S / 100,
+        atol=HiConstants.DE_CLOCK_TICK_S / 100,
     )
 
 
@@ -596,7 +595,7 @@ def test_get_de_clock_ticks_for_esa_step(fake_spin_df):
                 np.absolute(
                     fake_spin_df.spin_start_met.to_numpy() - clock_tick_mets[-1]
                 ).min()
-                / DE_CLOCK_TICK_S
+                / HiConstants.DE_CLOCK_TICK_S
             )
             assert clock_tick_weights[-1] == exp_final_weight
             assert np.all(clock_tick_weights[:-1] == 1)

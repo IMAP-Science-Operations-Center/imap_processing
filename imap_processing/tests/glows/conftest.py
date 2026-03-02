@@ -81,13 +81,21 @@ def mock_ancillary_exclusions():
     # Create datasets with epoch dimension and some mock data
     mock_excluded_regions = xr.Dataset(
         {
+            # degrees in [0, 360)
             "ecliptic_longitude_deg": (
-                ["epoch", "region"],
-                np.random.rand(len(epoch_range), 5),
+                ["epoch", "source"],
+                np.tile(
+                    np.array([202.0812, 120.0, 250.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
+            # degrees in [-90, 90]
             "ecliptic_latitude_deg": (
-                ["epoch", "region"],
-                np.random.rand(len(epoch_range), 5),
+                ["epoch", "source"],
+                np.tile(
+                    np.array([18.4119, 0.0, 35.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
         },
         coords={"epoch": epoch_range},
@@ -99,17 +107,28 @@ def mock_ancillary_exclusions():
                 ["epoch", "source"],
                 [["star1", "star2", "star3"]] * len(epoch_range),
             ),
+            # degrees in [0, 360)
             "ecliptic_longitude_deg": (
                 ["epoch", "source"],
-                np.random.rand(len(epoch_range), 3),
+                np.tile(
+                    np.array([202.0812, 120.0, 250.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
+            # degrees in [-90, 90]
             "ecliptic_latitude_deg": (
                 ["epoch", "source"],
-                np.random.rand(len(epoch_range), 3),
+                np.tile(
+                    np.array([18.4119, 0.0, 35.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
+            # masking radius in degrees
             "angular_radius_for_masking": (
                 ["epoch", "source"],
-                np.random.rand(len(epoch_range), 3),
+                np.tile(
+                    np.array([2.0, 0.0, 0.0], dtype=np.float64), (len(epoch_range), 1)
+                ),
             ),
         },
         coords={"epoch": epoch_range},

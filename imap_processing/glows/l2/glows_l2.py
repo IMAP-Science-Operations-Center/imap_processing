@@ -1,6 +1,7 @@
 """Module for GLOWS Level 2 processing."""
 
 import dataclasses
+import logging
 
 import numpy as np
 import xarray as xr
@@ -12,6 +13,8 @@ from imap_processing.glows.l1b.glows_l1b_data import (
 )
 from imap_processing.glows.l2.glows_l2_data import HistogramL2
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
+
+logger = logging.getLogger(__name__)
 
 
 def glows_l2(
@@ -47,8 +50,11 @@ def glows_l2(
     )
 
     l2 = HistogramL2(input_dataset, pipeline_settings)
-
-    return [create_l2_dataset(l2, cdf_attrs)]
+    if l2.number_of_good_l1b_inputs == 0:
+        logger.warning("No good data found in L1B dataset. Returning empty list.")
+        return []
+    else:
+        return [create_l2_dataset(l2, cdf_attrs)]
 
 
 def create_l2_dataset(

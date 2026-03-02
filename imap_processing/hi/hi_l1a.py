@@ -11,18 +11,9 @@ from numpy._typing import NDArray
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import HIAPID
+from imap_processing.hi.utils import HIAPID, HiConstants
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import packet_file_to_datasets
-
-# TODO: read DE_CLOCK_TICK_US from
-# instrument status summary later. This value
-# is rarely change but want to be able to change
-# it if needed. It stores information about how
-# fast the time was ticking. It is in microseconds.
-DE_CLOCK_TICK_US = 1999
-DE_CLOCK_TICK_S = DE_CLOCK_TICK_US / 1e6
-HALF_CLOCK_TICK_S = DE_CLOCK_TICK_S / 2
 
 MILLISECOND_TO_S = 1e-3
 
@@ -293,7 +284,7 @@ def create_de_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         # See Hi Algorithm Document section 2.2.5
         event_met_array = np.array(
             meta_event_met[de_data_dict["ccsds_index"]]
-            + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_S,
+            + np.array(de_data_dict["de_tag"]) * HiConstants.DE_CLOCK_TICK_S,
             dtype=event_met_dtype,
         )
 
