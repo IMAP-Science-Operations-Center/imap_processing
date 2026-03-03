@@ -10,6 +10,7 @@ import pandas as pd
 import xarray as xr
 from scipy.ndimage import convolve1d
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import (
     CalibrationProductConfig,
     CoincidenceBitmap,
@@ -18,6 +19,7 @@ from imap_processing.hi.utils import (
 )
 from imap_processing.quality_flags import ImapHiL1bDeFlags
 from imap_processing.spice.repoint import get_repoint_data
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +48,9 @@ def hi_goodtimes(
     current_repointing: str,
     l1b_hk: xr.Dataset,
     cal_product_config_path: Path,
-    output_dir: Path,
-    start_date: str,
-    version: str,
-) -> list[Path]:
+) -> list[xr.Dataset]:
     """
-    Generate goodtimes file for IMAP-Hi L1C processing.
+    Generate goodtimes dataset for IMAP-Hi L1B processing.
 
     This is the top-level function that orchestrates all goodtimes culling
     operations for a single pointing. It applies the following filters in order:
@@ -77,26 +76,15 @@ def hi_goodtimes(
         L1B housekeeping dataset containing DRF status.
     cal_product_config_path : Path
         Path to calibration product configuration CSV file.
-    output_dir : Path
-        Directory where the goodtimes text file will be written.
-    start_date : str
-        Start date in YYYYMMDD format for the output filename.
-    version : str
-        Version string (e.g., "v001") for the output filename.
 
     Returns
     -------
-    list[Path]
-        List containing the path to the generated goodtimes text file,
+    list[xr.Dataset]
+        List containing the goodtimes dataset ready for CDF writing,
         or an empty list if processing cannot proceed yet.
 
     Notes
     -----
-    The output filename follows the pattern:
-    imap_hi_sensor{45|90}-goodtimes_{start_date}_{start_date}_{version}.txt
-
-    TODO: Add repointing to filename when it is allowed in ancillary filenames.
-
     See IMAP-Hi Algorithm Document Sections 2.2.4 and 2.3.2 for details
     on each culling algorithm.
 
@@ -153,9 +141,21 @@ def hi_goodtimes(
         )
         goodtimes_ds["cull_flags"][:, :] = CullCode.LOOSE
 
-    # Generate output
-    output_path = _write_goodtimes_output(goodtimes_ds, output_dir, start_date, version)
-    return [output_path]
+    # Log final statistics
+    stats = goodtimes_ds.goodtimes.get_cull_statistics()
+    logger.info(
+        f"Final statistics: {stats['good_bins']}/{stats['total_bins']} good "
+        f"({stats['fraction_good'] * 100:.1f}%)"
+    )
+    if stats["cull_code_counts"]:
+        logger.info(f"Cull code counts: {stats['cull_code_counts']}")
+
+    # Finalize dataset for CDF output
+    logger.info("Finalizing goodtimes dataset for CDF output")
+    cdf_ready_ds = goodtimes_ds.goodtimes.finalize_dataset()
+
+    logger.info("Hi goodtimes processing complete")
+    return [cdf_ready_ds]
 
 
 def _find_current_pointing_index(
@@ -277,58 +277,6 @@ def _apply_goodtimes_filters(
     )
 
 
-def _write_goodtimes_output(
-    goodtimes_ds: xr.Dataset,
-    output_dir: Path,
-    start_date: str,
-    version: str,
-) -> Path:
-    """
-    Write goodtimes dataset to output file.
-
-    Parameters
-    ----------
-    goodtimes_ds : xr.Dataset
-        Goodtimes dataset to write.
-    output_dir : Path
-        Directory where the output file will be written.
-    start_date : str
-        Start date in YYYYMMDD format.
-    version : str
-        Version string (e.g., "v001").
-
-    Returns
-    -------
-    Path
-        Path to the generated goodtimes text file.
-    """
-    # Log final statistics
-    stats = goodtimes_ds.goodtimes.get_cull_statistics()
-    logger.info(
-        f"Final statistics: {stats['good_bins']}/{stats['total_bins']} good "
-        f"({stats['fraction_good'] * 100:.1f}%)"
-    )
-    if stats["cull_code_counts"]:
-        logger.info(f"Cull code counts: {stats['cull_code_counts']}")
-
-    # Generate output filename
-    # Pattern: imap_hi_{sensor}-goodtimes_{YYYYMMDD}_{YYYYMMDD}_{version}.txt
-    # TODO: Add repointing to filename when it is allowed in ancillary filenames.
-    #       Pattern should be:
-    #       imap_hi_{sensor}-goodtimes_{YYYYMMDD}_{YYYYMMDD}_{repointing}_{version}.txt
-    sensor = goodtimes_ds.attrs["sensor"]
-    output_filename = (
-        f"imap_hi_{sensor}-goodtimes_{start_date}_{start_date}_{version}.txt"
-    )
-    output_path = output_dir / output_filename
-
-    # Write goodtimes to text file
-    goodtimes_ds.goodtimes.write_txt(output_path)
-
-    logger.info(f"Hi goodtimes processing complete: {output_path}")
-    return output_path
-
-
 def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
     """
     Create goodtimes dataset from L1B Direct Event data.
@@ -394,6 +342,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
             f"attribute: {l1b_de.attrs['Repointing']}"
         )
     attrs = {
+        "Logical_source": f"imap_hi_l1b_{sensor_number}sensor-goodtimes",
         "sensor": f"sensor{sensor_number}",
         "pointing": int(match["pointing_num"]),
     }
@@ -437,7 +386,7 @@ class GoodtimesAccessor:
           ESA step for each MET timestamp
       * Attributes
         * sensor : str
-         Sensor identifier ('Hi45' or 'Hi90')
+         Sensor identifier ('sensor45' or 'sensor90')
         * pointing : int
          Pointing number for this dataset
 
@@ -778,6 +727,95 @@ class GoodtimesAccessor:
 
         logger.info(f"Wrote {len(intervals)} intervals to {output_path}")
         return output_path
+
+    def finalize_dataset(self) -> xr.Dataset:
+        """
+        Finalize the goodtimes dataset for CDF output.
+
+        Converts the dataset from using MET as the primary dimension to using
+        epoch (TT2000 nanoseconds), and adds all CDF attributes required for
+        L1B CDF file writing.
+
+        Returns
+        -------
+        xarray.Dataset
+            CDF-ready dataset with epoch dimension and all CDF attributes.
+
+        Notes
+        -----
+        This method should be called after all goodtimes filtering is complete,
+        just before writing to CDF. The original dataset remains unchanged.
+
+        Requires SPICE kernels to be loaded for MET to epoch conversion.
+        """
+        logger.info("Finalizing goodtimes dataset for CDF output")
+
+        # Convert MET to epoch (TT2000 nanoseconds)
+        met_values = self._obj.coords["met"].values
+        epoch_values = met_to_ttj2000ns(met_values)
+
+        # Initialize CDF attribute manager
+        attr_mgr = ImapCdfAttributes()
+        attr_mgr.add_instrument_global_attrs("hi")
+        attr_mgr.add_instrument_variable_attrs("hi")
+
+        # Create spin_bin coordinate with labels
+        spin_bin = np.arange(90, dtype=np.uint8)
+        spin_bin_label = np.array([f"{i}" for i in spin_bin], dtype=str)
+
+        # Create coordinates with CDF attributes
+        coords = {
+            "epoch": xr.DataArray(
+                epoch_values,
+                dims=["epoch"],
+                attrs=attr_mgr.get_variable_attributes("epoch", check_schema=False),
+            ),
+            "spin_bin": xr.DataArray(
+                spin_bin,
+                dims=["spin_bin"],
+                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin"),
+            ),
+            "spin_bin_label": xr.DataArray(
+                spin_bin_label,
+                dims=["spin_bin"],
+                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin_label"),
+            ),
+        }
+
+        # Create data variables with CDF attributes
+        data_vars = {
+            "cull_flags": xr.DataArray(
+                self._obj["cull_flags"].values,
+                dims=["epoch", "spin_bin"],
+                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_cull_flags"),
+            ),
+            "met": xr.DataArray(
+                met_values,
+                dims=["epoch"],
+                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_met"),
+            ),
+            "esa_step": xr.DataArray(
+                self._obj["esa_step"].values,
+                dims=["epoch"],
+                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_esa_step"),
+            ),
+        }
+
+        # Update global attributes
+        global_attrs = attr_mgr.get_global_attributes("imap_hi_l1b_goodtimes_attrs")
+        # Copy existing attributes
+        for key, value in self._obj.attrs.items():
+            if key not in global_attrs:
+                global_attrs[key] = value
+
+        # Ensure Logical_source is properly formatted
+        if "{sensor}" in global_attrs.get("Logical_source", ""):
+            sensor_value = self._obj.attrs.get("sensor", "sensor45")
+            global_attrs["Logical_source"] = global_attrs["Logical_source"].format(
+                sensor=sensor_value
+            )
+
+        return xr.Dataset(data_vars, coords, global_attrs)
 
 
 # ==============================================================================
