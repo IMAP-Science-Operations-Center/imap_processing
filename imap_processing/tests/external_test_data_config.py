@@ -153,6 +153,7 @@ EXTERNAL_TEST_DATA = [
     ("status_test_data_repoint00047.csv", "ultra/data/l1/"),
     ("voltage_culling_results_repoint00047.csv", "ultra/data/l1/"),
     ("validate_high_energy_culling_results_repoint00047_v2.csv", "ultra/data/l1/"),
+    ("validate_stat_culling_results_repoint00047.csv", "ultra/data/l1/"),
     ("de_test_data_repoint00047.csv", "ultra/data/l1/"),
     ("FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS", "ultra/data/l0/"),
     ("ultra45_raw_sc_rawnrgevnt_19840122_00.csv", "ultra/data/l0/"),
