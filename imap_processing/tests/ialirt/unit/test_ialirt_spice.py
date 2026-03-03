@@ -129,7 +129,7 @@ def test_transform_instrument_vectors_to_inertial_single(furnish_kernels):
     """Test real-world application of this function."""
 
     kernels = [
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "imap_130.tf",
         "naif0012.tls",
         "de440s.bsp",

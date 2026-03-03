@@ -19,7 +19,7 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
     }
 
     kernels = [
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_pointing_frame.bc",
         "imap_spk_demo.bsp",
         "imap_sclk_0000.tsc",
@@ -59,7 +59,7 @@ def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
 
     with furnish_kernels(
         [
-            "imap_science_100.tf",
+            "imap_science_120.tf",
             "imap_sclk_0000.tsc",
             "sim_1yr_imap_pointing_frame.bc",
             "imap_spk_demo.bsp",

@@ -236,7 +236,7 @@ def test_create_sky_map_from_psets(
     """Test coverage for create_sky_map_from_psets()"""
     kernels = [
         "imap_sclk_0000.tsc",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "naif0012.tls",
         "imap_spk_demo.bsp",
         "de440s.bsp",
