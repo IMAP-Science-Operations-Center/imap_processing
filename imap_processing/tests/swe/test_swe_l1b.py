@@ -238,6 +238,26 @@ def test_swe_l1b(mock_get_file_paths, l1b_validation_df):
     assert l1b_hk_filepath.name == "imap_swe_l1b_hk_20240510_v999.cdf"
 
 
+@patch("imap_processing.swe.l1b.swe_l1b.swe_l1b_science", return_value=None)
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_swe_l1b_no_full_cycle_data(mock_get_file_paths, mock_swe_l1b_science):
+    """Test that swe_l1b handles the case where there is no full cycle L1A data.
+
+    When swe_l1b_science returns None (i.e. no full cycle data found),
+    swe_l1b should not include None in the returned datasets list.
+    """
+    mock_get_file_paths.side_effect = lambda descriptor: (
+        ["imap_swe_l1a_sci_20240510_v000.cdf"] if descriptor == "sci" else []
+    )
+    science_input = ScienceInput("imap_swe_l1a_sci_20240510_v000.cdf")
+    dependencies = ProcessingInputCollection(science_input)
+
+    result = swe_l1b(dependencies)
+
+    assert None not in result
+    assert result == []
+
+
 def test_count_rate():
     x = np.array([1, 10, 100, 1000, 10000, 38911, 65535])
     acq_duration = np.array([80000])
