@@ -1021,6 +1021,10 @@ class HistogramL1B:
             look_vecs_dps,
             SpiceFrame.IMAP_DPS,
             SpiceFrame.ECLIPJ2000,
+            # This is for cases in which a histogram falls in a 2-min ck gap.
+            # DPS CK coverage intentionally doesn't include the
+            # repointing transition period.
+            allow_spice_noframeconnect=True,
         )
 
         # UV source vectors.
