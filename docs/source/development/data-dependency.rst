@@ -12,89 +12,118 @@ basis, to accommodate changing requirements.
 Overview
 --------
 
-When a file lands in the SDC, it is added to our data bucket (Also called S3 or S3 bucket.) This bucket, as the name implies, is a simple collection which contains all the files in the SDC, organized
-like a file system.
+When a file lands in the SDC, it is added to our data bucket (Also called S3 or S3 bucket.)
+This bucket, as the name implies, is a simple collection which contains all the files in the
+SDC, organized like a file system.
 
-Each data file is put into a specific subfolder depending on the file name. For example, a file named ``imap_swe_l0_sci_20240105_20240105_v00-01.pkts`` would be placed in the ``imap/swe/l0/2024/01`` folder.
-More information about the naming conventions can be found in :ref:`naming-conventions`.
+Each data file is put into a specific subfolder depending on the file name. For example,
+a file named ``imap_swe_l0_sci_20240105_20240105_v00-01.pkts`` would be placed in the
+``imap/swe/l0/2024/01`` folder. More information about the naming conventions can be
+found in :ref:`naming-conventions`.
 
-When a file of any level arrives in the bucket, it triggers the rest of processing. This is how we manage file processing within the SDC, rather than waiting until all files have arrived
-or running at particular times of day. This allows us to quickly process data as soon as all the required pieces are available to us, and create a flexible system which can easily be updated
+When a file of any level arrives in the bucket, it triggers the rest of processing. This is
+how we manage file processing within the SDC, rather than waiting until all files have arrived
+or running at particular times of day. This allows us to quickly process data as soon as all the
+required pieces are available to us, and create a flexible system which can easily be updated
 to add exceptions or new requirements on a per-instrument or per-level basis.
 
 .. note::
-    This document, and our tooling, uses the terms "upstream dependencies" and "downstream dependencies" to describe the relationships between files. A "downstream dependency" for a given file
-    means that the current file is required for processing of the downstream files. For example, an L2 file is a downstream dependency of an L1 file. An "upstream dependency" is the opposite,
-    describing a file which is required to begin processing the current file. For example, an L1 file is an upstream dependency of an L2 file.
+    This document, and our tooling, uses the terms "upstream dependencies" and
+    "downstream dependencies" to describe the relationships between files. A
+    "downstream dependency" for a given file means that the current file is required for
+    processing of the downstream files. For example, an L2 file is a downstream dependency
+    of an L1 file. An "upstream dependency" is the opposite, describing a file which is required
+    to begin processing the current file. For example, an L1 file is an upstream dependency of an
+    L2 file.
 
 Detailed Description of File Processing
 ---------------------------------------
 
-For explicit descriptions of the tools and technical choices of the IMAP SDC, please refer to `this Galaxy page <https://lasp.colorado.edu/galaxy/display/IMAP/SDC+Architecture>`_.
-This section is intended to act as a high level overview for the data processing architecture of the IMAP SDC, in less technical terms.
+For explicit descriptions of the tools and technical choices of the IMAP SDC, please refer to
+`this Galaxy page <https://lasp.colorado.edu/galaxy/display/IMAP/SDC+Architecture>`_.
+This section is intended to act as a high level overview for the data processing architecture of
+the IMAP SDC, in less technical terms.
 
 .. image:: ../_static/architecture_overview.png
 
 `Up to date overview chart in Galaxy <https://lasp.colorado.edu/galaxy/display/IMAP/SDC+Processing+Architecture+Overview>`_
 
-Each science file that arrives is treated the same, regardless of level or instrument. When a file is placed in the file storage system, it triggers a step to index the file ("indexer lambda").
+Each science file that arrives is treated the same, regardless of level or instrument. When a file
+is placed in the file storage system, it triggers a step to index the file ("indexer lambda").
 This step adds the file to the database and triggers the next step in processing ("batch starter lambda").
 
-This step is what determines if a instrument and level is ready for processing, by checking dependencies. For each file that arrives, the system checks to see what the downstream dependencies are -
-meaning, what future files need this file in order to complete processing. For example, if a MAG L1A file arrived, this step would determine that the MAG L1B ``mago`` and ``magi`` files are dependent on
+This step is what determines if a instrument and level is ready for processing, by checking dependencies.
+For each file that arrives, the system checks to see what the downstream dependencies are -
+meaning, what future files need this file in order to complete processing. For example, if a MAG L1A
+file arrived, this step would determine that the MAG L1B ``mago`` and ``magi`` files are dependent on
 the L1A file, and therefore MAG L1B may be ready to begin processing.
 
-Then, for each anticipated job, the batch starter process checks to see if all the upstream dependencies are met. Although we know we have one of the upstream dependencies for an expected job,
-it's possible that there are other required dependencies that have not yet arrived. If we are missing any required dependencies, then the system does not kick off the processing job.
-When the missing file arrives, it will trigger the same process of checking for all upstream dependencies. This time all required dependencies will be found and the processing job will be started.
+Then, for each anticipated job, the batch starter process checks to see if all the upstream
+dependencies are met. Although we know we have one of the upstream dependencies for an
+expected job, it's possible that there are other required dependencies that have not yet
+arrived. If we are missing any required dependencies, then the system does not kick off the
+processing job. When the missing file arrives, it will trigger the same process of checking
+for all upstream dependencies. This time all required dependencies will be found and the
+processing job will be started.
 
-For example, SWAPI L3 requires both SWAPI L2 files and MAG L1D (previously called L2pre) files. The SWAPI L2 job and the MAG L1D job are run independently, so there is no guarantee that they will finish
-at the same time. Let's assume that the MAG L1D job finishes first, since it is the lower level. When that file arrives, one of the downstream dependencies is going to be the SWAPI L3 processing.
-However, when batch starter checks the upstream dependencies for SWAPI L3, it will find that SWAPI L2 is missing. Therefore, processing won't start. Once the SWAPI L2 processing finishes,
-and the SWAPI L2 file arrives, the batch starter is triggered with that file. Once again, SWAPI L3 is a downstream dependency, but this time, both upstream dependencies for SWAPI L2 are present.
-Therefore, processing for SWAPI L3 can begin.
+For example, SWAPI L3 requires both SWAPI L2 files and MAG L1D (previously called L2pre)
+files. The SWAPI L2 job and the MAG L1D job are run independently, so there is no guarantee
+that they will finish at the same time. Let's assume that the MAG L1D job finishes first,
+since it is the lower level. When that file arrives, one of the downstream dependencies is
+going to be the SWAPI L3 processing. However, when batch starter checks the upstream
+dependencies for SWAPI L3, it will find that SWAPI L2 is missing. Therefore, processing
+won't start. Once the SWAPI L2 processing finishes, and the SWAPI L2 file arrives, the batch
+starter is triggered with that file. Once again, SWAPI L3 is a downstream dependency, but
+this time, both upstream dependencies for SWAPI L2 are present. Therefore, processing for
+SWAPI L3 can begin.
 
-The status of different files is recorded in the status tracking table. This table records the status of each anticipated output file as "in progress", "complete", or "failed." Through this,
-we can track processing for specific files and determine if a file exists quickly.
+The status of different files is recorded in the status tracking table. This table records
+the status of each anticipated output file as "in progress", "complete", or "failed." Through
+this, we can track processing for specific files and determine if a file exists quickly.
 
 Dependency Config File
 ----------------------
 
-How does the SDC track which files are dependent on others? In order to decide what the downstream or upstream dependencies of a file are, and what the nature of those dependencies are, we
-need some way to request the upstream or downstream dependencies of a given file. The current dependencies between instruments are recorded in `sds-data-manager Repo <https://github.com/IMAP-Science-Operations-Center/sds-data-manager/blob/dev/sds_data_manager/lambda_code/SDSCode/pipeline_lambdas/dependency_config.csv>`_.
+How does the SDC track which files are dependent on others? In order to decide what the
+downstream or upstream dependencies of a file are, and what the nature of those dependencies
+are, we need some way to request the upstream or downstream dependencies of a given file.
+The current dependencies between instruments are recorded in `sds-data-manager Repo
+<https://github.com/IMAP-Science-Operations-Center/sds-data-manager/blob/dev/sds_data_manager/lambda_code/SDSCode/pipeline_lambdas/dependency_config.csv>`_.
 
-We handle and track dependencies using a CSV config file that acts like a database. This CSV config file expects a specific format, and is used to determine the upstream and downstream dependencies of each file.
+We handle and track dependencies using a YAML config file that acts like a database. This YAML
+config file expects a specific format, and is used to determine the upstream and downstream
+dependencies of each product.
 
-The CSV config has the following structure:
+Filename convention
+~~~~~~~~~~~~~~~~~~~~
+imap_<instrument>_dependencies.yaml
 
-=====================  =================  ==================  =================  ====================  =====================  =========================  ================
-primary_source         primary_data_type  primary_descriptor  dependent_source   dependent_data_type   dependent_descriptor   relationship               dependency_type
-=====================  =================  ==================  =================  ====================  =====================  =========================  ================
-mag                    l1a                norm-mago           mag                l1b                   norm-mago              HARD                       DOWNSTREAM
-mag                    l1a                norm-magi           mag                l1b                   norm-magi              HARD                       DOWNSTREAM
-mag                    l1d                norm                swapi              l3                    sci                    HARD                       DOWNSTREAM
-swapi                  l2                 sci                 swapi              l3                    sci                    HARD                       DOWNSTREAM
-idex                   l0                 raw                 idex               l1a                   all                    HARD                       DOWNSTREAM
-leapseconds            spice              historical          idex               l1a                   all                    HARD_NO_TRIGGER            DOWNSTREAM
-spacecraft_clock       spice              historical          idex               l1a                   all                    HARD_NO_TRIGGER            DOWNSTREAM
-hi                     l1a                45sensor-de         hi                 l1b                   45sensor-de            HARD                       DOWNSTREAM
-plantary_epehemeris    spice              historical          hi                 l1b                   45sensor-de            HARD_NO_TRIGGER            DOWNSTREAM
-imap_frames            spice              historical          hi                 l1b                   45sensor-de            HARD_NO_TRIGGER            DOWNSTREAM
-attitude               spice              historical          hi                 l1b                   45sensor-de            HARD                       DOWNSTREAM
-spin                   spin               historical          hi                 l1b                   45sensor-de            HARD_NO_TRIGGER            DOWNSTREAM
-repoint                repoint            historical          hi                 l1b                   45sensor-de            HARD_NO_TRIGGER            DOWNSTREAM
-=====================  =================  ==================  =================  ====================  =====================  =========================  ================
 
-Valid Values for Dependency Config
------------------------------------
+Dependency Types
+~~~~~~~~~~~~~~~~~
 
-Primary Source
-~~~~~~~~~~~~~~~~~~
+The YAML config file stores the upstream dependencies for each data product. This information
+is used across all instruments to determine both upstream and downstream relationships:
 
-Primary source can be one of the following:
+**UPSTREAM**
+An upstream dependency is a file required to begin processing the current product.
+The dependency config file explicitly defines these upstream dependencies for each data product.
+
+**DOWNSTREAM**
+A downstream dependency is a product whose processing depends on the current file.
+Downstream dependencies are determined at runtime by querying which products list the current
+file as an upstream dependency.
+
+Valid Fields for Dependency Config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _imap-data-init: https://github.com/IMAP-Science-Operations-Center/imap-data-access/blob/main/imap_data_access/__init__.py
 .. _imap-data-validation: https://github.com/IMAP-Science-Operations-Center/imap-data-access/blob/main/imap_data_access/file_validation.py
+
+Upstream Source
+^^^^^^^^^^^^^^^
+
+Upstream source can be one of the following:
 
 - IMAP instrument name listed in the ``VALID_INSTRUMENTS`` dictionary in this file:
   `imap-data-access Repo <imap-data-init_>`_
@@ -103,10 +132,10 @@ Primary source can be one of the following:
   `imap-data-access validation file <imap-data-validation_>`_
 
 
-Primary Data Type
-~~~~~~~~~~~~~~~~~~~~
+Upstream Data Type
+^^^^^^^^^^^^^^^^^^
 
-Primary data type can be one of the following:
+Upstream data type can be one of the following:
 
 - IMAP data level listed in the ``VALID_DATALEVELS`` dictionary in this file:
   `imap-data-access Repo <imap-data-init_>`_
@@ -119,67 +148,124 @@ Primary data type can be one of the following:
 
 - ``ancillary``
 
-Primary descriptor
-~~~~~~~~~~~~~~~~~~~~
 
-Primary descriptor can be one of the following:
+Upstream Product Name
+^^^^^^^^^^^^^^^^^^^^^
 
-- For science or ancillary data, the descriptors are defined by the instrument and SDC.
+Upstream product name can be one of the following:
 
-- For ``spice`` data types, ``historical`` and ``best`` are the valid descriptors.
+- For science or ancillary data, the product names are defined by the instrument and SDC.
 
-- For ``spin`` and ``repoint`` data types, ``historical`` is the only valid descriptor.
+- For ``spice`` data types, ``historical`` and ``best`` are the valid product names.
+
+- For ``spin`` and ``repoint`` data types, ``historical`` is the only valid product name.
+
+Required (Optional)
+^^^^^^^^^^^^^^^^^^^
+
+**Default:** ``true``
+
+Whether the upstream dependency is required for processing the current product to begin.
+If set to true, the product cannot be processed until this dependency is available.
+If set to false, the product can be processed even if this dependency is missing.
 
 
+Kickoff_job (Optional)
+^^^^^^^^^^^^^^^^^^^^^^
 
-Dependent Source
-~~~~~~~~~~~~~~~~~~~
+**Default:** ``true``
 
-Same as primary_source, but for the dependent file.
+Whether the arrival of this upstream dependency should trigger a processing job.
+There are cases where we do not want to start a job when certain upstream data arrives.
+For example, upstream inputs such as spacecraft clock or leapseconds data should not change
+frequently, and processing jobs should not be triggered every time these files are updated.
+Setting this to false allows for more controlled processing and may require additional
+review before updating these types of dependencies.
 
-Dependent Data Type
-~~~~~~~~~~~~~~~~~~~~
+(Past_days, Future_days) (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Same as primary_data_type, but for the dependent file.
+**Default:**
 
-Dependent Descriptor
-~~~~~~~~~~~~~~~~~~~~
+- ENA and GLOWS: ``(0p, 0p)``
+- Rest of in-situ instruments: ``(0d, 0d)``
 
-Same as primary_descriptor, but for the dependent file.
+Most science files are produced daily or per pointing. Due to this cadence, the default is
+daily for most in-situ instruments and per pointing for ENA and GLOWS instruments. However,
+this feature provides flexibility to query for upstream data beyond the daily date range of
+the current product.
 
-Relationship
-~~~~~~~~~~~~~~~~~~~
+Supported values for past_days and future_days fields:
 
-- **HARD**
-  Triggers processing on file ingestion or a reprocessing event.
+- ``p`` - pointing
+- ``h`` - hourly
+- ``d`` - days
+- ``l`` - last_processed
 
-- **HARD_NO_TRIGGER**
-  Required data file. However, a new version of this file doesn't trigger
-  processing on file ingestion.
-  *Example:* leapseconds kernel or frame kernel that doesn't change often.
+Days can be used to support longer durations and different cadences. For example, weekly
+processing can use 7 days, and yearly processing can use 365 days.
 
-- **SOFT_TRIGGER**
-  A "nice to have" data file that **can trigger** processing on ingestion
-  for downstream dependencies.
-  Recommended only for ancillary or SPICE data files, because this may cause
-  unwanted reprocessing behavior.
-  *Example:* a calibration file that **does** significantly affect output and
-  should cause reprocessing of past data falling within the updated time range.
+``last_processed`` - retrieves the last x processed science data files to use to query for files needed for the current processing job.
+For example, IDEX science job requires all housekeeping data since the start date of the last processed science file.
 
-- **SOFT_NO_TRIGGER**
-  A "nice to have" file that **does not trigger** processing on ingestion.
-  *Example:* calibration files with minor updates that you still want included
-  in processing for current and future data products.
+File content structure
+~~~~~~~~~~~~~~~~~~~~~~
+The YAML config has the following structure:
 
-Dependency Types
-~~~~~~~~~~~~~~~~~~~
+.. code-block:: yaml
 
-- **DOWNSTREAM**
-  This is a downstream dependency, meaning that job to kick off when this file arrives.
+  (level, product_name):
+    - (
+      upstream_source,
+      upstream_data_type,
+      upstream_product_name,
+      required(bool),
+      kickoff_job(bool),
+      (past_days, future_days)
+    )
+    - (
+      upstream_source,
+      upstream_data_type,
+      upstream_product_name,
+      required(bool),
+      kickoff_job(bool),
+      (past_days, future_days)
+    )
+    ....
 
-- **UPSTREAM**
-  This is an upstream dependency. This means that upstream processing is blocked on
-  the existence of dependent files, meaning that a file required to kick off processing for
-  current file. NOTE: In the dependency config file, we only specify downstream dependencies.
-  Then in the dependency lambda at run time, it will determine the upstream dependencies
-  based on the downstream dependencies.
+
+File content Example
+~~~~~~~~~~~~~~~~~~~~~~
+
+**imap_hit_dependencies.yaml**
+
+.. code-block:: yaml
+
+  (l1a, all):
+    - (hit, l0, raw)
+    - (leapseconds, spice, historical)
+    - (spacecraft_clock, spice, historical)
+  (l1b, hk):
+    - (hit, l0, raw)
+    - (leapseconds, spice, historical)
+    - (spacecraft_clock, spice, historical)
+  ....
+
+**imap_hi_dependencies.yaml**
+
+.. code-block:: yaml
+
+  (l1b, 45sensor-de):
+    - (hi, l1a, 45sensor-de)
+    - (hi, l1b, 45sensor-hk)
+    - (hi, ancillary, 45sensor-esa-energies)
+    - (leapseconds, spice, historical)
+    - (imap_frames, spice, historical)
+
+  (l1b, 45sensor-goodtimes):
+      - (hi, l1b, 45sensor-de, true, true, (-3p, 3p))
+      - (hi, l1b, 45sensor-hk)
+      - (hi, l1a, 45sensor-diagfee)
+    - (leapseconds, spice, historical, true, false)
+    - (spacecraft_clock, spice, historical, true, false)
+    ...
