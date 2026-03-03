@@ -948,7 +948,8 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> list[xr.Dataset]:
     if has_science_data:
         # Process science data to L1B
         science_dataset = swe_l1b_science(dependencies)
-        processed_datasets.append(science_dataset)
+        if science_dataset is not None:
+            processed_datasets.append(science_dataset)
 
     # Process HK data using L0 file
     l0_files = dependencies.get_file_paths(descriptor="raw")

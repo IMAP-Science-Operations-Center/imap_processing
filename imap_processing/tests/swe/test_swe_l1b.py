@@ -52,6 +52,26 @@ def test_get_full_cycle_data_indices():
     np.testing.assert_array_equal(filtered_q, np.array([]))
 
 
+def test_swe_l1b_no_full_cycles():
+    """Test that swe_l1b handles None from swe_l1b_science (no full cycles).
+
+    When all science data is in-flight calibration data, swe_l1b_science
+    returns None. swe_l1b should not include None in its returned list.
+    """
+    with patch(
+        "imap_processing.swe.l1b.swe_l1b.swe_l1b_science", return_value=None
+    ):
+        with patch(
+            "imap_data_access.processing_input.ProcessingInputCollection.get_file_paths"
+        ) as mock_get:
+            mock_get.side_effect = lambda descriptor: (
+                ["dummy.cdf"] if descriptor == "sci" else []
+            )
+            dependencies = ProcessingInputCollection()
+            datasets = swe_l1b(dependencies)
+    assert all(ds is not None for ds in datasets)
+
+
 def test_in_flight_calibration_factor(l1a_test_data):
     """Test that the L1B processing is working as expected."""
     # create sample data
