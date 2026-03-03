@@ -846,7 +846,7 @@ def test_get_poisson_stats():
 
 @pytest.mark.external_test_data
 def test_validate_stat_cull():
-    """Validate that flag_statistical_outliers are correctly flagged"""
+    """Validate that statistical-outlier quality flags match expected results."""
     # read test data from csv files
     xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
     results_df = pd.read_csv(
