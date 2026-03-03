@@ -871,8 +871,8 @@ def test_validate_stat_cull():
         spin_bin_size,
     )
     intervals, _, _ = build_energy_bins()
-    # Use the actual energy ranges that were used for the test data
-    energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
+    # Get the energy ranges
+    energy_ranges = get_binned_energy_ranges(intervals)
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
     flags, con, it, std = flag_statistical_outliers(
         de_ds, spin_tbin_edges, energy_ranges, mask, 90
@@ -897,15 +897,6 @@ def test_get_energy_range_flags():
     flags = get_energy_range_flags(energy_ranges)
 
     np.testing.assert_array_equal(flags, 2 ** np.arange(5))
-
-
-def test_get_binned_energy_ranges():
-    """Tests get_binned_energy_ranges function."""
-    intervals, _, _ = build_energy_bins()
-    energy_ranges = get_binned_energy_ranges(intervals)
-
-    expected_energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
-    np.testing.assert_array_equal(energy_ranges, expected_energy_ranges)
 
 
 def test_get_binned_energy_ranges():
