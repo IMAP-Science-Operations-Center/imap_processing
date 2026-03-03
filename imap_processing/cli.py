@@ -772,7 +772,7 @@ class Hi(ProcessInstrument):
 
     def do_processing(  # noqa: PLR0912
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset]:
+    ) -> list[xr.Dataset | Path]:
         """
         Perform IMAP-Hi specific processing.
 
@@ -805,19 +805,7 @@ class Hi(ProcessInstrument):
             l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
             if l0_files:
                 datasets = hi_l1b.housekeeping(l0_files[0])
-            else:
-                l1a_de_file = dependencies.get_file_paths(
-                    source="hi", data_type="l1a", descriptor="de"
-                )[0]
-                l1b_hk_file = dependencies.get_file_paths(
-                    source="hi", data_type="l1b", descriptor="hk"
-                )[0]
-                esa_energies_csv = dependencies.get_file_paths(data_type="ancillary")[0]
-                datasets = hi_l1b.annotate_direct_events(
-                    load_cdf(l1a_de_file), load_cdf(l1b_hk_file), esa_energies_csv
-                )
-        elif self.data_level == "l1c":
-            if "goodtimes" in self.descriptor:
+            elif "goodtimes" in self.descriptor:
                 # Goodtimes processing
                 l1b_de_paths = dependencies.get_file_paths(
                     source="hi", data_type="l1b", descriptor="de"
@@ -846,17 +834,25 @@ class Hi(ProcessInstrument):
                 l1b_de_datasets = [load_cdf(path) for path in l1b_de_paths]
                 l1b_hk = load_cdf(l1b_hk_paths[0])
 
-                output_paths = hi_goodtimes.hi_goodtimes(
+                datasets = hi_goodtimes.hi_goodtimes(
                     l1b_de_datasets,
                     self.repointing,
                     l1b_hk,
                     cal_prod_paths[0],
-                    Path(imap_data_access.config["DATA_DIR"]),
-                    self.start_date,
-                    self.version,
                 )
-                return output_paths
-            elif "pset" in self.descriptor:
+            else:
+                l1a_de_file = dependencies.get_file_paths(
+                    source="hi", data_type="l1a", descriptor="de"
+                )[0]
+                l1b_hk_file = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="hk"
+                )[0]
+                esa_energies_csv = dependencies.get_file_paths(data_type="ancillary")[0]
+                datasets = hi_l1b.annotate_direct_events(
+                    load_cdf(l1a_de_file), load_cdf(l1b_hk_file), esa_energies_csv
+                )
+        elif self.data_level == "l1c":
+            if "pset" in self.descriptor:
                 # L1C PSET processing
                 science_paths = dependencies.get_file_paths(
                     source="hi", data_type="l1b"

@@ -365,12 +365,13 @@ def test_hi(
 
 
 @mock.patch("imap_processing.cli.hi_goodtimes.hi_goodtimes", autospec=True)
-def test_hi_l1c_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
-    """Test coverage for cli.Hi class with l1c goodtimes descriptor"""
+def test_hi_l1b_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
+    """Test coverage for cli.Hi class with l1b goodtimes descriptor"""
     mocks = mock_instrument_dependencies
-    # goodtimes returns paths directly, not datasets
-    expected_output_path = Path("/path/to/goodtimes_output.txt")
-    mock_hi_goodtimes.return_value = [expected_output_path]
+    # goodtimes now returns xr.Dataset for CDF writing
+    mock_goodtimes_ds = xr.Dataset()
+    mock_hi_goodtimes.return_value = [mock_goodtimes_ds]
+    mocks["mock_write_cdf"].return_value = Path("/path/to/goodtimes_output.cdf")
 
     # Mock load_cdf to return xr.Dataset objects
     mock_de_dataset = xr.Dataset()
@@ -403,7 +404,7 @@ def test_hi_l1c_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
 
     dependency_str = input_collection.serialize()
     instrument = Hi(
-        "l1c",
+        "l1b",
         "goodtimes",
         dependency_str,
         "20250415",
@@ -425,16 +426,10 @@ def test_hi_l1c_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
     assert isinstance(call_args.args[0], list)  # l1b_de_datasets is a list
     assert len(call_args.args[0]) == 7  # 7 DE datasets
     assert isinstance(call_args.args[2], xr.Dataset)  # l1b_hk is a dataset
-
-    # Check that start_date and version were passed correctly
-    assert call_args.args[5] == "20250415"  # start_date
-    assert call_args.args[6] == "v005"  # version
     assert call_args.args[1] == "repoint00004"  # current_repointing
 
-    # goodtimes returns paths directly, so write_cdf should not be called for
-    # the goodtimes output itself, but post_processing handles Path objects
-    # by just passing them through for upload
-    assert mocks["mock_write_cdf"].call_count == 0
+    # goodtimes now returns xr.Dataset, so write_cdf should be called
+    assert mocks["mock_write_cdf"].call_count == 1
 
 
 @mock.patch("imap_processing.cli.lo_l2.lo_l2", autospec=True)
