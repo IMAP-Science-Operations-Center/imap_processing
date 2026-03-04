@@ -97,7 +97,7 @@ class DailyLightcurve:
         if flags.size > 0:
             # Flatten epochs and flag rows into one axis: (n_epochs * 4, n_bins)
             flags_2d = flags.reshape(-1, self.number_of_bins)
-            # OR across all rows per bin: (n_bins,)
+            # Apply binary 'OR' operation across all rows per bin: (n_bins,)
             self.histogram_flag_array = np.bitwise_or.reduce(flags_2d, axis=0).astype(
                 np.uint8
             )
