@@ -145,7 +145,7 @@ class TestGoodtimesFromL1bDe:
 
     def test_from_l1b_de_attributes(self, goodtimes_instance):
         """Test that attributes are set correctly."""
-        assert goodtimes_instance.attrs["sensor"] == "sensor45"
+        assert goodtimes_instance.attrs["sensor"] == "45sensor"
         assert goodtimes_instance.attrs["pointing"] == 42
 
 
@@ -363,7 +363,7 @@ class TestGetGoodIntervals:
                 "esa_step": xr.DataArray(np.array([], dtype=np.uint8), dims=["met"]),
             },
             coords={"met": np.array([]), "spin_bin": np.arange(90)},
-            attrs={"sensor": "sensor45", "pointing": 0},
+            attrs={"sensor": "45sensor", "pointing": 0},
         )
 
         intervals = gt.goodtimes.get_good_intervals()
@@ -455,7 +455,7 @@ class TestToTxt:
         parts = lines[0].strip().split()
         assert len(parts) == 7
         assert parts[0] == "00042"  # pointing
-        assert parts[5] == "sensor45"  # sensor
+        assert parts[5] == "45sensor"  # sensor
 
     def test_to_txt_values(self, goodtimes_instance, tmp_path):
         """Test the values in the output file."""
@@ -473,7 +473,7 @@ class TestToTxt:
         assert int(met_end) == int(goodtimes_instance.coords["met"].values[0])
         assert int(bin_low) == 0
         assert int(bin_high) == 89
-        assert sensor == "sensor45"
+        assert sensor == "45sensor"
         assert int(esa_step) == goodtimes_instance["esa_step"].values[0]
 
     def test_to_txt_with_culled_bins(self, goodtimes_instance, tmp_path):
@@ -673,8 +673,6 @@ class TestFinalizeDataset:
             # Check for required global attributes
             assert "Logical_source" in finalized.attrs
             assert "Data_type" in finalized.attrs
-            assert "sensor" in finalized.attrs
-            assert "pointing" in finalized.attrs
 
     def test_finalize_formats_logical_source(self, goodtimes_instance):
         """Test that Logical_source is properly formatted with sensor."""
@@ -687,7 +685,7 @@ class TestFinalizeDataset:
 
             # Should contain the sensor designation
             assert (
-                "sensor45" in finalized.attrs["Logical_source"]
+                "45sensor" in finalized.attrs["Logical_source"]
                 or "45sensor" in finalized.attrs["Logical_source"]
             )
             # Should not contain template markers
@@ -754,7 +752,7 @@ class TestFinalizeDataset:
                 "esa_step": xr.DataArray(np.array([], dtype=np.uint8), dims=["met"]),
             },
             coords={"met": np.array([]), "spin_bin": np.arange(90)},
-            attrs={"sensor": "sensor45", "pointing": 1},
+            attrs={"sensor": "45sensor", "pointing": 1},
         )
 
         with patch("imap_processing.hi.hi_goodtimes.met_to_ttj2000ns") as mock_convert:
@@ -1126,7 +1124,7 @@ class TestDropDrfTimes:
                 "esa_step": xr.DataArray(np.ones(n_mets, dtype=np.uint8), dims=["met"]),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "sensor45", "pointing": 1},
+            attrs={"sensor": "45sensor", "pointing": 1},
         )
         return gt
 
@@ -1342,7 +1340,7 @@ class TestDropDrfTimes:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "sensor45", "pointing": 1},
+            attrs={"sensor": "45sensor", "pointing": 1},
         )
 
         # HK with DRF active for first 30 samples, then transition
@@ -1389,7 +1387,7 @@ class TestDropDrfTimes:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "sensor45", "pointing": 1},
+            attrs={"sensor": "45sensor", "pointing": 1},
         )
 
         # HK with DRF becoming active mid-way, then transition at end
@@ -1460,7 +1458,7 @@ class TestMarkOverflowPackets:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "sensor45", "pointing": 1},
+            attrs={"sensor": "45sensor", "pointing": 1},
         )
 
     def test_no_full_packets(self, mock_goodtimes, mock_config_df):
@@ -1931,7 +1929,7 @@ class TestStatisticalFilter0:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "sensor45", "pointing": 1},
+            attrs={"sensor": "45sensor", "pointing": 1},
         )
         return gt
 
@@ -2580,7 +2578,7 @@ class TestStatisticalFilter1:
                 ),
             },
             coords={"met": met_values, "spin_bin": np.arange(90)},
-            attrs={"sensor": "sensor45", "pointing": 1},
+            attrs={"sensor": "45sensor", "pointing": 1},
         )
         return gt
 
@@ -2871,7 +2869,7 @@ class TestStatisticalFilter2:
                 "met": met_values,
                 "spin_bin": np.arange(90),
             },
-            attrs={"sensor": "sensor45", "pointing": 1},
+            attrs={"sensor": "45sensor", "pointing": 1},
         )
         return ds
 
@@ -3395,8 +3393,8 @@ class TestApplyGoodtimesFilters:
 class TestHiGoodtimes:
     """Test suite for hi_goodtimes top-level function."""
 
-    def test_returns_empty_list_when_repoint_not_complete(self, tmp_path):
-        """Test that empty list is returned when repoint+3 has not occurred."""
+    def test_raises_value_error_when_repoint_not_complete(self, tmp_path):
+        """Test that ValueError is raised when repoint+3 has not occurred."""
         mock_repoint_df = pd.DataFrame(
             {
                 "repoint_id": [1, 2, 3],
@@ -3409,21 +3407,21 @@ class TestHiGoodtimes:
             "imap_processing.hi.hi_goodtimes.get_repoint_data"
         ) as mock_get_repoint:
             mock_get_repoint.return_value = mock_repoint_df
-
-            result = hi_goodtimes(
-                l1b_de_datasets=[mock_de],
-                current_repointing="repoint00001",
-                l1b_hk=mock_hk,
-                cal_product_config_path=tmp_path / "cal.csv",
-            )
-
-            assert result == []
+            with pytest.raises(
+                ValueError, match="Goodtimes cannot yet be processed for repoint00001"
+            ):
+                _ = hi_goodtimes(
+                    l1b_de_datasets=[mock_de],
+                    current_repointing="repoint00001",
+                    l1b_hk=mock_hk,
+                    cal_product_config_path=tmp_path / "cal.csv",
+                )
 
     def test_calls_find_current_index_when_repoint_complete(self, tmp_path):
         """Test that _find_current_pointing_index is called when repoint passes."""
         mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
         mock_goodtimes = MagicMock()
-        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_goodtimes.attrs = {"sensor": "45sensor"}
         mock_goodtimes.__getitem__ = MagicMock()
         # Mock the goodtimes accessor methods
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
@@ -3465,7 +3463,7 @@ class TestHiGoodtimes:
         """Test that cull_flags are set when DE set is incomplete."""
         mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
         mock_goodtimes = MagicMock()
-        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_goodtimes.attrs = {"sensor": "45sensor"}
         mock_cull_flags = MagicMock()
         mock_goodtimes.__getitem__ = MagicMock(return_value=mock_cull_flags)
         # Mock the goodtimes accessor methods
@@ -3508,7 +3506,7 @@ class TestHiGoodtimes:
         """Test that _apply_goodtimes_filters is called with 7 DE datasets."""
         mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
         mock_goodtimes = MagicMock()
-        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_goodtimes.attrs = {"sensor": "45sensor"}
         # Mock the goodtimes accessor methods
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
             "total_bins": 100,
@@ -3551,7 +3549,7 @@ class TestHiGoodtimes:
         """Test that hi_goodtimes returns list of datasets."""
         mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
         mock_goodtimes = MagicMock()
-        mock_goodtimes.attrs = {"sensor": "sensor45"}
+        mock_goodtimes.attrs = {"sensor": "45sensor"}
         # Mock the goodtimes accessor methods
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
             "total_bins": 100,

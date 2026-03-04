@@ -336,7 +336,6 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
             f"attribute: {l1b_de.attrs['Repointing']}"
         )
     attrs = {
-        "Logical_source": f"imap_hi_l1b_{sensor_number}sensor-goodtimes",
         "sensor": f"{sensor_number}sensor",
         "pointing": int(match["pointing_num"]),
     }
@@ -380,7 +379,7 @@ class GoodtimesAccessor:
           ESA step for each MET timestamp
       * Attributes
         * sensor : str
-         Sensor identifier ('sensor45' or 'sensor90')
+         Sensor identifier ('45sensor' or '90sensor')
         * pointing : int
          Pointing number for this dataset
 
@@ -738,78 +737,61 @@ class GoodtimesAccessor:
         Notes
         -----
         This method should be called after all goodtimes filtering is complete,
-        just before writing to CDF. The original dataset remains unchanged.
+        just before writing to CDF.
 
         Requires SPICE kernels to be loaded for MET to epoch conversion.
         """
         logger.info("Finalizing goodtimes dataset for CDF output")
-
-        # Convert MET to epoch (TT2000 nanoseconds)
-        met_values = self._obj.coords["met"].values
-        epoch_values = met_to_ttj2000ns(met_values)
 
         # Initialize CDF attribute manager
         attr_mgr = ImapCdfAttributes()
         attr_mgr.add_instrument_global_attrs("hi")
         attr_mgr.add_instrument_variable_attrs("hi")
 
-        # Create spin_bin coordinate with labels
-        spin_bin = np.arange(90, dtype=np.uint8)
-        spin_bin_label = np.array([f"{i}" for i in spin_bin], dtype=str)
+        # Convert MET coordinate to epoch coordinate (TT2000 nanoseconds)
+        met_values = self._obj.coords["met"].values
+        epoch_values = met_to_ttj2000ns(met_values)
 
-        # Create coordinates with CDF attributes
-        coords = {
-            "epoch": xr.DataArray(
-                epoch_values,
-                dims=["epoch"],
-                attrs=attr_mgr.get_variable_attributes("epoch", check_schema=False),
-            ),
-            "spin_bin": xr.DataArray(
-                spin_bin,
-                dims=["spin_bin"],
-                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin"),
-            ),
-            "spin_bin_label": xr.DataArray(
-                spin_bin_label,
-                dims=["spin_bin"],
-                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin_label"),
-            ),
-        }
+        # Rename met dimension to epoch and assign new epoch coordinate values
+        ds = self._obj.rename({"met": "epoch"})
+        ds = ds.assign_coords(epoch=epoch_values)
 
-        # Create data variables with CDF attributes
-        data_vars = {
-            "cull_flags": xr.DataArray(
-                self._obj["cull_flags"].values,
-                dims=["epoch", "spin_bin"],
-                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_cull_flags"),
-            ),
-            "met": xr.DataArray(
-                met_values,
-                dims=["epoch"],
-                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_met"),
-            ),
-            "esa_step": xr.DataArray(
-                self._obj["esa_step"].values,
-                dims=["epoch"],
-                attrs=attr_mgr.get_variable_attributes("hi_goodtimes_esa_step"),
-            ),
-        }
+        # Move met from coordinate to data variable
+        ds["met"] = xr.DataArray(met_values, dims=["epoch"])
 
-        # Update global attributes
-        global_attrs = attr_mgr.get_global_attributes("imap_hi_l1b_goodtimes_attrs")
-        # Copy existing attributes
-        for key, value in self._obj.attrs.items():
-            if key not in global_attrs:
-                global_attrs[key] = value
+        # Add spin_bin_label coordinate
+        spin_bin_label = np.array([f"{i}" for i in ds.coords["spin_bin"].values])
+        ds = ds.assign_coords(spin_bin_label=("spin_bin", spin_bin_label))
 
-        # Ensure Logical_source is properly formatted
-        if "{sensor}" in global_attrs.get("Logical_source", ""):
-            sensor_value = self._obj.attrs.get("sensor", "sensor45")
-            global_attrs["Logical_source"] = global_attrs["Logical_source"].format(
-                sensor=sensor_value
+        # Add coordinate attributes
+        ds["epoch"].attrs = attr_mgr.get_variable_attributes(
+            "epoch", check_schema=False
+        )
+        for coord_name in ds.coords:
+            attr_mgr_key = (
+                f"hi_goodtimes_{coord_name}" if coord_name != "epoch" else "epoch"
+            )
+            ds[coord_name].attrs = attr_mgr.get_variable_attributes(
+                attr_mgr_key, check_schema=False
+            )
+        ds["spin_bin"].attrs = attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin")
+
+        # Add variable attributes
+        for var_name in ds.data_vars:
+            ds[var_name].attrs.update(
+                attr_mgr.get_variable_attributes(f"hi_goodtimes_{var_name}")
             )
 
-        return xr.Dataset(data_vars, coords, global_attrs)
+        # Update global attributes
+        sensor_str = ds.attrs.pop("sensor")
+        ds.attrs = attr_mgr.get_global_attributes("imap_hi_l1b_goodtimes_attrs")
+
+        # Update Logical_source with sensor string
+        ds.attrs["Logical_source"] = ds.attrs["Logical_source"].format(
+            sensor=sensor_str
+        )
+
+        return ds
 
 
 # ==============================================================================
