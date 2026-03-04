@@ -98,7 +98,6 @@ histogram:
 
 pkts_file_name:
   CATDESC: Name of input file with CCSDS packets data
-  DISPLAY_TYPE: no_plot
   FIELDNAM: Packets-data input filename
   FILLVAL: " " # fill value for strings
   FORMAT: A49
@@ -106,7 +105,6 @@ pkts_file_name:
 
 ground_software_version:
   CATDESC: Version of ground software used for processing
-  DISPLAY_TYPE: no_plot
   FIELDNAM: Ground Software Version
   FILLVAL: " " # fill value for strings
   FORMAT: A4
