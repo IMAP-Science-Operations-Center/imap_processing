@@ -398,7 +398,7 @@ def test_hi_l1b_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
         ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00006_v001.cdf"),
         ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00007_v001.cdf"),
         ScienceInput("imap_hi_l1b_45sensor-hk_20250415-repoint00004_v001.cdf"),
-        AncillaryInput("imap_hi_45sensor-cal-prod_20240101_v001.json"),
+        AncillaryInput("imap_hi_45sensor-cal-prod_20240101_v001.csv"),
     )
     mocks["mock_pre_processing"].return_value = input_collection
 

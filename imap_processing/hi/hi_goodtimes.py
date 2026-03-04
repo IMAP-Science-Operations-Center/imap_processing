@@ -343,7 +343,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
         )
     attrs = {
         "Logical_source": f"imap_hi_l1b_{sensor_number}sensor-goodtimes",
-        "sensor": f"sensor{sensor_number}",
+        "sensor": f"{sensor_number}sensor",
         "pointing": int(match["pointing_num"]),
     }
 
