@@ -233,7 +233,7 @@ def _apply_goodtimes_filters(
     qualified_coincidence_types: set[int] = set()
     for coin_types in cal_product_config["coincidence_type_values"]:
         qualified_coincidence_types.update(coin_types)
-    logger.debug(f"Qualified coincidence types: {qualified_coincidence_types}")
+    logger.info(f"Qualified coincidence types: {qualified_coincidence_types}")
 
     # === Apply culling filters ===
 
@@ -324,7 +324,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
             np.zeros((len(met), 90), dtype=np.uint8),
             dims=["met", "spin_bin"],
         ),
-        "esa_step": esa_step,
+        "esa_step": xr.DataArray(esa_step.values, dims=["met"]),
     }
 
     # Create attributes
@@ -961,7 +961,7 @@ def mark_drf_times(
         return
 
     # Get HK times and DRF status from fsw_thruster_warn
-    hk_met = hk["ccsds_met"]
+    hk_met = hk["shcoarse"]
     drf_status = hk["fsw_thruster_warn"].values != 0
 
     # Find transitions from DRF active (1) to inactive (0) using numpy.diff

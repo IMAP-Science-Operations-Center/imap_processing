@@ -1133,7 +1133,7 @@ class TestDropDrfTimes:
         """Create HK data with one DRF transition from 1->0."""
         # HK packets every 60 seconds for 2 hours
         n_hk = 120
-        ccsds_met = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
+        shcoarse = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
 
         # DRF active for first 30 minutes, then inactive
         # Transition at index 30 (MET 2800.0)
@@ -1142,7 +1142,7 @@ class TestDropDrfTimes:
 
         hk = xr.Dataset(
             {
-                "ccsds_met": (["epoch"], ccsds_met),
+                "shcoarse": (["epoch"], shcoarse),
                 "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
             }
         )
@@ -1153,7 +1153,7 @@ class TestDropDrfTimes:
         """Create HK data with multiple DRF transitions."""
         # HK packets every 60 seconds for 2 hours
         n_hk = 120
-        ccsds_met = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
+        shcoarse = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
 
         # Multiple DRF periods:
         # Active: 0-30, inactive: 30-60, active: 60-90, inactive: 90-120
@@ -1164,7 +1164,7 @@ class TestDropDrfTimes:
 
         hk = xr.Dataset(
             {
-                "ccsds_met": (["epoch"], ccsds_met),
+                "shcoarse": (["epoch"], shcoarse),
                 "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
             }
         )
@@ -1174,12 +1174,12 @@ class TestDropDrfTimes:
     def hk_no_drf(self):
         """Create HK data with no DRF activity."""
         n_hk = 120
-        ccsds_met = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
+        shcoarse = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
         fsw_thruster_warn = np.zeros(n_hk, dtype=np.uint8)
 
         hk = xr.Dataset(
             {
-                "ccsds_met": (["epoch"], ccsds_met),
+                "shcoarse": (["epoch"], shcoarse),
                 "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
             }
         )
@@ -1189,12 +1189,12 @@ class TestDropDrfTimes:
     def hk_always_drf(self):
         """Create HK data with DRF always active (no transitions)."""
         n_hk = 120
-        ccsds_met = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
+        shcoarse = np.arange(1000.0, 1000.0 + n_hk * 60, 60)
         fsw_thruster_warn = np.ones(n_hk, dtype=np.uint8)
 
         hk = xr.Dataset(
             {
-                "ccsds_met": (["epoch"], ccsds_met),
+                "shcoarse": (["epoch"], shcoarse),
                 "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
             }
         )
@@ -1205,7 +1205,7 @@ class TestDropDrfTimes:
         """Create empty HK data."""
         hk = xr.Dataset(
             {
-                "ccsds_met": (["epoch"], np.array([])),
+                "shcoarse": (["epoch"], np.array([])),
                 "fsw_thruster_warn": (["epoch"], np.array([], dtype=np.uint8)),
             }
         )
@@ -1345,13 +1345,13 @@ class TestDropDrfTimes:
 
         # HK with DRF active for first 30 samples, then transition
         # Transition at index 30 gives window that exactly matches goodtimes start
-        ccsds_met = np.arange(2000.0, 4000.0, 60)
-        fsw_thruster_warn = np.zeros(len(ccsds_met), dtype=np.uint8)
+        shcoarse = np.arange(2000.0, 4000.0, 60)
+        fsw_thruster_warn = np.zeros(len(shcoarse), dtype=np.uint8)
         fsw_thruster_warn[0:30] = 1  # Active for first 30 samples
 
         hk = xr.Dataset(
             {
-                "ccsds_met": (["epoch"], ccsds_met),
+                "shcoarse": (["epoch"], shcoarse),
                 "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
             }
         )
@@ -1391,14 +1391,14 @@ class TestDropDrfTimes:
         )
 
         # HK with DRF becoming active mid-way, then transition at end
-        ccsds_met = np.arange(1000.0, 3000.0, 60)
-        fsw_thruster_warn = np.zeros(len(ccsds_met), dtype=np.uint8)
+        shcoarse = np.arange(1000.0, 3000.0, 60)
+        fsw_thruster_warn = np.zeros(len(shcoarse), dtype=np.uint8)
         fsw_thruster_warn[-10:] = 1  # Active for last 10 samples
         fsw_thruster_warn[-1] = 0  # Transition at last sample
 
         hk = xr.Dataset(
             {
-                "ccsds_met": (["epoch"], ccsds_met),
+                "shcoarse": (["epoch"], shcoarse),
                 "fsw_thruster_warn": (["epoch"], fsw_thruster_warn),
             }
         )
