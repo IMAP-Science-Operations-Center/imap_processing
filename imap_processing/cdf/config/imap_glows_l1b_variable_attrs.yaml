@@ -1,8 +1,8 @@
 int_fillval: &int_fillval -9223372036854775808
-max_uint32: &max_uint32 4294967295
-max_uint32_min_one: &max_uint32_min_one 4294967294
 max_uint16: &max_uint16 65535
 max_uint16_min_one: &max_uint16_min_one 65534
+max_uint32: &max_uint32 4294967295
+max_uint32_min_one: &max_uint32_min_one 4294967294
 min_epoch: &min_epoch -315575942816000000
 max_epoch: &max_epoch 3155630469184000000
 
@@ -66,16 +66,16 @@ flag_data_defaults: &flag_data_defaults
 
 bins_attrs:
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 3599
   CATDESC: Bin number in histogram
   FIELDNAM: Bin number
-  FORMAT: I4
-  VAR_TYPE: support_data
-  LABLAXIS: Bin no.
   FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Bin no.
   MONOTON: INCREASE
   SCALETYP: linear
+  VALIDMAX: 3599
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 within_the_second_attrs: # Used to be per_second_attrs
   <<:  *default_attrs
@@ -116,26 +116,26 @@ within_the_second_attrs: # Used to be per_second_attrs
 
 histogram:
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 255
   CATDESC: Histogram of photon counts in scanning-circle bins
   DEPEND_0: epoch
   DEPEND_1: bins
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Histogram of photon counts
+  FILLVAL: *max_uint16
+  FORMAT: I3
   LABL_PTR_1: bins_label
   LABLAXIS: Counts
-  FIELDNAM: Histogram of photon counts
-  FORMAT: I3
-  DISPLAY_TYPE: spectrogram
-  FILLVAL: *max_uint16
   UNITS: '#'
+  VALIDMAX: 255
+  VALIDMIN: 0
   VAR_TYPE: data
 
 pkts_file_name:
-  DEPEND_0:
   CATDESC: Name of input file with CCSDS packet data
+  DEPEND_0:
   DISPLAY_TYPE: no_plot
   FIELDNAM: CCSDS packet data input filename
-  FILLVAL: " "
+  FILLVAL: " " # fill value for strings
   FORMAT: A49
   VAR_TYPE: metadata
 
@@ -167,9 +167,9 @@ imap_time_offset:
   <<: *time_data_defaults
   CATDESC: Accumulation time for histogram (IMAP clock)
   FIELDNAM: Accum. time (IMAP clock)
+  FORMAT: F10.6
   LABLAXIS: Accum. time
   VALIDMAX: 999.0
-  FORMAT: F10.6
 
 glows_start_time:
   <<: *time_data_defaults
@@ -181,9 +181,9 @@ glows_time_offset:
   <<: *time_data_defaults
   CATDESC: Accumulation time for histogram (GLOWS clock)
   FIELDNAM: Accum. time (GLOWS clock)
+  FORMAT: F10.6
   LABLAXIS: Accum. time
   VALIDMAX: 999.0
-  FORMAT: F10.6
 
 is_generated_on_ground:
   <<: *flag_data_defaults
@@ -698,7 +698,7 @@ ground_software_version:
   CATDESC: Version of ground software used for processing
   DISPLAY_TYPE: no_plot
   FIELDNAM: Ground Software Version
-  FILLVAL: " "
+  FILLVAL: " " # fill value for strings
   FORMAT: A4
   VAR_TYPE: metadata
 
