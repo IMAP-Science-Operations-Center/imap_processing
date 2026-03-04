@@ -535,7 +535,6 @@ class DirectEventL1B:
     direct_event_glows_times: np.ndarray | None = field(init=False, default=None)
     # 3rd value is pulse length
     direct_event_pulse_lengths: np.ndarray | None = field(init=False, default=None)
-    # pkts_file_name: str = ""
     # TODO: where does the multi-event flag go?
 
     def __post_init__(
