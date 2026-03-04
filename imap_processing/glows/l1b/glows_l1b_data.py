@@ -863,13 +863,13 @@ class HistogramL1B:
         # get the data for the correct day
         day_exclusions = ancillary_exclusions.limit_by_day(day)
 
+        # Generate ISO datetime string using SPICE functions
+        datetime64_time = met_to_datetime64(self.imap_start_time)
+        self.unique_block_identifier = np.datetime_as_string(datetime64_time, "s")
         # Initialize histogram flag array: [is_close_to_uv_source,
         # is_inside_excluded_region, is_excluded_by_instr_team,
         # is_suspected_transient] x 3600 bins
         self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
-        # Generate ISO datetime string using SPICE functions
-        datetime64_time = met_to_datetime64(self.imap_start_time)
-        self.unique_block_identifier = np.datetime_as_string(datetime64_time, "s")
         self.flags = np.ones((FLAG_LENGTH,), dtype=np.uint8)
 
     def update_spice_parameters(self) -> None:
@@ -1021,6 +1021,10 @@ class HistogramL1B:
             look_vecs_dps,
             SpiceFrame.IMAP_DPS,
             SpiceFrame.ECLIPJ2000,
+            # This is for cases in which a histogram falls in a 2-min ck gap.
+            # DPS CK coverage intentionally doesn't include the
+            # repointing transition period.
+            allow_spice_noframeconnect=True,
         )
 
         # UV source vectors.
@@ -1080,6 +1084,31 @@ class HistogramL1B:
 
         return close_to_uv_source, inside_excluded_region
 
+    def flag_from_mask_dataset(self, mask_dataset: xr.Dataset) -> np.ndarray:
+        """
+        Look up the per-bin boolean mask for this histogram block.
+
+        Parameters
+        ----------
+        mask_dataset : xr.Dataset
+            Dataset with ``l1b_unique_block_identifier`` and
+            ``histogram_mask_array`` variables indexed by ``time_block``.
+
+        Returns
+        -------
+        mask : np.ndarray
+            Boolean array of shape (n_bins,). True where the bin is flagged.
+        """
+        identifiers = mask_dataset["l1b_unique_block_identifier"].values
+        match = np.where(identifiers == self.unique_block_identifier)[0]
+        if not match.size:
+            return np.zeros(len(self.histogram), dtype=bool)
+        mask_str = mask_dataset["histogram_mask_array"].values[match[0]]
+
+        # Parse the "0"/"1" character string into a boolean array
+        mask = np.array(list(mask_str)) == "1"
+        return mask
+
     def _compute_histogram_flag_array(
         self, exclusions: AncillaryExclusions
     ) -> np.ndarray:
@@ -1089,8 +1118,8 @@ class HistogramL1B:
         Creates a (4, 3600) array where each row represents a different flag type:
         - Row 0: is_close_to_uv_source
         - Row 1: is_inside_excluded_region
-        - Row 2: is_excluded_by_instr_team (TODO)
-        - Row 3: is_suspected_transient (TODO)
+        - Row 2: is_excluded_by_instr_team
+        - Row 3: is_suspected_transient
 
         Parameters
         ----------
@@ -1117,9 +1146,25 @@ class HistogramL1B:
             GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
         )
 
-        # inside if within half pixel size of any excluded region center
+        # inside if within half bin width of any excluded region center
         histogram_flags[1][inside_excluded_region] |= (
             GLOWSL1bFlags.IS_INSIDE_EXCLUDED_REGION.value
+        )
+
+        # bins excluded by the instrument team for the matching histogram block
+        excluded_by_instr = self.flag_from_mask_dataset(
+            exclusions.exclusions_by_instr_team
+        )
+        histogram_flags[2][excluded_by_instr] |= (
+            GLOWSL1bFlags.IS_EXCLUDED_BY_INSTR_TEAM.value
+        )
+
+        # bins flagged as suspected transients for the matching histogram block
+        suspected_transient = self.flag_from_mask_dataset(
+            exclusions.suspected_transients
+        )
+        histogram_flags[3][suspected_transient] |= (
+            GLOWSL1bFlags.IS_SUSPECTED_TRANSIENT.value
         )
 
         return histogram_flags

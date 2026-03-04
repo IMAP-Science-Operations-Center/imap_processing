@@ -616,4 +616,11 @@ def test_hist_spice_output(
         # (since the 0.05° threshold is exactly half the 0.1° bin spacing.
         assert np.count_nonzero(region_mask) == 1
 
+        # Test flag_from_mask_dataset using the fixture data
+        instr_mask = hist_data.flag_from_mask_dataset(
+            day_exclusions.exclusions_by_instr_team
+        )
+        assert instr_mask.shape == (3600,)
+        assert np.count_nonzero(instr_mask) == 10
+
         # TODO: Maxine will validate actual data with GLOWS team
