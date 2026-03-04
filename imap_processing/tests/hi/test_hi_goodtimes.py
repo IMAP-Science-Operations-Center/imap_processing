@@ -3324,8 +3324,8 @@ class TestApplyGoodtimesFilters:
             mock_f5.assert_called_once()
             mock_f6.assert_called_once()
 
-    def test_handles_statistical_filter_errors(self, tmp_path):
-        """Test that ValueError from statistical filters is caught."""
+    def test_raises_statistical_filter_0_errors(self, tmp_path):
+        """Test that ValueError from statistical filter 0 is raised."""
         mock_goodtimes = MagicMock()
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
             "good_bins": 100,
@@ -3345,22 +3345,51 @@ class TestApplyGoodtimesFilters:
             patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_statistical_filter_0",
-                side_effect=ValueError("test"),
+                side_effect=ValueError("filter 0 error"),
             ),
+        ):
+            with pytest.raises(ValueError, match="filter 0 error"):
+                _apply_goodtimes_filters(
+                    mock_goodtimes,
+                    [mock_l1b_de],
+                    current_index=0,
+                    l1b_hk=mock_hk,
+                    cal_product_config_path=tmp_path / "cal.csv",
+                )
+
+    def test_raises_statistical_filter_1_errors(self, tmp_path):
+        """Test that ValueError from statistical filter 1 is raised."""
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 100,
+            "total_bins": 100,
+        }
+        mock_l1b_de = MagicMock()
+        mock_hk = MagicMock()
+        mock_cal = {"coincidence_type_values": [{12}]}
+
+        with (
+            patch(
+                "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
+                return_value=mock_cal,
+            ),
+            patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
+            patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
+            patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
+            patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_0"),
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_statistical_filter_1",
-                side_effect=ValueError("test"),
+                side_effect=ValueError("filter 1 error"),
             ),
-            patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"),
         ):
-            # Should not raise - errors are caught and logged
-            _apply_goodtimes_filters(
-                mock_goodtimes,
-                [mock_l1b_de],
-                current_index=0,
-                l1b_hk=mock_hk,
-                cal_product_config_path=tmp_path / "cal.csv",
-            )
+            with pytest.raises(ValueError, match="filter 1 error"):
+                _apply_goodtimes_filters(
+                    mock_goodtimes,
+                    [mock_l1b_de],
+                    current_index=0,
+                    l1b_hk=mock_hk,
+                    cal_product_config_path=tmp_path / "cal.csv",
+                )
 
 
 class TestHiGoodtimes:

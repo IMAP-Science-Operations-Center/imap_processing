@@ -110,11 +110,11 @@ def hi_goodtimes(
     )
 
     if not required_repoints_complete:
-        logger.info(
+        raise ValueError(
             f"Goodtimes cannot yet be processed for {current_repointing}: "
-            f"repoint{future_repoint_id:05d} has not yet been completed."
+            f"repoint{future_repoint_id:05d} has not yet been completed "
+            f"according to the repoint table."
         )
-        return []
 
     # Find the current pointing index in the datasets
     current_index = _find_current_pointing_index(l1b_de_datasets, current_repointing)
@@ -251,22 +251,16 @@ def _apply_goodtimes_filters(
 
     # 4. Statistical Filter 0 - drastic background changes
     logger.info("Applying filter: mark_statistical_filter_0")
-    try:
-        mark_statistical_filter_0(goodtimes_ds, l1b_de_datasets, current_index)
-    except ValueError as e:
-        logger.warning(f"Skipping Statistical Filter 0: {e}")
+    mark_statistical_filter_0(goodtimes_ds, l1b_de_datasets, current_index)
 
     # 5. Statistical Filter 1 - isotropic count rate increases
     logger.info("Applying filter: mark_statistical_filter_1")
-    try:
-        mark_statistical_filter_1(
-            goodtimes_ds,
-            l1b_de_datasets,
-            current_index,
-            qualified_coincidence_types,
-        )
-    except ValueError as e:
-        logger.warning(f"Skipping Statistical Filter 1: {e}")
+    mark_statistical_filter_1(
+        goodtimes_ds,
+        l1b_de_datasets,
+        current_index,
+        qualified_coincidence_types,
+    )
 
     # 6. Statistical Filter 2 - short-lived event pulses
     logger.info("Applying filter: mark_statistical_filter_2")
