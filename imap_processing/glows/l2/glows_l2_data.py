@@ -90,7 +90,8 @@ class DailyLightcurve:
         # TODO: Average this, or should they all be the same?
         self.spin_angle = np.average(l1b_data["imap_spin_angle_bin_cntr"].data, axis=0)
 
-        # Apply 'OR' operation to histogram_flag_array across all good-time L1B blocks per bin.
+        # Apply 'OR' operation to histogram_flag_array across all
+        # good-time L1B blocks per bin.
         # Per Section 12.3.4: a flag is True in L2 if it is True in any L1B block.
         # flags shape: (n_epochs, 4, n_bins)
         flags = l1b_data["histogram_flag_array"].data
