@@ -416,10 +416,11 @@ class MapDescriptor:
         """
         try:
             return SpiceFrame[f"IMAP_{frame_str.upper()}"]
-        except KeyError:
-            raise NotImplementedError(
-                f"Coordinate frame {frame_str} is not yet implemented."
-            )
+        except KeyError as err:
+            raise KeyError(
+                f"Coordinate frame {frame_str} which translates to "
+                f"SPICE frame IMAP_{frame_str.upper()} is not recognized."
+            ) from err
 
     def to_empty_map(
         self,
