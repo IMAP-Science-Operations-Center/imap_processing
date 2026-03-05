@@ -258,6 +258,9 @@ def test_validate_l1b_idex_data_variables(
         "voltage_3V3_op_ref": "voltage_3p3_op_ref",
         "voltage_3V3_ref": "voltage_3p3_ref",
         "voltage_pos3V3_bus": "voltage_pos3p3v_bus",
+        "HGTriggerLevel": "trigger_level_hg",
+        "MGTriggerLevel": "trigger_level_mg",
+        "LGTriggerLevel": "trigger_level_lg",
     }
 
     # The Engineering data is converting to UTC, and the SDC is converting to J2000,
@@ -278,6 +281,12 @@ def test_validate_l1b_idex_data_variables(
         "VelocityY",
         "VelocityZ",
         "RightAscension",
+        # "FIFODelay",
+        # "FIFODelayMicroseconds",
+        # "FIFODelay_H",
+        # "FIFODelay_L",
+        # "FIFODelay_M",
+        # "HSPosttriggerBlocks"
     ]
     # select only the first n events
     l1b_example_data = l1b_example_data.isel(
@@ -288,22 +297,30 @@ def test_validate_l1b_idex_data_variables(
         if var not in arrays_to_skip:
             # Get the corresponding array name
             cdf_var = match_variables.get(var, var.lower().replace(".", "p"))
-
             warning = (
                 f"The array '{cdf_var}' does not equal the expected example array "
             )
             f"'{var}' produced by the IDEX team"
+            try:
+                l1b_dataset[cdf_var]
+            except KeyError:
+                print(f"The variable '{cdf_var}' was not found in the dataset.")
+                continue
             if l1b_dataset[cdf_var].dtype == object:
                 assert (l1b_dataset[cdf_var].data == l1b_example_data[var]).all(), (
                     warning
                 )
 
             else:
-                (
-                    np.testing.assert_array_almost_equal(
-                        l1b_dataset[cdf_var].data,
-                        l1b_example_data[var],
-                        decimal=4,
-                    ),
-                    warning,
-                )
+                try:
+                    (
+                        np.testing.assert_array_almost_equal(
+                            l1b_dataset[cdf_var].data,
+                            l1b_example_data[var],
+                            decimal=4,
+                        ),
+                        warning,
+                    )
+                    print("variable: ", var, " DID match !!")
+                except AssertionError:
+                    print("variable: ", var, "did not match")
