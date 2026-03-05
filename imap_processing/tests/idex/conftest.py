@@ -17,7 +17,9 @@ TEST_L0_FILE_EVT = TEST_DATA_PATH / "imap_idex_l0_raw_20250108_v001.pkts"  # 141
 TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 1419
 
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
-L1B_EXAMPLE_FILE = TEST_DATA_PATH / "ois_output_12182023_184030.h5"
+L1B_EXAMPLE_FILE = (
+    TEST_DATA_PATH / "imap_idex_l0_raw_20231218_v001.h5"
+)  # "ois_output_12182023_184030.h5"
 L1B_EXAMPLE_FILE2 = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
 
 L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
@@ -99,6 +101,19 @@ def l1b_example_data(_download_test_data):
       A dictionary containing the 6 waveform and telemetry arrays
     """
     return load_hdf_file(L1B_EXAMPLE_FILE)
+
+
+@pytest.fixture
+def l1b_example_data_2(_download_test_data):
+    """
+    Pytest fixture to load example L1B data (produced by the IDEX team) for testing.
+
+    Returns
+    -------
+    dict
+      A dictionary containing the 6 waveform and telemetry arrays
+    """
+    return load_hdf_file(L1B_EXAMPLE_FILE2)
 
 
 @pytest.fixture

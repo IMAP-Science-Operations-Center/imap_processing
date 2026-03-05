@@ -228,7 +228,7 @@ def test_get_spice_data(
 
 @pytest.mark.external_test_data
 def test_validate_l1b_idex_data_variables(
-    l1b_dataset: xr.Dataset, l1b_example_data: xr.Dataset
+    l1b_dataset: xr.Dataset, l1b_example_data: xr.Dataset, l1b_example_data_2
 ):
     """
     Verify that each of the 6 waveform and telemetry arrays are equal to the
@@ -281,12 +281,12 @@ def test_validate_l1b_idex_data_variables(
         "VelocityY",
         "VelocityZ",
         "RightAscension",
-        # "FIFODelay",
-        # "FIFODelayMicroseconds",
-        # "FIFODelay_H",
-        # "FIFODelay_L",
-        # "FIFODelay_M",
-        # "HSPosttriggerBlocks"
+        "FIFODelay",
+        "FIFODelayMicroseconds",
+        "FIFODelay_H",
+        "FIFODelay_L",
+        "FIFODelay_M",
+        "HSPosttriggerBlocks",
     ]
     # select only the first n events
     l1b_example_data = l1b_example_data.isel(
@@ -313,14 +313,11 @@ def test_validate_l1b_idex_data_variables(
 
             else:
                 try:
-                    (
-                        np.testing.assert_array_almost_equal(
-                            l1b_dataset[cdf_var].data,
-                            l1b_example_data[var],
-                            decimal=4,
-                        ),
-                        warning,
+                    np.testing.assert_array_almost_equal(
+                        l1b_dataset[cdf_var].data,
+                        np.squeeze(l1b_example_data[var]),
+                        decimal=4,
                     )
                     print("variable: ", var, " DID match !!")
                 except AssertionError:
-                    print("variable: ", var, "did not match")
+                    print(f"variable: {var} did not match")

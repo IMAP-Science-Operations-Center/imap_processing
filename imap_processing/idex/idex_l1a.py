@@ -582,7 +582,7 @@ class RawDustEvent:
         time_low_sample_rate_data : numpy.ndarray
             Low time sample data array.
         """
-        time_low_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_low_sample_rate_init = np.arange(num_samples, dtype=np.float64)
         time_low_sample_rate_data = (
             self.LOW_SAMPLE_RATE * time_low_sample_rate_init
             - self.low_sample_trigger_time
@@ -609,7 +609,7 @@ class RawDustEvent:
         time_high_sample_rate_data : numpy.ndarray
             High sample time data array.
         """
-        time_high_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_high_sample_rate_init = np.arange(num_samples, dtype=np.float64)
         time_high_sample_rate_data = (
             self.HIGH_SAMPLE_RATE * time_high_sample_rate_init
             - self.high_sample_trigger_time
