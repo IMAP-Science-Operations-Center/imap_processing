@@ -176,5 +176,4 @@ def calculate_extendedspin(
     extendedspin_dict["energy_range_edges"] = np.array(energy_ranges)
 
     extendedspin_dataset = create_dataset(extendedspin_dict, name, "l1b")
-
     return extendedspin_dataset
