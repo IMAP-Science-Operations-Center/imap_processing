@@ -505,11 +505,10 @@ class RawDustEvent:
             * (num_low_sample_pretrigger_blocks + 1)
             * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK
         )
-        self.high_sample_trigger_time = (
-            self.HIGH_SAMPLE_RATE
-            * (num_high_sample_pretrigger_blocks + 1)
-            * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
-            - self.HIGH_SAMPLE_RATE * delay
+        self.high_sample_trigger_time = self.HIGH_SAMPLE_RATE * (
+            num_high_sample_pretrigger_blocks + 1
+        ) * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK - self.HIGH_SAMPLE_RATE * (
+            delay - 1
         )
 
     def _parse_high_sample_waveform(self, waveform_raw: str) -> list[int]:
