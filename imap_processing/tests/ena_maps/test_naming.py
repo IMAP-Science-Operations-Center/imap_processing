@@ -170,6 +170,7 @@ class TestNaming:
         assert MapDescriptor.get_map_coord_frame("hre") is SpiceFrame.IMAP_HRE
         assert MapDescriptor.get_map_coord_frame("hnu") is SpiceFrame.IMAP_HNU
         assert MapDescriptor.get_map_coord_frame("gcs") is SpiceFrame.IMAP_GCS
+        assert MapDescriptor.get_map_coord_frame("hrc") is SpiceFrame.IMAP_HRC
 
         # Test with not implemented 'hgi'
         with pytest.raises(NotImplementedError):
