@@ -490,7 +490,7 @@ def test_get_valid_earth_angle_events(mock_spkezr):
     de_dps_velocity = np.random.random((12, 3))
     de_dataset = xr.Dataset(
         {
-            "de_dps_velocity": (("epoch", "component"), de_dps_velocity),
+            "velocity_dps_sc": (("epoch", "component"), de_dps_velocity),
             "event_times": ("epoch", np.arange(12)),
         }
     )
@@ -608,7 +608,7 @@ def test_get_valid_events_per_energy_range_ultra45(mock_spkezr):
 
     de_dataset = xr.Dataset(
         {
-            "de_dps_velocity": (("epoch", "component"), de_dps_velocity),
+            "velocity_dps_sc": (("epoch", "component"), de_dps_velocity),
             "event_times": ("epoch", np.full(len(energy), 798033671)),
             "energy_spacecraft": ("epoch", energy),
             "quality_outliers": ("epoch", np.full(len(energy), 0)),
@@ -815,10 +815,10 @@ def test_flag_statistical_outliers_invalid_events():
         energy_range_edges,
         mask,
     )
-    # check that all flags are set because there are no valid events in any energy bin
-    # so it fails the stat outlier check by default.
+    # check that no flags are set because there were no valid events to calculate
+    # statistics on.
     np.testing.assert_array_equal(
-        quality_flags, np.ones_like(quality_flags, dtype=bool)
+        quality_flags, np.zeros_like(quality_flags, dtype=bool)
     )
     # check that all energy bins are marked as converged (no valid events is not a
     # failure case for convergence since we just can't calculate statistics.
