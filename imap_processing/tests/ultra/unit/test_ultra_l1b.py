@@ -63,12 +63,19 @@ def mock_data_l1b_extendedspin_dict():
     )
     spin_start_time = np.array([0, 1, 2], dtype="uint64")
     quality = np.zeros((2, 3), dtype="uint16")
+    # These should be shape: (3,)
+    energy_dep_flags = np.zeros(len(spin), dtype="uint16")
     data_dict = {
         "epoch": epoch,
         "spin_number": spin,
         "energy_bin_geometric_mean": energy,
         "spin_start_time": spin_start_time,
         "quality_ena_rates": quality,
+        "quality_low_voltage": energy_dep_flags,
+        "quality_high_energy": energy_dep_flags,
+        "quality_statistics": energy_dep_flags,
+        "energy_range_flags": np.ones(5, dtype=np.uint16),
+        "energy_range_edges": np.ones(4, dtype=np.float64),
     }
     return data_dict
 

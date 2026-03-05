@@ -395,6 +395,7 @@ def test_get_spacecraft_exposure_times(
     ancillary_files,
     use_fake_spin_data_for_time,
     aux_dataset,
+    mock_goodtimes_dataset,
 ):
     """Test get_spacecraft_exposure_times function."""
     data_start_time = 445015665.0
@@ -422,12 +423,9 @@ def test_get_spacecraft_exposure_times(
         pixels_below_threshold,
         boundary_sf,
         aux_dataset,
-        (
-            data_start_time,
-            data_start_time,
-        ),
-        46,  # number of energy bins
+        build_energy_bins()[2],
         pix,
+        goodtimes_dataset=mock_goodtimes_dataset,
     )
     np.testing.assert_array_equal(exposure_pointing.shape, (46, pix))
     np.testing.assert_array_equal(deadtimes.shape, (steps,))

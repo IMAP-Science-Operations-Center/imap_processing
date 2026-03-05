@@ -561,33 +561,30 @@ def get_energy_and_spin_dependent_rejection_mask(
         goodtimes_dataset[flag_name].values
         for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
     ]
-    ebin_flags = goodtimes_dataset["energy_range_flags"].values
-    # Create a dict of spin_number to index in the goodtimes dataset
-    spin_to_idx = {
-        spin: idx for idx, spin in enumerate(goodtimes_dataset["spin_number"].values)
-    }
-
     # Initialize all events to not rejected
-    rejected = np.full(energy.shape, False, dtype=bool)
-    # loop through each energy bin and flag events that fall within an energy
-    # bin and have the corresponding energy bin flag set in the goodtimes dataset.
-    for i in range(len(energy_range_edges) - 1):
-        mask = (energy >= energy_range_edges[i]) & (energy < energy_range_edges[i + 1])
-        goodtimes_inds = [spin_to_idx[spin] for spin in spin_number[mask]]
-        # Get the flag value for the current energy bin
-        energy_bin_flag = ebin_flags[i]
-        # If the flag is set for any of the quality arrays, then reject
-        # the event.
-        flagged_at_spins = (
-            np.bitwise_or.reduce(
-                [qf[goodtimes_inds] & energy_bin_flag for qf in flag_arrays]
-            )
-            > 0
-        )
+    rejected = np.zeros_like(energy, dtype=bool)
+    ebin_flags = goodtimes_dataset["energy_range_flags"].values
+    # Get the index of the spin number in the goodtimes dataset for each event
+    # all spin numbers should be present in the goodtimes dataset since we have already
+    # filtered any events that are not
+    spin_idx = np.searchsorted(goodtimes_dataset.spin_number, spin_number)
+    event_energy_bins: NDArray = (np.digitize(energy, energy_range_edges) - 1).astype(
+        np.intp
+    )
+    in_valid_bin = (event_energy_bins >= 0) & (event_energy_bins < len(ebin_flags))
+    # get the flags for each event
+    event_flags = np.zeros_like(energy, dtype=np.uint16)
+    event_flags[in_valid_bin] = ebin_flags[event_energy_bins[in_valid_bin]]
+    for qf_array in flag_arrays:
+        # select the quality flag for each event
+        quality_flags_at_events = qf_array[spin_idx]
+        # If that flag is "turned on" for the spin of that event, and the event is in
+        # an energy bin that is flagged for culling, then we reject that event.
+        rejected |= quality_flags_at_events & event_flags > 0
 
-        # Mark flagged events as rejected
-        mask_indices = np.where(mask)[0]
-        rejected[mask_indices[flagged_at_spins]] = True
+    logger.info(
+        "Rejected %d events based on energy and spin dependent flags.", np.sum(rejected)
+    )
 
     return rejected
 
