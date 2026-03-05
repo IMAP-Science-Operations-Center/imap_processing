@@ -119,7 +119,9 @@ def test_l2_hi_sectored(mock_get_file_paths):
             )
             spin_vals = processed_l2[variable].values
             # All values should be finite and lie within a reasonable angular range.
-            assert np.all(np.isfinite(spin_vals)), "spin_angle contains non-finite values"
+            assert np.all(np.isfinite(spin_vals)), (
+                "spin_angle contains non-finite values"
+            )
             assert np.min(spin_vals) >= 0.0, "spin_angle has values below 0 degrees"
             assert np.max(spin_vals) <= 360.0, "spin_angle has values above 360 degrees"
             continue
