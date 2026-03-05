@@ -13,8 +13,52 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     DirectEventL1B,
     HistogramL1B,
     PipelineSettings,
+    get_threshold,
 )
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
+
+
+def _update_daily_statistical_error_flag(
+    output_dataset: xr.Dataset,
+    pipeline_settings: PipelineSettings,
+) -> xr.Dataset:
+    """
+    Update flag index 11 (is_beyond_daily_statistical_error) for all histograms.
+
+    Compares each histogram's total event count against the daily mean. Histograms
+    that deviate by more than n_sigma from the mean are flagged as bad (0).
+
+    This must be called after all histograms for the day have been processed, since
+    the daily mean and standard deviation require the full day's data.
+
+    Parameters
+    ----------
+    output_dataset : xr.Dataset
+        The L1B output dataset from create_l1b_hist_output.
+    pipeline_settings : PipelineSettings
+        Pipeline settings containing n_sigma thresholds.
+
+    Returns
+    -------
+    xr.Dataset
+        The output dataset with flag index 11 updated.
+    """
+    thresholds = pipeline_settings.processing_thresholds
+    n_sigma_lower = get_threshold(thresholds, "n_sigma_threshold_lower")
+    n_sigma_upper = get_threshold(thresholds, "n_sigma_threshold_upper")
+
+    counts = output_dataset["number_of_events"].values.astype(float)
+    daily_mean = np.mean(counts)
+    daily_std = np.std(counts)
+
+    is_good = (counts >= daily_mean - n_sigma_lower * daily_std) & (
+        counts <= daily_mean + n_sigma_upper * daily_std
+    )
+
+    # Flag index 11 corresponds to is_beyond_daily_statistical_error.
+    output_dataset["flags"].values[:, 11] = is_good.astype(np.uint8)
+
+    return output_dataset
 
 
 def glows_l1b(
@@ -80,6 +124,9 @@ def glows_l1b(
     )
     output_dataset = create_l1b_hist_output(
         output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
+    )
+    output_dataset = _update_daily_statistical_error_flag(
+        output_dataset, pipeline_settings
     )
 
     return output_dataset

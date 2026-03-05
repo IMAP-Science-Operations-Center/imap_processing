@@ -253,8 +253,10 @@ def mock_pipeline_settings():
             "active_bad_time_flags": (
                 ["epoch", "time_flag_index"],
                 np.tile(
-                    [True] * 17, (len(epoch_range), 1)
-                ),  # 17 bad time flags from the JSON
+                    [True, True, True, True, True, True, False,
+                     True, True, True, True, True, True, True, True, True, False],
+                    (len(epoch_range), 1),
+                ),
             ),
             "sunrise_offset": (["epoch"], [0.0] * len(epoch_range)),
             "sunset_offset": (["epoch"], [0.0] * len(epoch_range)),

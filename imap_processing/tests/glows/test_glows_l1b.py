@@ -286,6 +286,8 @@ def test_process_histogram(
     test_hists = np.zeros(3600)
     # For temp
     encoded_val = np.single(expected_temp * 2.318 + 69.5454)
+    # Zero variance -> zero std dev -> all threshold flags pass (1 = good)
+    zero_variance = np.single(0)
 
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(
@@ -293,25 +295,27 @@ def test_process_histogram(
         )
     )
 
+    # flags_set_onboard = 64 = 0b01000000: bit 6 (is_night) set -> flag[6] = 0 (bad)
+    # is_generated_on_ground = 1 -> flag[10] = 0 (bad)
     test_l1b = HistogramL1B(
         test_hists,
         "test",
         0,
         0,
         0,
-        0,
-        0,
+        64,  # flags_set_onboard: bit 6 (is_night) set
+        1,   # is_generated_on_ground
         0,
         3600,
         0,
         encoded_val,
+        zero_variance,
         encoded_val,
+        zero_variance,
         encoded_val,
+        zero_variance,
         encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
+        zero_variance,
         time_val,
         time_val,
         time_val,
@@ -320,6 +324,13 @@ def test_process_histogram(
         mock_ancillary_parameters,
         pipeline_settings,
     )
+
+    # All onboard flags good (1) except flag[6] (is_night, bit 6 of 64).
+    # Flag[10] (is_generated_on_ground) = 0 (bad). All threshold flags = 1 (good).
+    expected_flags = np.ones(17, dtype=np.uint8)
+    expected_flags[6] = 0   # is_night: bit 6 of flags_set_onboard=64 is set
+    expected_flags[10] = 0  # is_generated_on_ground=1
+    assert np.array_equal(test_l1b.flags, expected_flags)
 
     output = process_histogram(
         hist_dataset,

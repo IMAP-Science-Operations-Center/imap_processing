@@ -653,6 +653,28 @@ class DirectEventL1B:
         return times, pulse_lengths
 
 
+def get_threshold(thresholds: dict, suffix: str) -> float:
+    """
+    Return the threshold value whose key ends with the given suffix.
+
+    Parameters
+    ----------
+    thresholds : dict
+        Dictionary of threshold values from PipelineSettings.processing_thresholds.
+    suffix : str
+        The suffix to match against threshold keys.
+
+    Returns
+    -------
+    float
+        The matching threshold value, or inf if no match is found.
+    """
+    for k, v in thresholds.items():
+        if k.endswith(suffix):
+            return float(v)
+    return np.inf
+
+
 @dataclass
 class HistogramL1B:
     """
@@ -870,7 +892,7 @@ class HistogramL1B:
         # is_inside_excluded_region, is_excluded_by_instr_team,
         # is_suspected_transient] x 3600 bins
         self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
-        self.flags = np.ones((FLAG_LENGTH,), dtype=np.uint8)
+        self.flags = self._compute_flags(pipeline_settings)
 
     def update_spice_parameters(self) -> None:
         """Update SPICE parameters based on the current state."""
@@ -978,6 +1000,82 @@ class HistogramL1B:
         )
 
         return flags
+
+    def _compute_flags(self, pipeline_settings: PipelineSettings) -> np.ndarray:
+        """
+        Compute the 17 bad-time flags for this histogram.
+
+        Flags 0-9 are decoded from the onboard 16-bit flag integer. Flags 10-16
+        are computed during ground processing. The convention is 1 = condition
+        absent (good), 0 = condition present (bad/flag raised).
+
+        Parameters
+        ----------
+        pipeline_settings : PipelineSettings
+            Pipeline settings containing processing thresholds.
+
+        Returns
+        -------
+        flags : numpy.ndarray
+            Array of shape (FLAG_LENGTH,) with dtype uint8. 1 = good, 0 = bad.
+        """
+        thresholds = pipeline_settings.processing_thresholds
+
+        # Section 12.3.1 of the Algorithm Document: onboard generated bad-time flags.
+        # Flags are "stored in a 16-bit integer field.
+        onboard_flags = (
+            1 - self.deserialize_flags(int(self.flags_set_onboard))
+        ).astype(np.uint8)
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 1.
+        # Informs if the histogram was generated on-board or on the ground
+        # Flag 1 = onboard.
+        is_generated_on_ground = np.uint8(1 - int(self.is_generated_on_ground))
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 2.
+        # Comparison of the total numbers of counts in a given block-accumulated histogram with the
+        # daily average
+        # Placeholder.
+        is_beyond_daily_statistical_error = np.uint8(1)
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 3-6.
+        # (1=good, 0=bad).
+        temp_threshold = get_threshold(thresholds, "std_dev_threshold__celsius_deg")
+        hv_threshold = get_threshold(thresholds, "std_dev_threshold__volt")
+        spin_std_threshold = get_threshold(thresholds, "std_dev_threshold__sec")
+        pulse_threshold = get_threshold(thresholds, "std_dev_threshold__usec")
+        spin_diff_threshold = get_threshold(
+            thresholds, "relative_difference_threshold"
+        )
+
+        is_temp_ok = np.uint8(self.filter_temperature_std_dev <= temp_threshold)
+        is_hv_ok = np.uint8(self.hv_voltage_std_dev <= hv_threshold)
+        is_spin_std_ok = np.uint8(self.spin_period_std_dev <= spin_std_threshold)
+        is_pulse_ok = np.uint8(self.pulse_length_std_dev <= pulse_threshold)
+
+        spin_period_avg = float(self.spin_period_average)
+        if spin_period_avg != 0:
+            spin_diff = abs(
+                float(self.spin_period_ground_average) - spin_period_avg
+            ) / abs(spin_period_avg)
+        else:
+            spin_diff = np.inf
+        is_spin_diff_ok = np.uint8(spin_diff <= spin_diff_threshold)
+
+        ground_flags = np.array(
+            [
+                is_generated_on_ground,
+                is_beyond_daily_statistical_error,
+                is_temp_ok,
+                is_hv_ok,
+                is_spin_std_ok,
+                is_pulse_ok,
+                is_spin_diff_ok,
+            ],
+            dtype=np.uint8,
+        )
+
+        return np.concatenate([onboard_flags, ground_flags])
 
     def flag_uv_and_excluded(self, exclusions: AncillaryExclusions) -> tuple:
         """
