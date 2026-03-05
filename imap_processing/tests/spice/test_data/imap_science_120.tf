@@ -4,8 +4,8 @@ Interstellar Mapping and Acceleration Probe (IMAP) Dynamic Frames Kernel
 ========================================================================
 
    This kernel contains SPICE frame definitions to support the
-   IMAP mission.
-
+   IMAP mission. 
+   
    This kernel is composed of primarily dynamic frames, but in general
    it  holds frame definitions for all instrument-agnostic frames, CK
    frames used in science data processing and mapping.
@@ -23,14 +23,15 @@ Version and Date
 
    \begindata
 
-      TEXT_KERNEL_ID = 'IMAP_DYNAMIC_FRAMES V1.2.0 2026-FEB-25 FK'
+      TEXT_KERNEL_ID = 'IMAP_DYNAMIC_FRAMES V0.0.1 2025-JUNE-26 FK'
 
    \begintext
 
    Version 0.0.0 -- April 10, 2024 -- Nick Dutton (JHU/APL)
    Version 0.0.1 -- June  26, 2025 -- Nick Dutton (JHU/APL)
    Version 1.0.0 -- July   8, 2025 -- Nick and Doug (JHU/APL)
-   Version 1.2.0 -- February 25, 2026 -- Nick Dutton (JHU/APL)
+   Version 1.1.0 -- Nov   19, 2025 -- Nick and Doug (JHU/APL)
+   Version 1.2.0 -- Feb.  24, 2026 -- Nick and Doug (JHU/APL)
 
 
 References
@@ -49,21 +50,25 @@ References
       5.   heliospheric.tf, at
            https://soho.nascom.nasa.gov/solarsoft/stereo/...
            ...gen/data/spice/gen/heliospheric.tf
-
+           
       6.   "Geophysical Coordinate Transformations", C. T. Russell
-
+      
       7.   "Heliospheric Coordinate Systems", M. Franz and D. Harper
-
+      
       8.   "Global observations of the interstellar interaction from the
            Interstellar Boundary Explorer (IBEX)", D. J. McComas, et al.
-
+      
       9.   "Very Local Interstellar Medium Revealed by a Complete Solar
            Cycle of Interstellar Neutral Helium Observations with IBEX",
            P. Swaczyna, et al.
-
+           
       10.  Lagrange L1 definition and SPK, Min-Kun Chung,
            https://naif.jpl.nasa.gov/pub/naif/...
            ...generic_kernels/spk/lagrange_point/
+
+      11.  "Variability in the Position of the IBEX Ribbon over Nine Years:
+           More Observational Evidence for a Secondary ENA Source", M. A. 
+           Dayeh, et al.
 
 
 Contact Information
@@ -71,9 +76,9 @@ Contact Information
 
    Direct questions, comments, or concerns about the contents of this
    kernel to:
-
+   
       Nick Dutton, JHUAPL, Nicholas.Dutton@jhuapl.edu
-
+   
    or
 
       Doug Rodgers, JHUAPL, Douglas.Rodgers@jhuapl.edu
@@ -93,7 +98,7 @@ Implementation Notes
    SPICELIB routine FURNSH loads a kernel into the pool as shown below:
 
       Python: (SpiceyPy)
-
+      
          spiceypy.furnsh( frame_kernel_name )
 
       IDL: (ICY)
@@ -111,7 +116,7 @@ Implementation Notes
       FORTRAN: (SPICELIB)
 
          CALL FURNSH ( frame_kernel_name )
-
+         
    This file was created, and may be updated with, a text editor or word
    processor.
 
@@ -127,8 +132,8 @@ IMAP Science Frames
 
    The project-specific ID codes -43900 to -43999 have been set aside to
    support these dynamic frames.
-
-
+   
+   
       Frame Name                Relative To        Type        NAIF ID
       ======================    ===============    ========    =======
 
@@ -161,7 +166,7 @@ IMAP Science Frames
       IMAP_HRE                  J2000              DYNAMIC     -43927
       IMAP_HNU                  J2000              DYNAMIC     -43928
       IMAP_GCS                  GALACTIC           FIXED       -43929
-      IMAP_HRC                  J2000              DYNAMIC     -43930
+      IMAP_HRC                  ECLIPJ2000.        FIXED.      -43930
 
 
 IMAP Based Frames
@@ -169,30 +174,30 @@ IMAP Based Frames
 
    These dynamic frames are used for analyzing data in a reference
    frame tied to the dynamics of IMAP.
-
-
+  
+   
    Observatory Mechanical Design (OMD) Frame ([3])
    ---------------------------------------------------------------------
-
+   
       Alias for IMAP_SPACECRAFT frame defined in the primary
       'imap_vNNN.tf' frame kernel. From that file:
-
+   
       Origin:   Center of the launch vehicle adapter ring at the
                 observatory/launch vehicle interface plane
-
+           
       +Z axis:  Perpendicular to the launch vehicle interface plane
                 pointed in the direction of the top deck (runs through
                 the center of the central cylinder structure element)
-
+            
       +Y axis:  Direction of the vector orthogonal to the +Z axis and
                 parallel to the deployed MAG boom
-
+            
       +X axis:  The third orthogonal axis defined using an X, Y, Z
                 ordered right hand rule
-
+      
    \begindata
 
-      FRAME_IMAP_EARTHFIXED   = -43900
+      FRAME_IMAP_OMD          = -43900
       FRAME_-43900_NAME       = 'IMAP_OMD'
       FRAME_-43900_CLASS      = 4
       FRAME_-43900_CLASS_ID   = -43900
@@ -202,19 +207,19 @@ IMAP Based Frames
       TKFRAME_-43900_MATRIX   = ( 1  0  0
                                   0  1  0
                                   0  0  1 )
-
+                                  
    \begintext
-
-
+   
+    
    Despun Pointing Sets (DPS) Frame ([3])
    ---------------------------------------------------------------------
-
+    
       Coordinate frame used for ENA imager data processing and
       intentionally designed for use in producing all-sky map products.
-
+      
       This is provided by a CK file external to this file. Notionally,
       the frame is defined:
-
+      
       +Z axis is parallel to the nominal spin axis of the spacecraft.
       The axis is notionally a time-average of the spin axis of the
       exact orientation (IMAP_SPACECRAFT or IMAP_OMD).
@@ -222,9 +227,9 @@ IMAP Based Frames
       Y = Z cross Necliptic where Necliptic is the the unit normal
       (North) to the ecliptic plane.
 
-      This is a quasi-inertial reference frame and will have a unique
+      This is a quasi-inertial reference frame and will have a unique 
       transformation matrix, valid between repointings of the spacecraft
-
+            
    \begindata
 
       FRAME_IMAP_DPS              = -43901
@@ -293,14 +298,14 @@ Earth Based Frames
 
    Mean Ecliptic of Date (IMAP_ECLIPDATE) ([2],[5])
    ---------------------------------------------------------------------
-
+  
       Mean Ecliptic of Date is the more precise, rotating counterpart
       to the inertial Mean Ecliptic and Equinox of J2000 (ECLIPJ2000).
-
+      
       If computations involving this frame (or frames relative to this)
       are too expensive, the user may instruct SPICE to ignore
       rotational effects by changing 'ROTATING' to 'INERTIAL'.
-
+      
       The X axis is the first point in Aries for the mean ecliptic of
       date and the Z axis points along the ecliptic north pole.
 
@@ -331,7 +336,7 @@ Earth Based Frames
 
       Primary coordinate frame used to define IMAP's trajectory and
       orbit, as well as for some science data products.
-
+      
       The X axis is the first point in Aries for the mean ecliptic of
       J2000 and the Z axis points along the ecliptic north pole.
 
@@ -356,12 +361,12 @@ Earth Based Frames
 
    Mission Design Rotating (MDR) Frame ([3],[10])
    ---------------------------------------------------------------------
-
+   
       IMAP observatory body coordinate frame.
 
       The origin of the frame is the L1 point of the Sun and the Earth-
       Moon barycenter defined in SPK 'L1_de431.bsp' by reference [10];
-      this author assigned the NAIF body code 391 to this L1 point.
+      this author assigned the NAIF body code 391 to this L1 point. 
 
       The position of the Earth-Moon barycenter relative to the Sun is
       the primary vector: the X axis points from the Sun to the
@@ -409,13 +414,13 @@ Earth Based Frames
       Z-axis is parallel to the magnetic dipole. The geographic
       coordinates, D, of the dipole axis are found from the
       International Geomagnetic Reference Field.
-
+   
       The Y-axis of this system is perpendicular to the geographic poles
       such that if D is the dipole position and S is the south pole
       Y=DxS. The X-axis completes a right-handed orthogonal set.
 
       The implementation of this frame is complicated in that the
-      definition of the IGRF dipole is a function of time and the IGRF
+      definition of the IGRF dipole is a function of time and the IGRF 
       model cannot be directly incorporated into SPICE. However, SPICE
       does allow one to define time dependent Euler angles. Meaning, you
       can define a single Euler angle that rotates the Geocentric
@@ -445,7 +450,7 @@ Earth Based Frames
       used in the fit, and therefore may be vastly incorrect as the
       polynomials may diverge outside of this region. These coefficients
       will be refit when IGRF-15 is released.
-
+   
       Also, since the rest of the magnetic dipole frames are defined
       from this one, similar time ranges should be used for those frames
 
@@ -460,11 +465,11 @@ Earth Based Frames
 
       The GMC frame is achieved by first rotating the IAU_EARTH frame
       about Z by the longitude degrees, and then rotating about the
-      Y axis by the amount of latitude.
+      Y axis by the amount of latitude. 
 
       NOTE: ITRF93 is much more accurate than IAU_EARTH, if precise
       Earth-Fixed coordinates are desired, then ITRF93 should be
-      incorporated by changing RELATIVE of the IMAP_EARTHFIXED frame.
+      incorporated by changing RELATIVE of the IMAP_EARTHFIXED frame. 
 
    \begindata
 
@@ -492,7 +497,7 @@ Earth Based Frames
       FRAME_-43914_ANGLE_2_COEFFS = ( -9.981781660857344
                                       +1.8136204417470554E-9
                                       +7.130241121790372E-19
-                                      -2.215929597148403E-27
+                                      -2.215929597148403E-27 
                                       -3.900143352851885E-36
                                       +6.599160686982152E-45
                                       +8.376429421972708E-54
@@ -508,7 +513,7 @@ Earth Based Frames
    ---------------------------------------------------------------------
 
       Alias for SPICE J2000 frame.
-
+      
       The Geocentric Equatorial Inertial System (GEI) has its X-axis
       pointing from the Earth towards the first point of Aries (the
       position of the Sun at the vernal equinox). This direction is the
@@ -516,7 +521,7 @@ Earth Based Frames
       plane and thus the X-axis lies in both planes. The Z-axis is
       parallel to the rotation axis of the Earth and Y completes the
       right-handed orthogonal set (Y = Z x X).
-
+ 
    \begindata
 
       FRAME_IMAP_GEI          = -43915
@@ -535,21 +540,21 @@ Earth Based Frames
 
    Geocentric Solar Ecliptic (GSE) Frame ([3],[5])
    ---------------------------------------------------------------------
-
+   
       Rotating geocentric frame in which Sun and Earth are fixed and the
       Z axis is the unit normal to the Ecliptic plane.
-
+   
       The position of the Sun relative to the Earth is the primary
       vector: the X axis points from the Earth to the Sun.
-
+ 
       The northern surface normal to the mean ecliptic of date
       (IMAP_ECLIPDATE) is the secondary vector: the Z axis is the
       component of this vector orthogonal to the X axis.
-
+ 
       The Y axis is Z cross X, completing the right-handed frame.
 
       All vectors are geometric: no aberration corrections are used.
-
+ 
    \begindata
 
       FRAME_IMAP_GSE              = -43916
@@ -588,7 +593,7 @@ Earth Based Frames
       Earth's magnetic dipole axis (the +Z axis of IMAP_GMC) is the
       secondary vector: the Z axis is the component of this vector
       orthogonal to the X axis.
-
+ 
       The Y axis is Z cross X, completing the right-handed frame.
 
       All vectors are geometric: no aberration corrections are used.
@@ -613,7 +618,7 @@ Earth Based Frames
       FRAME_-43917_SEC_FRAME      = 'IMAP_GMC'
       FRAME_-43917_SEC_SPEC       = 'RECTANGULAR'
       FRAME_-43917_SEC_VECTOR     = (0, 0, 1)
-
+ 
    \begintext
 
 
@@ -631,7 +636,7 @@ Earth Based Frames
       The position of the Sun relative to the Earth is the secondary
       vector: the X axis is the component of the Earth-Sun vector
       orthogonal to the Z axis.
-
+ 
       The Y axis is Z cross X, completing the right-handed frame.
 
       All vectors are geometric: no aberration corrections are used.
@@ -669,20 +674,20 @@ Sun Based Frames
 
    Heliocentric Radial Tangential Normal (RTN) Frame ([3],[7])
    ---------------------------------------------------------------------
-
+  
       The position of the spacecraft relative to the Sun is the primary
       vector: the X axis points from the Sun center to the spacecraft.
-
+ 
       The solar rotation axis is the secondary vector: the Z axis is
       the component of the solar north direction perpendicular to X.
-
+ 
       The Y axis is Z cross X, completing the right-handed reference
       frame.
 
       All vectors are geometric: no aberration corrections are used.
-
+ 
    \begindata
-
+ 
       FRAME_IMAP_RTN              = -43920
       FRAME_-43920_NAME           = 'IMAP_RTN'
       FRAME_-43920_CLASS          =  5
@@ -708,13 +713,13 @@ Sun Based Frames
 
    Heliocentric Inertial (HCI) Frame ([3],[5],[7])
    ---------------------------------------------------------------------
-
+      
       Referred to as "Heliographic Inertial (HGI) frame at epoch J2000"
       in [3], but named as in [7] to avoid confusion with HGI of J1900.
-
+      
       The X-Y Plane lies in the solar equator, +Z axis is parallel to
       the Sun's rotation vector.
-
+      
       The solar rotation axis is the primary vector: the Z axis points
       in the solar north direction.
 
@@ -725,7 +730,7 @@ Sun Based Frames
 
       The Y axis is Z cross X, completing the right-handed reference
       frame.
-
+      
    \begindata
 
       FRAME_IMAP_HCI              = -43921
@@ -748,17 +753,17 @@ Sun Based Frames
       FRAME_-43921_SEC_VECTOR     = ( 0, 0, 1 )
 
    \begintext
-
-
+   
+   
    Heliocentric of Date (HCD) Frame ([3],[5],[7])
    ---------------------------------------------------------------------
-
+   
       Referred to as "Heliographic Inertial (HGI) frame true to
       reference date" in [3], but named as in [7] without "inertial."
-
+   
       The X-Y Plane lies in the solar equator, +Z axis is parallel to
       the Sun's rotation vector.
-
+      
       The solar rotation axis is the primary vector: the Z axis points
       in the solar north direction.
 
@@ -769,7 +774,7 @@ Sun Based Frames
 
       The Y axis is Z cross X, completing the right-handed reference
       frame.
-
+            
    \begindata
 
       FRAME_IMAP_HCD              = -43922
@@ -799,18 +804,18 @@ Sun Based Frames
 
       Cartesian counterpart to the spherical coordinates defined in [3],
       "Heliographic Spherical (HGS) coordinate frame true to ref. date".
-
+      
       Alias for SPICE IAU_SUN (Carrington heliographic coordinates)
       in which the frame rotates with the surface of the sun with a
       sidereal period of exactly 25.38 days.
-
+      
       The Z axis is the solar rotation axis.
 
       The X axis is the intersection of the Carrington prime meridian
-      and the heliographic equator.
+      and the heliographic equator. 
 
       The Y axis is Z cross X, completing the right-handed reference
-      frame.
+      frame.   
 
    \begindata
 
@@ -838,7 +843,7 @@ Sun Based Frames
       Aries at J2000.
 
       The Y axis is Z cross X, completing the right-handed reference
-      frame.
+      frame.   
 
    \begindata
 
@@ -867,7 +872,7 @@ Sun Based Frames
       Aries of date.
 
       The Y axis is Z cross X, completing the right-handed reference
-      frame.
+      frame.   
 
    \begindata
 
@@ -932,15 +937,17 @@ Sun Based Frames
       heliospheric "nose" direction.
 
       The nose direction is the primary vector: the X axis points in the
-      direction [-0.2477, -0.9647, 0.0896] in the ECLIPJ2000 (IMAP_HAE)
-      frame.
+      direction [-0.24785821221964, -0.964645013724845, 0.0895896429900153]
+      in the ECLIPJ2000 (IMAP_HAE) frame.  This unit vector corresponds
+      to coordinates 255.59 degrees longitude, 5.14 degrees latitude in
+      ECLIPJ2000.
 
       The northern surface normal to the mean ecliptic of J2000 is the
       secondary vector: the Z axis is the component of this vector
       orthogonal to the X axis.
 
       The Y axis is Z cross X, completing the right-handed reference
-      frame.
+      frame.   
 
    \begindata
 
@@ -956,7 +963,9 @@ Sun Based Frames
       FRAME_-43927_PRI_VECTOR_DEF  = 'CONSTANT'
       FRAME_-43927_PRI_FRAME       = 'ECLIPJ2000'
       FRAME_-43927_PRI_SPEC        = 'RECTANGULAR'
-      FRAME_-43927_PRI_VECTOR      = ( -0.2477, -0.9647, 0.0896 )
+      FRAME_-43927_PRI_VECTOR      = (-0.24785821221964, 
+                                      -0.964645013724845, 
+                                       0.0895896429900153 )
       FRAME_-43927_SEC_AXIS        = 'Z'
       FRAME_-43927_SEC_VECTOR_DEF  = 'CONSTANT'
       FRAME_-43927_SEC_FRAME       = 'ECLIPJ2000'
@@ -977,14 +986,18 @@ Sun Based Frames
 
       The nominal upfield direction of the ISM B-field is the primary
       vector: the Z axis points in the direction
-      [-0.5583, -0.6046, 0.5681] in the ECLIPJ2000 (IMAP_HAE) frame.
+      ~[-0.5583, -0.6046, 0.5681] in the ECLIPJ2000 (IMAP_HAE) frame.
+      This unit vector corresponds to 227.28 degrees longitude, 34.62
+      degrees latitude in ECLIPJ2000.
 
-      The nose direction [-0.2477, -0.9647, 0.0896] in the ECLIPJ2000
-      (IMAP_HAE) frame is the secondary vector: the X axis is the
-      component of this vector orthogonal to the Z axis.
-
+      The nose direction ~[-0.2477, -0.9647, 0.0896] in the ECLIPJ2000
+      (IMAP_HAE) frame is the secondary vector, which corresponds to
+      coordinates 255.59 degrees longitude, 5.14 degrees latitude in
+      ECLIPJ2000. The X axis is the component of this vector orthogonal 
+      to the Z axis. 
+      
       The Y axis is Z cross X, completing the right-handed reference
-      frame.
+      frame.   
 
    \begindata
 
@@ -1000,13 +1013,17 @@ Sun Based Frames
       FRAME_-43928_PRI_VECTOR_DEF  = 'CONSTANT'
       FRAME_-43928_PRI_FRAME       = 'ECLIPJ2000'
       FRAME_-43928_PRI_SPEC        = 'RECTANGULAR'
-      FRAME_-43928_PRI_VECTOR      = ( -0.5583, -0.6046, 0.5681 )
+      FRAME_-43928_PRI_VECTOR      = ( -0.558294509871844, 
+                                       -0.60459437847959, 
+                                        0.568131039248724 )
       FRAME_-43928_SEC_AXIS        = 'X'
       FRAME_-43928_SEC_VECTOR_DEF  = 'CONSTANT'
       FRAME_-43928_SEC_FRAME       = 'ECLIPJ2000'
       FRAME_-43928_SEC_SPEC        = 'RECTANGULAR'
-      FRAME_-43928_SEC_VECTOR      = ( -0.2477, -0.9647, 0.0896 )
-
+      FRAME_-43928_SEC_VECTOR      = (-0.24785821221964, 
+                                      -0.964645013724845, 
+                                       0.0895896429900153 )
+      
    \begintext
 
 
@@ -1039,23 +1056,22 @@ Sun Based Frames
                                   0  0  1 )
   \begintext
 
-   Heliospheric Ram Corotating (HRC) Frame ([3],[8])
+   Heliospheric Ribbon Centered (HRC) Frame ([11])
    ---------------------------------------------------------------------
 
-      This is a heliocentric frame oriented with respect to the current,
-      nominal ram direction of the Sun's motion relative to the local
-      interstellar medium and the solar equatorial plane.
+      Heliocentric frame oriented with respect to the current estimate
+      for the mean ribbon center described in Reference 11.
 
-      The nose direction is the primary vector: the X axis points in the
-      direction [-0.2477, -0.9647, 0.0896] in the ECLIPJ2000 (IMAP_HAE)
-      frame.
-
-      The solar north pole direction is the secondary vector: the Z axis
-      is the component of the solar rotation axis orthogonal to the X
-      axis.
-
+      The weighted mean (across IBEX energies and time) is the primary
+      vector (+Z) for the frame and is aligned with 218.33 degrees
+      longitude in IMAP_HAE, and 40.38 degrees latitude IMAP_HAE.
+      
+      The nose direction ~[-0.2477, -0.9647, 0.0896] in the ECLIPJ2000
+      (IMAP_HAE) frame is the secondary vector: the X axis is the
+      component of this vector orthogonal to the Z axis.
+      
       The Y axis is Z cross X, completing the right-handed reference
-      frame.
+      frame.   
 
    \begindata
 
@@ -1067,18 +1083,23 @@ Sun Based Frames
       FRAME_-43930_RELATIVE        = 'J2000'
       FRAME_-43930_DEF_STYLE       = 'PARAMETERIZED'
       FRAME_-43930_FAMILY          = 'TWO-VECTOR'
-      FRAME_-43930_PRI_AXIS        = 'X'
+      FRAME_-43930_PRI_AXIS        = 'Z'
       FRAME_-43930_PRI_VECTOR_DEF  = 'CONSTANT'
       FRAME_-43930_PRI_FRAME       = 'ECLIPJ2000'
       FRAME_-43930_PRI_SPEC        = 'RECTANGULAR'
-      FRAME_-43930_PRI_VECTOR      = ( -0.2477, -0.9647, 0.0896 )
-      FRAME_-43930_SEC_AXIS        = 'Z'
+      FRAME_-43930_PRI_VECTOR      = ( -0.597567491320518, 
+                                       -0.472438613169605, 
+                                        0.647854034565876 )
+      FRAME_-43930_SEC_AXIS        = 'X'
       FRAME_-43930_SEC_VECTOR_DEF  = 'CONSTANT'
-      FRAME_-43930_SEC_FRAME       = 'IAU_SUN'
+      FRAME_-43930_SEC_FRAME       = 'ECLIPJ2000'
       FRAME_-43930_SEC_SPEC        = 'RECTANGULAR'
-      FRAME_-43930_SEC_VECTOR      = ( 0, 0, 1 )
-
+      FRAME_-43930_SEC_VECTOR      = (-0.24785821221964, 
+                                      -0.964645013724845, 
+                                       0.0895896429900153 )
+      
    \begintext
+
 
 
 END OF FILE
