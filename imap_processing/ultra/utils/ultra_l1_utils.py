@@ -194,7 +194,7 @@ def create_dataset(  # noqa: PLR0912
         elif key in {"energy_range_flags"}:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_ranges"],
+                dims=["energy_range_flags"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:
