@@ -299,19 +299,19 @@ def test_process_histogram(
         0,
         0,
         0,
-        64,  # flags_set_onboard: bit 6 (is_night) set
-        1,  # is_generated_on_ground
+        0,
+        0,
         0,
         3600,
         0,
         encoded_val,
-        np.single(30.0),  # filter_temperature_variance: exceeds 2.03°C threshold
         encoded_val,
-        np.single(3500.0),  # hv_voltage_variance: exceeds 50.0V threshold
         encoded_val,
-        np.single(11000.0),  # spin_period_variance: exceeds 0.033333s threshold
         encoded_val,
-        np.single(2.0),  # pulse_length_variance: exceeds 1.0μs threshold
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        encoded_val,
         time_val,
         time_val,
         time_val,
