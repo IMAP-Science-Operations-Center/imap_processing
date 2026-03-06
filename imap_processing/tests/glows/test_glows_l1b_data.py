@@ -98,9 +98,15 @@ def test_validation_data_histogram(
     mock_conversion_table_dict,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
+    ds = l1a_dataset[0]
+    ds.attrs["flight_software_version"] = ds.attrs["flight_software_version"]
+    ds.attrs["Parents"] = np.array(
+        ["glows_test_packet_20110921_v01.pkts", "test_spice_file.tls"], dtype=object
+    )
+
     # Only test with histogram data (l1a_dataset[0])
     l1b = glows_l1b(
-        l1a_dataset[0],
+        ds,
         mock_ancillary_exclusions.excluded_regions,
         mock_ancillary_exclusions.uv_sources,
         mock_ancillary_exclusions.suspected_transients,

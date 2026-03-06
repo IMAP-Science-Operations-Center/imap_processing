@@ -82,30 +82,13 @@ def glows_l1b(
         output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
     )
 
-    output_dataset["flight_software_version"] = xr.DataArray(
-        input_dataset["flight_software_version"].data,
-        name="flight_software_version",
-        dims=["scalar"],
-        attrs=cdf_attrs.get_variable_attributes(
-            "flight_software_version", check_schema=False
-        ),
-    )
-
-    output_dataset["ground_software_version"] = xr.DataArray(
-        input_dataset["ground_software_version"].data,
-        name="ground_software_version",
-        dims=["scalar"],
-        attrs=cdf_attrs.get_variable_attributes(
-            "ground_software_version", check_schema=False
-        ),
-    )
-
-    output_dataset["pkts_file_name"] = xr.DataArray(
-        input_dataset["pkts_file_name"].data,
-        name="pkts_file_name",
-        dims=["scalar"],
-        attrs=cdf_attrs.get_variable_attributes("pkts_file_name", check_schema=False),
-    )
+    output_dataset.attrs["flight_software_version"] = input_dataset.attrs[
+        "flight_software_version"
+    ]
+    parents = input_dataset.attrs.get("Parents", "")
+    output_dataset.attrs["pkts_file_name"] = [
+        parent for parent in parents if parent.endswith("pkts")
+    ]
 
     return output_dataset
 
@@ -138,6 +121,11 @@ def glows_l1b_de(
     output_dataset = create_l1b_de_output(
         input_dataset, cdf_attrs, ancillary_parameters
     )
+
+    parents = input_dataset.attrs.get("Parents", "")
+    output_dataset.attrs["pkts_file_name"] = [
+        parent for parent in parents if parent.endswith("pkts")
+    ]
 
     return output_dataset
 
@@ -271,9 +259,6 @@ def process_histogram(
     # Only non-1D variables need to be in this mapping.
     output_dimension_mapping = {
         "histogram": ["bins"],
-        "flight_software_version": ["scalar"],
-        "pkts_file_name": ["scalar"],
-        "ground_software_version": ["scalar"],
         "imap_spin_angle_bin_cntr": ["bins"],
         "histogram_flag_array": ["bad_angle_flags", "bins"],
         "spacecraft_location_average": ["ecliptic"],
@@ -296,9 +281,6 @@ def process_histogram(
     # histograms is the only multi dimensional input variable, so we set the non-epoch
     # dimension ("bins"). Also, the three scalar inputs only have a non-epoch dimension.
     input_dims[0] = ["bins"]
-    input_dims[1] = ["scalar"]
-    input_dims[2] = ["scalar"]
-    input_dims[3] = ["scalar"]
 
     # Create a closure that captures the ancillary objects
     def create_histogram_l1b(*args) -> tuple:  # type: ignore[no-untyped-def]
@@ -327,7 +309,6 @@ def process_histogram(
         vectorize=True,
         keep_attrs=True,
     )
-    # exclude_dims={"scalar"},
 
     # This is a tuple of dataarrays and not a dataset yet
     return l1b_fields
@@ -433,15 +414,16 @@ def create_l1b_hist_output(
     )
 
     # Since we know the output_dataarrays are in the same order as the fields in the
-    # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
-
+    # HistogramL1B dataclass, we can use dataclasses.fields to get the field names,
+    # with the exception of the global attributes.
     fields = dataclasses.fields(HistogramL1B)
     for index, dataarray in enumerate(l1b_dataarrays):
-        # Dataarray is already an xr.DataArray type, so we can just assign it
-        output_dataset[fields[index].name] = dataarray
-        output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
-            fields[index].name
-        )
+        if fields[index].name not in ["flight_software_version", "pkts_file_name"]:
+            # Dataarray is already an xr.DataArray type, so we can just assign it
+            output_dataset[fields[index].name] = dataarray
+            output_dataset[
+                fields[index].name
+            ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
 
     output_dataset["bins"] = bin_data
     return output_dataset
@@ -515,16 +497,6 @@ def create_l1b_de_output(
         output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
             fields[index].name
         )
-
-    # TODO: Not sure if this is requested in this product...
-    # parents = input_dataset.attrs.get("Parent", "")
-    # output_dataset["pkts_file_name"] = xr.DataArray(
-    #   [parent for parent in parents if parent.endswith("cdf")],
-    #   attrs=cdf_attrs.get_variable_attributes("pkts_file_name", check_schema=False),
-    #   )
-    # output_dataset["pkts_file_name"] = [
-    #   parent for parent in parents if parent.endswith("cdf")
-    # ]
 
     output_dataset["within_the_second"] = within_the_second_data
     output_dataset.attrs["missing_packets_sequence"] = input_dataset.attrs.get(

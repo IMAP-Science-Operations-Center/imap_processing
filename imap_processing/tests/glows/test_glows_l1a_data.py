@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.glows import __version__
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1a.glows_l1a_data import (
     DirectEventL1A,
@@ -98,7 +97,6 @@ def test_histogram_attributes(histogram_test_data):
 
     expected_block_header = {
         "flight_software_version": 131329,
-        "ground_software_version": __version__,
         "pkts_file_name": "glows_test_packet_20110921_v01.pkts",
         "seq_count_in_pkts_file": 0,
     }
@@ -106,10 +104,6 @@ def test_histogram_attributes(histogram_test_data):
     assert (
         histogram_test_data.flight_software_version
         == expected_block_header["flight_software_version"]
-    )
-    assert (
-        histogram_test_data.ground_software_version
-        == expected_block_header["ground_software_version"]
     )
     assert histogram_test_data.pkts_file_name == expected_block_header["pkts_file_name"]
     assert (

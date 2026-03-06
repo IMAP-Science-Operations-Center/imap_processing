@@ -433,33 +433,8 @@ def generate_histogram_dataset(
 
     # These attributes are the same for each record, so we don't
     # need to store them per epoch like most of the other fields
-    output["flight_software_version"] = xr.DataArray(
-        np.array([hist_l1a_list[0].flight_software_version], dtype=np.uint32),
-        coords={"scalar": [0]},
-        name="flight_software_version",
-        dims=["scalar"],
-        attrs=glows_cdf_attributes.get_variable_attributes(
-            "flight_software_version", check_schema=False
-        ),
-    )
-    output["pkts_file_name"] = xr.DataArray(
-        np.array([hist_l1a_list[0].pkts_file_name], dtype=object),
-        coords={"scalar": [0]},
-        name="pkts_file_name",
-        dims=["scalar"],
-        attrs=glows_cdf_attributes.get_variable_attributes(
-            "pkts_file_name", check_schema=False
-        ),
-    )
-    output["ground_software_version"] = xr.DataArray(
-        np.array([hist_l1a_list[0].ground_software_version], dtype=object),
-        coords={"scalar": [0]},
-        name="ground_software_version",
-        dims=["scalar"],
-        attrs=glows_cdf_attributes.get_variable_attributes(
-            "ground_software_version", check_schema=False
-        ),
-    )
+    # Instead, we store them as global attributes
+    output.attrs["flight_software_version"] = hist_l1a_list[0].flight_software_version
 
     for key, value in support_data.items():
         output[key] = xr.DataArray(

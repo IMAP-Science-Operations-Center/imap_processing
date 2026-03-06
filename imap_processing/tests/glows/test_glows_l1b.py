@@ -28,9 +28,6 @@ from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 @pytest.fixture
 def hist_dataset():
     variables = {
-        "flight_software_version": 67,
-        "pkts_file_name": ["test_packet_file.pkts"],
-        "ground_software_version": ["v999"],
         "seq_count_in_pkts_file": np.zeros((20,)),
         "first_spin_id": np.zeros((20,)),
         "last_spin_id": np.zeros((20,)),
@@ -76,18 +73,10 @@ def hist_dataset():
     )
 
     for var, data in variables.items():
-        if var in [
-            "flight_software_version",
-            "pkts_file_name",
-            "ground_software_version",
-        ]:
-            if isinstance(data, int):
-                list = [data]  # Convert to list for consistent handling
-            else:
-                list = data
-            ds[var] = xr.DataArray(list, dims="scalar", coords={"scalar": [0]})
-        else:
-            ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
+        ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
+
+    ds.attrs["flight_software_version"] = np.array([67], dtype=int)
+    ds.attrs["Parents"] = ["test_packet_file.pkts", "test_spice_file.tls"]
 
     return ds
 
@@ -161,7 +150,7 @@ def de_dataset():
         },
     )
 
-    ds.attrs["Parent"] = ["test_packet_file.cdf", "test_spice_file.tls"]
+    ds.attrs["Parents"] = ["test_packet_file.pkts", "test_spice_file.tls"]
 
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
@@ -224,10 +213,9 @@ def test_histogram_mapping(
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
     time_val = np.double(1111111.11)
-    expected_temp = 100
 
     test_hists = np.zeros(3600)
-    # For temp
+    expected_temp = 100
     encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
     # For now, testing types and number of inputs
@@ -241,9 +229,6 @@ def test_histogram_mapping(
         dataclasses.asdict(
             HistogramL1B(
                 test_hists,
-                67,
-                "test_packet_file.pkts",
-                "v999",
                 0,
                 0,
                 0,
@@ -272,11 +257,11 @@ def test_histogram_mapping(
     )
 
     # Correctly decoded temperature
-    assert np.isclose(output[12], expected_temp, 0.1)
+    assert np.isclose(output[9], expected_temp, 0.1)
 
     # Ensure time values are correctly mapped
+    assert output[17] == time_val
     assert output[20] == time_val
-    assert output[23] == time_val
 
 
 @patch.object(
@@ -310,9 +295,6 @@ def test_process_histogram(
 
     test_l1b = HistogramL1B(
         test_hists,
-        67,
-        "test_packet_file.pkts",
-        "v999",
         0,
         0,
         0,
@@ -433,8 +415,6 @@ def test_glows_l1b(
 
     # This needs to be added eventually, but is skipped for now.
     expected_de_data = [
-        "flight_software_version",
-        "seq_count_in_pkts_file",
         "pkts_file_name",
         "ancillary_data_files",
     ]
@@ -471,13 +451,16 @@ def test_glows_l1b(
         "spacecraft_velocity_average",
         "spacecraft_velocity_std_dev",
         "flags",
-        "flight_software_version",
-        "ground_software_version",
-        "pkts_file_name",
     ]
-
     for key in expected_hist_data:
         assert key in hist_output
+
+    expected_global_attrs = [
+        "flight_software_version",
+        "pkts_file_name",
+    ]
+    for key in expected_global_attrs:
+        assert key in hist_output._attrs
 
     de_output = glows_l1b_de(de_dataset, mock_conversion_table_dict)
 
@@ -569,9 +552,6 @@ def test_hist_spice_output(
     use_fake_spin_data_for_time(data_start_time)
     params = {
         "histogram": np.zeros(3600),
-        "flight_software_version": 67,
-        "pkts_file_name": "test_packet_file.pkts",
-        "ground_software_version": "v999",
         "seq_count_in_pkts_file": 0,
         "first_spin_id": 0,
         "last_spin_id": 0,

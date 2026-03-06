@@ -130,14 +130,6 @@ histogram:
   VALIDMIN: 0
   VAR_TYPE: data
 
-pkts_file_name:
-  CATDESC: Name of input file with CCSDS packet data
-  DEPEND_0:
-  FIELDNAM: CCSDS packet data input filename
-  FILLVAL: " " # fill value for strings
-  FORMAT: A49
-  VAR_TYPE: metadata
-
 first_spin_id:
   <<: *support_data_defaults
   CATDESC: Ordinal number of the first spin during histogram accumulation
@@ -683,21 +675,6 @@ missing_packets_sequence: # Used to be missing_packets_sequence
   FORMAT: I10
   LABLAXIS: Metadata
   VALIDMAX: 1000000000
-  VAR_TYPE: metadata
-
-flight_software_version:
-  CATDESC: GLOWS flight software version
-  FIELDNAM: GLOWS flight software version
-  FILLVAL: *max_uint32
-  FORMAT: I8
-  LABLAXIS: FSW ver
-  VALIDMAX: 16777215
-
-ground_software_version:
-  CATDESC: Version of ground software used for processing
-  FIELDNAM: Ground Software Version
-  FILLVAL: " " # fill value for strings
-  FORMAT: A4
   VAR_TYPE: metadata
 
 # Flags

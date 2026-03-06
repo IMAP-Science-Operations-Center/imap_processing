@@ -739,18 +739,9 @@ class HistogramL1B:
     flags
         flags for extra information, per histogram. This should be a human-readable
         structure.
-    flight_software_version
-        The version of the flight software, copied from L1A
-    pkts_file_name
-        The name of the input CCSDS packets file
-    ground_software_version
-        The version of the ground software, copied from L1A
     """
 
     histogram: np.ndarray
-    flight_software_version: int
-    pkts_file_name: str
-    ground_software_version: str
     seq_count_in_pkts_file: int
     first_spin_id: int
     last_spin_id: int
