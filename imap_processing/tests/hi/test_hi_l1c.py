@@ -1,7 +1,6 @@
 """Test coverage for imap_processing.hi.l1c.hi_l1c.py"""
 
 import io
-from collections import namedtuple
 from unittest import mock
 from unittest.mock import MagicMock
 
@@ -10,10 +9,9 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-import imap_processing.hi.utils
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.hi import hi_l1c
+from imap_processing.hi import hi_l1c, utils
 from imap_processing.hi.utils import HIAPID, HiConstants
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
@@ -225,7 +223,7 @@ def test_pset_counts(
     """Test coverage for pset_counts function."""
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
     l1b_dataset = load_cdf(l1b_de_path)
-    cal_config_df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
+    cal_config_df = utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
     empty_pset = hi_l1c.empty_pset_dataset(
@@ -251,7 +249,7 @@ def test_pset_counts_empty_l1b(
     # remove all but one event and set its trigger_id to zero
     l1b_dataset = l1b_dataset.isel(event_met=[0])
     l1b_dataset["trigger_id"].data[0] = 0
-    cal_config_df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
+    cal_config_df = utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
     empty_pset = hi_l1c.empty_pset_dataset(
@@ -274,21 +272,13 @@ def test_get_tof_window_mask():
         "tof_bc1": -13,
         "tof_c1c2": -14,
     }
-    Row = namedtuple(
-        "Row",
-        [
-            "Index",
-            "tof_ab_low",
-            "tof_ab_high",
-            "tof_ac1_low",
-            "tof_ac1_high",
-            "tof_bc1_low",
-            "tof_bc1_high",
-            "tof_c1c2_low",
-            "tof_c1c2_high",
-        ],
-    )
-    prod_config_row = Row((1, 0), 0, 1, -1, 2, 1, 5, 4, 6)
+    # Use dict-based tof_windows instead of named tuple
+    tof_windows = {
+        "tof_ab": (0, 1),
+        "tof_ac1": (-1, 2),
+        "tof_bc1": (1, 5),
+        "tof_c1c2": (4, 6),
+    }
     synth_df = xr.Dataset(
         coords={
             "event_met": xr.DataArray(
@@ -323,7 +313,7 @@ def test_get_tof_window_mask():
         },
     )
     expected_mask = np.array([True, False, False, False, False, False, True])
-    window_mask = hi_l1c.get_tof_window_mask(synth_df, prod_config_row, fill_vals)
+    window_mask = utils.get_tof_window_mask(synth_df, tof_windows, fill_vals)
     np.testing.assert_array_equal(expected_mask, window_mask)
 
 
@@ -371,9 +361,7 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
     l1b_dataset = load_cdf(l1b_de_path)
 
-    cal_config_df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
-        io.StringIO(csv_content)
-    )
+    cal_config_df = utils.CalibrationProductConfig.from_csv(io.StringIO(csv_content))
 
     # Create PSET with non-sequential calibration product numbers
     l1b_met = 482373065

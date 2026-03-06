@@ -15,6 +15,7 @@ from imap_processing.hi.utils import (
     CalibrationProductConfig,
     CoincidenceBitmap,
     HiConstants,
+    compute_qualified_event_mask,
     parse_sensor_number,
 )
 from imap_processing.quality_flags import ImapHiL1bDeFlags
@@ -229,11 +230,17 @@ def _apply_goodtimes_filters(
     stats = goodtimes_ds.goodtimes.get_cull_statistics()
     logger.info(f"Initial good bins: {stats['good_bins']}/{stats['total_bins']}")
 
-    # Build set of qualified coincidence types from calibration product config
-    qualified_coincidence_types: set[int] = set()
-    for coin_types in cal_product_config["coincidence_type_values"]:
-        qualified_coincidence_types.update(coin_types)
-    logger.info(f"Qualified coincidence types: {qualified_coincidence_types}")
+    # Pre-compute qualified event masks for each dataset
+    # These masks check BOTH coincidence_type AND TOF windows
+    qualified_masks: dict[int, np.ndarray] = {}
+    for i, l1b_de in enumerate(l1b_de_datasets):
+        ccsds_index = l1b_de["ccsds_index"].values
+        esa_energy_steps = l1b_de["esa_energy_step"].values[ccsds_index]
+
+        qualified_masks[i] = compute_qualified_event_mask(
+            l1b_de, cal_product_config, esa_energy_steps
+        )
+    logger.info("Pre-computed qualified event masks for all datasets")
 
     # === Apply culling filters ===
 
@@ -259,7 +266,7 @@ def _apply_goodtimes_filters(
         goodtimes_ds,
         l1b_de_datasets,
         current_index,
-        qualified_coincidence_types,
+        qualified_masks,
     )
 
     # 6. Statistical Filter 2 - short-lived event pulses
@@ -267,7 +274,7 @@ def _apply_goodtimes_filters(
     mark_statistical_filter_2(
         goodtimes_ds,
         current_l1b_de,
-        qualified_coincidence_types,
+        qualified_masks[current_index],
     )
 
 
@@ -1390,7 +1397,7 @@ def mark_statistical_filter_0(
 
 def _compute_qualified_counts_per_sweep(
     l1b_de: xr.Dataset,
-    qualified_coincidence_types: set[int],
+    qualified_mask: np.ndarray,
 ) -> xr.Dataset:
     """
     Compute qualified calibration product counts per 8-spin interval and reshape.
@@ -1402,8 +1409,9 @@ def _compute_qualified_counts_per_sweep(
     ----------
     l1b_de : xarray.Dataset
         L1B Direct Event dataset with esa_sweep coordinate on epoch dimension.
-    qualified_coincidence_types : set[int]
-        Set of coincidence type integers that qualify for calibration products.
+    qualified_mask : np.ndarray
+        Boolean mask indicating which events qualify for calibration products.
+        This mask should check BOTH coincidence_type AND TOF windows.
 
     Returns
     -------
@@ -1416,13 +1424,12 @@ def _compute_qualified_counts_per_sweep(
         raise ValueError("Dataset must have esa_sweep coordinate")
 
     # Get values needed for counting
-    coincidence_type = l1b_de["coincidence_type"].values
     ccsds_index = l1b_de["ccsds_index"].values
     esa_sweep = l1b_de.coords["esa_sweep"].values
     esa_energy_step = l1b_de["esa_energy_step"].values
 
-    # Identify qualified events
-    is_qualified = np.isin(coincidence_type, list(qualified_coincidence_types))
+    # Use pre-computed qualified mask
+    is_qualified = qualified_mask
 
     # Map qualified events to their packet's (esa_sweep, esa_energy_step)
     qualified_packet_idx = ccsds_index[is_qualified]
@@ -1460,7 +1467,7 @@ def _compute_qualified_counts_per_sweep(
 
 def _build_per_sweep_datasets(
     l1b_de_datasets: list[xr.Dataset],
-    qualified_coincidence_types: set[int],
+    qualified_masks: dict[int, np.ndarray],
 ) -> dict[int, xr.Dataset]:
     """
     Build per-sweep datasets with qualified counts for each Pointing.
@@ -1469,8 +1476,9 @@ def _build_per_sweep_datasets(
     ----------
     l1b_de_datasets : list[xarray.Dataset]
         List of L1B DE datasets for multiple Pointings.
-    qualified_coincidence_types : set[int]
-        Set of coincidence type integers that qualify for calibration products.
+    qualified_masks : dict[int, np.ndarray]
+        Dictionary mapping dataset index to boolean mask indicating which events
+        qualify for calibration products (checking both coincidence_type AND TOF).
 
     Returns
     -------
@@ -1484,7 +1492,7 @@ def _build_per_sweep_datasets(
         # Add esa_sweep coordinate and compute counts per 8-spin interval
         l1b_de_with_sweep = _add_sweep_indices(l1b_de)
         per_sweep = _compute_qualified_counts_per_sweep(
-            l1b_de_with_sweep, qualified_coincidence_types
+            l1b_de_with_sweep, qualified_masks[i]
         )
         per_sweep_datasets[i] = per_sweep
 
@@ -1684,7 +1692,7 @@ def mark_statistical_filter_1(
     goodtimes_ds: xr.Dataset,
     l1b_de_datasets: list[xr.Dataset],
     current_index: int,
-    qualified_coincidence_types: set[int],
+    qualified_masks: dict[int, np.ndarray],
     consecutive_threshold_sigma: float = HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA,
     extreme_threshold_sigma: float = HiConstants.STAT_FILTER_1_EXTREME_SIGMA,
     min_consecutive_intervals: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
@@ -1714,8 +1722,9 @@ def mark_statistical_filter_1(
         current plus 3 preceding and 3 following Pointings.
     current_index : int
         Index of the current Pointing in l1b_de_datasets.
-    qualified_coincidence_types : set[int]
-        Set of coincidence type integers that qualify for calibration products.
+    qualified_masks : dict[int, np.ndarray]
+        Dictionary mapping dataset index to boolean mask indicating which events
+        qualify for calibration products (checking both coincidence_type AND TOF).
     consecutive_threshold_sigma : float, optional
         Sigma multiplier for consecutive interval check.
         Default is HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA.
@@ -1758,9 +1767,7 @@ def mark_statistical_filter_1(
         )
 
     # Step 1: Build per-sweep datasets with qualified counts for each Pointing
-    per_sweep_datasets = _build_per_sweep_datasets(
-        l1b_de_datasets, qualified_coincidence_types
-    )
+    per_sweep_datasets = _build_per_sweep_datasets(l1b_de_datasets, qualified_masks)
 
     # Step 2: Compute median and sigma per ESA energy step using xarray
     median_per_esa, sigma_per_esa = _compute_median_and_sigma_per_esa(
@@ -1908,7 +1915,7 @@ def _compute_bins_for_cluster(
 def mark_statistical_filter_2(
     goodtimes_ds: xr.Dataset,
     l1b_de: xr.Dataset,
-    qualified_coincidence_types: set[int],
+    qualified_mask: np.ndarray,
     min_events: int = HiConstants.STAT_FILTER_2_MIN_EVENTS,
     max_time_delta: float = HiConstants.STAT_FILTER_2_MAX_TIME_DELTA,
     bin_padding: int = HiConstants.STAT_FILTER_2_BIN_PADDING,
@@ -1942,9 +1949,9 @@ def mark_statistical_filter_2(
         - coincidence_type: detector coincidence bitmap
         - nominal_bin: spacecraft spin bin (0-89)
         - esa_step: ESA energy step for each packet
-    qualified_coincidence_types : set[int]
-        Set of coincidence type integers qualifying as calibration
-        products 1 or 2.
+    qualified_mask : np.ndarray
+        Boolean mask indicating which events qualify for calibration products.
+        This mask should check BOTH coincidence_type AND TOF windows.
     min_events : int, optional
         Minimum events to form a pulse cluster.
         Default is HiConstants.STAT_FILTER_2_MIN_EVENTS.
@@ -1981,19 +1988,15 @@ def mark_statistical_filter_2(
 
     # Add event-level coordinates for grouping
     l1b_de_with_sweep = l1b_de_with_sweep.assign_coords(
-        event_sweep=("event", esa_sweep[ccsds_index]),
-        event_step=("event", esa_step[ccsds_index]),
+        event_sweep=("event_met", esa_sweep[ccsds_index]),
+        event_step=("event_met", esa_step[ccsds_index]),
     )
 
-    # Filter to qualified events
-    coincidence_type = l1b_de_with_sweep["coincidence_type"].values
-    is_qualified = np.isin(coincidence_type, list(qualified_coincidence_types))
-
-    if not np.any(is_qualified):
+    if not np.any(qualified_mask):
         logger.info("Statistical Filter 2: No qualified events found")
         return
 
-    qualified_events = l1b_de_with_sweep.isel(event=is_qualified)
+    qualified_events = l1b_de_with_sweep.isel(event_met=qualified_mask)
 
     n_clusters_found = 0
     n_bins_marked = 0
