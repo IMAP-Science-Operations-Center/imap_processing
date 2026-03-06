@@ -670,11 +670,10 @@ def get_threshold(thresholds: dict, suffix: str) -> float | None:
         The matching threshold value, or None if no match is found.
     """
     return_value = None
-    for section in thresholds.values():
-        for descriptor, value in section.items():
-            if descriptor.endswith(suffix):
-                return_value = float(value)
-                break
+    for descriptor, value in thresholds.items():
+        if descriptor.endswith(suffix):
+            return_value = float(value)
+            break
 
     return return_value
 
@@ -1033,7 +1032,7 @@ class HistogramL1B:
         is_generated_on_ground = np.uint8(1 - int(self.is_generated_on_ground))
 
         # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 2.
-        # Checks whether the total count in a given histogram is far from the daily average.
+        # Checks if total count in a given histogram is far from the daily average.
         # Placeholder until daily histogram is available in glows_l1b.py.
         # TODO: this equation needs to be clarified.
         is_beyond_daily_statistical_error = np.uint8(1)

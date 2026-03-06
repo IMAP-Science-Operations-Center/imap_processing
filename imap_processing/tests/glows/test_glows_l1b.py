@@ -330,45 +330,21 @@ def test_process_histogram(
     assert len(output) == len(dataclasses.asdict(test_l1b))
 
 
-@pytest.mark.parametrize(
-    "temp_var, hv_var, spin_var, pulse_var, expected_std_flags",
-    [
-        pytest.param(
-            0.0, 0.0, 0.0, 0.0,
-            [1, 1, 1, 1],
-            id="all_pass",
-        ),
-        pytest.param(
-            # Encoded variances chosen to exceed thresholds after decode_std_dev:
-            # temp: std_dev > 2.03°C  (param_a=255/110, need encoded_var > ~22.1)
-            # hv:   std_dev > 50.0V   (param_a=4095/3500, need encoded_var > ~3422)
-            # spin: std_dev > 0.033333s (param_a=65535/20.9712, need > ~10850)
-            # pulse: std_dev > 1.0μs  (param_a=255/255=1, need encoded_var > 1.0)
-            30.0, 3500.0, 11000.0, 2.0,
-            [0, 0, 0, 0],
-            id="all_fail",
-        ),
-    ],
-)
 @patch.object(
     HistogramL1B,
     "flag_uv_and_excluded",
     return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
 )
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
-def test_compute_flags_std_dev_thresholds(
+def test_compute_flags(
     mock_spice_function,
     mock_flag_uv_and_excluded,
-    temp_var,
-    hv_var,
-    spin_var,
-    pulse_var,
-    expected_std_flags,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
     mock_pipeline_settings,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
+
     encoded_val = np.single(100 * 2.318 + 69.5454)
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(
@@ -382,19 +358,19 @@ def test_compute_flags_std_dev_thresholds(
         0,
         0,
         0,
-        0,  # flags_set_onboard: all good
-        0,  # is_generated_on_ground: onboard (good)
+        64,  # flags_set_onboard: bit 6 (is_night) set
+        1,  # is_generated_on_ground
         0,
         3600,
         0,
         encoded_val,
-        np.single(temp_var),
+        np.single(30.0),  # filter_temperature_variance: exceeds 2.03°C threshold
         encoded_val,
-        np.single(hv_var),
+        np.single(3500.0),  # hv_voltage_variance: exceeds 50.0V threshold
         encoded_val,
-        np.single(spin_var),
+        np.single(11000.0),  # spin_period_variance: exceeds 0.033333s threshold
         encoded_val,
-        np.single(pulse_var),
+        np.single(2.0),  # pulse_length_variance: exceeds 1.0μs threshold
         0.0,
         0.0,
         0.0,
@@ -404,11 +380,17 @@ def test_compute_flags_std_dev_thresholds(
         pipeline_settings,
     )
 
-    # flags[0:10]  = onboard flags (all 1, flags_set_onboard=0)
-    # flags[10]    = is_generated_on_ground (1, is_generated_on_ground=0)
+    # flags[0:10]  = onboard flags (1=good, 0=bad), one per bit of flags_set_onboard
+    # flags[10]    = is_generated_on_ground (1=onboard, 0=ground)
     # flags[11]    = is_beyond_daily_statistical_error (placeholder, always 1)
-    # flags[12:16] = std_dev threshold flags (is_temp_ok, is_hv_ok, is_spin_std_ok, is_pulse_ok)
-    assert list(test_l1b.flags[12:16]) == expected_std_flags
+    # flags[12:16] = std_dev threshold flags
+    # (is_temp_ok, is_hv_ok, is_spin_std_ok, is_pulse_ok)
+    assert test_l1b.flags[6] == 0  # is_night
+    assert test_l1b.flags[10] == 0  # is_generated_on_ground
+    assert test_l1b.flags[12] == 0  # is_temp_ok
+    assert test_l1b.flags[13] == 0  # is_hv_ok
+    assert test_l1b.flags[14] == 0  # is_spin_std_ok
+    assert test_l1b.flags[15] == 0  # is_pulse_ok
 
 
 @patch.object(
