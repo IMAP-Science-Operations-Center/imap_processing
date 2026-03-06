@@ -1037,7 +1037,7 @@ class HistogramL1B:
         # TODO: this equation needs to be clarified.
         is_beyond_daily_statistical_error = np.uint8(1)
 
-        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 3-6.
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 3-7.
         # (1=good, 0=bad).
         temp_threshold = get_threshold(thresholds, "std_dev_threshold__celsius_deg")
         hv_threshold = get_threshold(thresholds, "std_dev_threshold__volt")
@@ -1049,6 +1049,10 @@ class HistogramL1B:
         is_spin_std_ok = np.uint8(self.spin_period_std_dev <= spin_std_threshold)
         is_pulse_ok = np.uint8(self.pulse_length_std_dev <= pulse_threshold)
 
+        # TODO: listed as TBC in Algorithm Document.
+        # Placeholder for now.
+        is_beyond_background_error = np.uint8(1)
+
         ground_flags = np.array(
             [
                 is_generated_on_ground,
@@ -1057,6 +1061,7 @@ class HistogramL1B:
                 is_hv_ok,
                 is_spin_std_ok,
                 is_pulse_ok,
+                is_beyond_background_error,
             ],
             dtype=np.uint8,
         )
