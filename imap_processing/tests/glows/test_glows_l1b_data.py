@@ -12,6 +12,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     DirectEventL1B,
     HistogramL1B,
     PipelineSettings,
+    get_threshold,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
@@ -287,3 +288,29 @@ def test_pipeline_settings_from_flattened_json():
 
     assert len(settings.active_bad_angle_flags) == 4
     assert settings.active_bad_angle_flags[3] is False  # is_suspected_transient
+
+
+def test_get_threshold():
+    "Test get_threshold function."
+    test_data = {
+        "filter_based_on_comparison_of_spin_periods": {
+            "relative_difference_threshold": 7.0e-4
+        },
+        "filter_based_on_temperature_std_dev": {"std_dev_threshold__celsius_deg": 2.03},
+        "filter_based_on_hv_voltage_std_dev": {"std_dev_threshold__volt": 50.0},
+        "filter_based_on_spin_period_std_dev": {"std_dev_threshold__sec": 0.033333},
+        "filter_based_on_pulse_length_std_dev": {"std_dev_threshold__usec": 1.0},
+    }
+
+    expected = [2.03, 50.0, 0.033333, 1.0, 7.0e-4]
+    description = [
+        "std_dev_threshold__celsius_deg",
+        "std_dev_threshold__volt",
+        "std_dev_threshold__sec",
+        "std_dev_threshold__usec",
+        "relative_difference_threshold",
+    ]
+
+    for name, exp in zip(description, expected, strict=False):
+        threshold = get_threshold(test_data, name)
+        assert threshold == exp

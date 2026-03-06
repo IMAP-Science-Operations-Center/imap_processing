@@ -653,26 +653,30 @@ class DirectEventL1B:
         return times, pulse_lengths
 
 
-def get_threshold(thresholds: dict, suffix: str) -> float:
+def get_threshold(thresholds: dict, suffix: str) -> float | None:
     """
     Return the threshold value whose key ends with the given suffix.
 
     Parameters
     ----------
     thresholds : dict
-        Dictionary of threshold values from PipelineSettings.processing_thresholds.
+        Dictionary of threshold values.
     suffix : str
         The suffix to match against threshold keys.
 
     Returns
     -------
-    float
-        The matching threshold value, or inf if no match is found.
+    return_value : float or None
+        The matching threshold value, or None if no match is found.
     """
-    for k, v in thresholds.items():
-        if k.endswith(suffix):
-            return float(v)
-    return np.inf
+    return_value = None
+    for section in thresholds.values():
+        for descriptor, value in section.items():
+            if descriptor.endswith(suffix):
+                return_value = float(value)
+                break
+
+    return return_value
 
 
 @dataclass
@@ -1033,7 +1037,8 @@ class HistogramL1B:
         is_generated_on_ground = np.uint8(1 - int(self.is_generated_on_ground))
 
         # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 2.
-        # Comparison of the total numbers of counts in a given block-accumulated histogram with the
+        # Comparison of the total numbers of counts in a
+        # given block-accumulated histogram with the
         # daily average
         # Placeholder.
         is_beyond_daily_statistical_error = np.uint8(1)
@@ -1044,9 +1049,7 @@ class HistogramL1B:
         hv_threshold = get_threshold(thresholds, "std_dev_threshold__volt")
         spin_std_threshold = get_threshold(thresholds, "std_dev_threshold__sec")
         pulse_threshold = get_threshold(thresholds, "std_dev_threshold__usec")
-        spin_diff_threshold = get_threshold(
-            thresholds, "relative_difference_threshold"
-        )
+        spin_diff_threshold = get_threshold(thresholds, "relative_difference_threshold")
 
         is_temp_ok = np.uint8(self.filter_temperature_std_dev <= temp_threshold)
         is_hv_ok = np.uint8(self.hv_voltage_std_dev <= hv_threshold)
