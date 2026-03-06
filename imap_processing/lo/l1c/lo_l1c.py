@@ -96,8 +96,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
                 "Creating empty PSET dataset with zero counts and exposure time."
             )
             # Set dummy pointing start and end METs
-            pointing_start_met = 0
-            pointing_end_met = 0
+            pointing_start_met = 0.0
+            pointing_end_met = 0.0
         else:
             # Set the pointing start and end times based on the first epoch
             pointing_start_met, pointing_end_met = get_pointing_times(
