@@ -299,19 +299,19 @@ def test_process_histogram(
         0,
         0,
         0,
-        0,
-        0,
+        64,  # flags_set_onboard: bit 6 (is_night) set
+        1,  # is_generated_on_ground
         0,
         3600,
         0,
         encoded_val,
+        np.single(30.0),  # filter_temperature_variance: exceeds 2.03°C threshold
         encoded_val,
+        np.single(3500.0),  # hv_voltage_variance: exceeds 50.0V threshold
         encoded_val,
+        np.single(11000.0),  # spin_period_variance: exceeds 0.033333s threshold
         encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
+        np.single(2.0),  # pulse_length_variance: exceeds 1.0μs threshold
         time_val,
         time_val,
         time_val,
@@ -345,6 +345,7 @@ def test_compute_flags(
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
+    time_val = np.single(1111111.11)
     encoded_val = np.single(100 * 2.318 + 69.5454)
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(
@@ -371,10 +372,10 @@ def test_compute_flags(
         np.single(11000.0),  # spin_period_variance: exceeds 0.033333s threshold
         encoded_val,
         np.single(2.0),  # pulse_length_variance: exceeds 1.0μs threshold
-        0.0,
-        0.0,
-        0.0,
-        0.0,
+        time_val,
+        time_val,
+        time_val,
+        time_val,
         mock_ancillary_exclusions,
         mock_ancillary_parameters,
         pipeline_settings,
@@ -384,7 +385,6 @@ def test_compute_flags(
     # flags[10]    = is_generated_on_ground (1=onboard, 0=ground)
     # flags[11]    = is_beyond_daily_statistical_error (placeholder, always 1)
     # flags[12:16] = std_dev threshold flags
-    # (is_temp_ok, is_hv_ok, is_spin_std_ok, is_pulse_ok)
     assert test_l1b.flags[6] == 0  # is_night
     assert test_l1b.flags[10] == 0  # is_generated_on_ground
     assert test_l1b.flags[12] == 0  # is_temp_ok
