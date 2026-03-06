@@ -24,10 +24,10 @@ from imap_processing.spice.time import met_to_datetime64
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
+# Fixture for L1a histogram dataset
 @pytest.fixture
 def hist_dataset():
     variables = {
-        "flight_software_version": np.zeros((20,)),
         "seq_count_in_pkts_file": np.zeros((20,)),
         "first_spin_id": np.zeros((20,)),
         "last_spin_id": np.zeros((20,)),
@@ -51,20 +51,19 @@ def hist_dataset():
     }
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("glows")
-    cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
+    cdf_attrs.add_instrument_variable_attrs("glows", "l1a")
 
     epoch = xr.DataArray(
         np.arange(20),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
     bins = xr.DataArray(np.arange(3600), name="bins", dims=["bins"])
 
     ds = xr.Dataset(
-        coords={"epoch": epoch},
-        attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
+        attrs=cdf_attrs.get_global_attributes("imap_glows_l1a_hist"),
     )
 
     ds["histogram"] = xr.DataArray(
@@ -75,6 +74,9 @@ def hist_dataset():
 
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
+
+    ds.attrs["flight_software_version"] = np.array([67], dtype=int)
+    ds.attrs["Parents"] = ["test_packet_file.pkts", "test_spice_file.tls"]
 
     return ds
 
@@ -148,6 +150,8 @@ def de_dataset():
         },
     )
 
+    ds.attrs["Parents"] = ["test_packet_file.pkts", "test_spice_file.tls"]
+
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
@@ -208,14 +212,11 @@ def test_histogram_mapping(
     mock_pipeline_settings,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
-    time_val = 1111111.11
-    # A = 2.318
-    # B = 69.5454
-    expected_temp = 100
+    time_val = np.double(1111111.11)
 
     test_hists = np.zeros(3600)
-    # For temp
-    encoded_val = expected_temp * 2.318 + 69.5454
+    expected_temp = 100
+    encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
     # For now, testing types and number of inputs
     pipeline_settings = PipelineSettings(
@@ -228,7 +229,6 @@ def test_histogram_mapping(
         dataclasses.asdict(
             HistogramL1B(
                 test_hists,
-                "test",
                 0,
                 0,
                 0,
@@ -256,10 +256,12 @@ def test_histogram_mapping(
         ).values()
     )
 
-    assert output[18] == time_val
-
     # Correctly decoded temperature
-    assert output[10] - expected_temp < 0.1
+    assert np.isclose(output[9], expected_temp, 0.1)
+
+    # Ensure time values are correctly mapped
+    assert output[17] == time_val
+    assert output[20] == time_val
 
 
 @patch.object(
@@ -278,14 +280,12 @@ def test_process_histogram(
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
-    time_val = np.single(1111111.11)
-    # A = 2.318
-    # B = 69.5454
+    time_val = np.double(1111111.11)
     expected_temp = 100
 
     test_hists = np.zeros(3600)
     # For temp
-    encoded_val = np.single(expected_temp * 2.318 + 69.5454)
+    encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(
@@ -295,7 +295,6 @@ def test_process_histogram(
 
     test_l1b = HistogramL1B(
         test_hists,
-        "test",
         0,
         0,
         0,
@@ -416,11 +415,7 @@ def test_glows_l1b(
 
     # This needs to be added eventually, but is skipped for now.
     expected_de_data = [
-        "flight_software_version",
-        "ground_software_version",
         "pkts_file_name",
-        "seq_count_in_pkts_file",
-        "l1a_file_name",
         "ancillary_data_files",
     ]
 
@@ -457,9 +452,15 @@ def test_glows_l1b(
         "spacecraft_velocity_std_dev",
         "flags",
     ]
-
     for key in expected_hist_data:
         assert key in hist_output
+
+    expected_global_attrs = [
+        "flight_software_version",
+        "pkts_file_name",
+    ]
+    for key in expected_global_attrs:
+        assert key in hist_output._attrs
 
     de_output = glows_l1b_de(de_dataset, mock_conversion_table_dict)
 
@@ -551,7 +552,6 @@ def test_hist_spice_output(
     use_fake_spin_data_for_time(data_start_time)
     params = {
         "histogram": np.zeros(3600),
-        "flight_software_version": "v0.0.1",
         "seq_count_in_pkts_file": 0,
         "first_spin_id": 0,
         "last_spin_id": 0,
@@ -577,7 +577,7 @@ def test_hist_spice_output(
         "pipeline_settings": PipelineSettings(
             mock_pipeline_settings.sel(
                 epoch=mock_pipeline_settings.epoch[0], method="nearest"
-            )
+            ),
         ),
     }
 

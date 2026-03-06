@@ -824,9 +824,17 @@ def flag_statistical_outliers(
     # Initialize all spin bins to have no outlier flag
     spin_bin_size = len(spin_tbin_edges) - 1
     n_energy_bins = len(energy_ranges) - 1
-    # make a copy of the mask to avoid modifying the original mask passed in
-    iter_mask = mask.copy()
+    # make a copy of the current mask to avoid modifying the original mask passed in.
+    # This contains flags from previous steps (e.g., after low voltage and high
+    # energy culling) and will be updated iteratively to include the outlier flags as
+    # well
+    curr_mask = mask.copy()
+    # Initialize quality_stats to keep track of which bins are flagged as outliers for
+    # each energy bin
     quality_stats = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
+    # Initialize a mask to keep track of spin bins that have been flagged across all
+    # energy bins
+    all_channel_mask = np.zeros(spin_bin_size, dtype=bool)
     # Initialize convergence array to keep track of poisson stats
     convergence = np.full(n_energy_bins, False)
     # Keep track of how many iterations we have done of flagging outliers and
@@ -838,13 +846,14 @@ def flag_statistical_outliers(
         de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
     )  # shape (n_energy_bins, n_spin_bins)
     for e_idx in np.arange(n_energy_bins):
+        good_mask = ~curr_mask[e_idx]  # spin bins that are not currently flagged
         for it in range(n_iterations):
-            # only consider bins that are currently unflagged for this energy bin
-            counts = count_summary[e_idx, ~iter_mask[e_idx]]
+            counts = count_summary[e_idx, good_mask]
             # Step 1. check if any energy bins have less than 3 spin bins with counts.
             # If so, flag all spins for that energy bin and skip to the next iteration
             if np.sum(counts > 0) < 3:
                 quality_stats[e_idx] = True
+                curr_mask[e_idx] = True
                 convergence[e_idx] = True
                 std_diff[e_idx] = -1
                 break
@@ -853,12 +862,11 @@ def flag_statistical_outliers(
             std_diff[e_idx] = std_ratio
             # Step 3. Flag bins where the count is more than 3 standard deviations from
             # the mean.
-            outlier_inds = np.where(~iter_mask[e_idx])[0][outlier_mask]
+            outlier_inds = np.where(good_mask)[0][outlier_mask]
             # Set the quality flag to True for the outlier inds
             quality_stats[e_idx, outlier_inds] = True
-            # Also update the iter_mask to exclude the outlier bins for the next
-            # iteration
-            iter_mask[e_idx, outlier_inds] = True
+            all_channel_mask[outlier_inds] = True
+            good_mask[outlier_inds] = False
             iterations[e_idx] = it + 1
             # Check for convergence: if the standard deviation difference from
             # poisson stats is below the threshold, then we can stop iterating for this
@@ -868,17 +876,13 @@ def flag_statistical_outliers(
                 break
 
     if combine_flags_across_energy_bins:
-        # If a spin bin is flagged in any energy channel flag it in all energy channels
-        # Use np.any to check if a spin bin is flagged in any energy channel,
-        # then flag it in all energy channels
-        combined_mask = np.any(quality_stats, axis=0)  # (n_spin_bins,)
-        quality_stats[:] = combined_mask  # Broadcast to all energy bins
-
+        # If true, then use the all_channel_mask for every energy channel.
+        quality_stats[:] = all_channel_mask
         # Recalculate convergence with the combined mask.
         for e_idx in range(n_energy_bins):
             if not convergence[e_idx]:
                 # Select counts that have not been flagged in any channel.
-                counts = count_summary[e_idx, ~combined_mask]
+                counts = count_summary[e_idx, ~all_channel_mask]
                 std_ratio, _ = get_poisson_stats(counts)
                 if std_ratio < std_threshold:
                     convergence[e_idx] = True
@@ -1064,7 +1068,7 @@ def get_valid_earth_angle_events(
         A boolean array indicating which events have Earth angle greater than the
         specified threshold.
     """
-    de_dps_velocity = de_dataset_subset["de_dps_velocity"].values
+    velocity_dps_sc = de_dataset_subset["velocity_dps_sc"].values
     # Use the mean event time to compute the Earth unit vector since the spacecraft
     # position doesn't change significantly over the course of the energy bin.
     et = np.mean(de_dataset_subset["event_times"].values)
@@ -1082,10 +1086,10 @@ def get_valid_earth_angle_events(
     distance = np.linalg.norm(position)
     earth_unit_vector = position / distance
     # Calculate the magnitude of the velocity vector for each event
-    particle_mag = np.linalg.norm(de_dps_velocity, axis=1)
+    particle_mag = np.linalg.norm(velocity_dps_sc, axis=1)
     # Normalize and flip to get where each particle is looking.
     unit_look_dirs = (
-        -de_dps_velocity / particle_mag[:, np.newaxis]
+        -velocity_dps_sc / particle_mag[:, np.newaxis]
     )  # shape (n_events, 3)
     # Get cos(theta) between each particle look direction and Earth direction
     cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (n_events,)
@@ -1217,7 +1221,11 @@ def get_binned_spins_edges(
         )
     # Append the last start time plus the spin period to account for low times
     # that occur after the last spin start time
-    spin_tbin_edges = np.append(spin_tbin_edges, spin_tbin_edges[-1] + spin_periods[-1])
+    last_spin_idx = min(n_spin_bins * spin_bin_size - 1, len(spins) - 1)
+    spin_tbin_edges = np.append(
+        spin_tbin_edges, spin_start_times[last_spin_idx] + spin_periods[last_spin_idx]
+    )
+    return spin_tbin_edges
     return spin_tbin_edges
 
 

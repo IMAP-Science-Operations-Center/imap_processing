@@ -106,7 +106,24 @@ def test_l2_hi_sectored(mock_get_file_paths):
     val_data = val_data.rename({"spin_angles": "spin_angle"})
     # Check data variables
     for variable in val_data.data_vars:
+        # Spin angle bug is fixed but the old validation data is outdated.
+        # Verified with new 20260201 L2 validation file from Joey.
         if variable.startswith("unc_"):
+            continue
+        if variable == "spin_angle":
+            # The external validation file has outdated spin_angle values, but we
+            # still verify structure and basic numeric sanity to guard against
+            # regressions in the spin angle computation.
+            assert processed_l2[variable].dims == val_data[variable].dims, (
+                f"Dimension mismatch in variable '{variable}'"
+            )
+            spin_vals = processed_l2[variable].values
+            # All values should be finite and lie within a reasonable angular range.
+            assert np.all(np.isfinite(spin_vals)), (
+                "spin_angle contains non-finite values"
+            )
+            assert np.min(spin_vals) >= 0.0, "spin_angle has values below 0 degrees"
+            assert np.max(spin_vals) <= 360.0, "spin_angle has values above 360 degrees"
             continue
         np.testing.assert_allclose(
             processed_l2[variable].values,

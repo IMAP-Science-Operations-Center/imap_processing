@@ -56,7 +56,7 @@ from imap_processing.codice import codice_l1a, codice_l1b, codice_l2
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l2.glows_l2 import glows_l2
-from imap_processing.hi import hi_l1a, hi_l1b, hi_l1c, hi_l2
+from imap_processing.hi import hi_goodtimes, hi_l1a, hi_l1b, hi_l1c, hi_l2
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.hit.l2.hit_l2 import hit_l2
@@ -770,9 +770,9 @@ class Glows(ProcessInstrument):
 class Hi(ProcessInstrument):
     """Process IMAP-Hi."""
 
-    def do_processing(
+    def do_processing(  # noqa: PLR0912
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset]:
+    ) -> list[xr.Dataset | Path]:
         """
         Perform IMAP-Hi specific processing.
 
@@ -789,6 +789,10 @@ class Hi(ProcessInstrument):
         print(f"Processing IMAP-Hi {self.data_level}")
         datasets: list[xr.Dataset] = []
 
+        # Check self.repointing is not None (for mypy type checking)
+        if self.repointing is None:
+            raise ValueError("Repointing must be provided for Hi processing.")
+
         if self.data_level == "l1a":
             science_files = dependencies.get_file_paths(source="hi")
             if len(science_files) != 1:
@@ -801,6 +805,41 @@ class Hi(ProcessInstrument):
             l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
             if l0_files:
                 datasets = hi_l1b.housekeeping(l0_files[0])
+            elif "goodtimes" in self.descriptor:
+                # Goodtimes processing
+                l1b_de_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="de"
+                )
+                if not l1b_de_paths:
+                    raise ValueError("No L1B DE files found for goodtimes processing")
+
+                l1b_hk_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="hk"
+                )
+                if len(l1b_hk_paths) != 1:
+                    raise ValueError(
+                        f"Expected one L1B HK file, got {len(l1b_hk_paths)}"
+                    )
+
+                cal_prod_paths = dependencies.get_file_paths(
+                    data_type="ancillary", descriptor="cal-prod"
+                )
+                if len(cal_prod_paths) != 1:
+                    raise ValueError(
+                        f"Expected one cal-prod ancillary file, "
+                        f"got {len(cal_prod_paths)}"
+                    )
+
+                # Load CDFs before passing to hi_goodtimes
+                l1b_de_datasets = [load_cdf(path) for path in l1b_de_paths]
+                l1b_hk = load_cdf(l1b_hk_paths[0])
+
+                datasets = hi_goodtimes.hi_goodtimes(
+                    l1b_de_datasets,
+                    self.repointing,
+                    l1b_hk,
+                    cal_prod_paths[0],
+                )
             else:
                 l1a_de_file = dependencies.get_file_paths(
                     source="hi", data_type="l1a", descriptor="de"
@@ -813,17 +852,21 @@ class Hi(ProcessInstrument):
                     load_cdf(l1a_de_file), load_cdf(l1b_hk_file), esa_energies_csv
                 )
         elif self.data_level == "l1c":
-            science_paths = dependencies.get_file_paths(source="hi", data_type="l1b")
-            if len(science_paths) != 1:
-                raise ValueError(
-                    f"Expected only one science dependency. Got {science_paths}"
+            if "pset" in self.descriptor:
+                # L1C PSET processing
+                science_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1b"
                 )
-            anc_paths = dependencies.get_file_paths(data_type="ancillary")
-            if len(anc_paths) != 1:
-                raise ValueError(
-                    f"Expected only one ancillary dependency. Got {anc_paths}"
-                )
-            datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
+                if len(science_paths) != 1:
+                    raise ValueError(
+                        f"Expected only one science dependency. Got {science_paths}"
+                    )
+                anc_paths = dependencies.get_file_paths(data_type="ancillary")
+                if len(anc_paths) != 1:
+                    raise ValueError(
+                        f"Expected only one ancillary dependency. Got {anc_paths}"
+                    )
+                datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
         elif self.data_level == "l2":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
             anc_dependencies = dependencies.get_processing_inputs(data_type="ancillary")

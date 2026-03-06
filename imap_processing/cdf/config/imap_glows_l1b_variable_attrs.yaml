@@ -1,8 +1,8 @@
 int_fillval: &int_fillval -9223372036854775808
-max_uint32: &max_uint32 4294967295
-max_uint32_min_one: &max_uint32_min_one 4294967294
 max_uint16: &max_uint16 65535
 max_uint16_min_one: &max_uint16_min_one 65534
+max_uint32: &max_uint32 4294967295
+max_uint32_min_one: &max_uint32_min_one 4294967294
 min_epoch: &min_epoch -315575942816000000
 max_epoch: &max_epoch 3155630469184000000
 
@@ -66,16 +66,16 @@ flag_data_defaults: &flag_data_defaults
 
 bins_attrs:
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 3599
   CATDESC: Bin number in histogram
   FIELDNAM: Bin number
-  FORMAT: I4
-  VAR_TYPE: support_data
-  LABLAXIS: Bin no.
   FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Bin no.
   MONOTON: INCREASE
   SCALETYP: linear
+  VALIDMAX: 3599
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 within_the_second_attrs: # Used to be per_second_attrs
   <<:  *default_attrs
@@ -116,31 +116,19 @@ within_the_second_attrs: # Used to be per_second_attrs
 
 histogram:
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 255
   CATDESC: Histogram of photon counts in scanning-circle bins
   DEPEND_0: epoch
   DEPEND_1: bins
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Histogram of photon counts
+  FILLVAL: *max_uint16
+  FORMAT: I3
   LABL_PTR_1: bins_label
   LABLAXIS: Counts
-  FIELDNAM: Histogram of photon counts
-  FORMAT: I3
-  DISPLAY_TYPE: spectrogram
-  FILLVAL: *max_uint16
   UNITS: '#'
+  VALIDMAX: 255
+  VALIDMIN: 0
   VAR_TYPE: data
-
-pkts_file_name:
-  <<: *support_data_defaults
-  CATDESC: Name of input file with L0 CCSDS packets data
-  DISPLAY_TYPE: no_plot
-  FIELDNAM: L0 data input filename
-  FILLVAL: # TBD: what is fillval for strings?
-  FORMAT: S256 # TBC
-  LABLAXIS: File name # MS: is this needed for no_plot?
-  VALIDMAX: # TBD: what is validmax for a string?
-  VALIDMIN: # TBD: what is validmin for a string?
-  VAR_TYPE: metadata
 
 first_spin_id:
   <<: *support_data_defaults
@@ -170,9 +158,9 @@ imap_time_offset:
   <<: *time_data_defaults
   CATDESC: Accumulation time for histogram (IMAP clock)
   FIELDNAM: Accum. time (IMAP clock)
+  FORMAT: F10.6
   LABLAXIS: Accum. time
   VALIDMAX: 999.0
-  FORMAT: F10.6
 
 glows_start_time:
   <<: *time_data_defaults
@@ -184,9 +172,9 @@ glows_time_offset:
   <<: *time_data_defaults
   CATDESC: Accumulation time for histogram (GLOWS clock)
   FIELDNAM: Accum. time (GLOWS clock)
+  FORMAT: F10.6
   LABLAXIS: Accum. time
   VALIDMAX: 999.0
-  FORMAT: F10.6
 
 is_generated_on_ground:
   <<: *flag_data_defaults
@@ -688,15 +676,6 @@ missing_packets_sequence: # Used to be missing_packets_sequence
   LABLAXIS: Metadata
   VALIDMAX: 1000000000
   VAR_TYPE: metadata
-
-flight_software_version:
-  <<: *support_data_defaults
-  CATDESC: GLOWS flight software version
-  FIELDNAM: GLOWS flight software version
-  FILLVAL: *max_uint32
-  FORMAT: I8
-  LABLAXIS: FSW ver
-  VALIDMAX: 16777215
 
 # Flags
 # MS: this needs to be thoroughly discussed

@@ -499,6 +499,8 @@ class DirectEventL1B:
         float. From direct_events.
     direct_event_pulse_lengths: ndarray
         array of pulse lengths [μs] for direct events. From direct_events
+    pkts_file_name
+        Name of the input CCSDS packets file
     """
 
     direct_events: InitVar[np.ndarray]
@@ -669,7 +671,6 @@ class HistogramL1B:
     ----------
     histogram
         array of block-accumulated count numbers
-    flight_software_version: str
     seq_count_in_pkts_file: int
     first_spin_id: int
         The start ID
@@ -741,7 +742,6 @@ class HistogramL1B:
     """
 
     histogram: np.ndarray
-    flight_software_version: str
     seq_count_in_pkts_file: int
     first_spin_id: int
     last_spin_id: int

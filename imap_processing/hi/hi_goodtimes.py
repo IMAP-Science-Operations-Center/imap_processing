@@ -10,8 +10,16 @@ import pandas as pd
 import xarray as xr
 from scipy.ndimage import convolve1d
 
-from imap_processing.hi.utils import CoincidenceBitmap, HiConstants, parse_sensor_number
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.hi.utils import (
+    CalibrationProductConfig,
+    CoincidenceBitmap,
+    HiConstants,
+    parse_sensor_number,
+)
 from imap_processing.quality_flags import ImapHiL1bDeFlags
+from imap_processing.spice.repoint import get_repoint_data
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +41,234 @@ class CullCode(IntEnum):
 
     GOOD = 0
     LOOSE = 1
+
+
+def hi_goodtimes(
+    l1b_de_datasets: list[xr.Dataset],
+    current_repointing: str,
+    l1b_hk: xr.Dataset,
+    cal_product_config_path: Path,
+) -> list[xr.Dataset]:
+    """
+    Generate goodtimes dataset for IMAP-Hi L1B processing.
+
+    This is the top-level function that orchestrates all goodtimes culling
+    operations for a single pointing. It applies the following filters in order:
+
+    1. mark_incomplete_spin_sets - Remove incomplete 8-spin histogram periods
+    2. mark_drf_times - Remove times during spacecraft drift restabilization
+    3. mark_overflow_packets - Remove times when DE packets overflow
+    4. mark_statistical_filter_0 - Detect drastic penetrating background changes
+    5. mark_statistical_filter_1 - Detect isotropic count rate increases
+    6. mark_statistical_filter_2 - Detect short-lived event pulses
+
+    Parameters
+    ----------
+    l1b_de_datasets : list[xr.Dataset]
+        L1B DE datasets for surrounding pointings. Typically includes
+        current plus 3 preceding and 3 following pointings (7 total).
+        Statistical filters 0 and 1 use all datasets; other filters use
+        only the current pointing.
+    current_repointing : str
+        Repointing identifier for the current pointing (e.g., "repoint00001").
+        Used to identify which dataset in l1b_de_datasets is the current one.
+    l1b_hk : xr.Dataset
+        L1B housekeeping dataset containing DRF status.
+    cal_product_config_path : Path
+        Path to calibration product configuration CSV file.
+
+    Returns
+    -------
+    list[xr.Dataset]
+        List containing the goodtimes dataset ready for CDF writing,
+        or an empty list if processing cannot proceed yet.
+
+    Notes
+    -----
+    See IMAP-Hi Algorithm Document Sections 2.2.4 and 2.3.2 for details
+    on each culling algorithm.
+
+    Processing requires that repointing + 3 has occurred (so that statistical
+    filters can use surrounding pointings). Due to challenges with dependency
+    management in the batch starter, it was decided to design the Hi goodtimes
+    to set the L1B DE dependencies as not required and handle the final logic for
+    checking L1B DE dependencies in this function. If repointing + 3 has not yet
+    completed, an empty list is returned. If repointing + 3 has occurred but
+    not all 7 DE files are available, all times are marked as bad.
+    """
+    logger.info("Starting Hi goodtimes processing")
+
+    # Parse the current repoint ID and check if we can process yet
+    current_repoint_id = int(current_repointing.replace("repoint", ""))
+    future_repoint_id = current_repoint_id + 3
+
+    # Check if the future repointing has finished by checking that the next
+    # repoint is in the repoint dataframe.
+    repoint_df = get_repoint_data()
+    required_repoints_complete = (
+        future_repoint_id + 1 in repoint_df["repoint_id"].values
+    )
+
+    if not required_repoints_complete:
+        raise ValueError(
+            f"Goodtimes cannot yet be processed for {current_repointing}: "
+            f"repoint{future_repoint_id:05d} has not yet been completed "
+            f"according to the repoint table."
+        )
+
+    # Find the current pointing index in the datasets
+    current_index = _find_current_pointing_index(l1b_de_datasets, current_repointing)
+    current_l1b_de = l1b_de_datasets[current_index]
+
+    # Create the goodtimes dataset from the current pointing
+    goodtimes_ds = create_goodtimes_dataset(current_l1b_de)
+
+    # Check if we have the full set of 7 DE files for nominal processing
+    if len(l1b_de_datasets) == 7:
+        _apply_goodtimes_filters(
+            goodtimes_ds,
+            l1b_de_datasets,
+            current_index,
+            l1b_hk,
+            cal_product_config_path,
+        )
+    else:
+        # Incomplete DE file set - mark all times as bad
+        logger.warning(
+            f"Incomplete DE file set for {current_repointing}: "
+            f"expected 7 files, got {len(l1b_de_datasets)}. "
+            "Marking all times as bad."
+        )
+        goodtimes_ds["cull_flags"][:, :] = CullCode.LOOSE
+
+    # Log final statistics
+    stats = goodtimes_ds.goodtimes.get_cull_statistics()
+    logger.info(
+        f"Final statistics: {stats['good_bins']}/{stats['total_bins']} good "
+        f"({stats['fraction_good'] * 100:.1f}%)"
+    )
+    if stats["cull_code_counts"]:
+        logger.info(f"Cull code counts: {stats['cull_code_counts']}")
+
+    # Finalize dataset for CDF output
+    logger.info("Finalizing goodtimes dataset for CDF output")
+    cdf_ready_ds = goodtimes_ds.goodtimes.finalize_dataset()
+
+    logger.info("Hi goodtimes processing complete")
+    return [cdf_ready_ds]
+
+
+def _find_current_pointing_index(
+    l1b_de_datasets: list[xr.Dataset],
+    current_repointing: str,
+) -> int:
+    """
+    Find the index of the current pointing in the datasets list.
+
+    Parameters
+    ----------
+    l1b_de_datasets : list[xr.Dataset]
+        L1B DE datasets.
+    current_repointing : str
+        Repointing identifier for the current pointing.
+
+    Returns
+    -------
+    current_index : int
+        Index of the current pointing in the datasets list.
+
+    Raises
+    ------
+    ValueError
+        If the current repointing is not found in the datasets.
+    """
+    for i, ds in enumerate(l1b_de_datasets):
+        if ds.attrs.get("Repointing") == current_repointing:
+            logger.info(f"Current pointing index: {i} of {len(l1b_de_datasets)}")
+            return i
+
+    raise ValueError(
+        f"Could not find current repointing {current_repointing} "
+        f"in L1B DE datasets. Available repointings: "
+        f"{[ds.attrs.get('Repointing') for ds in l1b_de_datasets]}"
+    )
+
+
+def _apply_goodtimes_filters(
+    goodtimes_ds: xr.Dataset,
+    l1b_de_datasets: list[xr.Dataset],
+    current_index: int,
+    l1b_hk: xr.Dataset,
+    cal_product_config_path: Path,
+) -> None:
+    """
+    Apply all goodtimes culling filters to the dataset.
+
+    Modifies goodtimes_ds in place by applying filters 1-6.
+
+    Parameters
+    ----------
+    goodtimes_ds : xr.Dataset
+        Goodtimes dataset to modify.
+    l1b_de_datasets : list[xr.Dataset]
+        All L1B DE datasets (current + surrounding pointings).
+    current_index : int
+        Index of the current pointing in l1b_de_datasets.
+    l1b_hk : xr.Dataset
+        L1B housekeeping dataset.
+    cal_product_config_path : Path
+        Path to calibration product configuration CSV file.
+    """
+    current_l1b_de = l1b_de_datasets[current_index]
+
+    # Load calibration product config
+    logger.info(f"Loading cal product config: {cal_product_config_path}")
+    cal_product_config = CalibrationProductConfig.from_csv(cal_product_config_path)
+
+    # Log initial statistics
+    stats = goodtimes_ds.goodtimes.get_cull_statistics()
+    logger.info(f"Initial good bins: {stats['good_bins']}/{stats['total_bins']}")
+
+    # Build set of qualified coincidence types from calibration product config
+    qualified_coincidence_types: set[int] = set()
+    for coin_types in cal_product_config["coincidence_type_values"]:
+        qualified_coincidence_types.update(coin_types)
+    logger.info(f"Qualified coincidence types: {qualified_coincidence_types}")
+
+    # === Apply culling filters ===
+
+    # 1. Mark incomplete spin sets
+    logger.info("Applying filter: mark_incomplete_spin_sets")
+    mark_incomplete_spin_sets(goodtimes_ds, current_l1b_de)
+
+    # 2. Mark DRF times (drift restabilization)
+    logger.info("Applying filter: mark_drf_times")
+    mark_drf_times(goodtimes_ds, l1b_hk)
+
+    # 3. Mark overflow packets
+    logger.info("Applying filter: mark_overflow_packets")
+    mark_overflow_packets(goodtimes_ds, current_l1b_de, cal_product_config)
+
+    # 4. Statistical Filter 0 - drastic background changes
+    logger.info("Applying filter: mark_statistical_filter_0")
+    mark_statistical_filter_0(goodtimes_ds, l1b_de_datasets, current_index)
+
+    # 5. Statistical Filter 1 - isotropic count rate increases
+    logger.info("Applying filter: mark_statistical_filter_1")
+    mark_statistical_filter_1(
+        goodtimes_ds,
+        l1b_de_datasets,
+        current_index,
+        qualified_coincidence_types,
+    )
+
+    # 6. Statistical Filter 2 - short-lived event pulses
+    logger.info("Applying filter: mark_statistical_filter_2")
+    mark_statistical_filter_2(
+        goodtimes_ds,
+        current_l1b_de,
+        qualified_coincidence_types,
+    )
 
 
 def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
@@ -88,7 +324,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
             np.zeros((len(met), 90), dtype=np.uint8),
             dims=["met", "spin_bin"],
         ),
-        "esa_step": esa_step,
+        "esa_step": xr.DataArray(esa_step.values, dims=["met"]),
     }
 
     # Create attributes
@@ -100,7 +336,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
             f"attribute: {l1b_de.attrs['Repointing']}"
         )
     attrs = {
-        "sensor": f"Hi{sensor_number}",
+        "sensor": f"{sensor_number}sensor",
         "pointing": int(match["pointing_num"]),
     }
 
@@ -143,7 +379,7 @@ class GoodtimesAccessor:
           ESA step for each MET timestamp
       * Attributes
         * sensor : str
-         Sensor identifier ('Hi45' or 'Hi90')
+         Sensor identifier ('45sensor' or '90sensor')
         * pointing : int
          Pointing number for this dataset
 
@@ -485,6 +721,78 @@ class GoodtimesAccessor:
         logger.info(f"Wrote {len(intervals)} intervals to {output_path}")
         return output_path
 
+    def finalize_dataset(self) -> xr.Dataset:
+        """
+        Finalize the goodtimes dataset for CDF output.
+
+        Converts the dataset from using MET as the primary dimension to using
+        epoch (TT2000 nanoseconds), and adds all CDF attributes required for
+        L1B CDF file writing.
+
+        Returns
+        -------
+        xarray.Dataset
+            CDF-ready dataset with epoch dimension and all CDF attributes.
+
+        Notes
+        -----
+        This method should be called after all goodtimes filtering is complete,
+        just before writing to CDF.
+
+        Requires SPICE kernels to be loaded for MET to epoch conversion.
+        """
+        logger.info("Finalizing goodtimes dataset for CDF output")
+
+        # Initialize CDF attribute manager
+        attr_mgr = ImapCdfAttributes()
+        attr_mgr.add_instrument_global_attrs("hi")
+        attr_mgr.add_instrument_variable_attrs("hi")
+
+        # Convert MET coordinate to epoch coordinate (TT2000 nanoseconds)
+        met_values = self._obj.coords["met"].values
+        epoch_values = met_to_ttj2000ns(met_values)
+
+        # Rename met dimension to epoch and assign new epoch coordinate values
+        ds = self._obj.rename({"met": "epoch"})
+        ds = ds.assign_coords(epoch=epoch_values)
+
+        # Move met from coordinate to data variable
+        ds["met"] = xr.DataArray(met_values, dims=["epoch"])
+
+        # Add spin_bin_label coordinate
+        spin_bin_label = np.array([f"{i}" for i in ds.coords["spin_bin"].values])
+        ds = ds.assign_coords(spin_bin_label=("spin_bin", spin_bin_label))
+
+        # Add coordinate attributes
+        ds["epoch"].attrs = attr_mgr.get_variable_attributes(
+            "epoch", check_schema=False
+        )
+        for coord_name in ds.coords:
+            attr_mgr_key = (
+                f"hi_goodtimes_{coord_name}" if coord_name != "epoch" else "epoch"
+            )
+            ds[coord_name].attrs = attr_mgr.get_variable_attributes(
+                attr_mgr_key, check_schema=False
+            )
+        ds["spin_bin"].attrs = attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin")
+
+        # Add variable attributes
+        for var_name in ds.data_vars:
+            ds[var_name].attrs.update(
+                attr_mgr.get_variable_attributes(f"hi_goodtimes_{var_name}")
+            )
+
+        # Update global attributes
+        sensor_str = ds.attrs.pop("sensor")
+        ds.attrs = attr_mgr.get_global_attributes("imap_hi_l1b_goodtimes_attrs")
+
+        # Update Logical_source with sensor string
+        ds.attrs["Logical_source"] = ds.attrs["Logical_source"].format(
+            sensor=sensor_str
+        )
+
+        return ds
+
 
 # ==============================================================================
 # Culling/Filtering Functions
@@ -653,7 +961,7 @@ def mark_drf_times(
         return
 
     # Get HK times and DRF status from fsw_thruster_warn
-    hk_met = hk["ccsds_met"]
+    hk_met = hk["shcoarse"]
     drf_status = hk["fsw_thruster_warn"].values != 0
 
     # Find transitions from DRF active (1) to inactive (0) using numpy.diff

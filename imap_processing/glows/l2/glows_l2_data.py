@@ -90,7 +90,20 @@ class DailyLightcurve:
         # TODO: Average this, or should they all be the same?
         self.spin_angle = np.average(l1b_data["imap_spin_angle_bin_cntr"].data, axis=0)
 
-        self.histogram_flag_array = np.zeros(self.number_of_bins)
+        # Apply 'OR' operation to histogram_flag_array across all
+        # good-time L1B blocks per bin.
+        # Per Section 12.3.4: a flag is True in L2 if it is True in any L1B block.
+        # flags shape: (n_epochs, 4, n_bins)
+        flags = l1b_data["histogram_flag_array"].data
+        if flags.size > 0:
+            # Flatten epochs and flag rows into one axis: (n_epochs * 4, n_bins)
+            flags_2d = flags.reshape(-1, self.number_of_bins)
+            # Apply binary 'OR' operation across all rows per bin: (n_bins,)
+            self.histogram_flag_array = np.bitwise_or.reduce(flags_2d, axis=0).astype(
+                np.uint8
+            )
+        else:
+            self.histogram_flag_array = np.zeros(self.number_of_bins, dtype=np.uint8)
         self.ecliptic_lon = np.zeros(self.number_of_bins)
         self.ecliptic_lat = np.zeros(self.number_of_bins)
 
