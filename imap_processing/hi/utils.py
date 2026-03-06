@@ -594,7 +594,7 @@ def get_tof_window_mask(
     tof_windows : dict[str, tuple[float, float]]
         Dictionary mapping TOF field names to (low, high) tuples defining the
         acceptable window for each TOF measurement.
-    tof_fill_vals : dict[str, float], optional
+    tof_fill_vals : dict[str, float]
         Fill values for each TOF field - events with fill values pass the check.
         If not provided, fill value handling is disabled.
 
