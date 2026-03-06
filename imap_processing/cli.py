@@ -790,7 +790,7 @@ class Hi(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         # Check self.repointing is not None (for mypy type checking)
-        if self.repointing is None:
+        if self.data_level != "l2" and self.repointing is None:
             raise ValueError("Repointing must be provided for Hi processing.")
 
         if self.data_level == "l1a":
