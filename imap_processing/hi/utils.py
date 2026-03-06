@@ -600,7 +600,7 @@ def get_tof_window_mask(
 
     Returns
     -------
-    mask : np.ndarray
+    mask : numpy.ndarray
         Boolean mask where True = event passes all specified TOF window checks.
     """
     if tof_fill_vals is None:
@@ -732,7 +732,7 @@ def iter_qualified_events_by_config(
     de_ds : xarray.Dataset
         Direct Event dataset with coincidence_type and TOF variables.
         TOF variables must have FILLVAL attribute for fill value handling.
-    cal_product_config : pd.DataFrame
+    cal_product_config : pandas.DataFrame
         Config DataFrame with multi-index (calibration_prod, esa_energy_step).
         Must have coincidence_type_values column and TOF window columns.
     esa_energy_steps : np.ndarray
@@ -798,7 +798,7 @@ def compute_qualified_event_mask(
     de_ds : xarray.Dataset
         Direct Event dataset with coincidence_type and TOF variables.
         TOF variables must have FILLVAL attribute for fill value handling.
-    cal_product_config : pd.DataFrame
+    cal_product_config : pandas.DataFrame
         Config DataFrame with multi-index (calibration_prod, esa_energy_step).
         Must have coincidence_type_values column and TOF window columns.
     esa_energy_steps : np.ndarray
