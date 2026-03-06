@@ -2951,18 +2951,17 @@ class TestStatisticalFilter2:
 
         return xr.Dataset(
             {
-                # Event-level variables (event dimension)
-                "ccsds_index": (["event"], ccsds_index),
-                "event_met": (["event"], event_met_values),
-                "coincidence_type": (["event"], coincidence_type),
-                "nominal_bin": (["event"], nominal_bin),
                 # Packet-level variables (epoch dimension)
                 "ccsds_met": (["epoch"], packet_mets),
                 "esa_step": (["epoch"], packet_esa_steps),
+                # Event-level variables (event dimension)
+                "ccsds_index": (["event_met"], ccsds_index),
+                "coincidence_type": (["event_met"], coincidence_type),
+                "nominal_bin": (["even_met"], nominal_bin),
             },
             coords={
-                "event": np.arange(n_events),
                 "epoch": np.arange(n_packets),
+                "event_met": event_met_values,
             },
         )
 
@@ -2971,8 +2970,8 @@ class TestStatisticalFilter2:
         l1b_de = self._create_l1b_de_for_filter2()
         # Change all events to unqualified type
         l1b_de["coincidence_type"] = xr.DataArray(
-            np.full(len(l1b_de["event"]), 4, dtype=np.uint8),
-            dims=["event"],
+            np.full(len(l1b_de["event_met"]), 4, dtype=np.uint8),
+            dims=["event_met"],
         )
 
         # Create qualified mask - no events match type 12
@@ -3020,16 +3019,15 @@ class TestStatisticalFilter2:
 
         l1b_de = xr.Dataset(
             {
-                "ccsds_index": (["event"], ccsds_index),
-                "event_met": (["event"], event_met_values),
-                "coincidence_type": (["event"], coincidence_type),
-                "nominal_bin": (["event"], nominal_bin),
                 "ccsds_met": (["epoch"], packet_mets),
                 "esa_step": (["epoch"], packet_esa_steps),
+                "ccsds_index": (["event_met"], ccsds_index),
+                "coincidence_type": (["event_met"], coincidence_type),
+                "nominal_bin": (["event_met"], nominal_bin),
             },
             coords={
-                "event": np.arange(n_events),
                 "epoch": np.arange(n_packets),
+                "event_met": event_met_values,
             },
         )
 
@@ -3070,11 +3068,11 @@ class TestStatisticalFilter2:
                 ],
                 dtype=np.float64,
             ),
-            dims=["event"],
+            dims=["event_met"],
         )
         l1b_de["nominal_bin"] = xr.DataArray(
             np.array([40, 41, 42, 43, 44, 45, 10, 20, 30, 50], dtype=np.uint8),
-            dims=["event"],
+            dims=["event_met"],
         )
 
         # Create qualified mask based on coincidence type 12
@@ -3119,11 +3117,11 @@ class TestStatisticalFilter2:
                 ],
                 dtype=np.float64,
             ),
-            dims=["event"],
+            dims=["event_met"],
         )
         l1b_de["nominal_bin"] = xr.DataArray(
             np.array([10, 11, 12, 13, 14, 15, 70, 71, 72, 73, 74, 75], dtype=np.uint8),
-            dims=["event"],
+            dims=["event_met"],
         )
 
         # Create qualified mask based on coincidence type 12
@@ -3157,11 +3155,11 @@ class TestStatisticalFilter2:
             np.array(
                 [1000.01, 1000.02, 1000.03, 1000.04, 1000.05, 1000.06], dtype=np.float64
             ),
-            dims=["event"],
+            dims=["event_met"],
         )
         l1b_de["nominal_bin"] = xr.DataArray(
             np.array([0, 0, 1, 1, 2, 2], dtype=np.uint8),
-            dims=["event"],
+            dims=["event_met"],
         )
 
         # Create qualified mask based on coincidence type 12
@@ -3209,11 +3207,11 @@ class TestStatisticalFilter2:
                 ],
                 dtype=np.float64,
             ),
-            dims=["event"],
+            dims=["event_met"],
         )
         l1b_de["nominal_bin"] = xr.DataArray(
             np.array([40, 41, 42, 43, 10, 20, 30, 50, 60, 70], dtype=np.uint8),
-            dims=["event"],
+            dims=["event_met"],
         )
 
         # Create qualified mask based on coincidence type 12
