@@ -113,7 +113,7 @@ def test_get_angular_profiles():
 def test_get_energy_efficiencies(ancillary_files):
     """Tests function get_get_energy_efficiencies."""
 
-    u45_efficiencies = get_energy_efficiencies(ancillary_files)
+    u45_efficiencies = get_energy_efficiencies(ancillary_files, "ultra45")
 
     assert u45_efficiencies.shape == (58081, 157)
 

@@ -187,6 +187,7 @@ def calculate_helio_pset(
         theta_vals.values,
         phi_vals.values,
         n_pix,
+        sensor_id,
         ancillary_files,
         apply_bsf,
     )

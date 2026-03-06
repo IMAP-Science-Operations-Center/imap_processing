@@ -176,6 +176,7 @@ def calculate_spacecraft_pset(
         theta_vals,
         phi_vals,
         n_pix,
+        sensor_id,
         ancillary_files,
         apply_bsf,
     )

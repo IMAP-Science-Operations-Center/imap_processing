@@ -694,7 +694,7 @@ def test_get_efficiency():
         / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv"
     }
 
-    efficiency = get_efficiency(energy, phi, theta, ancillary_files)
+    efficiency = get_efficiency(energy, phi, theta, ancillary_files, "ultra45")
     expected_efficiency = np.array([0.0593281, 0.21803386, 0.0593281, 0.0628940])
 
     np.testing.assert_allclose(efficiency, expected_efficiency, atol=1e-03, rtol=0)

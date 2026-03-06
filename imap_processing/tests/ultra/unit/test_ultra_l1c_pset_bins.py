@@ -374,6 +374,7 @@ def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_dat
         mock_theta,
         mock_phi,
         npix=pix,
+        sensor_id=45,
         ancillary_files=ancillary_files,
         apply_bsf=False,
     )

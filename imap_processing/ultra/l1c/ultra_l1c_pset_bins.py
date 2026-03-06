@@ -501,6 +501,7 @@ def get_efficiencies_and_geometric_function(
     theta_vals: np.ndarray,
     phi_vals: np.ndarray,
     npix: int,
+    sensor_id: int,
     ancillary_files: dict,
     apply_bsf: bool = True,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -529,6 +530,8 @@ def get_efficiencies_and_geometric_function(
         corresponding phi for each pixel (and energy, if present).
     npix : int
         Number of HEALPix pixels.
+    sensor_id : int
+        Sensor ID, either 45 or 90.
     ancillary_files : dict
         Dictionary containing ancillary files.
     apply_bsf : bool, optional
@@ -543,9 +546,10 @@ def get_efficiencies_and_geometric_function(
         Averaged efficiencies across all spin phases.
         Shape = (n_energy_bins, npix).
     """
+    sensor_name = f"ultra{sensor_id}"
     # Load callable efficiency interpolator function
     eff_interpolator, theta_min_max, phi_min_max = get_efficiency_interpolator(
-        ancillary_files
+        ancillary_files, sensor_name
     )
     # load geometric factor lookup table
     geometric_lookup_table = load_geometric_factor_tables(
@@ -622,6 +626,7 @@ def get_efficiencies_and_geometric_function(
                 phi_at_spin_clipped[pixel_inds],
                 theta_at_spin_clipped[pixel_inds],
                 ancillary_files,
+                sensor_name,
                 interpolator=eff_interpolator,
             )
 
