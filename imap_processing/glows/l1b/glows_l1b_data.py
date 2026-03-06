@@ -1035,6 +1035,7 @@ class HistogramL1B:
         # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 2.
         # Checks whether the total count in a given histogram is far from the daily average.
         # Placeholder until daily histogram is available in glows_l1b.py.
+        # TODO: this equation needs to be clarified.
         is_beyond_daily_statistical_error = np.uint8(1)
 
         # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 3-6.

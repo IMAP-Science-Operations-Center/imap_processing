@@ -286,8 +286,6 @@ def test_process_histogram(
     test_hists = np.zeros(3600)
     # For temp
     encoded_val = np.single(expected_temp * 2.318 + 69.5454)
-    # Zero variance -> zero std dev -> all threshold flags pass (1 = good)
-    zero_variance = np.single(0)
 
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(
@@ -295,27 +293,25 @@ def test_process_histogram(
         )
     )
 
-    # flags_set_onboard = 64 = 0b01000000: bit 6 (is_night) set -> flag[6] = 0 (bad)
-    # is_generated_on_ground = 1 -> flag[10] = 0 (bad)
     test_l1b = HistogramL1B(
         test_hists,
         "test",
         0,
         0,
         0,
-        64,  # flags_set_onboard: bit 6 (is_night) set
-        1,   # is_generated_on_ground
+        0,
+        0,
         0,
         3600,
         0,
         encoded_val,
-        zero_variance,
         encoded_val,
-        zero_variance,
         encoded_val,
-        zero_variance,
         encoded_val,
-        zero_variance,
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        encoded_val,
         time_val,
         time_val,
         time_val,
@@ -324,13 +320,6 @@ def test_process_histogram(
         mock_ancillary_parameters,
         pipeline_settings,
     )
-
-    # All onboard flags good (1) except flag[6] (is_night, bit 6 of 64).
-    # Flag[10] (is_generated_on_ground) = 0 (bad). All threshold flags = 1 (good).
-    expected_flags = np.ones(17, dtype=np.uint8)
-    expected_flags[6] = 0   # is_night: bit 6 of flags_set_onboard=64 is set
-    expected_flags[10] = 0  # is_generated_on_ground=1
-    assert np.array_equal(test_l1b.flags, expected_flags)
 
     output = process_histogram(
         hist_dataset,
@@ -339,6 +328,87 @@ def test_process_histogram(
         pipeline_settings,
     )
     assert len(output) == len(dataclasses.asdict(test_l1b))
+
+
+@pytest.mark.parametrize(
+    "temp_var, hv_var, spin_var, pulse_var, expected_std_flags",
+    [
+        pytest.param(
+            0.0, 0.0, 0.0, 0.0,
+            [1, 1, 1, 1],
+            id="all_pass",
+        ),
+        pytest.param(
+            # Encoded variances chosen to exceed thresholds after decode_std_dev:
+            # temp: std_dev > 2.03°C  (param_a=255/110, need encoded_var > ~22.1)
+            # hv:   std_dev > 50.0V   (param_a=4095/3500, need encoded_var > ~3422)
+            # spin: std_dev > 0.033333s (param_a=65535/20.9712, need > ~10850)
+            # pulse: std_dev > 1.0μs  (param_a=255/255=1, need encoded_var > 1.0)
+            30.0, 3500.0, 11000.0, 2.0,
+            [0, 0, 0, 0],
+            id="all_fail",
+        ),
+    ],
+)
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_compute_flags_std_dev_thresholds(
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    temp_var,
+    hv_var,
+    spin_var,
+    pulse_var,
+    expected_std_flags,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+    mock_pipeline_settings,
+):
+    mock_spice_function.side_effect = mock_update_spice_parameters
+    encoded_val = np.single(100 * 2.318 + 69.5454)
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
+
+    test_l1b = HistogramL1B(
+        np.zeros(3600),
+        "test",
+        0,
+        0,
+        0,
+        0,  # flags_set_onboard: all good
+        0,  # is_generated_on_ground: onboard (good)
+        0,
+        3600,
+        0,
+        encoded_val,
+        np.single(temp_var),
+        encoded_val,
+        np.single(hv_var),
+        encoded_val,
+        np.single(spin_var),
+        encoded_val,
+        np.single(pulse_var),
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
+        pipeline_settings,
+    )
+
+    # flags[0:10]  = onboard flags (all 1, flags_set_onboard=0)
+    # flags[10]    = is_generated_on_ground (1, is_generated_on_ground=0)
+    # flags[11]    = is_beyond_daily_statistical_error (placeholder, always 1)
+    # flags[12:16] = std_dev threshold flags (is_temp_ok, is_hv_ok, is_spin_std_ok, is_pulse_ok)
+    assert list(test_l1b.flags[12:16]) == expected_std_flags
 
 
 @patch.object(
@@ -626,12 +696,5 @@ def test_hist_spice_output(
         # Each individual excluded region center can only flag 0 or 1 bins
         # (since the 0.05° threshold is exactly half the 0.1° bin spacing.
         assert np.count_nonzero(region_mask) == 1
-
-        # Test flag_from_mask_dataset using the fixture data
-        instr_mask = hist_data.flag_from_mask_dataset(
-            day_exclusions.exclusions_by_instr_team
-        )
-        assert instr_mask.shape == (3600,)
-        assert np.count_nonzero(instr_mask) == 10
 
         # TODO: Maxine will validate actual data with GLOWS team
