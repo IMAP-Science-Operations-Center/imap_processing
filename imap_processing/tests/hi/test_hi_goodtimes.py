@@ -2443,10 +2443,13 @@ class TestBuildPerSweepDatasets:
         """Test that per-sweep datasets are built correctly."""
         ds = self._create_test_dataset()
 
-        # Create qualified masks dict based on coincidence type 12
-        qualified_masks = {0: np.isin(ds["coincidence_type"].values, [12])}
+        # Add qualified mask based on coincidence type 12 directly to dataset
+        ds["qualified_mask"] = xr.DataArray(
+            np.isin(ds["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
 
-        per_sweep_datasets = _build_per_sweep_datasets([ds], qualified_masks)
+        per_sweep_datasets = _build_per_sweep_datasets([ds])
 
         # Should have per-sweep dataset for index 0 with 2D structure
         assert 0 in per_sweep_datasets
@@ -2470,13 +2473,17 @@ class TestBuildPerSweepDatasets:
         ds1 = self._create_test_dataset(base_met=1000.0)
         ds2 = self._create_test_dataset(base_met=2000.0)
 
-        # Create qualified masks dict for both datasets
-        qualified_masks = {
-            0: np.isin(ds1["coincidence_type"].values, [12]),
-            1: np.isin(ds2["coincidence_type"].values, [12]),
-        }
+        # Add qualified masks directly to datasets
+        ds1["qualified_mask"] = xr.DataArray(
+            np.isin(ds1["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
+        ds2["qualified_mask"] = xr.DataArray(
+            np.isin(ds2["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
 
-        per_sweep_datasets = _build_per_sweep_datasets([ds1, ds2], qualified_masks)
+        per_sweep_datasets = _build_per_sweep_datasets([ds1, ds2])
 
         # Should have per-sweep datasets for both indices
         assert 0 in per_sweep_datasets
@@ -2643,17 +2650,17 @@ class TestStatisticalFilter1:
             self._create_l1b_de_dataset(events_per_packet=10, base_met=3500.0),
         ]
 
-        # Create qualified masks dict based on coincidence type 12
-        qualified_masks = {
-            i: np.isin(ds["coincidence_type"].values, [12])
-            for i, ds in enumerate(l1b_de_datasets)
-        }
+        # Add qualified masks directly to datasets
+        for ds in l1b_de_datasets:
+            ds["qualified_mask"] = xr.DataArray(
+                np.isin(ds["coincidence_type"].values, [12]),
+                dims=["event_met"],
+            )
 
         mark_statistical_filter_1(
             goodtimes_for_filter1,
             l1b_de_datasets,
             current_index=2,
-            qualified_masks=qualified_masks,
         )
 
         # All times should still be good
@@ -2705,17 +2712,17 @@ class TestStatisticalFilter1:
             },
         )
 
-        # Create qualified masks dict based on coincidence type 12
-        qualified_masks = {
-            i: np.isin(ds["coincidence_type"].values, [12])
-            for i, ds in enumerate(l1b_de_datasets)
-        }
+        # Add qualified masks directly to datasets
+        for ds in l1b_de_datasets:
+            ds["qualified_mask"] = xr.DataArray(
+                np.isin(ds["coincidence_type"].values, [12]),
+                dims=["event_met"],
+            )
 
         mark_statistical_filter_1(
             goodtimes_for_filter1,
             l1b_de_datasets,
             current_index=2,
-            qualified_masks=qualified_masks,
         )
 
         # At least the first MET should be marked bad (extreme outlier)
@@ -2729,36 +2736,36 @@ class TestStatisticalFilter1:
             self._create_l1b_de_dataset(),
         ]
 
-        # Create qualified masks dict based on coincidence type 12
-        qualified_masks = {
-            i: np.isin(ds["coincidence_type"].values, [12])
-            for i, ds in enumerate(l1b_de_datasets)
-        }
+        # Add qualified masks directly to datasets
+        for ds in l1b_de_datasets:
+            ds["qualified_mask"] = xr.DataArray(
+                np.isin(ds["coincidence_type"].values, [12]),
+                dims=["event_met"],
+            )
 
         with pytest.raises(ValueError, match="At least 4 valid Pointings required"):
             mark_statistical_filter_1(
                 goodtimes_for_filter1,
                 l1b_de_datasets,
                 current_index=1,
-                qualified_masks=qualified_masks,
             )
 
     def test_current_index_out_of_range(self, goodtimes_for_filter1):
         """Test that current_index out of range raises ValueError."""
-        l1b_de_datasets = [self._create_l1b_de_dataset()] * 5
+        l1b_de_datasets = [self._create_l1b_de_dataset() for _ in range(5)]
 
-        # Create qualified masks dict based on coincidence type 12
-        qualified_masks = {
-            i: np.isin(ds["coincidence_type"].values, [12])
-            for i, ds in enumerate(l1b_de_datasets)
-        }
+        # Add qualified masks directly to datasets
+        for ds in l1b_de_datasets:
+            ds["qualified_mask"] = xr.DataArray(
+                np.isin(ds["coincidence_type"].values, [12]),
+                dims=["event_met"],
+            )
 
         with pytest.raises(ValueError, match="current_index.*out of range"):
             mark_statistical_filter_1(
                 goodtimes_for_filter1,
                 l1b_de_datasets,
                 current_index=10,
-                qualified_masks=qualified_masks,
             )
 
 
@@ -2974,13 +2981,15 @@ class TestStatisticalFilter2:
             dims=["event_met"],
         )
 
-        # Create qualified mask - no events match type 12
-        qualified_mask = np.isin(l1b_de["coincidence_type"].values, [12])
+        # Add qualified mask directly to dataset - no events match type 12
+        l1b_de["qualified_mask"] = xr.DataArray(
+            np.isin(l1b_de["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
 
         mark_statistical_filter_2(
             goodtimes_for_filter2,
             l1b_de,
-            qualified_mask,
             min_events=6,
             max_time_delta=10.0,
         )
@@ -3031,13 +3040,15 @@ class TestStatisticalFilter2:
             },
         )
 
-        # Create qualified mask based on coincidence type 12
-        qualified_mask = np.isin(l1b_de["coincidence_type"].values, [12])
+        # Add qualified mask directly to dataset
+        l1b_de["qualified_mask"] = xr.DataArray(
+            np.isin(l1b_de["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
 
         mark_statistical_filter_2(
             goodtimes_for_filter2,
             l1b_de,
-            qualified_mask,
             min_events=6,
             max_time_delta=0.2,
         )
@@ -3075,13 +3086,15 @@ class TestStatisticalFilter2:
             dims=["event_met"],
         )
 
-        # Create qualified mask based on coincidence type 12
-        qualified_mask = np.isin(l1b_de["coincidence_type"].values, [12])
+        # Add qualified mask directly to dataset
+        l1b_de["qualified_mask"] = xr.DataArray(
+            np.isin(l1b_de["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
 
         mark_statistical_filter_2(
             goodtimes_for_filter2,
             l1b_de,
-            qualified_mask,
             min_events=6,
             max_time_delta=0.1,
             bin_padding=1,
@@ -3124,13 +3137,15 @@ class TestStatisticalFilter2:
             dims=["event_met"],
         )
 
-        # Create qualified mask based on coincidence type 12
-        qualified_mask = np.isin(l1b_de["coincidence_type"].values, [12])
+        # Add qualified mask directly to dataset
+        l1b_de["qualified_mask"] = xr.DataArray(
+            np.isin(l1b_de["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
 
         mark_statistical_filter_2(
             goodtimes_for_filter2,
             l1b_de,
-            qualified_mask,
             min_events=6,
             max_time_delta=0.1,
             bin_padding=1,
@@ -3162,13 +3177,15 @@ class TestStatisticalFilter2:
             dims=["event_met"],
         )
 
-        # Create qualified mask based on coincidence type 12
-        qualified_mask = np.isin(l1b_de["coincidence_type"].values, [12])
+        # Add qualified mask directly to dataset
+        l1b_de["qualified_mask"] = xr.DataArray(
+            np.isin(l1b_de["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
 
         mark_statistical_filter_2(
             goodtimes_for_filter2,
             l1b_de,
-            qualified_mask,
             min_events=6,
             max_time_delta=0.1,
             bin_padding=2,
@@ -3214,14 +3231,16 @@ class TestStatisticalFilter2:
             dims=["event_met"],
         )
 
-        # Create qualified mask based on coincidence type 12
-        qualified_mask = np.isin(l1b_de["coincidence_type"].values, [12])
+        # Add qualified mask directly to dataset
+        l1b_de["qualified_mask"] = xr.DataArray(
+            np.isin(l1b_de["coincidence_type"].values, [12]),
+            dims=["event_met"],
+        )
 
         # With min_events=4, should detect cluster
         mark_statistical_filter_2(
             goodtimes_for_filter2,
             l1b_de,
-            qualified_mask,
             min_events=4,
             max_time_delta=0.1,
             bin_padding=1,
@@ -3287,8 +3306,9 @@ class TestStatisticalFilter2:
             },
         )
 
-        # Create qualified mask - only type 12 events are qualified
+        # Add qualified mask directly to dataset - only type 12 events are qualified
         qualified_mask = np.isin(l1b_de["coincidence_type"].values, [12])
+        l1b_de["qualified_mask"] = xr.DataArray(qualified_mask, dims=["event_met"])
 
         # Verify our test setup: 6 unqualified, 6 qualified
         assert np.sum(~qualified_mask) == 6  # 6 unqualified
@@ -3297,7 +3317,6 @@ class TestStatisticalFilter2:
         mark_statistical_filter_2(
             goodtimes_for_filter2,
             l1b_de,
-            qualified_mask,
             min_events=6,
             max_time_delta=0.1,
             bin_padding=1,
