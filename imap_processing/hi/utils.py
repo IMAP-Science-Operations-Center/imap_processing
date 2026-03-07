@@ -578,7 +578,7 @@ class CalibrationProductConfig:
 def get_tof_window_mask(
     de_ds: xr.Dataset,
     tof_windows: dict[str, tuple[float, float]],
-    tof_fill_vals: dict[str, float] | None = None,
+    tof_fill_vals: dict[str, float],
 ) -> NDArray[np.bool_]:
     """
     Generate mask indicating which DEs pass TOF window checks.
@@ -603,9 +603,6 @@ def get_tof_window_mask(
     mask : numpy.ndarray
         Boolean mask where True = event passes all specified TOF window checks.
     """
-    if tof_fill_vals is None:
-        tof_fill_vals = {}
-
     # Start with all True mask
     n_events = len(de_ds["event_met"]) if "event_met" in de_ds.dims else 0
     if n_events == 0:
@@ -614,9 +611,6 @@ def get_tof_window_mask(
     combined_mask = np.ones(n_events, dtype=bool)
 
     for tof_field, (low, high) in tof_windows.items():
-        if tof_field not in de_ds:
-            continue
-
         tof_array = de_ds[tof_field].values
         # TOF is in window if between low/high bounds OR equals fill value
         in_window = (low <= tof_array) & (tof_array <= high)
@@ -710,8 +704,7 @@ def _build_tof_fill_vals(de_ds: xr.Dataset) -> dict[str, float]:
     tof_fill_vals = {}
     for pair in CalibrationProductConfig.tof_detector_pairs:
         tof_var = f"tof_{pair}"
-        if tof_var in de_ds:
-            tof_fill_vals[tof_var] = de_ds[tof_var].attrs.get("FILLVAL", np.nan)
+        tof_fill_vals[tof_var] = de_ds[tof_var].attrs.get("FILLVAL", np.nan)
     return tof_fill_vals
 
 
