@@ -385,6 +385,7 @@ def calculate_exposure_time(
     -------
     exposure_pointing: xarray.DataArray
         Adjusted exposure times accounting for dead time.
+        Shape: ``(energy, pixel)``.
     """
     # nominal spin phase step.
     nominal_ms_step = 15 / valid_spun_pixels.shape[0]  # time step
@@ -431,7 +432,7 @@ def get_spacecraft_exposure_times(
         Boundary scale factors for each pixel at each spin phase.
     aux_dataset : xarray.Dataset
         Auxiliary dataset containing spin information.
-    energy_bins : int
+    energy_bins : np.ndarray
         Array of energy bin geometric means.
     goodtimes_dataset : xarray.Dataset
         Dataset containing the quality-filtered spins with energy dependent quality
@@ -468,6 +469,11 @@ def get_spacecraft_exposure_times(
     exposure_time = calculate_exposure_time(
         nominal_deadtime_ratios, valid_spun_pixels, boundary_scale_factors, apply_bsf
     )
+    if exposure_time.ndim != 2:
+        raise ValueError(
+            "Exposure time must be 2D with dimensions ('energy', 'pixel'); "
+            f"got dims {exposure_time.dims} and shape {exposure_time.shape}."
+        )
     nominal_spin_seconds = 15.0
     # Use filtered spins from goodtimes dataset to include only the spins that
     # passed the quality flag filtering.
@@ -510,18 +516,11 @@ def get_spacecraft_exposure_times(
     )
 
     logger.info(
-        f"Calculated total spins. Found {n_spins_in_pointing} valid spins per energy"
-        f"range."
+        f"Calculated total spins. Found {n_spins_in_pointing.tolist()} valid spins per "
+        f"energy range."
     )
-    if exposure_time.ndim == 1:
-        # Shape (n_energy_bins, n_pix)
-        exposure_pointing_adjusted = (
-            exposure_time.data[np.newaxis, :] * n_spins_in_pointing
-        )
-    else:
-        exposure_pointing_adjusted = (
-            exposure_time.data * n_spins_in_pointing[:, np.newaxis]
-        )
+    # Shape (n_energy_bins, n_pix)
+    exposure_pointing_adjusted = exposure_time.data * n_spins_in_pointing[:, np.newaxis]
 
     return exposure_pointing_adjusted, nominal_deadtime_ratios.values
 

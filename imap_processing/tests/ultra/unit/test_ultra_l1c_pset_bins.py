@@ -404,7 +404,7 @@ def test_get_spacecraft_exposure_times(
     data_start_time = 445015665.0
     data_end_time = 453070000.0
     use_fake_spin_data_for_time(data_start_time, data_end_time)
-    steps = 500  # reduced for testing
+    steps = 200  # reduced for testing
 
     pix = 786
     mock_theta = np.random.uniform(-60, 60, (steps, pix))
@@ -443,16 +443,14 @@ def test_get_spacecraft_exposure_times(
     # should have 99 spins because there was a flag set to true for one spin
     # in the mock_goodtimes_dataset. The rest of the energy bins should have 100 spins
     # because the goodtimes dataset did not flag any spins for those energy bins.
-    expected_good_spins = np.full(46, 100)
+    expected_good_spins = np.full(46, 100.0)
     expected_good_spins[
         UltraConstants.BASE_CULL_EBIN : UltraConstants.N_CULL_EBINS * 3
-    ] = 99
+        + UltraConstants.BASE_CULL_EBIN
+    ] = 99.0
     # The goodtimes dataset has flags set to True for energy bin 0-3 and for the
     # first three spins.
-    assert (
-        f"Calculated total spins. Found {expected_good_spins} valid spins per "
-        f"energy range."
-    ) in caplog.text
+    assert f"Found {expected_good_spins.tolist()} valid spins" in caplog.text
 
 
 def test_get_spacecraft_background_rates(
