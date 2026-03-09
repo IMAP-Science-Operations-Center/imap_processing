@@ -1124,7 +1124,7 @@ def get_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
 
 def get_binned_energy_ranges(
     energy_bin_edges: list[tuple[float, float]],
-    max_energy: int | None = UltraConstants.MAX_ENERGY_THRESHOLD,
+    max_energy: float | None = UltraConstants.MAX_ENERGY_THRESHOLD,
 ) -> NDArray:
     """
     Create L1C energy ranges by grouping energy bins.
@@ -1133,7 +1133,7 @@ def get_binned_energy_ranges(
     ----------
     energy_bin_edges : list[tuple[float, float]]
         List of (start, stop) tuples for each energy bin.
-    max_energy : int | None
+    max_energy : float | None
         Maximum energy to include in the energy ranges. If None, don't set a max.
 
     Returns
@@ -1156,12 +1156,11 @@ def get_binned_energy_ranges(
     energy_ranges = np.append(
         energy_starts, energy_bin_edges[last_group_end_ind - 1][1]
     )
-
     if max_energy is not None:
         # get the first index where the energy range exceeds the max energy
         # exclude the last edge since it is the stop energy of the last range
         max_reached_idx = np.where(energy_ranges[:-1] > max_energy)[0]
-        if np.any(energy_ranges[:-1] > max_energy):
+        if max_reached_idx:
             max_reached_idx = max_reached_idx[0]
         else:
             # if no energy range exceeds the max energy, return the original energy
@@ -1172,8 +1171,11 @@ def get_binned_energy_ranges(
         energy_ranges_lim = energy_ranges[
             : max_reached_idx + 2
         ].copy()  # include the first edge above max energy and the last edge
-        # Set the last edge to be the max energy to make the last bin a "catch-all" for
-        # all energies above the max energy.
+        # update the last bin to start at the first original edge above the max energy
+        # and end at the last edge
+        energy_ranges_lim[-2] = next(
+            e[0] for e in energy_bin_edges if e[0] > max_energy
+        )
         energy_ranges_lim[-1] = energy_ranges[-1]
         energy_ranges = energy_ranges_lim
 
@@ -1222,7 +1224,6 @@ def get_binned_spins_edges(
     spin_tbin_edges = np.append(
         spin_tbin_edges, spin_start_times[last_spin_idx] + spin_periods[last_spin_idx]
     )
-    return spin_tbin_edges
     return spin_tbin_edges
 
 

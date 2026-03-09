@@ -191,10 +191,10 @@ class UltraConstants:
     # Number of energy bins to use in energy dependent culling
     N_CULL_EBINS = 8
     # Bin to start culling at
-    BASE_CULL_EBIN = 3
+    BASE_CULL_EBIN = 0
     # Maximum energy threshold in keV. When creating the energy ranges for culling,
     # merge all energy bins above this threshold into one bin.
-    MAX_ENERGY_THRESHOLD = 100
+    MAX_ENERGY_THRESHOLD = 116.0
     # Angle threshold in radians for ULTRA 45 degree culling.
     # This is only needed for ULTRA 45 since Earth may be in the FOV.
     EARTH_ANGLE_45_THRESHOLD = np.radians(20)
@@ -202,14 +202,16 @@ class UltraConstants:
     # the number of energy bins used.
     # n_bins=len(PSET_ENERGY_BIN_EDGES)[BASE_CULL_EBIN:] // N_CULL_EBINS
     # an error will be raised if this does not match n_bins
-    HIGH_ENERGY_CULL_THRESHOLDS = np.array([2.0, 1.5, 0.6, 0.2, 0.2]) * SPIN_BIN_SIZE
+    HIGH_ENERGY_CULL_THRESHOLDS = (
+        np.array([4.0, 2.0, 1.25, 0.9, 0.2, 0.2]) * SPIN_BIN_SIZE
+    )
     # Use the channel defined below to determine which spins are contaminated
-    HIGH_ENERGY_CULL_CHANNEL = 4
+    HIGH_ENERGY_CULL_CHANNEL = 5
     # For the high energy cull, we want to combine spin bins because an SEP event is
     # expected to be over a longer time period. Low voltage and statistical culling
     # will still be done on the original spin bins. The variable below defines the
     # radius (in number of spin bins) to use when combining for the high energy cull.
-    HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS = 3
+    HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS = 5
     # Number of iterations to perform for statistical outlier culling.
     STAT_CULLING_N_ITER = 5
     # Sigma threshold to use for statistical outlier culling.

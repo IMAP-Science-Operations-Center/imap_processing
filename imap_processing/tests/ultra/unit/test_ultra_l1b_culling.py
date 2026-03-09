@@ -694,6 +694,14 @@ def test_flag_high_energy():
     assert not np.any(quality_flags[:, 2])
 
 
+@mock.patch(
+    "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_CULL_CHANNEL",
+    4,
+)
+@mock.patch(
+    "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS",
+    3,
+)
 @pytest.mark.external_test_data
 def test_validate_high_energy_cull():
     """Validate that high energy spins are correctly flagged"""
@@ -723,9 +731,8 @@ def test_validate_high_energy_cull():
         xspin.spin_start_time.values,
         spin_bin_size,
     )
-    intervals, _, _ = build_energy_bins()
     # Get the energy ranges
-    energy_ranges = get_binned_energy_ranges(intervals)
+    energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
     e_flags = flag_high_energy(
         de_ds, spin_tbin_edges, energy_ranges, None, mock_thresholds
     )
@@ -870,9 +877,8 @@ def test_validate_stat_cull():
         xspin.spin_start_time.values,
         spin_bin_size,
     )
-    intervals, _, _ = build_energy_bins()
     # Get the energy ranges
-    energy_ranges = get_binned_energy_ranges(intervals)
+    energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
 
     # Create a mask of flagged events to test that the stat cull algorithm
     # properly ignores these. The test data was created using this exact mask as well.
@@ -903,13 +909,14 @@ def test_get_energy_range_flags():
     energy_ranges = get_binned_energy_ranges(intervals)
     flags = get_energy_range_flags(energy_ranges)
 
-    np.testing.assert_array_equal(flags, 2 ** np.arange(5))
+    np.testing.assert_array_equal(flags, 2 ** np.arange(6))
 
 
 def test_get_binned_energy_ranges():
     """Tests get_binned_energy_ranges function."""
     intervals, _, _ = build_energy_bins()
     energy_ranges = get_binned_energy_ranges(intervals)
-
-    expected_energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
+    expected_energy_ranges = np.array(
+        [3.0, 6.96, 15.71, 34.9866, 77.9161, 116.276, 316.335]
+    )
     np.testing.assert_array_equal(energy_ranges, expected_energy_ranges)
