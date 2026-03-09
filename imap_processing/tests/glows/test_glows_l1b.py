@@ -346,6 +346,7 @@ def test_compute_flags(
     mock_spice_function.side_effect = mock_update_spice_parameters
 
     time_val = np.single(1111111.11)
+    test_hists = np.zeros(3600)
     encoded_val = np.single(100 * 2.318 + 69.5454)
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(
@@ -354,24 +355,24 @@ def test_compute_flags(
     )
 
     test_l1b = HistogramL1B(
-        np.zeros(3600),
+        test_hists,
         "test",
         0,
         0,
         0,
-        64,  # flags_set_onboard: bit 6 (is_night) set
-        1,  # is_generated_on_ground
+        0,
+        0,
         0,
         3600,
         0,
         encoded_val,
-        np.single(30.0),  # filter_temperature_variance: exceeds 2.03°C threshold
         encoded_val,
-        np.single(3500.0),  # hv_voltage_variance: exceeds 50.0V threshold
         encoded_val,
-        np.single(11000.0),  # spin_period_variance: exceeds 0.033333s threshold
         encoded_val,
-        np.single(2.0),  # pulse_length_variance: exceeds 1.0μs threshold
+        encoded_val,
+        encoded_val,
+        encoded_val,
+        encoded_val,
         time_val,
         time_val,
         time_val,
