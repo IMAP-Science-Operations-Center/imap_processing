@@ -1160,7 +1160,7 @@ def get_binned_energy_ranges(
         # get the first index where the energy range exceeds the max energy
         # exclude the last edge since it is the stop energy of the last range
         max_reached_idx = np.where(energy_ranges[:-1] > max_energy)[0]
-        if max_reached_idx:
+        if np.any(energy_ranges[:-1] > max_energy):
             max_reached_idx = max_reached_idx[0]
         else:
             # if no energy range exceeds the max energy, return the original energy
