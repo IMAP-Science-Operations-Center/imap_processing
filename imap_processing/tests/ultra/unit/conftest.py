@@ -8,6 +8,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l0.decom_ultra import (
     process_ultra_cmd_echo,
     process_ultra_energy_rates,
@@ -654,11 +655,12 @@ def mock_goodtimes_dataset():
     energy_ranges = get_binned_energy_ranges(intervals)
     energy_flags = get_energy_range_flags(energy_ranges)
 
-    # energy_range_flags should be size 16 and energy_range_edges should be size 17
-    energy_flags_padded = np.zeros(16, dtype=np.uint16)
+    energy_flags_padded = np.zeros(UltraConstants.MAX_ENERGY_RANGES, dtype=np.uint16)
     energy_flags_padded[: len(energy_flags)] = energy_flags
 
-    energy_ranges_padded = np.full(17, -1.0e31, dtype=np.float32)
+    energy_ranges_padded = np.full(
+        UltraConstants.MAX_ENERGY_RANGE_EDGES, -1.0e31, dtype=np.float32
+    )
     energy_ranges_padded[: len(energy_ranges)] = energy_ranges
 
     nspins = 100
