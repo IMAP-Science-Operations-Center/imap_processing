@@ -491,14 +491,14 @@ def get_spacecraft_exposure_times(
     valid_spins = (
         np.bitwise_or.reduce(flag_arrays)[np.newaxis, :] & energy_flags[:, np.newaxis]
     ) == 0
-    # pad valid_spins with arrays of all true at either end if energy bins are outside
-    # the range of the goodtimes dataset energy edges
-    # If the energy bin is below or above that the ranges, that just means those
-    # ranges were not included in the quality flag filtering in the goodtimes dataset.
+    # Pad valid_spins with arrays of all true at either end to account for energy bins
+    # that fall outside the range of the goodtimes dataset energy edges. Energy bins
+    # outside these ranges were not included in the quality flag filtering, so they are
+    # considered valid (all true).
     valid_spins_padded = np.pad(
         valid_spins,
         pad_width=((1, 1), (0, 0)),
-        # pad only the energy axis (axis=0), not the spin axis
+        # pad only the energy axis
         mode="constant",
         constant_values=True,
     )
