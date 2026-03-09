@@ -385,12 +385,14 @@ def test_compute_flags(
     # flags[10]    = is_generated_on_ground (1=onboard, 0=ground)
     # flags[11]    = is_beyond_daily_statistical_error (placeholder, always 1)
     # flags[12:16] = std_dev threshold flags
+    # flags[16]    = is_beyond_background
     assert test_l1b.flags[6] == 0  # is_night
     assert test_l1b.flags[10] == 0  # is_generated_on_ground
     assert test_l1b.flags[12] == 0  # is_temp_ok
     assert test_l1b.flags[13] == 0  # is_hv_ok
     assert test_l1b.flags[14] == 0  # is_spin_std_ok
     assert test_l1b.flags[15] == 0  # is_pulse_ok
+    assert test_l1b.flags[16] == 1  # is_beyond_background
 
 
 @patch.object(
