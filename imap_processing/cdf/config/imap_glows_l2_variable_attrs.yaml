@@ -40,11 +40,11 @@ support_data_defaults: &support_data_defaults
 
 time_data_defaults: &time_data_defaults
   <<: *support_data_defaults
-  FILLVAL: 0
-  FORMAT: I1000
+  FILLVAL: ' '
+  FORMAT: A30
   UNITS: N/A
-  VALIDMIN: 0
-  VALIDMAX: 0
+  VALIDMIN: ' '
+  VALIDMAX: ' '
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 lightcurve_defaults: &lightcurve_defaults
