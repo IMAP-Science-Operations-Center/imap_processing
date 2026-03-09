@@ -670,10 +670,11 @@ def get_threshold(thresholds: dict, suffix: str) -> float | None:
         The matching threshold value, or None if no match is found.
     """
     return_value = None
-    for descriptor, value in thresholds.items():
-        if descriptor.endswith(suffix):
-            return_value = float(value)
-            break
+    for section in thresholds.values():
+        for descriptor, value in section.items():
+            if descriptor.endswith(suffix):
+                return_value = float(value)
+                break
 
     return return_value
 
