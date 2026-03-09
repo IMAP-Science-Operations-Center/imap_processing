@@ -555,6 +555,8 @@ def get_energy_and_spin_dependent_rejection_mask(
     """
     # Get the ebin flags for each energy bin from the goodtimes dataset.
     energy_range_edges = goodtimes_dataset["energy_range_edges"].values
+    # Filter out fill values from energy_range_edges (negative or zero)
+    energy_range_edges = energy_range_edges[energy_range_edges > 0]
     # Get the quality flag arrays "turned on" for energy dependent culling from the
     # goodtimes dataset.
     flag_arrays = [
@@ -564,6 +566,8 @@ def get_energy_and_spin_dependent_rejection_mask(
     # Initialize all events to not rejected
     rejected = np.zeros_like(energy, dtype=bool)
     ebin_flags = goodtimes_dataset["energy_range_flags"].values
+    # Filter out fill values (0s) from energy_range_flags
+    ebin_flags = ebin_flags[ebin_flags > 0]
     # Get the index of the spin number in the goodtimes dataset for each event
     # all spin numbers should be present in the goodtimes dataset since we have already
     # filtered any events that are not

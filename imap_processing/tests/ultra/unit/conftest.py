@@ -653,6 +653,14 @@ def mock_goodtimes_dataset():
     intervals, _, _ = build_energy_bins()
     energy_ranges = get_binned_energy_ranges(intervals)
     energy_flags = get_energy_range_flags(energy_ranges)
+
+    # energy_range_flags should be size 16 and energy_range_edges should be size 17
+    energy_flags_padded = np.zeros(16, dtype=np.uint16)
+    energy_flags_padded[: len(energy_flags)] = energy_flags
+
+    energy_ranges_padded = np.full(17, -1.0e31, dtype=np.float32)
+    energy_ranges_padded[: len(energy_ranges)] = energy_ranges
+
     nspins = 100
     flags = 2 ** np.arange(9)
     quality = np.zeros(nspins, dtype=np.uint16)
@@ -662,11 +670,11 @@ def mock_goodtimes_dataset():
     return xr.Dataset(
         {
             "spin_number": ("epoch", np.zeros(nspins)),
-            "energy_range_flags": ("energy_flags", energy_flags),
+            "energy_range_flags": ("energy_flags", energy_flags_padded),
             "quality_low_voltage": ("spin_number", quality),
             "quality_high_energy": ("spin_number", np.zeros(nspins, dtype=np.uint16)),
             "quality_statistics": ("spin_number", np.zeros(nspins, dtype=np.uint16)),
-            "energy_range_edges": ("energy_ranges", energy_ranges),
+            "energy_range_edges": ("energy_ranges", energy_ranges_padded),
             "spin_period": (
                 "spin_number",
                 np.full(nspins, 15),

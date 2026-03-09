@@ -480,14 +480,19 @@ def get_spacecraft_exposure_times(
     spin_periods = goodtimes_dataset["spin_period"].values
     energy_flags = goodtimes_dataset["energy_range_flags"].values
     # only get valid flags for the energy bins we are using at l1c
+    # Filter out fill values (0s) from energy_range_flags
     energy_flags = energy_flags[energy_flags > 0]
+    # Filter out fill values from energy_range_edges
+    energy_range_edges = goodtimes_dataset["energy_range_edges"].values
+    # Remove fill values (negative or zero)
+    energy_range_edges_valid = energy_range_edges[energy_range_edges > 0]
     # Get the quality flag arrays "turned on" for energy dependent culling from the
     # goodtimes dataset.
     flag_arrays = [
         goodtimes_dataset[flag_name].values
         for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
     ]
-    bin_to_range = np.digitize(energy_bins, goodtimes_dataset.energy_range_edges)
+    bin_to_range = np.digitize(energy_bins, energy_range_edges_valid)
     valid_spins = (
         np.bitwise_or.reduce(flag_arrays)[np.newaxis, :] & energy_flags[:, np.newaxis]
     ) == 0
