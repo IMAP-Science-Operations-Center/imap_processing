@@ -614,8 +614,7 @@ def get_tof_window_mask(
         tof_array = de_ds[tof_field].values
         # TOF is in window if between low/high bounds OR equals fill value
         in_window = (low <= tof_array) & (tof_array <= high)
-        if tof_field in tof_fill_vals:
-            in_window |= tof_array == tof_fill_vals[tof_field]
+        in_window |= tof_array == tof_fill_vals[tof_field]
 
         combined_mask &= in_window
 

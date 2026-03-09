@@ -14,8 +14,12 @@ from imap_processing.hi.utils import (
     CalibrationProductConfig,
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
+    compute_qualified_event_mask,
     create_dataset_variables,
+    filter_events_by_coincidence,
     full_dataarray,
+    get_bin_range_with_wrap,
+    get_tof_window_mask,
     parse_sensor_number,
 )
 
@@ -406,3 +410,467 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
         # Should return sorted unique calibration product numbers
         np.testing.assert_array_equal(cal_prod_numbers, np.array([5, 10, 100]))
         assert isinstance(cal_prod_numbers, np.ndarray)
+
+
+class TestGetTofWindowMask:
+    """Test suite for get_tof_window_mask function."""
+
+    @pytest.fixture
+    def mock_de_dataset(self):
+        """Create a mock L1B DE dataset with TOF values."""
+        n_events = 10
+        return xr.Dataset(
+            {
+                "tof_ab": (
+                    ["event_met"],
+                    np.array([20, 50, 100, 30, 40, 60, 10, 80, 90, 55]),
+                ),
+                "tof_ac1": (
+                    ["event_met"],
+                    np.array([10, 30, -5, 50, 20, 40, 0, 60, 70, 35]),
+                ),
+                "tof_bc1": (
+                    ["event_met"],
+                    np.array([-30, 0, -20, 10, -40, -10, -50, 15, 20, 5]),
+                ),
+                "tof_c1c2": (
+                    ["event_met"],
+                    np.array([50, 60, 80, 30, 40, 70, 20, 90, 100, 55]),
+                ),
+            },
+            coords={"event_met": np.arange(n_events, dtype=float)},
+        )
+
+    def test_all_tofs_in_window(self, mock_de_dataset):
+        """Test that events with all TOFs in window pass."""
+        # Use wide windows that include all values
+        tof_windows = {
+            "tof_ab": (0, 200),
+            "tof_ac1": (-20, 100),
+            "tof_bc1": (-100, 50),
+            "tof_c1c2": (0, 200),
+        }
+        tof_fill_vals = {k: -9999 for k in tof_windows}
+        mask = get_tof_window_mask(mock_de_dataset, tof_windows, tof_fill_vals)
+        assert np.all(mask)
+
+    def test_some_tofs_out_of_window(self, mock_de_dataset):
+        """Test that events with TOFs outside window are filtered."""
+        # tof_ab values: [20, 50, 100, 30, 40, 60, 10, 80, 90, 55]
+        # Window (25, 75) should pass indices: 1, 3, 4, 5, 9 (values 50, 30, 40, 60, 55)
+        tof_windows = {
+            "tof_ab": (25, 75),
+        }
+        tof_fill_vals = {"tof_ab": -9999}
+        mask = get_tof_window_mask(mock_de_dataset, tof_windows, tof_fill_vals)
+        expected = np.array(
+            [False, True, False, True, True, True, False, False, False, True]
+        )
+        np.testing.assert_array_equal(mask, expected)
+
+    def test_with_fill_values(self, mock_de_dataset):
+        """Test that events with fill values pass the filter."""
+        # Set some values to fill value
+        fill_val = -9999
+        mock_de_dataset["tof_ab"].values[0] = fill_val  # Was 20, now fill
+        mock_de_dataset["tof_ab"].values[2] = fill_val  # Was 100, now fill
+
+        tof_windows = {"tof_ab": (25, 75)}
+        tof_fill_vals = {"tof_ab": fill_val}
+
+        mask = get_tof_window_mask(mock_de_dataset, tof_windows, tof_fill_vals)
+        # Events 0, 2 have fill values (pass), events 1, 3, 4, 5, 9 are in window
+        expected = np.array(
+            [True, True, True, True, True, True, False, False, False, True]
+        )
+        np.testing.assert_array_equal(mask, expected)
+
+    def test_multiple_tof_windows(self, mock_de_dataset):
+        """Test with multiple TOF windows - all must pass."""
+        # tof_ab:  [20, 50, 100, 30, 40, 60, 10, 80, 90, 55]
+        # tof_ac1: [10, 30, -5, 50, 20, 40, 0, 60, 70, 35]
+        tof_windows = {
+            "tof_ab": (20, 80),  # Passes: 0,1,3,4,5,7,9 (not 2,6,8)
+            "tof_ac1": (10, 60),  # Passes: 0,1,3,4,5,7,9 (not 2,6,8)
+        }
+        tof_fill_vals = {k: -9999 for k in tof_windows}
+        mask = get_tof_window_mask(mock_de_dataset, tof_windows, tof_fill_vals)
+        # Must pass both: 0, 1, 3, 4, 5, 7, 9
+        expected = np.array(
+            [True, True, False, True, True, True, False, True, False, True]
+        )
+        np.testing.assert_array_equal(mask, expected)
+
+    def test_empty_dataset(self):
+        """Test with empty dataset."""
+        empty_ds = xr.Dataset(
+            {
+                "tof_ab": (["event_met"], np.array([])),
+                "tof_ac1": (["event_met"], np.array([])),
+                "tof_bc1": (["event_met"], np.array([])),
+                "tof_c1c2": (["event_met"], np.array([])),
+            },
+            coords={"event_met": np.array([])},
+        )
+        tof_windows = {"tof_ab": (0, 100)}
+        mask = get_tof_window_mask(empty_ds, tof_windows, {})
+        assert len(mask) == 0
+
+
+class TestFilterEventsByCoincidence:
+    """Test suite for filter_events_by_coincidence function."""
+
+    @pytest.fixture
+    def mock_de_dataset(self):
+        """Create a mock L1B DE dataset with coincidence types."""
+        # Coincidence bitmap: A=8, B=4, C1=2, C2=1
+        # ABC1C2 = 15, ABC1 = 14, AB = 12, AC1 = 10, BC1 = 6, etc.
+        return xr.Dataset(
+            {
+                "coincidence_type": (
+                    ["event_met"],
+                    np.array([15, 14, 12, 10, 6, 15, 8, 4, 2, 1]),
+                ),
+            },
+            coords={"event_met": np.arange(10, dtype=float)},
+        )
+
+    def test_single_coincidence_type(self, mock_de_dataset):
+        """Test filtering for a single coincidence type."""
+        # Filter for ABC1C2 (15)
+        mask = filter_events_by_coincidence(mock_de_dataset, [15])
+        expected = np.array(
+            [True, False, False, False, False, True, False, False, False, False]
+        )
+        np.testing.assert_array_equal(mask, expected)
+
+    def test_multiple_coincidence_types(self, mock_de_dataset):
+        """Test filtering for multiple coincidence types."""
+        # Filter for ABC1C2 (15) or ABC1 (14)
+        mask = filter_events_by_coincidence(mock_de_dataset, [15, 14])
+        expected = np.array(
+            [True, True, False, False, False, True, False, False, False, False]
+        )
+        np.testing.assert_array_equal(mask, expected)
+
+    def test_no_matching_coincidence(self, mock_de_dataset):
+        """Test when no events match the coincidence types."""
+        # Filter for type 3 which doesn't exist
+        mask = filter_events_by_coincidence(mock_de_dataset, [3])
+        assert not np.any(mask)
+
+    def test_all_matching_coincidence(self, mock_de_dataset):
+        """Test when all events match the coincidence types."""
+        all_types = [15, 14, 12, 10, 6, 8, 4, 2, 1]
+        mask = filter_events_by_coincidence(mock_de_dataset, all_types)
+        assert np.all(mask)
+
+    def test_empty_coincidence_list(self, mock_de_dataset):
+        """Test with empty coincidence type list."""
+        mask = filter_events_by_coincidence(mock_de_dataset, [])
+        assert not np.any(mask)
+
+    def test_empty_dataset(self):
+        """Test with empty dataset."""
+        empty_ds = xr.Dataset(
+            {
+                "coincidence_type": (["event_met"], np.array([], dtype=np.uint8)),
+            },
+            coords={"event_met": np.array([])},
+        )
+        mask = filter_events_by_coincidence(empty_ds, [15])
+        assert len(mask) == 0
+
+
+class TestGetBinRangeWithWrap:
+    """Test suite for get_bin_range_with_wrap function."""
+
+    def test_no_wrap_middle(self):
+        """Test range in middle of bins (no wraparound)."""
+        result = get_bin_range_with_wrap(
+            first_bin=10, last_bin=20, n_bins=90, extend_by=1
+        )
+        expected = np.arange(9, 22)  # 10-1 to 20+1
+        np.testing.assert_array_equal(result, expected)
+
+    def test_no_wrap_with_larger_extension(self):
+        """Test with larger extension value."""
+        result = get_bin_range_with_wrap(
+            first_bin=10, last_bin=20, n_bins=90, extend_by=3
+        )
+        expected = np.arange(7, 24)  # 10-3 to 20+3
+        np.testing.assert_array_equal(result, expected)
+
+    def test_wrap_at_end(self):
+        """Test wraparound at high end (88 -> 0 boundary)."""
+        result = get_bin_range_with_wrap(
+            first_bin=87, last_bin=1, n_bins=90, extend_by=1
+        )
+        # Should get bins 86, 87, 88, 89, 0, 1, 2
+        expected = np.array([86, 87, 88, 89, 0, 1, 2])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_wrap_at_start(self):
+        """Test wraparound near bin 0."""
+        result = get_bin_range_with_wrap(
+            first_bin=0, last_bin=5, n_bins=90, extend_by=1
+        )
+        # first-1 = -1 % 90 = 89, last+1 = 6
+        # This should NOT wrap (89 > 6), so we get 89,0,1,2,3,4,5,6
+        expected = np.array([89, 0, 1, 2, 3, 4, 5, 6])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_wrap_at_both_ends(self):
+        """Test when first_bin is near end and last_bin is near start."""
+        result = get_bin_range_with_wrap(
+            first_bin=88, last_bin=2, n_bins=90, extend_by=1
+        )
+        # bot = 87, top = 3
+        # Since 3 < 87, we wrap: [87, 88, 89] + [0, 1, 2, 3]
+        expected = np.array([87, 88, 89, 0, 1, 2, 3])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_single_bin_range(self):
+        """Test when first_bin equals last_bin."""
+        result = get_bin_range_with_wrap(
+            first_bin=45, last_bin=45, n_bins=90, extend_by=1
+        )
+        expected = np.array([44, 45, 46])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_zero_extension(self):
+        """Test with zero extension."""
+        result = get_bin_range_with_wrap(
+            first_bin=10, last_bin=15, n_bins=90, extend_by=0
+        )
+        expected = np.arange(10, 16)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_different_n_bins(self):
+        """Test with different number of bins."""
+        result = get_bin_range_with_wrap(
+            first_bin=350, last_bin=10, n_bins=360, extend_by=5
+        )
+        # bot = 345, top = 15
+        # Since 15 < 345, we wrap: [345..359] + [0..15]
+        expected = np.concatenate([np.arange(345, 360), np.arange(0, 16)])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_adjacent_to_boundary(self):
+        """Test bins adjacent to boundary (89 and 0)."""
+        result = get_bin_range_with_wrap(
+            first_bin=89, last_bin=89, n_bins=90, extend_by=1
+        )
+        # bot = 88, top = 0 (90 % 90)
+        # Since 0 < 88, we wrap: [88, 89] + [0]
+        expected = np.array([88, 89, 0])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_full_spin_wrap(self):
+        """Test wrapping that covers almost all bins."""
+        result = get_bin_range_with_wrap(
+            first_bin=85, last_bin=5, n_bins=90, extend_by=1
+        )
+        # bot = 84, top = 6
+        # Since 6 < 84, we wrap
+        expected = np.concatenate([np.arange(84, 90), np.arange(0, 7)])
+        np.testing.assert_array_equal(result, expected)
+
+
+class TestComputeQualifiedEventMask:
+    """Test suite for compute_qualified_event_mask function."""
+
+    @pytest.fixture
+    def mock_cal_product_config(self):
+        """Create a mock calibration product config DataFrame."""
+        # Create a config with 2 calibration products, 2 ESA energy steps
+        # Coincidence bitmap: A=8, B=4, C1=2, C2=1
+        # ABC1C2=15, ABC1=14, AB=12
+        data = {
+            "coincidence_type_list": [
+                ("ABC1C2", "ABC1"),  # cal_prod=1, esa_energy=1
+                ("ABC1C2", "ABC1"),  # cal_prod=1, esa_energy=2
+                ("AB",),  # cal_prod=2, esa_energy=1
+                ("AB",),  # cal_prod=2, esa_energy=2
+            ],
+            "tof_ab_low": [10, 10, 10, 10],
+            "tof_ab_high": [100, 100, 100, 100],
+            "tof_ac1_low": [5, 5, 5, 5],
+            "tof_ac1_high": [80, 80, 80, 80],
+            "tof_bc1_low": [-50, -50, -50, -50],
+            "tof_bc1_high": [50, 50, 50, 50],
+            "tof_c1c2_low": [20, 20, 20, 20],
+            "tof_c1c2_high": [120, 120, 120, 120],
+        }
+        index = pd.MultiIndex.from_tuples(
+            [(1, 1), (1, 2), (2, 1), (2, 2)],
+            names=["calibration_prod", "esa_energy_step"],
+        )
+        df = pd.DataFrame(data, index=index)
+        # Trigger the accessor to add coincidence_type_values column
+        _ = df.cal_prod_config.number_of_products
+        return df
+
+    @pytest.fixture
+    def mock_de_dataset(self):
+        """Create a mock L1B DE dataset with events."""
+        # 10 events with various coincidence types and TOF values
+        # Coincidence bitmap: A=8, B=4, C1=2, C2=1
+        # ABC1C2=15, ABC1=14, AB=12, A=8
+        n_events = 10
+        fill_val = -9999.0
+        ds = xr.Dataset(
+            {
+                "coincidence_type": (
+                    ["event_met"],
+                    np.array([15, 14, 12, 8, 15, 14, 12, 8, 15, 12]),
+                ),
+                "tof_ab": (
+                    ["event_met"],
+                    np.array([50, 50, 50, 50, 200, 50, 50, 50, 50, 50]),
+                ),  # Event 4 out of window
+                "tof_ac1": (
+                    ["event_met"],
+                    np.array([30, 30, 30, 30, 30, 30, 30, 30, 30, 30]),
+                ),
+                "tof_bc1": (
+                    ["event_met"],
+                    np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                ),
+                "tof_c1c2": (
+                    ["event_met"],
+                    np.array([50, 50, 50, 50, 50, 50, 50, 50, 50, 50]),
+                ),
+            },
+            coords={"event_met": np.arange(n_events, dtype=float)},
+        )
+        # Add FILLVAL attributes to TOF variables
+        for tof_var in ["tof_ab", "tof_ac1", "tof_bc1", "tof_c1c2"]:
+            ds[tof_var].attrs["FILLVAL"] = fill_val
+        return ds
+
+    def test_qualifies_with_both_coincidence_and_tof(
+        self, mock_cal_product_config, mock_de_dataset
+    ):
+        """Events passing both coincidence and TOF checks qualify."""
+        # All events at ESA energy step 1
+        esa_energy_steps = np.ones(10, dtype=int)
+
+        mask = compute_qualified_event_mask(
+            mock_de_dataset, mock_cal_product_config, esa_energy_steps
+        )
+
+        # Events with coincidence_type in [15, 14, 12] and TOF in window should pass
+        # Event 4 has bad TOF (200, outside 10-100 window)
+        # Events 3, 7 have coincidence_type=8 (A only, not in config)
+        expected = np.array(
+            [True, True, True, False, False, True, True, False, True, True]
+        )
+        np.testing.assert_array_equal(mask, expected)
+
+    def test_fails_coincidence_only(self, mock_cal_product_config, mock_de_dataset):
+        """Events with wrong coincidence type don't qualify."""
+        # All events at ESA energy step 1
+        esa_energy_steps = np.ones(10, dtype=int)
+
+        # Check events 3, 7 which have coincidence_type=8 (not in config)
+        mask = compute_qualified_event_mask(
+            mock_de_dataset, mock_cal_product_config, esa_energy_steps
+        )
+
+        # Events 3 and 7 should not qualify
+        assert mask[3] is np.False_
+        assert mask[7] is np.False_
+
+    def test_fails_tof_only(self, mock_cal_product_config, mock_de_dataset):
+        """Events with valid coincidence but bad TOF don't qualify."""
+        # All events at ESA energy step 1
+        esa_energy_steps = np.ones(10, dtype=int)
+
+        # Event 4 has coincidence_type=15 (valid) but tof_ab=200 (outside 10-100)
+        mask = compute_qualified_event_mask(
+            mock_de_dataset, mock_cal_product_config, esa_energy_steps
+        )
+
+        assert mask[4] is np.False_
+
+    def test_union_across_cal_products(self, mock_cal_product_config, mock_de_dataset):
+        """Events qualify if they pass for ANY cal product."""
+        esa_energy_steps = np.ones(10, dtype=int)
+
+        # Event 2 has coincidence_type=12 (AB), valid for cal_prod 2
+        # Event 0 has coincidence_type=15 (ABC1C2), valid for cal_prod 1
+        mask = compute_qualified_event_mask(
+            mock_de_dataset, mock_cal_product_config, esa_energy_steps
+        )
+
+        assert mask[0]  # Qualifies for cal_prod 1
+        assert mask[2]  # Qualifies for cal_prod 2
+
+    def test_fill_values_pass_tof(self, mock_cal_product_config, mock_de_dataset):
+        """Events with TOF fill values pass TOF check."""
+        esa_energy_steps = np.ones(10, dtype=int)
+
+        # Set event 4's TOF to fill value (it was failing due to high tof_ab)
+        # The FILLVAL attribute is already set by the fixture
+        fill_val = mock_de_dataset["tof_ab"].attrs["FILLVAL"]
+        mock_de_dataset["tof_ab"].values[4] = fill_val
+
+        mask = compute_qualified_event_mask(
+            mock_de_dataset, mock_cal_product_config, esa_energy_steps
+        )
+
+        # Event 4 should now pass (fill value passes TOF check)
+        assert mask[4]
+
+    def test_different_esa_energy_steps(self, mock_cal_product_config, mock_de_dataset):
+        """Events match config based on their ESA energy step."""
+        # Half events at ESA 1, half at ESA 2
+        esa_energy_steps = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
+
+        mask = compute_qualified_event_mask(
+            mock_de_dataset, mock_cal_product_config, esa_energy_steps
+        )
+
+        # Events 0-4 should match ESA 1 config
+        # Events 5-9 should match ESA 2 config
+        # Event 4 still fails due to bad TOF
+        # Events 7 fails due to bad coincidence type (8)
+        expected = np.array(
+            [True, True, True, False, False, True, True, False, True, True]
+        )
+        np.testing.assert_array_equal(mask, expected)
+
+    def test_no_matching_esa_energy_step(
+        self, mock_cal_product_config, mock_de_dataset
+    ):
+        """Events with unmatched ESA energy step don't qualify."""
+        # All events at ESA energy step 99 (not in config)
+        esa_energy_steps = np.full(10, 99)
+
+        mask = compute_qualified_event_mask(
+            mock_de_dataset, mock_cal_product_config, esa_energy_steps
+        )
+
+        # No events should qualify
+        assert not np.any(mask)
+
+    def test_empty_dataset(self, mock_cal_product_config):
+        """Test with empty dataset."""
+        empty_ds = xr.Dataset(
+            {
+                "coincidence_type": (["event_met"], np.array([], dtype=np.uint8)),
+                "tof_ab": (["event_met"], np.array([])),
+                "tof_ac1": (["event_met"], np.array([])),
+                "tof_bc1": (["event_met"], np.array([])),
+                "tof_c1c2": (["event_met"], np.array([])),
+            },
+            coords={"event_met": np.array([])},
+        )
+        esa_energy_steps = np.array([])
+
+        mask = compute_qualified_event_mask(
+            empty_ds, mock_cal_product_config, esa_energy_steps
+        )
+
+        assert len(mask) == 0
