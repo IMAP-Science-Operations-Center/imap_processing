@@ -20,7 +20,7 @@ from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     """Test coverage for hi_l1c function"""
     mock_generate_pset_dataset.return_value = xr.Dataset()
-    pset = hi_l1c.hi_l1c(xr.Dataset(), hi_test_cal_prod_config_path)[0]
+    pset = hi_l1c.hi_l1c(xr.Dataset(), hi_test_cal_prod_config_path, xr.Dataset())[0]
     # Empty attributes, global values get added in post-processing
     assert pset.attrs == {}
 
@@ -45,8 +45,13 @@ def test_generate_pset_dataset(
         np.asarray([l1b_met - 15 * 60, l1b_met + seconds_per_day]),
         np.asarray([l1b_met, l1b_met + seconds_per_day + 1]),
     )
+    goodtimes_path = (
+        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
+    )
+    goodtimes = load_cdf(goodtimes_path)
+
     l1c_dataset = hi_l1c.generate_pset_dataset(
-        l1b_dataset, hi_test_cal_prod_config_path
+        l1b_dataset, hi_test_cal_prod_config_path, goodtimes
     )
 
     assert l1c_dataset.epoch.data[0] == l1b_dataset.epoch.data[0].astype(np.int64)
@@ -115,7 +120,9 @@ def test_generate_pset_dataset_uses_midpoint_time(
     mock_pset_backgrounds.return_value = {}
 
     # Call generate_pset_dataset
-    _ = hi_l1c.generate_pset_dataset(mock_l1b_dataset, hi_test_cal_prod_config_path)
+    _ = hi_l1c.generate_pset_dataset(
+        mock_l1b_dataset, hi_test_cal_prod_config_path, xr.Dataset()
+    )
 
     # Calculate expected midpoint ET
     # The PSET dataset should have epoch and epoch_delta based on pointing times
@@ -226,13 +233,19 @@ def test_pset_counts(
     cal_config_df = utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
+    goodtimes_path = (
+        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
+    )
+    goodtimes = load_cdf(goodtimes_path)
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
         l1b_dataset.esa_energy_step,
         cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
-    counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
+    counts_var = hi_l1c.pset_counts(
+        empty_pset.coords, cal_config_df, l1b_dataset, goodtimes
+    )
     assert "counts" in counts_var
 
 
@@ -252,13 +265,19 @@ def test_pset_counts_empty_l1b(
     cal_config_df = utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
+    goodtimes_path = (
+        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
+    )
+    goodtimes = load_cdf(goodtimes_path)
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
         l1b_dataset.esa_energy_step,
         cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
-    counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
+    counts_var = hi_l1c.pset_counts(
+        empty_pset.coords, cal_config_df, l1b_dataset, goodtimes
+    )
     assert counts_var["counts"].data.sum() == 0
 
 
@@ -363,6 +382,11 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
 
     cal_config_df = utils.CalibrationProductConfig.from_csv(io.StringIO(csv_content))
 
+    goodtimes_path = (
+        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
+    )
+    goodtimes = load_cdf(goodtimes_path)
+
     # Create PSET with non-sequential calibration product numbers
     l1b_met = 482373065
     use_fake_repoint_data_for_time(
@@ -383,7 +407,9 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
     with mock.patch(
         "imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200)
     ):
-        counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
+        counts_var = hi_l1c.pset_counts(
+            empty_pset.coords, cal_config_df, l1b_dataset, goodtimes
+        )
 
     # Verify counts array has correct shape based on coordinates
     assert "counts" in counts_var
@@ -438,17 +464,24 @@ def test_pset_backgrounds():
     )
 
 
+@mock.patch("imap_processing.hi.hi_l1c.good_time_and_phase_mask")
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
 @mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)
-@mock.patch("imap_processing.hi.hi_l1c.get_instrument_spin_phase")
+@mock.patch(
+    "imap_processing.hi.hi_l1c.get_spacecraft_to_instrument_spin_phase_offset",
+    return_value=0.0,
+)
+@mock.patch("imap_processing.hi.hi_l1c.get_spacecraft_spin_phase")
 @mock.patch("imap_processing.hi.hi_l1c.get_de_clock_ticks_for_esa_step")
 @mock.patch("imap_processing.hi.hi_l1c.find_last_de_packet_data")
 def test_pset_exposure(
     mock_find_last_de_packet_data,
     mock_de_clock_ticks,
-    mock_spin_phase,
+    mock_sc_spin_phase,
+    mock_phase_offset,
     mock_spin_data,
     mock_pointing_times,
+    mock_good_time_and_phase_mask,
 ):
     """Test coverage for pset_exposure function"""
     l1b_energy_steps = xr.DataArray(
@@ -472,7 +505,7 @@ def test_pset_exposure(
     # deterministic histogram values.
     # ESA step 1 should have repeating values of 3, 1.
     # ESA step 2 should have repeating values of 6, 2
-    mock_spin_phase.return_value = np.concat(
+    mock_sc_spin_phase.return_value = np.concat(
         [hi_l1c.SPIN_PHASE_BIN_CENTERS, hi_l1c.SPIN_PHASE_BIN_CENTERS[::2]]
     )
     mock_de_clock_ticks.return_value = (
@@ -485,8 +518,13 @@ def test_pset_exposure(
     l1b_dataset = MagicMock()
     l1b_dataset.attrs = {"Logical_source": "90sensor"}
 
+    # Mock goodtime to return all true
+    mock_good_time_and_phase_mask.side_effect = lambda x, y, z: np.ones(
+        x.shape, dtype=bool
+    )
+
     # All the setup is done, call the pset_exposure function
-    exposure_dict = hi_l1c.pset_exposure(empty_pset.coords, l1b_dataset)
+    exposure_dict = hi_l1c.pset_exposure(empty_pset.coords, l1b_dataset, xr.Dataset())
 
     # Based on the spin phase and clock_tick mocks, the expected clock ticks are:
     # - Repeated values of 3, 1 for the first half of the spin bins
@@ -608,3 +646,72 @@ def test_get_de_clock_ticks_for_esa_step_exceptions(fake_spin_df):
         ValueError, match="Error determining start/end time for exposure time"
     ):
         hi_l1c.get_de_clock_ticks_for_esa_step(bad_ccsds_met, fake_spin_df)
+
+
+class TestGoodTimeAndPhaseMask:
+    """Tests for good_time_and_phase_mask function."""
+
+    def test_filters_bad_times_with_nominal_bins(self):
+        """Events in bad times are filtered out using nominal_bins."""
+        # Create mock goodtimes with some bad times
+        gt_ds = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((3, 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                )
+            },
+            coords={"met": [100.0, 200.0, 300.0], "spin_bin": np.arange(90)},
+        )
+        # Mark spin_bin 10 as bad at MET 200
+        gt_ds["cull_flags"].values[1, 10] = 1
+
+        mets = np.array([150.0, 250.0, 250.0])
+        nominal_bins = np.array([10, 10, 20])
+
+        mask = hi_l1c.good_time_and_phase_mask(mets, nominal_bins, gt_ds)
+        # Event at 150 maps to MET index 0, bin 10 → good (cull_flags[0,10]=0)
+        # Event at 250 maps to MET index 1, bin 10 → bad (cull_flags[1,10]=1)
+        # Event at 250 maps to MET index 1, bin 20 → good (cull_flags[1,20]=0)
+        expected = np.array([True, False, True])
+        np.testing.assert_array_equal(mask, expected)
+
+    def test_met_before_goodtimes_range(self):
+        """Events before goodtimes range are clipped to first interval."""
+        gt_ds = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((2, 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                )
+            },
+            coords={"met": [100.0, 200.0], "spin_bin": np.arange(90)},
+        )
+        # Mark spin_bin 0 as bad at first MET
+        gt_ds["cull_flags"].values[0, 0] = 1
+
+        # Event at MET 50 (before goodtimes range) should use index 0
+        mets = np.array([50.0])
+        nominal_bins = np.array([0])
+
+        mask = hi_l1c.good_time_and_phase_mask(mets, nominal_bins, gt_ds)
+        # Clipped to index 0, bin 0 is bad
+        assert not mask[0]
+
+    def test_all_bins_bad_for_interval(self):
+        """When all bins are bad for an interval, all events are filtered."""
+        gt_ds = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.ones((1, 90), dtype=np.uint8),  # All bad
+                    dims=["met", "spin_bin"],
+                )
+            },
+            coords={"met": [100.0], "spin_bin": np.arange(90)},
+        )
+
+        mets = np.array([100.0, 150.0, 200.0])
+        nominal_bins = np.array([0, 45, 89])
+
+        mask = hi_l1c.good_time_and_phase_mask(mets, nominal_bins, gt_ds)
+        assert not np.any(mask)
