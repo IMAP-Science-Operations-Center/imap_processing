@@ -856,21 +856,33 @@ class Hi(ProcessInstrument):
         elif self.data_level == "l1c":
             if "pset" in self.descriptor:
                 # L1C PSET processing
-                science_paths = dependencies.get_file_paths(
-                    source="hi", data_type="l1b"
+                l1b_de_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="de"
                 )
-                if len(science_paths) != 1:
+                if len(l1b_de_paths) != 1:
                     raise ValueError(
-                        f"Expected only one science dependency. Got {science_paths}"
+                        f"Expected exactly one DE science dependency. "
+                        f"Got {l1b_de_paths}"
                     )
                 anc_paths = dependencies.get_file_paths(data_type="ancillary")
                 if len(anc_paths) != 1:
                     raise ValueError(
-                        f"Expected only one ancillary dependency. Got {anc_paths}"
+                        f"Expected exactly one ancillary dependency. Got {anc_paths}"
                     )
-                datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
+                # Load goodtimes dependency
+                goodtimes_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="goodtimes"
+                )
+                if len(goodtimes_paths) != 1:
+                    raise ValueError(
+                        f"Expected exactly one DE science dependency. "
+                        f"Got {goodtimes_paths}"
+                    )
+                datasets = hi_l1c.hi_l1c(
+                    load_cdf(l1b_de_paths[0]), anc_paths[0], load_cdf(goodtimes_paths)
+                )
         elif self.data_level == "l2":
-            science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
+            l1b_de_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
             anc_dependencies = dependencies.get_processing_inputs(data_type="ancillary")
             if len(anc_dependencies) != 3:
                 raise ValueError(
@@ -889,7 +901,7 @@ class Hi(ProcessInstrument):
                 for dep in anc_dependencies
             }
             datasets = hi_l2.hi_l2(
-                science_paths,
+                l1b_de_paths,
                 l2_ancillary_path_dict,
                 self.descriptor,
             )
