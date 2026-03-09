@@ -553,9 +553,10 @@ quality_statistics:
   LABLAXIS: quality_statistics
   # TODO: come back to format
   UNITS: " "
+  DEPEND_0: spin_number
 
 energy_range_edges:
-  CATDESC: Energy range edges used for culling data at l1b.
+  CATDESC: Energy range edges used for culling data.
   DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Range Edges
   FILLVAL: -1.0e+31
@@ -565,9 +566,10 @@ energy_range_edges:
   VALIDMIN: 0.0
   VALIDMAX: 5000
   VAR_TYPE: support_data
+  DEPEND_0: energy_range_edges_dim
 
 energy_range_flags:
-  CATDESC: Bit flags describing culling energy ranges applied at l1b.
+  CATDESC: Bit flags describing culling energy ranges.
   DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Range Flags
   FILLVAL: 0
@@ -577,3 +579,4 @@ energy_range_flags:
   VALIDMIN: 1
   VALIDMAX: 65534
   VAR_TYPE: support_data
+  DEPEND_0: energy_range_flags_dim

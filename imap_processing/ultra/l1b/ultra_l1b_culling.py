@@ -674,7 +674,11 @@ def flag_low_voltage(
     # For each low voltage ind, flag the corresponding flag
     quality_flags[lv_spin_inds] = True
 
-    #  TODO add log summary.
+    num_culled: int = np.sum(quality_flags)
+    logger.info(
+        f"High energy culling removed {num_culled} spin bins across all energy "
+        f"channels. Voltage threshold: {voltage_threshold} V."
+    )
 
     return quality_flags
 
@@ -752,7 +756,12 @@ def flag_high_energy(
         quality_flags[:, ~mask] = flagged[:, ~mask]
     else:
         quality_flags = flagged
-    # TODO add log summary. E.g Tim's hi goodtimes code
+
+    num_culled: int = np.sum(quality_flags)
+    logger.info(
+        f"High energy culling removed {num_culled} spin bins across {n_energy_bins} "
+        f"energy channels. Energy thresholds: {energy_thresholds.flatten()}, "
+    )
 
     return quality_flags
 
@@ -889,7 +898,7 @@ def flag_statistical_outliers(
                     convergence[e_idx] = True
 
     num_culled: int = np.sum(quality_stats)
-    logger.debug(
+    logger.info(
         f"Statistical culling removed {num_culled} spin bins across {n_energy_bins}"
         f" energy channels. Convergence: {convergence} after "
         f"{iterations} iterations."

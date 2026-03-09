@@ -1,5 +1,6 @@
 """Create dataset."""
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -186,15 +187,29 @@ def create_dataset(  # noqa: PLR0912
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in {"energy_range_edges"}:
+            dataset["energy_range_edges_dim"] = xr.DataArray(
+                np.arange(len(data)),
+                dims=["energy_range_edges_dim"],
+                attrs=cdf_manager.get_variable_attributes(
+                    "energy_range_edges_dim", check_schema=False
+                ),
+            )
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_range_edges"],
+                dims=["energy_range_edges_dim"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in {"energy_range_flags"}:
+            dataset["energy_range_flags_dim"] = xr.DataArray(
+                np.arange(len(data)),
+                dims=["energy_range_flags_dim"],
+                attrs=cdf_manager.get_variable_attributes(
+                    "energy_range_flags_dim", check_schema=False
+                ),
+            )
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_range_flags"],
+                dims=["energy_range_flags_dim"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:
