@@ -1,7 +1,6 @@
 """IMAP-HI Goodtimes processing module."""
 
 import logging
-import re
 from enum import IntEnum
 from pathlib import Path
 
@@ -31,8 +30,9 @@ INTERVAL_DTYPE: np.dtype = np.dtype(
         ("met_end", np.float64),
         ("spin_bin_low", np.uint8),
         ("spin_bin_high", np.uint8),
-        ("n_good_bins", np.uint8),
-        ("esa_step", np.uint8),
+        ("n_bins", np.uint8),
+        ("esa_step_mask", np.uint16),  # Bitmask for ESA steps 1-10 (bit i = step i+1)
+        ("cull_value", np.uint8),
     ]
 )
 
@@ -357,15 +357,10 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
 
     # Create attributes
     sensor_number = parse_sensor_number(l1b_de.attrs["Logical_source"])
-    match = re.match(r"repoint(?P<pointing_num>\d{5})", l1b_de.attrs["Repointing"])
-    if not match:
-        raise ValueError(
-            f"Unable to parse pointing number from l1b_de Repointing "
-            f"attribute: {l1b_de.attrs['Repointing']}"
-        )
+    repointing = l1b_de.attrs.get("Repointing", "unknown_repointing")
     attrs = {
-        "sensor": f"{sensor_number}sensor",
-        "pointing": int(match["pointing_num"]),
+        "Sensor": f"{sensor_number}sensor",
+        "Repointing": repointing,
     }
 
     return xr.Dataset(data_vars, coords, attrs)
@@ -549,33 +544,35 @@ class GoodtimesAccessor:
 
     def get_good_intervals(self) -> np.ndarray:
         """
-        Extract good time intervals for each MET timestamp.
+        Extract time intervals grouped by contiguous cull flag patterns.
 
-        Creates an interval for each MET time that has good bins. Since ESA step
-        changes at each MET, each MET gets its own interval(s).
+        Merges consecutive MET timestamps that have identical cull_flags patterns
+        into single intervals. Each interval spans a contiguous time range where
+        cull flags don't change.
 
-        If good bins wrap around the 89->0 boundary (e.g., bins 88,89,0,1), multiple
-        intervals are created for the same MET time, one for each contiguous set.
+        If cull flags have multiple contiguous regions with different values
+        (e.g., bins 0-44 good, 45-89 bad), multiple intervals are created for
+        the same time range, one per contiguous bin region.
 
         Returns
         -------
         numpy.ndarray
             Structured array with dtype INTERVAL_DTYPE containing:
-            - met_start: MET timestamp of interval
-            - met_end: MET timestamp of interval (same as met_start)
-            - spin_bin_low: Lowest good spin bin in interval
-            - spin_bin_high: Highest good spin bin in interval
-            - n_good_bins: Number of good bins
-            - esa_step: ESA step for this MET
+            - met_start: First MET timestamp of interval
+            - met_end: Last MET timestamp of interval
+            - spin_bin_low: Lowest spin bin in this contiguous region
+            - spin_bin_high: Highest spin bin in this contiguous region
+            - n_bins: Number of bins in this region
+            - esa_step_mask: Bitmask of ESA steps (1-10) included in interval
+            - cull_value: Cull flag value for this region (0=good, >0=bad)
 
         Notes
         -----
         This is used for generating the Good Times output files per algorithm
         document Section 2.3.2.5.
         """
-        logger.debug("Extracting good time intervals")
-        intervals: list[np.void] = []
-        met_values = self._obj.coords["met"].values
+        logger.debug("Extracting time intervals")
+        met_values = self._obj["met"].values
         cull_flags = self._obj["cull_flags"].values
         esa_steps = self._obj["esa_step"].values
 
@@ -583,29 +580,60 @@ class GoodtimesAccessor:
             logger.warning("No MET values found, returning empty intervals array")
             return np.array([], dtype=INTERVAL_DTYPE)
 
-        # Process each MET time
-        for met_idx in range(len(met_values)):
-            self._add_intervals_for_pattern(
-                intervals,
-                met_values[met_idx],
-                met_values[met_idx],  # met_start == met_end
-                cull_flags[met_idx, :],
-                esa_steps[met_idx],
-            )
+        # Group consecutive METs with identical cull patterns
+        # Each group becomes one or more intervals (one per contiguous bin region)
+        intervals: list[tuple] = []
 
-        logger.info(f"Extracted {len(intervals)} good time intervals")
+        # Start first group
+        group_start_idx = 0
+        current_pattern = cull_flags[0]
+        # Cast to int to avoid uint8 overflow when esa_step > 8
+        esa_step_mask = 1 << int(esa_steps[0] - 1)  # Bit i represents ESA step i+1
+
+        for met_idx in range(1, len(met_values)):
+            if np.array_equal(cull_flags[met_idx], current_pattern):
+                # Same pattern - extend current group
+                esa_step_mask |= 1 << int(esa_steps[met_idx] - 1)
+            else:
+                # Different pattern - close current group and start new one
+                self._add_intervals_for_pattern(
+                    intervals,
+                    met_values[group_start_idx],
+                    met_values[met_idx - 1],
+                    current_pattern,
+                    esa_step_mask,
+                )
+
+                # Start new group
+                group_start_idx = met_idx
+                current_pattern = cull_flags[met_idx]
+                esa_step_mask = 1 << int(esa_steps[met_idx] - 1)
+
+        # Close final group
+        self._add_intervals_for_pattern(
+            intervals,
+            met_values[group_start_idx],
+            met_values[-1],
+            current_pattern,
+            esa_step_mask,
+        )
+
+        logger.info(f"Extracted {len(intervals)} time intervals")
         return np.array(intervals, dtype=INTERVAL_DTYPE)
 
+    @staticmethod
     def _add_intervals_for_pattern(
-        self,
         intervals: list,
         met_start: float,
         met_end: float,
         pattern: np.ndarray,
-        esa_step: int,
+        esa_step_mask: int,
     ) -> None:
         """
-        Add interval(s) for a cull_flags pattern, splitting if bins wrap around.
+        Add interval(s) for a cull_flags pattern, one per contiguous bin region.
+
+        Creates an interval for each contiguous region of bins that share the
+        same cull value. This includes both good (cull=0) and bad (cull>0) regions.
 
         Parameters
         ----------
@@ -616,56 +644,39 @@ class GoodtimesAccessor:
         met_end : float
             End MET timestamp.
         pattern : numpy.ndarray
-            Cull flags pattern for spin bins.
-        esa_step : int
-            ESA step for this MET.
+            Cull flags pattern for spin bins (90 values).
+        esa_step_mask : int
+            Bitmask of ESA steps included in this time range.
         """
-        good_bins = np.nonzero(pattern == 0)[0]
+        # Find contiguous regions of bins with the same cull value
+        # diff != 0 indicates a change in cull value
+        changes = np.nonzero(np.diff(pattern) != 0)[0]
 
-        if len(good_bins) == 0:
-            return
-
-        # Check for gaps in good_bins (indicating separate contiguous regions)
-        # Bins are contiguous if difference between consecutive bins is 1
-        gaps = np.nonzero(np.diff(good_bins) > 1)[0]
-
-        if len(gaps) == 0:
-            # No gaps - single contiguous region
-            interval = (
-                met_start,
-                met_end,
-                good_bins[0],
-                good_bins[-1],
-                len(good_bins),
-                esa_step,
-            )
-            intervals.append(interval)
+        # Build list of (start_bin, end_bin) for each contiguous region
+        # If no changes, entire range is one region
+        if len(changes) == 0:
+            regions = [(0, 89)]
         else:
-            # Multiple contiguous regions - split at gaps
-            start_idx = 0
-            for gap_idx in gaps:
-                # Create interval for bins before the gap
-                bins_segment = good_bins[start_idx : gap_idx + 1]
-                interval = (
-                    met_start,
-                    met_end,
-                    bins_segment[0],
-                    bins_segment[-1],
-                    len(bins_segment),
-                    esa_step,
-                )
-                intervals.append(interval)
-                start_idx = gap_idx + 1
+            regions = []
+            start_bin = 0
+            for change_idx in changes:
+                regions.append((start_bin, change_idx))
+                start_bin = change_idx + 1
+            # Add final region
+            regions.append((start_bin, 89))
 
-            # Handle final segment after last gap
-            bins_segment = good_bins[start_idx:]
+        # Create an interval for each region
+        for start_bin, end_bin in regions:
+            cull_value = pattern[start_bin]
+            n_bins = end_bin - start_bin + 1
             interval = (
                 met_start,
                 met_end,
-                bins_segment[0],
-                bins_segment[-1],
-                len(bins_segment),
-                esa_step,
+                start_bin,
+                end_bin,
+                n_bins,
+                esa_step_mask,
+                cull_value,
             )
             intervals.append(interval)
 
@@ -706,11 +717,14 @@ class GoodtimesAccessor:
 
     def write_txt(self, output_path: Path) -> Path:
         """
-        Write good times to text file in the format specified by algorithm document.
+        Write time intervals to text file in the format specified by algorithm document.
 
         Format per Section 2.3.2.5:
-        pointing MET_start MET_end spin_bin_low spin_bin_high sensor esa_step
-        [rate/sigma values...]
+        pointing MET_start MET_end`tab`spin_bin_low spin_bin_high sensor`tab`
+        esa_steps[10] cull_value
+
+        The esa_steps field consists of 10 binary values (0 or 1) indicating whether
+        each ESA step (1-10) is included in this interval.
 
         Parameters
         ----------
@@ -722,24 +736,38 @@ class GoodtimesAccessor:
         pathlib.Path
             Path to the created file.
         """
-        logger.info(f"Writing good times to file: {output_path}")
+        logger.info(f"Writing intervals to file: {output_path}")
+        pointing = int(self._obj.attrs["Repointing"].replace("repoint", ""))
+        sensor = self._obj.attrs["Sensor"]
+
         intervals = self.get_good_intervals()
 
         with open(output_path, "w") as f:
+            # Write header info
+            if file_id := self._obj.attrs.get("Logical_file_id", None) is not None:
+                f.write(
+                    f"# Goodtimes txt file generated for input CDF: {file_id}" + "\n"
+                )
             for interval in intervals:
-                pointing = self._obj.attrs.get("pointing", 0)
-                sensor = self._obj.attrs["sensor"]
+                # Convert esa_step_mask bitmask to 10 binary values
+                # Bit i represents ESA step i+1, so check bits 0-9
+                esa_step_mask = int(interval["esa_step_mask"])
+                esa_step_flags = " ".join(
+                    "1" if (esa_step_mask >> i) & 1 else "0" for i in range(10)
+                )
 
                 # Format:
-                # pointing met_start met_end spin_bin_low spin_bin_high sensor esa_step
+                # pointing met_start met_end spin_bin_low spin_bin_high sensor
+                # esa_steps[10] cull_value
                 line = (
                     f"{pointing:05d} "
                     f"{int(interval['met_start'])} "
-                    f"{int(interval['met_end'])} "
+                    f"{int(interval['met_end'])}\t"
                     f"{interval['spin_bin_low']} "
                     f"{interval['spin_bin_high']} "
-                    f"{sensor} "
-                    f"{interval['esa_step']}"
+                    f"{sensor}\t"
+                    f"{esa_step_flags}\t"
+                    f"{interval['cull_value']}"
                 )
 
                 # TODO: Add rate/sigma values for each ESA step
