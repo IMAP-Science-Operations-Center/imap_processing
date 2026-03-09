@@ -434,7 +434,7 @@ def get_spacecraft_exposure_times(
     energy_bins : int
         Array of energy bin geometric means.
     goodtimes_dataset : xarray.Dataset
-        Dataset containing the quality-filtered spins with energy-dependent quality
+        Dataset containing the quality-filtered spins with energy dependent quality
         flags (quality_low_voltage, quality_high_energy, quality_statistics).
         Exposure times are computed using only these good spins
         and can be adjusted per energy bin based on quality flags.
@@ -505,7 +505,7 @@ def get_spacecraft_exposure_times(
     # Calculate total normalized spin count using spin periods from goodtimes
     # Shape (n_energy_bins)
     n_spins_in_pointing = (
-        np.sum(spin_periods_2d, axis=1, where=good_spins_per_ebin, initial=1.0)
+        np.sum(spin_periods_2d, axis=1, where=good_spins_per_ebin)
         / nominal_spin_seconds
     )
 
@@ -513,7 +513,6 @@ def get_spacecraft_exposure_times(
         f"Calculated total spins. Found {n_spins_in_pointing} valid spins per energy"
         f"range."
     )
-    print("NSPINS in POINTING:", n_spins_in_pointing)
     if exposure_time.ndim == 1:
         # Shape (n_energy_bins, n_pix)
         exposure_pointing_adjusted = (
