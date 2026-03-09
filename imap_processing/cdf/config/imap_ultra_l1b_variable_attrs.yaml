@@ -555,7 +555,7 @@ quality_statistics:
   UNITS: " "
 
 energy_range_edges:
-  CATDESC: Energy range edges used for culling data at l1b, in keV.
+  CATDESC: Energy range edges used for culling data at l1b.
   DEPEND_1: energy_range_edges
   DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Range Edges
@@ -572,7 +572,7 @@ energy_range_flags:
   DEPEND_1: energy_range_flags
   DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Range Flags
-  FILLVAL: 65535
+  FILLVAL: 0
   FORMAT: I5
   LABLAXIS: Range Flags
   UNITS: " "
