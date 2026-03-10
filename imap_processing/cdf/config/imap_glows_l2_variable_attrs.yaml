@@ -44,6 +44,8 @@ time_data_defaults: &time_data_defaults
   FILLVAL: ' '
   FORMAT: A30
   UNITS: N/A
+  VALIDMIN: ' '
+  VALIDMAX: ' '
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 lightcurve_defaults: &lightcurve_defaults
@@ -482,7 +484,7 @@ histogram_flag_array:
   CATDESC: Bad-angle flags for histogram bins
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Bad-angle flags for histogram
-  FILLVAL: -1.0E+31
+  FILLVAL: 255
   FORMAT: I2
   LABLAXIS: Mask value
   UNITS: ' '
