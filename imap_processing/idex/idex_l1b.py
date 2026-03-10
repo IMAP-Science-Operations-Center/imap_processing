@@ -20,7 +20,7 @@ from enum import Enum, IntEnum
 import numpy as np
 import pandas as pd
 import xarray as xr
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 from xarray import DataArray
 
 from imap_processing import imap_module_directory
@@ -359,8 +359,9 @@ def get_trigger_origin(
 
     Returns
     -------
-    xarray.DataArray
-        An array containing the trigger origin for each event.
+    dict[str, xarray.DataArray]
+        A dictionary containing the trigger_origin DataArray with the trigger
+        origin info for each event.
     """
     # extract the lower 10 bits of the trigger ID to get the trigger origin information
     trigger_bits = trigger_id & 0x3FF
@@ -368,11 +369,15 @@ def get_trigger_origin(
     # origin labels
     origin_labels = np.array(
         [
-            [TRIGGER_LABELS[TriggerOrigin(i)] for i in range(6) if (bits >> i) & 1]
+            ", ".join(
+                [TRIGGER_LABELS[TriggerOrigin(i)] for i in range(6) if (bits >> i) & 1]
+            )
             for bits in trigger_bits
         ],
         dtype=object,
     )
+    # Update any events with no trigger bits set to "unknown trigger origin"
+    origin_labels[origin_labels == ""] = "Unknown trigger origin"
     return {
         "trigger_origin": xr.DataArray(
             name="trigger_origin",

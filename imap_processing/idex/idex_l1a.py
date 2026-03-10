@@ -451,11 +451,13 @@ class RawDustEvent:
         """
         # Retrieve the number of samples for high gain delay
 
-        # packet['IDX__TXHDRSAMPDELAY'] is a 32-bit value, with the last 10 bits
-        # representing the high gain sample delay and the first 2 bits used for padding.
-        # To extract the high gain bits, the bitwise right shift (>> 20) moves the bits
-        # 20 positions to the right, and the mask (0b1111111111) keeps only the least
-        # significant 10 bits.
+        # packet['IDX__TXHDRSAMPDELAY'] is a 32-bit value:
+        # bits0-9: high-gain delay,
+        # bits10-19: mid-gain delay,
+        # bits20-29: low-gain delay.
+        # bits30-31 are padding/reserved.
+        # Each delay is extracted by right-shifting to align the field,
+        # then masking with #0b1111111111 (10 bits).
 
         n_blocks = packet["IDX__TXHDRBLOCKS"]
         trigger_item = packet["IDX__TXHDRTRIGID"]

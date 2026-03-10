@@ -11,8 +11,11 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_l1b import (
+    TRIGGER_LABELS,
+    TriggerOrigin,
     get_spice_data,
     get_trigger_mode_and_level,
+    get_trigger_origin,
     unpack_instrument_settings,
 )
 from imap_processing.idex.idex_utils import get_idex_attrs
@@ -170,11 +173,11 @@ def test_get_trigger_settings_success(decom_test_data_sci):
     for expected_mode, mode_name in zip(expected_modes, var_names, strict=False):
         (
             np.testing.assert_array_equal(
-                trigger_settings[mode_name].data, expected_mode
-            ),
-            (
-                f"The dict entry {mode_name} values did not match the expected values: "
-                f"{expected_mode}. Found: {trigger_settings[mode_name].data}"
+                trigger_settings[mode_name].data,
+                expected_mode,
+                err_msg=f"The dict entry {mode_name} values did not match the"
+                f" expected values: {expected_mode}. Found:"
+                f" {trigger_settings[mode_name].data}",
             ),
         )
     var_names = ["trigger_level_lg", "trigger_level_mg", "trigger_level_hg"]
@@ -182,13 +185,46 @@ def test_get_trigger_settings_success(decom_test_data_sci):
     for expected_level, level_name in zip(expected_levels, var_names, strict=False):
         (
             np.testing.assert_array_equal(
-                trigger_settings[level_name].data, expected_level
-            ),
-            (
-                f"The dict entry {level_name} values did not match the expected "
-                f"values: {expected_level}. Found: {trigger_settings[level_name].data}"
+                trigger_settings[level_name].data,
+                expected_level,
+                err_msg=f"The dic entry {level_name} values did not match the"
+                f" expected values: {expected_level}. Found: "
+                f"{trigger_settings[level_name].data}",
             ),
         )
+
+
+def test_trigger_origin():
+    """Check that the correct labels are produced for trigger origin values"""
+
+    trigger_bits = np.full(10, 6)
+    origins = get_trigger_origin(trigger_bits, get_idex_attrs("l1b"))
+    # Bits 1 and 2 should be set for all events
+    expected_origin = np.full(
+        10,
+        ", ".join([TRIGGER_LABELS[TriggerOrigin(1)], TRIGGER_LABELS[TriggerOrigin(2)]]),
+    )
+    np.testing.assert_array_equal(
+        origins["trigger_origin"],
+        expected_origin,
+        err_msg=f"The trigger origin values did not match the expected values: "
+        f"{expected_origin}. Found: {origins}",
+    )
+
+
+def test_invalid_trigger_origin():
+    """Check the labels when there are invalid trigger origin values"""
+
+    trigger_bits = np.full(10, 64)  # invalid trigger origin values
+    origins = get_trigger_origin(trigger_bits, get_idex_attrs("l1b"))
+    # Bits 1 and 2 should be set for all events
+    expected_origin = np.full(10, "Unknown trigger origin")
+    np.testing.assert_array_equal(
+        origins["trigger_origin"],
+        expected_origin,
+        err_msg=f"The trigger origin values did not match the expected values:"
+        f"{expected_origin}. Found: {origins}",
+    )
 
 
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
@@ -300,8 +336,8 @@ def test_validate_l1b_idex_data_variables(
             cdf_var = match_variables.get(var, var.lower().replace(".", "p"))
             warning = (
                 f"The array '{cdf_var}' does not equal the expected example array "
+                f"'{var}' produced by the IDEX team"
             )
-            f"'{var}' produced by the IDEX team"
             # TODO remove this block once the IDEX team fixes the l1b validation file.
             #   They included a lot of extra variables in the current file.
             try:
