@@ -55,34 +55,34 @@ spice_base: &spice_base
 # <=== Instrument Setting Attributes ===>
 trigger_mode_lg:
   <<: *string_base
-  FIELDNAM: LG Trigger Mode
-  CATDESC: LG Trigger Mode.
+  FIELDNAM: Low Gain Trigger Mode
+  CATDESC: Low Gain Trigger Mode.
 
 trigger_level_lg:
   <<: *trigger_base
-  FIELDNAM: LG Trigger Level
-  CATDESC: LG Trigger Level threshold.
+  FIELDNAM: Low Gain Trigger Level
+  CATDESC: Low Gain Trigger Level threshold.
 
 trigger_mode_mg:
   <<: *string_base
-  FIELDNAM: MG Trigger Mode
-  CATDESC: MG Trigger Mode.
+  FIELDNAM: Mid Gain Trigger Mode
+  CATDESC: Mid Gain Trigger Mode.
 
 trigger_level_mg:
   <<: *trigger_base
-  FIELDNAM: MG Trigger Level
-  CATDESC: MG Trigger level threshold.
+  FIELDNAM: Mid Gain Trigger Level
+  CATDESC: Mid Gain Trigger level threshold.
 
 
 trigger_mode_hg:
   <<: *string_base
-  FIELDNAM: HG Trigger Mode
-  CATDESC: HG Trigger Mode.
+  FIELDNAM: High Gain Trigger Mode
+  CATDESC: High Gain Trigger Mode.
 
 trigger_level_hg:
   <<: *trigger_base
-  FIELDNAM: HG Trigger Level
-  CATDESC: HG Trigger Level threshold.
+  FIELDNAM: High Trigger Level
+  CATDESC: High Trigger Level threshold.
 
 trigger_origin:
   <<: *string_base

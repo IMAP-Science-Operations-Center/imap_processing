@@ -462,25 +462,25 @@ class RawDustEvent:
         n_blocks = packet["IDX__TXHDRBLOCKS"]
         trigger_item = packet["IDX__TXHDRTRIGID"]
 
-        tofdelay = packet["IDX__TXHDRSAMPDELAY"]  # last two bits are padding
+        tof_delay = packet["IDX__TXHDRSAMPDELAY"]  # last two bits are padding
 
         # mask to extract 10-bit values
-        mask = 0b1111111111
+        tof_mask = 0b1111111111
 
         # Determine the delay based on the trigger id.
-        hgdelay = tofdelay & mask  # first 10 bits (0-9)
-        mgdelay = (tofdelay >> 10) & mask  # next 10 bits (10-19)
-        lgdelay = (tofdelay >> 20) & mask  # next 10 bits (20-29)
+        hg_delay = tof_delay & tof_mask  # first 10 bits (0-9)
+        mg_delay = (tof_delay >> 10) & tof_mask  # next 10 bits (10-19)
+        lg_delay = (tof_delay >> 20) & tof_mask  # next 10 bits (20-29)
 
         u10 = trigger_item & 0x3FF
         if (u10 >> 0) & 1:
-            delay = hgdelay
+            delay = hg_delay
         elif (u10 >> 1) & 1:
-            delay = lgdelay
+            delay = lg_delay
         elif (u10 >> 2) & 1:
-            delay = mgdelay
+            delay = mg_delay
         else:
-            delay = hgdelay
+            delay = hg_delay
 
         # Retrieve number of low/high sample pre-trigger blocks
 

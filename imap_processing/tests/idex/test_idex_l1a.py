@@ -160,7 +160,15 @@ def test_validate_l1a_idex_data_variables(
     # The Engineering data is converting to UTC, and the SDC is converting to J2000,
     # for 'epoch' and 'Timestamp' so this test is using the raw time value 'SCHOARSE' to
     # validate time
-    arrays_to_skip = ["Timestamp", "Epoch", "event"]
+    # TODO remove the low and high time from this list after the IDEX team produces a
+    #  new l1a h5 file.
+    arrays_to_skip = [
+        "Timestamp",
+        "Epoch",
+        "event",
+        "Time (high sampling)",
+        "Time (low sampling)",
+    ]
 
     # loop through all keys from the l1a example dict
     for var in l1a_example_data.variables:
