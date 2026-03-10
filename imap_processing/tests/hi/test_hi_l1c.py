@@ -436,6 +436,90 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
     )
 
 
+@mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
+@mock.patch("imap_processing.hi.hi_l1c.iter_qualified_events_by_config")
+def test_pset_counts_goodtimes_filtering(
+    mock_iter_qualified,
+    mock_pointing_times,
+):
+    """Test that pset_counts properly filters events based on goodtimes."""
+    # Create 10 events: METs 100-109, nominal_bins 0-9, all at spin_phase=0.5
+    # (spin_phase 0.5 -> spin_angle_bin 1800)
+    n_events = 10
+    event_mets = np.arange(100.0, 100.0 + n_events)
+    nominal_bins = np.arange(n_events, dtype=np.uint8)
+
+    l1b_dataset = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(np.arange(2), dims=["epoch"]),
+            "event_met": xr.DataArray(event_mets, dims=["event_met"]),
+        },
+        data_vars={
+            "trigger_id": xr.DataArray(
+                np.ones(n_events, dtype=np.uint16),
+                dims=["event_met"],
+                attrs={"FILLVAL": 65535},
+            ),
+            "nominal_bin": xr.DataArray(nominal_bins, dims=["event_met"]),
+            "spin_phase": xr.DataArray(np.full(n_events, 0.5), dims=["event_met"]),
+            "ccsds_index": xr.DataArray(
+                np.zeros(n_events, dtype=np.int32), dims=["event_met"]
+            ),
+            "esa_energy_step": xr.DataArray(
+                np.array([1, 1], dtype=np.uint8),
+                dims=["epoch"],
+                attrs={"FILLVAL": 255},
+            ),
+        },
+        attrs={"Logical_source": "imap_hi_l1b_90sensor-de"},
+    )
+
+    # Goodtimes: METs 100-104 good, METs 105-109 bad
+    goodtimes_ds = xr.Dataset(
+        {
+            "cull_flags": xr.DataArray(
+                np.zeros((2, 90), dtype=np.uint8),
+                dims=["met", "spin_bin"],
+            ),
+        },
+        coords={"met": [100.0, 105.0], "spin_bin": np.arange(90)},
+    )
+    goodtimes_ds["cull_flags"].values[1, :] = 1  # All bins bad for MET >= 105
+
+    # Create empty pset with single ESA step and single calibration product
+    empty_pset = hi_l1c.empty_pset_dataset(
+        100,
+        l1b_dataset.esa_energy_step,
+        np.array([0]),
+        HIAPID.H90_SCI_DE.sensor,
+    )
+
+    # Mock iter_qualified_events_by_config to mark all events as qualified
+    # and return a single (esa_energy, config_row, mask) tuple
+    mock_config_row = MagicMock()
+    mock_config_row.Index = (0, 1)  # (calibration_prod, esa_energy_step)
+
+    def mock_iter(de_ds, config_df, esa_energy_steps):
+        n_remaining = len(de_ds["event_met"])
+        yield 1, mock_config_row, np.ones(n_remaining, dtype=bool)
+
+    mock_iter_qualified.side_effect = mock_iter
+
+    # Use MagicMock for cal_config since it's not used with our mock
+    mock_cal_config = MagicMock()
+
+    counts_var = hi_l1c.pset_counts(
+        empty_pset.coords, mock_cal_config, l1b_dataset, goodtimes_ds
+    )
+
+    # Only 5 events (METs 100-104) should pass goodtimes filtering
+    # All 5 events have spin_phase=0.5 -> spin_angle_bin 1800
+    total_counts = counts_var["counts"].data.sum()
+    assert total_counts == 5, f"Expected 5 counts, got {total_counts}"
+    # Verify all counts are in the expected spin bin (1800)
+    assert counts_var["counts"].data[0, 0, 0, 1800] == 5
+
+
 def test_pset_backgrounds():
     """Test coverage for pset_backgrounds function."""
     # Create some fake coordinates to use
@@ -540,6 +624,79 @@ def test_pset_exposure(
         expected_values,
         atol=HiConstants.DE_CLOCK_TICK_S / 100,
     )
+
+
+@mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
+@mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)
+@mock.patch(
+    "imap_processing.hi.hi_l1c.get_spacecraft_to_instrument_spin_phase_offset",
+    return_value=0.0,
+)
+@mock.patch("imap_processing.hi.hi_l1c.get_spacecraft_spin_phase")
+@mock.patch("imap_processing.hi.hi_l1c.get_de_clock_ticks_for_esa_step")
+@mock.patch("imap_processing.hi.hi_l1c.find_last_de_packet_data")
+def test_pset_exposure_goodtimes_filtering(
+    mock_find_last_de_packet_data,
+    mock_de_clock_ticks,
+    mock_sc_spin_phase,
+    mock_phase_offset,
+    mock_spin_data,
+    mock_pointing_times,
+):
+    """Test that pset_exposure properly filters clock ticks based on goodtimes."""
+    l1b_energy_steps = xr.DataArray(
+        np.arange(1) + 1,  # Single ESA step for simplicity
+        attrs={"FILLVAL": 255},
+    )
+    empty_pset = hi_l1c.empty_pset_dataset(
+        100, l1b_energy_steps, np.array([0]), HIAPID.H90_SCI_DE.sensor
+    )
+
+    # Mock find_last_de_packet_data to return a single ESA step
+    mock_find_last_de_packet_data.return_value = xr.Dataset(
+        coords={"epoch": xr.DataArray(np.arange(1), dims=["epoch"])},
+        data_vars={
+            "ccsds_met": xr.DataArray(np.array([150.0]), dims=["epoch"]),
+            "esa_energy_step": xr.DataArray(np.array([1]), dims=["epoch"]),
+        },
+    )
+
+    # Create 10 clock ticks at METs 100-109 with uniform spin phases
+    n_ticks = 10
+    clock_tick_mets = np.arange(100.0, 100.0 + n_ticks)
+    mock_de_clock_ticks.return_value = (clock_tick_mets, np.ones(n_ticks))
+
+    # Mock spacecraft spin phase - each tick maps to a different spin bin
+    # Spin phases 0.0, 0.1, 0.2, ... -> nominal_bins 0, 9, 18, ...
+    spin_phases = np.arange(n_ticks) / n_ticks
+    mock_sc_spin_phase.return_value = spin_phases
+
+    # Create a goodtimes dataset that marks half the clock ticks as bad
+    # METs 100-104 are good (cull_flags=0), METs 105-109 are bad (cull_flags=1)
+    goodtimes_ds = xr.Dataset(
+        {
+            "cull_flags": xr.DataArray(
+                np.zeros((2, 90), dtype=np.uint8),
+                dims=["met", "spin_bin"],
+            ),
+        },
+        coords={"met": [100.0, 105.0], "spin_bin": np.arange(90)},
+    )
+    # Mark all spin bins as bad for METs >= 105
+    goodtimes_ds["cull_flags"].values[1, :] = 1
+
+    # Mock l1b_dataset
+    l1b_dataset = MagicMock()
+    l1b_dataset.attrs = {"Logical_source": "90sensor"}
+
+    # Call pset_exposure with the goodtimes dataset
+    exposure_dict = hi_l1c.pset_exposure(empty_pset.coords, l1b_dataset, goodtimes_ds)
+
+    # Only the first 5 clock ticks (METs 100-104) should contribute
+    # Their spin phases are 0.0, 0.1, 0.2, 0.3, 0.4 -> spin_angle_bins 0, 360, 720, ...
+    total_exposure_ticks = exposure_dict["exposure_times"].data.sum()
+    expected_ticks = 5.0 * HiConstants.DE_CLOCK_TICK_S
+    np.testing.assert_allclose(total_exposure_ticks, expected_ticks, rtol=0.01)
 
 
 def test_find_second_de_packet_data():
