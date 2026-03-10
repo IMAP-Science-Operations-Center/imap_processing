@@ -27,7 +27,7 @@ def glows_l2(
     pipeline_settings_dataset: xr.Dataset,
 ) -> list[xr.Dataset]:
     """
-    Will process GLoWS L2 data from L1 data.
+    Will process GLOWS L2 data from L1 data.
 
     Parameters
     ----------
