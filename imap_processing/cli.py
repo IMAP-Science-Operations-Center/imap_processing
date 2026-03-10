@@ -875,7 +875,7 @@ class Hi(ProcessInstrument):
                 )
                 if len(goodtimes_paths) != 1:
                     raise ValueError(
-                        f"Expected exactly one DE science dependency. "
+                        f"Expected exactly one goodtimes dependency. "
                         f"Got {goodtimes_paths}"
                     )
                 datasets = hi_l1c.hi_l1c(

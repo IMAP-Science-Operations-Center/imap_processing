@@ -464,8 +464,8 @@ def pset_exposure(
         The PSET coordinates from the xarray.Dataset.
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
-    goodtimes_ds : xarray.Dataset, optional
-        Goodtimes dataset with cull_flags. If None, all times are considered good.
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset with cull_flags.
 
     Returns
     -------
