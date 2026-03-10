@@ -351,7 +351,7 @@ def get_trigger_origin(
 
     Parameters
     ----------
-    trigger_id : NDArray
+    trigger_id : numpy.ndarray
         Array of raw trigger ID values from the l1a dataset. The trigger ID is a 32-bit
         integer where the lower 10 bits contain information about the trigger origin.
     idex_attrs : ImapCdfAttributes
@@ -359,7 +359,7 @@ def get_trigger_origin(
 
     Returns
     -------
-    xr.DataArray
+    xarray.DataArray
         An array containing the trigger origin for each event.
     """
     # extract the lower 10 bits of the trigger ID to get the trigger origin information
