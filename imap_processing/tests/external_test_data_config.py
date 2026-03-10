@@ -132,7 +132,7 @@ EXTERNAL_TEST_DATA = [
 
     # IDEX
     ("idex_l1a_validation_file.h5", "idex/test_data/"),
-    ("idex_l1b_validation_file.h5", "idex/test_data/"),
+    ("imap_idex_l1b_sci_20231218_v001.h5", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv", "idex/test_data/"),
 
