@@ -371,7 +371,10 @@ def process_single_pset(
     # Step 3: Calculate efficiency-corrected quantities
     pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
 
-    # Step 4: CG correction and compute ram mask
+    # Step 4: Add s/c velocity, optionally apply CG correction, and calculate
+    # ram-mask
+    pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
+
     if cg_correct:
         # NOTE: Heliospheric frame energy selection for CG correction
         # The heliospheric (HF) energies passed to the CG correction algorithm
@@ -384,15 +387,16 @@ def process_single_pset(
         # Convert energy coordinate from keV to eV for CG correction
         # (energy coordinate was set in normalize_pset_coordinates in keV)
         energy_values_ev: xr.DataArray = pset_processed["energy"] * 1000.0
-        # TODO: Pull add_spacecraft_velocity_to_pset and calculate_ram_mask out
-        #    of apply_compton_getting_correction for visibility. Issue:
-        # https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/2434
         pset_processed = apply_compton_getting_correction(
             pset_processed, energy_values_ev
         )
-    else:
-        pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
-        pset_processed = calculate_ram_mask(pset_processed)
+        # Prepare energy_sc for exposure time weighted projection
+        pset_processed["energy_sc_exposure_factor"] = (
+            pset_processed["energy_sc"] * pset_processed["exposure_factor"]
+        )
+
+    # Always calculate ram-mask to identify ram/anti-ram bins
+    pset_processed = calculate_ram_mask(pset_processed)
 
     return pset_processed
 
@@ -436,8 +440,8 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
     rename_map = {
         "exposure_time": "exposure_factor",
         f"{species}_counts": "counts",
-        f"{species}_background_rates": "bg_rates",
-        f"{species}_background_rates_stat_uncert": "bg_rates_stat_uncert",
+        f"{species}_background_rates": "bg_rate",
+        f"{species}_background_rates_stat_uncert": "bg_rate_stat_uncert",
     }
     pset_renamed = pset_renamed.rename_vars(rename_map)
 
@@ -524,10 +528,10 @@ def calculate_efficiency_corrected_quantities(
     pset["counts_over_eff_squared"] = pset["counts"] / (pset["efficiency"] ** 2)
 
     # background * exposure_factor for weighted average
-    pset["bg_rates_exposure_factor"] = pset["bg_rates"] * pset["exposure_factor"]
+    pset["bg_rate_exposure_factor"] = pset["bg_rate"] * pset["exposure_factor"]
     # background_uncertainty ** 2 * exposure_factor ** 2
-    pset["bg_rates_stat_uncert_exposure_factor2"] = (
-        pset["bg_rates_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
+    pset["bg_rate_stat_uncert_exposure_factor2"] = (
+        pset["bg_rate_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
     )
 
     return pset
@@ -566,13 +570,13 @@ def project_pset_to_map(
         "counts",
         "counts_over_eff",
         "counts_over_eff_squared",
-        "bg_rates",
-        "bg_rates_stat_uncert",
-        "bg_rates_exposure_factor",
-        "bg_rates_stat_uncert_exposure_factor2",
+        "bg_rate",
+        "bg_rate_stat_uncert",
+        "bg_rate_exposure_factor",
+        "bg_rate_stat_uncert_exposure_factor2",
     ]
     if cg_correct:
-        value_keys.append("energy_sc")
+        value_keys.append("energy_sc_exposure_factor")
 
     # Create LoPointingSet and project to map
     lo_pset = ena_maps.LoPointingSet(pset)
@@ -759,12 +763,20 @@ def populate_geometric_factors(
         "geometric_factor_stat_uncert": f"GF_Trpl_{species.upper()}_unc",
     }
     if species == "h":
-        # NOTE: From an e-mail from Nathan on 2025-09-11
-        energy_delta_hires_values = [5.43, 10.02, 18.61, 33.31, 64.98, 131.64, 262.35]
-        energy_delta_hithr_values = [8.81, 16.04, 28.50, 53.13, 105.60, 219.67, 413.60]
+        # NOTE: From an e-mail from Nathan on 2025-09-11 (values converted to keV)
+        energy_delta_hires_values = (
+            np.array([5.43, 10.02, 18.61, 33.31, 64.98, 131.64, 262.35]) * 1e-3
+        )
+        energy_delta_hithr_values = (
+            np.array([8.81, 16.04, 28.50, 53.13, 105.60, 219.67, 413.60]) * 1e-3
+        )
     else:  # species == "o"
-        energy_delta_hires_values = [5.82, 11.10, 21.78, 41.47, 85.61, 180.67, 361.93]
-        energy_delta_hithr_values = [9.45, 17.84, 33.51, 66.61, 139.95, 302.24, 569.48]
+        energy_delta_hires_values = (
+            np.array([5.82, 11.10, 21.78, 41.47, 85.61, 180.67, 361.93]) * 1e-3
+        )
+        energy_delta_hithr_values = (
+            np.array([9.45, 17.84, 33.51, 66.61, 139.95, 302.24, 569.48]) * 1e-3
+        )
 
     # Get ESA mode from the map (assuming it's constant or we take the first)
     # TODO: Figure out how to handle esa_mode properly
@@ -783,6 +795,7 @@ def populate_geometric_factors(
         dataset[var].values = gf_dataset[col].values
 
     # Update delta_minus and delta_plus based on ESA mode
+    # converting eV to keV
     if esa_mode == 0:  # HiRes
         dataset["energy_delta_minus"].values = energy_delta_hires_values
         dataset["energy_delta_plus"].values = energy_delta_hires_values
@@ -864,6 +877,11 @@ def calculate_all_rates_and_intensities(
     # Optional Step 7: Finish CG correction
     if cg_correction:
         logger.info("Interpolating map intensities to helio-frame energies")
+        # Finish calculation of the exposure factor weighted projection of energy_sc
+        # and convert to units of keV
+        dataset["energy_sc"] = (
+            dataset["energy_sc_exposure_factor"] / dataset["exposure_factor"] / 1e3
+        )
         dataset = interpolate_map_flux_to_helio_frame(
             dataset,
             dataset["energy"],
@@ -930,8 +948,7 @@ def calculate_intensities(dataset: xr.Dataset) -> xr.Dataset:
     # the equation is for the variance
     dataset["ena_intensity_stat_uncert"] = np.sqrt(
         dataset["counts_over_eff_squared"]
-        / (dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"])
-    )
+    ) / (dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"])
 
     # Equation 5 from mapping document (systematic uncertainty)
     dataset["ena_intensity_sys_err"] = (
@@ -960,26 +977,24 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
     """
     # Equation 6 from mapping document (background rate)
     # exposure time weighted average of the background rates
-    dataset["bg_rates"] = (
-        dataset["bg_rates_exposure_factor"] / dataset["exposure_factor"]
-    )
+    dataset["bg_rate"] = dataset["bg_rate_exposure_factor"] / dataset["exposure_factor"]
     # Equation 7 from mapping document (background statistical uncertainty)
-    dataset["bg_rates_stat_uncert"] = np.sqrt(
-        dataset["bg_rates_stat_uncert_exposure_factor2"]
+    dataset["bg_rate_stat_uncert"] = np.sqrt(
+        dataset["bg_rate_stat_uncert_exposure_factor2"]
         / dataset["exposure_factor"] ** 2
     )
     # Equation 8 from mapping document (background systematic uncertainty)
-    dataset["bg_rates_sys_err"] = (
-        dataset["bg_rates"]
+    dataset["bg_rate_sys_err"] = (
+        dataset["bg_rate"]
         * dataset["geometric_factor_stat_uncert"]
         / dataset["geometric_factor"]
     )
 
     # Background intensity
-    dataset["bg_intensity"] = dataset["bg_rates"] / (
+    dataset["bg_intensity"] = dataset["bg_rate"] / (
         dataset["geometric_factor"] * dataset["energy"]
     )
-    dataset["bg_intensity_stat_uncert"] = dataset["bg_rates_stat_uncert"] / (
+    dataset["bg_intensity_stat_uncert"] = dataset["bg_rate_stat_uncert"] / (
         dataset["geometric_factor"] * dataset["energy"]
     )
     dataset["bg_intensity_sys_err"] = (
@@ -1031,6 +1046,7 @@ def calculate_sputtering_corrections(
     # Equation 9
     j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset["bg_intensity"]
     j_o_prime.values[j_o_prime.values < 0] = 0  # No negative intensities
+    j_o_prime_valid = np.isfinite(j_o_prime) & (j_o_prime > 0)
 
     # Equation 10
     j_o_prime_var = (
@@ -1044,30 +1060,38 @@ def calculate_sputtering_corrections(
     )
     # Equation 11
     # Remove the sputtered oxygen intensity to correct the original H intensity
-    sputter_corrected_intensity = (
-        small_dataset["ena_intensity"] - sputter_correction_factor * j_o_prime
+    sputter_corrected_intensity = xr.where(
+        j_o_prime_valid,
+        small_dataset["ena_intensity"] - sputter_correction_factor * j_o_prime,
+        small_dataset["ena_intensity"],
     )
 
     # Equation 12
-    sputter_corrected_intensity_var = (
+    sputter_corrected_intensity_var = xr.where(
+        j_o_prime_valid,
         small_dataset["ena_intensity_stat_uncert"] ** 2
-        + (sputter_correction_factor**2) * j_o_prime_var
+        + (sputter_correction_factor**2) * j_o_prime_var,
+        small_dataset["ena_intensity_stat_uncert"] ** 2,
     )
 
     # Equation 13
-    sputter_corrected_intensity_sys_err = (
+    sputter_corrected_intensity_sys_err = xr.where(
+        j_o_prime_valid,
         sputter_corrected_intensity
         / small_dataset["ena_intensity"]
-        * small_dataset["ena_intensity_sys_err"]
+        * small_dataset["ena_intensity_sys_err"],
+        small_dataset["ena_intensity_sys_err"],
     )
 
     # Now put the corrected values into the original dataset
-    dataset["ena_intensity"][0, energy_indices, ...] = sputter_corrected_intensity
-    dataset["ena_intensity_stat_uncert"][0, energy_indices, ...] = np.sqrt(
-        sputter_corrected_intensity_var
+    dataset["ena_intensity"].values[0, energy_indices, ...] = (
+        sputter_corrected_intensity.values
     )
-    dataset["ena_intensity_sys_err"][0, energy_indices, ...] = (
-        sputter_corrected_intensity_sys_err
+    dataset["ena_intensity_stat_uncert"].values[0, energy_indices, ...] = np.sqrt(
+        sputter_corrected_intensity_var.values
+    )
+    dataset["ena_intensity_sys_err"].values[0, energy_indices, ...] = (
+        sputter_corrected_intensity_sys_err.values
     )
 
     return dataset
@@ -1208,26 +1232,34 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
         j_c_prime > 0, dataset["bootstrap_intensity"] / j_c_prime * j_c_prime_err, 0
     )
 
+    valid_bootstrap = (dataset["bootstrap_intensity"] > 0) & np.isfinite(
+        dataset["bootstrap_intensity"]
+    )
     # Update the original intensity values
     # Equation 32 / 33
     # ena_intensity = ena_intensity (J_c) - (j_c_prime - J_b)
-    dataset["ena_intensity"] -= j_c_prime - dataset["bootstrap_intensity"]
+    dataset["ena_intensity"] = xr.where(
+        valid_bootstrap,
+        dataset["ena_intensity"] - j_c_prime + dataset["bootstrap_intensity"],
+        dataset["ena_intensity"],
+    )
 
     # Ensure corrected intensities are non-negative
-    dataset["ena_intensity"] = dataset["ena_intensity"].where(
-        dataset["ena_intensity"] >= 0, 0
+    dataset["ena_intensity"] = xr.where(
+        dataset["ena_intensity"] < 0, 0, dataset["ena_intensity"]
     )
 
     # Equation 34 - statistical uncertainty
     # Take the square root, since we were in variances up to this point
-    dataset["ena_intensity_stat_uncert"] = np.sqrt(dataset["bootstrap_intensity_var"])
+    dataset["ena_intensity_stat_uncert"] = xr.where(
+        valid_bootstrap,
+        np.sqrt(dataset["bootstrap_intensity_var"]),
+        dataset["ena_intensity_stat_uncert"],
+    )
 
     # Equation 35 - systematic error for corrected intensity
     # Handle division by zero and ensure reasonable values
     dataset["ena_intensity_sys_err"] = xr.zeros_like(dataset["ena_intensity"])
-    valid_bootstrap = (dataset["bootstrap_intensity"] > 0) & np.isfinite(
-        dataset["bootstrap_intensity"]
-    )
 
     # Only compute where bootstrap intensity is valid
     dataset["ena_intensity_sys_err"] = xr.where(
@@ -1280,29 +1312,14 @@ def calculate_flux_corrections(dataset: xr.Dataset, flux_factors: Path) -> xr.Da
 
     # NOTE: We need to apply this to both total flux and background flux
     for var in ["ena", "bg"]:
-        # FluxCorrector works on (energy, :) arrays, so we need to flatten the map
-        # spatial dimensions for the correction and then reshape back after.
-        input_shape = dataset[f"{var}_intensity"].shape[1:]  # Exclude epoch dimension
-        intensity = (
-            dataset[f"{var}_intensity"].values[0].reshape(len(dataset["energy"]), -1)
+        # Apply flux correction with xarray inputs
+        dataset[f"{var}_intensity"], dataset[f"{var}_intensity_stat_uncert"] = (
+            corrector.apply_flux_correction(
+                dataset[f"{var}_intensity"],
+                dataset[f"{var}_intensity_stat_uncert"],
+                dataset["energy"],
+            )
         )
-        stat_uncert = (
-            dataset[f"{var}_intensity_stat_uncert"]
-            .values[0]
-            .reshape(len(dataset["energy"]), -1)
-        )
-        corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
-            intensity,
-            stat_uncert,
-            dataset["energy"].data,
-        )
-        # Add the size 1 epoch dimension back in to the corrected fluxes.
-        dataset[f"{var}_intensity"].data = corrected_intensity.reshape(input_shape)[
-            np.newaxis, ...
-        ]
-        dataset[f"{var}_intensity_stat_uncert"].data = corrected_stat_unc.reshape(
-            input_shape
-        )[np.newaxis, ...]
 
     return dataset
 
@@ -1332,8 +1349,8 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
         "geometric_factor_stat_uncert",
         "counts_over_eff",
         "counts_over_eff_squared",
-        "bg_rates_exposure_factor",
-        "bg_rates_stat_uncert_exposure_factor2",
+        "bg_rate_exposure_factor",
+        "bg_rate_stat_uncert_exposure_factor2",
     ]
 
     for potential_var in potential_vars:

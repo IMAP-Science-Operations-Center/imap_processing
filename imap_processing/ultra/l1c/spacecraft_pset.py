@@ -13,7 +13,11 @@ from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
 )
-from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
+from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    get_de_rejection_mask,
+    get_energy_and_spin_dependent_rejection_mask,
+)
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
     calculate_fwhm_spun_scattering,
@@ -36,7 +40,7 @@ def calculate_spacecraft_pset(
     de_dataset: xr.Dataset,
     goodtimes_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
-    params_dataset: xr.Dataset,
+    aux_dataset: xr.Dataset,
     name: str,
     ancillary_files: dict,
     instrument_id: int,
@@ -53,8 +57,8 @@ def calculate_spacecraft_pset(
         Dataset containing goodtimes data.
     rates_dataset : xarray.Dataset
         Dataset containing image rates data.
-    params_dataset : xarray.Dataset
-        Dataset containing image parameters data.
+    aux_dataset : xarray.Dataset
+        Dataset containing auxiliary data.
     name : str
         Name of the dataset.
     ancillary_files : dict
@@ -71,7 +75,8 @@ def calculate_spacecraft_pset(
     """
     # Do not cull events based on scattering thresholds
     reject_scattering = False
-
+    # Do not apply boundary scale factor corrections
+    apply_bsf = False
     pset_dict: dict[str, np.ndarray] = {}
 
     sensor_id = int(parse_filename_like(name)["sensor"][0:2])
@@ -83,22 +88,36 @@ def calculate_spacecraft_pset(
         logger.info(f"No data available for {name}")
         return None
 
+    ################ Reject events based on quality flags ################
     # Before we use the de_dataset to calculate the pointing set grid we need to filter.
-    rejected = get_de_rejection_mask(
+    de_rejected = get_de_rejection_mask(
         species_dataset["quality_scattering"].values,
         species_dataset["quality_outliers"].values,
         reject_scattering,
     )
-    species_dataset = species_dataset.isel(epoch=~rejected)
+    species_dataset = species_dataset.isel(epoch=~de_rejected)
+    # Check if spin_number is in the goodtimes dataset, if not then we can
+    #  reject all events for that spin without checking energy bin flags.
+    spin_rejected = ~np.isin(
+        species_dataset["spin"].values, goodtimes_dataset["spin_number"].values
+    )
+    species_dataset = species_dataset.isel(epoch=~spin_rejected)
 
+    intervals, _, energy_bin_geometric_means = build_energy_bins()
+
+    # Now check energy dependent flags.
+    energy_dependent_rejected = get_energy_and_spin_dependent_rejection_mask(
+        goodtimes_dataset,
+        species_dataset["energy_spacecraft"].values,
+        species_dataset["spin"].values,
+    )
+    species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
     v_mag_dps_spacecraft = np.linalg.norm(
         species_dataset["velocity_dps_sc"].values, axis=1
     )
     vhat_dps_spacecraft = (
         species_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
     )
-
-    intervals, _, energy_bin_geometric_means = build_energy_bins()
 
     # Get lookup table for FOR indices by spin phase step
     (
@@ -110,17 +129,18 @@ def calculate_spacecraft_pset(
     ) = get_spacecraft_pointing_lookup_tables(ancillary_files, instrument_id)
 
     logger.info("calculating spun FWHM scattering values.")
-    pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = (
+    valid_spun_pixels, scattering_theta, scattering_phi, scattering_thresholds = (
         calculate_fwhm_spun_scattering(
             for_indices_by_spin_phase,
             theta_vals,
             phi_vals,
             ancillary_files,
             instrument_id,
+            reject_scattering,
         )
     )
     # Determine nside from the lookup table
-    nside = hp.npix2nside(len(for_indices_by_spin_phase))
+    nside = hp.npix2nside(for_indices_by_spin_phase.sizes["pixel"])
     counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
         species_dataset["energy_spacecraft"].values,
@@ -139,30 +159,32 @@ def calculate_spacecraft_pset(
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
         rates_dataset,
-        params_dataset,
-        pixels_below_scattering,
+        valid_spun_pixels,
         boundary_scale_factors,
-        pointing_range_met,
-        n_pix=n_pix,
+        aux_dataset,
+        energy_bins=energy_bin_geometric_means,
         sensor_id=sensor_id,
         ancillary_files=ancillary_files,
+        apply_bsf=apply_bsf,
+        goodtimes_dataset=goodtimes_dataset,
     )
     logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
     geometric_function, efficiencies = get_efficiencies_and_geometric_function(
-        pixels_below_scattering,
+        valid_spun_pixels,
         boundary_scale_factors,
         theta_vals,
         phi_vals,
         n_pix,
         ancillary_files,
+        apply_bsf,
     )
     sensitivity = efficiencies * geometric_function
 
-    logger.info("Calculating background rates.")
     # Calculate background rates
     background_rates = get_spacecraft_background_rates(
         rates_dataset,
+        aux_dataset,
         sensor_id,
         ancillary_files,
         intervals,
@@ -182,13 +204,12 @@ def calculate_spacecraft_pset(
     # use either the pointing end time + 30 mins or the max event time,
     # whichever is smaller.
     end = min(end + 1800, ttj2000ns_to_et(pointing_range_ns[1]))
-    # Time bins in 30 minute intervals
+    # Time bins in 30 minute intervals in et
     time_bins = np.arange(start, end, 1800)
-
     # Compute mask for culling the Earth
     compute_culling_mask(
         time_bins,
-        6378.1,  # Earth radius
+        UltraConstants.DEFAULT_EARTH_CULLING_RADIUS,
         spacecraft_pset_quality_flags,
         nside=nside,
     )

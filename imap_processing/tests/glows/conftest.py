@@ -47,7 +47,12 @@ def l1a_dataset(packet_path):
 
 
 @pytest.fixture
-def l1b_hist_dataset(l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings):
+def l1b_hist_dataset(
+    l1a_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
+):
     return glows_l1b(
         l1a_dataset[0],
         mock_ancillary_exclusions.excluded_regions,
@@ -55,12 +60,13 @@ def l1b_hist_dataset(l1a_dataset, mock_ancillary_exclusions, mock_pipeline_setti
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
         mock_pipeline_settings,
+        mock_conversion_table_dict,
     )
 
 
 @pytest.fixture
-def l2_hist_dataset(l1b_datasets):
-    return glows_l2(l1b_datasets)
+def l2_hist_dataset(l1b_hist_dataset, mock_pipeline_settings):
+    return glows_l2(l1b_hist_dataset, mock_pipeline_settings)
 
 
 @pytest.fixture
@@ -75,13 +81,21 @@ def mock_ancillary_exclusions():
     # Create datasets with epoch dimension and some mock data
     mock_excluded_regions = xr.Dataset(
         {
+            # degrees in [0, 360)
             "ecliptic_longitude_deg": (
-                ["epoch", "region"],
-                np.random.rand(len(epoch_range), 5),
+                ["epoch", "source"],
+                np.tile(
+                    np.array([202.0812, 120.0, 250.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
+            # degrees in [-90, 90]
             "ecliptic_latitude_deg": (
-                ["epoch", "region"],
-                np.random.rand(len(epoch_range), 5),
+                ["epoch", "source"],
+                np.tile(
+                    np.array([18.4119, 0.0, 35.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
         },
         coords={"epoch": epoch_range},
@@ -93,31 +107,43 @@ def mock_ancillary_exclusions():
                 ["epoch", "source"],
                 [["star1", "star2", "star3"]] * len(epoch_range),
             ),
+            # degrees in [0, 360)
             "ecliptic_longitude_deg": (
                 ["epoch", "source"],
-                np.random.rand(len(epoch_range), 3),
+                np.tile(
+                    np.array([202.0812, 120.0, 250.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
+            # degrees in [-90, 90]
             "ecliptic_latitude_deg": (
                 ["epoch", "source"],
-                np.random.rand(len(epoch_range), 3),
+                np.tile(
+                    np.array([18.4119, 0.0, 35.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
+            # masking radius in degrees
             "angular_radius_for_masking": (
                 ["epoch", "source"],
-                np.random.rand(len(epoch_range), 3),
+                np.tile(
+                    np.array([2.0, 0.0, 0.0], dtype=np.float64), (len(epoch_range), 1)
+                ),
             ),
         },
         coords={"epoch": epoch_range},
     )
 
+    # Mask array based on data in imap_glows_suspected-transients_20250923_v002.dat.
     mock_suspected_transients = xr.Dataset(
         {
             "l1b_unique_block_identifier": (
                 ["epoch", "time_block"],
-                [["block1", "block2"]] * len(epoch_range),
+                [["2026-01-01T15:00:00", "2026-01-01T15:01:00"]] * len(epoch_range),
             ),
             "histogram_mask_array": (
                 ["epoch", "time_block"],
-                [["mask1", "mask2"]] * len(epoch_range),
+                [["0" * 3600, "0" * 600 + "1" * 100 + "0" * 2900]] * len(epoch_range),
             ),
         },
         coords={"epoch": epoch_range},
@@ -127,11 +153,11 @@ def mock_ancillary_exclusions():
         {
             "l1b_unique_block_identifier": (
                 ["epoch", "time_block"],
-                [["block1", "block2"]] * len(epoch_range),
+                [["2026-01-01T15:00:00", "2026-01-01T15:01:00"]] * len(epoch_range),
             ),
             "histogram_mask_array": (
                 ["epoch", "time_block"],
-                [["mask1", "mask2"]] * len(epoch_range),
+                [["0" * 100 + "1" * 10 + "0" * 3490, "0" * 3600]] * len(epoch_range),
             ),
         },
         coords={"epoch": epoch_range},
@@ -146,12 +172,21 @@ def mock_ancillary_exclusions():
 
 
 @pytest.fixture
-def mock_ancillary_parameters():
+def mock_ancillary_parameters(mock_conversion_table_dict):
     """Create a mock AncillaryParameters object for testing."""
-    mock_table = {
-        "description": "Table for conversion/decoding ancillary parameters collected "
-        "onboard by IMAP/GLOWS",
-        "version": "0.1",
+
+    return AncillaryParameters(mock_conversion_table_dict)
+
+
+@pytest.fixture
+def mock_conversion_table_dict():
+    """Create a mock conversion table dataset for testing.
+
+    This aligns with the validation output for GLOWS unit testing."""
+
+    mock_dict = {
+        "description": "Table for conversion/decoding ancillary parameters",
+        "version": "v001",
         "date_of_creation_yyyymmdd": "20230527",
         "filter_temperature": {
             "min": -30.0,
@@ -161,6 +196,7 @@ def mock_ancillary_parameters():
             "p02": 0.0,
             "p03": 0.0,
             "p04": 0.0,
+            "physical_unit": "Celsius degree",
         },
         "hv_voltage": {
             "min": 0.0,
@@ -170,9 +206,20 @@ def mock_ancillary_parameters():
             "p02": 0.0,
             "p03": 0.0,
             "p04": 0.0,
+            "physical_unit": "Celsius degree",
         },
-        "spin_period": {"min": 0.0, "max": 20.9712, "n_bits": 16},
-        "spin_phase": {"min": 0.0, "max": 360.0, "n_bits": 16},
+        "spin_period": {
+            "min": 0.0,
+            "max": 20.9712,
+            "n_bits": 16,
+            "physical_unit": "Celsius degree",
+        },
+        "spin_phase": {
+            "min": 0.0,
+            "max": 360.0,
+            "n_bits": 16,
+            "physical_unit": "Celsius degree",
+        },
         "pulse_length": {
             "min": 0.0,
             "max": 255.0,
@@ -181,9 +228,11 @@ def mock_ancillary_parameters():
             "p02": 0.0,
             "p03": 0.0,
             "p04": 0.0,
+            "physical_unit": "Celsius degree",
         },
     }
-    return AncillaryParameters(mock_table)
+
+    return mock_dict
 
 
 @pytest.fixture

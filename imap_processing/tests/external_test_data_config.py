@@ -33,9 +33,12 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l0_hi-sectored_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_hi-direct-events_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_hskp_20250814_v001.pkts", "codice/data/l1a_input/"),
+    ("imap_codice_l0_raw_20260130_v001.pkts", "codice/data/l1a_input/"),
 
     # L1A LUT
-    ("imap_codice_l1a-sci-lut_20251007_v003.json", "codice/data/l1a_lut/"),
+    ("imap_codice_l1a-sci-lut_20251007_v005.json", "codice/data/l1a_lut/"),
+    ("imap_codice_l1a-sci-lut_20260129_v002.json", "codice/data/l1a_lut/"),
 
     # L1A validation data
     (f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
@@ -63,7 +66,7 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l1b_hi-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_hi-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
-    (f"imap_codice_l1b_hi-priorities_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
+    (f"imap_codice_l1b_hi-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
@@ -77,10 +80,16 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l1b_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     # L2 LUT input data
-    ("imap_codice_l2-hi-omni-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
-    ("imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
-    ("imap_codice_l2-lo-gfactor_20251008_v001.csv", "codice/data/l2_lut/"),
-    ("imap_codice_l2-lo-efficiency_20251008_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-omni-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-sectored-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-ialirt-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-gfactor_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-tof-table_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-energy-table_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-onboard-energy-bins_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-onboard-energy-table_20250101_v001.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-lo-onboard-mpq-cal_20250101_v001.csv", "codice/data/l2_lut/"),
 
     # L2 Validation data
     (f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
@@ -89,6 +98,10 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l2_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-nsw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_hi-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_hi-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
 
     # Hi
     ("imap_hi_l1a_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),
@@ -114,6 +127,8 @@ EXTERNAL_TEST_DATA = [
     ("iois_1_packets_2025_284_05_52_37", "ialirt/data/l0/"),
     ("iois_1_packets_2025_284_05_53_38", "ialirt/data/l0/"),
     ("iois_1_packets_2025_284_05_54_39", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_344_05_57_56", "ialirt/data/l0/"),
+    ("iois_1_packets_2025_344_05_59_58", "ialirt/data/l0/"),
     ("imap_recon_od005_20250925_20251014_v01.bsp", "spice/test_data/"),
     ("imap_2025_283_2025_284_001.ah.bc", "spice/test_data/"),
 
@@ -126,9 +141,20 @@ EXTERNAL_TEST_DATA = [
     # Lo
     ("imap_lo_l1c_pset_20260101-repoint01261_v001.cdf", "lo/test_cdfs"),
 
+    # Pointing Attitude Kernel
+    ("imap_2025_338_2025_339_001.ah.bc", "spice/test_data/"),
+    ("imap_2025_339_2025_339_001.ah.bc", "spice/test_data/"),
+    ("imap_2025_339_2025_340_001.ah.bc", "spice/test_data/"),
+
     # Ultra
     ("FM90_Startup_20230711T081655.CCSDS", "ultra/data/l0/"),
     ("IMAP-Ultra45_r1_L1_V0_shortened.csv", "ultra/data/l1/"),
+    ("extendedspin_test_data_repoint00047.csv", "ultra/data/l1/"),
+    ("status_test_data_repoint00047.csv", "ultra/data/l1/"),
+    ("voltage_culling_results_repoint00047.csv", "ultra/data/l1/"),
+    ("validate_high_energy_culling_results_repoint00047_v2.csv", "ultra/data/l1/"),
+    ("validate_stat_culling_results_repoint00047_v2.csv", "ultra/data/l1/"),
+    ("de_test_data_repoint00047.csv", "ultra/data/l1/"),
     ("FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS", "ultra/data/l0/"),
     ("ultra45_raw_sc_rawnrgevnt_19840122_00.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_enaphxtofhnrgimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv",
@@ -187,6 +213,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1c-45sensor-nominal-for-lookup_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-45sensor-static-dead-times_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-90sensor-static-dead-times_20250101_v000.csv", "ultra/data/l1/"),
+
     # l2
     ("imap_ultra_l2-energy-bin-group-sizes_20250101_v000.csv", "ultra/data/l2/"),
 
@@ -239,4 +266,7 @@ EXTERNAL_TEST_DATA = [
     ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0F_15.dat", "swe/l2_validation/"),
     ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1H_14_6.dat", "swe/l2_validation/"),
     ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat", "swe/l2_validation/"),
+
+    # GLOWS
+    ("combined_de_l1a.csv", "glows/validation_data")
 ]  # fmt: skip

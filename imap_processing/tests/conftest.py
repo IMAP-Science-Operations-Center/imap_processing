@@ -96,17 +96,17 @@ def _download_test_data():
     _download_external_data()
 
 
-def _download_external_data():
+def _download_external_data(external_test_data=EXTERNAL_TEST_DATA):
     """This fixture downloads externally-located test data files into a specific
     location. The list of files and their storage locations are specified in
-    the `test_data_paths` parameter, which is a list of tuples; the zeroth
+    the `external_test_data` parameter, which is a list of tuples; the zeroth
     element being the source of the test file in the AWS S3 bucket, and the
     first element being the location in which to store the downloaded file."""
 
     logger = logging.getLogger(__name__)
 
     api_path = "https://api.dev.imap-mission.com/download/test_data/"
-    for source_filename, destination_path in EXTERNAL_TEST_DATA:
+    for source_filename, destination_path in external_test_data:
         source = api_path + source_filename
         destination = (
             Path(f"{imap_module_directory}/tests") / destination_path / source_filename
@@ -476,7 +476,7 @@ def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
         "sim_1yr_imap_attitude.bc",
         "imap_130.tf",
         "de440s.bsp",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels) as k:

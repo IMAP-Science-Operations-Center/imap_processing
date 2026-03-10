@@ -1,7 +1,9 @@
+import logging
 from collections import namedtuple
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -9,16 +11,26 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.lo.l1b.lo_l1b import (
+    DE_CLOCK_TICK_S,
+    calculate_de_rates,
+    calculate_histogram_rates,
+    calculate_star_sensor_profile_for_group,
+    calculate_star_sensor_profiles_by_group,
     calculate_tof1_for_golden_triples,
     convert_start_end_acq_times,
     convert_tofs_to_eu,
     create_badtimes_dataset,
     create_datasets,
+    filter_valid_star_records,
     get_avg_spin_durations_per_cycle,
+    get_pivot_angle_from_nhk,
+    get_sampling_cadence_from_nhk,
     get_spin_start_times,
     identify_species,
     initialize_l1b_de,
+    l1b_star,
     lo_l1b,
+    resweep_histogram_data,
     set_avg_spin_durations_per_event,
     set_bad_or_goodtimes,
     set_bad_times,
@@ -29,15 +41,50 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_pointing_bin,
     set_pointing_direction,
     set_spin_cycle,
+    set_spin_cycle_from_spin_data,
 )
 from imap_processing.lo.lo_ancillary import read_ancillary_file
 from imap_processing.spice.spin import get_spin_data
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import (
+    et_to_met,
+    et_to_ttj2000ns,
+    met_to_ttj2000ns,
+    str_to_et,
+    ttj2000ns_to_met,
+)
+
+SPIN_BIN_6_FIELDS = [
+    "h_counts",
+    "o_counts",
+    "tof0_tof1_counts",
+    "tof0_tof2_counts",
+    "tof1_tof2_counts",
+    "silver_triple_counts",
+]
+
+SPIN_BIN_60_FIELDS = [
+    "start_a_counts",
+    "start_c_counts",
+    "stop_b0_counts",
+    "stop_b3_counts",
+    "tof0_counts",
+    "tof1_counts",
+    "tof2_counts",
+    "tof3_counts",
+    "disc_tof0_counts",
+    "disc_tof1_counts",
+    "disc_tof2_counts",
+    "disc_tof3_counts",
+    "pos0_counts",
+    "pos1_counts",
+    "pos2_counts",
+    "pos3_counts",
+]
 
 
 @pytest.fixture
 def dependencies():
-    return {
+    data = {
         "imap_lo_l1a_de": load_cdf(
             imap_module_directory
             / "tests/lo/test_cdfs/imap_lo_l1a_de_20241022_v002.cdf"
@@ -47,6 +94,16 @@ def dependencies():
             / "tests/lo/test_cdfs/imap_lo_l1a_spin_20241022_v002.cdf"
         ),
     }
+
+    # We have 0 for num_completed which causes issues downstream
+    # when calculating the average spin durations and cascading
+    # failures. Set to 28 for testing.
+    data["imap_lo_l1a_spin"]["num_completed"] = 28
+
+    # There are 3 shcoarse values for some reason, this is a bad
+    # set of test data, so modify in-place here rather than updating
+    data["imap_lo_l1a_de"]["shcoarse"] = data["imap_lo_l1a_de"]["shcoarse"].values[0]
+    return data
 
 
 @pytest.fixture
@@ -59,6 +116,9 @@ def anc_dependencies():
         str(
             imap_module_directory
             / "tests/lo/test_anc/imap_lo_bad-times-small_20250101_20270101_v001.csv",
+        ),
+        str(
+            imap_module_directory / "tests/lo/test_anc/imap_lo_esa-mode-lut_v001.csv",
         ),
     ]
 
@@ -79,12 +139,77 @@ def attr_mgr_l1a():
     return attr_mgr
 
 
+@pytest.fixture
+def l1b_histrates():
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
+    )
+
+    # Build dataset with all expected fields
+    data_vars = {}
+    for f in SPIN_BIN_6_FIELDS:
+        data_vars[f] = (("epoch", "esa_step", "spin_bin_6"), np.zeros((2, 7, 60)))
+    for f in SPIN_BIN_60_FIELDS:
+        data_vars[f] = (("epoch", "esa_step", "spin_bin_60"), np.zeros((2, 7, 6)))
+
+    l1b_histrates = xr.Dataset(
+        data_vars,
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+            "spin_bin_60": np.arange(6),
+        },
+    )
+
+    return l1b_histrates
+
+
+@pytest.fixture
+def l1a_hist():
+    epoch_date = et_to_ttj2000ns(str_to_et(["2025-04-15T02:00:00"]))
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "oxygen": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "tof0_tof1": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "tof0_tof2": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "tof1_tof2": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "silver": (("epoch", "esa_step", "azimuth_6"), np.zeros((1, 7, 60))),
+            "start_a": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "start_c": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "stop_b0": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "stop_b3": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "tof0_count": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "tof1_count": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "tof2_count": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "tof3_count": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "disc_tof0": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "disc_tof1": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "disc_tof2": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "disc_tof3": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "pos0": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "pos1": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "pos2": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+            "pos3": (("epoch", "esa_step", "azimuth_60"), np.zeros((1, 7, 6))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+            "azimuth_6": np.arange(60),
+            "azimuth_60": np.arange(6),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+    return l1a_hist
+
+
 @patch(
     "imap_processing.lo.l1b.lo_l1b.frame_transform",
     return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
 )
 @patch(
-    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    "imap_processing.lo.l1b.lo_l1b.lo_instrument_pointing",
     return_value=np.zeros((2000, 3)),
 )
 @patch(
@@ -96,33 +221,87 @@ def attr_mgr_l1a():
     "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
     return_value=np.zeros((2000, 3)),
 )
-def test_lo_l1b(
+@patch("imap_processing.lo.l1b.lo_l1b.interpolate_spin_data")
+def test_lo_l1b_de(
+    mock_interpolate_spin_data,
     mock_frame_transform,
-    mock_instrument_pointing,
+    mock_lo_instrument_pointing,
     mocked_get_pointing_times,
     mock_spin_number,
     mock_cartesian_to_latitudinal,
+    dependencies,
     anc_dependencies,
 ):
     # Arrange
-    de_file = (
-        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_de_20241022_v002.cdf"
+    # Mock the spin data to provide spin start times
+    # Create a DataFrame covering the time range of the test data
+    mock_spin_df = pd.DataFrame(
+        {
+            "spin_start_met": np.ones([1]),
+        }
     )
-    spin_file = (
-        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_spin_20241022_v002.cdf"
-    )
-    data = {}
-    for file in [de_file, spin_file]:
-        dataset = load_cdf(file)
-        data[dataset.attrs["Logical_source"]] = dataset
+    mock_interpolate_spin_data.return_value = mock_spin_df
 
-    expected_logical_source = "imap_lo_l1b_de"
+    # Add l1b_nhk dependency with pivot angle information
+    l1b_nhk = xr.Dataset(
+        {"pcc_cumulative_cnt_pri": ("epoch", [45.0])},
+        coords={"epoch": [met_to_ttj2000ns(473389200)]},
+    )
+    dependencies["imap_lo_l1b_nhk"] = l1b_nhk
+
+    expected_logical_source_de = "imap_lo_l1b_de"
 
     # Act
-    output_files = lo_l1b(data, anc_dependencies)
+    output_files = lo_l1b(dependencies, anc_dependencies, descriptor="de")
 
     # Assert
-    assert expected_logical_source == output_files[-1].attrs["Logical_source"]
+    assert expected_logical_source_de == output_files[-1].attrs["Logical_source"]
+    # Verify that pivot_angle is present in the output
+    assert "pivot_angle" in output_files[-1]
+    assert output_files[-1]["pivot_angle"].values[0] == 45.0
+
+
+@patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+    return_value=(473389199, 473472001),
+)
+def test_lo_l1b_histogram_rates(
+    mock_repoint_times, mock_spin_number, l1a_hist, anc_dependencies
+):
+    # Arrange
+    met = et_to_met(str_to_et(["2025-04-15T02:00:00"]))
+    l1a_spin = xr.Dataset(
+        {
+            "shcoarse": ("epoch", [0]),
+            "num_completed": ("epoch", [28]),
+            "acq_start_sec": ("epoch", met),
+            "acq_start_subsec": ("epoch", [0]),
+            "acq_end_sec": ("epoch", met + 420),
+            "acq_end_subsec": ("epoch", [0]),
+        },
+        coords={
+            "epoch": et_to_ttj2000ns(str_to_et(["2025-04-15T02:00:00"])),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_spin"},
+    )
+    sci_dependencies = {
+        "imap_lo_l1a_histogram": l1a_hist,
+        "imap_lo_l1a_spin": l1a_spin,
+    }
+
+    # Act
+    l1b_datasets = lo_l1b(sci_dependencies, anc_dependencies, descriptor="all-rates")
+
+    # Assert
+    assert "h_rates" in l1b_datasets[-2].data_vars
+    assert "o_rates" in l1b_datasets[-2].data_vars
+    assert "exposure_time_6deg" in l1b_datasets[-2].data_vars
+    assert "h_counts" in l1b_datasets[-2].data_vars
+    assert "o_counts" in l1b_datasets[-2].data_vars
+    assert l1b_datasets[-2]["exposure_time_6deg"].values[0, 0, 0] == 2
+    # Should be 10x as large
+    assert l1b_datasets[-1]["exposure_time_60deg"].values[0, 0, 0] == 20
 
 
 # @pytest.mark.external_kernel
@@ -185,7 +364,7 @@ def test_initialize_dataset(dependencies, attr_mgr_l1b):
     # Assert
     assert l1b_de.attrs["Logical_source"] == logical_source
     assert list(l1b_de.coords.keys()) == []
-    assert len(l1b_de.data_vars) == 4
+    assert len(l1b_de.data_vars) == 5
     assert len(l1b_de.coords) == 0
     for l1b_name, l1a_name in {
         "pos": "pos",
@@ -195,6 +374,11 @@ def test_initialize_dataset(dependencies, attr_mgr_l1b):
     }.items():
         assert l1b_name in l1b_de.data_vars
         np.testing.assert_array_equal(l1b_de[l1b_name], l1a_de[l1a_name])
+
+    expected_l1b_shcoarse = np.repeat(
+        l1a_de["shcoarse"].values, l1a_de["de_count"].values
+    )
+    np.testing.assert_array_equal(l1b_de["shcoarse"], expected_l1b_shcoarse)
 
 
 def test_set_esa_mode(anc_dependencies, attr_mgr_l1b):
@@ -274,13 +458,22 @@ def test_convert_start_end_acq_times():
 
 def test_get_avg_spin_durations():
     # Arrange
-    acq_start = xr.DataArray([0, 423, 846.2], dims="epoch")
-    acq_end = xr.DataArray([422.8, 846, 1269.7], dims="epoch")
-    expected_avg_spin_durations = np.array([422.8, 423, 423.5]) / 28
+    spin_ds = xr.Dataset(
+        {
+            "acq_start_sec": ("epoch", [1, 2, 3]),
+            "acq_start_subsec": ("epoch", [1e6, 2e6, 3e6]),
+            "acq_end_sec": ("epoch", [100, 200, 300]),
+            "acq_end_subsec": ("epoch", [1e6, 2e6, 3e6]),
+            "num_completed": ("epoch", [28, 14, 28]),
+        },
+        coords={"epoch": [0, 1, 2]},
+    )
+    expected_avg_spin_durations = np.array(
+        [(101 - 2) / 28, (202 - 4) / 14, (303 - 6) / 28]
+    )
 
     # Act
-    avg_spin_durations = get_avg_spin_durations_per_cycle(acq_start, acq_end)
-
+    avg_spin_durations = get_avg_spin_durations_per_cycle(spin_ds)
     # Assert
     np.testing.assert_array_equal(avg_spin_durations, expected_avg_spin_durations)
 
@@ -312,47 +505,37 @@ def test_spin_cycle(mock_get_spin_number):
     np.testing.assert_array_equal(spin_cycle_data["spin_cycle"], spin_cycle_expected)
 
 
-def test_get_spin_start_times():
+@patch("imap_processing.lo.l1b.lo_l1b.interpolate_spin_data")
+def test_get_spin_start_times(mock_interpolate_spin_data):
     # Arrange
-    l1b_de = xr.Dataset(
+    # Mock the spin data to return specific spin start times
+    mock_spin_df = pd.DataFrame(
         {
-            "spin_cycle": ("direct_event", [0, 1, 2, 3, 4]),
-        },
-        coords={
-            "direct_event": [
-                0,
-                1,
-                2,
-                3,
-                4,
-            ]
-        },
+            "spin_start_met": [10.5, 30.1],
+        }
     )
+    mock_interpolate_spin_data.return_value = mock_spin_df
+
     l1a_de = xr.Dataset(
         {
+            "met": ("epoch", [15, 35]),
             "de_count": ("epoch", [2, 3]),
-            "met": ("epoch", [0, 1]),  # MET per time epoch, not per direct event
-            "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
+            "de_time": ("direct_event", [0, 1000, 2000, 3000, 4000]),
         },
         coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
     )
-    spin = xr.Dataset(
-        {
-            "start_sec_spin": (
-                ["epoch", "spin"],
-                [[20, 25, 30, 35, 40], [45, 50, 55, 60, 65]],
-            ),
-            "start_subsec_spin": (
-                ["epoch", "spin"],
-                [[2000, 3000, 4000, 5000, 6000], [1000, 1500, 2000, 3000, 4000]],
-            ),
-        }
+
+    # Expected: met 15 should match spin at index 0 (10 < 15 < 20)
+    # met 35 should match spin at index 2 (30 < 35 < 40)
+    # Repeated by de_count: [2, 3] -> [index0, index0, index2, index2, index2]
+    spin_start_times_expected = np.array(
+        [10.5, 10.5, 30.1, 30.1, 30.1]  # 10 + 0.5e6*1e-6  # 30 + 0.1e6*1e-6
     )
 
-    end_acq = xr.DataArray([0, 1], dims="epoch")
-    spin_start_times_expected = np.array([20.002, 25.003, 55.002, 60.003, 65.004])
-    spin_start_times = get_spin_start_times(l1a_de, l1b_de, spin, end_acq)
+    # Act
+    spin_start_times = get_spin_start_times(l1a_de)
 
+    # Assert
     np.testing.assert_allclose(
         spin_start_times,
         spin_start_times_expected,
@@ -360,31 +543,44 @@ def test_get_spin_start_times():
     )
 
 
-def test_set_event_met():
+@patch("imap_processing.lo.l1b.lo_l1b.interpolate_spin_data")
+def test_set_event_met(mock_interpolate_spin_data):
     # Arrange
+    # Mock the spin data
+    mock_spin_df = pd.DataFrame(
+        {
+            "spin_start_met": [10, 30],
+        }
+    )
+    mock_interpolate_spin_data.return_value = mock_spin_df
+
     l1b_de = xr.Dataset()
     l1a_de = xr.Dataset(
         {
+            "met": ("epoch", [15, 35]),
             "de_count": ("epoch", [2, 3]),
-            "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
+            "de_time": ("direct_event", [0, 1000, 2000, 3000, 4000]),
         },
         coords={
             "epoch": [0, 1],
-            "direct_event": [
-                0,
-                1,
-                2,
-                3,
-                4,
-            ],
+            "direct_event": [0, 1, 2, 3, 4],
         },
     )
-    avg_spin_durations = xr.DataArray([5, 10])
-    spin_start_times = xr.DataArray([10, 20, 30, 40, 50])
-    expected_event_met = np.array([10, 21.2207, 34.8828, 47.3242, 59.7656])
+
+    # met 15 -> spin_start 10, met 35 -> spin_start 30
+    # event_met = spin_start + de_time * DE_CLOCK_TICK_S
+    expected_event_met = np.array(
+        [
+            10 + 0 * DE_CLOCK_TICK_S,  # 10.0
+            10 + 1000 * DE_CLOCK_TICK_S,  # 14.096
+            30 + 2000 * DE_CLOCK_TICK_S,  # 38.192
+            30 + 3000 * DE_CLOCK_TICK_S,  # 42.288
+            30 + 4000 * DE_CLOCK_TICK_S,  # 46.384
+        ]
+    )
 
     # Act
-    l1b_de = set_event_met(l1a_de, l1b_de, spin_start_times, avg_spin_durations)
+    l1b_de = set_event_met(l1a_de, l1b_de)
 
     # Assert
     np.testing.assert_allclose(
@@ -393,24 +589,25 @@ def test_set_event_met():
         atol=1e-4,
     )
 
-    def test_set_each_event_epoch():
-        l1b_de = xr.Dataset(
-            {
-                "event_met": ("epoch", [10, 20, 30, 40, 50]),
-            },
-            coords={
-                "epoch": [0, 1, 2, 3, 4],
-            },
-        )
-        epoch_expected = met_to_ttj2000ns(np.array([10, 20, 30, 40, 50]))
 
-        l1b_de = set_each_event_epoch(l1b_de)
+def test_set_each_event_epoch():
+    l1b_de = xr.Dataset(
+        {
+            "event_met": ("epoch", [10, 20, 30, 40, 50]),
+        },
+        coords={
+            "epoch": [0, 1, 2, 3, 4],
+        },
+    )
+    epoch_expected = met_to_ttj2000ns(np.array([10, 20, 30, 40, 50]))
 
-        np.testing.assert_allclose(
-            l1b_de["epoch"].values,
-            epoch_expected,
-            atol=1e-4,
-        )
+    l1b_de = set_each_event_epoch(l1b_de)
+
+    np.testing.assert_allclose(
+        l1b_de["epoch"].values,
+        epoch_expected,
+        atol=1e-4,
+    )
 
 
 def test_set_avg_spin_durations_per_event():
@@ -451,7 +648,7 @@ def test_calculate_tof1_for_golden_triples():
             "coincidence_type": ("epoch", [0, 0, 0]),
             "mode": ("epoch", [0, 0, 1]),
             "tof0": ("epoch", [2, 4, 2]),
-            "tof1": ("epoch", [42, 36, 0]),
+            "tof1": ("epoch", [0, 0, 42]),
             "tof2": ("epoch", [2, 6, 2]),
             "tof3": ("epoch", [2, 8, 2]),
             "cksm": ("epoch", [2, 12, 2]),
@@ -462,7 +659,7 @@ def test_calculate_tof1_for_golden_triples():
     l1a_de = calculate_tof1_for_golden_triples(l1a_de)
 
     # Assert
-    assert l1a_de_expected.equals(l1a_de)
+    xr.testing.assert_equal(l1a_de, l1a_de_expected)
 
 
 def test_set_coincidence_type(attr_mgr_l1a):
@@ -600,13 +797,15 @@ def test_set_bad_or_goodtimes(anc_dependencies):
 
 
 @patch(
-    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    "imap_processing.lo.l1b.lo_l1b.lo_instrument_pointing",
     return_value=np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]),
 )
-def test_set_direction(imap_ena_sim_metakernel):
+def test_set_direction(mock_lo_instrument_pointing, imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
-        {},
+        {
+            "pivot_angle": ("epoch", [0, 0, 0, 0]),
+        },
         coords={
             "epoch": [0, 1, 2, 3],
         },
@@ -637,41 +836,59 @@ def test_set_direction(imap_ena_sim_metakernel):
     )
 
 
-@patch(
-    "imap_processing.lo.l1b.lo_l1b.frame_transform",
-    return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
-)
-@patch(
-    "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
-    return_value=np.array([[0, -180, -2], [0, 0, 0], [0, 90, 1], [0, 180, 2]]),
-)
-def test_pointing_bins(mock_cartesian_to_latitudinal, mock_frame_transform):
-    # Arrange
-    l1b_de = xr.Dataset(
-        {
-            "hae_x": ("epoch", [1, 1, 1, 1]),
-            "hae_y": ("epoch", [0, 0, 0, 0]),
-            "hae_z": ("epoch", [0, 0, 0, 0]),
-        },
-        coords={
-            "epoch": [
-                7.9794907049e17,
-                7.9794907153e17,
-                7.9794907254e17,
-                7.9794907354e17,
-            ],
-        },
-    )
+@pytest.mark.parametrize("pivot_angle", [75, 90, 105])
+def test_pointing_bins(pivot_angle):
+    # Arrange - Mock returns depend on pivot_angle
+    # Calculate offset based on pivot angle: lats = lats - (90 - pivot_angle)
+    offset = 90 - pivot_angle
 
-    expected_pointing_lats = np.array([0, 20, 30, 40])
-    expected_pointing_lons = np.array([0, 1800, 2700, 3600])
+    with (
+        patch(
+            "imap_processing.lo.l1b.lo_l1b.frame_transform",
+            return_value=np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]),
+        ),
+        patch(
+            "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
+            # Adjust latitude values based on pivot angle offset
+            # Longitudes: -180 -> 180, 0 -> 0, 90 -> 90, 180 -> 180
+            # After shift to 0-360: 180, 0, 90, 180
+            return_value=np.array(
+                [
+                    [0, -180, -2 + offset],
+                    [0, 0, 0 + offset],
+                    [0, 90, 1 + offset],
+                    [0, 180, 2 + offset],
+                ]
+            ),
+        ),
+    ):
+        l1b_de = xr.Dataset(
+            {
+                "hae_x": ("epoch", [1, 1, 1, 1]),
+                "hae_y": ("epoch", [0, 0, 0, 0]),
+                "hae_z": ("epoch", [0, 0, 0, 0]),
+            },
+            coords={
+                "epoch": [
+                    7.9794907049e17,
+                    7.9794907153e17,
+                    7.9794907254e17,
+                    7.9794907354e17,
+                ],
+                "pivot_angle": [pivot_angle],
+            },
+        )
 
-    # Act
-    l1b_de = set_pointing_bin(l1b_de)
+        expected_pointing_lats = np.array([0, 20, 30, 40])
+        # Longitude bins are now in 0-360 range after the shift
+        expected_pointing_lons = np.array([1800, 0, 900, 1800])
 
-    # Assert
-    np.testing.assert_array_equal(l1b_de["off_angle_bin"], expected_pointing_lats)
-    np.testing.assert_array_equal(l1b_de["spin_bin"], expected_pointing_lons)
+        # Act
+        l1b_de = set_pointing_bin(l1b_de)
+
+        # Assert
+        np.testing.assert_array_equal(l1b_de["off_angle_bin"], expected_pointing_lats)
+        np.testing.assert_array_equal(l1b_de["spin_bin"], expected_pointing_lons)
 
 
 def test_badtimes_no_spin():
@@ -703,3 +920,1259 @@ def test_badtimes_with_spin(spice_test_data_path, use_test_spin_data_csv):
         badtimes_ds["BadTime_start"], thruster_df["spin_start_sec_sclk"]
     )
     np.testing.assert_array_equal(badtimes_ds["badtime_flag"], 1)
+
+    # There should be a dataset returned from the main code in this case
+    datasets = lo_l1b({}, [], descriptor="badtimes")
+    assert len(datasets) == 1
+
+
+def test_l1b_badtimes_skipped_if_empty():
+    datasets = lo_l1b({}, [], descriptor="badtimes")
+    assert len(datasets) == 0
+
+
+def test_lo_l1b_unexpected_descriptor(caplog):
+    """Test that an unexpected descriptor logs a warning and returns empty list."""
+    datasets = lo_l1b({}, [], descriptor="unknown")
+    assert len(datasets) == 0
+    assert "Unexpected descriptor: 'unknown'" in caplog.text
+
+
+def test_resweep_histogram_success(l1b_histrates, anc_dependencies):
+    # Arrange
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
+    )
+    l1b_histrates["epoch"] = epoch_date
+    exposure_factor_6deg = np.full((2, 7, 60), 4)
+    exposure_factor_60deg = np.full((2, 7, 6), 4)
+    exposure_factor_6deg[:, 0, :] = 8
+    exposure_factor_60deg[:, 0, :] = 8
+    exposure_factor_6deg[:, 1, :] = 0
+    exposure_factor_60deg[:, 1, :] = 0
+
+    l1b_histrates.h_counts[0, 0, 0] = 5
+    l1b_histrates.h_counts[0, 1, 0] = 10
+    l1b_histrates.h_counts[0, 2, 0] = 2
+    l1b_histrates.o_counts[1, 0, 0] = 2
+    l1b_histrates.o_counts[1, 1, 0] = 3
+    l1b_histrates.o_counts[1, 2, 0] = 4
+
+    l1b_histrates, exposure_factor = resweep_histogram_data(
+        l1b_histrates, anc_dependencies
+    )
+
+    assert l1b_histrates.h_counts[0, 0, 0] == 15
+    assert l1b_histrates.h_counts[0, 1, 0] == 0
+    assert l1b_histrates.h_counts[0, 2, 0] == 2
+
+    assert l1b_histrates.o_counts[1, 0, 0] == 5
+    assert l1b_histrates.o_counts[1, 1, 0] == 0
+    assert l1b_histrates.o_counts[1, 2, 0] == 4
+
+    for field in SPIN_BIN_6_FIELDS + SPIN_BIN_60_FIELDS:
+        np.testing.assert_array_equal(l1b_histrates[field], l1b_histrates[field])
+    np.testing.assert_array_equal(exposure_factor["6deg"], exposure_factor_6deg)
+    np.testing.assert_array_equal(exposure_factor["60deg"], exposure_factor_60deg)
+
+
+def test_resweep_histogram_no_date_in_sweep(l1b_histrates, anc_dependencies, caplog):
+    # Arrange
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-25T02:00:00", "2025-04-25T03:00:00"])
+    )
+    l1b_histrates["epoch"] = epoch_date
+
+    l1b_histrates.h_counts[0, 0, 0] = 5
+    l1b_histrates.h_counts[0, 1, 0] = 10
+    l1b_histrates.h_counts[0, 2, 0] = 2
+
+    pytest.raises(ValueError, resweep_histogram_data, l1b_histrates, anc_dependencies)
+
+
+def test_resweep_histogram_no_table_in_lut(l1b_histrates, anc_dependencies, caplog):
+    # Arrange
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2024-01-01T02:00:00", "2024-01-01T03:00:00"])
+    )
+    l1b_histrates["epoch"] = epoch_date
+
+    l1b_histrates.h_counts[0, 0, 0] = 5
+    l1b_histrates.h_counts[0, 1, 0] = 10
+    l1b_histrates.h_counts[0, 2, 0] = 2
+
+    with caplog.at_level(logging.WARNING):
+        result, _ = resweep_histogram_data(l1b_histrates, anc_dependencies)
+
+        resweep_histogram_data(l1b_histrates, anc_dependencies)
+    # Check that warning was logged
+    assert any(
+        "No LUT entries for epoch" in record.message for record in caplog.records
+    )
+
+
+def test_resweep_histogram_multiple_lut(l1b_histrates, anc_dependencies, caplog):
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-16T02:00:00", "2025-04-16T03:00:00"])
+    )
+
+    l1b_histrates["epoch"] = epoch_date
+
+    with caplog.at_level(logging.WARNING):
+        result, _ = resweep_histogram_data(l1b_histrates, anc_dependencies)
+
+    # Check that warning was logged
+    assert any(
+        "Multiple LUT tables found for epoch" in record.message
+        for record in caplog.records
+    )
+    assert any("but found tables" in record.message for record in caplog.records)
+
+
+def test_calculate_histogram_rates(l1b_histrates):
+    acq_start = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-15T01:55:00")),
+            et_to_met(str_to_et("2025-04-15T02:55:00")),
+        ]
+    )
+    acq_end = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-15T02:02:00")),
+            et_to_met(str_to_et("2025-04-15T03:02:00")),
+        ]
+    )
+    avg_spin_durations_per_cycle = xr.DataArray([30, 15])
+    # default zeros then set a sample exposure as in original test intent
+    exposure_factors_6deg = np.zeros((2, 7, 60))
+    exposure_factors_60deg = np.zeros((2, 7, 6))
+    exposure_factors_6deg[0, 0, 0] = 1
+    exposure_factors_60deg[0, 0, 0] = 1
+    exposure_factors = {}
+    exposure_factors["6deg"] = exposure_factors_6deg
+    exposure_factors["60deg"] = exposure_factors_60deg
+
+    # Populate counts used by assertions
+    l1b_histrates.h_counts[0, 0, 0] = 30
+    l1b_histrates.h_counts[0, 1, 0] = 10
+    l1b_histrates.h_counts[0, 2, 0] = 2
+    l1b_histrates.h_counts[1, 0, 0] = 15
+    l1b_histrates.h_counts[1, 1, 0] = 30
+    l1b_histrates.h_counts[1, 2, 0] = 45
+
+    l1b_histrates.o_counts[0, 0, 0] = 100
+    l1b_histrates.o_counts[0, 1, 0] = 50
+    l1b_histrates.o_counts[0, 2, 0] = 25
+    l1b_histrates.o_counts[1, 0, 0] = 2
+    l1b_histrates.o_counts[1, 1, 0] = 3
+    l1b_histrates.o_counts[1, 2, 0] = 4
+
+    l1b_histrate = calculate_histogram_rates(
+        l1b_histrates,
+        acq_start,
+        acq_end,
+        avg_spin_durations_per_cycle,
+        exposure_factors,
+    )
+
+    hist_rates_h_epoch_0 = l1b_histrate["h_rates"]
+    hist_rates_h_epoch_0[0, :, :] = hist_rates_h_epoch_0[0, :, :] / 2
+    hist_rates_h_epoch_0[0, :, 0] = hist_rates_h_epoch_0[0, :, 0] / 2
+    hist_rates_o_epoch_0 = l1b_histrate["o_rates"]
+    hist_rates_o_epoch_0[0, :, :] = hist_rates_o_epoch_0[0, :, :] / 2
+    hist_rates_o_epoch_0[0, :, 0] = hist_rates_o_epoch_0[0, :, 0] / 2
+
+    np.testing.assert_array_equal(
+        l1b_histrate["h_rates"][0, :, :], hist_rates_h_epoch_0[0, :, :]
+    )
+    np.testing.assert_array_equal(
+        l1b_histrate["h_rates"][1, :, :], hist_rates_h_epoch_0[1, :, :]
+    )
+    np.testing.assert_array_equal(
+        l1b_histrate["o_rates"][0, :, :], hist_rates_o_epoch_0[0, :, :]
+    )
+    np.testing.assert_array_equal(
+        l1b_histrate["o_rates"][1, :, :], hist_rates_o_epoch_0[1, :, :]
+    )
+
+
+def test_calculate_histogram_rates_no_interval_found(l1b_histrates):
+    acq_start = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-30T01:55:00")),
+            et_to_met(str_to_et("2025-04-30T02:55:00")),
+        ]
+    )
+    acq_end = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-30T02:02:00")),
+            et_to_met(str_to_et("2025-04-30T03:02:00")),
+        ]
+    )
+    avg_spin_durations_per_cycle = xr.DataArray([30, 15])
+
+    exposure_factors_6deg = np.zeros((2, 7, 60))
+    exposure_factors_60deg = np.zeros((2, 7, 6))
+    exposure_factors = {}
+    exposure_factors["6deg"] = exposure_factors_6deg
+    exposure_factors["60deg"] = exposure_factors_60deg
+
+    l1b_histrate = calculate_histogram_rates(
+        l1b_histrates,
+        acq_start,
+        acq_end,
+        avg_spin_durations_per_cycle,
+        exposure_factors,
+    )
+
+    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.zeros((2, 7, 60)))
+    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.zeros((2, 7, 60)))
+
+
+def test_calculate_histogram_rates_zero_exposure_time(l1b_histrates):
+    acq_start = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-15T01:55:00")),
+            et_to_met(str_to_et("2025-04-15T02:55:00")),
+        ]
+    )
+    acq_end = xr.DataArray(
+        [
+            et_to_met(str_to_et("2025-04-15T02:02:00")),
+            et_to_met(str_to_et("2025-04-15T03:02:00")),
+        ]
+    )
+    avg_spin_durations_per_cycle = xr.DataArray([0, 15])
+
+    exposure_factors_6deg = np.zeros((2, 7, 60))
+    exposure_factors_60deg = np.zeros((2, 7, 6))
+    exposure_factors = {}
+    exposure_factors["6deg"] = exposure_factors_6deg
+    exposure_factors["60deg"] = exposure_factors_60deg
+
+    l1b_histrate = calculate_histogram_rates(
+        l1b_histrates,
+        acq_start,
+        acq_end,
+        avg_spin_durations_per_cycle,
+        exposure_factors,
+    )
+
+    np.testing.assert_array_equal(l1b_histrate["h_rates"], np.zeros((2, 7, 60)))
+    np.testing.assert_array_equal(l1b_histrate["o_rates"], np.zeros((2, 7, 60)))
+
+
+def test_set_spin_cycle_from_spin_data_histogram():
+    """Test spin cycle calculation for histogram data."""
+    # Arrange
+    epoch_date = et_to_ttj2000ns(
+        str_to_et(["2025-04-15T02:00:00", "2025-04-15T03:00:00"])
+    )
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step", "azimuth_6"), np.zeros((2, 7, 60))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+            "azimuth_6": np.arange(60),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+        }
+    )
+
+    met_times = ttj2000ns_to_met(epoch_date)
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", met_times),
+            "num_completed": ("epoch", [28, 28]),
+            "acq_start_sec": ("epoch", met_times),
+            "acq_start_subsec": ("epoch", [0, 0]),
+            "acq_end_sec": ("epoch", met_times),
+            "acq_end_subsec": ("epoch", [0, 0]),
+        },
+        coords={
+            "epoch": epoch_date,
+        },
+    )
+
+    # Mock get_spin_number to return predictable values
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=np.array([0, 28])
+    ):
+        # Act
+        l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Expected: spin_cycle = spin_start + 7 + (esa_step - 1) * 2
+    # For epoch 0: 0 + 7 + (1-1)*2 = 7, (2-1)*2 = 9, ..., (7-1)*2 = 19
+    # For epoch 1: 28 + 7 + (1-1)*2 = 35, ..., 28 + 7 + (7-1)*2 = 47
+    expected_spin_cycles = np.array(
+        [[7, 9, 11, 13, 15, 17, 19], [35, 37, 39, 41, 43, 45, 47]]
+    )
+
+    # Assert
+    assert "spin_cycle" in l1b_hist.data_vars
+    np.testing.assert_array_equal(l1b_hist["spin_cycle"].values, expected_spin_cycles)
+
+
+def test_set_spin_cycle_from_spin_data_matching_ascs():
+    """Test that science ASCs correctly match to spin ASCs."""
+    # Arrange - Science ASCs that should match different spin ASCs
+    science_met = [100, 200, 300]
+    spin_met = [50, 150, 250]  # Science times fall after these spin times
+
+    epoch_date = met_to_ttj2000ns(science_met)
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step"), np.zeros((3, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
+
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", spin_met),
+            "num_completed": ("epoch", [28, 28, 28]),
+            "acq_start_sec": ("epoch", spin_met),
+            "acq_start_subsec": ("epoch", [0, 0, 0]),
+            "acq_end_sec": ("epoch", spin_met),
+            "acq_end_subsec": ("epoch", [0, 0, 0]),
+        },
+        coords={"epoch": met_to_ttj2000ns(spin_met)},
+    )
+
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number",
+        return_value=np.array([0, 28, 56]),
+    ):
+        # Act
+        l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Assert - Each epoch should use the correct spin start number
+    assert l1b_hist["spin_cycle"][0, 0] == 7  # 0 + 7 + 0
+    assert l1b_hist["spin_cycle"][1, 0] == 35  # 28 + 7 + 0
+    assert l1b_hist["spin_cycle"][2, 2] == 67  # 56 + 7 + 2*2
+
+
+def test_set_spin_cycle_from_spin_data_repeated_closest():
+    """Test when multiple science ASCs map to the same spin ASC."""
+    # Arrange - Multiple science ASCs close to the same spin ASC
+    science_met = [100, 101, 200, 201]
+    spin_met = [50, 150]  # First two science ASCs map to spin[0], last two to spin[1]
+
+    epoch_date = met_to_ttj2000ns(science_met)
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step"), np.zeros((4, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
+
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", spin_met),
+            "num_completed": ("epoch", [28, 28]),
+            "acq_start_sec": ("epoch", spin_met),
+            "acq_start_subsec": ("epoch", [0, 0]),
+            "acq_end_sec": ("epoch", spin_met),
+            "acq_end_subsec": ("epoch", [0, 0]),
+        },
+        coords={"epoch": met_to_ttj2000ns(spin_met)},
+    )
+
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number",
+        return_value=np.array([10, 10, 38, 38]),
+    ):
+        # Act
+        l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Assert - First two should use spin 10, last two should use spin 38
+    assert l1b_hist["spin_cycle"][0, 0] == 17  # 10 + 7 + 0
+    assert l1b_hist["spin_cycle"][1, 0] == 17  # 10 + 7 + 0 (same spin)
+    assert l1b_hist["spin_cycle"][2, 0] == 45  # 38 + 7 + 0
+    assert l1b_hist["spin_cycle"][3, 0] == 45  # 38 + 7 + 0 (same spin)
+
+
+def test_set_spin_cycle_from_spin_data_all_esa_steps():
+    """Test that all ESA steps get correct spin cycles."""
+    # Arrange
+    epoch_date = et_to_ttj2000ns(str_to_et(["2025-04-15T02:00:00"]))
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (("epoch", "esa_step"), np.zeros((1, 7))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
+
+    met_time = ttj2000ns_to_met(epoch_date)
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", [met_time[0]]),
+            "num_completed": ("epoch", [28]),
+            "acq_start_sec": ("epoch", [met_time[0]]),
+            "acq_start_subsec": ("epoch", [0]),
+            "acq_end_sec": ("epoch", [met_time[0]]),
+            "acq_end_subsec": ("epoch", [0]),
+        },
+        coords={"epoch": epoch_date},
+    )
+
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=np.array([0])
+    ):
+        # Act
+        l1b_hist = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    # Assert - Verify the formula: spin_start + 7 + (esa_step - 1) * 2
+    expected = np.array([7, 9, 11, 13, 15, 17, 19])
+    np.testing.assert_array_equal(l1b_hist["spin_cycle"].values[0], expected)
+
+
+def test_set_spin_cycle_from_spin_data_insufficient_spins():
+    """Test that ASCs with fewer than 28 spins are filtered out."""
+    # Arrange - Mix of valid and invalid spin counts
+    science_met = [100, 200, 300]
+    spin_met = [50, 150, 250]
+
+    epoch_date = met_to_ttj2000ns(science_met)
+    l1a_hist = xr.Dataset(
+        {
+            "hydrogen": (["epoch", "esa_step", "azimuth"], np.ones((3, 7, 60))),
+            "oxygen": (["epoch", "esa_step", "azimuth"], np.ones((3, 7, 60))),
+        },
+        coords={
+            "epoch": epoch_date,
+            "esa_step": np.arange(1, 8),
+            "azimuth": np.arange(60),
+        },
+        attrs={"Logical_source": "imap_lo_l1a_histogram"},
+    )
+
+    l1b_hist = xr.Dataset(coords={"epoch": epoch_date, "esa_step": np.arange(1, 8)})
+
+    # Spin data with mixed valid/invalid counts
+    spin_data = xr.Dataset(
+        {
+            "shcoarse": ("epoch", spin_met),
+            "num_completed": ("epoch", [20, 28, 15]),  # 20 and 15 are < 28
+            "acq_start_sec": ("epoch", np.array([50, 150, 250])),
+            "acq_start_subsec": ("epoch", np.zeros(3)),
+            "acq_end_sec": ("epoch", np.array([78, 178, 278])),
+            "acq_end_subsec": ("epoch", np.zeros(3)),
+        },
+        coords={"epoch": np.arange(3)},
+    )
+
+    # Act
+    with patch(
+        "imap_processing.lo.l1b.lo_l1b.get_spin_number",
+        return_value=np.array([28, 26, 24]),
+    ):
+        result = set_spin_cycle_from_spin_data(l1a_hist, l1b_hist, spin_data)
+
+    assert len(result["epoch"]) == 3
+    np.testing.assert_array_equal(result["epoch"].values, epoch_date)
+
+    # Verify spin_cycle shape has all valid ESA steps and all epochs
+    assert result["spin_cycle"].shape == (3, 7)
+    # We should have added a flag about an incomplete ASC
+    np.testing.assert_array_equal(result["incomplete_asc"], [True, False, True])
+
+
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+    return_value=(473389199, 473472001),
+)
+@patch(
+    "imap_processing.lo.l1b.lo_l1b._get_esa_level_indices",
+    return_value=np.arange(7),
+)
+def test_calculate_de_rates(
+    mock_get_esa_level_indices, mock_get_pointing_times, attr_mgr_l1b, anc_dependencies
+):
+    """Test the calculate_de_rates function."""
+    # Use MET times from the test sweep table (2025-01-01)
+    met_start = 473389200
+    epoch_time = met_to_ttj2000ns([met_start, met_start + 15 * 28])
+
+    # Create individual epochs for each direct event in TTJ2000ns
+    de_epochs = met_to_ttj2000ns(
+        [
+            met_start + 10,
+            met_start + 20,
+            met_start + 30,
+            met_start + 15 * 28 + 10,
+            met_start + 15 * 28 + 20,
+        ]
+    )
+
+    # Create a simple l1b_de dataset with a few direct events
+    l1b_de = xr.Dataset(
+        {
+            "spin_cycle": ("epoch", [7, 9, 11, 35, 37]),
+            "esa_step": ("epoch", [1, 2, 3, 1, 2]),
+            "spin_bin": ("epoch", [0, 120, 240, 60, 180]),
+            "species": ("epoch", ["H", "O", "H", "H", "O"]),
+            "coincidence_type": (
+                "epoch",
+                ["111111", "110100", "111000", "101000", "100100"],
+            ),
+            "avg_spin_durations": ("epoch", [15.0, 15.0, 15.0, 15.0, 15.0]),
+        },
+        coords={"epoch": de_epochs},
+    )
+
+    # Create l1a_spin dataset
+    l1a_spin = xr.Dataset(
+        {
+            "shcoarse": ("epoch", [met_start, met_start + 15 * 28]),
+            "num_completed": ("epoch", [28, 28]),
+            "acq_start_sec": ("epoch", [met_start, met_start + 15 * 28]),
+            "acq_start_subsec": ("epoch", [0, 0]),
+            "acq_end_sec": ("epoch", [met_start + 15 * 28, met_start + 2 * 15 * 28]),
+            "acq_end_subsec": ("epoch", [0, 0]),
+        },
+        coords={"epoch": epoch_time},
+    )
+
+    # Create l1b_nhk dataset with pivot angle information
+    l1b_nhk = xr.Dataset(
+        {"pcc_cumulative_cnt_pri": ("epoch", [45.0])},
+        coords={"epoch": epoch_time[:1]},
+    )
+
+    # Add pivot_angle to l1b_de (normally set from l1b_nhk in l1b_de function)
+    l1b_de["pivot_angle"] = xr.DataArray([45.0], dims=["pivot_angle"])
+
+    sci_dependencies = {
+        "imap_lo_l1b_de": l1b_de,
+        "imap_lo_l1a_spin": l1a_spin,
+        "imap_lo_l1b_nhk": l1b_nhk,
+    }
+
+    result = calculate_de_rates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
+
+    assert result.attrs["Logical_source"] == "imap_lo_l1b_derates"
+    assert "epoch" in result.coords
+    assert "esa_step" in result.coords
+    assert "spin_bin" in result.coords
+
+    # Check that all expected data variables are present
+    expected_vars = [
+        "h_counts",
+        "o_counts",
+        "triple_counts",
+        "double_counts",
+        "h_rates",
+        "o_rates",
+        "triple_rates",
+        "double_rates",
+        "exposure_time",
+        "spin_cycle",
+        "esa_mode",
+    ]
+    for var in expected_vars:
+        assert var in result.data_vars
+
+    # Check shapes
+    assert result["h_counts"].shape == (2, 7, 60)  # (num_asc, num_esa_steps, num_bins)
+    assert result["o_counts"].shape == (2, 7, 60)
+    assert result["exposure_time"].shape == (2, 7)
+
+    # Verify some counts are correct based on our test data
+    # First ASC (spin_cycle 0) has 3 events at esa_step 1, 2, 3
+    # Second ASC (spin_cycle 28) has 2 events at esa_step 1, 2
+    # H species: indices 0, 2, 3
+    # ASC 0 has 2 H (esa_step 1, 3), ASC 1 has 1 H (esa_step 1)
+    # O species: indices 1, 4
+    # ASC 0 has 1 O (esa_step 2), ASC 1 has 1 O (esa_step 2)
+    # First ASC, esa_step 1, spin_bin 0
+    assert result["h_counts"][0, 0, 0] == 1
+    # First ASC, esa_step 3, spin_bin 4 (240//60)
+    assert result["h_counts"][0, 2, 4] == 1
+    # First ASC, esa_step 2, spin_bin 2 (120//60)
+    assert result["o_counts"][0, 1, 2] == 1
+
+    # Check that pivot angle was set
+    assert result["pivot_angle"].values[0] == 45.0
+
+    # Test that lo_l1b() with descriptor="derates" produces the correct output
+    output_datasets = lo_l1b(sci_dependencies, anc_dependencies, descriptor="derates")
+    assert len(output_datasets) == 1
+    assert output_datasets[0].attrs["Logical_source"] == "imap_lo_l1b_derates"
+
+
+# ============================================================================
+# Star Sensor L1B Tests
+# ============================================================================
+class TestGetSamplingCadenceFromNhk:
+    """Tests for get_sampling_cadence_from_nhk function."""
+
+    def test_extracts_mean_cadence(self):
+        """Test extracting sampling cadence from NHK dataset."""
+        # Arrange
+        l1b_nhk = xr.Dataset(
+            {
+                "ifb_data_interval": ("epoch", [20.0, 20.5, 21.0]),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+        expected_cadence = 20.5  # Mean of [20.0, 20.5, 21.0]
+
+        # Act
+        sampling_cadence = get_sampling_cadence_from_nhk(l1b_nhk)
+
+        # Assert
+        assert sampling_cadence == expected_cadence
+
+    def test_raises_error_when_field_missing(self):
+        """Test error when ifb_data_interval field is missing."""
+        # Arrange
+        l1b_nhk = xr.Dataset(
+            {
+                "other_field": ("epoch", [1, 2, 3]),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+
+        # Act / Assert
+        with pytest.raises(
+            KeyError,
+            match="ifb_data_interval field not found in L1B NHK dataset",
+        ):
+            get_sampling_cadence_from_nhk(l1b_nhk)
+
+
+class TestFilterValidStarRecords:
+    """Tests for filter_valid_star_records function."""
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_filters_by_count_threshold(self, mock_repoint):
+        """Test filtering star records by COUNT >= 700."""
+        # Arrange - Mock repoint data (no repoints in progress)
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False, False, False]}
+        )
+
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [650, 700, 720, 699, 715]),
+                "shcoarse": (
+                    "epoch",
+                    np.arange(5, dtype=np.float64),
+                ),  # Already in seconds
+            },
+            coords={"epoch": [0, 1, 2, 3, 4]},
+        )
+        expected_mask = np.array([False, True, True, False, True])
+
+        # Act
+        valid_mask = filter_valid_star_records(l1a_star, min_count=700)
+
+        # Assert
+        np.testing.assert_array_equal(valid_mask, expected_mask)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_filters_by_count_and_time_window(self, mock_repoint):
+        """Test filtering star records by both COUNT and time window."""
+        # Arrange - Mock repoint data (no repoints in progress)
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False, False, False]}
+        )
+
+        # Create times: 0s, 10s, 20s, 30s, 40s (already in seconds)
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [700, 710, 720, 715, 720]),
+                "shcoarse": ("epoch", np.array([0, 10, 20, 30, 40], dtype=np.float64)),
+            },
+            coords={"epoch": [0, 1, 2, 3, 4]},
+        )
+        # Time window: [5s, 25s] - should include epochs 1 and 2
+        expected_mask = np.array([False, True, True, False, False])
+
+        # Act
+        valid_mask = filter_valid_star_records(
+            l1a_star,
+            min_count=700,
+            time_window_offset=5.0,
+            time_window_duration=20.0,
+        )
+
+        # Assert
+        np.testing.assert_array_equal(valid_mask, expected_mask)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_processes_all_data_without_time_window(self, mock_repoint):
+        """Test filtering without time window (process all data)."""
+        # Arrange - Mock repoint data (no repoints in progress)
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False]}
+        )
+
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [700, 710, 720]),
+                "shcoarse": ("epoch", np.array([0, 10, 20], dtype=np.float64)),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+        expected_mask = np.array([True, True, True])
+
+        # Act
+        valid_mask = filter_valid_star_records(
+            l1a_star, min_count=700, time_window_duration=None
+        )
+
+        # Assert
+        np.testing.assert_array_equal(valid_mask, expected_mask)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_excludes_records_during_repoint(self, mock_repoint):
+        """Test filtering records during repoint maneuvers."""
+        # Arrange - Mock repoint data with some repoints in progress
+        # Epochs 1 and 3 are during repoint maneuvers
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, True, False, True, False]}
+        )
+
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [700, 710, 720, 715, 720]),
+                "shcoarse": ("epoch", np.arange(5, dtype=np.float64)),
+            },
+            coords={"epoch": [0, 1, 2, 3, 4]},
+        )
+        # Expected: epochs 0, 2, 4 pass (COUNT >= 700 AND not during repoint)
+        # Epochs 1 and 3 fail because they are during repoint
+        expected_mask = np.array([True, False, True, False, True])
+
+        # Act
+        valid_mask = filter_valid_star_records(l1a_star, min_count=700)
+
+        # Assert
+        np.testing.assert_array_equal(valid_mask, expected_mask)
+
+
+class TestCalculateStarSensorProfile:
+    """Tests for star sensor profile calculation functions."""
+
+    def test_profile_for_group_basic(self):
+        """Test basic star sensor profile calculation for a group."""
+        # Arrange - 3 records with uniform data
+        np.random.seed(42)
+        data = np.random.randint(100, 200, size=(3, 720)).astype(np.uint16)
+        counts = np.array([720, 720, 720])
+
+        # Act
+        avg_amplitude, count_per_bin = calculate_star_sensor_profile_for_group(
+            data, counts, end_bins_to_exclude=0
+        )
+
+        # Assert
+        assert len(avg_amplitude) == 720
+        assert len(count_per_bin) == 720
+        # All bins should have 3 samples
+        np.testing.assert_array_equal(count_per_bin, np.full(720, 3))
+        # Averages should be between 100 and 200
+        assert np.all(avg_amplitude >= 100)
+        assert np.all(avg_amplitude <= 200)
+
+    def test_profile_for_group_end_bins_excluded(self):
+        """Test that edge bins are properly excluded."""
+        # Arrange - 2 records with uniform data
+        data = np.ones((2, 720), dtype=np.uint16) * 100
+        counts = np.array([720, 720])
+
+        # Act
+        avg_amplitude, count_per_bin = calculate_star_sensor_profile_for_group(
+            data, counts, end_bins_to_exclude=2
+        )
+
+        # Assert
+        # Last 2 bins should have count=0
+        assert count_per_bin[718] == 0
+        assert count_per_bin[719] == 0
+        # All other bins should have count=2
+        assert np.all(count_per_bin[:718] == 2)
+        # End bins should have FILLVAL
+        assert np.all(np.isnan(avg_amplitude[718:]))
+        # Middle bins should have average value
+        assert np.all(avg_amplitude[:718] == 100.0)
+
+    def test_profile_for_group_empty_data(self):
+        """Test handling of empty data array."""
+        # Arrange
+        data = np.empty((0, 720), dtype=np.uint16)
+        counts = np.array([], dtype=np.int32)
+
+        # Act
+        avg_amplitude, count_per_bin = calculate_star_sensor_profile_for_group(
+            data, counts
+        )
+
+        # Assert
+        np.testing.assert_array_equal(count_per_bin, np.zeros(720))
+        # Empty data returns NaN for all bins (consistent with bins having no samples)
+        assert np.all(np.isnan(avg_amplitude))
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_profiles_by_group_creates_correct_groups(self, mock_repoint):
+        """Test that profiles are grouped correctly into 64-record groups."""
+        # Arrange - Create 150 records (should produce 3 groups: 64, 64, 22)
+        n_records = 150
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False] * n_records}
+        )
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720] * n_records),
+                "shcoarse": (
+                    "epoch",
+                    np.arange(n_records, dtype=np.float64) * 15.0,
+                ),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((n_records, 720), dtype=np.uint16) * 100,
+                ),
+            },
+            coords={
+                "epoch": met_to_ttj2000ns(np.arange(n_records) * 15.0),
+                "samples": np.arange(720),
+            },
+        )
+
+        # Act
+        (
+            spin_angle,
+            group_epochs,
+            avg_amplitudes,
+            counts_per_bin,
+        ) = calculate_star_sensor_profiles_by_group(
+            l1a_star,
+            sampling_cadence=21.0,
+            spin_period=15.0,
+            group_size=64,
+        )
+
+        # Assert
+        assert len(spin_angle) == 720
+        assert len(group_epochs) == 3  # 150 records -> 3 groups
+        assert avg_amplitudes.shape == (3, 720)
+        assert counts_per_bin.shape == (3, 720)
+        # First two groups should have 64 samples per bin, last group 22
+        assert np.all(counts_per_bin[0, 2:718] == 64)
+        assert np.all(counts_per_bin[1, 2:718] == 64)
+        assert np.all(counts_per_bin[2, 2:718] == 22)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_profiles_by_group_handles_no_valid_records(self, mock_repoint):
+        """Test handling when no records pass the COUNT threshold."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False]}
+        )
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [650, 600, 699]),  # All below 700
+                "shcoarse": ("epoch", np.array([0.0, 15.0, 30.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((3, 720), dtype=np.uint16) * 100,
+                ),
+            },
+            coords={
+                "epoch": met_to_ttj2000ns([0.0, 15.0, 30.0]),
+                "samples": np.arange(720),
+            },
+        )
+
+        # Act
+        (
+            spin_angle,
+            group_epochs,
+            avg_amplitudes,
+            counts_per_bin,
+        ) = calculate_star_sensor_profiles_by_group(
+            l1a_star,
+            sampling_cadence=21.0,
+            spin_period=15.0,
+            min_count_threshold=700,
+        )
+
+        # Assert
+        assert len(spin_angle) == 720
+        assert len(group_epochs) == 0  # No valid records
+        assert avg_amplitudes.shape == (0, 720)
+
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_profiles_by_group_angle_wrapping(self, mock_repoint):
+        """Test that spin angles wrap correctly to [0, 360) range."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame({"repoint_in_progress": [False]})
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720]),
+                "shcoarse": ("epoch", np.array([0.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((1, 720), dtype=np.uint16) * 100,
+                ),
+            },
+            coords={"epoch": met_to_ttj2000ns([0.0]), "samples": np.arange(720)},
+        )
+
+        # Act
+        spin_angle, _, _, _ = calculate_star_sensor_profiles_by_group(
+            l1a_star,
+            sampling_cadence=21.0,
+            spin_period=15.0,
+            start_angle_offset=350.0,  # Large offset to test wrapping
+        )
+
+        # Assert
+        assert np.all(spin_angle >= 0)
+        assert np.all(spin_angle < 360)
+        # With offset=350°, first bin should be around 350°
+        assert 350.0 < spin_angle[0] < 351.0
+        # Some bins will wrap to the lower range
+        assert np.any(spin_angle > 300)
+        assert np.any(spin_angle < 100)  # Some angles wrapped to lower range
+
+
+class TestL1bStar:
+    """Tests for l1b_star function."""
+
+    @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_initializes_with_spin_data(
+        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b
+    ):
+        """Test successful initialization of L1B star dataset with spin data."""
+        # Arrange - Create 150 records to produce multiple groups
+        n_records = 150
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False] * n_records}
+        )
+        mock_pointing_mid.return_value = 1000.0  # Mock pointing mid time in MET
+        np.random.seed(42)
+        met_times = np.arange(n_records, dtype=np.float64) * 15.0
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720] * n_records),
+                "shcoarse": ("epoch", met_times),
+                "data": (
+                    ("epoch", "samples"),
+                    np.random.randint(100, 200, size=(n_records, 720), dtype=np.uint16),
+                ),
+            },
+            coords={
+                "epoch": met_to_ttj2000ns(met_times),
+                "samples": np.arange(720),
+            },
+        )
+        l1b_nhk = xr.Dataset(
+            {
+                "ifb_data_interval": ("epoch", [21.0] * n_records),
+            },
+            coords={"epoch": list(range(n_records))},
+        )
+        # Create spin data with known spin durations
+        spin_data = xr.Dataset(
+            {
+                "acq_start_sec": ("epoch", [0, 15]),
+                "acq_start_subsec": ("epoch", [0, 0]),
+                "acq_end_sec": ("epoch", [420, 435]),  # 420s = 28 spins * 15s
+                "acq_end_subsec": ("epoch", [0, 0]),
+                "num_completed": ("epoch", [28, 28]),
+            },
+            coords={"epoch": [0, 1]},
+        )
+        sci_dependencies = {
+            "imap_lo_l1a_star": l1a_star,
+            "imap_lo_l1b_nhk": l1b_nhk,
+            "imap_lo_l1a_spin": spin_data,
+        }
+
+        # Act
+        l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b, group_size=64)
+
+        # Assert
+        assert l1b_star_ds.attrs["Logical_source"] == "imap_lo_l1b_prostar"
+        assert "epoch" in l1b_star_ds.coords
+        # 150 records / 64 group_size = 3 groups (64 + 64 + 22)
+        assert len(l1b_star_ds.coords["epoch"]) == 3
+        # spin_angle is now the coordinate (monotonically increasing)
+        assert "spin_angle" in l1b_star_ds.coords
+        assert len(l1b_star_ds.coords["spin_angle"]) == 720
+        # spin_angle_bin is now a data variable
+        assert "spin_angle_bin" in l1b_star_ds.data_vars
+        assert "avg_amplitude" in l1b_star_ds.data_vars
+        assert "count_per_bin" in l1b_star_ds.data_vars
+        assert "pointing_mid_met" in l1b_star_ds.attrs
+        # Check that spin_angle is monotonically increasing
+        spin_angles = l1b_star_ds.coords["spin_angle"].values
+        assert np.all(np.diff(spin_angles) > 0), (
+            "spin_angle should be monotonically increasing"
+        )
+        assert spin_angles[0] >= 0.0
+        assert spin_angles[-1] < 360.0
+        # Check attributes
+        assert "sampling_cadence_ms" in l1b_star_ds.attrs
+        assert "spin_duration_sec" in l1b_star_ds.attrs
+        assert "group_size" in l1b_star_ds.attrs
+        assert l1b_star_ds.attrs["sampling_cadence_ms"] == 21.0
+        assert l1b_star_ds.attrs["spin_duration_sec"] == 15.0
+        assert l1b_star_ds.attrs["group_size"] == 64
+        # Check data shapes - all variables have epoch as first dimension
+        assert l1b_star_ds["spin_angle_bin"].shape == (720,)
+        assert l1b_star_ds["avg_amplitude"].shape == (3, 720)
+        assert l1b_star_ds["count_per_bin"].shape == (3, 720)
+        # Check pointing_mid_met is a scalar with expected value
+        assert float(l1b_star_ds.attrs["pointing_mid_met"]) == 1000.0
+
+    @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_dataset_structure_and_attributes(
+        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b
+    ):
+        """Test that L1B star dataset has correct structure and attributes."""
+        # Arrange
+        mock_repoint.return_value = pd.DataFrame({"repoint_in_progress": [False]})
+        mock_pointing_mid.return_value = 1000.0
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720]),
+                "shcoarse": ("epoch", np.array([0.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((1, 720), dtype=np.uint16) * 150,
+                ),
+            },
+            coords={"epoch": met_to_ttj2000ns([0.0]), "samples": np.arange(720)},
+        )
+        l1b_nhk = xr.Dataset(
+            {
+                "ifb_data_interval": ("epoch", [21.0]),
+            },
+            coords={"epoch": [0]},
+        )
+        spin_data = xr.Dataset(
+            {
+                "acq_start_sec": ("epoch", [0]),
+                "acq_start_subsec": ("epoch", [0]),
+                "acq_end_sec": ("epoch", [420]),  # 420s = 28 spins * 15s
+                "acq_end_subsec": ("epoch", [0]),
+                "num_completed": ("epoch", [28]),
+            },
+            coords={"epoch": [0]},
+        )
+        sci_dependencies = {
+            "imap_lo_l1a_star": l1a_star,
+            "imap_lo_l1b_nhk": l1b_nhk,
+            "imap_lo_l1a_spin": spin_data,
+        }
+
+        # Act
+        l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
+
+        # Assert - Check spin_angle coordinate attributes
+        assert l1b_star_ds.coords["spin_angle"].attrs["UNITS"] == "deg"
+        assert l1b_star_ds.coords["spin_angle"].attrs["VALIDMIN"] == 0.0
+        assert l1b_star_ds.coords["spin_angle"].attrs["VALIDMAX"] == 360.0
+
+        # Assert - Check spin_angle_bin variable attributes (now a data variable)
+        assert (
+            "Original spin angle bin index"
+            in l1b_star_ds["spin_angle_bin"].attrs["CATDESC"]
+        )
+        assert l1b_star_ds["spin_angle_bin"].attrs["VALIDMIN"] == 0
+        assert l1b_star_ds["spin_angle_bin"].attrs["VALIDMAX"] == 719
+
+        assert l1b_star_ds["avg_amplitude"].attrs["UNITS"] == "mV"
+        assert l1b_star_ds["avg_amplitude"].attrs["FILLVAL"] == -1.0e31
+
+        assert l1b_star_ds["count_per_bin"].attrs["VALIDMIN"] == 0
+        assert l1b_star_ds["count_per_bin"].attrs["VALIDMAX"] == 100000
+
+        # Assert - Check processing parameter attributes
+        assert "lo_angle_offset_deg" in l1b_star_ds.attrs
+        assert "end_bins_excluded" in l1b_star_ds.attrs
+        assert "min_count_threshold" in l1b_star_ds.attrs
+        assert l1b_star_ds.attrs["lo_angle_offset_deg"] == 2.0
+        assert l1b_star_ds.attrs["end_bins_excluded"] == 2
+        assert l1b_star_ds.attrs["min_count_threshold"] == 700
+
+    @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_start_and_end_doy_variables(
+        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b
+    ):
+        """Test that start_doy and end_doy variables are computed correctly."""
+        # Arrange
+        mock_pointing_mid.return_value = 1000.0  # Mock pointing mid time in MET
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False, False, False]}
+        )
+        np.random.seed(42)
+        # Create epochs spanning 30 seconds
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720, 720, 720]),
+                "shcoarse": ("epoch", np.array([0.0, 15.0, 30.0], dtype=np.float64)),
+                "data": (
+                    ("epoch", "samples"),
+                    np.random.randint(100, 200, size=(3, 720), dtype=np.uint16),
+                ),
+            },
+            coords={
+                "epoch": met_to_ttj2000ns([0.0, 15.0, 30.0]),
+                "samples": np.arange(720),
+            },
+        )
+        l1b_nhk = xr.Dataset(
+            {
+                "ifb_data_interval": ("epoch", [21.0, 21.0, 21.0]),
+            },
+            coords={"epoch": [0, 1, 2]},
+        )
+        spin_data = xr.Dataset(
+            {
+                "acq_start_sec": ("epoch", [0, 15]),
+                "acq_start_subsec": ("epoch", [0, 0]),
+                "acq_end_sec": ("epoch", [420, 435]),
+                "acq_end_subsec": ("epoch", [0, 0]),
+                "num_completed": ("epoch", [28, 28]),
+            },
+            coords={"epoch": [0, 1]},
+        )
+        sci_dependencies = {
+            "imap_lo_l1a_star": l1a_star,
+            "imap_lo_l1b_nhk": l1b_nhk,
+            "imap_lo_l1a_spin": spin_data,
+        }
+
+        # Act
+        l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
+
+        # Assert - Check that start_doy and end_doy exist as scalars (global values)
+        assert "start_doy" in l1b_star_ds.attrs
+        assert "end_doy" in l1b_star_ds.attrs
+
+        # Assert - Check values are valid day of year (1.0 to 366.x for leap years)
+        start_doy = float(l1b_star_ds.attrs["start_doy"])
+        end_doy = float(l1b_star_ds.attrs["end_doy"])
+        assert 1.0 <= start_doy <= 367.0
+        assert 1.0 <= end_doy <= 367.0
+
+        # Assert - end_doy should be >= start_doy (data spans 30 seconds)
+        assert end_doy >= start_doy
+
+    @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_multiple_groups_created(
+        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b
+    ):
+        """Test that multiple 64-spin groups are created correctly."""
+        # Arrange - Create 150 records to produce 3 groups (64 + 64 + 22)
+        n_records = 150
+        mock_pointing_mid.return_value = 1000.0  # Mock pointing mid time in MET
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False] * n_records}
+        )
+        met_times = np.arange(n_records, dtype=np.float64) * 15.0
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720] * n_records),
+                "shcoarse": ("epoch", met_times),
+                "data": (
+                    ("epoch", "samples"),
+                    np.ones((n_records, 720), dtype=np.uint16) * 100,
+                ),
+            },
+            coords={
+                "epoch": met_to_ttj2000ns(met_times),
+                "samples": np.arange(720),
+            },
+        )
+        l1b_nhk = xr.Dataset(
+            {
+                "ifb_data_interval": ("epoch", [21.0] * n_records),
+            },
+            coords={"epoch": list(range(n_records))},
+        )
+        spin_data = xr.Dataset(
+            {
+                "acq_start_sec": ("epoch", [0]),
+                "acq_start_subsec": ("epoch", [0]),
+                "acq_end_sec": ("epoch", [420]),
+                "acq_end_subsec": ("epoch", [0]),
+                "num_completed": ("epoch", [28]),
+            },
+            coords={"epoch": [0]},
+        )
+        sci_dependencies = {
+            "imap_lo_l1a_star": l1a_star,
+            "imap_lo_l1b_nhk": l1b_nhk,
+            "imap_lo_l1a_spin": spin_data,
+        }
+
+        # Act
+        l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b, group_size=64)
+
+        # Assert
+        assert len(l1b_star_ds.coords["epoch"]) == 3
+        # Check pointing_mid_met is present (scalar value)
+        assert "pointing_mid_met" in l1b_star_ds.attrs
+        # First group epoch should be the first L1A epoch
+        assert l1b_star_ds.coords["epoch"].values[0] == met_to_ttj2000ns([0.0])[0]
+        # Second group epoch should be record 64
+        assert l1b_star_ds.coords["epoch"].values[1] == met_to_ttj2000ns([64 * 15.0])[0]
+        # Third group epoch should be record 128
+        assert (
+            l1b_star_ds.coords["epoch"].values[2] == met_to_ttj2000ns([128 * 15.0])[0]
+        )
+
+
+def test_get_pivot_angle_from_nhk():
+    """Test get_pivot_angle_from_nhk function."""
+    # Arrange - Create a mock NHK dataset with pivot angle information
+    l1b_nhk = xr.Dataset(
+        {
+            # Previous 90 degrees at the beginning, then shifted to 75 degrees
+            "pcc_cumulative_cnt_pri": ("epoch", [90, 90, 75, 75, 75, 75, 75]),
+        },
+        coords={"epoch": [0, 1, 2, 3, 4, 5, 6]},
+    )
+    expected_pivot_angle = 75
+
+    # Act
+    pivot_angle = get_pivot_angle_from_nhk(l1b_nhk)
+
+    # Assert
+    assert pivot_angle == expected_pivot_angle

@@ -10,7 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
+    CoDICECompression,
     ViewTabInfo,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
@@ -60,15 +60,13 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 1:
         raise ValueError("Unsupported sensor ID for Hi processing.")
 
     # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
-        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
-
     logical_source_id = "imap_codice_l1a_hi-counters-singles"
 
     # Counters is little bit different in how CDF variables are derived.
@@ -82,7 +80,7 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     # spin sector size is 1.
     inst_az = collapse_shape[1]
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
@@ -100,7 +98,8 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         -1, len(variable_names), inst_az
     )
-
+    # Convert counters data to float
+    counters_data = counters_data.astype(np.float64)
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
     epoch_center, deltas = get_codice_epoch_time(
@@ -169,7 +168,7 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         l1a_dataset[species] = xr.DataArray(
             counters_data[:, idx],
             dims=("epoch", "inst_az"),
-            attrs=cdf_attrs.get_variable_attributes(species),
+            attrs=cdf_attrs.get_variable_attributes(f"hi-{species}"),
         )
         # No uncertainty needed for Hi counters data
 

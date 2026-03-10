@@ -1,0 +1,363 @@
+ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)
+ 2  tlmrelay      001-00:00:00  020-19:57:14    0.0
+10  Kiel          021-09:57:58  021-08:40:39    2.0
+2026/021-09:58:26.231 Closed packets file for SDC: iois_1_packets_2026_021_09_57_25.partial
+2026/021-09:58:26.231 Renamed iois_1_packets_2026_021_09_57_25.partial to iois_1_packets_2026_021_09_57_25.
+2026/021-09:58:26.231 Spawning: mv
+2026/021-09:58:26.231 Opened packets file for SDC: iois_1_packets_2026_021_09_58_26.partial
+2026/021-09:58:27.126 Spawned command succeeded: mv
+2026/021-09:59:27.455 Closed packets file for SDC: iois_1_packets_2026_021_09_58_26.partial
+2026/021-09:59:27.455 Renamed iois_1_packets_2026_021_09_58_26.partial to iois_1_packets_2026_021_09_58_26.
+2026/021-09:59:27.455 Spawning: mv
+2026/021-09:59:27.455 Opened packets file for SDC: iois_1_packets_2026_021_09_59_27.partial
+2026/021-09:59:28.274 Spawned command succeeded: mv
+2026/021-10:00:28.556 Closed packets file for SDC: iois_1_packets_2026_021_09_59_27.partial
+2026/021-10:00:28.556 Renamed iois_1_packets_2026_021_09_59_27.partial to iois_1_packets_2026_021_09_59_27.
+2026/021-10:00:28.556 Spawning: mv
+2026/021-10:00:28.556 Opened packets file for SDC: iois_1_packets_2026_021_10_00_28.partial
+2026/021-10:00:29.411 Spawned command succeeded: mv
+2026/021-10:01:00.009 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_09_56_00.partial
+2026/021-10:01:00.009 Renamed IOIS_1_raw_record_20_2026_021_09_56_00.partial to IOIS_1_raw_record_20_2026_021_09_56_00.
+2026/021-10:01:00.009 Spawning: rsync
+2026/021-10:01:00.010 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_01_00.partial
+2026/021-10:01:02.628 Spawned command succeeded: rsync
+2026/021-10:01:29.698 Closed packets file for SDC: iois_1_packets_2026_021_10_00_28.partial
+2026/021-10:01:29.698 Renamed iois_1_packets_2026_021_10_00_28.partial to iois_1_packets_2026_021_10_00_28.
+2026/021-10:01:29.698 Spawning: mv
+2026/021-10:01:29.698 Opened packets file for SDC: iois_1_packets_2026_021_10_01_29.partial
+2026/021-10:01:30.630 Spawned command succeeded: mv
+2026/021-10:02:30.851 Closed packets file for SDC: iois_1_packets_2026_021_10_01_29.partial
+2026/021-10:02:30.851 Renamed iois_1_packets_2026_021_10_01_29.partial to iois_1_packets_2026_021_10_01_29.
+2026/021-10:02:30.851 Spawning: mv
+2026/021-10:02:30.851 Opened packets file for SDC: iois_1_packets_2026_021_10_02_30.partial
+2026/021-10:02:31.740 Spawned command succeeded: mv
+2026/021-10:03:31.133 Closed packets file for SDC: iois_1_packets_2026_021_10_02_30.partial
+2026/021-10:03:31.133 Renamed iois_1_packets_2026_021_10_02_30.partial to iois_1_packets_2026_021_10_02_30.
+2026/021-10:03:31.133 Spawning: mv
+2026/021-10:03:31.133 Opened packets file for SDC: iois_1_packets_2026_021_10_03_31.partial
+2026/021-10:03:32.023 Spawned command succeeded: mv
+2026/021-10:04:32.269 Closed packets file for SDC: iois_1_packets_2026_021_10_03_31.partial
+2026/021-10:04:32.270 Renamed iois_1_packets_2026_021_10_03_31.partial to iois_1_packets_2026_021_10_03_31.
+2026/021-10:04:32.270 Spawning: mv
+2026/021-10:04:32.270 Opened packets file for SDC: iois_1_packets_2026_021_10_04_32.partial
+2026/021-10:04:33.206 Spawned command succeeded: mv
+2026/021-10:05:33.458 Closed packets file for SDC: iois_1_packets_2026_021_10_04_32.partial
+2026/021-10:05:33.459 Renamed iois_1_packets_2026_021_10_04_32.partial to iois_1_packets_2026_021_10_04_32.
+2026/021-10:05:33.459 Spawning: mv
+2026/021-10:05:33.459 Opened packets file for SDC: iois_1_packets_2026_021_10_05_33.partial
+2026/021-10:05:34.315 Spawned command succeeded: mv
+2026/021-10:06:00.505 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_01_00.partial
+2026/021-10:06:00.505 Renamed IOIS_1_raw_record_20_2026_021_10_01_00.partial to IOIS_1_raw_record_20_2026_021_10_01_00.
+2026/021-10:06:00.505 Spawning: rsync
+2026/021-10:06:00.505 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_06_00.partial
+2026/021-10:06:03.149 Spawned command succeeded: rsync
+2026/021-10:06:34.629 Closed packets file for SDC: iois_1_packets_2026_021_10_05_33.partial
+2026/021-10:06:34.629 Renamed iois_1_packets_2026_021_10_05_33.partial to iois_1_packets_2026_021_10_05_33.
+2026/021-10:06:34.629 Spawning: mv
+2026/021-10:06:34.629 Opened packets file for SDC: iois_1_packets_2026_021_10_06_34.partial
+2026/021-10:06:35.453 Spawned command succeeded: mv
+2026/021-10:07:35.734 Closed packets file for SDC: iois_1_packets_2026_021_10_06_34.partial
+2026/021-10:07:35.734 Renamed iois_1_packets_2026_021_10_06_34.partial to iois_1_packets_2026_021_10_06_34.
+2026/021-10:07:35.734 Spawning: mv
+2026/021-10:07:35.735 Opened packets file for SDC: iois_1_packets_2026_021_10_07_35.partial
+2026/021-10:07:36.631 Spawned command succeeded: mv
+2026/021-10:08:36.029 Closed packets file for SDC: iois_1_packets_2026_021_10_07_35.partial
+2026/021-10:08:36.029 Renamed iois_1_packets_2026_021_10_07_35.partial to iois_1_packets_2026_021_10_07_35.
+2026/021-10:08:36.029 Spawning: mv
+2026/021-10:08:36.029 Opened packets file for SDC: iois_1_packets_2026_021_10_08_36.partial
+2026/021-10:08:36.892 Spawned command succeeded: mv
+2026/021-10:09:37.170 Closed packets file for SDC: iois_1_packets_2026_021_10_08_36.partial
+2026/021-10:09:37.170 Renamed iois_1_packets_2026_021_10_08_36.partial to iois_1_packets_2026_021_10_08_36.
+2026/021-10:09:37.170 Spawning: mv
+2026/021-10:09:37.170 Opened packets file for SDC: iois_1_packets_2026_021_10_09_37.partial
+2026/021-10:09:38.067 Spawned command succeeded: mv
+2026/021-10:10:38.311 Closed packets file for SDC: iois_1_packets_2026_021_10_09_37.partial
+2026/021-10:10:38.311 Renamed iois_1_packets_2026_021_10_09_37.partial to iois_1_packets_2026_021_10_09_37.
+2026/021-10:10:38.311 Spawning: mv
+2026/021-10:10:38.311 Opened packets file for SDC: iois_1_packets_2026_021_10_10_38.partial
+2026/021-10:10:39.207 Spawned command succeeded: mv
+2026/021-10:11:00.152 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_06_00.partial
+2026/021-10:11:00.152 Renamed IOIS_1_raw_record_20_2026_021_10_06_00.partial to IOIS_1_raw_record_20_2026_021_10_06_00.
+2026/021-10:11:00.152 Spawning: rsync
+2026/021-10:11:00.152 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_11_00.partial
+2026/021-10:11:03.650 Spawned command succeeded: rsync
+2026/021-10:11:39.489 Closed packets file for SDC: iois_1_packets_2026_021_10_10_38.partial
+2026/021-10:11:39.489 Renamed iois_1_packets_2026_021_10_10_38.partial to iois_1_packets_2026_021_10_10_38.
+2026/021-10:11:39.489 Spawning: mv
+2026/021-10:11:39.490 Opened packets file for SDC: iois_1_packets_2026_021_10_11_39.partial
+2026/021-10:11:40.360 Spawned command succeeded: mv
+2026/021-10:12:40.673 Closed packets file for SDC: iois_1_packets_2026_021_10_11_39.partial
+2026/021-10:12:40.673 Renamed iois_1_packets_2026_021_10_11_39.partial to iois_1_packets_2026_021_10_11_39.
+2026/021-10:12:40.673 Spawning: mv
+2026/021-10:12:40.673 Opened packets file for SDC: iois_1_packets_2026_021_10_12_40.partial
+2026/021-10:12:41.493 Spawned command succeeded: mv
+2026/021-10:13:41.777 Closed packets file for SDC: iois_1_packets_2026_021_10_12_40.partial
+2026/021-10:13:41.777 Renamed iois_1_packets_2026_021_10_12_40.partial to iois_1_packets_2026_021_10_12_40.
+2026/021-10:13:41.777 Spawning: mv
+2026/021-10:13:41.778 Opened packets file for SDC: iois_1_packets_2026_021_10_13_41.partial
+2026/021-10:13:42.669 Spawned command succeeded: mv
+2026/021-10:14:42.067 Closed packets file for SDC: iois_1_packets_2026_021_10_13_41.partial
+2026/021-10:14:42.067 Renamed iois_1_packets_2026_021_10_13_41.partial to iois_1_packets_2026_021_10_13_41.
+2026/021-10:14:42.067 Spawning: mv
+2026/021-10:14:42.068 Opened packets file for SDC: iois_1_packets_2026_021_10_14_42.partial
+2026/021-10:14:42.922 Spawned command succeeded: mv
+2026/021-10:15:43.210 Closed packets file for SDC: iois_1_packets_2026_021_10_14_42.partial
+2026/021-10:15:43.210 Renamed iois_1_packets_2026_021_10_14_42.partial to iois_1_packets_2026_021_10_14_42.
+2026/021-10:15:43.210 Spawning: mv
+2026/021-10:15:43.210 Opened packets file for SDC: iois_1_packets_2026_021_10_15_43.partial
+2026/021-10:15:44.147 Spawned command succeeded: mv
+2026/021-10:16:00.708 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_11_00.partial
+2026/021-10:16:00.708 Renamed IOIS_1_raw_record_20_2026_021_10_11_00.partial to IOIS_1_raw_record_20_2026_021_10_11_00.
+2026/021-10:16:00.708 Spawning: rsync
+2026/021-10:16:00.708 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_16_00.partial
+2026/021-10:16:04.207 Spawned command succeeded: rsync
+2026/021-10:16:44.357 Closed packets file for SDC: iois_1_packets_2026_021_10_15_43.partial
+2026/021-10:16:44.357 Renamed iois_1_packets_2026_021_10_15_43.partial to iois_1_packets_2026_021_10_15_43.
+2026/021-10:16:44.358 Spawning: mv
+2026/021-10:16:44.358 Opened packets file for SDC: iois_1_packets_2026_021_10_16_44.partial
+2026/021-10:16:45.249 Spawned command succeeded: mv
+2026/021-10:17:45.530 Closed packets file for SDC: iois_1_packets_2026_021_10_16_44.partial
+2026/021-10:17:45.530 Renamed iois_1_packets_2026_021_10_16_44.partial to iois_1_packets_2026_021_10_16_44.
+2026/021-10:17:45.530 Spawning: mv
+2026/021-10:17:45.530 Opened packets file for SDC: iois_1_packets_2026_021_10_17_45.partial
+2026/021-10:17:46.389 Spawned command succeeded: mv
+2026/021-10:18:46.694 Closed packets file for SDC: iois_1_packets_2026_021_10_17_45.partial
+2026/021-10:18:46.694 Renamed iois_1_packets_2026_021_10_17_45.partial to iois_1_packets_2026_021_10_17_45.
+2026/021-10:18:46.694 Spawning: mv
+2026/021-10:18:46.694 Opened packets file for SDC: iois_1_packets_2026_021_10_18_46.partial
+2026/021-10:18:47.530 Spawned command succeeded: mv
+2026/021-10:19:47.822 Closed packets file for SDC: iois_1_packets_2026_021_10_18_46.partial
+2026/021-10:19:47.822 Renamed iois_1_packets_2026_021_10_18_46.partial to iois_1_packets_2026_021_10_18_46.
+2026/021-10:19:47.822 Spawning: mv
+2026/021-10:19:47.822 Opened packets file for SDC: iois_1_packets_2026_021_10_19_47.partial
+2026/021-10:19:48.704 Spawned command succeeded: mv
+2026/021-10:20:48.133 Closed packets file for SDC: iois_1_packets_2026_021_10_19_47.partial
+2026/021-10:20:48.134 Renamed iois_1_packets_2026_021_10_19_47.partial to iois_1_packets_2026_021_10_19_47.
+2026/021-10:20:48.134 Spawning: mv
+2026/021-10:20:48.134 Opened packets file for SDC: iois_1_packets_2026_021_10_20_48.partial
+2026/021-10:20:48.965 Spawned command succeeded: mv
+2026/021-10:21:00.360 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_16_00.partial
+2026/021-10:21:00.360 Renamed IOIS_1_raw_record_20_2026_021_10_16_00.partial to IOIS_1_raw_record_20_2026_021_10_16_00.
+2026/021-10:21:00.360 Spawning: rsync
+2026/021-10:21:00.360 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_21_00.partial
+2026/021-10:21:02.945 Spawned command succeeded: rsync
+2026/021-10:21:49.252 Closed packets file for SDC: iois_1_packets_2026_021_10_20_48.partial
+2026/021-10:21:49.252 Renamed iois_1_packets_2026_021_10_20_48.partial to iois_1_packets_2026_021_10_20_48.
+2026/021-10:21:49.252 Spawning: mv
+2026/021-10:21:49.252 Opened packets file for SDC: iois_1_packets_2026_021_10_21_49.partial
+2026/021-10:21:50.138 Spawned command succeeded: mv
+2026/021-10:22:50.384 Closed packets file for SDC: iois_1_packets_2026_021_10_21_49.partial
+2026/021-10:22:50.384 Renamed iois_1_packets_2026_021_10_21_49.partial to iois_1_packets_2026_021_10_21_49.
+2026/021-10:22:50.384 Spawning: mv
+2026/021-10:22:50.384 Opened packets file for SDC: iois_1_packets_2026_021_10_22_50.partial
+2026/021-10:22:51.285 Spawned command succeeded: mv
+2026/021-10:23:51.571 Closed packets file for SDC: iois_1_packets_2026_021_10_22_50.partial
+2026/021-10:23:51.571 Renamed iois_1_packets_2026_021_10_22_50.partial to iois_1_packets_2026_021_10_22_50.
+2026/021-10:23:51.571 Spawning: mv
+2026/021-10:23:51.571 Opened packets file for SDC: iois_1_packets_2026_021_10_23_51.partial
+2026/021-10:23:52.417 Spawned command succeeded: mv
+2026/021-10:24:52.709 Closed packets file for SDC: iois_1_packets_2026_021_10_23_51.partial
+2026/021-10:24:52.709 Renamed iois_1_packets_2026_021_10_23_51.partial to iois_1_packets_2026_021_10_23_51.
+2026/021-10:24:52.709 Spawning: mv
+2026/021-10:24:52.709 Opened packets file for SDC: iois_1_packets_2026_021_10_24_52.partial
+2026/021-10:24:53.574 Spawned command succeeded: mv
+2026/021-10:25:53.855 Closed packets file for SDC: iois_1_packets_2026_021_10_24_52.partial
+2026/021-10:25:53.855 Renamed iois_1_packets_2026_021_10_24_52.partial to iois_1_packets_2026_021_10_24_52.
+2026/021-10:25:53.855 Spawning: mv
+2026/021-10:25:53.855 Opened packets file for SDC: iois_1_packets_2026_021_10_25_53.partial
+2026/021-10:25:54.748 Spawned command succeeded: mv
+2026/021-10:26:00.859 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_21_00.partial
+2026/021-10:26:00.859 Renamed IOIS_1_raw_record_20_2026_021_10_21_00.partial to IOIS_1_raw_record_20_2026_021_10_21_00.
+2026/021-10:26:00.859 Spawning: rsync
+2026/021-10:26:00.859 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_26_00.partial
+2026/021-10:26:03.449 Spawned command succeeded: rsync
+2026/021-10:26:54.146 Closed packets file for SDC: iois_1_packets_2026_021_10_25_53.partial
+2026/021-10:26:54.147 Renamed iois_1_packets_2026_021_10_25_53.partial to iois_1_packets_2026_021_10_25_53.
+2026/021-10:26:54.147 Spawning: mv
+2026/021-10:26:54.147 Opened packets file for SDC: iois_1_packets_2026_021_10_26_54.partial
+2026/021-10:26:54.995 Spawned command succeeded: mv
+2026/021-10:27:55.287 Closed packets file for SDC: iois_1_packets_2026_021_10_26_54.partial
+2026/021-10:27:55.287 Renamed iois_1_packets_2026_021_10_26_54.partial to iois_1_packets_2026_021_10_26_54.
+2026/021-10:27:55.287 Spawning: mv
+2026/021-10:27:55.287 Opened packets file for SDC: iois_1_packets_2026_021_10_27_55.partial
+2026/021-10:27:56.172 Spawned command succeeded: mv
+2026/021-10:27:59.674 Periodic status report:
+ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)
+ 2  tlmrelay      001-00:00:00  020-19:57:14    0.0
+10  Kiel          021-10:27:59  021-08:40:39    2.0
+2026/021-10:28:56.419 Closed packets file for SDC: iois_1_packets_2026_021_10_27_55.partial
+2026/021-10:28:56.419 Renamed iois_1_packets_2026_021_10_27_55.partial to iois_1_packets_2026_021_10_27_55.
+2026/021-10:28:56.419 Spawning: mv
+2026/021-10:28:56.419 Opened packets file for SDC: iois_1_packets_2026_021_10_28_56.partial
+2026/021-10:28:57.328 Spawned command succeeded: mv
+2026/021-10:29:57.641 Closed packets file for SDC: iois_1_packets_2026_021_10_28_56.partial
+2026/021-10:29:57.641 Renamed iois_1_packets_2026_021_10_28_56.partial to iois_1_packets_2026_021_10_28_56.
+2026/021-10:29:57.641 Spawning: mv
+2026/021-10:29:57.641 Opened packets file for SDC: iois_1_packets_2026_021_10_29_57.partial
+2026/021-10:29:58.464 Spawned command succeeded: mv
+2026/021-10:30:58.750 Closed packets file for SDC: iois_1_packets_2026_021_10_29_57.partial
+2026/021-10:30:58.750 Renamed iois_1_packets_2026_021_10_29_57.partial to iois_1_packets_2026_021_10_29_57.
+2026/021-10:30:58.750 Spawning: mv
+2026/021-10:30:58.751 Opened packets file for SDC: iois_1_packets_2026_021_10_30_58.partial
+2026/021-10:30:59.625 Spawned command succeeded: mv
+2026/021-10:31:00.502 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_26_00.partial
+2026/021-10:31:00.502 Renamed IOIS_1_raw_record_20_2026_021_10_26_00.partial to IOIS_1_raw_record_20_2026_021_10_26_00.
+2026/021-10:31:00.502 Spawning: rsync
+2026/021-10:31:00.502 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_31_00.partial
+2026/021-10:31:03.137 Spawned command succeeded: rsync
+2026/021-10:31:59.052 Closed packets file for SDC: iois_1_packets_2026_021_10_30_58.partial
+2026/021-10:31:59.052 Renamed iois_1_packets_2026_021_10_30_58.partial to iois_1_packets_2026_021_10_30_58.
+2026/021-10:31:59.052 Spawning: mv
+2026/021-10:31:59.052 Opened packets file for SDC: iois_1_packets_2026_021_10_31_59.partial
+2026/021-10:31:59.892 Spawned command succeeded: mv
+2026/021-10:33:00.178 Closed packets file for SDC: iois_1_packets_2026_021_10_31_59.partial
+2026/021-10:33:00.179 Renamed iois_1_packets_2026_021_10_31_59.partial to iois_1_packets_2026_021_10_31_59.
+2026/021-10:33:00.179 Spawning: mv
+2026/021-10:33:00.179 Opened packets file for SDC: iois_1_packets_2026_021_10_33_00.partial
+2026/021-10:33:01.035 Spawned command succeeded: mv
+2026/021-10:34:01.354 Closed packets file for SDC: iois_1_packets_2026_021_10_33_00.partial
+2026/021-10:34:01.355 Renamed iois_1_packets_2026_021_10_33_00.partial to iois_1_packets_2026_021_10_33_00.
+2026/021-10:34:01.355 Spawning: mv
+2026/021-10:34:01.355 Opened packets file for SDC: iois_1_packets_2026_021_10_34_01.partial
+2026/021-10:34:02.208 Spawned command succeeded: mv
+2026/021-10:35:02.464 Closed packets file for SDC: iois_1_packets_2026_021_10_34_01.partial
+2026/021-10:35:02.464 Renamed iois_1_packets_2026_021_10_34_01.partial to iois_1_packets_2026_021_10_34_01.
+2026/021-10:35:02.464 Spawning: mv
+2026/021-10:35:02.464 Opened packets file for SDC: iois_1_packets_2026_021_10_35_02.partial
+2026/021-10:35:03.351 Spawned command succeeded: mv
+2026/021-10:36:00.177 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_31_00.partial
+2026/021-10:36:00.178 Renamed IOIS_1_raw_record_20_2026_021_10_31_00.partial to IOIS_1_raw_record_20_2026_021_10_31_00.
+2026/021-10:36:00.178 Spawning: rsync
+2026/021-10:36:00.178 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_36_00.partial
+2026/021-10:36:02.744 Spawned command succeeded: rsync
+2026/021-10:36:03.637 Closed packets file for SDC: iois_1_packets_2026_021_10_35_02.partial
+2026/021-10:36:03.637 Renamed iois_1_packets_2026_021_10_35_02.partial to iois_1_packets_2026_021_10_35_02.
+2026/021-10:36:03.637 Spawning: mv
+2026/021-10:36:03.637 Opened packets file for SDC: iois_1_packets_2026_021_10_36_03.partial
+2026/021-10:36:04.497 Spawned command succeeded: mv
+2026/021-10:37:04.782 Closed packets file for SDC: iois_1_packets_2026_021_10_36_03.partial
+2026/021-10:37:04.782 Renamed iois_1_packets_2026_021_10_36_03.partial to iois_1_packets_2026_021_10_36_03.
+2026/021-10:37:04.782 Spawning: mv
+2026/021-10:37:04.782 Opened packets file for SDC: iois_1_packets_2026_021_10_37_04.partial
+2026/021-10:37:05.647 Spawned command succeeded: mv
+2026/021-10:38:05.068 Closed packets file for SDC: iois_1_packets_2026_021_10_37_04.partial
+2026/021-10:38:05.068 Renamed iois_1_packets_2026_021_10_37_04.partial to iois_1_packets_2026_021_10_37_04.
+2026/021-10:38:05.068 Spawning: mv
+2026/021-10:38:05.068 Opened packets file for SDC: iois_1_packets_2026_021_10_38_05.partial
+2026/021-10:38:05.931 Spawned command succeeded: mv
+2026/021-10:39:06.213 Closed packets file for SDC: iois_1_packets_2026_021_10_38_05.partial
+2026/021-10:39:06.213 Renamed iois_1_packets_2026_021_10_38_05.partial to iois_1_packets_2026_021_10_38_05.
+2026/021-10:39:06.213 Spawning: mv
+2026/021-10:39:06.213 Opened packets file for SDC: iois_1_packets_2026_021_10_39_06.partial
+2026/021-10:39:07.068 Spawned command succeeded: mv
+2026/021-10:40:07.357 Closed packets file for SDC: iois_1_packets_2026_021_10_39_06.partial
+2026/021-10:40:07.357 Renamed iois_1_packets_2026_021_10_39_06.partial to iois_1_packets_2026_021_10_39_06.
+2026/021-10:40:07.357 Spawning: mv
+2026/021-10:40:07.357 Opened packets file for SDC: iois_1_packets_2026_021_10_40_07.partial
+2026/021-10:40:08.250 Spawned command succeeded: mv
+2026/021-10:41:00.642 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_36_00.partial
+2026/021-10:41:00.643 Renamed IOIS_1_raw_record_20_2026_021_10_36_00.partial to IOIS_1_raw_record_20_2026_021_10_36_00.
+2026/021-10:41:00.643 Spawning: rsync
+2026/021-10:41:00.643 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_41_00.partial
+2026/021-10:41:03.289 Spawned command succeeded: rsync
+2026/021-10:41:08.494 Closed packets file for SDC: iois_1_packets_2026_021_10_40_07.partial
+2026/021-10:41:08.495 Renamed iois_1_packets_2026_021_10_40_07.partial to iois_1_packets_2026_021_10_40_07.
+2026/021-10:41:08.495 Spawning: mv
+2026/021-10:41:08.495 Opened packets file for SDC: iois_1_packets_2026_021_10_41_08.partial
+2026/021-10:41:09.390 Spawned command succeeded: mv
+2026/021-10:42:09.682 Closed packets file for SDC: iois_1_packets_2026_021_10_41_08.partial
+2026/021-10:42:09.682 Renamed iois_1_packets_2026_021_10_41_08.partial to iois_1_packets_2026_021_10_41_08.
+2026/021-10:42:09.682 Spawning: mv
+2026/021-10:42:09.683 Opened packets file for SDC: iois_1_packets_2026_021_10_42_09.partial
+2026/021-10:42:10.531 Spawned command succeeded: mv
+2026/021-10:43:10.822 Closed packets file for SDC: iois_1_packets_2026_021_10_42_09.partial
+2026/021-10:43:10.822 Renamed iois_1_packets_2026_021_10_42_09.partial to iois_1_packets_2026_021_10_42_09.
+2026/021-10:43:10.822 Spawning: mv
+2026/021-10:43:10.822 Opened packets file for SDC: iois_1_packets_2026_021_10_43_10.partial
+2026/021-10:43:11.679 Spawned command succeeded: mv
+2026/021-10:44:11.145 Closed packets file for SDC: iois_1_packets_2026_021_10_43_10.partial
+2026/021-10:44:11.145 Renamed iois_1_packets_2026_021_10_43_10.partial to iois_1_packets_2026_021_10_43_10.
+2026/021-10:44:11.145 Spawning: mv
+2026/021-10:44:11.145 Opened packets file for SDC: iois_1_packets_2026_021_10_44_11.partial
+2026/021-10:44:11.961 Spawned command succeeded: mv
+2026/021-10:45:12.254 Closed packets file for SDC: iois_1_packets_2026_021_10_44_11.partial
+2026/021-10:45:12.254 Renamed iois_1_packets_2026_021_10_44_11.partial to iois_1_packets_2026_021_10_44_11.
+2026/021-10:45:12.254 Spawning: mv
+2026/021-10:45:12.254 Opened packets file for SDC: iois_1_packets_2026_021_10_45_12.partial
+2026/021-10:45:13.146 Spawned command succeeded: mv
+2026/021-10:46:00.296 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_41_00.partial
+2026/021-10:46:00.296 Renamed IOIS_1_raw_record_20_2026_021_10_41_00.partial to IOIS_1_raw_record_20_2026_021_10_41_00.
+2026/021-10:46:00.296 Spawning: rsync
+2026/021-10:46:00.296 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_46_00.partial
+2026/021-10:46:02.936 Spawned command succeeded: rsync
+2026/021-10:46:13.390 Closed packets file for SDC: iois_1_packets_2026_021_10_45_12.partial
+2026/021-10:46:13.390 Renamed iois_1_packets_2026_021_10_45_12.partial to iois_1_packets_2026_021_10_45_12.
+2026/021-10:46:13.390 Spawning: mv
+2026/021-10:46:13.390 Opened packets file for SDC: iois_1_packets_2026_021_10_46_13.partial
+2026/021-10:46:14.283 Spawned command succeeded: mv
+2026/021-10:47:14.541 Closed packets file for SDC: iois_1_packets_2026_021_10_46_13.partial
+2026/021-10:47:14.541 Renamed iois_1_packets_2026_021_10_46_13.partial to iois_1_packets_2026_021_10_46_13.
+2026/021-10:47:14.541 Spawning: mv
+2026/021-10:47:14.541 Opened packets file for SDC: iois_1_packets_2026_021_10_47_14.partial
+2026/021-10:47:15.426 Spawned command succeeded: mv
+2026/021-10:48:15.727 Closed packets file for SDC: iois_1_packets_2026_021_10_47_14.partial
+2026/021-10:48:15.727 Renamed iois_1_packets_2026_021_10_47_14.partial to iois_1_packets_2026_021_10_47_14.
+2026/021-10:48:15.727 Spawning: mv
+2026/021-10:48:15.727 Opened packets file for SDC: iois_1_packets_2026_021_10_48_15.partial
+2026/021-10:48:16.567 Spawned command succeeded: mv
+2026/021-10:49:16.007 Closed packets file for SDC: iois_1_packets_2026_021_10_48_15.partial
+2026/021-10:49:16.007 Renamed iois_1_packets_2026_021_10_48_15.partial to iois_1_packets_2026_021_10_48_15.
+2026/021-10:49:16.007 Spawning: mv
+2026/021-10:49:16.007 Opened packets file for SDC: iois_1_packets_2026_021_10_49_16.partial
+2026/021-10:49:16.872 Spawned command succeeded: mv
+2026/021-10:50:17.141 Closed packets file for SDC: iois_1_packets_2026_021_10_49_16.partial
+2026/021-10:50:17.141 Renamed iois_1_packets_2026_021_10_49_16.partial to iois_1_packets_2026_021_10_49_16.
+2026/021-10:50:17.141 Spawning: mv
+2026/021-10:50:17.141 Opened packets file for SDC: iois_1_packets_2026_021_10_50_17.partial
+2026/021-10:50:18.008 Spawned command succeeded: mv
+2026/021-10:51:00.836 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_46_00.partial
+2026/021-10:51:00.836 Renamed IOIS_1_raw_record_20_2026_021_10_46_00.partial to IOIS_1_raw_record_20_2026_021_10_46_00.
+2026/021-10:51:00.836 Spawning: rsync
+2026/021-10:51:00.836 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_51_00.partial
+2026/021-10:51:03.438 Spawned command succeeded: rsync
+2026/021-10:51:18.293 Closed packets file for SDC: iois_1_packets_2026_021_10_50_17.partial
+2026/021-10:51:18.293 Renamed iois_1_packets_2026_021_10_50_17.partial to iois_1_packets_2026_021_10_50_17.
+2026/021-10:51:18.293 Spawning: mv
+2026/021-10:51:18.293 Opened packets file for SDC: iois_1_packets_2026_021_10_51_18.partial
+2026/021-10:51:19.139 Spawned command succeeded: mv
+2026/021-10:52:19.435 Closed packets file for SDC: iois_1_packets_2026_021_10_51_18.partial
+2026/021-10:52:19.435 Renamed iois_1_packets_2026_021_10_51_18.partial to iois_1_packets_2026_021_10_51_18.
+2026/021-10:52:19.435 Spawning: mv
+2026/021-10:52:19.436 Opened packets file for SDC: iois_1_packets_2026_021_10_52_19.partial
+2026/021-10:52:20.322 Spawned command succeeded: mv
+2026/021-10:53:20.627 Closed packets file for SDC: iois_1_packets_2026_021_10_52_19.partial
+2026/021-10:53:20.627 Renamed iois_1_packets_2026_021_10_52_19.partial to iois_1_packets_2026_021_10_52_19.
+2026/021-10:53:20.627 Spawning: mv
+2026/021-10:53:20.627 Opened packets file for SDC: iois_1_packets_2026_021_10_53_20.partial
+2026/021-10:53:21.468 Spawned command succeeded: mv
+2026/021-10:54:21.751 Closed packets file for SDC: iois_1_packets_2026_021_10_53_20.partial
+2026/021-10:54:21.751 Renamed iois_1_packets_2026_021_10_53_20.partial to iois_1_packets_2026_021_10_53_20.
+2026/021-10:54:21.751 Spawning: mv
+2026/021-10:54:21.752 Opened packets file for SDC: iois_1_packets_2026_021_10_54_21.partial
+2026/021-10:54:22.637 Spawned command succeeded: mv
+2026/021-10:55:22.047 Closed packets file for SDC: iois_1_packets_2026_021_10_54_21.partial
+2026/021-10:55:22.047 Renamed iois_1_packets_2026_021_10_54_21.partial to iois_1_packets_2026_021_10_54_21.
+2026/021-10:55:22.047 Spawning: mv
+2026/021-10:55:22.047 Opened packets file for SDC: iois_1_packets_2026_021_10_55_22.partial
+2026/021-10:55:22.900 Spawned command succeeded: mv
+2026/021-10:56:00.448 Closed raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_51_00.partial
+2026/021-10:56:00.448 Renamed IOIS_1_raw_record_20_2026_021_10_51_00.partial to IOIS_1_raw_record_20_2026_021_10_51_00.
+2026/021-10:56:00.448 Spawning: rsync
+2026/021-10:56:00.448 Opened raw record file for Kiel antenna_partner: IOIS_1_raw_record_20_2026_021_10_56_00.partial
+2026/021-10:56:03.084 Spawned command succeeded: rsync
+2026/021-10:56:23.201 Closed packets file for SDC: iois_1_packets_2026_021_10_55_22.partial
+2026/021-10:56:23.201 Renamed iois_1_packets_2026_021_10_55_22.partial to iois_1_packets_2026_021_10_55_22.
+2026/021-10:56:23.201 Spawning: mv
+2026/021-10:56:23.201 Opened packets file for SDC: iois_1_packets_2026_021_10_56_23.partial
+2026/021-10:56:24.049 Spawned command succeeded: mv
+2026/021-10:57:24.323 Closed packets file for SDC: iois_1_packets_2026_021_10_56_23.partial
+2026/021-10:57:24.323 Renamed iois_1_packets_2026_021_10_56_23.partial to iois_1_packets_2026_021_10_56_23.
+2026/021-10:57:24.323 Spawning: mv
+2026/021-10:57:24.323 Opened packets file for SDC: iois_1_packets_2026_021_10_57_24.partial
+2026/021-10:57:25.231 Spawned command succeeded: mv
+2026/021-10:58:00.171 Periodic status report:

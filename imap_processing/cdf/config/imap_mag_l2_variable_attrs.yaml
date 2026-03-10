@@ -50,7 +50,34 @@ vector_attrs: &vectors_default
     LABL_PTR_1: direction_label
     FILLVAL: 9223372036854775807
     FORMAT: F12.5
+    CDF_DATA_TYPE: CDF_FLOAT
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
+
+# Frame-specific vector attributes
+vector_attrs_srf:
+    <<: *vectors_default
+    CATDESC: Magnetic field vectors with x y z varying by time in Spacecraft Reference Frame
+    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:SRF,CoordinateRepresentation:Cartesian"
+
+vector_attrs_dsrf:
+    <<: *vectors_default
+    CATDESC: Magnetic field vectors with x y z varying by time in Despun Spacecraft Reference Frame
+    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
+
+vector_attrs_gse:
+    <<: *vectors_default
+    CATDESC: Magnetic field vectors with x y z varying by time in Geocentric Solar Ecliptic Reference Frame
+    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:GSE,CoordinateRepresentation:Cartesian"
+
+vector_attrs_gsm:
+    <<: *vectors_default
+    CATDESC: Magnetic field vectors with x y z varying by time in Geocentric Solar Magnetospheric Reference Frame
+    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:GSM,CoordinateRepresentation:Cartesian"
+
+vector_attrs_rtn:
+    <<: *vectors_default
+    CATDESC: Magnetic field vectors with r t n varying by time in Radial-Tangential-Normal Reference Frame
+    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:RTN,CoordinateRepresentation:Cartesian"
 
 direction_attrs:
     <<: *default_coords
@@ -63,20 +90,31 @@ direction_attrs:
     DICT_KEY: SPASE>Support>SupportQuantity:Orientation
 
 
-# TODO: Add magnitude and range attributes, remove this
-fill:
+magnitude:
   <<: *support_default
-  CATDESC: Compression bit width
-  DEPEND_0: epoch
-  DISPLAY_TYPE: time_series
-  FIELDNAM: Compressed data bit width
-  LABLAXIS: Bit width
-  FILLVAL: 255
-  FORMAT: I2
-  UNITS: 'bits'
-  VALIDMAX: 21
+  CATDESC: Magnitude of the magnetic field vector
+  FIELDNAM: Magnetic Field Magnitude
+  LABLAXIS: "|B|"
+  FORMAT: F12.5
+  FILLVAL: -1.0e+31
+  UNITS: nT
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  VALIDMAX: 1.0e+5
+  CDF_DATA_TYPE: CDF_FLOAT
+  DICT_KEY: SPASE>Field>FieldQuantity:Magnetic,Qualifier:Scalar
+
+range:
+  <<: *support_default
+  CATDESC: Sensor range setting
+  FIELDNAM: Sensor Range
+  LABLAXIS: Range
+  FILLVAL: 255
+  FORMAT: I1
+  UNITS: ' '
+  VALIDMAX: 3
+  VALIDMIN: 0
+  CDF_DATA_TYPE: CDF_UINT1
+  DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 pri_sens:
     <<: *support_default

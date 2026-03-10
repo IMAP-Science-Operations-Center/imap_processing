@@ -28,7 +28,7 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
     goodtimes_dataset : xarray.Dataset
         Dataset containing the extendedspin data that remains after culling.
     """
-    n_bins = extendedspin_dataset.dims["energy_bin_geometric_mean"]
+    n_bins = extendedspin_dataset.sizes["energy_bin_geometric_mean"]
     # If the spin rate was too high or low then the spin should be thrown out.
     # If the rates at any energy level are too high then throw out the entire spin.
     good_mask = (
@@ -86,6 +86,15 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
             dims=["spin_number"],
         )
         goodtimes_dataset["quality_attitude"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+        )
+        goodtimes_dataset["quality_low_voltage"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+        )
+        goodtimes_dataset["quality_high_energy"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+        )
+        goodtimes_dataset["quality_statistics"] = xr.DataArray(
             np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
         )
         goodtimes_dataset["quality_hk"] = xr.DataArray(

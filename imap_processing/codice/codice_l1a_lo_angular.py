@@ -8,9 +8,15 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
+from imap_processing.codice.constants import (
+    HALF_SPIN_FILLVAL,
+    LO_NSW_ANGULAR_VARIABLE_NAMES,
+    LO_SW_ANGULAR_VARIABLE_NAMES,
+)
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
+    CoDICECompression,
     ViewTabInfo,
     calculate_acq_time_per_step,
     get_codice_epoch_time,
@@ -58,8 +64,7 @@ def _despin_species_data(
     # 24 is derived by multiplying spin sector dim from collapse table by 2
     spin_sector_len = constants.LO_DESPIN_SPIN_SECTORS
     despun_shape = (num_packets, num_species, esa_steps, spin_sector_len, inst_az_dim)
-    despun_data = np.full(despun_shape, 0)
-
+    despun_data = np.full(despun_shape, 0.0, dtype=np.float64)
     # Pixel orientation array and mapping positions
     pixel_orientation = np.array(
         sci_lut_data["lo_stepping_tab"]["pixel_orientation"]["data"]
@@ -67,34 +72,34 @@ def _despin_species_data(
     # index_to_position gets the position from collapse table. Eg.
     #   [1, 2, 3, 23, 24] for SW angular
     angular_position = index_to_position(sci_lut_data, 0, view_tab_obj.collapse_table)
-    orientation_a = pixel_orientation == "A"
-    orientation_b = pixel_orientation == "B"
+    orientation_a_indices = np.where(pixel_orientation == "A")[0]
+    orientation_b_indices = np.where(pixel_orientation == "B")[0]
 
     # Despin data based on orientation and angular position
     for pos_idx, position in enumerate(angular_position):
         if position <= 12:
             # Case 1: position 0-12, orientation A, append to first half
-            despun_data[:, :, orientation_a, :12, pos_idx] = species_data[
-                :, :, orientation_a, :, pos_idx
+            despun_data[:, :, orientation_a_indices, :12, pos_idx] = species_data[
+                :, :, orientation_a_indices, :, pos_idx
             ]
             # Case 2: position 13-24, orientation B, append to second half
-            despun_data[:, :, orientation_b, 12:, pos_idx] = species_data[
-                :, :, orientation_b, :, pos_idx
+            despun_data[:, :, orientation_b_indices, 12:, pos_idx] = species_data[
+                :, :, orientation_b_indices, :, pos_idx
             ]
         else:
             # Case 3: position 13-24, orientation A, append to second half
-            despun_data[:, :, orientation_a, 12:, pos_idx] = species_data[
-                :, :, orientation_a, :, pos_idx
+            despun_data[:, :, orientation_a_indices, 12:, pos_idx] = species_data[
+                :, :, orientation_a_indices, :, pos_idx
             ]
             # Case 4: position 0-12, orientation B, append to first half
-            despun_data[:, :, orientation_b, :12, pos_idx] = species_data[
-                :, :, orientation_b, :, pos_idx
+            despun_data[:, :, orientation_b_indices, :12, pos_idx] = species_data[
+                :, :, orientation_b_indices, :, pos_idx
             ]
 
     return despun_data
 
 
-def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:  # noqa: PLR0912
     """
     L1A processing code.
 
@@ -134,6 +139,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 0:
@@ -141,20 +147,34 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
     # ========= Decompress and Reshape Data ===========
     # Lookup SW or NSW species based on APID
+    # We also need to determine if there are any species that should be backfilled
+    # with fill values
     if view_tab_obj.apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"]["sw"][
-            "species_names"
-        ]
+        actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
+            "sw"
+        ]["species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["angular"]["sw"][
+                "desired_species_names"
+            ]
+            + LO_SW_ANGULAR_VARIABLE_NAMES
+        )
         logical_source_id = "imap_codice_l1a_lo-sw-angular"
     elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"]["nsw"][
-            "species_names"
-        ]
+        actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["angular"][
+            "nsw"
+        ]["species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["angular"]["nsw"][
+                "desired_species_names"
+            ]
+            + LO_NSW_ANGULAR_VARIABLE_NAMES
+        )
         logical_source_id = "imap_codice_l1a_lo-nsw-angular"
     else:
         raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
 
-    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
@@ -180,15 +200,12 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # 24 includes despinning spin sector. Then at later steps,
     # we handle despinning.
     num_packets = len(binary_data_list)
-    esa_steps = constants.NUM_ESA_STEPS
-    num_species = len(species_names)
+    num_esa_steps = constants.NUM_ESA_STEPS
+    num_species = len(actual_species_names)
+    num_spin_sectors = collapsed_shape[0]
     species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        num_packets, num_species, esa_steps, *collapsed_shape
+        num_packets, num_species, num_esa_steps, *collapsed_shape
     )
-
-    # Despinning
-    # ----------------
-    species_data = _despin_species_data(species_data, sci_lut_data, view_tab_obj)
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
@@ -197,6 +214,111 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         "lo_stepping"
     ]
     voltage_data = sci_lut_data["esa_sweep_tab"][f"{esa_table_number}"]
+    # If data size is less than 128, pad with fillval to make it 128
+    half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
+    if len(half_spin_per_esa_step) < num_esa_steps:
+        pad_size = num_esa_steps - len(half_spin_per_esa_step)
+        half_spin_per_esa_step = np.concatenate(
+            (np.array(half_spin_per_esa_step), np.full(pad_size, HALF_SPIN_FILLVAL))
+        )
+    # TODO: Handle epoch dependent acquisition time and half spin per esa step
+    #   For now, just tile the same array for all epochs.
+    #   Eventually we may have data from a day where the LUT changed. If this is the
+    #  case, we need to split the data by epoch and assign different acquisition times
+    half_spin_per_esa_step = np.tile(
+        np.asarray(half_spin_per_esa_step).astype(np.uint8),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    # Get acquisition time per esa step
+    acquisition_time_per_step = calculate_acq_time_per_step(
+        sci_lut_data["lo_stepping_tab"]
+    )
+    acquisition_time_per_step = np.tile(
+        np.asarray(acquisition_time_per_step),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    # ========== Apply NSO/RGFO Masking ===========
+    # After FSW changes on 20260129, The Lo L1A product contains variables that
+    # indicate the esa step and spin sector during which the RGFO or NSO limits are
+    # triggered. The spin sector variable ranges from 0-11 and is the instrument
+    # reported spin sector. The following algorithm defines when to assign NaN to the
+    # angular data product due to NSO
+    # operation:
+    # 1. For half_spin > nso_half_spin a set all data to NaN
+    # 2. For half_spin = nso_half_spin
+    #   a. For spin_sector > nso_spin_sector a set all data to NaN
+    #   b. For spin_sector = nso_spin_sector
+    #       i. For esa_step > nso_esa_step a set all data to NaN
+    # For every energy after nso_half_spin, set data to fill values
+    # For data before 20260129 ( packet_version <=1 ) set all data to NaN where
+    # half_spin > nso_half_spin
+    packet_versions = unpacked_dataset["packet_version"].values
+    nso_half_spin = unpacked_dataset["nso_half_spin"].values
+    # TODO handle boundary days where the FSW changed halfway through the dataset. E.g
+    # Some packet_version = 1 and some = 2
+    if packet_versions[0] <= 1:
+        # For half_spin >= NSO_half_spin, set to NaN
+        half_spin_mask = (half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]) | (
+            half_spin_per_esa_step == HALF_SPIN_FILLVAL
+        )
+        species_mask = half_spin_mask[:, np.newaxis, :, np.newaxis, np.newaxis]
+        species_mask = np.broadcast_to(species_mask, species_data.shape)
+    else:
+        # nso_spin_sector and nso_esa_step for comparison. Shape (epoch, 1, 1)
+        # to broadcast
+        nso_spin_sector = unpacked_dataset["nso_spin_sector"].values[
+            :, np.newaxis, np.newaxis
+        ]
+        nso_esa_step = unpacked_dataset["nso_energy_step"].values[
+            :, np.newaxis, np.newaxis
+        ]
+        # Create arrays for spin sectors and esa steps to compare with nso values.
+        # Shape (1, 1, spin_sector) and (1, esa_step, 1)
+        spin_sectors = np.arange(num_spin_sectors)[np.newaxis, np.newaxis, :]
+        esa_steps = np.arange(num_esa_steps)[np.newaxis, :, np.newaxis]
+        # Create a mask for half_spin > nso_half_spin. Shape (epoch, esa_step))
+        # This will be used below to set half_spin_per_esa_step to fillval and
+        # acquisition_time_per_step to NaN for those steps.
+        half_spin_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+            half_spin_per_esa_step == HALF_SPIN_FILLVAL
+        )
+        # Create a mask for the boundary condition where half_spin == nso_half_spin.
+        at_boundary = (
+            half_spin_per_esa_step[:, :, np.newaxis]
+            == nso_half_spin[:, np.newaxis, np.newaxis]
+        )
+        boundary_half_spin_mask = (
+            at_boundary
+            &
+            # For spin_sector > nso_spin_sector, set to NaN
+            (
+                (spin_sectors > nso_spin_sector)
+                |
+                # For spin_sector = nso_spin_sector and esa_step > nso_esa_step,
+                # set to NaN
+                ((spin_sectors == nso_spin_sector) & (esa_steps > nso_esa_step))
+            )
+        )
+
+        # Combine masks. Shape (epoch, esa_step, spin_sector). This mask is True
+        # where data should be set to NaN
+        nso_mask = half_spin_mask[:, :, np.newaxis] | boundary_half_spin_mask
+        # Expand nso_mask to (epoch, 1, esa_step, spin_sector, 1) to apply to
+        # species_data.
+        species_mask = np.broadcast_to(
+            nso_mask[:, np.newaxis, :, :, np.newaxis], species_data.shape
+        )
+
+    species_data = species_data.astype(np.float64)
+    species_data[species_mask] = np.nan
+    # Set half_spin_per_esa_step to (fillval) where half_spin mask is True
+    half_spin_per_esa_step[half_spin_mask] = HALF_SPIN_FILLVAL
+    # Set acquisition_time_per_step to nan where half_spin_mask is True
+    acquisition_time_per_step[half_spin_mask] = np.nan
+
+    # Despinning
+    # ----------------
+    species_data = _despin_species_data(species_data, sci_lut_data, view_tab_obj)
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -237,6 +359,16 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 np.arange(128),
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
+            ),
+            "half_spin_per_esa_step": xr.DataArray(
+                half_spin_per_esa_step,
+                dims=(
+                    "epoch",
+                    "esa_step",
+                ),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "half_spin_per_esa_step", check_schema=False
+                ),
             ),
             "esa_step_label": xr.DataArray(
                 np.arange(128).astype(str),
@@ -302,13 +434,40 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
-    l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
-        dims=("esa_step",),
+    l1a_dataset["acquisition_time_per_esa_step"] = xr.DataArray(
+        acquisition_time_per_step,
+        dims=("epoch", "esa_step"),
         attrs=cdf_attrs.get_variable_attributes(
-            "acquisition_time_per_step", check_schema=False
+            "acquisition_time_per_esa_step", check_schema=False
         ),
     )
+    # Rename vars
+    unpacked_dataset = unpacked_dataset.rename(
+        {
+            k: v
+            for k, v in [
+                ("rgfo_energy_step", "rgfo_esa_step"),
+                ("nso_energy_step", "nso_esa_step"),
+            ]
+            if k in unpacked_dataset
+        }
+    )
+    # These variables were added to the packet definition after 20260129, so they only
+    # exist in the unpacked dataset if packet_version > 1
+    # If they don't exist, initialize them with fill val arrays since they won't be
+    # used in the NSO/RGFO masking logic but should still exist in l1a for SPDF
+    # compliance/consistency.
+    l1a_additional_vars = [
+        "rgfo_spin_sector",
+        "rgfo_esa_step",
+        "nso_spin_sector",
+        "nso_esa_step",
+    ]
+    for var in l1a_additional_vars:
+        if var not in unpacked_dataset:
+            unpacked_dataset[var] = np.full(
+                unpacked_dataset.sizes["epoch"], fill_value=np.nan
+            )
 
     # Carry over these variables from unpacked data to l1a_dataset
     l1a_carryover_vars = [
@@ -316,6 +475,8 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         "st_bias_gain_mode",
         "rgfo_half_spin",
         "nso_half_spin",
+        "packet_version",
+        *l1a_additional_vars,
     ]
     # Loop through them since we need to set their attrs too
     for var in l1a_carryover_vars:
@@ -324,12 +485,24 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             dims=("epoch",),
             attrs=cdf_attrs.get_variable_attributes(var),
         )
+    # Loop through the species we want in the final dataset (desired_species_names) and
+    # add them if they exist in the actual species names from the LUT.
+    # This is to handle the bug in which the spacecraft was sending data down "off by
+    # one" and getting mislabeled.
+    for species in desired_species_names:
+        if species not in actual_species_names:
+            logger.warning(
+                f"Desired species {species} not found in actual species names from "
+                f"LUT. This species will be filled with fill values in the final "
+                f"dataset. Actual species names: {actual_species_names}"
+            )
+            species_data_individual = np.full(species_data[:, 0, :, :, :].shape, np.nan)
+        else:
+            species_idx = actual_species_names.index(species)
+            species_data_individual = species_data[:, species_idx, :, :, :]
 
-    # Finally, add species data variables and their uncertainties
-    for species_data_idx, species in enumerate(species_names):
         species_attrs = cdf_attrs.get_variable_attributes("lo-angular-attrs")
         unc_attrs = cdf_attrs.get_variable_attributes("lo-angular-unc-attrs")
-
         direction = (
             "Sunward"
             if view_tab_obj.apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS
@@ -343,7 +516,7 @@ def l1a_lo_angular(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             species=species, direction=direction
         )
         l1a_dataset[species] = xr.DataArray(
-            species_data[:, species_data_idx, :, :, :],
+            species_data_individual,
             dims=("epoch", "esa_step", "spin_sector", "inst_az"),
             attrs=species_attrs,
         )

@@ -10,7 +10,9 @@ from imap_processing.quality_flags import (
 )
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.repoint import get_pointing_times_from_id
-from imap_processing.spice.time import et_to_met
+from imap_processing.spice.time import (
+    et_to_met,
+)
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
@@ -28,14 +30,14 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
-    get_eventtimes,
+    get_event_times,
     get_front_x_position,
     get_front_y_position,
     get_fwhm,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
-    get_spin_number,
+    get_spin_info,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     is_back_tof_valid,
@@ -49,7 +51,7 @@ FILLVAL_FLOAT32 = -1.0e31
 
 
 def calculate_de(
-    de_dataset: xr.Dataset, name: str, ancillary_files: dict
+    de_dataset: xr.Dataset, aux_dataset: xr.Dataset, name: str, ancillary_files: dict
 ) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Direct Event Data.
@@ -58,6 +60,8 @@ def calculate_de(
     ----------
     de_dataset : xarray.Dataset
         L1a dataset containing direct event data.
+    aux_dataset : xarray.Dataset
+        L1a dataset containing auxiliary data.
     name : str
         Name of the l1a dataset.
     ancillary_files : dict
@@ -71,16 +75,12 @@ def calculate_de(
     de_dict = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
 
-    # Define epoch and spin.
+    # Define epoch
     de_dict["epoch"] = de_dataset["epoch"].data
-    spin_number = get_spin_number(
-        de_dataset["shcoarse"].values, de_dataset["spin"].values
-    )
+
     repoint_id = de_dataset.attrs.get("Repointing", None)
     if repoint_id is not None:
         repoint_id = int(repoint_id.replace("repoint", ""))
-
-    de_dict["spin"] = spin_number
 
     # Add already populated fields.
     keys = [
@@ -89,6 +89,7 @@ def calculate_de(
         "event_type",
         "de_event_met",
         "phase_angle",
+        "event_id",
     ]
     dataset_keys = [
         "coin_type",
@@ -96,15 +97,15 @@ def calculate_de(
         "stop_type",
         "shcoarse",
         "phase_angle",
+        "event_id",
     ]
-
+    # Populate de_dict with existing fields from de_dataset
     de_dict.update(
         {
             key: de_dataset[dataset_key]
             for key, dataset_key in zip(keys, dataset_keys, strict=False)
         }
     )
-
     valid_mask = de_dataset["start_type"].data != FILLVAL_UINT8
     ph_mask = np.isin(
         de_dataset["stop_type"].data, [StopType.Top.value, StopType.Bottom.value]
@@ -114,7 +115,6 @@ def calculate_de(
     valid_indices = np.nonzero(valid_mask)[0]
     ph_indices = np.nonzero(valid_mask & ph_mask)[0]
     ssd_indices = np.nonzero(valid_mask & ssd_mask)[0]
-
     # Instantiate arrays
     xf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     yf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
@@ -135,12 +135,12 @@ def calculate_de(
     e_bin_l1a = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
     shape = (len(de_dataset["epoch"]), 3)
     sc_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     sc_dps_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     helio_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
     velocities = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     v_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     r_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
@@ -162,17 +162,19 @@ def calculate_de(
         f"ultra{sensor}",
         ancillary_files,
     )
-    start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
 
-    (
-        event_times[valid_indices],
-        spin_starts[valid_indices],
-        _,
-    ) = get_eventtimes(
-        de_dict["spin"][valid_indices],
-        de_dataset["phase_angle"].data[valid_indices],
+    start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
+    spin_ds = get_spin_info(aux_dataset, de_dataset["shcoarse"].data)
+
+    (event_times[valid_mask], spin_starts[valid_mask]) = get_event_times(
+        aux_dataset,
+        de_dataset["shcoarse"].data[valid_mask],
+        de_dataset["phase_angle"].data[valid_mask],
+        spin_ds.isel(epoch=valid_mask),
     )
 
+    de_dict["spin"] = spin_ds.spin_number.data
+    de_dict["event_times"] = event_times.astype(np.float64)
     # Pulse height
     ph_result = get_ph_tof_and_back_positions(
         de_dataset, xf, f"ultra{sensor}", ancillary_files
@@ -209,13 +211,17 @@ def calculate_de(
         f"ultra{sensor}",
         ancillary_files,
     )
-    backtofvalid = is_back_tof_valid(
-        de_dataset,
-        xf,
+    backtofvalid_quality_flags = np.zeros(len(ph_indices), dtype=quality_flags.dtype)
+    backtofvalid, backtofvalid_quality_flags = is_back_tof_valid(
+        de_dataset.isel(epoch=ph_indices),
+        xf[ph_indices],
         f"ultra{sensor}",
         ancillary_files,
+        backtofvalid_quality_flags,
     )
-    coinphvalid = is_coin_ph_valid(
+
+    coinphvalid_quality_flags = np.zeros(len(ph_indices), dtype=quality_flags.dtype)
+    coinphvalid, coinphvalid_quality_flags = is_coin_ph_valid(
         etof[ph_indices],
         xc[ph_indices],
         xb[ph_indices],
@@ -225,8 +231,11 @@ def calculate_de(
         de_dataset["stop_west_tdc"][ph_indices].values,
         f"ultra{sensor}",
         ancillary_files,
-        quality_flags[ph_indices],
+        coinphvalid_quality_flags,
     )
+    quality_flags[ph_indices] |= coinphvalid_quality_flags
+    quality_flags[ph_indices] |= backtofvalid_quality_flags
+
     e_bin[ph_indices] = determine_ebin_pulse_height(
         energy[ph_indices],
         tof[ph_indices],
@@ -321,28 +330,30 @@ def calculate_de(
     # Account for counts=0 (event times have FILL value)
     valid_events = (event_times != FILLVAL_FLOAT32).copy()
     if repoint_id is not None:
+        # Check all valid event times to see which are in the pointing
         in_pointing = calculate_events_in_pointing(
-            repoint_id, event_times[valid_events]
+            repoint_id, et_to_met(event_times[valid_events])
         )
+        # Initialize an array of all events as False
         events_to_flag = np.zeros(len(quality_flags), dtype=bool)
+        # Identify valid events that are outside the pointing
         events_to_flag[valid_events] = ~in_pointing
         # Update quality flags for valid events that are not in the pointing
         quality_flags[events_to_flag] |= ImapDEOutliersUltraFlags.DURINGREPOINT.value
         # Update valid_events to only include times within a pointing
         valid_events[valid_events] &= in_pointing
 
-    if np.any(valid_events):
-        (
-            sc_velocity[valid_events],
-            sc_dps_velocity[valid_events],
-            helio_velocity[valid_events],
-        ) = get_annotated_particle_velocity(
-            event_times[valid_events],
-            velocities.astype(np.float32)[valid_events],
-            ultra_frame,
-            SpiceFrame.IMAP_DPS,
-            SpiceFrame.IMAP_SPACECRAFT,
-        )
+    (
+        sc_velocity[valid_events],
+        sc_dps_velocity[valid_events],
+        helio_velocity[valid_events],
+    ) = get_annotated_particle_velocity(
+        event_times[valid_events],
+        velocities.astype(np.float32)[valid_events],
+        ultra_frame,
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.IMAP_SPACECRAFT,
+    )
 
     de_dict["velocity_sc"] = sc_velocity
     de_dict["velocity_dps_sc"] = sc_dps_velocity
@@ -409,7 +420,7 @@ def calculate_events_in_pointing(
     repoint_id : int
         The repointing ID.
     event_times : np.ndarray
-        Array of event times in ET.
+        Array of event times in MET.
 
     Returns
     -------
@@ -419,8 +430,7 @@ def calculate_events_in_pointing(
     """
     pointing_start_met, pointing_end_met = get_pointing_times_from_id(repoint_id)
     # Check which events are within the pointing
-    in_pointing = (et_to_met(event_times) >= pointing_start_met) & (
-        et_to_met(event_times) <= pointing_end_met
+    in_pointing = (event_times >= pointing_start_met) & (
+        event_times <= pointing_end_met
     )
-
     return in_pointing

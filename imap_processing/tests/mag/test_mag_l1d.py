@@ -3,8 +3,11 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import xarray as xr
+from imap_data_access.processing_input import ProcessingInputCollection
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import write_cdf
+from imap_processing.cli import Mag
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1d.mag_l1d import mag_l1d
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL1dConfiguration
@@ -91,16 +94,131 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
         )
     # Should have: 4 norm frames + 4 burst frames + spin offsets + 2 gradiometry offsets
 
+    frame = l1d[0].attrs["Logical_source"].split("-")[-1].lower()
     assert len(l1d) == 11
-    assert "vectors" in l1d[0].data_vars
+    assert f"b_{frame}" in l1d[0].data_vars
 
     # Check that expected logical sources are present
     logical_sources = [ds.attrs.get("Logical_source", "") for ds in l1d]
 
     # Should include ancillary files
-    assert "imap_mag_l1d-spin-offsets" in logical_sources
-    assert "imap_mag_l1d-gradiometry-offsets-norm" in logical_sources
-    assert "imap_mag_l1d-gradiometry-offsets-burst" in logical_sources
+    assert "imap_mag_l1d_spin-offsets" in logical_sources
+    assert "imap_mag_l1d_gradiometry-offsets-norm" in logical_sources
+    assert "imap_mag_l1d_gradiometry-offsets-burst" in logical_sources
+
+
+@pytest.mark.parametrize("data_mode", ["norm", "burst"])
+def test_mag_l1d_attributes(
+    mag_test_l1d_data,
+    norm_dataset,
+    furnish_kernels,
+    fake_mag_spin_data,
+    data_mode,
+):
+    """Test that L1D datasets have correct attributes based on frame and mode."""
+    # L1D always requires normal mode MAGO and MAGI datasets
+    norm_mago = norm_dataset.copy()
+    norm_mago.attrs["Logical_source"] = "imap_mag_l1c_norm-mago"
+
+    norm_magi = norm_dataset.copy()
+    norm_magi.attrs["Logical_source"] = "imap_mag_l1c_norm-magi"
+
+    input_datasets = [norm_mago, norm_magi]
+
+    # If testing burst mode, add burst datasets as well
+    if data_mode == "burst":
+        burst_mago = norm_dataset.copy()
+        burst_mago.attrs["Logical_source"] = "imap_mag_l1c_burst-mago"
+
+        burst_magi = norm_dataset.copy()
+        burst_magi.attrs["Logical_source"] = "imap_mag_l1c_burst-magi"
+
+        input_datasets.extend([burst_mago, burst_magi])
+
+    with (
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
+            side_effect=lambda *args, **kwargs: args[1],
+        ),
+        patch(
+            "imap_processing.mag.l2.mag_l2_data.frame_transform",
+            side_effect=lambda *args, **kwargs: args[1],
+        ),
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.ttj2000ns_to_met",
+            side_effect=lambda *args, **kwargs: args[0],
+        ),
+    ):
+        l1d_datasets = mag_l1d(
+            input_datasets,
+            mag_test_l1d_data,
+            np.datetime64("2000-01-01"),
+        )
+
+    # Filter out ancillary datasets and select only datasets matching the data_mode
+    science_datasets = [
+        ds
+        for ds in l1d_datasets
+        if "spin-offsets" not in ds.attrs.get("Logical_source", "")
+        and "gradiometry-offsets" not in ds.attrs.get("Logical_source", "")
+        and f"l1d_{data_mode}-" in ds.attrs.get("Logical_source", "")
+    ]
+
+    # Verify we have the expected number of datasets for the mode
+    # Each mode produces 4 frames: SRF, DSRF, GSE, RTN
+    assert len(science_datasets) == 4, (
+        f"Expected 4 L1D {data_mode} datasets, got {len(science_datasets)}"
+    )
+
+    for dataset in science_datasets:
+        assert "Logical_source" in dataset.attrs
+        assert "Data_type" in dataset.attrs
+        assert dataset.attrs["Logical_source"].startswith(f"imap_mag_l1d_{data_mode}-")
+
+        # Verify that data_level is correctly set to "l1d" in logical source
+        logical_source_parts = dataset.attrs["Logical_source"].split("_")
+        assert logical_source_parts[2] == "l1d", (
+            f"Expected data_level 'l1d' in Logical_source, "
+            f"got '{logical_source_parts[2]}'"
+        )
+
+        frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
+
+        vectors_attrs = dataset[f"b_{frame.lower()}"].attrs
+        assert "DICT_KEY" in vectors_attrs
+
+        assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
+
+        assert "magnitude" in dataset.data_vars
+        assert "range" in dataset.data_vars
+        assert dataset["magnitude"].attrs["UNITS"] == "nT"
+        assert dataset["range"].attrs["DICT_KEY"] == (
+            "SPASE>Support>SupportQuantity:InstrumentMode"
+        )
+
+    # Test that write_cdf can be called on all datasets
+    with patch("imap_processing.cdf.utils.xarray_to_cdf") as mock_xarray_to_cdf:
+        for dataset in l1d_datasets:
+            write_cdf(dataset)
+
+        # Verify xarray_to_cdf was called for each dataset
+        assert mock_xarray_to_cdf.call_count == len(l1d_datasets)
+
+    # Test that Mag.post_processing can be called on the datasets
+    mag_processor = Mag(
+        data_level="l1d",
+        data_descriptor="all",
+        dependency_str="[]",
+        start_date="20000101",
+        repointing=None,
+        version="v001",
+        upload_to_sdc=False,
+    )
+
+    mock_dependencies = ProcessingInputCollection()
+
+    with patch("imap_processing.cdf.utils.xarray_to_cdf"):
+        mag_processor.post_processing(l1d_datasets, mock_dependencies)
 
 
 def test_offset_vector():
@@ -143,7 +261,7 @@ def test_calculate_spin_offsets(
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
@@ -365,7 +483,7 @@ def test_mago_magi_swap_functionality(mag_l1d_test_class):
     assert np.array_equal(mag_l1d_test_class.vectors, mago_vectors)
     assert np.array_equal(mag_l1d_test_class.epoch, mago_epoch)
 
-    assert np.array_equal(result["vectors"].data, magi_vectors)
+    assert np.array_equal(result[mag_l1d_test_class.frame.var_name].data, magi_vectors)
     assert np.array_equal(result["epoch"].data, magi_epoch)
 
 
@@ -392,7 +510,7 @@ def test_mago_magi_no_swap_functionality(mag_l1d_test_class):
     assert np.array_equal(mag_l1d_test_class.vectors, mago_vectors)
     assert np.array_equal(mag_l1d_test_class.epoch, mago_epoch)
 
-    assert np.array_equal(result["vectors"].data, mago_vectors)
+    assert np.array_equal(result[mag_l1d_test_class.frame.var_name].data, mago_vectors)
     assert np.array_equal(result["epoch"].data, mago_epoch)
 
 
@@ -464,10 +582,8 @@ def test_rotate_frames(mag_l1d_test_class):
     def mock_frame_transform(
         epoch_et, vectors, from_frame, to_frame, allow_spice_noframeconnect
     ):
-        if from_frame == ValidFrames.MAGO.value:
+        if from_frame in [ValidFrames.MAGO.spice_frame, ValidFrames.MAGI.spice_frame]:
             return vectors + 100
-        elif from_frame == ValidFrames.MAGI.value:
-            return vectors + 200
         else:
             return vectors + 300
 
@@ -483,20 +599,22 @@ def test_rotate_frames(mag_l1d_test_class):
 
         # First call should be for MAGO vectors
         first_call_args = mock_transform_l1d.call_args_list[0]
-        assert first_call_args[1]["from_frame"] == ValidFrames.MAGO.value
-        assert first_call_args[1]["to_frame"] == ValidFrames.SRF.value
+        assert first_call_args[1]["from_frame"] == ValidFrames.MAGO.spice_frame
+        assert first_call_args[1]["to_frame"] == ValidFrames.SRF.spice_frame
 
         # Second call should be for MAGI vectors
         second_call_args = mock_transform_l1d.call_args_list[1]
-        assert second_call_args[1]["from_frame"] == ValidFrames.MAGI.value
-        assert second_call_args[1]["to_frame"] == ValidFrames.SRF.value
+        assert second_call_args[1]["from_frame"] == ValidFrames.MAGI.spice_frame
+        assert second_call_args[1]["to_frame"] == ValidFrames.SRF.spice_frame
 
-        # Check that MAGO vectors were transformed from MAGO frame (+100)
+        # MAGO frame and MAGi frame not necessarily different (and are now the same)
+
+        # Check that MAGO vectors were transformed (+100)
         expected_mago_vectors = initial_vectors + 100
         np.testing.assert_array_equal(mag_l1d_test_class.vectors, expected_mago_vectors)
 
-        # Check that MAGI vectors were transformed from MAGI frame (+200)
-        expected_magi_vectors = initial_magi_vectors + 200
+        # Check that MAGI vectors were transformed (+100)
+        expected_magi_vectors = initial_magi_vectors + 100
         np.testing.assert_array_equal(
             mag_l1d_test_class.magi_vectors, expected_magi_vectors
         )

@@ -20,13 +20,105 @@ from imap_processing.spice.time import (
 class ValidFrames(Enum):
     """SPICE reference frames for output."""
 
-    MAGO = SpiceFrame.IMAP_MAG_O
-    MAGI = SpiceFrame.IMAP_MAG_I
-    DSRF = SpiceFrame.IMAP_DPS
-    SRF = SpiceFrame.IMAP_SPACECRAFT
-    GSE = SpiceFrame.IMAP_GSE
-    GSM = SpiceFrame.IMAP_GSM
-    RTN = SpiceFrame.IMAP_RTN
+    """
+    Default MAGO and MAGI L1D and L2 frames both map to the same SPICE frame.
+    This is because the idealised IMAP_MAG_BASE frame is used for both sensors,
+    as the MAG team provides a calibration matrix to convert from the real mechanical
+    mount as assessed in flight into the idealised frame.
+
+    MAGO_GROUND_CAL and MAGI_GROUND_CAL additionally included for reference to the
+    ground assessed mount, and for future use if needed.
+    """
+    MAGO = ("MAGO", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
+    MAGI = ("MAGI", SpiceFrame.IMAP_MAG_BASE, "vector_attrs", "vectors")
+
+    MAGO_GROUND_CAL = (
+        "MAGO_GROUND_CAL",
+        SpiceFrame.IMAP_MAG_O,
+        "vector_attrs",
+        "vectors",
+    )
+    MAGI_GROUND_CAL = (
+        "MAGI_GROUND_CAL",
+        SpiceFrame.IMAP_MAG_I,
+        "vector_attrs",
+        "vectors",
+    )
+
+    DSRF = ("DSRF", SpiceFrame.IMAP_DPS, "vector_attrs_dsrf", "b_dsrf")
+    SRF = ("SRF", SpiceFrame.IMAP_SPACECRAFT, "vector_attrs_srf", "b_srf")
+    GSE = ("GSE", SpiceFrame.IMAP_GSE, "vector_attrs_gse", "b_gse")
+    GSM = ("GSM", SpiceFrame.IMAP_GSM, "vector_attrs_gsm", "b_gsm")
+    RTN = ("RTN", SpiceFrame.IMAP_RTN, "vector_attrs_rtn", "b_rtn")
+
+    _spice_frame_: SpiceFrame
+    _vector_attrs_name_: str
+    _var_name_: str
+
+    def __new__(
+        cls, value: str, spice_frame: SpiceFrame, attrs_name: str, var_name: str
+    ) -> "ValidFrames":
+        """
+        Construct a new Valid Frame.
+
+        Parameters
+        ----------
+        value : str
+            Unique name of the frame.
+        spice_frame : str
+            The SPICE frame name corresponding to this frame.
+        attrs_name : str
+            The name of the variable attributes in the attribute manager for this frame.
+        var_name : str
+            The name of the variable in the output dataset for this frame.
+
+        Returns
+        -------
+        ValidFrame : ValidFrame
+            A ValidFrame enum member.
+        """
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj._spice_frame_ = spice_frame
+        obj._vector_attrs_name_ = attrs_name
+        obj._var_name_ = var_name
+        return obj
+
+    @property
+    def spice_frame(self) -> SpiceFrame:
+        """
+        Get the SPICE frame name for this ValidFrame.
+
+        Returns
+        -------
+        spice_frame : str
+            The frame's associated spice frame.
+        """
+        return self._spice_frame_
+
+    @property
+    def vector_attrs_name(self) -> str:
+        """
+        Get the vector attributes name for this valid frame.
+
+        Returns
+        -------
+        vector_attrs_name : str
+            The frame's associated vector attributes name.
+        """
+        return self._vector_attrs_name_
+
+    @property
+    def var_name(self) -> str:
+        """
+        Get the vector variable name for this valid frame.
+
+        Returns
+        -------
+        var_name : str
+            The frame's associated vectors variable name.
+        """
+        return self._var_name_
 
 
 @dataclass(kw_only=True)
@@ -62,6 +154,9 @@ class MagL2L1dBase:
     epoch_et: np.ndarray
         The epoch timestamps converted to ET format. Used for frame transformations.
         Calculated on first use and then saved. Should not be passed in.
+    data_level: str
+        The data level of the product, to be used in the output attributes.
+        This should always be overridden by base classes.
     """
 
     vectors: np.ndarray
@@ -74,6 +169,7 @@ class MagL2L1dBase:
     magnitude: np.ndarray = field(init=False)
     frame: ValidFrames = ValidFrames.MAGO
     epoch_et: np.ndarray | None = field(init=False, default=None)
+    data_level: str = field(init=False)
 
     def generate_dataset(
         self,
@@ -101,8 +197,10 @@ class MagL2L1dBase:
         self.truncate_to_24h(day)
 
         logical_source_id = (
-            f"imap_mag_l2_{self.data_mode.value.lower()}-{self.frame.name.lower()}"
+            f"imap_mag_{self.data_level}_{self.data_mode.value.lower()}-"
+            f"{self.frame.name.lower()}"
         )
+
         direction = xr.DataArray(
             np.arange(3),
             name="direction",
@@ -132,9 +230,11 @@ class MagL2L1dBase:
 
         vectors = xr.DataArray(
             self.vectors,
-            name="vectors",
+            name=self.frame.var_name,
             dims=["epoch", "direction"],
-            attrs=attribute_manager.get_variable_attributes("vector_attrs"),
+            attrs=attribute_manager.get_variable_attributes(
+                self.frame.vector_attrs_name, check_schema=False
+            ),
         )
 
         quality_flags = xr.DataArray(
@@ -155,15 +255,18 @@ class MagL2L1dBase:
             self.range,
             name="range",
             dims=["epoch"],
-            # TODO temp attrs
-            attrs=attribute_manager.get_variable_attributes("fill"),
+            attrs=attribute_manager.get_variable_attributes(
+                "range", check_schema=False
+            ),
         )
 
         magnitude = xr.DataArray(
             self.magnitude,
             name="magnitude",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("fill"),
+            attrs=attribute_manager.get_variable_attributes(
+                "magnitude", check_schema=False
+            ),
         )
 
         global_attributes = (
@@ -180,7 +283,7 @@ class MagL2L1dBase:
             attrs=global_attributes,
         )
 
-        output["vectors"] = vectors
+        output[self.frame.var_name] = vectors
         output["quality_flags"] = quality_flags
         output["quality_bitmask"] = quality_bitmask
         output["range"] = rng
@@ -317,8 +420,8 @@ class MagL2L1dBase:
         self.vectors = frame_transform(
             self.epoch_et,
             self.vectors,
-            from_frame=self.frame.value,
-            to_frame=end_frame.value,
+            from_frame=self.frame.spice_frame,
+            to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
         self.frame = end_frame
@@ -326,16 +429,11 @@ class MagL2L1dBase:
 
 @dataclass(kw_only=True)
 class MagL2(MagL2L1dBase):
-    """
-    Dataclass for MAG L2 data.
-
-    Since L2 and L1D should have the same structure, this can be used for either level.
-
-    Some of the methods are also static, so they can be used in i-ALiRT processing.
-    """
+    """Dataclass for MAG L2 data."""
 
     offsets: InitVar[np.ndarray] = None
     timedelta: InitVar[np.ndarray] = None
+    data_level: str = field(default="l2", init=False)
 
     def __post_init__(self, offsets: np.ndarray, timedelta: np.ndarray) -> None:
         """

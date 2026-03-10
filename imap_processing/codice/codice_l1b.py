@@ -41,13 +41,14 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     rates_data : np.ndarray
         The converted data array.
     """
+    # No uncertainty calculation for diagnostic counters products
+    calculate_unc = False if "counters" in descriptor else True
     # Variables to convert based on descriptor
     variables_to_convert = getattr(
         constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
     )
-
     if descriptor.startswith("lo-"):
-        # Calculate energy_table using voltage_table and k_factor
+        # Calculate energy_per_charge using voltage_table and k_factor
         energy_attrs = dataset["voltage_table"].attrs | {
             "UNITS": "keV/e",
             "LABLAXIS": "E/q",
@@ -55,7 +56,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "FIELDNAM": "Energy per charge",
         }
         # 1e3 is to convert eV to keV
-        dataset["energy_table"] = xr.DataArray(
+        dataset["energy_per_charge"] = xr.DataArray(
             dataset["voltage_table"].values * dataset["k_factor"].values * 1e-3,
             dims=[
                 "esa_step",
@@ -73,7 +74,7 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     ]:
         # Denominator to convert counts to rates
         denominator = (
-            dataset.acquisition_time_per_step
+            dataset.acquisition_time_per_esa_step
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
         )
 
@@ -85,8 +86,10 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
+            "nso_esa_step",
+            "nso_spin_sector",
             # TODO: undo this when I get new validation file from Joey
-            # "acquisition_time_per_step",
+            # "acquisition_time_per_esa_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
     elif descriptor in [
@@ -94,17 +97,18 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         "lo-sw-species",
         "lo-ialirt",
     ]:
-        # Create n_sector with 'esa_step' dimension. This is done by xr.full_like
-        # with input dataset.acquisition_time_per_step. This ensures that the resulting
-        # n_sector has the same dimensions as acquisition_time_per_step.
-        # Per CoDICE, fill first 127 with default value of 12. Then fill last with 11.
+        # Create n_sector with 'epoch' and 'esa_step' dimension. This is done by
+        # xr.full_like with input dataset.acquisition_time_per_esa_step. This ensures
+        # that the resulting n_sector has the same dimensions as
+        # acquisition_time_per_esa_step. Per CoDICE, fill first 127 with default value
+        # of 12. Then fill last with 11. In your SDC processing
         n_sector = xr.full_like(
-            dataset.acquisition_time_per_step, 12.0, dtype=np.float64
+            dataset.acquisition_time_per_esa_step, 12.0, dtype=np.float64
         )
-        n_sector[-1] = 11.0
+        n_sector[:, -1] = 11.0
 
         # Denominator to convert counts to rates
-        denominator = dataset.acquisition_time_per_step * n_sector
+        denominator = dataset.acquisition_time_per_esa_step * n_sector
         # Do not carry these variable attributes from L1a to L1b for above products
         drop_variables = [
             "k_factor",
@@ -113,8 +117,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
             "st_bias_gain_mode",
             "spin_period",
             "voltage_table",
-            # TODO: undo this when I get new validation file from Joey
-            # "acquisition_time_per_step",
         ]
         dataset = dataset.drop_vars(drop_variables)
 
@@ -139,12 +141,13 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         # Carry over attrs and update as needed
         dataset[variable].attrs["UNITS"] = "counts/s"
 
-        # Uncertainty calculation
-        unc_variable = f"unc_{variable}"
-        dataset[unc_variable].data = (
-            dataset[unc_variable].astype(np.float64) / denominator
-        )
-        dataset[unc_variable].attrs["UNITS"] = "1/s"
+        if calculate_unc:
+            # Uncertainty calculation
+            unc_variable = f"unc_{variable}"
+            dataset[unc_variable].data = (
+                dataset[unc_variable].astype(np.float64) / denominator
+            )
+            dataset[unc_variable].attrs["UNITS"] = "1/s"
 
     # Drop spin_period
     if "spin_period" in dataset.variables:
@@ -186,6 +189,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
 
     # Update the global attributes
     l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
+
     return convert_to_rates(
         l1b_dataset,
         descriptor,

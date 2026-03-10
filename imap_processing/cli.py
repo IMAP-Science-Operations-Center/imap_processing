@@ -13,6 +13,7 @@ Examples
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import re
 import sys
@@ -24,6 +25,8 @@ import imap_data_access
 import numpy as np
 import spiceypy
 import xarray as xr
+from cdflib.xarray import xarray_to_cdf
+from cdflib.xarray.xarray_to_cdf import ISTPError
 from imap_data_access.io import IMAPDataAccessError, download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
@@ -53,7 +56,7 @@ from imap_processing.codice import codice_l1a, codice_l1b, codice_l2
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l2.glows_l2 import glows_l2
-from imap_processing.hi import hi_l1a, hi_l1b, hi_l1c, hi_l2
+from imap_processing.hi import hi_goodtimes, hi_l1a, hi_l1b, hi_l1c, hi_l2
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.hit.l2.hit_l2 import hit_l2
@@ -670,6 +673,21 @@ class Glows(ProcessInstrument):
                     f"{science_files}."
                 )
             input_dataset = load_cdf(science_files[0])
+
+            # Load conversion table (needed for both hist and DE)
+            conversion_table_file = dependencies.get_processing_inputs(
+                descriptor="conversion-table-for-anc-data"
+            )[0]
+
+            with open(conversion_table_file.imap_file_paths[0].construct_path()) as f:
+                conversion_table_dict = json.load(f)
+
+            # Use end date buffer for ancillary data
+            current_day = np.datetime64(
+                f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
+            )
+            day_buffer = current_day + np.timedelta64(3, "D")
+
             if "hist" in self.descriptor:
                 # Create file lists for each ancillary type
                 excluded_regions_files = dependencies.get_processing_inputs(
@@ -687,12 +705,6 @@ class Glows(ProcessInstrument):
                 pipeline_settings = dependencies.get_processing_inputs(
                     descriptor="pipeline-settings"
                 )[0]
-
-                # Use end date buffer for ancillary data
-                current_day = np.datetime64(
-                    f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
-                )
-                day_buffer = current_day + np.timedelta64(3, "D")
 
                 # Create combiners for each ancillary dataset
                 excluded_regions_combiner = GlowsAncillaryCombiner(
@@ -719,21 +731,38 @@ class Glows(ProcessInstrument):
                         suspected_transients_combiner.combined_dataset,
                         exclusions_by_instr_team_combiner.combined_dataset,
                         pipeline_settings_combiner.combined_dataset,
+                        conversion_table_dict,
                     )
                 ]
             else:
                 # Direct events
-                datasets = [glows_l1b_de(input_dataset)]
+                datasets = [glows_l1b_de(input_dataset, conversion_table_dict)]
 
         if self.data_level == "l2":
-            science_files = dependencies.get_file_paths(source="glows")
+            science_files = dependencies.get_file_paths(source="glows", data_type="l1b")
             if len(science_files) != 1:
                 raise ValueError(
-                    f"GLOWS L1A requires exactly one input science file, received: "
-                    f"{science_files}."
+                    f"GLOWS L2 requires exactly one input science file, "
+                    f"received: {science_files}."
                 )
             input_dataset = load_cdf(science_files[0])
-            datasets = glows_l2(input_dataset)
+
+            # Load pipeline settings for L2 processing
+            current_day = np.datetime64(
+                f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
+            )
+            day_buffer = current_day + np.timedelta64(3, "D")
+            pipeline_settings_input = dependencies.get_processing_inputs(
+                descriptor="pipeline-settings"
+            )[0]
+            pipeline_settings_combiner = GlowsAncillaryCombiner(
+                pipeline_settings_input, day_buffer
+            )
+
+            datasets = glows_l2(
+                input_dataset,
+                pipeline_settings_combiner.combined_dataset,
+            )
 
         return datasets
 
@@ -741,7 +770,7 @@ class Glows(ProcessInstrument):
 class Hi(ProcessInstrument):
     """Process IMAP-Hi."""
 
-    def do_processing(
+    def do_processing(  # noqa: PLR0912
         self, dependencies: ProcessingInputCollection
     ) -> list[xr.Dataset]:
         """
@@ -772,6 +801,47 @@ class Hi(ProcessInstrument):
             l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
             if l0_files:
                 datasets = hi_l1b.housekeeping(l0_files[0])
+            elif "goodtimes" in self.descriptor:
+                # Check self.repointing is not None (for mypy type checking)
+                if self.repointing is None:
+                    raise ValueError(
+                        "Repointing must be provided for Hi Goodtimes processing."
+                    )
+
+                # Goodtimes processing
+                l1b_de_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="de"
+                )
+                if not l1b_de_paths:
+                    raise ValueError("No L1B DE files found for goodtimes processing")
+
+                l1b_hk_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="hk"
+                )
+                if len(l1b_hk_paths) != 1:
+                    raise ValueError(
+                        f"Expected one L1B HK file, got {len(l1b_hk_paths)}"
+                    )
+
+                cal_prod_paths = dependencies.get_file_paths(
+                    data_type="ancillary", descriptor="cal-prod"
+                )
+                if len(cal_prod_paths) != 1:
+                    raise ValueError(
+                        f"Expected one cal-prod ancillary file, "
+                        f"got {len(cal_prod_paths)}"
+                    )
+
+                # Load CDFs before passing to hi_goodtimes
+                l1b_de_datasets = [load_cdf(path) for path in l1b_de_paths]
+                l1b_hk = load_cdf(l1b_hk_paths[0])
+
+                datasets = hi_goodtimes.hi_goodtimes(
+                    l1b_de_datasets,
+                    self.repointing,
+                    l1b_hk,
+                    cal_prod_paths[0],
+                )
             else:
                 l1a_de_file = dependencies.get_file_paths(
                     source="hi", data_type="l1a", descriptor="de"
@@ -784,17 +854,21 @@ class Hi(ProcessInstrument):
                     load_cdf(l1a_de_file), load_cdf(l1b_hk_file), esa_energies_csv
                 )
         elif self.data_level == "l1c":
-            science_paths = dependencies.get_file_paths(source="hi", data_type="l1b")
-            if len(science_paths) != 1:
-                raise ValueError(
-                    f"Expected only one science dependency. Got {science_paths}"
+            if "pset" in self.descriptor:
+                # L1C PSET processing
+                science_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1b"
                 )
-            anc_paths = dependencies.get_file_paths(data_type="ancillary")
-            if len(anc_paths) != 1:
-                raise ValueError(
-                    f"Expected only one ancillary dependency. Got {anc_paths}"
-                )
-            datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
+                if len(science_paths) != 1:
+                    raise ValueError(
+                        f"Expected only one science dependency. Got {science_paths}"
+                    )
+                anc_paths = dependencies.get_file_paths(data_type="ancillary")
+                if len(anc_paths) != 1:
+                    raise ValueError(
+                        f"Expected only one ancillary dependency. Got {anc_paths}"
+                    )
+                datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
         elif self.data_level == "l2":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
             anc_dependencies = dependencies.get_processing_inputs(data_type="ancillary")
@@ -975,9 +1049,13 @@ class Idex(ProcessInstrument):
                 source="idex", descriptor="sci-1week"
             )
             sci_dependencies = [load_cdf(f) for f in sci_files]
+            # sort science files by the first epoch value
+            sci_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
             hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
             # Remove duplicate housekeeping files
             hk_dependencies = [load_cdf(dep) for dep in list(set(hk_files))]
+            # sort housekeeping files by the first epoch value
+            hk_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
             datasets = idex_l2b(sci_dependencies, hk_dependencies)
         return datasets
 
@@ -1017,6 +1095,8 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             science_files = dependencies.get_file_paths(source="lo", data_type="l1a")
+            science_files += dependencies.get_file_paths(source="lo", data_type="l1b")
+
             ancillary_files = dependencies.get_file_paths(
                 source="lo", data_type="ancillary"
             )
@@ -1024,7 +1104,7 @@ class Lo(ProcessInstrument):
             for file in science_files:
                 dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = lo_l1b.lo_l1b(data_dict, ancillary_files)
+            datasets = lo_l1b.lo_l1b(data_dict, ancillary_files, self.descriptor)
 
         elif self.data_level == "l1c":
             data_dict = {}
@@ -1205,6 +1285,77 @@ class Mag(ProcessInstrument):
                     f"monotonically increasing."
                 )
         return datasets
+
+    def post_processing(
+        self,
+        processed_data: list[xr.Dataset | Path],
+        dependencies: ProcessingInputCollection,
+    ) -> list[Path]:
+        """
+        Override the post-processing method to handle ancillary file upload.
+
+        This will retrieve any datasets with Logical_source matching
+        ancillary_identifiers, and write them out to filenames, which will then be
+        passed to super().post_processing(). This means write_cdf will be skipped for
+        ancillary files ONLY.
+
+        Parameters
+        ----------
+        processed_data : list[xarray.Dataset | Path]
+            A list of datasets (products) and paths produced by the do_processing
+            method.
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+
+        Returns
+        -------
+        list[Path]
+            List of paths to CDF files produced.
+        """
+        ancillary_identifiers = [
+            "imap_mag_l1d_gradiometry-offsets-burst",
+            "imap_mag_l1d_gradiometry-offsets-norm",
+            "imap_mag_l1d_spin-offsets",
+        ]
+
+        for index, dataset in enumerate(processed_data):
+            if isinstance(dataset, xr.Dataset):
+                logical_source = dataset.attrs["Logical_source"]
+                if logical_source in ancillary_identifiers:
+                    # Skip write_cdf
+                    instrument, _data_level, descriptor = dataset.attrs[
+                        "Logical_source"
+                    ].split("_")[1:]
+                    start_date = self.start_date
+                    version = self.version
+
+                    output_filepath = (
+                        imap_data_access.AncillaryFilePath.generate_from_inputs(
+                            instrument=instrument,
+                            descriptor=descriptor,
+                            version=version,
+                            extension="cdf",
+                            start_time=start_date,
+                            end_time=start_date,
+                        ).filename
+                    )
+
+                    try:
+                        # write file to CDF
+                        xarray_to_cdf(
+                            dataset,
+                            output_filepath,
+                            terminate_on_warning=False,
+                            istp=False,
+                        )
+                        # update the dataset in processed_data to point to a path
+                        processed_data[index] = output_filepath
+                    except (ValueError, TypeError, ISTPError) as e:
+                        # Don't fail for any reason for ancillary files
+                        logger.warning(f"Hit error {e} when creating {output_filepath}")
+                        continue
+
+        return super().post_processing(processed_data, dependencies)
 
 
 class Spacecraft(ProcessInstrument):

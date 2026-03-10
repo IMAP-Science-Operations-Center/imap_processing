@@ -6,6 +6,9 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
+from imap_processing.glows import FLAG_LENGTH
+from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
+
 
 @dataclass
 class DailyLightcurve:
@@ -64,15 +67,17 @@ class DailyLightcurve:
         """
         self.raw_histograms = self.calculate_histogram_sums(l1b_data["histogram"].data)
 
-        exposure_times_per_timestamp = (
-            l1b_data["spin_period_average"]
-            * l1b_data["number_of_spins_per_block"]
-            / 3600
+        self.number_of_bins = l1b_data["histogram"].shape[1]
+
+        exposure_per_epoch = (
+            l1b_data["spin_period_average"].data
+            * l1b_data["number_of_spins_per_block"].data
+            / self.number_of_bins
         )
 
-        self.exposure_times = self.calculate_exposure_times(
-            l1b_data, exposure_times_per_timestamp
-        )
+        # Exposure is uniform across bins; sum over all good-time epochs
+        self.exposure_times = np.full(self.number_of_bins, np.sum(exposure_per_epoch))
+
         raw_uncertainties = np.sqrt(self.raw_histograms)
         self.photon_flux = np.zeros(len(self.raw_histograms))
         self.flux_uncertainties = np.zeros(len(self.raw_histograms))
@@ -85,36 +90,22 @@ class DailyLightcurve:
         # TODO: Average this, or should they all be the same?
         self.spin_angle = np.average(l1b_data["imap_spin_angle_bin_cntr"].data, axis=0)
 
-        # TODO: is the first number here ok? Would it change mid-obs day?
-        self.number_of_bins = len(self.spin_angle)
-
-        self.histogram_flag_array = np.zeros(self.number_of_bins)
+        # Apply 'OR' operation to histogram_flag_array across all
+        # good-time L1B blocks per bin.
+        # Per Section 12.3.4: a flag is True in L2 if it is True in any L1B block.
+        # flags shape: (n_epochs, 4, n_bins)
+        flags = l1b_data["histogram_flag_array"].data
+        if flags.size > 0:
+            # Flatten epochs and flag rows into one axis: (n_epochs * 4, n_bins)
+            flags_2d = flags.reshape(-1, self.number_of_bins)
+            # Apply binary 'OR' operation across all rows per bin: (n_bins,)
+            self.histogram_flag_array = np.bitwise_or.reduce(flags_2d, axis=0).astype(
+                np.uint8
+            )
+        else:
+            self.histogram_flag_array = np.zeros(self.number_of_bins, dtype=np.uint8)
         self.ecliptic_lon = np.zeros(self.number_of_bins)
         self.ecliptic_lat = np.zeros(self.number_of_bins)
-
-    @staticmethod
-    def calculate_exposure_times(
-        good_times: xr.Dataset, exposure_count: xr.DataArray
-    ) -> NDArray:
-        """
-        Calculate exposure times for each bin across all the timestamps.
-
-        Parameters
-        ----------
-        good_times : xarray.Dataset
-            Dataset with only good times.
-        exposure_count : float
-            Exposure count for each valid timestamp and bin.
-
-        Returns
-        -------
-        numpy.ndarray
-            Array of summed exposure times for each bin.
-        """
-        weighted_sum = (good_times["histogram"].data != -1) * exposure_count.data[
-            :, np.newaxis
-        ]
-        return np.sum(weighted_sum, axis=0)
 
     @staticmethod
     def calculate_histogram_sums(histograms: NDArray) -> NDArray:
@@ -131,6 +122,7 @@ class DailyLightcurve:
         numpy.ndarray
             Sum of valid histograms across all timestamps.
         """
+        histograms = histograms.copy()
         histograms[histograms == -1] = 0
         return np.sum(histograms, axis=0, dtype=np.int64)
 
@@ -141,6 +133,13 @@ class HistogramL2:
     Dataclass describing Histogram L2 data variables and methods.
 
     This class collects multiple HistogramL1B classes into one L2 per observational day.
+
+    Parameters
+    ----------
+        l1b_dataset : xr.Dataset
+            GLOWS histogram L1B dataset, as produced by glows_l1b.py.
+        pipeline_settings : PipelineSettings
+            Pipeline settings object read from ancillary file.
 
     Attributes
     ----------
@@ -223,3 +222,173 @@ class HistogramL2:
     spacecraft_velocity_std_dev: np.ndarray[np.double]
     spin_axis_orientation_average: np.ndarray[np.double]
     bad_time_flag_occurrences: np.ndarray
+
+    def __init__(self, l1b_dataset: xr.Dataset, pipeline_settings: PipelineSettings):
+        """
+        Given an L1B dataset, process data into an output HistogramL2 object.
+
+        Parameters
+        ----------
+        l1b_dataset : xr.Dataset
+            GLOWS histogram L1B dataset, as produced by glows_l1b.py.
+        pipeline_settings : PipelineSettings
+            Pipeline settings object read from ancillary file.
+        """
+        active_flags = np.array(pipeline_settings.active_bad_time_flags, dtype=float)
+
+        # Select the good blocks (i.e. epoch values) according to the flags. Drop any
+        # bad blocks before processing.
+        good_data = l1b_dataset.isel(
+            epoch=self.return_good_times(l1b_dataset["flags"], active_flags)
+        )
+        # TODO: bad angle filter
+        # TODO: filter bad bins out. Needs to happen here while everything is still
+        #       per-timestamp.
+
+        self.daily_lightcurve = DailyLightcurve(good_data)
+
+        self.total_l1b_inputs = len(l1b_dataset["epoch"])
+        self.number_of_good_l1b_inputs = len(good_data["epoch"])
+        self.identifier = -1  # TODO: retrieve from spin table
+        # TODO fill this in
+        self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH))
+
+        if len(good_data["epoch"]) != 0:
+            # Generate outputs that are passed in directly from L1B
+            self.start_time = good_data["epoch"].data[0]
+            self.end_time = good_data["epoch"].data[-1]
+        else:
+            # No good times in the file
+            self.start_time = l1b_dataset["imap_start_time"].data[0]
+            self.end_time = (
+                l1b_dataset["imap_start_time"].data[0]
+                + l1b_dataset["imap_time_offset"].data[0]
+            )
+
+        self.filter_temperature_average = (
+            good_data["filter_temperature_average"]
+            .mean(dim="epoch", keepdims=True)
+            .data
+        )
+        self.filter_temperature_std_dev = (
+            good_data["filter_temperature_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.hv_voltage_average = (
+            good_data["hv_voltage_average"].mean(dim="epoch", keepdims=True).data
+        )
+        self.hv_voltage_std_dev = (
+            good_data["hv_voltage_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.spin_period_average = (
+            good_data["spin_period_average"].mean(dim="epoch", keepdims=True).data
+        )
+        self.spin_period_std_dev = (
+            good_data["spin_period_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.pulse_length_average = (
+            good_data["pulse_length_average"].mean(dim="epoch", keepdims=True).data
+        )
+        self.pulse_length_std_dev = (
+            good_data["pulse_length_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.spin_period_ground_average = (
+            good_data["spin_period_ground_average"]
+            .mean(dim="epoch", keepdims=True)
+            .data
+        )
+        self.spin_period_ground_std_dev = (
+            good_data["spin_period_ground_average"].std(dim="epoch", keepdims=True).data
+        )
+        self.position_angle_offset_average = (
+            good_data["position_angle_offset_average"]
+            .mean(dim="epoch", keepdims=True)
+            .data
+        )
+        self.position_angle_offset_std_dev = (
+            good_data["position_angle_offset_average"]
+            .std(dim="epoch", keepdims=True)
+            .data
+        )
+        self.spacecraft_location_average = (
+            good_data["spacecraft_location_average"]
+            .mean(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spacecraft_location_std_dev = (
+            good_data["spacecraft_location_average"]
+            .std(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spacecraft_velocity_average = (
+            good_data["spacecraft_velocity_average"]
+            .mean(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spacecraft_velocity_std_dev = (
+            good_data["spacecraft_velocity_average"]
+            .std(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spin_axis_orientation_average = (
+            good_data["spin_axis_orientation_average"]
+            .mean(dim="epoch")
+            .data[np.newaxis, :]
+        )
+        self.spin_axis_orientation_std_dev = (
+            good_data["spin_axis_orientation_average"]
+            .std(dim="epoch")
+            .data[np.newaxis, :]
+        )
+
+    def filter_bad_bins(self, histograms: NDArray, bin_exclusions: NDArray) -> NDArray:
+        """
+        Filter out bad bins from the histogram.
+
+        Parameters
+        ----------
+        histograms : numpy.ndarray
+            Histogram data, with shape (n_timestamps, n_bins).
+        bin_exclusions : numpy.ndarray
+            Array of bin exclusions. This 2d array has a timestamp and bin filter array
+            pair. The bin filter array indicates "1" if a bin is to be excluded.
+
+        Returns
+        -------
+        numpy.ndarray
+            Histogram data with bad bins marked with -1.
+        """
+        # TODO: will need ancillary file imap_glows_exclusions_by_instr_team
+        # TODO: complete once unique_block_identifier is implemented
+        # file contains timestamp & bin filter array pairs. For the timestamp, the
+        # filter should be applied such that 1 excludes the bin.
+
+        # excluded bins can be marked with -1
+        return histograms
+
+    @staticmethod
+    def return_good_times(flags: xr.DataArray, active_flags: NDArray) -> NDArray:
+        """
+        Return the good times based on the input flags.
+
+        Parameters
+        ----------
+        flags : xarray.DataArray
+            Flags dataset with shape (n_timestamps, n_flags). If a flag is active and
+             set to 1, the timestamp is considered good.
+
+        active_flags : numpy.ndarray
+            Array of active flags. If the flag is set to 1, it is considered active.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of indices for good times.
+        """
+        if len(active_flags) != flags.shape[1]:
+            print("Active flags don't match expected length")
+
+        # A good time is where all the active flags are equal to one.
+        # Here, we mask the active indices using active_flags, and then return the times
+        # where all the active indices == 1.
+        good_times = np.where(np.all(flags[:, active_flags == 1] == 1, axis=1))[0]
+        return good_times

@@ -39,6 +39,7 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
         if f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict:
             de_dataset = calculate_de(
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
+                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-aux"],
                 f"imap_ultra_l1b_{instrument_id}sensor-de",
                 ancillary_files,
             )
@@ -50,6 +51,7 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
             and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
             and f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
             and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
+            and f"imap_ultra_l1b_{instrument_id}sensor-status" in data_dict
         ):
             extendedspin_dataset = calculate_extendedspin(
                 {
@@ -64,6 +66,9 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
                     ],
                     f"imap_ultra_l1b_{instrument_id}sensor-de": data_dict[
                         f"imap_ultra_l1b_{instrument_id}sensor-de"
+                    ],
+                    f"imap_ultra_l1b_{instrument_id}sensor-status": data_dict[
+                        f"imap_ultra_l1b_{instrument_id}sensor-status"
                     ],
                 },
                 f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",

@@ -10,9 +10,8 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
+    CoDICECompression,
     ViewTabInfo,
-    apply_replacements_to_attrs,
     get_codice_epoch_time,
     get_counters_aggregated_pattern,
     get_view_tab_info,
@@ -63,15 +62,13 @@ def l1a_hi_counters_aggregated(
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 1:
         raise ValueError("Unsupported sensor ID for Hi processing.")
 
     # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
-        raise ValueError("Unsupported APID for Hi Counters aggregated processing.")
-
     logical_source_id = "imap_codice_l1a_hi-counters-aggregated"
     # Counters is little bit different in how CDF variables are derived.
     # For singles, CDF variables are coming from 'product' tab. But for
@@ -91,7 +88,7 @@ def l1a_hi_counters_aggregated(
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
 
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [
@@ -106,6 +103,8 @@ def l1a_hi_counters_aggregated(
     counters_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         -1, num_variables
     )
+    # Convert counters data to float
+    counters_data = counters_data.astype(np.float64)
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -158,19 +157,12 @@ def l1a_hi_counters_aggregated(
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
 
-    # Finally, add species data variables and their uncertainties
-    for idx, species in enumerate(non_reserved_variables):
-        # Get CDF attrs
-        if species.startswith("reserved"):
-            # extract reserved index
-            reserved_index = species.replace("reserved", "")
-            attrs = cdf_attrs.get_variable_attributes("reserved")
-            # Apply index replacement
-            attrs = apply_replacements_to_attrs(attrs, {"{index}": reserved_index})
-        else:
-            attrs = cdf_attrs.get_variable_attributes(species)
+    # Finally, add data variables
+    for idx, variable in enumerate(non_reserved_variables):
+        # We don't store reserved variables in CDF
+        attrs = cdf_attrs.get_variable_attributes(f"hi-{variable}")
 
-        l1a_dataset[species] = xr.DataArray(
+        l1a_dataset[variable] = xr.DataArray(
             counters_data[:, idx], dims=("epoch",), attrs=attrs
         )
         # No uncertainty needed for Hi counters data

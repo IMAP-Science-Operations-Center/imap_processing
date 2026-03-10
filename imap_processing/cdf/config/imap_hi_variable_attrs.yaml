@@ -49,7 +49,7 @@ default_int32_attrs: &default_int32
 
 default_float32_attrs: &default_float32
   <<: *default
-  FILLVAL: .NAN
+  FILLVAL: -1.0e31
   FORMAT: F10.2
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
@@ -57,7 +57,7 @@ default_float32_attrs: &default_float32
 
 default_float64_attrs: &default_float64
   <<: *default
-  FILLVAL: .NAN
+  FILLVAL: -1.0e31
   FORMAT: F10.2
   VALIDMIN: -1.7976931348623157e+308
   VALIDMAX: 1.7976931348623157e+308
@@ -428,6 +428,27 @@ hi_de_nominal_bin:
   VALIDMIN: 0
   VALIDMAX: 89
 
+hi_de_esa_step_met:
+  <<: *default_float64
+  CATDESC: Mission Elapsed Time (MET) in seconds of when the ESA was stepped
+  FIELDNAM: ESA Start MET
+  LABLAXIS: ESA Start MET
+  UNITS: seconds
+  VAR_TYPE: support_data
+
+hi_de_ccsds_qf:
+  <<: *default_uint8
+  CATDESC: CCSDS packet quality flag bitmask
+  FIELDNAM: CCSDS Quality Flag
+  FORMAT: I3
+  LABLAXIS: CCSDS QF
+  VALIDMIN: 0
+  VALIDMAX: 255
+  VAR_NOTES: >
+    Bitwise quality flag for CCSDS packet. Bit 0 (value 1): packet was full
+    (contained 664 events). Bit 2 (value 4): packet contained events from an
+    invalid spin.
+
 # ======= L1C PSET Section =======
 
 # Define override values for epoch as defined in imap_constant_attrs.yaml
@@ -613,3 +634,63 @@ hi_pset_label_vector_HAE:
   FIELDNAM: Label cartesian despun_z
   FORMAT: A5
   VAR_TYPE: metadata
+
+# <=== L1B Goodtimes Attributes ===>
+hi_goodtimes_met:
+  <<: *default_float64
+  CATDESC: Mission Elapsed Time for each 8-spin histogram packet
+  FIELDNAM: MET
+  DEPEND_0: epoch
+  LABLAXIS: MET
+  UNITS: s
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 1.7976931348623157e+308
+
+hi_goodtimes_cull_flags:
+  <<: *default_uint8
+  CATDESC: Cull flags indicating good (0) or bad (non-zero) times per spin bin
+  FIELDNAM: Cull Flags
+  DEPEND_0: epoch
+  DEPEND_1: spin_bin
+  LABL_PTR_1: spin_bin_label
+  LABLAXIS: Cull Code
+  UNITS: " "
+  DISPLAY_TYPE: spectrogram
+  VAR_NOTES: >
+    Cull flags array with dimensions (epoch, spin_bin). Value of 0 indicates good time,
+    non-zero values indicate bad times with specific cull reason codes.
+    Cull code 1 (LOOSE) indicates times removed by quality filters.
+
+hi_goodtimes_esa_step:
+  <<: *default_uint8
+  CATDESC: ESA energy step for each 8-spin histogram packet
+  FIELDNAM: ESA Step
+  DEPEND_0: epoch
+  LABLAXIS: ESA Step
+  UNITS: " "
+  VAR_TYPE: support_data
+  VALIDMIN: 1
+  VALIDMAX: 10
+
+hi_goodtimes_spin_bin:
+  <<: *default_uint8
+  CATDESC: Spin angle bin index
+  FIELDNAM: Spin Bin
+  FORMAT: I2
+  LABLAXIS: Spin Bin
+  UNITS: " "
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 89
+  VAR_NOTES: >
+    Spin angle bins numbered 0-89, covering 0-360 degrees of spacecraft spin.
+    Each bin is 4 degrees wide.
+
+hi_goodtimes_spin_bin_label:
+  CATDESC: Label for spin bin
+  FIELDNAM: Spin Bin Label
+  DEPEND_1: spin_bin
+  FORMAT: A3
+  VAR_TYPE: metadata
+

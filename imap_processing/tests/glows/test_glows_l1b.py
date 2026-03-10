@@ -20,20 +20,21 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
+from imap_processing.spice.time import met_to_datetime64
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
+# Fixture for L1a histogram dataset
 @pytest.fixture
 def hist_dataset():
     variables = {
-        "flight_software_version": np.zeros((20,)),
         "seq_count_in_pkts_file": np.zeros((20,)),
         "first_spin_id": np.zeros((20,)),
         "last_spin_id": np.zeros((20,)),
         "flags_set_onboard": np.zeros((20,)),
         "is_generated_on_ground": np.zeros((20,)),
         "number_of_spins_per_block": np.zeros((20,)),
-        "number_of_bins_per_histogram": np.zeros((20,)),
+        "number_of_bins_per_histogram": np.full((20,), 3600),
         "number_of_events": np.zeros((20,)),
         "filter_temperature_average": np.zeros((20,)),
         "filter_temperature_variance": np.zeros((20,)),
@@ -50,20 +51,19 @@ def hist_dataset():
     }
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("glows")
-    cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
+    cdf_attrs.add_instrument_variable_attrs("glows", "l1a")
 
     epoch = xr.DataArray(
         np.arange(20),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
     bins = xr.DataArray(np.arange(3600), name="bins", dims=["bins"])
 
     ds = xr.Dataset(
-        coords={"epoch": epoch},
-        attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
+        attrs=cdf_attrs.get_global_attributes("imap_glows_l1a_hist"),
     )
 
     ds["histogram"] = xr.DataArray(
@@ -74,6 +74,9 @@ def hist_dataset():
 
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
+
+    ds.attrs["flight_software_version"] = np.array([67], dtype=int)
+    ds.attrs["Parents"] = ["test_packet_file.pkts", "test_spice_file.tls"]
 
     return ds
 
@@ -147,6 +150,8 @@ def de_dataset():
         },
     )
 
+    ds.attrs["Parents"] = ["test_packet_file.pkts", "test_spice_file.tls"]
+
     for var, data in variables.items():
         ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
@@ -193,22 +198,25 @@ def ancillary_dict():
     return dictionary
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_histogram_mapping(
     mock_spice_function,
+    mock_flag_uv_and_excluded,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
     mock_pipeline_settings,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
-    time_val = 1111111.11
-    # A = 2.318
-    # B = 69.5454
-    expected_temp = 100
+    time_val = np.double(1111111.11)
 
-    test_hists = np.zeros((200, 3600))
-    # For temp
-    encoded_val = expected_temp * 2.318 + 69.5454
+    test_hists = np.zeros(3600)
+    expected_temp = 100
+    encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
     # For now, testing types and number of inputs
     pipeline_settings = PipelineSettings(
@@ -221,14 +229,13 @@ def test_histogram_mapping(
         dataclasses.asdict(
             HistogramL1B(
                 test_hists,
-                "test",
                 0,
                 0,
                 0,
                 0,
                 0,
                 0,
-                0,
+                3600,
                 0,
                 encoded_val,
                 encoded_val,
@@ -249,15 +256,23 @@ def test_histogram_mapping(
         ).values()
     )
 
-    assert output[18] == time_val
-
     # Correctly decoded temperature
-    assert output[10] - expected_temp < 0.1
+    assert np.isclose(output[9], expected_temp, 0.1)
+
+    # Ensure time values are correctly mapped
+    assert output[17] == time_val
+    assert output[20] == time_val
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_process_histogram(
     mock_spice_function,
+    mock_flag_uv_and_excluded,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
@@ -265,14 +280,12 @@ def test_process_histogram(
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
-    time_val = np.single(1111111.11)
-    # A = 2.318
-    # B = 69.5454
+    time_val = np.double(1111111.11)
     expected_temp = 100
 
-    test_hists = np.zeros((200,))
+    test_hists = np.zeros(3600)
     # For temp
-    encoded_val = np.single(expected_temp * 2.318 + 69.5454)
+    encoded_val = np.double(expected_temp * 2.3182 + 69.5455)
 
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(
@@ -282,14 +295,13 @@ def test_process_histogram(
 
     test_l1b = HistogramL1B(
         test_hists,
-        "test",
         0,
         0,
         0,
         0,
         0,
         0,
-        0,
+        3600,
         0,
         encoded_val,
         encoded_val,
@@ -317,8 +329,44 @@ def test_process_histogram(
     assert len(output) == len(dataclasses.asdict(test_l1b))
 
 
-def test_process_de(de_dataset, ancillary_dict):
-    output = process_de(de_dataset)
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_bins_from_histogram_not_nbins(
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+    mock_pipeline_settings,
+):
+    """Output bin arrays should use len(histogram), not number_of_bins_per_histogram."""
+    mock_spice_function.side_effect = mock_update_spice_parameters
+    # Set NBINS to a value that differs from the actual histogram length (3600)
+    hist_dataset["number_of_bins_per_histogram"][:] = 225
+
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
+    output = process_histogram(
+        hist_dataset,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
+        pipeline_settings,
+    )
+    # All output variables with a bins dimension must use len(histogram), not NBINS
+    for da in output:
+        if "bins" in da.sizes:
+            assert da.sizes["bins"] == 3600
+
+
+def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
+    output = process_de(de_dataset, mock_ancillary_parameters)
 
     # Output has the same length as non-initvar fields in DirectEventL1B
     assert len(output) == len(dataclasses.fields(DirectEventL1B))
@@ -335,13 +383,20 @@ def test_process_de(de_dataset, ancillary_dict):
     assert np.isclose(output[8].data[0], expected_temp)
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_glows_l1b(
     mock_spice_function,
+    mock_flag_uv_and_excluded,
     de_dataset,
     hist_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
+    mock_conversion_table_dict,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -352,6 +407,7 @@ def test_glows_l1b(
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
         mock_pipeline_settings,
+        mock_conversion_table_dict,
     )
 
     assert hist_output["histogram"].dims == ("epoch", "bins")
@@ -359,11 +415,7 @@ def test_glows_l1b(
 
     # This needs to be added eventually, but is skipped for now.
     expected_de_data = [
-        "flight_software_version",
-        "ground_software_version",
         "pkts_file_name",
-        "seq_count_in_pkts_file",
-        "l1a_file_name",
         "ancillary_data_files",
     ]
 
@@ -400,11 +452,17 @@ def test_glows_l1b(
         "spacecraft_velocity_std_dev",
         "flags",
     ]
-
     for key in expected_hist_data:
         assert key in hist_output
 
-    de_output = glows_l1b_de(de_dataset)
+    expected_global_attrs = [
+        "flight_software_version",
+        "pkts_file_name",
+    ]
+    for key in expected_global_attrs:
+        assert key in hist_output._attrs
+
+    de_output = glows_l1b_de(de_dataset, mock_conversion_table_dict)
 
     # From table 15 in the algorithm document
     expected_de_data = [
@@ -426,9 +484,19 @@ def test_glows_l1b(
         assert key in de_output
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_generate_histogram_dataset(
-    mock_spice_function, hist_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -439,6 +507,7 @@ def test_generate_histogram_dataset(
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
         mock_pipeline_settings,
+        mock_conversion_table_dict,
     )
 
     output_path = write_cdf(l1b_data)
@@ -447,9 +516,12 @@ def test_generate_histogram_dataset(
 
 
 def test_generate_de_dataset(
-    de_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+    de_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
 ):
-    l1b_data = glows_l1b_de(de_dataset)
+    l1b_data = glows_l1b_de(de_dataset, mock_conversion_table_dict)
 
     output_path = write_cdf(l1b_data)
 
@@ -479,8 +551,7 @@ def test_hist_spice_output(
     data_start_time = 504975600.125  # 2026-01-01T15:00:00.125
     use_fake_spin_data_for_time(data_start_time)
     params = {
-        "histogram": np.zeros((1, 3600)),
-        "flight_software_version": "v0.0.1",
+        "histogram": np.zeros(3600),
         "seq_count_in_pkts_file": 0,
         "first_spin_id": 0,
         "last_spin_id": 0,
@@ -506,7 +577,7 @@ def test_hist_spice_output(
         "pipeline_settings": PipelineSettings(
             mock_pipeline_settings.sel(
                 epoch=mock_pipeline_settings.epoch[0], method="nearest"
-            )
+            ),
         ),
     }
 
@@ -515,12 +586,17 @@ def test_hist_spice_output(
         "de440s.bsp",
         "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels):
         hist_data = HistogramL1B(**params)
+
+        day = met_to_datetime64(hist_data.imap_start_time)
+        day_exclusions = mock_ancillary_exclusions.limit_by_day(day)
+
+        uv_mask, region_mask = hist_data.flag_uv_and_excluded(day_exclusions)
 
         # Assert that all these variables are the correct shape:
         assert isinstance(hist_data.spin_period_ground_average, np.float64)
@@ -533,5 +609,18 @@ def test_hist_spice_output(
         assert hist_data.spacecraft_location_std_dev.shape == (3,)
         assert hist_data.spacecraft_velocity_average.shape == (3,)
         assert hist_data.spacecraft_velocity_std_dev.shape == (3,)
+        assert uv_mask.shape == (3600,)
+        # For 2 degree radius: 20 + 20 + 1(center) ≈ 41 bins.
+        assert np.count_nonzero(uv_mask) == 41
+        # Each individual excluded region center can only flag 0 or 1 bins
+        # (since the 0.05° threshold is exactly half the 0.1° bin spacing.
+        assert np.count_nonzero(region_mask) == 1
+
+        # Test flag_from_mask_dataset using the fixture data
+        instr_mask = hist_data.flag_from_mask_dataset(
+            day_exclusions.exclusions_by_instr_team
+        )
+        assert instr_mask.shape == (3600,)
+        assert np.count_nonzero(instr_mask) == 10
 
         # TODO: Maxine will validate actual data with GLOWS team

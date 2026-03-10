@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 
-from imap_processing.codice.utils import CODICEAPID, CoDICECompression
+from imap_processing.codice.utils import CODICEAPID
 
 # -------L1A Constants-------
 # Numerical constants
@@ -42,9 +42,15 @@ IAL_BIT_STRUCTURE = {
     "PLAN_ID": 16,
     "PLAN_STEP": 4,
     "VIEW_ID": 4,
-    "RGFO_HALF_SPIN": 6,
-    "NSO_HALF_SPIN": 6,
-    "SPARE_01": 1,
+    "SPARE_01": 8,
+    "RGFO_HALF_SPIN": 8,
+    "RGFO_SPIN_SECTOR": 8,
+    "RGFO_ENERGY_STEP": 8,
+    "NSO_HALF_SPIN": 8,
+    "NSO_SPIN_SECTOR": 8,
+    "NSO_ENERGY_STEP": 8,
+    "SPARE_02": 16,
+    "SPARE_03": 5,
     "SUSPECT": 1,
     "COMPRESSION": 3,
     "BYTE_COUNT": 23,
@@ -58,11 +64,42 @@ LO_IALIRT_VARIABLE_NAMES = [
     "oplus7",
     "oplus8",
     "mg",
-    "fe_loq",
     "fe_hiq",
+    "fe_loq",
 ]
 HI_IALIRT_VARIABLE_NAMES = ["h"]
+# Mass over charge (AMU/e)
+# Section 13.2 of Algorithm Document.
+LO_IALIRT_M_OVER_Q = {
+    "heplusplus": 2.0,
+    "cplus5": 2.4,
+    "cplus6": 2.0,
+    "oplus6": 2.7,
+    "oplus7": 2.28,
+    "oplus8": 2.0,
+    "mg": 3.5,
+    "fe_loq": 7.25,
+    "fe_hiq": 3.85,
+}
 
+HI_IALIRT_ELEVATION_ANGLE = np.array(
+    [
+        132.8,
+        65.7,
+        47.1,
+        114.3,
+    ],
+    dtype=np.float32,
+)
+HI_IALIRT_REF_SPIN_ANGLE = np.array(
+    [
+        286.85,
+        264.55,
+        343.16,
+        5.44,
+    ],
+    dtype=float,
+)
 
 # Define the packet fields needed to be stored in segmented data and their
 # corresponding bit lengths for direct event data products
@@ -201,34 +238,6 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     },
 }
 
-# Compression ID lookup tables
-# The key is the view_id and the value is the ID for the compression algorithm
-# (see utils.CoDICECompression to see how the values correspond)
-# These are defined in the "Views" tab of the "*-SCI-LUT-*.xml" spreadsheet that
-# largely defines CoDICE processing.
-LO_COMPRESSION_ID_LOOKUP = {
-    0: CoDICECompression.PACK_24_BIT,
-    1: CoDICECompression.LOSSY_B_LOSSLESS,
-    2: CoDICECompression.LOSSY_B_LOSSLESS,
-    3: CoDICECompression.LOSSY_A_LOSSLESS,
-    4: CoDICECompression.LOSSY_A_LOSSLESS,
-    5: CoDICECompression.LOSSY_A_LOSSLESS,
-    6: CoDICECompression.LOSSY_A_LOSSLESS,
-    7: CoDICECompression.LOSSY_A_LOSSLESS,
-    8: CoDICECompression.LOSSY_A_LOSSLESS,
-}
-HI_COMPRESSION_ID_LOOKUP = {
-    0: CoDICECompression.LOSSY_A,
-    1: CoDICECompression.LOSSY_A,
-    2: CoDICECompression.LOSSY_A,
-    3: CoDICECompression.LOSSY_B_LOSSLESS,
-    4: CoDICECompression.LOSSY_B_LOSSLESS,
-    5: CoDICECompression.LOSSY_A_LOSSLESS,
-    6: CoDICECompression.LOSSY_A_LOSSLESS,
-    7: CoDICECompression.LOSSY_A_LOSSLESS,
-    8: CoDICECompression.LOSSY_A_LOSSLESS,
-    9: CoDICECompression.LOSSY_A_LOSSLESS,
-}
 
 # Lookup tables for Lossy decompression algorithms "A" and "B"
 # These were provided by Greg Dunn via his sohis_cdh_utils.v script and then
@@ -756,8 +765,15 @@ LOSSY_B_TABLE = {
 HI_ACQUISITION_TIME = 0.59916
 
 # TODO: in the future, read from sci-lut
-LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
-LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
+LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq", "heplus"]
+LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus", "heplus"]
+LO_SW_PRIORITY_VARIABLE_NAMES = [
+    "p0_tcrs",
+    "p1_hplus",
+    "p2_heplusplus",
+    "p3_heavies",
+    "p4_dcrs",
+]
 LO_NSW_PRIORITY_VARIABLE_NAMES = ["p5_heavies", "p6_hplus_heplusplus"]
 LO_SW_SPECIES_VARIABLE_NAMES = [
     "hplus",
@@ -777,7 +793,25 @@ LO_SW_SPECIES_VARIABLE_NAMES = [
     "heplus",
     "cnoplus",
 ]
-
+LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    "tcr",
+    "dcr",
+    "sta",
+    "stb",
+    "sp",
+    "total_position_count",
+]
+HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    "dcr",
+    "mst",
+    "starts_only",
+    "stops_only",
+    "singles_starts",
+    "singles_stops",
+    "low_tof_cutoff",
+]
+LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
+HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 # Various configurations to support L1b processing of individual data products
 # Much of these are described in the algorithm document in chapter 11 ("Data
 # Level 1B")
@@ -849,8 +883,8 @@ LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES = [
     "ne",
     "mg",
     "si",
-    "fe_loq",
     "fe_hiq",
+    "fe_loq",
 ]
 LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES = [
     "heplus",
@@ -868,182 +902,20 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
 ]
 HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh", "junk"]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
-# Lookup table for CoDICE-Lo despinning pixel orientations
-# See section 9.3.4 of the algorithm document for further information
-PIXEL_ORIENTATIONS = {
-    0: "A",
-    1: "B",
-    2: "A",
-    3: "B",
-    4: "A",
-    5: "A",
-    6: "B",
-    7: "B",
-    8: "A",
-    9: "A",
-    10: "B",
-    11: "B",
-    12: "A",
-    13: "A",
-    14: "A",
-    15: "B",
-    16: "B",
-    17: "B",
-    18: "A",
-    19: "A",
-    20: "A",
-    21: "B",
-    22: "B",
-    23: "B",
-    24: "A",
-    25: "A",
-    26: "A",
-    27: "A",
-    28: "B",
-    29: "B",
-    30: "B",
-    31: "B",
-    32: "A",
-    33: "A",
-    34: "A",
-    35: "A",
-    36: "B",
-    37: "B",
-    38: "B",
-    39: "B",
-    40: "A",
-    41: "A",
-    42: "A",
-    43: "A",
-    44: "A",
-    45: "B",
-    46: "B",
-    47: "B",
-    48: "B",
-    49: "B",
-    50: "A",
-    51: "A",
-    52: "A",
-    53: "A",
-    54: "A",
-    55: "B",
-    56: "B",
-    57: "B",
-    58: "B",
-    59: "B",
-    60: "A",
-    61: "A",
-    62: "A",
-    63: "A",
-    64: "A",
-    65: "B",
-    66: "B",
-    67: "B",
-    68: "B",
-    69: "B",
-    70: "A",
-    71: "A",
-    72: "A",
-    73: "A",
-    74: "A",
-    75: "B",
-    76: "B",
-    77: "B",
-    78: "B",
-    79: "B",
-    80: "A",
-    81: "A",
-    82: "A",
-    83: "A",
-    84: "A",
-    85: "A",
-    86: "B",
-    87: "B",
-    88: "B",
-    89: "B",
-    90: "B",
-    91: "B",
-    92: "A",
-    93: "A",
-    94: "A",
-    95: "A",
-    96: "A",
-    97: "A",
-    98: "B",
-    99: "B",
-    100: "B",
-    101: "B",
-    102: "B",
-    103: "B",
-    104: "A",
-    105: "A",
-    106: "A",
-    107: "A",
-    108: "A",
-    109: "A",
-    110: "B",
-    111: "B",
-    112: "B",
-    113: "B",
-    114: "B",
-    115: "B",
-    116: "A",
-    117: "A",
-    118: "A",
-    119: "A",
-    120: "A",
-    121: "A",
-    122: "B",
-    123: "B",
-    124: "B",
-    125: "B",
-    126: "B",
-    127: "B",
-}
-
-# Lookup table for mapping half-spin (keys) to esa steps (values)
-# This is used to determine geometry factors L2
-HALF_SPIN_LUT = {
-    0: [0],
-    1: [1],
-    2: [2],
-    3: [3],
-    4: [4, 5],
-    5: [6, 7],
-    6: [8, 9],
-    7: [10, 11],
-    8: [12, 13, 14],
-    9: [15, 16, 17],
-    10: [18, 19, 20],
-    11: [21, 22, 23],
-    12: [24, 25, 26, 27],
-    13: [28, 29, 30, 31],
-    14: [32, 33, 34, 35],
-    15: [36, 37, 38, 39],
-    16: [40, 41, 42, 43, 44],
-    17: [45, 46, 47, 48, 49],
-    18: [50, 51, 52, 53, 54],
-    19: [55, 56, 57, 58, 59],
-    20: [60, 61, 62, 63, 64],
-    21: [65, 66, 67, 68, 69],
-    22: [70, 71, 72, 73, 74],
-    23: [75, 76, 77, 78, 79],
-    24: [80, 81, 82, 83, 84, 85],
-    25: [86, 87, 88, 89, 90, 91],
-    26: [92, 93, 94, 95, 96, 97],
-    27: [98, 99, 100, 101, 102, 103],
-    28: [104, 105, 106, 107, 108, 109],
-    29: [110, 111, 112, 113, 114, 115],
-    30: [116, 117, 118, 119, 120, 121],
-    31: [122, 123, 124, 125, 126, 127],
-}
+HI_PRIORITY_VARIABLE_NAMES = [
+    "priority0",
+    "priority1",
+    "priority2",
+    "priority3",
+    "priority4",
+    "priority5",
+]
 
 NSW_POSITIONS = [x for x in range(3, 22)]
 SW_POSITIONS = [0, 1, 2, 22, 23]
 SOLAR_WIND_POSITIONS = [0]
 PUI_POSITIONS = SW_POSITIONS
-L2_GEOMETRIC_FACTOR = 0.013
-L2_HI_NUMBER_OF_SSD = 12.0
+IALIRT_HI_NUMBER_OF_SSD_PER_GROUP = 3.0
 
 L2_HI_SECTORED_ANGLE = np.array(
     [
@@ -1111,3 +983,54 @@ LO_POSITION_TO_ELEVATION_ANGLE = {
         13: 180,
     },
 }
+
+# SSD ID to Elevation Angle
+# The index corresponds to the SSD ID. Missing SSD IDs are represented with np.nan.
+SSD_ID_TO_ELEVATION = np.array(
+    [
+        150.0,
+        138.6,
+        np.nan,
+        115.7,
+        90.0,
+        64.3,
+        np.nan,
+        41.4,
+        30.0,
+        41.4,
+        np.nan,
+        64.3,
+        90.0,
+        115.7,
+        np.nan,
+        138.6,
+    ]
+)
+
+# gain lookup table
+GAIN_ID_TO_STR = {1: "LG", 2: "MG", 3: "HG"}
+
+# SSD ID to Spin Angle (degrees)
+# The index corresponds to the SSD ID. Missing SSD IDs are represented with np.nan.
+SSD_ID_TO_SPIN_ANGLE = np.array(
+    [
+        277.50,
+        236.61,
+        np.nan,
+        221.19,
+        217.5,
+        221.19,
+        np.nan,
+        236.61,
+        277.50,
+        318.39,
+        np.nan,
+        333.81,
+        337.50,
+        333.81,
+        np.nan,
+        318.39,
+    ]
+)
+
+HALF_SPIN_FILLVAL = 63

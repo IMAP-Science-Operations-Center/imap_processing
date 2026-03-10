@@ -46,6 +46,7 @@ class ImapDEOutliersUltraFlags(FlagNameMixin):
     COINPH = 2**2  # bit 2 # Event validity
     INVALID_ENERGY = 2**3  # bit 3
     DURINGREPOINT = 2**4  # bit 4 # event during a repointing
+    BACKTOF = 2**5  # bit 5 # Back TOF outlier
 
 
 class ImapHkUltraFlags(FlagNameMixin):
@@ -147,3 +148,15 @@ class GLOWSL1bFlags(FlagNameMixin):
     """Glows L1b flags."""
 
     NONE = CommonFlags.NONE
+    IS_CLOSE_TO_UV_SOURCE = 2**0  # Is the bin close to a UV source.
+    IS_INSIDE_EXCLUDED_REGION = 2**1  # Is the bin inside an excluded sky region.
+    IS_EXCLUDED_BY_INSTR_TEAM = 2**2  # Is the bin excluded by the instrument team.
+    IS_SUSPECTED_TRANSIENT = 2**3  # Is the bin a suspected transient.
+
+
+class ImapHiL1bDeFlags(FlagNameMixin):
+    """IMAP Hi L1B Direct Event CCSDS packet quality flags."""
+
+    NONE = CommonFlags.NONE
+    PACKET_FULL = 2**0  # bit 0, packet contained 664 events (max capacity)
+    BADSPIN = ENAFlags.BADSPIN  # bit 2, packet contained events from an invalid spin

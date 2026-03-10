@@ -104,10 +104,22 @@ positional_uncert_phi:
   LABL_PTR_2: pixel_index_label
 
 bg_rate:
-    DEPEND_1: energy
-    DEPEND_2: pixel_index
-    LABL_PTR_1: energy_label
-    LABL_PTR_2: pixel_index_label
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
+bg_rate_stat_uncert:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
+bg_rate_sys_err:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
 # These data variables will have an extra (energy) dimension
 # only if the energy dimension is present in the L1C data.
 # The default is energy-independent.

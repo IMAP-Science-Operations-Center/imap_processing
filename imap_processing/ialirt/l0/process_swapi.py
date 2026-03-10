@@ -10,9 +10,12 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 
 from imap_processing.ialirt.constants import IalirtSwapiConstants as Consts
-from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.grouping import (
+    _populate_instrument_header_items,
+    find_groups,
+)
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.swapi.l1.swapi_l1 import process_sweep_data
 from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 
@@ -54,6 +57,9 @@ def count_rate(
     speed = speed * 1000  # convert km/s to m/s
     density = density * 1e6  # convert 1/cm**3 to 1/m**3
 
+    # see comment on Consts.temporary_density_factor
+    density = density * Consts.temporary_density_factor
+
     return (
         (density * Consts.eff_area * (beta / np.pi) ** (3 / 2))
         * (np.exp(-beta * (center_speed**2 + speed**2 - 2 * center_speed * speed)))
@@ -71,7 +77,7 @@ def optimize_pseudo_parameters(
     count_rates: np.ndarray,
     count_rate_error: np.ndarray,
     energy_passbands: np.ndarray,
-) -> (dict)[str, list[float]]:
+) -> np.ndarray:
     """
     Find the pseudo speed (u), density (n) and temperature (T) of solar wind particles.
 
@@ -88,47 +94,114 @@ def optimize_pseudo_parameters(
 
     Returns
     -------
-    solution_dict : dict
-        Dictionary containing the optimized speed, density, and temperature values for
-        each sweep included in the input count_rates array.
+    pseudo_params : np.ndarray
+        Pseudo speed, pseudo density, pseudo temperature.
     """
-    solution_dict = {  # type: ignore
-        "pseudo_speed": [],
-        "pseudo_density": [],
-        "pseudo_temperature": [],
-    }
+    # Find the max count rate, and use the 5 points surrounding it
+    max_index = np.argmax(count_rates)
+    initial_speed_guess = np.sqrt(energy_passbands[max_index]) * Consts.speed_coeff
+    initial_param_guess = np.array(
+        [
+            initial_speed_guess,
+            5 * (400 / initial_speed_guess) ** 2,
+            60000 * (initial_speed_guess / 400) ** 2,
+        ]
+    )
 
-    for sweep in np.arange(count_rates.shape[0]):
-        current_sweep_count_rates = count_rates[sweep, :]
-        current_sweep_count_rate_errors = count_rate_error[sweep, :]
-        # Find the max count rate, and use the 5 points surrounding it
-        max_index = np.argmax(current_sweep_count_rates)
-        initial_speed_guess = np.sqrt(energy_passbands[max_index]) * Consts.speed_coeff
-        initial_param_guess = np.array(
-            [
-                initial_speed_guess,
-                5 * (400 / initial_speed_guess) ** 2,
-                60000 * (initial_speed_guess / 400) ** 2,
-            ]
-        )
-        sol = curve_fit(
+    sol = None
+
+    try:
+        five_point_range = range(max_index - 2, max_index + 2 + 1)
+        xdata = energy_passbands.take(five_point_range, mode="clip")
+        ydata = count_rates.take(five_point_range, mode="clip")
+        sigma = count_rate_error.take(five_point_range, mode="clip")
+        curve_fit_output = curve_fit(
             f=count_rate,
-            xdata=energy_passbands.take(
-                range(max_index - 3, max_index + 3), mode="clip"
-            ),
-            ydata=current_sweep_count_rates.take(
-                range(max_index - 3, max_index + 3), mode="clip"
-            ),
-            sigma=current_sweep_count_rate_errors.take(
-                range(max_index - 3, max_index + 3), mode="clip"
-            ),
+            xdata=xdata,
+            ydata=ydata,
+            sigma=sigma,
             p0=initial_param_guess,
         )
-        solution_dict["pseudo_speed"].append(sol[0][0])
-        solution_dict["pseudo_density"].append(sol[0][1])
-        solution_dict["pseudo_temperature"].append(sol[0][2])
 
-    return solution_dict
+        # If covariance matrix is not finite, scipy failed to converge to a
+        # solution and could just be reporting the initial guess
+        covariance_matrix_is_finite = np.all(np.isfinite(curve_fit_output[1]))
+
+        # fit has failed if R^2 < 0.7
+        yfit = count_rate(xdata, *curve_fit_output[0])
+        r2 = 1 - np.sum((ydata - yfit) ** 2) / np.sum((ydata - ydata.mean()) ** 2)
+        r2_is_acceptable = r2 >= 0.7
+
+        if covariance_matrix_is_finite and r2_is_acceptable:
+            sol = curve_fit_output[0]
+    except RuntimeError:
+        logger.error("curve_fit failed")
+        sol = None
+
+    # report speed only if fit fails
+    if sol is None:
+        sol = initial_param_guess.copy()
+        sol[1:] = np.nan
+
+    return sol
+
+
+def geometric_mean(
+    swapi_met_list: list,
+    pseudo_speed_list: list,
+    pseudo_proton_density_list: list,
+    pseudo_proton_temperature_list: list,
+) -> tuple:
+    """
+    Find moving geometric mean of SWAPI data.
+
+    Parameters
+    ----------
+    swapi_met_list : list
+        Mission elapsed time for first time measurement of SWAPI sweep.
+    pseudo_speed_list : list
+        Pseudo speed for SWAPI sweep.
+    pseudo_proton_density_list : list
+        Pseudo proton density for SWAPI sweep.
+    pseudo_proton_temperature_list : list
+        Pseudo proton temperature for SWAPI sweep.
+
+    Returns
+    -------
+    avg_swapi_met : float
+        Average swapi met value.
+    avg_proton_density : float
+        Average proton density value.
+    avg_pseudo_speed : float
+        Average pseudo speed value.
+    avg_proton_temperature : float
+        Average proton temperature value.
+    """
+    met_arr = np.asarray(swapi_met_list)
+
+    # If any of the values are equal to nan then do not include that index.
+    valid = (
+        ~np.isnan(pseudo_speed_list)
+        & ~np.isnan(pseudo_proton_density_list)
+        & ~np.isnan(pseudo_proton_temperature_list)
+    )
+
+    if not np.any(valid):
+        avg_swapi_met = np.mean(met_arr)
+        return avg_swapi_met, np.nan, np.nan, np.nan
+
+    pseudo_speed_arr = np.asarray(pseudo_speed_list)[valid]
+    avg_pseudo_speed = np.exp(np.mean(np.log(pseudo_speed_arr)))
+
+    density_arr = np.asarray(pseudo_proton_density_list)[valid]
+    avg_proton_density = np.exp(np.mean(np.log(density_arr)))
+
+    temperature_arr = np.asarray(pseudo_proton_temperature_list)[valid]
+    avg_proton_temperature = np.exp(np.mean(np.log(temperature_arr)))
+
+    avg_swapi_met = np.mean(met_arr[valid])
+
+    return avg_swapi_met, avg_proton_density, avg_pseudo_speed, avg_proton_temperature
 
 
 def process_swapi_ialirt(
@@ -159,8 +232,17 @@ def process_swapi_ialirt(
 
     # Add required parameters.
     sci_dataset["met"] = met
-    met_values = []
     incomplete_groups = []
+    swapi_data = []
+    pseudo_proton_speed_list = []
+    pseudo_proton_density_list = []
+    pseudo_proton_temperature_list = []
+    swapi_met_list = []
+
+    # Extract energy values from the calibration lookup table file
+    calibration_lut_table["timestamp"] = pd.to_datetime(
+        calibration_lut_table["timestamp"]
+    )
 
     grouped_dataset = find_groups(sci_dataset, (0, 11), "swapi_seq_number", "met")
 
@@ -175,76 +257,112 @@ def process_swapi_ialirt(
         seq_values = grouped_dataset["swapi_seq_number"][
             (grouped_dataset["group"] == group)
         ]
+        met = grouped_dataset["met"][(grouped_dataset["group"] == group).values]
 
-        met_values.append(
-            int(grouped_dataset["met"][(grouped_dataset["group"] == group).values][0])
-        )
+        swapi_met = grouped_dataset["swapi_acq"][
+            (grouped_dataset["group"] == group).values
+        ]
+        mid_measurement = int((swapi_met[0] + swapi_met[-1]) // 2)
 
         # Ensure no duplicates and all values from 0 to 11 are present
-        if not np.array_equal(seq_values.astype(int), np.arange(12)):
+        if not np.array_equal(seq_values.values.astype(int), np.arange(12)):
             incomplete_groups.append(group)
             continue
 
+        grouped_subset = grouped_dataset.sel(epoch=grouped_dataset.group == group)
+
+        raw_coin_count = process_sweep_data(grouped_subset, "swapi_coin_cnt")
+        # I-ALiRT packets have counts compressed by a factor of 16.
+        # Add 8 to avoid having counts truncated to 0 and to avoid
+        # counts being systematically too low
+        raw_coin_count = raw_coin_count * 16 + 8
+        # Subset to only the relevant I-ALiRT energy steps
+        raw_coin_count = raw_coin_count[:, :NUM_IALIRT_ENERGY_STEPS]
+        raw_coin_rate = raw_coin_count / SWAPI_LIVETIME
+        count_rate_error = np.sqrt(raw_coin_count) / SWAPI_LIVETIME
+
+        sweep_id = int(grouped_subset["swapi_version"].values[0])
+        subset_sweep = calibration_lut_table[
+            calibration_lut_table["Sweep #"] == sweep_id
+        ]
+
+        # Find the sweep's energy data for the latest time
+        subset = subset_sweep[
+            (subset_sweep["timestamp"] == subset_sweep["timestamp"].max())
+        ]
+        if subset.empty:
+            raise ValueError(
+                f"No esa unit conversion available for sweep {sweep_id}. "
+                f"Check lookup table?"
+            )
+        else:
+            subset = subset.sort_values(["timestamp", "ESA Step #"])
+            energy_passbands = (
+                subset["Energy"][:NUM_IALIRT_ENERGY_STEPS].to_numpy().astype(float)
+            )
+
+        pseudo_speed, pseudo_density, pseudo_temperature = optimize_pseudo_parameters(
+            raw_coin_rate.squeeze(), count_rate_error.squeeze(), energy_passbands
+        )
+
+        pseudo_proton_speed_list.append(pseudo_speed)
+        pseudo_proton_density_list.append(pseudo_density)
+        pseudo_proton_temperature_list.append(pseudo_temperature)
+        swapi_met_list.append(mid_measurement)
+
+        # Begin averaging after 1 minute has passed (5 sweeps) and make certain that
+        # the data is sequential (~12 s cadence).
+        if len(swapi_met_list) >= 5 and np.all(
+            np.isclose(np.diff(swapi_met_list[-5:]), 12.0, atol=0.05)
+        ):
+            (
+                avg_swapi_met,
+                avg_pseudo_proton_density,
+                avg_pseudo_proton_speed,
+                avg_pseudo_proton_temperature,
+            ) = geometric_mean(
+                swapi_met_list[-5:],
+                pseudo_proton_speed_list[-5:],
+                pseudo_proton_density_list[-5:],
+                pseudo_proton_temperature_list[-5:],
+            )
+
+            avg_pseudo_proton_speed = (
+                Decimal(f"{avg_pseudo_proton_speed:.3f}")
+                if avg_pseudo_proton_speed is not None
+                and np.isfinite(avg_pseudo_proton_speed)
+                else None
+            )
+
+            avg_pseudo_proton_density = (
+                Decimal(f"{avg_pseudo_proton_density:.3f}")
+                if avg_pseudo_proton_density is not None
+                and np.isfinite(avg_pseudo_proton_density)
+                else None
+            )
+
+            avg_pseudo_proton_temperature = (
+                Decimal(f"{avg_pseudo_proton_temperature:.3f}")
+                if avg_pseudo_proton_temperature is not None
+                and np.isfinite(avg_pseudo_proton_temperature)
+                else None
+            )
+
+            swapi_data.append(
+                _populate_instrument_header_items(met)
+                | {
+                    "instrument": "swapi",
+                    "swapi_epoch": int(met_to_ttj2000ns(avg_swapi_met)),
+                    "swapi_pseudo_proton_speed": avg_pseudo_proton_speed,
+                    "swapi_pseudo_proton_density": avg_pseudo_proton_density,
+                    "swapi_pseudo_proton_temperature": avg_pseudo_proton_temperature,
+                }
+            )
     if incomplete_groups:
         logger.info(
             f"The following swapi groups were skipped due to "
             f"missing or duplicate pkt_counter values: "
             f"{incomplete_groups}"
-        )
-
-    raw_coin_count = process_sweep_data(grouped_dataset, "swapi_coin_cnt")
-    # I-ALiRT packets are 16 times less than the regular science packets.
-    raw_coin_count = raw_coin_count * 16
-    # Subset to only the relevant I-ALiRT energy steps
-    raw_coin_count = raw_coin_count[:, :NUM_IALIRT_ENERGY_STEPS]
-    raw_coin_rate = raw_coin_count / SWAPI_LIVETIME
-    count_rate_error = np.sqrt(raw_coin_count) / SWAPI_LIVETIME
-
-    # Extract energy values from the calibration lookup table file
-    calibration_lut_table["timestamp"] = pd.to_datetime(
-        calibration_lut_table["timestamp"], format="%m/%d/%Y %H:%M"
-    )
-    calibration_lut_table["timestamp"] = calibration_lut_table["timestamp"].to_numpy(
-        dtype="datetime64[ns]"
-    )
-
-    # Find the sweep's energy data for the latest time, where sweep_id == 2
-    subset = calibration_lut_table[
-        (calibration_lut_table["timestamp"] == calibration_lut_table["timestamp"].max())
-        & (calibration_lut_table["Sweep #"] == 2)
-    ]
-    if subset.empty:
-        energy_passbands = np.full(NUM_IALIRT_ENERGY_STEPS, np.nan, dtype=np.float64)
-    else:
-        subset = subset.sort_values(["timestamp", "ESA Step #"])
-        energy_passbands = (
-            subset["Energy"][:NUM_IALIRT_ENERGY_STEPS].to_numpy().astype(float)
-        )
-
-    solution = optimize_pseudo_parameters(
-        raw_coin_rate, count_rate_error, energy_passbands
-    )
-
-    swapi_data = []
-
-    for entry in np.arange(0, len(solution["pseudo_speed"])):
-        swapi_data.append(
-            {
-                "apid": 478,
-                "met": int(met_values[entry]),
-                "met_in_utc": met_to_utc(met_values[entry]).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(met_values[entry])),
-                "instrument": "swapi",
-                "swapi_pseudo_proton_speed": Decimal(
-                    f"{solution['pseudo_speed'][entry]:.3f}"
-                ),
-                "swapi_pseudo_proton_density": Decimal(
-                    f"{solution['pseudo_density'][entry]:.3f}"
-                ),
-                "swapi_pseudo_proton_temperature": Decimal(
-                    f"{solution['pseudo_temperature'][entry]:.3f}"
-                ),
-            }
         )
 
     return swapi_data

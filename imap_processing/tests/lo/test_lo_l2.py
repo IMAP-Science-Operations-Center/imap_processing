@@ -133,9 +133,9 @@ def sample_pset_for_species(species_name):
 
     # Add background rates only for h and o
     if species_name in ["h", "o"]:
-        bg_rates = np.full(PSET_SHAPE, 0.1 if species_name == "h" else 0.05)
+        bg_rate = np.full(PSET_SHAPE, 0.1 if species_name == "h" else 0.05)
         bg_uncert = np.full(PSET_SHAPE, 0.01 if species_name == "h" else 0.005)
-        dataset_dict["background_rates"] = (PSET_DIMS, bg_rates)
+        dataset_dict["background_rates"] = (PSET_DIMS, bg_rate)
         dataset_dict["background_rates_stat_uncert"] = (
             PSET_DIMS,
             bg_uncert,
@@ -227,9 +227,9 @@ def minimal_pset_for_species(species_name):
     }
 
     # Add background rates for all species
-    bg_rates = np.full(PSET_SHAPE, 0.2 if species_name == "h" else 0.1)
+    bg_rate = np.full(PSET_SHAPE, 0.2 if species_name == "h" else 0.1)
     bg_uncert = np.full(PSET_SHAPE, 0.02 if species_name == "h" else 0.01)
-    dataset_dict["background_rates"] = (PSET_DIMS, bg_rates)
+    dataset_dict["background_rates"] = (PSET_DIMS, bg_rate)
     dataset_dict["background_rates_stat_uncert"] = (PSET_DIMS, bg_uncert)
 
     dataset = xr.Dataset(
@@ -375,11 +375,11 @@ def sample_dataset_with_background_intermediates():
 
     # Add the intermediate background variables using current naming convention
     bg_rate_exposure_factor = np.ones((1, n_energy)) * 0.2  # 0.2 counts
-    dataset["bg_rates_exposure_factor"] = (("epoch", "energy"), bg_rate_exposure_factor)
+    dataset["bg_rate_exposure_factor"] = (("epoch", "energy"), bg_rate_exposure_factor)
 
     # Background uncertainty squared times exposure time squared
     bg_rate_stat_uncert_exposure_factor2 = np.ones((1, n_energy)) * 0.004  # 0.02^2
-    dataset["bg_rates_stat_uncert_exposure_factor2"] = (
+    dataset["bg_rate_stat_uncert_exposure_factor2"] = (
         ("epoch", "energy"),
         bg_rate_stat_uncert_exposure_factor2,
     )
@@ -851,7 +851,7 @@ class TestNormalizePsetCoordinates:
         # Check that energy coordinate is present
         assert "energy" in result.coords
         expected_energies = (
-            np.array([0.015, 0.029, 0.055, 0.11, 0.209, 0.439, 0.872])
+            np.array([0.01633, 0.03047, 0.05576, 0.1063, 0.2, 0.405, 0.7873])
             if species == "h"
             else np.array([0.016, 0.032, 0.065, 0.135, 0.279, 0.601, 1.206])
         )
@@ -863,8 +863,8 @@ class TestNormalizePsetCoordinates:
         # Check that variables were renamed
         assert "counts" in result.data_vars
         assert "exposure_factor" in result.data_vars
-        assert "bg_rates" in result.data_vars
-        assert "bg_rates_stat_uncert" in result.data_vars
+        assert "bg_rate" in result.data_vars
+        assert "bg_rate_stat_uncert" in result.data_vars
 
         # Check that old variable names are gone
         assert f"{species}_counts" not in result.data_vars
@@ -993,8 +993,8 @@ class TestCalculateEfficiencyCorrectedQuantities:
             {
                 "counts": (("energy",), np.ones(7) * 10),  # 10 counts
                 "exposure_factor": (("energy",), np.ones(7) * 1.0),  # 1 second
-                "bg_rates": (("energy",), np.ones(7) * 0.1),  # 0.1 counts/s
-                "bg_rates_stat_uncert": (("energy",), np.ones(7) * 0.01),  # uncertainty
+                "bg_rate": (("energy",), np.ones(7) * 0.1),  # 0.1 counts/s
+                "bg_rate_stat_uncert": (("energy",), np.ones(7) * 0.01),  # uncertainty
                 "efficiency": (
                     ("energy",),
                     np.array([0.8, 0.85, 0.9, 0.95, 0.88, 0.92, 0.87]),
@@ -1008,8 +1008,8 @@ class TestCalculateEfficiencyCorrectedQuantities:
         # Check that corrected quantities were added
         assert "counts_over_eff" in result.data_vars
         assert "counts_over_eff_squared" in result.data_vars
-        assert "bg_rates_exposure_factor" in result.data_vars
-        assert "bg_rates_stat_uncert_exposure_factor2" in result.data_vars
+        assert "bg_rate_exposure_factor" in result.data_vars
+        assert "bg_rate_stat_uncert_exposure_factor2" in result.data_vars
 
         # Check dimensions
         assert result["counts_over_eff"].dims == pset["counts"].dims
@@ -1025,16 +1025,16 @@ class TestCalculateEfficiencyCorrectedQuantities:
         )
 
         # Check background rate calculations
-        expected_bg_exposure = pset["bg_rates"] * pset["exposure_factor"]
+        expected_bg_exposure = pset["bg_rate"] * pset["exposure_factor"]
         xr.testing.assert_allclose(
-            result["bg_rates_exposure_factor"], expected_bg_exposure
+            result["bg_rate_exposure_factor"], expected_bg_exposure
         )
 
         expected_bg_uncert_exposure = (
-            pset["bg_rates_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
+            pset["bg_rate_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
         )
         xr.testing.assert_allclose(
-            result["bg_rates_stat_uncert_exposure_factor2"], expected_bg_uncert_exposure
+            result["bg_rate_stat_uncert_exposure_factor2"], expected_bg_uncert_exposure
         )
 
 
@@ -1110,11 +1110,10 @@ class TestCalculateIntensities:
         # Check statistical uncertainty calculation
         expected_stat_uncert = np.sqrt(
             sample_dataset_with_geometric_factors["counts_over_eff_squared"]
-            / (
-                sample_dataset_with_geometric_factors["geometric_factor"]
-                * sample_dataset_with_geometric_factors["energy"]
-                * sample_dataset_with_geometric_factors["exposure_factor"]
-            )
+        ) / (
+            sample_dataset_with_geometric_factors["geometric_factor"]
+            * sample_dataset_with_geometric_factors["energy"]
+            * sample_dataset_with_geometric_factors["exposure_factor"]
         )
         xr.testing.assert_allclose(
             result["ena_intensity_stat_uncert"], expected_stat_uncert
@@ -1158,43 +1157,43 @@ class TestCalculateBackgrounds:
         result = calculate_backgrounds(dataset)
 
         # Check that background variables were calculated
-        assert "bg_rates" in result.data_vars
-        assert "bg_rates_stat_uncert" in result.data_vars
-        assert "bg_rates_sys_err" in result.data_vars
+        assert "bg_rate" in result.data_vars
+        assert "bg_rate_stat_uncert" in result.data_vars
+        assert "bg_rate_sys_err" in result.data_vars
 
         # Check background rate calculation
-        # bg_rates_exposure_factor / exposure_factor = 0.2 / 1.0 = 0.2
+        # bg_rate_exposure_factor / exposure_factor = 0.2 / 1.0 = 0.2
         expected_bg_rate = (
-            dataset["bg_rates_exposure_factor"] / dataset["exposure_factor"]
+            dataset["bg_rate_exposure_factor"] / dataset["exposure_factor"]
         )
-        xr.testing.assert_allclose(result["bg_rates"], expected_bg_rate)
+        xr.testing.assert_allclose(result["bg_rate"], expected_bg_rate)
 
         # Check statistical uncertainty calculation
-        # sqrt(bg_rates_stat_uncert_exposure_factor2) / exposure_factor^2
+        # sqrt(bg_rate_stat_uncert_exposure_factor2) / exposure_factor^2
         expected_stat_uncert = np.sqrt(
-            dataset["bg_rates_stat_uncert_exposure_factor2"]
+            dataset["bg_rate_stat_uncert_exposure_factor2"]
             / dataset["exposure_factor"] ** 2
         )
-        xr.testing.assert_allclose(result["bg_rates_stat_uncert"], expected_stat_uncert)
+        xr.testing.assert_allclose(result["bg_rate_stat_uncert"], expected_stat_uncert)
 
         # Check systematic uncertainty calculation
-        # (geometric_factor_stat_uncert / geometric_factor) * bg_rates
+        # (geometric_factor_stat_uncert / geometric_factor) * bg_rate
         expected_sys_err = (
-            result["bg_rates"]
+            result["bg_rate"]
             * dataset["geometric_factor_stat_uncert"]
             / dataset["geometric_factor"]
         )
-        xr.testing.assert_allclose(result["bg_rates_sys_err"], expected_sys_err)
+        xr.testing.assert_allclose(result["bg_rate_sys_err"], expected_sys_err)
 
     def test_calculate_backgrounds_zero_exposure(self):
         """Test background calculations with zero exposure time."""
         dataset = xr.Dataset(
             {
-                "bg_rates_exposure_factor": (
+                "bg_rate_exposure_factor": (
                     ("epoch", "energy"),
                     np.ones((1, 7)) * 0.2,
                 ),
-                "bg_rates_stat_uncert_exposure_factor2": (
+                "bg_rate_stat_uncert_exposure_factor2": (
                     ("epoch", "energy"),
                     np.ones((1, 7)) * 0.004,
                 ),
@@ -1208,12 +1207,12 @@ class TestCalculateBackgrounds:
         result = calculate_backgrounds(dataset)
 
         # Should handle division by zero gracefully
-        assert "bg_rates" in result.data_vars
-        assert "bg_rates_stat_uncert" in result.data_vars
-        assert "bg_rates_sys_err" in result.data_vars
+        assert "bg_rate" in result.data_vars
+        assert "bg_rate_stat_uncert" in result.data_vars
+        assert "bg_rate_sys_err" in result.data_vars
         # Results should be infinite where exposure time is zero
-        assert np.all(np.isinf(result["bg_rates"].values))
-        assert np.all(np.isinf(result["bg_rates_stat_uncert"].values))
+        assert np.all(np.isinf(result["bg_rate"].values))
+        assert np.all(np.isinf(result["bg_rate_stat_uncert"].values))
 
 
 class TestCalculateFluxCorrections:
@@ -1614,13 +1613,13 @@ class TestCalculateSputteringCorrections:
         # Create hydrogen dataset
         h_dataset = xr.Dataset(coords=coords)
         h_intensity_data = np.zeros((1, 7, 4, 3))
-        h_bg_rates_data = np.zeros((1, 7, 4, 3))
+        h_bg_rate_data = np.zeros((1, 7, 4, 3))
 
         # Set specific values for energy levels 4 and 5 only
         h_intensity_data[0, 4, :, :] = 200_000_000  # 200M for energy index 4
         h_intensity_data[0, 5, :, :] = 250_000_000  # 250M for energy index 5
-        h_bg_rates_data[0, 4, :, :] = 20_000_000  # 20M background
-        h_bg_rates_data[0, 5, :, :] = 25_000_000  # 25M background
+        h_bg_rate_data[0, 4, :, :] = 20_000_000  # 20M background
+        h_bg_rate_data[0, 5, :, :] = 25_000_000  # 25M background
 
         h_dataset["ena_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
@@ -1628,7 +1627,7 @@ class TestCalculateSputteringCorrections:
         )
         h_dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
-            h_bg_rates_data,
+            h_bg_rate_data,
         )
         h_dataset["ena_intensity_stat_uncert"] = (
             ("epoch", "energy", "longitude", "latitude"),
@@ -1646,13 +1645,13 @@ class TestCalculateSputteringCorrections:
         # Create oxygen dataset with higher values
         o_dataset = xr.Dataset(coords=coords)
         o_intensity_data = np.zeros((1, 7, 4, 3))
-        o_bg_rates_data = np.zeros((1, 7, 4, 3))
+        o_bg_rate_data = np.zeros((1, 7, 4, 3))
 
         # Set specific values for energy levels 4 and 5 only
         o_intensity_data[0, 4, :, :] = 250_000_000  # 250M for energy index 4
         o_intensity_data[0, 5, :, :] = 300_000_000  # 300M for energy index 5
-        o_bg_rates_data[0, 4, :, :] = 25_000_000  # 25M background
-        o_bg_rates_data[0, 5, :, :] = 30_000_000  # 30M background
+        o_bg_rate_data[0, 4, :, :] = 25_000_000  # 25M background
+        o_bg_rate_data[0, 5, :, :] = 30_000_000  # 30M background
 
         o_dataset["ena_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
@@ -1660,7 +1659,7 @@ class TestCalculateSputteringCorrections:
         )
         o_dataset["bg_intensity"] = (
             ("epoch", "energy", "longitude", "latitude"),
-            o_bg_rates_data,
+            o_bg_rate_data,
         )
         o_dataset["ena_intensity_stat_uncert"] = (
             ("epoch", "energy", "longitude", "latitude"),
@@ -1770,6 +1769,9 @@ class TestPopulateGeometricFactors:
                 assert result["geometric_factor_stat_uncert"].values[i] == (
                     1.5e-5 * (i + 1)
                 )
+        # Ensure that energy_deltas are in units of keV
+        assert np.all(result["energy_delta_plus"].values < 1)
+        assert np.all(result["energy_delta_minus"].values < 1)
 
     def test_populate_geometric_factors_no_gf_species(self):
         """Test population for species without geometric factors."""
@@ -1795,8 +1797,8 @@ class TestCleanupIntermediateVariables:
                 "counts": (("energy",), np.ones(7)),
                 "counts_over_eff": (("energy",), np.ones(7)),
                 "counts_over_eff_squared": (("energy",), np.ones(7)),
-                "bg_rates_exposure_factor": (("energy",), np.ones(7)),
-                "bg_rates_stat_uncert_exposure_factor2": (("energy",), np.ones(7)),
+                "bg_rate_exposure_factor": (("energy",), np.ones(7)),
+                "bg_rate_stat_uncert_exposure_factor2": (("energy",), np.ones(7)),
                 "ena_intensity": (("energy",), np.ones(7)),  # Should be kept
                 "exposure_factor": (("energy",), np.ones(7)),  # Should be kept
             }
@@ -1812,8 +1814,8 @@ class TestCleanupIntermediateVariables:
         # Should remove these intermediate variables
         assert "counts_over_eff" not in result.data_vars
         assert "counts_over_eff_squared" not in result.data_vars
-        assert "bg_rates_exposure_factor" not in result.data_vars
-        assert "bg_rates_stat_uncert_exposure_factor2" not in result.data_vars
+        assert "bg_rate_exposure_factor" not in result.data_vars
+        assert "bg_rate_stat_uncert_exposure_factor2" not in result.data_vars
 
     def test_cleanup_partial_variables(self):
         """Test cleanup when only some intermediate variables exist."""
@@ -2267,8 +2269,8 @@ class TestCalculateAllRatesAndIntensities:
                 "energy": (("energy",), np.ones(7) * 0.1),
                 "geometric_factor_stat_uncert": (("energy",), np.ones(7) * 1e-5),
                 # Background intermediate data
-                "bg_rates_exposure_factor": (("energy",), np.ones(7) * 0.3),
-                "bg_rates_stat_uncert_exposure_factor2": (
+                "bg_rate_exposure_factor": (("energy",), np.ones(7) * 0.3),
+                "bg_rate_stat_uncert_exposure_factor2": (
                     ("energy",),
                     np.ones(7) * 0.009,
                 ),
@@ -2287,15 +2289,15 @@ class TestCalculateAllRatesAndIntensities:
         assert "ena_intensity_sys_err" in result.data_vars
 
         # Check that background rates were calculated
-        assert "bg_rates" in result.data_vars
-        assert "bg_rates_stat_uncert" in result.data_vars
-        assert "bg_rates_sys_err" in result.data_vars
+        assert "bg_rate" in result.data_vars
+        assert "bg_rate_stat_uncert" in result.data_vars
+        assert "bg_rate_sys_err" in result.data_vars
 
         # Check that intermediate variables were cleaned up
         assert "counts_over_eff" not in result.data_vars
         assert "counts_over_eff_squared" not in result.data_vars
-        assert "bg_rates_exposure_factor" not in result.data_vars
-        assert "bg_rates_stat_uncert_exposure_factor2" not in result.data_vars
+        assert "bg_rate_exposure_factor" not in result.data_vars
+        assert "bg_rate_stat_uncert_exposure_factor2" not in result.data_vars
 
     def test_calculate_all_rates_with_cg_correction(
         self, sample_dataset_with_intensities
@@ -2309,14 +2311,15 @@ class TestCalculateAllRatesAndIntensities:
         dataset["exposure_factor"] = (("epoch", "energy"), np.ones((1, 7)) * 1.0)
         dataset["geometric_factor"] = (("energy",), np.ones(7) * 1e-4)
         dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(7) * 1e-5)
-        dataset["bg_rates_exposure_factor"] = (
+        dataset["bg_rate_exposure_factor"] = (
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.3,
         )
-        dataset["bg_rates_stat_uncert_exposure_factor2"] = (
+        dataset["bg_rate_stat_uncert_exposure_factor2"] = (
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.009,
         )
+        dataset["energy_sc_exposure_factor"] = xr.ones_like(dataset["ena_intensity"])
 
         # Mock the interpolation function
         with patch(
@@ -2337,6 +2340,13 @@ class TestCalculateAllRatesAndIntensities:
                 dataset["energy"]
             )  # spacecraft frame energies
             assert call_args[0][2].equals(dataset["energy"])  # helio frame energies
+            # Check that s/c energies get computed in keV units
+            expected_sc_energies = (
+                dataset["energy_sc_exposure_factor"] / dataset["exposure_factor"] / 1e3
+            )
+            xr.testing.assert_allclose(
+                call_args[0][0]["energy_sc"], expected_sc_energies
+            )
             assert "ena_intensity" in call_args[0][3]  # variables to interpolate
             assert "bg_intensity" in call_args[0][3]
 
@@ -2352,14 +2362,15 @@ class TestCalculateAllRatesAndIntensities:
         dataset["exposure_factor"] = (("epoch", "energy"), np.ones((1, 7)) * 1.0)
         dataset["geometric_factor"] = (("energy",), np.ones(7) * 1e-4)
         dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(7) * 1e-5)
-        dataset["bg_rates_exposure_factor"] = (
+        dataset["bg_rate_exposure_factor"] = (
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.3,
         )
-        dataset["bg_rates_stat_uncert_exposure_factor2"] = (
+        dataset["bg_rate_stat_uncert_exposure_factor2"] = (
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.009,
         )
+        dataset["energy_sc_exposure_factor"] = xr.ones_like(dataset["ena_intensity"])
 
         with patch(
             "imap_processing.lo.l2.lo_l2.interpolate_map_flux_to_helio_frame"
@@ -2462,6 +2473,10 @@ class TestIntegration:
         assert isinstance(result, list)
         assert len(result) == 1
         assert isinstance(result[0], xr.Dataset)
+
+        # Make sure that bg_rate variables are present
+        for var in ["bg_rate", "bg_rate_stat_uncert", "bg_rate_sys_err"]:
+            assert var in result[0].data_vars
 
 
 # =============================================================================
@@ -2664,6 +2679,9 @@ class TestProcessSinglePset:
         """Test that CG correction is applied for heliocentric frame."""
         pset = minimal_pset.copy()
         pset = pset.rename({"esa_energy_step": "energy"})
+        # apply_compton_getting_correction gets mocked out so we need to add the
+        # energy_sc variable to the pset
+        pset["energy_sc"] = xr.ones_like(pset["counts"])
 
         with (
             patch(
@@ -2676,22 +2694,34 @@ class TestProcessSinglePset:
                 "imap_processing.lo.l2.lo_l2.calculate_efficiency_corrected_quantities"
             ) as mock_calc_ef,
             patch(
+                "imap_processing.lo.l2.lo_l2.add_spacecraft_velocity_to_pset"
+            ) as mock_add_sv,
+            patch(
                 "imap_processing.lo.l2.lo_l2.apply_compton_getting_correction"
             ) as mock_cg,
+            patch("imap_processing.lo.l2.lo_l2.calculate_ram_mask") as mock_ram_mask,
         ):
             mock_norm.return_value = pset
             mock_add_ef.return_value = pset
             mock_calc_ef.return_value = pset
+            mock_add_sv.return_value = pset
             mock_cg.return_value = pset
+            mock_ram_mask.return_value = pset
 
             # Process with hf frame
             _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=True)
+
+            # Check that add_spacecraft_velocity_to_pset was called
+            mock_add_sv.assert_called_once()
 
             # Check that CG correction was called
             mock_cg.assert_called_once()
             assert mock_cg.call_args[0][0] is pset
             # Energy should be passed as second argument
             assert "energy" in mock_cg.call_args[0][1].dims
+
+            # Check that calculate_ram_mask was called
+            mock_ram_mask.assert_called_once()
 
     def test_process_single_pset_sc_frame(self, minimal_pset, sample_efficiency_data):
         """Test that CG correction is not applied for spacecraft frame."""
@@ -2775,10 +2805,10 @@ class TestProjectPsetToMap:
             "counts",
             "counts_over_eff",
             "counts_over_eff_squared",
-            "bg_rates",
-            "bg_rates_stat_uncert",
-            "bg_rates_exposure_factor",
-            "bg_rates_stat_uncert_exposure_factor2",
+            "bg_rate",
+            "bg_rate_stat_uncert",
+            "bg_rate_exposure_factor",
+            "bg_rate_stat_uncert_exposure_factor2",
         ]
 
         for key in expected_keys:

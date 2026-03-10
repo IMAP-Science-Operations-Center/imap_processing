@@ -32,14 +32,72 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_RATES,
     PacketProperties,
 )
-from imap_processing.utils import convert_to_binary_string
+from imap_processing.utils import combine_segmented_packets, convert_to_binary_string
 
 logger = logging.getLogger(__name__)
+
+
+def extract_initial_items_from_combined_packets(
+    packets: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Extract metadata fields from the beginning of combined event_data packets.
+
+    Extracts bit fields from the first 20 bytes of each event_data array
+    and adds them as new variables to the dataset.
+
+    Parameters
+    ----------
+    packets : xarray.Dataset
+        Dataset containing combined packets with event_data.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset with extracted metadata fields added.
+    """
+    # Initialize arrays for extracted fields
+    n_packets = len(packets.epoch)
+
+    # Preallocate arrays
+    sid = np.zeros(n_packets, dtype=np.uint8)
+    spin = np.zeros(n_packets, dtype=np.uint8)
+    abortflag = np.zeros(n_packets, dtype=np.uint8)
+    startdelay = np.zeros(n_packets, dtype=np.uint16)
+    p00 = np.zeros(n_packets, dtype=np.uint8)
+
+    # Extract the data array outside of the loop
+    binary_data = packets["packetdata"].data
+    # Extract fields from each packet
+    for pkt_idx in range(n_packets):
+        event_data = binary_data[pkt_idx]
+
+        sid[pkt_idx] = event_data[0]
+        spin[pkt_idx] = event_data[1]
+        abortflag[pkt_idx] = (event_data[2] >> 7) & 0x1
+        startdelay[pkt_idx] = int.from_bytes(event_data[2:4], byteorder="big") & 0x7FFF
+        p00[pkt_idx] = event_data[4]
+
+        # Remove the first 5 bytes after extraction
+        binary_data[pkt_idx] = event_data[5:]
+
+    # Add extracted fields to dataset
+    packets["sid"] = xr.DataArray(sid, dims=["epoch"])
+    packets["spin"] = xr.DataArray(spin, dims=["epoch"])
+    packets["abortflag"] = xr.DataArray(abortflag, dims=["epoch"])
+    packets["startdelay"] = xr.DataArray(startdelay, dims=["epoch"])
+    packets["p00"] = xr.DataArray(p00, dims=["epoch"])
+
+    return packets
 
 
 def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Dataset:
     """
     Unpack and decode Ultra TOF packets.
+
+    The TOF packets contain image data that may be split across multiple segmented
+    packets. This function combines the segmented packets and decompresses the image
+    data.
 
     Parameters
     ----------
@@ -54,6 +112,11 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
     dataset : xarray.Dataset
         Dataset containing the decoded and decompressed data.
     """
+    # Combine segmented packets
+    ds = combine_segmented_packets(ds, binary_field_name="packetdata")
+    # Extract the header keys from each of the combined packetdata fields.
+    ds = extract_initial_items_from_combined_packets(ds)
+
     scalar_keys = [key for key in ds.data_vars if key not in ("packetdata", "sid")]
 
     image_planes = packet_props.image_planes

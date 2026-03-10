@@ -3,6 +3,12 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+import numpy as np
+
+from imap_processing import imap_module_directory
+
+SPICE_DATA_SIM_PATH = imap_module_directory / "ultra/l1c/sim_spice_kernels"
+
 
 @dataclass(frozen=True)
 class UltraConstants:
@@ -46,7 +52,6 @@ class UltraConstants:
 
     # Composite energy threshold for SSD events
     COMPOSITE_ENERGY_THRESHOLD: int = 1707
-
     # Geometry-related constants
     Z_DSTOP: float = 2.6 / 2  # Position of stop foil on Z axis [mm]
     Z_DS: float = 46.19 - (2.6 / 2)  # Position of slit on Z axis [mm]
@@ -78,7 +83,7 @@ class UltraConstants:
     CULLING_RPM_MIN = 2.0
     CULLING_RPM_MAX = 6.0
 
-    # Thresholds for culling based on counts (keV).
+    # Energy Bounds for culling (keV).
     CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [
         3.0,
         10.0,
@@ -87,6 +92,7 @@ class UltraConstants:
         300.0,
         1e5,
     ]
+
     PSET_ENERGY_BIN_EDGES: ClassVar[list] = [
         3.0,
         3.4,
@@ -157,3 +163,56 @@ class UltraConstants:
         "proton": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         "non_proton": [20, 21, 22, 23, 24, 25, 26],
     }
+
+    SIM_KERNELS_FOR_HELIO_INDEX_MAPS: ClassVar[list] = [
+        str(SPICE_DATA_SIM_PATH / k)
+        for k in [
+            "imap_sclk_0000.tsc",
+            "naif0012.tls",
+            "imap_spk_demo.bsp",
+            "sim_1yr_imap_attitude.bc",
+            "imap_001.tf",
+            "imap_science_120.tf",
+            "sim_1yr_imap_pointing_frame.bc",
+        ]
+    ]
+
+    FOV_THETA_OFFSET_DEG = 0.0
+    FOV_PHI_LIMIT_DEG = 60.0
+
+    # For spatiotemporal culling
+    EARTH_RADIUS_KM: float = 6378.1
+    N_RE = 60
+    DEFAULT_EARTH_CULLING_RADIUS = EARTH_RADIUS_KM * N_RE
+
+    # L1b extended spin culling parameters
+    LOW_VOLTAGE_CULL_THRESHOLD = 3400.0
+    SPIN_BIN_SIZE = 20
+    # Number of energy bins to use in energy dependent culling
+    N_CULL_EBINS = 8
+    # Bin to start culling at
+    BASE_CULL_EBIN = 0
+    # Maximum energy threshold in keV. When creating the energy ranges for culling,
+    # merge all energy bins above this threshold into one bin.
+    MAX_ENERGY_THRESHOLD = 116.0
+    # Angle threshold in radians for ULTRA 45 degree culling.
+    # This is only needed for ULTRA 45 since Earth may be in the FOV.
+    EARTH_ANGLE_45_THRESHOLD = np.radians(20)
+    # An array of energy thresholds to use for culling. Each one corresponds to
+    # the number of energy bins used.
+    # n_bins=len(PSET_ENERGY_BIN_EDGES)[BASE_CULL_EBIN:] // N_CULL_EBINS
+    # an error will be raised if this does not match n_bins
+    HIGH_ENERGY_CULL_THRESHOLDS = (
+        np.array([4.0, 2.0, 1.25, 0.9, 0.2, 0.2]) * SPIN_BIN_SIZE
+    )
+    # Use the channel defined below to determine which spins are contaminated
+    HIGH_ENERGY_CULL_CHANNEL = 5
+    # For the high energy cull, we want to combine spin bins because an SEP event is
+    # expected to be over a longer time period. Low voltage and statistical culling
+    # will still be done on the original spin bins. The variable below defines the
+    # radius (in number of spin bins) to use when combining for the high energy cull.
+    HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS = 5
+    # Number of iterations to perform for statistical outlier culling.
+    STAT_CULLING_N_ITER = 5
+    # Sigma threshold to use for statistical outlier culling.
+    STAT_CULLING_STD_THRESHOLD = 0.05

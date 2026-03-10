@@ -2,7 +2,7 @@
 """Data classes for MAG L1D processing."""
 
 import logging
-from dataclasses import InitVar, dataclass
+from dataclasses import InitVar, dataclass, field
 
 import numpy as np
 import xarray as xr
@@ -156,6 +156,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
     config: MagL1dConfiguration
     spin_offsets: xr.Dataset = None
     day: InitVar[np.datetime64]
+    data_level: str = field(default="l1d", init=False)
 
     def __post_init__(self, day: np.datetime64) -> None:
         """
@@ -227,7 +228,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         Generate an xarray dataset from the dataclass.
 
         This overrides the parent method to conditionally swap MAGO/MAGI data
-        based on the always_output_mago configuration setting.
+        based on the always_output_mago configuration setting, and to construct
+        the logical_source_id for L1D files.
 
         Parameters
         ----------
@@ -253,7 +255,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             self.epoch = self.magi_epoch  # type: ignore[no-redef]
             self.range = self.magi_range  # type: ignore[no-redef]
 
-            # Call parent generate_dataset method
+            # Call parent generate_dataset method with L1D data level
             dataset = super().generate_dataset(attribute_manager, day)
 
             # Restore original vectors for any further processing
@@ -296,8 +298,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         self.vectors = frame_transform(
             self.epoch_et,
             self.vectors,
-            from_frame=start_frame.value,
-            to_frame=end_frame.value,
+            from_frame=start_frame.spice_frame,
+            to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
 
@@ -309,8 +311,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         self.magi_vectors = frame_transform(
             self.magi_epoch_et,
             self.magi_vectors,
-            from_frame=start_frame.value,
-            to_frame=end_frame.value,
+            from_frame=start_frame.spice_frame,
+            to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
 

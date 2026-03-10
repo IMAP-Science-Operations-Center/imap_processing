@@ -8,6 +8,7 @@ import pickle
 from pathlib import Path
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 import xarray as xr
@@ -18,12 +19,17 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.codice_l1b import convert_to_rates
+from imap_processing.codice.codice_l2 import (
+    compute_geometric_factors,
+    get_efficiency_lut,
+    get_geometric_factor_lut,
+    process_lo_species_intensity,
+)
 from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
-    COD_HI_COUNTER,
     COD_LO_COUNTER,
-    FILLVAL_UINT8,
     concatenate_bytes,
+    convert_to_intensities,
     create_xarray_dataset,
     process_codice,
     process_ialirt_data_streams,
@@ -36,6 +42,27 @@ from imap_processing.tests.codice.conftest import (
 from imap_processing.utils import packet_file_to_datasets
 
 pytestmark = pytest.mark.external_test_data
+
+OLD_IAL_BIT_STRUCTURE = {
+    "SHCOARSE": 32,
+    "PACKET_VERSION": 16,
+    "SPIN_PERIOD": 16,
+    "ACQ_START_SECONDS": 32,
+    "ACQ_START_SUBSECONDS": 20,
+    "SPARE_00": 8,
+    "ST_BIAS_GAIN_MODE": 2,
+    "SW_BIAS_GAIN_MODE": 2,
+    "TABLE_ID": 32,
+    "PLAN_ID": 16,
+    "PLAN_STEP": 4,
+    "VIEW_ID": 4,
+    "RGFO_HALF_SPIN": 6,
+    "NSO_HALF_SPIN": 6,
+    "SPARE_01": 1,
+    "SUSPECT": 1,
+    "COMPRESSION": 3,
+    "BYTE_COUNT": 23,
+}
 
 
 @pytest.fixture(scope="session")
@@ -186,9 +213,12 @@ def make_codice_lo_ialirt_dataset(cod_lo_l1a_test_data, descriptor):
         "k_factor": ("dim0", cod_lo_l1a_test_data["k_factor"].data),
         "voltage_table": ("esa_step", cod_lo_l1a_test_data["voltage_table"].data),
         "data_quality": ("epoch", cod_lo_l1a_test_data["data_quality"].data),
-        "acquisition_time_per_step": (
-            "esa_step",
-            cod_lo_l1a_test_data["acquisition_time_per_step"].data,
+        "acquisition_time_per_esa_step": (
+            (
+                "epoch",
+                "esa_step",
+            ),
+            cod_lo_l1a_test_data["acquisition_time_per_esa_step"].data,
         ),
         "epoch_delta_minus": ("epoch", cod_lo_l1a_test_data["epoch_delta_minus"].data),
         "epoch_delta_plus": ("epoch", cod_lo_l1a_test_data["epoch_delta_plus"].data),
@@ -272,6 +302,48 @@ def cod_hi_l1b_test_data():
     return data
 
 
+@pytest.fixture(scope="session")
+def cod_lo_l2_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / (
+            f"imap_codice_l2_lo-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
+    )
+    # TODO: fix error in cdf file and change to:
+    # data = load_cdf(data_path)
+    cdf_file = cdflib.CDF(data_path)
+
+    return cdf_file
+
+
+@pytest.fixture(scope="session")
+def cod_hi_l2_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_validation"
+        / (
+            f"imap_codice_l2_hi-ialirt_{VALIDATION_FILE_DATE}"
+            f"_{VALIDATION_FILE_VERSION}.cdf"
+        )
+    )
+    # TODO: fix error in cdf file and change to:
+    # data = load_cdf(data_path)
+    cdf_file = cdflib.CDF(data_path)
+
+    return cdf_file
+
+
 @patch("xarray.Dataset.drop_vars", new=lambda self, *args, **kwargs: self)
 @pytest.mark.external_test_data
 def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
@@ -292,7 +364,7 @@ def test_l1b_ialirt_cod_hi(cod_hi_l1a_test_data, cod_hi_l1b_test_data):
 
 
 @pytest.fixture
-def lut_path():
+def l1a_lut_path():
     """Returns the calibration data."""
     lut_path = (
         imap_module_directory
@@ -300,13 +372,50 @@ def lut_path():
         / "codice"
         / "data"
         / "l1a_lut"
-        / "imap_codice_l1a-sci-lut_20251007_v003.json"
+        / "imap_codice_l1a-sci-lut_20251007_v005.json"
     )
 
     return lut_path
 
 
-def test_create_xarray_dataset_basic(lut_path):
+@pytest.fixture
+def l2_lut_path():
+    """Returns the calibration data."""
+    lut_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_lut"
+        / "imap_codice_l2-hi-ialirt-efficiency_20251212_v003.csv"
+    )
+
+    return lut_path
+
+
+@pytest.fixture
+def l2_processing_dependencies():
+    eff_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_lut"
+        / "imap_codice_l2-lo-efficiency_20251212_v003.csv"
+    )
+    gf_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l2_lut"
+        / "imap_codice_l2-lo-gfactor_20251212_v003.csv"
+    )
+
+    return eff_path, gf_path
+
+
+def test_create_xarray_dataset_basic(l1a_lut_path):
     """Test create_xarray_dataset function."""
 
     science_values = ["0000000100100011"]
@@ -318,7 +427,7 @@ def test_create_xarray_dataset_basic(lut_path):
         "SPIN_PERIOD": np.array([24]),
     }
 
-    ds = create_xarray_dataset(science_values, metadata_values, "lo", lut_path)
+    ds = create_xarray_dataset(science_values, metadata_values, "lo")
 
     for key in metadata_values:
         assert key.lower() in ds.variables
@@ -332,8 +441,12 @@ def test_create_xarray_dataset_basic(lut_path):
 
 
 @pytest.mark.external_test_data
+@patch(
+    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
+    OLD_IAL_BIT_STRUCTURE,
+)
 def test_group_and_decompress_ialirt_cod_lo(
-    cod_lo_test_dataset, cod_lo_decom_test_file, lut_path, cod_lo_l1a_test_data
+    cod_lo_test_dataset, cod_lo_decom_test_file, l1a_lut_path, cod_lo_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Lo data can be grouped and decompressed properly."
 
@@ -343,7 +456,7 @@ def test_group_and_decompress_ialirt_cod_lo(
 
     # Verify that we grouped the values properly.
     counter_values = cod_lo_test_dataset["cod_lo_counter"].data
-    valid_values = counter_values[counter_values != FILLVAL_UINT8]
+    valid_values = counter_values[counter_values != 255]
     resets = np.where(valid_values == COD_LO_COUNTER)
 
     count = increment = 0
@@ -397,8 +510,8 @@ def test_group_and_decompress_ialirt_cod_lo(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "lo", lut_path)
-    result = l1a_lo_species(dataset, lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "lo")
+    result = l1a_lo_species(dataset, l1a_lut_path)
 
     expected_species = [
         "heplusplus",
@@ -418,25 +531,30 @@ def test_group_and_decompress_ialirt_cod_lo(
 
 
 @pytest.mark.external_test_data
+@patch(
+    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
+    OLD_IAL_BIT_STRUCTURE,
+)
 def test_group_and_decompress_ialirt_cod_hi(
-    cod_hi_test_dataset, cod_hi_decom_test_file, lut_path, cod_hi_l1a_test_data
+    cod_hi_test_dataset, cod_hi_decom_test_file, l1a_lut_path, cod_hi_l1a_test_data
 ):
     "Test that I-ALiRT CoDICE-Hi data can be grouped and decompressed properly."
 
+    codice_hi_counter = 197
     grouped_cod_hi_data = find_groups(
-        cod_hi_test_dataset, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
+        cod_hi_test_dataset, (0, codice_hi_counter), "cod_hi_counter", "cod_hi_acq"
     )
 
     # Verify that we grouped the values properly.
     counter_values = cod_hi_test_dataset["cod_hi_counter"].data
-    valid_values = counter_values[counter_values != FILLVAL_UINT8]
-    resets = np.where(valid_values == COD_HI_COUNTER)
+    valid_values = counter_values[counter_values != 255]
+    resets = np.where(valid_values == codice_hi_counter)
 
     count = increment = 0
     for reset in resets[0]:
         group = valid_values[increment : reset + 1]
         np.testing.assert_array_equal(
-            group, np.arange(0, COD_HI_COUNTER + 1, dtype=np.uint8)
+            group, np.arange(0, codice_hi_counter + 1, dtype=np.uint8)
         )
         increment = reset + 1
         count = count + 1
@@ -482,8 +600,8 @@ def test_group_and_decompress_ialirt_cod_hi(
 
         np.testing.assert_array_equal(decompressed_values, test_decom_data[i])
 
-    dataset = create_xarray_dataset(science_values, metadata_values, "hi", lut_path)
-    result = l1a_ialirt_hi(dataset, lut_path)
+    dataset = create_xarray_dataset(science_values, metadata_values, "hi")
+    result = l1a_ialirt_hi(dataset, l1a_lut_path)
 
     expected_species = [
         "h",
@@ -501,18 +619,219 @@ def test_group_and_decompress_ialirt_cod_hi(
 
 
 @pytest.mark.external_test_data
-def test_process_codice(codice_test_data, caplog, lut_path):
-    """Ensure that the ``process_codice`` function creates a dataset
+def test_l2_ialirt_cod_hi(cod_hi_l1b_test_data, l2_lut_path, cod_hi_l2_test_data):
+    "Test that I-ALiRT CoDICE-Hi L2 data."
 
-    Here we just need to make sure the function is returning the expected data.
-    CoDICE I-ALiRT data products are being validated separately in the
-    ``codice.test_codice_l[1a|1b|2]`` modules.
-    """
+    # Read efficiency lookup table
+    intensity = convert_to_intensities(cod_hi_l1b_test_data, l2_lut_path, "h")
 
-    with caplog.at_level("WARNING"):
-        cod_lo_data, cod_hi_data = process_codice(codice_test_data, lut_path)
+    # test data
+    test_data = cod_hi_l2_test_data["h"]
 
-    assert isinstance(cod_lo_data, list)
-    assert all(isinstance(item, dict) for item in cod_lo_data)
-    assert isinstance(cod_hi_data, list)
-    assert all(isinstance(item, dict) for item in cod_hi_data)
+    np.testing.assert_allclose(
+        intensity,
+        test_data,
+        atol=1e-6,
+    )
+
+
+@pytest.mark.external_test_data
+def test_l2_ialirt_cod_lo(
+    cod_lo_l1b_test_data, l1a_lut_path, cod_lo_l2_test_data, l2_processing_dependencies
+):
+    """Test process_codice for hi."""
+    eff_path, gf_path = l2_processing_dependencies
+
+    geometric_factor_lookup = get_geometric_factor_lut(None, gf_path)
+    geometric_factors = compute_geometric_factors(
+        cod_lo_l1b_test_data, geometric_factor_lookup
+    )
+
+    efficiency_lookup = get_efficiency_lut(None, eff_path)
+    efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
+
+    # Temporarily store energy_per_charge values from energy_table variable.
+    energy_per_charge_values = cod_lo_l1b_test_data["energy_table"].values
+
+    # L1B validation data is missing esa_step coordinate. Create esa_step coordinate.
+    # Also, all variables in l1b validation data is using energy_table as coordinate.
+    # Update both to match the processing code expectations with rename().
+    cod_lo_l1b_test_data = cod_lo_l1b_test_data.rename({"energy_table": "esa_step"})
+    # Now, create variable in data_vars with name energy_per_charge and values from
+    # energy_table variable.
+    cod_lo_l1b_test_data["energy_per_charge"] = xr.DataArray(
+        energy_per_charge_values, dims=["esa_step"]
+    )
+
+    intensity = process_lo_species_intensity(
+        cod_lo_l1b_test_data,
+        constants.LO_IALIRT_VARIABLE_NAMES,
+        geometric_factors,
+        efficiencies,
+        constants.SOLAR_WIND_POSITIONS,
+    )
+
+    pseudo_density_dict = {}
+
+    for species in constants.LO_IALIRT_VARIABLE_NAMES:
+        pseudo_density = (
+            intensity[species]
+            * np.sqrt(cod_lo_l1b_test_data["energy_per_charge"])
+            * np.sqrt(constants.LO_IALIRT_M_OVER_Q[species])
+        )  # (epoch, esa_step, spin_sector)
+
+        summed_pseudo_density = pseudo_density.sum(dim="esa_step").squeeze(
+            "spin_sector"
+        )  # (epoch,)
+        pseudo_density_dict[species] = summed_pseudo_density.values
+
+    species = constants.LO_IALIRT_VARIABLE_NAMES
+
+    # Denominator.
+    # Note that outside of this test a zero value denominator
+    # will lead to a null value.
+    # The use of zeros here is only to match the test data as
+    # confirmed by the instrument team.
+    o_abundance_ratio = (
+        pseudo_density_dict[species[3]]
+        + pseudo_density_dict[species[4]]
+        + pseudo_density_dict[species[5]]
+    )
+
+    c_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[1]] + pseudo_density_dict[species[2]],
+        o_abundance_ratio,
+        out=np.full(o_abundance_ratio.shape, np.nan),  # fill with nans by default
+        where=o_abundance_ratio != 0,
+    )
+    mg_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[6]],
+        o_abundance_ratio,
+        out=np.full(o_abundance_ratio.shape, np.nan),
+        where=o_abundance_ratio != 0,
+    )
+    fe_over_o_abundance_ratio = np.divide(
+        pseudo_density_dict[species[7]] + pseudo_density_dict[species[8]],
+        o_abundance_ratio,
+        out=np.full(o_abundance_ratio.shape, np.nan),
+        where=o_abundance_ratio != 0,
+    )
+
+    c_plus_6_over_c_plus_5_ratio = np.divide(
+        pseudo_density_dict[species[2]],
+        pseudo_density_dict[species[1]],
+        out=np.full(pseudo_density_dict[species[1]].shape, np.nan),
+        where=o_abundance_ratio != 0,
+    )
+    o_plus_7_over_o_plus_6_ratio = np.divide(
+        pseudo_density_dict[species[4]],
+        pseudo_density_dict[species[3]],
+        out=np.full(pseudo_density_dict[species[1]].shape, np.nan),
+        where=o_abundance_ratio != 0,
+    )
+    fe_low_over_fe_high_ratio = np.divide(
+        pseudo_density_dict[species[7]],
+        pseudo_density_dict[species[8]],
+        out=np.full(pseudo_density_dict[species[1]].shape, np.nan),
+        where=o_abundance_ratio != 0,
+    )
+
+    np.testing.assert_array_equal(
+        c_over_o_abundance_ratio, cod_lo_l2_test_data["c_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        mg_over_o_abundance_ratio, cod_lo_l2_test_data["mg_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        fe_over_o_abundance_ratio, cod_lo_l2_test_data["fe_over_o_abundance_ratio"]
+    )
+    np.testing.assert_array_equal(
+        c_plus_6_over_c_plus_5_ratio,
+        cod_lo_l2_test_data["c_plus_6_over_c_plus_5_ratio"],
+    )
+    np.testing.assert_array_equal(
+        o_plus_7_over_o_plus_6_ratio,
+        cod_lo_l2_test_data["o_plus_7_over_o_plus_6_ratio"],
+    )
+    np.testing.assert_array_equal(
+        fe_low_over_fe_high_ratio, cod_lo_l2_test_data["fe_low_over_fe_high_ratio"]
+    )
+
+
+@pytest.mark.external_test_data
+@patch(
+    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
+    OLD_IAL_BIT_STRUCTURE,
+)
+def test_process_codice_lo(
+    cod_lo_test_dataset,
+    l1a_lut_path,
+    l2_lut_path,
+    cod_lo_l2_test_data,
+    l2_processing_dependencies,
+    furnish_kernels,
+):
+    """Test process_codice for hi."""
+    eff_path, gf_path = l2_processing_dependencies
+
+    n = cod_lo_test_dataset.dims["epoch"]
+    cod_lo_test_dataset = cod_lo_test_dataset.assign(
+        sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
+        sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
+    )
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0036.tsc",
+    ]
+    with furnish_kernels(kernels):
+        cod_lo_data, _ = process_codice(
+            cod_lo_test_dataset, l1a_lut_path, eff_path, "codice_lo", gf_path
+        )
+
+    l2_products = [
+        "codice_lo_c_over_o_abundance",
+        "codice_lo_mg_over_o_abundance",
+        "codice_lo_fe_over_o_abundance",
+        "codice_lo_c_plus_6_over_c_plus_5",
+        "codice_lo_o_plus_7_over_o_plus_6",
+        "codice_lo_fe_low_over_fe_high",
+    ]
+
+    assert len(cod_lo_data) == 9
+
+    for product in l2_products:
+        assert cod_lo_data[0][product] is None
+
+
+@pytest.mark.external_test_data
+@patch("imap_processing.ialirt.l0.process_codice.COD_HI_COUNTER", 197)
+@patch(
+    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
+    OLD_IAL_BIT_STRUCTURE,
+)
+def test_process_codice_hi(
+    cod_hi_test_dataset, l1a_lut_path, l2_lut_path, cod_hi_l2_test_data
+):
+    """Test process_codice for hi."""
+    test_data = cod_hi_l2_test_data["h"]
+
+    n = cod_hi_test_dataset.dims["epoch"]
+    cod_hi_test_dataset = cod_hi_test_dataset.assign(
+        sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
+        sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
+    )
+
+    _, cod_hi_data = process_codice(
+        cod_hi_test_dataset, l1a_lut_path, l2_lut_path, "codice_hi"
+    )
+    samples_per_group = test_data.shape[0] // len(cod_hi_data)
+    grouped_test_data = test_data.reshape(
+        len(cod_hi_data),
+        samples_per_group,
+        *test_data.shape[1:],
+    )
+
+    for i, group in enumerate(cod_hi_data):
+        arr = np.array(group["codice_hi_h"], dtype=float)
+
+        np.testing.assert_allclose(arr, grouped_test_data[i], atol=3e-2, rtol=1e-5)

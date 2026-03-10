@@ -1,9 +1,7 @@
 """Module for GLOWS L1B data products."""
 
 import dataclasses
-import json
 from dataclasses import InitVar, dataclass, field
-from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -11,8 +9,15 @@ from scipy.stats import circmean, circstd
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
+from imap_processing.quality_flags import GLOWSL1bFlags
 from imap_processing.spice import geometry
-from imap_processing.spice.geometry import SpiceBody, SpiceFrame
+from imap_processing.spice.geometry import (
+    SpiceBody,
+    SpiceFrame,
+    frame_transform,
+    get_instrument_mounting_az_el,
+    spherical_to_cartesian,
+)
 from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spin_angle,
@@ -101,22 +106,65 @@ class PipelineSettings:  # numpydoc ignore=PR02
             Dataset containing pipeline settings data variables.
         """
         # Extract active bad-angle flags (default to all True if not present)
+        _angle_flag_names = [
+            "is_close_to_uv_source",
+            "is_inside_excluded_region",
+            "is_excluded_by_instr_team",
+            "is_suspected_transient",
+        ]
         if "active_bad_angle_flags" in pipeline_dataset.data_vars:
             self.active_bad_angle_flags = list(
                 pipeline_dataset["active_bad_angle_flags"].values
             )
+        elif any(
+            f"active_bad_angle_flags_{n}" in pipeline_dataset.data_vars
+            for n in _angle_flag_names
+        ):
+            # Flattened format from convert_json_to_dataset
+            self.active_bad_angle_flags = [
+                bool(pipeline_dataset[f"active_bad_angle_flags_{name}"].values)
+                for name in _angle_flag_names
+            ]
         else:
             # Default: all 4 bad-angle flags are active
             self.active_bad_angle_flags = [True, True, True, True]
 
         # Extract active bad-time flags (default to all True if not present)
+        _time_flag_names = [
+            "is_pps_missing",
+            "is_time_status_missing",
+            "is_phase_missing",
+            "is_spin_period_missing",
+            "is_overexposed",
+            "is_direct_event_non_monotonic",
+            "is_night",
+            "is_hv_test_in_progress",
+            "is_test_pulse_in_progress",
+            "is_memory_error_detected",
+            "is_generated_on_ground",
+            "is_beyond_daily_statistical_error",
+            "is_temperature_std_dev_beyond_threshold",
+            "is_hv_voltage_std_dev_beyond_threshold",
+            "is_spin_period_std_dev_beyond_threshold",
+            "is_pulse_length_std_dev_beyond_threshold",
+            "is_spin_period_difference_beyond_threshold",
+        ]
         if "active_bad_time_flags" in pipeline_dataset.data_vars:
             self.active_bad_time_flags = list(
                 pipeline_dataset["active_bad_time_flags"].values
             )
+        elif any(
+            f"active_bad_time_flags_{n}" in pipeline_dataset.data_vars
+            for n in _time_flag_names
+        ):
+            # Flattened format from convert_json_to_dataset
+            self.active_bad_time_flags = [
+                bool(pipeline_dataset[f"active_bad_time_flags_{name}"].values)
+                for name in _time_flag_names
+            ]
         else:
             # Default: assume all bad-time flags are active
-            self.active_bad_time_flags = [True] * 16  # Typical number of bad-time flags
+            self.active_bad_time_flags = [True] * FLAG_LENGTH
 
         # Extract sunrise/sunset offsets (default to 0.0 if not present)
         self.sunrise_offset = float(pipeline_dataset.get("sunrise_offset", 0.0))
@@ -231,13 +279,15 @@ class AncillaryParameters:
     """
     GLOWS L1B Ancillary Parameters for decoding ancillary histogram data points.
 
-    This class reads from a JSON file input which defines ancillary parameters.
-    It validates to ensure the input file has all the required parameters.
+    This class reads from either a dict (JSON input) or an xarray Dataset (from
+    GlowsAncillaryCombiner) which defines ancillary parameters. It validates to
+    ensure the input has all the required parameters.
 
     Parameters
     ----------
     input_table : dict
-        Dictionary generated from input JSON file.
+        Dictionary generated from input JSON file, or xarray Dataset from
+        GlowsAncillaryCombiner containing conversion table data.
 
     Attributes
     ----------
@@ -258,14 +308,28 @@ class AncillaryParameters:
         "p01", "p02", "p03", "p04"]
     """
 
-    def __init__(self, input_table: dict):
+    def __init__(self, input_table: dict) -> None:
         """
         Generate ancillary parameters from the given input.
 
         Validates parameters and will throw a KeyError if input data is incorrect.
+
+        Parameters
+        ----------
+        input_table : dict
+            Dictionary containing conversion parameters.
         """
-        full_keys = ["min", "max", "n_bits", "p01", "p02", "p03", "p04"]
-        spin_keys = ["min", "max", "n_bits"]
+        full_keys = [
+            "min",
+            "max",
+            "n_bits",
+            "p01",
+            "p02",
+            "p03",
+            "p04",
+            "physical_unit",
+        ]
+        spin_keys = ["min", "max", "n_bits", "physical_unit"]
 
         try:
             self.version = input_table["version"]
@@ -425,6 +489,8 @@ class DirectEventL1B:
         Flag for pulse test in progress, ends up in flags array
     memory_error_detected: InitVar[np.double]
         Flag for memory error detected, ends up in flags array
+    ancillary_parameters: InitVar[AncillaryParameters]
+        The ancillary parameters for decoding DE data
     flags: ndarray
         array of flags for extra information, per histogram. This is assembled from
         L1A variables.
@@ -433,6 +499,8 @@ class DirectEventL1B:
         float. From direct_events.
     direct_event_pulse_lengths: ndarray
         array of pulse lengths [μs] for direct events. From direct_events
+    pkts_file_name
+        Name of the input CCSDS packets file
     """
 
     direct_events: InitVar[np.ndarray]
@@ -460,6 +528,7 @@ class DirectEventL1B:
     hv_test_in_progress: InitVar[np.double]
     pulse_test_in_progress: InitVar[np.double]
     memory_error_detected: InitVar[np.double]
+    ancillary_parameters: InitVar[AncillaryParameters]
     # The following variables are created from the InitVar data
     de_flags: np.ndarray | None = field(init=False, default=None)
     # TODO: First two values of DE are sec/subsec
@@ -483,6 +552,7 @@ class DirectEventL1B:
         hv_test_in_progress: np.double,
         pulse_test_in_progress: np.double,
         memory_error_detected: np.double,
+        ancillary_parameters: AncillaryParameters,
     ) -> None:
         """
         Generate the L1B data for direct events using the inputs from InitVar.
@@ -515,6 +585,8 @@ class DirectEventL1B:
            Flag indicating if a pulse test is in progress.
         memory_error_detected : np.double
             Flag indicating if a memory error is detected.
+        ancillary_parameters : AncillaryParameters
+            The ancillary parameters for decoding DE data.
         """
         self.direct_event_glows_times, self.direct_event_pulse_lengths = (
             self.process_direct_events(direct_events)
@@ -530,22 +602,14 @@ class DirectEventL1B:
             int(self.glows_time_last_pps), glows_ssclk_last_pps
         ).to_seconds()
 
-        with open(
-            Path(__file__).parents[1] / "ancillary" / "l1b_conversion_table_v001.json"
-        ) as f:
-            self.ancillary_parameters = AncillaryParameters(json.loads(f.read()))
-
-        self.filter_temperature = self.ancillary_parameters.decode(
+        # Use passed-in ancillary parameters instead of loading from file
+        self.filter_temperature = ancillary_parameters.decode(
             "filter_temperature", self.filter_temperature
         )
-        self.hv_voltage = self.ancillary_parameters.decode(
-            "hv_voltage", self.hv_voltage
-        )
-        self.spin_period = self.ancillary_parameters.decode(
-            "spin_period", self.spin_period
-        )
+        self.hv_voltage = ancillary_parameters.decode("hv_voltage", self.hv_voltage)
+        self.spin_period = ancillary_parameters.decode("spin_period", self.spin_period)
 
-        self.spin_phase_at_next_pps = self.ancillary_parameters.decode(
+        self.spin_phase_at_next_pps = ancillary_parameters.decode(
             "spin_phase", self.spin_phase_at_next_pps
         )
 
@@ -607,7 +671,6 @@ class HistogramL1B:
     ----------
     histogram
         array of block-accumulated count numbers
-    flight_software_version: str
     seq_count_in_pkts_file: int
     first_spin_id: int
         The start ID
@@ -679,7 +742,6 @@ class HistogramL1B:
     """
 
     histogram: np.ndarray
-    flight_software_version: str
     seq_count_in_pkts_file: int
     first_spin_id: int
     last_spin_id: int
@@ -764,8 +826,10 @@ class HistogramL1B:
 
         # Add SPICE related variables
         self.update_spice_parameters()
-        # Will require some additional inputs
-        self.imap_spin_angle_bin_cntr = np.zeros((3600,))
+        # Calculate the spin angle bin center using actual histogram length from L1A
+        n_bins = len(self.histogram)
+        phi = (np.arange(n_bins, dtype=np.float64) + 0.5) / n_bins
+        self.imap_spin_angle_bin_cntr = phi * 360.0
 
         # TODO: This should probably be an AWS file
         # TODO Pass in AncillaryParameters object instead of reading here.
@@ -799,13 +863,13 @@ class HistogramL1B:
         # get the data for the correct day
         day_exclusions = ancillary_exclusions.limit_by_day(day)
 
+        # Generate ISO datetime string using SPICE functions
+        datetime64_time = met_to_datetime64(self.imap_start_time)
+        self.unique_block_identifier = np.datetime_as_string(datetime64_time, "s")
         # Initialize histogram flag array: [is_close_to_uv_source,
         # is_inside_excluded_region, is_excluded_by_instr_team,
         # is_suspected_transient] x 3600 bins
         self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
-        # Generate ISO datetime string using SPICE functions
-        datetime64_time = met_to_datetime64(self.imap_start_time)
-        self.unique_block_identifier = np.datetime_as_string(datetime64_time, "s")
         self.flags = np.ones((FLAG_LENGTH,), dtype=np.uint8)
 
     def update_spice_parameters(self) -> None:
@@ -915,6 +979,136 @@ class HistogramL1B:
 
         return flags
 
+    def flag_uv_and_excluded(self, exclusions: AncillaryExclusions) -> tuple:
+        """
+        Create boolean mask where True means bin is within radius of UV source.
+
+        Parameters
+        ----------
+        exclusions : AncillaryExclusions
+            Ancillary exclusions data filtered for the current day.
+
+        Returns
+        -------
+        close_to_uv_source : np.ndarray
+            Boolean mask for uv source.
+        inside_excluded_region : np.ndarray
+            Boolean mask for inside excluded region.
+        """
+        # Rotate spin-angle bin centers by the instrument position-angle offset
+        # so azimuth=0 aligns with the instrument pointing direction.
+        azimuth = (
+            self.imap_spin_angle_bin_cntr + self.position_angle_offset_average
+        ) % 360.0
+        # Ephemeris start time of the histogram accumulation.
+        data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
+
+        # Instrument pointing direction in the DPS frame.
+        az_el = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
+        elevation = az_el[1]
+
+        spherical = np.stack(
+            [np.ones_like(azimuth), azimuth, np.full_like(azimuth, elevation)],
+            axis=-1,
+        )  # (nbin, 3)
+
+        # Convert to unit cartesian vectors.
+        look_vecs_dps = spherical_to_cartesian(spherical)  # (nbin, 3)
+
+        # Transform unit cartesian vectors to ECLIPJ2000 frame.
+        look_vecs_ecl = frame_transform(
+            data_start_time_et,
+            look_vecs_dps,
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.ECLIPJ2000,
+            # This is for cases in which a histogram falls in a 2-min ck gap.
+            # DPS CK coverage intentionally doesn't include the
+            # repointing transition period.
+            allow_spice_noframeconnect=True,
+        )
+
+        # UV source vectors.
+        uv_longitude = exclusions.uv_sources[
+            "ecliptic_longitude_deg"
+        ].values  # (n_src,)
+        uv_latitude = exclusions.uv_sources["ecliptic_latitude_deg"].values  # (n_src,)
+        uv_radius = np.deg2rad(
+            exclusions.uv_sources["angular_radius_for_masking"].values
+        )
+
+        uv_spherical = np.stack(
+            [np.ones_like(uv_longitude), uv_longitude, uv_latitude],
+            axis=-1,
+        )  # (n_src, 3): (r, azimuth, elevation) in degrees
+
+        uv_vecs = spherical_to_cartesian(uv_spherical)  # (n_src, 3)
+
+        # Dot product of unit vectors gives cos(separation_angle) for each
+        # histogram bin vs. each UV source -> shape (nbin, n_src).
+        # (nbin, 3) @ (3, n_src) -> (nbin, n_src)
+        # If dot product -> 1 the two vectors point in almost
+        # the same direction and needs mask.
+        # If dot product -> 0 the two directions are perpendicular on the sky.
+        uv_cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
+
+        # Determine if the pixel is too close to any of the source radii.
+        close_to_uv_source = np.any(
+            uv_cos_sep >= np.cos(uv_radius)[None, :], axis=1
+        )  # (nbin,)
+
+        # Excluded region pixel centers.
+        region_longitude = exclusions.excluded_regions[
+            "ecliptic_longitude_deg"
+        ].values  # (n_region,)
+        region_latitude = exclusions.excluded_regions[
+            "ecliptic_latitude_deg"
+        ].values  # (n_region,)
+
+        region_spherical = np.stack(
+            [np.ones_like(region_longitude), region_longitude, region_latitude],
+            axis=-1,
+        )  # (n_region, 3)
+
+        region_vecs = spherical_to_cartesian(region_spherical)  # (n_region, 3)
+
+        # (nbin, 3) @ (3, n_region) -> (nbin, n_region)
+        region_cos_sep = look_vecs_ecl @ region_vecs.T
+
+        # Flag any bin whose pointing direction falls within half a bin width
+        # (0.1° / 2 = 0.05°) of an excluded sky direction.
+        half_bin_rad = np.deg2rad(0.1 / 2)
+
+        inside_excluded_region = np.any(
+            region_cos_sep >= np.cos(half_bin_rad), axis=1
+        )  # (nbin,)
+
+        return close_to_uv_source, inside_excluded_region
+
+    def flag_from_mask_dataset(self, mask_dataset: xr.Dataset) -> np.ndarray:
+        """
+        Look up the per-bin boolean mask for this histogram block.
+
+        Parameters
+        ----------
+        mask_dataset : xr.Dataset
+            Dataset with ``l1b_unique_block_identifier`` and
+            ``histogram_mask_array`` variables indexed by ``time_block``.
+
+        Returns
+        -------
+        mask : np.ndarray
+            Boolean array of shape (n_bins,). True where the bin is flagged.
+        """
+        identifiers = mask_dataset["l1b_unique_block_identifier"].values
+        match = np.where(identifiers == self.unique_block_identifier)[0]
+        if not match.size:
+            return np.zeros(len(self.histogram), dtype=bool)
+        mask_str = mask_dataset["histogram_mask_array"].values[match[0]]
+
+        # Parse the "0"/"1" character string into a boolean array
+        mask = np.array(list(mask_str)) == "1"
+        return mask
+
     def _compute_histogram_flag_array(
         self, exclusions: AncillaryExclusions
     ) -> np.ndarray:
@@ -937,5 +1131,40 @@ class HistogramL1B:
         np.ndarray
             Array of shape (4, 3600) with bad-angle flags for each bin.
         """
-        # TODO: fill out once spice data is available
-        return np.zeros((4, 3600), dtype=np.uint8)
+        histogram_flags = np.full(
+            (4, len(self.histogram)),
+            GLOWSL1bFlags.NONE.value,
+            dtype=np.uint8,
+        )
+
+        close_to_uv_source, inside_excluded_region = self.flag_uv_and_excluded(
+            exclusions
+        )
+
+        # close if within radius of any UV source
+        histogram_flags[0][close_to_uv_source] |= (
+            GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
+        )
+
+        # inside if within half bin width of any excluded region center
+        histogram_flags[1][inside_excluded_region] |= (
+            GLOWSL1bFlags.IS_INSIDE_EXCLUDED_REGION.value
+        )
+
+        # bins excluded by the instrument team for the matching histogram block
+        excluded_by_instr = self.flag_from_mask_dataset(
+            exclusions.exclusions_by_instr_team
+        )
+        histogram_flags[2][excluded_by_instr] |= (
+            GLOWSL1bFlags.IS_EXCLUDED_BY_INSTR_TEAM.value
+        )
+
+        # bins flagged as suspected transients for the matching histogram block
+        suspected_transient = self.flag_from_mask_dataset(
+            exclusions.suspected_transients
+        )
+        histogram_flags[3][suspected_transient] |= (
+            GLOWSL1bFlags.IS_SUSPECTED_TRANSIENT.value
+        )
+
+        return histogram_flags

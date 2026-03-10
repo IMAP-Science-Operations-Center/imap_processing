@@ -4,6 +4,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from numpy._typing import NDArray
 
 from imap_processing.ultra.constants import UltraConstants
@@ -67,12 +68,13 @@ def mask_below_fwhm_scattering_threshold(
 
 
 def calculate_fwhm_spun_scattering(
-    for_indices_by_spin_phase: np.ndarray,
+    for_indices_by_spin_phase: xr.DataArray,
     theta_vals: np.ndarray,
     phi_vals: np.ndarray,
     ancillary_files: dict,
     instrument_id: int,
-) -> tuple[list, NDArray, NDArray, NDArray]:
+    reject_scattering: bool = False,
+) -> tuple[xr.DataArray, NDArray, NDArray, NDArray]:
     """
     Calculate FWHM scattering values for each pixel, energy bin, and spin phase step.
 
@@ -80,26 +82,32 @@ def calculate_fwhm_spun_scattering(
 
     Parameters
     ----------
-    for_indices_by_spin_phase : np.ndarray
+    for_indices_by_spin_phase : xarray.DataArray
         A 2D boolean array where cols are spin phase steps are rows are HEALPix pixels.
         True indicates pixels that are within the Field of Regard (FOR) at that
         spin phase.
     theta_vals : np.ndarray
-        A 2D array of theta values for each HEALPix pixel at each spin phase step.
+        2D or 3D array of theta values. Shape is either (spin_phase_step, npix)
+        or (spin_phase_step, energy_bins, npix) when energy-dependent scattering
+        rejection is used.
     phi_vals : np.ndarray
-         A 2D array of phi values for each HEALPix pixel at each spin phase step.
+        Array of phi values with the same shape as `theta_vals`, giving the
+        corresponding phi for each pixel (and energy, if present).
     ancillary_files : dict
         Dictionary containing ancillary files.
     instrument_id : int,
         Instrument ID, either 45 or 90.
+    reject_scattering : bool
+        Whether to reject pixels based on scattering thresholds.
 
     Returns
     -------
-    pixels_below_scattering : list
-        A Nested list of arrays indicating pixels within the scattering threshold.
-        The outer list indicates spin phase steps, the middle list indicates energy
-        bins, and the inner arrays contain indices indicating pixels that are below
-        the FWHM scattering threshold.
+    valid_spun_pixels : xarray.DataArray
+       Boolean array indicating, for each spin phase step, energy_bin, pixel,
+       the pixel is inside the Field Of Regard (FOR) and whether the pixel is inside the
+       FOR at that spin phase and its computed FWHM at that energy is below the
+       scattering threshold. If reject_scattering is False, this will just reflect
+       the FOR mask (for_indices_by_spin_phase).
     scattering_fwhm_theta : NDArray
         Calculated FWHM scatting values for theta at each energy bin and averaged
         over spin phase.
@@ -109,77 +117,120 @@ def calculate_fwhm_spun_scattering(
     scattering_thresholds_for_energy_mean : NDArray
         Scattering thresholds corresponding to each energy bin.
     """
+    # Check shapes of theta phi, and index arrays
+    index_shape = for_indices_by_spin_phase.shape
+    if theta_vals.shape != index_shape or phi_vals.shape != index_shape:
+        raise ValueError(
+            "Shape mismatch between FOR indices and theta/phi values. "
+            f"FOR indices shape: {index_shape}, "
+            f"theta shape: {theta_vals.shape}, "
+            f"phi shape: {phi_vals.shape}."
+        )
     # Load scattering coefficient lookup table
     scattering_luts = load_scattering_lookup_tables(ancillary_files, instrument_id)
-    pixels_below_scattering = []
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
     # Load scattering thresholds for the energy bin geometric means
     scattering_thresholds_for_energy_mean = get_scattering_thresholds_for_energy(
         energy_bin_geometric_means, ancillary_files
     )
+    n_pix = for_indices_by_spin_phase.sizes["pixel"]
     # Initialize arrays to accumulate FWHM values for averaging
-    fwhm_theta_sum = np.zeros(
-        (len(energy_bin_geometric_means), for_indices_by_spin_phase.shape[0])
-    )
+    fwhm_theta_sum = np.zeros((len(energy_bin_geometric_means), n_pix))
     fwhm_phi_sum = np.zeros_like(fwhm_theta_sum)
     sample_count = np.zeros_like(fwhm_theta_sum)
 
-    steps = for_indices_by_spin_phase.shape[1]
+    steps = for_indices_by_spin_phase.sizes["spin_phase_step"]
     energies = energy_bin_geometric_means[np.newaxis, :]
+    # Initialize DataArray to hold boolean of valid pixels at each spin phase step
+    # If reject_scattering if false, this will just be the FOR mask.
+    spun_dims = ("spin_phase_step", "energy", "pixel")
+    if reject_scattering:
+        valid_pixels = xr.DataArray(
+            np.zeros((steps, len(energy_bin_geometric_means), n_pix), dtype=bool),
+            dims=spun_dims,
+        )
+    elif "energy" not in for_indices_by_spin_phase.sizes:
+        valid_pixels = for_indices_by_spin_phase.expand_dims(
+            {"energy": len(energy_bin_geometric_means)}
+        ).transpose(*spun_dims)
+    else:
+        valid_pixels = for_indices_by_spin_phase
     # The "for_indices_by_spin_phase" lookup table contains the boolean values of each
     # pixel at each spin phase step, indicating whether the pixel is inside the FOR.
     # It starts at Spin-phase = 0, and increments in fine steps (1 ms), spinning the
     # spacecraft in the despun frame. At each iteration, query for the pixels in the
     # FOR, and calculate whether the FWHM value is below the threshold at the energy.
     for i in range(steps):
-        # Calculate spin phase for the current iteration
-        for_inds = for_indices_by_spin_phase[:, i]
+        for_inds = for_indices_by_spin_phase.isel(spin_phase_step=i).values
 
-        # Skip if no pixels in FOR
-        if not np.any(for_inds):
-            logger.info(f"No pixels found in FOR at spin phase step {i}")
-            pixels_below_scattering.append(
-                [
-                    np.array([], dtype=int)
-                    for _ in range(len(energy_bin_geometric_means))
-                ]
+        if for_inds.ndim > 1:
+            # Energy dependent FOR indices
+            for e_ind in range(len(energy_bin_geometric_means)):
+                for_inds_energy = for_inds[e_ind, :]
+
+                # Skip if no pixels in FOR
+                if not np.any(for_inds_energy):
+                    continue
+
+                theta = theta_vals[i, e_ind, for_inds_energy]
+                phi = phi_vals[i, e_ind, for_inds_energy]
+                theta_coeffs, phi_coeffs = get_scattering_coefficients(
+                    theta.data, phi.data, lookup_tables=scattering_luts
+                )
+                # Calculate scattering mask for specified energy
+                energy = energy_bin_geometric_means[e_ind : e_ind + 1][np.newaxis, :]
+                scattering_mask, fwhm_theta, fwhm_phi = (
+                    mask_below_fwhm_scattering_threshold(
+                        theta_coeffs,
+                        phi_coeffs,
+                        energy,
+                        scattering_thresholds=scattering_thresholds_for_energy_mean[
+                            e_ind : e_ind + 1
+                        ],
+                    )
+                )
+                # If rejecting scattering, store the mask
+                if reject_scattering:
+                    valid_pixels[i, e_ind, for_inds_energy] = scattering_mask.flatten()
+
+                # Accumulate FWHM values
+                fwhm_theta_sum[e_ind, for_inds_energy] += fwhm_theta.flatten()
+                fwhm_phi_sum[e_ind, for_inds_energy] += fwhm_phi.flatten()
+                sample_count[e_ind, for_inds_energy] += 1
+        else:
+            # Energy independent FOR indices
+            if not np.any(for_inds):
+                continue
+
+            theta = theta_vals[i, for_inds]
+            phi = phi_vals[i, for_inds]
+            theta_coeffs, phi_coeffs = get_scattering_coefficients(
+                theta, phi, lookup_tables=scattering_luts
             )
-            continue
-        # Using the lookup table, get the indices of the pixels inside the FOR at
-        # the current spin phase step.
-        theta = theta_vals[for_inds, i]
-        phi = phi_vals[for_inds, i]
-        theta_coeffs, phi_coeffs = get_scattering_coefficients(
-            theta, phi, lookup_tables=scattering_luts
-        )
-        # Get a mask for pixels below the FWHM scattering threshold
-        scattering_mask, fwhm_theta, fwhm_phi = mask_below_fwhm_scattering_threshold(
-            theta_coeffs,
-            phi_coeffs,
-            energies,
-            scattering_thresholds=scattering_thresholds_for_energy_mean,
-        )
-        # Extract pixel indices for each energy
-        for_pixel_indices = np.where(for_inds)[0]
-        pixels_below_scattering_for_energy = []
+            scattering_mask, fwhm_theta, fwhm_phi = (
+                mask_below_fwhm_scattering_threshold(
+                    theta_coeffs,
+                    phi_coeffs,
+                    energies,
+                    scattering_thresholds=scattering_thresholds_for_energy_mean,
+                )
+            )
 
-        for energy_idx in range(len(energy_bin_geometric_means)):
-            valid_pixels = scattering_mask[:, energy_idx]
-            pixels_below_scattering_for_energy.append(for_pixel_indices[valid_pixels])
+            if reject_scattering:
+                valid_pixels[i, :, for_inds] = scattering_mask.T
 
-        pixels_below_scattering.append(pixels_below_scattering_for_energy)
-        # Accumulate FWHM values for averaging
-        fwhm_theta_sum[:, for_inds] += fwhm_theta.T
-        fwhm_phi_sum[:, for_inds] += fwhm_phi.T
-        sample_count[:, for_inds] += 1
+            # Accumulate FWHM values
+            fwhm_theta_sum[:, for_inds] += fwhm_theta.T
+            fwhm_phi_sum[:, for_inds] += fwhm_phi.T
+            sample_count[:, for_inds] += 1
 
     fwhm_phi_avg = np.zeros_like(fwhm_phi_sum)
     fwhm_theta_avg = np.zeros_like(fwhm_theta_sum)
     np.divide(fwhm_phi_sum, sample_count, out=fwhm_phi_avg, where=sample_count != 0)
     np.divide(fwhm_theta_sum, sample_count, out=fwhm_theta_avg, where=sample_count != 0)
     return (
-        pixels_below_scattering,
+        valid_pixels,
         fwhm_theta_avg,
         fwhm_phi_avg,
         scattering_thresholds_for_energy_mean,
@@ -188,7 +239,7 @@ def calculate_fwhm_spun_scattering(
 
 def get_spacecraft_pointing_lookup_tables(
     ancillary_files: dict, instrument_id: int
-) -> tuple[NDArray, NDArray, NDArray, NDArray, NDArray]:
+) -> tuple[xr.DataArray, NDArray, NDArray, NDArray, xr.DataArray]:
     """
     Get indices of pixels in the nominal FOR as a function of spin phase.
 
@@ -205,8 +256,8 @@ def get_spacecraft_pointing_lookup_tables(
 
     Returns
     -------
-    for_indices_by_spin_phase : NDArray
-        A 2D boolean array of shape (npix, n_spin_phase_steps).
+    for_indices_by_spin_phase : xarray.DataArray
+        A 2D boolean array of shape (n_spin_phase_steps,npix).
         True indicates pixels that are within the Field of Regard (FOR) at that
         spin phase.
     theta_vals : NDArray
@@ -215,7 +266,7 @@ def get_spacecraft_pointing_lookup_tables(
          A 2D array of phi values for each HEALPix pixel at each spin phase step.
     ra_and_dec : NDArray
         A 2D array of right ascension and declination values for each HEALPix pixel.
-    boundary_scale_factors : NDArray
+    boundary_scale_factors : xarray.DataArray
         A 2D array of boundary scale factors for each HEALPix pixel at each spin phase
         step.
     """
@@ -224,25 +275,37 @@ def get_spacecraft_pointing_lookup_tables(
     index_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-index"
     bsf_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-bsf"
 
-    theta_vals = pd.read_csv(
-        ancillary_files[theta_descriptor], header=None, skiprows=1
-    ).to_numpy(dtype=float)[:, 2:]
-    phi_vals = pd.read_csv(
-        ancillary_files[phi_descriptor], header=None, skiprows=1
-    ).to_numpy(dtype=float)[:, 2:]
-    index_grid = pd.read_csv(
-        ancillary_files[index_descriptor], header=None, skiprows=1
-    ).to_numpy(dtype=float)
-    boundary_scale_factors = pd.read_csv(
-        ancillary_files[bsf_descriptor], header=None, skiprows=1
-    ).to_numpy(dtype=float)[:, 2:]
+    theta_vals = (
+        pd.read_csv(ancillary_files[theta_descriptor], header=None, skiprows=1)
+        .to_numpy(dtype=float)[:, 2:]
+        .T
+    )
+    phi_vals = (
+        pd.read_csv(ancillary_files[phi_descriptor], header=None, skiprows=1)
+        .to_numpy(dtype=float)[:, 2:]
+        .T
+    )
+    index_grid = (
+        pd.read_csv(ancillary_files[index_descriptor], header=None, skiprows=1)
+        .to_numpy(dtype=float)
+        .T
+    )
+    boundary_scale_factors = (
+        pd.read_csv(ancillary_files[bsf_descriptor], header=None, skiprows=1)
+        .to_numpy(dtype=float)[:, 2:]
+        .T
+    )
 
-    ra_and_dec = index_grid[:, :2]  # Shape (npix, 2)
+    ra_and_dec = index_grid[:2, :]  # Shape (npix, 2)
     # This array indicates whether each pixel is in the nominal FOR at each spin phase
     # step (15000 steps for a full rotation with 1 ms resolution).
-    for_indices_by_spin_phase = np.nan_to_num(index_grid[:, 2:], nan=0).astype(
-        bool
-    )  # Shape (npix, 15000)
+    for_indices_by_spin_phase = xr.DataArray(
+        np.nan_to_num(index_grid[2:, :], nan=0).astype(bool),
+        dims=("spin_phase_step", "pixel"),
+    )
+    boundary_scale_factors = xr.DataArray(
+        boundary_scale_factors, dims=("spin_phase_step", "pixel")
+    )
     return (
         for_indices_by_spin_phase,
         theta_vals,
@@ -345,10 +408,6 @@ def build_energy_bins(
     # Create energy bins.
     if energy_bin_edges is None:
         energy_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)
-        logger.info(
-            f"No energy bin file found, using default pointing bin energy"
-            f" edges {energy_bin_edges}"
-        )
 
     energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 

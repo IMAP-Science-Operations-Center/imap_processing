@@ -16,7 +16,7 @@ from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.ena_maps.utils import map_utils, spatial_utils
+from imap_processing.ena_maps.utils import map_utils, naming, spatial_utils
 
 # The coordinate names can vary between L1C and L2 data (e.g. azimuth vs longitude),
 # so we define an enum to handle the coordinate names.
@@ -618,7 +618,7 @@ class LoHiBasePointingSet(PointingSet):
         The values stored in the "hae_longitude" and "hae_latitude" variables
         are used to construct the azimuth and elevation coordinates.
         """
-        logger.info(
+        logger.debug(
             "Updating az/el points based on data in hae_longitude and"
             "hae_latitude variables."
         )
@@ -657,8 +657,8 @@ class HiPointingSet(LoHiBasePointingSet):
     # renamed to match L2 variables
     l1c_to_l2_var_mapping: ClassVar[dict[str, str]] = {
         "exposure_times": "exposure_factor",
-        "background_rates": "bg_rates",
-        "background_rates_uncertainty": "bg_rates_unc",
+        "background_rates": "bg_rate",
+        "background_rates_uncertainty": "bg_rate_sys_err",
     }
 
     def __init__(self, dataset: xr.Dataset | str | Path):
@@ -1421,6 +1421,12 @@ class RectangularSkyMap(AbstractSkyMap):
             {"DELTA_PLUS_VAR": "epoch_delta", "BIN_LOCATION": 0}
         )
 
+        # And CATDESC for principal data
+        md = naming.MapDescriptor.from_string(descriptor)
+        principal_data = md.principal_data_var
+        if principal_data in cdf_ds:
+            cdf_ds[principal_data].attrs["CATDESC"] = md.to_catdesc()
+
         return cdf_ds
 
     def to_properties_dict(self) -> dict:
@@ -1633,13 +1639,6 @@ class HealpixSkyMap(AbstractSkyMap):
             + subpix_spacing / 2
         )
 
-        # We must weight by solid angle, which is not exactly equal for all subpixels
-        # Calculate the solid angle of the full rectangular pixel (sterad)
-        full_rect_pixel_solid_angle = np.deg2rad(rect_pix_spacing_deg) * (
-            np.sin(np.deg2rad(bottom_edge_lat + rect_pix_spacing_deg))
-            - np.sin(np.deg2rad(bottom_edge_lat))
-        )
-
         # Calculate solid angle of each subpix from the rect_subpix_lat_ctrs (sterad)
         all_edges_lat = bottom_edge_lat + np.arange(n_subpix_side + 1) * subpix_spacing
         sine_all_edges_lat = np.sin(np.deg2rad(all_edges_lat))
@@ -1669,14 +1668,22 @@ class HealpixSkyMap(AbstractSkyMap):
         # Get the healpix values at the rectangular subpixel centers
         hp_vals_at_rect_pix_ctrs = value_array.values[..., hp_pix_at_rect_subpix_ctrs]
 
+        valid_pixel_mask = np.isfinite(hp_vals_at_rect_pix_ctrs)
+
         # Weighted mean (weighted by solid angle) of these values over the pixel axis,
         # which is the last axis of this array
+        valid_pixel_weights = np.where(
+            valid_pixel_mask, rect_subpix_solid_angle_by_lat, 0
+        )
         weighted_hp_vals_at_rect_pix_ctrs = (
-            hp_vals_at_rect_pix_ctrs * rect_subpix_solid_angle_by_lat
+            np.where(valid_pixel_mask, hp_vals_at_rect_pix_ctrs, 0)
+            * valid_pixel_weights
         )
-        mean_pixel_value = (
-            weighted_hp_vals_at_rect_pix_ctrs.sum(axis=-1) / full_rect_pixel_solid_angle
-        )
+
+        with np.errstate(invalid="ignore"):
+            mean_pixel_value = weighted_hp_vals_at_rect_pix_ctrs.sum(axis=-1) / np.sum(
+                valid_pixel_weights, axis=-1
+            )
         # Log the mean pixel value and the number of subdivisions for debugging
         logger.debug(
             f"    Mean pixel value at Number of subdivisions: {num_subdivisions}: "

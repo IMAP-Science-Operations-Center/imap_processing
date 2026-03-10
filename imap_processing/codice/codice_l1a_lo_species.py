@@ -8,9 +8,16 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
+from imap_processing.codice.constants import (
+    HALF_SPIN_FILLVAL,
+    LO_IALIRT_VARIABLE_NAMES,
+    LO_NSW_SPECIES_VARIABLE_NAMES,
+    LO_SW_SPECIES_VARIABLE_NAMES,
+)
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
+    CoDICECompression,
     ViewTabInfo,
     calculate_acq_time_per_step,
     get_codice_epoch_time,
@@ -23,7 +30,7 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:  # noqa: PLR0912
     """
     L1A processing code.
 
@@ -63,33 +70,62 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
-
     if view_tab_obj.sensor != 0:
         raise ValueError("Unsupported sensor ID for Lo species processing.")
 
     # ========= Decompress and Reshape Data ===========
     # Lookup SW or NSW species based on APID
     if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"]["sw"][
-            "species_names"
-        ]
+        actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
+            "sw"
+        ]["species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["species"]["sw"][
+                "desired_species_names"
+            ]
+            + LO_SW_SPECIES_VARIABLE_NAMES
+        )
         logical_source_id = "imap_codice_l1a_lo-sw-species"
     elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"]["nsw"][
-            "species_names"
-        ]
+        actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
+            "nsw"
+        ]["species_names"]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["species"]["nsw"][
+                "desired_species_names"
+            ]
+            + LO_NSW_SPECIES_VARIABLE_NAMES
+        )
         logical_source_id = "imap_codice_l1a_lo-nsw-species"
+        # Rename "cnoplus" to "junk" if we are processing NSW angular data. Although
+        # cnoplus is in desired, and actual species name in the LUT, it is referencing
+        # different "cnoplus" data his is to handle the bug in which the spacecraft was
+        # sending data down "off by one" and getting mislabeled. The cnoplus data we
+        # are referencing is actually data that we want to toss out and fill with
+        # fill vals. This only affects data before the LUT was updated
+        # (table_id 3978152295).
+        if table_id <= 3978152295:
+            actual_species_names = [
+                "junk" if name == "cnoplus" else name for name in actual_species_names
+            ]
     elif view_tab_obj.apid == CODICEAPID.COD_LO_IAL:
-        species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
+        actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
             "species_names"
         ]
+        desired_species_names = set(
+            sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
+                "desired_species_names"
+            ]
+            + LO_IALIRT_VARIABLE_NAMES
+        )
         # Note: ialirt does not produce a cdf for l1a so this is arbitrary.
         logical_source_id = "imap_codice_l1a_lo-sw-species"
     else:
         raise ValueError(f"Unknown apid {view_tab_obj.apid} in Lo species processing.")
 
-    compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
@@ -115,11 +151,51 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     #   (num_packets, num_species, esa_steps, *collapsed_shape)
     # where collapsed_shape is usually (1,) for Lo species.
     num_packets = len(binary_data_list)
-    num_species = len(species_names)
+    num_species = len(actual_species_names)
     esa_steps = constants.NUM_ESA_STEPS
     species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
         num_packets, num_species, esa_steps, *collapsed_shape
     )
+
+    # If data size is less than 128, pad with fillval to make it 128
+    half_spin_per_esa_step = sci_lut_data["lo_stepping_tab"]["row_number"].get("data")
+    if len(half_spin_per_esa_step) < constants.NUM_ESA_STEPS:
+        pad_size = constants.NUM_ESA_STEPS - len(half_spin_per_esa_step)
+        half_spin_per_esa_step = np.concatenate(
+            (np.array(half_spin_per_esa_step), np.full(pad_size, HALF_SPIN_FILLVAL))
+        )
+
+    acquisition_time_per_step = calculate_acq_time_per_step(
+        sci_lut_data["lo_stepping_tab"]
+    )
+    # Get acquisition time per esa step
+    # TODO: Handle epoch dependent acquisition time and half spin per esa step
+    #   For now, just tile the same array for all epochs.
+    #   Eventually we may have data from a day where the LUT changed. If this is the
+    #  case, we need to split the data by epoch and assign different acquisition times
+    half_spin_per_esa_step = np.tile(
+        np.asarray(
+            half_spin_per_esa_step,
+        ).astype(np.uint8),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    acquisition_time_per_step = np.tile(
+        np.asarray(acquisition_time_per_step),
+        (len(unpacked_dataset["acq_start_seconds"]), 1),
+    )
+    # For every energy after nso_half_spin, set data to fill values
+    nso_half_spin = unpacked_dataset["nso_half_spin"].values
+    nso_mask = (half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]) | (
+        half_spin_per_esa_step == HALF_SPIN_FILLVAL
+    )
+    species_mask = nso_mask[:, np.newaxis, :, np.newaxis]
+    species_mask = np.repeat(species_mask, num_species, 1)
+    species_data = species_data.astype(np.float64)
+    species_data[species_mask] = np.nan
+    # Set half_spin_per_esa_step to (fillval) where nso_mask is True
+    half_spin_per_esa_step[nso_mask] = HALF_SPIN_FILLVAL
+    # Set acquisition_time_per_step to nan where nso_mask is True
+    acquisition_time_per_step[nso_mask] = np.nan
 
     # ========== Get Voltage Data from LUT ===========
     # Use plan id and plan step to get voltage data's table_number in ESA sweep table.
@@ -168,6 +244,16 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 np.arange(128),
                 dims=("esa_step",),
                 attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
+            ),
+            "half_spin_per_esa_step": xr.DataArray(
+                half_spin_per_esa_step,
+                dims=(
+                    "epoch",
+                    "esa_step",
+                ),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "half_spin_per_esa_step", check_schema=False
+                ),
             ),
             "esa_step_label": xr.DataArray(
                 np.arange(128).astype(str),
@@ -221,13 +307,40 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
-    l1a_dataset["acquisition_time_per_step"] = xr.DataArray(
-        calculate_acq_time_per_step(sci_lut_data["lo_stepping_tab"]),
-        dims=("esa_step",),
+    l1a_dataset["acquisition_time_per_esa_step"] = xr.DataArray(
+        acquisition_time_per_step,
+        dims=("epoch", "esa_step"),
         attrs=cdf_attrs.get_variable_attributes(
-            "acquisition_time_per_step", check_schema=False
+            "acquisition_time_per_esa_step", check_schema=False
         ),
     )
+    # Rename vars
+    unpacked_dataset = unpacked_dataset.rename(
+        {
+            k: v
+            for k, v in [
+                ("rgfo_energy_step", "rgfo_esa_step"),
+                ("nso_energy_step", "nso_esa_step"),
+            ]
+            if k in unpacked_dataset
+        }
+    )
+    # These variables were added to the packet definition after 20260129, so they only
+    # exist in the unpacked dataset if packet_version > 1
+    # If they don't exist, initialize them with fill val arrays since they won't be
+    # used in the NSO/RGFO masking logic but should still exist in l1a for SPDF
+    # compliance/consistency.
+    l1a_additional_vars = [
+        "rgfo_spin_sector",
+        "rgfo_esa_step",
+        "nso_spin_sector",
+        "nso_esa_step",
+    ]
+    for var in l1a_additional_vars:
+        if var not in unpacked_dataset:
+            unpacked_dataset[var] = np.full(
+                unpacked_dataset.sizes["epoch"], fill_value=np.nan
+            )
 
     # Carry over these variables from unpacked data to l1a_dataset
     l1a_carryover_vars = [
@@ -235,6 +348,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         "st_bias_gain_mode",
         "rgfo_half_spin",
         "nso_half_spin",
+        "packet_version",
+        *l1a_additional_vars,
     ]
     # Loop through them since we need to set their attrs too
     for var in l1a_carryover_vars:
@@ -243,18 +358,25 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             dims=("epoch",),
             attrs=cdf_attrs.get_variable_attributes(var),
         )
-
     # Finally, add species data variables and their uncertainties
-    for idx, species in enumerate(species_names):
-        if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS and species in [
-            "heplus",
-            "cnoplus",
-        ]:
-            species_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-attrs")
-            unc_attrs = cdf_attrs.get_variable_attributes("lo-pui-species-unc-attrs")
+    # Loop through the species we want in the final dataset (desired_species_names) and
+    # add them if they exist in the actual species names from the LUT.
+    # This is to handle the bug in which the spacecraft was sending data down "off by
+    # one" and getting mislabeled.
+    for species in desired_species_names:
+        if species not in actual_species_names:
+            logger.warning(
+                f"Desired species {species} not found in actual species names from "
+                f"LUT. This species will be filled with fill values in the final "
+                f"dataset. Actual species names: {actual_species_names}"
+            )
+            species_data_individual = np.full(species_data[:, 0, :, :].shape, np.nan)
         else:
-            species_attrs = cdf_attrs.get_variable_attributes("lo-species-attrs")
-            unc_attrs = cdf_attrs.get_variable_attributes("lo-species-unc-attrs")
+            species_idx = actual_species_names.index(species)
+            species_data_individual = species_data[:, species_idx, :, :]
+
+        species_attrs = cdf_attrs.get_variable_attributes("lo-species-attrs")
+        unc_attrs = cdf_attrs.get_variable_attributes("lo-species-unc-attrs")
 
         direction = (
             "Sunward"
@@ -269,7 +391,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             species=species, direction=direction
         )
         l1a_dataset[species] = xr.DataArray(
-            species_data[:, idx, :, :],
+            species_data_individual,
             dims=("epoch", "esa_step", "spin_sector"),
             attrs=species_attrs,
         )
@@ -285,5 +407,4 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
             dims=("epoch", "esa_step", "spin_sector"),
             attrs=unc_attrs,
         )
-
     return l1a_dataset

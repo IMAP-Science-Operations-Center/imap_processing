@@ -10,7 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
+    CoDICECompression,
     ViewTabInfo,
     apply_replacements_to_attrs,
     get_codice_epoch_time,
@@ -62,20 +62,18 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
     if view_tab_obj.sensor != 1:
         raise ValueError("Unsupported sensor ID for Hi processing.")
 
     # ========= Decompress and Reshape Data ===========
-    if view_tab_obj.apid != CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-        raise ValueError(f"Unknown apid {view_tab_obj.apid} in Hi omni processing.")
-
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["omni"]
     species_names = species_data.keys()
     logical_source_id = "imap_codice_l1a_hi-omni"
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
@@ -241,6 +239,8 @@ def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         species_attrs = apply_replacements_to_attrs(
             species_attrs, {"species": species_name}
         )
+        # Convert to float
+        species_data = species_data.astype(np.float64)
         l1a_dataset[species_name] = xr.DataArray(
             species_data,
             dims=("epoch", f"energy_{species_name}"),

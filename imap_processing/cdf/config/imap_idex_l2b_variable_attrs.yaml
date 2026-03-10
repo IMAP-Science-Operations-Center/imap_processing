@@ -50,8 +50,8 @@ spin_phase:
     VAR_TYPE: support_data
     SCALETYP: linear
     FILLVAL: *int_fillval
-    FORMAT: I4
-    VALIDMIN: 0.0
+    FORMAT: I8
+    VALIDMIN: 0
     VALIDMAX: 360
     LABL_PTR_1: spin_phase_labels
     UNITS: deg
@@ -162,3 +162,37 @@ rate_calculation_quality_flags:
   VAR_TYPE: data
   UNITS: " "
   DICT_KEY: SPASE>Support>SupportQuantity:QualityFlag
+
+on_off_times:
+    CATDESC: Science acquisition on/off event times.
+    FIELDNAM: On/Off Times
+    LABLAXIS: On/Off Times
+    FILLVAL: -9223372036854775808
+    FORMAT: " "
+    VALIDMIN: 315576066184000000
+    VALIDMAX: 3155716869184000000
+    UNITS: ns
+    VAR_TYPE: support_data
+    SCALETYP: linear
+    MONOTON: INCREASE
+    TIME_BASE: J2000
+    TIME_SCALE: Terrestrial Time
+    REFERENCE_POSITION: Rotating Earth Geoid
+    RESOLUTION: ' '
+    CDF_DATA_TYPE: "CDF_TIME_TT2000"
+    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+
+on_off_events:
+  CATDESC: Science acquisition on/off event values (1 = on, 0 = off).
+  FIELDNAM: On/Off Events
+  LABLAXIS: On/Off Events
+  DEPEND_0: on_off_times
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  FILLVAL: 255
+  FORMAT: I1
+  VALIDMIN: 0
+  VALIDMAX: 1
+  UNITS: " "
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+

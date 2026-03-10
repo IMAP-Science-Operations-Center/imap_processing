@@ -1,13 +1,12 @@
-import ast
 import dataclasses
 import json
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.glows import __version__
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1a.glows_l1a_data import (
     DirectEventL1A,
@@ -40,6 +39,45 @@ def test_histogram_list(histogram_test_data, decom_test_data):
     assert sum(histogram_test_data.histogram) == histl0.EVENTS
 
 
+def test_histogram_bin_handling(decom_test_data):
+    """Test histogram bin handling for odd bins."""
+    histl0 = decom_test_data[0][0]
+
+    # Test odd number of bins - extra byte should be removed
+    mock_histl0_odd = mock.MagicMock(spec=histl0)
+    mock_histl0_odd.NBINS = 3599
+    mock_histl0_odd.HISTOGRAM_DATA = list(range(3600))
+    mock_histl0_odd.SWVER = 1
+    mock_histl0_odd.packet_file_name = "test.pkts"
+    mock_histl0_odd.ccsds_header = mock.MagicMock()
+    mock_histl0_odd.ccsds_header.SRC_SEQ_CTR = 0
+    mock_histl0_odd.STARTID = 0
+    mock_histl0_odd.ENDID = 10
+    mock_histl0_odd.SEC = 1000
+    mock_histl0_odd.SUBSEC = 0
+    mock_histl0_odd.OFFSETSEC = 0
+    mock_histl0_odd.OFFSETSUBSEC = 0
+    mock_histl0_odd.GLXSEC = 1000
+    mock_histl0_odd.GLXSUBSEC = 0
+    mock_histl0_odd.GLXOFFSEC = 0
+    mock_histl0_odd.GLXOFFSUBSEC = 0
+    mock_histl0_odd.SPINS = 10
+    mock_histl0_odd.EVENTS = 1000
+    mock_histl0_odd.TEMPAVG = 100
+    mock_histl0_odd.TEMPVAR = 10
+    mock_histl0_odd.HVAVG = 500
+    mock_histl0_odd.HVVAR = 5
+    mock_histl0_odd.SPAVG = 150
+    mock_histl0_odd.SPVAR = 1
+    mock_histl0_odd.ELAVG = 20
+    mock_histl0_odd.ELVAR = 2
+    mock_histl0_odd.FLAGS = 0
+
+    hist_odd = HistogramL1A(mock_histl0_odd)
+    assert len(hist_odd.histogram) == 3599
+    assert hist_odd.number_of_bins_per_histogram == 3599
+
+
 def test_histogram_obs_day(packet_path):
     l1a = glows_l1a(packet_path)
 
@@ -59,7 +97,6 @@ def test_histogram_attributes(histogram_test_data):
 
     expected_block_header = {
         "flight_software_version": 131329,
-        "ground_software_version": __version__,
         "pkts_file_name": "glows_test_packet_20110921_v01.pkts",
         "seq_count_in_pkts_file": 0,
     }
@@ -67,10 +104,6 @@ def test_histogram_attributes(histogram_test_data):
     assert (
         histogram_test_data.flight_software_version
         == expected_block_header["flight_software_version"]
-    )
-    assert (
-        histogram_test_data.ground_software_version
-        == expected_block_header["ground_software_version"]
     )
     assert histogram_test_data.pkts_file_name == expected_block_header["pkts_file_name"]
     assert (
@@ -384,26 +417,25 @@ def test_generate_status_data():
     assert dataclasses.asdict(output) == expected
 
 
+@pytest.mark.external_test_data
 def test_expected_de_results(l1a_test_data):
     _, de_data = l1a_test_data
 
     # Validation data is generated from the code sent over by GLOWS team. Contains the
     # first 20 packets
     validation_data = pd.read_csv(
-        Path(__file__).parent
-        / "validation_data"
-        / "direct_events_validation_data_l1a.csv",
-        converters={"de_data": ast.literal_eval},
+        Path(__file__).parent / "validation_data" / "combined_de_l1a.csv",
+        converters={
+            "de_data": lambda x: [
+                [int(i) for i in n.split(" ") if i != ""] for n in x.split("\n")
+            ]
+        },
     )
-    assert validation_data.index.size == 5703
 
     for index in validation_data.index:
-        de = de_data[validation_data["packet_counter"][index]]
+        de = de_data[index]
 
-        assert (
-            de.l0.ccsds_header.SRC_SEQ_CTR
-            == validation_data["seq_count_in_pkts_file"][index]
-        )
+        assert de.l0.SEC == validation_data["imap_start_time_seconds"][index]
         assert (
             de.status_data.imap_sclk_last_pps
             == validation_data["imap_sclk_last_pps"][index]
@@ -481,26 +513,11 @@ def test_expected_de_results(l1a_test_data):
 
         assert de.l0.LEN == validation_data["number_of_de_packets"][index]
 
-        assert (
-            de.direct_events[
-                validation_data["de_data_counter"][index]
-            ].timestamp.seconds
-            == validation_data["de_data"][index][0]
-        )
-        assert (
-            de.direct_events[
-                validation_data["de_data_counter"][index]
-            ].timestamp.subseconds
-            == validation_data["de_data"][index][1]
-        )
-        assert (
-            de.direct_events[validation_data["de_data_counter"][index]].impulse_length
-            == validation_data["de_data"][index][2]
-        )
-        assert (
-            de.direct_events[validation_data["de_data_counter"][index]].multi_event
-            == validation_data["de_data"][index][3]
-        )
+        de_val = validation_data["de_data"][index]
+        for de_counter, direct_event in enumerate(de.direct_events):
+            assert direct_event.timestamp.seconds == de_val[de_counter][0]
+            assert direct_event.timestamp.subseconds == de_val[de_counter][1]
+            assert direct_event.impulse_length == de_val[de_counter][2]
 
 
 def test_expected_hist_results(l1a_dataset):
@@ -521,10 +538,11 @@ def test_expected_hist_results(l1a_dataset):
     }
 
     # block header and flags are handled differently, so not tested here
+    # "number_of_spins_per_block" is a special case and handled specifically
+    # (validation data is incorrect)
     compare_fields = [
         "first_spin_id",
         "last_spin_id",
-        "number_of_spins_per_block",
         "number_of_bins_per_histogram",
         "histogram",
         "number_of_events",
@@ -559,3 +577,15 @@ def test_expected_hist_results(l1a_dataset):
 
         for field in compare_fields:
             assert np.array_equal(data[field], datapoint[field].data)
+        assert np.array_equal(
+            data["number_of_spins_per_block"] - 1,
+            datapoint["number_of_spins_per_block"].data,
+        )
+
+
+@mock.patch("imap_processing.glows.l1a.glows_l1a.decom_packets")
+def test_glows_l1a_no_packet_data(decom_packets_mock):
+    # Should return empty list when no packet data is present
+    decom_packets_mock.return_value = ([], [])
+    output = glows_l1a("fake/filepath/packets.bin")
+    assert output == []

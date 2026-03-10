@@ -35,7 +35,8 @@ def test_dataset():
             "epoch": (
                 "epoch",
                 met_to_ttj2000ns([1, 2, 3]),
-            )
+            ),
+            "nan_data": ("epoch", np.array([1.0, 2.0, np.nan]), {"FILLVAL": -1.0e31}),
         },
         attrs=swe_attrs.get_global_attributes("imap_swe_l1a_sci")
         | {
@@ -66,6 +67,8 @@ def test_load_cdf(test_dataset):
     for _, data_array in dataset.variables.items():
         for attr in xarray_attrs:
             assert attr not in data_array.attrs
+
+    assert np.isnan(dataset["nan_data"].data[2])
 
 
 def test_load_cdf_extra_kwargs(test_dataset):

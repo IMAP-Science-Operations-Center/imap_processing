@@ -1,11 +1,13 @@
 """Data classes to support GLOWS L1A processing."""
 
+import logging
 import struct
 from dataclasses import InitVar, dataclass, field
 
-from imap_processing.glows import __version__
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -149,8 +151,6 @@ class HistogramL1A:
         List of histogram data values
     flight_software_version: int
         Version of the flight software used to generate the data. Part of block header.
-    ground_software_version: str
-        Version of the ground software used to process the data. Part of block header.
     pkts_file_name: str
         Name of the packet file used to generate the data. Part of block header.
     seq_count_in_pkts_file: int
@@ -198,10 +198,9 @@ class HistogramL1A:
 
     l0: InitVar[HistogramL0]
     histogram: list[int] = field(init=False)
-    # next four are in block header
     flight_software_version: int = field(init=False)
-    ground_software_version: str = field(init=False)
-    pkts_file_name: str = field(init=False)
+    pkts_file_name: str = ""
+    # next four are in block header
     seq_count_in_pkts_file: int = field(init=False)
     first_spin_id: int = field(init=False)
     last_spin_id: int = field(init=False)
@@ -238,7 +237,6 @@ class HistogramL1A:
         self.histogram = list(l0.HISTOGRAM_DATA)
 
         self.flight_software_version = l0.SWVER
-        self.ground_software_version = __version__
         self.pkts_file_name = l0.packet_file_name
         # note: packet number is seq_count (per apid!) field in CCSDS header
         self.seq_count_in_pkts_file = l0.ccsds_header.SRC_SEQ_CTR
@@ -261,8 +259,7 @@ class HistogramL1A:
         self.glows_time_offset = TimeTuple(l0.GLXOFFSEC, l0.GLXOFFSUBSEC)
 
         # In L1a, these are left as unit encoded values.
-        # TODO: This is plus one in validation code, why?
-        self.number_of_spins_per_block = l0.SPINS + 1
+        self.number_of_spins_per_block = l0.SPINS
         self.number_of_bins_per_histogram = l0.NBINS
         self.number_of_events = l0.EVENTS
         self.filter_temperature_average = l0.TEMPAVG
@@ -280,6 +277,16 @@ class HistogramL1A:
             "is_generated_on_ground": False,
         }
 
+        # Remove the extra byte from some packets (if there are an odd number of bins)
+        if self.number_of_bins_per_histogram % 2 == 1:
+            self.histogram = self.histogram[:-1]
+
+        if self.number_of_bins_per_histogram != len(self.histogram):
+            logger.warning(
+                f"Number of bins {self.number_of_bins_per_histogram} does not match "
+                f"processed number of bins {len(self.histogram)}!"
+            )
+
 
 @dataclass
 class DirectEventL1A:
@@ -289,14 +296,6 @@ class DirectEventL1A:
     This includes steps for merging multiple Direct Event packets into one class,
     so this class may span multiple packets. This is determined by the SEQ and LEN,
     by each packet having an incremental SEQ until LEN number of packets.
-
-    Block header information is retrieved from l0:
-    {
-    "flight_software_version" = l0.ccsds_header.VERSION
-    "ground_software_version" = __version__
-    "pkts_file_name" = l0.packet_file_name
-    "seq_count_in_pkts_file" = l0.ccsds_header.SRC_SEQ_CTR
-    }
 
     Parameters
     ----------
@@ -323,11 +322,14 @@ class DirectEventL1A:
     direct_events : list[DirectEvent]
         List of DirectEvent objects, which is created when the final level 0 packet in
         the sequence is added to de_data. Defaults to None.
+    pkts_file_name : str
+        Name of the L0 CCSDS packets file used to generate this dataset
 
     Methods
     -------
     merge_de_packets
         Add another Level0 instance.
+    finish_incomplete_packet
     """
 
     l0: DirectEventL0
@@ -336,12 +338,15 @@ class DirectEventL1A:
     missing_seq: list[int]
     status_data: StatusData = field(init=False)
     direct_events: list[DirectEvent] = field(init=False, default=None)  # type: ignore[arg-type]
+    pkts_file_name: str = " "
 
     def __init__(self, level0: DirectEventL0):
         self.l0 = level0
         self.most_recent_seq = self.l0.SEQ
         self.de_data = bytearray(level0.DE_DATA)
         self.missing_seq = []
+
+        self.pkts_file_name = level0.packet_file_name
 
         if level0.LEN == 1:
             self._process_de_data()
@@ -370,7 +375,8 @@ class DirectEventL1A:
             raise ValueError(
                 f"Sequence for direct event L1A is out of order or "
                 f"incorrect. Attempted to append sequence counter "
-                f"{second_l0.SEQ} after {self.most_recent_seq}."
+                f"{second_l0.SEQ} after {self.most_recent_seq}. "
+                f"New DE time: {second_l0.SEC}, current time: {self.l0.SEC}."
             )
 
         # Track any missing sequence counts
@@ -380,11 +386,10 @@ class DirectEventL1A:
         # Determine if new L0 packet matches existing L0 packet
         match = self.l0.within_same_sequence(second_l0)
 
-        # TODO: Should this raise an error? Log? something else?
         if not match:
             raise ValueError(
                 f"While attempting to merge L0 packet {second_l0} "
-                f"with {self.l0} mismatched values"
+                f"with {self.l0} mismatched values "
                 f"were found. "
             )
 
@@ -392,9 +397,18 @@ class DirectEventL1A:
 
         self.most_recent_seq = second_l0.SEQ
         # if this is the last packet in the sequence, process the DE data
-        # TODO: What if the last packet never arrives?
         if self.l0.LEN == self.most_recent_seq + 1:
             self._process_de_data()
+
+    def finish_incomplete_packet(self) -> None:
+        """
+        Finish an incomplete packet.
+
+        This will fill out the missing sequences and status data, but no DEs. This can
+        only run with at least the first packet.
+        """
+        self.missing_seq += [i for i in range(self.most_recent_seq + 1, self.l0.LEN)]
+        self.status_data = StatusData(self.de_data[:40])
 
     def _process_de_data(self) -> None:
         """
@@ -512,7 +526,7 @@ class DirectEventL1A:
 
         else:
             raise ValueError(
-                f"Incorrect length {len(raw)} for {raw}, expecting 2 or 3"
+                f"Incorrect length {len(raw)} for {raw}, expecting 2 or 3 "
                 f"bit compressed direct event data"
             )
 

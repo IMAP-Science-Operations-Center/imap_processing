@@ -9,7 +9,7 @@ import xarray as xr
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
+    CoDICECompression,
     ViewTabInfo,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
@@ -60,20 +60,14 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         sensor=view_tab_info["sensor"],
         three_d_collapsed=view_tab_info["3d_collapse"],
         collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
     )
 
-    if view_tab_obj.sensor != 1:
-        raise ValueError("Unsupported sensor ID for Hi processing.")
-
-    if view_tab_obj.apid != CODICEAPID.COD_HI_IAL:
-        raise ValueError(
-            f"Unknown apid {view_tab_obj.apid} in I-ALiRT omni processing."
-        )
-
     species_data = sci_lut_data["data_product_hi_tab"]["0"]["ialirt"]
-    species_names = species_data.keys()
+    first_species = next(iter(species_data))
+    centers, energy_minus, energy_plus = get_energy_info(species_data[first_species])
 
-    compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[view_tab_obj.view_id]
+    compression_algorithm = CoDICECompression(view_tab_obj.compression)
 
     binary_data_list = unpacked_dataset["data"].values
     byte_count_list = unpacked_dataset["byte_count"].values
@@ -119,6 +113,14 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
                 repeated_deltas,
                 dims=("epoch",),
             ),
+            f"energy_{first_species}_minus": xr.DataArray(
+                energy_minus,
+                dims=(f"energy_{first_species}",),
+            ),
+            f"energy_{first_species}_plus": xr.DataArray(
+                energy_plus,
+                dims=(f"energy_{first_species}",),
+            ),
         },
     )
 
@@ -137,47 +139,32 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
         *collapse_shape,
     )
 
-    species_chunk_sizes = [
-        len(species_data[species]["min_energy"]) for species in species_names
-    ]
+    # Number of energy chunks.
+    num_energy_chunk = [len(species_data[first_species]["min_energy"])]
 
-    start_idx = 0
+    l1a_dataset = l1a_dataset.assign_coords(
+        {f"energy_{first_species}": (f"energy_{first_species}", np.array(centers))}
+    )
 
-    for index, (species_name, data) in enumerate(species_data.items()):
-        centers, _, _ = get_energy_info(data)
+    chunk_size = num_energy_chunk[0]
 
-        l1a_dataset = l1a_dataset.assign_coords(
-            {
-                f"energy_{species_name}": xr.DataArray(
-                    np.array(centers),
-                    dims=(f"energy_{species_name}",),
-                )
-            }
-        )
+    # This is rearranging data from (epoch, energy, n_spins, spin_sector, inst_az)
+    # -> (epoch, n_spins, energy, spin_sector, inst_az) ->
+    # finally (epoch * n_spins, energy,
+    # spin_sector, inst_az)
+    decompressed_data = decompressed_data.transpose(0, 2, 1, 3, 4).reshape(
+        -1, chunk_size, *collapse_shape
+    )
 
-        chunk_size = species_chunk_sizes[index]
-        end_idx = start_idx + chunk_size * n_spins
+    l1a_dataset[first_species] = xr.DataArray(
+        decompressed_data,
+        dims=("epoch", f"energy_{first_species}", "spin_sector", "inst_az"),
+    )
 
-        species_array = decompressed_data[:, start_idx:end_idx]
-        # This is rearranging data from (epoch, energy, n_spins, spin_sector, inst_az)
-        # -> (epoch, n_spins, energy, spin_sector, inst_az) ->
-        # finally (epoch * n_spins, energy,
-        # spin_sector, inst_az)
-        species_array = species_array.transpose(0, 2, 1, 3, 4).reshape(
-            -1, chunk_size, *collapse_shape
-        )
-
-        l1a_dataset[species_name] = xr.DataArray(
-            species_array,
-            dims=("epoch", f"energy_{species_name}", "spin_sector", "inst_az"),
-        )
-
-        l1a_dataset[f"unc_{species_name}"] = xr.DataArray(
-            np.sqrt(species_array),
-            dims=("epoch", f"energy_{species_name}", "spin_sector", "inst_az"),
-        )
-
-        start_idx = end_idx
+    l1a_dataset[f"unc_{first_species}"] = xr.DataArray(
+        np.sqrt(decompressed_data),
+        dims=("epoch", f"energy_{first_species}", "spin_sector", "inst_az"),
+    )
 
     l1a_dataset["spin_period"] = xr.DataArray(
         np.repeat(unpacked_dataset["spin_period"].values, n_spins)

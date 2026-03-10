@@ -14,7 +14,7 @@ from imap_processing.ultra.l1b.ultra_l1b_annotated import (
 def furnish_kernels(spice_test_data_path, furnish_kernels):
     """List SPICE kernels."""
     required_kernels = [
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "imap_sclk_0000.tsc",
         "sim_1yr_imap_attitude.bc",
         "imap_130.tf",

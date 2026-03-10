@@ -33,7 +33,7 @@ _sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
 # Must be specified separately for purpose of type checking vs comparison
 valid_spice_frame_strings = ["sf", "hf", "hk"]
 _spice_frame_str_types = Literal["sf", "hf", "hk"]
-_coord_frame_str_types = Literal["hae", "hre", "hnu", "gcs"]
+_coord_frame_str_types = Literal["hae", "hre", "hnu", "gcs", "hrc"]
 
 # Mapping of inertial frames to their longer names used in logical source descriptors
 INERTIAL_FRAME_LONG_NAMES = {
@@ -172,6 +172,87 @@ class MapDescriptor:
                 cast(str, self.duration),
             ]
         )
+
+    def to_catdesc(self) -> str:
+        """
+        Convert the MapDescriptor instance to a human-readable CATDESC string.
+
+        Returns
+        -------
+        str
+            Information in descriptor converted to SPDF CATDESC attribute. This
+            is normally used for plot titles and should be under about 80 characters.
+        """
+        instrument = self.instrument.name.split("_")[0]
+        if instrument not in ("IDEX", "GLOWS"):
+            instrument = instrument.title()
+        sensor = " Combined" if self.sensor == "combined" else self.sensor
+        species = "UV" if self.species == "uv" else self.species.title()
+        m = re.match(
+            r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
+        )
+        quantity = {
+            "drt": "Rate",
+            "ena": "Inten",
+            "int": "Inten",
+            "isn": "Rate",
+            "spx": "Spectral",
+        }[m.group(1)]
+        if m.group(1) == "isn":
+            species = "ISN " + species
+        extras = m.group(2)
+        coord = self.coordinate_system.upper()
+        frame = {
+            "hf": "Helio",
+            "hk": "Helio Kin",
+            "sf": "SC",
+        }[self.frame_descriptor]
+        survival = "Surv Corr" if self.survival_corrected == "sp" else "No Surv Corr"
+        spin_phase = self.spin_phase.title()
+        if spin_phase == "Full":
+            spin_phase = "Full Spin"
+        m = re.match(r"^(\d+)deg|nside(\d+)", self.resolution_str)
+        resolution = f"{m.group(1)} deg" if m.group(1) else f"NSide {m.group(2)}"
+        if isinstance(self.duration, int):
+            duration = f"{self.duration} Day"
+        else:
+            m = re.match(r"^(\d+)(.*)$", self.duration)
+            duration = f"{m.group(1)} {m.group(2).title()}"
+            if duration.endswith("Mo"):
+                duration += "n"
+        catdesc = (
+            f"IMAP {instrument}{sensor} {species} {quantity}, {coord} "
+            f"{frame} Frame, {survival}, {spin_phase}, {resolution}, {duration}"
+        )
+        possible_extras = [
+            ("nbs", "No sputter/bootstrap"),
+            ("nbkgnd", "No bkgnd sub"),
+        ]
+        for extra, long_description in possible_extras:
+            if extras.startswith(extra):
+                catdesc += f", {long_description}"
+                break
+        return catdesc
+
+    @property
+    def principal_data_var(self) -> str:
+        """
+        The name of the variable containing the principal data for the map.
+
+        Returns
+        -------
+        principal_data_var : str
+            CDF (dataset) variable name expected to contain the principal data.
+        """
+        if self.principal_data.startswith("isnnbkgnd"):
+            return "isn_rate"
+        return {
+            "drt": "dust_rate",
+            "ena": "ena_intensity",
+            "int": "glows_rate",
+            "isn": "isn_rate_bg_subtracted",
+            "spx": "ena_spectral_index",
+        }[self.principal_data[:3]]
 
     # Methods for parsing and building parts of the map descriptor string
     @staticmethod
@@ -333,18 +414,13 @@ class MapDescriptor:
         NotImplementedError
             If the frame string is not recognized.
         """
-        if frame_str == "hae":
-            return SpiceFrame.IMAP_HAE
-        elif frame_str == "hre":
-            return SpiceFrame.IMAP_HRE
-        elif frame_str == "hnu":
-            return SpiceFrame.IMAP_HNU
-        elif frame_str == "gcs":
-            return SpiceFrame.IMAP_GCS
-        else:
-            raise NotImplementedError(
-                f"Coordinate frame {frame_str} is not yet implemented."
-            )
+        try:
+            return SpiceFrame[f"IMAP_{frame_str.upper()}"]
+        except KeyError as err:
+            raise KeyError(
+                f"Coordinate frame {frame_str} which translates to "
+                f"SPICE frame IMAP_{frame_str.upper()} is not recognized."
+            ) from err
 
     def to_empty_map(
         self,

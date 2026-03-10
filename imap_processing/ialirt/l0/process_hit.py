@@ -1,11 +1,15 @@
 """Functions to support HIT processing."""
 
 import logging
+from decimal import Decimal
 
 import numpy as np
 import xarray as xr
 
-from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.grouping import (
+    _populate_instrument_header_items,
+    find_groups,
+)
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
@@ -142,6 +146,18 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     unique_groups = np.unique(grouped_data["group"])
 
     for group in unique_groups:
+        status_values = grouped_data["hit_status"][
+            (grouped_data["group"] == group).values
+        ]
+
+        if np.any(status_values == 0):
+            logger.info(
+                f"Off-nominal value detected at "
+                f"missing or duplicate pkt_counter values: "
+                f"{group}"
+            )
+            continue
+
         # Subcom values for the group should be 0-59 with no duplicates.
         subcom_values = grouped_data["hit_subcom"][
             (grouped_data["group"] == group).values
@@ -150,6 +166,18 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         # Ensure no duplicates and all values from 0 to 59 are present
         if not np.array_equal(subcom_values, np.arange(60)):
             incomplete_groups.append(group)
+            continue
+
+        hit_met = int(
+            grouped_data["hit_met"][(grouped_data["group"] == group).values].values[0]
+        )
+
+        status_values = grouped_data["hit_status"][
+            (grouped_data["group"] == group).values
+        ]
+
+        if np.any(status_values == 0):
+            logger.info(f"Off-nominal value detected at {met_to_utc(hit_met)}")
             continue
 
         fast_rate_1 = grouped_data["hit_fast_rate_1"][
@@ -161,28 +189,35 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         slow_rate = grouped_data["hit_slow_rate"][
             (grouped_data["group"] == group).values
         ]
-        met = int(grouped_data["met"][(grouped_data["group"] == group).values][0])
+        met = grouped_data["met"][(grouped_data["group"] == group).values]
 
         l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
 
         hit_data.append(
-            {
-                "apid": 478,
-                "met": int(met),
-                "met_in_utc": met_to_utc(met).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(met)),
+            _populate_instrument_header_items(met)
+            | {
                 "instrument": "hit",
-                "hit_e_a_side_low_en": int(l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"]),
-                "hit_e_a_side_med_en": int(l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"]),
-                "hit_e_a_side_high_en": int(l1["IALRT_RATE_7"]),
-                "hit_e_b_side_low_en": int(l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"]),
-                "hit_e_b_side_med_en": int(l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"]),
-                "hit_e_b_side_high_en": int(l1["IALRT_RATE_17"]),
-                "hit_h_omni_med_en": int(l1["H_12_15"] + l1["H_15_70"]),
-                "hit_h_a_side_high_en": int(l1["IALRT_RATE_8"]),
-                "hit_h_b_side_high_en": int(l1["IALRT_RATE_18"]),
-                "hit_he_omni_low_en": int(l1["HE4_06_08"]),
-                "hit_he_omni_high_en": int(l1["HE4_15_70"]),
+                "hit_epoch": int(met_to_ttj2000ns(hit_met)),
+                "hit_e_a_side_low_en": Decimal(
+                    f"{l1['IALRT_RATE_1'] + l1['IALRT_RATE_2']:.3f}"
+                ),
+                "hit_e_a_side_med_en": Decimal(
+                    f"{l1['IALRT_RATE_5'] + l1['IALRT_RATE_6']:.3f}"
+                ),
+                "hit_e_a_side_high_en": Decimal(f"{l1['IALRT_RATE_7']:.3f}"),
+                "hit_e_b_side_low_en": Decimal(
+                    f"{l1['IALRT_RATE_11'] + l1['IALRT_RATE_12']:.3f}"
+                ),
+                "hit_e_b_side_med_en": Decimal(
+                    f"{l1['IALRT_RATE_15'] + l1['IALRT_RATE_16']:.3f}"
+                ),
+                "hit_e_b_side_high_en": Decimal(f"{l1['IALRT_RATE_17']:.3f}"),
+                "hit_h_omni_low_en": Decimal(f"{l1['H_06_08']:.3f}"),
+                "hit_h_omni_med_en": Decimal(f"{l1['H_12_15']:.3f}"),
+                "hit_h_a_side_high_en": Decimal(f"{l1['IALRT_RATE_8']:.3f}"),
+                "hit_h_b_side_high_en": Decimal(f"{l1['IALRT_RATE_18']:.3f}"),
+                "hit_he_omni_low_en": Decimal(f"{l1['HE4_06_08']:.3f}"),
+                "hit_he_omni_high_en": Decimal(f"{l1['HE4_15_70']:.3f}"),
             }
         )
 

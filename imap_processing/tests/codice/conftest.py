@@ -9,7 +9,7 @@ TEST_DATA_L0_PATH = TEST_DATA_PATH / "l0_data"
 TEST_L0_FILE = TEST_DATA_L0_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
 VALIDATION_FILE_DATE = "20250814"
-VALIDATION_FILE_VERSION = "v009"
+VALIDATION_FILE_VERSION = "v015"
 
 
 @pytest.fixture(scope="session")
@@ -145,6 +145,33 @@ def codice_lut_path():
                 / "l1a_input"
                 / "imap_codice_l0_hi-counters-aggregated_20250814_v001.pkts"
             ]
+        elif descriptor == "lo-counters-singles" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-counters-singles_20250814_v001.pkts"
+            ]
+        elif descriptor == "lo-counters-aggregated" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_lo-counters-aggregated_20250814_v001.pkts"
+            ]
+        elif descriptor == "hskp" and data_type == "l0":
+            return [
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_input"
+                / "imap_codice_l0_hskp_20250814_v001.pkts"
+            ]
         if descriptor == "lo-nsw-species" and data_type == "l1b":
             return [
                 imap_module_directory
@@ -209,26 +236,58 @@ def codice_lut_path():
             return [
                 TEST_DATA_PATH
                 / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v003.json"
+                / "imap_codice_l1a-sci-lut_20251007_v005.json"
+            ]
+        elif descriptor == "l1a-sci-lut-jan":
+            return [
+                TEST_DATA_PATH
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20260129_v002.json"
             ]
         elif descriptor == "l2-hi-omni-efficiency":
             return [
                 TEST_DATA_PATH
-                / "l2_lut/imap_codice_l2-hi-omni-efficiency_20251008_v001.csv"
+                / "l2_lut/imap_codice_l2-hi-omni-efficiency_20251212_v003.csv"
             ]
         elif descriptor == "l2-hi-sectored-efficiency":
             return [
                 TEST_DATA_PATH
-                / "l2_lut/imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
+                / "l2_lut/imap_codice_l2-hi-sectored-efficiency_20251212_v003.csv"
             ]
         elif descriptor == "l2-lo-efficiency":
             return [
-                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251008_v001.csv"
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251212_v003.csv"
             ]
         elif descriptor == "l2-lo-gfactor":
             return [
-                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251008_v001.csv"
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251212_v003.csv"
             ]
+        elif descriptor == "l2-lo-onboard-mpq-cal":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-lo-onboard-mpq-cal_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-lo-onboard-energy-bins":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-lo-onboard-energy-bins_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-lo-onboard-energy-table":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-lo-onboard-energy-table_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-hi-energy-table":
+            return [
+                TEST_DATA_PATH
+                / "l2_lut/imap_codice_l2-hi-energy-table_20250101_v001.csv"
+            ]
+        elif descriptor == "l2-hi-tof-table":
+            return [
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-hi-tof-table_20250101_v001.csv"
+            ]
+        elif descriptor == "fsw-changes":
+            return [TEST_DATA_PATH / "l1a_input/imap_codice_l0_raw_20260130_v001.pkts"]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")
 

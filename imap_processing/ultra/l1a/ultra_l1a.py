@@ -123,6 +123,7 @@ def ultra_l1a(  # noqa: PLR0912
 
     for i, datasets_by_apid in enumerate(decommutated_packet_datasets):
         for apid in apids:
+            logger.info(f"Processing APID: {apid}")
             if apid in ULTRA_AUX.apid:
                 decom_ultra_dataset = datasets_by_apid[apid]
                 gattr_key = ULTRA_AUX.logical_source[ULTRA_AUX.apid.index(apid)]

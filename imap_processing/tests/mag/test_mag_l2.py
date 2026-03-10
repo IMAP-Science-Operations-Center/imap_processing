@@ -18,6 +18,66 @@ from imap_processing.spice.time import (
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
+@pytest.mark.parametrize("data_mode", ["norm", "burst"])
+def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
+    """Test that L2 datasets have correct attributes based on frame and mode."""
+    calibration_dataset = mag_test_l2_data[0]
+    offset_dataset = mag_test_l2_data[1]
+
+    # Create dataset for the appropriate mode
+    test_dataset = norm_dataset.copy()
+    test_dataset.attrs["Logical_source"] = f"imap_mag_l1c_{data_mode}-mago"
+
+    # Convert data_mode string to DataMode enum
+    mode = DataMode.NORM if data_mode == "norm" else DataMode.BURST
+
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        side_effect=lambda *args, **kwargs: args[1],
+    ):
+        l2_datasets = mag_l2(
+            calibration_dataset,
+            offset_dataset,
+            test_dataset,
+            np.datetime64("2025-10-17"),
+            mode=mode,
+        )
+
+    # Verify we have the expected number of datasets
+    # L2 produces 5 frames: SRF, GSE, GSM, RTN, DSRF
+    assert len(l2_datasets) == 5, (
+        f"Expected 5 {data_mode} datasets, got {len(l2_datasets)}"
+    )
+
+    for dataset in l2_datasets:
+        assert "Logical_source" in dataset.attrs
+        assert "Data_type" in dataset.attrs
+        assert dataset.attrs["Logical_source"].startswith(f"imap_mag_l2_{data_mode}-")
+
+        # Verify that data_level is correctly set to "l2" in logical source
+        logical_source_parts = dataset.attrs["Logical_source"].split("_")
+        assert logical_source_parts[2] == "l2", (
+            f"Expected data_level 'l2' in Logical_source, "
+            f"got '{logical_source_parts[2]}'"
+        )
+
+        # Extract frame from logical source
+        frame = dataset.attrs["Logical_source"].split("-")[-1].upper()
+
+        vectors_attrs = dataset[f"b_{frame.lower()}"].attrs
+        assert "DICT_KEY" in vectors_attrs
+
+        assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
+
+        assert "magnitude" in dataset.data_vars
+        assert "range" in dataset.data_vars
+        assert dataset["magnitude"].attrs["UNITS"] == "nT"
+        assert dataset["range"].attrs["DICT_KEY"] == (
+            "SPASE>Support>SupportQuantity:InstrumentMode"
+        )
+        assert vectors_attrs["CDF_DATA_TYPE"] == "CDF_FLOAT"
+
+
 def test_mag_l2(norm_dataset, mag_test_l2_data):
     calibration_dataset = mag_test_l2_data[0]
 
@@ -46,7 +106,7 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
     )
 
     for i, dataset in enumerate(l2):
-        assert "vectors" in dataset.data_vars
+        assert expected_frames[i].var_name in dataset.data_vars
         assert expected_frames[i].name in dataset.attrs["Data_type"]
 
 
@@ -55,7 +115,7 @@ def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
         et, from_frame, to_frame, allow_spice_noframeconnect
     ):
         matrices = np.tile(np.eye(3), (len(et), 1, 1))
-        if to_frame == ValidFrames.DSRF.value:
+        if to_frame == ValidFrames.DSRF.spice_frame:
             for i in range(10, matrices.shape[0], 10):  # every 10th matrix is NaN
                 matrices[i] = np.full((3, 3), np.nan)
         return matrices
@@ -76,14 +136,18 @@ def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
 
     assert len(l2) == 5, "L2 should produce 5 frames"
 
+    all_vars = ["b_srf", "b_gse", "b_gsm", "b_rtn", "b_dsrf"]
+
     for dataset in l2:
-        assert "vectors" in dataset.data_vars
+        assert len(set(all_vars) & set(dataset.data_vars)) == 1, (
+            "Each dataset should have one of the expected vector variables"
+        )
 
     assert (
         l2[-1].attrs["Data_type"] == "L2_norm-dsrf>Level 2 normal rate data in DSRF"
     ), "Last frame should be DSRF"
 
-    dsrf_vectors = l2[-1]["vectors"].data
+    dsrf_vectors = l2[-1]["b_dsrf"].data
     for i in range(10, len(dsrf_vectors), 10):
         assert np.isnan(dsrf_vectors[i]).all(), f"Vectors at index {i} should be NaN"
 
@@ -305,18 +369,6 @@ def test_magnitude():
     assert np.allclose(output_magnitude, expected_magnitude, atol=1e-9)
 
     assert output_magnitude.shape == (10,)
-
-
-def test_expected_output_norm(norm_dataset):
-    # should return 4 files with correct attributes
-    # TODO: complete with L2 attributes
-
-    pass
-
-
-def test_expected_output_burst():
-    # should return 4 files with correct attributes
-    pass
 
 
 @pytest.mark.parametrize(

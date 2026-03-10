@@ -4,24 +4,20 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy import typing as npt
-from numpy._typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.hi_l1a import (
-    DE_CLOCK_TICK_S,
-    HALF_CLOCK_TICK_S,
-)
 from imap_processing.hi.utils import (
     CalibrationProductConfig,
+    HiConstants,
     create_dataset_variables,
     full_dataarray,
+    iter_qualified_events_by_config,
     parse_sensor_number,
 )
 from imap_processing.spice.geometry import (
@@ -104,7 +100,7 @@ def generate_pset_dataset(
     pset_dataset = empty_pset_dataset(
         de_dataset.ccsds_met.data.mean(),
         de_dataset.esa_energy_step,
-        config_df.cal_prod_config.number_of_products,
+        config_df.cal_prod_config.calibration_product_numbers,
         logical_source_parts["sensor"],
     )
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
@@ -124,7 +120,10 @@ def generate_pset_dataset(
 
 
 def empty_pset_dataset(
-    l1b_met: float, l1b_energy_steps: xr.DataArray, n_cal_prods: int, sensor_str: str
+    l1b_met: float,
+    l1b_energy_steps: xr.DataArray,
+    cal_prod_numbers: npt.NDArray[np.int_],
+    sensor_str: str,
 ) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
@@ -136,8 +135,9 @@ def empty_pset_dataset(
         repoint-table data to get the start and end times of the pointing.
     l1b_energy_steps : xarray.DataArray
         The array of esa_energy_step data from the L1B DE product.
-    n_cal_prods : int
-        Number of calibration products to allocate.
+    cal_prod_numbers : numpy.ndarray
+        Array of calibration product numbers from the configuration file.
+        These can be arbitrary integers, not necessarily starting at 0.
     sensor_str : str
         '45sensor' or '90sensor'.
 
@@ -191,7 +191,7 @@ def empty_pset_dataset(
     ).copy()
     dtype = attrs.pop("dtype")
     coords["calibration_prod"] = xr.DataArray(
-        np.arange(n_cal_prods, dtype=dtype),
+        cal_prod_numbers.astype(dtype),
         name="calibration_prod",
         dims=["calibration_prod"],
         attrs=attrs,
@@ -349,6 +349,12 @@ def pset_counts(
         fill_value=0,
     )
 
+    # Create mapping from calibration product numbers to array indices
+    cal_prod_to_index = {
+        cal_prod: idx
+        for idx, cal_prod in enumerate(pset_coords["calibration_prod"].values)
+    }
+
     # Drop events with FILLVAL for trigger_id. This should only occur for a
     # pointing with no events that gets a single fill event
     de_ds = l1b_de_dataset.drop_dims("epoch")
@@ -362,103 +368,35 @@ def pset_counts(
     )
     de_ds = de_ds.isel(event_met=good_mask)
 
+    # Get esa_energy_step for each event (recorded per packet, use ccsds_index)
+    esa_energy_steps = l1b_de_dataset["esa_energy_step"].data[de_ds["ccsds_index"].data]
+
     # The calibration product configuration potentially has different coincidence
     # types for each ESA and different TOF windows for each calibration product,
-    # esa energy step combination. Because of this we need to filter DEs that
-    # belong to each combo individually.
-    # Loop over the esa_energy_step values first
-    for esa_energy, esa_df in config_df.groupby(level="esa_energy_step"):
-        # Create a mask for all DEs at the current esa_energy_step.
-        # esa_energy_step is recorded for each packet rather than for each DE,
-        # so we use ccsds_index to get the esa_energy_step for each DE
-        esa_mask = (
-            l1b_de_dataset["esa_energy_step"].data[de_ds["ccsds_index"].data]
-            == esa_energy
+    # esa energy step combination. Use the shared generator to iterate over all
+    # config combinations and get qualified event masks.
+    for esa_energy, config_row, qualified_mask in iter_qualified_events_by_config(
+        de_ds, config_df, esa_energy_steps
+    ):
+        # Filter events using the qualified mask
+        filtered_de_ds = de_ds.isel(event_met=qualified_mask)
+
+        # Bin remaining DEs into spin-bins
+        i_esa = np.flatnonzero(pset_coords["esa_energy_step"].data == esa_energy)[0]
+        # spin_phase is in the range [0, 1). Multiplying by N_SPIN_BINS and
+        # truncating to an integer gives the correct bin index
+        spin_bin_indices = (filtered_de_ds["spin_phase"].data * N_SPIN_BINS).astype(int)
+        # When iterating over rows of a dataframe, the names of the multi-index
+        # are not preserved. Below, `config_row.Index[0]` gets the
+        # calibration_prod value from the namedtuple representing the
+        # dataframe row. We map this to the array index using cal_prod_to_index.
+        i_cal_prod = cal_prod_to_index[config_row.Index[0]]
+        np.add.at(
+            counts_var["counts"].data[0, i_esa, i_cal_prod],
+            spin_bin_indices,
+            1,
         )
-        # Now loop over the calibration products for the current ESA energy
-        for config_row in esa_df.itertuples():
-            # Remove DEs that are not at the current ESA energy and in the list
-            # of coincidence types for the current calibration product
-            type_mask = de_ds["coincidence_type"].isin(
-                config_row.coincidence_type_values
-            )
-            filtered_de_ds = de_ds.isel(event_met=(esa_mask & type_mask))
-
-            # Use the TOF window mask to remove DEs with TOFs outside the allowed range
-            tof_fill_vals = {
-                f"tof_{detector_pair}": l1b_de_dataset[f"tof_{detector_pair}"].attrs[
-                    "FILLVAL"
-                ]
-                for detector_pair in CalibrationProductConfig.tof_detector_pairs
-            }
-            tof_in_window_mask = get_tof_window_mask(
-                filtered_de_ds, config_row, tof_fill_vals
-            )
-            filtered_de_ds = filtered_de_ds.isel(event_met=tof_in_window_mask)
-
-            # Bin remaining DEs into spin-bins
-            i_esa = np.flatnonzero(pset_coords["esa_energy_step"].data == esa_energy)[0]
-            # spin_phase is in the range [0, 1). Multiplying by N_SPIN_BINS and
-            # truncating to an integer gives the correct bin index
-            spin_bin_indices = (filtered_de_ds["spin_phase"].data * N_SPIN_BINS).astype(
-                int
-            )
-            # When iterating over rows of a dataframe, the names of the multi-index
-            # are not preserved. Below, `config_row.Index[0]` gets the
-            # calibration_prod value from the namedtuple representing the
-            # dataframe row.
-            np.add.at(
-                counts_var["counts"].data[0, i_esa, config_row.Index[0]],
-                spin_bin_indices,
-                1,
-            )
     return counts_var
-
-
-def get_tof_window_mask(
-    de_ds: xr.Dataset, prod_config_row: NamedTuple, fill_vals: dict
-) -> NDArray[bool]:
-    """
-    Generate a mask indicating which DEs to keep based on TOF windows.
-
-    Parameters
-    ----------
-    de_ds : xarray.Dataset
-        The Direct Event Dataset for the DEs to filter based on the TOF
-        windows.
-    prod_config_row : NamedTuple
-        A single row of the prod config dataframe represented as a named tuple.
-    fill_vals : dict
-        A dictionary containing the fill values used in the input DE TOF
-        dataframe values. This value should be derived from the L1B DE CDF
-        TOF variable attributes.
-
-    Returns
-    -------
-    window_mask : np.ndarray
-        A mask with one entry per DE in the input `de_df` indicating which DEs
-        contain TOF values within the windows specified by `prod_config_row`.
-        The mask is intended to directly filter the DE dataframe.
-    """
-    detector_pairs = CalibrationProductConfig.tof_detector_pairs
-    tof_in_window_mask = np.empty(
-        (len(detector_pairs), len(de_ds["event_met"])), dtype=bool
-    )
-    for i_pair, detector_pair in enumerate(detector_pairs):
-        low_limit = getattr(prod_config_row, f"tof_{detector_pair}_low")
-        high_limit = getattr(prod_config_row, f"tof_{detector_pair}_high")
-        tof_array = de_ds[f"tof_{detector_pair}"].data
-        # The TOF in window mask contains True wherever the TOF is within
-        # the configuration low/high bounds OR the FILLVAL is present. The
-        # FILLVAL indicates that the detector pair was not hit. DEs with
-        # the incorrect coincidence_type are already filtered out and this
-        # implementation simplifies combining the tof_in_window_masks in
-        # the next step.
-        tof_in_window_mask[i_pair] = np.logical_or(
-            np.logical_and(low_limit <= tof_array, tof_array <= high_limit),
-            tof_array == fill_vals[f"tof_{detector_pair}"],
-        )
-    return np.all(tof_in_window_mask, axis=0)
 
 
 def pset_backgrounds(pset_coords: dict[str, xr.DataArray]) -> dict[str, xr.DataArray]:
@@ -528,7 +466,7 @@ def pset_exposure(
 
     # Get a subset of the l1b_de_dataset that contains only the second
     # of each pair of packets at an ESA step.
-    data_subset = find_second_de_packet_data(l1b_de_dataset)
+    data_subset = find_last_de_packet_data(l1b_de_dataset)
 
     # Get the pandas dataframe with spin data
     spin_df = get_spin_data()
@@ -546,7 +484,7 @@ def pset_exposure(
         # for a given clock tick, add 1/2 clock tick and compute spin-phase.
         spin_phases = np.atleast_1d(
             get_instrument_spin_phase(
-                clock_tick_mets + HALF_CLOCK_TICK_S,
+                clock_tick_mets + HiConstants.HALF_CLOCK_TICK_S,
                 SpiceFrame[f"IMAP_HI_{sensor_number}"],
             )
         )
@@ -570,14 +508,14 @@ def pset_exposure(
         exposure_var["exposure_times"].values[:, i_esa] += new_exposure_times
 
     # Convert exposure clock ticks to seconds
-    exposure_var["exposure_times"].values *= DE_CLOCK_TICK_S
+    exposure_var["exposure_times"].values *= HiConstants.DE_CLOCK_TICK_S
 
     return exposure_var
 
 
-def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
+def find_last_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """
-    Find the telemetry entries for the second packet at an ESA step.
+    Find the telemetry entries for the last packet at an ESA step.
 
     Parameters
     ----------
@@ -587,51 +525,38 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     reduced_dataset : xarray.Dataset
-        A dataset containing only the entries for the second packet at an ESA step.
+        A dataset containing only the entries for the last packet at an ESA step.
     """
     epoch_dataset = l1b_dataset.drop_dims("event_met")
-    # We should get two CCSDS packets per 8-spin ESA step.
+    # We should get 2, 4, or 8 CCSDS packets per 8-spin ESA step.
     # Get the indices of the packet before each ESA change.
     esa_step = epoch_dataset["esa_step"].values
     esa_energy_step = epoch_dataset["esa_energy_step"].values
-    # A change in esa_step should indicate the location of the second packet in
+    # A change in esa_step should indicate the location of the last packet in
     # each pair of DE packets at an esa_energy_step. In practice, during some
     # calibration activities, it was observed that the esa_energy_step can change
     # when the esa_step did not. So, we look for either to change and use the
-    # indices of those changes to identify the second packet in each pair. We
-    # also need to add the last packet index and assume an energy step change
-    # occurs after the last packet.
-    second_esa_packet_idx = np.append(
+    # indices of those changes to identify the last packet in each set. We
+    # also need to add the final packet index and assume an energy step change
+    # occurs after the final packet.
+    last_esa_packet_idx = np.append(
         np.flatnonzero((np.diff(esa_step) != 0) | (np.diff(esa_energy_step) != 0)),
         len(esa_step) - 1,
     )
     # Remove esa energy steps at 0 - these are calibrations
-    keep_mask = esa_energy_step[second_esa_packet_idx] != 0
+    keep_mask = esa_energy_step[last_esa_packet_idx] != 0
     # Remove esa energy steps at FILLVAL - these are unidentified
     keep_mask &= (
-        esa_energy_step[second_esa_packet_idx]
+        esa_energy_step[last_esa_packet_idx]
         != l1b_dataset["esa_energy_step"].attrs["FILLVAL"]
     )
-    second_esa_packet_idx = second_esa_packet_idx[keep_mask]
-    # Remove indices where we don't have two consecutive packets at the same ESA
-    if second_esa_packet_idx[0] == 0:
-        logger.warning(
-            f"Removing packet 0 with ESA step: {esa_step[0]} from"
-            f"calculation of exposure time due to missing matched pair."
-        )
-        second_esa_packet_idx = second_esa_packet_idx[1:]
-    missing_esa_pair_mask = (
-        esa_energy_step[second_esa_packet_idx - 1]
-        != esa_energy_step[second_esa_packet_idx]
-    )
-    if missing_esa_pair_mask.any():
-        logger.warning(
-            f"Removing {missing_esa_pair_mask.sum()} packets from exposure "
-            f"time calculation due to missing ESA step DE packet pairs."
-        )
-    second_esa_packet_idx = second_esa_packet_idx[~missing_esa_pair_mask]
-    # Reduce the dataset to just the second packet entries
-    data_subset = epoch_dataset.isel(epoch=second_esa_packet_idx)
+    last_esa_packet_idx = last_esa_packet_idx[keep_mask]
+
+    # We don't need to worry about checking that the right number of packets
+    # is present for each ESA step because that is done in the Goodtimes processing.
+
+    # Reduce the dataset to just the last packet entries
+    data_subset = epoch_dataset.isel(epoch=last_esa_packet_idx)
     return data_subset
 
 
@@ -695,7 +620,7 @@ def get_de_clock_ticks_for_esa_step(
     clock_tick_mets = np.arange(
         spin_start_mets[end_time_ind - 8],
         spin_start_mets[end_time_ind],
-        DE_CLOCK_TICK_S,
+        HiConstants.DE_CLOCK_TICK_S,
         dtype=float,
     )
     # The final clock-tick bin has less exposure time because the next spin
@@ -707,7 +632,7 @@ def get_de_clock_ticks_for_esa_step(
     clock_tick_weights = np.ones_like(clock_tick_mets, dtype=float)
     clock_tick_weights[-1] = (
         spin_start_mets[end_time_ind] - clock_tick_mets[-1]
-    ) / DE_CLOCK_TICK_S
+    ) / HiConstants.DE_CLOCK_TICK_S
     return clock_tick_mets, clock_tick_weights
 
 

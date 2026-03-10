@@ -339,7 +339,7 @@ unc_c:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -356,7 +356,7 @@ unc_fe:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -373,7 +373,7 @@ unc_h:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -390,7 +390,7 @@ unc_he3:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -407,7 +407,7 @@ unc_he4:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -424,7 +424,7 @@ unc_junk:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -441,7 +441,7 @@ unc_ne_mg_si:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -458,7 +458,7 @@ unc_o:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
@@ -475,7 +475,7 @@ unc_uh:
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
   SCALETYP: linear
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame

@@ -24,7 +24,7 @@ def test_read_backgrounds():
                 473389200.0,
                 473472000.0,
                 0,
-                1,
+                0,
                 "Lo",
                 0.0098,
                 0.0089,
@@ -61,16 +61,16 @@ def test_read_geometric_factor():
         [
             1,
             1,
-            0.015,
-            0.00135,
+            0.01633,
+            0.00028,
             5.35e-05,
             4.82e-06,
             2.20e-05,
             1.87e-06,
             5.32e-05,
             4.26e-06,
-            2.19e-05,
-            1.86e-06,
+            7.00e-05,
+            4.90e-05,
             0,
         ],
     )
@@ -135,20 +135,20 @@ def test_read_sweep_table():
         ANCILLARY_DIR / "imap_lo_sweep-table-small_20250101_20260301_v001.csv"
     )
     df = lo_ancillary.read_ancillary_file(ancillary_file)
-    assert len(df) == 6
+    assert len(df) == 11
 
     # spot check the first row
     np.testing.assert_array_equal(
         df.iloc[0],
         np.array(
             [
-                pd.Timestamp("2025-01-01"),
-                "ISN",
-                "HiRes Mode",
-                473389200,
-                473407618,
+                pd.Timestamp("2024-01-01"),
+                "ENA",
+                "Nominal Mode",
+                469024800,
+                469084200,
                 "Lo",
-                1,
+                20,
                 "HiRes",
                 1,
                 2,

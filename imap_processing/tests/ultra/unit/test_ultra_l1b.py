@@ -63,12 +63,19 @@ def mock_data_l1b_extendedspin_dict():
     )
     spin_start_time = np.array([0, 1, 2], dtype="uint64")
     quality = np.zeros((2, 3), dtype="uint16")
+    # These should be shape: (3,)
+    energy_dep_flags = np.zeros(len(spin), dtype="uint16")
     data_dict = {
         "epoch": epoch,
         "spin_number": spin,
         "energy_bin_geometric_mean": energy,
         "spin_start_time": spin_start_time,
         "quality_ena_rates": quality,
+        "quality_low_voltage": energy_dep_flags,
+        "quality_high_energy": energy_dep_flags,
+        "quality_statistics": energy_dep_flags,
+        "energy_range_flags": np.ones(5, dtype=np.uint16),
+        "energy_range_edges": np.ones(4, dtype=np.float64),
     }
     return data_dict
 
@@ -128,6 +135,7 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
 @pytest.mark.external_test_data
 def test_cdf_de(
     de_dataset,
+    aux_dataset,
     use_fake_spin_data_for_time,
     ancillary_files,
     use_fake_repoint_data_for_time,
@@ -138,6 +146,7 @@ def test_cdf_de(
     data_dict = {}
     de_dataset.attrs["Repointing"] = "repoint00001"
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    data_dict[aux_dataset.attrs["Logical_source"]] = aux_dataset
     # Create a spin table that cover spin 0-141
     use_fake_spin_data_for_time(511000000, 511000000 + 86400 * 5)
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
@@ -157,12 +166,15 @@ def test_cdf_de(
         test_data_path.name
         == "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
     )
+    # check that event_id exists in the dataset
+    assert "event_id" in l1b_de_dataset[0].variables
 
 
 @pytest.mark.external_test_data
 def test_cdf_de_flags(
     mock_get_annotated_particle_velocity,
     de_dataset,
+    aux_dataset,
     use_fake_spin_data_for_time,
     ancillary_files,
     use_fake_repoint_data_for_time,
@@ -171,6 +183,7 @@ def test_cdf_de_flags(
     data_dict = {}
     de_dataset.attrs["Repointing"] = "repoint00000"
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    data_dict[aux_dataset.attrs["Logical_source"]] = aux_dataset
     # Create a spin table that cover spin 0-141
     use_fake_spin_data_for_time(511000000, 511000000 + 86400 * 5)
     # Use repoint data that will NOT cover the event times to test flag setting
@@ -184,9 +197,10 @@ def test_cdf_de_flags(
     assert np.all((flags & ImapDEOutliersUltraFlags.DURINGREPOINT.value) != 0)
 
 
+@mock.patch("imap_processing.ultra.l1b.extendedspin.UltraConstants.SPIN_BIN_SIZE", 5)
 @pytest.mark.external_test_data
 def test_ultra_l1b_extendedspin(
-    use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset
+    use_fake_spin_data_for_time, aux_dataset, rates_dataset, status_dataset
 ):
     """Tests that L1b data is created."""
     use_fake_spin_data_for_time(0, 141 * 15)
@@ -201,8 +215,9 @@ def test_ultra_l1b_extendedspin(
             "imap_ultra_l1a_45sensor-params",
         ]
     }
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+    data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
     ancillary_files = {}
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
@@ -214,8 +229,11 @@ def test_ultra_l1b_extendedspin(
     )
 
 
+@mock.patch("imap_processing.ultra.l1b.extendedspin.UltraConstants.SPIN_BIN_SIZE", 5)
 @pytest.mark.external_test_data
-def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
+def test_cdf_extendedspin(
+    use_fake_spin_data_for_time, aux_dataset, rates_dataset, status_dataset
+):
     use_fake_spin_data_for_time(0, 141 * 15)
     l1b_de_dataset_path = (
         TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
@@ -229,8 +247,9 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
             "imap_ultra_l1a_45sensor-params",
         ]
     }
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+    data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
     ancillary_files = {}
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
@@ -246,8 +265,11 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
     )
 
 
+@mock.patch("imap_processing.ultra.l1b.extendedspin.UltraConstants.SPIN_BIN_SIZE", 5)
 @pytest.mark.external_test_data
-def test_cdf_goodtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
+def test_cdf_goodtimes(
+    use_fake_spin_data_for_time, aux_dataset, rates_dataset, status_dataset
+):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
     l1b_de_dataset_path = (
@@ -262,8 +284,9 @@ def test_cdf_goodtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_data
             "imap_ultra_l1a_45sensor-params",
         ]
     }
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+    data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
     ancillary_files = {}
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
@@ -283,8 +306,11 @@ def test_cdf_goodtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_data
     )
 
 
+@mock.patch("imap_processing.ultra.l1b.extendedspin.UltraConstants.SPIN_BIN_SIZE", 5)
 @pytest.mark.external_test_data
-def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
+def test_cdf_badtimes(
+    use_fake_spin_data_for_time, aux_dataset, rates_dataset, status_dataset
+):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
     l1b_de_dataset_path = (
@@ -299,8 +325,9 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
             "imap_ultra_l1a_45sensor-params",
         ]
     }
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+    data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
     ancillary_files = {}
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)

@@ -1,109 +1,36 @@
 """Test calculate_ingest functions."""
 
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import datetime, timedelta
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.calculate_ingest import (
-    find_tcp_connections,
     format_ingest_data,
     packets_created,
 )
-from imap_processing.ialirt.constants import STATIONS
 
 TEST_PATH = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
-
-
-def test_find_tcp_connections():
-    """Test the find_tcp_connections function."""
-    filename = "flight_iois_1.log.2025-212T16_55_27.531613"
-    # File creation time minus 1 hr.
-    timestamp_str = filename.split(".")[2]
-    timestamp_str = timestamp_str.replace("_", ":")
-    start_of_time = datetime.strptime(timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(
-        hours=1
-    )
-    end_of_time = start_of_time + timedelta(hours=48)
-
-    with open(TEST_PATH / filename, encoding="utf-8") as f:
-        lines = f.readlines()
-
-    formatted: dict[str, Any] = {
-        "summary": "I-ALiRT Real-time Ingest Summary",
-        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "time_format": "UTC (ISOC)",
-        "stations": list(STATIONS),
-        "time_range": [
-            start_of_time.isoformat(),
-            end_of_time.isoformat(),
-        ],  # Overall time range of the data
-        "packet_ingest": [],  # Global packet ingest times
-        "connection_times": {
-            station: [] for station in list(STATIONS)
-        },  # Per-station TCP connection windows
-    }
-
-    test = find_tcp_connections(start_of_time, end_of_time, lines, formatted)
-
-    # 2025/212-16:33:03.247
-    time_0 = datetime(2025, 7, 31, 16, 33, 3, 247000)
-    # 2025/212-16:33:40.189
-    time_1 = datetime(2025, 7, 31, 16, 33, 40, 189000)
-
-    assert test["connection_times"]["Kiel"][0]["start"] == datetime.isoformat(time_0)
-    assert test["connection_times"]["Kiel"][0]["end"] == datetime.isoformat(time_1)
-
-
-def test_find_tcp_connections_no_info():
-    """Test the find_tcp_connections function if tcp connection up not present."""
-    filename = "flight_iois_1.log.2025-295T17-28-05.937369"
-    # File creation time minus 1 hr.
-    timestamp_str = filename.split(".")[2]
-    start_of_time = datetime.strptime(timestamp_str, "%Y-%jT%H-%M-%S") - timedelta(
-        hours=1
-    )
-    end_of_time = start_of_time + timedelta(hours=48)
-
-    with open(TEST_PATH / filename, encoding="utf-8") as f:
-        lines = f.readlines()
-
-    formatted: dict[str, Any] = {
-        "summary": "I-ALiRT Real-time Ingest Summary",
-        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "time_format": "UTC (ISOC)",
-        "stations": list(STATIONS),
-        "time_range": [
-            start_of_time.isoformat(),
-            end_of_time.isoformat(),
-        ],  # Overall time range of the data
-        "packet_ingest": [],  # Global packet ingest times
-        "connection_times": {
-            station: [] for station in list(STATIONS)
-        },  # Per-station TCP connection windows
-    }
-
-    test = find_tcp_connections(start_of_time, end_of_time, lines, formatted)
-
-    assert test["connection_times"]["Kiel"][0]["start"] == start_of_time.isoformat()
-    assert test["connection_times"]["Kiel"][0]["end"] == end_of_time.isoformat()
 
 
 def test_packets_created():
     """Test the packets_created function."""
     with open(
-        TEST_PATH / "flight_iois_1.log.2025-212T16_55_27.531613", encoding="utf-8"
+        TEST_PATH / "flight_iois_1.log.2026-021T10-58-00.171087", encoding="utf-8"
     ) as f:
         lines = f.readlines()
 
-    actual_output = packets_created(datetime(2025, 7, 31, 16, 33, 39, 0), lines)
+    actual_output = packets_created(datetime(2026, 7, 31, 16, 33, 39, 0), lines)
 
-    # 2025/212-16:33:39.186
-    time_0 = datetime(2025, 7, 31, 16, 33, 39, 186000)
-    # 2025/212-16:34:40.199
-    time_1 = datetime(2025, 7, 31, 16, 34, 40, 199000)
+    expected = {
+        "Kiel": {
+            "last_data_received": [
+                "2026-01-21T09:57:58Z",
+                "2026-01-21T10:27:59Z",
+            ],
+            "rate_kbps": [2.0, 2.0],
+        }
+    }
 
-    assert actual_output[0] == time_0
-    assert actual_output[1] == time_1
+    assert actual_output == expected
 
 
 def test_format_ingest_data():
@@ -145,67 +72,24 @@ def test_format_ingest_data():
                 f"iois_1_packets_{pkt_time}.\n"
             )
 
+        if current_time == base_date + timedelta(hours=8):
+            log_lines.append(
+                "ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)\n"
+            )
+            log_lines.append("10  Kiel          365-08:00:00  365-08:00:00    2.0\n")
+
+        if current_time == base_date + timedelta(hours=15):
+            log_lines.append(
+                "ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)\n"
+            )
+            log_lines.append("10  Kiel          001-15:00:00  001-08:00:00    2.0\n")
+
         current_time += timedelta(seconds=1)
 
     filenames = sorted(filenames)
 
     data = format_ingest_data(filenames[-1], log_lines)
 
-    assert data["packet_ingest"][0] == "2025-07-31T08:00:00"
-    assert data["packet_ingest"][-1] == "2025-07-31T15:00:00"
-    assert data["connection_times"]["Kiel"][0]["start"] == "2025-07-31T08:00:00"
-    assert data["connection_times"]["Kiel"][0]["end"] == "2025-07-31T16:00:00"
-
-
-def test_format_ingest_data_edge_cases():
-    """Test the edge cases of the format_ingest_data function."""
-
-    # File names for a short 3 hour test window
-    filenames = [
-        "flight_iois_1.log.2025-212T00_00_00.000000",
-        "flight_iois_1.log.2025-212T01_00_00.000000",
-        "flight_iois_1.log.2025-212T02_00_00.000000",
-    ]
-
-    base_date = datetime(2025, 7, 31, 0, 0, 0)
-    log_lines = []
-
-    # Simulate case: log starts with a "down!" at 00:15 (no prior "up.")
-    timestamp_down = (base_date + timedelta(minutes=15)).strftime("%Y/%j-%H:%M:%S.%f")[
-        :-3
-    ]
-    log_lines.append(f"{timestamp_down} Kiel antenna partner connection is down!\n")
-
-    # Add packet event at 00:00
-    timestamp_pkt = base_date.strftime("%Y/%j-%H:%M:%S.%f")[:-3]
-    pkt_time = base_date.strftime("%Y_%j_%H_%M_%S")
-    log_lines.append(
-        f"{timestamp_pkt} Renamed iois_1_packets_{pkt_time}.partial to "
-        f"iois_1_packets_{pkt_time}.\n"
-    )
-
-    # Simulate case: "up." at 02:00 (no matching "down!" before end of file)
-    timestamp_up = (base_date + timedelta(hours=2)).strftime("%Y/%j-%H:%M:%S.%f")[:-3]
-    log_lines.append(f"{timestamp_up} Kiel antenna partner connection is up.\n")
-
-    # Add packet event at 02:01
-    timestamp_pkt = (base_date + timedelta(hours=2, minutes=1)).strftime(
-        "%Y/%j-%H:%M:%S.%f"
-    )[:-3]
-    pkt_time = (base_date + timedelta(hours=2, minutes=1)).strftime("%Y_%j_%H_%M_%S")
-    log_lines.append(
-        f"{timestamp_pkt} Renamed iois_1_packets_{pkt_time}.partial to "
-        f"iois_1_packets_{pkt_time}.\n"
-    )
-    filenames = sorted(filenames)
-
-    data = format_ingest_data(filenames[-1], log_lines)
-
-    assert data["connection_times"]["Kiel"][0]["start"] == "2025-07-29T02:00:00"
-    assert data["connection_times"]["Kiel"][0]["end"] == "2025-07-31T00:15:00"
-
-    assert data["connection_times"]["Kiel"][1]["start"] == "2025-07-31T02:00:00"
-    assert data["connection_times"]["Kiel"][1]["end"] == "2025-07-31T02:00:00"
-
-    assert data["packet_ingest"][0] == "2025-07-31T00:00:00"
-    assert data["packet_ingest"][1] == "2025-07-31T02:01:00"
+    assert data["Kiel"]["last_data_received"][0] == "2025-12-31T08:00:00Z"
+    assert data["Kiel"]["last_data_received"][-1] == "2026-01-01T15:00:00Z"
+    assert data["Kiel"]["rate_kbps"][0] == 2.0

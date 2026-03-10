@@ -61,10 +61,16 @@ class GlowsConstants:
         IMAP clock)
     SCAN_CIRCLE_ANGULAR_RADIUS: float
         angular radius of IMAP/GLOWS scanning circle [deg]
+    HISTOGRAM_FILLVAL: int
+        Fill value for histogram bins (65535 for uint16)
+    STANDARD_BIN_COUNT: int
+        Standard number of bins per histogram (3600)
     """
 
     SUBSECOND_LIMIT: int = 2_000_000
     SCAN_CIRCLE_ANGULAR_RADIUS: float = 75.0
+    HISTOGRAM_FILLVAL: int = 65535
+    STANDARD_BIN_COUNT: int = 3600
 
 
 @dataclass

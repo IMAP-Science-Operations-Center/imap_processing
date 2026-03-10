@@ -14,3 +14,6 @@ coverage:
 # Ignore coverage of fixtures
 ignore:
   - "**/conftest.py"
+  - "**/test_spacecraft_pset.py"
+  - "**/test_helio_pset.py"
+  - "**/*make_helio_index_maps.py"

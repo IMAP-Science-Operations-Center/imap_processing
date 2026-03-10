@@ -1,5 +1,7 @@
 """Methods for GLOWS Level 1A processing and CDF writing."""
 
+import logging
+from itertools import groupby
 from pathlib import Path
 
 import numpy as np
@@ -9,9 +11,12 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
+from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def create_glows_attr_obj() -> ImapCdfAttributes:
@@ -57,18 +62,17 @@ def glows_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     # Decompose packet file into histogram, and direct event data.
     hist_l0, de_l0 = decom_packets(packet_filepath)
 
-    l1a_de = process_de_l0(de_l0)
-    l1a_hists = []
-    for hist in hist_l0:
-        l1a_hists.append(HistogramL1A(hist))
-
     # Generate CDF files for each day
     output_datasets = []
-    dataset = generate_histogram_dataset(l1a_hists, glows_attrs)
-    output_datasets.append(dataset)
+    if hist_l0:
+        l1a_hists = [HistogramL1A(hist) for hist in hist_l0]
+        dataset = generate_histogram_dataset(l1a_hists, glows_attrs)
+        output_datasets.append(dataset)
 
-    dataset = generate_de_dataset(l1a_de, glows_attrs)
-    output_datasets.append(dataset)
+    if de_l0:
+        l1a_de = process_de_l0(de_l0)
+        dataset = generate_de_dataset(l1a_de, glows_attrs)
+        output_datasets.append(dataset)
 
     return output_datasets
 
@@ -93,18 +97,48 @@ def process_de_l0(
         Dictionary with keys of days and values of lists of DirectEventL1A objects.
         Each day has one CDF file associated with it.
     """
-    de_list: list[DirectEventL1A] = []
+    l1a_output: list[DirectEventL1A] = []
 
-    for de in de_l0:
-        # Putting not first data int o last direct event list.
-        if de.SEQ != 0:
-            # If the direct event is part of a sequence and is not the first,
-            # add it to the last direct event in the list
-            de_list[-1].merge_de_packets(de)
+    # Sort by SEC, so groupby only has one instance of each SEC
+    sorted_l0 = sorted(de_l0, key=lambda x: x.SEC)
+
+    for sec, de in groupby(sorted_l0, lambda x: x.SEC):
+        de_list = list(de)
+        if len(de_list) == 1:
+            # Only one seq found
+            new_de = DirectEventL1A(de_list[0])
+            if new_de.l0.LEN != 1:
+                # We're missing packets off the end
+                new_de.finish_incomplete_packet()
+
+            l1a_output.append(new_de)
         else:
-            de_list.append(DirectEventL1A(de))
+            sorted_des = sorted(de_list)
+            if sorted_des[0].SEQ != 0:
+                logger.warning(f"GLOWS: First SEQ not found for DE SEC {sec}")
+                # Processing cannot be run on this packet.
+                continue
+            first_de = DirectEventL1A(sorted_des[0])
+            for each_de in sorted_des[1:]:
+                try:
+                    first_de.merge_de_packets(each_de)
+                except (ValueError, IndexError) as e:
+                    # We don't want to stop processing for DE errors
+                    logger.warning(
+                        f"ERROR ENCOUNTERED in GLOWS DE processing. "
+                        f"Excluding packet from output. Error: {e}"
+                    )
+                    continue
 
-    return de_list
+            if sorted_des[-1].SEQ != first_de.l0.LEN:
+                first_de.finish_incomplete_packet()
+
+            l1a_output.append(first_de)
+
+    # Filter out DE records with no direct_events (incomplete packet sequences)
+    l1a_output = [de for de in l1a_output if de.direct_events is not None]
+
+    return l1a_output
 
 
 def generate_de_dataset(
@@ -137,7 +171,6 @@ def generate_de_dataset(
 
     # First variable is the output data type, second is the list of values
     support_data: dict = {
-        # "flight_software_version": [],
         "seq_count_in_pkts_file": [np.uint16, []],
         "number_of_de_packets": [np.uint32, []],
     }
@@ -291,16 +324,23 @@ def generate_histogram_dataset(
     output : xarray.Dataset
         Dataset containing the GLOWS L1A histogram CDF output.
     """
+    # Filter out empty histogram objects (those with no bins).
+    hist_l1a_list = [
+        hist for hist in hist_l1a_list if hist.number_of_bins_per_histogram > 0
+    ]
+
     # Store timestamps for each HistogramL1A object.
     time_data = np.zeros(len(hist_l1a_list), dtype=np.int64)
-    # TODO Add daily average of histogram counts
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
-    hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.uint16)
+    hist_data = np.full(
+        (len(hist_l1a_list), GlowsConstants.STANDARD_BIN_COUNT),
+        GlowsConstants.HISTOGRAM_FILLVAL,
+        dtype=np.uint16,
+    )
 
     # First variable is the output data type, second is the list of values
     support_data: dict = {
-        "flight_software_version": [np.uint32, []],
         "seq_count_in_pkts_file": [np.uint16, []],
         "first_spin_id": [np.uint32, []],
         "last_spin_id": [np.uint32, []],
@@ -327,7 +367,9 @@ def generate_histogram_dataset(
 
     for index, hist in enumerate(hist_l1a_list):
         epoch_time = met_to_ttj2000ns(hist.imap_start_time.to_seconds())
-        hist_data[index] = hist.histogram
+        # Assign histogram data, padding with zeros if shorter than max_bins
+        hist_len = len(hist.histogram)
+        hist_data[index, :hist_len] = hist.histogram
 
         support_data["flags_set_onboard"][1].append(hist.flags["flags_set_onboard"])
         support_data["is_generated_on_ground"][1].append(
@@ -349,7 +391,8 @@ def generate_histogram_dataset(
         dims=["epoch"],
         attrs=glows_cdf_attributes.get_variable_attributes("epoch", check_schema=False),
     )
-    bin_count = 3600  # TODO: Is it always 3600 bins?
+
+    bin_count = GlowsConstants.STANDARD_BIN_COUNT
 
     bins = xr.DataArray(
         np.arange(bin_count),
@@ -387,6 +430,11 @@ def generate_histogram_dataset(
     )
 
     output["histogram"] = hist
+
+    # These attributes are the same for each record, so we don't
+    # need to store them per epoch like most of the other fields
+    # Instead, we store them as global attributes
+    output.attrs["flight_software_version"] = hist_l1a_list[0].flight_software_version
 
     for key, value in support_data.items():
         output[key] = xr.DataArray(

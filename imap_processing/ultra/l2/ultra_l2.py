@@ -850,4 +850,11 @@ def ultra_l2(
     map_dataset["obs_date"] = map_dataset["obs_date"].astype(np.int64)
     map_dataset["obs_date_range"] = map_dataset["obs_date_range"].astype(np.int64)
 
+    # Adjust CATDESC per descriptor
+    if descriptor is not None:
+        md = MapDescriptor.from_string(descriptor)
+        principal_data = md.principal_data_var
+        if principal_data in map_dataset:
+            map_dataset[principal_data].attrs["CATDESC"] = md.to_catdesc()
+
     return [map_dataset]

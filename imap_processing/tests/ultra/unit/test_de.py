@@ -7,7 +7,6 @@ import pytest
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.spice.repoint import get_repoint_data
-from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.de import calculate_events_in_pointing
 
@@ -138,7 +137,7 @@ def test_calculate_events_in_pointing(use_fake_repoint_data_for_time):
     event_times[0] = pointing_start - 1
     in_pointing = calculate_events_in_pointing(
         repoint_id,
-        ttj2000ns_to_et(met_to_ttj2000ns(event_times)),
+        event_times,
     )
     # The first event should be False (not during a pointing), and the rest True.
     assert np.all(not in_pointing[0])

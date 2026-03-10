@@ -1,11 +1,14 @@
 """CoDICE L1A processing functions."""
 
+import datetime
 import logging
+import os
 
 import xarray as xr
 from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.codice_l1a_hi_counters_aggregated import (
     l1a_hi_counters_aggregated,
@@ -17,6 +20,12 @@ from imap_processing.codice.codice_l1a_hi_omni import l1a_hi_omni
 from imap_processing.codice.codice_l1a_hi_priority import l1a_hi_priority
 from imap_processing.codice.codice_l1a_hi_sectored import l1a_hi_sectored
 from imap_processing.codice.codice_l1a_lo_angular import l1a_lo_angular
+from imap_processing.codice.codice_l1a_lo_counters_aggregated import (
+    l1a_lo_counters_aggregated,
+)
+from imap_processing.codice.codice_l1a_lo_counters_singles import (
+    l1a_lo_counters_singles,
+)
 from imap_processing.codice.codice_l1a_lo_priority import l1a_lo_priority
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.utils import (
@@ -45,16 +54,22 @@ def process_l1a(  # noqa: PLR0912
     """
     # Get science data which is L0 packet file
     science_file = dependency.get_file_paths(data_type="l0")[0]
+    # TODO get the exact time the FSW changed on january 29 and relabel the xml file
+    # On January 29, 2026, the CoDICE flight software was updated to a new version.
+    # This update included changes to the packet definitions.
+    start_date = datetime.datetime.strptime(
+        os.path.basename(science_file).split("_")[4], "%Y%m%d"
+    )  # Extract the date from the filename
+    path = imap_module_directory / "codice/packet_definitions/"
+    if start_date >= datetime.datetime(2026, 1, 29):
+        xtce_file = path / "imap_codice_packet-definition_20260129_v001.xml"
+    else:
+        xtce_file = path / "imap_codice_packet-definition_20250101_v001.xml"
 
-    xtce_file = (
-        imap_module_directory / "codice/packet_definitions/codice_packet_definition.xml"
-    )
-    # Decom packet
     datasets_by_apid = packet_file_to_datasets(
         science_file,
         xtce_file,
     )
-
     datasets = []
     for apid in datasets_by_apid:
         if apid not in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
@@ -102,5 +117,33 @@ def process_l1a(  # noqa: PLR0912
         elif apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
             logger.info("Processing Hi Counters singles")
             datasets.append(l1a_hi_counters_singles(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
+            logger.info("Processing Lo Counters aggregated")
+            datasets.append(
+                l1a_lo_counters_aggregated(datasets_by_apid[apid], lut_file)
+            )
+        elif apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
+            logger.info("Processing Lo Counters singles")
+            datasets.append(l1a_lo_counters_singles(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_NHK:
+            logger.info("Processing l1a housekeeping data")
+            cdf_attrs = ImapCdfAttributes()
+            cdf_attrs.add_instrument_global_attrs("codice")
+            l1a_ds = datasets_by_apid[apid]
+            l1a_ds.attrs.update(cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"))
+            datasets.append(l1a_ds)
+
+            # l1b processing need to re-run packet file to datasets to do the
+            # housekeeping engineering unit conversions based on the packet definitions
+            # We only do this if there are any housekeeping packets that need it so we
+            # don't process unnecessarily here.
+            logger.info("Processing l1b housekeeping data")
+            l1b_ds = packet_file_to_datasets(
+                science_file,
+                xtce_file,
+                use_derived_value=True,
+            )[apid]
+            l1b_ds.attrs.update(cdf_attrs.get_global_attributes("imap_codice_l1b_hskp"))
+            datasets.append(l1b_ds)
 
     return datasets

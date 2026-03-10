@@ -95,8 +95,8 @@ class PacketParser:
                 data.attrs = self.idex_attrs.get_global_attributes(
                     f"imap_idex_{level}_evt"
                 )
-                data["epoch"] = calculate_idex_epoch_time(
-                    data["shcoarse"], data["shfine"]
+                data["epoch"] = calculate_idex_event_time(
+                    data["shcoarse"].data, data["shfine"].data
                 )
                 data["epoch"].attrs = epoch_attrs
                 self.data.append(data)
@@ -107,8 +107,8 @@ class PacketParser:
                 data.attrs = self.idex_attrs.get_global_attributes(
                     f"imap_idex_{level}_catlst"
                 )
-                data["epoch"] = calculate_idex_epoch_time(
-                    data["shcoarse"], data["shfine"]
+                data["epoch"] = calculate_idex_event_time(
+                    data["shcoarse"].data, data["shfine"].data
                 )
                 data["epoch"].attrs = epoch_attrs
                 self.data.append(data)
@@ -248,25 +248,24 @@ def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int
     return ints
 
 
-def calculate_idex_epoch_time(
-    shcoarse_time: float | np.ndarray, shfine_time: float | np.ndarray
+def calculate_idex_event_time(
+    coarse_time_sec: np.ndarray,
+    fine_time_subs: np.ndarray,
 ) -> npt.NDArray[np.int64]:
     """
     Calculate the epoch time from the FPGA header time variables.
 
-    We are given the MET seconds, we need to convert it to nanoseconds in j2000. IDEX
-    epoch is calculated with shcoarse and shfine time values. The shcoarse time counts
-    the number of whole seconds elapsed since the epoch (Jan 1st 2010), while shfine
-    time counts the number of additional 20-microsecond intervals beyond the whole
-    seconds. Together, these time measurements establish when a dust event took place.
+    Coarse_time_sec counts the number of whole seconds elapsed since the epoch
+    (Jan 1st 2010), while fine_time_subs counts the number of additional 20-microsecond
+    intervals beyond the whole seconds. Together, these time measurements establish
+    when a dust event took place.
 
     Parameters
     ----------
-    shcoarse_time : float, numpy.ndarray
-        The coarse time value from the FPGA header. Number of seconds since epoch.
-    shfine_time : float, numpy.ndarray
-        The fine time value from the FPGA header. Number of 20 microsecond "ticks" since
-         the last second.
+    coarse_time_sec : numpy.ndarray
+        The coarse event time (seconds).
+    fine_time_subs : numpy.ndarray
+        The fine event time in 20-microsecond intervals.
 
     Returns
     -------
@@ -274,9 +273,9 @@ def calculate_idex_epoch_time(
         The mission elapsed time converted to nanoseconds since the J2000 epoch
         in the terrestrial time (TT) timescale.
     """
-    # Get met time in seconds including shfine (number of 20 microsecond ticks)
-    met = shcoarse_time + shfine_time * 20e-6
-    return met_to_ttj2000ns(met)
+    # Calculate the fine event time in seconds
+    fine_event_time = fine_time_subs * 20e-6
+    return met_to_ttj2000ns(coarse_time_sec + fine_event_time)
 
 
 class RawDustEvent:
@@ -357,9 +356,17 @@ class RawDustEvent:
         """
         # Calculate the impact time in seconds since epoch
         self.impact_time = 0
-        self.impact_time = calculate_idex_epoch_time(
-            header_packet["SHCOARSE"], header_packet["SHFINE"]
+        # The elapsed seconds are stored as a 32-bit unsigned integer that is split
+        # across two 16-bit words for packetization. As a result, idx__txhdrtimesec1
+        # represents multiples of 2^16 seconds, while idx_txhdrtimesec2 represents the
+        # remaining seconds within that range. This necessitates bit shifting the upper
+        # word by 16 bits when reconstructing the full seconds counter.
+        self.impact_time = calculate_idex_event_time(
+            (header_packet["IDX__TXHDRTIMESEC1"] << 16)
+            + header_packet["IDX__TXHDRTIMESEC2"],
+            header_packet["IDX__TXHDRTIMESUBS"],
         )
+
         self.event_number = header_packet["IDX__SCI0EVTNUM"]
 
         # The actual trigger time for the low and high sample rate in

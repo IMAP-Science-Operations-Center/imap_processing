@@ -11,7 +11,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.hi_l1a import HALF_CLOCK_TICK_S
+from imap_processing.hi.hi_l1a import MILLISECOND_TO_S
 from imap_processing.hi.utils import (
     HIAPID,
     CoincidenceBitmap,
@@ -20,6 +20,7 @@ from imap_processing.hi.utils import (
     create_dataset_variables,
     parse_sensor_number,
 )
+from imap_processing.quality_flags import ImapHiL1bDeFlags
 from imap_processing.spice.geometry import (
     SpiceFrame,
     instrument_pointing,
@@ -133,11 +134,12 @@ def annotate_direct_events(
             att_manager_lookup_str="hi_de_{0}",
         )
     )
+    l1b_de_dataset.update(de_esa_step_met(l1b_de_dataset))
+    l1b_de_dataset.update(de_ccsds_qf(l1b_de_dataset))
     l1b_de_dataset = l1b_de_dataset.drop_vars(
         [
             "src_seq_ctr",
             "pkt_len",
-            "last_spin_num",
             "spin_invalids",
             "esa_step_seconds",
             "esa_step_milliseconds",
@@ -333,7 +335,7 @@ def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
     # be binned into in the histogram packet. The Hi histogram data is binned by
     # spacecraft spin-phase, not instrument spin-phase, so the same is done here.
     # We have to add 1/2 clock tick to MET time before getting spin phase
-    met_seconds = dataset.event_met.values + HALF_CLOCK_TICK_S
+    met_seconds = dataset.event_met.values + HiConstants.HALF_CLOCK_TICK_S
     imap_spin_phase = get_spacecraft_spin_phase(met_seconds)
     new_vars["nominal_bin"].values = np.asarray(imap_spin_phase * 360 / 4).astype(
         np.uint8
@@ -378,7 +380,9 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
 
     # Per Section 2.2.5 of Algorithm Document, add 1/2 of tick duration
     # to MET before computing pointing.
-    sclk_ticks = met_to_sclkticks(dataset.event_met.values + HALF_CLOCK_TICK_S)
+    sclk_ticks = met_to_sclkticks(
+        dataset.event_met.values + HiConstants.HALF_CLOCK_TICK_S
+    )
     et = sct_to_et(sclk_ticks)
     sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
     # TODO: For now, we are using SPICE to compute the look direction for each
@@ -531,3 +535,92 @@ def get_esa_to_esa_energy_step_lut(
                 matching_esa_energy["esa_energy_step"].values[0],
             )
     return esa_energy_step_lut
+
+
+def de_esa_step_met(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+    """
+    Compute esa_step_met for each CCSDS packet.
+
+    The esa_step_met is the MET time when the ESA was stepped, computed from
+    esa_step_seconds and esa_step_milliseconds.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The L1A/B dataset containing esa_step_seconds and esa_step_milliseconds.
+
+    Returns
+    -------
+    new_vars : dict[str, xarray.DataArray]
+        Dictionary with "esa_step_met" key and float64 DataArray value.
+    """
+    new_vars = create_dataset_variables(
+        ["esa_step_met"],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+
+    # Compute esa_step_met from esa_step_seconds and esa_step_milliseconds
+    new_vars["esa_step_met"].values = (
+        dataset["esa_step_seconds"].values.astype(np.float64)
+        + dataset["esa_step_milliseconds"].values * MILLISECOND_TO_S
+    )
+
+    return new_vars
+
+
+def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+    """
+    Compute ccsds_qf quality flag for each CCSDS packet.
+
+    The ccsds_qf is a quality flag bitmask indicating packet characteristics.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The L1A/B dataset containing ccsds_index for mapping events to packets.
+
+    Returns
+    -------
+    new_vars : dict[str, xarray.DataArray]
+        Dictionary with "ccsds_qf" key and uint8 DataArray value.
+    """
+    max_events_per_packet = 664
+
+    new_vars = create_dataset_variables(
+        ["ccsds_qf"],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+
+    # Initialize all values to 0 (no flags set)
+    new_vars["ccsds_qf"].values[:] = 0
+
+    # Count events per CCSDS packet
+    # ccsds_index maps each event to its originating packet
+    ccsds_indices = dataset["ccsds_index"].values
+    n_packets = len(dataset.epoch)
+
+    # Filter out fill/out-of-range indices (e.g., uint16 FILLVAL 65535)
+    valid_mask = (ccsds_indices >= 0) & (ccsds_indices < n_packets)
+
+    # Set BADSPIN flag for packets with nonzero spin_invalids
+    spin_invalid_mask = dataset["spin_invalids"].values != 0
+    new_vars["ccsds_qf"].values[spin_invalid_mask] |= np.uint8(ImapHiL1bDeFlags.BADSPIN)
+
+    # If there are no valid events, skip the PACKET_FULL check
+    if not np.any(valid_mask):
+        return new_vars
+
+    # Compute event counts per valid CCSDS packet
+    event_counts = np.bincount(
+        ccsds_indices[valid_mask].astype(np.int64),
+        minlength=n_packets,
+    )
+    # Set PACKET_FULL flag for packets with 664 events
+    full_packet_mask = event_counts == max_events_per_packet
+    new_vars["ccsds_qf"].values[full_packet_mask] |= np.uint8(
+        ImapHiL1bDeFlags.PACKET_FULL
+    )
+
+    return new_vars
