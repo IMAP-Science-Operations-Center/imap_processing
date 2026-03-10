@@ -228,7 +228,7 @@ def test_get_spice_data(
 
 @pytest.mark.external_test_data
 def test_validate_l1b_idex_data_variables(
-    l1b_dataset: xr.Dataset, l1b_example_data: xr.Dataset, l1b_example_data_2
+    l1b_dataset: xr.Dataset, l1b_example_data: xr.Dataset
 ):
     """
     Verify that each of the 6 waveform and telemetry arrays are equal to the
@@ -261,6 +261,7 @@ def test_validate_l1b_idex_data_variables(
         "HGTriggerLevel": "trigger_level_hg",
         "MGTriggerLevel": "trigger_level_mg",
         "LGTriggerLevel": "trigger_level_lg",
+        "TriggerOrigin": "trigger_origin",
     }
 
     # The Engineering data is converting to UTC, and the SDC is converting to J2000,
@@ -269,7 +270,7 @@ def test_validate_l1b_idex_data_variables(
     # SPICE data is mocked.
     arrays_to_skip = [
         "Timestamp",
-        "Epoch",
+        "epoch",
         "Pitch",
         "Roll",
         "Yaw",
@@ -301,23 +302,21 @@ def test_validate_l1b_idex_data_variables(
                 f"The array '{cdf_var}' does not equal the expected example array "
             )
             f"'{var}' produced by the IDEX team"
+            # TODO remove this block once the IDEX team fixes the l1b validation file.
+            #   They included a lot of extra variables in the current file.
             try:
                 l1b_dataset[cdf_var]
             except KeyError:
-                print(f"The variable '{cdf_var}' was not found in the dataset.")
                 continue
             if l1b_dataset[cdf_var].dtype == object:
-                assert (l1b_dataset[cdf_var].data == l1b_example_data[var]).all(), (
-                    warning
-                )
+                assert (
+                    l1b_dataset[cdf_var].data == np.squeeze(l1b_example_data[var])
+                ).all(), warning
 
             else:
-                try:
-                    np.testing.assert_array_almost_equal(
-                        l1b_dataset[cdf_var].data,
-                        np.squeeze(l1b_example_data[var]),
-                        decimal=4,
-                    )
-                    print("variable: ", var, " DID match !!")
-                except AssertionError:
-                    print(f"variable: {var} did not match")
+                np.testing.assert_array_almost_equal(
+                    l1b_dataset[cdf_var].data,
+                    np.squeeze(l1b_example_data[var]),
+                    decimal=4,
+                    err_msg=warning,
+                )

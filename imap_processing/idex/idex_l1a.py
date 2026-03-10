@@ -463,20 +463,20 @@ class RawDustEvent:
         # To extract the high gain bits, the bitwise right shift (>> 20) moves the bits
         # 20 positions to the right, and the mask (0b1111111111) keeps only the least
         # significant 10 bits.
-        # TODO use the delay corresponding to the trigger
-        # high_gain_delay = (packet["IDX__TXHDRSAMPDELAY"] >> 22) & 0b1111111111
+
         n_blocks = packet["IDX__TXHDRBLOCKS"]
         trigger_item = packet["IDX__TXHDRTRIGID"]
 
-        # Account for HS trigger delay
         tofdelay = packet["IDX__TXHDRSAMPDELAY"]  # last two bits are padding
 
         # mask to extract 10-bit values
         mask = 0b1111111111
 
-        hgdelay = (tofdelay) & mask  # first 10 bits (0-9)
+        # Determine the delay based on the trigger id.
+        hgdelay = tofdelay & mask  # first 10 bits (0-9)
         mgdelay = (tofdelay >> 10) & mask  # next 10 bits (10-19)
         lgdelay = (tofdelay >> 20) & mask  # next 10 bits (20-29)
+
         u10 = trigger_item & 0x3FF
         if (u10 >> 0) & 1:
             delay = hgdelay

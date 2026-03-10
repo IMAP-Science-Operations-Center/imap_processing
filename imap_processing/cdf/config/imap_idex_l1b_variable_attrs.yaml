@@ -55,35 +55,39 @@ spice_base: &spice_base
 # <=== Instrument Setting Attributes ===>
 trigger_mode_lg:
   <<: *string_base
-  FIELDNAM: Trigger Mode
-  CATDESC: Channel and mode that triggered the event
+  FIELDNAM: LG Trigger Mode
+  CATDESC: LG Trigger Mode.
 
 trigger_level_lg:
   <<: *trigger_base
-  FIELDNAM: Trigger Level
-  CATDESC: Threshold signal level that triggered the event
+  FIELDNAM: LG Trigger Level
+  CATDESC: LG Trigger Level threshold.
 
 trigger_mode_mg:
   <<: *string_base
-  FIELDNAM: Trigger Mode
-  CATDESC: Channel and mode that triggered the event
+  FIELDNAM: MG Trigger Mode
+  CATDESC: MG Trigger Mode.
 
 trigger_level_mg:
   <<: *trigger_base
-  FIELDNAM: Trigger Level
-  CATDESC: Threshold signal level that triggered the event
+  FIELDNAM: MG Trigger Level
+  CATDESC: MG Trigger level threshold.
 
 
 trigger_mode_hg:
   <<: *string_base
-  FIELDNAM: Trigger Mode
-  CATDESC: Channel and mode that triggered the event
+  FIELDNAM: HG Trigger Mode
+  CATDESC: HG Trigger Mode.
 
 trigger_level_hg:
   <<: *trigger_base
-  FIELDNAM: Trigger Level
-  CATDESC: Threshold signal level that triggered the event
+  FIELDNAM: HG Trigger Level
+  CATDESC: HG Trigger Level threshold.
 
+trigger_origin:
+  <<: *string_base
+  FIELDNAM: Trigger Origin
+  CATDESC: Trigger Origin of the event.
 
 tof_high:
   <<: *l1b_tof_base

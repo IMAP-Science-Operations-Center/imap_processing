@@ -15,10 +15,13 @@ Examples
 """
 
 import logging
-from enum import Enum
+from enum import Enum, IntEnum
 
+import numpy as np
 import pandas as pd
 import xarray as xr
+from numpy._typing import NDArray
+from xarray import DataArray
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -40,6 +43,27 @@ from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
+
+
+class TriggerOrigin(IntEnum):
+    """Enum class for event trigger origins."""
+
+    HS_ADC0I_TOF_HG = 0
+    HS_ADC0Q_TOF_LG = 1
+    HS_ADC1Q_TOF_MG = 2
+    LS_ADC1_TARGET_HG = 3
+    SW_TRIGGER = 4
+    EXTERNAL_TRIGGER = 5
+
+
+TRIGGER_LABELS = {
+    TriggerOrigin.HS_ADC0I_TOF_HG: "HS ADC0I trigger (TOF HG)",
+    TriggerOrigin.HS_ADC0Q_TOF_LG: "HS ADC0Q trigger (TOF LG)",
+    TriggerOrigin.HS_ADC1Q_TOF_MG: "HS ADC1Q trigger (TOF MG)",
+    TriggerOrigin.LS_ADC1_TARGET_HG: "LS ADC1 trigger (Target HG / low range)",
+    TriggerOrigin.SW_TRIGGER: "SW trigger",
+    TriggerOrigin.EXTERNAL_TRIGGER: "external trigger",
+}
 
 
 class TriggerMode(Enum):
@@ -118,13 +142,20 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     spice_data = get_spice_data(l1a_dataset, idex_attrs)
 
     trigger_settings = get_trigger_mode_and_level(l1a_dataset, idex_attrs)
-
+    trigger_origin = get_trigger_origin(
+        l1a_dataset["idx__txhdrtrigid"].data, idex_attrs
+    )
     # Create l1b Dataset
     prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
-    data_vars = processed_vars | waveforms_converted | trigger_settings | spice_data
+    data_vars = (
+        processed_vars
+        | waveforms_converted
+        | trigger_settings
+        | spice_data
+        | trigger_origin
+    )
     l1b_dataset = setup_dataset(l1a_dataset, prefixes, idex_attrs, data_vars)
     l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_sci")
-
     # Convert variables
     l1b_dataset = convert_raw_to_eu(
         l1b_dataset,
@@ -310,6 +341,46 @@ def get_trigger_mode_and_level(
         data_dict[f"trigger_level_{channel}"] = level_array
 
     return data_dict
+
+
+def get_trigger_origin(
+    trigger_id: NDArray, idex_attrs: ImapCdfAttributes
+) -> dict[str, DataArray]:
+    """
+    Determine the trigger origin for each event.
+
+    Parameters
+    ----------
+    trigger_id : NDArray
+        Array of raw trigger ID values from the l1a dataset. The trigger ID is a 32-bit
+        integer where the lower 10 bits contain information about the trigger origin.
+    idex_attrs : ImapCdfAttributes
+        CDF attribute manager object.
+
+    Returns
+    -------
+    xr.DataArray
+        An array containing the trigger origin for each event.
+    """
+    # extract the lower 10 bits of the trigger ID to get the trigger origin information
+    trigger_bits = trigger_id & 0x3FF
+    # For each event, determine which bits are set and get the corresponding trigger
+    # origin labels
+    origin_labels = np.array(
+        [
+            [TRIGGER_LABELS[TriggerOrigin(i)] for i in range(6) if (bits >> i) & 1]
+            for bits in trigger_bits
+        ],
+        dtype=object,
+    )
+    return {
+        "trigger_origin": xr.DataArray(
+            name="trigger_origin",
+            data=np.squeeze(origin_labels),
+            dims="epoch",
+            attrs=idex_attrs.get_variable_attributes("trigger_origin"),
+        )
+    }
 
 
 def get_spice_data(
