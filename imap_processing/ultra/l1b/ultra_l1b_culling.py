@@ -676,7 +676,7 @@ def flag_low_voltage(
 
     num_culled: int = np.sum(quality_flags)
     logger.info(
-        f"High energy culling removed {num_culled} spin bins across all energy "
+        f"Low voltage culling removed {num_culled} spin bins across all energy "
         f"channels. Voltage threshold: {voltage_threshold} V."
     )
 

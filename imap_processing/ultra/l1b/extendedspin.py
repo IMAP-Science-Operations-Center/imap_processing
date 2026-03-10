@@ -173,6 +173,10 @@ def calculate_extendedspin(
     energy_flags = np.full(UltraConstants.MAX_ENERGY_RANGES, 0, dtype=np.uint16)
     energy_flags[: len(energy_bin_flags)] = energy_bin_flags
     extendedspin_dict["energy_range_flags"] = energy_flags
+    extendedspin_dict["energy_range_flags_dim"] = np.arange(
+        UltraConstants.MAX_ENERGY_RANGES
+    )
+
     # Initialize array of energy range edges with fill value, then fill in the valid
     # energy ranges. Set the length to be the max number of energy bins we expect to
     # use for culling. The number of edges is one more than the number of bins (17).
@@ -181,6 +185,13 @@ def calculate_extendedspin(
     )
     ranges[: len(energy_ranges)] = energy_ranges
     extendedspin_dict["energy_range_edges"] = ranges
+    extendedspin_dict["energy_range_edges_dim"] = np.arange(
+        UltraConstants.MAX_ENERGY_RANGE_EDGES
+    )
 
     extendedspin_dataset = create_dataset(extendedspin_dict, name, "l1b")
+
+    print(extendedspin_dataset)
+    print("energy_range_flags_dim" in extendedspin_dataset)
+    print("energy_range_edges_dim" in extendedspin_dataset)
     return extendedspin_dataset
