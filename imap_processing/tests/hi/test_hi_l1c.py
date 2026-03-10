@@ -16,6 +16,22 @@ from imap_processing.hi.utils import HIAPID, HiConstants
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 
+@pytest.fixture(scope="module")
+def hi_l1b_de_dataset(hi_l1_test_data_path):
+    """Load the Hi L1B DE test dataset."""
+    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
+    return load_cdf(l1b_de_path)
+
+
+@pytest.fixture(scope="module")
+def hi_goodtimes_dataset(hi_l1_test_data_path):
+    """Load the Hi goodtimes test dataset."""
+    goodtimes_path = (
+        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
+    )
+    return load_cdf(goodtimes_path)
+
+
 @mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")
 def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     """Test coverage for hi_l1c function"""
@@ -28,7 +44,8 @@ def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
 @pytest.mark.external_kernel
 @pytest.mark.external_test_data
 def test_generate_pset_dataset(
-    hi_l1_test_data_path,
+    hi_l1b_de_dataset,
+    hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
     use_fake_spin_data_for_time,
     use_fake_repoint_data_for_time,
@@ -36,8 +53,7 @@ def test_generate_pset_dataset(
 ):
     """Test coverage for generate_pset_dataset function"""
     use_fake_spin_data_for_time(482372987.999)
-    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
-    l1b_dataset = load_cdf(l1b_de_path)
+    l1b_dataset = hi_l1b_de_dataset
     l1b_met = l1b_dataset["ccsds_met"].values[0]
     # Set repoint start and end times.
     seconds_per_day = 24 * 60 * 60
@@ -45,10 +61,7 @@ def test_generate_pset_dataset(
         np.asarray([l1b_met - 15 * 60, l1b_met + seconds_per_day]),
         np.asarray([l1b_met, l1b_met + seconds_per_day + 1]),
     )
-    goodtimes_path = (
-        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
-    )
-    goodtimes = load_cdf(goodtimes_path)
+    goodtimes = hi_goodtimes_dataset
 
     l1c_dataset = hi_l1c.generate_pset_dataset(
         l1b_dataset, hi_test_cal_prod_config_path, goodtimes
@@ -224,27 +237,22 @@ def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_s
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
 def test_pset_counts(
     mock_pointing_times,
-    hi_l1_test_data_path,
+    hi_l1b_de_dataset,
+    hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
 ):
     """Test coverage for pset_counts function."""
-    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
-    l1b_dataset = load_cdf(l1b_de_path)
     cal_config_df = utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
-    goodtimes_path = (
-        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
-    )
-    goodtimes = load_cdf(goodtimes_path)
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
-        l1b_dataset.esa_energy_step,
+        hi_l1b_de_dataset.esa_energy_step,
         cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
     counts_var = hi_l1c.pset_counts(
-        empty_pset.coords, cal_config_df, l1b_dataset, goodtimes
+        empty_pset.coords, cal_config_df, hi_l1b_de_dataset, hi_goodtimes_dataset
     )
     assert "counts" in counts_var
 
@@ -253,22 +261,18 @@ def test_pset_counts(
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
 def test_pset_counts_empty_l1b(
     mock_pointing_times,
-    hi_l1_test_data_path,
+    hi_l1b_de_dataset,
+    hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
 ):
     """Test coverage for pset_counts function when the input L1b contains no counts."""
-    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
-    l1b_dataset = load_cdf(l1b_de_path)
+    # Make a copy and modify it -
     # remove all but one event and set its trigger_id to zero
-    l1b_dataset = l1b_dataset.isel(event_met=[0])
+    l1b_dataset = hi_l1b_de_dataset.isel(event_met=[0]).copy(deep=True)
     l1b_dataset["trigger_id"].data[0] = 0
     cal_config_df = utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
-    goodtimes_path = (
-        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
-    )
-    goodtimes = load_cdf(goodtimes_path)
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
         l1b_dataset.esa_energy_step,
@@ -276,7 +280,7 @@ def test_pset_counts_empty_l1b(
         HIAPID.H90_SCI_DE.sensor,
     )
     counts_var = hi_l1c.pset_counts(
-        empty_pset.coords, cal_config_df, l1b_dataset, goodtimes
+        empty_pset.coords, cal_config_df, l1b_dataset, hi_goodtimes_dataset
     )
     assert counts_var["counts"].data.sum() == 0
 
@@ -365,7 +369,7 @@ def test_empty_pset_dataset_arbitrary_cal_prod_numbers(use_fake_repoint_data_for
 
 @pytest.mark.external_test_data
 def test_pset_counts_arbitrary_cal_prod_numbers(
-    hi_l1_test_data_path, use_fake_repoint_data_for_time
+    hi_l1b_de_dataset, hi_goodtimes_dataset, use_fake_repoint_data_for_time
 ):
     """Test pset_counts with non-sequential calibration product numbers."""
     # Create a test calibration product config with non-sequential numbers
@@ -377,15 +381,7 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
 10,2,0.00085,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023
     """
 
-    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
-    l1b_dataset = load_cdf(l1b_de_path)
-
     cal_config_df = utils.CalibrationProductConfig.from_csv(io.StringIO(csv_content))
-
-    goodtimes_path = (
-        hi_l1_test_data_path / "imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf"
-    )
-    goodtimes = load_cdf(goodtimes_path)
 
     # Create PSET with non-sequential calibration product numbers
     l1b_met = 482373065
@@ -395,7 +391,7 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
 
     empty_pset = hi_l1c.empty_pset_dataset(
         l1b_met,
-        l1b_dataset.esa_energy_step,
+        hi_l1b_de_dataset.esa_energy_step,
         cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
@@ -408,7 +404,7 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
         "imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200)
     ):
         counts_var = hi_l1c.pset_counts(
-            empty_pset.coords, cal_config_df, l1b_dataset, goodtimes
+            empty_pset.coords, cal_config_df, hi_l1b_de_dataset, hi_goodtimes_dataset
         )
 
     # Verify counts array has correct shape based on coordinates
@@ -424,14 +420,16 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
     assert counts_var["counts"].data.shape == expected_shape
     # Check that total number of expected counts is correct
     # ABC1C2 is coincidence type 15
-    esa_1_2_mask = (l1b_dataset["esa_step"][l1b_dataset["ccsds_index"]] < 3).values
-    coincidence_15_mask = (l1b_dataset["coincidence_type"] == 15).values
+    esa_1_2_mask = (
+        hi_l1b_de_dataset["esa_step"][hi_l1b_de_dataset["ccsds_index"]] < 3
+    ).values
+    coincidence_15_mask = (hi_l1b_de_dataset["coincidence_type"] == 15).values
     np.testing.assert_equal(
         np.sum(counts_var["counts"].data[:, :, 0]),
         np.sum(coincidence_15_mask & esa_1_2_mask),
     )
     # BC1C2 is coincidence type 7
-    coincidence_7_mask = (l1b_dataset["coincidence_type"] == 7).values
+    coincidence_7_mask = (hi_l1b_de_dataset["coincidence_type"] == 7).values
     np.testing.assert_equal(
         np.sum(counts_var["counts"].data[:, :, 1]),
         np.sum(coincidence_7_mask & esa_1_2_mask),
