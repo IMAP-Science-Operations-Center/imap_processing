@@ -879,10 +879,12 @@ class Hi(ProcessInstrument):
                         f"Got {goodtimes_paths}"
                     )
                 datasets = hi_l1c.hi_l1c(
-                    load_cdf(l1b_de_paths[0]), anc_paths[0], load_cdf(goodtimes_paths)
+                    load_cdf(l1b_de_paths[0]),
+                    anc_paths[0],
+                    load_cdf(goodtimes_paths[0]),
                 )
         elif self.data_level == "l2":
-            l1b_de_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
+            science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
             anc_dependencies = dependencies.get_processing_inputs(data_type="ancillary")
             if len(anc_dependencies) != 3:
                 raise ValueError(
@@ -901,7 +903,7 @@ class Hi(ProcessInstrument):
                 for dep in anc_dependencies
             }
             datasets = hi_l2.hi_l2(
-                l1b_de_paths,
+                science_paths,
                 l2_ancillary_path_dict,
                 self.descriptor,
             )
