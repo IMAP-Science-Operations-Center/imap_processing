@@ -561,33 +561,30 @@ def get_energy_and_spin_dependent_rejection_mask(
         goodtimes_dataset[flag_name].values
         for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
     ]
-    ebin_flags = goodtimes_dataset["energy_range_flags"].values
-    # Create a dict of spin_number to index in the goodtimes dataset
-    spin_to_idx = {
-        spin: idx for idx, spin in enumerate(goodtimes_dataset["spin_number"].values)
-    }
-
     # Initialize all events to not rejected
-    rejected = np.full(energy.shape, False, dtype=bool)
-    # loop through each energy bin and flag events that fall within an energy
-    # bin and have the corresponding energy bin flag set in the goodtimes dataset.
-    for i in range(len(energy_range_edges) - 1):
-        mask = (energy >= energy_range_edges[i]) & (energy < energy_range_edges[i + 1])
-        goodtimes_inds = [spin_to_idx[spin] for spin in spin_number[mask]]
-        # Get the flag value for the current energy bin
-        energy_bin_flag = ebin_flags[i]
-        # If the flag is set for any of the quality arrays, then reject
-        # the event.
-        flagged_at_spins = (
-            np.bitwise_or.reduce(
-                [qf[goodtimes_inds] & energy_bin_flag for qf in flag_arrays]
-            )
-            > 0
-        )
+    rejected = np.zeros_like(energy, dtype=bool)
+    ebin_flags = goodtimes_dataset["energy_range_flags"].values
+    # Get the index of the spin number in the goodtimes dataset for each event
+    # all spin numbers should be present in the goodtimes dataset since we have already
+    # filtered any events that are not
+    spin_idx = np.searchsorted(goodtimes_dataset.spin_number, spin_number)
+    event_energy_bins: NDArray = (np.digitize(energy, energy_range_edges) - 1).astype(
+        np.intp
+    )
+    in_valid_bin = (event_energy_bins >= 0) & (event_energy_bins < len(ebin_flags))
+    # get the flags for each event
+    event_flags = np.zeros_like(energy, dtype=np.uint16)
+    event_flags[in_valid_bin] = ebin_flags[event_energy_bins[in_valid_bin]]
+    for qf_array in flag_arrays:
+        # select the quality flag for each event
+        quality_flags_at_events = qf_array[spin_idx]
+        # If that flag is "turned on" for the spin of that event, and the event is in
+        # an energy bin that is flagged for culling, then we reject that event.
+        rejected |= quality_flags_at_events & event_flags > 0
 
-        # Mark flagged events as rejected
-        mask_indices = np.where(mask)[0]
-        rejected[mask_indices[flagged_at_spins]] = True
+    logger.info(
+        "Rejected %d events based on energy and spin dependent flags.", np.sum(rejected)
+    )
 
     return rejected
 
@@ -1127,7 +1124,7 @@ def get_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
 
 def get_binned_energy_ranges(
     energy_bin_edges: list[tuple[float, float]],
-    max_energy: int | None = UltraConstants.MAX_ENERGY_THRESHOLD,
+    max_energy: float | None = UltraConstants.MAX_ENERGY_THRESHOLD,
 ) -> NDArray:
     """
     Create L1C energy ranges by grouping energy bins.
@@ -1136,7 +1133,7 @@ def get_binned_energy_ranges(
     ----------
     energy_bin_edges : list[tuple[float, float]]
         List of (start, stop) tuples for each energy bin.
-    max_energy : int | None
+    max_energy : float | None
         Maximum energy to include in the energy ranges. If None, don't set a max.
 
     Returns
@@ -1159,7 +1156,6 @@ def get_binned_energy_ranges(
     energy_ranges = np.append(
         energy_starts, energy_bin_edges[last_group_end_ind - 1][1]
     )
-
     if max_energy is not None:
         # get the first index where the energy range exceeds the max energy
         # exclude the last edge since it is the stop energy of the last range
@@ -1175,8 +1171,11 @@ def get_binned_energy_ranges(
         energy_ranges_lim = energy_ranges[
             : max_reached_idx + 2
         ].copy()  # include the first edge above max energy and the last edge
-        # Set the last edge to be the max energy to make the last bin a "catch-all" for
-        # all energies above the max energy.
+        # update the last bin to start at the first original edge above the max energy
+        # and end at the last edge
+        energy_ranges_lim[-2] = next(
+            e[0] for e in energy_bin_edges if e[0] > max_energy
+        )
         energy_ranges_lim[-1] = energy_ranges[-1]
         energy_ranges = energy_ranges_lim
 
@@ -1225,7 +1224,6 @@ def get_binned_spins_edges(
     spin_tbin_edges = np.append(
         spin_tbin_edges, spin_start_times[last_spin_idx] + spin_periods[last_spin_idx]
     )
-    return spin_tbin_edges
     return spin_tbin_edges
 
 

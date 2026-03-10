@@ -27,7 +27,7 @@ from imap_processing.spice.geometry import (
 
 def test_spice_frame_enum(furnish_kernels):
     """Test that the SpiceFrame enum values match imap frames kernel."""
-    with furnish_kernels(["imap_130.tf", "imap_science_100.tf"]):
+    with furnish_kernels(["imap_130.tf", "imap_science_120.tf"]):
         for frame in SpiceFrame:
             assert frame.value == spiceypy.namfrm(frame.name)
 
@@ -169,7 +169,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
@@ -298,7 +298,7 @@ def test_frame_transform_az_el_3d_input(furnish_kernels):
         "naif0012.tls",
         "imap_001.tf",
         "imap_sclk_0000.tsc",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
@@ -341,7 +341,7 @@ def test_get_rotation_matrix(furnish_kernels):
         "naif0012.tls",
         "imap_130.tf",
         "imap_sclk_0000.tsc",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
         "de440s.bsp",
@@ -376,7 +376,7 @@ def test_get_rotation_matrix_no_transformation_defined_for_et_allowed(furnish_ke
         "naif0012.tls",
         "imap_130.tf",
         "imap_sclk_0000.tsc",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
         "de440s.bsp",
@@ -415,7 +415,7 @@ def test_get_rotation_matrix_no_transformation_defined_for_et_not_allowed(
         "naif0012.tls",
         "imap_130.tf",
         "imap_sclk_0000.tsc",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
         "de440s.bsp",
@@ -435,7 +435,7 @@ def test_instrument_pointing(furnish_kernels):
         "naif0012.tls",
         "imap_130.tf",
         "imap_sclk_0000.tsc",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
@@ -483,7 +483,7 @@ def test_instrument_pointing_all_instruments(frame, furnish_kernels):
         "naif0012.tls",
         "imap_130.tf",
         "imap_sclk_0000.tsc",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
@@ -507,7 +507,7 @@ def test_instrument_pointing_lo_ck(frame, furnish_kernels):
         "naif0012.tls",
         "imap_130.tf",
         "imap_sclk_0000.tsc",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]

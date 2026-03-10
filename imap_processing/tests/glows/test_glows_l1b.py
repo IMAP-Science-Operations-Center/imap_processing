@@ -586,7 +586,7 @@ def test_hist_spice_output(
         "de440s.bsp",
         "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]

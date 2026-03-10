@@ -11,14 +11,14 @@ from scipy import interpolate
 from imap_processing.spice.geometry import (
     cartesian_to_spherical,
 )
-from imap_processing.spice.spin import (
-    get_spin_data,
-)
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_geometric_factor,
     get_image_params,
     load_geometric_factor_tables,
+)
+from imap_processing.ultra.l1b.quality_flag_filters import (
+    ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS,
 )
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_pulses_per_spin,
@@ -385,6 +385,7 @@ def calculate_exposure_time(
     -------
     exposure_pointing: xarray.DataArray
         Adjusted exposure times accounting for dead time.
+        Shape: ``(energy, pixel)``.
     """
     # nominal spin phase step.
     nominal_ms_step = 15 / valid_spun_pixels.shape[0]  # time step
@@ -407,8 +408,8 @@ def get_spacecraft_exposure_times(
     valid_spun_pixels: xr.DataArray,
     boundary_scale_factors: xr.DataArray,
     aux_dataset: xr.Dataset,
-    pointing_range_met: tuple[float, float],
-    n_energy_bins: int,
+    energy_bins: np.ndarray,
+    goodtimes_dataset: xr.Dataset,
     sensor_id: int | None = None,
     ancillary_files: dict | None = None,
     apply_bsf: bool = True,
@@ -431,10 +432,13 @@ def get_spacecraft_exposure_times(
         Boundary scale factors for each pixel at each spin phase.
     aux_dataset : xarray.Dataset
         Auxiliary dataset containing spin information.
-    pointing_range_met : tuple
-        Start and stop time of the pointing period in mission elapsed time.
-    n_energy_bins : int
-        Number of energy bins.
+    energy_bins : np.ndarray
+        Array of energy bin geometric means.
+    goodtimes_dataset : xarray.Dataset
+        Dataset containing the quality-filtered spins with energy dependent quality
+        flags (quality_low_voltage, quality_high_energy, quality_statistics).
+        Exposure times are computed using only these good spins
+        and can be adjusted per energy bin based on quality flags.
     sensor_id : int, optional
         Sensor ID, either 45 or 90.
     ancillary_files : dict, optional
@@ -448,6 +452,7 @@ def get_spacecraft_exposure_times(
         Total exposure times of pixels in a
         Healpix tessellation of the sky
         in the pointing (dps) frame.
+        Shape: (n_energy_bins, n_pix).
     nominal_deadtime_ratios : np.ndarray
         Deadtime ratios at each spin phase step (1ms res).
     """
@@ -464,35 +469,60 @@ def get_spacecraft_exposure_times(
     exposure_time = calculate_exposure_time(
         nominal_deadtime_ratios, valid_spun_pixels, boundary_scale_factors, apply_bsf
     )
-    # Use the universal spin table to determine the actual number of spins
-    nominal_spin_seconds = 15.0
-    spin_data = get_spin_data()
-    # Filter for spins only in pointing
-    spin_data = spin_data[
-        (spin_data["spin_start_met"] >= pointing_range_met[0])
-        & (spin_data["spin_start_met"] <= pointing_range_met[1])
-    ]
-    # Get only valid spin data
-    valid_mask = (spin_data["spin_phase_valid"].values == 1) & (
-        spin_data["spin_period_valid"].values == 1
-    )
-    n_spins_in_pointing: float = np.sum(
-        spin_data[valid_mask].spin_period_sec / nominal_spin_seconds
-    )
-    logger.info(
-        f"Calculated total spins universal spin table. Found {n_spins_in_pointing} "
-        f"valid spins."
-    )
-    # Adjust exposure time by the actual number of valid spins in the pointing
-    exposure_pointing_adjusted = n_spins_in_pointing * exposure_time
-
-    if exposure_pointing_adjusted.shape[0] != n_energy_bins:
-        exposure_pointing_adjusted = np.repeat(
-            exposure_pointing_adjusted,
-            n_energy_bins,
-            axis=0,
+    if exposure_time.ndim != 2:
+        raise ValueError(
+            "Exposure time must be 2D with dimensions ('energy', 'pixel'); "
+            f"got dims {exposure_time.dims} and shape {exposure_time.shape}."
         )
-    return exposure_pointing_adjusted.values, nominal_deadtime_ratios.values
+    nominal_spin_seconds = 15.0
+    # Use filtered spins from goodtimes dataset to include only the spins that
+    # passed the quality flag filtering.
+    spin_periods = goodtimes_dataset["spin_period"].values
+    energy_flags = goodtimes_dataset["energy_range_flags"].values
+    # only get valid flags for the energy bins we are using at l1c
+    energy_flags = energy_flags[energy_flags > 0]
+    # Get the quality flag arrays "turned on" for energy dependent culling from the
+    # goodtimes dataset.
+    flag_arrays = [
+        goodtimes_dataset[flag_name].values
+        for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
+    ]
+    bin_to_range = np.digitize(energy_bins, goodtimes_dataset.energy_range_edges)
+    valid_spins = (
+        np.bitwise_or.reduce(flag_arrays)[np.newaxis, :] & energy_flags[:, np.newaxis]
+    ) == 0
+    # Pad valid_spins with arrays of all true at either end to account for energy bins
+    # that fall outside the range of the goodtimes dataset energy edges. Energy bins
+    # outside these ranges were not included in the quality flag filtering, so they are
+    # considered valid (all true).
+    valid_spins_padded = np.pad(
+        valid_spins,
+        pad_width=((1, 1), (0, 0)),
+        # pad only the energy axis
+        mode="constant",
+        constant_values=True,
+    )
+    # Select the valid spins for each energy bin using the bin_to_range indices
+    good_spins_per_ebin = valid_spins_padded[bin_to_range]
+    # Broadcast spin periods to have the correct shape e.g. (energy_bins, spins)
+    spin_periods_2d = np.broadcast_to(
+        spin_periods[np.newaxis, :], good_spins_per_ebin.shape
+    )
+    # Calculate total normalized spin count using spin periods from goodtimes
+    # Shape (n_energy_bins)
+    n_spins_in_pointing = (
+        np.sum(spin_periods_2d, axis=1, where=good_spins_per_ebin)
+        / nominal_spin_seconds
+    )
+
+    logger.info(
+        f"Calculated total spins. Found {n_spins_in_pointing.tolist()} valid spins per "
+        f"energy range."
+    )
+    # Shape (n_energy_bins, n_pix)
+    exposure_pointing_adjusted = exposure_time.data * n_spins_in_pointing[:, np.newaxis]
+
+    return exposure_pointing_adjusted, nominal_deadtime_ratios.values
 
 
 def get_efficiencies_and_geometric_function(

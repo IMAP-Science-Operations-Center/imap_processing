@@ -36,7 +36,7 @@ class TestUltraL2:
     def _setup_spice_kernels_list(self, spice_test_data_path, furnish_kernels):
         self.required_kernel_names = [
             "naif0012.tls",
-            "imap_science_100.tf",
+            "imap_science_120.tf",
             "imap_sclk_0000.tsc",
             "sim_1yr_imap_attitude.bc",
             "sim_1yr_imap_pointing_frame.bc",

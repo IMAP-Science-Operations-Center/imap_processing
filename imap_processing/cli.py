@@ -772,7 +772,7 @@ class Hi(ProcessInstrument):
 
     def do_processing(  # noqa: PLR0912
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset | Path]:
+    ) -> list[xr.Dataset]:
         """
         Perform IMAP-Hi specific processing.
 
@@ -789,10 +789,6 @@ class Hi(ProcessInstrument):
         print(f"Processing IMAP-Hi {self.data_level}")
         datasets: list[xr.Dataset] = []
 
-        # Check self.repointing is not None (for mypy type checking)
-        if self.repointing is None:
-            raise ValueError("Repointing must be provided for Hi processing.")
-
         if self.data_level == "l1a":
             science_files = dependencies.get_file_paths(source="hi")
             if len(science_files) != 1:
@@ -806,6 +802,12 @@ class Hi(ProcessInstrument):
             if l0_files:
                 datasets = hi_l1b.housekeeping(l0_files[0])
             elif "goodtimes" in self.descriptor:
+                # Check self.repointing is not None (for mypy type checking)
+                if self.repointing is None:
+                    raise ValueError(
+                        "Repointing must be provided for Hi Goodtimes processing."
+                    )
+
                 # Goodtimes processing
                 l1b_de_paths = dependencies.get_file_paths(
                     source="hi", data_type="l1b", descriptor="de"

@@ -32,7 +32,7 @@ def furnish_pointing_frame_kernels(furnish_kernels, spice_test_data_path):
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
     ]
     with furnish_kernels(required_kernels):
@@ -46,7 +46,7 @@ def furnish_flight_ah_kernels(furnish_kernels, spice_test_data_path):
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "imap_2025_338_2025_339_001.ah.bc",
         "imap_2025_339_2025_339_001.ah.bc",
         "imap_2025_339_2025_340_001.ah.bc",

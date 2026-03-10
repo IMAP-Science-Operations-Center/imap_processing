@@ -173,11 +173,11 @@ def calculate_helio_pset(
         pixels_below_scattering,
         boundary_scale_factors,
         aux_dataset,
-        pointing_range_met,
-        n_energy_bins=len(energy_bin_geometric_means),
+        energy_bins=energy_bin_geometric_means,
         sensor_id=sensor_id,
         ancillary_files=ancillary_files,
         apply_bsf=apply_bsf,
+        goodtimes_dataset=goodtimes_dataset,
     )
     logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy

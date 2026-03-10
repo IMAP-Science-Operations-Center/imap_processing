@@ -42,7 +42,7 @@ support_data_defaults: &support_data_defaults
 time_data_defaults: &time_data_defaults
   <<: *support_data_defaults
   FILLVAL: ' '
-  FORMAT: A29
+  FORMAT: A30
   UNITS: N/A
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 

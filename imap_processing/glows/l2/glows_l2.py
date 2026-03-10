@@ -12,7 +12,12 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     PipelineSettings,
 )
 from imap_processing.glows.l2.glows_l2_data import HistogramL2
-from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
+from imap_processing.spice.time import (
+    et_to_datetime64,
+    met_to_utc,
+    ttj2000ns_to_et,
+    ttj2000ns_to_met,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +27,7 @@ def glows_l2(
     pipeline_settings_dataset: xr.Dataset,
 ) -> list[xr.Dataset]:
     """
-    Will process GLoWS L2 data from L1 data.
+    Will process GLOWS L2 data from L1 data.
 
     Parameters
     ----------
@@ -145,6 +150,8 @@ def create_l2_dataset(
         "spin_axis_orientation_std_dev",
     ]
 
+    utc_time_variables = ["start_time", "end_time"]
+
     for key, value in dataclasses.asdict(histogram_l2).items():
         if key in ecliptic_variables:
             output[key] = xr.DataArray(
@@ -164,7 +171,12 @@ def create_l2_dataset(
                 dims=["epoch", "flags"],
                 attrs=attrs.get_variable_attributes(key),
             )
-
+        elif key in utc_time_variables:
+            # Convert time to UTC
+            utc_string = [met_to_utc(ttj2000ns_to_met(value))]
+            output[key] = xr.DataArray(
+                utc_string, dims=["epoch"], attrs=attrs.get_variable_attributes(key)
+            )
         elif key != "daily_lightcurve":
             val = value
             if type(value) is not np.ndarray:

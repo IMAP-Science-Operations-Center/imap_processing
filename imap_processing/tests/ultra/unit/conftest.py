@@ -39,6 +39,11 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_RATES,
 )
 from imap_processing.ultra.l1a.ultra_l1a import ultra_l1a
+from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    get_binned_energy_ranges,
+    get_energy_range_flags,
+)
+from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -644,13 +649,27 @@ def mock_helio_pointing_lookups():
 @pytest.fixture
 def mock_goodtimes_dataset():
     """Create a mock goodtimes dataset."""
+    # Set up bit flags
+    intervals, _, _ = build_energy_bins()
+    energy_ranges = get_binned_energy_ranges(intervals)
+    energy_flags = get_energy_range_flags(energy_ranges)
+    nspins = 100
+    flags = 2 ** np.arange(9)
+    quality = np.zeros(nspins, dtype=np.uint16)
+    quality[0] = flags[0]  # Set the first flag for the first spin
+    quality[1] = flags[1]  # Set the second flag for the second
+    quality[2] = flags[2]  # Set the third flag for the third spin
     return xr.Dataset(
         {
-            "spin_number": ("epoch", np.zeros(5)),
-            "energy_range_flags": ("energy_flags", np.zeros(10, dtype=np.uint16)),
-            "quality_low_voltage": ("spin_number", np.zeros(5, dtype=np.uint16)),
-            "quality_high_energy": ("spin_number", np.zeros(5, dtype=np.uint16)),
-            "quality_statistics": ("spin_number", np.zeros(5, dtype=np.uint16)),
-            "energy_range_edges": ("energy_ranges", np.zeros(11, dtype=np.uint16)),
+            "spin_number": ("epoch", np.zeros(nspins)),
+            "energy_range_flags": ("energy_flags", energy_flags),
+            "quality_low_voltage": ("spin_number", quality),
+            "quality_high_energy": ("spin_number", np.zeros(nspins, dtype=np.uint16)),
+            "quality_statistics": ("spin_number", np.zeros(nspins, dtype=np.uint16)),
+            "energy_range_edges": ("energy_ranges", energy_ranges),
+            "spin_period": (
+                "spin_number",
+                np.full(nspins, 15),
+            ),  # nominal spin period of 15 seconds
         }
     )
