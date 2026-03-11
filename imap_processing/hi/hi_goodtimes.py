@@ -211,7 +211,7 @@ def _apply_goodtimes_filters(
     """
     Apply all goodtimes culling filters to the dataset.
 
-    Modifies goodtimes_ds in place by applying filters 1-6.
+    Modifies goodtimes_ds in place by applying filters 1-7.
 
     Parameters
     ----------
@@ -1191,7 +1191,10 @@ def mark_bad_tdc_cal(
     # Based on sample code in culling_v2.c, skip this check if we have fewer
     # than two diag_fee packets.
     if len(diagfee.epoch) < 2:
-        logger.warning("No DIAG_FEE data to use for selecting good times")
+        logger.warning(
+            f"Insufficient DIAG_FEE packets to select good times "
+            f"(found {len(diagfee.epoch)}, need at least 2)"
+        )
         return
 
     df_met = diagfee["shcoarse"].values

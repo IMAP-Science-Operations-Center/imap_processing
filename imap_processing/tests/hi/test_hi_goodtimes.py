@@ -3646,6 +3646,7 @@ class TestApplyGoodtimesFilters:
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
             patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_0"),
             patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_1"),
             patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"),
