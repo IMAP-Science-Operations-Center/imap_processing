@@ -23,6 +23,7 @@ from imap_processing.hi.hi_goodtimes import (
     _identify_cull_pattern,
     create_goodtimes_dataset,
     hi_goodtimes,
+    mark_bad_tdc_cal,
     mark_drf_times,
     mark_incomplete_spin_sets,
     mark_overflow_packets,
@@ -1411,6 +1412,255 @@ class TestDropDrfTimes:
         n_culled = np.sum(gt["cull_flags"].values[:, 0] == CullCode.LOOSE)
         assert n_culled > 0  # Some should be culled
         assert n_culled <= 31  # But not all (only last ~30 minutes)
+
+
+class TestMarkBadTdcCal:
+    """Test suite for mark_bad_tdc_cal() function."""
+
+    @pytest.fixture
+    def goodtimes_for_tdc(self):
+        """Create a goodtimes dataset with METs spanning a range."""
+        # Create METs every 50 seconds for 200 seconds (5 METs)
+        n_mets = 5
+        met_values = np.arange(1000.0, 1000.0 + n_mets * 50, 50)
+
+        gt = xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((n_mets, 90), dtype=np.uint8), dims=["met", "spin_bin"]
+                ),
+                "esa_step": xr.DataArray(np.ones(n_mets, dtype=np.uint8), dims=["met"]),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+            attrs={"sensor": "45sensor", "pointing": 1},
+        )
+        return gt
+
+    @pytest.fixture
+    def diagfee_all_good(self):
+        """Create DIAG_FEE dataset where all TDC calibrations pass."""
+        # 4 DIAG_FEE packets, all with bit 1 set (=2, meaning calibration good)
+        return xr.Dataset(
+            {
+                "shcoarse": (["epoch"], np.array([1000, 1050, 1100, 1150])),
+                "tdc1_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+                "tdc2_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+                "tdc3_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+            }
+        )
+
+    @pytest.fixture
+    def diagfee_tdc1_fails(self):
+        """Create DIAG_FEE dataset where TDC1 fails at packet index 2."""
+        # TDC1 fails at index 2 (bit 1 not set, so value 0)
+        return xr.Dataset(
+            {
+                "shcoarse": (["epoch"], np.array([1000, 1050, 1100, 1150])),
+                "tdc1_cal_ctrl_stat": (
+                    ["epoch"],
+                    np.array([2, 2, 0, 2]),
+                ),  # fails at idx 2
+                "tdc2_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+                "tdc3_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+            }
+        )
+
+    @pytest.fixture
+    def diagfee_with_duplicate(self):
+        """Create DIAG_FEE dataset with duplicate packets within 10 seconds."""
+        # First two packets are within 10 seconds (should skip first)
+        return xr.Dataset(
+            {
+                "shcoarse": (["epoch"], np.array([1000, 1005, 1100, 1150])),
+                "tdc1_cal_ctrl_stat": (
+                    ["epoch"],
+                    np.array([0, 2, 2, 2]),
+                ),  # First would fail but is skipped
+                "tdc2_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+                "tdc3_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+            }
+        )
+
+    def test_mark_bad_tdc_cal_all_good(self, goodtimes_for_tdc, diagfee_all_good):
+        """Test that no times are marked when all TDC calibrations pass."""
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_all_good)
+
+        # All times should remain good
+        assert np.all(goodtimes_for_tdc["cull_flags"].values == CullCode.GOOD)
+
+    def test_mark_bad_tdc_cal_tdc1_fails(self, goodtimes_for_tdc, diagfee_tdc1_fails):
+        """Test that times are marked when TDC1 fails."""
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_tdc1_fails)
+
+        # TDC1 fails at packet 2 (MET 1100), should mark times from 1100 to 1150
+        # goodtimes METs are [1000, 1050, 1100, 1150, 1200]
+        # MET 1100 falls in window [1100, 1150), so MET 1100 should be culled
+        met_values = goodtimes_for_tdc.coords["met"].values
+
+        # MET 1100 (index 2) should be culled
+        idx_1100 = np.where(met_values == 1100.0)[0][0]
+        assert np.all(
+            goodtimes_for_tdc["cull_flags"].values[idx_1100, :] == CullCode.LOOSE
+        )
+
+        # METs before 1100 should still be good
+        assert np.all(
+            goodtimes_for_tdc["cull_flags"].values[0, :] == CullCode.GOOD
+        )  # 1000
+        assert np.all(
+            goodtimes_for_tdc["cull_flags"].values[1, :] == CullCode.GOOD
+        )  # 1050
+
+    def test_mark_bad_tdc_cal_skip_duplicate_packets(
+        self, goodtimes_for_tdc, diagfee_with_duplicate
+    ):
+        """Test that duplicate DIAG_FEE packets within 10 seconds are skipped."""
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_with_duplicate)
+
+        # First packet (MET 1000) has TDC1 fail but should be skipped
+        # because it's within 10 seconds of the next packet (MET 1005)
+        # So all times should remain good
+        assert np.all(goodtimes_for_tdc["cull_flags"].values == CullCode.GOOD)
+
+    def test_mark_bad_tdc_cal_insufficient_packets(self, goodtimes_for_tdc):
+        """Test that less than 2 packets logs warning and returns early."""
+        # Create DIAG_FEE with only 1 packet
+        diagfee_single = xr.Dataset(
+            {
+                "shcoarse": (["epoch"], np.array([1000])),
+                "tdc1_cal_ctrl_stat": (["epoch"], np.array([0])),  # Fails but ignored
+                "tdc2_cal_ctrl_stat": (["epoch"], np.array([2])),
+                "tdc3_cal_ctrl_stat": (["epoch"], np.array([2])),
+            }
+        )
+
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_single)
+
+        # All times should remain good (no culling due to insufficient packets)
+        assert np.all(goodtimes_for_tdc["cull_flags"].values == CullCode.GOOD)
+
+    def test_mark_bad_tdc_cal_selective_tdc_checking(
+        self, goodtimes_for_tdc, diagfee_tdc1_fails
+    ):
+        """Test that TDC checking can be selectively disabled."""
+        # Disable TDC1 checking - should not cull even though TDC1 fails
+        mark_bad_tdc_cal(
+            goodtimes_for_tdc, diagfee_tdc1_fails, check_tdc1=False, check_tdc2=True
+        )
+
+        # All times should remain good since TDC1 checking is disabled
+        assert np.all(goodtimes_for_tdc["cull_flags"].values == CullCode.GOOD)
+
+    def test_mark_bad_tdc_cal_tdc2_fails(self, goodtimes_for_tdc):
+        """Test that times are marked when TDC2 fails."""
+        diagfee_tdc2_fails = xr.Dataset(
+            {
+                "shcoarse": (["epoch"], np.array([1000, 1050, 1100, 1150])),
+                "tdc1_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+                "tdc2_cal_ctrl_stat": (
+                    ["epoch"],
+                    np.array([2, 0, 2, 2]),
+                ),  # fails at idx 1
+                "tdc3_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+            }
+        )
+
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_tdc2_fails)
+
+        # TDC2 fails at packet 1 (MET 1050), should mark times from 1050 to 1100
+        met_values = goodtimes_for_tdc.coords["met"].values
+
+        # MET 1050 (index 1) should be culled
+        idx_1050 = np.where(met_values == 1050.0)[0][0]
+        assert np.all(
+            goodtimes_for_tdc["cull_flags"].values[idx_1050, :] == CullCode.LOOSE
+        )
+
+    def test_mark_bad_tdc_cal_tdc3_fails(self, goodtimes_for_tdc):
+        """Test that times are marked when TDC3 fails."""
+        diagfee_tdc3_fails = xr.Dataset(
+            {
+                "shcoarse": (["epoch"], np.array([1000, 1050, 1100, 1150])),
+                "tdc1_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+                "tdc2_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+                "tdc3_cal_ctrl_stat": (
+                    ["epoch"],
+                    np.array([0, 2, 2, 2]),
+                ),  # fails at idx 0
+            }
+        )
+
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_tdc3_fails)
+
+        # TDC3 fails at packet 0 (MET 1000), should mark times from 1000 to 1050
+        # MET 1000 (index 0) should be culled
+        assert np.all(
+            goodtimes_for_tdc["cull_flags"].values[0, :] == CullCode.LOOSE
+        )  # 1000
+
+        # MET 1050 should be good (next DIAG_FEE packet starts good window)
+        assert np.all(
+            goodtimes_for_tdc["cull_flags"].values[1, :] == CullCode.GOOD
+        )  # 1050
+
+    def test_mark_bad_tdc_cal_custom_cull_code(
+        self, goodtimes_for_tdc, diagfee_tdc1_fails
+    ):
+        """Test that custom cull code is used."""
+        custom_cull_code = 5
+        mark_bad_tdc_cal(
+            goodtimes_for_tdc, diagfee_tdc1_fails, cull_code=custom_cull_code
+        )
+
+        # Check that culled times use custom code
+        assert np.any(goodtimes_for_tdc["cull_flags"].values == custom_cull_code)
+
+    def test_mark_bad_tdc_cal_last_packet_fails(self, goodtimes_for_tdc):
+        """Test behavior when the last DIAG_FEE packet has TDC failure."""
+        diagfee_last_fails = xr.Dataset(
+            {
+                "shcoarse": (["epoch"], np.array([1000, 1050, 1100, 1150])),
+                "tdc1_cal_ctrl_stat": (
+                    ["epoch"],
+                    np.array([2, 2, 2, 0]),
+                ),  # fails at last
+                "tdc2_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+                "tdc3_cal_ctrl_stat": (["epoch"], np.array([2, 2, 2, 2])),
+            }
+        )
+
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_last_fails)
+
+        # TDC1 fails at last packet (MET 1150), should mark all times >= 1150
+        met_values = goodtimes_for_tdc.coords["met"].values
+
+        # METs >= 1150 should be culled
+        for i, met in enumerate(met_values):
+            if met >= 1150:
+                assert np.all(
+                    goodtimes_for_tdc["cull_flags"].values[i, :] == CullCode.LOOSE
+                )
+            else:
+                assert np.all(
+                    goodtimes_for_tdc["cull_flags"].values[i, :] == CullCode.GOOD
+                )
+
+    def test_mark_bad_tdc_cal_empty_diagfee(self, goodtimes_for_tdc):
+        """Test that function handles empty DIAG_FEE data gracefully."""
+        diagfee_empty = xr.Dataset(
+            {
+                "shcoarse": (["epoch"], np.array([], dtype=np.float64)),
+                "tdc1_cal_ctrl_stat": (["epoch"], np.array([], dtype=np.uint8)),
+                "tdc2_cal_ctrl_stat": (["epoch"], np.array([], dtype=np.uint8)),
+                "tdc3_cal_ctrl_stat": (["epoch"], np.array([], dtype=np.uint8)),
+            }
+        )
+
+        # Should log warning and return without error
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_empty)
+
+        # All times should remain good
+        assert np.all(goodtimes_for_tdc["cull_flags"].values == CullCode.GOOD)
 
 
 class TestMarkOverflowPackets:
@@ -3407,13 +3657,14 @@ class TestApplyGoodtimesFilters:
                 [mock_l1b_de],
                 current_index=0,
                 l1b_hk=mock_hk,
+                l1a_diagfee=MagicMock(),
                 cal_product_config_path=cal_path,
             )
 
             mock_cal_load.assert_called_once_with(cal_path)
 
     def test_calls_all_filters(self, tmp_path):
-        """Test that all 6 filters are called."""
+        """Test that all 7 filters are called."""
         mock_goodtimes = MagicMock()
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
             "good_bins": 100,
@@ -3432,22 +3683,24 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"
             ) as mock_f1,
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times") as mock_f2,
-            patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets") as mock_f3,
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal") as mock_f3,
+            patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets") as mock_f4,
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_statistical_filter_0"
-            ) as mock_f4,
-            patch(
-                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_1"
             ) as mock_f5,
             patch(
-                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_1"
             ) as mock_f6,
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"
+            ) as mock_f7,
         ):
             _apply_goodtimes_filters(
                 mock_goodtimes,
                 [mock_l1b_de],
                 current_index=0,
                 l1b_hk=mock_hk,
+                l1a_diagfee=MagicMock(),
                 cal_product_config_path=tmp_path / "cal.csv",
             )
 
@@ -3457,6 +3710,7 @@ class TestApplyGoodtimesFilters:
             mock_f4.assert_called_once()
             mock_f5.assert_called_once()
             mock_f6.assert_called_once()
+            mock_f7.assert_called_once()
 
     def test_raises_statistical_filter_0_errors(self, tmp_path):
         """Test that ValueError from statistical filter 0 is raised."""
@@ -3476,6 +3730,7 @@ class TestApplyGoodtimesFilters:
             ),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
             patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_statistical_filter_0",
@@ -3488,6 +3743,7 @@ class TestApplyGoodtimesFilters:
                     [mock_l1b_de],
                     current_index=0,
                     l1b_hk=mock_hk,
+                    l1a_diagfee=MagicMock(),
                     cal_product_config_path=tmp_path / "cal.csv",
                 )
 
@@ -3509,6 +3765,7 @@ class TestApplyGoodtimesFilters:
             ),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
             patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
             patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_0"),
             patch(
@@ -3522,6 +3779,7 @@ class TestApplyGoodtimesFilters:
                     [mock_l1b_de],
                     current_index=0,
                     l1b_hk=mock_hk,
+                    l1a_diagfee=MagicMock(),
                     cal_product_config_path=tmp_path / "cal.csv",
                 )
 
@@ -3547,9 +3805,10 @@ class TestHiGoodtimes:
                 ValueError, match="Goodtimes cannot yet be processed for repoint00001"
             ):
                 _ = hi_goodtimes(
-                    l1b_de_datasets=[mock_de],
                     current_repointing="repoint00001",
+                    l1b_de_datasets=[mock_de],
                     l1b_hk=mock_hk,
+                    l1a_diagfee=MagicMock(),
                     cal_product_config_path=tmp_path / "cal.csv",
                 )
 
@@ -3587,9 +3846,10 @@ class TestHiGoodtimes:
             patch("imap_processing.hi.hi_goodtimes._apply_goodtimes_filters"),
         ):
             hi_goodtimes(
-                l1b_de_datasets=mock_datasets,
                 current_repointing="repoint00004",
+                l1b_de_datasets=mock_datasets,
                 l1b_hk=mock_hk,
+                l1a_diagfee=MagicMock(),
                 cal_product_config_path=tmp_path / "cal.csv",
             )
 
@@ -3629,9 +3889,10 @@ class TestHiGoodtimes:
             ),
         ):
             hi_goodtimes(
-                l1b_de_datasets=mock_datasets,
                 current_repointing="repoint00001",
+                l1b_de_datasets=mock_datasets,
                 l1b_hk=mock_hk,
+                l1a_diagfee=MagicMock(),
                 cal_product_config_path=tmp_path / "cal.csv",
             )
 
@@ -3673,9 +3934,10 @@ class TestHiGoodtimes:
             ) as mock_apply,
         ):
             hi_goodtimes(
-                l1b_de_datasets=mock_datasets,
                 current_repointing="repoint00004",
+                l1b_de_datasets=mock_datasets,
                 l1b_hk=mock_hk,
+                l1a_diagfee=MagicMock(),
                 cal_product_config_path=tmp_path / "cal.csv",
             )
 
@@ -3715,9 +3977,10 @@ class TestHiGoodtimes:
             patch("imap_processing.hi.hi_goodtimes._apply_goodtimes_filters"),
         ):
             result = hi_goodtimes(
-                l1b_de_datasets=mock_datasets,
                 current_repointing="repoint00004",
+                l1b_de_datasets=mock_datasets,
                 l1b_hk=mock_hk,
+                l1a_diagfee=MagicMock(),
                 cal_product_config_path=tmp_path / "cal.csv",
             )
 

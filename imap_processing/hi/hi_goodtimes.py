@@ -45,9 +45,10 @@ class CullCode(IntEnum):
 
 
 def hi_goodtimes(
-    l1b_de_datasets: list[xr.Dataset],
     current_repointing: str,
+    l1b_de_datasets: list[xr.Dataset],
     l1b_hk: xr.Dataset,
+    l1a_diagfee: xr.Dataset,
     cal_product_config_path: Path,
 ) -> list[xr.Dataset]:
     """
@@ -58,23 +59,26 @@ def hi_goodtimes(
 
     1. mark_incomplete_spin_sets - Remove incomplete 8-spin histogram periods
     2. mark_drf_times - Remove times during spacecraft drift restabilization
-    3. mark_overflow_packets - Remove times when DE packets overflow
-    4. mark_statistical_filter_0 - Detect drastic penetrating background changes
-    5. mark_statistical_filter_1 - Detect isotropic count rate increases
-    6. mark_statistical_filter_2 - Detect short-lived event pulses
+    3. mark_bad_tdc_cal - Remove times with failed TDC calibration
+    4. mark_overflow_packets - Remove times when DE packets overflow
+    5. mark_statistical_filter_0 - Detect drastic penetrating background changes
+    6. mark_statistical_filter_1 - Detect isotropic count rate increases
+    7. mark_statistical_filter_2 - Detect short-lived event pulses
 
     Parameters
     ----------
+    current_repointing : str
+        Repointing identifier for the current pointing (e.g., "repoint00001").
+        Used to identify which dataset in l1b_de_datasets is the current one.
     l1b_de_datasets : list[xr.Dataset]
         L1B DE datasets for surrounding pointings. Typically includes
         current plus 3 preceding and 3 following pointings (7 total).
         Statistical filters 0 and 1 use all datasets; other filters use
         only the current pointing.
-    current_repointing : str
-        Repointing identifier for the current pointing (e.g., "repoint00001").
-        Used to identify which dataset in l1b_de_datasets is the current one.
     l1b_hk : xr.Dataset
         L1B housekeeping dataset containing DRF status.
+    l1a_diagfee : xr.Dataset
+        L1A DIAG_FEE dataset containing TDC calibration status.
     cal_product_config_path : Path
         Path to calibration product configuration CSV file.
 
@@ -131,6 +135,7 @@ def hi_goodtimes(
             l1b_de_datasets,
             current_index,
             l1b_hk,
+            l1a_diagfee,
             cal_product_config_path,
         )
     else:
@@ -200,6 +205,7 @@ def _apply_goodtimes_filters(
     l1b_de_datasets: list[xr.Dataset],
     current_index: int,
     l1b_hk: xr.Dataset,
+    l1a_diagfee: xr.Dataset,
     cal_product_config_path: Path,
 ) -> None:
     """
@@ -217,6 +223,8 @@ def _apply_goodtimes_filters(
         Index of the current pointing in l1b_de_datasets.
     l1b_hk : xr.Dataset
         L1B housekeeping dataset.
+    l1a_diagfee : xr.Dataset
+        L1A DIAG_FEE dataset containing TDC calibration status.
     cal_product_config_path : Path
         Path to calibration product configuration CSV file.
     """
@@ -263,15 +271,19 @@ def _apply_goodtimes_filters(
     logger.info("Applying filter: mark_drf_times")
     mark_drf_times(goodtimes_ds, l1b_hk)
 
-    # 3. Mark overflow packets
+    # 3. Mark bad TDC calibration times
+    logger.info("Applying filter: mark_bad_tdc_cal")
+    mark_bad_tdc_cal(goodtimes_ds, l1a_diagfee)
+
+    # 4. Mark overflow packets
     logger.info("Applying filter: mark_overflow_packets")
     mark_overflow_packets(goodtimes_ds, current_l1b_de, cal_product_config)
 
-    # 4. Statistical Filter 0 - drastic background changes
+    # 5. Statistical Filter 0 - drastic background changes
     logger.info("Applying filter: mark_statistical_filter_0")
     mark_statistical_filter_0(goodtimes_ds, l1b_de_datasets, current_index)
 
-    # 5. Statistical Filter 1 - isotropic count rate increases
+    # 6. Statistical Filter 1 - isotropic count rate increases
     logger.info("Applying filter: mark_statistical_filter_1")
     mark_statistical_filter_1(
         goodtimes_ds,
@@ -279,7 +291,7 @@ def _apply_goodtimes_filters(
         current_index,
     )
 
-    # 6. Statistical Filter 2 - short-lived event pulses
+    # 7. Statistical Filter 2 - short-lived event pulses
     logger.info("Applying filter: mark_statistical_filter_2")
     mark_statistical_filter_2(
         goodtimes_ds,
@@ -1128,6 +1140,92 @@ def mark_overflow_packets(
         f"Found {len(full_packet_indices)} full packet(s), "
         f"dropped {len(mets_to_cull)} 8-spin period(s) due to overflow packets"
     )
+
+
+def mark_bad_tdc_cal(
+    goodtimes_ds: xr.Dataset,
+    diagfee: xr.Dataset,
+    check_tdc1: bool = True,
+    check_tdc2: bool = True,
+    check_tdc3: bool = True,
+    cull_code: int = CullCode.LOOSE,
+) -> None:
+    """
+    Remove times with failed TDC calibration (DIAG_FEE method).
+
+    Based on C reference: drop_bad_tdc_diagfee in culling.c
+
+    This function scans DIAG_FEE packets chronologically and checks the TDC
+    calibration status for each packet. If any checked TDC has failed
+    calibration, all times from that DIAG_FEE packet until the next DIAG_FEE
+    packet are marked as bad.
+
+    Parameters
+    ----------
+    goodtimes_ds : xr.Dataset
+        Goodtimes dataset to update with cull flags.
+    diagfee : xr.Dataset
+        DIAG_FEE dataset containing TDC calibration status fields:
+        - shcoarse: Mission Elapsed Time (MET)
+        - tdc1_cal_ctrl_stat: TDC1 calibration status (bit 1 = success)
+        - tdc2_cal_ctrl_stat: TDC2 calibration status (bit 1 = success)
+        - tdc3_cal_ctrl_stat: TDC3 calibration status (bit 1 = success)
+    check_tdc1 : bool, optional
+        Whether to check TDC1 calibration status. Default is True.
+    check_tdc2 : bool, optional
+        Whether to check TDC2 calibration status. Default is True.
+    check_tdc3 : bool, optional
+        Whether to check TDC3 calibration status. Default is True.
+    cull_code : int, optional
+        Cull code to use for marking bad times. Default is CullCode.LOOSE.
+
+    Notes
+    -----
+    This function modifies goodtimes_ds in place.
+
+    Quirk: Two DIAG_FEE packets are generated when entering HVSCI mode.
+    The first packet is skipped if two packets appear within 10 seconds.
+    """
+    logger.info("Running mark_bad_tdc_cal culling")
+
+    # Based on sample code in culling_v2.c, skip this check if we have fewer
+    # than two diag_fee packets.
+    if len(diagfee.epoch) < 2:
+        logger.warning("No DIAG_FEE data to use for selecting good times")
+        return
+
+    df_met = diagfee["shcoarse"].values
+    met_values = goodtimes_ds.coords["met"].values
+    n_times_removed = 0
+
+    for i in range(len(df_met)):
+        # Skip duplicate DIAG_FEE packets (within 10 seconds of next)
+        if i < len(df_met) - 1 and df_met[i] + 10 > df_met[i + 1]:
+            continue
+
+        # Check TDC calibration status (bit 1: 1=good, 0=bad)
+        any_tdc_failed = False
+
+        if check_tdc1 and (diagfee["tdc1_cal_ctrl_stat"].values[i] & 2) == 0:
+            any_tdc_failed = True
+        if check_tdc2 and (diagfee["tdc2_cal_ctrl_stat"].values[i] & 2) == 0:
+            any_tdc_failed = True
+        if check_tdc3 and (diagfee["tdc3_cal_ctrl_stat"].values[i] & 2) == 0:
+            any_tdc_failed = True
+
+        if any_tdc_failed:
+            # Remove times from this DIAG_FEE until next
+            df_time = df_met[i]
+            next_df_time = df_met[i + 1] if i < len(df_met) - 1 else np.inf
+
+            in_window = (met_values >= df_time) & (met_values < next_df_time)
+            mets_to_cull = met_values[in_window]
+
+            if len(mets_to_cull) > 0:
+                goodtimes_ds.goodtimes.mark_bad_times(met=mets_to_cull, cull=cull_code)
+                n_times_removed += len(mets_to_cull)
+
+    logger.info(f"Dropped {n_times_removed} time(s) due to bad TDC calibration")
 
 
 def _get_sweep_indices(esa_step: np.ndarray) -> np.ndarray:
