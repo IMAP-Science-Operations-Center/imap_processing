@@ -832,14 +832,24 @@ class Hi(ProcessInstrument):
                         f"got {len(cal_prod_paths)}"
                     )
 
+                l1a_diagfee_paths = dependencies.get_file_paths(
+                    source="hi", data_type="l1a", descriptor="diagfee"
+                )
+                if len(l1a_diagfee_paths) != 1:
+                    raise ValueError(
+                        f"Expected one L1A DIAG_FEE file, got {len(l1a_diagfee_paths)}"
+                    )
+
                 # Load CDFs before passing to hi_goodtimes
                 l1b_de_datasets = [load_cdf(path) for path in l1b_de_paths]
                 l1b_hk = load_cdf(l1b_hk_paths[0])
+                l1a_diagfee = load_cdf(l1a_diagfee_paths[0])
 
                 datasets = hi_goodtimes.hi_goodtimes(
-                    l1b_de_datasets,
                     self.repointing,
+                    l1b_de_datasets,
                     l1b_hk,
+                    l1a_diagfee,
                     cal_prod_paths[0],
                 )
             else:

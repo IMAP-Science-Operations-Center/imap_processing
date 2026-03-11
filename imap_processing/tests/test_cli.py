@@ -373,21 +373,8 @@ def test_hi_l1b_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
     mock_hi_goodtimes.return_value = [mock_goodtimes_ds]
     mocks["mock_write_cdf"].return_value = Path("/path/to/goodtimes_output.cdf")
 
-    # Mock load_cdf to return xr.Dataset objects
-    mock_de_dataset = xr.Dataset()
-    mock_hk_dataset = xr.Dataset()
-    # 7 DE files + 1 HK file = 8 total calls to load_cdf
-    mocks["mock_load_cdf"].side_effect = [
-        mock_de_dataset,
-        mock_de_dataset,
-        mock_de_dataset,
-        mock_de_dataset,
-        mock_de_dataset,
-        mock_de_dataset,
-        mock_de_dataset,
-        mock_hk_dataset,
-    ]
-
+    # set load_cdf to return empty datasets
+    mocks["mock_load_cdf"].return_value = xr.Dataset()
     # Set up the input collection with required dependencies
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00001_v001.cdf"),
@@ -398,6 +385,7 @@ def test_hi_l1b_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
         ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00006_v001.cdf"),
         ScienceInput("imap_hi_l1b_45sensor-de_20250415-repoint00007_v001.cdf"),
         ScienceInput("imap_hi_l1b_45sensor-hk_20250415-repoint00004_v001.cdf"),
+        ScienceInput("imap_hi_l1a_45sensor-diagfee_20250415-repoint00004_v001.cdf"),
         AncillaryInput("imap_hi_45sensor-cal-prod_20240101_v001.csv"),
     )
     mocks["mock_pre_processing"].return_value = input_collection
@@ -416,17 +404,18 @@ def test_hi_l1b_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
     instrument.process()
 
     # Verify load_cdf was called for DE files and HK file
-    assert mocks["mock_load_cdf"].call_count == 8  # 7 DE + 1 HK
+    assert mocks["mock_load_cdf"].call_count == 9  # 7 DE + 1 HK + 1 DIAG_FEE
 
     # Verify hi_goodtimes was called with correct arguments
     assert mock_hi_goodtimes.call_count == 1
     call_args = mock_hi_goodtimes.call_args
 
     # Check that datasets (not paths) were passed for l1b_de_datasets and l1b_hk
-    assert isinstance(call_args.args[0], list)  # l1b_de_datasets is a list
-    assert len(call_args.args[0]) == 7  # 7 DE datasets
+    assert call_args.args[0] == "repoint00004"  # current_repointing
+    assert isinstance(call_args.args[1], list)  # l1b_de_datasets is a list
+    assert len(call_args.args[1]) == 7  # 7 DE datasets
     assert isinstance(call_args.args[2], xr.Dataset)  # l1b_hk is a dataset
-    assert call_args.args[1] == "repoint00004"  # current_repointing
+    assert isinstance(call_args.args[3], xr.Dataset)  # l1a_diagfee is a dataset
 
     # goodtimes now returns xr.Dataset, so write_cdf should be called
     assert mocks["mock_write_cdf"].call_count == 1
