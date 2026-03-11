@@ -608,8 +608,8 @@ def combine_maps(sky_maps: dict[str, RectangularSkyMap]) -> RectangularSkyMap:
 
     with np.errstate(divide="ignore", invalid="ignore"):
         combined["ena_intensity"] = (
-            ram_ds["ena_intensity"] * weight_ram
-            + anti_ds["ena_intensity"] * weight_anti
+            ram_ds["ena_intensity"].fillna(0) * weight_ram
+            + anti_ds["ena_intensity"].fillna(0) * weight_anti
         ) / total_weight
 
         combined["ena_intensity_stat_uncert"] = np.sqrt(1 / total_weight)
