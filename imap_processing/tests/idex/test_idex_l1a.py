@@ -156,6 +156,7 @@ def test_validate_l1a_idex_data_variables(
         "Ion Grid": "Ion_Grid",
         "Time (high sampling)": "time_high_sample_rate",
         "Time (low sampling)": "time_low_sample_rate",
+        "idx__txhdrfswaidcopy": "aid",
     }
     # The Engineering data is converting to UTC, and the SDC is converting to J2000,
     # for 'epoch' and 'Timestamp' so this test is using the raw time value 'SCHOARSE' to
@@ -168,6 +169,8 @@ def test_validate_l1a_idex_data_variables(
         "event",
         "Time (high sampling)",
         "Time (low sampling)",
+        "IDX__SCI0AID",  # This is dropped because it is invalid
+        "IDX__TXHDRFSWAIDCOPY",  # this is renamed to aid
     ]
 
     # loop through all keys from the l1a example dict

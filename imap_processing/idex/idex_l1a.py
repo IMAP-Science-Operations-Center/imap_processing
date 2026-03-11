@@ -651,8 +651,15 @@ class RawDustEvent:
         # Gather the huge amount of metadata info
         trigger_vars = {}
         for var, value in self.telemetry_items.items():
+            # SCI0AID is not updated properly. To this end, TXHDRFSWAIDCOPY must be
+            # used as the proper AID.
+            if var == "idx__sci0aid":
+                continue
+            # rename idx__txhdrfswaidcopy to aid for better readability in the final
+            # dataset
+            var_name = "aid" if var == "idx__txhdrfswaidcopy" else var
             trigger_vars[var] = xr.DataArray(
-                name=var,
+                name=var_name,
                 data=[value],
                 dims=("epoch"),
                 attrs=idex_attrs.get_variable_attributes(var),

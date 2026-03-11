@@ -146,7 +146,7 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
         l1a_dataset["idx__txhdrtrigid"].data, idex_attrs
     )
     # Create l1b Dataset
-    prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
+    prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample", "aid"]
     data_vars = (
         processed_vars
         | waveforms_converted

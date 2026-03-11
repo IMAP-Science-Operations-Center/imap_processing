@@ -325,6 +325,8 @@ def test_validate_l1b_idex_data_variables(
         "FIFODelay_M",
         "HSPosttriggerBlocks",
     ]
+    # assert that "aid" is in l1b
+    assert "aid" in l1b_dataset, "The array 'aid' is missing from the l1b dataset."
     # select only the first n events
     l1b_example_data = l1b_example_data.isel(
         event=np.arange(l1b_dataset.sizes["epoch"])
