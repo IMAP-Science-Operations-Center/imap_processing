@@ -137,7 +137,7 @@ counts:
   <<: *default
   CATDESC: Counts for a spin.
   DEPEND_1: energy_bin_geometric_mean
-  DEPEND_2: pixel_index
+  DEPEND_2: counts_pixel_index
   FIELDNAM: counts
   LABLAXIS: counts
   # TODO: come back to format
