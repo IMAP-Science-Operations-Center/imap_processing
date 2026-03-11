@@ -46,6 +46,7 @@ def create_dataset(  # noqa: PLR0912
         coords = {
             "epoch": data_dict["epoch"],
             "pixel_index": data_dict["pixel_index"],
+            "counts_pixel_index": data_dict["counts_pixel_index"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
             "spin_phase_step": data_dict["spin_phase_step"],
         }
@@ -155,7 +156,6 @@ def create_dataset(  # noqa: PLR0912
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in {
-            "counts",
             "background_rates",
             "exposure_factor",
             "helio_exposure_factor",
@@ -163,6 +163,12 @@ def create_dataset(  # noqa: PLR0912
             dataset[key] = xr.DataArray(
                 data,
                 dims=["epoch", "energy_bin_geometric_mean", "pixel_index"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key in {"counts"}:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["epoch", "energy_bin_geometric_mean", "counts_pixel_index"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in {

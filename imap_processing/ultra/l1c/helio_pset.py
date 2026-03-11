@@ -2,6 +2,7 @@
 
 import logging
 
+import astropy_healpix.healpy as hp
 import numpy as np
 import xarray as xr
 
@@ -160,12 +161,14 @@ def calculate_helio_pset(
         vhat_dps_helio,
         species_dataset["energy_heliosphere"].values,
         intervals,
-        nside=nside,
+        nside=UltraConstants.L1C_COUNTS_NSIDE,
     )
     helio_pset_quality_flags = np.full(
         n_pix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
     )
-    healpix = np.arange(n_pix)
+    counts_healpix = np.arange(n_pix)
+    # Determine nside for non "counts" variables from the lookup table
+    healpix = hp.nside2npix(nside)
 
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_time, deadtime_ratios = get_spacecraft_exposure_times(
@@ -236,6 +239,7 @@ def calculate_helio_pset(
     pset_dict["background_rates"] = background_rates[np.newaxis, ...]
     pset_dict["exposure_factor"] = exposure_time[np.newaxis, ...]
     pset_dict["pixel_index"] = healpix
+    pset_dict["counts_pixel_index"] = counts_healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
         np.newaxis, ...
     ]
