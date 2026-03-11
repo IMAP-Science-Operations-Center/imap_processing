@@ -146,8 +146,8 @@ class TestGoodtimesFromL1bDe:
 
     def test_from_l1b_de_attributes(self, goodtimes_instance):
         """Test that attributes are set correctly."""
-        assert goodtimes_instance.attrs["sensor"] == "45sensor"
-        assert goodtimes_instance.attrs["pointing"] == 42
+        assert goodtimes_instance.attrs["Sensor"] == "45sensor"
+        assert goodtimes_instance.attrs["Repointing"] == "repoint00042"
 
 
 class TestRemoveTimes:
@@ -817,7 +817,7 @@ class TestFinalizeDataset:
                 "esa_step": xr.DataArray(np.array([], dtype=np.uint8), dims=["met"]),
             },
             coords={"met": np.array([]), "spin_bin": np.arange(90)},
-            attrs={"sensor": "45sensor", "pointing": 1},
+            attrs={"Sensor": "45sensor", "Pointing": 1},
         )
 
         with patch("imap_processing.hi.hi_goodtimes.met_to_ttj2000ns") as mock_convert:

@@ -738,7 +738,11 @@ class GoodtimesAccessor:
         """
         logger.info(f"Writing intervals to file: {output_path}")
         pointing = int(self._obj.attrs["Repointing"].replace("repoint", ""))
-        sensor = self._obj.attrs["Sensor"]
+        sensor = (
+            parse_sensor_number(self._obj.attrs["Logical_source"])
+            if "Logical_source" in self._obj.attrs
+            else self._obj.attrs["Sensor"]
+        )
 
         intervals = self.get_good_intervals()
 
@@ -830,7 +834,6 @@ class GoodtimesAccessor:
             ds[coord_name].attrs = attr_mgr.get_variable_attributes(
                 attr_mgr_key, check_schema=False
             )
-        ds["spin_bin"].attrs = attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin")
 
         # Add variable attributes
         for var_name in ds.data_vars:
@@ -839,7 +842,7 @@ class GoodtimesAccessor:
             )
 
         # Update global attributes
-        sensor_str = ds.attrs.pop("sensor")
+        sensor_str = ds.attrs.pop("Sensor")
         ds.attrs = attr_mgr.get_global_attributes("imap_hi_l1b_goodtimes_attrs")
 
         # Update Logical_source with sensor string
