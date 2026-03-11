@@ -658,7 +658,7 @@ class RawDustEvent:
             # rename idx__txhdrfswaidcopy to aid for better readability in the final
             # dataset
             var_name = "aid" if var == "idx__txhdrfswaidcopy" else var
-            trigger_vars[var] = xr.DataArray(
+            trigger_vars[var_name] = xr.DataArray(
                 name=var_name,
                 data=[value],
                 dims=("epoch"),
