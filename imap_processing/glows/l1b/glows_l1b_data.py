@@ -176,6 +176,28 @@ class PipelineSettings:  # numpydoc ignore=PR02
             if "threshold" in var_name.lower() or "limit" in var_name.lower():
                 self.processing_thresholds[var_name] = pipeline_dataset[var_name].item()
 
+    def get_threshold(self, suffix: str) -> float | None:
+        """
+        Return the threshold value whose key ends with the given suffix.
+
+        Parameters
+        ----------
+        suffix : str
+            The suffix to match against threshold keys.
+
+        Returns
+        -------
+        return_value : float or None
+            The matching threshold value, or None if no match is found.
+        """
+        return_value = None
+        for descriptor, value in self.processing_thresholds.items():
+            if descriptor.endswith(suffix):
+                return_value = float(value)
+                break
+
+        return return_value
+
 
 @dataclass
 class AncillaryExclusions:
@@ -653,31 +675,6 @@ class DirectEventL1B:
         return times, pulse_lengths
 
 
-def get_threshold(thresholds: dict, suffix: str) -> float | None:
-    """
-    Return the threshold value whose key ends with the given suffix.
-
-    Parameters
-    ----------
-    thresholds : dict
-        Dictionary of threshold values.
-    suffix : str
-        The suffix to match against threshold keys.
-
-    Returns
-    -------
-    return_value : float or None
-        The matching threshold value, or None if no match is found.
-    """
-    return_value = None
-    for descriptor, value in thresholds.items():
-        if descriptor.endswith(suffix):
-            return_value = float(value)
-            break
-
-    return return_value
-
-
 @dataclass
 class HistogramL1B:
     """
@@ -1018,8 +1015,6 @@ class HistogramL1B:
         flags : numpy.ndarray
             Array of shape (FLAG_LENGTH,) with dtype uint8. 1 = good, 0 = bad.
         """
-        thresholds = pipeline_settings.processing_thresholds
-
         # Section 12.3.1 of the Algorithm Document: onboard generated bad-time flags.
         # Flags are "stored in a 16-bit integer field.
         onboard_flags = (
@@ -1039,10 +1034,12 @@ class HistogramL1B:
 
         # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 3-7.
         # (1=good, 0=bad).
-        temp_threshold = get_threshold(thresholds, "std_dev_threshold__celsius_deg")
-        hv_threshold = get_threshold(thresholds, "std_dev_threshold__volt")
-        spin_std_threshold = get_threshold(thresholds, "std_dev_threshold__sec")
-        pulse_threshold = get_threshold(thresholds, "std_dev_threshold__usec")
+        temp_threshold = pipeline_settings.get_threshold(
+            "std_dev_threshold__celsius_deg"
+        )
+        hv_threshold = pipeline_settings.get_threshold("std_dev_threshold__volt")
+        spin_std_threshold = pipeline_settings.get_threshold("std_dev_threshold__sec")
+        pulse_threshold = pipeline_settings.get_threshold("std_dev_threshold__usec")
 
         is_temp_ok = np.uint8(self.filter_temperature_std_dev <= temp_threshold)
         is_hv_ok = np.uint8(self.hv_voltage_std_dev <= hv_threshold)

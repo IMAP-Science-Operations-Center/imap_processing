@@ -12,7 +12,6 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     DirectEventL1B,
     HistogramL1B,
     PipelineSettings,
-    get_threshold,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
@@ -291,7 +290,7 @@ def test_pipeline_settings_from_flattened_json():
 
 
 def test_get_threshold():
-    "Test get_threshold function."
+    "Test PipelineSettings.get_threshold method."
 
     test_data = {
         "n_sigma_threshold_lower": 3.0,
@@ -302,6 +301,8 @@ def test_get_threshold():
         "std_dev_threshold__sec": 0.033333,
         "std_dev_threshold__usec": 1.0,
     }
+    pipeline_dataset = xr.Dataset({k: xr.DataArray(v) for k, v in test_data.items()})
+    settings = PipelineSettings(pipeline_dataset)
 
     expected = [2.03, 50.0, 0.033333, 1.0, 7e-5]
     description = [
@@ -313,5 +314,5 @@ def test_get_threshold():
     ]
 
     for name, exp in zip(description, expected, strict=False):
-        threshold = get_threshold(test_data, name)
+        threshold = settings.get_threshold(name)
         assert threshold == exp
