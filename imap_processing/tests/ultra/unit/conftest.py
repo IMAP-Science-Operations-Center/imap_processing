@@ -483,6 +483,8 @@ def ancillary_files():
     return {
         "l1b-45sensor-logistic-interpolation": path
         / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
+        "l1b-90sensor-logistic-interpolation": path
+        / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
         "l1b-sensor-gf-noblades": path
         / "imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv",
         "l1b-sensor-gf-blades": path

@@ -117,6 +117,10 @@ def test_get_energy_efficiencies(ancillary_files):
 
     assert u45_efficiencies.shape == (58081, 157)
 
+    # Test that the function can also read the ultra90 efficiencies
+    u90_efficiencies = get_energy_efficiencies(ancillary_files, "ultra90")
+    assert u90_efficiencies.shape == (58081, 157)
+
 
 @pytest.mark.external_test_data
 def test_get_geometric_function(ancillary_files):
