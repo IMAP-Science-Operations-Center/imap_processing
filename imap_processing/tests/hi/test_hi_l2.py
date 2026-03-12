@@ -1461,8 +1461,8 @@ def test_combine_maps_handles_nan_intensity(mock_sky_map_for_combine):
     assert np.isfinite(result.data_1d["ena_intensity"].values[0, 0, 0, 0])
     assert np.isfinite(result.data_1d["ena_intensity"].values[0, 1, 2, 1])
 
-    # The combined value should be 35 (since ram's NaN becomes 0 in weighted sum)
-    expected_combined = 35.0  # (0 * 0.04 + 70 * 0.04) / 0.08
+    # The combined value should be 70 because ram's NaN should not contribute
+    expected_combined = 70.0  # (0 * 0 + 70 * 0.04) / 0.04
     np.testing.assert_almost_equal(
         result.data_1d["ena_intensity"].values[0, 0, 0, 0],
         expected_combined,
