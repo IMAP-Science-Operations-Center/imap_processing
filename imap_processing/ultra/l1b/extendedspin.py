@@ -190,8 +190,4 @@ def calculate_extendedspin(
     )
 
     extendedspin_dataset = create_dataset(extendedspin_dict, name, "l1b")
-
-    print(extendedspin_dataset)
-    print("energy_range_flags_dim" in extendedspin_dataset)
-    print("energy_range_edges_dim" in extendedspin_dataset)
     return extendedspin_dataset
