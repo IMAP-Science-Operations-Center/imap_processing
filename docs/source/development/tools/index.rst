@@ -1,3 +1,5 @@
+.. _tools:
+
 Tools
 =====
 
@@ -9,4 +11,3 @@ These are tools written by the IMAP team that are used across multiple instrumen
     xtce-generator
     xarray-to-cdf
     cdf-global-attrs
-    imap-data-access

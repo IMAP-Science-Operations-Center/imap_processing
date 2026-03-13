@@ -14,6 +14,7 @@ be versioned appropriately to correspond with the code that produced them.
 .. toctree::
     :maxdepth: 1
 
+    cli
     data-dependency
     doc-overview
     docker
@@ -23,3 +24,4 @@ be versioned appropriately to correspond with the code that produced them.
     poetry
     release-workflow
     technology-stack
+    tools/index

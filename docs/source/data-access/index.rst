@@ -7,6 +7,11 @@ The `imap-data-access <https://github.com/IMAP-Science-Operations-Center/imap-da
 repository provides a command-line utility and python package for
 interacting with the API programmatically. It is the preferred way to use the API.
 
+.. toctree::
+    :maxdepth: 1
+
+    imap-data-access
+
 Users may also download, upload, and query via the REST API directly through the browser, or via `curl` commands.
 The `REST API Specification`_ section describes the various endpoints that are supported, and how to use them.
 
@@ -273,3 +278,11 @@ REST API Specification
 
    {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": [{"file_path": "imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-05.pkts", "instrument": "swe", "data_level": "l0", "descriptor": "sci", "start_date": "20240105", "end_date": "20240105", "version": "v00-05", "extension": "pkts"}]}
    {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: ['file_path', 'instrument', 'data_level', 'descriptor', 'start_date', 'end_date', 'version', 'extension']"}
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   generated/imap_data_access.io.download
+   generated/imap_data_access.io.query
+   generated/imap_data_access.io.upload
