@@ -17,7 +17,7 @@ be versioned appropriately to correspond with the code that produced them.
     doc-overview
     docker
     getting-started
-    GitHub Workflow and Style Guide <git-workflow-and-style-guide/index>
+    git-workflow-and-style-guide/index
     poetry
     release-workflow
     technology-stack
