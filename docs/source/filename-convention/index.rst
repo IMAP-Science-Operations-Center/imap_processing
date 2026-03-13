@@ -8,4 +8,5 @@ This section describes the naming conventions used for IMAP data products and fi
 .. toctree::
    :maxdepth: 1
 
-   naming-conventions
+   Science Filename Convention <naming-conventions>
+   Ancillary Filename Convention <calibration-files>
