@@ -1,4 +1,4 @@
-.. _data-access-api:
+.. _data-access:
 
 Data Access API
 ===============

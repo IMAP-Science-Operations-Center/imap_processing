@@ -1,7 +1,7 @@
-.. _code-documentation:
+.. _algorithm-code-documentation:
 
-Code Documentation
-==================
+Algorithm Code Documentation
+============================
 
 .. currentmodule:: imap_processing
 
