@@ -17,6 +17,7 @@ be versioned appropriately to correspond with the code that produced them.
     doc-overview
     docker
     getting-started
+    git-access-roles
     git-workflow-and-style-guide/index
     poetry
     release-workflow

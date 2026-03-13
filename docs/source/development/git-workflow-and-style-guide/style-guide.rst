@@ -29,16 +29,3 @@ these items are provided below in the guide.
 Contributors can refer to the :ref:`checklist for contributors and reviewers of pull requests
 <checklist-for-contributors-and-reviewers-of-pull-requests>` for assistance in making sure pull requests are adhering
 to these conventions.
-
-.. toctree::
-    :maxdepth: 1
-
-    git-and-github-workflow
-    python-coding
-    python-docstrings
-    poetry-environment
-    security
-    tools-and-library-recommendations
-    versioning
-    checklist-for-pull-requests
-    review-standards

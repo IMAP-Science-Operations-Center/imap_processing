@@ -1,5 +1,7 @@
+.. _technology-stack:
+
 Technology Stack
-----------------
+================
 
 This page lists the various technologies and libraries that the IMAP SDC
 utilizes along with a few notes on what they are used for, why they were chosen,
