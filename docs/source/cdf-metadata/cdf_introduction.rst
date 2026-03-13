@@ -32,7 +32,7 @@ The internal format of CDF files are described in the `cdf specification <https:
 Variables
 ---------
 
-.. image:: ../../_static/cdf_variables.png
+.. image:: ../_static/cdf_variables.png
 
 
 Variables are the data stored within a file.  They have a few key characteristics -

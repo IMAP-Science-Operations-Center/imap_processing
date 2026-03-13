@@ -81,7 +81,7 @@ numpydoc_show_class_members = False
 
 intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
     "pytest": ("https://pytest.org/en/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
@@ -106,6 +106,7 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*space_packet_parser.*"),
     (r"py:.*", r".*CoDICECompression.*"),
     (r"py:.*", r".*SegmentedPacketOrder.*"),
+    (r"py:.*", r".*codice.utils.*"),
     (r"py:.*", r".*RectangularSkyMap.*"),
     (r"py:.*", r".*AbstractSkyMap.*"),
     (r"py:.*", r".*MapDescriptor.*"),

@@ -15,6 +15,7 @@ The processing code to decommutate the CCSDS packets (L0) and create higher leve
     :template: autosummary.rst
     :recursive:
 
+    codice_l1a
     codice_l1b
     codice_l2
 

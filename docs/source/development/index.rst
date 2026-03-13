@@ -14,6 +14,7 @@ be versioned appropriately to correspond with the code that produced them.
 .. toctree::
     :maxdepth: 1
 
+    data-dependency
     doc-overview
     docker
     getting-started
