@@ -8,8 +8,12 @@ from numpy.typing import NDArray
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
-from imap_processing.glows.utils.constants import GlowsConstants
-from imap_processing.spice.geometry import SpiceFrame, get_instrument_mounting_az_el
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    frame_transform_az_el,
+    get_instrument_mounting_az_el,
+)
+from imap_processing.spice.time import met_to_sclkticks, sct_to_et
 
 
 @dataclass
@@ -122,8 +126,11 @@ class DailyLightcurve:
             )
         else:
             self.histogram_flag_array = np.zeros(self.number_of_bins, dtype=np.uint8)
-        self.ecliptic_lon = np.zeros(self.number_of_bins)
-        self.ecliptic_lat = np.zeros(self.number_of_bins)
+
+        # Get ecliptic longitude and latitude of bin centers
+        self.ecliptic_lon, self.ecliptic_lat = (
+            self.compute_ecliptic_coords_of_bin_centers(l1b_data)
+        )
 
         if self.number_of_bins:
             # imap_spin_angle_bin_cntr is the raw IMAP spin angle ψ (0 - 360°,
@@ -166,6 +173,65 @@ class DailyLightcurve:
         # Zero out areas where HISTOGRAM_FILLVAL (i.e. unused bins)
         histograms[histograms == GlowsConstants.HISTOGRAM_FILLVAL] = 0
         return np.sum(histograms, axis=0, dtype=np.int64)
+
+    @staticmethod
+    def compute_ecliptic_coords_of_bin_centers(
+        l1b_data: xr.Dataset,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Compute the ecliptic coordinates of the histogram bin centers.
+
+        Histogram bin centers represent the center spin angle for each bin in the imap
+        frame and are stored in the "imap_spin_angle_bin_cntr" variable in the L1B
+        dataset.
+
+        The ecliptic coordinates of the bin centers are computed as follows:
+            - Get the fixed elevation angle from the instrument pointing direction in
+              the DPS frame.
+            - Align azimuth with instrument pointing direction by rotating the center
+              spin angle for the bins by the position angle offset.
+            - Transform the resulting DPS coordinates into the ECLIPJ2000 frame using
+              SPICE transformations.
+
+        Parameters
+        ----------
+        l1b_data : xarray.Dataset
+            L1B data filtered by good times, good angles, and good bins for one
+            observation day.
+
+        Returns
+        -------
+        tuple[numpy.ndarray, numpy.ndarray]
+            Longitude and latitudes in the ECLIPJ2000 frame representing the pointing
+            direction of each histogram bin center, with shape (n_bins,).
+        """
+        # Ephemeris start time of the histogram accumulation.
+        data_start_time_et = sct_to_et(met_to_sclkticks(l1b_data["imap_start_time"]))
+
+        # Get elevation from instrument pointing direction in the DPS frame.
+        az_el = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
+        elevation = az_el[1]
+
+        # Rotate spin-angle bin centers by the instrument position-angle offset
+        # so azimuth=0 aligns with the instrument pointing direction.
+        azimuth = (
+            l1b_data["imap_spin_angle_bin_cntr"]
+            + l1b_data["position_angle_offset_average"]
+        ) % 360.0
+
+        # Create array of azimuth, elevation coordinates in the DPS frame (n_bins, 2)
+        az_el = np.column_stack((azimuth, np.full_like(azimuth, elevation)))
+
+        # Transform coordinates to ECLIPJ2000 frame using SPICE transformations.
+        ecliptic_coords = frame_transform_az_el(
+            data_start_time_et,
+            az_el,
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.ECLIPJ2000,
+        )
+
+        # Return ecliptic longitudes and latitudes as separate arrays.
+        return ecliptic_coords[:, 0], ecliptic_coords[:, 1]
 
 
 @dataclass
