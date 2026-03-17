@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
+from imap_processing.glows.utils.constants import GlowsConstants
 
 
 @dataclass
@@ -65,9 +66,18 @@ class DailyLightcurve:
             L1B data filtered by good times, good angles, and good bins for one
             observation day.
         """
-        self.raw_histograms = self.calculate_histogram_sums(l1b_data["histogram"].data)
+        # number_of_bins_per_histogram is the count of valid (non-FILLVAL) bins.
+        # Histogram arrays from L1B are always GlowsConstants.STANDARD_BIN_COUNT
+        # (3600) long, with unused bins filled with GlowsConstants.HISTOGRAM_FILLVAL.
+        # All bin-dimensioned arrays here are chopped to number_of_bins so that
+        # computations only operate on valid data. glows_l2.py is responsible for
+        # re-expanding these arrays back to STANDARD_BIN_COUNT, filling unused bins
+        # with the appropriate CDF FILLVAL before writing to output.
+        self.number_of_bins = l1b_data["number_of_bins_per_histogram"].data[0]
 
-        self.number_of_bins = l1b_data["histogram"].shape[1]
+        self.raw_histograms = self.calculate_histogram_sums(
+            l1b_data["histogram"].data
+        )[: self.number_of_bins]
 
         exposure_per_epoch = (
             l1b_data["spin_period_average"].data
@@ -79,16 +89,15 @@ class DailyLightcurve:
         self.exposure_times = np.full(self.number_of_bins, np.sum(exposure_per_epoch))
 
         raw_uncertainties = np.sqrt(self.raw_histograms)
-        self.photon_flux = np.zeros(len(self.raw_histograms))
-        self.flux_uncertainties = np.zeros(len(self.raw_histograms))
+        self.photon_flux = np.zeros(self.number_of_bins)
+        self.flux_uncertainties = np.zeros(self.number_of_bins)
 
         # TODO: Only where exposure counts != 0
         if len(self.exposure_times) != 0:
             self.photon_flux = self.raw_histograms / self.exposure_times
             self.flux_uncertainties = raw_uncertainties / self.exposure_times
 
-        # TODO: Average this, or should they all be the same?
-        self.spin_angle = np.average(l1b_data["imap_spin_angle_bin_cntr"].data, axis=0)
+        self.spin_angle = l1b_data["imap_spin_angle_bin_cntr"].data[0][: self.number_of_bins]
 
         self.histogram_flag_array = np.zeros(self.number_of_bins)
         self.ecliptic_lon = np.zeros(self.number_of_bins)
@@ -110,7 +119,8 @@ class DailyLightcurve:
             Sum of valid histograms across all timestamps.
         """
         histograms = histograms.copy()
-        histograms[histograms == -1] = 0
+        # Zero out areas where HISTOGRAM_FILLVAL (i.e. unused bins)
+        histograms[histograms == GlowsConstants.HISTOGRAM_FILLVAL] = 0
         return np.sum(histograms, axis=0, dtype=np.int64)
 
 

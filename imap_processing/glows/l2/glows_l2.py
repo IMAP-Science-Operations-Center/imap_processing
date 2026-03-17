@@ -11,6 +11,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     PipelineSettings,
 )
 from imap_processing.glows.l2.glows_l2_data import HistogramL2
+from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
 
 
@@ -85,7 +86,7 @@ def create_l2_dataset(
     )
 
     bins = xr.DataArray(
-        np.arange(histogram_l2.daily_lightcurve.number_of_bins, dtype=np.uint32),
+        np.arange(GlowsConstants.STANDARD_BIN_COUNT, dtype=np.uint32),
         name="bins",
         dims=["bins"],
         attrs=attrs.get_variable_attributes("bins_dim", check_schema=False),
@@ -169,19 +170,27 @@ def create_l2_dataset(
                 attrs=attrs.get_variable_attributes(key),
             )
 
+    n_bins = histogram_l2.daily_lightcurve.number_of_bins
     for key, value in dataclasses.asdict(histogram_l2.daily_lightcurve).items():
         if key == "number_of_bins":
-            # number_of_bins does not have n_bins dimensions.
+            # number_of_bins does not have a bins dimension.
             output[key] = xr.DataArray(
                 np.array([value]),
                 dims=["epoch"],
                 attrs=attrs.get_variable_attributes(key),
             )
         else:
+            # Bin arrays are chopped to number_of_bins in DailyLightcurve to
+            # avoid operating on FILLVAL data. Re-expand to STANDARD_BIN_COUNT
+            # here, filling unused bins with the variable's CDF FILLVAL.
+            var_attrs = attrs.get_variable_attributes(key)
+            fillval = var_attrs["FILLVAL"]
+            padded = np.full(GlowsConstants.STANDARD_BIN_COUNT, fillval)
+            padded[:n_bins] = value
             output[key] = xr.DataArray(
-                np.array([value]),
+                np.array([padded]),
                 dims=["epoch", "bins"],
-                attrs=attrs.get_variable_attributes(key),
+                attrs=var_attrs,
             )
 
     return output
