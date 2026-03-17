@@ -84,7 +84,7 @@ def generate_dataset(
     # TODO: Correct CDF attributes from email
 
     vector_data = np.zeros((len(l0_data), len(l0_data[0].VECTORS)))
-    shcoarse_data = np.zeros(len(l0_data), dtype="datetime64[ns]")
+    shcoarse_data: np.ndarray = np.zeros(len(l0_data), dtype="datetime64[ns]")
 
     support_data = defaultdict(list)
 

@@ -1017,7 +1017,7 @@ class HistogramL1B:
         """
         # Section 12.3.1 of the Algorithm Document: onboard generated bad-time flags.
         # Flags are "stored in a 16-bit integer field.
-        onboard_flags = (
+        onboard_flags: np.ndarray = (
             1 - self.deserialize_flags(int(self.flags_set_onboard))
         ).astype(np.uint8)
 
@@ -1217,7 +1217,7 @@ class HistogramL1B:
         np.ndarray
             Array of shape (4, 3600) with bad-angle flags for each bin.
         """
-        histogram_flags = np.full(
+        histogram_flags: np.ndarray = np.full(
             (4, len(self.histogram)),
             GLOWSL1bFlags.NONE.value,
             dtype=np.uint8,

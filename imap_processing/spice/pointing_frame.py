@@ -23,7 +23,7 @@ from imap_processing.spice.time import (
 
 logger = logging.getLogger(__name__)
 
-POINTING_SEGMENT_DTYPE = np.dtype(
+POINTING_SEGMENT_DTYPE: np.dtype = np.dtype(
     [
         # sclk ticks are a double precision number of SCLK ticks since the
         # start of the mission (e.g. MET_seconds / TICK_DURATION)

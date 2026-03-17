@@ -116,36 +116,74 @@ def calculate_de(
     ph_indices = np.nonzero(valid_mask & ph_mask)[0]
     ssd_indices = np.nonzero(valid_mask & ssd_mask)[0]
     # Instantiate arrays
-    xf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    yf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    xb = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    yb = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    xc = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    d = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
-    r = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    phi = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    theta = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    tof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    etof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    ctof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    tof_energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    magnitude_v = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    e_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
-    e_bin_l1a = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
-    species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
-    t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
-    spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    xf: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    yf: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    xb: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    yb: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    xc: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    d: np.ndarray = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    r: np.ndarray = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    phi: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    theta: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    tof: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    etof: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    ctof: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    tof_energy: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    magnitude_v: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    energy: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    e_bin: np.ndarray = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
+    e_bin_l1a: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8
+    )
+    species_bin: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8
+    )
+    t2: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+    )
+    event_times: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64
+    )
+    spin_starts: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64
+    )
     shape = (len(de_dataset["epoch"]), 3)
-    sc_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    sc_dps_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    helio_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    velocities = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    v_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    r_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    sc_velocity: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    sc_dps_velocity: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    helio_velocity: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    velocities: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    v_hat: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    r_hat: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
 
-    start_type = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
+    start_type: np.ndarray = np.full(
+        len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8
+    )
     quality_flags = np.full(
         de_dataset["epoch"].shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
     )
@@ -335,7 +373,7 @@ def calculate_de(
             repoint_id, et_to_met(event_times[valid_events])
         )
         # Initialize an array of all events as False
-        events_to_flag = np.zeros(len(quality_flags), dtype=bool)
+        events_to_flag: np.ndarray = np.zeros(len(quality_flags), dtype=bool)
         # Identify valid events that are outside the pointing
         events_to_flag[valid_events] = ~in_pointing
         # Update quality flags for valid events that are not in the pointing

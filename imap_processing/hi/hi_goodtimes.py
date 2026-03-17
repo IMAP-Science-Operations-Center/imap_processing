@@ -25,7 +25,7 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 # Structured dtype for good time intervals
-INTERVAL_DTYPE = np.dtype(
+INTERVAL_DTYPE: np.dtype = np.dtype(
     [
         ("met_start", np.float64),
         ("met_end", np.float64),
@@ -241,7 +241,7 @@ def _apply_goodtimes_filters(
         valid_events = l1b_de["trigger_id"].values != trigger_id_fillval
 
         # Initialize with -1 (won't match any config row since ESA energy steps > 0)
-        esa_energy_steps = np.full(len(ccsds_index), -1, dtype=np.int32)
+        esa_energy_steps: np.ndarray = np.full(len(ccsds_index), -1, dtype=np.int32)
         if np.any(valid_events):
             esa_energy_steps[valid_events] = l1b_de["esa_energy_step"].values[
                 ccsds_index[valid_events]
@@ -1097,7 +1097,7 @@ def mark_overflow_packets(
     # - After processing all events, last_event_per_packet[P] contains the
     #   index of the last event belonging to packet P
     max_packet_idx = int(np.max(ccsds_indices))
-    last_event_per_packet = np.full(max_packet_idx + 1, -1, dtype=np.intp)
+    last_event_per_packet: np.ndarray = np.full(max_packet_idx + 1, -1, dtype=np.intp)
     event_indices = np.arange(len(ccsds_indices))
     np.maximum.at(last_event_per_packet, ccsds_indices, event_indices)
 
@@ -1228,7 +1228,7 @@ def _compute_normalized_counts_per_sweep(
 
     # Count valid AB events per sweep
     n_sweeps = int(l1b_de["esa_sweep"].max().values) + 1
-    counts_per_sweep = np.zeros(n_sweeps, dtype=np.int64)
+    counts_per_sweep: np.ndarray = np.zeros(n_sweeps, dtype=np.int64)
     np.add.at(counts_per_sweep, event_sweep_idx[is_valid_ab.values], 1)
 
     # Normalize by number of unique ESA energy steps
@@ -1448,7 +1448,7 @@ def _compute_qualified_counts_per_sweep(
     # Count qualified events per (esa_sweep, esa_energy_step) using 2D array
     n_sweeps = int(esa_sweep.max()) + 1
     n_esa_energy_steps = int(esa_energy_step.max()) + 1
-    counts_2d = np.zeros((n_sweeps, n_esa_energy_steps), dtype=np.float64)
+    counts_2d: np.ndarray = np.zeros((n_sweeps, n_esa_energy_steps), dtype=np.float64)
     np.add.at(counts_2d, (qualified_sweep, qualified_energy_step), 1)
 
     # Remove event_met dimension and reshape using multi-index
@@ -1900,7 +1900,9 @@ def _compute_bins_for_cluster(
         For example, if cluster spans bins 88-91 with n_bins=90,
         returns [87, 88, 89, 0, 1, 2] (with padding=1).
     """
-    cluster_bins = nominal_bins[cluster_start : cluster_end + 1].astype(np.int32)
+    cluster_bins: np.ndarray = nominal_bins[cluster_start : cluster_end + 1].astype(
+        np.int32
+    )
 
     # Unwrap to handle clusters spanning the 0/n_bins boundary
     unwrapped = np.unwrap(cluster_bins, period=n_bins)
@@ -1912,7 +1914,7 @@ def _compute_bins_for_cluster(
     bin_high = bin_max + bin_padding
 
     # Generate bin indices with wrapping using modulo
-    bins_to_mark = np.arange(bin_low, bin_high + 1) % n_bins
+    bins_to_mark: np.ndarray = np.arange(bin_low, bin_high + 1) % n_bins
 
     logger.debug(f"Cluster {cluster_start} to {cluster_end} bins: {bins_to_mark}")
 

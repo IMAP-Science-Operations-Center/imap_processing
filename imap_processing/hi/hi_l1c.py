@@ -617,7 +617,7 @@ def get_de_clock_ticks_for_esa_step(
             f"The CCSDS MET time {ccsds_met} "
             "is less than 8 spins from the loaded spin table data."
         )
-    clock_tick_mets = np.arange(
+    clock_tick_mets: np.ndarray = np.arange(
         spin_start_mets[end_time_ind - 8],
         spin_start_mets[end_time_ind],
         HiConstants.DE_CLOCK_TICK_S,

@@ -254,7 +254,7 @@ def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
 
     # Get the start indices of each sector mode spin
     sector_starts = spin_change[spin_run_inds]
-    sectored_mode_mask = np.zeros(len(spins), dtype=bool)
+    sectored_mode_mask: np.ndarray = np.zeros(len(spins), dtype=bool)
     starts = np.asarray(sector_starts)
     # Create offsets 0..14 and broadcast
     idx = starts[:, None] + np.arange(15)
@@ -306,7 +306,9 @@ def get_deadtime_ratios_by_spin_phase(
         )
     else:
         num_spin_sectors = 15
-        sector_indices = np.arange(len(sectored_rates["epoch"])) % num_spin_sectors
+        sector_indices: np.ndarray = (
+            np.arange(len(sectored_rates["epoch"])) % num_spin_sectors
+        )
         # Get timestamps at the start of each spin (sector 0)
         spin_start_indices = np.where(sector_indices == 0)[0]
         met_time = sectored_rates["shcoarse"].values[spin_start_indices]

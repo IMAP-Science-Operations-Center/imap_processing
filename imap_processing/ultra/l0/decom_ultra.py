@@ -60,11 +60,11 @@ def extract_initial_items_from_combined_packets(
     n_packets = len(packets.epoch)
 
     # Preallocate arrays
-    sid = np.zeros(n_packets, dtype=np.uint8)
-    spin = np.zeros(n_packets, dtype=np.uint8)
-    abortflag = np.zeros(n_packets, dtype=np.uint8)
-    startdelay = np.zeros(n_packets, dtype=np.uint16)
-    p00 = np.zeros(n_packets, dtype=np.uint8)
+    sid: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    spin: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    abortflag: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    startdelay: np.ndarray = np.zeros(n_packets, dtype=np.uint16)
+    p00: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
 
     # Extract the data array outside of the loop
     binary_data = packets["packetdata"].data
@@ -463,7 +463,7 @@ def process_ultra_cmd_echo(ds: xr.Dataset) -> xr.Dataset:
 
     fill = 0xFF
     max_len = 10
-    arg_array = np.full((len(ds["epoch"]), max_len), fill, dtype=np.uint8)
+    arg_array: np.ndarray = np.full((len(ds["epoch"]), max_len), fill, dtype=np.uint8)
 
     for i, arg in enumerate(ds["args"].values):
         # Converts to the numeric representations of each byte.
@@ -508,7 +508,7 @@ def process_ultra_macros_checksum(ds: xr.Dataset) -> xr.Dataset:
         Dataset with unpacked and decoded checksum values.
     """
     # big endian uint16
-    packed_dtype = np.dtype(">u2")
+    packed_dtype: np.dtype = np.dtype(">u2")
     fill = np.iinfo(packed_dtype).max
     n_epochs = ds.sizes["epoch"]
     max_len = 256

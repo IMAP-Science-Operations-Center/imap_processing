@@ -378,7 +378,7 @@ class MagL1a:
             Length of new array to add or append to the compression_flags attribute.
             This is expected to be the length of the vector array.
         """
-        new_flags = np.full(
+        new_flags: np.ndarray = np.full(
             (length, 2),
             [packet_properties.compression, packet_properties.compression_width],
             dtype=np.int8,
@@ -1066,7 +1066,7 @@ class MagL1a:
                 f"{width * AXIS_COUNT} or {width * AXIS_COUNT + RANGE_BIT_WIDTH} if "
                 f"has_range."
             )
-        padding = np.zeros(8 - (width % 8), dtype=np.uint8)
+        padding: np.ndarray = np.zeros(8 - (width % 8), dtype=np.uint8)
 
         # take slices of the input data and pack from an array of bits to an array of
         # uint8 bytes

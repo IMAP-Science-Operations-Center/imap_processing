@@ -126,7 +126,7 @@ def decompress_count(
     # Decompress counts based on compression indicators
     # If 0, value is already decompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
-    new_count = copy.deepcopy(count_data).astype(np.int32)
+    new_count: np.ndarray = copy.deepcopy(count_data).astype(np.int32)
 
     # If data is compressed, decompress it
     compressed_indices = compression_flag == 1
@@ -492,7 +492,7 @@ def process_swapi_science(
     # ===================================================================
     # Quality flags
     # ===================================================================
-    quality_flags_data = np.zeros(
+    quality_flags_data: np.ndarray = np.zeros(
         (total_full_sweeps, NUM_ENERGY_STEPS), dtype=np.uint16
     )
 
@@ -550,9 +550,9 @@ def process_swapi_science(
     ]
 
     for flag_name in hk_flags_name:
-        current_flag = np.repeat(good_sweep_hk_data[flag_name.lower()].data, 6).reshape(
-            -1, NUM_ENERGY_STEPS
-        )
+        current_flag: np.ndarray = np.repeat(
+            good_sweep_hk_data[flag_name.lower()].data, 6
+        ).reshape(-1, NUM_ENERGY_STEPS)
         # Use getattr to dynamically access the flag in SWAPIFlags class
         flag_to_set = getattr(SWAPIFlags, flag_name)
         # set the quality flag for each data

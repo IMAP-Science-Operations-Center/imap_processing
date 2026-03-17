@@ -104,7 +104,7 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = N_CEMS) -> NDArray
         - 7 corresponds to the 7 CEM detectors.
         - 30 corresponds to the 30 phi bins.
     """
-    raw_counts = np.zeros((8, cem_number, 30), dtype=np.uint8)
+    raw_counts: np.ndarray = np.zeros((8, cem_number, 30), dtype=np.uint8)
 
     # Compute phi values and their corresponding bins
     # Example: energy steps 0-1 have the same phi;

@@ -43,4 +43,4 @@ repos:
     hooks:
       - id: mypy
         exclude: .*(tests|docs).*
-        additional_dependencies: [ numpy==1.26.4 ]
+        additional_dependencies: [ numpy==2.3.5 ]
