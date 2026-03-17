@@ -82,6 +82,14 @@ def glows_l1b(
         output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
     )
 
+    output_dataset.attrs["flight_software_version"] = input_dataset.attrs[
+        "flight_software_version"
+    ]
+    parents = input_dataset.attrs.get("Parents", "")
+    output_dataset.attrs["pkts_file_name"] = [
+        parent for parent in parents if parent.endswith("pkts")
+    ]
+
     return output_dataset
 
 
@@ -113,6 +121,11 @@ def glows_l1b_de(
     output_dataset = create_l1b_de_output(
         input_dataset, cdf_attrs, ancillary_parameters
     )
+
+    parents = input_dataset.attrs.get("Parents", "")
+    output_dataset.attrs["pkts_file_name"] = [
+        parent for parent in parents if parent.endswith("pkts")
+    ]
 
     return output_dataset
 
@@ -266,8 +279,7 @@ def process_histogram(
     ]
 
     # histograms is the only multi dimensional input variable, so we set the non-epoch
-    # dimension ("bins").
-    # The rest of the input vars are epoch only, so they have an empty list.
+    # dimension ("bins"). Also, the three scalar inputs only have a non-epoch dimension.
     input_dims[0] = ["bins"]
 
     # Create a closure that captures the ancillary objects
@@ -402,15 +414,16 @@ def create_l1b_hist_output(
     )
 
     # Since we know the output_dataarrays are in the same order as the fields in the
-    # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
-
+    # HistogramL1B dataclass, we can use dataclasses.fields to get the field names,
+    # with the exception of the global attributes.
     fields = dataclasses.fields(HistogramL1B)
     for index, dataarray in enumerate(l1b_dataarrays):
-        # Dataarray is already an xr.DataArray type, so we can just assign it
-        output_dataset[fields[index].name] = dataarray
-        output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
-            fields[index].name
-        )
+        if fields[index].name not in ["flight_software_version", "pkts_file_name"]:
+            # Dataarray is already an xr.DataArray type, so we can just assign it
+            output_dataset[fields[index].name] = dataarray
+            output_dataset[
+                fields[index].name
+            ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
 
     output_dataset["bins"] = bin_data
     return output_dataset

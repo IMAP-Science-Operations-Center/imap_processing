@@ -171,7 +171,6 @@ def generate_de_dataset(
 
     # First variable is the output data type, second is the list of values
     support_data: dict = {
-        # "flight_software_version": [],
         "seq_count_in_pkts_file": [np.uint16, []],
         "number_of_de_packets": [np.uint32, []],
     }
@@ -342,7 +341,6 @@ def generate_histogram_dataset(
 
     # First variable is the output data type, second is the list of values
     support_data: dict = {
-        "flight_software_version": [np.uint32, []],
         "seq_count_in_pkts_file": [np.uint16, []],
         "first_spin_id": [np.uint32, []],
         "last_spin_id": [np.uint32, []],
@@ -432,6 +430,11 @@ def generate_histogram_dataset(
     )
 
     output["histogram"] = hist
+
+    # These attributes are the same for each record, so we don't
+    # need to store them per epoch like most of the other fields
+    # Instead, we store them as global attributes
+    output.attrs["flight_software_version"] = hist_l1a_list[0].flight_software_version
 
     for key, value in support_data.items():
         output[key] = xr.DataArray(

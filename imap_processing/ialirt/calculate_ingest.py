@@ -6,7 +6,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-STATIONS = ["Kiel"]
+STATIONS = ["Kiel", "UKSA"]
 
 
 def packets_created(start_file_creation: datetime, lines: list) -> dict:
@@ -123,6 +123,7 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
             start_of_time.isoformat(),
             end_of_time.isoformat(),
         ],  # Overall time range of the data
+        "stations": list(STATIONS),
         **station_dict,
     }
 

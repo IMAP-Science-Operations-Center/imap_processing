@@ -34,16 +34,16 @@ support_data_defaults: &support_data_defaults
 
 bins_attrs:
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 3599
   CATDESC: Histogram bin number
   FIELDNAM: Bin number
-  FORMAT: I5
-  VAR_TYPE: support_data
-  LABLAXIS: Counts
   FILLVAL: -32768
+  FORMAT: I5
+  LABLAXIS: Counts
   MONOTON: INCREASE
   SCALETYP: linear
+  VALIDMAX: 3599
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 within_the_second: # Used to be per_second_attrs
   <<:  *default_attrs
@@ -58,53 +58,43 @@ within_the_second: # Used to be per_second_attrs
 
 direct_event_components_attrs:
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 3
   CATDESC: Components of a direct event (seconds, subseconds, impulse_length, multi_event)
   FIELDNAM: Direct event components
-  FORMAT: I2
-  VAR_TYPE: support_data
-  LABLAXIS: Components
   FILLVAL: 255
+  FORMAT: I2
+  LABLAXIS: Components
+  VALIDMAX: 3
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 direct_events:
   <<:  *default_attrs
+  CATDESC: Direct events grouped by epoch seconds
   DEPEND_0: epoch
   DEPEND_1: within_the_second
   DEPEND_2: direct_event_components
-  VALIDMIN: 0
-  VALIDMAX: *max_uint32
-  CATDESC: Direct events grouped by epoch seconds
   FIELDNAM: Direct events
-  FORMAT: I10
-  VAR_TYPE: data
-  LABLAXIS: Counts
   FILLVAL: *max_uint32_min_one
+  FORMAT: I10
+  LABLAXIS: Counts
+  VALIDMAX: *max_uint32
+  VALIDMIN: 0
+  VAR_TYPE: data
 
 histogram:
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 255
   CATDESC: Histogram of photon counts in scanning-circle bins
   DEPEND_0: epoch
   DEPEND_1: bins
-  LABL_PTR_1: bins_label
-  FIELDNAM: Histogram of photon counts
-  FORMAT: I4
   DISPLAY_TYPE: time_series
+  FIELDNAM: Histogram of photon counts
   FILL_VAL: *max_uint16
+  FORMAT: I4
+  LABL_PTR_1: bins_label
   UNITS: counts
+  VALIDMAX: 255
+  VALIDMIN: 0
   VAR_TYPE: data
-
-pkts_file_name:
-  <<: *support_data_defaults
-  CATDESC: Name of input file with CCSDS packets data
-  DISPLAY_TYPE: no_plot
-  FIELDNAM: Packets-data input filename
-  FILLVAL: # TBD: what is fillval for strings?
-  FORMAT: S256 # TBC
-  LABLAXIS: File name
-  VAR_TYPE: metadata
 
 first_spin_id:
   <<: *support_data_defaults
@@ -131,8 +121,8 @@ imap_start_time:
   # TODO: Presumably float64 max or min should be here?
   FILLVAL: *int_fillval
   FORMAT: F16.6
-  UNITS: seconds
   LABLAXIS: Start time
+  UNITS: seconds
   VALIDMAX: 4294967295.0
   VALIDMIN: 0.0
 
@@ -140,11 +130,11 @@ imap_time_offset:
   <<: *support_data_defaults
   CATDESC: Accumulation time in seconds for GLOWS histogram
   FIELDNAM: Histogram accumulation time
-   # TODO: Presumably float64 max or min should be here?
+  # TODO: Presumably float64 max or min should be here?
   FILLVAL: *int_fillval
   FORMAT: F12.6
-  UNITS: seconds
   LABLAXIS: Duration
+  UNITS: seconds
   VALIDMAX: 4000.0
   VALIDMIN: 0.0
 
@@ -154,8 +144,8 @@ glows_start_time:
   FIELDNAM: Histogram start time, GLOWS-clock seconds
   FILLVAL: *int_fillval
   FORMAT: F16.6
-  UNITS: seconds
   LABLAXIS: Start time
+  UNITS: seconds
   VALIDMAX: 4294967295.0
   VALIDMIN: 0.0
 
@@ -165,14 +155,14 @@ glows_time_offset:
   FIELDNAM: Histogram accumulation time
   FILLVAL: *int_fillval
   FORMAT: F12.6
-  UNITS: seconds
   LABLAXIS: Duration
+  UNITS: seconds
   VALIDMAX: 4000.0 # 15.38 s per spin x 256 spins = 3937.3 s, then rounded up
   VALIDMIN: 0.0
 
 flags_set_onboard:
-  # TODO: Verify uint32 fillval and uint16 validmax
   <<: *support_data_defaults
+  # TODO: Verify uint32 fillval and uint16 validmax
   CATDESC: Binary mask with histogram flags set onboard
   FIELDNAM: Mask with histogram flags set onboard
   FILLVAL: *max_uint32
@@ -293,6 +283,7 @@ pulse_length_variance:
   FORMAT: I10
   LABLAXIS: Variance
   VALIDMAX: *max_uint16
+
 # End of not-in--dicts in generate_de_dataset
 
 # support_data
@@ -330,8 +321,8 @@ imap_sclk_last_pps:
 glows_sclk_last_pps:
   <<: *support_data_defaults
   CATDESC: GLOWS-clock seconds for last PPS
-  FIELDNAM: GLOWS-clock seconds for last PPS
   DISPLAY_TYPE: no_plot
+  FIELDNAM: GLOWS-clock seconds for last PPS
   FILLVAL: *max_uint32
   FORMAT: I11
   LABLAXIS: GLOWS seconds
@@ -341,8 +332,8 @@ glows_sclk_last_pps:
 glows_ssclk_last_pps:
   <<: *support_data_defaults
   CATDESC: GLOWS-clock subseconds for last PPS
-  FIELDNAM: GLOWS-clock subseconds for last PPS
   DISPLAY_TYPE: no_plot
+  FIELDNAM: GLOWS-clock subseconds for last PPS
   FILLVAL: *max_uint32
   LABLAXIS: GLOWS subseconds
   VALIDMAX: 1999999
@@ -420,12 +411,12 @@ number_of_completed_spins:
 filter_temperature:
   <<: *support_data_defaults
   CATDESC: Uint encoded filter temperature
+  DISPLAY_TYPE: time_series
   FIELDNAM: Filter temperature
   FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Temperature
   VALIDMAX: *max_uint16
-  DISPLAY_TYPE: time_series
 
 hv_voltage:
   <<: *support_data_defaults
@@ -502,11 +493,3 @@ missing_packets_sequence: # Used to be missing_packets_sequence
   LABLAXIS: Metadata
   VALIDMAX: 1000000000
   VAR_TYPE: metadata
-
-flight_software_version:
-  <<: *support_data_defaults
-  CATDESC: GLOWS flight software version
-  FIELDNAM: GLOWS flight software version
-  FILLVAL: *max_uint32
-  LABLAXIS: Version
-  VALIDMAX: 16777215

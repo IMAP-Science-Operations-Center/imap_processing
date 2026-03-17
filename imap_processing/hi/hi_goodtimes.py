@@ -10,8 +10,17 @@ import pandas as pd
 import xarray as xr
 from scipy.ndimage import convolve1d
 
-from imap_processing.hi.utils import CoincidenceBitmap, HiConstants, parse_sensor_number
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.hi.utils import (
+    CalibrationProductConfig,
+    CoincidenceBitmap,
+    HiConstants,
+    compute_qualified_event_mask,
+    parse_sensor_number,
+)
 from imap_processing.quality_flags import ImapHiL1bDeFlags
+from imap_processing.spice.repoint import get_repoint_data
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +42,249 @@ class CullCode(IntEnum):
 
     GOOD = 0
     LOOSE = 1
+
+
+def hi_goodtimes(
+    l1b_de_datasets: list[xr.Dataset],
+    current_repointing: str,
+    l1b_hk: xr.Dataset,
+    cal_product_config_path: Path,
+) -> list[xr.Dataset]:
+    """
+    Generate goodtimes dataset for IMAP-Hi L1B processing.
+
+    This is the top-level function that orchestrates all goodtimes culling
+    operations for a single pointing. It applies the following filters in order:
+
+    1. mark_incomplete_spin_sets - Remove incomplete 8-spin histogram periods
+    2. mark_drf_times - Remove times during spacecraft drift restabilization
+    3. mark_overflow_packets - Remove times when DE packets overflow
+    4. mark_statistical_filter_0 - Detect drastic penetrating background changes
+    5. mark_statistical_filter_1 - Detect isotropic count rate increases
+    6. mark_statistical_filter_2 - Detect short-lived event pulses
+
+    Parameters
+    ----------
+    l1b_de_datasets : list[xr.Dataset]
+        L1B DE datasets for surrounding pointings. Typically includes
+        current plus 3 preceding and 3 following pointings (7 total).
+        Statistical filters 0 and 1 use all datasets; other filters use
+        only the current pointing.
+    current_repointing : str
+        Repointing identifier for the current pointing (e.g., "repoint00001").
+        Used to identify which dataset in l1b_de_datasets is the current one.
+    l1b_hk : xr.Dataset
+        L1B housekeeping dataset containing DRF status.
+    cal_product_config_path : Path
+        Path to calibration product configuration CSV file.
+
+    Returns
+    -------
+    list[xr.Dataset]
+        List containing the goodtimes dataset ready for CDF writing,
+        or an empty list if processing cannot proceed yet.
+
+    Notes
+    -----
+    See IMAP-Hi Algorithm Document Sections 2.2.4 and 2.3.2 for details
+    on each culling algorithm.
+
+    Processing requires that repointing + 3 has occurred (so that statistical
+    filters can use surrounding pointings). Due to challenges with dependency
+    management in the batch starter, it was decided to design the Hi goodtimes
+    to set the L1B DE dependencies as not required and handle the final logic for
+    checking L1B DE dependencies in this function. If repointing + 3 has not yet
+    completed, an empty list is returned. If repointing + 3 has occurred but
+    not all 7 DE files are available, all times are marked as bad.
+    """
+    logger.info("Starting Hi goodtimes processing")
+
+    # Parse the current repoint ID and check if we can process yet
+    current_repoint_id = int(current_repointing.replace("repoint", ""))
+    future_repoint_id = current_repoint_id + 3
+
+    # Check if the future repointing has finished by checking that the next
+    # repoint is in the repoint dataframe.
+    repoint_df = get_repoint_data()
+    required_repoints_complete = (
+        future_repoint_id + 1 in repoint_df["repoint_id"].values
+    )
+
+    if not required_repoints_complete:
+        raise ValueError(
+            f"Goodtimes cannot yet be processed for {current_repointing}: "
+            f"repoint{future_repoint_id:05d} has not yet been completed "
+            f"according to the repoint table."
+        )
+
+    # Find the current pointing index in the datasets
+    current_index = _find_current_pointing_index(l1b_de_datasets, current_repointing)
+    current_l1b_de = l1b_de_datasets[current_index]
+
+    # Create the goodtimes dataset from the current pointing
+    goodtimes_ds = create_goodtimes_dataset(current_l1b_de)
+
+    # Check if we have the full set of 7 DE files for nominal processing
+    if len(l1b_de_datasets) == 7:
+        _apply_goodtimes_filters(
+            goodtimes_ds,
+            l1b_de_datasets,
+            current_index,
+            l1b_hk,
+            cal_product_config_path,
+        )
+    else:
+        # Incomplete DE file set - mark all times as bad
+        logger.warning(
+            f"Incomplete DE file set for {current_repointing}: "
+            f"expected 7 files, got {len(l1b_de_datasets)}. "
+            "Marking all times as bad."
+        )
+        goodtimes_ds["cull_flags"][:, :] = CullCode.LOOSE
+
+    # Log final statistics
+    stats = goodtimes_ds.goodtimes.get_cull_statistics()
+    logger.info(
+        f"Final statistics: {stats['good_bins']}/{stats['total_bins']} good "
+        f"({stats['fraction_good'] * 100:.1f}%)"
+    )
+    if stats["cull_code_counts"]:
+        logger.info(f"Cull code counts: {stats['cull_code_counts']}")
+
+    # Finalize dataset for CDF output
+    logger.info("Finalizing goodtimes dataset for CDF output")
+    cdf_ready_ds = goodtimes_ds.goodtimes.finalize_dataset()
+
+    logger.info("Hi goodtimes processing complete")
+    return [cdf_ready_ds]
+
+
+def _find_current_pointing_index(
+    l1b_de_datasets: list[xr.Dataset],
+    current_repointing: str,
+) -> int:
+    """
+    Find the index of the current pointing in the datasets list.
+
+    Parameters
+    ----------
+    l1b_de_datasets : list[xr.Dataset]
+        L1B DE datasets.
+    current_repointing : str
+        Repointing identifier for the current pointing.
+
+    Returns
+    -------
+    current_index : int
+        Index of the current pointing in the datasets list.
+
+    Raises
+    ------
+    ValueError
+        If the current repointing is not found in the datasets.
+    """
+    for i, ds in enumerate(l1b_de_datasets):
+        if ds.attrs.get("Repointing") == current_repointing:
+            logger.info(f"Current pointing index: {i} of {len(l1b_de_datasets)}")
+            return i
+
+    raise ValueError(
+        f"Could not find current repointing {current_repointing} "
+        f"in L1B DE datasets. Available repointings: "
+        f"{[ds.attrs.get('Repointing') for ds in l1b_de_datasets]}"
+    )
+
+
+def _apply_goodtimes_filters(
+    goodtimes_ds: xr.Dataset,
+    l1b_de_datasets: list[xr.Dataset],
+    current_index: int,
+    l1b_hk: xr.Dataset,
+    cal_product_config_path: Path,
+) -> None:
+    """
+    Apply all goodtimes culling filters to the dataset.
+
+    Modifies goodtimes_ds in place by applying filters 1-6.
+
+    Parameters
+    ----------
+    goodtimes_ds : xr.Dataset
+        Goodtimes dataset to modify.
+    l1b_de_datasets : list[xr.Dataset]
+        All L1B DE datasets (current + surrounding pointings).
+    current_index : int
+        Index of the current pointing in l1b_de_datasets.
+    l1b_hk : xr.Dataset
+        L1B housekeeping dataset.
+    cal_product_config_path : Path
+        Path to calibration product configuration CSV file.
+    """
+    current_l1b_de = l1b_de_datasets[current_index]
+
+    # Load calibration product config
+    logger.info(f"Loading cal product config: {cal_product_config_path}")
+    cal_product_config = CalibrationProductConfig.from_csv(cal_product_config_path)
+
+    # Log initial statistics
+    stats = goodtimes_ds.goodtimes.get_cull_statistics()
+    logger.info(f"Initial good bins: {stats['good_bins']}/{stats['total_bins']}")
+
+    # Pre-compute qualified event masks for each dataset
+    # These masks check BOTH coincidence_type AND TOF windows
+    for l1b_de in l1b_de_datasets:
+        ccsds_index = l1b_de["ccsds_index"].values
+
+        # Handle invalid events (FILLVAL trigger_id) to avoid IndexError
+        # For pointings with no valid events, trigger_id will be at FILLVAL
+        trigger_id_fillval = l1b_de["trigger_id"].attrs.get("FILLVAL", 65535)
+        valid_events = l1b_de["trigger_id"].values != trigger_id_fillval
+
+        # Initialize with -1 (won't match any config row since ESA energy steps > 0)
+        esa_energy_steps = np.full(len(ccsds_index), -1, dtype=np.int32)
+        if np.any(valid_events):
+            esa_energy_steps[valid_events] = l1b_de["esa_energy_step"].values[
+                ccsds_index[valid_events]
+            ]
+
+        l1b_de["qualified_mask"] = xr.DataArray(
+            compute_qualified_event_mask(l1b_de, cal_product_config, esa_energy_steps),
+            dims=["event_met"],
+        )
+    logger.info("Pre-computed qualified event masks for all datasets")
+
+    # === Apply culling filters ===
+
+    # 1. Mark incomplete spin sets
+    logger.info("Applying filter: mark_incomplete_spin_sets")
+    mark_incomplete_spin_sets(goodtimes_ds, current_l1b_de)
+
+    # 2. Mark DRF times (drift restabilization)
+    logger.info("Applying filter: mark_drf_times")
+    mark_drf_times(goodtimes_ds, l1b_hk)
+
+    # 3. Mark overflow packets
+    logger.info("Applying filter: mark_overflow_packets")
+    mark_overflow_packets(goodtimes_ds, current_l1b_de, cal_product_config)
+
+    # 4. Statistical Filter 0 - drastic background changes
+    logger.info("Applying filter: mark_statistical_filter_0")
+    mark_statistical_filter_0(goodtimes_ds, l1b_de_datasets, current_index)
+
+    # 5. Statistical Filter 1 - isotropic count rate increases
+    logger.info("Applying filter: mark_statistical_filter_1")
+    mark_statistical_filter_1(
+        goodtimes_ds,
+        l1b_de_datasets,
+        current_index,
+    )
+
+    # 6. Statistical Filter 2 - short-lived event pulses
+    logger.info("Applying filter: mark_statistical_filter_2")
+    mark_statistical_filter_2(
+        goodtimes_ds,
+        current_l1b_de,
+    )
 
 
 def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
@@ -88,7 +340,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
             np.zeros((len(met), 90), dtype=np.uint8),
             dims=["met", "spin_bin"],
         ),
-        "esa_step": esa_step,
+        "esa_step": xr.DataArray(esa_step.values, dims=["met"]),
     }
 
     # Create attributes
@@ -100,7 +352,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
             f"attribute: {l1b_de.attrs['Repointing']}"
         )
     attrs = {
-        "sensor": f"Hi{sensor_number}",
+        "sensor": f"{sensor_number}sensor",
         "pointing": int(match["pointing_num"]),
     }
 
@@ -143,7 +395,7 @@ class GoodtimesAccessor:
           ESA step for each MET timestamp
       * Attributes
         * sensor : str
-         Sensor identifier ('Hi45' or 'Hi90')
+         Sensor identifier ('45sensor' or '90sensor')
         * pointing : int
          Pointing number for this dataset
 
@@ -485,6 +737,78 @@ class GoodtimesAccessor:
         logger.info(f"Wrote {len(intervals)} intervals to {output_path}")
         return output_path
 
+    def finalize_dataset(self) -> xr.Dataset:
+        """
+        Finalize the goodtimes dataset for CDF output.
+
+        Converts the dataset from using MET as the primary dimension to using
+        epoch (TT2000 nanoseconds), and adds all CDF attributes required for
+        L1B CDF file writing.
+
+        Returns
+        -------
+        xarray.Dataset
+            CDF-ready dataset with epoch dimension and all CDF attributes.
+
+        Notes
+        -----
+        This method should be called after all goodtimes filtering is complete,
+        just before writing to CDF.
+
+        Requires SPICE kernels to be loaded for MET to epoch conversion.
+        """
+        logger.info("Finalizing goodtimes dataset for CDF output")
+
+        # Initialize CDF attribute manager
+        attr_mgr = ImapCdfAttributes()
+        attr_mgr.add_instrument_global_attrs("hi")
+        attr_mgr.add_instrument_variable_attrs("hi")
+
+        # Convert MET coordinate to epoch coordinate (TT2000 nanoseconds)
+        met_values = self._obj.coords["met"].values
+        epoch_values = met_to_ttj2000ns(met_values)
+
+        # Rename met dimension to epoch and assign new epoch coordinate values
+        ds = self._obj.rename({"met": "epoch"})
+        ds = ds.assign_coords(epoch=epoch_values)
+
+        # Move met from coordinate to data variable
+        ds["met"] = xr.DataArray(met_values, dims=["epoch"])
+
+        # Add spin_bin_label coordinate
+        spin_bin_label = np.array([f"{i}" for i in ds.coords["spin_bin"].values])
+        ds = ds.assign_coords(spin_bin_label=("spin_bin", spin_bin_label))
+
+        # Add coordinate attributes
+        ds["epoch"].attrs = attr_mgr.get_variable_attributes(
+            "epoch", check_schema=False
+        )
+        for coord_name in ds.coords:
+            attr_mgr_key = (
+                f"hi_goodtimes_{coord_name}" if coord_name != "epoch" else "epoch"
+            )
+            ds[coord_name].attrs = attr_mgr.get_variable_attributes(
+                attr_mgr_key, check_schema=False
+            )
+        ds["spin_bin"].attrs = attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin")
+
+        # Add variable attributes
+        for var_name in ds.data_vars:
+            ds[var_name].attrs.update(
+                attr_mgr.get_variable_attributes(f"hi_goodtimes_{var_name}")
+            )
+
+        # Update global attributes
+        sensor_str = ds.attrs.pop("sensor")
+        ds.attrs = attr_mgr.get_global_attributes("imap_hi_l1b_goodtimes_attrs")
+
+        # Update Logical_source with sensor string
+        ds.attrs["Logical_source"] = ds.attrs["Logical_source"].format(
+            sensor=sensor_str
+        )
+
+        return ds
+
 
 # ==============================================================================
 # Culling/Filtering Functions
@@ -653,7 +977,7 @@ def mark_drf_times(
         return
 
     # Get HK times and DRF status from fsw_thruster_warn
-    hk_met = hk["ccsds_met"]
+    hk_met = hk["shcoarse"]
     drf_status = hk["fsw_thruster_warn"].values != 0
 
     # Find transitions from DRF active (1) to inactive (0) using numpy.diff
@@ -1082,7 +1406,7 @@ def mark_statistical_filter_0(
 
 def _compute_qualified_counts_per_sweep(
     l1b_de: xr.Dataset,
-    qualified_coincidence_types: set[int],
+    qualified_mask: np.ndarray,
 ) -> xr.Dataset:
     """
     Compute qualified calibration product counts per 8-spin interval and reshape.
@@ -1094,8 +1418,9 @@ def _compute_qualified_counts_per_sweep(
     ----------
     l1b_de : xarray.Dataset
         L1B Direct Event dataset with esa_sweep coordinate on epoch dimension.
-    qualified_coincidence_types : set[int]
-        Set of coincidence type integers that qualify for calibration products.
+    qualified_mask : np.ndarray
+        Boolean mask indicating which events qualify for calibration products.
+        This mask should check BOTH coincidence_type AND TOF windows.
 
     Returns
     -------
@@ -1108,13 +1433,12 @@ def _compute_qualified_counts_per_sweep(
         raise ValueError("Dataset must have esa_sweep coordinate")
 
     # Get values needed for counting
-    coincidence_type = l1b_de["coincidence_type"].values
     ccsds_index = l1b_de["ccsds_index"].values
     esa_sweep = l1b_de.coords["esa_sweep"].values
     esa_energy_step = l1b_de["esa_energy_step"].values
 
-    # Identify qualified events
-    is_qualified = np.isin(coincidence_type, list(qualified_coincidence_types))
+    # Use pre-computed qualified mask
+    is_qualified = qualified_mask
 
     # Map qualified events to their packet's (esa_sweep, esa_energy_step)
     qualified_packet_idx = ccsds_index[is_qualified]
@@ -1152,7 +1476,6 @@ def _compute_qualified_counts_per_sweep(
 
 def _build_per_sweep_datasets(
     l1b_de_datasets: list[xr.Dataset],
-    qualified_coincidence_types: set[int],
 ) -> dict[int, xr.Dataset]:
     """
     Build per-sweep datasets with qualified counts for each Pointing.
@@ -1160,9 +1483,9 @@ def _build_per_sweep_datasets(
     Parameters
     ----------
     l1b_de_datasets : list[xarray.Dataset]
-        List of L1B DE datasets for multiple Pointings.
-    qualified_coincidence_types : set[int]
-        Set of coincidence type integers that qualify for calibration products.
+        List of L1B DE datasets for multiple Pointings. Each dataset must
+        contain a "qualified_mask" DataArray indicating which events qualify
+        for calibration products.
 
     Returns
     -------
@@ -1176,7 +1499,7 @@ def _build_per_sweep_datasets(
         # Add esa_sweep coordinate and compute counts per 8-spin interval
         l1b_de_with_sweep = _add_sweep_indices(l1b_de)
         per_sweep = _compute_qualified_counts_per_sweep(
-            l1b_de_with_sweep, qualified_coincidence_types
+            l1b_de_with_sweep, l1b_de["qualified_mask"].values
         )
         per_sweep_datasets[i] = per_sweep
 
@@ -1376,7 +1699,6 @@ def mark_statistical_filter_1(
     goodtimes_ds: xr.Dataset,
     l1b_de_datasets: list[xr.Dataset],
     current_index: int,
-    qualified_coincidence_types: set[int],
     consecutive_threshold_sigma: float = HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA,
     extreme_threshold_sigma: float = HiConstants.STAT_FILTER_1_EXTREME_SIGMA,
     min_consecutive_intervals: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
@@ -1403,11 +1725,11 @@ def mark_statistical_filter_1(
         Goodtimes dataset for the current Pointing to update.
     l1b_de_datasets : list[xarray.Dataset]
         List of L1B DE datasets for surrounding Pointings. Typically includes
-        current plus 3 preceding and 3 following Pointings.
+        current plus 3 preceding and 3 following Pointings. Each dataset must
+        contain a "qualified_mask" DataArray indicating which events qualify
+        for calibration products (checking both coincidence_type AND TOF).
     current_index : int
         Index of the current Pointing in l1b_de_datasets.
-    qualified_coincidence_types : set[int]
-        Set of coincidence type integers that qualify for calibration products.
     consecutive_threshold_sigma : float, optional
         Sigma multiplier for consecutive interval check.
         Default is HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA.
@@ -1450,9 +1772,7 @@ def mark_statistical_filter_1(
         )
 
     # Step 1: Build per-sweep datasets with qualified counts for each Pointing
-    per_sweep_datasets = _build_per_sweep_datasets(
-        l1b_de_datasets, qualified_coincidence_types
-    )
+    per_sweep_datasets = _build_per_sweep_datasets(l1b_de_datasets)
 
     # Step 2: Compute median and sigma per ESA energy step using xarray
     median_per_esa, sigma_per_esa = _compute_median_and_sigma_per_esa(
@@ -1594,13 +1914,14 @@ def _compute_bins_for_cluster(
     # Generate bin indices with wrapping using modulo
     bins_to_mark = np.arange(bin_low, bin_high + 1) % n_bins
 
+    logger.debug(f"Cluster {cluster_start} to {cluster_end} bins: {bins_to_mark}")
+
     return bins_to_mark
 
 
 def mark_statistical_filter_2(
     goodtimes_ds: xr.Dataset,
     l1b_de: xr.Dataset,
-    qualified_coincidence_types: set[int],
     min_events: int = HiConstants.STAT_FILTER_2_MIN_EVENTS,
     max_time_delta: float = HiConstants.STAT_FILTER_2_MAX_TIME_DELTA,
     bin_padding: int = HiConstants.STAT_FILTER_2_BIN_PADDING,
@@ -1634,9 +1955,8 @@ def mark_statistical_filter_2(
         - coincidence_type: detector coincidence bitmap
         - nominal_bin: spacecraft spin bin (0-89)
         - esa_step: ESA energy step for each packet
-    qualified_coincidence_types : set[int]
-        Set of coincidence type integers qualifying as calibration
-        products 1 or 2.
+        - qualified_mask: boolean mask indicating which events qualify for
+          calibration products (checking both coincidence_type AND TOF windows)
     min_events : int, optional
         Minimum events to form a pulse cluster.
         Default is HiConstants.STAT_FILTER_2_MIN_EVENTS.
@@ -1673,19 +1993,18 @@ def mark_statistical_filter_2(
 
     # Add event-level coordinates for grouping
     l1b_de_with_sweep = l1b_de_with_sweep.assign_coords(
-        event_sweep=("event", esa_sweep[ccsds_index]),
-        event_step=("event", esa_step[ccsds_index]),
+        event_sweep=("event_met", esa_sweep[ccsds_index]),
+        event_step=("event_met", esa_step[ccsds_index]),
     )
 
-    # Filter to qualified events
-    coincidence_type = l1b_de_with_sweep["coincidence_type"].values
-    is_qualified = np.isin(coincidence_type, list(qualified_coincidence_types))
+    # Get qualified mask from the dataset
+    qualified_mask = l1b_de["qualified_mask"].values
 
-    if not np.any(is_qualified):
+    if not np.any(qualified_mask):
         logger.info("Statistical Filter 2: No qualified events found")
         return
 
-    qualified_events = l1b_de_with_sweep.isel(event=is_qualified)
+    qualified_events = l1b_de_with_sweep.isel(event_met=qualified_mask)
 
     n_clusters_found = 0
     n_bins_marked = 0

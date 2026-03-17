@@ -476,7 +476,7 @@ def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
         "sim_1yr_imap_attitude.bc",
         "imap_130.tf",
         "de440s.bsp",
-        "imap_science_100.tf",
+        "imap_science_120.tf",
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels) as k:

@@ -97,7 +97,6 @@ def create_dataset(  # noqa: PLR0912
             # epoch coordinate already created with correct attrs
             continue
         elif key == "epoch_delta":
-            # Create epoch_delta variable
             dataset[key] = xr.DataArray(
                 data,
                 dims=["epoch"],
@@ -109,9 +108,15 @@ def create_dataset(  # noqa: PLR0912
             "pixel_index",
             "spin_phase_step",
         ]:
-            # update attrs
+            # update attrs on existing coords
             dataset[key].attrs = cdf_manager.get_variable_attributes(
                 key, check_schema=False
+            )
+        elif key in ["energy_range_edges_dim", "energy_range_flags_dim"]:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=[key],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(
@@ -177,24 +182,22 @@ def create_dataset(  # noqa: PLR0912
                 dims=["energy_bin_geometric_mean", "pixel_index"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key in {
-            "dead_time_ratio",
-        }:
+        elif key in {"dead_time_ratio"}:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["spin_phase_step"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key in {"energy_range_edges"}:
+        elif key == "energy_range_edges":
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_range_edges"],
+                dims=["energy_range_edges_dim"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key in {"energy_range_flags"}:
+        elif key == "energy_range_flags":
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_ranges"],
+                dims=["energy_range_flags_dim"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:
@@ -225,7 +228,15 @@ def extract_data_dict(dataset: xr.Dataset) -> dict:
     data_dict.update(
         {
             coord: dataset.coords[coord].values
-            for coord in ("spin_number", "energy_bin_geometric_mean", "epoch")
+            for coord in (
+                "spin_number",
+                "energy_bin_geometric_mean",
+                "epoch",
+                "energy_range_flags_dim",
+                "energy_range_edges_dim",
+                "energy_range_flags",
+                "energy_range_edges",
+            )
             if coord in dataset.coords
         }
     )

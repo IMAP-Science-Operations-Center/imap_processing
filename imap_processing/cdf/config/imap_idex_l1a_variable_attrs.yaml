@@ -214,7 +214,7 @@ checksum:
   FIELDNAM: Checksum
   UNITS: " "
 
-idx__sci0aid:
+aid:
   <<: *trigger_base
   CATDESC: Accountability identifier for this event
   FIELDNAM: Accountability identifier

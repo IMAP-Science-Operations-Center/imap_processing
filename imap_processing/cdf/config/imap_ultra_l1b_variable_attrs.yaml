@@ -526,6 +526,7 @@ quality_scattering:
   LABLAXIS: quality_scattering
   # TODO: come back to format
   UNITS: " "
+  DEPEND_0: spin_number
 
 quality_low_voltage:
   <<: *default_uint16
@@ -534,6 +535,7 @@ quality_low_voltage:
   LABLAXIS: quality_low_voltage
   # TODO: come back to format
   UNITS: " "
+  DEPEND_0: spin_number
 
 quality_high_energy:
   <<: *default_uint16
@@ -542,6 +544,7 @@ quality_high_energy:
   LABLAXIS: quality_high_energy
   # TODO: come back to format
   UNITS: " "
+  DEPEND_0: spin_number
 
 quality_statistics:
   <<: *default_uint16
@@ -550,22 +553,30 @@ quality_statistics:
   LABLAXIS: quality_statistics
   # TODO: come back to format
   UNITS: " "
-
+  DEPEND_0: spin_number
 
 energy_range_edges:
-  <<: *default_float64
-  CATDESC: Energy range edges for culling data at l1b.
+  CATDESC: Energy range edges used for culling data.
   DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Range Edges
+  FILLVAL: -1.0e+31
+  FORMAT: F12.4
   LABLAXIS: Energy Edges
   UNITS: keV
   VALIDMIN: 0.0
-  VALIDMAX: 9223372036854775807
+  VALIDMAX: 5000
+  VAR_TYPE: support_data
+  DEPEND_0: energy_range_edges_dim
 
 energy_range_flags:
-  <<: *default_float64
-  CATDESC: Bit flags for each culling energy range
+  CATDESC: Bit flags describing culling energy ranges.
   DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Range Flags
+  FILLVAL: 0
+  FORMAT: I5
   LABLAXIS: Range Flags
   UNITS: " "
+  VALIDMIN: 1
+  VALIDMAX: 65534
+  VAR_TYPE: support_data
+  DEPEND_0: energy_range_flags_dim

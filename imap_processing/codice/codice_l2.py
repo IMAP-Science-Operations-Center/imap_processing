@@ -1074,9 +1074,17 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # Calculate spin angle by adding a base angle from L2_HI_SECTORED_ANGLE
     # for each SSD index and then adding multiple of 30 degrees for each elevation.
     # Then mod by 360 to keep it within 0-360 range.
-    elevation_angles = np.arange(len(l2_dataset["elevation_angle"].values)) * 30.0
-    spin_angle = (L2_HI_SECTORED_ANGLE[:, np.newaxis] + elevation_angles) % 360.0
+    # Determine number of bins from dataset dimensions
+    n_spin = l2_dataset.sizes["spin_sector"]
+    n_elev = l2_dataset.sizes["elevation_angle"]
 
+    # Elevation-dependent offset: 0, 30, 60, ... for each elevation bin
+    elevation_offsets = np.arange(n_elev, dtype=float).reshape(1, n_elev) * 30.0
+
+    # Base spin angle per spin sector, broadcast across elevation_angle
+    base_angles = np.asarray(L2_HI_SECTORED_ANGLE, dtype=float).reshape(n_spin, 1)
+
+    spin_angle = (base_angles + elevation_offsets) % 360.0
     # Add spin angle variable using the new elevation_angle dimension
     l2_dataset["spin_angle"] = (("spin_sector", "elevation_angle"), spin_angle)
     l2_dataset["spin_angle"].attrs = cdf_attrs.get_variable_attributes(

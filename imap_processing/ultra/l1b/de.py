@@ -375,7 +375,11 @@ def calculate_de(
         ancillary_files,
     )
     de_dict["event_efficiency"] = get_efficiency(
-        de_dict["tof_energy"], de_dict["phi"], de_dict["theta"], ancillary_files
+        de_dict["tof_energy"],
+        de_dict["phi"],
+        de_dict["theta"],
+        ancillary_files,
+        f"ultra{sensor}",
     )
     de_dict["geometric_factor_blades"] = get_geometric_factor(
         de_dict["phi"],

@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Sequence
+from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy import typing as npt
+from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
@@ -571,3 +573,243 @@ class CalibrationProductConfig:
             .sort_values()
             .values
         )
+
+
+def get_tof_window_mask(
+    de_ds: xr.Dataset,
+    tof_windows: dict[str, tuple[float, float]],
+    tof_fill_vals: dict[str, float],
+) -> NDArray[np.bool_]:
+    """
+    Generate mask indicating which DEs pass TOF window checks.
+
+    An event passes the TOF window check for a given detector pair if its TOF value
+    is within the (low, high) bounds OR equals the fill value (indicating the detector
+    pair was not hit).
+
+    Parameters
+    ----------
+    de_ds : xarray.Dataset
+        Direct Event Dataset with TOF variables (tof_ab, tof_ac1, tof_bc1, tof_c1c2).
+    tof_windows : dict[str, tuple[float, float]]
+        Dictionary mapping TOF field names to (low, high) tuples defining the
+        acceptable window for each TOF measurement.
+    tof_fill_vals : dict[str, float]
+        Fill values for each TOF field - events with fill values pass the check.
+        If not provided, fill value handling is disabled.
+
+    Returns
+    -------
+    mask : numpy.ndarray
+        Boolean mask where True = event passes all specified TOF window checks.
+    """
+    # Start with all True mask
+    n_events = len(de_ds["event_met"]) if "event_met" in de_ds.dims else 0
+    if n_events == 0:
+        return np.array([], dtype=bool)
+
+    combined_mask = np.ones(n_events, dtype=bool)
+
+    for tof_field, (low, high) in tof_windows.items():
+        tof_array = de_ds[tof_field].values
+        # TOF is in window if between low/high bounds OR equals fill value
+        in_window = (low <= tof_array) & (tof_array <= high)
+        in_window |= tof_array == tof_fill_vals[tof_field]
+
+        combined_mask &= in_window
+
+    return combined_mask
+
+
+def filter_events_by_coincidence(
+    de_ds: xr.Dataset,
+    coincidence_types: Sequence[int],
+) -> NDArray[np.bool_]:
+    """
+    Filter events by coincidence type.
+
+    Parameters
+    ----------
+    de_ds : xarray.Dataset
+        Direct Event Dataset with coincidence_type variable.
+    coincidence_types : Sequence[int]
+        Sequence of coincidence type integers to match.
+
+    Returns
+    -------
+    mask : np.ndarray
+        Boolean mask where True = event's coincidence_type is in the provided list.
+    """
+    if "coincidence_type" not in de_ds:
+        raise ValueError("Dataset must have 'coincidence_type' variable")
+
+    coincidence_array = de_ds["coincidence_type"].values
+    return np.isin(coincidence_array, list(coincidence_types))
+
+
+def get_bin_range_with_wrap(
+    first_bin: int, last_bin: int, n_bins: int, extend_by: int
+) -> np.ndarray:
+    """
+    Get bin range with wraparound and optional extension.
+
+    Computes a range of bin indices from first_bin to last_bin, optionally
+    extending by a padding amount on each side, with proper wraparound
+    handling for circular bin structures (e.g., spin bins).
+
+    Parameters
+    ----------
+    first_bin : int
+        First bin index in the range.
+    last_bin : int
+        Last bin index in the range (may be less than first_bin if wrapping).
+    n_bins : int
+        Total number of bins (bins are 0 to n_bins-1).
+    extend_by : int
+        Number of bins to add on each side of the range.
+
+    Returns
+    -------
+    bins : np.ndarray
+        Array of bin indices in the range, with wrapping handled.
+    """
+    # Apply extension
+    bot = (first_bin - extend_by) % n_bins
+    top = (last_bin + extend_by) % n_bins
+
+    # Check if we need to wrap
+    if top >= bot:
+        # No wrap needed
+        return np.arange(bot, top + 1)
+    else:
+        # Wrap around: bins from bot to n_bins-1, then 0 to top
+        return np.concatenate([np.arange(bot, n_bins), np.arange(0, top + 1)])
+
+
+def _build_tof_fill_vals(de_ds: xr.Dataset) -> dict[str, float]:
+    """
+    Build TOF fill values dictionary from dataset attributes.
+
+    Parameters
+    ----------
+    de_ds : xarray.Dataset
+        Direct Event dataset with TOF variables containing FILLVAL attributes.
+
+    Returns
+    -------
+    dict[str, float]
+        Dictionary mapping TOF variable names to their fill values.
+    """
+    tof_fill_vals = {}
+    for pair in CalibrationProductConfig.tof_detector_pairs:
+        tof_var = f"tof_{pair}"
+        tof_fill_vals[tof_var] = de_ds[tof_var].attrs.get("FILLVAL", np.nan)
+    return tof_fill_vals
+
+
+def iter_qualified_events_by_config(
+    de_ds: xr.Dataset,
+    cal_product_config: pd.DataFrame,
+    esa_energy_steps: NDArray[np.int_],
+) -> Generator[tuple[Any, Any, NDArray[np.bool_]], None, None]:
+    """
+    Iterate over calibration config, yielding masks for qualified events.
+
+    For each (esa_energy_step, calibration_prod) combination in the config,
+    yields a mask indicating which events qualify based on BOTH coincidence_type
+    AND TOF window checks.
+
+    Parameters
+    ----------
+    de_ds : xarray.Dataset
+        Direct Event dataset with coincidence_type and TOF variables.
+        TOF variables must have FILLVAL attribute for fill value handling.
+    cal_product_config : pandas.DataFrame
+        Config DataFrame with multi-index (calibration_prod, esa_energy_step).
+        Must have coincidence_type_values column and TOF window columns.
+    esa_energy_steps : np.ndarray
+        ESA energy step for each event in de_ds.
+
+    Yields
+    ------
+    esa_energy : Any
+        The ESA energy step value.
+    config_row : namedtuple
+        The config row from itertuples() containing calibration product settings.
+    qualified_mask : np.ndarray
+        Boolean mask where True = event qualifies for this (esa, cal_prod).
+    """
+    n_events = len(de_ds["event_met"]) if "event_met" in de_ds.dims else 0
+
+    # Build TOF fill values from dataset attributes
+    tof_fill_vals = _build_tof_fill_vals(de_ds)
+
+    for esa_energy, esa_df in cal_product_config.groupby(level="esa_energy_step"):
+        # Mask for events at this ESA energy step
+        esa_mask = esa_energy_steps == esa_energy if n_events > 0 else np.array([])
+
+        for config_row in esa_df.itertuples():
+            if n_events == 0 or not np.any(esa_mask):
+                yield esa_energy, config_row, np.zeros(n_events, dtype=bool)
+                continue
+
+            # Check coincidence type
+            coin_mask = filter_events_by_coincidence(
+                de_ds, config_row.coincidence_type_values
+            )
+
+            # Build TOF windows dict from config row
+            tof_windows = {
+                f"tof_{pair}": (
+                    getattr(config_row, f"tof_{pair}_low"),
+                    getattr(config_row, f"tof_{pair}_high"),
+                )
+                for pair in CalibrationProductConfig.tof_detector_pairs
+            }
+
+            # Check TOF windows
+            tof_mask = get_tof_window_mask(de_ds, tof_windows, tof_fill_vals)
+
+            yield esa_energy, config_row, esa_mask & coin_mask & tof_mask
+
+
+def compute_qualified_event_mask(
+    de_ds: xr.Dataset,
+    cal_product_config: pd.DataFrame,
+    esa_energy_steps: NDArray[np.int_],
+) -> NDArray[np.bool_]:
+    """
+    Compute mask of events qualifying for ANY calibration product.
+
+    An event qualifies if it passes BOTH coincidence_type AND TOF window
+    checks for ANY (calibration_prod, esa_energy_step) combination in the
+    configuration.
+
+    Parameters
+    ----------
+    de_ds : xarray.Dataset
+        Direct Event dataset with coincidence_type and TOF variables.
+        TOF variables must have FILLVAL attribute for fill value handling.
+    cal_product_config : pandas.DataFrame
+        Config DataFrame with multi-index (calibration_prod, esa_energy_step).
+        Must have coincidence_type_values column and TOF window columns.
+    esa_energy_steps : np.ndarray
+        ESA energy step for each event in de_ds.
+
+    Returns
+    -------
+    qualified_mask : np.ndarray
+        Boolean mask - True if event qualifies for at least one cal product.
+    """
+    n_events = len(de_ds["event_met"]) if "event_met" in de_ds.dims else 0
+    if n_events == 0:
+        return np.array([], dtype=bool)
+
+    qualified_mask = np.zeros(n_events, dtype=bool)
+
+    for _, _, mask in iter_qualified_events_by_config(
+        de_ds, cal_product_config, esa_energy_steps
+    ):
+        qualified_mask |= mask
+
+    return qualified_mask

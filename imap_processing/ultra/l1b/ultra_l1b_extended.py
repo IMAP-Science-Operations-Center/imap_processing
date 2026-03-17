@@ -1170,6 +1170,7 @@ def get_fwhm(
 
 def get_efficiency_interpolator(
     ancillary_files: dict,
+    sensor: str,
 ) -> tuple[RegularGridInterpolator, tuple, tuple]:
     """
     Return a callable function that interpolates efficiency values for each event.
@@ -1178,6 +1179,8 @@ def get_efficiency_interpolator(
     ----------
     ancillary_files : dict
         Ancillary files.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
 
     Returns
     -------
@@ -1188,7 +1191,7 @@ def get_efficiency_interpolator(
     phi_min_max : tuple
         Minimum and maximum phi values in the lookup table.
     """
-    lookup_table = get_energy_efficiencies(ancillary_files)
+    lookup_table = get_energy_efficiencies(ancillary_files, sensor)
 
     theta_vals = np.sort(lookup_table["theta (deg)"].unique())
     phi_vals = np.sort(lookup_table["phi (deg)"].unique())
@@ -1218,6 +1221,7 @@ def get_efficiency(
     phi_inst: NDArray,
     theta_inst: NDArray,
     ancillary_files: dict,
+    sensor: str,
     interpolator: RegularGridInterpolator = None,
 ) -> np.ndarray:
     """
@@ -1233,6 +1237,8 @@ def get_efficiency(
         Instrument-frame elevation angle for each event.
     ancillary_files : dict
         Ancillary files.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
     interpolator : RegularGridInterpolator, optional
         Precomputed interpolator to use for efficiency lookup.
         If None, a new interpolator will be created from the ancillary files.
@@ -1243,7 +1249,7 @@ def get_efficiency(
         Interpolated efficiency values.
     """
     if not interpolator:
-        interpolator, _, _ = get_efficiency_interpolator(ancillary_files)
+        interpolator, _, _ = get_efficiency_interpolator(ancillary_files, sensor)
 
     return interpolator((theta_inst, phi_inst, energy))
 

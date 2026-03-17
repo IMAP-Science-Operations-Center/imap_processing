@@ -634,3 +634,63 @@ hi_pset_label_vector_HAE:
   FIELDNAM: Label cartesian despun_z
   FORMAT: A5
   VAR_TYPE: metadata
+
+# <=== L1B Goodtimes Attributes ===>
+hi_goodtimes_met:
+  <<: *default_float64
+  CATDESC: Mission Elapsed Time for each 8-spin histogram packet
+  FIELDNAM: MET
+  DEPEND_0: epoch
+  LABLAXIS: MET
+  UNITS: s
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 1.7976931348623157e+308
+
+hi_goodtimes_cull_flags:
+  <<: *default_uint8
+  CATDESC: Cull flags indicating good (0) or bad (non-zero) times per spin bin
+  FIELDNAM: Cull Flags
+  DEPEND_0: epoch
+  DEPEND_1: spin_bin
+  LABL_PTR_1: spin_bin_label
+  LABLAXIS: Cull Code
+  UNITS: " "
+  DISPLAY_TYPE: spectrogram
+  VAR_NOTES: >
+    Cull flags array with dimensions (epoch, spin_bin). Value of 0 indicates good time,
+    non-zero values indicate bad times with specific cull reason codes.
+    Cull code 1 (LOOSE) indicates times removed by quality filters.
+
+hi_goodtimes_esa_step:
+  <<: *default_uint8
+  CATDESC: ESA energy step for each 8-spin histogram packet
+  FIELDNAM: ESA Step
+  DEPEND_0: epoch
+  LABLAXIS: ESA Step
+  UNITS: " "
+  VAR_TYPE: support_data
+  VALIDMIN: 1
+  VALIDMAX: 10
+
+hi_goodtimes_spin_bin:
+  <<: *default_uint8
+  CATDESC: Spin angle bin index
+  FIELDNAM: Spin Bin
+  FORMAT: I2
+  LABLAXIS: Spin Bin
+  UNITS: " "
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 89
+  VAR_NOTES: >
+    Spin angle bins numbered 0-89, covering 0-360 degrees of spacecraft spin.
+    Each bin is 4 degrees wide.
+
+hi_goodtimes_spin_bin_label:
+  CATDESC: Label for spin bin
+  FIELDNAM: Spin Bin Label
+  DEPEND_1: spin_bin
+  FORMAT: A3
+  VAR_TYPE: metadata
+

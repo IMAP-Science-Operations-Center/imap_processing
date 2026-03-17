@@ -81,13 +81,21 @@ def mock_ancillary_exclusions():
     # Create datasets with epoch dimension and some mock data
     mock_excluded_regions = xr.Dataset(
         {
+            # degrees in [0, 360)
             "ecliptic_longitude_deg": (
-                ["epoch", "region"],
-                np.random.rand(len(epoch_range), 5),
+                ["epoch", "source"],
+                np.tile(
+                    np.array([202.0812, 120.0, 250.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
+            # degrees in [-90, 90]
             "ecliptic_latitude_deg": (
-                ["epoch", "region"],
-                np.random.rand(len(epoch_range), 5),
+                ["epoch", "source"],
+                np.tile(
+                    np.array([18.4119, 0.0, 35.0], dtype=np.float64),
+                    (len(epoch_range), 1),
+                ),
             ),
         },
         coords={"epoch": epoch_range},
@@ -126,15 +134,16 @@ def mock_ancillary_exclusions():
         coords={"epoch": epoch_range},
     )
 
+    # Mask array based on data in imap_glows_suspected-transients_20250923_v002.dat.
     mock_suspected_transients = xr.Dataset(
         {
             "l1b_unique_block_identifier": (
                 ["epoch", "time_block"],
-                [["block1", "block2"]] * len(epoch_range),
+                [["2026-01-01T15:00:00", "2026-01-01T15:01:00"]] * len(epoch_range),
             ),
             "histogram_mask_array": (
                 ["epoch", "time_block"],
-                [["mask1", "mask2"]] * len(epoch_range),
+                [["0" * 3600, "0" * 600 + "1" * 100 + "0" * 2900]] * len(epoch_range),
             ),
         },
         coords={"epoch": epoch_range},
@@ -144,11 +153,11 @@ def mock_ancillary_exclusions():
         {
             "l1b_unique_block_identifier": (
                 ["epoch", "time_block"],
-                [["block1", "block2"]] * len(epoch_range),
+                [["2026-01-01T15:00:00", "2026-01-01T15:01:00"]] * len(epoch_range),
             ),
             "histogram_mask_array": (
                 ["epoch", "time_block"],
-                [["mask1", "mask2"]] * len(epoch_range),
+                [["0" * 100 + "1" * 10 + "0" * 3490, "0" * 3600]] * len(epoch_range),
             ),
         },
         coords={"epoch": epoch_range},

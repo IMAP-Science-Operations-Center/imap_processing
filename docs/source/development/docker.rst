@@ -1,5 +1,7 @@
+.. _docker:
+
 Docker Workflow
-----------------
+===============
 
 This page describes how to build and run a Docker Image Locally and in AWS.
 

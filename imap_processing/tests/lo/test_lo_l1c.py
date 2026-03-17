@@ -295,6 +295,38 @@ def test_filter_goodtimes(l1b_de, anc_dependencies):
     xr.testing.assert_equal(l1b_goodtimes_only, l1b_goodtimes_onl_expected)
 
 
+def test_lo_l1c_no_goodtimes(
+    l1b_de_spin,
+    anc_dependencies,
+    use_fake_repoint_data_for_time,
+    use_fake_spin_data_for_time,
+    repoint_met,
+):
+    # Arrange
+    data = {"imap_lo_l1b_de": l1b_de_spin}
+    use_fake_spin_data_for_time(511000000)
+    use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
+    expected_logical_source = "imap_lo_l1c_pset"
+
+    # Act
+    output_dataset = lo_l1c(data, anc_dependencies)[0]
+
+    # Assert
+    assert expected_logical_source == output_dataset.attrs["Logical_source"]
+    # Verify that pivot_angle is passed through from l1b_de
+    assert "pivot_angle" in output_dataset
+    assert output_dataset["pivot_angle"].values[0] == 45.0
+    expected_counts = np.zeros((1, 7, 3600, 40))
+    np.testing.assert_array_equal(output_dataset["h_counts"], expected_counts)
+    np.testing.assert_array_equal(output_dataset["o_counts"], expected_counts)
+    np.testing.assert_array_equal(output_dataset["doubles_counts"], expected_counts)
+    np.testing.assert_array_equal(output_dataset["triples_counts"], expected_counts)
+    np.testing.assert_array_equal(output_dataset["h_background_rates"], expected_counts)
+    np.testing.assert_array_equal(output_dataset["o_background_rates"], expected_counts)
+    expected = np.zeros((1, 3600, 40))
+    np.testing.assert_array_equal(output_dataset["hae_latitude"], expected)
+
+
 def test_create_pset_counts(l1b_de):
     # Arrange
     expected_counts = np.zeros((1, 7, 3600, 40))

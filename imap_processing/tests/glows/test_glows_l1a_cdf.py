@@ -34,8 +34,6 @@ def test_generate_histogram_dataset(l1a_test_data):
                 dataset["is_generated_on_ground"].data[0]
                 == item["is_generated_on_ground"]
             )
-        elif key not in ["histogram", "ground_software_version", "pkts_file_name"]:
-            assert dataset[key].data[0] == item
 
     for i in range(len(dataset["histogram"].data)):
         assert (dataset["histogram"].data[i] == histogram_l1a[i].histogram).all()

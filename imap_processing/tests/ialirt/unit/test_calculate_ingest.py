@@ -27,7 +27,11 @@ def test_packets_created():
                 "2026-01-21T10:27:59Z",
             ],
             "rate_kbps": [2.0, 2.0],
-        }
+        },
+        "UKSA": {
+            "last_data_received": [],
+            "rate_kbps": [],
+        },
     }
 
     assert actual_output == expected

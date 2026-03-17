@@ -176,6 +176,28 @@ class PipelineSettings:  # numpydoc ignore=PR02
             if "threshold" in var_name.lower() or "limit" in var_name.lower():
                 self.processing_thresholds[var_name] = pipeline_dataset[var_name].item()
 
+    def get_threshold(self, suffix: str) -> float | None:
+        """
+        Return the threshold value whose key ends with the given suffix.
+
+        Parameters
+        ----------
+        suffix : str
+            The suffix to match against threshold keys.
+
+        Returns
+        -------
+        return_value : float or None
+            The matching threshold value, or None if no match is found.
+        """
+        return_value = None
+        for descriptor, value in self.processing_thresholds.items():
+            if descriptor.endswith(suffix):
+                return_value = float(value)
+                break
+
+        return return_value
+
 
 @dataclass
 class AncillaryExclusions:
@@ -499,6 +521,8 @@ class DirectEventL1B:
         float. From direct_events.
     direct_event_pulse_lengths: ndarray
         array of pulse lengths [μs] for direct events. From direct_events
+    pkts_file_name
+        Name of the input CCSDS packets file
     """
 
     direct_events: InitVar[np.ndarray]
@@ -669,7 +693,6 @@ class HistogramL1B:
     ----------
     histogram
         array of block-accumulated count numbers
-    flight_software_version: str
     seq_count_in_pkts_file: int
     first_spin_id: int
         The start ID
@@ -741,7 +764,6 @@ class HistogramL1B:
     """
 
     histogram: np.ndarray
-    flight_software_version: str
     seq_count_in_pkts_file: int
     first_spin_id: int
     last_spin_id: int
@@ -863,14 +885,14 @@ class HistogramL1B:
         # get the data for the correct day
         day_exclusions = ancillary_exclusions.limit_by_day(day)
 
+        # Generate ISO datetime string using SPICE functions
+        datetime64_time = met_to_datetime64(self.imap_start_time)
+        self.unique_block_identifier = np.datetime_as_string(datetime64_time, "s")
         # Initialize histogram flag array: [is_close_to_uv_source,
         # is_inside_excluded_region, is_excluded_by_instr_team,
         # is_suspected_transient] x 3600 bins
         self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
-        # Generate ISO datetime string using SPICE functions
-        datetime64_time = met_to_datetime64(self.imap_start_time)
-        self.unique_block_identifier = np.datetime_as_string(datetime64_time, "s")
-        self.flags = np.ones((FLAG_LENGTH,), dtype=np.uint8)
+        self.flags = self.compute_flags(pipeline_settings)
 
     def update_spice_parameters(self) -> None:
         """Update SPICE parameters based on the current state."""
@@ -979,7 +1001,71 @@ class HistogramL1B:
 
         return flags
 
-    def flag_uv_source(self, exclusions: AncillaryExclusions) -> np.ndarray:
+    def compute_flags(self, pipeline_settings: PipelineSettings) -> np.ndarray:
+        """
+        Compute the 17 bad-time flags for this histogram.
+
+        Parameters
+        ----------
+        pipeline_settings : PipelineSettings
+            Pipeline settings containing processing thresholds.
+
+        Returns
+        -------
+        flags : numpy.ndarray
+            Array of shape (FLAG_LENGTH,) with dtype uint8. 1 = good, 0 = bad.
+        """
+        # Section 12.3.1 of the Algorithm Document: onboard generated bad-time flags.
+        # Flags are "stored in a 16-bit integer field.
+        onboard_flags = (
+            1 - self.deserialize_flags(int(self.flags_set_onboard))
+        ).astype(np.uint8)
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 1.
+        # Informs if the histogram was generated on-board or on the ground.
+        # Flag 1 = onboard.
+        is_generated_on_ground = np.uint8(1 - int(self.is_generated_on_ground))
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 2.
+        # Checks if total count in a given histogram is far from the daily average.
+        # Placeholder until daily histogram is available in glows_l1b.py.
+        # TODO: this equation needs to be clarified.
+        is_beyond_daily_statistical_error = np.uint8(1)
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 3-7.
+        # (1=good, 0=bad).
+        temp_threshold = pipeline_settings.get_threshold(
+            "std_dev_threshold__celsius_deg"
+        )
+        hv_threshold = pipeline_settings.get_threshold("std_dev_threshold__volt")
+        spin_std_threshold = pipeline_settings.get_threshold("std_dev_threshold__sec")
+        pulse_threshold = pipeline_settings.get_threshold("std_dev_threshold__usec")
+
+        is_temp_ok = np.uint8(self.filter_temperature_std_dev <= temp_threshold)
+        is_hv_ok = np.uint8(self.hv_voltage_std_dev <= hv_threshold)
+        is_spin_std_ok = np.uint8(self.spin_period_std_dev <= spin_std_threshold)
+        is_pulse_ok = np.uint8(self.pulse_length_std_dev <= pulse_threshold)
+
+        # TODO: listed as TBC in Algorithm Document.
+        # Placeholder for now.
+        is_beyond_background_error = np.uint8(1)
+
+        ground_flags = np.array(
+            [
+                is_generated_on_ground,
+                is_beyond_daily_statistical_error,
+                is_temp_ok,
+                is_hv_ok,
+                is_spin_std_ok,
+                is_pulse_ok,
+                is_beyond_background_error,
+            ],
+            dtype=np.uint8,
+        )
+
+        return np.concatenate([onboard_flags, ground_flags])
+
+    def flag_uv_and_excluded(self, exclusions: AncillaryExclusions) -> tuple:
         """
         Create boolean mask where True means bin is within radius of UV source.
 
@@ -992,6 +1078,8 @@ class HistogramL1B:
         -------
         close_to_uv_source : np.ndarray
             Boolean mask for uv source.
+        inside_excluded_region : np.ndarray
+            Boolean mask for inside excluded region.
         """
         # Rotate spin-angle bin centers by the instrument position-angle offset
         # so azimuth=0 aligns with the instrument pointing direction.
@@ -1019,6 +1107,10 @@ class HistogramL1B:
             look_vecs_dps,
             SpiceFrame.IMAP_DPS,
             SpiceFrame.ECLIPJ2000,
+            # This is for cases in which a histogram falls in a 2-min ck gap.
+            # DPS CK coverage intentionally doesn't include the
+            # repointing transition period.
+            allow_spice_noframeconnect=True,
         )
 
         # UV source vectors.
@@ -1043,14 +1135,65 @@ class HistogramL1B:
         # If dot product -> 1 the two vectors point in almost
         # the same direction and needs mask.
         # If dot product -> 0 the two directions are perpendicular on the sky.
-        cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
+        uv_cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
 
         # Determine if the pixel is too close to any of the source radii.
         close_to_uv_source = np.any(
-            cos_sep >= np.cos(uv_radius)[None, :], axis=1
+            uv_cos_sep >= np.cos(uv_radius)[None, :], axis=1
         )  # (nbin,)
 
-        return close_to_uv_source
+        # Excluded region pixel centers.
+        region_longitude = exclusions.excluded_regions[
+            "ecliptic_longitude_deg"
+        ].values  # (n_region,)
+        region_latitude = exclusions.excluded_regions[
+            "ecliptic_latitude_deg"
+        ].values  # (n_region,)
+
+        region_spherical = np.stack(
+            [np.ones_like(region_longitude), region_longitude, region_latitude],
+            axis=-1,
+        )  # (n_region, 3)
+
+        region_vecs = spherical_to_cartesian(region_spherical)  # (n_region, 3)
+
+        # (nbin, 3) @ (3, n_region) -> (nbin, n_region)
+        region_cos_sep = look_vecs_ecl @ region_vecs.T
+
+        # Flag any bin whose pointing direction falls within half a bin width
+        # (0.1° / 2 = 0.05°) of an excluded sky direction.
+        half_bin_rad = np.deg2rad(0.1 / 2)
+
+        inside_excluded_region = np.any(
+            region_cos_sep >= np.cos(half_bin_rad), axis=1
+        )  # (nbin,)
+
+        return close_to_uv_source, inside_excluded_region
+
+    def flag_from_mask_dataset(self, mask_dataset: xr.Dataset) -> np.ndarray:
+        """
+        Look up the per-bin boolean mask for this histogram block.
+
+        Parameters
+        ----------
+        mask_dataset : xr.Dataset
+            Dataset with ``l1b_unique_block_identifier`` and
+            ``histogram_mask_array`` variables indexed by ``time_block``.
+
+        Returns
+        -------
+        mask : np.ndarray
+            Boolean array of shape (n_bins,). True where the bin is flagged.
+        """
+        identifiers = mask_dataset["l1b_unique_block_identifier"].values
+        match = np.where(identifiers == self.unique_block_identifier)[0]
+        if not match.size:
+            return np.zeros(len(self.histogram), dtype=bool)
+        mask_str = mask_dataset["histogram_mask_array"].values[match[0]]
+
+        # Parse the "0"/"1" character string into a boolean array
+        mask = np.array(list(mask_str)) == "1"
+        return mask
 
     def _compute_histogram_flag_array(
         self, exclusions: AncillaryExclusions
@@ -1060,9 +1203,9 @@ class HistogramL1B:
 
         Creates a (4, 3600) array where each row represents a different flag type:
         - Row 0: is_close_to_uv_source
-        - Row 1: is_inside_excluded_region (TODO)
-        - Row 2: is_excluded_by_instr_team (TODO)
-        - Row 3: is_suspected_transient (TODO)
+        - Row 1: is_inside_excluded_region
+        - Row 2: is_excluded_by_instr_team
+        - Row 3: is_suspected_transient
 
         Parameters
         ----------
@@ -1080,9 +1223,34 @@ class HistogramL1B:
             dtype=np.uint8,
         )
 
-        close_any = self.flag_uv_source(exclusions)
+        close_to_uv_source, inside_excluded_region = self.flag_uv_and_excluded(
+            exclusions
+        )
 
         # close if within radius of any UV source
-        histogram_flags[0][close_any] |= GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
+        histogram_flags[0][close_to_uv_source] |= (
+            GLOWSL1bFlags.IS_CLOSE_TO_UV_SOURCE.value
+        )
+
+        # inside if within half bin width of any excluded region center
+        histogram_flags[1][inside_excluded_region] |= (
+            GLOWSL1bFlags.IS_INSIDE_EXCLUDED_REGION.value
+        )
+
+        # bins excluded by the instrument team for the matching histogram block
+        excluded_by_instr = self.flag_from_mask_dataset(
+            exclusions.exclusions_by_instr_team
+        )
+        histogram_flags[2][excluded_by_instr] |= (
+            GLOWSL1bFlags.IS_EXCLUDED_BY_INSTR_TEAM.value
+        )
+
+        # bins flagged as suspected transients for the matching histogram block
+        suspected_transient = self.flag_from_mask_dataset(
+            exclusions.suspected_transients
+        )
+        histogram_flags[3][suspected_transient] |= (
+            GLOWSL1bFlags.IS_SUSPECTED_TRANSIENT.value
+        )
 
         return histogram_flags

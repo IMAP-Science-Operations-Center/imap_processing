@@ -11,10 +11,14 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_l1b import (
+    TRIGGER_LABELS,
+    TriggerOrigin,
     get_spice_data,
     get_trigger_mode_and_level,
+    get_trigger_origin,
     unpack_instrument_settings,
 )
+from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.tests.idex import conftest
 
 
@@ -149,48 +153,78 @@ def test_get_trigger_settings_success(decom_test_data_sci):
     # correct when the modes and levels vary from event to event
     decom_test_data_sci["idx__txhdrmgtrigmode"][0] = 1
     decom_test_data_sci["idx__txhdrhgtrigmode"][0] = 0
-
+    idex_attrs = get_idex_attrs("l1b")
     n_epochs = len(decom_test_data_sci["epoch"])
-    trigger_settings = get_trigger_mode_and_level(decom_test_data_sci)
+    trigger_settings = get_trigger_mode_and_level(decom_test_data_sci, idex_attrs)
 
-    expected_modes = np.full(n_epochs, "HGThreshold")
-    expected_modes[0] = "MGThreshold"
-    expected_levels = np.full(n_epochs, 0.16762)
-    expected_levels[0] = 1023.0 * 1.13e-2
+    expected_modes_lg = np.full(n_epochs, None)
+    expected_modes_hg = expected_modes_lg.copy()
+    expected_modes_hg[1:] = "HGThreshold"
+    expected_modes_mg = np.full(n_epochs, None)
+    expected_modes_mg[0] = "MGThreshold"
+    expected_levels_lg = np.full(n_epochs, np.nan)
+    expected_levels_hg = expected_levels_lg.copy()
+    expected_levels_hg[1:] = 0.16762
+    expected_levels_mg = expected_levels_lg.copy()
+    expected_levels_mg[0] = 1023.0 * 1.13e-2
 
-    assert (trigger_settings["triggermode"].data == expected_modes).all(), (
-        f"The dict entry 'triggermode' values did not match the expected values: "
-        f"{expected_modes}. Found: {trigger_settings['triggermode'].data}"
+    var_names = ["trigger_mode_lg", "trigger_mode_mg", "trigger_mode_hg"]
+    expected_modes = [expected_modes_lg, expected_modes_mg, expected_modes_hg]
+    for expected_mode, mode_name in zip(expected_modes, var_names, strict=False):
+        (
+            np.testing.assert_array_equal(
+                trigger_settings[mode_name].data,
+                expected_mode,
+                err_msg=f"The dict entry {mode_name} values did not match the"
+                f" expected values: {expected_mode}. Found:"
+                f" {trigger_settings[mode_name].data}",
+            ),
+        )
+    var_names = ["trigger_level_lg", "trigger_level_mg", "trigger_level_hg"]
+    expected_levels = [expected_levels_lg, expected_levels_mg, expected_levels_hg]
+    for expected_level, level_name in zip(expected_levels, var_names, strict=False):
+        (
+            np.testing.assert_array_equal(
+                trigger_settings[level_name].data,
+                expected_level,
+                err_msg=f"The dic entry {level_name} values did not match the"
+                f" expected values: {expected_level}. Found: "
+                f"{trigger_settings[level_name].data}",
+            ),
+        )
+
+
+def test_trigger_origin():
+    """Check that the correct labels are produced for trigger origin values"""
+
+    trigger_bits = np.full(10, 6)
+    origins = get_trigger_origin(trigger_bits, get_idex_attrs("l1b"))
+    # Bits 1 and 2 should be set for all events
+    expected_origin = np.full(
+        10,
+        ", ".join([TRIGGER_LABELS[TriggerOrigin(1)], TRIGGER_LABELS[TriggerOrigin(2)]]),
+    )
+    np.testing.assert_array_equal(
+        origins["trigger_origin"],
+        expected_origin,
+        err_msg=f"The trigger origin values did not match the expected values: "
+        f"{expected_origin}. Found: {origins}",
     )
 
-    assert (trigger_settings["triggerlevel"].data == expected_levels).all(), (
-        f"The dict entry 'triggerlevel' values did not match the expected values: "
-        f"{expected_levels}. Found: {trigger_settings['triggerlevel'].data}"
+
+def test_invalid_trigger_origin():
+    """Check the labels when there are invalid trigger origin values"""
+
+    trigger_bits = np.full(10, 64)  # invalid trigger origin values
+    origins = get_trigger_origin(trigger_bits, get_idex_attrs("l1b"))
+    # Bits 1 and 2 should be set for all events
+    expected_origin = np.full(10, "Unknown trigger origin")
+    np.testing.assert_array_equal(
+        origins["trigger_origin"],
+        expected_origin,
+        err_msg=f"The trigger origin values did not match the expected values:"
+        f"{expected_origin}. Found: {origins}",
     )
-
-
-def test_get_trigger_settings_failure(decom_test_data_sci):
-    """
-    Check that an error is thrown when there are more than one valid trigger for an
-    event
-
-    Parameters
-    ----------
-    decom_test_data_sci : xarray.Dataset
-        L1a dataset
-    """
-    decom_test_data_sci["idx__txhdrhgtrigmode"][0] = 1
-    decom_test_data_sci["idx__txhdrmgtrigmode"][0] = 2
-
-    error_ms = (
-        "Only one channel can trigger a dust event. Please make sure there is "
-        "only one valid trigger value per event. This caused Merge Error: "
-        "conflicting values for variable 'trigger_mode' on objects to be "
-        "combined. You can skip this check by specifying compat='override'."
-    )
-
-    with pytest.raises(ValueError, match=error_ms):
-        get_trigger_mode_and_level(decom_test_data_sci)
 
 
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
@@ -260,6 +294,10 @@ def test_validate_l1b_idex_data_variables(
         "voltage_3V3_op_ref": "voltage_3p3_op_ref",
         "voltage_3V3_ref": "voltage_3p3_ref",
         "voltage_pos3V3_bus": "voltage_pos3p3v_bus",
+        "HGTriggerLevel": "trigger_level_hg",
+        "MGTriggerLevel": "trigger_level_mg",
+        "LGTriggerLevel": "trigger_level_lg",
+        "TriggerOrigin": "trigger_origin",
     }
 
     # The Engineering data is converting to UTC, and the SDC is converting to J2000,
@@ -268,7 +306,7 @@ def test_validate_l1b_idex_data_variables(
     # SPICE data is mocked.
     arrays_to_skip = [
         "Timestamp",
-        "Epoch",
+        "epoch",
         "Pitch",
         "Roll",
         "Yaw",
@@ -280,29 +318,43 @@ def test_validate_l1b_idex_data_variables(
         "VelocityY",
         "VelocityZ",
         "RightAscension",
+        "FIFODelay",
+        "FIFODelayMicroseconds",
+        "FIFODelay_H",
+        "FIFODelay_L",
+        "FIFODelay_M",
+        "HSPosttriggerBlocks",
     ]
+    # assert that "aid" is in l1b
+    assert "aid" in l1b_dataset, "The array 'aid' is missing from the l1b dataset."
+    # select only the first n events
+    l1b_example_data = l1b_example_data.isel(
+        event=np.arange(l1b_dataset.sizes["epoch"])
+    )
     # Compare each corresponding variable
     for var in l1b_example_data.data_vars:
         if var not in arrays_to_skip:
             # Get the corresponding array name
             cdf_var = match_variables.get(var, var.lower().replace(".", "p"))
-
             warning = (
                 f"The array '{cdf_var}' does not equal the expected example array "
+                f"'{var}' produced by the IDEX team"
             )
-            f"'{var}' produced by the IDEX team"
-
+            # TODO remove this block once the IDEX team fixes the l1b validation file.
+            #   They included a lot of extra variables in the current file.
+            try:
+                l1b_dataset[cdf_var]
+            except KeyError:
+                continue
             if l1b_dataset[cdf_var].dtype == object:
-                assert (l1b_dataset[cdf_var].data == l1b_example_data[var]).all(), (
-                    warning
-                )
+                assert (
+                    l1b_dataset[cdf_var].data == np.squeeze(l1b_example_data[var])
+                ).all(), warning
 
             else:
-                (
-                    np.testing.assert_array_almost_equal(
-                        l1b_dataset[cdf_var].data,
-                        l1b_example_data[var],
-                        decimal=4,
-                    ),
-                    warning,
+                np.testing.assert_array_almost_equal(
+                    l1b_dataset[cdf_var].data,
+                    np.squeeze(l1b_example_data[var]),
+                    decimal=4,
+                    err_msg=warning,
                 )

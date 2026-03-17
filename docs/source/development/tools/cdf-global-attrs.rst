@@ -1,3 +1,5 @@
+.. _cdf-global-attrs:
+
 Code for creating CDF attributes
 ================================
 

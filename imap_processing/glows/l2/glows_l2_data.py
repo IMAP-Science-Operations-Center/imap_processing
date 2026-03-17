@@ -75,9 +75,9 @@ class DailyLightcurve:
         # with the appropriate CDF FILLVAL before writing to output.
         self.number_of_bins = l1b_data["number_of_bins_per_histogram"].data[0]
 
-        self.raw_histograms = self.calculate_histogram_sums(
-            l1b_data["histogram"].data
-        )[: self.number_of_bins]
+        self.raw_histograms = self.calculate_histogram_sums(l1b_data["histogram"].data)[
+            : self.number_of_bins
+        ]
 
         exposure_per_epoch = (
             l1b_data["spin_period_average"].data
@@ -97,9 +97,24 @@ class DailyLightcurve:
             self.photon_flux = self.raw_histograms / self.exposure_times
             self.flux_uncertainties = raw_uncertainties / self.exposure_times
 
-        self.spin_angle = l1b_data["imap_spin_angle_bin_cntr"].data[0][: self.number_of_bins]
+        self.spin_angle = l1b_data["imap_spin_angle_bin_cntr"].data[0][
+            : self.number_of_bins
+        ]
 
-        self.histogram_flag_array = np.zeros(self.number_of_bins)
+        # Apply 'OR' operation to histogram_flag_array across all
+        # good-time L1B blocks per bin.
+        # Per Section 12.3.4: a flag is True in L2 if it is True in any L1B block.
+        # flags shape: (n_epochs, 4, n_bins)
+        flags = l1b_data["histogram_flag_array"].data
+        if flags.size > 0:
+            # Flatten epochs and flag rows into one axis: (n_epochs * 4, n_bins)
+            flags_2d = flags.reshape(-1, self.number_of_bins)
+            # Apply binary 'OR' operation across all rows per bin: (n_bins,)
+            self.histogram_flag_array = np.bitwise_or.reduce(flags_2d, axis=0).astype(
+                np.uint8
+            )
+        else:
+            self.histogram_flag_array = np.zeros(self.number_of_bins, dtype=np.uint8)
         self.ecliptic_lon = np.zeros(self.number_of_bins)
         self.ecliptic_lat = np.zeros(self.number_of_bins)
 
@@ -238,13 +253,13 @@ class HistogramL2:
         good_data = l1b_dataset.isel(
             epoch=self.return_good_times(l1b_dataset["flags"], active_flags)
         )
-        # todo: bad angle filter
-        # TODO filter bad bins out. Needs to happen here while everything is still
-        # per-timestamp.
+        # TODO: bad angle filter
+        # TODO: filter bad bins out. Needs to happen here while everything is still
+        #       per-timestamp.
 
         self.daily_lightcurve = DailyLightcurve(good_data)
 
-        self.total_l1b_inputs = len(good_data["epoch"])
+        self.total_l1b_inputs = len(l1b_dataset["epoch"])
         self.number_of_good_l1b_inputs = len(good_data["epoch"])
         self.identifier = -1  # TODO: retrieve from spin table
         # TODO fill this in
@@ -382,7 +397,7 @@ class HistogramL2:
             An array of indices for good times.
         """
         if len(active_flags) != flags.shape[1]:
-            print("Active flags don't matched expected length")
+            print("Active flags don't match expected length")
 
         # A good time is where all the active flags are equal to one.
         # Here, we mask the active indices using active_flags, and then return the times

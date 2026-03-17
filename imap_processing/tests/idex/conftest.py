@@ -17,7 +17,7 @@ TEST_L0_FILE_EVT = TEST_DATA_PATH / "imap_idex_l0_raw_20250108_v001.pkts"  # 141
 TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 1419
 
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
-L1B_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
+L1B_EXAMPLE_FILE = TEST_DATA_PATH / "imap_idex_l1b_sci_20231218_v001.h5"
 
 L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
 L1B_EVT_CDF = TEST_DATA_PATH / "imap_idex_l1b_evt_20250108_v001.cdf"

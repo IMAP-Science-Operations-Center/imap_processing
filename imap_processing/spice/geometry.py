@@ -65,7 +65,7 @@ class SpiceFrame(IntEnum):
     IMAP_GLOWS = -43750
 
     # IMAP Science Frames (new additions from imap_science_xxx.tf)
-    # IMAP_OMD appears to have a bad definition in imap_science_100.tf
+    # IMAP_OMD appears to have a bad definition in imap_science_120.tf
     # Commenting it out for now.
     # IMAP_OMD = -43900
     IMAP_EARTHFIXED = -43910
@@ -87,6 +87,7 @@ class SpiceFrame(IntEnum):
     IMAP_HRE = -43927
     IMAP_HNU = -43928
     IMAP_GCS = -43929
+    IMAP_HRC = -43930
 
 
 BORESIGHT_LOOKUP = {

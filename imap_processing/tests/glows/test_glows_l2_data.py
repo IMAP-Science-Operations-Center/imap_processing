@@ -4,6 +4,7 @@ import xarray as xr
 
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
+from imap_processing.glows.utils.constants import GlowsConstants
 
 
 @pytest.fixture
@@ -53,14 +54,19 @@ def l1b_dataset():
     """Minimal L1B dataset for testing DailyLightcurve.
 
     Two timestamps, four bins.
-    Bin 3 is masked (-1) at timestamp 0.
+    Bin 3 is masked (HISTOGRAM_FILLVAL) at timestamp 0.
+    histogram_flag_array has shape (epoch, bad_angle_flags, bins) with all zeros.
     """
-    n_epochs, n_bins = 2, 4
+    n_epochs, n_bins, n_flags = 2, 4, 4
+    fillval = GlowsConstants.HISTOGRAM_FILLVAL
     epoch = xr.DataArray(np.arange(n_epochs), dims=["epoch"])
     bins = xr.DataArray(np.arange(n_bins), dims=["bins"])
 
-    histogram = np.array([[10, 20, 30, -1], [10, 20, 30, 40]], dtype=float)
+    histogram = np.array(
+        [[10, 20, 30, fillval], [10, 20, 30, 40]], dtype=float
+    )
     spin_angle = np.tile(np.linspace(0, 270, n_bins), (n_epochs, 1))
+    histogram_flag_array = np.zeros((n_epochs, n_flags, n_bins), dtype=np.uint8)
 
     ds = xr.Dataset(
         {
@@ -68,6 +74,11 @@ def l1b_dataset():
             "spin_period_average": (["epoch"], [15.0, 15.0]),
             "number_of_spins_per_block": (["epoch"], [5, 5]),
             "imap_spin_angle_bin_cntr": (["epoch", "bins"], spin_angle),
+            "histogram_flag_array": (
+                ["epoch", "bad_angle_flags", "bins"],
+                histogram_flag_array,
+            ),
+            "number_of_bins_per_histogram": (["epoch"], [n_bins, n_bins])
         },
         coords={"epoch": epoch, "bins": bins},
     )
@@ -101,29 +112,17 @@ def test_flux_uncertainty(l1b_dataset):
     assert np.allclose(lc.flux_uncertainties, expected_uncertainty)
 
 
-def test_zero_exposure_bins():
+def test_zero_exposure_bins(l1b_dataset):
     """Bins with all-masked histograms get zero flux and uncertainty.
 
     Exposure time still accumulates uniformly from each good-time file even
-    when all histogram values are masked (-1). Flux and uncertainty are zero
-    because the raw histogram sums are zero.
+    when all histogram values are masked (HISTOGRAM_FILLVAL). Flux and
+    uncertainty are zero because the raw histogram sums are zero.
     """
-    n_epochs, n_bins = 2, 3
-    histogram = np.full((n_epochs, n_bins), -1, dtype=float)
-    spin_angle = np.tile(np.linspace(0, 240, n_bins), (n_epochs, 1))
+    l1b_dataset["histogram"].values[:] = GlowsConstants.HISTOGRAM_FILLVAL
+    lc = DailyLightcurve(l1b_dataset)
 
-    ds = xr.Dataset(
-        {
-            "histogram": (["epoch", "bins"], histogram),
-            "spin_period_average": (["epoch"], [15.0, 15.0]),
-            "number_of_spins_per_block": (["epoch"], [5, 5]),
-            "imap_spin_angle_bin_cntr": (["epoch", "bins"], spin_angle),
-        },
-        coords={"epoch": xr.DataArray(np.arange(n_epochs), dims=["epoch"])},
-    )
-    lc = DailyLightcurve(ds)
-
-    expected_exposure = 2 * 15.0 * 5 / 3
+    expected_exposure = 2 * 15.0 * 5 / 4
     assert np.all(lc.photon_flux == 0)
     assert np.all(lc.flux_uncertainties == 0)
     assert np.allclose(lc.exposure_times, expected_exposure)
@@ -136,6 +135,59 @@ def test_number_of_bins(l1b_dataset):
     assert len(lc.photon_flux) == 4
     assert len(lc.flux_uncertainties) == 4
     assert len(lc.exposure_times) == 4
+
+
+def test_histogram_flag_array_or_propagation(l1b_dataset):
+    """histogram_flag_array is OR'd across all L1B epochs and flag rows per bin.
+
+    Per Section 12.3.4: a flag is True in L2 if it is True in any L1B block.
+    """
+    # epoch 0, flag row 0 (IS_CLOSE_TO_UV_SOURCE=1): bin 0 flagged
+    # epoch 1, flag row 1 (IS_INSIDE_EXCLUDED_REGION=2): bin 2 flagged
+    # epoch 1, flag row 0 (IS_CLOSE_TO_UV_SOURCE=2): bin 0 flagged
+    l1b_dataset["histogram_flag_array"].values[0, 0, 0] = 1
+    l1b_dataset["histogram_flag_array"].values[1, 1, 2] = 2
+    l1b_dataset["histogram_flag_array"].values[1, 0, 0] = 2
+
+    lc = DailyLightcurve(l1b_dataset)
+
+    assert (
+        lc.histogram_flag_array[0] == 3
+    )  # IS_CLOSE_TO_UV_SOURCE and IS_INSIDE_EXCLUDED_REGION
+    assert lc.histogram_flag_array[1] == 0  # no flags on bin 1
+    assert lc.histogram_flag_array[2] == 2  # IS_INSIDE_EXCLUDED_REGION
+    assert lc.histogram_flag_array[3] == 0  # no flags on bin 3
+
+
+def test_histogram_flag_array_zero_epochs():
+    """histogram_flag_array is all zeros when the input dataset is empty.
+
+    Note: this is NEVER expected to happen in production
+    TODO: remove tests and allow failures if empty imput?"""
+    n_bins, n_flags = 4, 4
+    histogram = np.empty((0, n_bins), dtype=float)
+    spin_angle = np.empty((0, n_bins), dtype=float)
+    histogram_flag_array = np.empty((0, n_flags, n_bins), dtype=np.uint8)
+
+    ds = xr.Dataset(
+        {
+            "histogram": (["epoch", "bins"], histogram),
+            "spin_period_average": (["epoch"], []),
+            "number_of_spins_per_block": (["epoch"], []),
+            "imap_spin_angle_bin_cntr": (["epoch", "bins"], spin_angle),
+            "histogram_flag_array": (
+                ["epoch", "bad_angle_flags", "bins"],
+                histogram_flag_array,
+            ),
+            "number_of_bins_per_histogram": (["epoch"], [])
+        },
+        coords={"epoch": xr.DataArray(np.arange(0), dims=["epoch"])},
+    )
+    lc = DailyLightcurve(ds)
+
+    # if the dataset is empty, there is no way to infer the number_of_bins
+    assert len(lc.histogram_flag_array) == 0
+    assert np.all(lc.histogram_flag_array == 0)
 
 
 def test_filter_good_times():

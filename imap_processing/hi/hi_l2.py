@@ -593,25 +593,35 @@ def combine_maps(sky_maps: dict[str, RectangularSkyMap]) -> RectangularSkyMap:
     combined["counts"] = ram_ds["counts"] + anti_ds["counts"]
     combined["exposure_factor"] = ram_ds["exposure_factor"] + anti_ds["exposure_factor"]
 
-    # Inverse-variance weighted average for ena_intensity
+    # Compute weights for ram and anti-ram based on the inverse of the variance
+    # (uncertainty squared). Zero weights where the variance is zero or where
+    # ena_intensity is not finite. The latter prevents NaNs, which get replaced
+    # with zeros for the sum below, from contributing to the weighted average.
+    ram_valid_mask = np.logical_and(
+        ram_ds["ena_intensity_stat_uncert"] > 0, np.isfinite(ram_ds["ena_intensity"])
+    )
     weight_ram = xr.where(
-        ram_ds["ena_intensity_stat_uncert"] > 0,
+        ram_valid_mask,
         1 / ram_ds["ena_intensity_stat_uncert"] ** 2,
         0,
     )
+    anti_valid_mask = np.logical_and(
+        anti_ds["ena_intensity_stat_uncert"] > 0, np.isfinite(anti_ds["ena_intensity"])
+    )
     weight_anti = xr.where(
-        anti_ds["ena_intensity_stat_uncert"] > 0,
+        anti_valid_mask,
         1 / anti_ds["ena_intensity_stat_uncert"] ** 2,
         0,
     )
     total_weight = weight_ram + weight_anti
 
     with np.errstate(divide="ignore", invalid="ignore"):
+        # Inverse-variance weighted average for ena_intensity
         combined["ena_intensity"] = (
-            ram_ds["ena_intensity"] * weight_ram
-            + anti_ds["ena_intensity"] * weight_anti
+            ram_ds["ena_intensity"].fillna(0) * weight_ram
+            + anti_ds["ena_intensity"].fillna(0) * weight_anti
         ) / total_weight
-
+        # ena_intensity_stat_uncertainty is combined using inverse quadrature sum
         combined["ena_intensity_stat_uncert"] = np.sqrt(1 / total_weight)
 
     # Exposure-weighted average for systematic error

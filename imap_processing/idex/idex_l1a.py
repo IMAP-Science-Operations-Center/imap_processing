@@ -458,14 +458,36 @@ class RawDustEvent:
         """
         # Retrieve the number of samples for high gain delay
 
-        # packet['IDX__TXHDRSAMPDELAY'] is a 32-bit value, with the last 10 bits
-        # representing the high gain sample delay and the first 2 bits used for padding.
-        # To extract the high gain bits, the bitwise right shift (>> 20) moves the bits
-        # 20 positions to the right, and the mask (0b1111111111) keeps only the least
-        # significant 10 bits.
-        # TODO use the delay corresponding to the trigger
-        high_gain_delay = (packet["IDX__TXHDRSAMPDELAY"] >> 22) & 0b1111111111
+        # packet['IDX__TXHDRSAMPDELAY'] is a 32-bit value:
+        # bits0-9: high-gain delay,
+        # bits10-19: mid-gain delay,
+        # bits20-29: low-gain delay.
+        # bits30-31 are padding/reserved.
+        # Each delay is extracted by right-shifting to align the field,
+        # then masking with #0b1111111111 (10 bits).
+
         n_blocks = packet["IDX__TXHDRBLOCKS"]
+        trigger_item = packet["IDX__TXHDRTRIGID"]
+
+        tof_delay = packet["IDX__TXHDRSAMPDELAY"]  # last two bits are padding
+
+        # mask to extract 10-bit values
+        tof_mask = 0b1111111111
+
+        # Determine the delay based on the trigger id.
+        hg_delay = tof_delay & tof_mask  # first 10 bits (0-9)
+        mg_delay = (tof_delay >> 10) & tof_mask  # next 10 bits (10-19)
+        lg_delay = (tof_delay >> 20) & tof_mask  # next 10 bits (20-29)
+
+        u10 = trigger_item & 0x3FF
+        if (u10 >> 0) & 1:
+            delay = hg_delay
+        elif (u10 >> 1) & 1:
+            delay = lg_delay
+        elif (u10 >> 2) & 1:
+            delay = mg_delay
+        else:
+            delay = hg_delay
 
         # Retrieve number of low/high sample pre-trigger blocks
 
@@ -485,11 +507,10 @@ class RawDustEvent:
             * (num_low_sample_pretrigger_blocks + 1)
             * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK
         )
-        self.high_sample_trigger_time = (
-            self.HIGH_SAMPLE_RATE
-            * (num_high_sample_pretrigger_blocks + 1)
-            * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
-            - self.HIGH_SAMPLE_RATE * high_gain_delay
+        self.high_sample_trigger_time = self.HIGH_SAMPLE_RATE * (
+            num_high_sample_pretrigger_blocks + 1
+        ) * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK - self.HIGH_SAMPLE_RATE * (
+            delay - 1
         )
 
     def _parse_high_sample_waveform(self, waveform_raw: str) -> list[int]:
@@ -563,7 +584,7 @@ class RawDustEvent:
         time_low_sample_rate_data : numpy.ndarray
             Low time sample data array.
         """
-        time_low_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_low_sample_rate_init = np.arange(num_samples, dtype=np.float64)
         time_low_sample_rate_data = (
             self.LOW_SAMPLE_RATE * time_low_sample_rate_init
             - self.low_sample_trigger_time
@@ -590,7 +611,7 @@ class RawDustEvent:
         time_high_sample_rate_data : numpy.ndarray
             High sample time data array.
         """
-        time_high_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_high_sample_rate_init = np.arange(num_samples, dtype=np.float64)
         time_high_sample_rate_data = (
             self.HIGH_SAMPLE_RATE * time_high_sample_rate_init
             - self.high_sample_trigger_time
@@ -630,8 +651,15 @@ class RawDustEvent:
         # Gather the huge amount of metadata info
         trigger_vars = {}
         for var, value in self.telemetry_items.items():
-            trigger_vars[var] = xr.DataArray(
-                name=var,
+            # SCI0AID is not updated properly. To this end, TXHDRFSWAIDCOPY must be
+            # used as the proper AID.
+            if var == "idx__sci0aid":
+                continue
+            # rename idx__txhdrfswaidcopy to aid for better readability in the final
+            # dataset
+            var_name = "aid" if var == "idx__txhdrfswaidcopy" else var
+            trigger_vars[var_name] = xr.DataArray(
+                name=var_name,
                 data=[value],
                 dims=("epoch"),
                 attrs=idex_attrs.get_variable_attributes(var),

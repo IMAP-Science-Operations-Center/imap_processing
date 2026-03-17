@@ -1,7 +1,7 @@
-.. _code-documentation:
+.. _algorithm-code-documentation:
 
-Code Documentation
-==================
+Algorithm Code Documentation
+============================
 
 .. currentmodule:: imap_processing
 
@@ -15,7 +15,6 @@ Instruments
 .. toctree::
    :maxdepth: 1
 
-   cli
    codice
    glows
    hi
@@ -63,11 +62,3 @@ variable ``IMAP_DATA_DIR``. For example to use a temporary directory
       imap_cli --instrument codice --level 1 --data-dir /tmp/imap-data
       # or equivalently with an environment variable
       IMAP_DATA_DIR=/tmp/imap-data imap_cli --instrument codice --level 1
-
-Tools
------
-
-.. toctree::
-   :maxdepth: 2
-
-   tools/index

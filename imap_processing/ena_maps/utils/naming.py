@@ -33,7 +33,7 @@ _sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
 # Must be specified separately for purpose of type checking vs comparison
 valid_spice_frame_strings = ["sf", "hf", "hk"]
 _spice_frame_str_types = Literal["sf", "hf", "hk"]
-_coord_frame_str_types = Literal["hae", "hre", "hnu", "gcs"]
+_coord_frame_str_types = Literal["hae", "hre", "hnu", "gcs", "hrc"]
 
 # Mapping of inertial frames to their longer names used in logical source descriptors
 INERTIAL_FRAME_LONG_NAMES = {
@@ -414,18 +414,13 @@ class MapDescriptor:
         NotImplementedError
             If the frame string is not recognized.
         """
-        if frame_str == "hae":
-            return SpiceFrame.IMAP_HAE
-        elif frame_str == "hre":
-            return SpiceFrame.IMAP_HRE
-        elif frame_str == "hnu":
-            return SpiceFrame.IMAP_HNU
-        elif frame_str == "gcs":
-            return SpiceFrame.IMAP_GCS
-        else:
-            raise NotImplementedError(
-                f"Coordinate frame {frame_str} is not yet implemented."
-            )
+        try:
+            return SpiceFrame[f"IMAP_{frame_str.upper()}"]
+        except KeyError as err:
+            raise KeyError(
+                f"Coordinate frame {frame_str} which translates to "
+                f"SPICE frame IMAP_{frame_str.upper()} is not recognized."
+            ) from err
 
     def to_empty_map(
         self,
