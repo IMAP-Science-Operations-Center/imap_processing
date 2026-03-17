@@ -19,6 +19,21 @@ from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
 @pytest.fixture
+def mock_ecliptic_bin_centers(monkeypatch):
+    """Keep DailyLightcurve unit tests independent from SPICE/time conversions."""
+
+    def _mock_compute_coords(l1b_data: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
+        n_bins = l1b_data["histogram"].shape[1]
+        return np.zeros(n_bins, dtype=float), np.zeros(n_bins, dtype=float)
+
+    monkeypatch.setattr(
+        DailyLightcurve,
+        "compute_ecliptic_coords_of_bin_centers",
+        staticmethod(_mock_compute_coords),
+    )
+
+
+@pytest.fixture
 def l1b_hists():
     epoch = xr.DataArray(np.arange(4), name="epoch", dims=["epoch"])
     bins = xr.DataArray(np.arange(5), name="bins", dims=["bins"])
@@ -51,6 +66,7 @@ def test_glows_l2(
     mock_ancillary_exclusions,
     mock_pipeline_settings,
     mock_conversion_table_dict,
+    mock_ecliptic_bin_centers,
     caplog,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
@@ -93,6 +109,8 @@ def test_generate_l2(
     mock_ancillary_exclusions,
     mock_pipeline_settings,
     mock_conversion_table_dict,
+    furnish_kernels,
+    mock_ecliptic_bin_centers,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 

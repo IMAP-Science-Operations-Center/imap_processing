@@ -10,6 +10,21 @@ from imap_processing.glows.utils.constants import GlowsConstants
 
 
 @pytest.fixture
+def mock_ecliptic_bin_centers(monkeypatch):
+    """Keep DailyLightcurve unit tests independent from SPICE/time conversions."""
+
+    def _mock_compute_coords(l1b_data: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
+        n_bins = l1b_data["histogram"].shape[1]
+        return np.zeros(n_bins, dtype=float), np.zeros(n_bins, dtype=float)
+
+    monkeypatch.setattr(
+        DailyLightcurve,
+        "compute_ecliptic_coords_of_bin_centers",
+        staticmethod(_mock_compute_coords),
+    )
+
+
+@pytest.fixture
 def pipeline_settings():
     """PipelineSettings with flags matching the default pipeline settings JSON.
 
@@ -78,6 +93,8 @@ def l1b_dataset():
             "spin_period_average": (["epoch"], [15.0, 15.0]),
             "number_of_spins_per_block": (["epoch"], [5, 5]),
             "imap_spin_angle_bin_cntr": (["epoch", "bins"], spin_angle),
+            "position_angle_offset_average": (["epoch"], [0.0, 0.0]),
+            "imap_start_time": (["epoch"], [0.0, 1.0]),
             "histogram_flag_array": (
                 ["epoch", "bad_angle_flags", "bins"],
                 histogram_flag_array,
@@ -89,7 +106,7 @@ def l1b_dataset():
     return ds
 
 
-def test_photon_flux(l1b_dataset):
+def test_photon_flux(l1b_dataset, mock_ecliptic_bin_centers):
     """Flux = sum(histograms) / sum(exposure_times) per bin (Eq. 50)."""
     lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
 
@@ -108,7 +125,7 @@ def test_photon_flux(l1b_dataset):
     assert np.allclose(lc.photon_flux, expected_flux)
 
 
-def test_flux_uncertainty(l1b_dataset):
+def test_flux_uncertainty(l1b_dataset, mock_ecliptic_bin_centers):
     """Uncertainty = sqrt(sum_hist) / exposure per bin (Eq. 54)."""
     lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
 
@@ -116,7 +133,7 @@ def test_flux_uncertainty(l1b_dataset):
     assert np.allclose(lc.flux_uncertainties, expected_uncertainty)
 
 
-def test_zero_exposure_bins(l1b_dataset):
+def test_zero_exposure_bins(l1b_dataset, mock_ecliptic_bin_centers):
     """Bins with all-masked histograms get zero flux and uncertainty.
 
     Exposure time still accumulates uniformly from each good-time file even
@@ -132,16 +149,18 @@ def test_zero_exposure_bins(l1b_dataset):
     assert np.allclose(lc.exposure_times, expected_exposure)
 
 
-def test_number_of_bins(l1b_dataset):
+def test_number_of_bins(l1b_dataset, mock_ecliptic_bin_centers):
     lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
     assert lc.number_of_bins == 4
     assert len(lc.spin_angle) == 4
     assert len(lc.photon_flux) == 4
     assert len(lc.flux_uncertainties) == 4
     assert len(lc.exposure_times) == 4
+    assert len(lc.ecliptic_lon) == 4
+    assert len(lc.ecliptic_lat) == 4
 
 
-def test_histogram_flag_array_or_propagation(l1b_dataset):
+def test_histogram_flag_array_or_propagation(l1b_dataset, mock_ecliptic_bin_centers):
     """histogram_flag_array is OR'd across all L1B epochs and flag rows per bin.
 
     Per Section 12.3.4: a flag is True in L2 if it is True in any L1B block.
@@ -163,7 +182,7 @@ def test_histogram_flag_array_or_propagation(l1b_dataset):
     assert lc.histogram_flag_array[3] == 0  # no flags on bin 3
 
 
-def test_histogram_flag_array_zero_epochs():
+def test_histogram_flag_array_zero_epochs(mock_ecliptic_bin_centers):
     """histogram_flag_array is all zeros when the input dataset is empty.
 
     Note: this is NEVER expected to happen in production
@@ -179,6 +198,8 @@ def test_histogram_flag_array_zero_epochs():
             "spin_period_average": (["epoch"], []),
             "number_of_spins_per_block": (["epoch"], []),
             "imap_spin_angle_bin_cntr": (["epoch", "bins"], spin_angle),
+            "position_angle_offset_average": (["epoch"], []),
+            "imap_start_time": (["epoch"], []),
             "histogram_flag_array": (
                 ["epoch", "bad_angle_flags", "bins"],
                 histogram_flag_array,
