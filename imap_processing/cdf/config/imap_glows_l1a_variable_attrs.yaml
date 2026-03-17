@@ -29,7 +29,7 @@ support_data_defaults: &support_data_defaults
   VALIDMAX: 1
   DISPLAY_TYPE: time_series
   VAR_TYPE: support_data
-  FORMAT: I2
+  FORMAT: I10
   RESOLUTION: ISO8601
 
 bins_attrs:
@@ -88,7 +88,7 @@ histogram:
   DEPEND_1: bins
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Histogram of photon counts
-  FILL_VAL: *max_uint16
+  FILLVAL: *max_uint16
   FORMAT: I3
   LABL_PTR_1: bins_label
   UNITS: '#'
@@ -240,6 +240,7 @@ hv_voltage_variance:
   CATDESC: Uint-encoded spin-block-averaged variance of HV voltage on CEM
   FIELDNAM: Uint encoded HV voltage variance
   FILLVAL: *max_uint32
+  FORMAT: I10
   LABLAXIS: HV var
   VALIDMAX: *max_uint32_min_one
 
@@ -335,6 +336,7 @@ glows_ssclk_last_pps:
   DISPLAY_TYPE: no_plot
   FIELDNAM: Latest PPS time (GLOWS subseconds)
   FILLVAL: *max_uint32
+  FORMAT: I7
   LABLAXIS: PPS time
   VALIDMAX: 1999999
 
