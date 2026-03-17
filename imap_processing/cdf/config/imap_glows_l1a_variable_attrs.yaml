@@ -183,7 +183,7 @@ number_of_spins_per_block:
   <<: *support_data_defaults
   CATDESC: Number of spins per block during accumulation of histogram
   FIELDNAM: Number of spins per block
-  FILLVAL: 65535
+  FILLVAL: 255
   FORMAT: I2
   LABLAXIS: No. of spins
   VALIDMAX: 64
@@ -471,7 +471,7 @@ pulse_test_in_progress:
   <<: *support_data_defaults
   CATDESC: Pulse-test-in-progress flag (1 - test is on, 0 - test is off)
   FIELDNAM: Pulse-test-in-progress flag
-  FILLVAL: 255 # int8_min
+  FILLVAL: 255 # uint8_max
   FORMAT: I1
   LABLAXIS: Flag
 
