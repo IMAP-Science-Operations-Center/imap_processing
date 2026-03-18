@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
 from imap_processing.glows.utils.constants import GlowsConstants
+from imap_processing.spice.geometry import SpiceFrame, get_instrument_mounting_az_el
 
 
 @dataclass
@@ -48,7 +49,6 @@ class DailyLightcurve:
     raw_histograms: np.ndarray = field(init=False)
     exposure_times: np.ndarray = field(init=False)
     flux_uncertainties: np.ndarray = field(init=False)
-    # TODO: flag array
     histogram_flag_array: np.ndarray = field(init=False)
     # TODO: ecliptic coordinates
     ecliptic_lon: np.ndarray = field(init=False)
@@ -73,7 +73,12 @@ class DailyLightcurve:
         # computations only operate on valid data. glows_l2.py is responsible for
         # re-expanding these arrays back to STANDARD_BIN_COUNT, filling unused bins
         # with the appropriate CDF FILLVAL before writing to output.
-        self.number_of_bins = l1b_data["number_of_bins_per_histogram"].data[0]
+
+        self.number_of_bins = (
+            l1b_data["number_of_bins_per_histogram"].data[0]
+            if len(l1b_data["number_of_bins_per_histogram"].data) != 0
+            else 0
+        )
 
         self.raw_histograms = self.calculate_histogram_sums(l1b_data["histogram"].data)[
             : self.number_of_bins
@@ -97,10 +102,13 @@ class DailyLightcurve:
             self.photon_flux = self.raw_histograms / self.exposure_times
             self.flux_uncertainties = raw_uncertainties / self.exposure_times
 
-        self.spin_angle = l1b_data["imap_spin_angle_bin_cntr"].data[0][
-            : self.number_of_bins
-        ]
+        if self.number_of_bins:
+            self.spin_angle = l1b_data["imap_spin_angle_bin_cntr"].data[0][
+                : self.number_of_bins
+            ]
 
+        else:
+            self.spin_angle = np.zeros(0)
         # Apply 'OR' operation to histogram_flag_array across all
         # good-time L1B blocks per bin.
         # Per Section 12.3.4: a flag is True in L2 if it is True in any L1B block.
@@ -311,15 +319,14 @@ class HistogramL2:
         self.spin_period_ground_std_dev = (
             good_data["spin_period_ground_average"].std(dim="epoch", keepdims=True).data
         )
-        self.position_angle_offset_average = (
-            good_data["position_angle_offset_average"]
-            .mean(dim="epoch", keepdims=True)
-            .data
+
+        self.position_angle_offset_average = np.full(
+            (self.number_of_good_l1b_inputs), self.compute_position_angle()
         )
-        self.position_angle_offset_std_dev = (
-            good_data["position_angle_offset_average"]
-            .std(dim="epoch", keepdims=True)
-            .data
+
+        # Always zero - per algorithm doc 10.6
+        self.position_angle_offset_std_dev = np.full(
+            (self.number_of_good_l1b_inputs), 0.0
         )
         self.spacecraft_location_average = (
             good_data["spacecraft_location_average"]
@@ -404,3 +411,23 @@ class HistogramL2:
         # where all the active indices == 1.
         good_times = np.where(np.all(flags[:, active_flags == 1] == 1, axis=1))[0]
         return good_times
+
+    def compute_position_angle(self) -> float:
+        """
+        Compute the position angle based on the instrument mounting.
+
+        This number is not expected to change significantly. It is the same for all L1B
+        blocks (epoch values).
+
+        Returns
+        -------
+        float
+            The GLOWS mounting position angle.
+        """
+        # Calculation described in algorithm doc 10.6 (Eq. 30):
+        # psi_G_eff = 360 - psi_GLOWS
+        # where psi_GLOWS is the azimuth of the GLOWS boresight in the
+        # IMAP spacecraft frame, measured from the spacecraft x-axis.
+        # delta_psi_G_eff is assumed to be 0 per instrument team decision.
+        glows_mounting_azimuth, _ = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
+        return (360.0 - glows_mounting_azimuth) % 360.0
