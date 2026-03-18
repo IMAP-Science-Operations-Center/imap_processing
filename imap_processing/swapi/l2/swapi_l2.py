@@ -70,7 +70,9 @@ def solve_full_sweep_energy(
     # The first 63 energies are coarse steps, then followed by 9 fine steps.
     # The 9 fine steps may be defined in the main table (fixed steps), or "solve"
     # which requires a separate lookup in the lut-notes table.
-    energy_data = np.empty((len(sweep_table), NUM_ENERGY_STEPS), dtype=float)
+    energy_data: np.ndarray = np.empty(
+        (len(sweep_table), NUM_ENERGY_STEPS), dtype=float
+    )
 
     for i_sweep, (time, sweep_id, esa_lvl5_val) in enumerate(
         zip(data_time, sweep_table, esa_lvl5_data, strict=True)

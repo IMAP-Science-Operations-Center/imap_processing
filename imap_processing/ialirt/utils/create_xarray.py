@@ -284,7 +284,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
         shape = [dataset.dims[d] for d in dims]
 
-        data = np.full(shape, fill, dtype=dtype)
+        data: np.ndarray = np.full(shape, fill, dtype=dtype)
         dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
 
     for i, record in enumerate(by_inst.get("mag", [])):

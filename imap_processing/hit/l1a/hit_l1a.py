@@ -150,7 +150,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
 
     # Update counts for science frames where data is available
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
-        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[
+        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[  # type: ignore[index]
             "sectorates"
         ].values[i]
 
@@ -427,7 +427,7 @@ def subset_sectored_counts(
     )
     complete_sectored_counts_dataset = sectored_counts_dataset.isel(epoch=data_indices)
 
-    epoch_per_complete_set = np.repeat(
+    epoch_per_complete_set: np.ndarray = np.repeat(
         [
             complete_sectored_counts_dataset.epoch[idx : idx + bin_size].mean().item()
             for idx in range(0, len(complete_sectored_counts_dataset.epoch), 10)

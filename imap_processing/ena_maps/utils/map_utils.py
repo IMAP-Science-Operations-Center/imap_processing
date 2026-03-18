@@ -77,7 +77,7 @@ def vectorized_bincount(
     # dimension by an integer multiple of the number of bins. Doing so gives
     # each element in the additional dimensions its own set of 1D bins: index 0
     # uses bins [0, minlength), index 1 uses bins [minlength, 2*minlength), etc.
-    offsets = np.arange(n_binsets).reshape(*non_spatial_shape, 1) * minlength
+    offsets: NDArray = np.arange(n_binsets).reshape(*non_spatial_shape, 1) * minlength
     indices_flat = (indices_bc + offsets).ravel()
 
     # Single bincount call with flattened data

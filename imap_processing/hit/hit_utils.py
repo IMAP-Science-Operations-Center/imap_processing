@@ -368,7 +368,7 @@ def add_energy_variables(
     """
     updated_ds = dataset.copy()
 
-    energy_mean = np.round(
+    energy_mean: np.ndarray = np.round(
         np.mean(np.array([energy_min_values, energy_max_values]), axis=0), 3
     ).astype(np.float32)
 
@@ -424,8 +424,8 @@ def add_summed_particle_data_to_dataset(
     )
 
     # Initialize arrays for energy values
-    energy_min = np.zeros(len(energy_ranges), dtype=np.float32)
-    energy_max = np.zeros(len(energy_ranges), dtype=np.float32)
+    energy_min: np.ndarray = np.zeros(len(energy_ranges), dtype=np.float32)
+    energy_max: np.ndarray = np.zeros(len(energy_ranges), dtype=np.float32)
 
     # Compute summed data and update the dataset
     for i, energy_range_dict in enumerate(energy_ranges):

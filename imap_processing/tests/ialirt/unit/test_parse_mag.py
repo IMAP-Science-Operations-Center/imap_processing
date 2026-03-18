@@ -63,7 +63,6 @@ def binary_packet_path():
 
 
 @pytest.fixture(scope="session")
-@pytest.mark.external_test_data
 def postlaunch_packet_path():
     """Returns the paths to the binary packets."""
     directory = imap_module_directory / "tests" / "ialirt" / "data" / "l0"

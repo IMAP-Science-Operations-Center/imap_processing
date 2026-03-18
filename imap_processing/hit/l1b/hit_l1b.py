@@ -300,7 +300,7 @@ def sum_livetime_10min(livetime: xr.DataArray) -> xr.DataArray:
     livetime_10min_sum = [
         livetime[i : i + 10].sum().item() for i in range(0, len(livetime) - 9, 10)
     ]
-    livetime_expanded = np.repeat(livetime_10min_sum, 10)
+    livetime_expanded: np.ndarray = np.repeat(livetime_10min_sum, 10)
     return xr.DataArray(livetime_expanded, dims=livetime.dims, coords=livetime.coords)
 
 

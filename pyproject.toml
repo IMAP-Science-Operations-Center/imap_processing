@@ -164,4 +164,3 @@ explicit_package_bases = true
 follow_imports = 'skip' #may want to remove
 exclude = ["tests"]
 packages = ["imap_processing" , "tools"]
-plugins = 'numpy.typing.mypy_plugin'

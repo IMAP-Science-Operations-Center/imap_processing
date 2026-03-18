@@ -356,9 +356,9 @@ def get_ssd_back_position_and_tof_offset(
     indices = np.nonzero(np.isin(de_dataset["stop_type"], StopType.SSD.value))[0]
     de_filtered = de_dataset.isel(epoch=indices)
 
-    yb = np.zeros(len(indices), dtype=np.float64)
-    ssd_number = np.zeros(len(indices), dtype=int)
-    tof_offset = np.zeros(len(indices), dtype=np.float64)
+    yb: np.ndarray = np.zeros(len(indices), dtype=np.float64)
+    ssd_number: np.ndarray = np.zeros(len(indices), dtype=int)
+    tof_offset: np.ndarray = np.zeros(len(indices), dtype=np.float64)
 
     for i in range(8):
         ssd_flag_mask = de_filtered[f"ssd_flag_{i}"].data == 1
@@ -480,8 +480,8 @@ def get_coincidence_positions(
     ]
     de_bottom = de_dataset.isel(epoch=index_bottom)
 
-    etof = np.zeros(len(de_dataset["coin_type"]), dtype=np.float64)
-    xc_array = np.zeros(len(de_dataset["coin_type"]), dtype=np.float64)
+    etof: np.ndarray = np.zeros(len(de_dataset["coin_type"]), dtype=np.float64)
+    xc_array: np.ndarray = np.zeros(len(de_dataset["coin_type"]), dtype=np.float64)
 
     # Normalized TDCs
     # For the stop anode, there are mismatches between the coincidence TDCs,
@@ -535,7 +535,7 @@ def get_de_velocity(
         logger.info("Negative tof values found.")
 
     # distances in .1 mm
-    delta_v = np.empty((len(d), 3), dtype=np.float32)
+    delta_v: np.ndarray = np.empty((len(d), 3), dtype=np.float32)
     delta_v[:, 0] = (front_position[0] - back_position[0]) * 0.1
     delta_v[:, 1] = (front_position[1] - back_position[1]) * 0.1
     delta_v[:, 2] = d * 0.1
@@ -709,12 +709,12 @@ def get_energy_pulse_height(
     indices_top = np.where(stop_type == 1)[0]
     indices_bottom = np.where(stop_type == 2)[0]
 
-    xlut = np.zeros(len(stop_type), dtype=np.float64)
-    ylut = np.zeros(len(stop_type), dtype=np.float64)
-    energy_ph = np.zeros(len(stop_type), dtype=np.float64)
+    xlut: np.ndarray = np.zeros(len(stop_type), dtype=np.float64)
+    ylut: np.ndarray = np.zeros(len(stop_type), dtype=np.float64)
+    energy_ph: np.ndarray = np.zeros(len(stop_type), dtype=np.float64)
 
     # Full-length correction arrays
-    ph_correction = np.zeros(len(stop_type), dtype=np.float64)
+    ph_correction: np.ndarray = np.zeros(len(stop_type), dtype=np.float64)
 
     # Stop type 1
     xlut[indices_top] = (xb[indices_top] / 100 - 24.5 / 2) * 20 / 50  # mm
@@ -794,7 +794,7 @@ def get_energy_ssd(
     ssd_indices = np.nonzero(np.isin(de_dataset["stop_type"], StopType.SSD.value))[0]
     energy = de_dataset["energy_ph"].data[ssd_indices]
 
-    composite_energy = np.empty(len(energy), dtype=np.float64)
+    composite_energy: np.ndarray = np.empty(len(energy), dtype=np.float64)
 
     composite_energy[energy >= UltraConstants.COMPOSITE_ENERGY_THRESHOLD] = (
         UltraConstants.COMPOSITE_ENERGY_THRESHOLD
@@ -843,7 +843,7 @@ def get_ctof(
 
     # Multiply times 100 to convert to hundredths of a millimeter.
     ctof = tof * dmin_ctof * 100 / path_length
-    magnitude_v = np.full(len(ctof), -1.0e31, dtype=np.float32)
+    magnitude_v: np.ndarray = np.full(len(ctof), -1.0e31, dtype=np.float32)
 
     # Convert from mm/0.1ns to km/s for valid ctof values
     valid_mask = ctof >= 0
@@ -1430,7 +1430,7 @@ def is_back_tof_valid(
     top_mask = de_dataset["stop_type"] == StopType.Top.value
     bottom_mask = de_dataset["stop_type"] == StopType.Bottom.value
 
-    valid = np.zeros(len(top_mask), dtype=bool)
+    valid: np.ndarray = np.zeros(len(top_mask), dtype=bool)
 
     diff_tp_min = get_image_params("TOFDiffTpMin", sensor, ancillary_files)
     diff_tp_max = get_image_params("TOFDiffTpMax", sensor, ancillary_files)

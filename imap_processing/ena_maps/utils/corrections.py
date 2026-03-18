@@ -273,7 +273,7 @@ class PowerLawFluxCorrector:
             of input.
         """
         n_levels = observed_fluxes.shape[0]
-        energy_levels = np.arange(n_levels) + 1
+        energy_levels: np.ndarray = np.arange(n_levels) + 1
 
         # Initial power-law estimate from observed fluxes
         gamma_initial, _ = self.estimate_power_law_slope(observed_fluxes, energies)

@@ -390,7 +390,7 @@ def compute_counts_by_charge_and_mass(
     counts_by_mass = []
     counts_by_charge_map = []
     counts_by_mass_map = []
-    daily_epoch = np.zeros(len(epoch_doy_unique), dtype=np.float64)
+    daily_epoch: np.ndarray = np.zeros(len(epoch_doy_unique), dtype=np.float64)
     for i in range(len(epoch_doy_unique)):
         doy = epoch_doy_unique[i]
         # Get the indices for the current day

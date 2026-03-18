@@ -163,7 +163,7 @@ def generate_de_dataset(
     # TODO: Block header per second, or global attribute?
 
     # Store timestamps for each DirectEventL1a object.
-    time_data = np.zeros(len(de_l1a_list), dtype=np.int64)
+    time_data: np.ndarray = np.zeros(len(de_l1a_list), dtype=np.int64)
 
     # Each DirectEventL1A class covers 1 second of direct events data
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
@@ -330,10 +330,10 @@ def generate_histogram_dataset(
     ]
 
     # Store timestamps for each HistogramL1A object.
-    time_data = np.zeros(len(hist_l1a_list), dtype=np.int64)
+    time_data: np.ndarray = np.zeros(len(hist_l1a_list), dtype=np.int64)
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
-    hist_data = np.full(
+    hist_data: np.ndarray = np.full(
         (len(hist_l1a_list), GlowsConstants.STANDARD_BIN_COUNT),
         GlowsConstants.HISTOGRAM_FILLVAL,
         dtype=np.uint16,

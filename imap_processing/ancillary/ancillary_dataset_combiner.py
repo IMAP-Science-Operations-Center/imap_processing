@@ -123,7 +123,7 @@ class AncillaryCombiner:
             )
             end_dt = np.datetime64(formatted_str, "D")
         else:
-            end_dt = self.expected_end_date
+            end_dt = self.expected_end_date  # type: ignore[assignment]
 
         return TimestampedData(start_dt, end_dt, dataset, filepath.version)
 

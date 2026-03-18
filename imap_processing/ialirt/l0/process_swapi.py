@@ -112,9 +112,9 @@ def optimize_pseudo_parameters(
 
     try:
         five_point_range = range(max_index - 2, max_index + 2 + 1)
-        xdata = energy_passbands.take(five_point_range, mode="clip")
-        ydata = count_rates.take(five_point_range, mode="clip")
-        sigma = count_rate_error.take(five_point_range, mode="clip")
+        xdata: np.ndarray = energy_passbands.take(five_point_range, mode="clip")
+        ydata: np.ndarray = count_rates.take(five_point_range, mode="clip")
+        sigma: np.ndarray = count_rate_error.take(five_point_range, mode="clip")
         curve_fit_output = curve_fit(
             f=count_rate,
             xdata=xdata,
@@ -128,7 +128,7 @@ def optimize_pseudo_parameters(
         covariance_matrix_is_finite = np.all(np.isfinite(curve_fit_output[1]))
 
         # fit has failed if R^2 < 0.7
-        yfit = count_rate(xdata, *curve_fit_output[0])
+        yfit = count_rate(xdata, *curve_fit_output[0])  # type: ignore[arg-type]
         r2 = 1 - np.sum((ydata - yfit) ** 2) / np.sum((ydata - ydata.mean()) ** 2)
         r2_is_acceptable = r2 >= 0.7
 

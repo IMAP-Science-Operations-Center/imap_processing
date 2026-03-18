@@ -128,9 +128,9 @@ def calculate_extendedspin(
     # Validate that the spin values match
     valid = (idx < pulses.unique_spins.size) & (pulses.unique_spins[idx] == spin)
 
-    start_per_spin = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
-    stop_per_spin = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
-    coin_per_spin = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
+    start_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
+    stop_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
+    coin_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
 
     # Fill only the valid ones
     start_per_spin[valid] = pulses.start_per_spin[idx[valid]]
@@ -170,7 +170,9 @@ def calculate_extendedspin(
     extendedspin_dict["quality_high_energy"] = high_energy_qf  # shape (nspin,)
     # ISTP requires stable dimension sizes, so this field must always remain size 16.
     # If fewer bins are used, pad the remaining entries with 0.
-    energy_flags = np.full(UltraConstants.MAX_ENERGY_RANGES, 0, dtype=np.uint16)
+    energy_flags: np.ndarray = np.full(
+        UltraConstants.MAX_ENERGY_RANGES, 0, dtype=np.uint16
+    )
     energy_flags[: len(energy_bin_flags)] = energy_bin_flags
     extendedspin_dict["energy_range_flags"] = energy_flags
     extendedspin_dict["energy_range_flags_dim"] = np.arange(
@@ -180,7 +182,7 @@ def calculate_extendedspin(
     # Initialize array of energy range edges with fill value, then fill in the valid
     # energy ranges. Set the length to be the max number of energy bins we expect to
     # use for culling. The number of edges is one more than the number of bins (17).
-    ranges = np.full(
+    ranges: np.ndarray = np.full(
         (UltraConstants.MAX_ENERGY_RANGE_EDGES,), FILLVAL_FLOAT32, dtype=np.float32
     )
     ranges[: len(energy_ranges)] = energy_ranges
