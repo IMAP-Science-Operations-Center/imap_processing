@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -42,8 +44,12 @@ def pipeline_settings():
     ]
     pipeline_dataset = xr.Dataset(
         {
-            "active_bad_time_flags": xr.DataArray(active_bad_time_flags),
-            "active_bad_angle_flags": xr.DataArray(active_bad_angle_flags),
+            "active_bad_time_flags": xr.DataArray(
+                active_bad_time_flags, dims=["time_flag_index"]
+            ),
+            "active_bad_angle_flags": xr.DataArray(
+                active_bad_angle_flags, dims=["angle_flag_index"]
+            ),
         }
     )
     return PipelineSettings(pipeline_dataset)
@@ -62,9 +68,7 @@ def l1b_dataset():
     epoch = xr.DataArray(np.arange(n_epochs), dims=["epoch"])
     bins = xr.DataArray(np.arange(n_bins), dims=["bins"])
 
-    histogram = np.array(
-        [[10, 20, 30, fillval], [10, 20, 30, 40]], dtype=float
-    )
+    histogram = np.array([[10, 20, 30, fillval], [10, 20, 30, 40]], dtype=float)
     spin_angle = np.tile(np.linspace(0, 270, n_bins), (n_epochs, 1))
     histogram_flag_array = np.zeros((n_epochs, n_flags, n_bins), dtype=np.uint8)
 
@@ -78,7 +82,7 @@ def l1b_dataset():
                 ["epoch", "bad_angle_flags", "bins"],
                 histogram_flag_array,
             ),
-            "number_of_bins_per_histogram": (["epoch"], [n_bins, n_bins])
+            "number_of_bins_per_histogram": (["epoch"], [n_bins, n_bins]),
         },
         coords={"epoch": epoch, "bins": bins},
     )
@@ -87,7 +91,7 @@ def l1b_dataset():
 
 def test_photon_flux(l1b_dataset):
     """Flux = sum(histograms) / sum(exposure_times) per bin (Eq. 50)."""
-    lc = DailyLightcurve(l1b_dataset)
+    lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
 
     # l1b_exposure_time_per_bin = spin_period_average *
     # number_of_spins_per_block / number_of_bins_per_histogram
@@ -106,7 +110,7 @@ def test_photon_flux(l1b_dataset):
 
 def test_flux_uncertainty(l1b_dataset):
     """Uncertainty = sqrt(sum_hist) / exposure per bin (Eq. 54)."""
-    lc = DailyLightcurve(l1b_dataset)
+    lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
 
     expected_uncertainty = np.sqrt(lc.raw_histograms) / lc.exposure_times
     assert np.allclose(lc.flux_uncertainties, expected_uncertainty)
@@ -120,7 +124,7 @@ def test_zero_exposure_bins(l1b_dataset):
     uncertainty are zero because the raw histogram sums are zero.
     """
     l1b_dataset["histogram"].values[:] = GlowsConstants.HISTOGRAM_FILLVAL
-    lc = DailyLightcurve(l1b_dataset)
+    lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
 
     expected_exposure = 2 * 15.0 * 5 / 4
     assert np.all(lc.photon_flux == 0)
@@ -129,7 +133,7 @@ def test_zero_exposure_bins(l1b_dataset):
 
 
 def test_number_of_bins(l1b_dataset):
-    lc = DailyLightcurve(l1b_dataset)
+    lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
     assert lc.number_of_bins == 4
     assert len(lc.spin_angle) == 4
     assert len(lc.photon_flux) == 4
@@ -149,7 +153,7 @@ def test_histogram_flag_array_or_propagation(l1b_dataset):
     l1b_dataset["histogram_flag_array"].values[1, 1, 2] = 2
     l1b_dataset["histogram_flag_array"].values[1, 0, 0] = 2
 
-    lc = DailyLightcurve(l1b_dataset)
+    lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
 
     assert (
         lc.histogram_flag_array[0] == 3
@@ -163,7 +167,7 @@ def test_histogram_flag_array_zero_epochs():
     """histogram_flag_array is all zeros when the input dataset is empty.
 
     Note: this is NEVER expected to happen in production
-    TODO: remove tests and allow failures if empty imput?"""
+    """
     n_bins, n_flags = 4, 4
     histogram = np.empty((0, n_bins), dtype=float)
     spin_angle = np.empty((0, n_bins), dtype=float)
@@ -179,11 +183,11 @@ def test_histogram_flag_array_zero_epochs():
                 ["epoch", "bad_angle_flags", "bins"],
                 histogram_flag_array,
             ),
-            "number_of_bins_per_histogram": (["epoch"], [])
+            "number_of_bins_per_histogram": (["epoch"], []),
         },
         coords={"epoch": xr.DataArray(np.arange(0), dims=["epoch"])},
     )
-    lc = DailyLightcurve(ds)
+    lc = DailyLightcurve(ds, position_angle=0.0)
 
     # if the dataset is empty, there is no way to infer the number_of_bins
     assert len(lc.histogram_flag_array) == 0
@@ -203,3 +207,108 @@ def test_filter_good_times():
     expected_good_times = [0, 2, 3]
 
     assert np.array_equal(good_times, expected_good_times)
+
+
+# ── spin_angle tests ──────────────────────────────────────────────────────────
+
+
+def test_spin_angle_offset_formula(l1b_dataset):
+    """spin_angle = (imap_spin_angle_bin_cntr - position_angle + 360) % 360.
+
+    Fixture spin_angle_bin_cntr = [0, 90, 180, 270], position_angle = 90.
+    Expected before roll: [270, 0, 90, 180].
+    Minimum is at index 1, so roll = -1 -> [0, 90, 180, 270].
+    """
+    lc = DailyLightcurve(l1b_dataset, position_angle=90.0)
+    expected = np.array([0.0, 90.0, 180.0, 270.0])
+    assert np.allclose(lc.spin_angle, expected)
+
+
+def test_spin_angle_starts_at_minimum(l1b_dataset):
+    """After rolling, lc.spin_angle[0] is the minimum value.
+
+    Fixture spin_angle_bin_cntr = [0, 90, 180, 270], position_angle = 45.
+    Before roll: [315, 45, 135, 225]; minimum 45 is at index 1 -> roll = -1
+    -> [45, 135, 225, 315].
+    """
+    lc = DailyLightcurve(l1b_dataset, position_angle=45.0)
+    assert lc.spin_angle[0] == np.min(lc.spin_angle)
+    assert np.allclose(lc.spin_angle, np.array([45.0, 135.0, 225.0, 315.0]))
+
+
+# ── position_angle_offset_average tests ──────────────────────────────────────
+
+
+def test_compute_position_angle():
+    """compute_position_angle returns (360 - azimuth) % 360 (Eq. 30)."""
+    target_module = (
+        "imap_processing.glows.l2.glows_l2_data.get_instrument_mounting_az_el"
+    )
+    with patch(target_module, return_value=(270.0, 0.0)):
+        result = HistogramL2.compute_position_angle(None)
+    assert result == pytest.approx(90.0)
+
+
+@pytest.fixture
+def l1b_dataset_full():
+    """Minimal L1B dataset with all variables required by HistogramL2.
+
+    Two epochs, four bins, 17 flags (all good).
+    """
+    n_epochs, n_bins, n_angle_flags, n_time_flags = 2, 4, 4, 17
+    fillval = GlowsConstants.HISTOGRAM_FILLVAL
+    epoch = np.arange(n_epochs, dtype=np.float64)
+
+    histogram = np.array([[10, 20, 30, fillval], [10, 20, 30, 40]], dtype=float)
+    spin_angle = np.tile(np.linspace(0, 270, n_bins), (n_epochs, 1))
+    histogram_flag_array = np.zeros((n_epochs, n_angle_flags, n_bins), dtype=np.uint8)
+
+    return xr.Dataset(
+        {
+            "histogram": (["epoch", "bins"], histogram),
+            "spin_period_average": (["epoch"], [15.0, 15.0]),
+            "number_of_spins_per_block": (["epoch"], [5, 5]),
+            "imap_spin_angle_bin_cntr": (["epoch", "bins"], spin_angle),
+            "histogram_flag_array": (
+                ["epoch", "bad_angle_flags", "bins"],
+                histogram_flag_array,
+            ),
+            "number_of_bins_per_histogram": (["epoch"], [n_bins, n_bins]),
+            "flags": (
+                ["epoch", "flag_index"],
+                np.ones((n_epochs, n_time_flags)),
+            ),
+            "filter_temperature_average": (["epoch"], [20.0, 21.0]),
+            "hv_voltage_average": (["epoch"], [1000.0, 1000.0]),
+            "pulse_length_average": (["epoch"], [5.0, 5.0]),
+            "spin_period_ground_average": (["epoch"], [15.0, 15.0]),
+            "spacecraft_location_average": (
+                ["epoch", "xyz"],
+                np.ones((n_epochs, 3)),
+            ),
+            "spacecraft_velocity_average": (
+                ["epoch", "xyz"],
+                np.ones((n_epochs, 3)),
+            ),
+            "spin_axis_orientation_average": (
+                ["epoch", "lonlat"],
+                np.ones((n_epochs, 2)),
+            ),
+            "imap_start_time": (["epoch"], [0.0, 1.0]),
+            "imap_time_offset": (["epoch"], [60.0, 60.0]),
+        },
+        coords={"epoch": xr.DataArray(epoch, dims=["epoch"])},
+    )
+
+
+def test_position_angle_offset_average(l1b_dataset_full, pipeline_settings):
+    """position_angle_offset_average is a scalar equal to the result of
+    compute_position_angle (Eq. 30, Section 10.6). It is constant across the
+    observational day since it depends only on instrument mounting geometry.
+    """
+    mock_pa = 42.5
+    target = "imap_processing.glows.l2.glows_l2_data.HistogramL2.compute_position_angle"
+    with patch(target, return_value=mock_pa):
+        l2 = HistogramL2(l1b_dataset_full, pipeline_settings)
+
+    assert l2.position_angle_offset_average == pytest.approx(mock_pa)

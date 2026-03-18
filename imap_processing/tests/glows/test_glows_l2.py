@@ -13,6 +13,7 @@ from imap_processing.glows.l2.glows_l2 import (
     glows_l2,
 )
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
+from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
@@ -24,10 +25,10 @@ def l1b_hists():
     hist = xr.DataArray(
         np.ones((4, 5)), dims=["epoch", "bins"], coords={"epoch": epoch, "bins": bins}
     )
-    hist[1, 0] = -1
-    hist[2, 0] = -1
-    hist[1, 1] = -1
-    hist[2, 3] = -1
+    hist[1, 0] = GlowsConstants.HISTOGRAM_FILLVAL
+    hist[2, 0] = GlowsConstants.HISTOGRAM_FILLVAL
+    hist[1, 1] = GlowsConstants.HISTOGRAM_FILLVAL
+    hist[2, 3] = GlowsConstants.HISTOGRAM_FILLVAL
 
     input = xr.Dataset(coords={"epoch": epoch, "bins": bins})
     input["histogram"] = hist
@@ -35,6 +36,7 @@ def l1b_hists():
     return input
 
 
+@patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
 @patch.object(
     HistogramL1B,
     "flag_uv_and_excluded",
@@ -44,6 +46,7 @@ def l1b_hists():
 def test_glows_l2(
     mock_spice_function,
     mock_flag_uv_and_excluded,
+    mock_compute_position_angle,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
@@ -75,6 +78,7 @@ def test_glows_l2(
     assert any(record.levelname == "WARNING" for record in caplog.records)
 
 
+@patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
 @patch.object(
     HistogramL1B,
     "flag_uv_and_excluded",
@@ -84,6 +88,7 @@ def test_glows_l2(
 def test_generate_l2(
     mock_spice_function,
     mock_flag_uv_and_excluded,
+    mock_compute_position_angle,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,

@@ -55,8 +55,9 @@ class DailyLightcurve:
     ecliptic_lat: np.ndarray = field(init=False)
     number_of_bins: int = field(init=False)
     l1b_data: InitVar[xr.Dataset]
+    position_angle: InitVar[float]
 
-    def __post_init__(self, l1b_data: xr.Dataset) -> None:
+    def __post_init__(self, l1b_data: xr.Dataset, position_angle: float) -> None:
         """
         Compute all the daily lightcurve variables from L1B data.
 
@@ -65,6 +66,11 @@ class DailyLightcurve:
         l1b_data : xarray.Dataset
             L1B data filtered by good times, good angles, and good bins for one
             observation day.
+        position_angle : float
+            The offset angle of the GLOWS instrument from the spin plane - this is used
+            in spin angle calculations. This number may change with different SPICE
+            kernels, but does not vary by time inside the code, so we can just use a
+            fixed value.
         """
         # number_of_bins_per_histogram is the count of valid (non-FILLVAL) bins.
         # Histogram arrays from L1B are always GlowsConstants.STANDARD_BIN_COUNT
@@ -102,13 +108,8 @@ class DailyLightcurve:
             self.photon_flux = self.raw_histograms / self.exposure_times
             self.flux_uncertainties = raw_uncertainties / self.exposure_times
 
-        if self.number_of_bins:
-            self.spin_angle = l1b_data["imap_spin_angle_bin_cntr"].data[0][
-                : self.number_of_bins
-            ]
+        self.spin_angle = np.zeros(0)
 
-        else:
-            self.spin_angle = np.zeros(0)
         # Apply 'OR' operation to histogram_flag_array across all
         # good-time L1B blocks per bin.
         # Per Section 12.3.4: a flag is True in L2 if it is True in any L1B block.
@@ -125,6 +126,28 @@ class DailyLightcurve:
             self.histogram_flag_array = np.zeros(self.number_of_bins, dtype=np.uint8)
         self.ecliptic_lon = np.zeros(self.number_of_bins)
         self.ecliptic_lat = np.zeros(self.number_of_bins)
+
+        if self.number_of_bins:
+            # imap_spin_angle_bin_cntr is the raw IMAP spin angle ψ (0 - 360°,
+            # bin midpoints).
+            spin_angle_bin_cntr = l1b_data["imap_spin_angle_bin_cntr"].data[0][
+                : self.number_of_bins
+            ]
+            # Convert ψ → ψPA (Eq. 29): position angle measured from the
+            # northernmost point of the scanning circle.
+            self.spin_angle = (spin_angle_bin_cntr - position_angle + 360.0) % 360.0
+
+            # Roll all bin arrays so bin 0 corresponds to the northernmost
+            # point (minimum ψPA).
+            roll = -np.argsort(self.spin_angle)[0]
+            self.spin_angle = np.roll(self.spin_angle, roll)
+            self.raw_histograms = np.roll(self.raw_histograms, roll)
+            self.photon_flux = np.roll(self.photon_flux, roll)
+            self.exposure_times = np.roll(self.exposure_times, roll)
+            self.flux_uncertainties = np.roll(self.flux_uncertainties, roll)
+            self.histogram_flag_array = np.roll(self.histogram_flag_array, roll)
+            self.ecliptic_lon = np.roll(self.ecliptic_lon, roll)
+            self.ecliptic_lat = np.roll(self.ecliptic_lat, roll)
 
     @staticmethod
     def calculate_histogram_sums(histograms: NDArray) -> NDArray:
@@ -233,8 +256,8 @@ class HistogramL2:
     pulse_length_std_dev: np.ndarray[np.double]
     spin_period_ground_average: np.ndarray[np.double]
     spin_period_ground_std_dev: np.ndarray[np.double]
-    position_angle_offset_average: np.ndarray[np.double]
-    position_angle_offset_std_dev: np.ndarray[np.double]
+    position_angle_offset_average: np.double
+    position_angle_offset_std_dev: np.double
     spin_axis_orientation_std_dev: np.ndarray[np.double]
     spacecraft_location_average: np.ndarray[np.double]
     spacecraft_location_std_dev: np.ndarray[np.double]
@@ -264,8 +287,6 @@ class HistogramL2:
         # TODO: bad angle filter
         # TODO: filter bad bins out. Needs to happen here while everything is still
         #       per-timestamp.
-
-        self.daily_lightcurve = DailyLightcurve(good_data)
 
         self.total_l1b_inputs = len(l1b_dataset["epoch"])
         self.number_of_good_l1b_inputs = len(good_data["epoch"])
@@ -320,14 +341,11 @@ class HistogramL2:
             good_data["spin_period_ground_average"].std(dim="epoch", keepdims=True).data
         )
 
-        self.position_angle_offset_average = np.full(
-            (self.number_of_good_l1b_inputs), self.compute_position_angle()
-        )
+        position_angle = self.compute_position_angle()
+        self.position_angle_offset_average: np.double = np.double(position_angle)
 
         # Always zero - per algorithm doc 10.6
-        self.position_angle_offset_std_dev = np.full(
-            (self.number_of_good_l1b_inputs), 0.0
-        )
+        self.position_angle_offset_std_dev = np.double(0.0)
         self.spacecraft_location_average = (
             good_data["spacecraft_location_average"]
             .mean(dim="epoch")
@@ -358,6 +376,8 @@ class HistogramL2:
             .std(dim="epoch")
             .data[np.newaxis, :]
         )
+
+        self.daily_lightcurve = DailyLightcurve(good_data, position_angle)
 
     def filter_bad_bins(self, histograms: NDArray, bin_exclusions: NDArray) -> NDArray:
         """
