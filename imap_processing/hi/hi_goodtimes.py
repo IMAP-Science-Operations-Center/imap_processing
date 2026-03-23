@@ -1212,7 +1212,10 @@ def mark_bad_tdc_cal(
         # Remove times from this DIAG_FEE packet until next. We are skipping the
         # first packet of a duplicate pair, so determining the window based on the
         # current packet met and next packet met covers the time window between
-        # non-duplicate DIAG_FEE packets.
+        # non-duplicate DIAG_FEE packets. We can ignore the ~10 seconds of slop
+        # around duplicate packets because these packets should only be produced
+        # when IMAP-Hi is transitioning to HVSCI mode which means that there will
+        # be no DE packets being produced.
         df_time = diagfee_met[i]
         next_df_time = diagfee_met[i + 1] if i < len(diagfee_met) - 1 else np.inf
 
