@@ -614,17 +614,17 @@ class UltraPointingSet(HealpixPointingSet):
         """
         pset_data = self.data
         counts_n_pix = pset_data.sizes["counts_pixel_index"]
-        if counts_n_pix != hp.nside2npix(self.nside):
+        pset_n_pix = hp.nside2npix(self.nside)
+        if counts_n_pix != pset_n_pix:
             # Raise an error if the nside the counts were sampled at is lower than the
             # nside of the output map. We never want counts to be upsampled.
-            if counts_n_pix < hp.nside2npix(self.nside):
+            if counts_n_pix < pset_n_pix:
                 raise ValueError(
                     f"Counts in the input PSET are sampled at nside "
                     f"{hp.npix2nside(counts_n_pix)}, and the pset is {self.nside}. "
                     f"This would require upsampling the counts, which we do not want."
                 )
             counts_nside = hp.npix2nside(counts_n_pix)
-            pset_n_pix = hp.nside2npix(self.nside)
             n_energy_bins = pset_data.sizes["energy_bin_geometric_mean"]
             order_diff = int(np.log2(counts_nside // self.nside))
             counts = pset_data["counts"].values[

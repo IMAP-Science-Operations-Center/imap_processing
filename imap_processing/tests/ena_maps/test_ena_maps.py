@@ -143,8 +143,8 @@ class TestUltraPointingSet:
         ultra_pset = self.l1c_pset_products[0]
 
         # First check that counts are at a finer resolution than exposure factor
-        counts_nside_before = hp.npix2nside(ultra_pset["counts"].shape[-1])
-        assert counts_nside_before != ultra_pset["exposure_factor"].shape[-1]
+        counts_npix_before = ultra_pset["counts"].shape[-1]
+        assert counts_npix_before != ultra_pset["exposure_factor"].shape[-1]
         pset = ena_maps.UltraPointingSet(ultra_pset)
 
         # Verify counts are now at the same resolution as pset
