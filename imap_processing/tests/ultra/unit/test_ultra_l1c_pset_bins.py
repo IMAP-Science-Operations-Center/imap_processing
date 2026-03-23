@@ -118,13 +118,9 @@ def test_get_spacecraft_histogram(test_data):
     energy_bin_edges, _, _ = build_energy_bins()
     subset_energy_bin_edges = energy_bin_edges[:3]
 
-    hist, latitude, longitude, n_pix = get_spacecraft_histogram(
-        v, energy, subset_energy_bin_edges, nside=1
-    )
+    hist, n_pix = get_spacecraft_histogram(v, energy, subset_energy_bin_edges, nside=1)
     assert hist.shape == (len(subset_energy_bin_edges), hp.nside2npix(1))
     assert n_pix == hp.nside2npix(1)
-    assert latitude.shape == (n_pix,)
-    assert longitude.shape == (n_pix,)
 
     # Spot check that 2 counts are in the second energy bin
     assert np.sum(hist[2, :]) == 2
@@ -135,14 +131,10 @@ def test_get_spacecraft_histogram(test_data):
         (2.5, 4.137),
         (3.385, 5.057),
     ]
-    hist, latitude, longitude, n_pix = get_spacecraft_histogram(
-        v, energy, overlapping_bins, nside=1
-    )
+    hist, n_pix = get_spacecraft_histogram(v, energy, overlapping_bins, nside=1)
     # Spot check that 3 counts are in the third energy bin
     assert np.sum(hist[2, :]) == 3
     assert n_pix == hp.nside2npix(1)
-    assert latitude.shape == (n_pix,)
-    assert longitude.shape == (n_pix,)
 
 
 def mock_imap_state(time, ref_frame):

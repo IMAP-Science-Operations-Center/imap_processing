@@ -79,7 +79,7 @@ def get_spacecraft_histogram(
     energy_bin_edges: list[tuple[float, float]],
     nside: int = 128,
     nested: bool = False,
-) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+) -> tuple[NDArray, NDArray]:
     """
     Compute a 2D histogram of the particle data using HEALPix binning.
 
@@ -101,10 +101,6 @@ def get_spacecraft_histogram(
     -------
     hist : np.ndarray
         A 2D histogram array with shape (n_pix, n_energy_bins).
-    latitude : np.ndarray
-        Array of latitude values.
-    longitude : np.ndarray
-        Array of longitude values.
     n_pix : int
         Number of healpix pixels.
 
@@ -126,10 +122,6 @@ def get_spacecraft_histogram(
     # Compute number of HEALPix pixels that cover the sphere
     n_pix = hp.nside2npix(nside)
 
-    # Calculate the corresponding longitude (az) latitude (el)
-    # center coordinates
-    longitude, latitude = hp.pix2ang(nside, np.arange(n_pix), lonlat=True)
-
     # Get HEALPix pixel indices for each event
     # HEALPix expects latitude in [-90, 90] so we don't need to change elevation
     hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
@@ -143,7 +135,7 @@ def get_spacecraft_histogram(
         # Only count the events that fall within the energy bin
         hist[i, :] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist, latitude, longitude, n_pix
+    return hist, n_pix
 
 
 def get_spacecraft_count_rate_uncertainty(hist: NDArray, exposure: NDArray) -> NDArray:

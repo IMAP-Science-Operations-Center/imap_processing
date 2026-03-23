@@ -626,34 +626,38 @@ class UltraPointingSet(HealpixPointingSet):
             counts_nside = hp.npix2nside(counts_n_pix)
             pset_n_pix = hp.nside2npix(self.nside)
             n_energy_bins = pset_data.sizes["energy_bin_geometric_mean"]
-            downsampled_counts = np.zeros((n_energy_bins, pset_n_pix))
             order_diff = int(np.log2(counts_nside // self.nside))
-            for i in range(n_energy_bins):
-                counts = pset_data["counts"].values[0, i]
-                # Convert to nested ordering if necessary. In nested ordering, the
-                # pixels that need to be binned together to go from the counts nside to
-                # the pset nside are contiguous in the array.
-                counts_n = (
-                    counts
-                    if self.nested
-                    else counts[hp.ring2nest(counts_nside, np.arange(counts_n_pix))]
-                )
-                # reshape the counts by the amount pixels to bin together which is
-                # 4**order_diff because each step in order multiplies the pixel count
-                # by 4
-                binned_counts_n = counts_n.reshape((-1, 4**order_diff)).sum(axis=1)
+            counts = pset_data["counts"].values[
+                0
+            ]  # shape: (n_energy_bins, counts_n_pix)
+            # Get counts in nested ordering. In nested ordering, the
+            # pixels that need to be binned together to go from the counts nside to
+            # the pset nside are contiguous in the array.
+            if not self.nested:
+                counts_n = counts[
+                    :, hp.ring2nest(counts_nside, np.arange(counts_n_pix))
+                ]
+            else:
+                counts_n = counts
+
+            # reshape the counts by the amount pixels to bin together which is
+            # 4**order_diff because each step in order multiplies the pixel count
+            # by 4
+            # Shape: (n_energy_bins, pset_n_pix, 4**order_diff) ->
+            # (n_energy_bins, pset_n_pix)
+            binned_counts_n = counts_n.reshape(
+                (n_energy_bins, pset_n_pix, 4**order_diff)
+            ).sum(axis=-1)
+
+            if not self.nested:
                 # convert back to ring ordering if necessary and store in the
                 # downsampled counts array
-                downsampled_counts[i] = (
-                    binned_counts_n
-                    if self.nested
-                    else binned_counts_n[
-                        hp.nest2ring(self.nside, np.arange(pset_n_pix))
-                    ]
-                )
+                binned_counts_n = binned_counts_n[
+                    :, hp.nest2ring(self.nside, np.arange(pset_n_pix))
+                ]
 
             self.data["counts"] = xr.DataArray(
-                downsampled_counts[np.newaxis, :, :],
+                binned_counts_n[np.newaxis, :, :],
                 dims=(
                     *self.data["counts"].dims[:-1],
                     CoordNames.HEALPIX_INDEX.value,

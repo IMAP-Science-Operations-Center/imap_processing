@@ -247,6 +247,18 @@ pixel_index:
   VALIDMAX: *max_int
   VAR_TYPE: support_data
 
+counts_pixel_index:
+  FILLVAL: *min_int
+  CATDESC: Counts variable HEALPix pixel index.
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: counts_pixel_index
+  FORMAT: I12
+  LABLAXIS: Counts Pixel Index
+  UNITS: " "
+  VALIDMIN: *min_int
+  VALIDMAX: *max_int
+  VAR_TYPE: support_data
+
 spin_phase_step:
   FILLVAL: *min_int
   CATDESC: Spin phase step index (1ms resolution).
