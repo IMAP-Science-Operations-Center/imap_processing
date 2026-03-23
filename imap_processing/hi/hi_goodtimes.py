@@ -1145,20 +1145,18 @@ def mark_overflow_packets(
 def mark_bad_tdc_cal(
     goodtimes_ds: xr.Dataset,
     diagfee: xr.Dataset,
-    check_tdc1: bool = True,
-    check_tdc2: bool = True,
-    check_tdc3: bool = True,
     cull_code: int = CullCode.LOOSE,
 ) -> None:
     """
     Remove times with failed TDC calibration (DIAG_FEE method).
 
-    Based on C reference: drop_bad_tdc_diagfee in culling.c
+    Based on C reference: drop_bad_tdc_diagfee in culling_v2.c provided by
+    IMAP-Hi team.
 
     This function scans DIAG_FEE packets chronologically and checks the TDC
-    calibration status for each packet. If any checked TDC has failed
-    calibration, all times from that DIAG_FEE packet until the next DIAG_FEE
-    packet are marked as bad.
+    calibration status for each packet. If any TDC has failed calibration,
+    all times from that DIAG_FEE packet until the next DIAG_FEE packet are
+    marked as bad.
 
     Parameters
     ----------
@@ -1170,12 +1168,6 @@ def mark_bad_tdc_cal(
         - tdc1_cal_ctrl_stat: TDC1 calibration status (bit 1 = success)
         - tdc2_cal_ctrl_stat: TDC2 calibration status (bit 1 = success)
         - tdc3_cal_ctrl_stat: TDC3 calibration status (bit 1 = success)
-    check_tdc1 : bool, optional
-        Whether to check TDC1 calibration status. Default is True.
-    check_tdc2 : bool, optional
-        Whether to check TDC2 calibration status. Default is True.
-    check_tdc3 : bool, optional
-        Whether to check TDC3 calibration status. Default is True.
     cull_code : int, optional
         Cull code to use for marking bad times. Default is CullCode.LOOSE.
 
@@ -1197,36 +1189,39 @@ def mark_bad_tdc_cal(
         )
         return
 
-    df_met = diagfee["shcoarse"].values
-    met_values = goodtimes_ds.coords["met"].values
+    diagfee_met = diagfee["shcoarse"].values
+    goodtimes_met = goodtimes_ds.coords["met"].values
+
+    # Identify duplicate packets: skip if followed by another within 10 seconds
+    time_gaps = np.diff(diagfee_met)
+    is_duplicate = np.concatenate([time_gaps < 10, [False]])
+
+    # Identify any packets where any of the three TDC calibrations failed.
+    # TDC failure check (bit 1: 1=good, 0=bad)
+    tdc_failed = (
+        ((diagfee["tdc1_cal_ctrl_stat"].values & 2) == 0)
+        | ((diagfee["tdc2_cal_ctrl_stat"].values & 2) == 0)
+        | ((diagfee["tdc3_cal_ctrl_stat"].values & 2) == 0)
+    )
+
+    # Only loop over non-duplicate packets with TDC failures
+    failed_indices = np.nonzero(~is_duplicate & tdc_failed)[0]
+
     n_times_removed = 0
+    for i in failed_indices:
+        # Remove times from this DIAG_FEE packet until next. We are skipping the
+        # first packet of a duplicate pair, so determining the window based on the
+        # current packet met and next packet met covers the time window between
+        # non-duplicate DIAG_FEE packets.
+        df_time = diagfee_met[i]
+        next_df_time = diagfee_met[i + 1] if i < len(diagfee_met) - 1 else np.inf
 
-    for i in range(len(df_met)):
-        # Skip duplicate DIAG_FEE packets (within 10 seconds of next)
-        if i < len(df_met) - 1 and df_met[i] + 10 > df_met[i + 1]:
-            continue
+        in_window = (goodtimes_met >= df_time) & (goodtimes_met < next_df_time)
+        mets_to_cull = goodtimes_met[in_window]
 
-        # Check TDC calibration status (bit 1: 1=good, 0=bad)
-        any_tdc_failed = False
-
-        if check_tdc1 and (diagfee["tdc1_cal_ctrl_stat"].values[i] & 2) == 0:
-            any_tdc_failed = True
-        if check_tdc2 and (diagfee["tdc2_cal_ctrl_stat"].values[i] & 2) == 0:
-            any_tdc_failed = True
-        if check_tdc3 and (diagfee["tdc3_cal_ctrl_stat"].values[i] & 2) == 0:
-            any_tdc_failed = True
-
-        if any_tdc_failed:
-            # Remove times from this DIAG_FEE until next
-            df_time = df_met[i]
-            next_df_time = df_met[i + 1] if i < len(df_met) - 1 else np.inf
-
-            in_window = (met_values >= df_time) & (met_values < next_df_time)
-            mets_to_cull = met_values[in_window]
-
-            if len(mets_to_cull) > 0:
-                goodtimes_ds.goodtimes.mark_bad_times(met=mets_to_cull, cull=cull_code)
-                n_times_removed += len(mets_to_cull)
+        if len(mets_to_cull) > 0:
+            goodtimes_ds.goodtimes.mark_bad_times(met=mets_to_cull, cull=cull_code)
+            n_times_removed += len(mets_to_cull)
 
     logger.info(f"Dropped {n_times_removed} time(s) due to bad TDC calibration")
 

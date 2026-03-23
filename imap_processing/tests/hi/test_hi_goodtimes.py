@@ -1539,18 +1539,6 @@ class TestMarkBadTdcCal:
         # All times should remain good (no culling due to insufficient packets)
         assert np.all(goodtimes_for_tdc["cull_flags"].values == CullCode.GOOD)
 
-    def test_mark_bad_tdc_cal_selective_tdc_checking(
-        self, goodtimes_for_tdc, diagfee_tdc1_fails
-    ):
-        """Test that TDC checking can be selectively disabled."""
-        # Disable TDC1 checking - should not cull even though TDC1 fails
-        mark_bad_tdc_cal(
-            goodtimes_for_tdc, diagfee_tdc1_fails, check_tdc1=False, check_tdc2=True
-        )
-
-        # All times should remain good since TDC1 checking is disabled
-        assert np.all(goodtimes_for_tdc["cull_flags"].values == CullCode.GOOD)
-
     def test_mark_bad_tdc_cal_tdc2_fails(self, goodtimes_for_tdc):
         """Test that times are marked when TDC2 fails."""
         diagfee_tdc2_fails = xr.Dataset(
