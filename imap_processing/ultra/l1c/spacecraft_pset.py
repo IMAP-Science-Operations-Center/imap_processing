@@ -139,16 +139,17 @@ def calculate_spacecraft_pset(
             reject_scattering,
         )
     )
-    counts, latitude, longitude, n_pix = get_spacecraft_histogram(
+    counts, latitude, longitude, counts_n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
         species_dataset["energy_spacecraft"].values,
         intervals,
         nside=UltraConstants.L1C_COUNTS_NSIDE,
     )
-    counts_healpix = np.arange(n_pix)
+    counts_healpix = np.arange(counts_n_pix)
     # Determine nside for non "counts" variables from the lookup table
-    nside = hp.npix2nside(for_indices_by_spin_phase.sizes["pixel"])
-    healpix = hp.nside2npix(nside)
+    n_pix = for_indices_by_spin_phase.sizes["pixel"]
+    nside = hp.npix2nside(n_pix)
+    healpix = np.arange(n_pix)
 
     # Get the start and stop times of the pointing period
     repoint_id = species_dataset.attrs.get("Repointing", None)

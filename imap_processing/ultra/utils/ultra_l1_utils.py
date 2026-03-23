@@ -108,6 +108,7 @@ def create_dataset(  # noqa: PLR0912
             "spin_number",
             "energy_bin_geometric_mean",
             "pixel_index",
+            "counts_pixel_index",
             "spin_phase_step",
         ]:
             # update attrs

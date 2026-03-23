@@ -157,18 +157,19 @@ def calculate_helio_pset(
         )
     )
 
-    counts, latitude, longitude, n_pix = get_spacecraft_histogram(
+    counts, latitude, longitude, counts_n_pix = get_spacecraft_histogram(
         vhat_dps_helio,
         species_dataset["energy_heliosphere"].values,
         intervals,
         nside=UltraConstants.L1C_COUNTS_NSIDE,
     )
+    n_pix = hp.nside2npix(nside)
     helio_pset_quality_flags = np.full(
         n_pix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
     )
-    counts_healpix = np.arange(n_pix)
+    counts_healpix = np.arange(counts_n_pix)
     # Determine nside for non "counts" variables from the lookup table
-    healpix = hp.nside2npix(nside)
+    healpix = np.arange(n_pix)
 
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_time, deadtime_ratios = get_spacecraft_exposure_times(
