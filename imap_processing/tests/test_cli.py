@@ -18,6 +18,7 @@ from imap_data_access.processing_input import (
     ProcessingInputCollection,
     ScienceInput,
     SPICEInput,
+    SpinInput,
 )
 
 from imap_processing.cli import (
@@ -627,15 +628,18 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
 
 @mock.patch("imap_processing.cli.idex_l1b")
 def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
-    """Test coverage for cli.Idex class with l2b data level"""
+    """Test coverage for cli.Idex class with l1b data level"""
     mocks = mock_instrument_dependencies
     new_ds = xr.Dataset(data_vars={"epoch": [1]})
     old_ds = xr.Dataset(data_vars={"epoch": [0]})
     mocks["mock_load_cdf"].side_effect = [old_ds, new_ds]
     input_collection = ProcessingInputCollection(
-        ScienceInput("imap_idex_l1b_sci-1week_20251017_v001.cdf"),
-        ScienceInput("imap_idex_l1b_sci-1week_20251012_v001.cdf"),
+        ScienceInput(
+            "imap_idex_l1a_sci-1week_20251017_v001.cdf",
+            "imap_idex_l1a_sci-1week_20251012_v001.cdf",
+        ),
         SPICEInput("naif0012.tls", "imap_sclk_0000.tsc"),
+        SpinInput("imap_2025_306_2025_307_01.spin"),
     )
     mocks["mock_pre_processing"].return_value = input_collection
 
@@ -648,7 +652,7 @@ def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
     assert mock_idex_l1b.call_count == 1
     # Assert that the dataset with the newer epoch value was passed to idex_l1b for
     # processing
-    assert mock_idex_l1b.call_args[0][0].epoch == new_ds.epoch
+    xr.testing.assert_equal(mock_idex_l1b.call_args[0][0], new_ds)
 
 
 @mock.patch("imap_processing.cli.idex_l2b")
