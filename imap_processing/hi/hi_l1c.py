@@ -703,7 +703,7 @@ def good_time_and_phase_mask(
     met_indices = np.clip(met_indices, 0, len(gt_mets) - 1)
 
     # Convert nominal_bins to int32 for indexing
-    spin_bins = nominal_bins.astype(np.int32)
+    spin_bins: npt.NDArray[np.int32] = nominal_bins.astype(np.int32)
 
     # Look up cull_flags for each event/tick
     # Events are good if cull_flags == 0
