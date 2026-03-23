@@ -142,18 +142,16 @@ class TestUltraPointingSet:
     def test_downsample_counts(self):
         ultra_pset = self.l1c_pset_products[0]
 
-        # First check that counts are at a finer resolution than the spatial grid
-        # Verify counts start at a finer resolution than the spatial grid
+        # First check that counts are at a finer resolution than exposure factor
         counts_nside_before = hp.npix2nside(ultra_pset["counts"].shape[-1])
         assert counts_nside_before != ultra_pset["exposure_factor"].shape[-1]
         pset = ena_maps.UltraPointingSet(ultra_pset)
 
-        # Verify counts are now at the same resolution as the spatial grid
+        # Verify counts are now at the same resolution as pset
         counts_nside_after = hp.npix2nside(pset.data["counts"].shape[-1])
         assert counts_nside_after == pset.nside
 
-        # Verify counts are conserved
-        # (sum before == sum after, since power=-2 keeps sum invariant)
+        # Verify counts are the same after downsampling.
         np.testing.assert_allclose(
             pset.data["counts"].values.sum(), ultra_pset["counts"].values.sum()
         )
