@@ -625,6 +625,32 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
+@mock.patch("imap_processing.cli.idex_l1b")
+def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
+    """Test coverage for cli.Idex class with l2b data level"""
+    mocks = mock_instrument_dependencies
+    new_ds = xr.Dataset(data_vars={"epoch": [1]})
+    old_ds = xr.Dataset(data_vars={"epoch": [0]})
+    mocks["mock_load_cdf"].side_effect = [old_ds, new_ds]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_idex_l1b_sci-1week_20251017_v001.cdf"),
+        ScienceInput("imap_idex_l1b_sci-1week_20251012_v001.cdf"),
+        SPICEInput("naif0012.tls", "imap_sclk_0000.tsc"),
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    dependency_str = input_collection.serialize()
+    instrument = Idex(
+        "l1b", "sci-1week", dependency_str, "20251017", "20251017", "v001", False
+    )
+
+    instrument.process()
+    assert mock_idex_l1b.call_count == 1
+    # Assert that the dataset with the newer epoch value was passed to idex_l1b for
+    # processing
+    assert mock_idex_l1b.call_args[0][0].epoch == new_ds.epoch
+
+
 @mock.patch("imap_processing.cli.idex_l2b")
 def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     """Test coverage for cli.Idex class with l2b data level"""

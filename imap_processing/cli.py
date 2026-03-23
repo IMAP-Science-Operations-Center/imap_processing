@@ -1037,9 +1037,13 @@ class Idex(ProcessInstrument):
                 )
             # get CDF file
             science_files = dependencies.get_file_paths(source="idex")
+            # Load all the science files. There should only be one, but in the case of
+            # multiple files, we want to make sure to load them all and sort them by
+            # time and pass in the latest one.
+            dependencies = [load_cdf(f) for f in science_files]
+            latest_file = sorted(dependencies, key=lambda ds: ds["epoch"].data[0])[-1]
             # process data
-            dependency = load_cdf(science_files[0])
-            datasets = [idex_l1b(dependency)]
+            datasets = [idex_l1b(latest_file)]
         elif self.data_level == "l2a":
             if len(dependency_list) != 3:
                 raise ValueError(
