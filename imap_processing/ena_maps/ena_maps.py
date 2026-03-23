@@ -558,6 +558,8 @@ class UltraPointingSet(HealpixPointingSet):
             np.stack((azimuth_pixel_center, elevation_pixel_center), axis=-1),
             dims=[CoordNames.GENERIC_PIXEL.value, CoordNames.AZ_EL_VECTOR.value],
         )
+        # downsample counts variable to match the nside of the pointing set
+        self.downsample_counts()
 
     @property
     def num_points(self) -> int:
@@ -599,6 +601,69 @@ class UltraPointingSet(HealpixPointingSet):
             f"{self.spice_reference_frame}, epoch={self.epoch}, "
             f"num_points={self.num_points})"
         )
+
+    def downsample_counts(self) -> None:
+        """
+        Downsample the counts variable to match the pset nside.
+
+        Counts at l1c are sampled at a finer resolution to help maintain the
+        pointing accuracy for each event. Since count maps are a binned integral
+        quantity, they necessarily require a non-spun approach per Pointing, unlike
+        exposure time and sensitivities. We need to downsample the counts from the
+        nside of the input pset counts variable (e.g. 128) to the nside of the pset.
+        """
+        pset_data = self.data
+        counts_n_pix = pset_data.sizes["counts_pixel_index"]
+        if counts_n_pix != hp.nside2npix(self.nside):
+            # Raise an error if the nside the counts were sampled at is lower than the
+            # nside of the output map. We never want counts to be upsampled.
+            if counts_n_pix < hp.nside2npix(self.nside):
+                raise ValueError(
+                    f"Counts in the input PSET are sampled at nside "
+                    f"{hp.npix2nside(counts_n_pix)}, and the pset is {self.nside}. "
+                    f"This would require upsampling the counts, which we do not want."
+                )
+            counts_nside = hp.npix2nside(counts_n_pix)
+            pset_n_pix = hp.nside2npix(self.nside)
+            n_energy_bins = pset_data.sizes["energy_bin_geometric_mean"]
+            downsampled_counts = np.zeros((n_energy_bins, pset_n_pix))
+            order_diff = int(np.log2(counts_nside // self.nside))
+            for i in range(n_energy_bins):
+                counts = pset_data["counts"].values[0, i]
+                # Convert to nested ordering if necessary. In nested ordering, the
+                # pixels that need to be binned together to go from the counts nside to
+                # the pset nside are contiguous in the array.
+                counts_n = (
+                    counts
+                    if self.nested
+                    else counts[hp.ring2nest(counts_nside, np.arange(counts_n_pix))]
+                )
+                # reshape the counts by the amount pixels to bin together which is
+                # 4**order_diff because each step in order multiplies the pixel count
+                # by 4
+                binned_counts_n = counts_n.reshape((-1, 4**order_diff)).sum(axis=1)
+                # convert back to ring ordering if necessary and store in the
+                # downsampled counts array
+                downsampled_counts[i] = (
+                    binned_counts_n
+                    if self.nested
+                    else binned_counts_n[
+                        hp.nest2ring(self.nside, np.arange(pset_n_pix))
+                    ]
+                )
+
+            self.data["counts"] = xr.DataArray(
+                downsampled_counts[np.newaxis, :, :],
+                dims=(
+                    *self.data["counts"].dims[:-1],
+                    CoordNames.HEALPIX_INDEX.value,
+                ),
+            )
+        else:
+            # Update the counts variable with the correct dims
+            self.data["counts"] = self.data["counts"].rename(
+                {CoordNames.COUNTS_HEALPIX_INDEX.value: CoordNames.HEALPIX_INDEX.value}
+            )
 
 
 class LoHiBasePointingSet(PointingSet):
