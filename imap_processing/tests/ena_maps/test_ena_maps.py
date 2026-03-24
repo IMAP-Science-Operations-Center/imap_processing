@@ -76,7 +76,9 @@ class TestUltraPointingSet:
                 ultra_pset.num_points,
                 hp.nside2npix(self.nside),
             )
-
+            # check the epoch delta
+            # This was mocked to 10 in the fixture data
+            assert ultra_pset.epoch_delta == 10
             # Check the repr exists
             assert "UltraPointingSet" in repr(ultra_pset)
 

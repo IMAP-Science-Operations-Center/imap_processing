@@ -136,7 +136,7 @@ def match_coords_to_indices(
     if isinstance(input_object, PointingSet) and isinstance(output_object, PointingSet):
         raise ValueError("Cannot match indices between two PointingSet objects.")
 
-    # If event_et is not specified, use the first epoch midpoint of the PointingSet, if
+    # If event_et is not specified, use the midpoint of the PointingSet, if
     # present.
     # The epoch will be in units of terrestrial time (TT) J2000 nanoseconds,
     # which must be converted to ephemeris time (ET) for SPICE.
