@@ -1208,7 +1208,7 @@ def mark_bad_tdc_cal(
     tdc_failed_indices = np.nonzero(~is_duplicate & tdc_failed)[0]
 
     n_times_removed = 0
-    for i in failed_indices:
+    for i in tdc_failed_indices:
         # Remove times from this DIAG_FEE packet until next. We are skipping the
         # first packet of a duplicate pair, so determining the window based on the
         # current packet met and next packet met covers the time window between
