@@ -1205,7 +1205,7 @@ def mark_bad_tdc_cal(
     )
 
     # Only loop over non-duplicate packets with TDC failures
-    failed_indices = np.nonzero(~is_duplicate & tdc_failed)[0]
+    tdc_failed_indices = np.nonzero(~is_duplicate & tdc_failed)[0]
 
     n_times_removed = 0
     for i in failed_indices:
