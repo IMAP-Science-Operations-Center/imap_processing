@@ -167,6 +167,7 @@ def mock_l1c_pset_product_rectangular(
                 ],
                 sensitivity,
             ),
+            "epoch_delta": ([CoordNames.TIME.value], np.array([10], dtype=np.float64)),
         },
         coords={
             CoordNames.TIME.value: [

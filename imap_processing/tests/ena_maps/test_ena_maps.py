@@ -20,6 +20,7 @@ from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils import spatial_utils
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -76,9 +77,10 @@ class TestUltraPointingSet:
                 ultra_pset.num_points,
                 hp.nside2npix(self.nside),
             )
-            # check the epoch delta
-            # This was mocked to 10 in the fixture data
-            assert ultra_pset.epoch_delta == 10
+            # check that the midpoint_j2000_et property is equal to the expected value
+            assert ultra_pset.midpoint_j2000_et == ttj2000ns_to_et(
+                ultra_pset.epoch + self.l1c_pset_products[0].epoch_delta[0] / 2
+            )
             # Check the repr exists
             assert "UltraPointingSet" in repr(ultra_pset)
 
@@ -150,12 +152,15 @@ class TestHiPointingSet:
     def test_init(self, hi_pset_cdf_path):
         """Test coverage for __init__ method."""
         pset_ds = load_cdf(hi_pset_cdf_path)
+        delta = 10
+        pset_ds["epoch_delta"] = ("epoch", np.array([delta]))  # Add dummy epoch delta
         hi_pset = ena_maps.HiPointingSet(pset_ds)
         assert isinstance(hi_pset, ena_maps.HiPointingSet)
         assert hi_pset.spice_reference_frame == geometry.SpiceFrame.IMAP_HAE
         assert hi_pset.num_points == 3600
         np.testing.assert_array_equal(hi_pset.az_el_points.shape, (3600, 2))
-
+        # check that the midpoint_j2000_et property is equal to the expected value
+        assert hi_pset.midpoint_j2000_et == ttj2000ns_to_et(hi_pset.epoch + delta / 2)
         for var_name in ["exposure_factor", "bg_rate", "bg_rate_sys_err"]:
             assert var_name in hi_pset.data
 
@@ -166,7 +171,9 @@ class TestHiPointingSet:
 
     def test_plays_nice_with_rectangular_sky_map(self, hi_pset_cdf_path):
         """Test that HiPointingSet works with RectangularSkyMap"""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
+        hi_ds = load_cdf(hi_pset_cdf_path)
+        hi_ds["epoch_delta"] = ("epoch", np.array([0]))  # Add dummy epoch delta
+        hi_pset = ena_maps.HiPointingSet(hi_ds)
         rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=2, spice_frame=geometry.SpiceFrame.IMAP_HAE
         )
@@ -215,6 +222,16 @@ def lo_pset_ds():
         dims=["epoch"],
         name="epoch",
     )
+    dataset.coords["pointing_start_met"] = xr.DataArray(
+        [1],
+        dims=["epoch"],
+        name="epoch",
+    )
+    dataset.coords["pointing_end_met"] = xr.DataArray(
+        [10],
+        dims=["epoch"],
+        name="epoch",
+    )
     dataset.coords["spin_angle"] = xr.DataArray(
         [i for i in range(3600)],
         dims=["spin_angle"],
@@ -256,6 +273,14 @@ class TestLoPointingSet:
         assert lo_pset.num_points == 144000
         np.testing.assert_array_equal(lo_pset.az_el_points.shape, (144000, 2))
 
+        # check that the midpoint_j2000_et property is equal to the expected value
+        assert lo_pset.midpoint_j2000_et == ttj2000ns_to_et(
+            lo_pset.epoch
+            + met_to_ttj2000ns(
+                lo_pset_ds.pointing_end_met - lo_pset_ds.pointing_start_met
+            )
+            / 2
+        )
         for var_name in ["exposure_time", "h_counts"]:
             assert var_name in lo_pset.data
 
@@ -297,6 +322,7 @@ class TestLoHiBasePointingSet:
             HiPointingSet with multi-dimensional az_el_points.
         """
         pset_ds = load_cdf(hi_pset_cdf_path)
+        pset_ds["epoch_delta"] = ("epoch", np.array([0]))  # Add dummy epoch delta
         hi_pset = ena_maps.HiPointingSet(pset_ds)
         hi_pset.data["hae_longitude"] = xr.DataArray(
             np.random.uniform(0, 360, shape),
