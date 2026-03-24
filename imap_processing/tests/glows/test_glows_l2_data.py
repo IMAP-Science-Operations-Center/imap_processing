@@ -7,6 +7,7 @@ import xarray as xr
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture
@@ -104,6 +105,35 @@ def l1b_dataset():
         coords={"epoch": epoch, "bins": bins},
     )
     return ds
+
+
+@pytest.mark.external_kernel
+def test_ecliptic_coords_computation(furnish_kernels, l1b_dataset):
+    """Test method that computes ecliptic coordinates."""
+
+    # Update the epoch and imap_start time to real values
+    # for 2026-01-01 and 2026-01-02 in seconds since J2000
+    # with leap seconds included
+    l1b_dataset = l1b_dataset.assign_coords(
+        epoch=xr.DataArray(
+            [met_to_ttj2000ns(504975603.125), met_to_ttj2000ns(505975604.125)],
+            dims=["epoch"],
+        )
+    )
+    l1b_dataset["imap_start_time"] = (["epoch"], [504975603.125, 505975604.125])
+    kernels = [
+        "naif0012.tls",
+        "de440s.bsp",
+        "imap_sclk_0000.tsc",
+        "imap_130.tf",
+        "imap_science_120.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        lc = DailyLightcurve(l1b_dataset)
+        assert np.all(lc.ecliptic_lon == 0)
+        assert np.all(lc.ecliptic_lat == 0)
 
 
 def test_photon_flux(l1b_dataset, mock_ecliptic_bin_centers):

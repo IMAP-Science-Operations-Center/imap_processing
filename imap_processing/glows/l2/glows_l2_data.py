@@ -220,7 +220,7 @@ class DailyLightcurve:
         ) % 360.0
 
         # Create array of azimuth, elevation coordinates in the DPS frame (n_bins, 2)
-        az_el = np.column_stack((azimuth, np.full_like(azimuth, elevation)))
+        az_el = np.stack((azimuth, np.full_like(azimuth, elevation)), axis=-1)
 
         # Transform coordinates to ECLIPJ2000 frame using SPICE transformations.
         ecliptic_coords = frame_transform_az_el(
