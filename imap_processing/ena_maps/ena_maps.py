@@ -136,14 +136,19 @@ def match_coords_to_indices(
     if isinstance(input_object, PointingSet) and isinstance(output_object, PointingSet):
         raise ValueError("Cannot match indices between two PointingSet objects.")
 
-    # If event_et is not specified, use epoch of the PointingSet, if present.
+    # If event_et is not specified, use the first epoch midpoint of the PointingSet, if
+    # present.
     # The epoch will be in units of terrestrial time (TT) J2000 nanoseconds,
     # which must be converted to ephemeris time (ET) for SPICE.
     if event_et is None:
         if isinstance(input_object, PointingSet):
-            event_et = ttj2000ns_to_et(input_object.epoch)
+            event_et = ttj2000ns_to_et(
+                input_object.epoch + input_object.epoch_delta / 2
+            )
         elif isinstance(output_object, PointingSet):
-            event_et = ttj2000ns_to_et(output_object.epoch)
+            event_et = ttj2000ns_to_et(
+                output_object.epoch + output_object.epoch_delta / 2
+            )
         else:
             raise ValueError(
                 "Event time must be specified if both objects are SkyMaps."
@@ -300,6 +305,18 @@ class PointingSet(ABC):
             The epoch value [J2000 TT ns] of the pointing set.
         """
         return self.data["epoch"].values[0]
+
+    @property
+    def epoch_delta(self) -> int:
+        """
+        The singular epoch delta value from the xarray.Dataset.
+
+        Returns
+        -------
+        epoch_delta: int
+            The epoch delta value [J2000 TT ns] of the pointing set.
+        """
+        return self.data["epoch_delta"].values[0] if "epoch_delta" in self.data else 0
 
     @property
     def unwrapped_dims_dict(self) -> dict[str, tuple[str, ...]]:
