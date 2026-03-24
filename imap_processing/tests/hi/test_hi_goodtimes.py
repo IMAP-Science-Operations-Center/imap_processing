@@ -520,7 +520,7 @@ class TestToTxt:
         parts = lines[0].strip().split()
         assert len(parts) == 17  # 6 base fields + 10 ESA step flags + cull_value
         assert parts[0] == "00042"  # pointing
-        assert parts[5] == "45sensor"  # sensor
+        assert parts[5] == "45"  # sensor
         assert parts[16] == "0"  # cull_value (all good)
 
     def test_to_txt_values(self, goodtimes_instance, tmp_path):
@@ -548,7 +548,7 @@ class TestToTxt:
         assert int(met_end) == int(goodtimes_instance.coords["met"].values[-1])
         assert int(bin_low) == 0
         assert int(bin_high) == 89
-        assert sensor == "45sensor"
+        assert sensor == "45"
         assert cull_value == "0"
 
         # Check ESA step flags - should have 1s for all unique ESA steps

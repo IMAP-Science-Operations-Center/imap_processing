@@ -363,7 +363,7 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
 
     # Create attributes
     sensor_number = parse_sensor_number(l1b_de.attrs["Logical_source"])
-    repointing = l1b_de.attrs.get("Repointing", "unknown_repointing")
+    repointing = l1b_de.attrs.get("Repointing", "repoint-9999")
     attrs = {
         "Sensor": f"{sensor_number}sensor",
         "Repointing": repointing,
@@ -749,7 +749,7 @@ class GoodtimesAccessor:
         sensor = (
             parse_sensor_number(self._obj.attrs["Logical_source"])
             if "Logical_source" in self._obj.attrs
-            else self._obj.attrs["Sensor"]
+            else self._obj.attrs["Sensor"].replace("sensor", "")
         )
 
         intervals = self.get_good_intervals()
