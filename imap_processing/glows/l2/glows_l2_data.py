@@ -67,10 +67,8 @@ class DailyLightcurve:
             L1B data filtered by good times, good angles, and good bins for one
             observation day.
         position_angle : float
-            The offset angle of the GLOWS instrument from the spin plane - this is used
-            in spin angle calculations. This number may change with different SPICE
-            kernels, but does not vary by time inside the code, so we can just use a
-            fixed value.
+            The offset angle of the GLOWS instrument from the north spin point - this
+            is used in spin angle calculations.
         """
         # number_of_bins_per_histogram is the count of valid (non-FILLVAL) bins.
         # Histogram arrays from L1B are always GlowsConstants.STANDARD_BIN_COUNT
@@ -139,7 +137,7 @@ class DailyLightcurve:
 
             # Roll all bin arrays so bin 0 corresponds to the northernmost
             # point (minimum ψPA).
-            roll = -np.argsort(self.spin_angle)[0]
+            roll = -np.argmin(self.spin_angle)
             self.spin_angle = np.roll(self.spin_angle, roll)
             self.raw_histograms = np.roll(self.raw_histograms, roll)
             self.photon_flux = np.roll(self.photon_flux, roll)
@@ -448,6 +446,11 @@ class HistogramL2:
         # psi_G_eff = 360 - psi_GLOWS
         # where psi_GLOWS is the azimuth of the GLOWS boresight in the
         # IMAP spacecraft frame, measured from the spacecraft x-axis.
-        # delta_psi_G_eff is assumed to be 0 per instrument team decision.
+        # This angle does not change with time, as it is in the spinning IMAP frame.
+        # It basically defines the angle between x=0 in the IMAP frame and x=0 in the
+        # GLOWS instrument frame, and is defined by the physical mounting location of
+        # the instrument.
+        # delta_psi_G_eff is assumed to be 0 per instrument team decision (aka this
+        # doesn't move from the SPICE determined mounting angle.
         glows_mounting_azimuth, _ = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
         return (360.0 - glows_mounting_azimuth) % 360.0
