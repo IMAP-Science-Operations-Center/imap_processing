@@ -38,10 +38,16 @@ INTERVAL_DTYPE: np.dtype = np.dtype(
 
 
 class CullCode(IntEnum):
-    """Cull reason codes for good/bad time classification."""
+    """Cull reason codes for good/bad time classification (bit flags)."""
 
     GOOD = 0
-    LOOSE = 1
+    INCOMPLETE_SPIN = 1 << 0  # 1
+    DRF = 1 << 1  # 2
+    BAD_TDC_CAL = 1 << 2  # 4
+    OVERFLOW = 1 << 3  # 8
+    STAT_FILTER_0 = 1 << 4  # 16
+    STAT_FILTER_1 = 1 << 5  # 32
+    STAT_FILTER_2 = 1 << 6  # 64
 
 
 def hi_goodtimes(
@@ -145,7 +151,7 @@ def hi_goodtimes(
             f"expected 7 files, got {len(l1b_de_datasets)}. "
             "Marking all times as bad."
         )
-        goodtimes_ds["cull_flags"][:, :] = CullCode.LOOSE
+        goodtimes_ds["cull_flags"][:, :] = CullCode.INCOMPLETE_SPIN
 
     # Log final statistics
     stats = goodtimes_ds.goodtimes.get_cull_statistics()
@@ -533,14 +539,16 @@ class GoodtimesAccessor:
             # Subtract 1 to get the largest value <= met_val
             met_indices = np.searchsorted(met_values, met_array, side="right") - 1
 
-        # Set cull_flags for all indices
+        # Set cull_flags for all indices using bitwise OR to combine flags
         n_times = len(met_indices)
         n_bins = len(bins_array)
         logger.debug(
             f"Flagging {n_times} MET time(s) x {n_bins} spin bin(s) with "
             f"cull code {cull}"
         )
-        self._obj["cull_flags"].values[np.ix_(met_indices, bins_array)] = cull
+        self._obj["cull_flags"].values[np.ix_(met_indices, bins_array)] |= np.uint8(
+            cull
+        )
 
     def get_good_intervals(self) -> np.ndarray:
         """
@@ -862,7 +870,7 @@ class GoodtimesAccessor:
 def mark_incomplete_spin_sets(
     goodtimes_ds: xr.Dataset,
     l1b_de: xr.Dataset,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.INCOMPLETE_SPIN,
 ) -> None:
     """
     Filter out incomplete 8-spin histogram periods.
@@ -977,7 +985,7 @@ def mark_incomplete_spin_sets(
 def mark_drf_times(
     goodtimes_ds: xr.Dataset,
     hk: xr.Dataset,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.DRF,
 ) -> None:
     """
     Remove times during spacecraft drift restabilization.
@@ -1050,7 +1058,7 @@ def mark_overflow_packets(
     goodtimes_ds: xr.Dataset,
     l1b_de: xr.Dataset,
     config_df: pd.DataFrame,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.OVERFLOW,
 ) -> None:
     """
     Remove times when DE packets overflow with qualified events.
@@ -1176,7 +1184,7 @@ def mark_overflow_packets(
 def mark_bad_tdc_cal(
     goodtimes_ds: xr.Dataset,
     diagfee: xr.Dataset,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.BAD_TDC_CAL,
 ) -> None:
     """
     Remove times with failed TDC calibration (DIAG_FEE method).
@@ -1397,7 +1405,7 @@ def mark_statistical_filter_0(
     current_index: int,
     threshold_factor: float = HiConstants.STAT_FILTER_0_THRESHOLD_FACTOR,
     tof_ab_limit_ns: int = HiConstants.STAT_FILTER_0_TOF_AB_LIMIT_NS,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.STAT_FILTER_0,
     min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
 ) -> None:
     """
@@ -1832,7 +1840,7 @@ def mark_statistical_filter_1(
     consecutive_threshold_sigma: float = HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA,
     extreme_threshold_sigma: float = HiConstants.STAT_FILTER_1_EXTREME_SIGMA,
     min_consecutive_intervals: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.STAT_FILTER_1,
     min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
 ) -> None:
     """
@@ -2057,7 +2065,7 @@ def mark_statistical_filter_2(
     min_events: int = HiConstants.STAT_FILTER_2_MIN_EVENTS,
     max_time_delta: float = HiConstants.STAT_FILTER_2_MAX_TIME_DELTA,
     bin_padding: int = HiConstants.STAT_FILTER_2_BIN_PADDING,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.STAT_FILTER_2,
 ) -> None:
     """
     Apply Statistical Filter 2 to detect short-lived event pulses.
