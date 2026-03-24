@@ -4,6 +4,7 @@ from collections import namedtuple
 
 tof_conv = namedtuple("tof_conv", ["C0", "C1"])
 # TOF conversion coefficients from Lo's TOF Conversion_annotated.docx
+# TOF3_CONV was updated in March 2026 per email from Nathan
 # TODO: Ask Lo to put these in the algorithm document for better reference
 TOF0_CONV = tof_conv(C0=5.52524e-01, C1=1.68374e-01)
 TOF1_CONV = tof_conv(C0=-7.20181e-01, C1=1.65124e-01)
