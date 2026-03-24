@@ -579,7 +579,7 @@ class TestToTxt:
         parts = lines[0].strip().split()
         assert int(parts[3]) == 0  # bin_low
         assert int(parts[4]) == 20  # bin_high
-        assert parts[16] == "1"  # cull_value (LOOSE)
+        assert parts[16] == "1"  # cull_value (INCOMPLETE_SPIN)
 
         # Second interval: good bins 21-89
         parts = lines[1].strip().split()

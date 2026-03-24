@@ -756,7 +756,8 @@ class GoodtimesAccessor:
 
         with open(output_path, "w") as f:
             # Write header info
-            if file_id := self._obj.attrs.get("Logical_file_id", None) is not None:
+            file_id = self._obj.attrs.get("Logical_file_id")
+            if file_id is not None:
                 f.write(
                     f"# Goodtimes txt file generated for input CDF: {file_id}" + "\n"
                 )
