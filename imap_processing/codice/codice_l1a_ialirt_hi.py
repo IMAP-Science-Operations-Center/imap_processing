@@ -152,7 +152,7 @@ def l1a_ialirt_hi(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     # -> (epoch, n_spins, energy, spin_sector, inst_az) ->
     # finally (epoch * n_spins, energy,
     # spin_sector, inst_az)
-    decompressed_data = decompressed_data.transpose(0, 2, 1, 3, 4).reshape(
+    decompressed_data = decompressed_data.transpose(0, 2, 1, 4, 3).reshape(
         -1, chunk_size, *collapse_shape
     )
 
