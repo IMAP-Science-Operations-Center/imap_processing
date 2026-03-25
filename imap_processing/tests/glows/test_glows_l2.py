@@ -15,22 +15,9 @@ from imap_processing.glows.l2.glows_l2 import (
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
-from imap_processing.tests.glows.conftest import mock_update_spice_parameters
-
-
-@pytest.fixture
-def mock_ecliptic_bin_centers(monkeypatch):
-    """Keep DailyLightcurve unit tests independent from SPICE/time conversions."""
-
-    def _mock_compute_coords(l1b_data: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
-        n_bins = l1b_data["histogram"].shape[1]
-        return np.zeros(n_bins, dtype=float), np.zeros(n_bins, dtype=float)
-
-    monkeypatch.setattr(
-        DailyLightcurve,
-        "compute_ecliptic_coords_of_bin_centers",
-        staticmethod(_mock_compute_coords),
-    )
+from imap_processing.tests.glows.conftest import (
+    mock_update_spice_parameters,
+)
 
 
 @pytest.fixture
