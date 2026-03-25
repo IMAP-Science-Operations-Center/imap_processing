@@ -208,6 +208,12 @@ shfine:
   LABLAXIS: Packet Generation Time (Fine)
   UNITS: seconds
 
+messages:
+  <<: *string_base
+  CATDESC: Rendered IDEX event message text
+  FIELDNAM: Event message text
+  FORMAT: A160
+
 checksum:
   <<: *trigger_base
   CATDESC: CRC 16 Checksum

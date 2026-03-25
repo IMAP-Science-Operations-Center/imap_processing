@@ -14,6 +14,7 @@ Examples
     l1a_data.write_l1a_cdf()
 """
 
+import json
 import logging
 from enum import IntEnum
 from pathlib import Path
@@ -24,7 +25,9 @@ import space_packet_parser
 import xarray as xr
 from xarray import Dataset
 
+from imap_processing import imap_module_directory
 from imap_processing.idex.decode import rice_decode
+from imap_processing.idex.evt_msg_decode_utils import render_event_template
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.idex.idex_utils import get_idex_attrs
@@ -86,23 +89,19 @@ class PacketParser:
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
             self.data.append(self._create_science_dataset(science_packets))
-
         datasets_by_level = {"l1a": raw_datset_by_apid, "l1b": derived_datasets_by_apid}
         for level, dataset in datasets_by_level.items():
-            if IDEXAPID.IDEX_EVT in dataset:
-                logger.info(f"Processing IDEX {level} Event Message data")
+            # Only produce l1a products for event messages. L1a will be processed in a
+            # another job.
+            if IDEXAPID.IDEX_EVT in dataset and level == "l1a":
+                logger.info("Processing IDEX L1A Event Message data")
                 data = dataset[IDEXAPID.IDEX_EVT]
-                data.attrs = self.idex_attrs.get_global_attributes(
-                    f"imap_idex_{level}_evt"
-                )
-                data["epoch"] = calculate_idex_event_time(
-                    data["shcoarse"].data, data["shfine"].data
-                )
-                data["epoch"].attrs = epoch_attrs
-                self.data.append(data)
+                processed_data = self.process_idex_msg_data(data)
+                processed_data["epoch"].attrs = epoch_attrs
+                self.data.append(processed_data)
 
             if IDEXAPID.IDEX_CATLST in dataset:
-                logger.info(f"Processing IDEX {level} Catalog List Summary data.")
+                logger.info(f"Processing IDEX {level} CATLST data")
                 data = dataset[IDEXAPID.IDEX_CATLST]
                 data.attrs = self.idex_attrs.get_global_attributes(
                     f"imap_idex_{level}_catlst"
@@ -114,6 +113,108 @@ class PacketParser:
                 self.data.append(data)
 
         logger.info("IDEX L1A data processing completed.")
+
+    def process_idex_msg_data(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Process IDEX message data into a more usable format.
+
+        Parameters
+        ----------
+        data : xarray.Dataset
+            The raw message data to process.
+
+        Returns
+        -------
+        xarray.Dataset
+            The processed message data.
+        """
+        # Convert the time to epoch time in nanoseconds since J2000 in the TT timescale
+        epoch = calculate_idex_event_time(data["shcoarse"].data, data["shfine"].data)
+        # initialize dataset with time variables
+        l1a_msg_ds = xr.Dataset(
+            data_vars={
+                "epoch": xr.DataArray(epoch, name="epoch", dims=["epoch"]),
+                "shfine": xr.DataArray(
+                    data["shfine"].data, dims=["epoch"], attrs=data["shfine"].attrs
+                ),
+                "shcoarse": xr.DataArray(
+                    data["shcoarse"].data,
+                    dims=["epoch"],
+                    attrs=data["shcoarse"].attrs,
+                ),
+            },
+            attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg"),
+        )
+        # Load the event decoding dictionaries
+        with open(
+            f"{imap_module_directory}/idex/idex_evt_msg_parsing_dictionaries.json"
+        ) as f:
+            msg_dicts = json.load(f)
+
+        # restore integer keys since JSON stringifies them
+        msg_dicts = {
+            dict_name: {int(k): v for k, v in pairs.items()}
+            for dict_name, pairs in msg_dicts.items()
+        }
+        # Get the event message templates and log entry name dictionaries
+        # These are used to decode the raw event messages into human-readable formats
+        # during rendering.
+        event_templates = msg_dicts.get("eventMsgDictionary", {})
+        log_entry_names = msg_dicts.get("logEntryIdDictionary", {})
+
+        # Get the event id - this will tell us what event happened.
+        # The following parameter values will tell us additional details about the event
+        # For example the event may be a science state change and the parameters will
+        # tell us what state it changed to (e.g. on or off).
+        event_ids = data["elid_evtpkt"].data
+        # Stack the parameter bytes into a single array of shape (num_events, 4) for
+        # easier access during rendering.
+        params = np.stack(
+            [
+                data["el1par_evtpkt"].data,
+                data["el2par_evtpkt"].data,
+                data["el3par_evtpkt"].data,
+                data["el4par_evtpkt"].data,
+            ],
+            axis=-1,
+        )
+
+        # initialize an empty list for messages
+        messages = []
+        for idx in range(len(event_ids)):
+            # Look up the string format using the event_id.
+            event_id = event_ids[idx]
+            template = event_templates.get(event_id)
+            event_name = log_entry_names.get(event_id, f"EVENT_0x{event_id:02X}")
+            # Render the event message using the template if available.
+            if template:
+                try:
+                    message = render_event_template(
+                        template, params[idx].tolist(), msg_dicts
+                    )
+                except Exception as exc:
+                    message = (
+                        f"{event_name} [template_render_error={exc}] "
+                        f"params=({', '.join(f'0x{x:02X}' for x in params[idx])})"
+                    )
+            else:
+                # If no template exists for an event ID, fall back to a message
+                # that still preserves the event name and raw parameter bytes.
+                phex = ", ".join(f"0x{x:02X}" for x in params)
+                message = f"{event_name} ({phex})"
+
+            messages.append(message)
+
+        l1a_msg_ds["messages"] = xr.DataArray(
+            messages,
+            name="messages",
+            dims=["epoch"],
+            attrs=self.idex_attrs.get_variable_attributes(
+                "messages", check_schema=False
+            ),
+        )
+        l1a_msg_ds.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_msg")
+        return l1a_msg_ds
 
     def _create_science_dataset(self, science_decom_packet_list: list) -> xr.Dataset:
         """
