@@ -281,7 +281,7 @@ def mock_pipeline_settings():
 
 @pytest.fixture
 def mock_ecliptic_bin_centers(monkeypatch):
-    """Keep DailyLightcurve unit tests independent of SPICE/time conversions."""
+    """Mock ecliptic coordinates for bin centers."""
 
     def _mock_compute_coords(
         _data_start_time_et: float, spin_angle: np.ndarray
