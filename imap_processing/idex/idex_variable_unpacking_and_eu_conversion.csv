@@ -10,8 +10,8 @@
 9,detector_voltage,idx__txhdrhvpshkch01,4,4,12,V,0,1.4652,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
 10,sensor_voltage,idx__txhdrhvpshkch01,20,4,12,V,0,1.4652,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
 11,target_voltage,idx__txhdrhvpshkch23,4,4,12,V,0,1.4652,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
-12,reflectron_voltage,idx__txhdrhvpshkch23,20,4,12,V,0,1.4652,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
-13,rejection_voltage,idx__txhdrhvpshkch45,4,4,12,V,0,1.4652,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
+12,rejection_voltage,idx__txhdrhvpshkch23,20,4,12,V,0,1.4652,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
+13,reflectron_voltage,idx__txhdrhvpshkch45,4,4,12,V,0,1.4652,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
 14,current_hvps_sensor,idx__txhdrhvpshkch45,20,4,12,mA,0,0.000007326,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
 15,positive_current_hvps,idx__txhdrhvpshkch67,4,4,12,mA,0,0.000024339,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
 16,negative_current_hvps,idx__txhdrhvpshkch67,20,4,12,mA,0,0.000024339,0,0,0,0,0,0,UNSEGMENTED_POLY,IDEX_SCI
