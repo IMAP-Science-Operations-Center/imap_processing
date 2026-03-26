@@ -130,11 +130,8 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         },
     ]
     test_json_filename = "imap_ultra_l2_test-dependency-json_20250520_v999.json"
-    test_json_dir = tmp_path / "imap/dependency/ultra/l2/2025/05/"
-    test_json_dir.mkdir(parents=True, exist_ok=True)
-    test_json_dst = test_json_dir / test_json_filename
 
-    with open(test_json_dst, "w") as f:
+    with open(test_json_filename, "w") as f:
         f.write(json.dumps(test_json_content))
 
     test_args = [
@@ -142,7 +139,7 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         "--instrument",
         "mag",
         "--dependency",
-        str(test_json_dst),
+        str(test_json_filename),
         "--data-level",
         "l1a",
         "--start-date",

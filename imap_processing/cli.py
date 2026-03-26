@@ -27,7 +27,7 @@ import spiceypy
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 from cdflib.xarray.xarray_to_cdf import ISTPError
-from imap_data_access.io import IMAPDataAccessError, download
+from imap_data_access.io import IMAPDataAccessError
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
     ProcessingInputType,
@@ -267,8 +267,7 @@ def _parse_args() -> argparse.Namespace:
         logger.info(
             f"Interpreting dependency argument as a JSON file: {args.dependency}"
         )
-        dependency_filepath = download(args.dependency)
-        with open(dependency_filepath) as f:
+        with open(args.dependency) as f:
             args.dependency = f.read()
 
     return args
