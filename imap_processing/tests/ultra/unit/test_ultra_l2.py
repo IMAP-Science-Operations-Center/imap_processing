@@ -139,7 +139,6 @@ class TestUltraL2:
             pset["energy_bin_delta"] = pset["energy_bin_delta"].expand_dims(
                 {CoordNames.TIME.value: pset["epoch"].values}
             )
-
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
             hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
