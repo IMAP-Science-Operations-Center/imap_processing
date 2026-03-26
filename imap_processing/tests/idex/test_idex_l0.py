@@ -61,13 +61,12 @@ def test_catlst_event_num(decom_test_data_catlst: list[xr.Dataset]):
         assert len(ds["epoch"]) == 1
 
 
-def test_evt_event_num(decom_test_data_evt: list[xr.Dataset]):
+def test_msg_event_num(decom_test_data_msg: xr.Dataset):
     """Verify that a sample of the data is correct.
 
     Parameters
     ----------
-    decom_test_data_evt : list[xarray.Dataset]
-        The raw and derived (l1a and l1b) datasets to test with.
+    decom_test_data_msg : xarray.Dataset
+        Event message data.
     """
-    for ds in decom_test_data_evt:
-        assert len(ds["epoch"]) == 28
+    assert len(decom_test_data_msg["epoch"]) == 28

@@ -354,23 +354,23 @@ def test_catlst_dataset(decom_test_data_catlst: list[xr.Dataset]):
     assert filename_l1b.name == "imap_idex_l1b_catlst_20241206_v999.cdf"
 
 
-def test_evt_dataset(decom_test_data_evt: list[xr.Dataset]):
+def test_msg_dataset(decom_test_data_msg: xr.Dataset):
     """Verify that the dataset contains what we expect and can be written to a cdf.
 
     Parameters
     ----------
-    decom_test_data_evt : list[xarray.Dataset]
+    decom_test_data_msg : xarray.Dataset
         The raw l1a dataset to test with.
     """
-    assert len(decom_test_data_evt) == 1
-    ds = decom_test_data_evt[0]
-    assert "shcoarse" in ds
-    assert "shfine" in ds
+    assert "shcoarse" in decom_test_data_msg
+    assert "shfine" in decom_test_data_msg
     # Assert epoch is calculated using fine grained clock ticks
-    expected_epoch = met_to_ttj2000ns(ds["shcoarse"] + ds["shfine"] * 20e-6)
-    np.testing.assert_array_equal(ds.epoch, expected_epoch)
+    expected_epoch = met_to_ttj2000ns(
+        decom_test_data_msg["shcoarse"] + decom_test_data_msg["shfine"] * 20e-6
+    )
+    np.testing.assert_array_equal(decom_test_data_msg.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
-    filename_l1a = write_cdf(decom_test_data_evt[0])
+    filename_l1a = write_cdf(decom_test_data_msg)
     assert filename_l1a.name == "imap_idex_l1a_msg_20250108_v999.cdf"
 
     # Validate the messages with the IDEX team example data
@@ -379,4 +379,4 @@ def test_evt_dataset(decom_test_data_evt: list[xr.Dataset]):
     )
 
     messages = example_data.iloc[:, 1].tolist()
-    np.testing.assert_array_equal(ds["messages"].data, messages)
+    np.testing.assert_array_equal(decom_test_data_msg["messages"].data, messages)

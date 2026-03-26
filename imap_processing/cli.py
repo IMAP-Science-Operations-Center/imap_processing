@@ -1081,7 +1081,7 @@ class Idex(ProcessInstrument):
             sci_dependencies = [load_cdf(f) for f in sci_files]
             # sort science files by the first epoch value
             sci_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
-            hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
+            hk_files = dependencies.get_file_paths(source="idex", descriptor="msg")
             # Remove duplicate housekeeping files
             hk_dependencies = [load_cdf(dep) for dep in list(set(hk_files))]
             # sort housekeeping files by the first epoch value

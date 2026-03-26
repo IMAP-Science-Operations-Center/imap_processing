@@ -17,7 +17,7 @@ imap_idex_l1a_sci:
 
 imap_idex_l1a_msg:
    <<: *instrument_base
-   Data_type: L1A_msg>Level-1A Event Message Data
+   Data_type: L1A_MSG>Level-1A Event Message Data
    Logical_source: imap_idex_l1a_msg
    Logical_source_description: IMAP Mission IDEX Instrument Level-1A Event Message Data.
 
@@ -35,7 +35,7 @@ imap_idex_l1b_sci:
 
 imap_idex_l1b_msg:
    <<: *instrument_base
-   Data_type: L1B_msg>Level-1B Event Message Data
+   Data_type: L1B_MSG>Level-1B Event Message Data
    Logical_source: imap_idex_l1b_msg
    Logical_source_description: IMAP Mission IDEX Instrument Level-1B Event Message Data.
 

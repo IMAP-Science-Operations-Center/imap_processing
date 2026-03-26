@@ -91,12 +91,12 @@ class PacketParser:
             self.data.append(self._create_science_dataset(science_packets))
         datasets_by_level = {"l1a": raw_datset_by_apid, "l1b": derived_datasets_by_apid}
         for level, dataset in datasets_by_level.items():
-            # Only produce l1a products for event messages. L1a will be processed in a
+            # Only produce l1a products for event messages. L1b will be processed in a
             # another job.
             if IDEXAPID.IDEX_EVT in dataset and level == "l1a":
                 logger.info("Processing IDEX L1A Event Message data")
                 data = dataset[IDEXAPID.IDEX_EVT]
-                processed_data = self.process_idex_msg_data(data)
+                processed_data = self._create_evt_msg_data(data)
                 processed_data["epoch"].attrs = epoch_attrs
                 self.data.append(processed_data)
 
@@ -114,7 +114,7 @@ class PacketParser:
 
         logger.info("IDEX L1A data processing completed.")
 
-    def process_idex_msg_data(self, data: xr.Dataset) -> xr.Dataset:
+    def _create_evt_msg_data(self, data: xr.Dataset) -> xr.Dataset:
         """
         Process IDEX message data into a more usable format.
 
@@ -200,7 +200,7 @@ class PacketParser:
             else:
                 # If no template exists for an event ID, fall back to a message
                 # that still preserves the event name and raw parameter bytes.
-                phex = ", ".join(f"0x{x:02X}" for x in params)
+                phex = ", ".join(f"0x{x:02X}" for x in params[idx])
                 message = f"{event_name} ({phex})"
 
             messages.append(message)
