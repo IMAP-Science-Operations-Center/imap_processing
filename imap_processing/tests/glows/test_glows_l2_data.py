@@ -95,8 +95,7 @@ def l1b_dataset():
 def test_ecliptic_coords_computation(furnish_kernels):
     """Test method that computes ecliptic coordinates."""
 
-    # Start time is 2026-01-01 since J2000 which is covered by
-    # the spice kernels
+    # Use a met value within the SPICE kernel coverage (2026-01-01).
     data_start_time_et = sct_to_et(met_to_sclkticks(504975603.125))
     n_bins = 4
     spin_angle = np.linspace(0, 270, n_bins)

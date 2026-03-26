@@ -96,7 +96,6 @@ def test_generate_l2(
     mock_ancillary_exclusions,
     mock_pipeline_settings,
     mock_conversion_table_dict,
-    furnish_kernels,
     mock_ecliptic_bin_centers,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters

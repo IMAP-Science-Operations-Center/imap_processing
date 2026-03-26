@@ -183,10 +183,8 @@ class DailyLightcurve:
         """
         Compute the ecliptic coordinates of the histogram bin centers.
 
-        Histogram bin centers represent the center spin angle for each bin in the imap
-        frame, which corresponds to a specific pointing direction in space. This method
-        transforms the instrument pointing direction for each bin center from the IMAP
-        spacecraft frame to the ECLIPJ2000 frame.
+        This method transforms the instrument pointing direction for each bin
+        center from the IMAP Pointing frame (IMAP_DPS) to the ECLIPJ2000 frame.
 
         Parameters
         ----------
