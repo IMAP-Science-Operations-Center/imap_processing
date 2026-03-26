@@ -8,6 +8,8 @@
 
 This is a trivial change to force a PR.
 
+Here's another change.
+
 The Interstellar Mapping and Acceleration Probe (IMAP) is an exciting project aimed at studying the interstellar medium and investigating the acceleration mechanisms of particles within our galaxy. IMAP utilizes cutting-edge technology and advanced instrumentation to gather valuable data and expand our understanding of space.
 
 The IMAP project's Git repository serves as a centralized hub for collaboration among researchers, scientists, and developers involved in the project. It provides a platform for version control, code sharing, issue tracking, and documentation, fostering a collaborative environment for advancing the goals of the IMAP mission.
