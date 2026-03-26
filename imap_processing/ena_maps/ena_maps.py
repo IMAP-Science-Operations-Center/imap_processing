@@ -663,6 +663,10 @@ class UltraPointingSet(HealpixPointingSet):
                     CoordNames.HEALPIX_INDEX.value,
                 ),
             )
+            logger.info(
+                f"Counts variable with nside = {counts_nside} downsampled to "
+                f"nside {self.nside}."
+            )
         else:
             # Update the counts variable with the correct dims
             self.data["counts"] = self.data["counts"].rename(
