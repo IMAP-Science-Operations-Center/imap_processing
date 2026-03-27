@@ -194,7 +194,8 @@ def mock_l1c_pset_product_rectangular(
 # TODO: Add ability to mock with/without energy dim to exposure_factor
 # The Helio frame L1C will have the energy dimension, but the spacecraft frame will not.
 def mock_l1c_pset_product_healpix(
-    nside: int = DEFAULT_HEALPIX_NSIDE_L1C,
+    nside: int = 32,
+    counts_nside: int = 128,
     stripe_center_lat: int = 0,
     width_scale: float = 10.0,
     counts_scaling_params: tuple[int, float] = (100, 0.01),
@@ -265,19 +266,19 @@ def mock_l1c_pset_product_healpix(
     energy_bin_delta = np.diff(energy_intervals, axis=1).squeeze()
     num_energy_bins = len(energy_bin_midpoints)
     npix = hp.nside2npix(nside)
-    counts = np.zeros(npix)
-    exposure_time = np.zeros(npix)
-
+    counts_npix = hp.nside2npix(counts_nside)
+    # counts are binned at a higher resolution than the other variables. See L1c
+    # code for more details.
     # Get latitude for each healpix pixel
-    pix_indices = np.arange(npix)
-    lon_pix, lat_pix = hp.pix2ang(nside, pix_indices, lonlat=True)
-
-    counts = np.zeros(shape=(num_energy_bins, npix))
+    counts_pix_indices = np.arange(counts_npix)
+    counts_lon_pix, counts_lat_pix = hp.pix2ang(
+        counts_nside, counts_pix_indices, lonlat=True
+    )
 
     # Calculate probability based on distance from target latitude
-    lat_diff = np.abs(lat_pix - stripe_center_lat)
+    counts_lat_diff = np.abs(counts_lat_pix - stripe_center_lat)
     prob_scaling_factor = counts_scaling_params[1] * np.exp(
-        -(lat_diff**2) / (2 * width_scale**2)
+        -(counts_lat_diff**2) / (2 * width_scale**2)
     )
     # Generate counts using binomial distribution
     rng = np.random.default_rng(seed=42)
@@ -287,6 +288,12 @@ def mock_l1c_pset_product_healpix(
             for _ in range(num_energy_bins)
         ]
     )
+    # Get latitude for each healpix pixel
+    pix_indices = np.arange(npix)
+    lon_pix, lat_pix = hp.pix2ang(nside, pix_indices, lonlat=True)
+
+    # Calculate probability based on distance from target latitude
+    lat_diff = np.abs(lat_pix - stripe_center_lat)
 
     # Generate exposure times using gaussian distribution, but wider
     prob_scaling_factor_exptime = counts_scaling_params[1] * np.exp(
@@ -318,7 +325,7 @@ def mock_l1c_pset_product_healpix(
     counts = counts.astype(int)
     # add an epoch dimension
     counts = np.expand_dims(counts, axis=0)
-    ones_ds = np.ones_like(counts)[0]  # pointing independent
+    ones_ds = np.ones((num_energy_bins, npix))  # pointing independent
     sensitivity = ones_ds
     geometric_function = ones_ds
     efficiency = ones_ds
@@ -339,7 +346,7 @@ def mock_l1c_pset_product_healpix(
                 [
                     CoordNames.TIME.value,
                     CoordNames.ENERGY_ULTRA_L1C.value,
-                    CoordNames.HEALPIX_INDEX.value,
+                    CoordNames.COUNTS_HEALPIX_INDEX.value,
                 ],
                 counts,
             ),
@@ -349,7 +356,7 @@ def mock_l1c_pset_product_healpix(
                     CoordNames.ENERGY_ULTRA_L1C.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
-                np.full_like(counts, 0.05, dtype=float),
+                np.full((1, num_energy_bins, npix), 0.05, dtype=float),
             ),
             "exposure_factor": (
                 exposure_dims,  # special case: optionally energy dependent exposure

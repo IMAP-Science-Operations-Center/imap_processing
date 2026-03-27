@@ -46,7 +46,8 @@ class TestUltraL2:
     def _mock_single_pset(self, _setup_spice_kernels_list, furnish_kernels):
         with furnish_kernels(self.required_kernel_names):
             self.ultra_pset = mock_l1c_pset_product_healpix(
-                nside=32,
+                nside=16,
+                counts_nside=32,
                 stripe_center_lat=0,
                 timestr="2025-05-15T12:00:00",
                 energy_dependent_exposure=True,
@@ -66,6 +67,7 @@ class TestUltraL2:
             self.ultra_psets = [
                 mock_l1c_pset_product_healpix(
                     nside=16,
+                    counts_nside=32,
                     stripe_center_lat=mid_latitude,
                     width_scale=5,
                     counts_scaling_params=(50, 0.5),
@@ -139,7 +141,6 @@ class TestUltraL2:
             pset["energy_bin_delta"] = pset["energy_bin_delta"].expand_dims(
                 {CoordNames.TIME.value: pset["epoch"].values}
             )
-
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
             hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
@@ -741,8 +742,13 @@ class TestUltraL2:
     @pytest.mark.usefixtures("_mock_single_pset")
     def test_bin_pset_energy_bins_default(self):
         """Test binning with default bin sizes."""
-        # Avoid modifying the original pset
-        pset = self.ultra_pset.copy(deep=True)
+        pset = mock_l1c_pset_product_healpix(
+            nside=16,
+            counts_nside=16,
+            stripe_center_lat=0,
+            timestr="2025-05-15T12:00:00",
+            energy_dependent_exposure=True,
+        )
         # Set the values in the single input PSET
         # Create a mock array with known values to test binning
         # e.g., 0,0,0,0,1,1,1,1,2,2,2,2,...11,11
@@ -752,7 +758,9 @@ class TestUltraL2:
         mock_array = (
             np.ones_like(pset["exposure_factor"]) * mock_vals[np.newaxis, :, np.newaxis]
         )
-        pset["counts"].values = mock_array
+        pset["counts"].values = (
+            np.ones_like(pset["counts"]) * mock_vals[np.newaxis, :, np.newaxis]
+        )
         pset["exposure_factor"].values = mock_array
         pset["sensitivity"].values = mock_array[0]
         pset["geometric_function"].values = mock_array[0]

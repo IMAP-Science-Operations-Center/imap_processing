@@ -92,6 +92,8 @@ class UltraConstants:
         300.0,
         1e5,
     ]
+    # Counts at l1c are sampled at a finer resolution.
+    L1C_COUNTS_NSIDE = 128
 
     PSET_ENERGY_BIN_EDGES: ClassVar[list] = [
         3.0,

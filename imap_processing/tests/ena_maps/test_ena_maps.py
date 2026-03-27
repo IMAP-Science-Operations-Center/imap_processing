@@ -8,6 +8,7 @@ import warnings
 from copy import deepcopy
 from pathlib import Path
 from unittest import mock
+from unittest.mock import patch
 
 import astropy_healpix.healpy as hp
 import numpy as np
@@ -105,10 +106,14 @@ class TestUltraPointingSet:
 
         cdf_filepath = write_cdf(ultra_pset, istp=False)
 
-        ultra_pset_from_dataset = ena_maps.UltraPointingSet(ultra_pset)
-
-        ultra_pset_from_str = ena_maps.UltraPointingSet(cdf_filepath)
-        ultra_pset_from_path = ena_maps.UltraPointingSet(Path(cdf_filepath))
+        # Mock the downsample_counts method to avoid dimension bugs
+        # since this is a dummy cdf, the dimensions are not present.
+        with patch.object(
+            ena_maps.UltraPointingSet, "downsample_counts", lambda self: None
+        ):
+            ultra_pset_from_str = ena_maps.UltraPointingSet(cdf_filepath)
+            ultra_pset_from_path = ena_maps.UltraPointingSet(Path(cdf_filepath))
+            ultra_pset_from_dataset = ena_maps.UltraPointingSet(ultra_pset)
 
         np.testing.assert_allclose(
             ultra_pset_from_dataset.data["counts"].values,
@@ -122,7 +127,6 @@ class TestUltraPointingSet:
             rtol=1e-6,
         )
 
-    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     def test_different_spacing_raises_error(self):
         """Test that different spaced az/el from the L1C dataset raises ValueError"""
@@ -138,6 +142,23 @@ class TestUltraPointingSet:
                 ultra_pset_ds,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
             )
+
+    def test_downsample_counts(self):
+        ultra_pset = self.l1c_pset_products[0]
+
+        # First check that counts are at a finer resolution than exposure factor
+        counts_npix_before = ultra_pset["counts"].shape[-1]
+        assert counts_npix_before != ultra_pset["exposure_factor"].shape[-1]
+        pset = ena_maps.UltraPointingSet(ultra_pset)
+
+        # Verify counts are now at the same resolution as pset
+        counts_nside_after = hp.npix2nside(pset.data["counts"].shape[-1])
+        assert counts_nside_after == pset.nside
+
+        # Verify counts are the same after downsampling.
+        np.testing.assert_allclose(
+            pset.data["counts"].values.sum(), ultra_pset["counts"].values.sum()
+        )
 
 
 @pytest.fixture(scope="module")

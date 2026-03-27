@@ -12,12 +12,14 @@ from imap_processing.tests.ultra.mock_data import (
 @pytest.fixture(scope="module")
 def ultra_l1c_pset_datasets():
     """Make fake L1C Ultra PSET products on a HEALPix tiling for testing"""
-    l1c_nside = 32
+    l1c_nside = 16
+    counts_nside = 32
     return {
         "nside": l1c_nside,
         "products": [
             mock_l1c_pset_product_healpix(
                 nside=l1c_nside,
+                counts_nside=counts_nside,
                 stripe_center_lat=mid_latitude,
                 width_scale=5,
                 counts_scaling_params=(50, 0.5),
