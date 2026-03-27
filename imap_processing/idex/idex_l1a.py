@@ -160,7 +160,7 @@ class PacketParser:
         # These are used to decode the raw event messages into human-readable formats
         # during rendering.
         event_description_templates = msg_json_data.get("eventMsgDictionary", {})
-        log_entry_names = msg_dicts.get("logEntryIdDictionary", {})
+        log_entry_names = msg_json_data.get("logEntryIdDictionary", {})
 
         # Get the event id - this will tell us what event happened.
         # The following parameter values will tell us additional details about the event
