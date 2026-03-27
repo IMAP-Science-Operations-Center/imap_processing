@@ -392,14 +392,14 @@ def test_l1b_msg_processing(decom_test_data_msg: xr.Dataset):
 
     # Check that the pulser_on variable is correct
     expected_pulser_on = np.ones_like(test_l1b_msg["pulser_on"]) * 255
-    # The pulser_on variable should be 1 for the 2nd and 0 for the 3rd event, and
+    # The pulser_on variable should be 1 for the 1st and 0 for the 2nd event, and
     # 255 for all other events
-    expected_pulser_on[2] = 1
-    expected_pulser_on[3] = 0
-    np.testing.assert_array_equal(test_l1b_msg["pulser_on"].data, expected_pulser_on)
+    expected_pulser_on[0] = 1
+    expected_pulser_on[1] = 0
     # Check that the science_on variable is correct
     expected_science_on = np.ones_like(test_l1b_msg["pulser_on"]) * 255
-    # The science_on variable should be 1 for the 10th event and 0 for the 11th event
-    expected_science_on[10] = 1
-    expected_science_on[11] = 0
+    # The science_on variable should be 1 for the 3rd event and 0 for the 4th event
+    expected_science_on[2] = 1
+    expected_science_on[3] = 0
+    np.testing.assert_array_equal(test_l1b_msg["pulser_on"].data, expected_pulser_on)
     np.testing.assert_array_equal(test_l1b_msg["science_on"].data, expected_science_on)

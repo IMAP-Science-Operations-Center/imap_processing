@@ -200,6 +200,11 @@ def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset:
         name="science_on",
         attrs=idex_attrs.get_variable_attributes("science_on"),
     )
+
+    # Filter dataset to only include rows where there is an event
+    # (either science or pulser)
+    null_event = (pulser_on == 255) & (science_on == 255)
+    l1b_dataset = l1b_dataset.isel(epoch=~null_event)
     logger.info("IDEX L1B MSG data processing completed.")
     return l1b_dataset
 
