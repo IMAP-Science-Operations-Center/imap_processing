@@ -12,10 +12,12 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_l1b import (
     TRIGGER_LABELS,
+    EventMessage,
     TriggerOrigin,
     get_spice_data,
     get_trigger_mode_and_level,
     get_trigger_origin,
+    idex_l1b,
     unpack_instrument_settings,
 )
 from imap_processing.idex.idex_utils import get_idex_attrs
@@ -358,3 +360,46 @@ def test_validate_l1b_idex_data_variables(
                     decimal=4,
                     err_msg=warning,
                 )
+
+
+def test_l1b_msg_processing(decom_test_data_msg: xr.Dataset):
+    """Verify that the MSG data is being processed correctly in the l1b processing.
+
+    Parameters
+    ----------
+    decom_test_data_msg : xr.Dataset
+        A dataset containing the MSG data produced by the l1a processing.
+    """
+    msg_ds = decom_test_data_msg.copy()
+    # Set 2 consecutive events to have pulser on and pulser off
+    msg_ds.messages[2] = EventMessage.PULSER_ON.value
+    msg_ds.messages[3] = EventMessage.PULSER_OFF.value
+    # Set 2 to have a non-consecutive pulser on and pulser off to check that
+    # non-consecutive events are treated as non-valid pulser on and off events
+    msg_ds.messages[20] = EventMessage.PULSER_ON.value
+    msg_ds.messages[22] = EventMessage.PULSER_OFF.value
+    # Process the MSG data with the l1b function
+    test_l1b_msg = idex_l1b(msg_ds, "msg")
+    expected_vars = [
+        "epoch",
+        "pulser_on",
+        "science_on",
+    ]
+    for var in expected_vars:
+        assert var in test_l1b_msg, (
+            f"The variable '{var}' is missing from the MSG dataset."
+        )
+
+    # Check that the pulser_on variable is correct
+    expected_pulser_on = np.ones_like(test_l1b_msg["pulser_on"]) * 255
+    # The pulser_on variable should be 1 for the 2nd and 0 for the 3rd event, and
+    # 255 for all other events
+    expected_pulser_on[2] = 1
+    expected_pulser_on[3] = 0
+    np.testing.assert_array_equal(test_l1b_msg["pulser_on"].data, expected_pulser_on)
+    # Check that the science_on variable is correct
+    expected_science_on = np.ones_like(test_l1b_msg["pulser_on"]) * 255
+    # The science_on variable should be 1 for the 10th event and 0 for the 11th event
+    expected_science_on[10] = 1
+    expected_science_on[11] = 0
+    np.testing.assert_array_equal(test_l1b_msg["science_on"].data, expected_science_on)

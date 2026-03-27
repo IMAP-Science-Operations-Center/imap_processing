@@ -12,12 +12,13 @@ Examples
 
     l0_file = "imap_processing/tests/idex/imap_idex_l0_raw_20231218_v001.pkts"
     l0_file_hk = "imap_processing/tests/idex/imap_idex_l0_raw_20250108_v001.pkts"
-    l1a_data = PacketParser(l0_file).data[0]
-    evt_data = PacketParser(l0_file_hk).data[0]
-    l1a_data, l1a_evt_data, l1b_evt_data = PacketParser(l0_file)
-    l1b_data = idex_l1b(l1a_data)
+    l1a_data, _ = PacketParser(l0_file)
+    _, l1a_msg_data = PacketParser(l0_file_hk)
+    msg_data_l1b = idex_l1b(msg_data_l1a, "msg")
+    l1b_data = idex_l1b(l1a_data, "sci-1week")
+
     l1a_data = idex_l2a(l1b_data)
-    l2b_and_l2c_datasets = idex_l2b(l2a_data, [evt_data])
+    l2b_and_l2c_datasets = idex_l2b(l2a_data, [msg_data_l1b])
     write_cdf(l2b_and_l2c_datasets[0])
     write_cdf(l2b_and_l2c_datasets[1])
 """
@@ -38,7 +39,6 @@ from imap_processing.idex.idex_constants import (
     IDEX_EVENT_REFERENCE_FRAME,
     IDEX_SPACING_DEG,
     SECONDS_IN_DAY,
-    IDEXEvtAcquireCodes,
 )
 from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.spice.time import epoch_to_doy, et_to_datetime64, ttj2000ns_to_et
@@ -84,7 +84,7 @@ LAT_BINS_EDGES = SKY_GRID.el_bin_edges
 
 
 def idex_l2b(
-    l2a_datasets: list[xr.Dataset], evt_datasets: list[xr.Dataset]
+    l2a_datasets: list[xr.Dataset], msg_data_l1b: list[xr.Dataset]
 ) -> list[xr.Dataset]:
     """
     Will process IDEX l2a data to create l2b and l2c data products.
@@ -96,8 +96,8 @@ def idex_l2b(
     ----------
     l2a_datasets : list[xarray.Dataset]
         IDEX L2a datasets to process.
-    evt_datasets : list[xarray.Dataset]
-        List of IDEX housekeeping event message datasets.
+    msg_data_l1b : list[xarray.Dataset]
+        List of IDEX L1B event message datasets.
 
     Returns
     -------
@@ -113,8 +113,9 @@ def idex_l2b(
     # create the attribute manager for this data level
     idex_l2b_attrs = get_idex_attrs("l2b")
     idex_l2c_attrs = get_idex_attrs("l2c")
-    evt_dataset = xr.concat(evt_datasets, dim="epoch")
-
+    msg_ds = (
+        xr.concat(msg_data_l1b, dim="epoch").sortby("epoch").drop_duplicates("epoch")
+    )
     # Concat all the l2a datasets together
     l2a_dataset = xr.concat(l2a_datasets, dim="epoch")
     epoch_doy = epoch_to_doy(l2a_dataset["epoch"].data)
@@ -130,10 +131,14 @@ def idex_l2b(
         counts_by_mass_map,
         daily_epoch,
     ) = compute_counts_by_charge_and_mass(l2a_dataset, epoch_doy_unique)
-    # Get science acquisition start and stop times
-    _, evt_time, evt_values = get_science_acquisition_timestamps(evt_dataset)
+    # Filter the message dataset to only include science acquisition on/off events.
+    # (ignore fill vals)
+    science_on_msg_ds = msg_ds.isel(epoch=np.isin(msg_ds.science_on, [0, 1]))
+    msg_time = science_on_msg_ds["epoch"].data
+    msg_values = science_on_msg_ds["science_on"].data
+
     # Get science acquisition percentage for each day
-    daily_on_percentage = get_science_acquisition_on_percentage(evt_time, evt_values)
+    daily_on_percentage = get_science_acquisition_on_percentage(msg_time, msg_values)
     (
         rate_by_charge,
         rate_by_mass,
@@ -164,7 +169,7 @@ def idex_l2b(
     common_vars = {
         "on_off_times": xr.DataArray(
             name="on_off_times",
-            data=evt_time,
+            data=msg_time,
             dims="on_off_times",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "on_off_times", check_schema=False
@@ -172,7 +177,7 @@ def idex_l2b(
         ),
         "on_off_events": xr.DataArray(
             name="on_off_events",
-            data=np.asarray(evt_values, dtype=np.uint8),
+            data=np.asarray(msg_values, dtype=np.uint8),
             dims="on_off_times",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "on_off_events", check_schema=False
@@ -589,79 +594,17 @@ def bin_spin_phases(spin_phases: xr.DataArray) -> np.ndarray:
     return np.asarray(bin_indices)
 
 
-def get_science_acquisition_timestamps(
-    evt_dataset: xr.Dataset,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Get the science acquisition start and stop times and messages from the event data.
-
-    Parameters
-    ----------
-    evt_dataset : xarray.Dataset
-        Contains IDEX event message data.
-
-    Returns
-    -------
-    event_logs : np.ndarray
-        Array containing science acquisition start and stop events messages.
-    event_timestamps : np.ndarray
-        Array containing science acquisition start and stop timestamps.
-    event_values : np.ndarray
-        Array containing values indicating if the event is a start (1) or
-        stop (0).
-    """
-    # Sort the event dataset by the epoch time. Drop duplicates
-    evt_dataset = evt_dataset.sortby("epoch").drop_duplicates("epoch")
-    # First find indices of the state change events
-    sc_indices = np.where(evt_dataset["elid_evtpkt"].data == "SCI_STE")[0]
-    event_logs = []
-    event_timestamps = []
-    event_values = []
-    # Get the values of the state change events
-    val1 = (
-        evt_dataset["el1par_evtpkt"].data[sc_indices] << 8
-        | evt_dataset["el2par_evtpkt"].data[sc_indices]
-    )
-    val2 = (
-        evt_dataset["el3par_evtpkt"].data[sc_indices] << 8
-        | evt_dataset["el4par_evtpkt"].data[sc_indices]
-    )
-    epochs = evt_dataset["epoch"][sc_indices].data
-    # Now the state change values and check if it is either a science
-    # acquisition start or science acquisition stop event.
-    for v1, v2, epoch in zip(val1, val2, epochs, strict=False):
-        # An "acquire" start will have val1=ACQSETUP and val2=ACQ
-        # An "acquire" stop will have val1=ACQ and val2=CHILL
-        if (v1, v2) == (IDEXEvtAcquireCodes.ACQSETUP, IDEXEvtAcquireCodes.ACQ):
-            event_logs.append("SCI state change: ACQSETUP to ACQ")
-            event_timestamps.append(epoch)
-            event_values.append(1)
-        elif (v1, v2) == (IDEXEvtAcquireCodes.ACQ, IDEXEvtAcquireCodes.CHILL):
-            event_logs.append("SCI state change: ACQ to CHILL")
-            event_timestamps.append(epoch)
-            event_values.append(0)
-
-    logger.info(
-        f"Found science acquisition events: {event_logs} at times: {event_timestamps}"
-    )
-    return (
-        np.asarray(event_logs),
-        np.asarray(event_timestamps),
-        np.asarray(event_values),
-    )
-
-
 def get_science_acquisition_on_percentage(
-    evt_time: NDArray, evt_values: NDArray
+    msg_time: NDArray, msg_values: NDArray
 ) -> dict:
     """
     Calculate the percentage of time science acquisition was occurring for each day.
 
     Parameters
     ----------
-    evt_time : np.ndarray
+    msg_time : np.ndarray
         Array of timestamps for science acquisition start and stop events.
-    evt_values : np.ndarray
+    msg_values : np.ndarray
         Array of values indicating if the event is a start (1) or stop (0).
 
     Returns
@@ -670,7 +613,7 @@ def get_science_acquisition_on_percentage(
         Percentages of time the instrument was in science acquisition mode for each day
          of year.
     """
-    if len(evt_time) == 0:
+    if len(msg_time) == 0:
         logger.warning(
             "No science acquisition events found in event dataset. Returning empty "
             "uptime percentages. All rate variables will be set to -1."
@@ -680,17 +623,17 @@ def get_science_acquisition_on_percentage(
     daily_totals: collections.defaultdict = defaultdict(timedelta)
     daily_on: collections.defaultdict = defaultdict(timedelta)
     # Convert epoch event times to datetime
-    dates = et_to_datetime64(ttj2000ns_to_et(evt_time)).astype(datetime)
+    dates = et_to_datetime64(ttj2000ns_to_et(msg_time)).astype(datetime)
     # Simulate an event at the start of the first day.
     start_of_first_day = dates[0].replace(hour=0, minute=0, second=0, microsecond=0)
     # Assume that the state at the start of the day is the opposite of what the first
     # state is.
-    state_at_start = 0 if evt_values[0] == 1 else 1
+    state_at_start = 0 if msg_values[0] == 1 else 1
     dates = np.insert(dates, 0, start_of_first_day)
-    evt_values = np.insert(evt_values, 0, state_at_start)
+    msg_values = np.insert(msg_values, 0, state_at_start)
     for i in range(len(dates)):
         start = dates[i]
-        state = evt_values[i]
+        state = msg_values[i]
         if i == len(dates) - 1:
             # If this is the last event, set the "end" value the end of the day.
             end = (start + timedelta(days=1)).replace(

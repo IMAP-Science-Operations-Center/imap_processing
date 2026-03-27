@@ -199,6 +199,7 @@ shcoarse:
   FIELDNAM: Secondary header coarse time
   LABLAXIS: Packet Generation Time (Coarse)
   UNITS: seconds
+  FILLVAL: 4294967295
 
 shfine:
   <<: *trigger_base
@@ -207,6 +208,7 @@ shfine:
   VALIDMAX: *max_uint16
   LABLAXIS: Packet Generation Time (Fine)
   UNITS: seconds
+  FILLVAL: 65535
 
 messages:
   <<: *string_base

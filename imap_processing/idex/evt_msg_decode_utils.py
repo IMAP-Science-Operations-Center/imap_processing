@@ -14,7 +14,7 @@ def render_event_template(
     Produce an event message string by replacing placeholders with parameter values.
 
     Example template:
-    "Event {p0} occurred with value {p1+2:dictName}"
+    "Event {p0} occurred with value {p1+2|dictName}"
 
     This would replace {p0} with the hex value of params[0], and replace {p1+2:dictName}
     with the combined hex value of params[1] and params[2] (treated as big-endian bytes)

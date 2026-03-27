@@ -139,22 +139,15 @@ def calculate_spacecraft_pset(
             reject_scattering,
         )
     )
-    counts, counts_n_pix = get_spacecraft_histogram(
+    # Determine nside from the lookup table
+    nside = hp.npix2nside(for_indices_by_spin_phase.sizes["pixel"])
+    counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
         species_dataset["energy_spacecraft"].values,
         intervals,
-        nside=UltraConstants.L1C_COUNTS_NSIDE,
+        nside=nside,
     )
-    counts_healpix = np.arange(counts_n_pix)
-    # Determine nside for non "counts" variables from the lookup table
-    n_pix = for_indices_by_spin_phase.sizes["pixel"]
-    nside = hp.npix2nside(n_pix)
     healpix = np.arange(n_pix)
-
-    # Calculate the corresponding longitude (az) latitude (el)
-    # center coordinates
-    longitude, latitude = hp.pix2ang(nside, healpix, lonlat=True)
-
     # Get the start and stop times of the pointing period
     repoint_id = species_dataset.attrs.get("Repointing", None)
     if repoint_id is None:
@@ -233,7 +226,6 @@ def calculate_spacecraft_pset(
     pset_dict["background_rates"] = background_rates[np.newaxis, ...]
     pset_dict["exposure_factor"] = exposure_pointing[np.newaxis, ...]
     pset_dict["pixel_index"] = healpix
-    pset_dict["counts_pixel_index"] = counts_healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
         np.newaxis, ...
     ]

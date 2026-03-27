@@ -88,11 +88,3 @@ IDEX_SPACING_DEG = 6
 
 # Define the pointing reference frame for IDEX
 IDEX_EVENT_REFERENCE_FRAME = SpiceFrame.ECLIPJ2000
-
-
-class IDEXEvtAcquireCodes(IntEnum):
-    """Create ENUM for event message ints that signify science acquire events."""
-
-    ACQSETUP = 2
-    ACQ = 3
-    CHILL = 5

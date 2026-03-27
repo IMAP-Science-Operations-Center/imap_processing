@@ -20,7 +20,7 @@ L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
 L1B_EXAMPLE_FILE = TEST_DATA_PATH / "imap_idex_l1b_sci_20231218_v001.h5"
 
 L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
-L1B_MSG_CDF = TEST_DATA_PATH / "imap_idex_l1b_evt_20250108_v001.cdf"
+L1B_MSG_CDF = TEST_DATA_PATH / "imap_idex_l1b_msg_20250108_v001.cdf"
 
 pytestmark = pytest.mark.external_test_data
 
@@ -51,7 +51,7 @@ def decom_test_data_catlst() -> xr.Dataset:
 
 @pytest.fixture
 def decom_test_data_msg() -> xr.Dataset:
-    """``xarray`` dataset containing the raw and derived event log data.
+    """``xarray`` dataset containing the raw event message data.
 
     Returns
     -------
@@ -59,6 +59,18 @@ def decom_test_data_msg() -> xr.Dataset:
         ``xarray`` dataset containing the event log data.
     """
     return PacketParser(TEST_L0_FILE_MSG).data[0]
+
+
+@pytest.fixture
+def test_l1b_msg(decom_test_data_msg) -> xr.Dataset:
+    """``xarray`` dataset containing the l1b msg data.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        ``xarray`` dataset containing the event log data.
+    """
+    return idex_l1b(decom_test_data_msg, "msg")
 
 
 @pytest.fixture
@@ -112,7 +124,7 @@ def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Data
     """
 
     mock_get_spice_data.side_effect = get_spice_data_side_effect_func
-    dataset = idex_l1b(decom_test_data_sci)
+    dataset = idex_l1b(decom_test_data_sci, "sci-1week")
     return dataset
 
 

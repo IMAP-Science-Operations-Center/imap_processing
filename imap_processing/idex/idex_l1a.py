@@ -135,12 +135,14 @@ class PacketParser:
             data_vars={
                 "epoch": xr.DataArray(epoch, name="epoch", dims=["epoch"]),
                 "shfine": xr.DataArray(
-                    data["shfine"].data, dims=["epoch"], attrs=data["shfine"].attrs
+                    data["shfine"].data,
+                    dims=["epoch"],
+                    attrs=self.idex_attrs.get_variable_attributes("shfine"),
                 ),
                 "shcoarse": xr.DataArray(
                     data["shcoarse"].data,
                     dims=["epoch"],
-                    attrs=data["shcoarse"].attrs,
+                    attrs=self.idex_attrs.get_variable_attributes("shcoarse"),
                 ),
             },
             attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg"),

@@ -89,6 +89,28 @@ trigger_origin:
   FIELDNAM: Trigger Origin
   CATDESC: Trigger Origin of the event.
 
+pulser_on:
+  <<: *trigger_base
+  FIELDNAM: Pulser On
+  CATDESC: Pulser state flag derived from message events (0=off, 1=on).
+  LABLAXIS: Pulser On
+  FORMAT: I1
+  FILLVAL: 255
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 1
+
+science_on:
+  <<: *trigger_base
+  FIELDNAM: Science On
+  CATDESC: Science acquisition state flag derived from message events (0=off, 1=on).
+  LABLAXIS: Science On
+  FORMAT: I1
+  FILLVAL: 255
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 1
+
 tof_high:
   <<: *l1b_tof_base
   CATDESC: Time of flight waveform on the high-gain channel

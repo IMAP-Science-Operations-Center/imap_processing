@@ -45,6 +45,19 @@ from imap_processing.utils import convert_raw_to_eu
 logger = logging.getLogger(__name__)
 
 
+class EventMessage(Enum):
+    """Enum class for event messages."""
+
+    PULSER_ON = "SEQ success (len=0x0580, opCodeLCDictionary(enstim))"
+    PULSER_OFF = "SEQ success (len=0x0580, opCodeLCDictionary(susprel))"
+    SCIENCE_ON = (
+        "SCI state change: sciState16Dictionary(ACQSETUP) ==> sciState16Dictionary(ACQ)"
+    )
+    SCIENCE_OFF = (
+        "SCI state change: sciState16Dictionary(ACQ) ==> sciState16Dictionary(CHILL)"
+    )
+
+
 class TriggerOrigin(IntEnum):
     """Enum class for event trigger origins."""
 
@@ -104,9 +117,96 @@ class TriggerMode(Enum):
         return f"{channel.upper()}{TriggerMode(mode).name}"
 
 
-def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
+def idex_l1b(l1a_dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
     """
-    Will process IDEX l1a data to create l1b data products.
+    Process IDEX l1a data to create l1b data products based on the descriptor.
+
+    Parameters
+    ----------
+    l1a_dataset : xarray.Dataset
+        IDEX L1a dataset to process.
+    descriptor : str
+        Descriptor to determine the type of l1b processing to perform. E.g. "sci-1week"
+        or "msg".
+
+    Returns
+    -------
+    l1b_dataset : xarray.Dataset
+        The``xarray`` dataset containing the processed data and supporting metadata.
+    """
+    if descriptor.startswith("sci"):
+        return idex_l1b_science(l1a_dataset)
+    elif descriptor.startswith("msg"):
+        return idex_l1b_msg(l1a_dataset)
+    else:
+        raise ValueError(f"Unsupported descriptor: {descriptor}")
+
+
+def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Will process IDEX l1a msg data.
+
+    Parameters
+    ----------
+    l1a_dataset : xarray.Dataset
+        IDEX L1a dataset to process.
+
+    Returns
+    -------
+    l1b_dataset : xarray.Dataset
+        The``xarray`` dataset containing the msg housekeeping data and
+        supporting metadata.
+    """
+    logger.info(
+        f"Running IDEX L1B MSG processing on dataset: "
+        f"{l1a_dataset.attrs['Logical_source']}"
+    )
+    # create the attribute manager for this data level
+    idex_attrs = get_idex_attrs("l1b")
+    # set up a dataset with only epoch.
+    l1b_dataset = setup_dataset(l1a_dataset, [], idex_attrs, data_vars=None)
+    l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_msg")
+    # Compute science_on and pulser_on variables based on the event message. The
+    # "science_on" variable indicates when the science data collection is turned on or
+    # off and the "pulser_on" variable indicates when the pulser is turned on or off.
+    # The following logic is applied to determine the pulser_on status.
+    # enstim → set pulser_on = 1
+    # susprel AND the previous message was enstim → set pulser_on = 0
+    # susprel but previous message was NOT enstim → pulser_on stays whatever it was
+    l1a_messages = l1a_dataset.messages.values
+    # Set science_on to 1 when science is on and 0 when it is off. 255 otherwise.
+    science_on = np.where(l1a_messages == EventMessage.SCIENCE_ON.value, 1, 255)
+    science_on[l1a_messages == EventMessage.SCIENCE_OFF.value] = 0
+    # Find indices where there are consecutive PULSER_ON followed by PULSER_OFF
+    # messages. These are the only cases where we should set pulser_on to 1 and 0.
+    # Compare the messages by shifting the pulser off messages back by one and looking
+    # for matching overlaps.
+    consecutive_pulser_on_off = np.where(
+        (l1a_messages[:-1] == EventMessage.PULSER_ON.value)
+        & (l1a_messages[1:] == EventMessage.PULSER_OFF.value)
+    )[0]
+    pulser_on = np.full(len(l1a_messages), 255)  # initialize with 255 (unknown)
+    pulser_on[consecutive_pulser_on_off] = 1
+    pulser_on[consecutive_pulser_on_off + 1] = 0
+    l1b_dataset["pulser_on"] = xr.DataArray(
+        data=pulser_on,
+        dims="epoch",
+        name="pulser_on",
+        attrs=idex_attrs.get_variable_attributes("pulser_on"),
+    )
+    l1b_dataset["science_on"] = xr.DataArray(
+        data=science_on,
+        dims="epoch",
+        name="science_on",
+        attrs=idex_attrs.get_variable_attributes("science_on"),
+    )
+    logger.info("IDEX L1B MSG data processing completed.")
+    return l1b_dataset
+
+
+def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Will process IDEX l1a science data.
 
     Parameters
     ----------

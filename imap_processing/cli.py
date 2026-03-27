@@ -1040,10 +1040,11 @@ class Idex(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="idex")
             datasets = PacketParser(science_files[0]).data
         elif self.data_level == "l1b":
-            if len(dependency_list) != 3:
+            n_expected_deps = 3 if self.descriptor == "sci-1week" else 1
+            if len(dependency_list) != n_expected_deps:
                 raise ValueError(
-                    f"Unexpected dependencies found for IDEX L1B:"
-                    f"{dependency_list}. Expected only three dependencies."
+                    f"Unexpected dependencies found for IDEX L1B {self.descriptor}:"
+                    f"{dependency_list}. Expected only {n_expected_deps} dependencies."
                 )
             # get CDF file
             science_files = dependencies.get_file_paths(source="idex")
@@ -1055,7 +1056,7 @@ class Idex(ProcessInstrument):
                 raise ValueError("No science files found for IDEX L1B processing.")
             latest_file = max(science_datasets, key=lambda ds: ds["epoch"].data[0])
             # process data
-            datasets = [idex_l1b(latest_file)]
+            datasets = [idex_l1b(latest_file, self.descriptor)]
         elif self.data_level == "l2a":
             if len(dependency_list) != 3:
                 raise ValueError(
