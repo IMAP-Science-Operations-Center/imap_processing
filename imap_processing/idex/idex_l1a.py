@@ -152,14 +152,14 @@ class PacketParser:
             msg_dicts = json.load(f)
 
         # restore integer keys since JSON stringifies them
-        msg_dicts = {
+        msg_json_data = {
             dict_name: {int(k): v for k, v in pairs.items()}
             for dict_name, pairs in msg_dicts.items()
         }
         # Get the event message templates and log entry name dictionaries
         # These are used to decode the raw event messages into human-readable formats
         # during rendering.
-        event_templates = msg_dicts.get("eventMsgDictionary", {})
+        event_description_templates = msg_json_data.get("eventMsgDictionary", {})
         log_entry_names = msg_dicts.get("logEntryIdDictionary", {})
 
         # Get the event id - this will tell us what event happened.
@@ -169,7 +169,7 @@ class PacketParser:
         event_ids = data["elid_evtpkt"].data
         # Stack the parameter bytes into a single array of shape (num_events, 4) for
         # easier access during rendering.
-        params = np.stack(
+        params_bytes = np.stack(
             [
                 data["el1par_evtpkt"].data,
                 data["el2par_evtpkt"].data,
@@ -184,23 +184,25 @@ class PacketParser:
         for idx in range(len(event_ids)):
             # Look up the string format using the event_id.
             event_id = event_ids[idx]
-            template = event_templates.get(event_id)
+            current_desc_template = event_description_templates.get(event_id)
+            current_param_bytes = params_bytes[idx].tolist()
             event_name = log_entry_names.get(event_id, f"EVENT_0x{event_id:02X}")
             # Render the event message using the template if available.
-            if template:
+            if current_desc_template:
                 try:
                     message = render_event_template(
-                        template, params[idx].tolist(), msg_dicts
+                        current_desc_template, current_param_bytes, msg_json_data
                     )
                 except Exception as exc:
                     message = (
                         f"{event_name} [template_render_error={exc}] "
-                        f"params=({', '.join(f'0x{x:02X}' for x in params[idx])})"
+                        f"params="
+                        f"({', '.join(f'0x{x:02X}' for x in current_param_bytes)})"
                     )
             else:
                 # If no template exists for an event ID, fall back to a message
                 # that still preserves the event name and raw parameter bytes.
-                phex = ", ".join(f"0x{x:02X}" for x in params[idx])
+                phex = ", ".join(f"0x{x:02X}" for x in current_param_bytes)
                 message = f"{event_name} ({phex})"
 
             messages.append(message)
