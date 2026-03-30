@@ -340,6 +340,11 @@ def process_mag_l1c(
             normal_vecsec_dict = None
 
         gaps = find_all_gaps(norm_epoch, normal_vecsec_dict, day_start_ns, day_end_ns)
+        # Filter out micro-gaps at config mode transitions (1 missing sample)
+        if gaps.shape[0] > 0:
+            cadences = 1e9 / gaps[:, 2]
+            durations = gaps[:, 1] - gaps[:, 0]
+            gaps = gaps[durations > 2 * cadences]
     else:
         norm_epoch = [day_start_ns, day_end_ns]
         gaps = np.array(
@@ -499,8 +504,8 @@ def interpolate_gaps(
         burst_start = max(0, burst_gap_start - burst_buffer)
         burst_end = min(len(burst_epochs) - 1, burst_gap_end + burst_buffer)
 
-        gap_timeline = filled_norm_timeline[
-            (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
+        gap_timeline = filled_norm_timeline[:, 0][
+            (filled_norm_timeline[:, 0] > gap[0]) & (filled_norm_timeline[:, 0] < gap[1])
         ]
 
         short = (gap_timeline >= burst_epochs[burst_start]) & (
@@ -515,8 +520,8 @@ def interpolate_gaps(
         gap_timeline = gap_timeline[short]
         # do not include range
         adjusted_gap_timeline, gap_fill = interpolation_function(
-            burst_vectors[burst_start:burst_end, :3],
-            burst_epochs[burst_start:burst_end],
+            burst_vectors[burst_start : burst_end + 1, :3],
+            burst_epochs[burst_start : burst_end + 1],
             gap_timeline,
             input_rate=burst_rate,
             output_rate=norm_rate,
@@ -548,7 +553,7 @@ def interpolate_gaps(
                     "Self-inconsistent data. "
                     "Gaps not included in final timeline should be missing."
                 )
-            np.delete(filled_norm_timeline, timeline_index)
+            pass
 
     return filled_norm_timeline
 
@@ -734,8 +739,9 @@ def generate_missing_timestamps(gap: np.ndarray) -> np.ndarray:
     full_timeline: numpy.ndarray
         Completed timeline.
     """
-    # Generated timestamps should always be 0.5 seconds apart
-    difference_ns = 0.5 * 1e9
+    # Use the gap's declared vector rate for cadence; fall back to 0.5s (2 Hz)
+    vectors_per_second = int(gap[2]) if len(gap) > 2 else 2
+    difference_ns = int(1e9 / vectors_per_second)
     output: np.ndarray = np.arange(gap[0], gap[1], difference_ns)
     return output
 

@@ -112,7 +112,9 @@ def test_interpolation_methods():
 def test_process_mag_l1c(norm_dataset, burst_dataset):
     l1c = process_mag_l1c(norm_dataset, burst_dataset, InterpolationFunction.linear)
     expected_output_timeline = (
-        np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.75, 5.25, 5.5, 5.75, 6])
+        np.array(
+            [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6]
+        )
         * 1e9
     )
     assert np.array_equal(l1c[:, 0], expected_output_timeline)
@@ -122,12 +124,12 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         np.count_nonzero([np.sum(l1c[i, 1:4]) for i in range(l1c.shape[0])])
         == l1c.shape[0] - 1
     )
-    expected_flags = np.zeros(15)
+    expected_flags = np.zeros(17)
     # filled sections should have 1 as a flag
     expected_flags[5:8] = 1
-    expected_flags[10:11] = 1
+    expected_flags[10:13] = 1
     # last datapoint in the gap is missing a value
-    expected_flags[11] = -1
+    expected_flags[13] = -1
     assert np.array_equal(l1c[:, 5], expected_flags)
     assert np.array_equal(l1c[:5, 1:5], norm_dataset["vectors"].data[:5, :])
     for i in range(5, 8):
@@ -140,7 +142,7 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
 
     assert np.array_equal(l1c[8:10, 1:5], norm_dataset["vectors"].data[5:7, :])
-    for i in range(10, 11):
+    for i in range(10, 13):
         e = l1c[i, 0]
         burst_vectors = burst_dataset.sel(epoch=int(e), method="nearest")[
             "vectors"
@@ -149,7 +151,7 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         # identical.
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
 
-    assert np.array_equal(l1c[11, 1:5], [0, 0, 0, 0])
+    assert np.array_equal(l1c[13, 1:5], [0, 0, 0, 0])
 
 
 def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
