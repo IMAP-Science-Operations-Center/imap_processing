@@ -181,6 +181,14 @@ class UltraConstants:
 
     FOV_THETA_OFFSET_DEG = 0.0
     FOV_PHI_LIMIT_DEG = 60.0
+    # TODO anxillary file
+    # Restricted FOV theta/phi acceptance limits (degrees).
+    # Samples outside these bounds are excluded from GF, efficiency, exposure,
+    # and counts maps at L1C (fine energy bin maps only).
+    RESTRICTED_FOV_THETA_LOW_DEG_45: float = -43.0
+    RESTRICTED_FOV_THETA_HIGH_DEG_45: float = 43.0
+    RESTRICTED_FOV_THETA_LOW_DEG_90: float = -43.0
+    RESTRICTED_FOV_THETA_HIGH_DEG_90: float = 43.0
 
     # For spatiotemporal culling
     EARTH_RADIUS_KM: float = 6378.1
@@ -224,3 +232,19 @@ class UltraConstants:
     # and pad with fill values if we use fewer bins.
     MAX_ENERGY_RANGES = 16
     MAX_ENERGY_RANGE_EDGES = MAX_ENERGY_RANGES + 1
+
+    # L1C PSET constants
+
+    # When True, applies the FOV restrictions defined above to the L1C fine energy bin
+    # maps (GF, efficiency, exposure, counts). This culls regions of the instrument
+    # field of view with poor efficiency calibration from inclusion into the map making
+    # process.
+    APPLY_FOV_RESTRICTIONS_L1C: bool = True
+
+    # When True, applies the boundary scale factors from the ancillary file to exposure
+    # time, efficiency, and geometric factor maps.
+    APPLY_BOUNDARY_SCALE_FACTORS_L1C: bool = False
+
+    # When True, applies the scattering rejection mask based on the FWHM thresholds
+    # to the L1C fine energy bin maps.
+    APPLY_SCATTERING_REJECTION_L1C: bool = False

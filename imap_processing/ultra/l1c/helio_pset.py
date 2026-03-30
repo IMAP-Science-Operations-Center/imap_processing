@@ -21,7 +21,8 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 )
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
-    calculate_fwhm_spun_scattering,
+    calculate_accepted_pixels,
+    in_restricted_fov,
 )
 from imap_processing.ultra.l1c.make_helio_index_maps import (
     make_helio_index_maps_with_nominal_kernels,
@@ -76,10 +77,6 @@ def calculate_helio_pset(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
-    # Do not cull events based on scattering thresholds
-    reject_scattering = False
-    # Do not apply boundary scale factor corrections
-    apply_bsf = False
     nside = 32
     num_spin_steps = 720
     sensor_id = int(parse_filename_like(name)["sensor"][0:2])
@@ -95,7 +92,7 @@ def calculate_helio_pset(
     rejected = get_de_rejection_mask(
         species_dataset["quality_scattering"].values,
         species_dataset["quality_outliers"].values,
-        reject_scattering,
+        UltraConstants.APPLY_SCATTERING_REJECTION_L1C,
     )
     species_dataset = species_dataset.isel(epoch=~rejected)
     # Check if spin_number is in the goodtimes dataset, if not then we can
@@ -114,13 +111,6 @@ def calculate_helio_pset(
         species_dataset["spin"].values,
     )
     species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
-    v_mag_helio_spacecraft = np.linalg.norm(
-        species_dataset["velocity_dps_helio"].values, axis=1
-    )
-    vhat_dps_helio = (
-        species_dataset["velocity_dps_helio"].values
-        / v_mag_helio_spacecraft[:, np.newaxis]
-    )
     # Get the start and stop times of the pointing period
     repoint_id = species_dataset.attrs.get("Repointing", None)
     if repoint_id is None:
@@ -138,7 +128,7 @@ def calculate_helio_pset(
         spin_duration=15.0,
         num_steps=num_spin_steps,
         instrument_frame=instrument_frame,
-        compute_bsf=apply_bsf,
+        compute_bsf=UltraConstants.APPLY_BOUNDARY_SCALE_FACTORS_L1C,
     )
     boundary_scale_factors = helio_pointing_ds.bsf
     theta_vals = helio_pointing_ds.theta
@@ -147,16 +137,37 @@ def calculate_helio_pset(
 
     logger.info("calculating spun FWHM scattering values.")
     pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = (
-        calculate_fwhm_spun_scattering(
+        calculate_accepted_pixels(
             fov_index,
             theta_vals,
             phi_vals,
             ancillary_files,
             instrument_id,
-            reject_scattering,
+            reject_scattering=UltraConstants.APPLY_SCATTERING_REJECTION_L1C,
+            apply_fov_restriction=UltraConstants.APPLY_FOV_RESTRICTIONS_L1C,
         )
     )
-
+    # Apply restricted FOV filter to counts.
+    # If a valid event's instrument frame theta/phi falls outside the restricted
+    # acceptance window it is excluded from the L1C fine energy-bin counts map.
+    if UltraConstants.APPLY_FOV_RESTRICTIONS_L1C:
+        fov_accepted = in_restricted_fov(
+            species_dataset["theta"].values,
+            species_dataset["phi"].values,
+            instrument_id,
+        )
+        logger.info(
+            f"Restricted FOV counts filter: keeping {fov_accepted.sum()} / "
+            f"{len(fov_accepted)} events."
+        )
+        species_dataset = species_dataset.isel(epoch=fov_accepted)
+    v_mag_helio_spacecraft = np.linalg.norm(
+        species_dataset["velocity_dps_helio"].values, axis=1
+    )
+    vhat_dps_helio = (
+        species_dataset["velocity_dps_helio"].values
+        / v_mag_helio_spacecraft[:, np.newaxis]
+    )
     counts, counts_n_pix = get_spacecraft_histogram(
         vhat_dps_helio,
         species_dataset["energy_heliosphere"].values,
@@ -184,7 +195,7 @@ def calculate_helio_pset(
         energy_bins=energy_bin_geometric_means,
         sensor_id=sensor_id,
         ancillary_files=ancillary_files,
-        apply_bsf=apply_bsf,
+        apply_bsf=UltraConstants.APPLY_BOUNDARY_SCALE_FACTORS_L1C,
         goodtimes_dataset=goodtimes_dataset,
     )
     logger.info("Calculating spun efficiencies and geometric function.")
@@ -197,7 +208,7 @@ def calculate_helio_pset(
         n_pix,
         sensor_id,
         ancillary_files,
-        apply_bsf,
+        apply_bsf=UltraConstants.APPLY_BOUNDARY_SCALE_FACTORS_L1C,
     )
 
     logger.info("Calculating background rates.")

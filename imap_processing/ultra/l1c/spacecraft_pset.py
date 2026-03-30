@@ -1,4 +1,4 @@
-"""Calculate Pointing Set Grids."""
+"""Calculate Spacecraft Pointing Set Grids."""
 
 import logging
 
@@ -20,8 +20,9 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 )
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     build_energy_bins,
-    calculate_fwhm_spun_scattering,
+    calculate_accepted_pixels,
     get_spacecraft_pointing_lookup_tables,
+    in_restricted_fov,
 )
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
@@ -73,10 +74,6 @@ def calculate_spacecraft_pset(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
-    # Do not cull events based on scattering thresholds
-    reject_scattering = False
-    # Do not apply boundary scale factor corrections
-    apply_bsf = False
     pset_dict: dict[str, np.ndarray] = {}
 
     sensor_id = int(parse_filename_like(name)["sensor"][0:2])
@@ -93,7 +90,7 @@ def calculate_spacecraft_pset(
     de_rejected = get_de_rejection_mask(
         species_dataset["quality_scattering"].values,
         species_dataset["quality_outliers"].values,
-        reject_scattering,
+        UltraConstants.APPLY_SCATTERING_REJECTION_L1C,
     )
     species_dataset = species_dataset.isel(epoch=~de_rejected)
     # Check if spin_number is in the goodtimes dataset, if not then we can
@@ -112,12 +109,6 @@ def calculate_spacecraft_pset(
         species_dataset["spin"].values,
     )
     species_dataset = species_dataset.isel(epoch=~energy_dependent_rejected)
-    v_mag_dps_spacecraft = np.linalg.norm(
-        species_dataset["velocity_dps_sc"].values, axis=1
-    )
-    vhat_dps_spacecraft = (
-        species_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
-    )
 
     # Get lookup table for FOR indices by spin phase step
     (
@@ -130,14 +121,37 @@ def calculate_spacecraft_pset(
 
     logger.info("calculating spun FWHM scattering values.")
     valid_spun_pixels, scattering_theta, scattering_phi, scattering_thresholds = (
-        calculate_fwhm_spun_scattering(
+        calculate_accepted_pixels(
             for_indices_by_spin_phase,
             theta_vals,
             phi_vals,
             ancillary_files,
             instrument_id,
-            reject_scattering,
+            reject_scattering=UltraConstants.APPLY_SCATTERING_REJECTION_L1C,
+            apply_fov_restriction=UltraConstants.APPLY_FOV_RESTRICTIONS_L1C,
         )
+    )
+
+    # Apply restricted FOV filter to counts.
+    # If a valid event's instrument frame theta/phi falls outside the restricted
+    # acceptance window it is excluded from the L1C fine energy-bin counts map.
+    if UltraConstants.APPLY_FOV_RESTRICTIONS_L1C:
+        fov_accepted = in_restricted_fov(
+            species_dataset["theta"].values,
+            species_dataset["phi"].values,
+            instrument_id,
+        )
+        logger.info(
+            f"Restricted FOV counts filter: keeping {fov_accepted.sum()} / "
+            f"{len(fov_accepted)} events."
+        )
+        species_dataset = species_dataset.isel(epoch=fov_accepted)
+
+    v_mag_dps_spacecraft = np.linalg.norm(
+        species_dataset["velocity_dps_sc"].values, axis=1
+    )
+    vhat_dps_spacecraft = (
+        species_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
     )
     counts, counts_n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
@@ -172,7 +186,7 @@ def calculate_spacecraft_pset(
         energy_bins=energy_bin_geometric_means,
         sensor_id=sensor_id,
         ancillary_files=ancillary_files,
-        apply_bsf=apply_bsf,
+        apply_bsf=UltraConstants.APPLY_BOUNDARY_SCALE_FACTORS_L1C,
         goodtimes_dataset=goodtimes_dataset,
     )
     logger.info("Calculating spun efficiencies and geometric function.")
@@ -185,7 +199,7 @@ def calculate_spacecraft_pset(
         n_pix,
         sensor_id,
         ancillary_files,
-        apply_bsf,
+        apply_bsf=UltraConstants.APPLY_BOUNDARY_SCALE_FACTORS_L1C,
     )
     sensitivity = efficiencies * geometric_function
 

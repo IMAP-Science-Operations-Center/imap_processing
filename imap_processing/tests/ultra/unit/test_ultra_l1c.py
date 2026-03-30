@@ -179,6 +179,8 @@ def test_calculate_spacecraft_pset_with_cdf(
     de_dict["spin"] = np.full(len(sc_dps_velocity), 0)
     de_dict["species"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
     de_dict["ebin"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
+    de_dict["theta"] = np.zeros(len(df_subset), dtype=np.float32)
+    de_dict["phi"] = np.zeros(len(df_subset), dtype=np.float32)
     de_dict["event_times"] = df_subset["tdb"].values
 
     name = "imap_ultra_l1b_45sensor-de"
@@ -245,6 +247,8 @@ def test_calculate_helio_pset_with_cdf(
     # Fake SCLK in seconds that matches SPICE.
     de_dict["event_times"] = np.full(len(df_subset), 2.41187e13)
     de_dict["ebin"] = np.ones(len(df_subset), dtype=np.uint8)
+    de_dict["theta"] = np.zeros(len(df_subset), dtype=np.float32)
+    de_dict["phi"] = np.zeros(len(df_subset), dtype=np.float32)
     species_bin = np.full(len(df_subset), 1, dtype=np.uint8)
 
     # PosYSlit is True for left (start_type = 1)

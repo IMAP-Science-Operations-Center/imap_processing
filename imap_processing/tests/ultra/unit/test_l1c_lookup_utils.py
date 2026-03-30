@@ -4,10 +4,11 @@ import pytest
 import xarray as xr
 
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
-    calculate_fwhm_spun_scattering,
+    calculate_accepted_pixels,
     get_scattering_thresholds_for_energy,
     get_spacecraft_pointing_lookup_tables,
     get_static_deadtime_ratios,
+    in_restricted_fov,
     mask_below_fwhm_scattering_threshold,
 )
 
@@ -31,6 +32,7 @@ def test_get_spacecraft_pointing_lookup_tables(ancillary_files):
     assert theta_vals.shape == (cols, npix)
     assert phi_vals.shape == (cols, npix)
     assert ra_and_dec.shape == (2, npix)
+    assert boundary_scale_factors.shape == (cols, npix)
 
     # Value tests
     assert for_indices_by_spin_phase.dtype == bool
@@ -115,21 +117,31 @@ def test_get_static_deadtime_ratios(ancillary_files):
     assert np.all((dt_ratio >= 0.0) & (dt_ratio <= 1.0))
 
 
-def test_calculate_fwhm_spun_scattering(ancillary_files):
-    """Test calculate_fwhm_spun_scattering function."""
+def test_in_restricted_fov():
+    """Test in_restricted_fov function."""
+    # Create mock theta and phi values
+    # First two values are outside the restricted FOV, the rest are inside
+    theta_vals = np.array([[-50, 49, 10, 40, 35]])
+    # The last value is outside the restricted FOV
+    phi_vals = np.array([[20, 30, 40, 50, 70]])  # shape (1, 5)
+    accepted_pixels = in_restricted_fov(theta_vals, phi_vals, 45)
+    expected_accepted_pixels = np.array([[False, False, True, True, False]])
+    np.testing.assert_array_equal(accepted_pixels, expected_accepted_pixels)
+
+
+def test_calculate_accepted_pixels(ancillary_files):
+    """Test calculate_accepted_pixels function."""
     # Make array with ones (we are only testing the shape here)
     for_pixels = np.ones((50, 10))
     theta_vals = np.ones((50, 10)) * 20  # All theta values are 20
     phi_vals = np.ones((50, 5)) * 15  # All phi
     with pytest.raises(ValueError, match="Shape mismatch"):
-        calculate_fwhm_spun_scattering(
-            for_pixels, theta_vals, phi_vals, ancillary_files, 45
-        )
+        calculate_accepted_pixels(for_pixels, theta_vals, phi_vals, ancillary_files, 45)
 
 
 @pytest.mark.external_test_data
-def test_calculate_fwhm_spun_scattering_reject(ancillary_files):
-    """Test calculate_fwhm_spun_scattering function."""
+def test_calculate_accepted_pixels_reject(ancillary_files):
+    """Test calculate_accepted_pixels function."""
     nside = 8
     pix = hp.nside2npix(nside)
     steps = 5  # Reduced for testing
@@ -144,16 +156,49 @@ def test_calculate_fwhm_spun_scattering_reject(ancillary_files):
     # Simulate first 100 pixels are in the FOR for all spin phases
     inside_inds = 100
     for_pixels[:, :, :inside_inds] = True
-    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
-        calculate_fwhm_spun_scattering(
-            for_pixels,
-            mock_theta,
-            mock_phi,
-            ancillary_files,
-            45,
-            reject_scattering=True,
-        )
+    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = calculate_accepted_pixels(
+        for_pixels,
+        mock_theta,
+        mock_phi,
+        ancillary_files,
+        45,
+        reject_scattering=True,
     )
     assert valid_spun_pixels.shape == (steps, energy_dim, pix)
     # Check that some pixels are rejected
     assert not np.array_equal(valid_spun_pixels, for_pixels)
+
+
+@pytest.mark.external_test_data
+def test_calculate_accepted_pixels_restrict_fov(ancillary_files):
+    """Test calculate_accepted_pixels function for FOV restrictions."""
+    nside = 8
+    pix = hp.nside2npix(nside)
+    steps = 5  # Reduced for testing
+    energy_dim = 46
+    np.random.seed(42)
+    mock_theta = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    mock_phi = np.random.uniform(-60, 60, (steps, energy_dim, pix))
+    # Create for_pixels with all True values to isolate the effect of FOV restrictions
+    for_pixels = xr.DataArray(
+        np.ones((steps, energy_dim, pix)).astype(bool),
+        dims=("spin_phase_step", "energy", "pixel"),
+    )
+    # Set first 30 pixels to be outside of the FOR for all spin phases and energies
+    outside_inds = 30
+    for_pixels[:, :, :outside_inds] = False
+    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = calculate_accepted_pixels(
+        for_pixels,
+        mock_theta,
+        mock_phi,
+        ancillary_files,
+        45,
+        apply_fov_restriction=True,
+    )
+    assert valid_spun_pixels.shape == (steps, energy_dim, pix)
+    # In this case, the valid spun pixels should be the same as the pixels that are
+    # in the restricted FOV except the first 30 pixels which are outside the FOR and
+    # should be False for all spin phases and energies.
+    expected_accepted_px = in_restricted_fov(mock_theta, mock_phi, 45)
+    expected_accepted_px[:, :, :outside_inds] = False
+    assert np.array_equal(expected_accepted_px, valid_spun_pixels)
