@@ -676,7 +676,7 @@ class Glows(ProcessInstrument):
 
             # Load conversion table (needed for both hist and DE)
             conversion_table_file = dependencies.get_processing_inputs(
-                descriptor="conversion-table-for-anc-data"
+                descriptor="l1b-conversion-table-for-anc-data"
             )[0]
 
             with open(conversion_table_file.imap_file_paths[0].construct_path()) as f:
@@ -691,16 +691,16 @@ class Glows(ProcessInstrument):
             if "hist" in self.descriptor:
                 # Create file lists for each ancillary type
                 excluded_regions_files = dependencies.get_processing_inputs(
-                    descriptor="map-of-excluded-regions"
+                    descriptor="l1b-map-of-excluded-regions"
                 )[0]
                 uv_sources_files = dependencies.get_processing_inputs(
-                    descriptor="map-of-uv-sources"
+                    descriptor="l1b-map-of-uv-sources"
                 )[0]
                 suspected_transients_files = dependencies.get_processing_inputs(
-                    descriptor="suspected-transients"
+                    descriptor="l1b-suspected-transients"
                 )[0]
                 exclusions_by_instr_team_files = dependencies.get_processing_inputs(
-                    descriptor="exclusions-by-instr-team"
+                    descriptor="l1b-exclusions-by-instr-team"
                 )[0]
                 pipeline_settings = dependencies.get_processing_inputs(
                     descriptor="pipeline-settings"
