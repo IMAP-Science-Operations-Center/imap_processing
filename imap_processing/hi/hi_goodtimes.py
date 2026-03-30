@@ -552,34 +552,32 @@ class GoodtimesAccessor:
 
     def get_good_intervals(self) -> np.ndarray:
         """
-        Extract time intervals grouped by contiguous cull flag patterns.
+        Extract good time intervals grouped by ESA sweep cull patterns.
 
-        Merges consecutive MET timestamps that have identical cull_flags patterns
-        into single intervals. Each interval spans a contiguous time range where
-        cull flags don't change.
-
-        If cull flags have multiple contiguous regions with different values
-        (e.g., bins 0-44 good, 45-89 bad), multiple intervals are created for
-        the same time range, one per contiguous bin region.
+        Groups consecutive ESA sweeps with identical cull patterns. For each group:
+        1. Writes one interval for fully-good ESA steps (all 90 bins good) spanning
+           bins 0-89, with cull_value indicating the cull code from any bad ESAs.
+        2. Writes additional intervals for each good bin region of partially-good
+           ESA steps, with cull_value indicating the cull code that removed bad bins.
 
         Returns
         -------
         numpy.ndarray
             Structured array with dtype INTERVAL_DTYPE containing:
             - met_start: First MET timestamp of interval
-            - met_end: Last MET timestamp of interval
+            - met_end: Start of next interval (or last MET for final interval)
             - spin_bin_low: Lowest spin bin in this contiguous region
             - spin_bin_high: Highest spin bin in this contiguous region
             - n_bins: Number of bins in this region
-            - esa_step_mask: Bitmask of ESA steps (1-10) included in interval
-            - cull_value: Cull flag value for this region (0=good, >0=bad)
+            - esa_step_mask: Bitmask of good ESA steps (1-10) for this interval
+            - cull_value: Cull code for ESA steps/bins not included (0 if all good)
 
         Notes
         -----
         This is used for generating the Good Times output files per algorithm
         document Section 2.3.2.5.
         """
-        logger.debug("Extracting time intervals")
+        logger.debug("Extracting good time intervals")
         met_values = self._obj["met"].values
         cull_flags = self._obj["cull_flags"].values
         esa_steps = self._obj["esa_step"].values
@@ -588,105 +586,214 @@ class GoodtimesAccessor:
             logger.warning("No MET values found, returning empty intervals array")
             return np.array([], dtype=INTERVAL_DTYPE)
 
-        # Group consecutive METs with identical cull patterns
-        # Each group becomes one or more intervals (one per contiguous bin region)
         intervals: list[tuple] = []
 
-        # Start first group
-        group_start_idx = 0
-        current_pattern = cull_flags[0]
-        # Cast to int to avoid uint8 overflow when esa_step > 8
-        esa_step_mask = 1 << int(esa_steps[0] - 1)  # Bit i represents ESA step i+1
+        # Assign sweep indices based on ESA step transitions
+        sweep_indices = _get_sweep_indices(esa_steps)
+        n_sweeps = int(sweep_indices.max()) + 1 if len(sweep_indices) > 0 else 0
 
-        for met_idx in range(1, len(met_values)):
-            if np.array_equal(cull_flags[met_idx], current_pattern):
-                # Same pattern - extend current group
-                esa_step_mask |= 1 << int(esa_steps[met_idx] - 1)
+        # Build per-sweep data: for each sweep, collect (esa_step, cull_pattern) pairs
+        sweep_data: list[list[tuple[int, np.ndarray, float]]] = [
+            [] for _ in range(n_sweeps)
+        ]
+        for met_idx in range(len(met_values)):
+            sweep_idx = sweep_indices[met_idx]
+            sweep_data[sweep_idx].append(
+                (esa_steps[met_idx], cull_flags[met_idx], met_values[met_idx])
+            )
+
+        # Process sweeps and group consecutive ones with identical patterns
+        # A sweep's "pattern signature" is the tuple of (esa_step, cull_pattern_tuple)
+        def get_sweep_signature(
+            sweep: list[tuple[int, np.ndarray, float]],
+        ) -> tuple[tuple[int, tuple], ...]:
+            """
+            Create a hashable signature for a sweep.
+
+            Parameters
+            ----------
+            sweep : list[tuple[int, np.ndarray, float]]
+                List of tuples for each MET in the sweep, where each tuple contains:
+                - ESA step number (int)
+                - Cull flags array for all 90 bins (np.ndarray)
+                - MET value (float)
+
+            Returns
+            -------
+            tuple[tuple[int, tuple], ...]
+                A tuple of (esa_step, cull_pattern) pairs sorted by ESA step,
+                where cull_pattern is a tuple representation of the cull flags array.
+                This signature is hashable and can be compared for equality.
+            """
+            return tuple((esa, tuple(cull.tolist())) for esa, cull, _ in sorted(sweep))
+
+        # Group consecutive sweeps with identical signatures
+        groups: list[list[int]] = []  # List of sweep index groups
+        current_group: list[int] = []
+        current_sig: tuple | None = None
+
+        for sweep_i in range(n_sweeps):
+            if not sweep_data[sweep_i]:
+                continue
+            sig = get_sweep_signature(sweep_data[sweep_i])
+            if sig == current_sig:
+                current_group.append(sweep_i)
             else:
-                # Different pattern - close current group and start new one
-                self._add_intervals_for_pattern(
-                    intervals,
-                    met_values[group_start_idx],
-                    met_values[met_idx - 1],
-                    current_pattern,
-                    esa_step_mask,
-                )
+                if current_group:
+                    groups.append(current_group)
+                current_group = [sweep_i]
+                current_sig = sig
 
-                # Start new group
-                group_start_idx = met_idx
-                current_pattern = cull_flags[met_idx]
-                esa_step_mask = 1 << int(esa_steps[met_idx] - 1)
+        if current_group:
+            groups.append(current_group)
 
-        # Close final group
-        self._add_intervals_for_pattern(
-            intervals,
-            met_values[group_start_idx],
-            met_values[-1],
-            current_pattern,
-            esa_step_mask,
-        )
+        # Compute start time for each group
+        group_start_times: list[float] = []
+        for group in groups:
+            group_met_mask = np.isin(sweep_indices, group)
+            group_start_times.append(float(met_values[group_met_mask].min()))
 
-        logger.info(f"Extracted {len(intervals)} time intervals")
+        # Process each group, using next group's start time as met_end
+        for i, group in enumerate(groups):
+            if i + 1 < len(groups):
+                # met_end is the start of the next group
+                met_end = group_start_times[i + 1]
+            else:
+                # For the last group, use the max MET in that group
+                group_met_mask = np.isin(sweep_indices, group)
+                met_end = float(met_values[group_met_mask].max())
+
+            self._add_intervals_for_sweep_group(
+                intervals, group, sweep_data, met_values, sweep_indices, met_end
+            )
+
+        logger.info(f"Extracted {len(intervals)} good time intervals")
         return np.array(intervals, dtype=INTERVAL_DTYPE)
 
-    @staticmethod
-    def _add_intervals_for_pattern(
+    def _add_intervals_for_sweep_group(
+        self,
         intervals: list,
-        met_start: float,
+        group: list[int],
+        sweep_data: list[list[tuple[int, np.ndarray, float]]],
+        met_values: np.ndarray,
+        sweep_indices: np.ndarray,
         met_end: float,
-        pattern: np.ndarray,
-        esa_step_mask: int,
     ) -> None:
         """
-        Add interval(s) for a cull_flags pattern, one per contiguous bin region.
-
-        Creates an interval for each contiguous region of bins that share the
-        same cull value. This includes both good (cull=0) and bad (cull>0) regions.
+        Add intervals for a group of sweeps with identical cull patterns.
 
         Parameters
         ----------
         intervals : list
             List to append interval tuples to.
-        met_start : float
-            Start MET timestamp.
+        group : list[int]
+            List of sweep indices in this group.
+        sweep_data : list
+            Per-sweep data: list of (esa_step, cull_pattern, met) tuples.
+        met_values : np.ndarray
+            All MET values.
+        sweep_indices : np.ndarray
+            Sweep index for each MET.
         met_end : float
-            End MET timestamp.
-        pattern : numpy.ndarray
-            Cull flags pattern for spin bins (90 values).
-        esa_step_mask : int
-            Bitmask of ESA steps included in this time range.
+            End MET timestamp for this interval (typically the start of the next group).
         """
-        # Find contiguous regions of bins with the same cull value
-        # diff != 0 indicates a change in cull value
-        changes = np.nonzero(np.diff(pattern) != 0)[0]
+        # Get start time for this group
+        group_met_mask = np.isin(sweep_indices, group)
+        group_mets = met_values[group_met_mask]
+        met_start = float(group_mets.min())
 
-        # Build list of (start_bin, end_bin) for each contiguous region
-        # If no changes, entire range is one region
-        if len(changes) == 0:
-            regions = [(0, 89)]
-        else:
-            regions = []
-            start_bin = 0
-            for change_idx in changes:
-                regions.append((start_bin, change_idx))
-                start_bin = change_idx + 1
-            # Add final region
+        # Use first sweep in group as representative (all have identical patterns)
+        representative_sweep = sweep_data[group[0]]
+
+        # Separate ESA steps into fully-good and partially-good
+        fully_good_mask = 0
+        partially_good: list[tuple[int, np.ndarray]] = []
+        bad_cull_value = 0
+
+        for esa_step, cull_pattern, _ in representative_sweep:
+            esa_bit = 1 << int(esa_step - 1)
+
+            if np.all(cull_pattern == 0):
+                # Fully good - all 90 bins are good
+                fully_good_mask |= esa_bit
+            else:
+                # Partially good - some bins are bad
+                partially_good.append((esa_step, cull_pattern))
+                # Track the cull code from bad bins
+                bad_vals = cull_pattern[cull_pattern > 0]
+                if len(bad_vals) > 0 and bad_cull_value == 0:
+                    bad_cull_value = int(bad_vals[0])
+
+        # Write interval for fully-good ESA steps (all 90 bins)
+        if fully_good_mask > 0:
+            intervals.append(
+                (
+                    met_start,
+                    met_end,
+                    0,  # spin_bin_low
+                    89,  # spin_bin_high
+                    90,  # n_bins
+                    fully_good_mask,
+                    bad_cull_value,  # Cull code for bad ESAs/bins
+                )
+            )
+
+        # Write intervals for each partially-good ESA's good bin regions
+        for esa_step, cull_pattern in partially_good:
+            esa_bit = 1 << int(esa_step - 1)
+
+            # Get cull code from bad bins in this pattern
+            bad_vals = cull_pattern[cull_pattern > 0]
+            cull_val = int(bad_vals[0]) if len(bad_vals) > 0 else 0
+
+            # Find contiguous good regions (cull == 0)
+            good_regions = self._find_good_bin_regions(cull_pattern)
+
+            for start_bin, end_bin in good_regions:
+                n_bins = end_bin - start_bin + 1
+                intervals.append(
+                    (
+                        met_start,
+                        met_end,
+                        start_bin,
+                        end_bin,
+                        n_bins,
+                        esa_bit,
+                        cull_val,
+                    )
+                )
+
+    @staticmethod
+    def _find_good_bin_regions(cull_pattern: np.ndarray) -> list[tuple[int, int]]:
+        """
+        Find contiguous regions where cull_pattern == 0.
+
+        Parameters
+        ----------
+        cull_pattern : np.ndarray
+            Array of cull values for 90 spin bins.
+
+        Returns
+        -------
+        list[tuple[int, int]]
+            List of (start_bin, end_bin) tuples for good regions.
+        """
+        regions: list[tuple[int, int]] = []
+        in_good_region = False
+        start_bin = 0
+
+        for i, val in enumerate(cull_pattern):
+            if val == 0 and not in_good_region:
+                start_bin = i
+                in_good_region = True
+            elif val != 0 and in_good_region:
+                regions.append((start_bin, i - 1))
+                in_good_region = False
+
+        if in_good_region:
             regions.append((start_bin, 89))
 
-        # Create an interval for each region
-        for start_bin, end_bin in regions:
-            cull_value = pattern[start_bin]
-            n_bins = end_bin - start_bin + 1
-            interval = (
-                met_start,
-                met_end,
-                start_bin,
-                end_bin,
-                n_bins,
-                esa_step_mask,
-                cull_value,
-            )
-            intervals.append(interval)
+        return regions
 
     def get_cull_statistics(self) -> dict:
         """
@@ -774,13 +881,13 @@ class GoodtimesAccessor:
                 # esa_steps[10] cull_value
                 line = (
                     f"{pointing:05d} "
-                    f"{int(interval['met_start'])} "
-                    f"{int(interval['met_end'])}\t"
-                    f"{interval['spin_bin_low']} "
-                    f"{interval['spin_bin_high']} "
-                    f"{sensor}\t"
-                    f"{esa_step_flags}\t"
-                    f"{interval['cull_value']}"
+                    f"{interval['met_start']:0.1f} "
+                    f"{interval['met_end']:0.1f} "
+                    f"{interval['spin_bin_low']:2d} "
+                    f"{interval['spin_bin_high']:2d}  "
+                    f"{sensor} "
+                    f"{esa_step_flags} "
+                    f"{interval['cull_value']:3d}"
                 )
 
                 # TODO: Add rate/sigma values for each ESA step
@@ -2004,6 +2111,11 @@ def _find_event_clusters(
     # Find transitions: +1 = start of group, -1 = end of group
     diff = np.diff(padded.astype(int))
     starts = np.flatnonzero(diff == 1)
+    # We need to adjust ends for the shortening from diffs performed.
+    # The window_spans array has length = n_events - min_events + 1
+    # The contiguous diff adds two padding elements and np.diff shortens by 1.
+    # The result is that we need to add min_events and subtract 2 to get the
+    # correct end index.
     ends = np.flatnonzero(diff == -1) + min_events - 2  # Adjust for window size
 
     return list(zip(starts.tolist(), ends.tolist(), strict=False))
