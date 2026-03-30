@@ -79,6 +79,9 @@ def mag_l2(
     mode : DataMode
         The data mode to process. Default is DataMode.NORM (normal mode).
         Can also be DataMode.BURST for burst mode processing.
+    frames : list[ValidFrames]
+        List of frames to output. DEFAULT_L2_FRAMES is [SRF, GSE, GSM, RTN, DSRF]
+        Note that DSRF should be last as some vectors may become NaN after rotation.
 
     Returns
     -------
