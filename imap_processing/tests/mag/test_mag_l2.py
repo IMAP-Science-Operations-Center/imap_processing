@@ -40,7 +40,7 @@ from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 def test_mag_l2_attributes(
     norm_dataset, mag_test_l2_data, data_mode, frames, expected_frames
 ):
-    """Test that correct L2 datasets are generated and have correct attributes based on frame and mode."""
+    """Test that correct L2 datasets have correct attributes based on frame and mode."""
     calibration_dataset = mag_test_l2_data[0]
     offset_dataset = mag_test_l2_data[1]
 

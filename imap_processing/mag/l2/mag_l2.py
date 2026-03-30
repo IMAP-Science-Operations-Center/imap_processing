@@ -13,12 +13,13 @@ from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
 logger = logging.getLogger(__name__)
 
 DEFAULT_L2_FRAMES = [
-        ValidFrames.SRF,
-        ValidFrames.GSE,
-        ValidFrames.GSM,
-        ValidFrames.RTN,
-        ValidFrames.DSRF,  # should be last as some vectors may become NaN
-    ]
+    ValidFrames.SRF,
+    ValidFrames.GSE,
+    ValidFrames.GSM,
+    ValidFrames.RTN,
+    ValidFrames.DSRF,  # should be last as some vectors may become NaN
+]
+
 
 def mag_l2(
     calibration_dataset: xr.Dataset,
@@ -26,7 +27,7 @@ def mag_l2(
     input_data: xr.Dataset,
     day_to_process: np.datetime64,
     mode: DataMode = DataMode.NORM,
-    frames: list[ValidFrames] = DEFAULT_L2_FRAMES
+    frames: list[ValidFrames] = DEFAULT_L2_FRAMES,
 ) -> list[xr.Dataset]:
     """
     Complete MAG L2 processing.
