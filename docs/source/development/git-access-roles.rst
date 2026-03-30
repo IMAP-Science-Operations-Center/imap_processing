@@ -48,6 +48,9 @@ Additional GitHub Roles
 
 Beyond the **GitHub Read** role (which is sufficient for most contributors), GitHub
 provides additional permission levels: `Triage`, `Write`, `Maintain`, and `Admin`.
+Please read the GitHub's breakdown of these roles and their permissions in the
+`GitHub documentation on repository roles <https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role>`_.
+
 
 **If you need permissions** please contact the IMAP SDC team to request the
 appropriate access level for your role.
