@@ -147,8 +147,12 @@ class DailyLightcurve:
             self.exposure_times = np.roll(self.exposure_times, roll)
             self.flux_uncertainties = np.roll(self.flux_uncertainties, roll)
             self.histogram_flag_array = np.roll(self.histogram_flag_array, roll)
+
+            # Get the midpoint start time covered by repointing kernels
+            # needed to compute ecliptic coordinates
+            mid_idx = len(l1b_data["imap_start_time"]) // 2
             et_imap_start_time = sct_to_et(
-                met_to_sclkticks(l1b_data["imap_start_time"][0].data)
+                met_to_sclkticks(l1b_data["imap_start_time"][mid_idx].data)
             )
             self.ecliptic_lon, self.ecliptic_lat = (
                 self.compute_ecliptic_coords_of_bin_centers(
