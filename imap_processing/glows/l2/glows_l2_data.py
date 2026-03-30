@@ -151,12 +151,12 @@ class DailyLightcurve:
             # Get the midpoint start time covered by repointing kernels
             # needed to compute ecliptic coordinates
             mid_idx = len(l1b_data["imap_start_time"]) // 2
-            et_imap_start_time = sct_to_et(
+            pointing_midpoint_time_et = sct_to_et(
                 met_to_sclkticks(l1b_data["imap_start_time"][mid_idx].data)
             )
             self.ecliptic_lon, self.ecliptic_lat = (
                 self.compute_ecliptic_coords_of_bin_centers(
-                    et_imap_start_time, self.spin_angle
+                    pointing_midpoint_time_et, self.spin_angle
                 )
             )
 
@@ -182,7 +182,7 @@ class DailyLightcurve:
 
     @staticmethod
     def compute_ecliptic_coords_of_bin_centers(
-        data_start_time_et: float, spin_angle_bin_centers: NDArray
+        data_time_et: float, spin_angle_bin_centers: NDArray
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Compute the ecliptic coordinates of the histogram bin centers.
@@ -192,8 +192,8 @@ class DailyLightcurve:
 
         Parameters
         ----------
-        data_start_time_et : float
-            Ephemeris time corresponding to the start of the histogram accumulation.
+        data_time_et : float
+            Ephemeris time corresponding to the midpoint of the histogram accumulation.
 
         spin_angle_bin_centers : numpy.ndarray
             Spin angle bin centers for the histogram bins, measured in the IMAP frame,
@@ -218,7 +218,7 @@ class DailyLightcurve:
 
         # Transform coordinates to ECLIPJ2000 frame using SPICE transformations.
         ecliptic_coords = frame_transform_az_el(
-            data_start_time_et,
+            data_time_et,
             az_el,
             SpiceFrame.IMAP_DPS,
             SpiceFrame.ECLIPJ2000,
