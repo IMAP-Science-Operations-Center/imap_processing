@@ -18,9 +18,29 @@ from imap_processing.spice.time import (
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
-@pytest.mark.parametrize("data_mode", ["norm", "burst"])
-def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
-    """Test that L2 datasets have correct attributes based on frame and mode."""
+@pytest.mark.parametrize(
+    "data_mode,frames,expected_frames",
+    [
+        (
+            "norm",
+            [
+                ValidFrames.SRF,
+                ValidFrames.GSE,
+                ValidFrames.GSM,
+                ValidFrames.RTN,
+                ValidFrames.DSRF,
+            ],
+            5,
+        ),
+        ("norm", [], 5),
+        ("burst", [ValidFrames.SRF], 1),
+        ("burst", [], 5),
+    ],
+)
+def test_mag_l2_attributes(
+    norm_dataset, mag_test_l2_data, data_mode, frames, expected_frames
+):
+    """Test that correct L2 datasets are generated and have correct attributes based on frame and mode."""
     calibration_dataset = mag_test_l2_data[0]
     offset_dataset = mag_test_l2_data[1]
 
@@ -35,18 +55,30 @@ def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
         "imap_processing.mag.l2.mag_l2_data.frame_transform",
         side_effect=lambda *args, **kwargs: args[1],
     ):
-        l2_datasets = mag_l2(
-            calibration_dataset,
-            offset_dataset,
-            test_dataset,
-            np.datetime64("2025-10-17"),
-            mode=mode,
-        )
+        if frames:
+            # ensure when a subset of frames is needed only those are generated
+            l2_datasets = mag_l2(
+                calibration_dataset,
+                offset_dataset,
+                test_dataset,
+                np.datetime64("2025-10-17"),
+                mode=mode,
+                frames=frames,
+            )
+        else:
+            # be default all frames are generated
+            l2_datasets = mag_l2(
+                calibration_dataset,
+                offset_dataset,
+                test_dataset,
+                np.datetime64("2025-10-17"),
+                mode=mode,
+            )
 
     # Verify we have the expected number of datasets
     # L2 produces 5 frames: SRF, GSE, GSM, RTN, DSRF
-    assert len(l2_datasets) == 5, (
-        f"Expected 5 {data_mode} datasets, got {len(l2_datasets)}"
+    assert len(l2_datasets) == expected_frames, (
+        f"Expected {expected_frames} {data_mode} datasets, got {len(l2_datasets)}"
     )
 
     for dataset in l2_datasets:
