@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 def glows_l2(
     input_dataset: xr.Dataset,
     pipeline_settings_dataset: xr.Dataset,
+    calibration_dataset: xr.Dataset,
 ) -> list[xr.Dataset]:
     """
     Will process GLOWS L2 data from L1 data.
@@ -36,6 +37,9 @@ def glows_l2(
         Input L1B dataset.
     pipeline_settings_dataset : xarray.Dataset
         Dataset containing pipeline settings from
+        GlowsAncillaryCombiner.
+    calibration_dataset : xarray.Dataset
+        Dataset containing calibration data from
         GlowsAncillaryCombiner.
 
     Returns

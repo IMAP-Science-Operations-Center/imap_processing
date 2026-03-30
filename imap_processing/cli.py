@@ -758,10 +758,15 @@ class Glows(ProcessInstrument):
             pipeline_settings_combiner = GlowsAncillaryCombiner(
                 pipeline_settings_input, day_buffer
             )
+            calibration_input = dependencies.get_processing_inputs(
+                descriptor="l2-calibration"
+            )[0]
+            calibration_combiner = GlowsAncillaryCombiner(calibration_input, day_buffer)
 
             datasets = glows_l2(
                 input_dataset,
                 pipeline_settings_combiner.combined_dataset,
+                calibration_combiner.combined_dataset,
             )
 
         return datasets
