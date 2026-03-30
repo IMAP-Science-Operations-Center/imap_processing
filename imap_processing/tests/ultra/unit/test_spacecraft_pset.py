@@ -233,8 +233,7 @@ def test_validate_exposure_time_and_sensitivities(
     l1b_de = TEST_PATH / "imap_ultra_l1b_45sensor-de_20000101-repoint00000_v000.cdf"
     l1b_de = load_cdf(l1b_de)
     sensitivities_ebin_0 = pd.read_csv(
-        TEST_PATH
-        / "/Users/luco3133/Downloads/SENS-IMAP_ULTRA_90-IMAP_DPS-SC-nside32-ebin0.csv"
+        TEST_PATH / "SENS-IMAP_ULTRA_90-IMAP_DPS-SC-nside32-ebin0.csv"
     )
     exposure_factor_ebin_0 = pd.read_csv(
         TEST_PATH / "Exposures-IMAP_ULTRA_90-IMAP_DPS-SC-nside32-ebin0.csv"
