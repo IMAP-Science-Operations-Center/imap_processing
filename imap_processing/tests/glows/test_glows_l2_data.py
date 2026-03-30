@@ -175,6 +175,29 @@ def test_zero_exposure_bins(l1b_dataset, mock_ecliptic_bin_centers):
     assert np.allclose(lc.exposure_times, expected_exposure)
 
 
+def test_zero_exposure_values(l1b_dataset, mock_ecliptic_bin_centers):
+    """Zero exposure yields zero flux and zero uncertainty per bin.
+
+    Note: all bins have the same exposure time, so if one is zero all are zero.
+    """
+
+    # Update values used to calculate exposure times to
+    # ensure a zero exposure result.
+    l1b_dataset["spin_period_average"].data[:] = 0
+    l1b_dataset["number_of_spins_per_block"].data[:] = 0
+
+    with np.errstate(divide="raise", invalid="raise"):
+        lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
+
+    expected = np.zeros(l1b_dataset.sizes["bins"], dtype=float)
+    assert lc.exposure_times.shape == expected.shape
+    assert np.array_equal(lc.exposure_times, expected)
+    assert np.array_equal(lc.photon_flux, expected)
+    assert np.array_equal(lc.flux_uncertainties, expected)
+    assert np.all(np.isfinite(lc.photon_flux))
+    assert np.all(np.isfinite(lc.flux_uncertainties))
+
+
 def test_number_of_bins(l1b_dataset, mock_ecliptic_bin_centers):
     lc = DailyLightcurve(l1b_dataset, position_angle=0.0)
     assert lc.number_of_bins == 4
