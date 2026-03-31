@@ -1931,8 +1931,9 @@ def calculate_de_rates(
     ds["triple_rates"] = ds["triple_counts"] / ds["exposure_time"]
     ds["double_rates"] = ds["double_counts"] / ds["exposure_time"]
 
-    # (N, 7) - reshape unique_asc for broadcasting with esa_step
-    ds["spin_cycle"] = unique_asc[:, np.newaxis] + 7 + (ds["esa_step"] - 1) * 2
+    # (N, 7)
+    unique_asc = xr.DataArray(unique_asc, dims=["epoch"])
+    ds["spin_cycle"] = unique_asc + 7 + (ds["esa_step"] - 1) * 2
 
     # TODO: Add badtimes
     ds["badtime"] = xr.zeros_like(ds["epoch"], dtype=int)
