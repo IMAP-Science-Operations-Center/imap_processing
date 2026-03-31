@@ -2340,7 +2340,7 @@ def test_l1b_bgrates_and_goodtimes_high_rate(attr_mgr_l1b):
     epoch_times = met_to_ttj2000ns(met_times)
 
     # Create high counts (above threshold)
-    # h_bg_rate_nom = 0.0028, exposure = 2100
+    # h_bg_rate_nom = 0.0028, exposure = 420*10*0.5 = 2100 seconds
     # To be above threshold: rate > 0.0028
     # Use 10x threshold for high rate periods: 0.028 counts/sec
     # That's 0.028 * 2100 / 2100_values = 0.028 per element
@@ -2431,7 +2431,9 @@ def test_l1b_bgrates_and_goodtimes_custom_cycle_count(attr_mgr_l1b):
 
     # Should successfully create datasets with custom parameters
     assert len(l1b_goodtimes_ds["start_met"]) > 0
-    assert l1b_bgrates_ds["h_background_rates"].shape[1] == 7
+    # Background rates should be calculated from the low-count period
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
 
 
 def test_l1b_bgrates_and_goodtimes_empty_dataset(attr_mgr_l1b):
@@ -2524,7 +2526,7 @@ def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
     )
 
     # Assert - Check bgrates dataset has background fields
-    # Note: bgrates includes start_met, end_met, bin_start, bin_end per
+    # Note: bgrates includes 'start_met', 'end_met', 'bin_start', 'bin_end' per
     # BACKGROUND_RATE_FIELDS
     assert "h_background_rates" in bgrates_ds.data_vars
     assert "h_background_variance" in bgrates_ds.data_vars
@@ -2565,7 +2567,7 @@ def test_l1b_bgrates_and_goodtimes_azimuth_bins(attr_mgr_l1b):
     # Set high counts outside bins 20-50, low counts inside bins 20-50
     h_counts = (
         np.ones((num_epochs, 7, 60)) * 0.028
-    )  # High counts everywhere (10x threshold)
+    )  # High counts (10x threshold) everywhere
     o_counts = np.ones((num_epochs, 7, 60)) * 0.0028
 
     # Set low counts in the bins that are actually used (20-50)
@@ -2694,3 +2696,127 @@ def test_l1b_bgrates_and_goodtimes_offset_application(attr_mgr_l1b):
 
         # The difference should be reasonable (not negative due to offset)
         assert (end - start) > 0
+
+
+def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(attr_mgr_l1b):
+    """Test interval closure when transitioning from low to high rate
+    (covers begin > 0.0 block)."""
+    # Arrange - Create dataset that transitions from LOW to HIGH rates
+    # This specifically tests the "if begin > 0.0:" code path at line ~2787
+    num_epochs = 50  # Need at least 5 cycles (50 epochs / 10 per cycle)
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Start with LOW rates for first 30 epochs (3 cycles)
+    # Then switch to HIGH rates for last 20 epochs (2 cycles)
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.00028  # Low (below threshold)
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.000028
+
+    # Make last 20 epochs HIGH (above threshold) to trigger interval closure
+    h_counts[30:, :, :] = 0.028  # High (10x threshold)
+    o_counts[30:, :, :] = 0.0028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Should create goodtime interval that gets closed when rate goes high
+    # The interval should span the first 3 cycles (epochs 0-29)
+    assert len(l1b_goodtimes_ds["start_met"]) >= 1
+
+    # First interval should start around epoch 0's time
+    first_start = l1b_goodtimes_ds["start_met"].values[0]
+    first_end = l1b_goodtimes_ds["end_met"].values[0]
+
+    # Verify interval was created
+    assert first_start < first_end
+
+    # Background rates should be calculated from the low-rate period
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
+
+    # Variance should also be positive
+    assert np.all(l1b_bgrates_ds["h_background_variance"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_variance"].values > 0)
+
+
+def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(attr_mgr_l1b):
+    """Test multiple intervals created by multiple rate transitions."""
+    # Arrange - Create dataset with HIGH -> LOW -> HIGH -> LOW pattern
+    # This tests multiple calls to the "if begin > 0.0:" code path
+    num_epochs = 80
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Initialize with HIGH rates
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.028
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.0028
+
+    # Pattern: HIGH(0-9), LOW(10-29), HIGH(30-39), LOW(40-59), HIGH(60-79)
+    # Epochs 10-29 (2 cycles): LOW - should create interval 1
+    h_counts[10:30, :, :] = 0.00028
+    o_counts[10:30, :, :] = 0.000028
+
+    # Epochs 40-59 (2 cycles): LOW - should create interval 2
+    h_counts[40:60, :, :] = 0.00028
+    o_counts[40:60, :, :] = 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Should create at least 2 goodtime intervals (one for each LOW period)
+    assert len(l1b_goodtimes_ds["start_met"]) >= 2
+
+    # All intervals should have valid start < end
+    for i in range(len(l1b_goodtimes_ds["start_met"])):
+        assert (
+            l1b_goodtimes_ds["start_met"].values[i]
+            < l1b_goodtimes_ds["end_met"].values[i]
+        )
+
+    # Background rates should be positive for all intervals
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
