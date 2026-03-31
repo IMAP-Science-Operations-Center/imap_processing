@@ -1,4 +1,5 @@
 # ----------------------------- Useful variables -----------------------------
+uint8_fillval: &uint8_fillval 255
 real_fillval: &real_fillval -1.0e+31
 max_float: &max_float 3.4028235e+38
 species_valid_max: &species_valid_max 1e20
