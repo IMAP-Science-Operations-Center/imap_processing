@@ -106,7 +106,11 @@ class DailyLightcurve:
         self.photon_flux = np.zeros(self.number_of_bins)
         self.flux_uncertainties = np.zeros(self.number_of_bins)
 
-        if len(self.exposure_times) != 0 and self.exposure_times[0] > 0:
+        if (
+            len(self.exposure_times) != 0
+            and self.exposure_times[0] > 0
+            and len(np.unique(self.exposure_times)) == 1
+        ):
             self.photon_flux = self.raw_histograms / self.exposure_times
             self.flux_uncertainties = raw_uncertainties / self.exposure_times
 

@@ -176,10 +176,9 @@ def test_zero_exposure_bins(l1b_dataset, mock_ecliptic_bin_centers):
 
 
 def test_zero_exposure_values(l1b_dataset, mock_ecliptic_bin_centers):
-    """Zero exposure yields zero flux and zero uncertainty per bin.
+    """Zero exposure yields zero flux and zero uncertainty per bin."""
 
-    Note: all bins have the same exposure time, so if one is zero all are zero.
-    """
+    # Note: all bins have the same exposure time, so if one is zero all are zero.
 
     # Update values used to calculate exposure times to
     # ensure a zero exposure result.
@@ -191,6 +190,7 @@ def test_zero_exposure_values(l1b_dataset, mock_ecliptic_bin_centers):
 
     expected = np.zeros(l1b_dataset.sizes["bins"], dtype=float)
     assert lc.exposure_times.shape == expected.shape
+    assert len(np.unique(lc.exposure_times)) == 1
     assert np.array_equal(lc.exposure_times, expected)
     assert np.array_equal(lc.photon_flux, expected)
     assert np.array_equal(lc.flux_uncertainties, expected)
