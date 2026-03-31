@@ -236,6 +236,19 @@ def test_glows_excluded_regions_combiner(glows_ancillary_filepath):
     assert dataset["ecliptic_latitude_deg"].dims == ("region",)
 
 
+def test_glows_excluded_regions_combiner_empty_file(tmp_path):
+    file_path = tmp_path / "imap_glows_l1b-map-of-excluded-regions_20251112_v001.dat"
+    file_path.write_text("# header only\n")
+
+    combiner = GlowsAncillaryCombiner([], "20251115")
+    dataset = combiner.convert_file_to_dataset(file_path)
+
+    assert "ecliptic_longitude_deg" in dataset.data_vars
+    assert "ecliptic_latitude_deg" in dataset.data_vars
+    assert len(dataset["ecliptic_longitude_deg"]) == 0
+    assert len(dataset["ecliptic_latitude_deg"]) == 0
+
+
 def test_glows_uv_sources_combiner(glows_ancillary_filepath):
     file_path = (
         glows_ancillary_filepath / "imap_glows_map-of-uv-sources_20250923_v002.dat"

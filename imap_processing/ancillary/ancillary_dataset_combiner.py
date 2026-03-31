@@ -338,7 +338,7 @@ class GlowsAncillaryCombiner(AncillaryCombiner):
     ):
         super().__init__(ancillary_input, expected_end_date)
 
-    def convert_file_to_dataset(self, filepath: str | Path) -> xr.Dataset:
+    def convert_file_to_dataset(self, filepath: str | Path) -> xr.Dataset:  # noqa: PLR0911
         """
         Convert GLOWS ancillary .dat files to xarray datasets.
 
@@ -422,6 +422,19 @@ class GlowsAncillaryCombiner(AncillaryCombiner):
                 {
                     "l1b_unique_block_identifier": (["time_block"], identifiers),
                     "histogram_mask_array": (["time_block"], masks),
+                }
+            )
+
+        elif "l2-calibration" in filename:
+            # Handle calibration file (timestamp + cps_per_R float value)
+            with open(filepath) as f:
+                lines = [line.strip() for line in f if not line.startswith("#")]
+            identifiers = [line.split(" ", 1)[0] for line in lines]
+            values = [float(line.split(" ", 1)[1]) for line in lines]
+            return xr.Dataset(
+                {
+                    "start_time_utc": (["time_block"], identifiers),
+                    "cps_per_r": (["time_block"], values),
                 }
             )
 
