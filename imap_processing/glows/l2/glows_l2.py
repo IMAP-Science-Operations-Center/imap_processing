@@ -63,6 +63,16 @@ def glows_l2(
     if l2.number_of_good_l1b_inputs == 0:
         logger.warning("No good data found in L1B dataset. Returning empty list.")
         return []
+    elif (
+        np.all(l2.daily_lightcurve.photon_flux == 0)
+        and np.all(l2.daily_lightcurve.flux_uncertainties == 0)
+        and np.all(l2.daily_lightcurve.exposure_times == 0)
+    ):
+        logger.warning(
+            "All photon flux, flux uncertainties, and exposure times are zero. "
+            "Returning empty list."
+        )
+        return []
     else:
         return [create_l2_dataset(l2, cdf_attrs)]
 

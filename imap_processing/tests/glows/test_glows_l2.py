@@ -74,9 +74,21 @@ def test_glows_l2(
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
 
     # Test case 2: L1B dataset has no good times (all flags 0)
-    l1b_hist_dataset["flags"].values = np.zeros(l1b_hist_dataset.flags.shape)
+    l1b_hist_dataset_no_good_times = l1b_hist_dataset.copy(deep=True)
+    l1b_hist_dataset_no_good_times["flags"].values = np.zeros(
+        l1b_hist_dataset_no_good_times.flags.shape
+    )
     caplog.set_level("WARNING")
-    result = glows_l2(l1b_hist_dataset, mock_pipeline_settings, None)
+    result = glows_l2(l1b_hist_dataset_no_good_times, mock_pipeline_settings, None)
+    assert result == []
+    assert any(record.levelname == "WARNING" for record in caplog.records)
+
+    # Test case 3: Dataset has zero exposure and flux values
+    l1b_hist_dataset_zero_values = l1b_hist_dataset.copy(deep=True)
+    l1b_hist_dataset_zero_values["spin_period_average"].data[:] = 0
+    l1b_hist_dataset_zero_values["number_of_spins_per_block"].data[:] = 0
+    caplog.set_level("WARNING")
+    result = glows_l2(l1b_hist_dataset_zero_values, mock_pipeline_settings, None)
     assert result == []
     assert any(record.levelname == "WARNING" for record in caplog.records)
 
