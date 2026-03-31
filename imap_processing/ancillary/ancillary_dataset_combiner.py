@@ -364,6 +364,19 @@ class GlowsAncillaryCombiner(AncillaryCombiner):
         if "excluded-regions" in filename:
             # Handle excluded regions (2 columns: longitude, latitude)
             data = np.loadtxt(filepath, comments="#")
+            if data.size == 0:
+                return xr.Dataset(
+                    {
+                        "ecliptic_longitude_deg": (
+                            ["region"],
+                            np.array([], dtype=float),
+                        ),
+                        "ecliptic_latitude_deg": (
+                            ["region"],
+                            np.array([], dtype=float),
+                        ),
+                    }
+                )
             return xr.Dataset(
                 {
                     "ecliptic_longitude_deg": (["region"], data[:, 0]),
