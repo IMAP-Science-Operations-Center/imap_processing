@@ -13,6 +13,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
 )
 from imap_processing.glows.l2.glows_l2 import glows_l2
+from imap_processing.glows.l2.glows_l2_data import DailyLightcurve
 
 
 @pytest.fixture
@@ -276,6 +277,23 @@ def mock_pipeline_settings():
     )
 
     return mock_pipeline_dataset
+
+
+@pytest.fixture
+def mock_ecliptic_bin_centers(monkeypatch):
+    """Mock ecliptic coordinates for bin centers."""
+
+    def _mock_compute_coords(
+        _data_start_time_et: float, spin_angle: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        n_bins = len(spin_angle)
+        return np.zeros(n_bins, dtype=float), np.zeros(n_bins, dtype=float)
+
+    monkeypatch.setattr(
+        DailyLightcurve,
+        "compute_ecliptic_coords_of_bin_centers",
+        staticmethod(_mock_compute_coords),
+    )
 
 
 def mock_update_spice_parameters(self, *args, **kwargs):

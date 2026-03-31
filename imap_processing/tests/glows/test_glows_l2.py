@@ -15,7 +15,9 @@ from imap_processing.glows.l2.glows_l2 import (
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
-from imap_processing.tests.glows.conftest import mock_update_spice_parameters
+from imap_processing.tests.glows.conftest import (
+    mock_update_spice_parameters,
+)
 
 
 @pytest.fixture
@@ -51,6 +53,7 @@ def test_glows_l2(
     mock_ancillary_exclusions,
     mock_pipeline_settings,
     mock_conversion_table_dict,
+    mock_ecliptic_bin_centers,
     caplog,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
@@ -93,6 +96,7 @@ def test_generate_l2(
     mock_ancillary_exclusions,
     mock_pipeline_settings,
     mock_conversion_table_dict,
+    mock_ecliptic_bin_centers,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 

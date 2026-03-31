@@ -9,7 +9,12 @@ from numpy.typing import NDArray
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
 from imap_processing.glows.utils.constants import GlowsConstants
-from imap_processing.spice.geometry import SpiceFrame, get_instrument_mounting_az_el
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    frame_transform_az_el,
+    get_instrument_mounting_az_el,
+)
+from imap_processing.spice.time import met_to_sclkticks, sct_to_et
 
 
 @dataclass
@@ -122,8 +127,6 @@ class DailyLightcurve:
             )
         else:
             self.histogram_flag_array = np.zeros(self.number_of_bins, dtype=np.uint8)
-        self.ecliptic_lon = np.zeros(self.number_of_bins)
-        self.ecliptic_lat = np.zeros(self.number_of_bins)
 
         if self.number_of_bins:
             # imap_spin_angle_bin_cntr is the raw IMAP spin angle ψ (0 - 360°,
@@ -144,8 +147,18 @@ class DailyLightcurve:
             self.exposure_times = np.roll(self.exposure_times, roll)
             self.flux_uncertainties = np.roll(self.flux_uncertainties, roll)
             self.histogram_flag_array = np.roll(self.histogram_flag_array, roll)
-            self.ecliptic_lon = np.roll(self.ecliptic_lon, roll)
-            self.ecliptic_lat = np.roll(self.ecliptic_lat, roll)
+
+            # Get the midpoint start time covered by repointing kernels
+            # needed to compute ecliptic coordinates
+            mid_idx = len(l1b_data["imap_start_time"]) // 2
+            pointing_midpoint_time_et = sct_to_et(
+                met_to_sclkticks(l1b_data["imap_start_time"][mid_idx].data)
+            )
+            self.ecliptic_lon, self.ecliptic_lat = (
+                self.compute_ecliptic_coords_of_bin_centers(
+                    pointing_midpoint_time_et, self.spin_angle
+                )
+            )
 
     @staticmethod
     def calculate_histogram_sums(histograms: NDArray) -> NDArray:
@@ -166,6 +179,53 @@ class DailyLightcurve:
         # Zero out areas where HISTOGRAM_FILLVAL (i.e. unused bins)
         histograms[histograms == GlowsConstants.HISTOGRAM_FILLVAL] = 0
         return np.sum(histograms, axis=0, dtype=np.int64)
+
+    @staticmethod
+    def compute_ecliptic_coords_of_bin_centers(
+        data_time_et: float, spin_angle_bin_centers: NDArray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Compute the ecliptic coordinates of the histogram bin centers.
+
+        This method transforms the instrument pointing direction for each bin
+        center from the IMAP Pointing frame (IMAP_DPS) to the ECLIPJ2000 frame.
+
+        Parameters
+        ----------
+        data_time_et : float
+            Ephemeris time corresponding to the midpoint of the histogram accumulation.
+
+        spin_angle_bin_centers : numpy.ndarray
+            Spin angle bin centers for the histogram bins, measured in the IMAP frame,
+            with shape (n_bins,), and already corrected for the northernmost point of
+            the scanning circle.
+
+        Returns
+        -------
+        tuple[numpy.ndarray, numpy.ndarray]
+            Longitude and latitudes in the ECLIPJ2000 frame representing the pointing
+            direction of each histogram bin center, with shape (n_bins,).
+        """
+        # In the IMAP frame, the azimuth corresponds to the spin angle bin centers
+        azimuth = spin_angle_bin_centers
+
+        # Get elevation from instrument pointing direction in the DPS frame.
+        az_el_instrument_mounting = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
+        elevation = az_el_instrument_mounting[1]
+
+        # Create array of azimuth, elevation coordinates in the DPS frame (n_bins, 2)
+        az_el = np.stack((azimuth, np.full_like(azimuth, elevation)), axis=-1)
+
+        # Transform coordinates to ECLIPJ2000 frame using SPICE transformations.
+        ecliptic_coords = frame_transform_az_el(
+            data_time_et,
+            az_el,
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.ECLIPJ2000,
+        )
+
+        # Return ecliptic longitudes and latitudes as separate arrays.
+        return ecliptic_coords[:, 0], ecliptic_coords[:, 1]
 
 
 @dataclass
