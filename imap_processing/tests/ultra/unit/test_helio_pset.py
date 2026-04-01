@@ -97,7 +97,7 @@ def test_validate_exposure_time_and_sensitivities(
 
     # Validate exposure times for ebin 0
     exposure_times = pset["exposure_factor"][0, 0, :].values
-    expected_exposure_times = exposure_factor_ebin_0["P18"].to_numpy()
+    expected_exposure_times = exposure_factor_ebin_0["P0"].to_numpy()
     np.testing.assert_allclose(
         exposure_times,
         expected_exposure_times,
