@@ -53,6 +53,7 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l1a_lo-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
+    ("imap_codice_l1a_hi-ialirt_20260331_v0.0.22.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-nsw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
