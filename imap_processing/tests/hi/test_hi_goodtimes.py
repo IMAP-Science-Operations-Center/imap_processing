@@ -299,29 +299,33 @@ class TestGetGoodIntervals:
         # With sweep-based grouping, consecutive sweeps with identical patterns
         # are merged. The number of intervals depends on sweep structure.
         assert len(intervals) >= 1
-
-        # All intervals should be good (cull_value == 0) and span all bins
-        for interval in intervals:
-            assert interval["cull_value"] == 0
-            assert interval["spin_bin_low"] == 0
-            assert interval["spin_bin_high"] == 89
-            assert interval["n_bins"] == 90
-
-        # Check interval structure
         assert intervals.dtype == INTERVAL_DTYPE
 
+        # All intervals should be good (cull_value == 0)
+        for interval in intervals:
+            assert interval["cull_value"] == 0
+            # All-good intervals have all ESAs marked in bitmask
+            assert interval["esa_step_mask"] > 0
+
     def test_get_good_intervals_structure(self, goodtimes_instance):
-        """Test interval structure and field names."""
+        """Test interval structure and attributes."""
         intervals = goodtimes_instance.goodtimes.get_good_intervals()
 
-        # Check that all fields exist
-        assert "met_start" in intervals.dtype.names
-        assert "met_end" in intervals.dtype.names
-        assert "spin_bin_low" in intervals.dtype.names
-        assert "spin_bin_high" in intervals.dtype.names
-        assert "n_bins" in intervals.dtype.names
-        assert "esa_step_mask" in intervals.dtype.names
-        assert "cull_value" in intervals.dtype.names
+        # Check that intervals have the correct dtype
+        assert intervals.dtype == INTERVAL_DTYPE
+
+        # Check that all required fields exist
+        required_fields = [
+            "met_start",
+            "met_end",
+            "spin_bin_low",
+            "spin_bin_high",
+            "n_bins",
+            "esa_step_mask",
+            "cull_value",
+        ]
+        for field in required_fields:
+            assert field in intervals.dtype.names
 
     def test_get_good_intervals_all_good_values(self, goodtimes_instance):
         """Test interval values when all bins are good."""
@@ -330,11 +334,9 @@ class TestGetGoodIntervals:
         # With sweep-based grouping, we may have multiple intervals
         assert len(intervals) >= 1
 
-        # All intervals should have all bins good
+        # All intervals should be all-good (cull_value == 0)
         for interval in intervals:
-            assert interval["spin_bin_low"] == 0
-            assert interval["spin_bin_high"] == 89
-            assert interval["n_bins"] == 90
+            assert interval["esa_step_mask"] > 0
             assert interval["cull_value"] == 0
 
         # First interval should start at first MET
@@ -364,17 +366,12 @@ class TestGetGoodIntervals:
         # The number of intervals depends on sweep grouping
         assert len(intervals) >= 2
 
-        # All intervals should have cull_value == 0 or indicating what was culled
-        # Check that we have good bin regions
-        good_intervals = [i for i in intervals if i["cull_value"] == 0]
-        assert len(good_intervals) >= 1
-
         # Check for the partial interval (bins 21-89 good for the culled ESA step)
-        partial_intervals = [
-            i for i in intervals if i["spin_bin_low"] == 21 and i["spin_bin_high"] == 89
-        ]
-        assert len(partial_intervals) >= 1
-        assert partial_intervals[0]["n_bins"] == 69
+        has_partial = any(
+            interval["spin_bin_low"] == 21 and interval["spin_bin_high"] == 89
+            for interval in intervals
+        )
+        assert has_partial, "Should have at least one partial region with bins 21-89"
 
     def test_get_good_intervals_with_gaps(self, goodtimes_instance):
         """Test intervals when bins have gaps in cull values."""

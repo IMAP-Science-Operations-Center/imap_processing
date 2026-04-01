@@ -578,190 +578,153 @@ class GoodtimesAccessor:
         document Section 2.3.2.5.
         """
         logger.debug("Extracting good time intervals")
-        met_values = self._obj["met"].values
-        cull_flags = self._obj["cull_flags"].values
-        esa_steps = self._obj["esa_step"].values
 
+        # Determine which dimension is present (epoch for CDF, met for in-memory)
+        time_dim = "epoch" if "epoch" in self._obj.dims else "met"
+
+        # Get met values
+        met_values = self._obj["met"].values
         if len(met_values) == 0:
             logger.warning("No MET values found, returning empty intervals array")
             return np.array([], dtype=INTERVAL_DTYPE)
 
+        # Add sweep indices as a coordinate
+        ds = _add_sweep_indices(self._obj)
+
+        # Compare consecutive sweeps using xarray groupby
+        grouped = list(ds["cull_flags"].groupby("esa_sweep"))
+
+        # Determine pattern changes by comparing each sweep to the next
+        # Start with False for first sweep (no previous sweep)
+        pattern_changes = [False]
+        for i in range(len(grouped) - 1):
+            # The grouped list contains tuples (sweep_idx, cull_flags_ds).
+            # Grab just the cull_flags_ds values for comparison.
+            cull_curr = grouped[i][1]
+            cull_next = grouped[i + 1][1]
+
+            # Compare shapes first (different lengths = different pattern)
+            if cull_curr.shape != cull_next.shape:
+                pattern_changes.append(True)
+            else:
+                # Compare cull_flag values only (not coordinates)
+                pattern_changes.append(
+                    not np.array_equal(cull_curr.values, cull_next.values)
+                )
+
+        # Convert to numpy array and create group IDs
+        pattern_changes = np.array(pattern_changes, dtype=bool)
+
+        # Use cumsum to create group IDs
+        group_ids = pattern_changes.cumsum().astype(int)
+
+        # Map group IDs to all time points using the correct dimension
+        group_coord = np.array([group_ids[int(s)] for s in ds["esa_sweep"].values])
+        ds = ds.assign_coords(pattern_group=(time_dim, group_coord))
+
+        # Group by pattern_group (consecutive identical sweeps only)
         intervals: list[tuple] = []
+        pattern_groups = list(ds.groupby("pattern_group"))
 
-        # Assign sweep indices based on ESA step transitions
-        sweep_indices = _get_sweep_indices(esa_steps)
-        n_sweeps = int(sweep_indices.max()) + 1 if len(sweep_indices) > 0 else 0
+        for i, (_, pattern_ds) in enumerate(pattern_groups):
+            # Get met values from the pattern dataset
+            pattern_met = pattern_ds["met"].values
+            met_start = float(pattern_met.min())
 
-        # Build per-sweep data: for each sweep, collect (esa_step, cull_pattern) pairs
-        sweep_data: list[list[tuple[int, np.ndarray, float]]] = [
-            [] for _ in range(n_sweeps)
-        ]
-        for met_idx in range(len(met_values)):
-            sweep_idx = sweep_indices[met_idx]
-            sweep_data[sweep_idx].append(
-                (esa_steps[met_idx], cull_flags[met_idx], met_values[met_idx])
+            # met_end is start of next group, or max MET of this group if last
+            if i + 1 < len(pattern_groups):
+                next_met = pattern_groups[i + 1][1]["met"].values
+                met_end = float(next_met.min())
+            else:
+                met_end = float(pattern_met.max())
+
+            # Get first sweep as representative (all sweeps in pattern are identical)
+            first_sweep_idx = pattern_ds["esa_sweep"].values[0]
+            first_sweep = pattern_ds.sel(
+                {time_dim: (pattern_ds["esa_sweep"] == first_sweep_idx)}
             )
 
-        # Process sweeps and group consecutive ones with identical patterns
-        # A sweep's "pattern signature" is the tuple of (esa_step, cull_pattern_tuple)
-        def get_sweep_signature(
-            sweep: list[tuple[int, np.ndarray, float]],
-        ) -> tuple[tuple[int, tuple], ...]:
-            """
-            Create a hashable signature for a sweep.
-
-            Parameters
-            ----------
-            sweep : list[tuple[int, np.ndarray, float]]
-                List of tuples for each MET in the sweep, where each tuple contains:
-                - ESA step number (int)
-                - Cull flags array for all 90 bins (np.ndarray)
-                - MET value (float)
-
-            Returns
-            -------
-            tuple[tuple[int, tuple], ...]
-                A tuple of (esa_step, cull_pattern) pairs sorted by ESA step,
-                where cull_pattern is a tuple representation of the cull flags array.
-                This signature is hashable and can be compared for equality.
-            """
-            return tuple((esa, tuple(cull.tolist())) for esa, cull, _ in sorted(sweep))
-
-        # Group consecutive sweeps with identical signatures
-        groups: list[list[int]] = []  # List of sweep index groups
-        current_group: list[int] = []
-        current_sig: tuple | None = None
-
-        for sweep_i in range(n_sweeps):
-            if not sweep_data[sweep_i]:
-                continue
-            sig = get_sweep_signature(sweep_data[sweep_i])
-            if sig == current_sig:
-                current_group.append(sweep_i)
-            else:
-                if current_group:
-                    groups.append(current_group)
-                current_group = [sweep_i]
-                current_sig = sig
-
-        if current_group:
-            groups.append(current_group)
-
-        # Compute start time for each group
-        group_start_times: list[float] = []
-        for group in groups:
-            group_met_mask = np.isin(sweep_indices, group)
-            group_start_times.append(float(met_values[group_met_mask].min()))
-
-        # Process each group, using next group's start time as met_end
-        for i, group in enumerate(groups):
-            if i + 1 < len(groups):
-                # met_end is the start of the next group
-                met_end = group_start_times[i + 1]
-            else:
-                # For the last group, use the max MET in that group
-                group_met_mask = np.isin(sweep_indices, group)
-                met_end = float(met_values[group_met_mask].max())
-
-            self._add_intervals_for_sweep_group(
-                intervals, group, sweep_data, met_values, sweep_indices, met_end
+            # Generate interval elements for this pattern
+            intervals.extend(
+                self._generate_intervals_for_pattern(first_sweep, met_start, met_end)
             )
 
         logger.info(f"Extracted {len(intervals)} good time intervals")
         return np.array(intervals, dtype=INTERVAL_DTYPE)
 
-    def _add_intervals_for_sweep_group(
-        self,
-        intervals: list,
-        group: list[int],
-        sweep_data: list[list[tuple[int, np.ndarray, float]]],
-        met_values: np.ndarray,
-        sweep_indices: np.ndarray,
-        met_end: float,
-    ) -> None:
+    def _generate_intervals_for_pattern(
+        self, sweep_ds: xr.Dataset, met_start: float, met_end: float
+    ) -> list[tuple]:
         """
-        Add intervals for a group of sweeps with identical cull patterns.
+        Generate interval elements for a sweep pattern.
 
         Parameters
         ----------
-        intervals : list
-            List to append interval tuples to.
-        group : list[int]
-            List of sweep indices in this group.
-        sweep_data : list
-            Per-sweep data: list of (esa_step, cull_pattern, met) tuples.
-        met_values : np.ndarray
-            All MET values.
-        sweep_indices : np.ndarray
-            Sweep index for each MET.
+        sweep_ds : xarray.Dataset
+            Representative sweep.
+        met_start : float
+            Start MET for this interval group.
         met_end : float
-            End MET timestamp for this interval (typically the start of the next group).
+            End MET for this interval group.
+
+        Returns
+        -------
+        list[tuple]
+            List of interval tuples matching INTERVAL_DTYPE.
         """
-        # Get start time for this group
-        group_met_mask = np.isin(sweep_indices, group)
-        group_mets = met_values[group_met_mask]
-        met_start = float(group_mets.min())
-
-        # Use first sweep in group as representative (all have identical patterns)
-        representative_sweep = sweep_data[group[0]]
-
-        # Separate ESA steps into fully-good and partially-good
-        fully_good_mask = 0
-        partially_good: list[tuple[int, np.ndarray]] = []
+        all_good_mask = 0
+        partial_regions = []
         bad_cull_value = 0
 
-        for esa_step, cull_pattern, _ in representative_sweep:
-            esa_bit = 1 << int(esa_step - 1)
+        # Process each unique ESA step
+        for esa_step in np.unique(sweep_ds["esa_step"].values):
+            esa_mask = sweep_ds["esa_step"] == esa_step
+            cull_pattern = sweep_ds["cull_flags"].values[esa_mask.values][0]
+            esa_bit = 1 << (int(esa_step) - 1)
 
             if np.all(cull_pattern == 0):
-                # Fully good - all 90 bins are good
-                fully_good_mask |= esa_bit
+                all_good_mask |= esa_bit
             else:
-                # Partially good - some bins are bad
-                partially_good.append((esa_step, cull_pattern))
-                # Track the cull code from bad bins
                 bad_vals = cull_pattern[cull_pattern > 0]
-                if len(bad_vals) > 0 and bad_cull_value == 0:
-                    bad_cull_value = int(bad_vals[0])
+                if len(bad_vals) > 0:
+                    bad_cull_value |= int(np.bitwise_or.reduce(bad_vals))
+                    region_cull = int(bad_vals[0])
+                else:
+                    region_cull = 0
 
-        # Write interval for fully-good ESA steps (all 90 bins)
-        if fully_good_mask > 0:
-            intervals.append(
+                for bin_low, bin_high in self._find_good_bin_regions(cull_pattern):
+                    partial_regions.append(
+                        {
+                            "esa_bit": esa_bit,
+                            "bin_low": bin_low,
+                            "bin_high": bin_high,
+                            "cull_value": region_cull,
+                        }
+                    )
+
+        # Generate interval elements
+        elements = []
+
+        if all_good_mask > 0:
+            elements.append(
+                (met_start, met_end, 0, 89, 90, all_good_mask, bad_cull_value)
+            )
+
+        for region in partial_regions:
+            n_bins = region["bin_high"] - region["bin_low"] + 1
+            elements.append(
                 (
                     met_start,
                     met_end,
-                    0,  # spin_bin_low
-                    89,  # spin_bin_high
-                    90,  # n_bins
-                    fully_good_mask,
-                    bad_cull_value,  # Cull code for bad ESAs/bins
+                    region["bin_low"],
+                    region["bin_high"],
+                    n_bins,
+                    region["esa_bit"],
+                    region["cull_value"],
                 )
             )
 
-        # Write intervals for each partially-good ESA's good bin regions
-        for esa_step, cull_pattern in partially_good:
-            esa_bit = 1 << int(esa_step - 1)
-
-            # Get cull code from bad bins in this pattern
-            bad_vals = cull_pattern[cull_pattern > 0]
-            cull_val = int(bad_vals[0]) if len(bad_vals) > 0 else 0
-
-            # Find contiguous good regions (cull == 0)
-            good_regions = self._find_good_bin_regions(cull_pattern)
-
-            for start_bin, end_bin in good_regions:
-                n_bins = end_bin - start_bin + 1
-                intervals.append(
-                    (
-                        met_start,
-                        met_end,
-                        start_bin,
-                        end_bin,
-                        n_bins,
-                        esa_bit,
-                        cull_val,
-                    )
-                )
+        return elements
 
     @staticmethod
     def _find_good_bin_regions(cull_pattern: np.ndarray) -> list[tuple[int, int]]:
@@ -1417,15 +1380,18 @@ def _add_sweep_indices(l1b_de: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     l1b_de : xarray.Dataset
-        L1B Direct Event dataset.
+        L1B Direct Event dataset or goodtimes dataset.
 
     Returns
     -------
     xarray.Dataset
-        Dataset with esa_sweep coordinate added on epoch dimension.
+        Dataset with esa_sweep coordinate added on the time dimension
+        (either 'epoch' or 'met').
     """
     sweep_indices = _get_sweep_indices(l1b_de["esa_step"].values)
-    return l1b_de.assign_coords(esa_sweep=("epoch", sweep_indices))
+    # Determine which dimension to use (epoch for CDF data, met for in-memory)
+    time_dim = "epoch" if "epoch" in l1b_de.dims else "met"
+    return l1b_de.assign_coords(esa_sweep=(time_dim, sweep_indices))
 
 
 def _compute_normalized_counts_per_sweep(
