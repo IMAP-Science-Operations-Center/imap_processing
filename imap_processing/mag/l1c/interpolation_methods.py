@@ -296,7 +296,12 @@ def linear_filtered(
     input_filtered, vectors_filtered = cic_filter(
         input_vectors, input_timestamps, output_timestamps, input_rate, output_rate
     )
-    return linear(vectors_filtered, input_filtered, output_timestamps)
+    return linear(
+        vectors_filtered,
+        input_filtered,
+        output_timestamps,
+        extrapolate=True,
+    )
 
 
 def quadratic_filtered(
