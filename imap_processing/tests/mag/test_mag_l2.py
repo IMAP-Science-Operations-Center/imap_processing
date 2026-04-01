@@ -5,7 +5,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.mag.constants import DataMode
+from imap_processing.mag.constants import FILLVAL, DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
 from imap_processing.spice.time import (
@@ -445,6 +445,55 @@ def test_spice_returns(norm_dataset):
         assert l2.frame.name == "DSRF"
         assert not np.array_equal(l2.vectors, norm_dataset["vectors"].data[:, :3])
         assert np.array_equal(l2.vectors[0], [-1, -1, -1])
+
+
+def test_rotate_frame_preserves_fillval_and_nan(norm_dataset):
+    """Test that rotate_frame preserves FILLVAL and NaN vectors."""
+
+    vectors = norm_dataset["vectors"].data[:, :3].copy()
+    n = len(vectors)
+
+    # Set some vectors to FILLVAL and NaN
+    vectors[0] = [FILLVAL, FILLVAL, FILLVAL]
+    vectors[2] = [np.nan, np.nan, np.nan]
+    # Partial NaN in a row
+    vectors[4] = [1.0, np.nan, 3.0]
+    # Partial FILLVAL in a row
+    vectors[5] = [FILLVAL, 2.0, 3.0]
+
+    l2 = MagL2(
+        vectors=vectors,
+        epoch=norm_dataset["epoch"].data,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(n),
+        quality_bitmask=np.zeros(n),
+        data_mode=DataMode.NORM,
+        offsets=np.zeros((n, 3)),
+        timedelta=np.zeros(n),
+    )
+
+    rotated_values = np.full(vectors.shape, 99.0)
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        return_value=rotated_values,
+    ):
+        l2.rotate_frame(ValidFrames.DSRF)
+
+    assert l2.frame == ValidFrames.DSRF
+
+    # Full FILLVAL row -> all components should be FILLVAL
+    assert np.all(l2.vectors[0] == FILLVAL)
+    # Full NaN row -> all components should be FILLVAL
+    assert np.all(l2.vectors[2] == FILLVAL)
+    # Partial NaN -> affected components should be FILLVAL
+    assert l2.vectors[4, 1] == FILLVAL
+    # Partial FILLVAL -> affected components should be FILLVAL
+    assert l2.vectors[5, 0] == FILLVAL
+
+    # Normal vectors should get the rotated value
+    assert np.all(l2.vectors[1] == 99.0)
+    assert np.all(l2.vectors[3] == 99.0)
 
 
 def test_qf(norm_dataset):

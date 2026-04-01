@@ -175,7 +175,11 @@ def norm_dataset(mag_test_l2_data):
     dataset.attrs["vectors_per_second"] = vectors_per_second_attr
     dataset["epoch"] = epoch_vals
     dataset.attrs["Logical_source"] = "imap_mag_l1c_norm-mago"
-    vectors = np.array([[i, i, i, 2] for i in range(1, 3505)])
+    # Actual dataset is a CDF_FLOAT which is a float32.
+    vectors = np.array(
+        [[i, i, i, 2] for i in range(1, 3505)],
+        dtype=np.float64,
+    )
     dataset["vectors"].data = vectors
 
     return dataset

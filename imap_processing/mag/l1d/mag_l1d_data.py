@@ -298,26 +298,40 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             self.epoch_et: np.ndarray = ttj2000ns_to_et(self.epoch)
             self.magi_epoch_et: np.ndarray = ttj2000ns_to_et(self.magi_epoch)
 
-        self.vectors = frame_transform(
+        new_vectors = frame_transform(
             self.epoch_et,
             self.vectors,
             from_frame=start_frame.spice_frame,
             to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
+        if np.isnan(self.vectors).any() or (self.vectors == FILLVAL).any():
+            new_vectors = np.where(
+                np.isnan(self.vectors) | (self.vectors == FILLVAL),
+                FILLVAL,
+                new_vectors,
+            )
+        self.vectors = new_vectors
 
         # If we were in MAGO frame, we need to rotate MAGI vectors from MAGI to
         # end_frame
         if start_frame == ValidFrames.MAGO:
             start_frame = ValidFrames.MAGI
 
-        self.magi_vectors = frame_transform(
+        new_magi_vectors = frame_transform(
             self.magi_epoch_et,
             self.magi_vectors,
             from_frame=start_frame.spice_frame,
             to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
+        if np.isnan(self.magi_vectors).any() or (self.magi_vectors == FILLVAL).any():
+            new_magi_vectors = np.where(
+                np.isnan(self.magi_vectors) | (self.magi_vectors == FILLVAL),
+                FILLVAL,
+                new_magi_vectors,
+            )
+        self.magi_vectors = new_magi_vectors
 
         self.frame = end_frame
 

@@ -7,6 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.mag import constants
 from imap_processing.mag.constants import FILLVAL, DataMode
 from imap_processing.mag.l1b.mag_l1b import calibrate_vector
 from imap_processing.spice.geometry import SpiceFrame, frame_transform
@@ -417,13 +418,21 @@ class MagL2L1dBase:
         """
         if self.epoch_et is None:
             self.epoch_et = ttj2000ns_to_et(self.epoch)
-        self.vectors = frame_transform(
+        new_vectors = frame_transform(
             self.epoch_et,
             self.vectors,
             from_frame=self.frame.spice_frame,
             to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
+        if np.isnan(self.vectors).any() or (self.vectors == constants.FILLVAL).any():
+            new_vectors = np.where(
+                np.isnan(self.vectors) | (self.vectors == constants.FILLVAL),
+                constants.FILLVAL,
+                new_vectors,
+            )
+
+        self.vectors = new_vectors
         self.frame = end_frame
 
 
