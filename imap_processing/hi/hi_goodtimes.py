@@ -1258,6 +1258,7 @@ def mark_bad_tdc_cal(
     goodtimes_ds: xr.Dataset,
     diagfee: xr.Dataset,
     cull_code: int = CullCode.BAD_TDC_CAL,
+    check_tdc_3: bool = False,
 ) -> None:
     """
     Remove times with failed TDC calibration (DIAG_FEE method).
@@ -1282,6 +1283,9 @@ def mark_bad_tdc_cal(
         - tdc3_cal_ctrl_stat: TDC3 calibration status (bit 1 = success)
     cull_code : int, optional
         Cull code to use for marking bad times. Default is CullCode.LOOSE.
+    check_tdc_3 : bool, optional
+        Whether to check TDC3 calibration status in addition to TDC1 and TDC2.
+        Default is False to match original C code behavior.
 
     Notes
     -----
@@ -1310,11 +1314,11 @@ def mark_bad_tdc_cal(
 
     # Identify any packets where any of the three TDC calibrations failed.
     # TDC failure check (bit 1: 1=good, 0=bad)
-    tdc_failed = (
-        ((diagfee["tdc1_cal_ctrl_stat"].values & 2) == 0)
-        | ((diagfee["tdc2_cal_ctrl_stat"].values & 2) == 0)
-        | ((diagfee["tdc3_cal_ctrl_stat"].values & 2) == 0)
+    tdc_failed = ((diagfee["tdc1_cal_ctrl_stat"].values & 2) == 0) | (
+        (diagfee["tdc2_cal_ctrl_stat"].values & 2) == 0
     )
+    if check_tdc_3:
+        tdc_failed |= (diagfee["tdc3_cal_ctrl_stat"].values & 2) == 0
 
     # Only loop over non-duplicate packets with TDC failures
     tdc_failed_indices = np.nonzero(~is_duplicate & tdc_failed)[0]

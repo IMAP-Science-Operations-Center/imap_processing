@@ -1726,7 +1726,12 @@ class TestMarkBadTdcCal:
             }
         )
 
-        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_tdc3_fails)
+        # Check that setting check_tdc_3=False results in all good values
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_tdc3_fails, check_tdc_3=False)
+        assert np.all(goodtimes_for_tdc["cull_flags"].values[0, :] == CullCode.GOOD)
+
+        # Now run with check_tdc_3=True, should mark times from 1050 to 1100
+        mark_bad_tdc_cal(goodtimes_for_tdc, diagfee_tdc3_fails, check_tdc_3=True)
 
         # TDC3 fails at packet 0 (MET 1000), should mark times from 1000 to 1050
         # MET 1000 (index 0) should be culled
