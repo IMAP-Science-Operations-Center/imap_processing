@@ -68,10 +68,7 @@ def glows_l2(
         and np.all(l2.daily_lightcurve.flux_uncertainties == 0)
         and np.all(l2.daily_lightcurve.exposure_times == 0)
     ):
-        logger.warning(
-            "All photon flux, flux uncertainties, and exposure times are zero. "
-            "Returning empty list."
-        )
+        logger.warning("All flux and exposure times are zero. Returning empty list.")
         return []
     else:
         return [create_l2_dataset(l2, cdf_attrs)]
