@@ -521,8 +521,6 @@ def interpolate_gaps(
 
         # Limit timestamps to only include the areas with burst data
         gap_timeline = gap_timeline[short]
-        if gap_timeline.size == 0:
-            continue
         # do not include range
         adjusted_gap_timeline, gap_fill = interpolation_function(
             burst_vectors[burst_start:burst_end, :3],
