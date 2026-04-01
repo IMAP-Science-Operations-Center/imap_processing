@@ -184,6 +184,7 @@ def postlaunch_packet_path():
     ]
     return tuple(directory / fname for fname in filenames)
 
+
 @pytest.fixture
 def postlaunch_xarray_data(postlaunch_packet_path, sc_packet_path):
     """Create xarray data for multiple packets."""
@@ -850,9 +851,7 @@ def test_process_codice_lo(
 
 
 @pytest.mark.external_test_data
-def test_process_codice_hi(
-    postlaunch_xarray_data, cod_hi_l1a_test_data_transposed
-):
+def test_process_codice_hi(postlaunch_xarray_data, cod_hi_l1a_test_data_transposed):
     """Test process_codice for hi."""
     grouped_cod_hi_data = find_groups(
         postlaunch_xarray_data, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
@@ -870,12 +869,12 @@ def test_process_codice_hi(
             cod_hi_science_values, cod_hi_metadata_values, "hi"
         )
         l1a_lut_path = (
-                imap_module_directory
-                / "tests"
-                / "codice"
-                / "data"
-                / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20260129_v002.json"
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "l1a_lut"
+            / "imap_codice_l1a-sci-lut_20260129_v002.json"
         )
         l1a_hi = l1a_ialirt_hi(cod_hi_dataset, l1a_lut_path)
 
