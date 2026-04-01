@@ -113,7 +113,9 @@ def test_interpolation_methods():
 def test_process_mag_l1c(norm_dataset, burst_dataset):
     l1c = process_mag_l1c(norm_dataset, burst_dataset, InterpolationFunction.linear)
     expected_output_timeline = (
-        np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6])
+        np.array(
+            [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6]
+        )
         * 1e9
     )
     assert np.array_equal(l1c[:, 0], expected_output_timeline)
@@ -531,7 +533,29 @@ def test_generate_timeline():
     gaps_rate_gap = np.array([[1_000_000_000, 4_000_000_000, 4]])
     output_rate_gap = generate_timeline(epoch_rate_gap, gaps_rate_gap)
     expected_rate_gap = (
-        np.array([0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5])
+        np.array(
+            [
+                0,
+                0.25,
+                0.5,
+                0.75,
+                1,
+                1.25,
+                1.5,
+                1.75,
+                2,
+                2.25,
+                2.5,
+                2.75,
+                3,
+                3.25,
+                3.5,
+                3.75,
+                4,
+                4.25,
+                4.5,
+            ]
+        )
         * 1e9
     )
     assert np.array_equal(output_rate_gap, expected_rate_gap)

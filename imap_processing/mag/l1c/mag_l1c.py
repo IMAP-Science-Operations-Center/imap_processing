@@ -511,7 +511,9 @@ def interpolate_gaps(
             # filtered range at the trailing edge by roughly one output cadence.
             short_end -= int(1e9 / norm_rate.value)
 
-        short = (gap_timeline >= burst_epochs[burst_start]) & (gap_timeline <= short_end)
+        short = (gap_timeline >= burst_epochs[burst_start]) & (
+            gap_timeline <= short_end
+        )
         num_short = int(short.sum())
 
         if len(gap_timeline) != num_short:
@@ -667,7 +669,12 @@ def find_all_gaps(
     if start_of_day_ns is not None and epoch_data[0] > start_of_day_ns:
         # Add a gap from the start of the day to the first timestamp
         gaps = np.concatenate(
-            (gaps, np.array([[start_of_day_ns, epoch_data[0], first_rate]], dtype=np.int64))
+            (
+                gaps,
+                np.array(
+                    [[start_of_day_ns, epoch_data[0], first_rate]], dtype=np.int64
+                ),
+            )
         )
 
     for index, (start_index, vectors_per_second) in enumerate(rate_segments):
@@ -681,7 +688,10 @@ def find_all_gaps(
 
     if end_of_day_ns is not None and epoch_data[-1] < end_of_day_ns:
         gaps = np.concatenate(
-            (gaps, np.array([[epoch_data[-1], end_of_day_ns, last_rate]], dtype=np.int64))
+            (
+                gaps,
+                np.array([[epoch_data[-1], end_of_day_ns, last_rate]], dtype=np.int64),
+            )
         )
 
     return gaps
@@ -717,9 +727,9 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
     diffs = abs(np.diff(timeline_data))
 
     # Gap can be up to 7.5% larger than expected vectors per second due to clock drift
-    gap_index = np.asarray(diffs - expected_gap > expected_gap * GAP_TOLERANCE).nonzero()[
-        0
-    ]
+    gap_index = np.asarray(
+        diffs - expected_gap > expected_gap * GAP_TOLERANCE
+    ).nonzero()[0]
     output: np.ndarray = np.zeros((len(gap_index), 3), dtype=np.int64)
 
     for index, gap in enumerate(gap_index):
@@ -764,7 +774,22 @@ def generate_missing_timestamps(gap: np.ndarray) -> np.ndarray:
 
 
 def _is_expected_rate(timestamp_difference: float, vectors_per_second: int) -> bool:
-    """Return True when a timestamp spacing matches a rate within tolerance."""
+    """
+    Determine whether a timestamp spacing matches an expected cadence.
+
+    Parameters
+    ----------
+    timestamp_difference : float
+        The observed spacing between adjacent timestamps, in nanoseconds.
+    vectors_per_second : int
+        The expected number of vectors per second for the cadence being checked.
+
+    Returns
+    -------
+    bool
+        True when the observed spacing is within `GAP_TOLERANCE` of the expected
+        cadence.
+    """
     expected_gap = 1 / vectors_per_second * 1e9
     return abs(timestamp_difference - expected_gap) <= expected_gap * GAP_TOLERANCE
 
@@ -778,6 +803,19 @@ def _find_rate_segments(
     Walk each configured transition backward while the observed cadence already matches
     the new rate so gaps stay attached to the correct segment instead of producing
     spurious single-sample micro-gaps at delayed Config boundaries.
+
+    Parameters
+    ----------
+    epoch_data : numpy.ndarray
+        The sorted epoch timestamps for the current timeline, in nanoseconds.
+    vecsec_dict : dict[int, int]
+        Mapping of transition start time to expected vectors-per-second rate.
+
+    Returns
+    -------
+    list[tuple[int, int]]
+        Pairs of `(start_index, vectors_per_second)` describing contiguous rate
+        segments in `epoch_data`.
     """
     if epoch_data.shape[0] == 0:
         return []
