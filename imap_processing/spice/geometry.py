@@ -321,7 +321,11 @@ def frame_transform(
 
     # For every FILLVAL in the input position, ensure the output is also NaN or FILLVAL
     if np.isnan(position).any() or (position == constants.FILLVAL).any():
-        result = np.where(np.isnan(position) | (position == constants.FILLVAL), constants.FILLVAL, result)
+        result = np.where(
+            np.isnan(position) | (position == constants.FILLVAL),
+            constants.FILLVAL,
+            result,
+        )
 
     return result
 

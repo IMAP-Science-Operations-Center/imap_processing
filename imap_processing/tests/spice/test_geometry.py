@@ -2,11 +2,11 @@
 
 from unittest import mock
 
-from imap_processing.mag import constants
 import numpy as np
 import pytest
 import spiceypy
 
+from imap_processing.mag import constants
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
@@ -167,9 +167,9 @@ def test_get_spacecraft_to_instrument_spin_phase_offset(
                 [
                     [0, 0, 0],
                     [constants.FILLVAL, constants.FILLVAL, constants.FILLVAL],
-                    [np.nan, np.nan, np.nan]
+                    [np.nan, np.nan, np.nan],
                 ]
-                ),
+            ),
             SpiceFrame.IMAP_SPACECRAFT,
             SpiceFrame.IMAP_DPS,
         ),
@@ -219,7 +219,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
 
         # Ensure that NaN/FILL_VAL inputs are preserved exactly as FILL_VAL outputs
         # and not just really close to but not quite FILL_VAL
-        for input_vec, output_vec in zip(position, result):
+        for input_vec, output_vec in zip(position, result, strict=False):
             if np.isnan(input_vec).all() or (input_vec == constants.FILLVAL).all():
                 assert (output_vec == constants.FILLVAL).all()
 
