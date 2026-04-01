@@ -687,8 +687,10 @@ class GoodtimesAccessor:
             else:
                 bad_vals = cull_pattern[cull_pattern > 0]
                 if len(bad_vals) > 0:
-                    bad_cull_value |= int(np.bitwise_or.reduce(bad_vals))
-                    region_cull = int(bad_vals[0])
+                    # Aggregate all non-zero cull codes for this ESA step so that
+                    # the region cull value reflects every flag that contributed.
+                    region_cull = int(np.bitwise_or.reduce(bad_vals))
+                    bad_cull_value |= region_cull
                 else:
                     region_cull = 0
 
@@ -798,7 +800,7 @@ class GoodtimesAccessor:
         Write time intervals to text file in the format specified by algorithm document.
 
         Format per Section 2.3.2.5:
-        pointing MET_start MET_end`tab`spin_bin_low spin_bin_high sensor`tab`
+        pointing MET_start MET_end spin_bin_low spin_bin_high sensor
         esa_steps[10] cull_value
 
         The esa_steps field consists of 10 binary values (0 or 1) indicating whether
