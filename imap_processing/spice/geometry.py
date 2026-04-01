@@ -18,8 +18,6 @@ import numpy.typing as npt
 import spiceypy
 from numpy.typing import NDArray
 
-from imap_processing.mag import constants
-
 logger = logging.getLogger(__name__)
 
 
@@ -318,14 +316,6 @@ def frame_transform(
     # Multiple et single pos:  (n, 3, 3),(3, 1) -> (n, 3, 1)
     # Multiple et/positions :  (n, 3, 3),(n, 3, 1) -> (n, 3, 1)
     result = np.squeeze(rotate @ position[..., np.newaxis])
-
-    # For every FILLVAL in the input position, ensure the output is also NaN or FILLVAL
-    if np.isnan(position).any() or (position == constants.FILLVAL).any():
-        result = np.where(
-            np.isnan(position) | (position == constants.FILLVAL),
-            constants.FILLVAL,
-            result,
-        )
 
     return result
 
