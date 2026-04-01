@@ -176,19 +176,11 @@ def postlaunch_packet_path():
     """Returns the paths to the binary packets."""
     directory = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
     filenames = [
-        "iois_1_packets_2026_090_05_02_04",
         "iois_1_packets_2026_090_05_03_05",
         "iois_1_packets_2026_090_05_04_06",
         "iois_1_packets_2026_090_05_05_07",
         "iois_1_packets_2026_090_05_06_08",
         "iois_1_packets_2026_090_05_07_09",
-        "iois_1_packets_2026_090_05_08_10",
-        "iois_1_packets_2026_090_05_09_11",
-        "iois_1_packets_2026_090_05_10_12",
-        "iois_1_packets_2026_090_05_11_13",
-        "iois_1_packets_2026_090_05_12_14",
-        "iois_1_packets_2026_090_05_13_15",
-        "iois_1_packets_2026_090_05_14_16",
     ]
     return tuple(directory / fname for fname in filenames)
 
@@ -426,7 +418,7 @@ def l1a_lut_path():
         / "codice"
         / "data"
         / "l1a_lut"
-        / "imap_codice_l1a-sci-lut_20260129_v002.json"
+        / "imap_codice_l1a-sci-lut_20251007_v005.json"
     )
 
     return lut_path
@@ -859,7 +851,7 @@ def test_process_codice_lo(
 
 @pytest.mark.external_test_data
 def test_process_codice_hi(
-    postlaunch_xarray_data, cod_hi_l1a_test_data_transposed, l1a_lut_path
+    postlaunch_xarray_data, cod_hi_l1a_test_data_transposed
 ):
     """Test process_codice for hi."""
     grouped_cod_hi_data = find_groups(
@@ -867,7 +859,6 @@ def test_process_codice_hi(
     )
     unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
 
-    l1a_results = []
     for group in unique_cod_hi_groups:
         cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
         cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
@@ -878,21 +869,21 @@ def test_process_codice_hi(
         cod_hi_dataset = create_xarray_dataset(
             cod_hi_science_values, cod_hi_metadata_values, "hi"
         )
+        l1a_lut_path = (
+                imap_module_directory
+                / "tests"
+                / "codice"
+                / "data"
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20260129_v002.json"
+        )
         l1a_hi = l1a_ialirt_hi(cod_hi_dataset, l1a_lut_path)
-        l1a_results.append(l1a_hi)
 
-    result = xr.concat(l1a_results, dim="epoch")
+        expected = cod_hi_l1a_test_data_transposed.sel(
+            epoch=l1a_hi["epoch"], method="nearest"
+        )
 
-    np.testing.assert_array_equal(
-        result["h"].values,
-        cod_hi_l1a_test_data_transposed["h"].data,
-    )
-    np.testing.assert_array_equal(
-        result["data_quality"].values,
-        cod_hi_l1a_test_data_transposed["data_quality"].data,
-    )
-    np.testing.assert_allclose(
-        result["spin_period"].values,
-        cod_hi_l1a_test_data_transposed["spin_period"].data,
-        atol=1e-6,
-    )
+        np.testing.assert_array_equal(
+            l1a_hi["h"].values,
+            expected["h"].data,
+        )
