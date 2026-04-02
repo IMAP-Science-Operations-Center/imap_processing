@@ -22,7 +22,7 @@ from imap_processing.ena_maps.utils import map_utils, naming, spatial_utils
 # so we define an enum to handle the coordinate names.
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
-from imap_processing.spice.time import ttj2000ns_to_et
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -136,14 +136,15 @@ def match_coords_to_indices(
     if isinstance(input_object, PointingSet) and isinstance(output_object, PointingSet):
         raise ValueError("Cannot match indices between two PointingSet objects.")
 
-    # If event_et is not specified, use epoch of the PointingSet, if present.
+    # If event_et is not specified, use the midpoint of the PointingSet, if
+    # present.
     # The epoch will be in units of terrestrial time (TT) J2000 nanoseconds,
     # which must be converted to ephemeris time (ET) for SPICE.
     if event_et is None:
         if isinstance(input_object, PointingSet):
-            event_et = ttj2000ns_to_et(input_object.epoch)
+            event_et = input_object.midpoint_j2000_et
         elif isinstance(output_object, PointingSet):
-            event_et = ttj2000ns_to_et(output_object.epoch)
+            event_et = output_object.midpoint_j2000_et
         else:
             raise ValueError(
                 "Event time must be specified if both objects are SkyMaps."
@@ -300,6 +301,19 @@ class PointingSet(ABC):
             The epoch value [J2000 TT ns] of the pointing set.
         """
         return self.data["epoch"].values[0]
+
+    @property
+    def midpoint_j2000_et(self) -> float:
+        """
+        The midpoint of the pointing in ET.
+
+        Returns
+        -------
+        midpoint: int
+            The midpoint value [J2000 ET] of the pointing set.
+        """
+        epoch_delta = self.data["epoch_delta"].values[0]
+        return float(ttj2000ns_to_et(self.epoch + epoch_delta / 2))
 
     @property
     def unwrapped_dims_dict(self) -> dict[str, tuple[str, ...]]:
@@ -558,6 +572,8 @@ class UltraPointingSet(HealpixPointingSet):
             np.stack((azimuth_pixel_center, elevation_pixel_center), axis=-1),
             dims=[CoordNames.GENERIC_PIXEL.value, CoordNames.AZ_EL_VECTOR.value],
         )
+        # downsample counts variable to match the nside of the pointing set
+        self.downsample_counts()
 
     @property
     def num_points(self) -> int:
@@ -599,6 +615,77 @@ class UltraPointingSet(HealpixPointingSet):
             f"{self.spice_reference_frame}, epoch={self.epoch}, "
             f"num_points={self.num_points})"
         )
+
+    def downsample_counts(self) -> None:
+        """
+        Downsample the counts variable to match the pset nside.
+
+        Counts at l1c are sampled at a finer resolution to help maintain the
+        pointing accuracy for each event. Since count maps are a binned integral
+        quantity, they necessarily require a non-spun approach per Pointing, unlike
+        exposure time and sensitivities. We need to downsample the counts from the
+        nside of the input pset counts variable (e.g. 128) to the nside of the pset.
+        """
+        pset_data = self.data
+        counts_n_pix = pset_data.sizes["counts_pixel_index"]
+        pset_n_pix = hp.nside2npix(self.nside)
+        if counts_n_pix != pset_n_pix:
+            # Raise an error if the nside the counts were sampled at is lower than the
+            # nside of the output map. We never want counts to be upsampled.
+            if counts_n_pix < pset_n_pix:
+                raise ValueError(
+                    f"Counts in the input PSET are sampled at nside "
+                    f"{hp.npix2nside(counts_n_pix)}, and the pset is {self.nside}. "
+                    f"This would require upsampling the counts, which we do not want."
+                )
+            counts_nside = hp.npix2nside(counts_n_pix)
+            n_energy_bins = pset_data.sizes["energy_bin_geometric_mean"]
+            order_diff = int(np.log2(counts_nside // self.nside))
+            counts = pset_data["counts"].values[
+                0
+            ]  # shape: (n_energy_bins, counts_n_pix)
+            # Get counts in nested ordering. In nested ordering, the
+            # pixels that need to be binned together to go from the counts nside to
+            # the pset nside are contiguous in the array.
+            if not self.nested:
+                counts_n = counts[
+                    :, hp.ring2nest(counts_nside, np.arange(counts_n_pix))
+                ]
+            else:
+                counts_n = counts
+
+            # reshape the counts by the amount pixels to bin together which is
+            # 4**order_diff because each step in order multiplies the pixel count
+            # by 4
+            # Shape: (n_energy_bins, pset_n_pix, 4**order_diff) ->
+            # (n_energy_bins, pset_n_pix)
+            binned_counts_n = counts_n.reshape(
+                (n_energy_bins, pset_n_pix, 4**order_diff)
+            ).sum(axis=-1)
+
+            if not self.nested:
+                # convert back to ring ordering if necessary and store in the
+                # downsampled counts array
+                binned_counts_n = binned_counts_n[
+                    :, hp.nest2ring(self.nside, np.arange(pset_n_pix))
+                ]
+
+            self.data["counts"] = xr.DataArray(
+                binned_counts_n[np.newaxis, :, :],
+                dims=(
+                    *self.data["counts"].dims[:-1],
+                    CoordNames.HEALPIX_INDEX.value,
+                ),
+            )
+            logger.info(
+                f"Counts variable with nside = {counts_nside} downsampled to "
+                f"nside {self.nside}."
+            )
+        else:
+            # Update the counts variable with the correct dims
+            self.data["counts"] = self.data["counts"].rename(
+                {CoordNames.COUNTS_HEALPIX_INDEX.value: CoordNames.HEALPIX_INDEX.value}
+            )
 
 
 class LoHiBasePointingSet(PointingSet):
@@ -695,6 +782,21 @@ class LoPointingSet(LoHiBasePointingSet):
 
         # Update az_el_points using the base class method
         self.update_az_el_points()
+
+    @property
+    def midpoint_j2000_et(self) -> float:
+        """
+        The midpoint of the pointing in ET.
+
+        Returns
+        -------
+        midpoint: int
+            The midpoint value [J2000 ET] of the pointing set.
+        """
+        epoch_delta = met_to_ttj2000ns(
+            self.data["pointing_end_met"].data - self.data["pointing_start_met"].data
+        )
+        return float(ttj2000ns_to_et(self.epoch + epoch_delta / 2))
 
 
 # Define the Map classes

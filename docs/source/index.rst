@@ -16,16 +16,18 @@ IMAP mission and being developed at
 
 To get started with the project: :ref:`getting-started`.
 
-The explicit code interfaces and structure are described in the :ref:`code-documentation`.
+The explicit code interfaces and structure are described in the :ref:`algorithm-code-documentation`.
 
 .. toctree::
    :maxdepth: 1
 
-   code-documentation/index
-   development/index
-   project-management/index
-   external-tools/index
-   data-access/index
+   Onboarding & Collaboration <development/index>
+   IMAP Data Access Tool <data-access/index>
+   CDF Metadata Resources <cdf-metadata/index>
+   Filename Conventions <filename-convention/index>
+   SDC Project Management <project-management/index>
+   Algorithm Code Documentation <algorithm-code-documentation/index>
+
 
 If you make use of any ``imap_processing`` code, please consider citing it in your research.
 `https://zenodo.org/record/11168295 <https://zenodo.org/record/11168295>`_

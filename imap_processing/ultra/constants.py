@@ -92,6 +92,8 @@ class UltraConstants:
         300.0,
         1e5,
     ]
+    # Counts at l1c are sampled at a finer resolution.
+    L1C_COUNTS_NSIDE = 128
 
     PSET_ENERGY_BIN_EDGES: ClassVar[list] = [
         3.0,
@@ -216,3 +218,9 @@ class UltraConstants:
     STAT_CULLING_N_ITER = 5
     # Sigma threshold to use for statistical outlier culling.
     STAT_CULLING_STD_THRESHOLD = 0.05
+
+    # Set dimensions for extended spin/goodtime support variables
+    # ISTP requires fixed dimensions, so we set these to the maximum we expect to need
+    # and pad with fill values if we use fewer bins.
+    MAX_ENERGY_RANGES = 16
+    MAX_ENERGY_RANGE_EDGES = MAX_ENERGY_RANGES + 1

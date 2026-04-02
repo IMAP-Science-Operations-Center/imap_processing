@@ -286,9 +286,9 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
             f"{starting_indices[0]} packets at start of file belong to science frame "
             f"from previous day's ccsds file"
         )
-    last_index_of_last_frame = starting_indices[-1] + FRAME_SIZE
+    last_index_of_last_frame = int(starting_indices[-1]) + FRAME_SIZE
     if last_index_of_last_frame:
-        remaining_packets = total_packets - last_index_of_last_frame
+        remaining_packets = int(total_packets) - last_index_of_last_frame
         if 0 < remaining_packets < FRAME_SIZE:
             print(
                 f"{remaining_packets} packets at end of file belong to science frame "

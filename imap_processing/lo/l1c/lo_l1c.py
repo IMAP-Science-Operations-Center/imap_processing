@@ -31,7 +31,9 @@ N_OFF_ANGLE_BINS = 40
 # 1 time, 7 energy steps, 3600 spin angle bins, and 40 off angle bins
 PSET_SHAPE = (1, N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS)
 PSET_DIMS = ["epoch", "esa_energy_step", "spin_angle", "off_angle"]
-ESA_ENERGY_STEPS = np.arange(N_ESA_ENERGY_STEPS) + 1  # 1 to 7 inclusive
+ESA_ENERGY_STEPS: np.ndarray = (
+    np.arange(N_ESA_ENERGY_STEPS) + 1  # 1 to 7 inclusive
+)
 SPIN_ANGLE_BIN_EDGES = np.linspace(0, 360, N_SPIN_ANGLE_BINS + 1)
 SPIN_ANGLE_BIN_CENTERS = (SPIN_ANGLE_BIN_EDGES[:-1] + SPIN_ANGLE_BIN_EDGES[1:]) / 2
 OFF_ANGLE_BIN_EDGES = np.linspace(-2, 2, N_OFF_ANGLE_BINS + 1)
@@ -689,7 +691,7 @@ def create_goodtimes_fraction(
     total_pointing_duration = pointing_end_met - pointing_start_met
 
     # Initialize as all zeros (no good time)
-    goodtimes_fraction = np.zeros(
+    goodtimes_fraction: np.ndarray = np.zeros(
         (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS), dtype=np.float32
     )
 
@@ -799,7 +801,7 @@ def calculate_exposure_times(
             "Pointing duration is zero or negative. Exposure times will be zero."
         )
         # Return zero exposure times with correct shape and dimensions
-        zero_exposure = np.zeros(PSET_SHAPE, dtype=np.float32)
+        zero_exposure: np.ndarray = np.zeros(PSET_SHAPE, dtype=np.float32)
         return xr.DataArray(
             data=zero_exposure,
             dims=PSET_DIMS,
@@ -1067,14 +1069,17 @@ def set_background_rates(
     if species not in {FilterType.HYDROGEN, FilterType.OXYGEN}:
         raise ValueError(f"Species must be 'h' or 'o', but got {species.value}.")
 
-    bg_rates = np.zeros(
-        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS), dtype=np.float16
+    bg_rates: np.ndarray = np.zeros(
+        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),
+        dtype=np.float16,
     )
-    bg_stat_uncert = np.zeros(
-        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS), dtype=np.float16
+    bg_stat_uncert: np.ndarray = np.zeros(
+        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),
+        dtype=np.float16,
     )
-    bg_sys_err = np.zeros(
-        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS), dtype=np.float16
+    bg_sys_err: np.ndarray = np.zeros(
+        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),
+        dtype=np.float16,
     )
 
     # read in the background rates from ancillary file

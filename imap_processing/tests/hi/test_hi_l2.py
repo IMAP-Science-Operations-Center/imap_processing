@@ -1426,3 +1426,57 @@ def test_combine_maps_invalid_length():
 
     with pytest.raises(ValueError, match="Expected 1 or 2 sky maps"):
         combine_maps({"a": sky_map, "b": sky_map, "c": sky_map})
+
+
+def test_combine_maps_handles_nan_intensity(mock_sky_map_for_combine):
+    """Test that combine_maps handles NaN values in ena_intensity correctly.
+
+    When one map has NaN values and the other has valid data, the combined
+    result should use the valid data rather than propagating NaN.
+    This tests the fix using .fillna(0) in the weighted sum.
+    """
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine(intensity_offset=20)
+
+    # Set some positions in ram to NaN for ena_intensity
+    # Use a slice to set NaN at specific positions
+    ram_intensity = ram_map.data_1d["ena_intensity"].values.copy()
+    ram_intensity[0, 0, 0, 0] = np.nan  # Set first position to NaN
+    ram_intensity[0, 1, 2, 1] = np.nan  # Set another position to NaN
+    ram_map.data_1d["ena_intensity"] = xr.DataArray(
+        ram_intensity, dims=ram_map.data_1d["ena_intensity"].dims
+    )
+
+    # Anti map has valid values at all positions (intensity = 70 from offset=20)
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    # At positions where ram had NaN, the result should use anti's value
+    # Anti has intensity=70, uncertainty=5, so weight = 1/25 = 0.04
+    # Ram has NaN (treated as 0), uncertainty=5, so weight = 1/25 = 0.04
+    # Combined: (0 * 0.04 + 70 * 0.04) / (0.04 + 0.04) = 2.8 / 0.08 = 35
+    # This is the expected behavior when ram's NaN is treated as 0
+
+    # Verify no NaN values in the combined result at those positions
+    assert np.isfinite(result.data_1d["ena_intensity"].values[0, 0, 0, 0])
+    assert np.isfinite(result.data_1d["ena_intensity"].values[0, 1, 2, 1])
+
+    # The combined value should be 70 because ram's NaN should not contribute
+    expected_combined = 70.0  # (0 * 0 + 70 * 0.04) / 0.04
+    np.testing.assert_almost_equal(
+        result.data_1d["ena_intensity"].values[0, 0, 0, 0],
+        expected_combined,
+        decimal=5,
+    )
+
+    # At positions where both maps have valid data, result should be normal
+    # weighted average
+    # Ram=50, Anti=70, both with uncertainty=5
+    # Combined: (50 * 0.04 + 70 * 0.04) / 0.08 = 4.8 / 0.08 = 60
+    expected_normal = 60.0
+    # Check a position that wasn't set to NaN (e.g., [0, 0, 1, 0])
+    np.testing.assert_almost_equal(
+        result.data_1d["ena_intensity"].values[0, 0, 1, 0],
+        expected_normal,
+        decimal=5,
+    )

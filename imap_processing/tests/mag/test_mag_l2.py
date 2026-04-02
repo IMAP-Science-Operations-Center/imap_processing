@@ -5,7 +5,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.mag.constants import DataMode
+from imap_processing.mag.constants import FILLVAL, DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
 from imap_processing.spice.time import (
@@ -18,9 +18,29 @@ from imap_processing.spice.time import (
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
-@pytest.mark.parametrize("data_mode", ["norm", "burst"])
-def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
-    """Test that L2 datasets have correct attributes based on frame and mode."""
+@pytest.mark.parametrize(
+    "data_mode,frames,expected_frames",
+    [
+        (
+            "norm",
+            [
+                ValidFrames.SRF,
+                ValidFrames.GSE,
+                ValidFrames.GSM,
+                ValidFrames.RTN,
+                ValidFrames.DSRF,
+            ],
+            5,
+        ),
+        ("norm", [], 5),
+        ("burst", [ValidFrames.SRF], 1),
+        ("burst", [], 5),
+    ],
+)
+def test_mag_l2_attributes(
+    norm_dataset, mag_test_l2_data, data_mode, frames, expected_frames
+):
+    """Test that correct L2 datasets have correct attributes based on frame and mode."""
     calibration_dataset = mag_test_l2_data[0]
     offset_dataset = mag_test_l2_data[1]
 
@@ -35,18 +55,30 @@ def test_mag_l2_attributes(norm_dataset, mag_test_l2_data, data_mode):
         "imap_processing.mag.l2.mag_l2_data.frame_transform",
         side_effect=lambda *args, **kwargs: args[1],
     ):
-        l2_datasets = mag_l2(
-            calibration_dataset,
-            offset_dataset,
-            test_dataset,
-            np.datetime64("2025-10-17"),
-            mode=mode,
-        )
+        if frames:
+            # ensure when a subset of frames is needed only those are generated
+            l2_datasets = mag_l2(
+                calibration_dataset,
+                offset_dataset,
+                test_dataset,
+                np.datetime64("2025-10-17"),
+                mode=mode,
+                frames=frames,
+            )
+        else:
+            # be default all frames are generated
+            l2_datasets = mag_l2(
+                calibration_dataset,
+                offset_dataset,
+                test_dataset,
+                np.datetime64("2025-10-17"),
+                mode=mode,
+            )
 
     # Verify we have the expected number of datasets
     # L2 produces 5 frames: SRF, GSE, GSM, RTN, DSRF
-    assert len(l2_datasets) == 5, (
-        f"Expected 5 {data_mode} datasets, got {len(l2_datasets)}"
+    assert len(l2_datasets) == expected_frames, (
+        f"Expected {expected_frames} {data_mode} datasets, got {len(l2_datasets)}"
     )
 
     for dataset in l2_datasets:
@@ -445,6 +477,55 @@ def test_spice_returns(norm_dataset):
         assert l2.frame.name == "DSRF"
         assert not np.array_equal(l2.vectors, norm_dataset["vectors"].data[:, :3])
         assert np.array_equal(l2.vectors[0], [-1, -1, -1])
+
+
+def test_rotate_frame_preserves_fillval_and_nan(norm_dataset):
+    """Test that rotate_frame preserves FILLVAL and NaN vectors."""
+
+    vectors = norm_dataset["vectors"].data[:, :3].copy()
+    n = len(vectors)
+
+    # Set some vectors to FILLVAL and NaN
+    vectors[0] = [FILLVAL, FILLVAL, FILLVAL]
+    vectors[2] = [np.nan, np.nan, np.nan]
+    # Partial NaN in a row
+    vectors[4] = [1.0, np.nan, 3.0]
+    # Partial FILLVAL in a row
+    vectors[5] = [FILLVAL, 2.0, 3.0]
+
+    l2 = MagL2(
+        vectors=vectors,
+        epoch=norm_dataset["epoch"].data,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(n),
+        quality_bitmask=np.zeros(n),
+        data_mode=DataMode.NORM,
+        offsets=np.zeros((n, 3)),
+        timedelta=np.zeros(n),
+    )
+
+    rotated_values = np.full(vectors.shape, 99.0)
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        return_value=rotated_values,
+    ):
+        l2.rotate_frame(ValidFrames.DSRF)
+
+    assert l2.frame == ValidFrames.DSRF
+
+    # Full FILLVAL row -> all components should be FILLVAL
+    assert np.all(l2.vectors[0] == FILLVAL)
+    # Full NaN row -> all components should be FILLVAL
+    assert np.all(l2.vectors[2] == FILLVAL)
+    # Partial NaN -> affected components should be FILLVAL
+    assert l2.vectors[4, 1] == FILLVAL
+    # Partial FILLVAL -> affected components should be FILLVAL
+    assert l2.vectors[5, 0] == FILLVAL
+
+    # Normal vectors should get the rotated value
+    assert np.all(l2.vectors[1] == 99.0)
+    assert np.all(l2.vectors[3] == 99.0)
 
 
 def test_qf(norm_dataset):

@@ -12,6 +12,7 @@ class CoordNames(Enum):
     ENERGY_ULTRA_L1C = "energy_bin_geometric_mean"
     ENERGY_L2 = "energy"
     HEALPIX_INDEX = "pixel_index"
+    COUNTS_HEALPIX_INDEX = "counts_pixel_index"
 
     # The names of the az/el angular coordinates may differ between L1C and L2 data
     AZIMUTH_L1C = "longitude"

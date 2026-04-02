@@ -1,6 +1,5 @@
 # ----------------------------- Useful variables -----------------------------
 uint8_fillval: &uint8_fillval 255
-uint32_fillval: &uint32_fillval 4294967295
 real_fillval: &real_fillval -1.0e+31
 
 min_int: &min_int -9223372036854775808
@@ -12,20 +11,20 @@ energy_attrs: &energy_default
   CATDESC: Geometric mean energy per nucleon
   FIELDNAM: Energy Table
   LABLAXIS: Energy
-  SCALETYP: log
+  SCALETYP: linear
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
 
 # ------------------------------- Coordinates -------------------------------
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
   FIELDNAM: epoch delta minus
-  FILLVAL: -9223372036854775808
-  FORMAT: I18
+  FILLVAL: *min_int
+  FORMAT: I19
   LABLAXIS: Epoch Delta Minus
   SCALETYP: linear
   UNITS: ns
@@ -37,8 +36,8 @@ epoch_delta_minus:
 epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
   FIELDNAM: epoch delta plus
-  FILLVAL: -9223372036854775808
-  FORMAT: I18
+  FILLVAL: *min_int
+  FORMAT: I19
   LABLAXIS: Epoch Delta Plus
   SCALETYP: linear
   UNITS: ns
@@ -50,7 +49,8 @@ epoch_delta_plus:
 elevation_angle:
   CATDESC: Elevation Angle
   FIELDNAM: Elevation Angle
-  FORMAT: '%f'
+  FORMAT: F32.1
+  FILLVAL: *real_fillval
   LABLAXIS: Elevation Angle
   SCALETYP: linear
   UNITS: degrees
@@ -61,8 +61,8 @@ elevation_angle:
 spin_sector:
   CATDESC: Spin Sector Index
   FIELDNAM: Spin Sector Index
-  FILLVAL: -1
-  FORMAT: I2
+  FILLVAL: *uint8_fillval
+  FORMAT: I3
   LABLAXIS: " "
   SCALETYP: linear
   UNITS: " "
@@ -166,12 +166,13 @@ data_quality:
 
 species_dim_attrs: &species_dim_attrs
   DEPEND_0: epoch
-  DEPEND_1: energy_cno
+  DEPEND_1: energy_{species}
   DEPEND_2: spin_sector
   DEPEND_3: elevation_angle
-  LABL_PTR_1: energy_cno_label
+  LABL_PTR_1: energy_{species}_label
   LABL_PTR_2: spin_sector_label
   LABL_PTR_3: elevation_angle_label
+
 # species:
 cno:
   <<: *species_dim_attrs
@@ -179,12 +180,12 @@ cno:
   DISPLAY_TYPE: spectrogram
   CATDESC: cno (x2 spacing)
   FIELDNAM: cno
-  FILLVAL: *uint32_fillval
-  FORMAT: '%f'
-  SCALETYP: linear
+  FILLVAL: *real_fillval
+  FORMAT: E14.7
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
-  VALIDMAX: 16777216
-  VALIDMIN: 0
+  VALIDMAX: 16777216.0
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 fe:
@@ -193,12 +194,12 @@ fe:
   DISPLAY_TYPE: spectrogram
   CATDESC: fe (x2 spacing)
   FIELDNAM: fe
-  FILLVAL: *uint32_fillval
-  FORMAT: '%f'
-  SCALETYP: linear
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
-  VALIDMAX: 16777216
-  VALIDMIN: 0
+  VALIDMAX: 16777216.0
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 h:
@@ -207,12 +208,12 @@ h:
   DISPLAY_TYPE: spectrogram
   CATDESC: h (x2 spacing)
   FIELDNAM: h
-  FILLVAL: *uint32_fillval
-  FORMAT: '%f'
-  SCALETYP: linear
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
-  VALIDMAX: 16777216
-  VALIDMIN: 0
+  VALIDMAX: 16777216.0
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 he3he4:
@@ -221,12 +222,12 @@ he3he4:
   DISPLAY_TYPE: spectrogram
   CATDESC: he3he4 (x2 spacing)
   FIELDNAM: he3he4
-  FILLVAL: *uint32_fillval
-  FORMAT: '%f'
-  SCALETYP: linear
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
-  VALIDMAX: 16777216
-  VALIDMIN: 0
+  VALIDMAX: 16777216.0
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 # uncertainties:
@@ -236,13 +237,13 @@ unc_cno:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for cno (x2 spacing)
   VAR_TYPE: data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   COORDINATE_SYSTEM: instrument frame
 
 unc_fe:
@@ -251,11 +252,11 @@ unc_fe:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for fe (x2 spacing)
   VAR_TYPE: data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: spectrogram
   COORDINATE_SYSTEM: instrument frame
@@ -266,11 +267,11 @@ unc_h:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for h (x2 spacing)
   VAR_TYPE: data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: spectrogram
   DEPEND_0: epoch
@@ -282,11 +283,11 @@ unc_he3he4:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for he3he4 (x2 spacing)
   VAR_TYPE: data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: spectrogram
   COORDINATE_SYSTEM: instrument frame
@@ -299,10 +300,10 @@ energy_cno_minus:
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   DEPEND_1: energy_cno
 
@@ -313,10 +314,10 @@ energy_cno_plus:
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   DEPEND_1: energy_cno
 
@@ -327,10 +328,10 @@ energy_fe_minus:
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   DEPEND_1: energy_fe
 
@@ -341,10 +342,10 @@ energy_fe_plus:
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   DEPEND_1: energy_fe
 
@@ -355,10 +356,10 @@ energy_h_minus:
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   DEPEND_1: energy_h
 
@@ -369,10 +370,10 @@ energy_h_plus:
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   DEPEND_1: energy_h
 
@@ -383,10 +384,10 @@ energy_he3he4_minus:
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   DEPEND_1: energy_he3he4
 
@@ -397,10 +398,10 @@ energy_he3he4_plus:
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   DEPEND_1: energy_he3he4
 
@@ -409,12 +410,12 @@ spin_angle:
   VAR_TYPE: support_data
   CATDESC: Spin Angle
   FIELDNAM: Spin Angle
-  SCALETYP: linear
+  SCALETYP: log
   UNITS: degrees
   FILLVAL: *real_fillval
   VALIDMAX: 360.0
   VALIDMIN: 0.0
-  FORMAT: '%f'
+  FORMAT: F32.1
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
   DEPEND_1: spin_sector
   DEPEND_2: elevation_angle

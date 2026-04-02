@@ -608,7 +608,7 @@ def get_tof_window_mask(
     if n_events == 0:
         return np.array([], dtype=bool)
 
-    combined_mask = np.ones(n_events, dtype=bool)
+    combined_mask: np.ndarray = np.ones(n_events, dtype=bool)
 
     for tof_field, (low, high) in tof_windows.items():
         tof_array = de_ds[tof_field].values
@@ -805,7 +805,7 @@ def compute_qualified_event_mask(
     if n_events == 0:
         return np.array([], dtype=bool)
 
-    qualified_mask = np.zeros(n_events, dtype=bool)
+    qualified_mask: np.ndarray = np.zeros(n_events, dtype=bool)
 
     for _, _, mask in iter_qualified_events_by_config(
         de_ds, cal_product_config, esa_energy_steps

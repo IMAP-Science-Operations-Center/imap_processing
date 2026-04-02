@@ -14,6 +14,7 @@ Examples
     l1a_data.write_l1a_cdf()
 """
 
+import json
 import logging
 from enum import IntEnum
 from pathlib import Path
@@ -24,7 +25,9 @@ import space_packet_parser
 import xarray as xr
 from xarray import Dataset
 
+from imap_processing import imap_module_directory
 from imap_processing.idex.decode import rice_decode
+from imap_processing.idex.evt_msg_decode_utils import render_event_template
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.idex.idex_utils import get_idex_attrs
@@ -86,23 +89,19 @@ class PacketParser:
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
             self.data.append(self._create_science_dataset(science_packets))
-
         datasets_by_level = {"l1a": raw_datset_by_apid, "l1b": derived_datasets_by_apid}
         for level, dataset in datasets_by_level.items():
-            if IDEXAPID.IDEX_EVT in dataset:
-                logger.info(f"Processing IDEX {level} Event Message data")
+            # Only produce l1a products for event messages. L1b will be processed in a
+            # another job.
+            if IDEXAPID.IDEX_EVT in dataset and level == "l1a":
+                logger.info("Processing IDEX L1A Event Message data")
                 data = dataset[IDEXAPID.IDEX_EVT]
-                data.attrs = self.idex_attrs.get_global_attributes(
-                    f"imap_idex_{level}_evt"
-                )
-                data["epoch"] = calculate_idex_event_time(
-                    data["shcoarse"].data, data["shfine"].data
-                )
-                data["epoch"].attrs = epoch_attrs
-                self.data.append(data)
+                processed_data = self._create_evt_msg_data(data)
+                processed_data["epoch"].attrs = epoch_attrs
+                self.data.append(processed_data)
 
             if IDEXAPID.IDEX_CATLST in dataset:
-                logger.info(f"Processing IDEX {level} Catalog List Summary data.")
+                logger.info(f"Processing IDEX {level} CATLST data")
                 data = dataset[IDEXAPID.IDEX_CATLST]
                 data.attrs = self.idex_attrs.get_global_attributes(
                     f"imap_idex_{level}_catlst"
@@ -114,6 +113,112 @@ class PacketParser:
                 self.data.append(data)
 
         logger.info("IDEX L1A data processing completed.")
+
+    def _create_evt_msg_data(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Process IDEX message data into a more usable format.
+
+        Parameters
+        ----------
+        data : xarray.Dataset
+            The raw message data to process.
+
+        Returns
+        -------
+        xarray.Dataset
+            The processed message data.
+        """
+        # Convert the time to epoch time in nanoseconds since J2000 in the TT timescale
+        epoch = calculate_idex_event_time(data["shcoarse"].data, data["shfine"].data)
+        # initialize dataset with time variables
+        l1a_msg_ds = xr.Dataset(
+            data_vars={
+                "epoch": xr.DataArray(epoch, name="epoch", dims=["epoch"]),
+                "shfine": xr.DataArray(
+                    data["shfine"].data,
+                    dims=["epoch"],
+                    attrs=self.idex_attrs.get_variable_attributes("shfine"),
+                ),
+                "shcoarse": xr.DataArray(
+                    data["shcoarse"].data,
+                    dims=["epoch"],
+                    attrs=self.idex_attrs.get_variable_attributes("shcoarse"),
+                ),
+            },
+            attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg"),
+        )
+        # Load the event decoding dictionaries
+        with open(
+            f"{imap_module_directory}/idex/idex_evt_msg_parsing_dictionaries.json"
+        ) as f:
+            msg_dicts = json.load(f)
+
+        # restore integer keys since JSON stringifies them
+        msg_json_data = {
+            dict_name: {int(k): v for k, v in pairs.items()}
+            for dict_name, pairs in msg_dicts.items()
+        }
+        # Get the event message templates and log entry name dictionaries
+        # These are used to decode the raw event messages into human-readable formats
+        # during rendering.
+        event_description_templates = msg_json_data.get("eventMsgDictionary", {})
+        log_entry_names = msg_json_data.get("logEntryIdDictionary", {})
+
+        # Get the event id - this will tell us what event happened.
+        # The following parameter values will tell us additional details about the event
+        # For example the event may be a science state change and the parameters will
+        # tell us what state it changed to (e.g. on or off).
+        event_ids = data["elid_evtpkt"].data
+        # Stack the parameter bytes into a single array of shape (num_events, 4) for
+        # easier access during rendering.
+        params_bytes = np.stack(
+            [
+                data["el1par_evtpkt"].data,
+                data["el2par_evtpkt"].data,
+                data["el3par_evtpkt"].data,
+                data["el4par_evtpkt"].data,
+            ],
+            axis=-1,
+        )
+
+        # initialize an empty list for messages
+        messages = []
+        for idx in range(len(event_ids)):
+            # Look up the string format using the event_id.
+            event_id = event_ids[idx]
+            current_desc_template = event_description_templates.get(event_id)
+            current_param_bytes = params_bytes[idx].tolist()
+            event_name = log_entry_names.get(event_id, f"EVENT_0x{event_id:02X}")
+            # Render the event message using the template if available.
+            if current_desc_template:
+                try:
+                    message = render_event_template(
+                        current_desc_template, current_param_bytes, msg_json_data
+                    )
+                except Exception as exc:
+                    message = (
+                        f"{event_name} [template_render_error={exc}] "
+                        f"params="
+                        f"({', '.join(f'0x{x:02X}' for x in current_param_bytes)})"
+                    )
+            else:
+                # If no template exists for an event ID, fall back to a message
+                # that still preserves the event name and raw parameter bytes.
+                phex = ", ".join(f"0x{x:02X}" for x in current_param_bytes)
+                message = f"{event_name} ({phex})"
+
+            messages.append(message)
+
+        l1a_msg_ds["messages"] = xr.DataArray(
+            messages,
+            name="messages",
+            dims=["epoch"],
+            attrs=self.idex_attrs.get_variable_attributes(
+                "messages", check_schema=False
+            ),
+        )
+        l1a_msg_ds.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_msg")
+        return l1a_msg_ds
 
     def _create_science_dataset(self, science_decom_packet_list: list) -> xr.Dataset:
         """
@@ -458,14 +563,36 @@ class RawDustEvent:
         """
         # Retrieve the number of samples for high gain delay
 
-        # packet['IDX__TXHDRSAMPDELAY'] is a 32-bit value, with the last 10 bits
-        # representing the high gain sample delay and the first 2 bits used for padding.
-        # To extract the high gain bits, the bitwise right shift (>> 20) moves the bits
-        # 20 positions to the right, and the mask (0b1111111111) keeps only the least
-        # significant 10 bits.
-        # TODO use the delay corresponding to the trigger
-        high_gain_delay = (packet["IDX__TXHDRSAMPDELAY"] >> 22) & 0b1111111111
+        # packet['IDX__TXHDRSAMPDELAY'] is a 32-bit value:
+        # bits0-9: high-gain delay,
+        # bits10-19: mid-gain delay,
+        # bits20-29: low-gain delay.
+        # bits30-31 are padding/reserved.
+        # Each delay is extracted by right-shifting to align the field,
+        # then masking with #0b1111111111 (10 bits).
+
         n_blocks = packet["IDX__TXHDRBLOCKS"]
+        trigger_item = packet["IDX__TXHDRTRIGID"]
+
+        tof_delay = packet["IDX__TXHDRSAMPDELAY"]  # last two bits are padding
+
+        # mask to extract 10-bit values
+        tof_mask = 0b1111111111
+
+        # Determine the delay based on the trigger id.
+        hg_delay = tof_delay & tof_mask  # first 10 bits (0-9)
+        mg_delay = (tof_delay >> 10) & tof_mask  # next 10 bits (10-19)
+        lg_delay = (tof_delay >> 20) & tof_mask  # next 10 bits (20-29)
+
+        u10 = trigger_item & 0x3FF
+        if (u10 >> 0) & 1:
+            delay = hg_delay
+        elif (u10 >> 1) & 1:
+            delay = lg_delay
+        elif (u10 >> 2) & 1:
+            delay = mg_delay
+        else:
+            delay = hg_delay
 
         # Retrieve number of low/high sample pre-trigger blocks
 
@@ -485,11 +612,10 @@ class RawDustEvent:
             * (num_low_sample_pretrigger_blocks + 1)
             * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK
         )
-        self.high_sample_trigger_time = (
-            self.HIGH_SAMPLE_RATE
-            * (num_high_sample_pretrigger_blocks + 1)
-            * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
-            - self.HIGH_SAMPLE_RATE * high_gain_delay
+        self.high_sample_trigger_time = self.HIGH_SAMPLE_RATE * (
+            num_high_sample_pretrigger_blocks + 1
+        ) * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK - self.HIGH_SAMPLE_RATE * (
+            delay - 1
         )
 
     def _parse_high_sample_waveform(self, waveform_raw: str) -> list[int]:
@@ -563,7 +689,7 @@ class RawDustEvent:
         time_low_sample_rate_data : numpy.ndarray
             Low time sample data array.
         """
-        time_low_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_low_sample_rate_init: np.ndarray = np.arange(num_samples, dtype=np.float64)
         time_low_sample_rate_data = (
             self.LOW_SAMPLE_RATE * time_low_sample_rate_init
             - self.low_sample_trigger_time
@@ -590,7 +716,9 @@ class RawDustEvent:
         time_high_sample_rate_data : numpy.ndarray
             High sample time data array.
         """
-        time_high_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_high_sample_rate_init: np.ndarray = np.arange(
+            num_samples, dtype=np.float64
+        )
         time_high_sample_rate_data = (
             self.HIGH_SAMPLE_RATE * time_high_sample_rate_init
             - self.high_sample_trigger_time
@@ -630,8 +758,15 @@ class RawDustEvent:
         # Gather the huge amount of metadata info
         trigger_vars = {}
         for var, value in self.telemetry_items.items():
-            trigger_vars[var] = xr.DataArray(
-                name=var,
+            # SCI0AID is not updated properly. To this end, TXHDRFSWAIDCOPY must be
+            # used as the proper AID.
+            if var == "idx__sci0aid":
+                continue
+            # rename idx__txhdrfswaidcopy to aid for better readability in the final
+            # dataset
+            var_name = "aid" if var == "idx__txhdrfswaidcopy" else var
+            trigger_vars[var_name] = xr.DataArray(
+                name=var_name,
                 data=[value],
                 dims=("epoch"),
                 attrs=idex_attrs.get_variable_attributes(var),

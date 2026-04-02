@@ -13,14 +13,14 @@ from imap_processing.idex.idex_l1b import idex_l1b
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
 TEST_L0_FILE_SCI = TEST_DATA_PATH / "imap_idex_l0_raw_20231218_v001.pkts"
-TEST_L0_FILE_EVT = TEST_DATA_PATH / "imap_idex_l0_raw_20250108_v001.pkts"  # 1418
+TEST_L0_FILE_MSG = TEST_DATA_PATH / "imap_idex_l0_raw_20250108_v001.pkts"  # 1418
 TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 1419
 
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
-L1B_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
+L1B_EXAMPLE_FILE = TEST_DATA_PATH / "imap_idex_l1b_sci_20231218_v002.h5"
 
 L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
-L1B_EVT_CDF = TEST_DATA_PATH / "imap_idex_l1b_evt_20250108_v001.cdf"
+L1B_MSG_CDF = TEST_DATA_PATH / "imap_idex_l1b_msg_20250108_v001.cdf"
 
 pytestmark = pytest.mark.external_test_data
 
@@ -50,15 +50,27 @@ def decom_test_data_catlst() -> xr.Dataset:
 
 
 @pytest.fixture
-def decom_test_data_evt() -> xr.Dataset:
-    """List of ``xarray`` datasets containing the raw and derived event log data.
+def decom_test_data_msg() -> xr.Dataset:
+    """``xarray`` dataset containing the raw event message data.
 
     Returns
     -------
-    dataset : list[xarray.Dataset]
-        A list of ``xarray`` datasets containing the event log datasets.
+    dataset : xarray.Dataset
+        ``xarray`` dataset containing the event log data.
     """
-    return PacketParser(TEST_L0_FILE_EVT).data
+    return PacketParser(TEST_L0_FILE_MSG).data[0]
+
+
+@pytest.fixture
+def test_l1b_msg(decom_test_data_msg) -> xr.Dataset:
+    """``xarray`` dataset containing the l1b msg data.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        ``xarray`` dataset containing the event log data.
+    """
+    return idex_l1b(decom_test_data_msg, "msg")
 
 
 @pytest.fixture
@@ -112,7 +124,7 @@ def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Data
     """
 
     mock_get_spice_data.side_effect = get_spice_data_side_effect_func
-    dataset = idex_l1b(decom_test_data_sci)
+    dataset = idex_l1b(decom_test_data_sci, "sci-1week")
     return dataset
 
 

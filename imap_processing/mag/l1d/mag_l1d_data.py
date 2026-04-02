@@ -174,7 +174,10 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         self.frame = ValidFrames.MAGO
 
         # set the magnitude before truncating
-        self.magnitude = np.zeros(self.vectors.shape[0], dtype=np.float64)  # type: ignore[has-type]
+        self.magnitude: np.ndarray = np.zeros(  # type: ignore[var-annotated]
+            self.vectors.shape[0],  # type: ignore[has-type]
+            dtype=np.float64,
+        )
         self.truncate_to_24h(day)
 
         self.vectors, self.magi_vectors = self._calibrate_and_offset_vectors(
@@ -295,26 +298,40 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             self.epoch_et: np.ndarray = ttj2000ns_to_et(self.epoch)
             self.magi_epoch_et: np.ndarray = ttj2000ns_to_et(self.magi_epoch)
 
-        self.vectors = frame_transform(
+        new_vectors = frame_transform(
             self.epoch_et,
             self.vectors,
             from_frame=start_frame.spice_frame,
             to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
+        if np.isnan(self.vectors).any() or (self.vectors == FILLVAL).any():
+            new_vectors = np.where(
+                np.isnan(self.vectors) | (self.vectors == FILLVAL),
+                FILLVAL,
+                new_vectors,
+            )
+        self.vectors = new_vectors
 
         # If we were in MAGO frame, we need to rotate MAGI vectors from MAGI to
         # end_frame
         if start_frame == ValidFrames.MAGO:
             start_frame = ValidFrames.MAGI
 
-        self.magi_vectors = frame_transform(
+        new_magi_vectors = frame_transform(
             self.magi_epoch_et,
             self.magi_vectors,
             from_frame=start_frame.spice_frame,
             to_frame=end_frame.spice_frame,
             allow_spice_noframeconnect=True,
         )
+        if np.isnan(self.magi_vectors).any() or (self.magi_vectors == FILLVAL).any():
+            new_magi_vectors = np.where(
+                np.isnan(self.magi_vectors) | (self.magi_vectors == FILLVAL),
+                FILLVAL,
+                new_magi_vectors,
+            )
+        self.magi_vectors = new_magi_vectors
 
         self.frame = end_frame
 
@@ -441,7 +458,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         epoch_met = ttj2000ns_to_met(self.epoch)
         sc_spin_phase = spin.get_spacecraft_spin_phase(epoch_met)
         # mark vectors as nan where they are nan in sc_spin_phase
-        vectors = self.vectors.copy().astype(np.float64)
+        vectors: np.ndarray = self.vectors.copy().astype(np.float64)
 
         vectors[np.isnan(sc_spin_phase), :] = np.nan
 
@@ -528,8 +545,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
 
             if not np.isnan(avg_x) and not np.isnan(avg_y):
                 offset_epochs.append(chunk_epoch[0])
-                x_avg_calcs.append(avg_x)
-                y_avg_calcs.append(avg_y)
+                x_avg_calcs.append(np.float64(avg_x))
+                y_avg_calcs.append(np.float64(avg_y))
 
                 # Add validity time range for this chunk
                 validity_start_times.append(chunk_epoch[0])

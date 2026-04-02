@@ -1,12 +1,15 @@
 # ----------------------------- Useful variables -----------------------------
+uint8_fillval: &uint8_fillval 255
 real_fillval: &real_fillval -1.0e+31
 max_float: &max_float 3.4028235e+38
+species_valid_max: &species_valid_max 1e20
 
 # ------------------------------- Coordinates -------------------------------
 elevation_angle:
   CATDESC: Elevation Angle
   FIELDNAM: Elevation Angle
-  FORMAT: I8
+  FORMAT: F32.1
+  FILLVAL: *real_fillval
   LABLAXIS: Elevation Angle
   SCALETYP: linear
   UNITS: degrees
@@ -17,13 +20,13 @@ elevation_angle:
 spin_sector:
   CATDESC: Spin Sector Index
   FIELDNAM: Spin Sector Index
-  FILLVAL: -1
-  FORMAT: I2
+  FILLVAL: *uint8_fillval
+  FORMAT: I3
   LABLAXIS: " "
   SCALETYP: linear
   UNITS: " "
   VALIDMIN: 0
-  VALIDMAX: 24
+  VALIDMAX: 12
   VAR_TYPE: support_data
 
 # ------------------------------- labels -------------------------------
@@ -40,15 +43,16 @@ lo-species-attrs:
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    DISPLAY_TYPE: time_series
+    DISPLAY_TYPE: spectrogram
     FIELDNAM: "Non-sunward - {species}"
     FILLVAL: *real_fillval
-    FORMAT: F13.4
+    FORMAT: F32.1
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
+    SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
-    VALIDMAX: 16777216.0
+    VALIDMAX: *species_valid_max
     VAR_TYPE: data
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
@@ -57,15 +61,16 @@ lo-pui-species-attrs:
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    DISPLAY_TYPE: time_series
+    DISPLAY_TYPE: spectrogram
     FIELDNAM: "Sunward - {species}"
     FILLVAL: *real_fillval
-    FORMAT: F13.4
+    FORMAT: F32.1
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
+    SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
-    VALIDMAX: 16777216.0
+    VALIDMAX: *species_valid_max
     VAR_TYPE: data
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
@@ -74,15 +79,16 @@ lo-sw-species-attrs:
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: "Sunward - {species}"
   FILLVAL: *real_fillval
-  FORMAT: F13.4
+  FORMAT: F32.1
   LABL_PTR_1: esa_step_label
   LABL_PTR_2: spin_sector_label
+  SCALETYP: log
   UNITS: "#/(cm^2-s-sr-keV/q)"
   VALIDMIN: 0.0
-  VALIDMAX: 16777216.0
+  VALIDMAX: *species_valid_max
   VAR_TYPE: data
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
@@ -91,15 +97,16 @@ lo-species-unc-attrs:
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    DISPLAY_TYPE: time_series
+    DISPLAY_TYPE: spectrogram
     FIELDNAM: "Non-sunward - {species}"
     FILLVAL: *real_fillval
-    FORMAT: F20.9
+    FORMAT: F32.1
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
+    SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
-    VALIDMAX: 16777216.0
+    VALIDMAX: *species_valid_max
     VAR_TYPE: data
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
 
@@ -108,15 +115,16 @@ lo-pui-species-unc-attrs:
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    DISPLAY_TYPE: time_series
+    DISPLAY_TYPE: spectrogram
     FIELDNAM: "Sunward - {species}"
     FILLVAL: *real_fillval
-    FORMAT: F20.9
+    FORMAT: F32.1
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
+    SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
-    VALIDMAX: 16777216.0
+    VALIDMAX: *species_valid_max
     VAR_TYPE: data
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
 
@@ -125,14 +133,15 @@ lo-sw-species-unc-attrs:
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    DISPLAY_TYPE: time_series
+    DISPLAY_TYPE: spectrogram
     FIELDNAM: "Sunward - {species}"
     FILLVAL: *real_fillval
-    FORMAT: F20.9
+    FORMAT: F32.1
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
+    SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMIN: 0.0
-    VALIDMAX: 16777216.0
+    VALIDMAX: *species_valid_max
     VAR_TYPE: data
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty

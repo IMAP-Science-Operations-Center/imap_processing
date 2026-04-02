@@ -136,8 +136,11 @@ scatter_threshold:
 counts:
   <<: *default
   CATDESC: Counts for a spin.
+  VAR_NOTES: Counts healpix maps are sampled at finer resolution to help maintain the pointing accuracy for each event.
+    Since count maps are a binned integral quantity, they necessarily require a non-spun approach per Pointing, unlike
+    exposure time and sensitivities.
   DEPEND_1: energy_bin_geometric_mean
-  DEPEND_2: pixel_index
+  DEPEND_2: counts_pixel_index
   FIELDNAM: counts
   LABLAXIS: counts
   # TODO: come back to format
@@ -239,6 +242,18 @@ pixel_index:
   FIELDNAM: pixel_index
   FORMAT: I12
   LABLAXIS: Pixel Index
+  UNITS: " "
+  VALIDMIN: *min_int
+  VALIDMAX: *max_int
+  VAR_TYPE: support_data
+
+counts_pixel_index:
+  FILLVAL: *min_int
+  CATDESC: Counts variable HEALPix pixel index.
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: counts_pixel_index
+  FORMAT: I12
+  LABLAXIS: Counts Pixel Index
   UNITS: " "
   VALIDMIN: *min_int
   VALIDMAX: *max_int

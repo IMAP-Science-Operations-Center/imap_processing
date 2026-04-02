@@ -1,5 +1,5 @@
-CDFs
-====
+CDF Metadata
+============
 
 These pages describe CDF files, tools for using CDF files, and SPDF requirements for archiving.
 

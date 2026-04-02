@@ -49,25 +49,25 @@ def extract_initial_items_from_combined_packets(
     n_packets = len(packets.epoch)
 
     # Preallocate arrays
-    packet_version = np.zeros(n_packets, dtype=np.uint16)
-    spin_period = np.zeros(n_packets, dtype=np.uint16)
-    acq_start_seconds = np.zeros(n_packets, dtype=np.uint32)
-    acq_start_subseconds = np.zeros(n_packets, dtype=np.uint32)
-    spare_1 = np.zeros(n_packets, dtype=np.uint8)
-    st_bias_gain_mode = np.zeros(n_packets, dtype=np.uint8)
-    sw_bias_gain_mode = np.zeros(n_packets, dtype=np.uint8)
-    suspect = np.zeros(n_packets, dtype=np.uint8)
-    priority = np.zeros(n_packets, dtype=np.uint8)
-    compressed = np.zeros(n_packets, dtype=np.uint8)
-    rgfo_half_spin = np.zeros(n_packets, dtype=np.uint8)
-    rgfo_esa_step = np.zeros(n_packets, dtype=np.uint8)
-    rgfo_spin_sector = np.zeros(n_packets, dtype=np.uint8)
-    nso_half_spin = np.zeros(n_packets, dtype=np.uint8)
-    nso_spin_sector = np.zeros(n_packets, dtype=np.uint8)
-    nso_esa_step = np.zeros(n_packets, dtype=np.uint8)
-    spare_2 = np.zeros(n_packets, dtype=np.uint16)
-    num_events = np.zeros(n_packets, dtype=np.uint32)
-    byte_count = np.zeros(n_packets, dtype=np.uint32)
+    packet_version: np.ndarray = np.zeros(n_packets, dtype=np.uint16)
+    spin_period: np.ndarray = np.zeros(n_packets, dtype=np.uint16)
+    acq_start_seconds: np.ndarray = np.zeros(n_packets, dtype=np.uint32)
+    acq_start_subseconds: np.ndarray = np.zeros(n_packets, dtype=np.uint32)
+    spare_1: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    st_bias_gain_mode: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    sw_bias_gain_mode: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    suspect: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    priority: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    compressed: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_half_spin: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_esa_step: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    rgfo_spin_sector: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    nso_half_spin: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    nso_spin_sector: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    nso_esa_step: np.ndarray = np.zeros(n_packets, dtype=np.uint8)
+    spare_2: np.ndarray = np.zeros(n_packets, dtype=np.uint16)
+    num_events: np.ndarray = np.zeros(n_packets, dtype=np.uint32)
+    byte_count: np.ndarray = np.zeros(n_packets, dtype=np.uint32)
 
     # Extract fields from each packet
     for pkt_idx in range(n_packets):
@@ -342,10 +342,10 @@ def _unpack_and_store_events(
     num_packets = len(num_events_arr)
 
     # Preallocate arrays for concatenated events and their destination indices
-    all_event_bytes = np.zeros((total_events, 8), dtype=np.uint8)
-    event_epoch_idx = np.zeros(total_events, dtype=np.int32)
-    event_priority_idx = np.zeros(total_events, dtype=np.int32)
-    event_position_idx = np.zeros(total_events, dtype=np.int32)
+    all_event_bytes: np.ndarray = np.zeros((total_events, 8), dtype=np.uint8)
+    event_epoch_idx: np.ndarray = np.zeros(total_events, dtype=np.int32)
+    event_priority_idx: np.ndarray = np.zeros(total_events, dtype=np.int32)
+    event_position_idx: np.ndarray = np.zeros(total_events, dtype=np.int32)
 
     # Build concatenated event array and index mappings
     offset = 0

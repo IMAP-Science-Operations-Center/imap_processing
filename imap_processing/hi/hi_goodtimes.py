@@ -1,7 +1,6 @@
 """IMAP-HI Goodtimes processing module."""
 
 import logging
-import re
 from enum import IntEnum
 from pathlib import Path
 
@@ -25,29 +24,37 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 # Structured dtype for good time intervals
-INTERVAL_DTYPE = np.dtype(
+INTERVAL_DTYPE: np.dtype = np.dtype(
     [
         ("met_start", np.float64),
         ("met_end", np.float64),
         ("spin_bin_low", np.uint8),
         ("spin_bin_high", np.uint8),
-        ("n_good_bins", np.uint8),
-        ("esa_step", np.uint8),
+        ("n_bins", np.uint8),
+        ("esa_step_mask", np.uint16),  # Bitmask for ESA steps 1-10 (bit i = step i+1)
+        ("cull_value", np.uint8),
     ]
 )
 
 
 class CullCode(IntEnum):
-    """Cull reason codes for good/bad time classification."""
+    """Cull reason codes for good/bad time classification (bit flags)."""
 
     GOOD = 0
-    LOOSE = 1
+    INCOMPLETE_SPIN = 1 << 0  # 1
+    DRF = 1 << 1  # 2
+    BAD_TDC_CAL = 1 << 2  # 4
+    OVERFLOW = 1 << 3  # 8
+    STAT_FILTER_0 = 1 << 4  # 16
+    STAT_FILTER_1 = 1 << 5  # 32
+    STAT_FILTER_2 = 1 << 6  # 64
 
 
 def hi_goodtimes(
-    l1b_de_datasets: list[xr.Dataset],
     current_repointing: str,
+    l1b_de_datasets: list[xr.Dataset],
     l1b_hk: xr.Dataset,
+    l1a_diagfee: xr.Dataset,
     cal_product_config_path: Path,
 ) -> list[xr.Dataset]:
     """
@@ -58,23 +65,26 @@ def hi_goodtimes(
 
     1. mark_incomplete_spin_sets - Remove incomplete 8-spin histogram periods
     2. mark_drf_times - Remove times during spacecraft drift restabilization
-    3. mark_overflow_packets - Remove times when DE packets overflow
-    4. mark_statistical_filter_0 - Detect drastic penetrating background changes
-    5. mark_statistical_filter_1 - Detect isotropic count rate increases
-    6. mark_statistical_filter_2 - Detect short-lived event pulses
+    3. mark_bad_tdc_cal - Remove times with failed TDC calibration
+    4. mark_overflow_packets - Remove times when DE packets overflow
+    5. mark_statistical_filter_0 - Detect drastic penetrating background changes
+    6. mark_statistical_filter_1 - Detect isotropic count rate increases
+    7. mark_statistical_filter_2 - Detect short-lived event pulses
 
     Parameters
     ----------
+    current_repointing : str
+        Repointing identifier for the current pointing (e.g., "repoint00001").
+        Used to identify which dataset in l1b_de_datasets is the current one.
     l1b_de_datasets : list[xr.Dataset]
         L1B DE datasets for surrounding pointings. Typically includes
         current plus 3 preceding and 3 following pointings (7 total).
         Statistical filters 0 and 1 use all datasets; other filters use
         only the current pointing.
-    current_repointing : str
-        Repointing identifier for the current pointing (e.g., "repoint00001").
-        Used to identify which dataset in l1b_de_datasets is the current one.
     l1b_hk : xr.Dataset
         L1B housekeeping dataset containing DRF status.
+    l1a_diagfee : xr.Dataset
+        L1A DIAG_FEE dataset containing TDC calibration status.
     cal_product_config_path : Path
         Path to calibration product configuration CSV file.
 
@@ -131,6 +141,7 @@ def hi_goodtimes(
             l1b_de_datasets,
             current_index,
             l1b_hk,
+            l1a_diagfee,
             cal_product_config_path,
         )
     else:
@@ -140,7 +151,7 @@ def hi_goodtimes(
             f"expected 7 files, got {len(l1b_de_datasets)}. "
             "Marking all times as bad."
         )
-        goodtimes_ds["cull_flags"][:, :] = CullCode.LOOSE
+        goodtimes_ds["cull_flags"][:, :] = CullCode.INCOMPLETE_SPIN
 
     # Log final statistics
     stats = goodtimes_ds.goodtimes.get_cull_statistics()
@@ -200,12 +211,13 @@ def _apply_goodtimes_filters(
     l1b_de_datasets: list[xr.Dataset],
     current_index: int,
     l1b_hk: xr.Dataset,
+    l1a_diagfee: xr.Dataset,
     cal_product_config_path: Path,
 ) -> None:
     """
     Apply all goodtimes culling filters to the dataset.
 
-    Modifies goodtimes_ds in place by applying filters 1-6.
+    Modifies goodtimes_ds in place by applying filters 1-7.
 
     Parameters
     ----------
@@ -217,6 +229,8 @@ def _apply_goodtimes_filters(
         Index of the current pointing in l1b_de_datasets.
     l1b_hk : xr.Dataset
         L1B housekeeping dataset.
+    l1a_diagfee : xr.Dataset
+        L1A DIAG_FEE dataset containing TDC calibration status.
     cal_product_config_path : Path
         Path to calibration product configuration CSV file.
     """
@@ -241,7 +255,7 @@ def _apply_goodtimes_filters(
         valid_events = l1b_de["trigger_id"].values != trigger_id_fillval
 
         # Initialize with -1 (won't match any config row since ESA energy steps > 0)
-        esa_energy_steps = np.full(len(ccsds_index), -1, dtype=np.int32)
+        esa_energy_steps: np.ndarray = np.full(len(ccsds_index), -1, dtype=np.int32)
         if np.any(valid_events):
             esa_energy_steps[valid_events] = l1b_de["esa_energy_step"].values[
                 ccsds_index[valid_events]
@@ -263,15 +277,19 @@ def _apply_goodtimes_filters(
     logger.info("Applying filter: mark_drf_times")
     mark_drf_times(goodtimes_ds, l1b_hk)
 
-    # 3. Mark overflow packets
+    # 3. Mark bad TDC calibration times
+    logger.info("Applying filter: mark_bad_tdc_cal")
+    mark_bad_tdc_cal(goodtimes_ds, l1a_diagfee)
+
+    # 4. Mark overflow packets
     logger.info("Applying filter: mark_overflow_packets")
     mark_overflow_packets(goodtimes_ds, current_l1b_de, cal_product_config)
 
-    # 4. Statistical Filter 0 - drastic background changes
+    # 5. Statistical Filter 0 - drastic background changes
     logger.info("Applying filter: mark_statistical_filter_0")
     mark_statistical_filter_0(goodtimes_ds, l1b_de_datasets, current_index)
 
-    # 5. Statistical Filter 1 - isotropic count rate increases
+    # 6. Statistical Filter 1 - isotropic count rate increases
     logger.info("Applying filter: mark_statistical_filter_1")
     mark_statistical_filter_1(
         goodtimes_ds,
@@ -279,7 +297,7 @@ def _apply_goodtimes_filters(
         current_index,
     )
 
-    # 6. Statistical Filter 2 - short-lived event pulses
+    # 7. Statistical Filter 2 - short-lived event pulses
     logger.info("Applying filter: mark_statistical_filter_2")
     mark_statistical_filter_2(
         goodtimes_ds,
@@ -345,15 +363,10 @@ def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
 
     # Create attributes
     sensor_number = parse_sensor_number(l1b_de.attrs["Logical_source"])
-    match = re.match(r"repoint(?P<pointing_num>\d{5})", l1b_de.attrs["Repointing"])
-    if not match:
-        raise ValueError(
-            f"Unable to parse pointing number from l1b_de Repointing "
-            f"attribute: {l1b_de.attrs['Repointing']}"
-        )
+    repointing = l1b_de.attrs.get("Repointing", "repoint-9999")
     attrs = {
-        "sensor": f"{sensor_number}sensor",
-        "pointing": int(match["pointing_num"]),
+        "Sensor": f"{sensor_number}sensor",
+        "Repointing": repointing,
     }
 
     return xr.Dataset(data_vars, coords, attrs)
@@ -526,44 +539,48 @@ class GoodtimesAccessor:
             # Subtract 1 to get the largest value <= met_val
             met_indices = np.searchsorted(met_values, met_array, side="right") - 1
 
-        # Set cull_flags for all indices
+        # Set cull_flags for all indices using bitwise OR to combine flags
         n_times = len(met_indices)
         n_bins = len(bins_array)
         logger.debug(
             f"Flagging {n_times} MET time(s) x {n_bins} spin bin(s) with "
             f"cull code {cull}"
         )
-        self._obj["cull_flags"].values[np.ix_(met_indices, bins_array)] = cull
+        self._obj["cull_flags"].values[np.ix_(met_indices, bins_array)] |= np.uint8(
+            cull
+        )
 
     def get_good_intervals(self) -> np.ndarray:
         """
-        Extract good time intervals for each MET timestamp.
+        Extract time intervals grouped by contiguous cull flag patterns.
 
-        Creates an interval for each MET time that has good bins. Since ESA step
-        changes at each MET, each MET gets its own interval(s).
+        Merges consecutive MET timestamps that have identical cull_flags patterns
+        into single intervals. Each interval spans a contiguous time range where
+        cull flags don't change.
 
-        If good bins wrap around the 89->0 boundary (e.g., bins 88,89,0,1), multiple
-        intervals are created for the same MET time, one for each contiguous set.
+        If cull flags have multiple contiguous regions with different values
+        (e.g., bins 0-44 good, 45-89 bad), multiple intervals are created for
+        the same time range, one per contiguous bin region.
 
         Returns
         -------
         numpy.ndarray
             Structured array with dtype INTERVAL_DTYPE containing:
-            - met_start: MET timestamp of interval
-            - met_end: MET timestamp of interval (same as met_start)
-            - spin_bin_low: Lowest good spin bin in interval
-            - spin_bin_high: Highest good spin bin in interval
-            - n_good_bins: Number of good bins
-            - esa_step: ESA step for this MET
+            - met_start: First MET timestamp of interval
+            - met_end: Last MET timestamp of interval
+            - spin_bin_low: Lowest spin bin in this contiguous region
+            - spin_bin_high: Highest spin bin in this contiguous region
+            - n_bins: Number of bins in this region
+            - esa_step_mask: Bitmask of ESA steps (1-10) included in interval
+            - cull_value: Cull flag value for this region (0=good, >0=bad)
 
         Notes
         -----
         This is used for generating the Good Times output files per algorithm
         document Section 2.3.2.5.
         """
-        logger.debug("Extracting good time intervals")
-        intervals: list[np.void] = []
-        met_values = self._obj.coords["met"].values
+        logger.debug("Extracting time intervals")
+        met_values = self._obj["met"].values
         cull_flags = self._obj["cull_flags"].values
         esa_steps = self._obj["esa_step"].values
 
@@ -571,29 +588,60 @@ class GoodtimesAccessor:
             logger.warning("No MET values found, returning empty intervals array")
             return np.array([], dtype=INTERVAL_DTYPE)
 
-        # Process each MET time
-        for met_idx in range(len(met_values)):
-            self._add_intervals_for_pattern(
-                intervals,
-                met_values[met_idx],
-                met_values[met_idx],  # met_start == met_end
-                cull_flags[met_idx, :],
-                esa_steps[met_idx],
-            )
+        # Group consecutive METs with identical cull patterns
+        # Each group becomes one or more intervals (one per contiguous bin region)
+        intervals: list[tuple] = []
 
-        logger.info(f"Extracted {len(intervals)} good time intervals")
+        # Start first group
+        group_start_idx = 0
+        current_pattern = cull_flags[0]
+        # Cast to int to avoid uint8 overflow when esa_step > 8
+        esa_step_mask = 1 << int(esa_steps[0] - 1)  # Bit i represents ESA step i+1
+
+        for met_idx in range(1, len(met_values)):
+            if np.array_equal(cull_flags[met_idx], current_pattern):
+                # Same pattern - extend current group
+                esa_step_mask |= 1 << int(esa_steps[met_idx] - 1)
+            else:
+                # Different pattern - close current group and start new one
+                self._add_intervals_for_pattern(
+                    intervals,
+                    met_values[group_start_idx],
+                    met_values[met_idx - 1],
+                    current_pattern,
+                    esa_step_mask,
+                )
+
+                # Start new group
+                group_start_idx = met_idx
+                current_pattern = cull_flags[met_idx]
+                esa_step_mask = 1 << int(esa_steps[met_idx] - 1)
+
+        # Close final group
+        self._add_intervals_for_pattern(
+            intervals,
+            met_values[group_start_idx],
+            met_values[-1],
+            current_pattern,
+            esa_step_mask,
+        )
+
+        logger.info(f"Extracted {len(intervals)} time intervals")
         return np.array(intervals, dtype=INTERVAL_DTYPE)
 
+    @staticmethod
     def _add_intervals_for_pattern(
-        self,
         intervals: list,
         met_start: float,
         met_end: float,
         pattern: np.ndarray,
-        esa_step: int,
+        esa_step_mask: int,
     ) -> None:
         """
-        Add interval(s) for a cull_flags pattern, splitting if bins wrap around.
+        Add interval(s) for a cull_flags pattern, one per contiguous bin region.
+
+        Creates an interval for each contiguous region of bins that share the
+        same cull value. This includes both good (cull=0) and bad (cull>0) regions.
 
         Parameters
         ----------
@@ -604,56 +652,39 @@ class GoodtimesAccessor:
         met_end : float
             End MET timestamp.
         pattern : numpy.ndarray
-            Cull flags pattern for spin bins.
-        esa_step : int
-            ESA step for this MET.
+            Cull flags pattern for spin bins (90 values).
+        esa_step_mask : int
+            Bitmask of ESA steps included in this time range.
         """
-        good_bins = np.nonzero(pattern == 0)[0]
+        # Find contiguous regions of bins with the same cull value
+        # diff != 0 indicates a change in cull value
+        changes = np.nonzero(np.diff(pattern) != 0)[0]
 
-        if len(good_bins) == 0:
-            return
-
-        # Check for gaps in good_bins (indicating separate contiguous regions)
-        # Bins are contiguous if difference between consecutive bins is 1
-        gaps = np.nonzero(np.diff(good_bins) > 1)[0]
-
-        if len(gaps) == 0:
-            # No gaps - single contiguous region
-            interval = (
-                met_start,
-                met_end,
-                good_bins[0],
-                good_bins[-1],
-                len(good_bins),
-                esa_step,
-            )
-            intervals.append(interval)
+        # Build list of (start_bin, end_bin) for each contiguous region
+        # If no changes, entire range is one region
+        if len(changes) == 0:
+            regions = [(0, 89)]
         else:
-            # Multiple contiguous regions - split at gaps
-            start_idx = 0
-            for gap_idx in gaps:
-                # Create interval for bins before the gap
-                bins_segment = good_bins[start_idx : gap_idx + 1]
-                interval = (
-                    met_start,
-                    met_end,
-                    bins_segment[0],
-                    bins_segment[-1],
-                    len(bins_segment),
-                    esa_step,
-                )
-                intervals.append(interval)
-                start_idx = gap_idx + 1
+            regions = []
+            start_bin = 0
+            for change_idx in changes:
+                regions.append((start_bin, change_idx))
+                start_bin = change_idx + 1
+            # Add final region
+            regions.append((start_bin, 89))
 
-            # Handle final segment after last gap
-            bins_segment = good_bins[start_idx:]
+        # Create an interval for each region
+        for start_bin, end_bin in regions:
+            cull_value = pattern[start_bin]
+            n_bins = end_bin - start_bin + 1
             interval = (
                 met_start,
                 met_end,
-                bins_segment[0],
-                bins_segment[-1],
-                len(bins_segment),
-                esa_step,
+                start_bin,
+                end_bin,
+                n_bins,
+                esa_step_mask,
+                cull_value,
             )
             intervals.append(interval)
 
@@ -694,11 +725,14 @@ class GoodtimesAccessor:
 
     def write_txt(self, output_path: Path) -> Path:
         """
-        Write good times to text file in the format specified by algorithm document.
+        Write time intervals to text file in the format specified by algorithm document.
 
         Format per Section 2.3.2.5:
-        pointing MET_start MET_end spin_bin_low spin_bin_high sensor esa_step
-        [rate/sigma values...]
+        pointing MET_start MET_end`tab`spin_bin_low spin_bin_high sensor`tab`
+        esa_steps[10] cull_value
+
+        The esa_steps field consists of 10 binary values (0 or 1) indicating whether
+        each ESA step (1-10) is included in this interval.
 
         Parameters
         ----------
@@ -710,24 +744,43 @@ class GoodtimesAccessor:
         pathlib.Path
             Path to the created file.
         """
-        logger.info(f"Writing good times to file: {output_path}")
+        logger.info(f"Writing intervals to file: {output_path}")
+        pointing = int(self._obj.attrs["Repointing"].replace("repoint", ""))
+        sensor = (
+            parse_sensor_number(self._obj.attrs["Logical_source"])
+            if "Logical_source" in self._obj.attrs
+            else self._obj.attrs["Sensor"].replace("sensor", "")
+        )
+
         intervals = self.get_good_intervals()
 
         with open(output_path, "w") as f:
+            # Write header info
+            file_id = self._obj.attrs.get("Logical_file_id")
+            if file_id is not None:
+                f.write(
+                    f"# Goodtimes txt file generated for input CDF: {file_id}" + "\n"
+                )
             for interval in intervals:
-                pointing = self._obj.attrs.get("pointing", 0)
-                sensor = self._obj.attrs["sensor"]
+                # Convert esa_step_mask bitmask to 10 binary values
+                # Bit i represents ESA step i+1, so check bits 0-9
+                esa_step_mask = int(interval["esa_step_mask"])
+                esa_step_flags = " ".join(
+                    "1" if (esa_step_mask >> i) & 1 else "0" for i in range(10)
+                )
 
                 # Format:
-                # pointing met_start met_end spin_bin_low spin_bin_high sensor esa_step
+                # pointing met_start met_end spin_bin_low spin_bin_high sensor
+                # esa_steps[10] cull_value
                 line = (
                     f"{pointing:05d} "
                     f"{int(interval['met_start'])} "
-                    f"{int(interval['met_end'])} "
+                    f"{int(interval['met_end'])}\t"
                     f"{interval['spin_bin_low']} "
                     f"{interval['spin_bin_high']} "
-                    f"{sensor} "
-                    f"{interval['esa_step']}"
+                    f"{sensor}\t"
+                    f"{esa_step_flags}\t"
+                    f"{interval['cull_value']}"
                 )
 
                 # TODO: Add rate/sigma values for each ESA step
@@ -790,7 +843,6 @@ class GoodtimesAccessor:
             ds[coord_name].attrs = attr_mgr.get_variable_attributes(
                 attr_mgr_key, check_schema=False
             )
-        ds["spin_bin"].attrs = attr_mgr.get_variable_attributes("hi_goodtimes_spin_bin")
 
         # Add variable attributes
         for var_name in ds.data_vars:
@@ -799,7 +851,7 @@ class GoodtimesAccessor:
             )
 
         # Update global attributes
-        sensor_str = ds.attrs.pop("sensor")
+        sensor_str = ds.attrs.pop("Sensor")
         ds.attrs = attr_mgr.get_global_attributes("imap_hi_l1b_goodtimes_attrs")
 
         # Update Logical_source with sensor string
@@ -819,7 +871,7 @@ class GoodtimesAccessor:
 def mark_incomplete_spin_sets(
     goodtimes_ds: xr.Dataset,
     l1b_de: xr.Dataset,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.INCOMPLETE_SPIN,
 ) -> None:
     """
     Filter out incomplete 8-spin histogram periods.
@@ -934,7 +986,7 @@ def mark_incomplete_spin_sets(
 def mark_drf_times(
     goodtimes_ds: xr.Dataset,
     hk: xr.Dataset,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.DRF,
 ) -> None:
     """
     Remove times during spacecraft drift restabilization.
@@ -1007,7 +1059,7 @@ def mark_overflow_packets(
     goodtimes_ds: xr.Dataset,
     l1b_de: xr.Dataset,
     config_df: pd.DataFrame,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.OVERFLOW,
 ) -> None:
     """
     Remove times when DE packets overflow with qualified events.
@@ -1097,7 +1149,7 @@ def mark_overflow_packets(
     # - After processing all events, last_event_per_packet[P] contains the
     #   index of the last event belonging to packet P
     max_packet_idx = int(np.max(ccsds_indices))
-    last_event_per_packet = np.full(max_packet_idx + 1, -1, dtype=np.intp)
+    last_event_per_packet: np.ndarray = np.full(max_packet_idx + 1, -1, dtype=np.intp)
     event_indices = np.arange(len(ccsds_indices))
     np.maximum.at(last_event_per_packet, ccsds_indices, event_indices)
 
@@ -1128,6 +1180,93 @@ def mark_overflow_packets(
         f"Found {len(full_packet_indices)} full packet(s), "
         f"dropped {len(mets_to_cull)} 8-spin period(s) due to overflow packets"
     )
+
+
+def mark_bad_tdc_cal(
+    goodtimes_ds: xr.Dataset,
+    diagfee: xr.Dataset,
+    cull_code: int = CullCode.BAD_TDC_CAL,
+) -> None:
+    """
+    Remove times with failed TDC calibration (DIAG_FEE method).
+
+    Based on C reference: drop_bad_tdc_diagfee in culling_v2.c provided by
+    IMAP-Hi team.
+
+    This function scans DIAG_FEE packets chronologically and checks the TDC
+    calibration status for each packet. If any TDC has failed calibration,
+    all times from that DIAG_FEE packet until the next DIAG_FEE packet are
+    marked as bad.
+
+    Parameters
+    ----------
+    goodtimes_ds : xr.Dataset
+        Goodtimes dataset to update with cull flags.
+    diagfee : xr.Dataset
+        DIAG_FEE dataset containing TDC calibration status fields:
+        - shcoarse: Mission Elapsed Time (MET)
+        - tdc1_cal_ctrl_stat: TDC1 calibration status (bit 1 = success)
+        - tdc2_cal_ctrl_stat: TDC2 calibration status (bit 1 = success)
+        - tdc3_cal_ctrl_stat: TDC3 calibration status (bit 1 = success)
+    cull_code : int, optional
+        Cull code to use for marking bad times. Default is CullCode.LOOSE.
+
+    Notes
+    -----
+    This function modifies goodtimes_ds in place.
+
+    Quirk: Two DIAG_FEE packets are generated when entering HVSCI mode.
+    The first packet is skipped if two packets appear within 10 seconds.
+    """
+    logger.info("Running mark_bad_tdc_cal culling")
+
+    # Based on sample code in culling_v2.c, skip this check if we have fewer
+    # than two diag_fee packets.
+    if len(diagfee.epoch) < 2:
+        logger.warning(
+            f"Insufficient DIAG_FEE packets to select good times "
+            f"(found {len(diagfee.epoch)}, need at least 2)"
+        )
+        return
+
+    diagfee_met = diagfee["shcoarse"].values
+    goodtimes_met = goodtimes_ds.coords["met"].values
+
+    # Identify duplicate packets: skip if followed by another within 10 seconds
+    time_gaps = np.diff(diagfee_met)
+    is_duplicate = np.concatenate([time_gaps < 10, [False]])
+
+    # Identify any packets where any of the three TDC calibrations failed.
+    # TDC failure check (bit 1: 1=good, 0=bad)
+    tdc_failed = (
+        ((diagfee["tdc1_cal_ctrl_stat"].values & 2) == 0)
+        | ((diagfee["tdc2_cal_ctrl_stat"].values & 2) == 0)
+        | ((diagfee["tdc3_cal_ctrl_stat"].values & 2) == 0)
+    )
+
+    # Only loop over non-duplicate packets with TDC failures
+    tdc_failed_indices = np.nonzero(~is_duplicate & tdc_failed)[0]
+
+    n_times_removed = 0
+    for i in tdc_failed_indices:
+        # Remove times from this DIAG_FEE packet until next. We are skipping the
+        # first packet of a duplicate pair, so determining the window based on the
+        # current packet met and next packet met covers the time window between
+        # non-duplicate DIAG_FEE packets. We can ignore the ~10 seconds of slop
+        # around duplicate packets because these packets should only be produced
+        # when IMAP-Hi is transitioning to HVSCI mode which means that there will
+        # be no DE packets being produced.
+        df_time = diagfee_met[i]
+        next_df_time = diagfee_met[i + 1] if i < len(diagfee_met) - 1 else np.inf
+
+        in_window = (goodtimes_met >= df_time) & (goodtimes_met < next_df_time)
+        mets_to_cull = goodtimes_met[in_window]
+
+        if len(mets_to_cull) > 0:
+            goodtimes_ds.goodtimes.mark_bad_times(met=mets_to_cull, cull=cull_code)
+            n_times_removed += len(mets_to_cull)
+
+    logger.info(f"Dropped {n_times_removed} time(s) due to bad TDC calibration")
 
 
 def _get_sweep_indices(esa_step: np.ndarray) -> np.ndarray:
@@ -1228,7 +1367,7 @@ def _compute_normalized_counts_per_sweep(
 
     # Count valid AB events per sweep
     n_sweeps = int(l1b_de["esa_sweep"].max().values) + 1
-    counts_per_sweep = np.zeros(n_sweeps, dtype=np.int64)
+    counts_per_sweep: np.ndarray = np.zeros(n_sweeps, dtype=np.int64)
     np.add.at(counts_per_sweep, event_sweep_idx[is_valid_ab.values], 1)
 
     # Normalize by number of unique ESA energy steps
@@ -1267,7 +1406,7 @@ def mark_statistical_filter_0(
     current_index: int,
     threshold_factor: float = HiConstants.STAT_FILTER_0_THRESHOLD_FACTOR,
     tof_ab_limit_ns: int = HiConstants.STAT_FILTER_0_TOF_AB_LIMIT_NS,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.STAT_FILTER_0,
     min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
 ) -> None:
     """
@@ -1448,7 +1587,7 @@ def _compute_qualified_counts_per_sweep(
     # Count qualified events per (esa_sweep, esa_energy_step) using 2D array
     n_sweeps = int(esa_sweep.max()) + 1
     n_esa_energy_steps = int(esa_energy_step.max()) + 1
-    counts_2d = np.zeros((n_sweeps, n_esa_energy_steps), dtype=np.float64)
+    counts_2d: np.ndarray = np.zeros((n_sweeps, n_esa_energy_steps), dtype=np.float64)
     np.add.at(counts_2d, (qualified_sweep, qualified_energy_step), 1)
 
     # Remove event_met dimension and reshape using multi-index
@@ -1702,7 +1841,7 @@ def mark_statistical_filter_1(
     consecutive_threshold_sigma: float = HiConstants.STAT_FILTER_1_CONSECUTIVE_SIGMA,
     extreme_threshold_sigma: float = HiConstants.STAT_FILTER_1_EXTREME_SIGMA,
     min_consecutive_intervals: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.STAT_FILTER_1,
     min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
 ) -> None:
     """
@@ -1900,7 +2039,9 @@ def _compute_bins_for_cluster(
         For example, if cluster spans bins 88-91 with n_bins=90,
         returns [87, 88, 89, 0, 1, 2] (with padding=1).
     """
-    cluster_bins = nominal_bins[cluster_start : cluster_end + 1].astype(np.int32)
+    cluster_bins: np.ndarray = nominal_bins[cluster_start : cluster_end + 1].astype(
+        np.int32
+    )
 
     # Unwrap to handle clusters spanning the 0/n_bins boundary
     unwrapped = np.unwrap(cluster_bins, period=n_bins)
@@ -1912,7 +2053,7 @@ def _compute_bins_for_cluster(
     bin_high = bin_max + bin_padding
 
     # Generate bin indices with wrapping using modulo
-    bins_to_mark = np.arange(bin_low, bin_high + 1) % n_bins
+    bins_to_mark: np.ndarray = np.arange(bin_low, bin_high + 1) % n_bins
 
     logger.debug(f"Cluster {cluster_start} to {cluster_end} bins: {bins_to_mark}")
 
@@ -1925,7 +2066,7 @@ def mark_statistical_filter_2(
     min_events: int = HiConstants.STAT_FILTER_2_MIN_EVENTS,
     max_time_delta: float = HiConstants.STAT_FILTER_2_MAX_TIME_DELTA,
     bin_padding: int = HiConstants.STAT_FILTER_2_BIN_PADDING,
-    cull_code: int = CullCode.LOOSE,
+    cull_code: int = CullCode.STAT_FILTER_2,
 ) -> None:
     """
     Apply Statistical Filter 2 to detect short-lived event pulses.

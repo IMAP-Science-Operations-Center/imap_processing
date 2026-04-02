@@ -719,7 +719,7 @@ def test_convert_tofs_to_eu(attr_mgr_l1b, attr_mgr_l1a):
     tof0_expected = np.array([1.394394, 0.889272])
     tof1_expected = np.array([0.931059, tof_fill_l1b])
     tof2_expected = np.array([2.870557, 1.372876])
-    tof3_expected = np.array([3.88245, 1.818162])
+    tof3_expected = np.array([3.89606, 1.83878])
 
     # Act
     l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)

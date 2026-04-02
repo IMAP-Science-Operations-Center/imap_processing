@@ -7,6 +7,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.de import FILLVAL_FLOAT32
 from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
@@ -65,6 +66,13 @@ def mock_data_l1b_extendedspin_dict():
     quality = np.zeros((2, 3), dtype="uint16")
     # These should be shape: (3,)
     energy_dep_flags = np.zeros(len(spin), dtype="uint16")
+    energy_range_flags = np.zeros(UltraConstants.MAX_ENERGY_RANGES, dtype=np.uint16)
+    energy_range_flags[:5] = 1  # Set first 5 to 1 for testing
+    energy_range_edges = np.ones(
+        UltraConstants.MAX_ENERGY_RANGE_EDGES, dtype=np.float32
+    )
+    energy_range_edges[:4] = [3.0, 5.0, 7.0, 10.0]  # Example values
+    energy_range_edges[4:] = -1.0e31  # Fill remaining with fillval
     data_dict = {
         "epoch": epoch,
         "spin_number": spin,
@@ -74,8 +82,8 @@ def mock_data_l1b_extendedspin_dict():
         "quality_low_voltage": energy_dep_flags,
         "quality_high_energy": energy_dep_flags,
         "quality_statistics": energy_dep_flags,
-        "energy_range_flags": np.ones(5, dtype=np.uint16),
-        "energy_range_edges": np.ones(4, dtype=np.float64),
+        "energy_range_flags": energy_range_flags,
+        "energy_range_edges": energy_range_edges,
     }
     return data_dict
 

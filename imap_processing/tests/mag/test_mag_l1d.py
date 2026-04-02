@@ -8,7 +8,7 @@ from imap_data_access.processing_input import ProcessingInputCollection
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.cli import Mag
-from imap_processing.mag.constants import DataMode
+from imap_processing.mag.constants import FILLVAL, DataMode
 from imap_processing.mag.l1d.mag_l1d import mag_l1d
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL1dConfiguration
 from imap_processing.mag.l2.mag_l2_data import ValidFrames
@@ -569,6 +569,57 @@ def test_enhanced_gradiometry_with_quality_flags_detailed():
         grad_ds["gradiometer_offset_magnitude"].data, expected_magnitudes, rtol=1e-10
     )
     assert np.array_equal(grad_ds["quality_flags"].data, expected_flags)
+
+
+def test_rotate_frame_preserves_fillval_and_nan(mag_l1d_test_class):
+    """Test that L1D rotate_frame preserves FILLVAL and NaN vectors."""
+    mag_l1d_test_class.frame = ValidFrames.MAGO
+
+    vectors = mag_l1d_test_class.vectors.copy()
+    magi_vectors = mag_l1d_test_class.magi_vectors.copy()
+
+    # Set some MAGO vectors to FILLVAL and NaN
+    vectors[0] = [FILLVAL, FILLVAL, FILLVAL]
+    vectors[2] = [np.nan, np.nan, np.nan]
+    vectors[4] = [1.0, np.nan, 3.0]
+    mag_l1d_test_class.vectors = vectors
+
+    # Set some MAGI vectors to FILLVAL and NaN
+    magi_vectors[1] = [FILLVAL, FILLVAL, FILLVAL]
+    magi_vectors[3] = [np.nan, np.nan, np.nan]
+    mag_l1d_test_class.magi_vectors = magi_vectors
+
+    def mock_frame_transform(
+        epoch_et,
+        vecs,
+        from_frame,
+        to_frame,
+        allow_spice_noframeconnect,
+    ):
+        return np.full(vecs.shape, 99.0)
+
+    with patch(
+        "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
+        side_effect=mock_frame_transform,
+    ):
+        mag_l1d_test_class.rotate_frame(ValidFrames.SRF)
+
+    assert mag_l1d_test_class.frame == ValidFrames.SRF
+
+    # MAGO: FILLVAL/NaN rows preserved as FILLVAL
+    assert np.all(mag_l1d_test_class.vectors[0] == FILLVAL)
+    assert np.all(mag_l1d_test_class.vectors[2] == FILLVAL)
+    assert mag_l1d_test_class.vectors[4, 1] == FILLVAL
+    # Normal MAGO vectors get rotated value
+    assert np.all(mag_l1d_test_class.vectors[1] == 99.0)
+    assert np.all(mag_l1d_test_class.vectors[3] == 99.0)
+
+    # MAGI: FILLVAL/NaN rows preserved as FILLVAL
+    assert np.all(mag_l1d_test_class.magi_vectors[1] == FILLVAL)
+    assert np.all(mag_l1d_test_class.magi_vectors[3] == FILLVAL)
+    # Normal MAGI vectors get rotated value
+    assert np.all(mag_l1d_test_class.magi_vectors[0] == 99.0)
+    assert np.all(mag_l1d_test_class.magi_vectors[2] == 99.0)
 
 
 def test_rotate_frames(mag_l1d_test_class):

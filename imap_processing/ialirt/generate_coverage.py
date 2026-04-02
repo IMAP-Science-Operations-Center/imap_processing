@@ -185,10 +185,10 @@ def generate_coverage(  # noqa: PLR0912
     stop_et_input = start_et_input + duration_seconds
 
     time_range = np.arange(start_et_input, stop_et_input, time_step)
-    total_visible_mask = np.zeros(time_range.shape, dtype=bool)
+    total_visible_mask: np.ndarray = np.zeros(time_range.shape, dtype=bool)
 
     # Precompute DSN outage mask for non-DSN stations
-    dsn_outage_mask = np.zeros(time_range.shape, dtype=bool)
+    dsn_outage_mask: np.ndarray = np.zeros(time_range.shape, dtype=bool)
     if dsn:
         for dsn_contacts in dsn.values():
             for start, end in dsn_contacts:
@@ -209,7 +209,7 @@ def generate_coverage(  # noqa: PLR0912
         schedule_mask = create_schedule_mask(station, time_range)
         visible &= schedule_mask
 
-        outage_mask = np.zeros(time_range.shape, dtype=bool)
+        outage_mask: np.ndarray = np.zeros(time_range.shape, dtype=bool)
         if outages and station_name in outages:
             for start, end in outages[station_name]:
                 start_et = str_to_et(start)
@@ -229,7 +229,7 @@ def generate_coverage(  # noqa: PLR0912
     # --- DSN Stations ---
     if dsn:
         for dsn_station, contacts in dsn.items():
-            dsn_visible_mask = np.zeros(time_range.shape, dtype=bool)
+            dsn_visible_mask: np.ndarray = np.zeros(time_range.shape, dtype=bool)
             for start, end in contacts:
                 start_et = str_to_et(start)
                 end_et = str_to_et(end)
@@ -253,7 +253,7 @@ def generate_coverage(  # noqa: PLR0912
                 time_range[outage_mask], format_str="ISOC"
             )
     if uksa:
-        uksa_visible_mask = np.zeros(time_range.shape, dtype=bool)
+        uksa_visible_mask: np.ndarray = np.zeros(time_range.shape, dtype=bool)
         for start, end in uksa:
             start_et = str_to_et(start)
             end_et = str_to_et(end)

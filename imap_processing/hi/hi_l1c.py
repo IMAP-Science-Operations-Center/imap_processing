@@ -24,10 +24,11 @@ from imap_processing.spice.geometry import (
     SpiceFrame,
     frame_transform,
     frame_transform_az_el,
+    get_spacecraft_to_instrument_spin_phase_offset,
 )
 from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import (
-    get_instrument_spin_phase,
+    get_spacecraft_spin_phase,
     get_spin_data,
 )
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
@@ -40,15 +41,12 @@ logger = logging.getLogger(__name__)
 
 
 def hi_l1c(
-    de_dataset: xr.Dataset, calibration_prod_config_path: Path
+    de_dataset: xr.Dataset,
+    calibration_prod_config_path: Path,
+    goodtimes_ds: xr.Dataset,
 ) -> list[xr.Dataset]:
     """
     High level IMAP-Hi l1c processing function.
-
-    This function will be expanded once the l1c processing is better defined. It
-    will need to add inputs such as Ephemerides, Goodtimes inputs, and
-    instrument status summary and will output a Pointing Set CDF as well as a
-    Goodtimes list (CDF?).
 
     Parameters
     ----------
@@ -56,6 +54,8 @@ def hi_l1c(
         IMAP-Hi l1b de product.
     calibration_prod_config_path : pathlib.Path
         Calibration product configuration file.
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset with cull_flags.
 
     Returns
     -------
@@ -64,15 +64,17 @@ def hi_l1c(
     """
     logger.info("Running Hi l1c processing")
 
-    # TODO: I am not sure what the input for Goodtimes will be so for now,
-    #    If the input is an xarray Dataset, do pset processing
-    l1c_dataset = generate_pset_dataset(de_dataset, calibration_prod_config_path)
+    l1c_dataset = generate_pset_dataset(
+        de_dataset, calibration_prod_config_path, goodtimes_ds
+    )
 
     return [l1c_dataset]
 
 
 def generate_pset_dataset(
-    de_dataset: xr.Dataset, calibration_prod_config_path: Path
+    de_dataset: xr.Dataset,
+    calibration_prod_config_path: Path,
+    goodtimes_ds: xr.Dataset,
 ) -> xr.Dataset:
     """
     Generate IMAP-Hi l1c pset xarray dataset from l1b product.
@@ -83,6 +85,8 @@ def generate_pset_dataset(
         IMAP-Hi l1b de product.
     calibration_prod_config_path : pathlib.Path
         Calibration product configuration file.
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset with cull_flags.
 
     Returns
     -------
@@ -110,9 +114,11 @@ def generate_pset_dataset(
     )
     pset_dataset.update(pset_geometry(pset_midpoint_et, logical_source_parts["sensor"]))
     # Bin the counts into the spin-bins
-    pset_dataset.update(pset_counts(pset_dataset.coords, config_df, de_dataset))
+    pset_dataset.update(
+        pset_counts(pset_dataset.coords, config_df, de_dataset, goodtimes_ds)
+    )
     # Calculate and add the exposure time to the pset_dataset
-    pset_dataset.update(pset_exposure(pset_dataset.coords, de_dataset))
+    pset_dataset.update(pset_exposure(pset_dataset.coords, de_dataset, goodtimes_ds))
     # Get the backgrounds
     pset_dataset.update(pset_backgrounds(pset_dataset.coords))
 
@@ -322,6 +328,7 @@ def pset_counts(
     pset_coords: dict[str, xr.DataArray],
     config_df: pd.DataFrame,
     l1b_de_dataset: xr.Dataset,
+    goodtimes_ds: xr.Dataset,
 ) -> dict[str, xr.DataArray]:
     """
     Bin direct events into PSET spin-bins.
@@ -334,6 +341,8 @@ def pset_counts(
         The calibration product configuration dataframe.
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset with cull_flags.
 
     Returns
     -------
@@ -362,11 +371,23 @@ def pset_counts(
     # Remove DEs with invalid trigger_id. This should only occur for a
     # pointing with no events that gets a single fill event
     good_mask = de_ds["trigger_id"].data != de_ds["trigger_id"].attrs["FILLVAL"]
+    if not np.any(good_mask):
+        return counts_var
+    elif not np.all(good_mask):
+        raise ValueError(
+            "An event with trigger_id=FILLVAL should only occur for a pointing "
+            "with no events that gets a single fill event. Events with mixed "
+            "valid and FILLVAL trigger_ids found."
+        )
+
     # Remove DEs not in Goodtimes/angles
-    good_mask &= good_time_and_phase_mask(
-        l1b_de_dataset.event_met.values, l1b_de_dataset.spin_phase.values
+    # For direct events, use nominal_bin (spacecraft spin bin 0-89) to look up goodtimes
+    goodtimes_mask = good_time_and_phase_mask(
+        de_ds.event_met.values,
+        de_ds.nominal_bin.values,
+        goodtimes_ds,
     )
-    de_ds = de_ds.isel(event_met=good_mask)
+    de_ds = de_ds.isel(event_met=goodtimes_mask)
 
     # Get esa_energy_step for each event (recorded per packet, use ccsds_index)
     esa_energy_steps = l1b_de_dataset["esa_energy_step"].data[de_ds["ccsds_index"].data]
@@ -435,7 +456,9 @@ def pset_backgrounds(pset_coords: dict[str, xr.DataArray]) -> dict[str, xr.DataA
 
 
 def pset_exposure(
-    pset_coords: dict[str, xr.DataArray], l1b_de_dataset: xr.Dataset
+    pset_coords: dict[str, xr.DataArray],
+    l1b_de_dataset: xr.Dataset,
+    goodtimes_ds: xr.Dataset,
 ) -> dict[str, xr.DataArray]:
     """
     Calculate PSET exposure time.
@@ -446,6 +469,8 @@ def pset_exposure(
         The PSET coordinates from the xarray.Dataset.
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset with cull_flags.
 
     Returns
     -------
@@ -482,15 +507,26 @@ def pset_exposure(
 
         # Clock tick MET times are accumulation "edges". To get the mean spin-phase
         # for a given clock tick, add 1/2 clock tick and compute spin-phase.
-        spin_phases = np.atleast_1d(
-            get_instrument_spin_phase(
-                clock_tick_mets + HiConstants.HALF_CLOCK_TICK_S,
-                SpiceFrame[f"IMAP_HI_{sensor_number}"],
-            )
-        )
+        mid_tick_mets = clock_tick_mets + HiConstants.HALF_CLOCK_TICK_S
+
+        # Compute spacecraft spin phase first (used for goodtimes filtering)
+        spacecraft_spin_phase = np.atleast_1d(get_spacecraft_spin_phase(mid_tick_mets))
+
+        # Convert spacecraft spin phase to nominal_bins (0-89) for goodtimes lookup
+        nominal_bins = (spacecraft_spin_phase * 90).astype(np.int32)
+        nominal_bins = np.clip(nominal_bins, 0, 89)
+
+        # Compute instrument spin phase from spacecraft spin phase
+        # This implementation is identical to spin.get_instrument_spin_phase and
+        # is replicated here to avoid querying the spin dataframe again.
+        instrument_frame = SpiceFrame[f"IMAP_HI_{sensor_number}"]
+        phase_offset = get_spacecraft_to_instrument_spin_phase_offset(instrument_frame)
+        spin_phases = (spacecraft_spin_phase + phase_offset) % 1.0
 
         # Remove ticks not in good times/angles
-        good_mask = good_time_and_phase_mask(clock_tick_mets, spin_phases)
+        good_mask = good_time_and_phase_mask(
+            clock_tick_mets, nominal_bins, goodtimes_ds
+        )
         spin_phases = spin_phases[good_mask]
         clock_tick_weights = clock_tick_weights[good_mask]
 
@@ -617,7 +653,7 @@ def get_de_clock_ticks_for_esa_step(
             f"The CCSDS MET time {ccsds_met} "
             "is less than 8 spins from the loaded spin table data."
         )
-    clock_tick_mets = np.arange(
+    clock_tick_mets: np.ndarray = np.arange(
         spin_start_mets[end_time_ind - 8],
         spin_start_mets[end_time_ind],
         HiConstants.DE_CLOCK_TICK_S,
@@ -637,22 +673,40 @@ def get_de_clock_ticks_for_esa_step(
 
 
 def good_time_and_phase_mask(
-    tick_mets: np.ndarray, spin_phases: np.ndarray
-) -> npt.NDArray:
+    mets: np.ndarray,
+    nominal_bins: np.ndarray,
+    goodtimes_ds: xr.Dataset,
+) -> npt.NDArray[np.bool_]:
     """
-    Filter out the clock tick times that are not in good times and angles.
+    Filter out times that are not in good times based on the goodtimes dataset.
 
     Parameters
     ----------
-    tick_mets : np.ndarray
-        Clock-tick MET times.
-    spin_phases : np.ndarray
-        Spin phases for each clock tick.
+    mets : np.ndarray
+        MET times for each event or clock tick.
+    nominal_bins : np.ndarray
+        Spacecraft spin bins (0-89) for each event or clock tick.
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset with cull_flags variable dimensioned (met, spin_bin).
 
     Returns
     -------
     keep_mask : np.ndarray
-        Boolean mask indicating which clock ticks are in good times/phases.
+        Boolean mask indicating which events/ticks are in good times.
     """
-    # TODO: Implement this once we have Goodtimes data product defined.
-    return np.full_like(tick_mets, True, dtype=bool)
+    gt_mets = goodtimes_ds["met"].values
+    cull_flags = goodtimes_ds["cull_flags"].values
+
+    # Map each event/tick to the nearest goodtimes MET interval
+    # searchsorted with side='right' - 1 gives the largest MET <= query MET
+    met_indices = np.searchsorted(gt_mets, mets, side="right") - 1
+    met_indices = np.clip(met_indices, 0, len(gt_mets) - 1)
+
+    # Convert nominal_bins to int32 for indexing
+    spin_bins: npt.NDArray[np.int32] = nominal_bins.astype(np.int32)
+
+    # Look up cull_flags for each event/tick
+    # Events are good if cull_flags == 0
+    event_cull_flags = cull_flags[met_indices, spin_bins]
+
+    return event_cull_flags == 0

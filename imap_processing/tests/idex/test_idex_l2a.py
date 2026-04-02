@@ -49,7 +49,7 @@ def l2a_dataset(
         "imap_processing.idex.idex_l1b.get_spice_data",
         return_value={"spin_phase": spin_phase_angles},
     ):
-        dataset = idex_l2a(idex_l1b(decom_test_data_sci), ancillary_files)
+        dataset = idex_l2a(idex_l1b(decom_test_data_sci, "sci-1week"), ancillary_files)
     return dataset
 
 

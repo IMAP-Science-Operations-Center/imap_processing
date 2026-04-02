@@ -54,9 +54,7 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
     )
 
     data_dict = extract_data_dict(filtered_dataset)
-
     goodtimes_dataset = create_dataset(data_dict, name, "l1b")
-
     if goodtimes_dataset["spin_number"].size == 0:
         goodtimes_dataset = goodtimes_dataset.drop_dims("spin_number")
         goodtimes_dataset = goodtimes_dataset.expand_dims(spin_number=[FILLVAL_UINT32])

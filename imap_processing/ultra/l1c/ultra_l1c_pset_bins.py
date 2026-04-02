@@ -79,7 +79,7 @@ def get_spacecraft_histogram(
     energy_bin_edges: list[tuple[float, float]],
     nside: int = 128,
     nested: bool = False,
-) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+) -> tuple[NDArray, NDArray]:
     """
     Compute a 2D histogram of the particle data using HEALPix binning.
 
@@ -101,10 +101,6 @@ def get_spacecraft_histogram(
     -------
     hist : np.ndarray
         A 2D histogram array with shape (n_pix, n_energy_bins).
-    latitude : np.ndarray
-        Array of latitude values.
-    longitude : np.ndarray
-        Array of longitude values.
     n_pix : int
         Number of healpix pixels.
 
@@ -126,10 +122,6 @@ def get_spacecraft_histogram(
     # Compute number of HEALPix pixels that cover the sphere
     n_pix = hp.nside2npix(nside)
 
-    # Calculate the corresponding longitude (az) latitude (el)
-    # center coordinates
-    longitude, latitude = hp.pix2ang(nside, np.arange(n_pix), lonlat=True)
-
     # Get HEALPix pixel indices for each event
     # HEALPix expects latitude in [-90, 90] so we don't need to change elevation
     hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
@@ -143,7 +135,7 @@ def get_spacecraft_histogram(
         # Only count the events that fall within the energy bin
         hist[i, :] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist, latitude, longitude, n_pix
+    return hist, n_pix
 
 
 def get_spacecraft_count_rate_uncertainty(hist: NDArray, exposure: NDArray) -> NDArray:
@@ -254,7 +246,7 @@ def get_sectored_rates(rates_ds: xr.Dataset) -> xr.Dataset | None:
 
     # Get the start indices of each sector mode spin
     sector_starts = spin_change[spin_run_inds]
-    sectored_mode_mask = np.zeros(len(spins), dtype=bool)
+    sectored_mode_mask: np.ndarray = np.zeros(len(spins), dtype=bool)
     starts = np.asarray(sector_starts)
     # Create offsets 0..14 and broadcast
     idx = starts[:, None] + np.arange(15)
@@ -306,7 +298,9 @@ def get_deadtime_ratios_by_spin_phase(
         )
     else:
         num_spin_sectors = 15
-        sector_indices = np.arange(len(sectored_rates["epoch"])) % num_spin_sectors
+        sector_indices: np.ndarray = (
+            np.arange(len(sectored_rates["epoch"])) % num_spin_sectors
+        )
         # Get timestamps at the start of each spin (sector 0)
         spin_start_indices = np.where(sector_indices == 0)[0]
         met_time = sectored_rates["shcoarse"].values[spin_start_indices]
@@ -480,14 +474,19 @@ def get_spacecraft_exposure_times(
     spin_periods = goodtimes_dataset["spin_period"].values
     energy_flags = goodtimes_dataset["energy_range_flags"].values
     # only get valid flags for the energy bins we are using at l1c
+    # Filter out fill values (0s) from energy_range_flags
     energy_flags = energy_flags[energy_flags > 0]
+    # Filter out fill values from energy_range_edges
+    energy_range_edges = goodtimes_dataset["energy_range_edges"].values
+    # Remove fill values (negative or zero)
+    energy_range_edges_valid = energy_range_edges[energy_range_edges > 0]
     # Get the quality flag arrays "turned on" for energy dependent culling from the
     # goodtimes dataset.
     flag_arrays = [
         goodtimes_dataset[flag_name].values
         for flag_name in ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS
     ]
-    bin_to_range = np.digitize(energy_bins, goodtimes_dataset.energy_range_edges)
+    bin_to_range = np.digitize(energy_bins, energy_range_edges_valid)
     valid_spins = (
         np.bitwise_or.reduce(flag_arrays)[np.newaxis, :] & energy_flags[:, np.newaxis]
     ) == 0
@@ -531,6 +530,7 @@ def get_efficiencies_and_geometric_function(
     theta_vals: np.ndarray,
     phi_vals: np.ndarray,
     npix: int,
+    sensor_id: int,
     ancillary_files: dict,
     apply_bsf: bool = True,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -559,6 +559,8 @@ def get_efficiencies_and_geometric_function(
         corresponding phi for each pixel (and energy, if present).
     npix : int
         Number of HEALPix pixels.
+    sensor_id : int
+        Sensor ID, either 45 or 90.
     ancillary_files : dict
         Dictionary containing ancillary files.
     apply_bsf : bool, optional
@@ -573,9 +575,10 @@ def get_efficiencies_and_geometric_function(
         Averaged efficiencies across all spin phases.
         Shape = (n_energy_bins, npix).
     """
+    sensor_name = f"ultra{sensor_id}"
     # Load callable efficiency interpolator function
     eff_interpolator, theta_min_max, phi_min_max = get_efficiency_interpolator(
-        ancillary_files
+        ancillary_files, sensor_name
     )
     # load geometric factor lookup table
     geometric_lookup_table = load_geometric_factor_tables(
@@ -652,6 +655,7 @@ def get_efficiencies_and_geometric_function(
                 phi_at_spin_clipped[pixel_inds],
                 theta_at_spin_clipped[pixel_inds],
                 ancillary_files,
+                sensor_name,
                 interpolator=eff_interpolator,
             )
 

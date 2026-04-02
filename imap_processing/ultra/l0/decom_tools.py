@@ -210,9 +210,9 @@ def decompress_image(
     pos = 0  # Starting position in the binary string
     while plane_num < planes_per_packet:
         # Compressed pixel matrix
-        p = np.zeros((rows, cols), dtype=np.uint16)
+        p: np.ndarray = np.zeros((rows, cols), dtype=np.uint16)
         # Decompressed pixel matrix
-        p_decom = np.zeros((rows, cols), dtype=np.int16)
+        p_decom: np.ndarray = np.zeros((rows, cols), dtype=np.int16)
 
         for i in range(rows):
             for j in range(blocks_per_row):
@@ -245,10 +245,10 @@ def decompress_image(
                     p[i][column_index] = np.int16(current_pixel0) - delta_f
                     # Perform logarithmic decompression on the pixel value
                     p_decom[i][column_index] = log_decompression(
-                        p[i][column_index], mantissa_bit_length
+                        int(p[i][column_index]), mantissa_bit_length
                     )
-                    current_pixel0 = p[i][column_index]
-            current_pixel0 = p[i][0]
+                    current_pixel0 = int(p[i][column_index])
+            current_pixel0 = p[i][0]  # type: ignore[assignment]
         planes.append(p_decom)
         plane_num += 1
         # Read P00 for the next plane (if not the last plane)

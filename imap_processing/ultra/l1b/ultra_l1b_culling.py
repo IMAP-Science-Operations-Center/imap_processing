@@ -81,7 +81,7 @@ def get_energy_histogram(
     spin_df = get_spin_data()
 
     unique_spin_number = np.unique(spin_number)
-    spin_edges = np.append(unique_spin_number, unique_spin_number.max() + 1)
+    spin_edges: np.ndarray = np.append(unique_spin_number, unique_spin_number.max() + 1)
 
     # Counts per spin at each energy bin.
     hist, _ = np.histogramdd(
@@ -321,7 +321,7 @@ def compare_aux_univ_spin_table(
         .loc[present_in_both]
     )
 
-    mismatch_indices = np.zeros(len(spins), dtype=bool)
+    mismatch_indices: np.ndarray = np.zeros(len(spins), dtype=bool)
 
     fields_to_compare = [
         ("timespinstart", "spin_start_sec_sclk"),
@@ -332,7 +332,7 @@ def compare_aux_univ_spin_table(
     ]
 
     # Compare fields
-    mismatch = np.zeros(len(df_aux), dtype=bool)
+    mismatch: np.ndarray = np.zeros(len(df_aux), dtype=bool)
     for aux_field, spin_field in fields_to_compare:
         mismatch |= df_aux[aux_field].values != df_univ[spin_field].values
 
@@ -555,6 +555,8 @@ def get_energy_and_spin_dependent_rejection_mask(
     """
     # Get the ebin flags for each energy bin from the goodtimes dataset.
     energy_range_edges = goodtimes_dataset["energy_range_edges"].values
+    # Filter out fill values from energy_range_edges (negative or zero)
+    energy_range_edges = energy_range_edges[energy_range_edges > 0]
     # Get the quality flag arrays "turned on" for energy dependent culling from the
     # goodtimes dataset.
     flag_arrays = [
@@ -564,6 +566,8 @@ def get_energy_and_spin_dependent_rejection_mask(
     # Initialize all events to not rejected
     rejected = np.zeros_like(energy, dtype=bool)
     ebin_flags = goodtimes_dataset["energy_range_flags"].values
+    # Filter out fill values (0s) from energy_range_flags
+    ebin_flags = ebin_flags[ebin_flags > 0]
     # Get the index of the spin number in the goodtimes dataset for each event
     # all spin numbers should be present in the goodtimes dataset since we have already
     # filtered any events that are not
@@ -647,7 +651,7 @@ def flag_low_voltage(
     """
     spin_bin_size = len(spin_tbin_edges) - 1
     # initialize all spins to have no low voltage flag
-    quality_flags = np.zeros(spin_bin_size, dtype=bool)
+    quality_flags: np.ndarray = np.zeros(spin_bin_size, dtype=bool)
     # Get the min voltage across both deflection plate at each epoch
     min_voltage = np.minimum(
         status_dataset["rightdeflection_v"].data,
@@ -670,7 +674,11 @@ def flag_low_voltage(
     # For each low voltage ind, flag the corresponding flag
     quality_flags[lv_spin_inds] = True
 
-    #  TODO add log summary.
+    num_culled: int = np.sum(quality_flags)
+    logger.info(
+        f"Low voltage culling removed {num_culled} spin bins across all energy "
+        f"channels. Voltage threshold: {voltage_threshold} V."
+    )
 
     return quality_flags
 
@@ -727,7 +735,7 @@ def flag_high_energy(
 
     # Initialize all spin bins to have no high energy flag
     spin_bin_size = len(spin_tbin_edges) - 1
-    quality_flags = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
+    quality_flags: np.ndarray = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
     # Get valid events and counts at each spin bin for the
     # designated culling channel.
     de_counts = get_valid_de_count_summary(
@@ -748,7 +756,12 @@ def flag_high_energy(
         quality_flags[:, ~mask] = flagged[:, ~mask]
     else:
         quality_flags = flagged
-    # TODO add log summary. E.g Tim's hi goodtimes code
+
+    num_culled: int = np.sum(quality_flags)
+    logger.info(
+        f"High energy culling removed {num_culled} spin bins across {n_energy_bins} "
+        f"energy channels. Energy thresholds: {energy_thresholds.flatten()}, "
+    )
 
     return quality_flags
 
@@ -828,21 +841,21 @@ def flag_statistical_outliers(
     curr_mask = mask.copy()
     # Initialize quality_stats to keep track of which bins are flagged as outliers for
     # each energy bin
-    quality_stats = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
+    quality_stats: np.ndarray = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
     # Initialize a mask to keep track of spin bins that have been flagged across all
     # energy bins
-    all_channel_mask = np.zeros(spin_bin_size, dtype=bool)
+    all_channel_mask: np.ndarray = np.zeros(spin_bin_size, dtype=bool)
     # Initialize convergence array to keep track of poisson stats
     convergence = np.full(n_energy_bins, False)
     # Keep track of how many iterations we have done of flagging outliers and
     # recalculating stats per energy bin
     iterations = np.zeros(n_energy_bins)
     # keep track of the standard deviation difference from poisson stats per energy bin
-    std_diff = np.zeros(n_energy_bins, dtype=float)
+    std_diff: np.ndarray = np.zeros(n_energy_bins, dtype=float)
     count_summary = get_valid_de_count_summary(
         de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
     )  # shape (n_energy_bins, n_spin_bins)
-    for e_idx in np.arange(n_energy_bins):
+    for e_idx in range(n_energy_bins):
         good_mask = ~curr_mask[e_idx]  # spin bins that are not currently flagged
         for it in range(n_iterations):
             counts = count_summary[e_idx, good_mask]
@@ -885,7 +898,7 @@ def flag_statistical_outliers(
                     convergence[e_idx] = True
 
     num_culled: int = np.sum(quality_stats)
-    logger.debug(
+    logger.info(
         f"Statistical culling removed {num_culled} spin bins across {n_energy_bins}"
         f" energy channels. Convergence: {convergence} after "
         f"{iterations} iterations."
@@ -961,7 +974,9 @@ def get_valid_de_count_summary(
     valid_events = get_valid_events_per_energy_range(
         de_dataset, energy_ranges, UltraConstants.EARTH_ANGLE_45_THRESHOLD, sensor_id
     )
-    counts = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=float)
+    counts: np.ndarray = np.zeros(
+        (len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=float
+    )
 
     for i in range(len(energy_ranges) - 1):
         counts[i, :], _ = np.histogram(
@@ -1005,7 +1020,9 @@ def get_valid_events_per_energy_range(
         A boolean array of shape (n_energy_ranges, n_events).
     """
     event_energies = de_dataset["energy_spacecraft"].values
-    valid_events = np.zeros((len(energy_ranges) - 1, len(event_energies)), dtype=bool)
+    valid_events: np.ndarray = np.zeros(
+        (len(energy_ranges) - 1, len(event_energies)), dtype=bool
+    )
     valid_outliers = de_dataset["quality_outliers"].values == 0
     valid_scattering = de_dataset["quality_scattering"].values == 0
     # TODO what about species non-proton? For those psets dont cull based on
@@ -1020,7 +1037,7 @@ def get_valid_events_per_energy_range(
             continue
         # subset the dataset to events within the energy range
         de_dataset_subset = de_dataset.isel(epoch=energy_mask)
-        valid_earth_angle = np.full(np.sum(energy_mask), True, dtype=bool)
+        valid_earth_angle: np.ndarray = np.full(np.sum(energy_mask), True, dtype=bool)
         # For ultra45, also apply an Earth angle cut to remove times when
         # the Earth is in the field of view. ULTRA 90 does not require this since Earth
         # is always outside the field of view.
@@ -1153,8 +1170,9 @@ def get_binned_energy_ranges(
     last_group_end_ind = min(
         group_start_inds[-1] + UltraConstants.N_CULL_EBINS, len(energy_bin_edges)
     )
-    energy_ranges = np.append(
-        energy_starts, energy_bin_edges[last_group_end_ind - 1][1]
+    energy_ranges: np.ndarray = np.append(
+        energy_starts,
+        energy_bin_edges[last_group_end_ind - 1][1],  # type: ignore[operator]
     )
     if max_energy is not None:
         # get the first index where the energy range exceeds the max energy
@@ -1247,9 +1265,11 @@ def expand_bin_flags_to_spins(
     quality_flags : NDArray
         Quality flags mapped to each individual spin.
     """
-    quality_flags = np.full(n_spins, ImapRatesUltraFlags.NONE.value, dtype=np.uint16)
+    quality_flags: np.ndarray = np.full(
+        n_spins, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
+    )
     # Repeat each binned flag for the number of spins in each bin
-    repeated_flags = np.repeat(binned_quality_flags, spin_bin_size)
+    repeated_flags: np.ndarray = np.repeat(binned_quality_flags, spin_bin_size)
     if len(repeated_flags) > n_spins:
         logger.warning(
             f"Found incomplete spin bin at the end with"

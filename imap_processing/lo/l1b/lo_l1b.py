@@ -482,7 +482,7 @@ def set_esa_mode(
         # Get the ESA mode for the pointing
         esa_mode = sweep_df["esa_mode"].values[0]
         # Repeat the ESA mode for each direct event in the pointing
-        esa_mode_array = np.repeat(esa_mode, len(l1b_science["epoch"]))
+        esa_mode_array: np.ndarray = np.repeat(esa_mode, len(l1b_science["epoch"]))
     else:
         raise ValueError("Multiple ESA modes found in sweep table for pointing.")
 
@@ -1199,7 +1199,7 @@ def set_bad_or_goodtimes(
     combined_mask = time_mask & bin_mask
 
     # Get the time flags for each epoch's esa_step from matching rows
-    time_flags = np.zeros(len(epochs), dtype=int)
+    time_flags: np.ndarray = np.zeros(len(epochs), dtype=int)
     for epoch_idx in range(len(epochs)):
         matching_rows = np.where(combined_mask[epoch_idx])[0]
         if len(matching_rows) > 0:
@@ -1811,7 +1811,7 @@ def calculate_de_rates(
         )
 
     # exposure time shape: (num_asc, num_esa_steps)
-    exposure_time = np.zeros((num_asc, 7), dtype=float)
+    exposure_time: np.ndarray = np.zeros((num_asc, 7), dtype=float)
     # exposure_time_6deg = 4 * avg_spin_per_asc / 60
     # 4 sweeps per ASC (28 / 7) in 60 bins
     asc_avg_spin_durations = 4 * l1b_de["avg_spin_durations"].data[unique_idx] / 60
@@ -2016,7 +2016,7 @@ def _get_esa_level_indices(epochs: np.ndarray, anc_dependencies: list) -> np.nda
     #       Can we just take the last 7 entries of the sweep table for that
     #       date and use those values instead of this extra work with the
     #       separate LUT ancillary file?
-    energy_step_mapping = np.zeros(7, dtype=int)
+    energy_step_mapping: np.ndarray = np.zeros(7, dtype=int)
     # Loop through the LUT entries and populate the mapping
     for _, row in lut_entries.iterrows():
         # Original ESA step index is 1-based, convert to 0-based
@@ -2172,7 +2172,7 @@ def calculate_star_sensor_profile_for_group(
     count_array = valid_bin_mask.sum(axis=0).astype(np.int32)
 
     # Compute average amplitude per bin
-    avg_amplitude = np.full(720, np.nan, dtype=np.float64)
+    avg_amplitude: np.ndarray = np.full(720, np.nan, dtype=np.float64)
     mask = count_array > 0
     avg_amplitude[mask] = sum_array[mask] / count_array[mask]
 
@@ -2261,15 +2261,15 @@ def calculate_star_sensor_profiles_by_group(
         logger.debug(f"Last group contains {last_group_size} records (partial group)")
 
     # Assign group labels to the dataset for xarray groupby operations
-    group_labels = np.repeat(np.arange(n_groups), group_size)[:n_valid]
+    group_labels: np.ndarray = np.repeat(np.arange(n_groups), group_size)[:n_valid]
     l1a_star = l1a_star.assign_coords(group=("epoch", group_labels))
 
     # Extract first MET for each group using xarray groupby
     group_mets = l1a_star["shcoarse"].groupby("group").first().values.astype(np.int64)
 
     # Initialize output arrays
-    avg_amplitudes = np.zeros((n_groups, 720), dtype=np.float64)
-    counts_per_bin = np.zeros((n_groups, 720), dtype=np.int32)
+    avg_amplitudes: np.ndarray = np.zeros((n_groups, 720), dtype=np.float64)
+    counts_per_bin: np.ndarray = np.zeros((n_groups, 720), dtype=np.int32)
 
     # Process each group using xarray groupby
     for group_label, group_data in l1a_star.groupby("group"):

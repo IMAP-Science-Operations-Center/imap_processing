@@ -1,0 +1,29 @@
+timestamp,message
+2025-01-08 20:40:25.222800 UTC,"MEM FLASH UErr FOUND, PARAM=0x000000fe"
+2025-01-08 20:40:51.222740 UTC,"UPK oper fsw says hello, version=02.00.0000"
+2025-01-08 20:40:56.222700 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(dualcmd))"
+2025-01-08 20:40:57.222700 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(rawwrt))"
+2025-01-08 20:41:00.222680 UTC,"SEQ engine has changed state, eng=seqEngineDictionary(0x00) was=seqEngineStateDictionary(ACTIV) is=seqEngineStateDictionary(IDLE) 0x00"
+2025-01-08 20:48:39.220040 UTC,AUT hvps state changed to hvStateDictionary(STANDBY)
+2025-01-08 20:50:27.219540 UTC,AUT hvps state changed to hvStateDictionary(ACTIVE)
+2025-01-08 20:56:32.218180 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(noop))"
+2025-01-08 20:56:33.218160 UTC,"SEQ engine has changed state, eng=seqEngineDictionary(0x00) was=seqEngineStateDictionary(ACTIV) is=seqEngineStateDictionary(IDLE) 0x00"
+2025-01-08 20:58:15.217920 UTC,SCI state change: sciState16Dictionary(IDLE) ==> sciState16Dictionary(ACQSETUP)
+2025-01-08 20:58:20.217900 UTC,SCI state change: sciState16Dictionary(ACQSETUP) ==> sciState16Dictionary(ACQ)
+2025-01-08 20:59:15.217800 UTC,SCI state change: sciState16Dictionary(ACQ) ==> sciState16Dictionary(CHILL)
+2025-01-08 20:59:20.217800 UTC,SCI state change: sciState16Dictionary(CHILL) ==> sciState16Dictionary(ACQCLEANUP)
+2025-01-08 20:59:21.217780 UTC,"MEM cleanup found sci data, blocks empty=0x0000, blocks w/data=0x0001"
+2025-01-08 20:59:26.217780 UTC,SCI science activity completed: sciState16Dictionary(ACQ)
+2025-01-08 20:59:27.217760 UTC,SCI state change: sciState16Dictionary(ACQCLEANUP) ==> sciState16Dictionary(IDLE)
+2025-01-08 21:00:12.217700 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(haltstim))"
+2025-01-08 21:00:14.217680 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(haltsci))"
+2025-01-08 21:00:15.217680 UTC,"SEQ engine has changed state, eng=seqEngineDictionary(0x00) was=seqEngineStateDictionary(ACTIV) is=seqEngineStateDictionary(IDLE) 0x00"
+2025-01-08 21:02:48.217480 UTC,AUT hvps state changed to hvStateDictionary(STANDBY)
+2025-01-08 21:04:42.217340 UTC,AUT hvps state changed to hvStateDictionary(OFF)
+2025-01-08 21:05:30.217280 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(dualcmd))"
+2025-01-08 21:05:33.217280 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(rawwrt))"
+2025-01-08 21:05:36.217280 UTC,"SEQ engine has changed state, eng=seqEngineDictionary(0x00) was=seqEngineStateDictionary(ACTIV) is=seqEngineStateDictionary(IDLE) 0x00"
+2025-01-08 21:06:36.217180 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(dshtr))"
+2025-01-08 21:06:38.217180 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(dualcmd))"
+2025-01-08 21:06:39.217180 UTC,"SEQ success (len=0x0580, opCodeLCDictionary(rawwrt))"
+2025-01-08 21:06:42.217180 UTC,"SEQ engine has changed state, eng=seqEngineDictionary(0x00) was=seqEngineStateDictionary(ACTIV) is=seqEngineStateDictionary(IDLE) 0x00"

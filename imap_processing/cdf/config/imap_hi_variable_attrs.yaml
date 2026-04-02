@@ -674,23 +674,24 @@ hi_goodtimes_esa_step:
   VALIDMAX: 10
 
 hi_goodtimes_spin_bin:
-  <<: *default_uint8
   CATDESC: Spin angle bin index
   FIELDNAM: Spin Bin
+  FILLVAL: 255
   FORMAT: I2
   LABLAXIS: Spin Bin
   UNITS: " "
-  VAR_TYPE: support_data
   VALIDMIN: 0
   VALIDMAX: 89
+  VAR_TYPE: support_data
   VAR_NOTES: >
     Spin angle bins numbered 0-89, covering 0-360 degrees of spacecraft spin.
     Each bin is 4 degrees wide.
+  dtype: uint8
 
 hi_goodtimes_spin_bin_label:
   CATDESC: Label for spin bin
   FIELDNAM: Spin Bin Label
-  DEPEND_1: spin_bin
+  DEPEND_0: spin_bin
   FORMAT: A3
   VAR_TYPE: metadata
 

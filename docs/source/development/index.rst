@@ -1,5 +1,5 @@
-Development
-===========
+Onboarding and Collaboration
+============================
 
 :ref:`getting-started`
 
@@ -14,9 +14,14 @@ be versioned appropriately to correspond with the code that produced them.
 .. toctree::
     :maxdepth: 1
 
-    getting-started
+    cli
+    data-dependency
     doc-overview
     docker
+    getting-started
+    git-access-roles
+    git-workflow-and-style-guide/index
+    poetry
     release-workflow
-    style-guide/style-guide
     technology-stack
+    tools/index

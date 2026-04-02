@@ -38,6 +38,7 @@ support_data_defaults: &support_data_defaults
   FORMAT: I10
   RESOLUTION: ISO8601
 
+# UTC Strings
 time_data_defaults: &time_data_defaults
   <<: *support_data_defaults
   FILLVAL: ' '
@@ -104,7 +105,7 @@ number_of_good_l1b_inputs:
   CATDESC: Number of good L1B inputs per observational day
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Number of good L1B inputs
-  FILLVAL: *max_uint16
+  FILLVAL: -9223372036854775808
   FORMAT: I5
   LABLAXIS: No. of L1B
   VALIDMAX: 20000 # 3 days * 86400 s / 14.6 s rounded up
@@ -114,7 +115,7 @@ total_l1b_inputs:
   CATDESC: Total number of L1B inputs per observational day
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Total number of L1B inputs
-  FILLVAL: *max_uint16
+  FILLVAL: -9223372036854775808
   FORMAT: I5
   LABLAXIS: No. of L1B
   VALIDMAX: 20000
@@ -124,7 +125,7 @@ identifier:
   CATDESC: Spin pointing number to identify observational day
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   FIELDNAM: Spin pointing number
-  FILLVAL: *max_uint32
+  FILLVAL: -9223372036854775808
   FORMAT: I5
   LABLAXIS: Pointing no.
   VALIDMAX: 99999
@@ -133,7 +134,7 @@ flight_software_version:
   <<: *support_data_defaults
   CATDESC: GLOWS flight software version
   FIELDNAM: GLOWS flight software version
-  FILLVAL: *max_uint32
+  FILLVAL: -9223372036854775808
   FORMAT: I8
   LABLAXIS: FSW ver
   VALIDMAX: 16777215
@@ -164,7 +165,7 @@ filter_temperature_average:
   CATDESC: Filter temperature averaged over observational day
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Average filter temperature
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F6.2
   LABLAXIS: Temp
   UNITS: Celsius
@@ -176,7 +177,7 @@ filter_temperature_std_dev:
   CATDESC: Standard deviation of filter temperature
   DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: Std dev of filter temperature
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: E9.3
   LABLAXIS: Temp std dev
   UNITS: Celsius
@@ -188,7 +189,7 @@ hv_voltage_average:
   CATDESC: CEM HV voltage averaged over observational day
   DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: Average HV voltage
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F7.2
   LABLAXIS: HV
   UNITS: V
@@ -200,7 +201,7 @@ hv_voltage_std_dev:
   CATDESC: Standard deviation of CEM HV voltage
   DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: Std dev of HV voltage
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: E9.3
   LABLAXIS: HV std dev
   UNITS: V
@@ -214,7 +215,7 @@ spin_period_average:
   CATDESC: Spin period averaged over observational day
   DICT_KEY: SPASE>Support>SupportQuantity:SpinPeriod
   FIELDNAM: Average spin period
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F9.6
   LABLAXIS: Period
   UNITS: s
@@ -226,7 +227,7 @@ spin_period_std_dev:
   CATDESC: Standard deviation of spin period
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Std dev of spin period
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: E9.3
   LABLAXIS: Period std dev
   UNITS: s
@@ -241,7 +242,7 @@ spin_period_ground_average:
   CATDESC: Spin period (ground processing) averaged over observational day
   DICT_KEY: SPASE>Support>SupportQuantity:SpinPeriod
   FIELDNAM: Average spin period (ground)
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F9.6
   LABLAXIS: Period
   UNITS: s
@@ -253,7 +254,7 @@ spin_period_ground_std_dev:
   CATDESC: Standard deviation of spin period (ground processing)
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Std dev of spin period (ground)
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: E9.3
   LABLAXIS: Period std dev
   UNITS: s
@@ -265,7 +266,7 @@ pulse_length_average:
   CATDESC: Pulse length averaged over observational day
   DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: Average pulse length
-  FILLVAL: 1.0e+31
+  FILLVAL: -1.0e+31
   FORMAT: F5.2
   LABLAXIS: Pulse
   UNITS: us
@@ -277,7 +278,7 @@ pulse_length_std_dev:
   CATDESC: Standard deviation of pulse length
   DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: Std dev of pulse length
-  FILLVAL: 1.0e+31
+  FILLVAL: -1.0e+31
   FORMAT: E9.3
   LABLAXIS: Pulse std dev
   UNITS: us
@@ -290,7 +291,7 @@ position_angle_offset_average:
   CATDESC: Position angle offset averaged over observational day
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
   FIELDNAM: Average position angle offset
-  FILLVAL: 1.0e+31
+  FILLVAL: -1.0e+31
   FORMAT: F10.6
   LABLAXIS: Offset angle
   UNITS: degrees
@@ -303,7 +304,7 @@ position_angle_offset_std_dev:
   CATDESC: Standard deviation of position angle offset
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Std dev of position angle offset
-  FILLVAL: 1.0e+31
+  FILLVAL: -1.0e+31
   FORMAT: E9.3
   LABLAXIS: Offset std dev
   UNITS: degrees
@@ -316,7 +317,7 @@ spin_axis_orientation_average:
   CATDESC: Spin axis pointing averaged over observational day (ecliptic lon and lat)
   DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
   FIELDNAM: Average spin axis pointing
-  FILLVAL: 1.0e+31
+  FILLVAL: -1.0e+31
   FORMAT: F7.3
   LABLAXIS: Lon/lat
   UNITS: degrees
@@ -329,7 +330,7 @@ spin_axis_orientation_std_dev:
   CATDESC: Standard deviation of spin axis pointing
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Std dev of spin axis pointing
-  FILLVAL: 1.0e+31
+  FILLVAL: -1.0e+31
   FORMAT: E9.3
   LABLAXIS: Lon/lat std dev
   UNITS: degrees
@@ -344,7 +345,7 @@ spacecraft_location_average:
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
   DISPLAY_TYPE: no_plot
   FIELDNAM: Average spacecraft location
-  FILLVAL: 1.0e+31
+  FILLVAL: -1.0e+31
   FORMAT: E13.6
   LABLAXIS: Loc
   UNITS: km
@@ -359,7 +360,7 @@ spacecraft_location_std_dev:
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: no_plot
   FIELDNAM: Std dev of spacecraft location
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: E9.3
   LABLAXIS: Loc std dev
   UNITS: km
@@ -374,7 +375,7 @@ spacecraft_velocity_average:
   DICT_KEY: SPASE>Support>SupportQuantity:Velocity
   DISPLAY_TYPE: no_plot
   FIELDNAM: Average spacecraft velocity
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: E13.6
   LABLAXIS: Vsc
   UNITS: km/s
@@ -389,7 +390,7 @@ spacecraft_velocity_std_dev:
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: no_plot
   FIELDNAM: Std dev of spacecraft velocity
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: E9.3
   LABLAXIS: Vsc std dev
   UNITS: km/s
@@ -403,7 +404,7 @@ bad_time_flag_occurrences:
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: no_plot
   FIELDNAM: Occurrences of bad-time flags
-  FILLVAL: *max_uint16
+  FILLVAL: -1.0E+31
   FORMAT: I5
   LABL_PTR_1: flags_label # MS: I do not understand this
   LABLAXIS: No. of cases
@@ -414,7 +415,7 @@ spin_angle:
   CATDESC: Spin angle (measured from north) for bin centers
   DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
   FIELDNAM: Spin angle for bin centers
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F7.3
   LABLAXIS: Spin angle
   UNITS: degrees
@@ -430,7 +431,7 @@ photon_flux:
   DICT_KEY: SPASE>Wave>WaveType:Electromagnetic,WaveQuantity:Intensity,Qualifier:Scalar
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Pointing-averaged photon flux
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F8.2
   LABLAXIS: Flux
   UNITS: Rayleigh
@@ -445,7 +446,7 @@ raw_histograms:
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Histogram of counts
-  FILLVAL: *max_uint32
+  FILLVAL: -9223372036854775808
   FORMAT: I8
   LABLAXIS: Counts
   UNITS: '#'
@@ -458,7 +459,7 @@ exposure_times:
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Exposure time per bin
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F7.2
   LABLAXIS: Bin exposure
   UNITS: s
@@ -470,7 +471,7 @@ flux_uncertainties:
   CATDESC: Statistical uncertainties for photon flux
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Photon flux uncertainties
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F8.2
   LABLAXIS: Flux uncert
   UNITS: Rayleigh
@@ -496,7 +497,7 @@ ecliptic_lon:
   CATDESC: Ecliptic longitudes of bin centers
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
   FIELDNAM: Ecliptic longitudes of bins
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F7.3
   LABLAXIS: Bin lon
   UNITS: degrees
@@ -509,7 +510,7 @@ ecliptic_lat:
   CATDESC: Ecliptic latitudes of bin centers
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
   FIELDNAM: Ecliptic latitudes of bins
-  FILLVAL: 1.0E+31
+  FILLVAL: -1.0E+31
   FORMAT: F7.3
   LABLAXIS: Bin lat
   UNITS: degrees
@@ -522,7 +523,7 @@ number_of_bins:
   CATDESC: Number of bins in histogram
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Number of bins in histogram
-  FILLVAL: *max_uint16
+  FILLVAL: -9223372036854775808
   FORMAT: I4
   LABLAXIS: No. of bins
   UNITS: ' '

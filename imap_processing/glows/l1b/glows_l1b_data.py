@@ -176,6 +176,28 @@ class PipelineSettings:  # numpydoc ignore=PR02
             if "threshold" in var_name.lower() or "limit" in var_name.lower():
                 self.processing_thresholds[var_name] = pipeline_dataset[var_name].item()
 
+    def get_threshold(self, suffix: str) -> float | None:
+        """
+        Return the threshold value whose key ends with the given suffix.
+
+        Parameters
+        ----------
+        suffix : str
+            The suffix to match against threshold keys.
+
+        Returns
+        -------
+        return_value : float or None
+            The matching threshold value, or None if no match is found.
+        """
+        return_value = None
+        for descriptor, value in self.processing_thresholds.items():
+            if descriptor.endswith(suffix):
+                return_value = float(value)
+                break
+
+        return return_value
+
 
 @dataclass
 class AncillaryExclusions:
@@ -870,7 +892,7 @@ class HistogramL1B:
         # is_inside_excluded_region, is_excluded_by_instr_team,
         # is_suspected_transient] x 3600 bins
         self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
-        self.flags = np.ones((FLAG_LENGTH,), dtype=np.uint8)
+        self.flags = self.compute_flags(pipeline_settings)
 
     def update_spice_parameters(self) -> None:
         """Update SPICE parameters based on the current state."""
@@ -978,6 +1000,70 @@ class HistogramL1B:
         )
 
         return flags
+
+    def compute_flags(self, pipeline_settings: PipelineSettings) -> np.ndarray:
+        """
+        Compute the 17 bad-time flags for this histogram.
+
+        Parameters
+        ----------
+        pipeline_settings : PipelineSettings
+            Pipeline settings containing processing thresholds.
+
+        Returns
+        -------
+        flags : numpy.ndarray
+            Array of shape (FLAG_LENGTH,) with dtype uint8. 1 = good, 0 = bad.
+        """
+        # Section 12.3.1 of the Algorithm Document: onboard generated bad-time flags.
+        # Flags are "stored in a 16-bit integer field.
+        onboard_flags: np.ndarray = (
+            1 - self.deserialize_flags(int(self.flags_set_onboard))
+        ).astype(np.uint8)
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 1.
+        # Informs if the histogram was generated on-board or on the ground.
+        # Flag 1 = onboard.
+        is_generated_on_ground = np.uint8(1 - int(self.is_generated_on_ground))
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 2.
+        # Checks if total count in a given histogram is far from the daily average.
+        # Placeholder until daily histogram is available in glows_l1b.py.
+        # TODO: this equation needs to be clarified.
+        is_beyond_daily_statistical_error = np.uint8(1)
+
+        # Section 12.3.2 of the Algorithm Document: ground processing flags: flag 3-7.
+        # (1=good, 0=bad).
+        temp_threshold = pipeline_settings.get_threshold(
+            "std_dev_threshold__celsius_deg"
+        )
+        hv_threshold = pipeline_settings.get_threshold("std_dev_threshold__volt")
+        spin_std_threshold = pipeline_settings.get_threshold("std_dev_threshold__sec")
+        pulse_threshold = pipeline_settings.get_threshold("std_dev_threshold__usec")
+
+        is_temp_ok = np.uint8(self.filter_temperature_std_dev <= temp_threshold)
+        is_hv_ok = np.uint8(self.hv_voltage_std_dev <= hv_threshold)
+        is_spin_std_ok = np.uint8(self.spin_period_std_dev <= spin_std_threshold)
+        is_pulse_ok = np.uint8(self.pulse_length_std_dev <= pulse_threshold)
+
+        # TODO: listed as TBC in Algorithm Document.
+        # Placeholder for now.
+        is_beyond_background_error = np.uint8(1)
+
+        ground_flags = np.array(
+            [
+                is_generated_on_ground,
+                is_beyond_daily_statistical_error,
+                is_temp_ok,
+                is_hv_ok,
+                is_spin_std_ok,
+                is_pulse_ok,
+                is_beyond_background_error,
+            ],
+            dtype=np.uint8,
+        )
+
+        return np.concatenate([onboard_flags, ground_flags])
 
     def flag_uv_and_excluded(self, exclusions: AncillaryExclusions) -> tuple:
         """
@@ -1131,7 +1217,7 @@ class HistogramL1B:
         np.ndarray
             Array of shape (4, 3600) with bad-angle flags for each bin.
         """
-        histogram_flags = np.full(
+        histogram_flags: np.ndarray = np.full(
             (4, len(self.histogram)),
             GLOWSL1bFlags.NONE.value,
             dtype=np.uint8,

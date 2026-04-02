@@ -113,9 +113,13 @@ def test_get_angular_profiles():
 def test_get_energy_efficiencies(ancillary_files):
     """Tests function get_get_energy_efficiencies."""
 
-    u45_efficiencies = get_energy_efficiencies(ancillary_files)
+    u45_efficiencies = get_energy_efficiencies(ancillary_files, "ultra45")
 
     assert u45_efficiencies.shape == (58081, 157)
+
+    # Test that the function can also read the ultra90 efficiencies
+    u90_efficiencies = get_energy_efficiencies(ancillary_files, "ultra90")
+    assert u90_efficiencies.shape == (58081, 157)
 
 
 @pytest.mark.external_test_data

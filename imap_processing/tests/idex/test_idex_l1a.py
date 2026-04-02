@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest import mock
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from cdflib.xarray.xarray_to_cdf import ISTPError
@@ -15,6 +16,8 @@ from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.tests.idex.conftest import TEST_L0_FILE_SCI
 from imap_processing.utils import packet_generator
+
+TEST_DATA_DIR = f"{imap_module_directory}/tests/idex/test_data"
 
 
 def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
@@ -156,11 +159,22 @@ def test_validate_l1a_idex_data_variables(
         "Ion Grid": "Ion_Grid",
         "Time (high sampling)": "time_high_sample_rate",
         "Time (low sampling)": "time_low_sample_rate",
+        "idx__txhdrfswaidcopy": "aid",
     }
     # The Engineering data is converting to UTC, and the SDC is converting to J2000,
     # for 'epoch' and 'Timestamp' so this test is using the raw time value 'SCHOARSE' to
     # validate time
-    arrays_to_skip = ["Timestamp", "Epoch", "event"]
+    # TODO remove the low and high time from this list after the IDEX team produces a
+    #  new l1a h5 file.
+    arrays_to_skip = [
+        "Timestamp",
+        "Epoch",
+        "event",
+        "Time (high sampling)",
+        "Time (low sampling)",
+        "IDX__SCI0AID",  # This is dropped because it is invalid
+        "IDX__TXHDRFSWAIDCOPY",  # this is renamed to aid
+    ]
 
     # loop through all keys from the l1a example dict
     for var in l1a_example_data.variables:
@@ -180,10 +194,9 @@ def test_compressed_packet():
     """
     Test compressed data decompression against known non-compressed data.
     """
-    test_data_dir = f"{imap_module_directory}/tests/idex/test_data"
 
-    compressed = Path(f"{test_data_dir}/compressed_2023_102_14_24_55.pkts")
-    non_compressed = Path(f"{test_data_dir}/non_compressed_2023_102_14_22_26.pkts")
+    compressed = Path(f"{TEST_DATA_DIR}/compressed_2023_102_14_24_55.pkts")
+    non_compressed = Path(f"{TEST_DATA_DIR}/non_compressed_2023_102_14_22_26.pkts")
 
     decompressed = PacketParser(compressed).data[0]
     expected = PacketParser(non_compressed).data[0]
@@ -341,25 +354,29 @@ def test_catlst_dataset(decom_test_data_catlst: list[xr.Dataset]):
     assert filename_l1b.name == "imap_idex_l1b_catlst_20241206_v999.cdf"
 
 
-def test_evt_dataset(decom_test_data_evt: list[xr.Dataset]):
+def test_msg_dataset(decom_test_data_msg: xr.Dataset):
     """Verify that the dataset contains what we expect and can be written to a cdf.
 
     Parameters
     ----------
-    decom_test_data_evt : list[xarray.Dataset]
-        The raw and derived (l1a and l1b) datasets to test with.
+    decom_test_data_msg : xarray.Dataset
+        The raw l1a dataset to test with.
     """
-    for ds in decom_test_data_evt:
-        assert "shcoarse" in ds
-        assert "shfine" in ds
-        # Assert epoch is calculated using fine grained clock ticks
-        expected_epoch = met_to_ttj2000ns(ds["shcoarse"] + ds["shfine"] * 20e-6)
-        np.testing.assert_array_equal(ds.epoch, expected_epoch)
-    assert decom_test_data_evt[0]["elid_evtpkt"][9] == 192
-    assert decom_test_data_evt[1]["elid_evtpkt"][9] == "SCI_STE"
+    assert "shcoarse" in decom_test_data_msg
+    assert "shfine" in decom_test_data_msg
+    # Assert epoch is calculated using fine grained clock ticks
+    expected_epoch = met_to_ttj2000ns(
+        decom_test_data_msg["shcoarse"] + decom_test_data_msg["shfine"] * 20e-6
+    )
+    np.testing.assert_array_equal(decom_test_data_msg.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
-    filename_l1a = write_cdf(decom_test_data_evt[0])
-    assert filename_l1a.name == "imap_idex_l1a_evt_20250108_v999.cdf"
+    filename_l1a = write_cdf(decom_test_data_msg)
+    assert filename_l1a.name == "imap_idex_l1a_msg_20250108_v999.cdf"
 
-    filename_l1b = write_cdf(decom_test_data_evt[1])
-    assert filename_l1b.name == "imap_idex_l1b_evt_20250108_v999.cdf"
+    # Validate the messages with the IDEX team example data
+    example_data = pd.read_csv(
+        f"{TEST_DATA_DIR}/idex_event_messages.csv", skiprows=1, header=None
+    )
+
+    messages = example_data.iloc[:, 1].tolist()
+    np.testing.assert_array_equal(decom_test_data_msg["messages"].data, messages)

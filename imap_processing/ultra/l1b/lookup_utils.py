@@ -210,7 +210,7 @@ def get_angular_profiles(
     return lookup_table
 
 
-def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
+def get_energy_efficiencies(ancillary_files: dict, sensor: str) -> pd.DataFrame:
     """
     Lookup table for efficiencies for theta and phi.
 
@@ -221,14 +221,22 @@ def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
     ----------
     ancillary_files : dict[Path]
         Ancillary files.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
 
     Returns
     -------
     lookup_table : DataFrame
         Efficiencies lookup table for a given sensor.
     """
-    # TODO: add sensor to input when new lookup tables are available.
-    lookup_table = pd.read_csv(ancillary_files["l1b-45sensor-logistic-interpolation"])
+    if sensor == "ultra45":
+        lookup_table = pd.read_csv(
+            ancillary_files["l1b-45sensor-logistic-interpolation"]
+        )
+    else:
+        lookup_table = pd.read_csv(
+            ancillary_files["l1b-90sensor-logistic-interpolation"]
+        )
 
     return lookup_table
 

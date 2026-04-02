@@ -236,6 +236,19 @@ def test_glows_excluded_regions_combiner(glows_ancillary_filepath):
     assert dataset["ecliptic_latitude_deg"].dims == ("region",)
 
 
+def test_glows_excluded_regions_combiner_empty_file(tmp_path):
+    file_path = tmp_path / "imap_glows_l1b-map-of-excluded-regions_20251112_v001.dat"
+    file_path.write_text("# header only\n")
+
+    combiner = GlowsAncillaryCombiner([], "20251115")
+    dataset = combiner.convert_file_to_dataset(file_path)
+
+    assert "ecliptic_longitude_deg" in dataset.data_vars
+    assert "ecliptic_latitude_deg" in dataset.data_vars
+    assert len(dataset["ecliptic_longitude_deg"]) == 0
+    assert len(dataset["ecliptic_latitude_deg"]) == 0
+
+
 def test_glows_uv_sources_combiner(glows_ancillary_filepath):
     file_path = (
         glows_ancillary_filepath / "imap_glows_map-of-uv-sources_20250923_v002.dat"
@@ -298,6 +311,21 @@ def test_glows_exclusions_by_instr_team_combiner(glows_ancillary_filepath):
         )
         assert len(combiner.timestamped_data) == 1
         assert combiner.timestamped_data[0].version == "v002"
+
+
+def test_glows_l2_calibration_combiner(tmp_path):
+    file_path = tmp_path / "imap_glows_l2-calibration_20251112_v001.dat"
+    file_path.write_text(
+        "# header\n2025-11-13T18:12:48 1.020\n2025-11-14T09:58:04 0.849\n"
+    )
+
+    combiner = GlowsAncillaryCombiner([], "20251115")
+    dataset = combiner.convert_file_to_dataset(file_path)
+
+    assert "start_time_utc" in dataset.data_vars
+    assert "cps_per_r" in dataset.data_vars
+    assert len(dataset["cps_per_r"]) == 2
+    assert dataset["cps_per_r"].values[0] == pytest.approx(1.020)
 
 
 def test_ancillary_combiner_empty_input():

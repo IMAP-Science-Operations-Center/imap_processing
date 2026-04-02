@@ -109,6 +109,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_hi_l1b_90sensor-hk_20241105-repoint00099_v001.cdf", "hi/data/l1/"),
     ("imap_hi_l1a_90sensor-de_20241105-repoint00099_v001.cdf", "hi/data/l1/"),
     ("imap_hi_l1c_45sensor-pset_20250415_v999.cdf", "hi/data/l1/"),
+    ("imap_hi_l1b_45sensor-goodtimes_20250415_v999.cdf", "hi/data/l1/"),
 
     # I-ALiRT
     ("apid_478.bin", "ialirt/data/l0/"),
@@ -134,7 +135,7 @@ EXTERNAL_TEST_DATA = [
 
     # IDEX
     ("idex_l1a_validation_file.h5", "idex/test_data/"),
-    ("idex_l1b_validation_file.h5", "idex/test_data/"),
+    ("imap_idex_l1b_sci_20231218_v002.h5", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv", "idex/test_data/"),
 

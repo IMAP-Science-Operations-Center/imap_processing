@@ -10,22 +10,23 @@ max_int: &max_int 9223372036854775807
 energy_attrs: &energy_default
   VAR_TYPE: support_data
   CATDESC: Geometric mean energy per nucleon
+  DISPLAY_TYPE: time_series
   FIELDNAM: Energy Table
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: '%f'
+  FORMAT: F32.1
   FILLVAL: *real_fillval
   VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
 
 # ------------------------------- Coordinates -------------------------------
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
   FIELDNAM: epoch delta minus
-  FILLVAL: -9223372036854775808
-  FORMAT: I18
+  FILLVAL: *min_int
+  FORMAT: I19
   LABLAXIS: Epoch Delta Minus
   SCALETYP: linear
   UNITS: ns
@@ -37,8 +38,8 @@ epoch_delta_minus:
 epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
   FIELDNAM: epoch delta plus
-  FILLVAL: -9223372036854775808
-  FORMAT: I18
+  FILLVAL: *min_int
+  FORMAT: I19
   LABLAXIS: Epoch Delta Plus
   SCALETYP: linear
   UNITS: ns
@@ -334,11 +335,11 @@ unc_c:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for c (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -351,11 +352,11 @@ unc_fe:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for fe (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -368,11 +369,11 @@ unc_h:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for h (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -385,11 +386,11 @@ unc_he3:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for he3 (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -402,11 +403,11 @@ unc_he4:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for he4 (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -419,11 +420,11 @@ unc_junk:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for junk (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -436,11 +437,11 @@ unc_ne_mg_si:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for ne-mg-si (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -453,11 +454,11 @@ unc_o:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for o (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -470,11 +471,11 @@ unc_uh:
   VALIDMIN: 0.0
   VALIDMAX: 4096.0
   UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: '%f'
+  FORMAT: F32.1
   CATDESC: Uncertainties for uh (Root 2 spacing)
   VAR_TYPE: support_data
   SI_CONVERSION: ' > '
-  SCALETYP: linear
+  SCALETYP: log
   FILLVAL: *real_fillval
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
@@ -484,12 +485,11 @@ unc_uh:
 c:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: c
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - c
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
@@ -501,12 +501,11 @@ c:
 fe:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: fe
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - fe
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
@@ -518,12 +517,11 @@ fe:
 h:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: h
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - h
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
@@ -535,12 +533,11 @@ h:
 he3:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: he3
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - he3
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
@@ -552,12 +549,11 @@ he3:
 he4:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: he4
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - he4
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
@@ -569,12 +565,11 @@ he4:
 junk:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: junk
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - junk
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
@@ -586,12 +581,11 @@ junk:
 ne_mg_si:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: ne-mg-si
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - ne-mg-si
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
@@ -603,12 +597,11 @@ ne_mg_si:
 o:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: o
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - o
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
@@ -620,12 +613,11 @@ o:
 uh:
   VAR_TYPE: data
   DEPEND_0: epoch
-  DISPLAY_TYPE: spectrogram
-  FIELDNAM: uh
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Diff. Intensity - uh
   FILLVAL: *real_fillval
-  FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
-  SCALETYP: linear
+  FORMAT: F32.1
+  SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0

@@ -365,7 +365,7 @@ def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     # word_0: full 16-bits is the de_tag
     # word_1: 2-bits of Trigger ID, 10-bits tof_1, upper 4-bits of tof_2
     # word_2: lower 6-bits of tof_2, 10-bits of tof_3
-    data_uint16 = np.reshape(
+    data_uint16: np.ndarray = np.reshape(
         np.frombuffer(de_data, dtype=">u2"), (3, -1), order="F"
     ).astype(np.uint16)
 

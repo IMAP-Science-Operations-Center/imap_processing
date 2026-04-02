@@ -293,3 +293,32 @@ def test_pipeline_settings_from_flattened_json():
 
     assert len(settings.active_bad_angle_flags) == 4
     assert settings.active_bad_angle_flags[3] is False  # is_suspected_transient
+
+
+def test_get_threshold():
+    "Test PipelineSettings.get_threshold method."
+
+    test_data = {
+        "n_sigma_threshold_lower": 3.0,
+        "n_sigma_threshold_upper": 3.0,
+        "relative_difference_threshold": 7e-05,
+        "std_dev_threshold__celsius_deg": 2.03,
+        "std_dev_threshold__volt": 50.0,
+        "std_dev_threshold__sec": 0.033333,
+        "std_dev_threshold__usec": 1.0,
+    }
+    pipeline_dataset = xr.Dataset({k: xr.DataArray(v) for k, v in test_data.items()})
+    settings = PipelineSettings(pipeline_dataset)
+
+    expected = [2.03, 50.0, 0.033333, 1.0, 7e-5]
+    description = [
+        "std_dev_threshold__celsius_deg",
+        "std_dev_threshold__volt",
+        "std_dev_threshold__sec",
+        "std_dev_threshold__usec",
+        "relative_difference_threshold",
+    ]
+
+    for name, exp in zip(description, expected, strict=False):
+        threshold = settings.get_threshold(name)
+        assert threshold == exp

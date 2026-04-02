@@ -415,16 +415,23 @@ def test_expand_bin_flags_to_spins(caplog):
 def test_get_energy_and_spin_dependent_rejection_mask():
     """Tests get_energy_and_spin_dependent_rejection_mask function."""
     n_spins = 10
+    energy_range_flags = np.zeros(16, dtype=np.uint16)
+    energy_range_flags[:3] = [2**1, 2**2, 2**3]  # Example flags for 3 energy bins
+    energy_range_edges = np.full(17, -1.0e31, dtype=np.float32)
+    energy_range_edges[:4] = [
+        3,
+        5,
+        7,
+        18,
+    ]  # Example energy bin edges (4 edges = 3 bins)
     goodtimes_dataset = xr.Dataset(
         data_vars={
             "spin_number": np.arange(n_spins),
             "quality_low_voltage": np.full(n_spins, 0),
             "quality_high_energy": np.full(n_spins, 0),
             "quality_statistics": np.full(n_spins, 0),
-            "energy_range_flags": np.array(
-                [2**1, 2**2, 2**3]
-            ),  # Example flags for energy bins
-            "energy_range_edges": np.array([3, 5, 7, 18]),  # Example energy bin edges
+            "energy_range_flags": energy_range_flags,
+            "energy_range_edges": energy_range_edges,
         }
     )
     # update quality flags to test that events get rejected

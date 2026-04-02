@@ -491,7 +491,7 @@ hi-species-attrs:
     SCALETYP: linear
     UNITS: counts
     VALIDMAX: *max_uint32
-    VALIDMIN: 0
+    VALIDMIN: 0.0
     VAR_TYPE: data
 
 hi-species-unc-attrs:
@@ -548,7 +548,7 @@ hi_priorities_attrs: &hi_priorities_default
     LABLAXIS: "events"
     UNITS: events
     VALIDMAX: *real_fillval
-    VALIDMIN: 0
+    VALIDMIN: 0.0
     VAR_TYPE: data
 
 priority0:
@@ -899,32 +899,32 @@ lo-pui-species-unc-attrs:
 # Data quality and num of events attrs
 de_2d_attrs:
   CATDESC: Direct event data
-  FIELDNAM: Direct Event Data
-  LABLAXIS: Values
   DEPEND_0: epoch
   DEPEND_1: priority
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: Direct Event Data
   FILLVAL: -9223372036854775808
   FORMAT: I5
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 65535
-  VAR_TYPE: support_data
+  LABLAXIS: Values
   SCALETYP: linear
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  UNITS: " "
+  VALIDMAX: 65535
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 # unpacked 64-bits attrs
 de_3d_attrs:
   CATDESC: Direct event data
-  FIELDNAM: Direct Event Data
-  LABLAXIS: Values
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: Direct Event Data
   FILLVAL: -9223372036854775808
   FORMAT: I{num_digits}
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: "{valid_max}"
-  VAR_TYPE: support_data
+  LABLAXIS: Values
   SCALETYP: linear
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  UNITS: " "
+  VALIDMAX: "{valid_max}"
+  VALIDMIN: 0
+  VAR_TYPE: support_data

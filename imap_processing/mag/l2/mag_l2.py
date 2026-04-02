@@ -12,6 +12,14 @@ from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_L2_FRAMES = [
+    ValidFrames.SRF,
+    ValidFrames.GSE,
+    ValidFrames.GSM,
+    ValidFrames.RTN,
+    ValidFrames.DSRF,  # should be last as some vectors may become NaN
+]
+
 
 def mag_l2(
     calibration_dataset: xr.Dataset,
@@ -19,6 +27,7 @@ def mag_l2(
     input_data: xr.Dataset,
     day_to_process: np.datetime64,
     mode: DataMode = DataMode.NORM,
+    frames: list[ValidFrames] = DEFAULT_L2_FRAMES,
 ) -> list[xr.Dataset]:
     """
     Complete MAG L2 processing.
@@ -70,6 +79,9 @@ def mag_l2(
     mode : DataMode
         The data mode to process. Default is DataMode.NORM (normal mode).
         Can also be DataMode.BURST for burst mode processing.
+    frames : list[ValidFrames]
+        List of frames to output. DEFAULT_L2_FRAMES is [SRF, GSE, GSM, RTN, DSRF]
+        Note that DSRF should be last as some vectors may become NaN after rotation.
 
     Returns
     -------
@@ -78,6 +90,9 @@ def mag_l2(
         for different frames.
     """
     always_output_mago = configuration.ALWAYS_OUTPUT_MAGO
+
+    if not frames:
+        frames = DEFAULT_L2_FRAMES
 
     # TODO Check that the input file matches the offsets file
     if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
@@ -118,19 +133,13 @@ def mag_l2(
     attributes.add_instrument_variable_attrs("mag", "l2")
 
     # Rotate from the MAG frame into the SRF frame
-    frames: list[xr.Dataset] = []
+    datasets: list[xr.Dataset] = []
 
-    for frame in [
-        ValidFrames.SRF,
-        ValidFrames.GSE,
-        ValidFrames.GSM,
-        ValidFrames.RTN,
-        ValidFrames.DSRF,  # should be last as some vectors may become NaN
-    ]:
+    for frame in frames:
         l2_data.rotate_frame(frame)
-        frames.append(l2_data.generate_dataset(attributes, day))
+        datasets.append(l2_data.generate_dataset(attributes, day))
 
-    return frames
+    return datasets
 
 
 def retrieve_matrix_from_l2_calibration(
