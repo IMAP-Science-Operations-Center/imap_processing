@@ -316,15 +316,20 @@ def test_glows_exclusions_by_instr_team_combiner(glows_ancillary_filepath):
 def test_glows_l2_calibration_combiner(tmp_path):
     file_path = tmp_path / "imap_glows_l2-calibration_20251112_v001.dat"
     file_path.write_text(
-        "# header\n2025-11-13T18:12:48 1.020\n2025-11-14T09:58:04 0.849\n"
+        "# header\n2025-11-13T18:12:48 1.020\n"
+        "2025-11-14T09:58:04 0.849\n"
+        "2025-11-14T20:58:04 0.649\n"
     )
 
     combiner = GlowsAncillaryCombiner([], "20251115")
     dataset = combiner.convert_file_to_dataset(file_path)
 
-    assert "start_time_utc" in dataset.data_vars
+    assert "start_time_utc" in dataset.coords
+    assert (
+        np.diff(dataset.start_time_utc.values.astype("datetime64")) >= np.timedelta64(0)
+    ).all()
     assert "cps_per_r" in dataset.data_vars
-    assert len(dataset["cps_per_r"]) == 2
+    assert len(dataset["cps_per_r"]) == 3
     assert dataset["cps_per_r"].values[0] == pytest.approx(1.020)
 
 
