@@ -11,7 +11,7 @@ from imap_processing.ialirt.utils.grouping import (
     find_groups,
 )
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -146,18 +146,6 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     unique_groups = np.unique(grouped_data["group"])
 
     for group in unique_groups:
-        status_values = grouped_data["hit_status"][
-            (grouped_data["group"] == group).values
-        ]
-
-        if np.any(status_values == 0):
-            logger.info(
-                f"Off-nominal value detected at "
-                f"missing or duplicate pkt_counter values: "
-                f"{group}"
-            )
-            continue
-
         # Subcom values for the group should be 0-59 with no duplicates.
         subcom_values = grouped_data["hit_subcom"][
             (grouped_data["group"] == group).values
@@ -171,14 +159,6 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         hit_met = int(
             grouped_data["hit_met"][(grouped_data["group"] == group).values].values[0]
         )
-
-        status_values = grouped_data["hit_status"][
-            (grouped_data["group"] == group).values
-        ]
-
-        if np.any(status_values == 0):
-            logger.info(f"Off-nominal value detected at {met_to_utc(hit_met)}")
-            continue
 
         fast_rate_1 = grouped_data["hit_fast_rate_1"][
             (grouped_data["group"] == group).values
