@@ -39,30 +39,24 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
     output_datasets = []
     # Account for possibility of having 45 and 90 in dictionary.
     for instrument_id in [45, 90]:
-        # Find any de product if it is in the data_dict
+        # Find all DE-like products in insertion order (e.g. de, priority-1-de ...)
         l1a_de_products = [
             name
             for name in data_dict.keys()
-            if re.search(rf"^imap_ultra_l1a_{instrument_id}sensor.*-de$", name)
+            if re.search(rf"{instrument_id}sensor.*-de$", name)
         ]
-        # L1b de data will be created if L1a de data is available
-        # Including priority de products
+        # L1b DE data will be created for every available L1a DE product,
+        # including priority DE products.
         if l1a_de_products:
-            l1a_de_product = l1a_de_products[0]
-            if len(l1a_de_products) > 1:
-                raise ValueError(
-                    f"Multiple L1a de products found for instrument {instrument_id}. "
-                    f"Expected only one but found {len(l1a_de_products)}: "
-                    f"{l1a_de_products}"
+            for l1a_de_product in l1a_de_products:
+                l1b_de_product = l1a_de_product.replace("l1a", "l1b")
+                de_dataset = calculate_de(
+                    data_dict[l1a_de_product],
+                    data_dict[f"imap_ultra_l1a_{instrument_id}sensor-aux"],
+                    l1b_de_product,
+                    ancillary_files,
                 )
-            l1b_de_product = l1a_de_product.replace("l1a", "l1b")
-            de_dataset = calculate_de(
-                data_dict[l1a_de_product],
-                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-aux"],
-                l1b_de_product,
-                ancillary_files,
-            )
-            output_datasets.append(de_dataset)
+                output_datasets.append(de_dataset)
         # L1b extended data will be created if L1a hk, rates,
         # aux, params, and l1b de data are available
         elif (
