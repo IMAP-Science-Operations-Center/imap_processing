@@ -29,6 +29,11 @@ def ultra_l1c(
     """
     output_datasets = []
     create_helio_pset = True if "helio" in descriptor else False
+
+    # TODO
+    # Determine which l1b priority DE product to use in creating the l1c products.
+    # This will vary per-pointing by an ancillary file produced by the ULTRA team.
+
     # Account for the possibility of having 45 and 90 in the dictionary.
     for instrument_id in [45, 90]:
         if (

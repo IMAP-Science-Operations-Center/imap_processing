@@ -1,11 +1,16 @@
 """Calculate ULTRA L1b."""
 
+import logging
+import re
+
 import xarray as xr
 
 from imap_processing.ultra.l1b.badtimes import calculate_badtimes
 from imap_processing.ultra.l1b.de import calculate_de
 from imap_processing.ultra.l1b.extendedspin import calculate_extendedspin
 from imap_processing.ultra.l1b.goodtimes import calculate_goodtimes
+
+logger = logging.getLogger(__name__)
 
 
 def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
@@ -32,18 +37,26 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
     3. l1b extended, goodtimes, badtimes created here
     """
     output_datasets = []
-
     # Account for possibility of having 45 and 90 in dictionary.
     for instrument_id in [45, 90]:
-        # L1b de data will be created if L1a de data is available
-        if f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict:
-            de_dataset = calculate_de(
-                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
-                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-aux"],
-                f"imap_ultra_l1b_{instrument_id}sensor-de",
-                ancillary_files,
-            )
-            output_datasets.append(de_dataset)
+        # Find all DE-like products in insertion order (e.g. de, priority-1-de ...)
+        l1a_de_products = [
+            name
+            for name in data_dict.keys()
+            if re.search(rf"{instrument_id}sensor.*-de$", name)
+        ]
+        # L1b DE data will be created for every available L1a DE product,
+        # including priority DE products.
+        if l1a_de_products:
+            for l1a_de_product in l1a_de_products:
+                l1b_de_product = l1a_de_product.replace("l1a", "l1b")
+                de_dataset = calculate_de(
+                    data_dict[l1a_de_product],
+                    data_dict[f"imap_ultra_l1a_{instrument_id}sensor-aux"],
+                    l1b_de_product,
+                    ancillary_files,
+                )
+                output_datasets.append(de_dataset)
         # L1b extended data will be created if L1a hk, rates,
         # aux, params, and l1b de data are available
         elif (
