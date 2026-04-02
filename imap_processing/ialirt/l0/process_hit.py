@@ -132,6 +132,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     """
     hit_data = []
     incomplete_groups = []
+    status_groups = []
 
     # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
     # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
@@ -146,6 +147,13 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     unique_groups = np.unique(grouped_data["group"])
 
     for group in unique_groups:
+        status_values = grouped_data["hit_status"][
+            (grouped_data["group"] == group).values
+        ]
+
+        if np.any(status_values == 0):
+            status_groups.append(group)
+
         # Subcom values for the group should be 0-59 with no duplicates.
         subcom_values = grouped_data["hit_subcom"][
             (grouped_data["group"] == group).values
@@ -206,6 +214,10 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
             f"The following hit groups were skipped due to "
             f"missing or duplicate pkt_counter values: "
             f"{incomplete_groups}"
+        )
+    if status_groups:
+        logger.warning(
+            f"The following hit groups have zero status values: {status_groups}"
         )
 
     return hit_data
