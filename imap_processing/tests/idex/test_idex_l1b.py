@@ -403,3 +403,19 @@ def test_l1b_msg_processing(decom_test_data_msg: xr.Dataset):
     expected_science_on[3] = 0
     np.testing.assert_array_equal(test_l1b_msg["pulser_on"].data, expected_pulser_on)
     np.testing.assert_array_equal(test_l1b_msg["science_on"].data, expected_science_on)
+
+
+def test_no_valid_messages(decom_test_data_msg: xr.Dataset):
+    """Verify that if there are no valid pulser and science events then no dataset is
+    returned.
+
+    Parameters
+    ----------
+    decom_test_data_msg : xr.Dataset
+        A dataset containing the MSG data produced by the l1a processing.
+    """
+    msg_ds = decom_test_data_msg.copy()
+    # Set all messages to a value that is not a valid pulser on or off event
+    msg_ds.messages[:] = "Not a science or pulser event"
+    result = idex_l1b(msg_ds, "msg")
+    assert result is None
