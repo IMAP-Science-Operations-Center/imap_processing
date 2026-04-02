@@ -117,7 +117,7 @@ class TriggerMode(Enum):
         return f"{channel.upper()}{TriggerMode(mode).name}"
 
 
-def idex_l1b(l1a_dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
+def idex_l1b(l1a_dataset: xr.Dataset, descriptor: str) -> xr.Dataset | None:
     """
     Process IDEX l1a data to create l1b data products based on the descriptor.
 
@@ -142,7 +142,7 @@ def idex_l1b(l1a_dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
         raise ValueError(f"Unsupported descriptor: {descriptor}")
 
 
-def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset:
+def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset | None:
     """
     Will process IDEX l1a msg data.
 
@@ -205,6 +205,11 @@ def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset:
     # (either science or pulser)
     null_event = (pulser_on == 255) & (science_on == 255)
     l1b_dataset = l1b_dataset.isel(epoch=~null_event)
+    if len(l1b_dataset["epoch"]) == 0:
+        logger.warning(
+            "No science or pulser events found. No l1b dataset will be created."
+        )
+        return None
     logger.info("IDEX L1B MSG data processing completed.")
     return l1b_dataset
 
