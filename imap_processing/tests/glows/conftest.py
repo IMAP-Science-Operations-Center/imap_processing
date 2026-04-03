@@ -237,6 +237,15 @@ def mock_conversion_table_dict():
 
 
 @pytest.fixture
+def mock_calibration_dataset():
+    """Create a mock CalibrationDataset object for testing."""
+    return xr.Dataset(
+        {"cps_per_r": xr.DataArray([0.849, 1.020], dims=["start_time_utc"])},
+        coords={"start_time_utc": ["2011-09-19T09:58:04", "2011-09-20T18:12:48"]},
+    )
+
+
+@pytest.fixture
 def mock_pipeline_settings():
     """Create a mock PipelineSettings dataset for testing."""
     # Create a mock dataset with pipeline settings data which matches the output

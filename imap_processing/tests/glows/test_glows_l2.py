@@ -9,9 +9,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
-from imap_processing.glows.l2.glows_l2 import (
-    glows_l2,
-)
+from imap_processing.glows.l2.glows_l2 import get_calibration_factor, glows_l2
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
@@ -38,6 +36,32 @@ def l1b_hists():
     return input
 
 
+def test_get_calibration_factor(mock_calibration_dataset):
+    """Test correctly selecting calibration factor."""
+
+    # The mid epoch is after calibration timestamps,
+    # so the most recent (1.020) is selected.
+    # ['2011-09-21T00:50:15.000', '2011-09-21T00:52:15.000', '2011-09-21T00:54:15.000']
+    later_epoch = np.array([369838281184000000, 369838401184000000, 369838521184000000])
+    assert get_calibration_factor(
+        later_epoch, mock_calibration_dataset
+    ) == pytest.approx(1.020)
+
+    # The mid epoch is before all calibration timestamps,
+    # so a KeyError is raised with the "pad" filter method.
+    # ['2011-09-18T19:59:08.816', '2011-09-18T20:01:08.816', '2011-09-18T20:03:08.816']
+    early_epoch = np.array([369648015000000000, 369648135000000000, 369648255000000000])
+    with pytest.raises(KeyError):
+        get_calibration_factor(early_epoch, mock_calibration_dataset)
+
+    # The mid epoch is between the calibration times,
+    # so the first entry (0.849) is selected.
+    between_epoch = np.array([369808281184000000])
+    assert get_calibration_factor(
+        between_epoch, mock_calibration_dataset
+    ) == pytest.approx(0.849)
+
+
 @patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
 @patch.object(
     HistogramL1B,
@@ -54,6 +78,7 @@ def test_glows_l2(
     mock_pipeline_settings,
     mock_conversion_table_dict,
     mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
     caplog,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
@@ -69,7 +94,7 @@ def test_glows_l2(
     )
 
     # Test case 1: L1B dataset has good times
-    l2 = glows_l2(l1b_hist_dataset, mock_pipeline_settings, None)[0]
+    l2 = glows_l2(l1b_hist_dataset, mock_pipeline_settings, mock_calibration_dataset)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
 
@@ -79,7 +104,9 @@ def test_glows_l2(
         l1b_hist_dataset_no_good_times.flags.shape
     )
     caplog.set_level("WARNING")
-    result = glows_l2(l1b_hist_dataset_no_good_times, mock_pipeline_settings, None)
+    result = glows_l2(
+        l1b_hist_dataset_no_good_times, mock_pipeline_settings, mock_calibration_dataset
+    )
     assert result == []
     assert any(record.levelname == "WARNING" for record in caplog.records)
 
@@ -88,7 +115,9 @@ def test_glows_l2(
     l1b_hist_dataset_zero_values["spin_period_average"].data[:] = 0
     l1b_hist_dataset_zero_values["number_of_spins_per_block"].data[:] = 0
     caplog.set_level("WARNING")
-    result = glows_l2(l1b_hist_dataset_zero_values, mock_pipeline_settings, None)
+    result = glows_l2(
+        l1b_hist_dataset_zero_values, mock_pipeline_settings, mock_calibration_dataset
+    )
     assert result == []
     assert any(record.levelname == "WARNING" for record in caplog.records)
 
@@ -127,7 +156,7 @@ def test_generate_l2(
     )
 
     # Test case 1: L1B dataset has good times
-    l2 = HistogramL2(l1b_hist_dataset, pipeline_settings)
+    l2 = HistogramL2(l1b_hist_dataset, pipeline_settings, calibration_factor=1)
 
     expected_values = {
         "filter_temperature_average": [57.59],
@@ -155,7 +184,7 @@ def test_generate_l2(
 
     # Test case 2: L1B dataset has no good times (all flags 0)
     l1b_hist_dataset["flags"].values = np.zeros(l1b_hist_dataset.flags.shape)
-    ds = HistogramL2(l1b_hist_dataset, pipeline_settings)
+    ds = HistogramL2(l1b_hist_dataset, pipeline_settings, calibration_factor=1)
     expected_number_of_good_l1b_inputs = 0
     assert ds.number_of_good_l1b_inputs == expected_number_of_good_l1b_inputs
 
