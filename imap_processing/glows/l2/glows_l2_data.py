@@ -123,10 +123,9 @@ class DailyLightcurve:
         self.flux_uncertainties = np.zeros(self.number_of_bins)
 
         if (
-            len(self.exposure_times) != 0
+            self.number_of_bins > 0
             and self.exposure_times[0] > 0
-            and len(np.unique(self.exposure_times)) == 1
-            and calibration_factor != 0.0
+            and calibration_factor
         ):
             self.photon_flux = (
                 self.raw_histograms / self.exposure_times
@@ -584,7 +583,7 @@ class HistogramL2:
         """
         # Use the midpoint epoch for the day
         mid_idx = len(epoch_values) // 2
-        mid_epoch_utc = et_to_utc(ttj2000ns_to_et(epoch_values[mid_idx].data))
+        mid_epoch_utc = et_to_utc(ttj2000ns_to_et(epoch_values[mid_idx].item()))
         return calibration_dataset.sel(start_time_utc=mid_epoch_utc, method="pad")[
             "cps_per_r"
         ].data.item()
