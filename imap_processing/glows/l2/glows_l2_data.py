@@ -55,14 +55,16 @@ class DailyLightcurve:
     exposure_times: np.ndarray = field(init=False)
     flux_uncertainties: np.ndarray = field(init=False)
     histogram_flag_array: np.ndarray = field(init=False)
-    # TODO: ecliptic coordinates
     ecliptic_lon: np.ndarray = field(init=False)
     ecliptic_lat: np.ndarray = field(init=False)
     number_of_bins: int = field(init=False)
     l1b_data: InitVar[xr.Dataset]
     position_angle: InitVar[float]
+    calibration_factor: InitVar[float]
 
-    def __post_init__(self, l1b_data: xr.Dataset, position_angle: float) -> None:
+    def __post_init__(
+        self, l1b_data: xr.Dataset, position_angle: float, calibration_factor: float
+    ) -> None:
         """
         Compute all the daily lightcurve variables from L1B data.
 
@@ -74,6 +76,10 @@ class DailyLightcurve:
         position_angle : float
             The offset angle of the GLOWS instrument from the north spin point - this
             is used in spin angle calculations.
+        calibration_factor : float
+            Calibration factor used for flux calculations, in units of counts per second
+            per Rayleigh. This is used to convert from raw histograms and exposure times
+            to physical photon flux units.
         """
         # number_of_bins_per_histogram is the count of valid (non-FILLVAL) bins.
         # Histogram arrays from L1B are always GlowsConstants.STANDARD_BIN_COUNT
@@ -110,9 +116,14 @@ class DailyLightcurve:
             len(self.exposure_times) != 0
             and self.exposure_times[0] > 0
             and len(np.unique(self.exposure_times)) == 1
+            and calibration_factor != 0.0
         ):
-            self.photon_flux = self.raw_histograms / self.exposure_times
-            self.flux_uncertainties = raw_uncertainties / self.exposure_times
+            self.photon_flux = (
+                self.raw_histograms / self.exposure_times
+            ) / calibration_factor
+            self.flux_uncertainties = (
+                raw_uncertainties / self.exposure_times
+            ) / calibration_factor
 
         self.spin_angle = np.zeros(0)
 
@@ -244,6 +255,8 @@ class HistogramL2:
             GLOWS histogram L1B dataset, as produced by glows_l1b.py.
         pipeline_settings : PipelineSettings
             Pipeline settings object read from ancillary file.
+        calibration_factor : float
+            The cps-to-Rayleigh calibration factor needed for flux calculations.
 
     Attributes
     ----------
@@ -327,7 +340,12 @@ class HistogramL2:
     spin_axis_orientation_average: np.ndarray[np.double]
     bad_time_flag_occurrences: np.ndarray
 
-    def __init__(self, l1b_dataset: xr.Dataset, pipeline_settings: PipelineSettings):
+    def __init__(
+        self,
+        l1b_dataset: xr.Dataset,
+        pipeline_settings: PipelineSettings,
+        calibration_factor: float,
+    ) -> None:
         """
         Given an L1B dataset, process data into an output HistogramL2 object.
 
@@ -337,6 +355,8 @@ class HistogramL2:
             GLOWS histogram L1B dataset, as produced by glows_l1b.py.
         pipeline_settings : PipelineSettings
             Pipeline settings object read from ancillary file.
+        calibration_factor : float
+            cps-to-Rayleigh calibration factor used for flux calculations.
         """
         active_flags = np.array(pipeline_settings.active_bad_time_flags, dtype=float)
 
@@ -438,7 +458,9 @@ class HistogramL2:
             .data[np.newaxis, :]
         )
 
-        self.daily_lightcurve = DailyLightcurve(good_data, position_angle)
+        self.daily_lightcurve = DailyLightcurve(
+            good_data, position_angle, calibration_factor
+        )
 
     def filter_bad_bins(self, histograms: NDArray, bin_exclusions: NDArray) -> NDArray:
         """
