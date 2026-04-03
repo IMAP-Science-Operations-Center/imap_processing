@@ -15,7 +15,6 @@ from imap_processing.glows.l2.glows_l2_data import HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import (
     et_to_datetime64,
-    et_to_utc,
     met_to_utc,
     ttj2000ns_to_et,
     ttj2000ns_to_met,
@@ -60,12 +59,7 @@ def glows_l2(
         pipeline_settings_dataset.sel(epoch=day, method="nearest")
     )
 
-    # Select calibration factor corresponding to the mid epoch in the L1B data.
-    calibration_factor = get_calibration_factor(
-        input_dataset["epoch"].data, calibration_dataset
-    )
-
-    l2 = HistogramL2(input_dataset, pipeline_settings, calibration_factor)
+    l2 = HistogramL2(input_dataset, pipeline_settings, calibration_dataset)
     if l2.number_of_good_l1b_inputs == 0:
         logger.warning("No good data found in L1B dataset. Returning empty list.")
         return []
@@ -78,36 +72,6 @@ def glows_l2(
         return []
     else:
         return [create_l2_dataset(l2, cdf_attrs)]
-
-
-def get_calibration_factor(
-    epoch_values: np.ndarray, calibration_dataset: xr.Dataset
-) -> float:
-    """
-    Select calibration factor for an observational day.
-
-    The calibration factor is needed to compute flux in Rayleigh units.
-    There is a strong assumption that the calibration is constant for
-    a given observational day.
-
-    Parameters
-    ----------
-    epoch_values : np.ndarray
-        Array of epoch values from the L1B dataset, in TT J2000 nanoseconds.
-    calibration_dataset : xr.Dataset
-        Dataset containing calibration data.
-
-    Returns
-    -------
-    float
-        The calibration factor needed to compute flux in Rayleigh units.
-    """
-    # Use the midpoint epoch for the day
-    mid_idx = len(epoch_values) // 2
-    mid_epoch_utc = et_to_utc(ttj2000ns_to_et(epoch_values[mid_idx].data))
-    return calibration_dataset.sel(start_time_utc=mid_epoch_utc, method="pad")[
-        "cps_per_r"
-    ].data.item()
 
 
 def create_l2_dataset(

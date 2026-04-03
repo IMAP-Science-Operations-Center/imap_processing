@@ -91,6 +91,32 @@ def l1b_dataset():
     return ds
 
 
+def test_get_calibration_factor(mock_calibration_dataset):
+    """Test selecting correct calibration factor."""
+
+    # The mid-epoch is after calibration timestamps,
+    # so the most recent (1.020) is selected.
+    # ['2011-09-21T00:50:15.000', '2011-09-21T00:52:15.000', '2011-09-21T00:54:15.000']
+    later_epoch = np.array([369838281184000000, 369838401184000000, 369838521184000000])
+    assert HistogramL2.get_calibration_factor(
+        later_epoch, mock_calibration_dataset
+    ) == pytest.approx(1.020)
+
+    # The mid-epoch is before all calibration timestamps,
+    # so a KeyError is raised with the "pad" filter method.
+    # ['2011-09-18T19:59:08.816', '2011-09-18T20:01:08.816', '2011-09-18T20:03:08.816']
+    early_epoch = np.array([369648015000000000, 369648135000000000, 369648255000000000])
+    with pytest.raises(KeyError):
+        HistogramL2.get_calibration_factor(early_epoch, mock_calibration_dataset)
+
+    # The mid-epoch is between the calibration times,
+    # so the first entry (0.849) is selected.
+    between_epoch = np.array([369808281184000000])
+    assert HistogramL2.get_calibration_factor(
+        between_epoch, mock_calibration_dataset
+    ) == pytest.approx(0.849)
+
+
 @pytest.mark.external_kernel
 def test_ecliptic_coords_computation(furnish_kernels):
     """Test method that computes ecliptic coordinates."""
@@ -139,8 +165,10 @@ def test_photon_flux(l1b_dataset, mock_ecliptic_bin_centers):
 
             per bin (Eq. 50-53)
     """
-    factor = 2
-    lc = DailyLightcurve(l1b_dataset, position_angle=0.0, calibration_factor=factor)
+    mock_cal_factor = 2
+    lc = DailyLightcurve(
+        l1b_dataset, position_angle=0.0, calibration_factor=mock_cal_factor
+    )
 
     # l1b_exposure_time_per_bin = spin_period_average *
     # number_of_spins_per_block / number_of_bins_per_histogram
@@ -150,7 +178,7 @@ def test_photon_flux(l1b_dataset, mock_ecliptic_bin_centers):
     expected_exposure = np.array(
         [2 * exposure_per, 2 * exposure_per, 2 * exposure_per, 2 * exposure_per]
     )
-    expected_flux = (expected_raw / expected_exposure) / factor
+    expected_flux = (expected_raw / expected_exposure) / mock_cal_factor
 
     assert np.allclose(lc.raw_histograms, expected_raw)
     assert np.allclose(lc.exposure_times, expected_exposure)
@@ -163,10 +191,14 @@ def test_flux_uncertainty(l1b_dataset, mock_ecliptic_bin_centers):
                 Raleigh calibration factor
 
                 per bin (Eq. 54-55)."""
-    factor = 2
-    lc = DailyLightcurve(l1b_dataset, position_angle=0.0, calibration_factor=factor)
+    mock_cal_factor = 2
+    lc = DailyLightcurve(
+        l1b_dataset, position_angle=0.0, calibration_factor=mock_cal_factor
+    )
 
-    expected_uncertainty = (np.sqrt(lc.raw_histograms) / lc.exposure_times) / factor
+    expected_uncertainty = (
+        np.sqrt(lc.raw_histograms) / lc.exposure_times
+    ) / mock_cal_factor
     assert np.allclose(lc.flux_uncertainties, expected_uncertainty)
 
 
@@ -177,8 +209,11 @@ def test_zero_exposure_bins(l1b_dataset, mock_ecliptic_bin_centers):
     when all histogram values are masked (HISTOGRAM_FILLVAL). Flux and
     uncertainty are zero because the raw histogram sums are zero.
     """
+    mock_cal_factor = 1
     l1b_dataset["histogram"].values[:] = GlowsConstants.HISTOGRAM_FILLVAL
-    lc = DailyLightcurve(l1b_dataset, position_angle=0.0, calibration_factor=1)
+    lc = DailyLightcurve(
+        l1b_dataset, position_angle=0.0, calibration_factor=mock_cal_factor
+    )
 
     expected_exposure = 2 * 15.0 * 5 / 4
     assert np.all(lc.photon_flux == 0)
@@ -196,8 +231,12 @@ def test_zero_exposure_values(l1b_dataset, mock_ecliptic_bin_centers):
     l1b_dataset["spin_period_average"].data[:] = 0
     l1b_dataset["number_of_spins_per_block"].data[:] = 0
 
+    mock_cal_factor = 1
+
     with np.errstate(divide="raise", invalid="raise"):
-        lc = DailyLightcurve(l1b_dataset, position_angle=0.0, calibration_factor=1)
+        lc = DailyLightcurve(
+            l1b_dataset, position_angle=0.0, calibration_factor=mock_cal_factor
+        )
 
     expected = np.zeros(l1b_dataset.sizes["bins"], dtype=float)
     assert lc.exposure_times.shape == expected.shape
@@ -210,7 +249,10 @@ def test_zero_exposure_values(l1b_dataset, mock_ecliptic_bin_centers):
 
 
 def test_number_of_bins(l1b_dataset, mock_ecliptic_bin_centers):
-    lc = DailyLightcurve(l1b_dataset, position_angle=0.0, calibration_factor=1)
+    mock_cal_factor = 1
+    lc = DailyLightcurve(
+        l1b_dataset, position_angle=0.0, calibration_factor=mock_cal_factor
+    )
     assert lc.number_of_bins == 4
     assert len(lc.spin_angle) == 4
     assert len(lc.photon_flux) == 4
@@ -232,7 +274,10 @@ def test_histogram_flag_array_or_propagation(l1b_dataset, mock_ecliptic_bin_cent
     l1b_dataset["histogram_flag_array"].values[1, 1, 2] = 2
     l1b_dataset["histogram_flag_array"].values[1, 0, 0] = 2
 
-    lc = DailyLightcurve(l1b_dataset, position_angle=0.0, calibration_factor=1)
+    mock_cal_factor = 1
+    lc = DailyLightcurve(
+        l1b_dataset, position_angle=0.0, calibration_factor=mock_cal_factor
+    )
 
     assert (
         lc.histogram_flag_array[0] == 3
@@ -266,7 +311,8 @@ def test_histogram_flag_array_zero_epochs(mock_ecliptic_bin_centers):
         },
         coords={"epoch": xr.DataArray(np.arange(0), dims=["epoch"])},
     )
-    lc = DailyLightcurve(ds, position_angle=0.0, calibration_factor=1)
+    mock_cal_factor = 1
+    lc = DailyLightcurve(ds, position_angle=0.0, calibration_factor=mock_cal_factor)
 
     # if the dataset is empty, there is no way to infer the number_of_bins
     assert len(lc.histogram_flag_array) == 0
@@ -298,7 +344,10 @@ def test_spin_angle_offset_formula(l1b_dataset, mock_ecliptic_bin_centers):
     Expected before roll: [270, 0, 90, 180].
     Minimum is at index 1, so roll = -1 -> [0, 90, 180, 270].
     """
-    lc = DailyLightcurve(l1b_dataset, position_angle=90.0, calibration_factor=1)
+    mock_cal_factor = 1
+    lc = DailyLightcurve(
+        l1b_dataset, position_angle=90.0, calibration_factor=mock_cal_factor
+    )
     expected = np.array([0.0, 90.0, 180.0, 270.0])
     assert np.allclose(lc.spin_angle, expected)
 
@@ -310,7 +359,10 @@ def test_spin_angle_starts_at_minimum(l1b_dataset, mock_ecliptic_bin_centers):
     Before roll: [315, 45, 135, 225]; minimum 45 is at index 1 -> roll = -1
     -> [45, 135, 225, 315].
     """
-    lc = DailyLightcurve(l1b_dataset, position_angle=45.0, calibration_factor=1)
+    mock_cal_factor = 1
+    lc = DailyLightcurve(
+        l1b_dataset, position_angle=45.0, calibration_factor=mock_cal_factor
+    )
     assert lc.spin_angle[0] == np.min(lc.spin_angle)
     assert np.allclose(lc.spin_angle, np.array([45.0, 135.0, 225.0, 315.0]))
 
@@ -381,15 +433,24 @@ def l1b_dataset_full():
 
 
 def test_position_angle_offset_average(
-    l1b_dataset_full, pipeline_settings, mock_ecliptic_bin_centers
+    l1b_dataset_full,
+    pipeline_settings,
+    mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
 ):
     """position_angle_offset_average is a scalar equal to the result of
     compute_position_angle (Eq. 30, Section 10.6). It is constant across the
     observational day since it depends only on instrument mounting geometry.
     """
     mock_pa = 42.5
-    target = "imap_processing.glows.l2.glows_l2_data.HistogramL2.compute_position_angle"
-    with patch(target, return_value=mock_pa):
-        l2 = HistogramL2(l1b_dataset_full, pipeline_settings, calibration_factor=1)
+    mock_cal_factor = 1
 
-    assert l2.position_angle_offset_average == pytest.approx(mock_pa)
+    with (
+        patch.object(HistogramL2, "compute_position_angle", return_value=mock_pa),
+        patch.object(
+            HistogramL2, "get_calibration_factor", return_value=mock_cal_factor
+        ),
+    ):
+        l2 = HistogramL2(l1b_dataset_full, pipeline_settings, mock_calibration_dataset)
+
+        assert l2.position_angle_offset_average == pytest.approx(mock_pa)
