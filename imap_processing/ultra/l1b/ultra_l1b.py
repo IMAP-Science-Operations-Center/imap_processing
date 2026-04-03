@@ -43,7 +43,7 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
         l1a_de_products = [
             name
             for name in data_dict.keys()
-            if re.search(rf"{instrument_id}sensor.*-de$", name)
+            if re.search(rf"^imap_ultra_l1a_{instrument_id}sensor.*-de$", name)
         ]
         # L1b de data will be created if L1a de data is available
         # Including priority de products
