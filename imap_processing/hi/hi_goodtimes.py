@@ -604,6 +604,8 @@ class GoodtimesAccessor:
             cull_next = grouped[i + 1][1]
 
             # Compare shapes first (different lengths = different pattern)
+            # In a nominal Pointing, the final ESA sweep will get cut short by the repoint
+            # maneuver. This is the typical case where the shape would be different.
             if cull_curr.shape != cull_next.shape:
                 pattern_changes.append(True)
             else:
