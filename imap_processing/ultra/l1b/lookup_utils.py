@@ -235,7 +235,7 @@ def get_energy_efficiencies(ancillary_files: dict, sensor: str) -> pd.DataFrame:
         )
     else:
         lookup_table = pd.read_csv(
-            ancillary_files["l1b-45sensor-logistic-interpolation"]
+            ancillary_files["l1b-90sensor-logistic-interpolation"]
         )
 
     return lookup_table
