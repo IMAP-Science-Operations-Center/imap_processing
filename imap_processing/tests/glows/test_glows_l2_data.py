@@ -161,7 +161,7 @@ def test_ecliptic_coords_computation(furnish_kernels):
 def test_photon_flux(l1b_dataset, mock_ecliptic_bin_centers):
     """
     Flux = (sum(histograms) / sum(exposure_times)) /
-            Raleigh calibration factor
+            Rayleigh calibration factor
 
             per bin (Eq. 50-53)
     """
@@ -188,7 +188,7 @@ def test_photon_flux(l1b_dataset, mock_ecliptic_bin_centers):
 def test_flux_uncertainty(l1b_dataset, mock_ecliptic_bin_centers):
     """
     Uncertainty = sqrt(sum_hist) / exposure /
-                Raleigh calibration factor
+                Rayleigh calibration factor
 
                 per bin (Eq. 54-55)."""
     mock_cal_factor = 2
