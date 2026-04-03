@@ -15,7 +15,7 @@ from imap_processing.spice.geometry import (
     get_instrument_mounting_az_el,
 )
 from imap_processing.spice.time import (
-    et_to_utc,
+    et_to_datetime64,
     met_to_sclkticks,
     sct_to_et,
     ttj2000ns_to_et,
@@ -583,7 +583,7 @@ class HistogramL2:
         """
         # Use the midpoint epoch for the day
         mid_idx = len(epoch_values) // 2
-        mid_epoch_utc = et_to_utc(ttj2000ns_to_et(epoch_values[mid_idx].item()))
+        mid_epoch_utc = et_to_datetime64(ttj2000ns_to_et(epoch_values[mid_idx].item()))
         return calibration_dataset.sel(start_time_utc=mid_epoch_utc, method="pad")[
             "cps_per_r"
         ].data.item()

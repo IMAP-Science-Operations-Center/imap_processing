@@ -436,8 +436,8 @@ class GlowsAncillaryCombiner(AncillaryCombiner):
                     "cps_per_r": (["start_time_utc"], values),  # floats
                 },
                 coords={
-                    "start_time_utc": identifiers
-                },  # numpy.str (e.g. '2025-07-01T00:00:00Z')
+                    "start_time_utc": np.array(identifiers, dtype="datetime64[s]")
+                },  # (e.g. '2025-07-01T00:00:00')
             )
 
             return ds.sortby("start_time_utc")
