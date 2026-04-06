@@ -376,6 +376,7 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
         ultra_l1b(mock_data_l1a_rates_dict, ancillary_files)
 
 
+@pytest.mark.external_test_data
 def test_ultra_l1b_priority_de(
     mock_get_annotated_particle_velocity,
     de_dataset,
