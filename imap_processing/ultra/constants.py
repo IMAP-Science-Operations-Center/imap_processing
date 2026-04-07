@@ -218,7 +218,11 @@ class UltraConstants:
     STAT_CULLING_N_ITER = 5
     # Sigma threshold to use for statistical outlier culling.
     STAT_CULLING_STD_THRESHOLD = 0.05
-
+    # Energy channels for the upstream ion cull
+    # The algorithm will be run twice with the different sets of channels below.
+    UPSTREAM_ION_ENERGY_CHANNELS_1: ClassVar[list] = [0, 1, 2]
+    UPSTREAM_ION_ENERGY_CHANNELS_2: ClassVar[list] = [2, 3, 4]
+    UPSTREAM_SIG_THRESHOLD = 2.5
     # Set dimensions for extended spin/goodtime support variables
     # ISTP requires fixed dimensions, so we set these to the maximum we expect to need
     # and pad with fill values if we use fewer bins.

@@ -942,6 +942,69 @@ def get_poisson_stats(counts: NDArray) -> tuple[float, NDArray]:
     return std_ratio, sub_mask
 
 
+def flag_upstream_ion(
+    de_dataset: xr.Dataset,
+    spin_tbin_edges: NDArray,
+    energy_ranges: NDArray,
+    mask: NDArray,
+    channels: list,
+    sensor_id: int = 90,
+) -> NDArray:
+    """
+    Flag upstream ion events.
+
+    Parameters
+    ----------
+    de_dataset : xr.Dataset
+        Direct event dataset.
+    spin_tbin_edges : NDArray
+        Edges of the spin time bins.
+    energy_ranges : NDArray
+        Array of energy range edges.
+    mask : NDArray
+        Mask indicating which events to consider for upstream ion flagging. This should
+        be a 2d boolean array of shape (n_energy_bins, n_spin_bins) where True
+        indicates the spin bins that have been flagged in previous steps
+        and should be excluded from the upstream ion flagging process.
+    channels : list
+        List of energy channel indices to use for upstream ion flagging.
+    sensor_id : int
+        Sensor ID (e.g., 45 or 90).
+
+    Returns
+    -------
+    flagged : NDArray
+        Boolean array of shape (n_spin_bins,) where True indicates spin bins flagged for
+        upstream ions. These flags are energy independent and should be applied across
+        all energy channels.
+    """
+    counts_sum = get_valid_de_count_summary(
+        de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
+    )[channels, :]  # shape (num_channels, n_spin_bins)
+
+    channel_mask = ~mask[channels, :]
+    weights = channel_mask.sum(axis=0)
+    # Sum counts where the mask is True (valid)
+    sum_scaled_counts = np.where(channel_mask, counts_sum, 0).sum(axis=0)
+    # Get 1D array of valid spin bins
+    valid_bins = np.flatnonzero(weights > 0)
+    total_scaled = sum_scaled_counts[valid_bins]
+    total_mean = np.mean(total_scaled)
+    # Set a threshold based on poisson stats for the total counts across the channels
+    thresh = total_mean + UltraConstants.UPSTREAM_SIG_THRESHOLD * np.sqrt(total_mean)
+    # Flag bins where the total counts across the channels exceed the threshold
+    flagged = np.zeros(counts_sum.shape[1], dtype=bool)
+    flagged[valid_bins[total_scaled > thresh]] = True
+
+    num_culled: int = np.sum(flagged)
+    logger.info(
+        f"Upstream Ion culling removed {num_culled} spin bins. These are energy"
+        f" independent flags and will be applied across all {mask.shape[0]} energy"
+        f" channels."
+    )
+    return flagged
+
+
 def get_valid_de_count_summary(
     de_dataset: xr.Dataset,
     energy_ranges: NDArray,

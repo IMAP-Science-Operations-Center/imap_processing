@@ -15,6 +15,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_low_voltage,
     flag_rates,
     flag_statistical_outliers,
+    flag_upstream_ion,
     get_binned_energy_ranges,
     get_binned_spins_edges,
     get_energy_histogram,
@@ -101,6 +102,28 @@ def calculate_extendedspin(
         mask,
         instrument_id,
     )
+    # Combine statistical outlier flags with the current mask
+    mask = mask | stat_outliers_qf
+    upstream_ion_qf_1 = flag_upstream_ion(
+        de_dataset,
+        spin_tbin_edges,
+        energy_ranges,
+        mask,
+        UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1,
+        instrument_id,
+    )
+    # Update mask to include upstream ion flags from the first set of energy channels
+    # before flagging with the second set of energy channels
+    mask = mask | upstream_ion_qf_1
+    upstream_ion_qf_2 = flag_upstream_ion(
+        de_dataset,
+        spin_tbin_edges,
+        energy_ranges,
+        mask,
+        UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_2,
+        instrument_id,
+    )
+
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
 
@@ -146,13 +169,23 @@ def calculate_extendedspin(
     stat_outliers_qf = np.bitwise_or.reduce(
         stat_outliers_qf * energy_bin_flags[:, np.newaxis], axis=0
     )
-    # Low voltage flag is shape (n_spin_bins,) but we want to convert from a boolean
-    # to a bitwise flag to be consistent with the other flags, where each spin that
-    # is flagged will have the bitflag of all the energy flags combined.
-    voltage_qf = voltage_qf * np.bitwise_or.reduce(energy_bin_flags)
+    # Low voltage and upstream ion flags are shape (n_spin_bins,) but we want to
+    # convert from a boolean to a bitwise flag to be consistent with the other flags,
+    # where each spin that is flagged will have the bitflag of all the energy flags
+    # combined.
+    combined_flags = np.bitwise_or.reduce(energy_bin_flags)
+    voltage_qf = voltage_qf * combined_flags
+    upstream_ion_qf_1 = upstream_ion_qf_1 * combined_flags
+    upstream_ion_qf_2 = upstream_ion_qf_2 * combined_flags
     # Expand binned quality flags to individual spins.
     high_energy_qf = expand_bin_flags_to_spins(len(spin), high_energy_qf, spin_bin_size)
     voltage_qf = expand_bin_flags_to_spins(len(spin), voltage_qf, spin_bin_size)
+    upstream_ion_qf_1 = expand_bin_flags_to_spins(
+        len(spin), upstream_ion_qf_1, spin_bin_size
+    )
+    upstream_ion_qf_2 = expand_bin_flags_to_spins(
+        len(spin), upstream_ion_qf_2, spin_bin_size
+    )
     stat_outliers_qf = expand_bin_flags_to_spins(
         len(spin), stat_outliers_qf, spin_bin_size
     )
@@ -166,6 +199,8 @@ def calculate_extendedspin(
     extendedspin_dict["quality_hk"] = hk_qf
     extendedspin_dict["quality_instruments"] = inst_qf
     extendedspin_dict["quality_low_voltage"] = voltage_qf  # shape (nspin,)
+    extendedspin_dict["quality_upstream_ion_1"] = upstream_ion_qf_1  # shape (nspin,)
+    extendedspin_dict["quality_upstream_ion_2"] = upstream_ion_qf_2  # shape (nspin,)
     extendedspin_dict["quality_statistics"] = stat_outliers_qf  # shape (nspin,)
     extendedspin_dict["quality_high_energy"] = high_energy_qf  # shape (nspin,)
     # ISTP requires stable dimension sizes, so this field must always remain size 16.

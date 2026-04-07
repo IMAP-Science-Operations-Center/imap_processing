@@ -79,6 +79,8 @@ def test_calculate_spacecraft_pset(
                 ["epoch", "component"],
                 particle_velocity_dps_spacecraft,
             ),
+            "theta": (["epoch"], np.zeros(len(species), dtype=np.float32)),
+            "phi": (["epoch"], np.zeros(len(species), dtype=np.float32)),
             "energy_spacecraft": (["epoch"], energy_dps_spacecraft),
             "spin": (["epoch"], df["Spin"].values),
             "quality_scattering": (
@@ -177,6 +179,8 @@ def test_calculate_spacecraft_pset_with_cdf(
         de_dict["quality_scattering"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["quality_outliers"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["ebin"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
+        de_dict["theta"] = np.zeros(len(df_subset), dtype=np.float32)
+        de_dict["phi"] = np.zeros(len(df_subset), dtype=np.float32)
         de_dict["event_times"] = 817561854.185627 + (
             df_subset["tdb"].values - df_subset["tdb"].values[0]
         )

@@ -21,6 +21,8 @@ SPIN_QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
 # Then all flags in the array will be used for filtering.
 ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS: list = [
     "quality_low_voltage",
+    "quality_upstream_ion_1",
+    "quality_upstream_ion_2",
     "quality_high_energy",
     "quality_statistics",
 ]
