@@ -132,7 +132,6 @@ def calculate_extendedspin(
         mask,
         instrument_id,
     )
-
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
 
