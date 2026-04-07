@@ -234,7 +234,13 @@ def l1a_hi_sectored(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
 
         # Extract species data from decompressed data:
         # - (num_packets, energy_bins, spin_sector, inst_az)
+        # Unpacked data is in this order:
+        #   (epoch, number_species, energy_{species}, inst_az, spin_sector)
         species_data = decompressed_data[:, species_index, :, :, :]
+        # Now transpose to put data in the correct order for writing to CDF:
+        #   (epoch, energy_{species}, spin_sector, inst_az)
+        species_data = np.transpose(species_data, [0, 1, 3, 2])
+
         species_attrs = cdf_attrs.get_variable_attributes("hi-species-attrs")
         species_attrs = apply_replacements_to_attrs(
             species_attrs, {"species": species_name}
