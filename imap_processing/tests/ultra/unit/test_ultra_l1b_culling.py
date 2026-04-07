@@ -457,6 +457,8 @@ def test_get_energy_and_spin_dependent_rejection_mask():
             "quality_statistics": np.full(n_spins, 0),
             "energy_range_flags": energy_range_flags,
             "energy_range_edges": energy_range_edges,
+            "quality_upstream_ion_1": np.full(n_spins, 0),
+            "quality_upstream_ion_2": np.full(n_spins, 0),
         }
     )
     # update quality flags to test that events get rejected

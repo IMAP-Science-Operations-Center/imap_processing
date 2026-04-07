@@ -683,5 +683,13 @@ def mock_goodtimes_dataset():
                 "spin_number",
                 np.full(nspins, 15),
             ),  # nominal spin period of 15 seconds
+            "quality_upstream_ion_1": (
+                "spin_number",
+                np.zeros(nspins, dtype=np.uint16),
+            ),
+            "quality_upstream_ion_2": (
+                "spin_number",
+                np.zeros(nspins, dtype=np.uint16),
+            ),
         }
     )
