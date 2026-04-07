@@ -181,7 +181,6 @@ class UltraConstants:
 
     FOV_THETA_OFFSET_DEG = 0.0
     FOV_PHI_LIMIT_DEG = 60.0
-    # TODO anxillary file
     # Restricted FOV theta/phi acceptance limits (degrees).
     # Samples outside these bounds are excluded from GF, efficiency, exposure,
     # and counts maps at L1C (fine energy bin maps only).
