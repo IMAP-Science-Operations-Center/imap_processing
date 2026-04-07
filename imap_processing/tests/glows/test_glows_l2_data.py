@@ -94,23 +94,31 @@ def l1b_dataset():
 def test_get_calibration_factor(mock_calibration_dataset):
     """Test selecting correct calibration factor."""
 
-    # The mid-epoch is after calibration timestamps,
-    # so the most recent (1.020) is selected.
+    # Mock calibration data:
+    #   timestamps: ["2011-09-19T09:58:04", "2011-09-20T18:12:48"]
+    #   values:     [0.849, 1.020]
+
+    # Case 1: The mid-epoch is after calibration timestamps,
+    # so the last value is selected (1.020).
+
     # ['2011-09-21T00:50:15.000', '2011-09-21T00:52:15.000', '2011-09-21T00:54:15.000']
     later_epoch = np.array([369838281184000000, 369838401184000000, 369838521184000000])
     assert HistogramL2.get_calibration_factor(
         later_epoch, mock_calibration_dataset
     ) == pytest.approx(1.020)
 
-    # The mid-epoch is before all calibration timestamps,
+    # Case 2: The mid-epoch is before all calibration timestamps,
     # so a KeyError is raised with the "pad" filter method.
+
     # ['2011-09-18T19:59:08.816', '2011-09-18T20:01:08.816', '2011-09-18T20:03:08.816']
     early_epoch = np.array([369648015000000000, 369648135000000000, 369648255000000000])
     with pytest.raises(KeyError):
         HistogramL2.get_calibration_factor(early_epoch, mock_calibration_dataset)
 
-    # The mid-epoch is between the calibration times,
-    # so the first entry (0.849) is selected.
+    # Case 3: The mid-epoch is between the calibration times,
+    # so the first value is selected (0.849).
+
+    # '2011-09-20T16:30:15.000'
     between_epoch = np.array([369808281184000000])
     assert HistogramL2.get_calibration_factor(
         between_epoch, mock_calibration_dataset

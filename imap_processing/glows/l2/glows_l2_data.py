@@ -474,7 +474,7 @@ class HistogramL2:
                 good_data["epoch"].data, calibration_dataset
             )
         else:
-            calibration_factor = None
+            calibration_factor = None  # No good data available. Still proceed
 
         self.daily_lightcurve = DailyLightcurve(
             good_data, position_angle, calibration_factor
