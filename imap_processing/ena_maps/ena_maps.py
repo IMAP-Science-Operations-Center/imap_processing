@@ -627,6 +627,12 @@ class UltraPointingSet(HealpixPointingSet):
         nside of the input pset counts variable (e.g. 128) to the nside of the pset.
         """
         pset_data = self.data
+        if "counts_pixel_index" not in pset_data:
+            logger.info(
+                "No counts_pixel_index found in the dataset. Skipping counts "
+                "downsampling."
+            )
+            return
         counts_n_pix = pset_data.sizes["counts_pixel_index"]
         pset_n_pix = hp.nside2npix(self.nside)
         if counts_n_pix != pset_n_pix:
