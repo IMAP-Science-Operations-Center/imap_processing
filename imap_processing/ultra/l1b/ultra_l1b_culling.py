@@ -1312,7 +1312,6 @@ def get_binned_energy_ranges(
         energy_starts,
         energy_bin_edges[last_group_end_ind - 1][1],
     )
-
     if max_energy is not None:
         # get the first index where the energy range exceeds the max energy
         # exclude the last edge since it is the stop energy of the last range
