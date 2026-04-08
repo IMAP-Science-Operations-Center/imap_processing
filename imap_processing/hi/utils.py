@@ -7,7 +7,7 @@ from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 import numpy as np
 import pandas as pd
@@ -552,13 +552,13 @@ class CalibrationProductConfig(_BaseConfigAccessor):
     )
 
     @classmethod
-    def from_csv(cls, path: str | Path) -> pd.DataFrame:
+    def from_csv(cls, path: str | Path | IO[str]) -> pd.DataFrame:
         """
         Read calibration product configuration CSV file into a pandas.DataFrame.
 
         Parameters
         ----------
-        path : str or pathlib.Path
+        path : str or pathlib.Path or file-like object
             Location of the calibration product configuration CSV file.
 
         Returns
@@ -612,13 +612,13 @@ class BackgroundConfig(_BaseConfigAccessor):
     )
 
     @classmethod
-    def from_csv(cls, path: str | Path) -> pd.DataFrame:
+    def from_csv(cls, path: str | Path | IO[str]) -> pd.DataFrame:
         """
         Read background configuration CSV file into a pandas.DataFrame.
 
         Parameters
         ----------
-        path : str or pathlib.Path
+        path : str or pathlib.Path or file-like object
             Location of the background configuration CSV file.
 
         Returns
@@ -816,24 +816,10 @@ def iter_qualified_events_by_config(
                 yield esa_energy, config_row, np.zeros(n_events, dtype=bool)
                 continue
 
-            # Check coincidence type
-            coin_mask = filter_events_by_coincidence(
-                de_ds, config_row.coincidence_type_values
-            )
+            # Apply common filtering logic
+            filter_mask = _filter_events_by_config_row(de_ds, config_row, tof_fill_vals)
 
-            # Build TOF windows dict from config row
-            tof_windows = {
-                f"tof_{pair}": (
-                    getattr(config_row, f"tof_{pair}_low"),
-                    getattr(config_row, f"tof_{pair}_high"),
-                )
-                for pair in CalibrationProductConfig.tof_detector_pairs
-            }
-
-            # Check TOF windows
-            tof_mask = get_tof_window_mask(de_ds, tof_windows, tof_fill_vals)
-
-            yield esa_energy, config_row, esa_mask & coin_mask & tof_mask
+            yield esa_energy, config_row, esa_mask & filter_mask
 
 
 def _filter_events_by_config_row(
