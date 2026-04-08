@@ -1045,34 +1045,36 @@ def flag_spectral_events(
     -------
     flagged : NDArray
         Boolean array of shape (n_spin_bins,) where True indicates spin bins flagged for
-        upstream ions. These flags are energy independent and should be applied across
-        all energy channels.
+        spectral anomalies. These flags are energy independent and should be applied
+         across all energy channels.
     """
     # validate that the channels provided are within the bounds of the energy ranges
     if not np.all([ch in range(len(energy_ranges) - 1) for ch in channels]):
         raise ValueError(
-            f"Channels provided for upstream ion flagging must be within the bounds"
+            f"Channels provided for spectral flagging must be within the bounds"
             f" of the energy ranges. Provided channels: {channels}, number of energy"
             f" ranges: {len(energy_ranges) - 1}."
         )
     counts_sum = get_valid_de_count_summary(
         de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
     )[channels, :]  # shape (num_channels, n_spin_bins)
-    # Flag spin bins where the count difference between adjacent bins exceeds
-    # a Poisson-based threshold. For each pair of adjacent spin bins, compute
-    # the absolute difference in counts and compare it to a threshold scaled
-    # by the combined Poisson uncertainty (sqrt(N1 + N2)) of those two bins.
-    # If the difference is large relative to the statistical noise, the bin
-    # is flagged at all energy ranges.
+    # Flag spin bins where the signed count difference between adjacent selected
+    # energy channels exceeds a Poisson-based threshold. For each pair of
+    # adjacent channels, compute np.diff(counts_sum, axis=0) and compare that
+    # signed difference to a threshold scaled by the combined Poisson
+    # uncertainty (sqrt(N1 + N2)) of those two channels for each spin bin.
+    # If any adjacent channel pair exceeds the threshold for a spin bin, that
+    # spin bin is flagged across all energy ranges.
     diff = np.diff(counts_sum, axis=0) - UltraConstants.SPECTRAL_SIG_THRESHOLD * (
         np.sqrt(counts_sum[:-1] + counts_sum[1:])
     )  # shape (num_channels - 1, n_spin_bins)
     flagged = np.any(np.where(diff > 0, True, False), axis=0)  # shape (n_spin_bins,)
     num_culled: int = np.sum(flagged)
     logger.info(
-        f"Upstream Ion culling removed {num_culled} spin bins. These are energy"
-        f" independent flags and will be applied across all energy"
-        f" channels."
+        f"Spectral culling removed {num_culled} spin bins using channels"
+        f" {channels} and threshold {UltraConstants.SPECTRAL_SIG_THRESHOLD}."
+        f" These are energy independent flags and will be applied across all"
+        f" energy channels."
     )
     return flagged
 
