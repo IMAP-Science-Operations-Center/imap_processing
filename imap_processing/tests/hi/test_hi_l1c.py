@@ -33,10 +33,19 @@ def hi_goodtimes_dataset(hi_l1_test_data_path):
 
 
 @mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")
-def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
+def test_hi_l1c(
+    mock_generate_pset_dataset,
+    hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
+):
     """Test coverage for hi_l1c function"""
     mock_generate_pset_dataset.return_value = xr.Dataset()
-    pset = hi_l1c.hi_l1c(xr.Dataset(), hi_test_cal_prod_config_path, xr.Dataset())[0]
+    pset = hi_l1c.hi_l1c(
+        xr.Dataset(),
+        hi_test_cal_prod_config_path,
+        xr.Dataset(),
+        hi_test_background_config_path,
+    )[0]
     # Empty attributes, global values get added in post-processing
     assert pset.attrs == {}
 
@@ -47,6 +56,7 @@ def test_generate_pset_dataset(
     hi_l1b_de_dataset,
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
     use_fake_spin_data_for_time,
     use_fake_repoint_data_for_time,
     imap_ena_sim_metakernel,
@@ -64,7 +74,10 @@ def test_generate_pset_dataset(
     goodtimes = hi_goodtimes_dataset
 
     l1c_dataset = hi_l1c.generate_pset_dataset(
-        l1b_dataset, hi_test_cal_prod_config_path, goodtimes
+        l1b_dataset,
+        hi_test_cal_prod_config_path,
+        goodtimes,
+        hi_test_background_config_path,
     )
 
     assert l1c_dataset.epoch.data[0] == l1b_dataset.epoch.data[0].astype(np.int64)
@@ -97,6 +110,7 @@ def test_generate_pset_dataset_uses_midpoint_time(
     mock_pset_exposure,
     mock_pset_backgrounds,
     hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
 ):
     """Test that generate_pset_dataset uses midpoint ET for pset_geometry."""
     # Create a mock L1B dataset
@@ -129,12 +143,20 @@ def test_generate_pset_dataset_uses_midpoint_time(
     # Mock the return values for the sub-functions
     mock_pset_geometry.return_value = {}
     mock_pset_counts.return_value = {}
-    mock_pset_exposure.return_value = {}
+    # pset_exposure must return exposure_times for pset_backgrounds to use
+    mock_exposure_times = xr.DataArray(
+        np.ones((1, n_energy_steps, 3600), dtype=np.float32),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+    mock_pset_exposure.return_value = {"exposure_times": mock_exposure_times}
     mock_pset_backgrounds.return_value = {}
 
     # Call generate_pset_dataset
     _ = hi_l1c.generate_pset_dataset(
-        mock_l1b_dataset, hi_test_cal_prod_config_path, xr.Dataset()
+        mock_l1b_dataset,
+        hi_test_cal_prod_config_path,
+        xr.Dataset(),
+        hi_test_background_config_path,
     )
 
     # Calculate expected midpoint ET
@@ -240,6 +262,7 @@ def test_pset_counts(
     hi_l1b_de_dataset,
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
 ):
     """Test coverage for pset_counts function."""
     cal_config_df = utils.CalibrationProductConfig.from_csv(
@@ -264,6 +287,7 @@ def test_pset_counts_empty_l1b(
     hi_l1b_de_dataset,
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
 ):
     """Test coverage for pset_counts function when the input L1b contains no counts."""
     # Make a copy and modify it -
@@ -520,29 +544,81 @@ def test_pset_counts_goodtimes_filtering(
     assert counts_var["counts"].data[0, 0, 0, 1800] == 5
 
 
-def test_pset_backgrounds():
+def test_pset_backgrounds(
+    hi_test_background_config_path,
+    hi_test_cal_prod_config_path,
+    hi_l1b_de_dataset,
+    hi_goodtimes_dataset,
+    use_fake_spin_data_for_time,
+    use_fake_repoint_data_for_time,
+):
     """Test coverage for pset_backgrounds function."""
-    # Create some fake coordinates to use
-    n_epoch = 1
-    n_energy = 9
-    n_cal_prod = 2
-    n_spin_bins = 3600
-    pset_coords = {
-        "epoch": xr.DataArray(np.arange(n_epoch)),
-        "esa_energy_step": xr.DataArray(np.arange(n_energy) + 1),
-        "calibration_prod": xr.DataArray(np.arange(n_cal_prod)),
-        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins)),
-    }
-    backgrounds_vars = hi_l1c.pset_backgrounds(pset_coords)
-    assert "background_rates" in backgrounds_vars
-    np.testing.assert_array_equal(
-        backgrounds_vars["background_rates"].data,
-        np.zeros((n_epoch, n_energy, n_cal_prod, n_spin_bins)),
+    # Setup required SPICE data
+    use_fake_spin_data_for_time(482372987.999)
+    l1b_met = hi_l1b_de_dataset["ccsds_met"].values[0]
+    seconds_per_day = 24 * 60 * 60
+    use_fake_repoint_data_for_time(
+        np.asarray([l1b_met - 15 * 60, l1b_met + seconds_per_day]),
+        np.asarray([l1b_met, l1b_met + seconds_per_day + 1]),
     )
+
+    # Load the background config
+    background_df = utils.BackgroundConfig.from_csv(hi_test_background_config_path)
+
+    # Create empty pset dataset to get coordinates
+    cal_config_df = utils.CalibrationProductConfig.from_csv(
+        hi_test_cal_prod_config_path
+    )
+    empty_pset = hi_l1c.empty_pset_dataset(
+        l1b_met,
+        hi_l1b_de_dataset.esa_energy_step,
+        cal_config_df.cal_prod_config.calibration_product_numbers,
+        HIAPID.H90_SCI_DE.sensor,
+    )
+
+    # Create exposure_times for the test
+    exposure_times_data = np.full(
+        (
+            len(empty_pset.coords["epoch"]),
+            len(empty_pset.coords["esa_energy_step"]),
+            len(empty_pset.coords["spin_angle_bin"]),
+        ),
+        1.0,
+        dtype=np.float32,
+    )
+    exposure_times = xr.DataArray(
+        exposure_times_data,
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+        coords={
+            "epoch": empty_pset.coords["epoch"],
+            "esa_energy_step": empty_pset.coords["esa_energy_step"],
+            "spin_angle_bin": empty_pset.coords["spin_angle_bin"],
+        },
+    )
+
+    # Call pset_backgrounds with the new signature
+    backgrounds_vars = hi_l1c.pset_backgrounds(
+        empty_pset.coords,
+        background_df,
+        hi_l1b_de_dataset,
+        hi_goodtimes_dataset,
+        exposure_times,
+    )
+
+    assert "background_rates" in backgrounds_vars
+    assert backgrounds_vars["background_rates"].data.shape == (
+        len(empty_pset.coords["epoch"]),
+        len(empty_pset.coords["esa_energy_step"]),
+        len(empty_pset.coords["calibration_prod"]),
+        len(empty_pset.coords["spin_angle_bin"]),
+    )
+
     assert "background_rates_uncertainty" in backgrounds_vars
-    np.testing.assert_array_equal(
-        backgrounds_vars["background_rates_uncertainty"].data,
-        np.ones((n_epoch, n_energy, n_cal_prod, n_spin_bins)),
+    assert backgrounds_vars["background_rates_uncertainty"].data.shape == (
+        len(empty_pset.coords["epoch"]),
+        len(empty_pset.coords["esa_energy_step"]),
+        len(empty_pset.coords["calibration_prod"]),
+        len(empty_pset.coords["spin_angle_bin"]),
     )
 
 
