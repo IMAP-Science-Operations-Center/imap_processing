@@ -75,6 +75,15 @@ def calculate_extendedspin(
     spin_tbin_edges = get_binned_spins_edges(
         spin, spin_period, spin_starttime, spin_bin_size
     )
+
+    # Calculate goodtime quality flags.
+    # The culling algorithms should be called in the following order
+    # 1. Low voltage
+    # 2. High energy (energy dependent)
+    # 3. Upstream ion (with first set of energy channels)
+    # 4. Upstream ion (with second set of energy channels)
+    # 5. Spectral cull
+    # 6. Statistical outliers (energy dependent)
     voltage_qf = flag_low_voltage(spin_tbin_edges, status_dataset)
     # Get energy bins used at l1c
     intervals, _, _ = build_energy_bins()
@@ -95,15 +104,6 @@ def calculate_extendedspin(
     mask = (
         voltage_qf[np.newaxis, :] | high_energy_qf
     )  # Shape (n_energy_bins, n_spins_bins)
-    stat_outliers_qf, _, _, _ = flag_statistical_outliers(
-        de_dataset,
-        spin_tbin_edges,
-        energy_ranges,
-        mask,
-        instrument_id,
-    )
-    # Combine statistical outlier flags with the current mask
-    mask = mask | stat_outliers_qf
     upstream_ion_qf_1 = flag_upstream_ion(
         de_dataset,
         spin_tbin_edges,
@@ -121,6 +121,15 @@ def calculate_extendedspin(
         energy_ranges,
         mask,
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_2,
+        instrument_id,
+    )
+    # Update mask to include upstream ion flags #2
+    mask = mask | upstream_ion_qf_2
+    stat_outliers_qf, _, _, _ = flag_statistical_outliers(
+        de_dataset,
+        spin_tbin_edges,
+        energy_ranges,
+        mask,
         instrument_id,
     )
 
