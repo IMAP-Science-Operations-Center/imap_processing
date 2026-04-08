@@ -98,6 +98,16 @@ class TestUltraPointingSet:
                 "energy_bin_geometric_mean",
             )
 
+    # TODO remove this test when the TODO in the ultra downsample_counts function is
+    # removed.
+    def test_old_pset(self):
+        pset = self.l1c_pset_products[0]
+        pset = pset.drop_dims("counts_pixel_index")
+        pset = ena_maps.UltraPointingSet(
+            pset,
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     def test_init_cdf(
         self,
