@@ -448,6 +448,9 @@ def _compute_background_counts(
     """
     Compute background counts by filtering and binning direct events.
 
+    Background counts are computed across all esa_energy_steps and spin_angle_bins
+    since backgrounds are isotropic and do not depend on ESA energy step or spin angle.
+
     Parameters
     ----------
     pset_coords : dict[str, xarray.DataArray]
@@ -463,10 +466,11 @@ def _compute_background_counts(
     Returns
     -------
     xarray.DataArray
-        Background counts with dims
-        (epoch, esa_energy_step, calibration_prod, background_index, spin_angle_bin).
+        Background counts with dims (epoch, calibration_prod, background_index).
     """
     # Create background_counts as xarray DataArray with proper coordinates
+    # Note: esa_energy_step and spin_angle_bin are NOT included since backgrounds
+    # are isotropic and computed across all ESA steps and spin angles
     background_indices = (
         background_config_df.index.get_level_values("background_index")
         .unique()
@@ -476,29 +480,23 @@ def _compute_background_counts(
 
     bg_coords = {
         "epoch": pset_coords["epoch"],
-        "esa_energy_step": pset_coords["esa_energy_step"],
         "calibration_prod": pset_coords["calibration_prod"],
         "background_index": background_indices,
-        "spin_angle_bin": pset_coords["spin_angle_bin"],
     }
 
     background_counts = xr.DataArray(
         np.zeros(
             (
                 len(bg_coords["epoch"]),
-                len(bg_coords["esa_energy_step"]),
                 len(bg_coords["calibration_prod"]),
                 len(bg_coords["background_index"]),
-                len(bg_coords["spin_angle_bin"]),
             ),
             dtype=np.int32,
         ),
         dims=[
             "epoch",
-            "esa_energy_step",
             "calibration_prod",
             "background_index",
-            "spin_angle_bin",
         ],
         coords=bg_coords,
     )
@@ -530,10 +528,9 @@ def _compute_background_counts(
         return background_counts
 
     for cal_prod in pset_coords["calibration_prod"].values:
-        try:
-            cal_prod_rows = background_config_df.xs(cal_prod, level="calibration_prod")
-        except KeyError:
-            continue
+        # Take cross-section of calibration product configuration DataFrame
+        # to get rows relevant to this calibration product
+        cal_prod_rows = background_config_df.xs(cal_prod, level="calibration_prod")
 
         # Use iter_background_events_by_config to get filtered events
         for config_row, filtered_de_ds in iter_background_events_by_config(
@@ -544,31 +541,17 @@ def _compute_background_counts(
             if len(filtered_de_ds["event_met"]) == 0:
                 continue
 
-            # Get esa_energy_step for each filtered event using ccsds_index
-            filtered_esa_steps = l1b_de_dataset["esa_energy_step"].data[
-                filtered_de_ds["ccsds_index"].data
-            ]
+            # Count all filtered events
+            # (no binning by spin angle since backgrounds are isotropic)
+            count = len(filtered_de_ds["event_met"])
 
-            for esa_energy in pset_coords["esa_energy_step"].values:
-                esa_mask = filtered_esa_steps == esa_energy
-                if not np.any(esa_mask):
-                    continue
-
-                esa_spin_phases = filtered_de_ds["spin_phase"].values[esa_mask]
-                spin_bin_indices = (esa_spin_phases * N_SPIN_BINS).astype(int)
-
-                np.add.at(
-                    background_counts.loc[
-                        dict(
-                            epoch=pset_coords["epoch"].values[0],
-                            esa_energy_step=esa_energy,
-                            calibration_prod=cal_prod,
-                            background_index=background_idx,
-                        )
-                    ].values,
-                    spin_bin_indices,
-                    1,
+            background_counts.loc[
+                dict(
+                    epoch=pset_coords["epoch"].values[0],
+                    calibration_prod=cal_prod,
+                    background_index=background_idx,
                 )
+            ] += count
 
     return background_counts
 
@@ -634,11 +617,11 @@ def pset_backgrounds(
         pset_coords, background_config_df, l1b_de_dataset, goodtimes_ds
     )
 
-    # Sum background_counts over (esa_energy_step, spin_angle_bin) dimensions
-    summed_counts = background_counts.sum(dim=["esa_energy_step", "spin_angle_bin"])
+    # background_counts already has shape (epoch, calibration_prod, background_index)
+    # (no summing needed since spin_angle_bin dimension was never included)
 
     # Compute count rates: shape (epoch, calibration_prod, background_index)
-    count_rates = summed_counts / total_exposure_time
+    count_rates = background_counts / total_exposure_time
 
     # Convert background config DataFrame to xarray Dataset
     config_ds = background_config_df.to_xarray()
@@ -649,7 +632,9 @@ def pset_backgrounds(
     scaled_rates = count_rates * scaling_factors_da
 
     # Compute uncertainties (Poisson + scaling factor, combined in quadrature)
-    poisson_unc = (np.sqrt(summed_counts) / total_exposure_time) * scaling_factors_da
+    poisson_unc = (
+        np.sqrt(background_counts) / total_exposure_time
+    ) * scaling_factors_da
     scaling_unc = count_rates * uncertainties_da
     combined_unc = np.sqrt(poisson_unc**2 + scaling_unc**2)
 
@@ -658,6 +643,8 @@ def pset_backgrounds(
     total_unc = np.sqrt((combined_unc**2).sum(dim="background_index", skipna=True))
 
     # Broadcast to (epoch, esa_energy_step, calibration_prod, spin_angle_bin)
+    # Backgrounds are isotropic and independent of ESA step, so we
+    # broadcast across esa_energy_step and spin_angle_bin dimensions.
     output_vars["background_rates"].values[:] = total_rates.values[
         :, np.newaxis, :, np.newaxis
     ]
