@@ -883,7 +883,7 @@ def iter_background_events_by_config(
 
     Parameters
     ----------
-    de_ds : xr.Dataset
+    de_ds : xarray.Dataset
         Direct Event dataset with coincidence_type and TOF variables.
         TOF variables must have FILLVAL attribute for fill value handling.
     background_config : pandas.DataFrame
