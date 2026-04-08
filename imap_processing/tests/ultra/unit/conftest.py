@@ -691,5 +691,9 @@ def mock_goodtimes_dataset():
                 "spin_number",
                 np.zeros(nspins, dtype=np.uint16),
             ),
+            "quality_spectral": (
+                "spin_number",
+                np.zeros(nspins, dtype=np.uint16),
+            ),
         }
     )

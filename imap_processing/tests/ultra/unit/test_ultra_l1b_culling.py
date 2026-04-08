@@ -27,6 +27,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_low_voltage,
     flag_rates,
     flag_scattering,
+    flag_spectral_events,
     flag_statistical_outliers,
     flag_upstream_ion,
     get_binned_energy_ranges,
@@ -459,6 +460,7 @@ def test_get_energy_and_spin_dependent_rejection_mask():
             "energy_range_edges": energy_range_edges,
             "quality_upstream_ion_1": np.full(n_spins, 0),
             "quality_upstream_ion_2": np.full(n_spins, 0),
+            "quality_spectral": np.full(n_spins, 0),
         }
     )
     # update quality flags to test that events get rejected
@@ -967,3 +969,28 @@ def test_upstream_ion_cull_invalid_channels(setup_repoint_47_data):
             [5, 6, 7],  # Invalid channels that are out of bounds
             90,
         )
+
+
+@pytest.mark.external_test_data
+def test_validate_spectral_cull(setup_repoint_47_data):
+    """Validate that spectral flags match expected results."""
+    # read test data from csv files
+    expected_results = pd.read_csv(
+        TEST_PATH / "validate_spectral_culling_results_repoint00047_v1.csv"
+    ).to_numpy()
+    de_ds, _, spin_tbin_edges = setup_repoint_47_data
+    intervals, _, _ = build_energy_bins()
+    energy_ranges = get_binned_energy_ranges(intervals)
+    mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
+    mask[0:2, 0:2] = (
+        True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
+    )
+    flags = flag_spectral_events(
+        de_ds,
+        spin_tbin_edges,
+        energy_ranges,
+        UltraConstants.SPECTRAL_ENERGY_CHANNELS,
+        90,
+    )
+    results = flags | mask
+    np.testing.assert_array_equal(results, ~expected_results.astype(bool))

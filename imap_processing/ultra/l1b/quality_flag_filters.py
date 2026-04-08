@@ -23,6 +23,7 @@ ENERGY_DEPENDENT_SPIN_QUALITY_FLAG_FILTERS: list = [
     "quality_low_voltage",
     "quality_upstream_ion_1",
     "quality_upstream_ion_2",
+    "quality_spectral",
     "quality_high_energy",
     "quality_statistics",
 ]

@@ -230,6 +230,9 @@ class UltraConstants:
     UPSTREAM_ION_ENERGY_CHANNELS_1: ClassVar[list] = [0, 1, 2]
     UPSTREAM_ION_ENERGY_CHANNELS_2: ClassVar[list] = [2, 3, 4]
     UPSTREAM_SIG_THRESHOLD = 2.5
+    # Spectral culling parameters
+    SPECTRAL_ENERGY_CHANNELS: ClassVar[list] = [0, 1, 2, 3]
+    SPECTRAL_SIG_THRESHOLD = 1
     # Set dimensions for extended spin/goodtime support variables
     # ISTP requires fixed dimensions, so we set these to the maximum we expect to need
     # and pad with fill values if we use fewer bins.

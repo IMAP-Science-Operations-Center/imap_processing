@@ -14,6 +14,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_imap_instruments,
     flag_low_voltage,
     flag_rates,
+    flag_spectral_events,
     flag_statistical_outliers,
     flag_upstream_ion,
     get_binned_energy_ranges,
@@ -75,7 +76,6 @@ def calculate_extendedspin(
     spin_tbin_edges = get_binned_spins_edges(
         spin, spin_period, spin_starttime, spin_bin_size
     )
-
     # Calculate goodtime quality flags.
     # The culling algorithms should be called in the following order
     # 1. Low voltage
@@ -123,8 +123,16 @@ def calculate_extendedspin(
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_2,
         instrument_id,
     )
-    # Update mask to include upstream ion flags #2
-    mask = mask | upstream_ion_qf_2
+    spectral_qf = flag_spectral_events(
+        de_dataset,
+        spin_tbin_edges,
+        energy_ranges,
+        UltraConstants.SPECTRAL_ENERGY_CHANNELS,
+        instrument_id,
+    )
+    # Update mask to include upstream ion flags #2 and spectral flags before flagging
+    # statistical outliers
+    mask = mask | upstream_ion_qf_2 | spectral_qf
     stat_outliers_qf, _, _, _ = flag_statistical_outliers(
         de_dataset,
         spin_tbin_edges,
@@ -185,9 +193,11 @@ def calculate_extendedspin(
     voltage_qf = voltage_qf * combined_flags
     upstream_ion_qf_1 = upstream_ion_qf_1 * combined_flags
     upstream_ion_qf_2 = upstream_ion_qf_2 * combined_flags
+    spectral_qf = spectral_qf * combined_flags
     # Expand binned quality flags to individual spins.
     high_energy_qf = expand_bin_flags_to_spins(len(spin), high_energy_qf, spin_bin_size)
     voltage_qf = expand_bin_flags_to_spins(len(spin), voltage_qf, spin_bin_size)
+    spectral_qf = expand_bin_flags_to_spins(len(spin), spectral_qf, spin_bin_size)
     upstream_ion_qf_1 = expand_bin_flags_to_spins(
         len(spin), upstream_ion_qf_1, spin_bin_size
     )
@@ -209,6 +219,7 @@ def calculate_extendedspin(
     extendedspin_dict["quality_low_voltage"] = voltage_qf  # shape (nspin,)
     extendedspin_dict["quality_upstream_ion_1"] = upstream_ion_qf_1  # shape (nspin,)
     extendedspin_dict["quality_upstream_ion_2"] = upstream_ion_qf_2  # shape (nspin,)
+    extendedspin_dict["quality_spectral"] = spectral_qf  # shape (nspin,)
     extendedspin_dict["quality_statistics"] = stat_outliers_qf  # shape (nspin,)
     extendedspin_dict["quality_high_energy"] = high_energy_qf  # shape (nspin,)
     # ISTP requires stable dimension sizes, so this field must always remain size 16.
