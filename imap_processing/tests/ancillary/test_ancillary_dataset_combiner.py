@@ -324,7 +324,7 @@ def test_glows_l2_calibration_combiner(tmp_path):
     combiner = GlowsAncillaryCombiner([], "20251115")
     dataset = combiner.convert_file_to_dataset(file_path)
 
-    assert "start_time_utc" in dataset.coords
+    assert "start_time_utc" in dataset.data_vars
     assert (
         np.diff(dataset.start_time_utc.values.astype("datetime64")) >= np.timedelta64(0)
     ).all()
