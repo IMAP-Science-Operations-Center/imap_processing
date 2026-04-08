@@ -627,11 +627,17 @@ class UltraPointingSet(HealpixPointingSet):
         nside of the input pset counts variable (e.g. 128) to the nside of the pset.
         """
         pset_data = self.data
+        # TODO remove this check once we reprocess all psets
+        #  going forward, all psets should have counts_pixel_index as a coordinate.
+        if "counts_pixel_index" not in pset_data.dims:
+            logger.info(
+                "No counts_pixel_index found in the dataset. Skipping counts "
+                "downsampling."
+            )
+            return
         counts_n_pix = pset_data.sizes["counts_pixel_index"]
         pset_n_pix = hp.nside2npix(self.nside)
         if counts_n_pix != pset_n_pix:
-            # TODO Use a loop to sum through pixels - get lat and lon and find what
-            #  pixel that corresponds to in the lower nside.
             # Raise an error if the nside the counts were sampled at is lower than the
             # nside of the output map. We never want counts to be upsampled.
             if counts_n_pix < pset_n_pix:
