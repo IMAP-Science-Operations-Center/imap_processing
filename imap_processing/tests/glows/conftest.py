@@ -241,8 +241,6 @@ def mock_calibration_dataset():
     """Create a mock CalibrationDataset object for testing."""
 
     # Both cps_per_r and start_time_utc are 2D: (epoch, *_dim_0).
-    # After .sel(epoch=..., method="pad") the epoch axis is dropped, leaving
-    # 1D arrays indexed by their respective _dim_0 dimension.
     return xr.Dataset(
         {
             "cps_per_r": xr.DataArray(
@@ -263,7 +261,6 @@ def mock_calibration_dataset():
                             "2011-09-21T18:15:50",
                         ],
                     ],
-                    dtype="datetime64[s]",
                 ),
                 dims=["epoch", "start_time_utc_dim_0"],
             ),
