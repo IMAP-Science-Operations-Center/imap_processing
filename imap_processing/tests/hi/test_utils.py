@@ -471,30 +471,6 @@ class TestBackgroundConfig:
         assert isinstance(cal_prod_numbers, np.ndarray)
         assert cal_prod_numbers.dtype in [np.int32, np.int64]
 
-    def test_get_background_rates(self, hi_test_background_config_path):
-        """Test that background rates are correctly summed per calibration product."""
-        df = BackgroundConfig.from_csv(hi_test_background_config_path)
-        rates = df.background_config.get_background_rates()
-
-        # From test CSV:
-        # Cal prod 0: 0.00306 + 0.0189 = 0.02196
-        # Cal prod 1: 0.00306 + 0.0189 = 0.02196
-        expected_rate = 0.00306 + 0.0189
-        assert rates[0] == pytest.approx(expected_rate)
-        assert rates[1] == pytest.approx(expected_rate)
-
-    def test_get_background_uncertainties(self, hi_test_background_config_path):
-        """Test that uncertainties are correctly summed in quadrature."""
-        df = BackgroundConfig.from_csv(hi_test_background_config_path)
-        uncertainties = df.background_config.get_background_uncertainties()
-
-        # From test CSV:
-        # Cal prod 0: sqrt(0.0003^2 + 0.002^2) = sqrt(9e-8 + 4e-6) = sqrt(4.09e-6)
-        # Cal prod 1: sqrt(0.0003^2 + 0.002^2) = same
-        expected_unc = np.sqrt(0.0003**2 + 0.002**2)
-        assert uncertainties[0] == pytest.approx(expected_unc)
-        assert uncertainties[1] == pytest.approx(expected_unc)
-
     def test_calibration_product_numbers_arbitrary_values(self):
         """Test calibration_product_numbers with arbitrary non-sequential values."""
         csv_content = """\

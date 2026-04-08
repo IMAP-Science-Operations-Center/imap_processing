@@ -637,43 +637,6 @@ class BackgroundConfig(_BaseConfigAccessor):
         _ = df.background_config.calibration_product_numbers
         return df
 
-    def get_background_rates(self) -> dict[int, float]:
-        """
-        Get aggregated background rates per calibration product.
-
-        For each calibration product, sums all scaling_factor values across
-        background_index entries.
-
-        Returns
-        -------
-        rates : dict[int, float]
-            Dictionary mapping calibration_prod to summed scaling_factor.
-        """
-        return (
-            self._obj.groupby(level="calibration_prod")["scaling_factor"]
-            .sum()
-            .to_dict()
-        )
-
-    def get_background_uncertainties(self) -> dict[int, float]:
-        """
-        Get aggregated background uncertainties per calibration product.
-
-        For each calibration product, computes the quadrature sum of
-        uncertainty values across background_index entries:
-        sqrt(sum(uncertainty^2))
-
-        Returns
-        -------
-        uncertainties : dict[int, float]
-            Dictionary mapping calibration_prod to quadrature-summed uncertainty.
-        """
-        return (
-            self._obj.groupby(level="calibration_prod")["uncertainty"]
-            .apply(lambda x: np.sqrt((x**2).sum()))
-            .to_dict()
-        )
-
 
 def get_tof_window_mask(
     de_ds: xr.Dataset,
