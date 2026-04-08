@@ -627,7 +627,9 @@ class UltraPointingSet(HealpixPointingSet):
         nside of the input pset counts variable (e.g. 128) to the nside of the pset.
         """
         pset_data = self.data
-        if "counts_pixel_index" not in pset_data:
+        # TODO remove this check once we reprocess all psets
+        #  going forward, all psets should have counts_pixel_index as a coordinate.
+        if "counts_pixel_index" not in pset_data.dims:
             logger.info(
                 "No counts_pixel_index found in the dataset. Skipping counts "
                 "downsampling."
