@@ -2877,11 +2877,6 @@ def test_l1b_bgrates_and_goodtimes_large_interval_with_active_tracking(attr_mgr_
         met_spacing,
     )
 
-    # But make the interval within this chunk too large by spacing them far apart
-    # Actually, the interval is calculated as:
-    # shcoarse[index + cycle_count - 1] - shcoarse[index]
-    # So we need the last epoch of the chunk to be far from the first
-    # Let's adjust: keep first 9 epochs close, but make the 10th epoch very far
     met_times_gap_chunk_adjusted = met_times_gap_chunk.copy()
     met_times_gap_chunk_adjusted[-1] = met_times_gap_chunk[0] + large_gap
 
