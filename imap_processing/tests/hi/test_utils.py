@@ -11,6 +11,7 @@ import imap_processing.hi
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import (
     HIAPID,
+    BackgroundConfig,
     CalibrationProductConfig,
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
@@ -350,8 +351,15 @@ class TestCalibrationProductConfig:
         )
         for exclude_column_name in required_columns:
             include_columns = set(required_columns) - {exclude_column_name}
-            df = pd.DataFrame({col: [1, 2, 3] for col in include_columns})
-            with pytest.raises(AttributeError, match="Required column*"):
+            # Create dataframe with proper indices but missing one column
+            df = pd.DataFrame(
+                {col: [1, 2, 3] for col in include_columns},
+                index=pd.MultiIndex.from_tuples(
+                    [(0, 0), (0, 1), (1, 0)],
+                    names=["calibration_prod", "esa_energy_step"],
+                ),
+            )
+            with pytest.raises(AttributeError, match="Required column.*"):
                 _ = df.cal_prod_config.number_of_products
 
     def test_from_csv(self, hi_test_cal_prod_config_path):
@@ -406,6 +414,98 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
 
         df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
         cal_prod_numbers = df.cal_prod_config.calibration_product_numbers
+
+        # Should return sorted unique calibration product numbers
+        np.testing.assert_array_equal(cal_prod_numbers, np.array([5, 10, 100]))
+        assert isinstance(cal_prod_numbers, np.ndarray)
+
+
+class TestBackgroundConfig:
+    """
+    All test coverage for the pd.DataFrame accessor extension "background_config".
+    """
+
+    def test_wrong_columns(self):
+        """Test coverage for a dataframe with the wrong columns."""
+        required_columns = BackgroundConfig.required_columns
+        for exclude_column_name in required_columns:
+            include_columns = set(required_columns) - {exclude_column_name}
+            # Create dataframe with proper indices but missing one column
+            df = pd.DataFrame(
+                {col: [1, 2, 3] for col in include_columns},
+                index=pd.MultiIndex.from_tuples(
+                    [(0, 0), (0, 1), (1, 0)],
+                    names=["calibration_prod", "background_index"],
+                ),
+            )
+            with pytest.raises(AttributeError, match="Required column.*"):
+                _ = df.background_config.calibration_product_numbers
+
+    def test_from_csv(self, hi_test_background_config_path):
+        """Test coverage for from_csv function."""
+        df = BackgroundConfig.from_csv(hi_test_background_config_path)
+        # Verify coincidence_type_list is a tuple
+        assert isinstance(df["coincidence_type_list"][0, 0], tuple)
+        # Verify MultiIndex
+        assert df.index.names == ["calibration_prod", "background_index"]
+
+    def test_added_coincidence_type_values_column(self, hi_test_background_config_path):
+        """Test that coincidence_type_values column is added correctly."""
+        df = BackgroundConfig.from_csv(hi_test_background_config_path)
+        assert "coincidence_type_values" in df.columns
+        for _, row in df.iterrows():
+            for detect_string, val in zip(
+                row["coincidence_type_list"],
+                row["coincidence_type_values"],
+                strict=False,
+            ):
+                assert val == CoincidenceBitmap.detector_hit_str_to_int(detect_string)
+
+    def test_calibration_product_numbers(self, hi_test_background_config_path):
+        """Test coverage for calibration_product_numbers accessor."""
+        df = BackgroundConfig.from_csv(hi_test_background_config_path)
+        cal_prod_numbers = df.background_config.calibration_product_numbers
+        # The test config file has calibration products 0 and 1
+        np.testing.assert_array_equal(cal_prod_numbers, np.array([0, 1]))
+        # Verify it's a numpy array of integers
+        assert isinstance(cal_prod_numbers, np.ndarray)
+        assert cal_prod_numbers.dtype in [np.int32, np.int64]
+
+    def test_get_background_rates(self, hi_test_background_config_path):
+        """Test that background rates are correctly summed per calibration product."""
+        df = BackgroundConfig.from_csv(hi_test_background_config_path)
+        rates = df.background_config.get_background_rates()
+
+        # From test CSV:
+        # Cal prod 0: 0.00306 + 0.0189 = 0.02196
+        # Cal prod 1: 0.00306 + 0.0189 = 0.02196
+        expected_rate = 0.00306 + 0.0189
+        assert rates[0] == pytest.approx(expected_rate)
+        assert rates[1] == pytest.approx(expected_rate)
+
+    def test_get_background_uncertainties(self, hi_test_background_config_path):
+        """Test that uncertainties are correctly summed in quadrature."""
+        df = BackgroundConfig.from_csv(hi_test_background_config_path)
+        uncertainties = df.background_config.get_background_uncertainties()
+
+        # From test CSV:
+        # Cal prod 0: sqrt(0.0003^2 + 0.002^2) = sqrt(9e-8 + 4e-6) = sqrt(4.09e-6)
+        # Cal prod 1: sqrt(0.0003^2 + 0.002^2) = same
+        expected_unc = np.sqrt(0.0003**2 + 0.002**2)
+        assert uncertainties[0] == pytest.approx(expected_unc)
+        assert uncertainties[1] == pytest.approx(expected_unc)
+
+    def test_calibration_product_numbers_arbitrary_values(self):
+        """Test calibration_product_numbers with arbitrary non-sequential values."""
+        csv_content = """\
+calibration_prod,background_index,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,scaling_factor,uncertainty
+10,0,ABC1C2,-20,16,-46,-15,-511,511,0,1023,0.01,0.001
+5,0,BC1C2,-20,16,-46,-15,-511,511,0,1023,0.02,0.002
+100,0,AB,-20,16,-46,-15,-511,511,0,1023,0.03,0.003
+        """
+
+        df = BackgroundConfig.from_csv(io.StringIO(csv_content))
+        cal_prod_numbers = df.background_config.calibration_product_numbers
 
         # Should return sorted unique calibration product numbers
         np.testing.assert_array_equal(cal_prod_numbers, np.array([5, 10, 100]))
