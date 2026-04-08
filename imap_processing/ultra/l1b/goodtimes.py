@@ -92,6 +92,12 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
         goodtimes_dataset["quality_high_energy"] = xr.DataArray(
             np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
         )
+        goodtimes_dataset["quality_upstream_ion_1"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+        )
+        goodtimes_dataset["quality_upstream_ion_2"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+        )
         goodtimes_dataset["quality_statistics"] = xr.DataArray(
             np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
         )

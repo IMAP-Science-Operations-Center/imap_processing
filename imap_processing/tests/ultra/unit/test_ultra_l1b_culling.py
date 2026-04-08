@@ -50,7 +50,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 @pytest.fixture
 def setup_repoint_47_data():
-    """Fixture to set up dataa for validation test using repoint 47."""
+    """Fixture to set up data for validation test using repoint 47."""
     de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
     de_ds = xr.Dataset(
         {
@@ -923,7 +923,7 @@ def test_get_binned_energy_ranges():
 def test_validate_upstream_ion_cull(setup_repoint_47_data):
     """Validate that upstream ion quality flags match expected results."""
     # read test data from csv files
-    results_df = pd.read_csv(
+    expected_results = pd.read_csv(
         TEST_PATH / "validate_upstream_ion_1_culling_results_repoint00047_v1.csv"
     ).to_numpy()
     de_ds, _, spin_tbin_edges = setup_repoint_47_data
@@ -943,5 +943,27 @@ def test_validate_upstream_ion_cull(setup_repoint_47_data):
     )
     # Combine the flags with the mask to get the final expected results since the
     # masked bins should be flagged as well.
-    expected_results = flags | mask
-    np.testing.assert_array_equal(expected_results, ~results_df)
+    results = flags | mask
+    np.testing.assert_array_equal(results, ~expected_results.astype(bool))
+
+
+@pytest.mark.external_test_data
+def test_upstream_ion_cull_invalid_channels(setup_repoint_47_data):
+    """Validate upstream ion error handling."""
+    de_ds, _, spin_tbin_edges = setup_repoint_47_data
+    intervals, _, _ = build_energy_bins()
+    energy_ranges = get_binned_energy_ranges(intervals)
+    mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
+    with pytest.raises(
+        ValueError,
+        match="Channels provided for upstream ion flagging"
+        " must be within the bounds of the energy ranges.",
+    ):
+        flag_upstream_ion(
+            de_ds,
+            spin_tbin_edges,
+            energy_ranges,
+            mask,
+            [5, 6, 7],  # Invalid channels that are out of bounds
+            90,
+        )

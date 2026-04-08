@@ -978,10 +978,17 @@ def flag_upstream_ion(
         upstream ions. These flags are energy independent and should be applied across
         all energy channels.
     """
+    # validate that the channels provided are within the bounds of the energy ranges
+    if not np.all([ch in range(len(energy_ranges) - 1) for ch in channels]):
+        raise ValueError(
+            f"Channels provided for upstream ion flagging must be within the bounds"
+            f" of the energy ranges. Provided channels: {channels}, number of energy"
+            f" ranges: {len(energy_ranges) - 1}."
+        )
     counts_sum = get_valid_de_count_summary(
         de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
     )[channels, :]  # shape (num_channels, n_spin_bins)
-
+    flagged = np.zeros(counts_sum.shape[1], dtype=bool)
     channel_mask = ~mask[channels, :]
     weights = channel_mask.sum(axis=0)
     # Sum counts where the mask is True (valid)
@@ -989,11 +996,17 @@ def flag_upstream_ion(
     # Get 1D array of valid spin bins
     valid_bins = np.flatnonzero(weights > 0)
     total_scaled = sum_scaled_counts[valid_bins]
+    if valid_bins.size == 0 or total_scaled.size == 0:
+        logger.info(
+            "Upstream Ion culling found no valid spin bins for evaluation; "
+            "returning all-False upstream ion flags."
+        )
+        return flagged
+
     total_mean = np.mean(total_scaled)
     # Set a threshold based on poisson stats for the total counts across the channels
     thresh = total_mean + UltraConstants.UPSTREAM_SIG_THRESHOLD * np.sqrt(total_mean)
     # Flag bins where the total counts across the channels exceed the threshold
-    flagged = np.zeros(counts_sum.shape[1], dtype=bool)
     flagged[valid_bins[total_scaled > thresh]] = True
 
     num_culled: int = np.sum(flagged)
@@ -1235,7 +1248,7 @@ def get_binned_energy_ranges(
     )
     energy_ranges: np.ndarray = np.append(
         energy_starts,
-        energy_bin_edges[last_group_end_ind - 1][1],  # type: ignore[operator]
+        energy_bin_edges[last_group_end_ind - 1][1],
     )
     if max_energy is not None:
         # get the first index where the energy range exceeds the max energy
