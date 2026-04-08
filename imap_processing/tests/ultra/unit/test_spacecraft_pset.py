@@ -179,11 +179,11 @@ def test_calculate_spacecraft_pset_with_cdf(
         de_dict["quality_scattering"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["quality_outliers"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["ebin"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
-        de_dict["theta"] = np.zeros(len(df_subset), dtype=np.float32)
-        de_dict["phi"] = np.zeros(len(df_subset), dtype=np.float32)
         de_dict["event_times"] = 817561854.185627 + (
             df_subset["tdb"].values - df_subset["tdb"].values[0]
         )
+        de_dict["theta"] = np.zeros(len(df_subset), dtype=np.float32)
+        de_dict["phi"] = np.zeros(len(df_subset), dtype=np.float32)
 
         name = "imap_ultra_l1b_45sensor-de"
         dataset = create_dataset(de_dict, name, "l1b")
@@ -244,26 +244,10 @@ def test_validate_exposure_time_and_sensitivities(
         .squeeze()
     )
     npix = 12288  # nside 32
-    # Create a minimal goodtimes dataset to pass to the function
-    # Create mock spin data that has 5525 nominal spins
-    # Create DataFrame
-    nspins = 5522
-    nominal_spin_seconds = 15.0
+    # Create a minimal dataset to pass to the function
     dataset = xr.Dataset(
         {
-            "spin_number": (["epoch"], np.arange(nspins)),
-            "energy_range_edges": (
-                ["energy_bin"],
-                np.array([0, 1000], dtype=np.float32),
-            ),
-            "quality_low_voltage": (["epoch"], np.zeros(nspins, dtype=np.uint16)),
-            "quality_high_energy": (["epoch"], np.zeros(nspins, dtype=np.uint16)),
-            "quality_statistics": (["epoch"], np.zeros(nspins, dtype=np.uint16)),
-            "energy_range_flags": ("energy_bin", np.array([2, 4], dtype=np.uint8)),
-            "spin_period": (
-                ["epoch"],
-                np.full(nspins, nominal_spin_seconds, dtype=np.float32),
-            ),
+            "spin": (["epoch"], np.array([1, 2, 3])),
         }
     )
     dataset.attrs["Repointing"] = "repoint00000"
@@ -282,7 +266,20 @@ def test_validate_exposure_time_and_sensitivities(
     )
 
     pointing_range_met = (472374890.0, 582378000.0)
-    l1b_de["spin"] = ("epoch", np.arange(len(l1b_de["epoch"])))
+    # Create mock spin data that has 5525 nominal spins
+    # Create DataFrame
+    nspins = 5522
+    nominal_spin_seconds = 15.0
+    spin_data = pd.DataFrame(
+        {
+            "spin_start_met": np.linspace(
+                pointing_range_met[0], pointing_range_met[1], nspins
+            ),
+            "spin_period_sec": np.full(nspins, nominal_spin_seconds),
+            "spin_phase_valid": np.ones(nspins),
+            "spin_period_valid": np.ones(nspins),
+        }
+    )
     with (
         # Mock the pointing times
         mock.patch(
@@ -294,6 +291,11 @@ def test_validate_exposure_time_and_sensitivities(
             "imap_processing.ultra.l1c.ultra_l1c_pset_bins."
             "get_deadtime_ratios_by_spin_phase",
             return_value=xr.DataArray(test_deadtimes, dims="spin_phase_step"),
+        ),
+        # Mock spin data to match nominal spins in a pointing period
+        mock.patch(
+            "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spin_data",
+            return_value=spin_data,
         ),
         # Mock background rates to be constant 0.1
         mock.patch(
