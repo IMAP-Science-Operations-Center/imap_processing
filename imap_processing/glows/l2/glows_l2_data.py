@@ -574,16 +574,39 @@ class HistogramL2:
         epoch_values : np.ndarray
             Array of epoch values from the L1B dataset, in TT J2000 nanoseconds.
         calibration_dataset : xr.Dataset
-            Dataset containing calibration data.
+            Dataset containing calibration data with the following structure:
+                Coords: epoch (datetime64[s])
+                Dims: epoch, cps_per_r_dim_0, start_time_utc_dim_0
+                Data vars: "cps_per_r" and "start_time_utc" are 2D (epoch, *_dim_0)
+
+                Note: epoch and start_time_utc do not necessarily match in size or
+                      values
+                    - epoch contains timestamps in the calibration data up to a defined
+                      day buffer and start_time_utc are the timestamps for all the
+                      calibration data entries.
+                    - epoch is used for selecting the time block, and start_time_utc is
+                      used for selecting the calibration value within that block.
 
         Returns
         -------
         float
             The calibration factor needed to compute flux in Rayleigh units.
         """
-        # Use the midpoint epoch for the day
+        # Use the midpoint epoch for the observation day
         mid_idx = len(epoch_values) // 2
         mid_epoch_utc = et_to_datetime64(ttj2000ns_to_et(epoch_values[mid_idx].item()))
-        return calibration_dataset.sel(start_time_utc=mid_epoch_utc, method="pad")[
-            "cps_per_r"
-        ].data.item()
+
+        # Select calibration data before mid_epoch_utc using "pad" to find
+        # the nearest preceding entry in the calibration dataset's epoch
+        # coordinate which is in UTC datetime64 format.
+        cal_at_epoch = calibration_dataset.sel(epoch=mid_epoch_utc, method="pad")
+
+        # start_time_utc is a data variable with its own index dimension.
+        # Use searchsorted to find the last entry whose start_time_utc <= mid_epoch_utc.
+        start_times = np.array(
+            cal_at_epoch["start_time_utc"].values, dtype="datetime64[ns]"
+        )
+        nearest_idx = np.searchsorted(start_times, mid_epoch_utc, side="left") - 1
+
+        # Select the calibration value at the nearest index.
+        return float(cal_at_epoch["cps_per_r"].isel(cps_per_r_dim_0=nearest_idx))

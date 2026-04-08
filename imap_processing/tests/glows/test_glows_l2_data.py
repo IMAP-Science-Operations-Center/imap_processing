@@ -92,37 +92,41 @@ def l1b_dataset():
 
 
 def test_get_calibration_factor(mock_calibration_dataset):
-    """Test selecting correct calibration factor."""
+    """Test selecting correct calibration factor.
 
-    # Mock calibration data:
-    #   timestamps: ["2011-09-19T09:58:04", "2011-09-20T18:12:48"]
-    #   values:     [0.849, 1.020]
+    Mock calibration data:
+      start_time_utc (dims epoch × start_time_utc_dim_0, same per epoch):
+          ["2011-09-19T09:58:04", "2011-09-20T18:12:48", "2011-09-21T18:15:50"]
+      cps_per_r (dims epoch × cps_per_r_dim_0, same per epoch):
+          index 0 → 0.849,  index 1 → 1.020,  index 2 → 1.500
+    """
+    # Case 1: The mid-epoch ('2011-09-21T00:52:15') falls after the
+    # start_time_utc entries, so the last entry (index 2) is selected → 1.500.
 
-    # Case 1: The mid-epoch is after calibration timestamps,
-    # so the last value is selected (1.020).
-
-    # ['2011-09-21T00:50:15.000', '2011-09-21T00:52:15.000', '2011-09-21T00:54:15.000']
-    later_epoch = np.array([369838281184000000, 369838401184000000, 369838521184000000])
+    # ["2011-09-22T07:45:55.015", "2011-09-22T10:30:55.015", "2011-09-22T13:15:55.015"]
+    later_epoch = np.array([369949621199000000, 369959521199000000, 369969421199000000])
     assert HistogramL2.get_calibration_factor(
         later_epoch, mock_calibration_dataset
+    ) == pytest.approx(1.500)
+
+    # Case 2: The mid-epoch ('2011-09-21T00:52:15') falls between the 2nd and
+    # 3rd start_time_utc entries, so the 2nd entry (index 1) is selected → 1.020.
+
+    # ['2011-09-21T00:50:15.000', '2011-09-21T00:52:15.000', '2011-09-21T00:54:15.000']
+    between_epoch = np.array(
+        [369838281184000000, 369838401184000000, 369838521184000000]
+    )
+    assert HistogramL2.get_calibration_factor(
+        between_epoch, mock_calibration_dataset
     ) == pytest.approx(1.020)
 
-    # Case 2: The mid-epoch is before all calibration timestamps,
-    # so a KeyError is raised with the "pad" filter method.
+    # Case 3: The mid-epoch is before all start_time_utc entries,
+    # so a KeyError is raised by xarray's "pad" selection method.
 
     # ['2011-09-18T19:59:08.816', '2011-09-18T20:01:08.816', '2011-09-18T20:03:08.816']
     early_epoch = np.array([369648015000000000, 369648135000000000, 369648255000000000])
     with pytest.raises(KeyError):
         HistogramL2.get_calibration_factor(early_epoch, mock_calibration_dataset)
-
-    # Case 3: The mid-epoch is between the calibration times,
-    # so the first value is selected (0.849).
-
-    # '2011-09-20T16:30:15.000'
-    between_epoch = np.array([369808281184000000])
-    assert HistogramL2.get_calibration_factor(
-        between_epoch, mock_calibration_dataset
-    ) == pytest.approx(0.849)
 
 
 @pytest.mark.external_kernel
