@@ -627,17 +627,11 @@ class UltraPointingSet(HealpixPointingSet):
         nside of the input pset counts variable (e.g. 128) to the nside of the pset.
         """
         pset_data = self.data
-        # TODO remove this check once we reprocess all psets
-        #  going forward, all psets should have counts_pixel_index as a coordinate.
-        if "counts_pixel_index" not in pset_data.dims:
-            logger.info(
-                "No counts_pixel_index found in the dataset. Skipping counts "
-                "downsampling."
-            )
-            return
         counts_n_pix = pset_data.sizes["counts_pixel_index"]
         pset_n_pix = hp.nside2npix(self.nside)
         if counts_n_pix != pset_n_pix:
+            # TODO Use a loop to sum through pixels - get lat and lon and find what
+            #  pixel that corresponds to in the lower nside.
             # Raise an error if the nside the counts were sampled at is lower than the
             # nside of the output map. We never want counts to be upsampled.
             if counts_n_pix < pset_n_pix:
@@ -655,9 +649,11 @@ class UltraPointingSet(HealpixPointingSet):
             # Get counts in nested ordering. In nested ordering, the
             # pixels that need to be binned together to go from the counts nside to
             # the pset nside are contiguous in the array.
+            # Use nest2ring to get the indices to convert from ring to nest ordering if
+            # necessary.
             if not self.nested:
                 counts_n = counts[
-                    :, hp.ring2nest(counts_nside, np.arange(counts_n_pix))
+                    :, hp.nest2ring(counts_nside, np.arange(counts_n_pix))
                 ]
             else:
                 counts_n = counts
@@ -675,7 +671,7 @@ class UltraPointingSet(HealpixPointingSet):
                 # convert back to ring ordering if necessary and store in the
                 # downsampled counts array
                 binned_counts_n = binned_counts_n[
-                    :, hp.nest2ring(self.nside, np.arange(pset_n_pix))
+                    :, hp.ring2nest(self.nside, np.arange(pset_n_pix))
                 ]
 
             self.data["counts"] = xr.DataArray(
