@@ -100,7 +100,7 @@ def test_get_calibration_factor(mock_calibration_dataset):
       cps_per_r (dims epoch × cps_per_r_dim_0, same per epoch):
           index 0 → 0.849,  index 1 → 1.020,  index 2 → 1.500
     """
-    # Case 1: The mid-epoch ('2011-09-21T00:52:15') falls after the
+    # Case 1: The mid-epoch ('2011-09-22T10:30:55.015') falls after the
     # start_time_utc entries, so the last entry (index 2) is selected → 1.500.
 
     # ["2011-09-22T07:45:55.015", "2011-09-22T10:30:55.015", "2011-09-22T13:15:55.015"]
@@ -109,7 +109,7 @@ def test_get_calibration_factor(mock_calibration_dataset):
         later_epoch, mock_calibration_dataset
     ) == pytest.approx(1.500)
 
-    # Case 2: The mid-epoch ('2011-09-21T00:52:15') falls between the 2nd and
+    # Case 2: The mid-epoch ('2011-09-21T00:52:15.000') falls between the 2nd and
     # 3rd start_time_utc entries, so the 2nd entry (index 1) is selected → 1.020.
 
     # ['2011-09-21T00:50:15.000', '2011-09-21T00:52:15.000', '2011-09-21T00:54:15.000']

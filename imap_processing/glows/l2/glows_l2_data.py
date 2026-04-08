@@ -596,7 +596,7 @@ class HistogramL2:
         mid_idx = len(epoch_values) // 2
         mid_epoch_utc = et_to_datetime64(ttj2000ns_to_et(epoch_values[mid_idx].item()))
 
-        # Select calibration data before mid_epoch_utc using "pad" to find
+        # Select calibration data before or equal to mid_epoch_utc using "pad" to find
         # the nearest preceding entry in the calibration dataset's epoch
         # coordinate which is in UTC datetime64 format.
         cal_at_epoch = calibration_dataset.sel(epoch=mid_epoch_utc, method="pad")
@@ -606,7 +606,7 @@ class HistogramL2:
         start_times = np.array(
             cal_at_epoch["start_time_utc"].values, dtype="datetime64[ns]"
         )
-        nearest_idx = np.searchsorted(start_times, mid_epoch_utc, side="left") - 1
+        nearest_idx = np.searchsorted(start_times, mid_epoch_utc, side="right") - 1
 
         # Select the calibration value at the nearest index.
         return float(cal_at_epoch["cps_per_r"].isel(cps_per_r_dim_0=nearest_idx))
