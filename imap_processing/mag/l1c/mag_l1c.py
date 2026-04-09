@@ -764,6 +764,8 @@ def generate_missing_timestamps(gap: np.ndarray) -> np.ndarray:
         Completed timeline.
     """
     difference_ns = int(0.5 * 1e9)
+    # Support both legacy (start, end) gaps, which use the historical 0.5 s cadence,
+    # and newer (start, end, rate) gaps, which use the declared cadence.
     if len(gap) > 2:
         difference_ns = int(1e9 / int(gap[2]))
     output: np.ndarray = np.arange(
