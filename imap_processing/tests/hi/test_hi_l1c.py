@@ -622,6 +622,41 @@ def test_pset_backgrounds(
     )
 
 
+def test_compute_background_counts_missing_cal_prod_raises_error(
+    hi_test_background_config_path,
+    hi_l1b_de_dataset,
+    hi_goodtimes_dataset,
+):
+    """Test _compute_background_counts raises ValueError with invalid bkgnd config."""
+    # Load the background config (has cal prods 0 and 1)
+    background_df = utils.BackgroundConfig.from_csv(hi_test_background_config_path)
+
+    # Create minimal pset_coords with a calibration product (999) that's
+    # NOT in the background config
+    missing_cal_prod = 999
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "calibration_prod": xr.DataArray(
+            np.array([0, 1, missing_cal_prod], dtype=np.int32),
+            dims=["calibration_prod"],
+        ),
+    }
+
+    # Verify that calling _compute_background_counts raises ValueError
+    # with expected message
+    with pytest.raises(
+        ValueError,
+        match=f"Calibration product {missing_cal_prod} not found "
+        f"in background configuration",
+    ):
+        hi_l1c._compute_background_counts(
+            pset_coords,
+            background_df,
+            hi_l1b_de_dataset,
+            hi_goodtimes_dataset,
+        )
+
+
 @mock.patch("imap_processing.hi.hi_l1c.good_time_and_phase_mask")
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
 @mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)

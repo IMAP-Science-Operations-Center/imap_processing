@@ -491,7 +491,6 @@ def _compute_background_counts(
                 len(bg_coords["calibration_prod"]),
                 len(bg_coords["background_index"]),
             ),
-            dtype=np.int32,
         ),
         dims=[
             "epoch",
@@ -528,8 +527,18 @@ def _compute_background_counts(
         return background_counts
 
     for cal_prod in pset_coords["calibration_prod"].values:
-        # Take cross-section of calibration product configuration DataFrame
-        # to get rows relevant to this calibration product
+        # Check that cal_prod exists in background_config_df
+        if cal_prod not in background_config_df.index.get_level_values(
+            "calibration_prod"
+        ):
+            raise ValueError(
+                f"Calibration product {cal_prod} not found in background "
+                f"configuration. Available calibration products: "
+                f"{sorted(background_config_df.index.get_level_values('calibration_prod').unique().tolist())}"
+            )
+
+        # Take a cross-section of the background configuration DataFrame
+        # to get rows relevant to the current calibration product
         cal_prod_rows = background_config_df.xs(cal_prod, level="calibration_prod")
 
         # Use iter_background_events_by_config to get filtered events
