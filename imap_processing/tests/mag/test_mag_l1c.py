@@ -110,6 +110,35 @@ def test_interpolation_methods():
         assert len(output) == 20
 
 
+@pytest.mark.parametrize(
+    "method",
+    [
+        InterpolationFunction.linear_filtered,
+        InterpolationFunction.quadratic_filtered,
+        InterpolationFunction.cubic_filtered,
+    ],
+)
+def test_filtered_interpolation_methods_keep_tail_boundary_timestamp(method):
+    input_timestamps = np.arange(0.125, 8.001, step=0.125) * 1e9
+    seconds = input_timestamps / 1e9
+    input_vectors = np.column_stack(
+        [seconds, seconds, seconds, np.ones(input_timestamps.size)]
+    )
+    # Tail boundary: 8.0 s is inside the original burst window but beyond the
+    # post-CIC filtered tail unless the method preserves it explicitly.
+    output_timestamps = np.array([7.5, 8.0]) * 1e9
+
+    adjusted_time, output = method(
+        input_vectors,
+        input_timestamps,
+        output_timestamps,
+        input_rate=VecSec.EIGHT_VECS_PER_S,
+        output_rate=VecSec.TWO_VECS_PER_S,
+    )
+
+    assert np.array_equal(adjusted_time, output_timestamps)
+
+
 def test_process_mag_l1c(norm_dataset, burst_dataset):
     l1c = process_mag_l1c(norm_dataset, burst_dataset, InterpolationFunction.linear)
     expected_output_timeline = (

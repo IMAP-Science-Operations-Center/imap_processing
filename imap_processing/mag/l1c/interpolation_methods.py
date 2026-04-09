@@ -90,6 +90,7 @@ def quadratic(
     output_timestamps: np.ndarray,
     input_rate: VecSec | None = None,
     output_rate: VecSec | None = None,
+    extrapolate: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Quadratic interpolation of input vectors to output timestamps.
@@ -108,6 +109,9 @@ def quadratic(
         Not required for this interpolation method.
     output_rate : VecSec, optional
         Not required for this interpolation method.
+    extrapolate : bool, optional
+        Whether to allow extrapolation of output timestamps outside the range of input
+        timestamps. Default is False.
 
     Returns
     -------
@@ -115,9 +119,10 @@ def quadratic(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
-    output_timestamps = remove_invalid_output_timestamps(
-        input_timestamps, output_timestamps
-    )
+    if not extrapolate:
+        output_timestamps = remove_invalid_output_timestamps(
+            input_timestamps, output_timestamps
+        )
     spline = make_interp_spline(input_timestamps, input_vectors, k=2)
     return output_timestamps, spline(output_timestamps)
 
@@ -128,6 +133,7 @@ def cubic(
     output_timestamps: np.ndarray,
     input_rate: VecSec | None = None,
     output_rate: VecSec | None = None,
+    extrapolate: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Cubic interpolation of input vectors to output timestamps.
@@ -146,6 +152,9 @@ def cubic(
         Not required for this interpolation method.
     output_rate : VecSec, optional
         Not required for this interpolation method.
+    extrapolate : bool, optional
+        Whether to allow extrapolation of output timestamps outside the range of input
+        timestamps. Default is False.
 
     Returns
     -------
@@ -153,9 +162,10 @@ def cubic(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
-    output_timestamps = remove_invalid_output_timestamps(
-        input_timestamps, output_timestamps
-    )
+    if not extrapolate:
+        output_timestamps = remove_invalid_output_timestamps(
+            input_timestamps, output_timestamps
+        )
     spline = make_interp_spline(input_timestamps, input_vectors, k=3)
     return output_timestamps, spline(output_timestamps)
 
@@ -338,7 +348,12 @@ def quadratic_filtered(
     input_filtered, vectors_filtered = cic_filter(
         input_vectors, input_timestamps, output_timestamps, input_rate, output_rate
     )
-    return quadratic(vectors_filtered, input_filtered, output_timestamps)
+    return quadratic(
+        vectors_filtered,
+        input_filtered,
+        output_timestamps,
+        extrapolate=True,
+    )
 
 
 def cubic_filtered(
@@ -380,7 +395,7 @@ def cubic_filtered(
     input_filtered, vectors_filtered = cic_filter(
         input_vectors, input_timestamps, output_timestamps, input_rate, output_rate
     )
-    return cubic(vectors_filtered, input_filtered, output_timestamps)
+    return cubic(vectors_filtered, input_filtered, output_timestamps, extrapolate=True)
 
 
 class InterpolationFunction(Enum):
