@@ -792,8 +792,7 @@ def _is_expected_rate(timestamp_difference: float, vectors_per_second: int) -> b
     """
     expected_gap = 1 / vectors_per_second * 1e9
     return (
-        abs(timestamp_difference - expected_gap)
-        <= expected_gap * L1C_CADENCE_TOLERANCE
+        abs(timestamp_difference - expected_gap) <= expected_gap * L1C_CADENCE_TOLERANCE
     )
 
 
