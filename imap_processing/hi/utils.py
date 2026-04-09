@@ -541,12 +541,11 @@ class CalibrationProductConfig(_BaseConfigAccessor):
         "calibration_prod",
         "esa_energy_step",
     )
-    tof_detector_pairs = ("ab", "ac1", "bc1", "c1c2")
     required_columns = (
         "coincidence_type_list",
         *[
             f"tof_{det_pair}_{limit}"
-            for det_pair in tof_detector_pairs
+            for det_pair in _BaseConfigAccessor.tof_detector_pairs
             for limit in ["low", "high"]
         ],
     )
@@ -599,12 +598,11 @@ class BackgroundConfig(_BaseConfigAccessor):
         "calibration_prod",
         "background_index",
     )
-    tof_detector_pairs = CalibrationProductConfig.tof_detector_pairs
     required_columns = (
         "coincidence_type_list",
         *[
             f"tof_{det_pair}_{limit}"
-            for det_pair in CalibrationProductConfig.tof_detector_pairs
+            for det_pair in _BaseConfigAccessor.tof_detector_pairs
             for limit in ["low", "high"]
         ],
         "scaling_factor",
