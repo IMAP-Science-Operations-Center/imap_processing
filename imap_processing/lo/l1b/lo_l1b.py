@@ -2639,10 +2639,9 @@ def l1b_bgrates_and_goodtimes(
                     f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
                 )
                 h_background_rate[row_count, :] = np.full(NUM_ESA_STEPS, h_bg_rate)
-                h_background_rate_variance[row_count, :] = (
-                    np.full(
+                h_background_rate_variance[row_count, :] = np.full(
                     NUM_ESA_STEPS, h_bg_rate_variance
-                ))
+                )
                 o_background_rate[row_count, :] = np.full(NUM_ESA_STEPS, o_bg_rate)
                 o_background_rate_variance[row_count, :] = np.full(
                     NUM_ESA_STEPS, o_bg_rate_variance
