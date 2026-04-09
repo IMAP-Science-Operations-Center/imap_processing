@@ -939,8 +939,8 @@ class HistogramL1B:
                 np.array([0, 0, 1]),
                 SpiceFrame.IMAP_SPACECRAFT,
                 SpiceFrame.ECLIPJ2000,
-            ),                                                                                                                                                                      
-            degrees=False,                                                                                                                                                            
+            ),
+            degrees=False,
         )
         # Calculate circular statistics for longitude (wraps around)
         lon_mean = circmean(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
