@@ -50,9 +50,10 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
         if l1a_de_products:
             l1a_de_product = l1a_de_products[0]
             if len(l1a_de_products) > 1:
-                logger.warning(
-                    f"Multiple L1a de products found when we only expect"
-                    f" one. Using the first one: {l1a_de_product}"
+                raise ValueError(
+                    f"Multiple L1a de products found for instrument {instrument_id}. "
+                    f"Expected only one but found {len(l1a_de_products)}: "
+                    f"{l1a_de_products}"
                 )
             l1b_de_product = l1a_de_product.replace("l1a", "l1b")
             de_dataset = calculate_de(
