@@ -1037,7 +1037,7 @@ def flag_spectral_events(
     energy_ranges : NDArray
         Array of energy range edges.
     channels : list
-        List of energy channel indices to use for upstream ion flagging.
+        List of energy channel indices to use for spectral flagging.
     sensor_id : int
         Sensor ID (e.g., 45 or 90).
 
@@ -1068,7 +1068,7 @@ def flag_spectral_events(
     diff = np.diff(counts_sum, axis=0) - UltraConstants.SPECTRAL_SIG_THRESHOLD * (
         np.sqrt(counts_sum[:-1] + counts_sum[1:])
     )  # shape (num_channels - 1, n_spin_bins)
-    flagged = np.any(np.where(diff > 0, True, False), axis=0)  # shape (n_spin_bins,)
+    flagged = np.any(diff > 0, axis=0)  # shape (n_spin_bins,)
     num_culled: int = np.sum(flagged)
     logger.info(
         f"Spectral culling removed {num_culled} spin bins using channels"
