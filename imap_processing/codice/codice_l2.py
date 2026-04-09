@@ -1166,6 +1166,16 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     base_angles = np.asarray(L2_HI_SECTORED_ANGLE, dtype=float).reshape(n_spin, 1)
 
     spin_angle = (base_angles + elevation_offsets) % 360.0
+    # We need to transpose spin_angle to put spin_angle data into correct
+    # dimensions. Eg.
+    #   spin_angle[0,0] - 285
+    #   spin_angle[1,0] - 315
+    #   ....
+    # This is expected behavior per CoDICE because the spin angle should increments
+    # at 30 degree spin angle per elevation angle. Due to that, in the example, the
+    # column remained same but spin angle incremented by 30 degrees for each
+    # elevation angle.
+    spin_angle = spin_angle.T
     # Add spin angle variable using the new elevation_angle dimension
     l2_dataset["spin_angle"] = (("spin_sector", "elevation_angle"), spin_angle)
     l2_dataset["spin_angle"].attrs = cdf_attrs.get_variable_attributes(
