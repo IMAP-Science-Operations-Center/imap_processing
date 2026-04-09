@@ -947,8 +947,9 @@ class HistogramL1B:
         lon_std = circstd(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
         lat_mean = circmean(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
         lat_std = circstd(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
-        self.spin_axis_orientation_average = np.array([lon_mean, lat_mean])
-        self.spin_axis_orientation_std_dev = np.array([lon_std, lat_std])
+        # Convert circular statistics to degrees and store
+        self.spin_axis_orientation_average = np.degrees(np.array([lon_mean, lat_mean]))
+        self.spin_axis_orientation_std_dev = np.degrees(np.array([lon_std, lat_std]))
 
         # Calculate spacecraft location and velocity
         # ------------------------------------------
