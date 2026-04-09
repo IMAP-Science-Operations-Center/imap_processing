@@ -1243,8 +1243,11 @@ def get_binned_energy_ranges(
     )
     energy_starts = [energy_bin_edges[i][0] for i in group_start_inds]
     # Append the stop energy of the last bin to cover the full range
-    last_group_end_ind = min(
-        group_start_inds[-1] + UltraConstants.N_CULL_EBINS, len(energy_bin_edges)
+    last_group_end_ind = int(
+        min(
+            int(group_start_inds[-1]) + UltraConstants.N_CULL_EBINS,
+            len(energy_bin_edges),
+        )
     )
     energy_ranges: np.ndarray = np.append(
         energy_starts,
