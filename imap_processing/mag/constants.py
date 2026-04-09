@@ -132,6 +132,9 @@ AXIS_COUNT = 3
 RANGE_BIT_WIDTH = 2
 MAX_COMPRESSED_VECTOR_BITS = 60
 FILLVAL = -1e31
+# Relative tolerance (7.5%) for L1C cadence checks; allows small clock-drift
+# variation around the expected cadence before a spacing is treated as a gap.
+L1C_CADENCE_TOLERANCE = 0.075
 
 
 def vectors_per_second_from_string(vecsec_string: str) -> dict:

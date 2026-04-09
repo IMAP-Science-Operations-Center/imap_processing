@@ -7,13 +7,15 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
-from imap_processing.mag.constants import ModeFlags, VecSec
+from imap_processing.mag.constants import (
+    L1C_CADENCE_TOLERANCE,
+    ModeFlags,
+    VecSec,
+)
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
 from imap_processing.spice.time import et_to_ttj2000ns, str_to_et
 
 logger = logging.getLogger(__name__)
-
-GAP_TOLERANCE = 0.075
 
 
 def mag_l1c(
@@ -726,7 +728,7 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
 
     # Gap can be up to 7.5% larger than expected vectors per second due to clock drift
     gap_index = np.asarray(
-        diffs - expected_gap > expected_gap * GAP_TOLERANCE
+        diffs - expected_gap > expected_gap * L1C_CADENCE_TOLERANCE
     ).nonzero()[0]
     output: np.ndarray = np.zeros((len(gap_index), 3), dtype=np.int64)
 
@@ -785,11 +787,14 @@ def _is_expected_rate(timestamp_difference: float, vectors_per_second: int) -> b
     Returns
     -------
     bool
-        True when the observed spacing is within `GAP_TOLERANCE` of the expected
+        True when the observed spacing is within `L1C_CADENCE_TOLERANCE` of the expected
         cadence.
     """
     expected_gap = 1 / vectors_per_second * 1e9
-    return abs(timestamp_difference - expected_gap) <= expected_gap * GAP_TOLERANCE
+    return (
+        abs(timestamp_difference - expected_gap)
+        <= expected_gap * L1C_CADENCE_TOLERANCE
+    )
 
 
 def _find_rate_segments(
