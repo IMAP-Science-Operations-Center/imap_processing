@@ -465,7 +465,7 @@ def interpolate_gaps(
         6-7 - compression flags.
     """
     burst_epochs = burst_dataset["epoch"].data
-    norm_epochs = filled_norm_timeline[:, 0]
+    filled_timeline_epochs = filled_norm_timeline[:, 0]
     has_norm_context = np.any(filled_norm_timeline[:, 5] == ModeFlags.NORM.value)
     # Exclude range values
     burst_vectors = burst_dataset["vectors"].data
@@ -505,7 +505,9 @@ def interpolate_gaps(
         burst_start = max(0, burst_gap_start - burst_buffer)
         burst_end = min(len(burst_epochs), burst_gap_end + burst_buffer + 1)
 
-        gap_timeline = norm_epochs[(norm_epochs > gap[0]) & (norm_epochs < gap[1])]
+        gap_timeline = filled_timeline_epochs[
+            (filled_timeline_epochs > gap[0]) & (filled_timeline_epochs < gap[1])
+        ]
 
         short_end = burst_epochs[burst_end - 1]
         if not has_norm_context:
@@ -534,7 +536,7 @@ def interpolate_gaps(
 
         # gaps should not have data in timeline, still check it
         for index, timestamp in enumerate(adjusted_gap_timeline):
-            timeline_index = np.searchsorted(norm_epochs, timestamp)
+            timeline_index = np.searchsorted(filled_timeline_epochs, timestamp)
             if sum(
                 filled_norm_timeline[timeline_index, 1:4]
             ) == 0 and burst_gap_start + index < len(burst_vectors):
@@ -552,7 +554,7 @@ def interpolate_gaps(
         missing_timeline = np.setdiff1d(gap_timeline, adjusted_gap_timeline)
 
         for timestamp in missing_timeline:
-            timeline_index = np.searchsorted(norm_epochs, timestamp)
+            timeline_index = np.searchsorted(filled_timeline_epochs, timestamp)
             if filled_norm_timeline[timeline_index, 5] != ModeFlags.MISSING.value:
                 raise RuntimeError(
                     "Self-inconsistent data. "
