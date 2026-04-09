@@ -509,14 +509,14 @@ def interpolate_gaps(
             (filled_timeline_epochs > gap[0]) & (filled_timeline_epochs < gap[1])
         ]
 
-        short_end = burst_epochs[burst_end - 1]
+        usable_burst_end_epoch = burst_epochs[burst_end - 1]
         if not has_norm_context:
             # In the burst-only fallback, CIC delay compensation shortens the usable
             # filtered range at the trailing edge by roughly one output cadence.
-            short_end -= int(1e9 / norm_rate.value)
+            usable_burst_end_epoch -= int(1e9 / norm_rate.value)
 
         short = (gap_timeline >= burst_epochs[burst_start]) & (
-            gap_timeline <= short_end
+            gap_timeline <= usable_burst_end_epoch
         )
         num_short = int(short.sum())
 
