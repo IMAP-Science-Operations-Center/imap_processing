@@ -11,6 +11,7 @@ interacting with the API programmatically. It is the preferred way to use the AP
     :maxdepth: 1
 
     imap-data-access
+    spice-files
 
 Users may also download, upload, and query via the REST API directly through the browser, or via `curl` commands.
 The `REST API Specification`_ section describes the various endpoints that are supported, and how to use them.
