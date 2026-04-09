@@ -544,6 +544,7 @@ def test_pset_counts_goodtimes_filtering(
     assert counts_var["counts"].data[0, 0, 0, 1800] == 5
 
 
+@pytest.mark.external_test_data
 def test_pset_backgrounds(
     hi_test_background_config_path,
     hi_test_cal_prod_config_path,
