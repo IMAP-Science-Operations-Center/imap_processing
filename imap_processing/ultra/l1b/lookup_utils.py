@@ -1,5 +1,7 @@
 """Contains tools for lookup tables for l1b."""
 
+import logging
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -8,6 +10,8 @@ from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.constants import UltraConstants
+
+logger = logging.getLogger(__name__)
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -625,7 +629,7 @@ def get_de_product_name(
     Get the name of the de product to use for processing.
 
     This will be either the raw de product or a priority 1-4 de product, depending on
-    the pointing, data level.
+    the pointing and data level.
 
     Note: Currently the lookup tables are identical between ultra45 and ultra90,
     but this function accounts for the possibility of them being different in the
@@ -680,5 +684,8 @@ def get_de_product_name(
             f"repointing_id_start and repointing_id_end values are correct"
             f" and not overlapping."
         )
-
+    product = repoint_row["de_product"].values[0]
+    logger.info(
+        f"Using DE product {product} for repoint ID {repoint_id} based on lookup table"
+    )
     return repoint_row["de_product"].values[0]
