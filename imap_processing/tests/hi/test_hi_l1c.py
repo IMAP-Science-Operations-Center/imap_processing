@@ -627,7 +627,6 @@ def test_pset_backgrounds(
 def test_compute_background_counts_missing_cal_prod_raises_error(
     mock_good_time_and_phase_mask,
     hi_test_background_config_path,
-    hi_goodtimes_dataset,
 ):
     """Test _compute_background_counts raises ValueError with invalid bkgnd config."""
     # Mock good_time_and_phase_mask to return all True
@@ -693,7 +692,7 @@ def test_compute_background_counts_missing_cal_prod_raises_error(
             pset_coords,
             background_df,
             hi_l1b_de_dataset,
-            hi_goodtimes_dataset,
+            xr.Dataset(),
         )
 
 
