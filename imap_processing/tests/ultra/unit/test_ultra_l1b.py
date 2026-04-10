@@ -227,7 +227,10 @@ def test_ultra_l1b_extendedspin(
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
-    ancillary_files = {}
+    ancillary_files = {
+        "l1b-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+    }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
     assert len(l1b_extendedspin_dataset) == 1
@@ -259,7 +262,10 @@ def test_cdf_extendedspin(
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
-    ancillary_files = {}
+    ancillary_files = {
+        "l1b-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+    }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
     """Tests that CDF file is created and contains same attributes as xarray."""
     l1b_extendedspin_dataset[0].attrs["Data_version"] = "999"
@@ -296,7 +302,10 @@ def test_cdf_goodtimes(
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
-    ancillary_files = {}
+    ancillary_files = {
+        "l1b-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+    }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
     goodtimes_dataset = ultra_l1b(
@@ -337,7 +346,10 @@ def test_cdf_badtimes(
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
-    ancillary_files = {}
+    ancillary_files = {
+        "l1b-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+    }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
     ancillary_files = {}
