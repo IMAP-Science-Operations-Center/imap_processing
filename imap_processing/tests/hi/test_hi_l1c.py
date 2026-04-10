@@ -623,12 +623,17 @@ def test_pset_backgrounds(
     )
 
 
+@mock.patch("imap_processing.hi.hi_l1c.good_time_and_phase_mask")
 def test_compute_background_counts_missing_cal_prod_raises_error(
+    mock_good_time_and_phase_mask,
     hi_test_background_config_path,
-    hi_l1b_de_dataset,
     hi_goodtimes_dataset,
 ):
     """Test _compute_background_counts raises ValueError with invalid bkgnd config."""
+    # Mock good_time_and_phase_mask to return all True
+    mock_good_time_and_phase_mask.side_effect = lambda a, b, c: np.ones(
+        a.shape, dtype=bool
+    )
     # Load the background config (has cal prods 0 and 1)
     background_df = utils.BackgroundConfig.from_csv(hi_test_background_config_path)
 
@@ -642,6 +647,40 @@ def test_compute_background_counts_missing_cal_prod_raises_error(
             dims=["calibration_prod"],
         ),
     }
+
+    hi_l1b_de_dataset = xr.Dataset(
+        {
+            "coincidence_type": xr.DataArray(
+                np.array([15], dtype=np.uint8), dims=["event_met"]
+            ),
+            "trigger_id": xr.DataArray(
+                np.array([0], dtype=np.float64),
+                dims=["event_met"],
+                attrs={"FILLVAL": 65535},
+            ),
+            "nominal_bin": xr.DataArray(
+                np.array([0], dtype=np.uint8), dims=["event_met"]
+            ),
+            "tof_ab": xr.DataArray(
+                np.array([50], dtype=np.float32), dims=["event_met"]
+            ),
+            "tof_ac1": xr.DataArray(
+                np.array([50], dtype=np.float32), dims=["event_met"]
+            ),
+            "tof_bc1": xr.DataArray(
+                np.array([50], dtype=np.float32), dims=["event_met"]
+            ),
+            "tof_c1c2": xr.DataArray(
+                np.array([50], dtype=np.float32), dims=["event_met"]
+            ),
+        },
+        coords={
+            "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+            "event_met": xr.DataArray(
+                np.array([0], dtype=np.float64), dims=["event_met"]
+            ),
+        },
+    )
 
     # Verify that calling _compute_background_counts raises ValueError
     # with expected message
