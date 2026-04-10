@@ -625,7 +625,11 @@ def get_de_product_name(
     Get the name of the de product to use for processing.
 
     This will be either the raw de product or a priority 1-4 de product, depending on
-    the pointing, data level, and sensor.
+    the pointing, data level.
+
+    Note: Currently the lookup tables are identical between ultra45 and ultra90,
+    but this function accounts for the possibility of them being different in the
+    future.
 
     Parameters
     ----------
