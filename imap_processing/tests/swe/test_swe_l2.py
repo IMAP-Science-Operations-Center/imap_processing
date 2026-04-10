@@ -291,7 +291,7 @@ def test_swe_l2_15sec(
     use_fake_spin_data_for_time(data_start_time, data_end_time)
 
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
-    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "sci")
     l1a_ds = l1a_datasets[0]
     l1a_ds.attrs["Data_version"] = "000"
     l1a_cdf_filepath = write_cdf(l1a_ds)
@@ -403,7 +403,7 @@ def test_swe_l2_14_6sec(
     use_fake_spin_data_for_time(data_start_time, data_end_time, spin_period=14.6)
 
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
-    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "sci")
     l1a_ds = l1a_datasets[0]
     l1a_ds.attrs["Data_version"] = "000"
     l1a_cdf_filepath = write_cdf(l1a_ds)

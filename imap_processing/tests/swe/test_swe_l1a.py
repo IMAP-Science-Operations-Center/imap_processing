@@ -5,7 +5,7 @@ from imap_processing.swe.l1a.swe_l1a import swe_l1a
 
 def test_cdf_creation():
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
-    processed_data = swe_l1a(imap_module_directory / test_data_path)
+    processed_data = swe_l1a(imap_module_directory / test_data_path, "sci")
 
     cem_raw_cdf_filepath = write_cdf(processed_data[0])
 
@@ -14,7 +14,7 @@ def test_cdf_creation():
 
 def test_cdf_creation_hk():
     test_data_path = "tests/swe/l0_data/2024051010_SWE_HK_packet.bin"
-    processed_data = swe_l1a(imap_module_directory / test_data_path)
+    processed_data = swe_l1a(imap_module_directory / test_data_path, "hk")
 
     hk_cdf_filepath = write_cdf(processed_data[0])
 
@@ -23,7 +23,7 @@ def test_cdf_creation_hk():
 
 def test_cdf_creation_cem_raw():
     test_data_path = "tests/swe/l0_data/2024051011_SWE_CEM_RAW_packet.bin"
-    processed_data = swe_l1a(imap_module_directory / test_data_path)
+    processed_data = swe_l1a(imap_module_directory / test_data_path, "cem-raw")
 
     cem_raw_cdf_filepath = write_cdf(processed_data[0])
 

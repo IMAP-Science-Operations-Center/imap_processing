@@ -166,7 +166,7 @@ def test_get_checker_board_pattern():
 def test_swe_l1b(mock_get_file_paths, l1b_validation_df):
     """Test that CDF file is created and has the correct name."""
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
-    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "sci")
 
     l1b_input = l1a_datasets[0]
 

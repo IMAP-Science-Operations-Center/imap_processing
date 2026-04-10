@@ -1537,7 +1537,7 @@ class Swe(ProcessInstrument):
                     "L0 data and time kernels."
                 )
             science_files = dependencies.get_file_paths(source="swe")
-            datasets = swe_l1a(str(science_files[0]))
+            datasets = swe_l1a(str(science_files[0]), self.descriptor)
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
 

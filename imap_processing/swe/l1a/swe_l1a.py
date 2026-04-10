@@ -15,7 +15,7 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 
 
-def swe_l1a(packet_file: str) -> xr.Dataset:
+def swe_l1a(packet_file: str, descriptor: str) -> xr.Dataset:
     """
     Will process SWE l0 data into l1a data.
 
@@ -27,6 +27,8 @@ def swe_l1a(packet_file: str) -> xr.Dataset:
     ----------
     packet_file : str
         Path where the raw packet file is stored.
+    descriptor : str
+        The descriptor of the data to be processed.
 
     Returns
     -------
@@ -40,13 +42,9 @@ def swe_l1a(packet_file: str) -> xr.Dataset:
         packet_file, xtce_document, use_derived_value=False
     )
 
-    processed_data = []
-
-    if SWEAPID.SWE_SCIENCE in datasets_by_apid:
+    if SWEAPID.SWE_SCIENCE in datasets_by_apid and descriptor == "sci":
         logger.info("Processing SWE science data.")
-        processed_data.append(
-            swe_science(l0_dataset=datasets_by_apid[SWEAPID.SWE_SCIENCE])
-        )
+        return [(swe_science(l0_dataset=datasets_by_apid[SWEAPID.SWE_SCIENCE]))]
 
     # Process non-science data
     # Define minimal CDF attrs for the non science dataset
@@ -56,7 +54,7 @@ def swe_l1a(packet_file: str) -> xr.Dataset:
     non_science_attrs = imap_attrs.get_variable_attributes("non_science_attrs")
     epoch_attrs = imap_attrs.get_variable_attributes("epoch", check_schema=False)
 
-    if SWEAPID.SWE_APP_HK in datasets_by_apid:
+    if SWEAPID.SWE_APP_HK in datasets_by_apid and descriptor == "hk":
         logger.info("Processing SWE housekeeping data.")
         l1a_hk_ds = datasets_by_apid[SWEAPID.SWE_APP_HK]
         l1a_hk_ds.attrs.update(imap_attrs.get_global_attributes("imap_swe_l1a_hk"))
@@ -64,9 +62,9 @@ def swe_l1a(packet_file: str) -> xr.Dataset:
         # Add attrs to HK data variables
         for var_name in l1a_hk_ds.data_vars:
             l1a_hk_ds[var_name].attrs.update(non_science_attrs)
-        processed_data.append(l1a_hk_ds)
+        return [l1a_hk_ds]
 
-    if SWEAPID.SWE_CEM_RAW in datasets_by_apid:
+    if SWEAPID.SWE_CEM_RAW in datasets_by_apid and descriptor == "cem-raw":
         logger.info("Processing SWE CEM raw data.")
         cem_raw_ds = datasets_by_apid[SWEAPID.SWE_CEM_RAW]
         cem_raw_ds.attrs.update(
@@ -77,9 +75,8 @@ def swe_l1a(packet_file: str) -> xr.Dataset:
         # Add attrs to CEM raw data variables
         for var_name in cem_raw_ds.data_vars:
             cem_raw_ds[var_name].attrs.update(non_science_attrs)
-        processed_data.append(cem_raw_ds)
+        return [cem_raw_ds]
 
-    if len(processed_data) == 0:
-        logger.info("Data contains unknown APID.")
+    logger.info("Data contains unknown APID.")
 
-    return processed_data
+    return []
