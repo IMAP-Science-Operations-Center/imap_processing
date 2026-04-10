@@ -84,6 +84,12 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
             de_product_desc = get_de_product_name(
                 repoint, instrument_id, "l1b", ancillary_files
             )
+            if de_product_desc not in data_dict:
+                raise ValueError(
+                    f"Selected L1B DE product '{de_product_desc}' for instrument "
+                    f"{instrument_id} is not present in data_dict. Available L1B DE "
+                    f"products: {data_dict.keys()}"
+                )
             extendedspin_dataset = calculate_extendedspin(
                 {
                     f"imap_ultra_l1a_{instrument_id}sensor-aux": data_dict[

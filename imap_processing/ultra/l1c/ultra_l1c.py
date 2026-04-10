@@ -52,6 +52,12 @@ def ultra_l1c(
             de_product_desc = get_de_product_name(
                 repoint, instrument_id, "l1c", ancillary_files
             )
+            if de_product_desc not in data_dict:
+                raise ValueError(
+                    f"Selected L1B DE product '{de_product_desc}' for instrument "
+                    f"{instrument_id} is not present in data_dict. Available L1B DE "
+                    f"products: {data_dict.keys()}"
+                )
         else:
             continue
         if (
