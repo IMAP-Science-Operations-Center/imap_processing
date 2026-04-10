@@ -391,12 +391,6 @@ def pset_counts(
     good_mask = de_ds["trigger_id"].data != de_ds["trigger_id"].attrs["FILLVAL"]
     if not np.any(good_mask):
         return counts_var
-    elif not np.all(good_mask):
-        raise ValueError(
-            "An event with trigger_id=FILLVAL should only occur for a pointing "
-            "with no events that gets a single fill event. Events with mixed "
-            "valid and FILLVAL trigger_ids found."
-        )
 
     # Remove DEs not in Goodtimes/angles
     # For direct events, use nominal_bin (spacecraft spin bin 0-89) to look up goodtimes
@@ -506,13 +500,6 @@ def _compute_background_counts(
     good_mask = de_ds["trigger_id"].data != de_ds["trigger_id"].attrs["FILLVAL"]
     if not np.any(good_mask):
         return background_counts
-
-    if not np.all(good_mask):
-        raise ValueError(
-            "An event with trigger_id=FILLVAL should only occur for a pointing "
-            "with no events that gets a single fill event. Events with mixed "
-            "valid and FILLVAL trigger_ids found."
-        )
 
     # Remove DEs not in Goodtimes/angles
     goodtimes_mask = good_time_and_phase_mask(
