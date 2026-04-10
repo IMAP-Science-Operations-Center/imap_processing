@@ -697,6 +697,95 @@ def test_compute_background_counts_missing_cal_prod_raises_error(
         )
 
 
+@mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
+def test_pset_backgrounds_cal_prod_mismatch_raises_error(
+    mock_compute_background_counts,
+):
+    """Test pset_backgrounds raises ValueError when cal prods don't match.
+
+    This tests the validation at lines 634-639 of hi_l1c.py that checks
+    if calibration products in pset_coords match those in background_config_df.
+    """
+    # Create pset_coords with calibration products [0, 1]
+    n_epoch = 1
+    n_energy = 2
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "esa_energy_step": xr.DataArray(
+            np.arange(n_energy) + 1, dims=["esa_energy_step"]
+        ),
+        "calibration_prod": xr.DataArray(
+            np.array([0, 1], dtype=np.int64),
+            dims=["calibration_prod"],
+        ),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
+    }
+
+    # Create a background config DataFrame with DIFFERENT calibration products [5, 6]
+    # This simulates a mismatch between pset_coords and background_config_df
+    background_config_data = {
+        "coincidence_type_list": ["ABC1C2", "ABC1C2"],
+        "coincidence_type_values": [[15], [15]],
+        "tof_ab_low": [0, 0],
+        "tof_ab_high": [100, 100],
+        "tof_ac1_low": [0, 0],
+        "tof_ac1_high": [100, 100],
+        "tof_bc1_low": [0, 0],
+        "tof_bc1_high": [100, 100],
+        "tof_c1c2_low": [0, 0],
+        "tof_c1c2_high": [100, 100],
+        "scaling_factor": [1.0, 1.0],
+        "uncertainty": [0.1, 0.1],
+    }
+    # Use calibration products [5, 6] which don't match pset_coords [0, 1]
+    mismatched_cal_prods = [5, 6]
+    background_indices = [0, 0]
+    multi_index = pd.MultiIndex.from_arrays(
+        [mismatched_cal_prods, background_indices],
+        names=["calibration_prod", "background_index"],
+    )
+    background_df = pd.DataFrame(background_config_data, index=multi_index)
+
+    # Create mock exposure_times
+    exposure_times = xr.DataArray(
+        np.ones((n_epoch, n_energy, n_spin_bins), dtype=np.float32),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+
+    # Mock _compute_background_counts to return a DataArray with the mismatched
+    # calibration products (simulating what would happen if the earlier check
+    # didn't catch the mismatch)
+    mock_background_counts = xr.DataArray(
+        np.zeros((n_epoch, len(mismatched_cal_prods), 1)),
+        dims=["epoch", "calibration_prod", "background_index"],
+        coords={
+            "epoch": pset_coords["epoch"],
+            "calibration_prod": mismatched_cal_prods,
+            "background_index": [0],
+        },
+    )
+    mock_compute_background_counts.return_value = mock_background_counts
+
+    # Create minimal l1b dataset and goodtimes (not used due to mock)
+    l1b_de_dataset = xr.Dataset()
+    goodtimes_ds = xr.Dataset()
+
+    # Verify that pset_backgrounds raises ValueError with expected message
+    with pytest.raises(
+        ValueError,
+        match="Calibration products in pset_coords and "
+        "background_config_df do not match",
+    ):
+        hi_l1c.pset_backgrounds(
+            pset_coords,
+            background_df,
+            l1b_de_dataset,
+            goodtimes_ds,
+            exposure_times,
+        )
+
+
 @mock.patch("imap_processing.hi.hi_l1c.good_time_and_phase_mask")
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
 @mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)

@@ -621,19 +621,22 @@ def pset_backgrounds(
         output_vars["background_rates_uncertainty"].values[:] = 0
         return output_vars
 
-    # Compute background counts
+    # Compute background counts: shape (epoch, calibration_prod, background_index)
     background_counts = _compute_background_counts(
         pset_coords, background_config_df, l1b_de_dataset, goodtimes_ds
     )
-
-    # background_counts already has shape (epoch, calibration_prod, background_index)
-    # (no summing needed since spin_angle_bin dimension was never included)
 
     # Compute count rates: shape (epoch, calibration_prod, background_index)
     count_rates = background_counts / total_exposure_time
 
     # Convert background config DataFrame to xarray Dataset
     config_ds = background_config_df.to_xarray()
+    if not config_ds["calibration_prod"].equals(pset_coords["calibration_prod"]):
+        raise ValueError(
+            f"Calibration products in pset_coords and background_config_df "
+            f"do not match. pset_coords: {pset_coords['calibration_prod'].values}, "
+            f"background_config_df: {config_ds['calibration_prod'].values}"
+        )
     scaling_factors_da = config_ds["scaling_factor"]
     uncertainties_da = config_ds["uncertainty"]
 
