@@ -95,11 +95,11 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
                     f"imap_ultra_l1a_{instrument_id}sensor-rates": data_dict[
                         f"imap_ultra_l1a_{instrument_id}sensor-rates"
                     ],
-                    de_product_desc: data_dict[de_product_desc],
                     f"imap_ultra_l1b_{instrument_id}sensor-status": data_dict[
                         f"imap_ultra_l1b_{instrument_id}sensor-status"
                     ],
                 },
+                data_dict[de_product_desc],
                 f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",
                 instrument_id,
             )

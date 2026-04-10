@@ -32,6 +32,7 @@ FILLVAL_FLOAT32 = -1.0e31
 
 def calculate_extendedspin(
     dict_datasets: dict[str, xr.Dataset],
+    de_dataset: xr.Dataset,
     name: str,
     instrument_id: int,
 ) -> xr.Dataset:
@@ -42,6 +43,8 @@ def calculate_extendedspin(
     ----------
     dict_datasets : dict
         Dictionary containing all the datasets.
+    de_dataset : xarray.Dataset
+        Dataset containing the direct event data.
     name : str
         Name of the dataset.
     instrument_id : int
@@ -54,7 +57,6 @@ def calculate_extendedspin(
     """
     aux_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-aux"]
     rates_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-rates"]
-    de_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-de"]
     status_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-status"]
 
     extendedspin_dict = {}
