@@ -650,7 +650,7 @@ def get_de_product_name(
     Returns
     -------
     de_product_name : str
-        Name of the de product to use in calculating the extended spin dataset.
+        Name of the de product to use for processing.
     """
     if data_level not in ["l1b", "l1c"]:
         raise ValueError(f"Invalid data level: {data_level}. Must be 'l1b' or 'l1c'.")
@@ -688,4 +688,4 @@ def get_de_product_name(
     logger.info(
         f"Using DE product {product} for repoint ID {repoint_id} based on lookup table"
     )
-    return repoint_row["de_product"].values[0]
+    return product
