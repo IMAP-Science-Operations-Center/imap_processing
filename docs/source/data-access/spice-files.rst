@@ -6,7 +6,7 @@ The IMAP SDC provides two REST API endpoints for accessing SPICE kernel data:
 a ready-to-use metakernel (or a list of kernel filenames) that covers a
 requested time range.
 
-Both endpoints are accessible from the base URL: ``https://api.dev.imap-mission.com``
+Both endpoints are accessible from the base URL: ``https://api.imap-mission.com``
 
 .. _spice-query-endpoint:
 
@@ -27,15 +27,15 @@ date, or filename.
 
    # Query for all attitude_history kernels covering a time range
    curl -X GET -H "Accept: application/json" \
-     "https://api.dev.imap-mission.com/spice-query?start_time=315576066&end_time=4575787269&type=attitude_history"
+     "https://api.imap-mission.com/spice-query?start_time=315576066&end_time=4575787269&type=attitude_history"
 
    # Query for a specific kernel by filename
    curl -X GET -H "Accept: application/json" \
-     "https://api.dev.imap-mission.com/spice-query?file_name=naif0012.tls"
+     "https://api.imap-mission.com/spice-query?file_name=naif0012.tls"
 
    # Query for the latest version of the spacecraft_clock kernel
    curl -X GET -H "Accept: application/json" \
-     "https://api.dev.imap-mission.com/spice-query?type=spacecraft_clock&latest=True"
+     "https://api.imap-mission.com/spice-query?type=spacecraft_clock&latest=True"
 
 **Possible Responses:**
 
@@ -102,15 +102,15 @@ returns a JSON list of kernel filenames instead.
 
    # Retrieve a metakernel covering a time range for selected kernel types
    curl -X GET -H "Accept: application/json" \
-     "https://api.dev.imap-mission.com/metakernel?start_time=797949057&end_time=798035454&file_types=leapseconds,attitude_history"
+     "https://api.imap-mission.com/metakernel?start_time=797949057&end_time=798035454&file_types=leapseconds,attitude_history"
 
    # Get only a list of kernel filenames (no metakernel wrapper)
    curl -X GET -H "Accept: application/json" \
-     "https://api.dev.imap-mission.com/metakernel?start_time=797949057&end_time=798035454&file_types=leapseconds,spacecraft_clock&list_files=True"
+     "https://api.imap-mission.com/metakernel?start_time=797949057&end_time=798035454&file_types=leapseconds,spacecraft_clock&list_files=True"
 
    # Retrieve a metakernel with a custom spice_path prefix in the output
    curl -X GET -H "Accept: application/json" \
-     "https://api.dev.imap-mission.com/metakernel?start_time=797949057&end_time=798035454&spice_path=/my/path/imap"
+     "https://api.imap-mission.com/metakernel?start_time=797949057&end_time=798035454&spice_path=/my/path/imap"
 
 **Possible Responses:**
 
