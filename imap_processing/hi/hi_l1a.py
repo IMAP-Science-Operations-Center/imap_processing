@@ -404,11 +404,11 @@ def finish_hist_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     dataset = input_ds.rename_vars({"shcoarse": "ccsds_met"})
 
     dataset.epoch.attrs.update(
-        attr_mgr.get_variable_attributes("epoch"),
+        attr_mgr.get_variable_attributes("epoch", check_schema=False),
     )
     # Add the hist_angle coordinate
     # Histogram data is binned in 90, 4-degree bins
-    attrs = attr_mgr.get_variable_attributes("hi_hist_angle")
+    attrs = attr_mgr.get_variable_attributes("hi_hist_angle", check_schema=False)
     dataset.coords.update(
         {
             "angle": xr.DataArray(
@@ -535,7 +535,7 @@ def finish_memdmp_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     dataset = dataset.rename_vars({"shcoarse": "ccsds_met"})
 
     dataset.epoch.attrs.update(
-        attr_mgr.get_variable_attributes("epoch"),
+        attr_mgr.get_variable_attributes("epoch", check_schema=False),
     )
 
     # Update existing variable attributes
