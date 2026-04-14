@@ -182,8 +182,8 @@ BACKGROUND_RATE_FIELDS = [
     "o_background_variance",
 ]
 GOODTIMES_FIELDS = [
-    "start_met",
-    "end_met",
+    "gt_start_met",
+    "gt_end_met",
     "bin_start",
     "bin_end",
     "esa_goodtime_flags",
@@ -255,7 +255,7 @@ def lo_l1b(
         ds = l1b_star(sci_dependencies, attr_mgr_l1b)
         datasets_to_return.append(ds)
 
-    elif descriptor == "good-times":
+    elif descriptor == "goodtimes":
         logger.info("\nProcessing IMAP-Lo L1B Background Rates and Goodtimes...")
         ds = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b)
         datasets_to_return.extend(ds)
@@ -2539,7 +2539,7 @@ def l1b_bgrates_and_goodtimes(
     # if (pivot_angle < 95.0) & (pivot_angle > 85.0):
     #    h_bg_rate_nom = 0.0028
     # else:
-    #    h_bg_rate_nom = 0.0060
+    #    h_bg_rate_nom = 0.0033
     h_bg_rate_nom = 0.0028
     o_bg_rate_nom = h_bg_rate_nom / 100
 
@@ -2560,20 +2560,18 @@ def l1b_bgrates_and_goodtimes(
     met = ttj2000ns_to_met(l1b_histrates["epoch"].values)
 
     max_row_count = np.shape(h_intensity)[0]
+    bg_start_met = xr.DataArray([0.0])
+    bg_end_met = xr.DataArray([0.0])
     epochs = l1b_histrates["epoch"].values
     epochs = xr.DataArray(epochs, dims=["epoch"])
     goodtimes = xr.DataArray(np.zeros((max_row_count, 2), dtype=np.int64))
-    h_background_rate = xr.DataArray(
-        np.zeros((max_row_count, NUM_ESA_STEPS), dtype=np.float32)
-    )
+    h_background_rate = xr.DataArray(np.zeros((1, NUM_ESA_STEPS), dtype=np.float32))
     h_background_rate_variance = xr.DataArray(
-        np.zeros((max_row_count, NUM_ESA_STEPS), dtype=np.float32)
+        np.zeros((1, NUM_ESA_STEPS), dtype=np.float32)
     )
-    o_background_rate = xr.DataArray(
-        np.zeros((max_row_count, NUM_ESA_STEPS), dtype=np.float32)
-    )
+    o_background_rate = xr.DataArray(np.zeros((1, NUM_ESA_STEPS), dtype=np.float32))
     o_background_rate_variance = xr.DataArray(
-        np.zeros((max_row_count, NUM_ESA_STEPS), dtype=np.float32)
+        np.zeros((1, NUM_ESA_STEPS), dtype=np.float32)
     )
 
     # Walk through the histrate data in chunks of cycle_count (10)
@@ -2594,7 +2592,7 @@ def l1b_bgrates_and_goodtimes(
         if (index + cycle_count - 1) < max_row_count:
             interval = met[index + cycle_count - 1] - met[index]
         else:
-            interval = interval_nom
+            interval = interval_nom * max_row_count
 
         logger.debug(
             f"\n  Index {index}: met[{index}]="
@@ -2613,38 +2611,11 @@ def l1b_bgrates_and_goodtimes(
                 end = met[index - 1]
                 logger.debug(f"    Closing interval before gap: {begin} -> {end}")
 
-                h_bg_rate = sum_h_bg_counts / sum_h_bg_exposure
-                h_bg_rate_variance = np.sqrt(sum_h_bg_counts) / sum_h_bg_exposure
-                o_bg_rate = sum_o_bg_counts / sum_h_bg_exposure
-                o_bg_rate_variance = np.sqrt(sum_o_bg_counts) / sum_h_bg_exposure
-
-                if h_bg_rate_variance <= 0.0:
-                    h_bg_rate_variance = h_bg_rate
-
-                if o_bg_rate_variance <= 0.0:
-                    o_bg_rate_variance = o_bg_rate
-
-                if h_bg_rate <= 0.0:
-                    h_bg_rate = h_bg_rate_nom / 50.0
-                    h_bg_rate_variance = h_bg_rate
-
-                if o_bg_rate <= 0.0:
-                    o_bg_rate = o_bg_rate_nom * 0.3
-                    o_bg_rate_variance = o_bg_rate
-
                 epochs[row_count] = l1b_histrates["epoch"][index - 1].values.item()
                 goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
                 logger.debug(
                     f"    STORED interval {row_count} (large interval): "
                     f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
-                )
-                h_background_rate[row_count, :] = np.full(NUM_ESA_STEPS, h_bg_rate)
-                h_background_rate_variance[row_count, :] = np.full(
-                    NUM_ESA_STEPS, h_bg_rate_variance
-                )
-                o_background_rate[row_count, :] = np.full(NUM_ESA_STEPS, o_bg_rate)
-                o_background_rate_variance[row_count, :] = np.full(
-                    NUM_ESA_STEPS, o_bg_rate_variance
                 )
 
                 row_count += 1
@@ -2667,67 +2638,12 @@ def l1b_bgrates_and_goodtimes(
             end = met[index - 1]
             logger.debug(f"    Closing interval due to time gap: {begin} -> {end}")
 
-            h_bg_rate = sum_h_bg_counts / sum_h_bg_exposure
-            h_bg_rate_variance = np.sqrt(sum_h_bg_counts) / sum_h_bg_exposure
-            o_bg_rate = sum_o_bg_counts / sum_h_bg_exposure
-            o_bg_rate_variance = np.sqrt(sum_o_bg_counts) / sum_h_bg_exposure
-
-            if h_bg_rate_variance <= 0.0:
-                h_bg_rate_variance = h_bg_rate
-
-            if o_bg_rate_variance <= 0.0:
-                o_bg_rate_variance = o_bg_rate
-
-            if h_bg_rate <= 0.0:
-                h_bg_rate = h_bg_rate_nom / 50.0
-                h_bg_rate_variance = h_bg_rate
-
-            if o_bg_rate <= 0.0:
-                o_bg_rate = o_bg_rate_nom * 0.3
-                o_bg_rate_variance = o_bg_rate
-
             epochs[row_count] = l1b_histrates["epoch"][index - 1].values.item()
             goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
             logger.debug(
                 f"    STORED interval {row_count} (time gap): "
                 f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
             )
-            h_background_rate[row_count, :] = [
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-            ]
-            h_background_rate_variance[row_count, :] = [
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-            ]
-            o_background_rate[row_count, :] = [
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-            ]
-            o_background_rate_variance[row_count, :] = [
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-            ]
 
             row_count += 1
             begin = 0.0
@@ -2761,67 +2677,12 @@ def l1b_bgrates_and_goodtimes(
                     f"    Closing interval due to rate threshold: {begin} -> {end}"
                 )
 
-                h_bg_rate = sum_h_bg_counts / sum_h_bg_exposure
-                h_bg_rate_variance = np.sqrt(sum_h_bg_counts) / sum_h_bg_exposure
-                o_bg_rate = sum_o_bg_counts / sum_h_bg_exposure
-                o_bg_rate_variance = np.sqrt(sum_o_bg_counts) / sum_h_bg_exposure
-
-                if h_bg_rate_variance <= 0.0:
-                    h_bg_rate_variance = h_bg_rate
-
-                if o_bg_rate_variance <= 0.0:
-                    o_bg_rate_variance = o_bg_rate
-
-                if h_bg_rate <= 0.0:
-                    h_bg_rate = h_bg_rate_nom / 50.0
-                    h_bg_rate_variance = h_bg_rate
-
-                if o_bg_rate <= 0.0:
-                    o_bg_rate = o_bg_rate_nom * 0.3
-                    o_bg_rate_variance = o_bg_rate
-
                 epochs[row_count] = l1b_histrates["epoch"][index - 1].values.item()
                 goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
                 logger.debug(
                     f"    STORED interval {row_count} (rate threshold): "
                     f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
                 )
-                h_background_rate[row_count, :] = [
-                    h_bg_rate,
-                    h_bg_rate,
-                    h_bg_rate,
-                    h_bg_rate,
-                    h_bg_rate,
-                    h_bg_rate,
-                    h_bg_rate,
-                ]
-                h_background_rate_variance[row_count, :] = [
-                    h_bg_rate_variance,
-                    h_bg_rate_variance,
-                    h_bg_rate_variance,
-                    h_bg_rate_variance,
-                    h_bg_rate_variance,
-                    h_bg_rate_variance,
-                    h_bg_rate_variance,
-                ]
-                o_background_rate[row_count, :] = [
-                    o_bg_rate,
-                    o_bg_rate,
-                    o_bg_rate,
-                    o_bg_rate,
-                    o_bg_rate,
-                    o_bg_rate,
-                    o_bg_rate,
-                ]
-                o_background_rate_variance[row_count, :] = [
-                    o_bg_rate_variance,
-                    o_bg_rate_variance,
-                    o_bg_rate_variance,
-                    o_bg_rate_variance,
-                    o_bg_rate_variance,
-                    o_bg_rate_variance,
-                    o_bg_rate_variance,
-                ]
 
                 row_count += 1
                 begin = 0.0
@@ -2831,83 +2692,53 @@ def l1b_bgrates_and_goodtimes(
     if (end == 0.0) & (begin > 0.0):
         end = met[max_row_count - 1]
         if end > begin:
-            h_bg_rate = sum_h_bg_counts / sum_h_bg_exposure
-            h_bg_rate_variance = np.sqrt(sum_h_bg_counts) / sum_h_bg_exposure
-            o_bg_rate = sum_o_bg_counts / sum_h_bg_exposure
-            o_bg_rate_variance = np.sqrt(sum_o_bg_counts) / sum_h_bg_exposure
-
-            if h_bg_rate_variance <= 0.0:
-                h_bg_rate_variance = h_bg_rate
-
-            if o_bg_rate_variance <= 0.0:
-                o_bg_rate_variance = o_bg_rate
-
-            if h_bg_rate <= 0.0:
-                h_bg_rate = h_bg_rate_nom / 50.0
-                h_bg_rate_variance = h_bg_rate
-
-            if o_bg_rate <= 0.0:
-                o_bg_rate = o_bg_rate_nom * 0.3
-                o_bg_rate_variance = o_bg_rate
-
             epochs[row_count] = l1b_histrates["epoch"][max_row_count - 1]
             goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
             logger.debug(
                 f"    STORED interval {row_count} (final): "
                 f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
             )
-            h_background_rate[row_count, :] = [
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-                h_bg_rate,
-            ]
-            h_background_rate_variance[row_count, :] = [
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-                h_bg_rate_variance,
-            ]
-            o_background_rate[row_count, :] = [
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-                o_bg_rate,
-            ]
-            o_background_rate_variance[row_count, :] = [
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-                o_bg_rate_variance,
-            ]
 
             row_count += 1
             begin = 0.0
             end = 0.0
 
+    # Record the background rates for the entire pointing
+    if sum_h_bg_exposure > 0.0:
+        h_bg_rate = sum_h_bg_counts / sum_h_bg_exposure
+        h_bg_rate_variance = np.sqrt(sum_h_bg_counts) / sum_h_bg_exposure
+        o_bg_rate = sum_o_bg_counts / sum_h_bg_exposure
+        o_bg_rate_variance = np.sqrt(sum_o_bg_counts) / sum_h_bg_exposure
+
+        if h_bg_rate_variance <= 0.0:
+            h_bg_rate_variance = h_bg_rate
+
+        if o_bg_rate_variance <= 0.0:
+            o_bg_rate_variance = o_bg_rate
+
+        if h_bg_rate <= 0.0:
+            h_bg_rate = h_bg_rate_nom / 50.0
+            h_bg_rate_variance = h_bg_rate
+
+        if o_bg_rate <= 0.0:
+            o_bg_rate = o_bg_rate_nom * 0.3
+            o_bg_rate_variance = o_bg_rate
+
+        h_background_rate[0, :] = np.full(NUM_ESA_STEPS, h_bg_rate)
+        h_background_rate_variance[0, :] = np.full(NUM_ESA_STEPS, h_bg_rate_variance)
+        o_background_rate[0, :] = np.full(NUM_ESA_STEPS, o_bg_rate)
+        o_background_rate_variance[0, :] = np.full(NUM_ESA_STEPS, o_bg_rate_variance)
+        bg_start_met[0] = met[0]
+        bg_end_met[0] = met[max_row_count - 1]
+
+    # Handle case where no goodtimes were found -- produce a
+    # single record with invalid times (the defaults above)
+    if row_count == 0:
+        row_count = 1
+
     # Trim arrays to actual size
     epoch = epochs.isel(epoch=slice(0, row_count))
     goodtimes = goodtimes.isel(dim_0=slice(0, row_count))
-    h_background_rate = h_background_rate.isel(dim_0=slice(0, row_count))
-    h_background_rate_variance = h_background_rate_variance.isel(
-        dim_0=slice(0, row_count)
-    )
-    o_background_rate = o_background_rate.isel(dim_0=slice(0, row_count))
-    o_background_rate_variance = o_background_rate_variance.isel(
-        dim_0=slice(0, row_count)
-    )
 
     l1b_backgrounds_and_goodtimes_ds["epoch"] = xr.DataArray(
         data=epoch,
@@ -2916,16 +2747,28 @@ def l1b_bgrates_and_goodtimes(
         attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
     )
     l1b_backgrounds_and_goodtimes_ds["start_met"] = xr.DataArray(
-        data=goodtimes[:, 0],
-        name="Goodtime_start",
+        data=bg_start_met,
+        name="start_met",
         dims=["met"],
         attrs=attr_mgr_l1b.get_variable_attributes("met"),
     )
     l1b_backgrounds_and_goodtimes_ds["end_met"] = xr.DataArray(
-        data=goodtimes[:, 1],
-        name="Goodtime_end",
+        data=bg_end_met,
+        name="end_met",
         dims=["met"],
         attrs=attr_mgr_l1b.get_variable_attributes("met"),
+    )
+    l1b_backgrounds_and_goodtimes_ds["gt_start_met"] = xr.DataArray(
+        data=goodtimes[:, 0],
+        name="Goodtime_start",
+        dims=["epoch"],
+        # attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
+    )
+    l1b_backgrounds_and_goodtimes_ds["gt_end_met"] = xr.DataArray(
+        data=goodtimes[:, 1],
+        name="Goodtime_end",
+        dims=["epoch"],
+        # attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
     )
     l1b_backgrounds_and_goodtimes_ds["h_background_rates"] = xr.DataArray(
         data=h_background_rate,
@@ -2938,14 +2781,12 @@ def l1b_bgrates_and_goodtimes(
         name="h_bg_rate_variance",
         dims=["met", "esa_step"],
     )
-
     l1b_backgrounds_and_goodtimes_ds["o_background_rates"] = xr.DataArray(
         data=o_background_rate,
         name="o_bg_rate",
         dims=["met", "esa_step"],
         # attrs=attr_mgr_l1b.get_variable_attributes("esa_background_rates"),
     )
-
     l1b_backgrounds_and_goodtimes_ds["o_background_variance"] = xr.DataArray(
         data=o_background_rate_variance,
         name="o_bg_rate_variance",
@@ -2953,16 +2794,18 @@ def l1b_bgrates_and_goodtimes(
     )
 
     # We're only creating one record for all bins for now
+    # Note that this is true for both GoodTimes and background rates,
+    # so we cheat here by just using one record.
     l1b_backgrounds_and_goodtimes_ds["bin_start"] = xr.DataArray(
         data=np.zeros(row_count, dtype=int),
         name="bin_start",
-        dims=["met"],
+        dims=["epoch"],
         # attrs=attr_mgr_l1b.get_variable_attributes("bin_start"),
     )
     l1b_backgrounds_and_goodtimes_ds["bin_end"] = xr.DataArray(
         data=np.zeros(row_count, dtype=int) + 59,
         name="bin_end",
-        dims=["met"],
+        dims=["epoch"],
         # attrs=attr_mgr_l1b.get_variable_attributes("bin_end"),
     )
 
@@ -2971,7 +2814,7 @@ def l1b_bgrates_and_goodtimes(
     l1b_backgrounds_and_goodtimes_ds["esa_goodtime_flags"] = xr.DataArray(
         data=np.zeros((row_count, NUM_ESA_STEPS), dtype=int) + 1,
         name="E-step",
-        dims=["met", "esa_step"],
+        dims=["epoch", "esa_step"],
         # attrs=attr_mgr_l1b.get_variable_attributes("esa_goodtime_flags"),
     )
 

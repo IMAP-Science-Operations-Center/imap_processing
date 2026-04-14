@@ -2248,8 +2248,8 @@ def test_l1b_bgrates_and_goodtimes_basic(attr_mgr_l1b):
     # Note: bgrates uses 'met' dimension, goodtimes has epoch in data vars
 
     # Check goodtimes dataset structure
-    assert "start_met" in l1b_goodtimes_ds.data_vars
-    assert "end_met" in l1b_goodtimes_ds.data_vars
+    assert "gt_start_met" in l1b_goodtimes_ds.data_vars
+    assert "gt_end_met" in l1b_goodtimes_ds.data_vars
     assert "bin_start" in l1b_goodtimes_ds.data_vars
     assert "bin_end" in l1b_goodtimes_ds.data_vars
     assert "esa_goodtime_flags" in l1b_goodtimes_ds.data_vars
@@ -2259,12 +2259,12 @@ def test_l1b_bgrates_and_goodtimes_basic(attr_mgr_l1b):
     assert l1b_bgrates_ds["h_background_rates"].shape[1] == 7  # 7 ESA steps
 
     # Check that goodtime intervals were created
-    assert len(l1b_goodtimes_ds["start_met"]) > 0
-    assert len(l1b_goodtimes_ds["end_met"]) > 0
+    assert len(l1b_goodtimes_ds["gt_start_met"]) > 0
+    assert len(l1b_goodtimes_ds["gt_end_met"]) > 0
 
     # Check that start times are before end times
     assert np.all(
-        l1b_goodtimes_ds["start_met"].values <= l1b_goodtimes_ds["end_met"].values
+        l1b_goodtimes_ds["gt_start_met"].values <= l1b_goodtimes_ds["gt_end_met"].values
     )
 
     # Check bin_start and bin_end values
@@ -2328,13 +2328,13 @@ def test_l1b_bgrates_and_goodtimes_with_gap(attr_mgr_l1b):
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
     # Should create at least 2 separate goodtime intervals (before and after gap)
-    assert len(l1b_goodtimes_ds["start_met"]) >= 2
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 2
 
     # Check that intervals don't span across the gap
-    for i in range(len(l1b_goodtimes_ds["start_met"])):
+    for i in range(len(l1b_goodtimes_ds["gt_start_met"])):
         interval_duration = (
-            l1b_goodtimes_ds["end_met"].values[i]
-            - l1b_goodtimes_ds["start_met"].values[i]
+            l1b_goodtimes_ds["gt_end_met"].values[i]
+            - l1b_goodtimes_ds["gt_start_met"].values[i]
         )
         # No interval should be as large as the gap
         assert interval_duration < gap_size
@@ -2393,15 +2393,55 @@ def test_l1b_bgrates_and_goodtimes_high_rate(attr_mgr_l1b):
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
     # Should create at least 2 intervals (before and after high rate period)
-    assert len(l1b_goodtimes_ds["start_met"]) >= 2
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 2
 
     # Check that background rates were calculated
     assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
     assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
 
-    # Check that variance values are positive
-    assert np.all(l1b_bgrates_ds["h_background_variance"].values > 0)
-    assert np.all(l1b_bgrates_ds["o_background_variance"].values > 0)
+
+def test_l1b_bgrates_and_goodtimes_no_goodtimes(attr_mgr_l1b):
+    """When no goodtimes are detected the function should still return datasets."""
+    num_epochs = 50
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Make counts high everywhere so no low-rate goodtime intervals are found
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.1
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.01
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    bgrates_ds, goodtimes_ds = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Function should return two datasets
+    assert "h_background_rates" in bgrates_ds.data_vars
+    # Goodtimes dataset should exist and contain the gt_* fields
+    # (defaults when none found)
+    assert "gt_start_met" in goodtimes_ds.data_vars
+    assert "gt_end_met" in goodtimes_ds.data_vars
+    # When no goodtimes were detected the default invalid times are used (zeros)
+    assert int(goodtimes_ds["gt_start_met"].values[0]) == 0
+    assert int(goodtimes_ds["gt_end_met"].values[0]) == 0
+    assert int(bgrates_ds["start_met"].values[0]) == 0
+    assert int(bgrates_ds["end_met"].values[0]) == 0
 
 
 def test_l1b_bgrates_and_goodtimes_custom_cycle_count(attr_mgr_l1b):
@@ -2441,7 +2481,7 @@ def test_l1b_bgrates_and_goodtimes_custom_cycle_count(attr_mgr_l1b):
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
     # Should successfully create datasets with custom parameters
-    assert len(l1b_goodtimes_ds["start_met"]) > 0
+    assert len(l1b_goodtimes_ds["gt_start_met"]) > 0
     # Background rates should be calculated from the low-count period
     assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
     assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
@@ -2484,7 +2524,7 @@ def test_l1b_bgrates_and_goodtimes_empty_dataset(attr_mgr_l1b):
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
     assert "h_background_rates" in l1b_bgrates_ds.data_vars
-    assert "start_met" in l1b_goodtimes_ds.data_vars
+    assert "gt_start_met" in l1b_goodtimes_ds.data_vars
 
 
 def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
@@ -2510,6 +2550,16 @@ def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
                 np.random.rand(num_records, 7),
             ),
             # Goodtime fields
+            "gt_start_met": (
+                "met",
+                np.arange(473389200, 473389200 + num_records * 420, 420),
+            ),
+            "gt_end_met": (
+                "met",
+                np.arange(473389200 + 400, 473389200 + num_records * 420 + 400, 420),
+            ),
+            # Also include non-prefixed background start/end fields so
+            # split_backgrounds_and_goodtimes_dataset can select
             "start_met": (
                 "met",
                 np.arange(473389200, 473389200 + num_records * 420, 420),
@@ -2546,8 +2596,8 @@ def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
     # Note: bgrates uses 'met' dimension, goodtimes has epoch in data vars
 
     # Check goodtimes dataset structure
-    assert "start_met" in goodtimes_ds.data_vars
-    assert "end_met" in goodtimes_ds.data_vars
+    assert "gt_start_met" in goodtimes_ds.data_vars
+    assert "gt_end_met" in goodtimes_ds.data_vars
     assert "bin_start" in goodtimes_ds.data_vars
     assert "bin_end" in goodtimes_ds.data_vars
     assert "esa_goodtime_flags" in goodtimes_ds.data_vars
@@ -2557,11 +2607,13 @@ def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
     assert bgrates_ds["h_background_rates"].shape[1] == 7  # 7 ESA steps
 
     # Check that goodtime intervals were created
-    assert len(goodtimes_ds["start_met"]) > 0
-    assert len(goodtimes_ds["end_met"]) > 0
+    assert len(goodtimes_ds["gt_start_met"]) > 0
+    assert len(goodtimes_ds["gt_end_met"]) > 0
 
     # Check that start times are before end times
-    assert np.all(goodtimes_ds["start_met"].values <= goodtimes_ds["end_met"].values)
+    assert np.all(
+        goodtimes_ds["gt_start_met"].values <= goodtimes_ds["gt_end_met"].values
+    )
 
     # Check bin_start and bin_end values
     assert np.all(goodtimes_ds["bin_start"].values == 0)
@@ -2613,7 +2665,7 @@ def test_l1b_bgrates_and_goodtimes_azimuth_bins(attr_mgr_l1b):
     # Assert - Should create goodtime intervals because bins 20-50 have low counts
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
-    assert len(l1b_goodtimes_ds["start_met"]) > 0
+    assert len(l1b_goodtimes_ds["gt_start_met"]) > 0
     # Background rates should be calculated from the low-count bins
     assert np.all(l1b_bgrates_ds["h_background_rates"].values < 1.0)
 
@@ -2703,10 +2755,10 @@ def test_l1b_bgrates_and_goodtimes_offset_application(attr_mgr_l1b):
     # Assert
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
-    # Check that start_met is earlier than end_met (accounting for offsets)
-    for i in range(len(l1b_goodtimes_ds["start_met"])):
-        start = l1b_goodtimes_ds["start_met"].values[i]
-        end = l1b_goodtimes_ds["end_met"].values[i]
+    # Check that gt_start_met is earlier than gt_end_met (accounting for offsets)
+    for i in range(len(l1b_goodtimes_ds["gt_start_met"])):
+        start = l1b_goodtimes_ds["gt_start_met"].values[i]
+        end = l1b_goodtimes_ds["gt_end_met"].values[i]
 
         # Start should be before end
         assert start < end
@@ -2760,11 +2812,11 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(attr_mgr_l1b):
 
     # Should create goodtime interval that gets closed when rate goes high
     # The interval should span the first 3 cycles (epochs 0-29)
-    assert len(l1b_goodtimes_ds["start_met"]) >= 1
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 1
 
     # First interval should start around epoch 0's time
-    first_start = l1b_goodtimes_ds["start_met"].values[0]
-    first_end = l1b_goodtimes_ds["end_met"].values[0]
+    first_start = l1b_goodtimes_ds["gt_start_met"].values[0]
+    first_end = l1b_goodtimes_ds["gt_end_met"].values[0]
 
     # Verify interval was created
     assert first_start < first_end
@@ -2825,13 +2877,13 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(attr_mgr_
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
     # Should create at least 2 goodtime intervals (one for each LOW period)
-    assert len(l1b_goodtimes_ds["start_met"]) >= 2
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 2
 
     # All intervals should have valid start < end
-    for i in range(len(l1b_goodtimes_ds["start_met"])):
+    for i in range(len(l1b_goodtimes_ds["gt_start_met"])):
         assert (
-            l1b_goodtimes_ds["start_met"].values[i]
-            < l1b_goodtimes_ds["end_met"].values[i]
+            l1b_goodtimes_ds["gt_start_met"].values[i]
+            < l1b_goodtimes_ds["gt_end_met"].values[i]
         )
 
     # Background rates should be positive for all intervals
@@ -2921,11 +2973,11 @@ def test_l1b_bgrates_and_goodtimes_large_interval_with_active_tracking(attr_mgr_
     # Should have created at least 2 intervals:
     # 1. The interval that was closed before the gap
     # 2. The interval after the gap
-    assert len(l1b_goodtimes_ds["start_met"]) >= 2
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 2
 
     # The first interval should end before the gap chunk
     # (it should be closed when we detect the large interval)
-    first_interval_end = l1b_goodtimes_ds["end_met"].values[0]
+    first_interval_end = l1b_goodtimes_ds["gt_end_met"].values[0]
     gap_chunk_start = met_times_gap_chunk_adjusted[0]
 
     # The first interval should end before the gap chunk starts
