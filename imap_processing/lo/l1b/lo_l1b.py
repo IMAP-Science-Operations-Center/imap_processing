@@ -2498,7 +2498,7 @@ def l1b_star(
     return l1b_star_ds
 
 
-def l1b_bgrates_and_goodtimes(
+def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     sci_dependencies: dict,
     attr_mgr_l1b: ImapCdfAttributes,
     cycle_count: int = 10,
