@@ -804,8 +804,8 @@ class LoPointingSet(LoHiBasePointingSet):
             The midpoint value [J2000 ET] of the pointing set.
         """
         epoch_delta = met_to_ttj2000ns(
-            self.data["pointing_end_met"].data - self.data["pointing_start_met"].data
-        )
+            self.data["pointing_end_met"].data
+        ) - met_to_ttj2000ns(self.data["pointing_start_met"].data)
         return float(ttj2000ns_to_et(self.epoch + epoch_delta / 2))
 
 
