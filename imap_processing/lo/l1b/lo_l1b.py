@@ -2564,8 +2564,7 @@ def l1b_bgrates_and_goodtimes(
     bg_end_met = xr.DataArray([0.0])
     epochs = l1b_histrates["epoch"].values.copy()
     epochs = xr.DataArray(
-        epochs, dims=["epoch"], attrs=attr_mgr_l1b.get_variable_attributes("epoch")
-    )
+        epochs, dims=["epoch"])
     goodtimes = xr.DataArray(np.zeros((max_row_count, 2), dtype=np.int64))
     h_background_rate = xr.DataArray(np.zeros((1, NUM_ESA_STEPS), dtype=np.float32))
     h_background_rate_variance = xr.DataArray(
@@ -2827,7 +2826,8 @@ def l1b_bgrates_and_goodtimes(
         l1b_backgrounds_and_goodtimes_ds, attr_mgr_l1b
     )
     datasets_to_return.extend([l1b_bgrates_ds, l1b_goodtimes_ds])
-
+    print("epoch bgrates meta", l1b_bgrates_ds["epoch"].attrs)
+    print("epoch goodtimes meta", l1b_goodtimes_ds["epoch"].attrs)
     return datasets_to_return
 
 
