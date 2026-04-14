@@ -1,6 +1,6 @@
 openapi: 3.0.0
 servers:
-  - description: Development IMAP SDC Server
+  - description: Production IMAP SDC Server
 host: https://api.imap-mission.com/
 info:
   version: "0.1.0"
