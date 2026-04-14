@@ -2562,7 +2562,7 @@ def l1b_bgrates_and_goodtimes(
     max_row_count = np.shape(h_intensity)[0]
     bg_start_met = xr.DataArray([0.0])
     bg_end_met = xr.DataArray([0.0])
-    epochs = l1b_histrates["epoch"].values
+    epochs = l1b_histrates["epoch"].values.copy()
     epochs = xr.DataArray(epochs, dims=["epoch"])
     goodtimes = xr.DataArray(np.zeros((max_row_count, 2), dtype=np.int64))
     h_background_rate = xr.DataArray(np.zeros((1, NUM_ESA_STEPS), dtype=np.float32))
