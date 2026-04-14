@@ -2676,7 +2676,8 @@ def l1b_bgrates_and_goodtimes(
                 logger.debug(
                     f"    Closing interval due to rate threshold: {begin} -> {end}"
                 )
-
+                print("    antiram_h_rate: ", antiram_h_rate, " at index ", index)
+                print("l1b_histrates epoch: ", l1b_histrates["epoch"][index - 1].values)
                 epochs[row_count] = l1b_histrates["epoch"][index - 1].values.item()
                 goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
                 logger.debug(
