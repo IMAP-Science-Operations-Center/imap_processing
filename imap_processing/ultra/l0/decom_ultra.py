@@ -214,7 +214,7 @@ def get_event_id(
     event_data: bytes, count: int, shcoarse: int, bits_per_event: int
 ) -> list:
     """
-    Generate unique event IDs for each event in the packet.
+    Get unique event IDs using data from events packets.
 
     Parameters
     ----------
@@ -230,9 +230,8 @@ def get_event_id(
 
     Returns
     -------
-    list
-        A list of unique event IDs for each event in the packet, formatted as 50
-        character hex strings.
+    event_ids : numpy.ndarray
+        Ultra events data with calculated unique event IDs as 64-bit integers.
     """
     binary = convert_to_binary_string(event_data)
     # For all packets with event data, parses the binary string
