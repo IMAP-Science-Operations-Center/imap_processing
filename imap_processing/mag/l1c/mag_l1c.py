@@ -48,9 +48,6 @@ def mag_l1c(
     """
     # TODO:
     # find missing sequences and output them
-    # Fix gaps at the beginning of the day by going to previous day's file
-    # Fix gaps at the end of the day
-    # Allow for one input to be missing
     # Missing burst file - just pass through norm file
     # Missing norm file - go back to previous L1C file to find timestamps, then
     # interpolate the entire day from burst
@@ -68,10 +65,8 @@ def mag_l1c(
 
     interp_function = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
     if burst_mode_dataset is not None:
-        # Only use day_to_process if there is no norm data
-        day_to_process_arg = day_to_process if normal_mode_dataset is None else None
         full_interpolated_timeline: np.ndarray = process_mag_l1c(
-            normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process_arg
+            normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process
         )
     elif normal_mode_dataset is not None:
         full_interpolated_timeline = fill_normal_data(normal_mode_dataset)

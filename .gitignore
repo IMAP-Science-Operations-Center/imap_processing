@@ -167,6 +167,9 @@ cython_debug/
 # VSCode
 .vscode/
 
+# Claude
+.claude/
+
 # Data that is downloaded
 data/
 test_data/
