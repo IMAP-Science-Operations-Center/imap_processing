@@ -65,10 +65,11 @@ def ultra_l1a(  # noqa: PLR0912
     xtce = str(
         f"{imap_module_directory}/ultra/packet_definitions/ULTRA_SCI_COMBINED.xml"
     )
-
     # Keep a list to track the two versions, l1a and l1b with the derived values.
     decommutated_packet_datasets = []
     datasets_by_apid = packet_file_to_datasets(packet_file, xtce)
+    # get raw packets for event data
+    # raw_packets = packet_generator(packet_file, xtce)
     decommutated_packet_datasets.append(datasets_by_apid)
     if create_derived_l1b:
         # For the housekeeping products, we can create the l1b at the same time
