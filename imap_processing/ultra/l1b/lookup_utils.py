@@ -638,7 +638,8 @@ def get_de_product_name(
     Parameters
     ----------
     repoint : str
-        The repointing ID in the format "repointXXX" where XXX is the repointing number.
+        The repointing ID in the format "repointXXXXX" where XXXXX is the repointing
+        number.
     sensor : int
         Sensor number, either 45 or 90.
     data_level : str
@@ -659,9 +660,7 @@ def get_de_product_name(
     # and de_product. If repointing_id_end is NaN that indicates that the de_product
     # should be used for all repoint IDs greater than or equal to repointing_id_start.
     file_name = f"{data_level}-{sensor}sensor-de-product-lookup"
-    de_lookup = pd.read_csv(
-        ancillary_files[f"{data_level}-{sensor}sensor-de-product-lookup"]
-    )
+    de_lookup = pd.read_csv(ancillary_files[file_name])
     repoint_id = int(repoint.replace("repoint", ""))
     # Filter the dataset to find where the current repoint ID falls within the
     # repointing_id_start and repointing_id_end range. OR if repointing_id_end is NaN,
