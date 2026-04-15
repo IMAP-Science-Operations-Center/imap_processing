@@ -349,13 +349,13 @@ def test_filter_good_times():
 @pytest.mark.parametrize(
     "sunrise_offset, sunset_offset, expected_is_night",
     [
-        # sunset>0 shortens at sunset; sunrise>0 extends at sunrise
+        # sunrise>0 extends at sunrise; sunset>0 shortens at sunset
         (1, 1, [1, 1, 1, 1, 0, 0, 0, 1]),
-        # sunset>0 shortens at sunset; sunrise<0 shortens at sunrise
+        # sunrise<0 shortens at sunrise; sunset>0 shortens at sunset
         (-1, 1, [1, 1, 1, 1, 0, 1, 1, 1]),
-        # sunset<0 extends at sunset; sunrise>0 extends at sunrise
+        # sunrise>0 extends at sunrise; sunset<0 extends at sunset
         (1, -1, [1, 1, 0, 0, 0, 0, 0, 1]),
-        # sunset<0 extends at sunset; sunrise<0 shortens at sunrise
+        # sunrise<0 shortens at sunrise; sunset<0 extends at sunset
         (-1, -1, [1, 1, 0, 0, 0, 1, 1, 1]),
         # zero offsets: no change
         (0, 0, [1, 1, 1, 0, 0, 0, 1, 1]),
@@ -367,6 +367,7 @@ def test_apply_is_night_offsets(sunrise_offset, sunset_offset, expected_is_night
     # Setup: epochs 0-2 day, 3-5 night, 6-7 day (processed flags: 0=night, 1=day).
     flags = np.ones((8, 17), dtype=float)
     flags[3:6, 6] = 0  # epochs 3-5 are night
+    original_flags = flags.copy()
 
     result = HistogramL2.apply_is_night_offsets(
         flags,
@@ -376,6 +377,14 @@ def test_apply_is_night_offsets(sunrise_offset, sunset_offset, expected_is_night
     )
 
     assert np.array_equal(result[:, 6], np.array(expected_is_night, dtype=float))
+
+    if sunrise_offset == 0 and sunset_offset == 0:
+        # No offsets: original array returned as-is (no copy)
+        assert result is flags
+    else:
+        # Offsets applied: result is a copy, original flags are unchanged
+        assert result is not flags
+        assert np.array_equal(flags, original_flags)
 
 
 # ── spin_angle tests ──────────────────────────────────────────────────────────

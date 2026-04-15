@@ -374,9 +374,9 @@ class HistogramL2:
         # is_night transitions before selecting good blocks.
         flags = self.apply_is_night_offsets(
             l1b_dataset["flags"].data,
-            is_night_idx=6,  # is_night is the 7th bad-time flag (0-indexed)
-            sunrise_offset=pipeline_settings.sunrise_offset,
-            sunset_offset=pipeline_settings.sunset_offset,
+            is_night_idx=GlowsConstants.IS_NIGHT_FLAG_IDX,
+            sunrise_offset=int(pipeline_settings.sunrise_offset),
+            sunset_offset=int(pipeline_settings.sunset_offset),
         )
         flags_da = xr.DataArray(flags, dims=l1b_dataset["flags"].dims)
 
@@ -547,8 +547,8 @@ class HistogramL2:
     def apply_is_night_offsets(
         flags: np.ndarray,
         is_night_idx: int,
-        sunrise_offset: float,
-        sunset_offset: float,
+        sunrise_offset: int,
+        sunset_offset: int,
     ) -> np.ndarray:
         """
         Apply sunrise/sunset offsets to is_night transitions.
@@ -572,27 +572,28 @@ class HistogramL2:
             Flags array with shape (n_epochs, FLAG_LENGTH), 0=bad, 1=good.
         is_night_idx : int
             Column index of the is_night flag in the flags array.
-        sunrise_offset : float
+        sunrise_offset : int
             Additional histogram shift at the sunrise (is_night 1->0) transition.
-        sunset_offset : float
+        sunset_offset : int
             Histogram shift applied at both the sunset and sunrise transitions.
 
         Returns
         -------
         numpy.ndarray
-            Copy of flags with the is_night column adjusted per the offsets.
+            Returns the original flags array if no offsets are applied,
+            otherwise returns a modified copy.
 
         Notes
         -----
         Algorithm doc v4.4.7, Sec. 3.9.1, item 2
         is_night: 1 = daytime (good), 0 = night (bad)
         """
-        flags_with_offsets = flags.copy()
-
         # If sunrise_offset=0 and sunset_offset=0 then no corrections are needed
         # relative to is_night transition set onboard.
         if sunrise_offset == 0 and sunset_offset == 0:
-            return flags_with_offsets
+            return flags
+
+        flags_with_offsets = flags.copy()
 
         is_night_col = flags[:, is_night_idx]
         n = flags.shape[0]
@@ -605,15 +606,15 @@ class HistogramL2:
             # to is_night 0 -> 1 transition.
             for i in sunrise_index:
                 flags_with_offsets[
-                    i + 1 : min(n, i + 1 + int(sunrise_offset)), is_night_idx
+                    i + 1 : min(n, i + 1 + sunrise_offset), is_night_idx
                 ] = 0
 
-        if sunrise_offset < 0:
+        elif sunrise_offset < 0:
             # Night (flag = 0) shortens by sunrise_offset relative
             # to is_night 0 -> 1 transition.
             for i in sunrise_index:
                 flags_with_offsets[
-                    max(0, i + 1 + int(sunrise_offset)) : i + 1, is_night_idx
+                    max(0, i + 1 + sunrise_offset) : i + 1, is_night_idx
                 ] = 1
 
         if sunset_offset > 0:
@@ -621,15 +622,15 @@ class HistogramL2:
             # to is_night 1 -> 0 transition.
             for i in sunset_index:
                 flags_with_offsets[
-                    i + 1 : min(n, i + 1 + int(sunset_offset)), is_night_idx
+                    i + 1 : min(n, i + 1 + sunset_offset), is_night_idx
                 ] = 1
 
-        if sunset_offset < 0:
+        elif sunset_offset < 0:
             # Night (flag = 0) extends by sunset_offset relative
             # to is_night 1 -> 0 transition.
             for i in sunset_index:
                 flags_with_offsets[
-                    max(0, i + 1 + int(sunset_offset)) : i + 1, is_night_idx
+                    max(0, i + 1 + sunset_offset) : i + 1, is_night_idx
                 ] = 0
 
         return flags_with_offsets
