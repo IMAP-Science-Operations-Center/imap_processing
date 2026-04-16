@@ -17,6 +17,46 @@ from imap_processing.ultra.l1b.lookup_utils import (
 logger = logging.getLogger(__name__)
 
 
+def in_restricted_fov(
+    theta: np.ndarray,
+    phi: np.ndarray,
+    instrument_id: int,
+) -> np.ndarray:
+    """
+    Determine whether the theta/phi pairs are inside the restricted FOV.
+
+    Parameters
+    ----------
+    theta : np.ndarray
+        Array of theta values in degrees.
+    phi : np.ndarray
+        Array of phi values in degrees.
+    instrument_id : int
+        Instrument ID, either 45 or 90.
+
+    Returns
+    -------
+    np.ndarray
+        Boolean array indicating whether each theta/phi pair is within the restricted
+         FOV.
+    """
+    # Theta limits are dependent on the instrument id
+    if instrument_id == 90:
+        low_theta_lim = UltraConstants.RESTRICTED_FOV_THETA_LOW_DEG_90
+        high_theta_lim = UltraConstants.RESTRICTED_FOV_THETA_HIGH_DEG_90
+    elif instrument_id == 45:
+        low_theta_lim = UltraConstants.RESTRICTED_FOV_THETA_LOW_DEG_45
+        high_theta_lim = UltraConstants.RESTRICTED_FOV_THETA_HIGH_DEG_45
+    else:
+        raise ValueError(f"Invalid instrument ID: {instrument_id}. Must be 45 or 90.")
+
+    return (
+        (theta >= low_theta_lim)
+        & (theta <= high_theta_lim)
+        & (np.abs(phi) < UltraConstants.FOV_PHI_LIMIT_DEG)
+    )
+
+
 def mask_below_fwhm_scattering_threshold(
     theta_coeffs: np.ndarray,
     phi_coeffs: np.ndarray,
@@ -67,18 +107,20 @@ def mask_below_fwhm_scattering_threshold(
     return scattering_mask, fwhm_theta, fwhm_phi
 
 
-def calculate_fwhm_spun_scattering(
+def calculate_accepted_pixels(  # noqa: PLR0912
     for_indices_by_spin_phase: xr.DataArray,
     theta_vals: np.ndarray,
     phi_vals: np.ndarray,
     ancillary_files: dict,
     instrument_id: int,
     reject_scattering: bool = False,
+    apply_fov_restriction: bool = False,
 ) -> tuple[xr.DataArray, NDArray, NDArray, NDArray]:
     """
-    Calculate FWHM scattering values for each pixel, energy bin, and spin phase step.
+    Calculate the accepted pixels based scattering and FOV restrictions.
 
-    This function also calculates a mask for pixels that are below the FWHM threshold.
+    This function also calculates a mask for pixels that are below the FWHM threshold
+    and FWHM scattering values for each pixel, energy bin, and spin phase step.
 
     Parameters
     ----------
@@ -99,15 +141,23 @@ def calculate_fwhm_spun_scattering(
         Instrument ID, either 45 or 90.
     reject_scattering : bool
         Whether to reject pixels based on scattering thresholds.
+    apply_fov_restriction : bool
+        Whether to apply the restricted FOV theta/phi acceptance test.  When
+        ``True``, any spin-step/pixel combination whose instrument-frame theta
+        and phi do not satisfy :func:`in_restricted_fov` is skipped entirely:
+        it is not added to the averaging numerator *or* denominator, and it
+        does not contribute exposure time.  This gates GF, efficiency, and
+        exposure for the fine L1C energy-bin maps.
 
     Returns
     -------
     valid_spun_pixels : xarray.DataArray
-       Boolean array indicating, for each spin phase step, energy_bin, pixel,
-       the pixel is inside the Field Of Regard (FOR) and whether the pixel is inside the
-       FOR at that spin phase and its computed FWHM at that energy is below the
-       scattering threshold. If reject_scattering is False, this will just reflect
-       the FOR mask (for_indices_by_spin_phase).
+        Boolean array of shape ``(spin_phase_step, energy_bin, pixel)`` indicating
+        which pixel samples are accepted for L1C accumulation at each spin step.
+        Acceptance always requires the sample to be inside the Field of Regard (FOR),
+        can optionally require passing the restricted theta/phi FOV criteria when
+        ``apply_fov_restriction=True``, and can optionally require passing the FWHM
+        scattering threshold when ``reject_scattering=True``.
     scattering_fwhm_theta : NDArray
         Calculated FWHM scatting values for theta at each energy bin and averaged
         over spin phase.
@@ -143,9 +193,10 @@ def calculate_fwhm_spun_scattering(
     steps = for_indices_by_spin_phase.sizes["spin_phase_step"]
     energies = energy_bin_geometric_means[np.newaxis, :]
     # Initialize DataArray to hold boolean of valid pixels at each spin phase step
-    # If reject_scattering if false, this will just be the FOR mask.
+    # If reject_scattering and apply_fov_restriction are both False, this will just
+    # be the FOR mask.
     spun_dims = ("spin_phase_step", "energy", "pixel")
-    if reject_scattering:
+    if reject_scattering or apply_fov_restriction:
         valid_pixels = xr.DataArray(
             np.zeros((steps, len(energy_bin_geometric_means), n_pix), dtype=bool),
             dims=spun_dims,
@@ -156,6 +207,8 @@ def calculate_fwhm_spun_scattering(
         ).transpose(*spun_dims)
     else:
         valid_pixels = for_indices_by_spin_phase
+    # TODO refactor loop below and combine the energy dependent and independent cases
+    #  if possible to avoid code duplication.
     # The "for_indices_by_spin_phase" lookup table contains the boolean values of each
     # pixel at each spin phase step, indicating whether the pixel is inside the FOR.
     # It starts at Spin-phase = 0, and increments in fine steps (1 ms), spinning the
@@ -167,14 +220,27 @@ def calculate_fwhm_spun_scattering(
         if for_inds.ndim > 1:
             # Energy dependent FOR indices
             for e_ind in range(len(energy_bin_geometric_means)):
-                for_inds_energy = for_inds[e_ind, :]
-
                 # Skip if no pixels in FOR
-                if not np.any(for_inds_energy):
+                if not np.any(for_inds[e_ind, :]):
+                    continue
+                accepted_pix = np.flatnonzero(for_inds[e_ind, :])
+                theta = theta_vals[i, e_ind, accepted_pix]
+                phi = phi_vals[i, e_ind, accepted_pix]
+
+                # Check if we need to restrict the fov further using theta/phi
+                # acceptance limits
+                if apply_fov_restriction:
+                    fov_mask = in_restricted_fov(theta, phi, instrument_id)
+                    # update accepted pixel indices to reflect the FOV restriction
+                    accepted_pix = accepted_pix[fov_mask]
+                    theta = theta[fov_mask]
+                    phi = phi[fov_mask]
+                    # update valid pixels to reflect the FOV restriction
+                    valid_pixels[i, e_ind, accepted_pix] = True
+
+                if len(accepted_pix) == 0:
                     continue
 
-                theta = theta_vals[i, e_ind, for_inds_energy]
-                phi = phi_vals[i, e_ind, for_inds_energy]
                 theta_coeffs, phi_coeffs = get_scattering_coefficients(
                     theta.data, phi.data, lookup_tables=scattering_luts
                 )
@@ -192,19 +258,37 @@ def calculate_fwhm_spun_scattering(
                 )
                 # If rejecting scattering, store the mask
                 if reject_scattering:
-                    valid_pixels[i, e_ind, for_inds_energy] = scattering_mask.flatten()
+                    valid_pixels[i, e_ind, accepted_pix] = scattering_mask.flatten()
 
                 # Accumulate FWHM values
-                fwhm_theta_sum[e_ind, for_inds_energy] += fwhm_theta.flatten()
-                fwhm_phi_sum[e_ind, for_inds_energy] += fwhm_phi.flatten()
-                sample_count[e_ind, for_inds_energy] += 1
+                fwhm_theta_sum[e_ind, accepted_pix] += fwhm_theta.flatten()
+                fwhm_phi_sum[e_ind, accepted_pix] += fwhm_phi.flatten()
+                sample_count[e_ind, accepted_pix] += 1
         else:
             # Energy independent FOR indices
             if not np.any(for_inds):
                 continue
 
-            theta = theta_vals[i, for_inds]
-            phi = phi_vals[i, for_inds]
+            accepted_pix = np.flatnonzero(for_inds)  # Get indices of pixels in FOR for
+            # this spin phase step
+
+            theta = theta_vals[i, accepted_pix]
+            phi = phi_vals[i, accepted_pix]
+
+            # Check if we need to apply the restricted FOV mask before calculating
+            # scattering coefficients
+            if apply_fov_restriction:
+                fov_mask = in_restricted_fov(theta, phi, instrument_id)
+                # update accepted pixel indices to reflect the FOV restriction
+                accepted_pix = accepted_pix[fov_mask]
+                theta = theta[fov_mask]
+                phi = phi[fov_mask]
+                # update valid pixels to reflect the FOV restriction
+                valid_pixels[i, :, accepted_pix] = True
+
+            if len(accepted_pix) == 0:
+                continue
+
             theta_coeffs, phi_coeffs = get_scattering_coefficients(
                 theta, phi, lookup_tables=scattering_luts
             )
@@ -216,14 +300,13 @@ def calculate_fwhm_spun_scattering(
                     scattering_thresholds=scattering_thresholds_for_energy_mean,
                 )
             )
-
             if reject_scattering:
-                valid_pixels[i, :, for_inds] = scattering_mask.T
+                valid_pixels[i, :, accepted_pix] = scattering_mask.T
 
             # Accumulate FWHM values
-            fwhm_theta_sum[:, for_inds] += fwhm_theta.T
-            fwhm_phi_sum[:, for_inds] += fwhm_phi.T
-            sample_count[:, for_inds] += 1
+            fwhm_theta_sum[:, accepted_pix] += fwhm_theta.T
+            fwhm_phi_sum[:, accepted_pix] += fwhm_phi.T
+            sample_count[:, accepted_pix] += 1
 
     fwhm_phi_avg = np.zeros_like(fwhm_phi_sum)
     fwhm_theta_avg = np.zeros_like(fwhm_theta_sum)

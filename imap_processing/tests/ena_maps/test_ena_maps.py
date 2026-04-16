@@ -98,6 +98,16 @@ class TestUltraPointingSet:
                 "energy_bin_geometric_mean",
             )
 
+    # TODO remove this test when the TODO in the ultra downsample_counts function is
+    # removed.
+    def test_old_pset(self):
+        pset = self.l1c_pset_products[0]
+        pset = pset.drop_dims("counts_pixel_index")
+        pset = ena_maps.UltraPointingSet(
+            pset,
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     def test_init_cdf(
         self,
@@ -297,8 +307,9 @@ class TestLoPointingSet:
         # check that the midpoint_j2000_et property is equal to the expected value
         assert lo_pset.midpoint_j2000_et == ttj2000ns_to_et(
             lo_pset.epoch
-            + met_to_ttj2000ns(
-                lo_pset_ds.pointing_end_met - lo_pset_ds.pointing_start_met
+            + (
+                met_to_ttj2000ns(lo_pset_ds.pointing_end_met)
+                - met_to_ttj2000ns(lo_pset_ds.pointing_start_met)
             )
             / 2
         )

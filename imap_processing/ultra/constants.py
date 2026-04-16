@@ -181,6 +181,13 @@ class UltraConstants:
 
     FOV_THETA_OFFSET_DEG = 0.0
     FOV_PHI_LIMIT_DEG = 60.0
+    # Restricted FOV theta/phi acceptance limits (degrees).
+    # Samples outside these bounds are excluded from GF, efficiency, exposure,
+    # and counts maps at L1C (fine energy bin maps only).
+    RESTRICTED_FOV_THETA_LOW_DEG_45: float = -43.0
+    RESTRICTED_FOV_THETA_HIGH_DEG_45: float = 43.0
+    RESTRICTED_FOV_THETA_LOW_DEG_90: float = -43.0
+    RESTRICTED_FOV_THETA_HIGH_DEG_90: float = 43.0
 
     # For spatiotemporal culling
     EARTH_RADIUS_KM: float = 6378.1
@@ -205,7 +212,7 @@ class UltraConstants:
     # n_bins=len(PSET_ENERGY_BIN_EDGES)[BASE_CULL_EBIN:] // N_CULL_EBINS
     # an error will be raised if this does not match n_bins
     HIGH_ENERGY_CULL_THRESHOLDS = (
-        np.array([4.0, 2.0, 1.25, 0.9, 0.2, 0.2]) * SPIN_BIN_SIZE
+        np.array([4.0, 2.0, 1.20, 0.45, 0.1, 0.1]) * SPIN_BIN_SIZE
     )
     # Use the channel defined below to determine which spins are contaminated
     HIGH_ENERGY_CULL_CHANNEL = 5
@@ -218,9 +225,32 @@ class UltraConstants:
     STAT_CULLING_N_ITER = 5
     # Sigma threshold to use for statistical outlier culling.
     STAT_CULLING_STD_THRESHOLD = 0.05
-
+    # Energy channels for the upstream ion cull
+    # The algorithm will be run twice with the different sets of channels below.
+    UPSTREAM_ION_ENERGY_CHANNELS_1: ClassVar[list] = [0, 1, 2]
+    UPSTREAM_ION_ENERGY_CHANNELS_2: ClassVar[list] = [2, 3, 4]
+    UPSTREAM_SIG_THRESHOLD = 2.5
+    # Spectral culling parameters
+    SPECTRAL_ENERGY_CHANNELS: ClassVar[list] = [0, 1, 2, 3]
+    SPECTRAL_SIG_THRESHOLD = 1
     # Set dimensions for extended spin/goodtime support variables
     # ISTP requires fixed dimensions, so we set these to the maximum we expect to need
     # and pad with fill values if we use fewer bins.
     MAX_ENERGY_RANGES = 16
     MAX_ENERGY_RANGE_EDGES = MAX_ENERGY_RANGES + 1
+
+    # L1C PSET constants
+
+    # When True, applies the FOV restrictions defined above to the L1C fine energy bin
+    # maps (GF, efficiency, exposure, counts). This culls regions of the instrument
+    # field of view with poor efficiency calibration from inclusion into the map making
+    # process.
+    APPLY_FOV_RESTRICTIONS_L1C: bool = True
+
+    # When True, applies the boundary scale factors from the ancillary file to exposure
+    # time, efficiency, and geometric factor maps.
+    APPLY_BOUNDARY_SCALE_FACTORS_L1C: bool = False
+
+    # When True, applies the scattering rejection mask based on the FWHM thresholds
+    # to the L1C fine energy bin maps.
+    APPLY_SCATTERING_REJECTION_L1C: bool = False

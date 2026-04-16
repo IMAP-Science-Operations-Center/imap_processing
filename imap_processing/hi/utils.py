@@ -7,7 +7,7 @@ from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 import numpy as np
 import pandas as pd
@@ -313,7 +313,12 @@ class EsaEnergyStepLookupTable:
 
     def __init__(self) -> None:
         self.df = pd.DataFrame(
-            columns=["start_met", "end_met", "esa_step", "esa_energy_step"]
+            {
+                "start_met": pd.Series(dtype="float64"),
+                "end_met": pd.Series(dtype="float64"),
+                "esa_step": pd.Series(dtype="int64"),
+                "esa_energy_step": pd.Series(dtype="int64"),
+            }
         )
         self._indexed = False
 
@@ -451,10 +456,12 @@ class EsaEnergyStepLookupTable:
             return results.astype(self._esa_energy_step_dtype)
 
 
-@pd.api.extensions.register_dataframe_accessor("cal_prod_config")
-class CalibrationProductConfig:
+class _BaseConfigAccessor:
     """
-    Register custom accessor for calibration product configuration DataFrames.
+    Base class for configuration DataFrame accessors.
+
+    Provides common functionality for validating and processing configuration
+    DataFrames with coincidence types and TOF windows.
 
     Parameters
     ----------
@@ -462,19 +469,10 @@ class CalibrationProductConfig:
         Object to run validation and use accessor functions on.
     """
 
-    index_columns = (
-        "calibration_prod",
-        "esa_energy_step",
-    )
+    # Subclasses must define these
+    index_columns: tuple[str, ...]
+    required_columns: tuple[str, ...]
     tof_detector_pairs = ("ab", "ac1", "bc1", "c1c2")
-    required_columns = (
-        "coincidence_type_list",
-        *[
-            f"tof_{det_pair}_{limit}"
-            for det_pair in tof_detector_pairs
-            for limit in ["low", "high"]
-        ],
-    )
 
     def __init__(self, pandas_obj: pd.DataFrame) -> None:
         self._validate(pandas_obj)
@@ -495,7 +493,7 @@ class CalibrationProductConfig:
         AttributeError : If the dataframe does not pass validation.
         """
         for index_name in self.index_columns:
-            if index_name in df.index:
+            if index_name not in df.index.names:
                 raise AttributeError(
                     f"Required index {index_name} not present in dataframe."
                 )
@@ -503,8 +501,6 @@ class CalibrationProductConfig:
         for col in self.required_columns:
             if col not in df.columns:
                 raise AttributeError(f"Required column {col} not present in dataframe.")
-        # TODO: Verify that the same ESA energy steps exist in all unique calibration
-        #   product numbers
 
     def _add_coincidence_values_column(self) -> None:
         """Generate and add the coincidence_type_values column to the dataframe."""
@@ -517,44 +513,6 @@ class CalibrationProductConfig:
             ),
             axis=1,
         )
-
-    @classmethod
-    def from_csv(cls, path: str | Path) -> pd.DataFrame:
-        """
-        Read configuration CSV file into a pandas.DataFrame.
-
-        Parameters
-        ----------
-        path : str or pathlib.Path
-            Location of the Calibration Product configuration CSV file.
-
-        Returns
-        -------
-        dataframe : pandas.DataFrame
-            Validated calibration product configuration data frame.
-        """
-        df = pd.read_csv(
-            path,
-            index_col=cls.index_columns,
-            converters={"coincidence_type_list": lambda s: tuple(s.split("|"))},
-            comment="#",
-        )
-        # Force the _init_ method to run by using the namespace
-        _ = df.cal_prod_config.number_of_products
-        return df
-
-    @property
-    def number_of_products(self) -> int:
-        """
-        Get the number of calibration products in the current configuration.
-
-        Returns
-        -------
-        number_of_products : int
-            The maximum number of calibration products defined in the list of
-            calibration product definitions.
-        """
-        return len(self._obj.index.unique(level="calibration_prod"))
 
     @property
     def calibration_product_numbers(self) -> npt.NDArray[np.int_]:
@@ -573,6 +531,109 @@ class CalibrationProductConfig:
             .sort_values()
             .values
         )
+
+
+@pd.api.extensions.register_dataframe_accessor("cal_prod_config")
+class CalibrationProductConfig(_BaseConfigAccessor):
+    """Register custom accessor for calibration product configuration DataFrames."""
+
+    index_columns = (
+        "calibration_prod",
+        "esa_energy_step",
+    )
+    required_columns = (
+        "coincidence_type_list",
+        *[
+            f"tof_{det_pair}_{limit}"
+            for det_pair in _BaseConfigAccessor.tof_detector_pairs
+            for limit in ["low", "high"]
+        ],
+    )
+
+    @classmethod
+    def from_csv(cls, path: str | Path | IO[str]) -> pd.DataFrame:
+        """
+        Read calibration product configuration CSV file into a pandas.DataFrame.
+
+        Parameters
+        ----------
+        path : str or pathlib.Path or file-like object
+            Location of the calibration product configuration CSV file.
+
+        Returns
+        -------
+        dataframe : pandas.DataFrame
+            Validated calibration product configuration DataFrame with
+            coincidence_type_values column added.
+        """
+        df = pd.read_csv(
+            path,
+            index_col=cls.index_columns,
+            converters={"coincidence_type_list": lambda s: tuple(s.split("|"))},
+            comment="#",
+        )
+        # Trigger the accessor to run validation and add coincidence_type_values
+        _ = df.cal_prod_config.number_of_products
+        return df
+
+    @property
+    def number_of_products(self) -> int:
+        """
+        Get the number of calibration products in the current configuration.
+
+        Returns
+        -------
+        number_of_products : int
+            The maximum number of calibration products defined in the list of
+            calibration product definitions.
+        """
+        return len(self._obj.index.unique(level="calibration_prod"))
+
+
+@pd.api.extensions.register_dataframe_accessor("background_config")
+class BackgroundConfig(_BaseConfigAccessor):
+    """Register custom accessor for background configuration DataFrames."""
+
+    index_columns = (
+        "calibration_prod",
+        "background_index",
+    )
+    required_columns = (
+        "coincidence_type_list",
+        *[
+            f"tof_{det_pair}_{limit}"
+            for det_pair in _BaseConfigAccessor.tof_detector_pairs
+            for limit in ["low", "high"]
+        ],
+        "scaling_factor",
+        "uncertainty",
+    )
+
+    @classmethod
+    def from_csv(cls, path: str | Path | IO[str]) -> pd.DataFrame:
+        """
+        Read background configuration CSV file into a pandas.DataFrame.
+
+        Parameters
+        ----------
+        path : str or pathlib.Path or file-like object
+            Location of the background configuration CSV file.
+
+        Returns
+        -------
+        dataframe : pandas.DataFrame
+            Validated background configuration DataFrame with
+            coincidence_type_values column added.
+        """
+        df = pd.read_csv(
+            path,
+            index_col=cls.index_columns,
+            converters={"coincidence_type_list": lambda s: tuple(s.split("|"))},
+            comment="#",
+        )
+        # Trigger the accessor to run validation and add coincidence_type_values
+        _ = df.background_config.calibration_product_numbers
+        return df
 
 
 def get_tof_window_mask(
@@ -753,24 +814,104 @@ def iter_qualified_events_by_config(
                 yield esa_energy, config_row, np.zeros(n_events, dtype=bool)
                 continue
 
-            # Check coincidence type
-            coin_mask = filter_events_by_coincidence(
-                de_ds, config_row.coincidence_type_values
-            )
+            # Apply common filtering logic
+            filter_mask = _filter_events_by_config_row(de_ds, config_row, tof_fill_vals)
 
-            # Build TOF windows dict from config row
-            tof_windows = {
-                f"tof_{pair}": (
-                    getattr(config_row, f"tof_{pair}_low"),
-                    getattr(config_row, f"tof_{pair}_high"),
-                )
-                for pair in CalibrationProductConfig.tof_detector_pairs
-            }
+            yield esa_energy, config_row, esa_mask & filter_mask
 
-            # Check TOF windows
-            tof_mask = get_tof_window_mask(de_ds, tof_windows, tof_fill_vals)
 
-            yield esa_energy, config_row, esa_mask & coin_mask & tof_mask
+def _filter_events_by_config_row(
+    de_ds: xr.Dataset,
+    config_row: Any,
+    tof_fill_vals: dict[str, float],
+) -> NDArray[np.bool_]:
+    """
+    Filter events by coincidence type and TOF windows for a single config row.
+
+    Helper function to apply common filtering logic used by both
+    iter_qualified_events_by_config and iter_background_events_by_config.
+
+    Parameters
+    ----------
+    de_ds : xarray.Dataset
+        Direct Event dataset with coincidence_type and TOF variables.
+    config_row : namedtuple
+        Config row from DataFrame.itertuples() containing:
+        - coincidence_type_values: tuple of int coincidence types
+        - tof_<pair>_low, tof_<pair>_high: TOF window bounds
+    tof_fill_vals : dict[str, float]
+        Dictionary mapping TOF variable names to their fill values.
+
+    Returns
+    -------
+    filter_mask : numpy.ndarray
+        Boolean mask where True = event matches the filter criteria.
+    """
+    # Check coincidence type
+    coin_mask = filter_events_by_coincidence(de_ds, config_row.coincidence_type_values)
+
+    # Build TOF windows dict from config row
+    tof_windows = {
+        f"tof_{pair}": (
+            getattr(config_row, f"tof_{pair}_low"),
+            getattr(config_row, f"tof_{pair}_high"),
+        )
+        for pair in CalibrationProductConfig.tof_detector_pairs
+    }
+
+    # Check TOF windows
+    tof_mask = get_tof_window_mask(de_ds, tof_windows, tof_fill_vals)
+
+    return coin_mask & tof_mask
+
+
+def iter_background_events_by_config(
+    de_ds: xr.Dataset,
+    background_config: pd.DataFrame,
+) -> Generator[tuple[Any, xr.Dataset], None, None]:
+    """
+    Iterate over background config, yielding filtered event datasets.
+
+    For each (calibration_prod, background_index) combination in the config,
+    yields the filtered dataset containing only events that match BOTH
+    coincidence_type AND TOF window checks.
+
+    Unlike iter_qualified_events_by_config, this does NOT filter by ESA energy
+    step, as background counts are accumulated across all ESA steps.
+
+    Parameters
+    ----------
+    de_ds : xarray.Dataset
+        Direct Event dataset with coincidence_type and TOF variables.
+        TOF variables must have FILLVAL attribute for fill value handling.
+    background_config : pandas.DataFrame
+        Config DataFrame with multi-index (calibration_prod, background_index).
+        Must have coincidence_type_values column and TOF window columns.
+
+    Yields
+    ------
+    config_row : namedtuple
+        The config row from itertuples() containing background settings.
+    filtered_ds : xarray.Dataset
+        Filtered dataset containing only events matching the criteria.
+    """
+    n_events = len(de_ds["event_met"])
+
+    # Build TOF fill values from dataset attributes
+    tof_fill_vals = _build_tof_fill_vals(de_ds)
+
+    for config_row in background_config.itertuples():
+        if n_events == 0:
+            # Return empty dataset
+            yield config_row, de_ds.isel(event_met=slice(0, 0))
+            continue
+
+        # Apply common filtering logic
+        filter_mask = _filter_events_by_config_row(de_ds, config_row, tof_fill_vals)
+
+        # Return filtered dataset (no ESA energy filtering)
+        filtered_ds = de_ds.isel(event_met=filter_mask)
+        yield config_row, filtered_ds
 
 
 def compute_qualified_event_mask(
@@ -801,7 +942,7 @@ def compute_qualified_event_mask(
     qualified_mask : np.ndarray
         Boolean mask - True if event qualifies for at least one cal product.
     """
-    n_events = len(de_ds["event_met"]) if "event_met" in de_ds.dims else 0
+    n_events = len(de_ds["event_met"])
     if n_events == 0:
         return np.array([], dtype=bool)
 

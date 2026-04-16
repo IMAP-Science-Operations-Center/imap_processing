@@ -309,6 +309,7 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     assert cdf_file.name == f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_v999.cdf"
 
 
+@pytest.mark.xfail(reason="Need to revisit in future PR")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [

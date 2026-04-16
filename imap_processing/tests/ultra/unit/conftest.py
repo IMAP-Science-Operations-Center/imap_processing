@@ -559,6 +559,10 @@ def ancillary_files():
         / "imap_ultra_l1c-45sensor-static-dead-times_20250101_v000.csv",
         "l1c-90sensor-static-dead-times": path
         / "imap_ultra_l1c-90sensor-static-dead-times_20250101_v000.csv",
+        "l1c-45sensor-de-product-lookup": path
+        / "imap_ultra_l1c-45sensor-de-product-lookup_20251001_v001.csv",
+        "l1c-90sensor-de-product-lookup": path
+        / "imap_ultra_l1c-45sensor-de-product-lookup_20251001_v001.csv",
     }
 
 
@@ -683,5 +687,17 @@ def mock_goodtimes_dataset():
                 "spin_number",
                 np.full(nspins, 15),
             ),  # nominal spin period of 15 seconds
+            "quality_upstream_ion_1": (
+                "spin_number",
+                np.zeros(nspins, dtype=np.uint16),
+            ),
+            "quality_upstream_ion_2": (
+                "spin_number",
+                np.zeros(nspins, dtype=np.uint16),
+            ),
+            "quality_spectral": (
+                "spin_number",
+                np.zeros(nspins, dtype=np.uint16),
+            ),
         }
     )

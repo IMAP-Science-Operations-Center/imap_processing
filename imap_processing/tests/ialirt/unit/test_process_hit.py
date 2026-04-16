@@ -172,13 +172,13 @@ def test_process_hit(xarray_data, caplog):
 
     # Tests that it functions normally
     hit_product = process_hit(xarray_data)
-    assert len(hit_product) == 1
+    assert len(hit_product) == 15
 
     assert hit_product[0]["hit_e_a_side_low_en"] == 0
     assert hit_product[0]["hit_e_a_side_med_en"] == 0
     assert hit_product[0]["hit_e_b_side_low_en"] == 0
     assert hit_product[0]["hit_e_b_side_high_en"] == 0
-    assert hit_product[0]["hit_e_b_side_med_en"] == 1
+    assert hit_product[0]["hit_e_b_side_med_en"] == 0
     assert hit_product[0]["hit_he_omni_high_en"] == 0
 
 

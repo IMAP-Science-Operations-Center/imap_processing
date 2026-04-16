@@ -27,6 +27,7 @@ from imap_processing.codice.codice_l2 import (
 )
 from imap_processing.codice.decompress import decompress
 from imap_processing.ialirt.l0.process_codice import (
+    COD_HI_COUNTER,
     COD_LO_COUNTER,
     concatenate_bytes,
     convert_to_intensities,
@@ -151,6 +152,52 @@ def cod_hi_test_dataset(cod_hi_test_file):
     )[1168]
 
     return datasets
+
+
+@pytest.fixture(scope="session")
+def cod_hi_l1a_test_data_transposed():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "codice"
+        / "data"
+        / "l1a_validation"
+        / "imap_codice_l1a_hi-ialirt_20260331_v0.0.22.cdf"
+    )
+
+    data = load_cdf(data_path)
+
+    return data
+
+
+@pytest.fixture(scope="session")
+def postlaunch_packet_path():
+    """Returns the paths to the binary packets."""
+    directory = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
+    filenames = [
+        "iois_1_packets_2026_090_05_03_05",
+        "iois_1_packets_2026_090_05_04_06",
+        "iois_1_packets_2026_090_05_05_07",
+        "iois_1_packets_2026_090_05_06_08",
+        "iois_1_packets_2026_090_05_07_09",
+    ]
+    return tuple(directory / fname for fname in filenames)
+
+
+@pytest.fixture
+def postlaunch_xarray_data(postlaunch_packet_path, sc_packet_path):
+    """Create xarray data for multiple packets."""
+    apid = 478
+    _, xtce_ialirt_path = sc_packet_path
+
+    xarray_data = tuple(
+        packet_file_to_datasets(packet, xtce_ialirt_path, use_derived_value=False)[apid]
+        for packet in postlaunch_packet_path
+    )
+
+    merged_xarray_data = xr.concat(xarray_data, dim="epoch")
+    return merged_xarray_data
 
 
 @pytest.fixture
@@ -804,34 +851,38 @@ def test_process_codice_lo(
 
 
 @pytest.mark.external_test_data
-@patch("imap_processing.ialirt.l0.process_codice.COD_HI_COUNTER", 197)
-@patch(
-    "imap_processing.codice.constants.IAL_BIT_STRUCTURE",
-    OLD_IAL_BIT_STRUCTURE,
-)
-def test_process_codice_hi(
-    cod_hi_test_dataset, l1a_lut_path, l2_lut_path, cod_hi_l2_test_data
-):
+def test_process_codice_hi(postlaunch_xarray_data, cod_hi_l1a_test_data_transposed):
     """Test process_codice for hi."""
-    test_data = cod_hi_l2_test_data["h"]
-
-    n = cod_hi_test_dataset.dims["epoch"]
-    cod_hi_test_dataset = cod_hi_test_dataset.assign(
-        sc_sclk_sec=("epoch", np.zeros(n, dtype=np.int64)),
-        sc_sclk_sub_sec=("epoch", np.zeros(n, dtype=np.int64)),
+    grouped_cod_hi_data = find_groups(
+        postlaunch_xarray_data, (0, COD_HI_COUNTER), "cod_hi_counter", "cod_hi_acq"
     )
+    unique_cod_hi_groups = np.unique(grouped_cod_hi_data["group"])
 
-    _, cod_hi_data = process_codice(
-        cod_hi_test_dataset, l1a_lut_path, l2_lut_path, "codice_hi"
-    )
-    samples_per_group = test_data.shape[0] // len(cod_hi_data)
-    grouped_test_data = test_data.reshape(
-        len(cod_hi_data),
-        samples_per_group,
-        *test_data.shape[1:],
-    )
+    for group in unique_cod_hi_groups:
+        cod_hi_data_stream = concatenate_bytes(grouped_cod_hi_data, group, "hi")
+        cod_hi_science_values, cod_hi_metadata_values = process_ialirt_data_streams(
+            [cod_hi_data_stream]
+        )
+        if not cod_hi_science_values:
+            continue
+        cod_hi_dataset = create_xarray_dataset(
+            cod_hi_science_values, cod_hi_metadata_values, "hi"
+        )
+        l1a_lut_path = (
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "l1a_lut"
+            / "imap_codice_l1a-sci-lut_20260129_v002.json"
+        )
+        l1a_hi = l1a_ialirt_hi(cod_hi_dataset, l1a_lut_path)
 
-    for i, group in enumerate(cod_hi_data):
-        arr = np.array(group["codice_hi_h"], dtype=float)
+        expected = cod_hi_l1a_test_data_transposed.sel(
+            epoch=l1a_hi["epoch"], method="nearest"
+        )
 
-        np.testing.assert_allclose(arr, grouped_test_data[i], atol=3e-2, rtol=1e-5)
+        np.testing.assert_array_equal(
+            l1a_hi["h"].values,
+            expected["h"].data,
+        )

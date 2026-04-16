@@ -28,6 +28,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     get_spin_start_times,
     identify_species,
     initialize_l1b_de,
+    l1b_bgrates_and_goodtimes,
     l1b_star,
     lo_l1b,
     resweep_histogram_data,
@@ -42,6 +43,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_pointing_direction,
     set_spin_cycle,
     set_spin_cycle_from_spin_data,
+    split_backgrounds_and_goodtimes_dataset,
 )
 from imap_processing.lo.lo_ancillary import read_ancillary_file
 from imap_processing.spice.spin import get_spin_data
@@ -1048,6 +1050,9 @@ def test_calculate_histogram_rates(l1b_histrates):
     exposure_factors_60deg = np.zeros((2, 7, 6))
     exposure_factors_6deg[0, 0, 0] = 1
     exposure_factors_60deg[0, 0, 0] = 1
+    exposure_factors_6deg[0, 1, 0] = 0
+    exposure_factors_60deg[0, 1, 0] = 0
+
     exposure_factors = {}
     exposure_factors["6deg"] = exposure_factors_6deg
     exposure_factors["60deg"] = exposure_factors_60deg
@@ -1613,7 +1618,7 @@ class TestFilterValidStarRecords:
             },
             coords={"epoch": [0, 1, 2, 3, 4]},
         )
-        # Time window: [5s, 25s] - should include epochs 1 and 2
+        # # Time window: [5s, 25s] - should include epochs 1 and 2
         expected_mask = np.array([False, True, True, False, False])
 
         # Act
@@ -1720,10 +1725,11 @@ class TestCalculateStarSensorProfile:
         assert count_per_bin[719] == 0
         # All other bins should have count=2
         assert np.all(count_per_bin[:718] == 2)
-        # End bins should have FILLVAL
-        assert np.all(np.isnan(avg_amplitude[718:]))
-        # Middle bins should have average value
+        # Averages should be 100 for all bins except the excluded ones
         assert np.all(avg_amplitude[:718] == 100.0)
+        # Excluded bins should be NaN
+        assert np.isnan(avg_amplitude[718])
+        assert np.isnan(avg_amplitude[719])
 
     def test_profile_for_group_empty_data(self):
         """Test handling of empty data array."""
@@ -1749,6 +1755,7 @@ class TestCalculateStarSensorProfile:
         mock_repoint.return_value = pd.DataFrame(
             {"repoint_in_progress": [False] * n_records}
         )
+        met_times = np.arange(n_records, dtype=np.float64) * 15.0
         l1a_star = xr.Dataset(
             {
                 "count": ("epoch", [720] * n_records),
@@ -1762,7 +1769,7 @@ class TestCalculateStarSensorProfile:
                 ),
             },
             coords={
-                "epoch": met_to_ttj2000ns(np.arange(n_records) * 15.0),
+                "epoch": met_to_ttj2000ns(met_times),
                 "samples": np.arange(720),
             },
         )
@@ -1885,7 +1892,10 @@ class TestL1bStar:
         l1a_star = xr.Dataset(
             {
                 "count": ("epoch", [720] * n_records),
-                "shcoarse": ("epoch", met_times),
+                "shcoarse": (
+                    "epoch",
+                    np.arange(n_records, dtype=np.float64) * 15.0,
+                ),
                 "data": (
                     ("epoch", "samples"),
                     np.random.randint(100, 200, size=(n_records, 720), dtype=np.uint16),
@@ -2109,7 +2119,10 @@ class TestL1bStar:
         l1a_star = xr.Dataset(
             {
                 "count": ("epoch", [720] * n_records),
-                "shcoarse": ("epoch", met_times),
+                "shcoarse": (
+                    "epoch",
+                    np.arange(n_records, dtype=np.float64) * 15.0,
+                ),
                 "data": (
                     ("epoch", "samples"),
                     np.ones((n_records, 720), dtype=np.uint16) * 100,
@@ -2176,3 +2189,801 @@ def test_get_pivot_angle_from_nhk():
 
     # Assert
     assert pivot_angle == expected_pivot_angle
+
+
+def test_l1b_bgrates_and_goodtimes_basic(attr_mgr_l1b):
+    """Test basic functionality of l1b_bgrates_and_goodtimes."""
+    # Arrange - Create a simple L1B histogram rates dataset
+    # with enough data points to create goodtime intervals
+    num_epochs = 100  # 10 cycles of 10 epochs each
+    met_start = 473389200  # Start MET time
+    met_spacing = 42  # seconds between epochs
+
+    # Create evenly spaced MET times
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Create counts data with low background rates (below threshold)
+    # h_bg_rate_nom = 0.0028, exposure = 420*10*0.5 = 2100 seconds
+    # To be below threshold: rate = counts / exposure < 0.0028
+    # Summed over 7 ESA steps * 30 azimuth bins * 10 epochs = 2100 values
+    # Max total counts per chunk: 0.0028 * 2100 = 5.88 counts
+    # Use 10% of max for safety: 5.88 / 2100 / 10 = 0.00028 per element
+    h_counts_per_epoch = 0.00028  # Low counts to ensure below threshold
+    o_counts_per_epoch = 0.000028  # 10x smaller for oxygen
+
+    h_counts = np.ones((num_epochs, 7, 60)) * h_counts_per_epoch
+    o_counts = np.ones((num_epochs, 7, 60)) * o_counts_per_epoch
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert - Should return a list with two datasets
+    assert isinstance(result, list)
+    assert len(result) == 2
+
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Check bgrates dataset structure
+    assert "h_background_rates" in l1b_bgrates_ds.data_vars
+    assert "h_background_variance" in l1b_bgrates_ds.data_vars
+    assert "o_background_rates" in l1b_bgrates_ds.data_vars
+    assert "o_background_variance" in l1b_bgrates_ds.data_vars
+    # Note: bgrates uses 'met' dimension, goodtimes has epoch in data vars
+
+    # Check goodtimes dataset structure
+    assert "gt_start_met" in l1b_goodtimes_ds.data_vars
+    assert "gt_end_met" in l1b_goodtimes_ds.data_vars
+    assert "bin_start" in l1b_goodtimes_ds.data_vars
+    assert "bin_end" in l1b_goodtimes_ds.data_vars
+    assert "esa_goodtime_flags" in l1b_goodtimes_ds.data_vars
+
+    # Check dimensions
+    assert l1b_bgrates_ds["h_background_rates"].dims == ("met", "esa_step")
+    assert l1b_bgrates_ds["h_background_rates"].shape[1] == 7  # 7 ESA steps
+
+    # Check that goodtime intervals were created
+    assert len(l1b_goodtimes_ds["gt_start_met"]) > 0
+    assert len(l1b_goodtimes_ds["gt_end_met"]) > 0
+
+    # Check that start times are before end times
+    assert np.all(
+        l1b_goodtimes_ds["gt_start_met"].values <= l1b_goodtimes_ds["gt_end_met"].values
+    )
+
+    # Check bin_start and bin_end values
+    assert np.all(l1b_goodtimes_ds["bin_start"].values == 0)
+    assert np.all(l1b_goodtimes_ds["bin_end"].values == 59)
+
+    # Check ESA goodtime flags are all 1 (good)
+    assert np.all(l1b_goodtimes_ds["esa_goodtime_flags"].values == 1)
+
+
+def test_l1b_bgrates_and_goodtimes_with_gap(attr_mgr_l1b):
+    """Test l1b_bgrates_and_goodtimes handles data gaps correctly."""
+    # Arrange - Create dataset with a large gap in the middle
+    num_epochs_first = 50
+    num_epochs_second = 50
+    met_start = 473389200
+    met_spacing = 42
+    gap_size = 10000  # Large gap (> delay_max + interval_nom)
+
+    # First segment
+    met_times_first = np.arange(
+        met_start, met_start + num_epochs_first * met_spacing, met_spacing
+    )
+    # Second segment after gap
+    met_times_second = np.arange(
+        met_start + num_epochs_first * met_spacing + gap_size,
+        met_start
+        + num_epochs_first * met_spacing
+        + gap_size
+        + num_epochs_second * met_spacing,
+        met_spacing,
+    )
+
+    met_times = np.concatenate([met_times_first, met_times_second])
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Low background counts (below threshold)
+    h_counts = np.ones((len(met_times), 7, 60)) * 0.00028
+    o_counts = np.ones((len(met_times), 7, 60)) * 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Should create at least 2 separate goodtime intervals (before and after gap)
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 2
+
+    # Check that intervals don't span across the gap
+    for i in range(len(l1b_goodtimes_ds["gt_start_met"])):
+        interval_duration = (
+            l1b_goodtimes_ds["gt_end_met"].values[i]
+            - l1b_goodtimes_ds["gt_start_met"].values[i]
+        )
+        # No interval should be as large as the gap
+        assert interval_duration < gap_size
+
+
+def test_l1b_bgrates_and_goodtimes_high_rate(attr_mgr_l1b):
+    """Test l1b_bgrates_and_goodtimes handles high count rates correctly."""
+    # Arrange - Create dataset with high rates that exceed threshold
+    num_epochs = 100
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Create high counts (above threshold)
+    # h_bg_rate_nom = 0.0028, exposure = 420*10*0.5 = 2100 seconds
+    # To be above threshold: rate > 0.0028
+    # Use 10x threshold for high rate periods: 0.028 counts/sec
+    # That's 0.028 * 2100 / 2100_values = 0.028 per element
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.028  # High rate (10x threshold)
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.0028
+
+    # Make first 20 epochs low (below threshold)
+    h_counts[:20, :, :] = 0.00028
+    o_counts[:20, :, :] = 0.000028
+
+    # Make middle 60 epochs high (above threshold)
+    h_counts[20:80, :, :] = 0.028
+    o_counts[20:80, :, :] = 0.0028
+
+    # Make last 20 epochs low again
+    h_counts[80:, :, :] = 0.00028
+    o_counts[80:, :, :] = 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Should create at least 2 intervals (before and after high rate period)
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 2
+
+    # Check that background rates were calculated
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
+
+
+def test_l1b_bgrates_and_goodtimes_no_goodtimes(attr_mgr_l1b):
+    """When no goodtimes are detected the function should still return datasets."""
+    num_epochs = 50
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Make counts high everywhere so no low-rate goodtime intervals are found
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.1
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.01
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    bgrates_ds, goodtimes_ds = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Function should return two datasets
+    assert "h_background_rates" in bgrates_ds.data_vars
+    # Goodtimes dataset should exist and contain the gt_* fields
+    # (defaults when none found)
+    assert "gt_start_met" in goodtimes_ds.data_vars
+    assert "gt_end_met" in goodtimes_ds.data_vars
+    # When no goodtimes were detected the default invalid times are used (zeros)
+    assert int(goodtimes_ds["gt_start_met"].values[0]) == 0
+    assert int(goodtimes_ds["gt_end_met"].values[0]) == 0
+    assert int(bgrates_ds["start_met"].values[0]) == 0
+    assert int(bgrates_ds["end_met"].values[0]) == 0
+
+
+def test_l1b_bgrates_and_goodtimes_custom_cycle_count(attr_mgr_l1b):
+    """Test l1b_bgrates_and_goodtimes with custom cycle_count parameter."""
+    # Arrange
+    num_epochs = 50
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Low counts (below threshold)
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.00028
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act - Use different cycle_count
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=5, delay_max=420
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Should successfully create datasets with custom parameters
+    assert len(l1b_goodtimes_ds["gt_start_met"]) > 0
+    # Background rates should be calculated from the low-count period
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
+
+
+def test_l1b_bgrates_and_goodtimes_empty_dataset(attr_mgr_l1b):
+    """Test l1b_bgrates_and_goodtimes handles edge case with minimal data."""
+    # Arrange - Create minimal dataset (just enough for one cycle)
+    num_epochs = 10
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Low counts (below threshold)
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.00028
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert - Should still create valid datasets even with minimal data
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    assert "h_background_rates" in l1b_bgrates_ds.data_vars
+    assert "gt_start_met" in l1b_goodtimes_ds.data_vars
+
+
+def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
+    """Test split_backgrounds_and_goodtimes_dataset separates fields correctly."""
+    # Arrange - Create a combined dataset with both background and goodtime fields
+    num_records = 5
+    epoch_times = met_to_ttj2000ns(
+        np.arange(473389200, 473389200 + num_records * 420, 420)
+    )
+
+    combined_ds = xr.Dataset(
+        {
+            # Background rate fields
+            "epoch": ("epoch", epoch_times),
+            "h_background_rates": (("met", "esa_step"), np.random.rand(num_records, 7)),
+            "h_background_variance": (
+                ("met", "esa_step"),
+                np.random.rand(num_records, 7),
+            ),
+            "o_background_rates": (("met", "esa_step"), np.random.rand(num_records, 7)),
+            "o_background_variance": (
+                ("met", "esa_step"),
+                np.random.rand(num_records, 7),
+            ),
+            # Goodtime fields
+            "gt_start_met": (
+                "met",
+                np.arange(473389200, 473389200 + num_records * 420, 420),
+            ),
+            "gt_end_met": (
+                "met",
+                np.arange(473389200 + 400, 473389200 + num_records * 420 + 400, 420),
+            ),
+            # Also include non-prefixed background start/end fields so
+            # split_backgrounds_and_goodtimes_dataset can select
+            "start_met": (
+                "met",
+                np.arange(473389200, 473389200 + num_records * 420, 420),
+            ),
+            "end_met": (
+                "met",
+                np.arange(473389200 + 400, 473389200 + num_records * 420 + 400, 420),
+            ),
+            "bin_start": ("met", np.zeros(num_records, dtype=int)),
+            "bin_end": ("met", np.zeros(num_records, dtype=int) + 59),
+            "esa_goodtime_flags": (
+                ("met", "esa_step"),
+                np.ones((num_records, 7), dtype=int),
+            ),
+        },
+        coords={
+            "met": np.arange(num_records),
+            "esa_step": np.arange(1, 8),
+        },
+    )
+
+    # Act
+    bgrates_ds, goodtimes_ds = split_backgrounds_and_goodtimes_dataset(
+        combined_ds, attr_mgr_l1b
+    )
+
+    # Assert - Check bgrates dataset has background fields
+    # Note: bgrates includes 'start_met', 'end_met', 'bin_start', 'bin_end' per
+    # BACKGROUND_RATE_FIELDS
+    assert "h_background_rates" in bgrates_ds.data_vars
+    assert "h_background_variance" in bgrates_ds.data_vars
+    assert "o_background_rates" in bgrates_ds.data_vars
+    assert "o_background_variance" in bgrates_ds.data_vars
+    # Note: bgrates uses 'met' dimension, goodtimes has epoch in data vars
+
+    # Check goodtimes dataset structure
+    assert "gt_start_met" in goodtimes_ds.data_vars
+    assert "gt_end_met" in goodtimes_ds.data_vars
+    assert "bin_start" in goodtimes_ds.data_vars
+    assert "bin_end" in goodtimes_ds.data_vars
+    assert "esa_goodtime_flags" in goodtimes_ds.data_vars
+
+    # Check dimensions
+    assert bgrates_ds["h_background_rates"].dims == ("met", "esa_step")
+    assert bgrates_ds["h_background_rates"].shape[1] == 7  # 7 ESA steps
+
+    # Check that goodtime intervals were created
+    assert len(goodtimes_ds["gt_start_met"]) > 0
+    assert len(goodtimes_ds["gt_end_met"]) > 0
+
+    # Check that start times are before end times
+    assert np.all(
+        goodtimes_ds["gt_start_met"].values <= goodtimes_ds["gt_end_met"].values
+    )
+
+    # Check bin_start and bin_end values
+    assert np.all(goodtimes_ds["bin_start"].values == 0)
+    assert np.all(goodtimes_ds["bin_end"].values == 59)
+
+    # Check ESA goodtime flags are all 1 (good)
+    assert np.all(goodtimes_ds["esa_goodtime_flags"].values == 1)
+
+
+def test_l1b_bgrates_and_goodtimes_azimuth_bins(attr_mgr_l1b):
+    """Test that the function correctly uses azimuth bins 20-50 for calculations."""
+    # Arrange - Create dataset with specific counts in different azimuth bins
+    num_epochs = 30
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Set high counts outside bins 20-50, low counts inside bins 20-50
+    h_counts = (
+        np.ones((num_epochs, 7, 60)) * 0.028
+    )  # High counts (10x threshold) everywhere
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.0028
+
+    # Set low counts in the bins that are actually used (20-50)
+    h_counts[:, :, 20:50] = 0.00028  # Low counts in used bins (below threshold)
+    o_counts[:, :, 20:50] = 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert - Should create goodtime intervals because bins 20-50 have low counts
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    assert len(l1b_goodtimes_ds["gt_start_met"]) > 0
+    # Background rates should be calculated from the low-count bins
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values < 1.0)
+
+
+def test_l1b_bgrates_and_goodtimes_variance_calculation(attr_mgr_l1b):
+    """Test that variance is calculated correctly and handles edge cases."""
+    # Arrange
+    num_epochs = 30
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Use very low counts to test zero variance handling
+    h_counts = np.zeros((num_epochs, 7, 60))
+    o_counts = np.zeros((num_epochs, 7, 60))
+
+    # Add some small counts (below threshold)
+    h_counts[:, :, 20:50] = 0.00001  # Very low but non-zero
+    o_counts[:, :, 20:50] = 0.000001
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Variance should never be zero (fallback logic should apply)
+    assert np.all(l1b_bgrates_ds["h_background_variance"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_variance"].values > 0)
+
+    # Background rates should also never be zero (fallback logic should apply)
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
+
+
+def test_l1b_bgrates_and_goodtimes_offset_application(attr_mgr_l1b):
+    """Test that goodtime start/end offsets (-620, +320) are applied correctly."""
+    # Arrange
+    num_epochs = 30
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Low counts (below threshold)
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.00028
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Check that gt_start_met is earlier than gt_end_met (accounting for offsets)
+    for i in range(len(l1b_goodtimes_ds["gt_start_met"])):
+        start = l1b_goodtimes_ds["gt_start_met"].values[i]
+        end = l1b_goodtimes_ds["gt_end_met"].values[i]
+
+        # Start should be before end
+        assert start < end
+
+        # The difference should be reasonable (not negative due to offset)
+        assert (end - start) > 0
+
+
+def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(attr_mgr_l1b):
+    """Test interval closure when transitioning from low to high rate
+    (covers begin > 0.0 block)."""
+    # Arrange - Create dataset that transitions from LOW to HIGH rates
+    # This specifically tests the "if begin > 0.0:" code path at line ~2787
+    num_epochs = 50  # Need at least 5 cycles (50 epochs / 10 per cycle)
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Start with LOW rates for first 30 epochs (3 cycles)
+    # Then switch to HIGH rates for last 20 epochs (2 cycles)
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.00028  # Low (below threshold)
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.000028
+
+    # Make last 20 epochs HIGH (above threshold) to trigger interval closure
+    h_counts[30:, :, :] = 0.028  # High (10x threshold)
+    o_counts[30:, :, :] = 0.0028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Should create goodtime interval that gets closed when rate goes high
+    # The interval should span the first 3 cycles (epochs 0-29)
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 1
+
+    # First interval should start around epoch 0's time
+    first_start = l1b_goodtimes_ds["gt_start_met"].values[0]
+    first_end = l1b_goodtimes_ds["gt_end_met"].values[0]
+
+    # Verify interval was created
+    assert first_start < first_end
+
+    # Background rates should be calculated from the low-rate period
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
+
+    # Variance should also be positive
+    assert np.all(l1b_bgrates_ds["h_background_variance"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_variance"].values > 0)
+
+
+def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(attr_mgr_l1b):
+    """Test multiple intervals created by multiple rate transitions."""
+    # Arrange - Create dataset with HIGH -> LOW -> HIGH -> LOW pattern
+    # This tests multiple calls to the "if begin > 0.0:" code path
+    num_epochs = 80
+    met_start = 473389200
+    met_spacing = 42
+
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Initialize with HIGH rates
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.028
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.0028
+
+    # Pattern: HIGH(0-9), LOW(10-29), HIGH(30-39), LOW(40-59), HIGH(60-79)
+    # Epochs 10-29 (2 cycles): LOW - should create interval 1
+    h_counts[10:30, :, :] = 0.00028
+    o_counts[10:30, :, :] = 0.000028
+
+    # Epochs 40-59 (2 cycles): LOW - should create interval 2
+    h_counts[40:60, :, :] = 0.00028
+    o_counts[40:60, :, :] = 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=10, delay_max=840
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Should create at least 2 goodtime intervals (one for each LOW period)
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 2
+
+    # All intervals should have valid start < end
+    for i in range(len(l1b_goodtimes_ds["gt_start_met"])):
+        assert (
+            l1b_goodtimes_ds["gt_start_met"].values[i]
+            < l1b_goodtimes_ds["gt_end_met"].values[i]
+        )
+
+    # Background rates should be positive for all intervals
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
+
+
+def test_l1b_bgrates_and_goodtimes_large_interval_with_active_tracking(attr_mgr_l1b):
+    """
+    Test that an active goodtime interval is properly closed when a large interval
+    gap is encountered.
+
+    This test ensures the code path where:
+    1. We're actively tracking an interval (begin > 0.0)
+    2. A chunk with interval > (interval_nom + delay_max) is encountered
+    3. The active interval is closed before skipping the gap
+    """
+    # Arrange - Create dataset where we start tracking, then hit a large interval
+    cycle_count = 10
+    delay_max = 840
+    met_spacing = 42
+
+    # First: Create enough low-rate chunks to start tracking (begin > 0.0)
+    num_chunks_before_gap = 2  # 2 chunks of 10 epochs each = 20 epochs
+    epochs_per_chunk = 10
+    num_epochs_first = num_chunks_before_gap * epochs_per_chunk
+
+    met_start = 473389200
+    met_times_first = np.arange(
+        met_start, met_start + num_epochs_first * met_spacing, met_spacing
+    )
+
+    # Second: Create a chunk where the interval is too large
+    # The interval is measured from the first epoch of the chunk to the last
+    # We need interval > (interval_nom + delay_max) = 4200 + 840 = 5040
+    large_gap = 6000  # Larger than threshold
+    met_times_gap_chunk_start = met_times_first[-1] + met_spacing
+
+    # Create the problematic chunk (10 more epochs)
+    met_times_gap_chunk = np.arange(
+        met_times_gap_chunk_start,
+        met_times_gap_chunk_start + epochs_per_chunk * met_spacing,
+        met_spacing,
+    )
+
+    met_times_gap_chunk_adjusted = met_times_gap_chunk.copy()
+    met_times_gap_chunk_adjusted[-1] = met_times_gap_chunk[0] + large_gap
+
+    # Third: Add more normal data after the gap
+    met_times_after = np.arange(
+        met_times_gap_chunk_adjusted[-1] + met_spacing,
+        met_times_gap_chunk_adjusted[-1] + met_spacing + 200 * met_spacing,
+        met_spacing,
+    )
+
+    met_times = np.concatenate(
+        [met_times_first, met_times_gap_chunk_adjusted, met_times_after]
+    )
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # All counts are low (below h_bg_rate_nom = 0.0028) to ensure we start tracking
+    h_counts = np.ones((len(met_times), 7, 60)) * 0.00025
+    o_counts = np.ones((len(met_times), 7, 60)) * 0.000025
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {"imap_lo_l1b_histrates": l1b_histrates}
+
+    # Act
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, attr_mgr_l1b, cycle_count=cycle_count, delay_max=delay_max
+    )
+
+    # Assert
+    l1b_bgrates_ds, l1b_goodtimes_ds = result
+
+    # Should have created at least 2 intervals:
+    # 1. The interval that was closed before the gap
+    # 2. The interval after the gap
+    assert len(l1b_goodtimes_ds["gt_start_met"]) >= 2
+
+    # The first interval should end before the gap chunk
+    # (it should be closed when we detect the large interval)
+    first_interval_end = l1b_goodtimes_ds["gt_end_met"].values[0]
+    gap_chunk_start = met_times_gap_chunk_adjusted[0]
+
+    # The first interval should end before the gap chunk starts
+    # (with the +320 offset applied in the code)
+    assert first_interval_end < gap_chunk_start + 320
+
+    # Verify background rates are valid
+    assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
+    assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)

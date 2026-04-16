@@ -14,7 +14,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.spacecraft_pset import (
-    calculate_fwhm_spun_scattering,
+    calculate_accepted_pixels,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
@@ -269,15 +269,13 @@ def test_apply_deadtime_correction(
     """Tests apply_deadtime_correction function."""
     mock_theta, mock_phi, spin_phase_steps, inside_inds, pix, steps = spun_index_data
     deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
-    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
-        calculate_fwhm_spun_scattering(
-            spin_phase_steps,
-            mock_theta,
-            mock_phi,
-            ancillary_files,
-            45,
-            reject_scattering=False,
-        )
+    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = calculate_accepted_pixels(
+        spin_phase_steps,
+        mock_theta,
+        mock_phi,
+        ancillary_files,
+        45,
+        reject_scattering=False,
     )
     boundary_sf = xr.DataArray(np.ones((pix, steps)), dims=("pixel", "spin_phase_step"))
     exposure_pointing_adjusted = calculate_exposure_time(
@@ -303,15 +301,13 @@ def test_apply_deadtime_correction_energy_dep(
     deadtime_ratios = xr.DataArray(np.ones(steps), dims="spin_phase_step")
     boundary_sf = xr.DataArray(np.ones((steps, pix)), dims=("spin_phase_step", "pixel"))
 
-    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
-        calculate_fwhm_spun_scattering(
-            spin_phase_steps,
-            mock_theta,
-            mock_phi,
-            ancillary_files,
-            45,
-            reject_scattering=True,
-        )
+    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = calculate_accepted_pixels(
+        spin_phase_steps,
+        mock_theta,
+        mock_phi,
+        ancillary_files,
+        45,
+        reject_scattering=True,
     )
 
     exposure_pointing_adjusted = calculate_exposure_time(
@@ -349,15 +345,13 @@ def test_get_eff_and_gf(imap_ena_sim_metakernel, ancillary_files, spun_index_dat
     # Simulate first 100 pixels are in the FOR for all spin phases
     inside_inds = 100
     spin_phase_steps[:, :, :inside_inds] = True
-    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = (
-        calculate_fwhm_spun_scattering(
-            spin_phase_steps,
-            mock_theta,
-            mock_phi,
-            ancillary_files,
-            45,
-            reject_scattering=False,
-        )
+    valid_spun_pixels, fwhm_theta, fwhm_phi, thresholds = calculate_accepted_pixels(
+        spin_phase_steps,
+        mock_theta,
+        mock_phi,
+        ancillary_files,
+        45,
+        reject_scattering=False,
     )
     boundary_sf = xr.DataArray(
         np.ones((steps, energy_dim, pix)), dims=("spin_phase_step", "energy", "pixel")
@@ -409,7 +403,7 @@ def test_get_spacecraft_exposure_times(
     )  # Spin phase steps, random 0 or 1
 
     pixels_below_threshold, fwhm_theta, fwhm_phi, thresholds = (
-        calculate_fwhm_spun_scattering(
+        calculate_accepted_pixels(
             spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
         )
     )

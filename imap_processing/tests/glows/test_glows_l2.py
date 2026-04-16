@@ -9,9 +9,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
-from imap_processing.glows.l2.glows_l2 import (
-    glows_l2,
-)
+from imap_processing.glows.l2.glows_l2 import glows_l2
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
@@ -54,6 +52,7 @@ def test_glows_l2(
     mock_pipeline_settings,
     mock_conversion_table_dict,
     mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
     caplog,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
@@ -69,7 +68,7 @@ def test_glows_l2(
     )
 
     # Test case 1: L1B dataset has good times
-    l2 = glows_l2(l1b_hist_dataset, mock_pipeline_settings, None)[0]
+    l2 = glows_l2(l1b_hist_dataset, mock_pipeline_settings, mock_calibration_dataset)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
 
@@ -79,7 +78,9 @@ def test_glows_l2(
         l1b_hist_dataset_no_good_times.flags.shape
     )
     caplog.set_level("WARNING")
-    result = glows_l2(l1b_hist_dataset_no_good_times, mock_pipeline_settings, None)
+    result = glows_l2(
+        l1b_hist_dataset_no_good_times, mock_pipeline_settings, mock_calibration_dataset
+    )
     assert result == []
     assert any(record.levelname == "WARNING" for record in caplog.records)
 
@@ -88,7 +89,9 @@ def test_glows_l2(
     l1b_hist_dataset_zero_values["spin_period_average"].data[:] = 0
     l1b_hist_dataset_zero_values["number_of_spins_per_block"].data[:] = 0
     caplog.set_level("WARNING")
-    result = glows_l2(l1b_hist_dataset_zero_values, mock_pipeline_settings, None)
+    result = glows_l2(
+        l1b_hist_dataset_zero_values, mock_pipeline_settings, mock_calibration_dataset
+    )
     assert result == []
     assert any(record.levelname == "WARNING" for record in caplog.records)
 
@@ -109,6 +112,7 @@ def test_generate_l2(
     mock_pipeline_settings,
     mock_conversion_table_dict,
     mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -127,37 +131,38 @@ def test_generate_l2(
     )
 
     # Test case 1: L1B dataset has good times
-    l2 = HistogramL2(l1b_hist_dataset, pipeline_settings)
+    with patch.object(HistogramL2, "get_calibration_factor", return_value=1):
+        l2 = HistogramL2(l1b_hist_dataset, pipeline_settings, mock_calibration_dataset)
 
-    expected_values = {
-        "filter_temperature_average": [57.59],
-        "filter_temperature_std_dev": [0.21],
-        "hv_voltage_average": [1715.4],
-        "hv_voltage_std_dev": [0.0],
-    }
+        expected_values = {
+            "filter_temperature_average": [57.59],
+            "filter_temperature_std_dev": [0.21],
+            "hv_voltage_average": [1715.4],
+            "hv_voltage_std_dev": [0.0],
+        }
 
-    assert np.isclose(
-        l2.filter_temperature_average,
-        expected_values["filter_temperature_average"],
-        0.01,
-    )
-    assert np.isclose(
-        l2.filter_temperature_std_dev,
-        expected_values["filter_temperature_std_dev"],
-        0.01,
-    )
-    assert np.isclose(
-        l2.hv_voltage_average, expected_values["hv_voltage_average"], 0.01
-    )
-    assert np.isclose(
-        l2.hv_voltage_std_dev, expected_values["hv_voltage_std_dev"], 0.01
-    )
+        assert np.isclose(
+            l2.filter_temperature_average,
+            expected_values["filter_temperature_average"],
+            0.01,
+        )
+        assert np.isclose(
+            l2.filter_temperature_std_dev,
+            expected_values["filter_temperature_std_dev"],
+            0.01,
+        )
+        assert np.isclose(
+            l2.hv_voltage_average, expected_values["hv_voltage_average"], 0.01
+        )
+        assert np.isclose(
+            l2.hv_voltage_std_dev, expected_values["hv_voltage_std_dev"], 0.01
+        )
 
-    # Test case 2: L1B dataset has no good times (all flags 0)
-    l1b_hist_dataset["flags"].values = np.zeros(l1b_hist_dataset.flags.shape)
-    ds = HistogramL2(l1b_hist_dataset, pipeline_settings)
-    expected_number_of_good_l1b_inputs = 0
-    assert ds.number_of_good_l1b_inputs == expected_number_of_good_l1b_inputs
+        # Test case 2: L1B dataset has no good times (all flags 0)
+        l1b_hist_dataset["flags"].values = np.zeros(l1b_hist_dataset.flags.shape)
+        ds = HistogramL2(l1b_hist_dataset, pipeline_settings, mock_calibration_dataset)
+        expected_number_of_good_l1b_inputs = 0
+        assert ds.number_of_good_l1b_inputs == expected_number_of_good_l1b_inputs
 
 
 def test_bin_exclusions(l1b_hists):

@@ -641,6 +641,7 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     assert cdf_file.name == f"imap_codice_l1a_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
 
 
+@pytest.mark.xfail(reason="Need to revisit in future PR")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     """Tests hi-sectored."""

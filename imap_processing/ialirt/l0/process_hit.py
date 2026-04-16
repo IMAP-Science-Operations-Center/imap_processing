@@ -11,7 +11,7 @@ from imap_processing.ialirt.utils.grouping import (
     find_groups,
 )
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +132,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     """
     hit_data = []
     incomplete_groups = []
+    status_groups = []
 
     # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
     # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
@@ -151,12 +152,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         ]
 
         if np.any(status_values == 0):
-            logger.info(
-                f"Off-nominal value detected at "
-                f"missing or duplicate pkt_counter values: "
-                f"{group}"
-            )
-            continue
+            status_groups.append(group)
 
         # Subcom values for the group should be 0-59 with no duplicates.
         subcom_values = grouped_data["hit_subcom"][
@@ -171,14 +167,6 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         hit_met = int(
             grouped_data["hit_met"][(grouped_data["group"] == group).values].values[0]
         )
-
-        status_values = grouped_data["hit_status"][
-            (grouped_data["group"] == group).values
-        ]
-
-        if np.any(status_values == 0):
-            logger.info(f"Off-nominal value detected at {met_to_utc(hit_met)}")
-            continue
 
         fast_rate_1 = grouped_data["hit_fast_rate_1"][
             (grouped_data["group"] == group).values
@@ -226,6 +214,10 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
             f"The following hit groups were skipped due to "
             f"missing or duplicate pkt_counter values: "
             f"{incomplete_groups}"
+        )
+    if status_groups:
+        logger.warning(
+            f"The following hit groups have zero status values: {status_groups}"
         )
 
     return hit_data
