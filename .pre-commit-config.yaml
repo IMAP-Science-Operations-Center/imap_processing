@@ -31,6 +31,8 @@ repos:
     rev: '2.3.2'  # add version here
     hooks:
       - id: poetry-check
+      - id: poetry-lock
+        args: [--no-update]
   - repo: https://github.com/numpy/numpydoc
     rev: 'v1.10.0'
     hooks:
