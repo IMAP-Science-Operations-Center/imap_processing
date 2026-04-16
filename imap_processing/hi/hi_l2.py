@@ -14,7 +14,7 @@ from imap_processing.ena_maps.ena_maps import (
 )
 from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
-    add_spacecraft_velocity_to_pset,
+    add_spacecraft_position_and_velocity_to_pset,
     apply_compton_getting_correction,
     calculate_ram_mask,
     get_pset_directional_mask,
@@ -276,8 +276,8 @@ def process_single_pset(
         pset_processed["exposure_factor"], float(mid_time)
     )
 
-    # Step 3: Add spacecraft velocity
-    pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
+    # Step 3: Add spacecraft position and velocity
+    pset_processed = add_spacecraft_position_and_velocity_to_pset(pset_processed)
 
     # Step 4: Optionally apply Compton-Getting correction for heliocentric frame
     if descriptor.frame_descriptor == "hf":

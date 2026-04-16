@@ -427,11 +427,11 @@ class PowerLawFluxCorrector:
         return corrected_flux_da, corrected_unc_da
 
 
-def add_spacecraft_velocity_to_pset(
+def add_spacecraft_position_and_velocity_to_pset(
     pset: xr.Dataset,
 ) -> xr.Dataset:
     """
-    Calculate and add spacecraft velocity data to pointing set dataset.
+    Calculate and add spacecraft position and velocity data to pointing set dataset.
 
     Parameters
     ----------
@@ -442,13 +442,16 @@ def add_spacecraft_velocity_to_pset(
     Returns
     -------
     pset_processed : xarray.Dataset
-        Pointing set dataset with spacecraft velocity data added.
+        Pointing set dataset with spacecraft position and velocity data added.
+        These values are calculated at the midpoint time of the pointing.
 
     Notes
     -----
     Adds the following DataArrays to input dataset:
     - "sc_velocity": Spacecraft velocity vector (km/s) with dims ["x_y_z"]
     - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
+    - "sc_position": Spacecraft position vector (km) with dims ["x_y_z"]
+    - "sc_position_direction_vector": Spacecraft position unit vector w/ dims ["x_y_z"]
     """
     # Hi and Lo need to use different methods for computing the Pointing
     # midpoint time.
@@ -465,7 +468,7 @@ def add_spacecraft_velocity_to_pset(
         ) * 1e9
     else:
         raise NotImplementedError(
-            f"add_spacecraft_velocity_to_pset does not support PSETs with "
+            f"add_spacecraft_position_and_velocity_to_pset does not support PSETs with "
             f"Logical_source: {pset.attrs['Logical_source']}"
         )
 
@@ -475,8 +478,9 @@ def add_spacecraft_velocity_to_pset(
     if pointing_duration_ns <= 0:
         logger.warning(
             "Pointing duration is zero or negative. "
-            "Setting spacecraft velocity to zero."
+            "Setting spacecraft positiona and velocity to zero."
         )
+        sc_position_vector = np.zeros(3)  # Zero position vector
         sc_velocity_vector = np.zeros(3)  # Zero velocity vector
     else:
         # Compute ephemeris time (J2000 seconds) of PSET midpoint
@@ -484,6 +488,7 @@ def add_spacecraft_velocity_to_pset(
 
         # Get spacecraft state in HAE frame
         sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
+        sc_position_vector = sc_state[0:3]
         sc_velocity_vector = sc_state[3:6]
 
     # Store spacecraft velocity as DataArray
@@ -494,6 +499,15 @@ def add_spacecraft_velocity_to_pset(
     # Calculate spacecraft speed and direction
     sc_velocity_km_per_sec = np.linalg.norm(pset["sc_velocity"], axis=-1, keepdims=True)
     pset["sc_direction_vector"] = pset["sc_velocity"] / sc_velocity_km_per_sec
+
+    # Store spacecraft position as DataArray
+    pset["sc_position"] = xr.DataArray(
+        sc_position_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
+    )
+
+    # Calculate spacecraft position direction
+    sc_position_km = np.linalg.norm(pset["sc_position"], axis=-1, keepdims=True)
+    pset["sc_position_direction_vector"] = pset["sc_position"] / sc_position_km
 
     return pset
 
