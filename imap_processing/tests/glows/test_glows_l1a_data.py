@@ -591,6 +591,7 @@ def test_glows_l1a_no_packet_data(decom_packets_mock):
     assert output == []
 
 
+@pytest.mark.external_test_data
 def test_glows_l1a_empty_de_packet(repoint_packet_path):
     """Test that L1A processing handles packets with no direct event data."""
     result = glows_l1a(repoint_packet_path)
