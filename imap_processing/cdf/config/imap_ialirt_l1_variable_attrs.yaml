@@ -348,18 +348,18 @@ hit_e_a_side_low_en:
   FIELDNAM: Low energy electron count rate (A-side)
   LABLAXIS: A-side e- >0.5 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_a_side_med_en:
   <<: *default_float32
-  CATDESC: Count rates from HIT for electrons below 1 MeV, A-side aperture (anti-sunward) look direction
+  CATDESC: Counts from HIT for electrons below 1 MeV, A-side aperture (sunward directed particles) look direction
   FIELDNAM: Medium energy electron count rate (A-side)
   LABLAXIS: A-side e- <1 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   FORMAT: F17.6
@@ -371,7 +371,7 @@ hit_e_a_side_high_en:
   FIELDNAM: High energy electron count rate (A-side)
   LABLAXIS: A-side e- >3 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
@@ -382,18 +382,18 @@ hit_e_b_side_low_en:
   FIELDNAM: Low energy electron count rate (B-side)
   LABLAXIS: B-side e- >0.5 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_b_side_med_en:
   <<: *default_float32
-  CATDESC: Count rates from HIT for electrons below 1 MeV, B-side aperture (sunward) look direction
+  CATDESC: Counts from HIT for electrons below 1 MeV, B-side aperture (anti-sunward directed particles) look direction
   FIELDNAM: Medium energy electron count rate (B-side)
   LABLAXIS: B-side e- <1 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   FORMAT: F17.6
@@ -405,18 +405,18 @@ hit_e_b_side_high_en:
   FIELDNAM: High energy electron count rate (B-side)
   LABLAXIS: B-side e- >3 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_h_omni_low_en:
   <<: *default_float32
-  CATDESC: Count rates from HIT for protons between 6 to 8 MeV, omnidirectional (sum of particles divided by full sky area)
+  CATDESC: Counts from HIT for protons between 6 to 8 MeV, omnidirectional
   FIELDNAM: Proton count rate 6 to 8 MeV (omni)
   LABLAXIS: Omni H+ 6 to 8 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   FORMAT: F17.6
@@ -424,11 +424,11 @@ hit_h_omni_low_en:
 
 hit_h_omni_med_en:
   <<: *default_float32
-  CATDESC: Count rates from HIT for protons between 12 to 15 MeV, omnidirectional (sum of particles divided by full sky area)
+  CATDESC: Counts from HIT for protons between 12 to 15 MeV, omnidirectional
   FIELDNAM: Proton count rate 12 to 15 MeV (omni)
   LABLAXIS: Omni H+ 12 to 15 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   FORMAT: F17.6
@@ -440,7 +440,7 @@ hit_h_a_side_high_en:
   FIELDNAM: Proton count rate >70 MeV (A-side)
   LABLAXIS: A-side H >70 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
@@ -451,18 +451,18 @@ hit_h_b_side_high_en:
   FIELDNAM: Proton count rate >70 MeV (B-side)
   LABLAXIS: B-side H >70 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_he_omni_low_en:
   <<: *default_float32
-  CATDESC: Count rates from HIT for He4 between 6 to 8 MeV/nuc, omnidirectional (sum of particles divided by full sky area)
+  CATDESC: Counts from HIT for He4 between 6 to 8 MeV/nuc, omnidirectional
   FIELDNAM: Helium count rate 6 to 8 MeV/nuc (omni)
   LABLAXIS: Omni He 6 to 8 MeV/nuc
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   FORMAT: F17.6
@@ -470,11 +470,11 @@ hit_he_omni_low_en:
 
 hit_he_omni_high_en:
   <<: *default_float32
-  CATDESC: Count rates from HIT for He4 between 15 to 70 MeV/nuc, omnidirectional (sum of particles divided by full sky area)
+  CATDESC: Counts from HIT for He4 between 15 to 70 MeV/nuc, omnidirectional
   FIELDNAM: Helium count rate 15 to 70 MeV/nuc (omni)
   LABLAXIS: Omni He 15 to 70 MeV/nuc
   DEPEND_0: hit_epoch
-  UNITS: counts per second
+  UNITS: counts
   VALIDMIN: 0
   VALIDMAX: 1000000000.0
   FORMAT: F17.6
