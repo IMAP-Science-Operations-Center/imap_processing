@@ -65,12 +65,15 @@ class GlowsConstants:
         Fill value for histogram bins (65535 for uint16)
     STANDARD_BIN_COUNT: int
         Standard number of bins per histogram (3600)
+    IS_NIGHT_FLAG_IDX: int
+        Index of the is_night flag in the bad-time flags array (0-indexed)
     """
 
     SUBSECOND_LIMIT: int = 2_000_000
     SCAN_CIRCLE_ANGULAR_RADIUS: float = 75.0
     HISTOGRAM_FILLVAL: int = 65535
     STANDARD_BIN_COUNT: int = 3600
+    IS_NIGHT_FLAG_IDX: int = 6
 
 
 @dataclass
