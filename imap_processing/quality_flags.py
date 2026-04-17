@@ -154,6 +154,15 @@ class GLOWSL1bFlags(FlagNameMixin):
     IS_SUSPECTED_TRANSIENT = 2**3  # Is the bin a suspected transient.
 
 
+class SweL1bFlags(FlagNameMixin):
+    """SWE L1b flags."""
+
+    NONE = CommonFlags.NONE
+    LAST_CAL_INTERVAL = (
+        2**0
+    )  # bit 0, counter values interpolated using last two cal entries
+
+
 class ImapHiL1bDeFlags(FlagNameMixin):
     """IMAP Hi L1B Direct Event CCSDS packet quality flags."""
 
