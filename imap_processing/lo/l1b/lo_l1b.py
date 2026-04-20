@@ -497,8 +497,8 @@ def set_esa_mode(
 
     # Get the sweep table rows that correspond to the time period of the pointing
     pointing_sweep_df = sweep_df[
-        (sweep_df["GoodTime_end"] >= pointing_start_met)
-        & (sweep_df["GoodTime_start"] <= pointing_end_met)
+        (sweep_df["GoodTime_start"] >= pointing_start_met)
+        & (sweep_df["GoodTime_end"] <= pointing_end_met)
     ]
 
     # Check that there is only one ESA mode in the sweep table for the pointing
