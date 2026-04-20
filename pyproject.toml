@@ -116,7 +116,7 @@ lint.ignore = [
 convention = "numpy"
 
 [tool.codespell]
-ignore-words-list = "livetime"
+ignore-words-list = "livetime,nd"
 
 [tool.poetry-dynamic-versioning]
 enable = true

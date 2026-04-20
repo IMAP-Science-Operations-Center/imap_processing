@@ -52,19 +52,28 @@ Each science file that arrives is treated the same, regardless of level or instr
 is placed in the file storage system, it triggers a step to index the file ("indexer lambda").
 This step adds the file to the database and triggers the next step in processing ("batch starter lambda").
 
-This step is what determines if a instrument and level is ready for processing, by checking dependencies.
-For each file that arrives, the system checks to see what the downstream dependencies are -
-meaning, what future files need this file in order to complete processing. For example, if a MAG L1A
-file arrived, this step would determine that the MAG L1B ``mago`` and ``magi`` files are dependent on
+After indexing, the batch starter lambda is triggered in order to determine what jobs may be ready for processing.
+For each file that arrives, the system checks to see what job may need to be run by looking
+at the downstream dependencies are.For example, if a MAG L1A file arrived, this step would
+determine that the MAG L1B ``mago`` and ``magi`` files are dependent on
 the L1A file, and therefore MAG L1B may be ready to begin processing.
 
-Then, for each anticipated job, the batch starter process checks to see if all the upstream
+Then, for each possible job, the batch starter process checks to see if all the upstream
 dependencies are met. Although we know we have one of the upstream dependencies for an
 expected job, it's possible that there are other required dependencies that have not yet
 arrived. If we are missing any required dependencies, then the system does not kick off the
-processing job. When the missing file arrives, it will trigger the same process of checking
+processing job. When the missing upstream dependency arrives, it will trigger the same process of checking
 for all upstream dependencies. This time all required dependencies will be found and the
 processing job will be started.
+
+The upstream look up system will determine if it has a complete list of dependencies.
+Several scenarios can cause the dependency list to be incomplete. Missing files in the database
+represent the primary cause. Anomalies such as Loss of Orientation Insertion (LOI) or Trajectory
+Correction Maneuver (TCM) events, as well as solar wind conditions, may also result in incomplete
+dependencies, though support for these scenarios is not yet implemented. Similarly, delays in
+repoint data or downlink delays can cause incompleteness, but handling for these cases is also
+planned for future implementation. Additionally, if any required dependencies are missing or if a
+job is still in progress, the dependency list cannot be considered complete.
 
 For example, SWAPI L3 requires both SWAPI L2 files and MAG L1D (previously called L2pre)
 files. The SWAPI L2 job and the MAG L1D job are run independently, so there is no guarantee
@@ -77,9 +86,9 @@ starter is triggered with that file. Once again, SWAPI L3 is a downstream depend
 this time, both upstream dependencies for SWAPI L2 are present. Therefore, processing for
 SWAPI L3 can begin.
 
-The status of different files is recorded in the status tracking table. This table records
-the status of each anticipated output file as "in progress", "complete", or "failed." Through
-this, we can track processing for specific files and determine if a file exists quickly.
+The status of each job is recorded in the status tracking table as "in progress", "complete",
+or "failed." Through this, we can track processing for specific files and determine if a
+file exists quickly.
 
 Dependency Config File
 ----------------------
@@ -149,28 +158,29 @@ Upstream data type can be one of the following:
 - ``ancillary``
 
 
-Upstream Product Name
+Upstream Descriptor
 ^^^^^^^^^^^^^^^^^^^^^
 
-Upstream product name can be one of the following:
+Upstream descriptor can be one of the following:
 
-- For science or ancillary data, the product names are defined by the instrument and SDC.
+- For science or ancillary data, the descriptors are defined by the instrument and SDC.
 
-- For ``spice`` data types, ``historical`` and ``best`` are the valid product names.
+- For ``spice`` data types, ``historical``, and ``best`` are the valid descriptors.
 
-- For ``spin`` and ``repoint`` data types, ``historical`` is the only valid product name.
+- For ``spin`` and ``repoint`` data types, ``historical`` is the only valid descriptor.
 
 Required (Optional)
 ^^^^^^^^^^^^^^^^^^^
 
 **Default:** ``true``
 
-Whether the upstream dependency is required for processing the current product to begin.
+Specifies whether this upstream dependency must be available before a processing
+job can begin.
 If set to true, the product cannot be processed until this dependency is available.
 If set to false, the product can be processed even if this dependency is missing.
 
 
-Kickoff_job (Optional)
+Trigger_job (Optional)
 ^^^^^^^^^^^^^^^^^^^^^^
 
 **Default:** ``true``
@@ -187,8 +197,8 @@ review before updating these types of dependencies.
 
 **Default:**
 
-- ENA and GLOWS: ``(0p, 0p)``
-- Rest of in-situ instruments: ``(0d, 0d)``
+- ENA and GLOWS: ``[0p, 0p]``
+- Rest of in-situ instruments: ``[0d, 0d]``
 
 Most science files are produced daily or per pointing. Due to this cadence, the default is
 daily for most in-situ instruments and per pointing for ENA and GLOWS instruments. However,
@@ -201,6 +211,8 @@ Supported values for past_days and future_days fields:
 - ``h`` - hourly
 - ``d`` - days
 - ``l`` - last_processed
+- ``nd``- nearest day
+- ``np``- nearest pointing
 
 Days can be used to support longer durations and different cadences. For example, weekly
 processing can use 7 days, and yearly processing can use 365 days.
@@ -241,31 +253,59 @@ File content Example
 
 .. code-block:: yaml
 
+  spice_basics: &spice_basics
+    - upstream_source: leapseconds
+      upstream_data_type: spice
+      upstream_descriptor: historical
+      kickoff_job: false
+    - upstream_source: spacecraft_clock
+      upstream_data_type: spice
+      upstream_descriptor: historical
+      kickoff_job: false
+
+  l0_data: &l0_data
+    - upstream_source: hit
+      upstream_data_type: l0
+      upstream_descriptor: raw
+
   (l1a, all):
-    - (hit, l0, raw)
-    - (leapseconds, spice, historical)
-    - (spacecraft_clock, spice, historical)
+    - *spice_basics
+    - *l0_data
+
   (l1b, hk):
-    - (hit, l0, raw)
-    - (leapseconds, spice, historical)
-    - (spacecraft_clock, spice, historical)
-  ....
+    - *spice_basics
+    - *l0_data
 
 **imap_hi_dependencies.yaml**
 
 .. code-block:: yaml
 
-  (l1b, 45sensor-de):
-    - (hi, l1a, 45sensor-de)
-    - (hi, l1b, 45sensor-hk)
-    - (hi, ancillary, 45sensor-esa-energies)
-    - (leapseconds, spice, historical)
-    - (imap_frames, spice, historical)
+  spice_basic: &spice_basic
+    - upstream_source: leapseconds
+      upstream_data_type: spice
+      upstream_descriptor: historical
+      kickoff_job: false
+    - upstream_source: spacecraft_clock
+      upstream_data_type: spice
+      upstream_descriptor: historical
+      kickoff_job: false
 
   (l1b, 45sensor-goodtimes):
-      - (hi, l1b, 45sensor-de, true, true, (-3p, 3p))
-      - (hi, l1b, 45sensor-hk)
-      - (hi, l1a, 45sensor-diagfee)
-    - (leapseconds, spice, historical, true, false)
-    - (spacecraft_clock, spice, historical, true, false)
-    ...
+    - *spice_basic
+    - upstream_source: repoint
+      upstream_data_type: repoint
+      upstream_descriptor: historical
+      kickoff_job: false
+    - upstream_source: hi
+      upstream_data_type: ancillary
+      upstream_descriptor: 45sensor-cal-prod
+    - upstream_source: hi
+      upstream_data_type: l1a
+      upstream_descriptor: 45sensor-diagfee
+    - upstream_source: hi
+      upstream_data_type: l1b
+      upstream_descriptor: 45sensor-de
+      date_range: ["6np",]
+    - upstream_source: hi
+      upstream_data_type: l1b
+      upstream_descriptor: 45sensor-hk
