@@ -629,7 +629,6 @@ def ultra_l2(
         map_descriptor = MapDescriptor.from_string(descriptor)
         output_map_structure = map_descriptor.to_empty_map()
         inertial_frame = map_descriptor.frame_descriptor
-        # Keep descriptor duration token for output naming metadata.
         descriptor_duration = str(map_descriptor.duration)
     inertial_frame_long_name = INERTIAL_FRAME_LONG_NAMES.get(inertial_frame, "unknown")
 
