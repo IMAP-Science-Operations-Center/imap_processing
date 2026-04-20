@@ -726,13 +726,15 @@ class TestUltraL2:
         with furnish_kernels(self.required_kernel_names):
             output_map = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
-                descriptor="u90-ena-h-sf-nsp-full-hae-nside32-6mo",
+                descriptor="u90-ena-h-sf-nsp-full-hae-nside32-3mo",
             )[0]
 
         assert "spacecraft frame" in output_map.attrs["Logical_source_description"]
+        # Check that the logical source contains the expected information from the
+        # descriptor string
         assert (
             output_map.attrs["Logical_source"]
-            == "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-nside32-6mo"
+            == "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-nside32-3mo"
         )
         assert output_map.attrs["Spice_reference_frame"] == "IMAP_HAE"
         assert output_map.attrs["HEALPix_nside"] == "32"
