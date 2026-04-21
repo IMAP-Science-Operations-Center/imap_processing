@@ -158,9 +158,11 @@ class SweL1bFlags(FlagNameMixin):
     """SWE L1b flags."""
 
     NONE = CommonFlags.NONE
+    INF = CommonFlags.INF
+    NEG = CommonFlags.NEG
     LAST_CAL_INTERVAL = (
-        2**0
-    )  # bit 0, counter values interpolated using last two cal entries
+        2**2
+    )  # bit 2, counter values interpolated using last two cal entries
 
 
 class ImapHiL1bDeFlags(FlagNameMixin):

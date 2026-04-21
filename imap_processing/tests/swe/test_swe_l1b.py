@@ -115,7 +115,7 @@ def test_inflight_cal_flags():
     """Test that LAST_CAL_INTERVAL flag is set correctly per epoch.
 
     The test LUT has cal_times = [453050308, 553051294, 1782864000].
-    LAST_CAL_INTERVAL is set when any acquisition time >= cal_times[-2] = 553051294.
+    LAST_CAL_INTERVAL is set when any acquisition time > cal_times[-2] = 553051294.
     The halfway met_time point of the last calibration interval is 1167957647.
     """
     in_flight_cal_files = [
@@ -149,16 +149,18 @@ def test_inflight_cal_flags():
     )
 
     assert not (flags[0] & SweL1bFlags.LAST_CAL_INTERVAL.value)
+    # all counts for cycle 0 stay the same
     np.testing.assert_allclose(corrected_counts[0, ...], 1)
 
     assert flags[1] & SweL1bFlags.LAST_CAL_INTERVAL.value
-    # all counts scale by a factor of 1.5
+    # all counts for cycle 1 scale by a factor of 1.5
     np.testing.assert_allclose(corrected_counts[1, ...], 1.5)
 
     assert flags[2] & SweL1bFlags.LAST_CAL_INTERVAL.value
-    # all counts for first ESA level and first angle sector scale by a factor of 1.5
+    # all counts for cycle 2 + the first ESA level + the first angle sector
+    # scale by a factor of 1.5
     np.testing.assert_allclose(corrected_counts[2, 0, 0, :], 1.5)
-    # all other counts remain the same
+    # all other counts for cycle 2 remain the same
     np.testing.assert_allclose(corrected_counts[2, 1:, 1:, :], 1)
 
 

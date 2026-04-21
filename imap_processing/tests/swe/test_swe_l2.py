@@ -339,6 +339,13 @@ def test_swe_l2_15sec(
 
     l2_dataset = swe_l2(l1b_dataset)
 
+    # Verify inflight_cal_flags is propagated from L1B to L2 for downstream (L3) use.
+    assert "inflight_cal_flags" in l2_dataset
+    np.testing.assert_array_equal(
+        l2_dataset["inflight_cal_flags"].values,
+        l1b_dataset["inflight_cal_flags"].values,
+    )
+
     assert isinstance(l2_dataset, xr.Dataset)
     assert l2_dataset["phase_space_density_spin_sector"].shape == (
         6,

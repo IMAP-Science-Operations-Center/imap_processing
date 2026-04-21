@@ -330,10 +330,10 @@ inflight_cal_flags:
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FILLVAL: 255
-  FORMAT: I1
+  FORMAT: I3
   UNITS: " "
   VALIDMIN: 0
-  VALIDMAX: 1
+  VALIDMAX: 255
   VAR_TYPE: support_data
   SCALETYP: linear
 

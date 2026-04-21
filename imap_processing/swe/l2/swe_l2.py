@@ -436,6 +436,11 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     dataset["acq_duration"].attrs = cdf_attributes.get_variable_attributes(
         "acq_duration"
     )
+    # Carry over inflight_cal_flags for L3 purposes.
+    dataset["inflight_cal_flags"] = l1b_dataset["inflight_cal_flags"]
+    dataset["inflight_cal_flags"].attrs = cdf_attributes.get_variable_attributes(
+        "inflight_cal_flags"
+    )
 
     # Calculate spin phase using SWE acquisition_time from the
     # L1B dataset. The L1B dataset stores acquisition_time with
