@@ -144,7 +144,9 @@ def test_inflight_cal_flags():
     # detector factor 2.0
     acq_time[2, 0, 0] = 1167957647.0
 
-    corrected_counts, flags = apply_in_flight_calibration(counts, acq_time, in_flight_cal_files)
+    corrected_counts, flags = apply_in_flight_calibration(
+        counts, acq_time, in_flight_cal_files
+    )
 
     assert flags[0] == SweL1bFlags.NONE.value
     np.testing.assert_allclose(corrected_counts[0, ...], 1)
