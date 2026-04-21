@@ -315,3 +315,4 @@ inflight_cal_flags:
   VALIDMAX: 255
   VAR_TYPE: support_data
   SCALETYP: linear
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
