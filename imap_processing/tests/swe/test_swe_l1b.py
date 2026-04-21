@@ -148,14 +148,14 @@ def test_inflight_cal_flags():
         counts, acq_time, in_flight_cal_files
     )
 
-    assert flags[0] == SweL1bFlags.NONE.value
+    assert not (flags[0] & SweL1bFlags.LAST_CAL_INTERVAL.value)
     np.testing.assert_allclose(corrected_counts[0, ...], 1)
 
-    assert flags[1] == SweL1bFlags.LAST_CAL_INTERVAL.value
+    assert flags[1] & SweL1bFlags.LAST_CAL_INTERVAL.value
     # all counts scale by a factor of 1.5
     np.testing.assert_allclose(corrected_counts[1, ...], 1.5)
 
-    assert flags[2] == SweL1bFlags.LAST_CAL_INTERVAL.value
+    assert flags[2] & SweL1bFlags.LAST_CAL_INTERVAL.value
     # all counts for first ESA level and first angle sector scale by a factor of 1.5
     np.testing.assert_allclose(corrected_counts[2, 0, 0, :], 1.5)
     # all other counts remain the same

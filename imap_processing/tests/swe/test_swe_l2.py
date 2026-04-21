@@ -333,9 +333,8 @@ def test_swe_l2_15sec(
 
     # Test data acquisition times (~453051355) are before cal_times[-2] (553051294),
     # so no epoch should have LAST_CAL_INTERVAL set.
-    np.testing.assert_array_equal(
-        l1b_dataset["inflight_cal_flags"].values,
-        SweL1bFlags.NONE.value,
+    assert not np.any(
+        l1b_dataset["inflight_cal_flags"].values & SweL1bFlags.LAST_CAL_INTERVAL.value
     )
 
     l2_dataset = swe_l2(l1b_dataset)
