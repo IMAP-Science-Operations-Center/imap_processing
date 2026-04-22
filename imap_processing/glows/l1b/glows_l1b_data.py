@@ -1086,7 +1086,7 @@ class HistogramL1B:
         # Rotate spin-angle bin centers by the instrument position-angle offset
         # so azimuth=0 aligns with the instrument pointing direction.
         azimuth = (
-            self.imap_spin_angle_bin_cntr + self.position_angle_offset_average
+            self.imap_spin_angle_bin_cntr - self.position_angle_offset_average
         ) % 360.0
         # Ephemeris start time of the histogram accumulation.
         data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
