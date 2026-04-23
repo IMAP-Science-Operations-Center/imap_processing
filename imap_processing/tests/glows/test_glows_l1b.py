@@ -20,6 +20,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
+from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.spice.time import met_to_datetime64
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
@@ -342,76 +343,6 @@ def test_process_histogram(
     assert test_l1b.flags[16] == 1  # is_beyond_background
 
 
-@pytest.mark.external_kernel
-@pytest.mark.usefixtures("use_fake_spin_data_for_time")
-@patch("imap_processing.spice.geometry.imap_state")
-def test_process_histogram_calculates_correct_angle_offset(
-    mock_imap_state,
-    use_fake_spin_data_for_time,
-    furnish_kernels,
-    mock_ancillary_exclusions,
-    mock_ancillary_parameters,
-    mock_pipeline_settings,
-):
-    # Mock the imap_state function
-    mock_imap_state.return_value = np.array(
-        [
-            [1.0, 2.0, 3.0, 0.1, 0.2, 0.3],  # Example position and velocity data
-            [4.0, 5.0, 6.0, 0.4, 0.5, 0.6],
-        ]
-    )
-
-    # Generate a fake spin data for time
-    data_start_time = 504975600.125  # 2026-01-01T15:00:00.125
-    use_fake_spin_data_for_time(data_start_time)
-
-    params = {
-        "histogram": np.zeros(3600),
-        "seq_count_in_pkts_file": 0,
-        "first_spin_id": 0,
-        "last_spin_id": 0,
-        "flags_set_onboard": 0,
-        "is_generated_on_ground": 1,
-        "number_of_spins_per_block": 1,
-        "number_of_bins_per_histogram": 3600,
-        "number_of_events": 0,
-        "filter_temperature_average": 20.0,
-        "filter_temperature_variance": 0.0,
-        "hv_voltage_average": 1000.0,
-        "hv_voltage_variance": 0.0,
-        "spin_period_average": 10.0,
-        "spin_period_variance": 0.0,
-        "pulse_length_average": 50.0,
-        "pulse_length_variance": 0.0,
-        "imap_start_time": 504975603.125,
-        "imap_time_offset": 200.0,
-        "glows_start_time": 504975603.125,
-        "glows_time_offset": 200.0,
-        "ancillary_exclusions": mock_ancillary_exclusions,
-        "ancillary_parameters": mock_ancillary_parameters,
-        "pipeline_settings": PipelineSettings(
-            mock_pipeline_settings.sel(
-                epoch=mock_pipeline_settings.epoch[0], method="nearest"
-            ),
-        ),
-    }
-
-    kernels = [
-        "naif0012.tls",
-        "de440s.bsp",
-        "imap_sclk_0000.tsc",
-        "imap_130.tf",
-        "imap_science_120.tf",
-        "sim_1yr_imap_attitude.bc",
-        "sim_1yr_imap_pointing_frame.bc",
-    ]
-    with furnish_kernels(kernels):
-        hist_data = HistogramL1B(**params)
-
-        assert np.all(hist_data.histogram_flag_array[0, 1397:1437] == 1)
-        assert hist_data.histogram_flag_array[1, 1417] == 2
-
-
 @patch.object(
     HistogramL1B,
     "flag_uv_and_excluded",
@@ -699,6 +630,9 @@ def test_hist_spice_output(
         # (since the 0.05° threshold is exactly half the 0.1° bin spacing.
         assert np.count_nonzero(region_mask) == 1
 
+        assert np.all(uv_mask[1397:1437])
+        assert region_mask[1417]
+
         # Test flag_from_mask_dataset using the fixture data
         instr_mask = hist_data.flag_from_mask_dataset(
             day_exclusions.exclusions_by_instr_team
@@ -707,3 +641,37 @@ def test_hist_spice_output(
         assert np.count_nonzero(instr_mask) == 10
 
         # TODO: Maxine will validate actual data with GLOWS team
+
+
+@pytest.mark.external_kernel
+def test_calculate_calculate_look_vectors_dps_uses_correct_azimuth_calculation(
+    furnish_kernels,
+):
+    kernels = [
+        "naif0012.tls",
+        "de440s.bsp",
+        "imap_sclk_0000.tsc",
+        "imap_130.tf",
+        "imap_science_120.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        expected_imap_spin_angle_bin_cntr = np.array([0, 90, 180, 270])
+        expected_position_angle_offset_average = 71.5
+        expected_azimuth = np.array([360 - 71.5, 90 - 71.5, 180 - 71.5, 270 - 71.5])
+        expected_radius = np.array([1, 1, 1, 1])
+        expected_elevation = np.array([15.025791, 15.025791, 15.025791, 15.025791])
+
+        look_vectors = HistogramL1B.calculate_look_vectors_dps(
+            expected_imap_spin_angle_bin_cntr, expected_position_angle_offset_average
+        )
+
+        actual_spherical = cartesian_to_spherical(look_vectors)
+        actual_azimuth = actual_spherical[:, 1]
+        actual_radius = actual_spherical[:, 0]
+        actual_elevation = actual_spherical[:, 2]
+
+        np.testing.assert_allclose(expected_azimuth, actual_azimuth)
+        np.testing.assert_allclose(expected_radius, actual_radius)
+        np.testing.assert_allclose(expected_elevation, actual_elevation)
