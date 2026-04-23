@@ -643,28 +643,26 @@ def test_hist_spice_output(
         # TODO: Maxine will validate actual data with GLOWS team
 
 
-@pytest.mark.external_kernel
 def test_calculate_calculate_look_vectors_dps_uses_correct_azimuth_calculation(
     furnish_kernels,
 ):
     kernels = [
-        "naif0012.tls",
-        "de440s.bsp",
-        "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_120.tf",
-        "sim_1yr_imap_attitude.bc",
-        "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels):
-        expected_imap_spin_angle_bin_cntr = np.array([0, 90, 180, 270])
-        expected_position_angle_offset_average = 71.5
-        expected_azimuth = np.array([360 - 71.5, 90 - 71.5, 180 - 71.5, 270 - 71.5])
+        imap_spin_angle_bin_cntr = np.array([0, 90, 180, 270])
+        some_position_angle_offset_average = np.double(41.5)
+
+        expected_azimuth = (
+            np.array([360, 90, 180, 270]) - some_position_angle_offset_average
+        )
         expected_radius = np.array([1, 1, 1, 1])
+
+        # As-built mounting elevation of GLOWS in the s/c frame is 15.025791 degrees
         expected_elevation = np.array([15.025791, 15.025791, 15.025791, 15.025791])
 
         look_vectors = HistogramL1B.calculate_look_vectors_dps(
-            expected_imap_spin_angle_bin_cntr, expected_position_angle_offset_average
+            imap_spin_angle_bin_cntr, some_position_angle_offset_average
         )
 
         actual_spherical = cartesian_to_spherical(look_vectors)
