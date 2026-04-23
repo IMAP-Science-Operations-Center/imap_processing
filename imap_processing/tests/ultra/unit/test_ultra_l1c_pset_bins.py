@@ -290,6 +290,9 @@ def test_apply_deadtime_correction(
     assert np.all(exposure_pointing_adjusted[:, :inside_inds] > 0)
     # Assert that pixels outside the FOR remain at 0.
     assert np.all(exposure_pointing_adjusted[:, inside_inds:] == 0)
+    # Test that fwhm values are not all nans or zeros
+    assert np.any(fwhm_theta > 0)
+    assert np.any(fwhm_phi > 0)
 
 
 @pytest.mark.external_kernel
