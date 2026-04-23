@@ -210,7 +210,9 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
     return dataset
 
 
-def get_event_id(event_data: bytes, count: int, shcoarse: int) -> list:
+def get_event_id(
+    event_data: bytes, count: int, shcoarse: int, bits_per_event: int
+) -> list:
     """
     Generate unique event IDs for each event in the packet.
 
@@ -220,8 +222,11 @@ def get_event_id(event_data: bytes, count: int, shcoarse: int) -> list:
         Raw event data from the packet.
     count : int
         Number of events in the packet.
-    shcoarse : np.ndarray
+    shcoarse : int
         The met value for the packet.
+    bits_per_event : int
+        Bits allocated for each event in the packet. This differs between event data
+        and energy event data packets.
 
     Returns
     -------
@@ -231,7 +236,6 @@ def get_event_id(event_data: bytes, count: int, shcoarse: int) -> list:
     """
     binary = convert_to_binary_string(event_data)
     # For all packets with event data, parses the binary string
-    bits_per_event = 166
     event_ids = []
     # Get the met value and convert to hex (4 bytes -> 8 hex )
     met_hex = format(shcoarse, "08x")
@@ -277,8 +281,10 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
     )
     if apid in all_event_apids:
         field_ranges = EVENT_FIELD_RANGES
+        bits_per_event = 166
     elif apid in ULTRA_ENERGY_EVENTS.apid:
         field_ranges = ENERGY_EVENT_FIELD_RANGES
+        bits_per_event = 41
     else:
         raise ValueError(f"APID {apid} not recognized for Ultra events processing.")
 
@@ -312,7 +318,9 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
             all_events.extend(event_data_list)
             # Keep track of how many times does the event occurred at this epoch.
             all_indices.extend([i] * count)
-            ids = get_event_id(eventdata_array[i], count, ds["shcoarse"].values[i])
+            ids = get_event_id(
+                eventdata_array[i], count, ds["shcoarse"].values[i], bits_per_event
+            )
             event_ids.extend(ids)
 
     # Now we have the event data, we need to create the xarray dataset.

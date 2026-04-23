@@ -509,12 +509,12 @@ def test_get_event_id():
     """Test get_event_id"""
     # example event bytes
     event_date = (
-        b"\x929\xc4=\x05\x13\xf2dC\x0c`\x002\xb2\xb3\x80\n"
-        b'UQ\xb5BH\xe6\x114\x10O\t\xb1\x08\x0e`\x00\xd6\x89"\x00)UF\xd6'
+        b"\x929\xc4=\x05\x13\xf2dC\x0c`\x002\xb2\xb3\x80\nUQ\xb5BH"
+        b'\xe6\x114\x10O\t\xb1\x08\x0e`\x00\xd6\x89"\x00)UF\xd6I'
     )
     met = 445015657
     count = 2
-    event_ids = get_event_id(event_date, count, met)
+    event_ids = get_event_id(event_date, count, met, 166)
     assert len(event_ids) == count
     # Check that they are all unique
     assert len(set(event_ids)) == count
@@ -533,4 +533,4 @@ def test_event_id_not_enough_binary_data():
     with pytest.raises(
         ValueError, match="Data for event 1 is expected to have more bits"
     ):
-        get_event_id(event_date, count, met)
+        get_event_id(event_date, count, met, 166)
