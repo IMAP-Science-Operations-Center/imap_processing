@@ -216,7 +216,7 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
         dataset[field] = xr.DataArray(
             np.full(num_de, attr_mgr.get_variable_attributes(field)["FILLVAL"]),
             dims="direct_events",
-            attrs=attr_mgr.get_variable_attributes(field),
+            attrs=attr_mgr.get_variable_attributes(field, check_schema=False),
         )
     dataset["passes"] = xr.DataArray(
         np.full(
