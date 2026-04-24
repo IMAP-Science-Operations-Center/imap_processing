@@ -139,10 +139,9 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     # ========== Apply NSO/RGFO Masking ===========
     # After FSW changes on 20260129, The Lo L1A product contains variables that
     # indicate the esa step and spin sector during which the RGFO or NSO limits are
-    # triggered. The spin sector variable ranges from 0-11 and is the instrument
-    # reported spin sector. The following algorithm defines when to assign NaN to the
-    # angular data product due to NSO
-    # operation:
+    # triggered. The spin sector variable ranges from 0-23 (normalized to 0-11) and is
+    # the instrument reported spin sector. The following algorithm defines when to
+    # assign NaN to the counters data product due to NSO operation:
     # 1. For half_spin > nso_half_spin a set all data to NaN
     # 2. For half_spin = nso_half_spin
     #   a. For spin_sector > nso_spin_sector a set all data to NaN
@@ -171,7 +170,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         # After modulo 12, we need to floor divide by 2 since the counters data has 6
         # spin sector bins (2 spin sectors per bin).
         nso_spin_sector = nso_spin_sector // 2
-        # compare it to the 0-11 spin sector in the data
+        # compare it to the 0-5 spin sector bins in the data
         nso_esa_step = unpacked_dataset["nso_energy_step"].values[
             :, np.newaxis, np.newaxis
         ]
