@@ -698,7 +698,7 @@ def ultra_l2(
         output_map_structure=output_map_structure,
         energy_bin_edges=energy_bin_edges,
     )
-    # if rectangular
+    # Build the rectangular map
     if output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
         rectangular_skymap, _ = generate_ultra_skymap(
             ultra_l1c_psets=l1c_products,
@@ -773,8 +773,8 @@ def ultra_l2(
                 value_keys=RECURSIVE_HEALPIX_TO_RECTANGULAR_VARIABLES,
             )
         )
-        # Merge recursive-subdivision variables into the directly projected rectangular
-        # map.
+        # Merge recursively subdivided variables into the directly projected
+        # rectangular map.
         for key in RECURSIVE_HEALPIX_TO_RECTANGULAR_VARIABLES:
             rectangular_skymap.data_1d[key] = intensity_rectangular_skymap.data_1d[key]
 
