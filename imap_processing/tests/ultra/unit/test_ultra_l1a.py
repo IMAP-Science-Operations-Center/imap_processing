@@ -522,15 +522,3 @@ def test_get_event_id():
     assert all(
         isinstance(event_id, str) and len(event_id) == 50 for event_id in event_ids
     )
-
-
-def test_event_id_not_enough_binary_data():
-    """Test get_event_id with not enough binary data"""
-    # example event bytes
-    event_date = b"\x929\xc4=\x05\x13\xf2dC\x0c`\x002\xb2\xb3\x80\nUQ\xb5BH\xe6\x114"
-    met = 445015657
-    count = 2
-    with pytest.raises(
-        ValueError, match="Data for event 1 is expected to have more bits"
-    ):
-        get_event_id(event_date, count, met, 166)

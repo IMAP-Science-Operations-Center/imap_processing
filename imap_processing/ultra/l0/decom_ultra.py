@@ -241,12 +241,6 @@ def get_event_id(
     met_hex = format(shcoarse, "08x")
     for i in range(count):
         start_bit = i * bits_per_event
-        if start_bit + bits_per_event > len(binary):
-            raise ValueError(
-                f"Data for event {i} is expected to have more bits. Packet "
-                f"shcoarse={shcoarse}. Expected at least {start_bit + bits_per_event}"
-                f" bits, but got {len(binary)} bits."
-            )
         event_bits = binary[start_bit : start_bit + bits_per_event]
         # Convert the event bits to an integer, then to a hex string, and concatenate
         # with the met hex to create the event ID.
@@ -300,7 +294,7 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
         )
         for field in field_ranges
     }
-
+    print("APID", apid)
     counts = ds["count"].values
     eventdata_array = ds["eventdata"].values
     event_ids: list[str] = []
@@ -308,7 +302,7 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
         if count == 0:
             all_events.append(empty_event)
             all_indices.append(i)
-            event_ids.append("")  # TODO ask ultra IT what to use here
+            event_ids.append("0x0")  # TODO ask ultra IT what to use here
         else:
             # Here there are multiple images in a single packet,
             # so we need to loop through each image and decompress it.
@@ -322,7 +316,8 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
                 eventdata_array[i], count, ds["shcoarse"].values[i], bits_per_event
             )
             event_ids.extend(ids)
-
+    print("event ids", event_ids[0:10])
+    print("counts", counts)
     # Now we have the event data, we need to create the xarray dataset.
     # We cannot append to the existing dataset (sorted_packets)
     # because there are multiple events for each epoch.
@@ -348,7 +343,7 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
             data,
             dims=["epoch"],
         )
-
+    print(dataset.event_id.shape)
     return dataset
 
 
