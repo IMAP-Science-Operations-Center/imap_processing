@@ -323,7 +323,7 @@ cksum:
 
 inflight_cal_flags:
   CATDESC: >
-    In-flight calibration quality flags. Bit 0 (LAST_CAL_INTERVAL): set if any
+    In-flight calibration quality flags. Bit 2 (LAST_CAL_INTERVAL): set if any
     acquisition time in this cycle was interpolated using the last two entries
     in the calibration table.
   FIELDNAM: In-Flight Calibration Flags

@@ -299,7 +299,7 @@ def apply_in_flight_calibration(
         in_flight_cal_df.iloc[:, 1:].values,
     )
 
-    # Flag epochs where any acquisition time is interpolated using the last
+    # Flag epochs where any acquisition time is extrapolated using the last
     # two calibration entries, i.e. falls in (cal_times[-2], cal_times[-1]].
     in_last_interval = acquisition_time > cal_times[-2]
     # Reduce over all axes except the epoch axis (first axis)

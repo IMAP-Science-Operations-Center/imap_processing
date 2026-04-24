@@ -162,7 +162,7 @@ class SweL1bFlags(FlagNameMixin):
     NEG = CommonFlags.NEG
     LAST_CAL_INTERVAL = (
         2**2
-    )  # bit 2, counter values interpolated using last two cal entries
+    )  # bit 2, counter values extrapolated using last two cal entries
 
 
 class ImapHiL1bDeFlags(FlagNameMixin):
