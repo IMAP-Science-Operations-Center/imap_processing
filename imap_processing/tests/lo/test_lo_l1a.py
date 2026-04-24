@@ -45,8 +45,8 @@ def test_lo_l1a():
         output_dataset, expected_logical_source, strict=False
     ):
         assert logical_source == dataset.attrs["Logical_source"]
-        for var in no_depend_0_vars:
-            if var in dataset:
+        for var in dataset:
+            if var in no_depend_0_vars or var.endswith("label"):
                 assert "DEPEND_0" not in dataset[var].attrs
 
 
