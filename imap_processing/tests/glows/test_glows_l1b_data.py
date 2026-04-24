@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -322,3 +323,115 @@ def test_get_threshold():
     for name, exp in zip(description, expected, strict=False):
         threshold = settings.get_threshold(name)
         assert threshold == exp
+
+
+@patch("imap_processing.glows.l1b.glows_l1b_data.geometry.imap_state")
+@patch("imap_processing.glows.l1b.glows_l1b_data.get_instrument_spin_phase")
+@patch("imap_processing.glows.l1b.glows_l1b_data.get_spin_data")
+@patch("imap_processing.glows.l1b.glows_l1b_data.geometry.frame_transform")
+@patch("imap_processing.glows.l1b.glows_l1b_data.sct_to_et")
+@patch("imap_processing.glows.l1b.glows_l1b_data.met_to_sclkticks")
+def test_update_spice_parameters_spin_axis_near_wrapping_point(
+    mock_met_to_sclkticks,
+    mock_sct_to_et,
+    mock_frame_transform,
+    mock_get_spin_data,
+    mock_get_instrument_spin_phase,
+    mock_imap_state,
+):
+    """Test spin axis orientation calculation near the longitude wrapping point.
+
+    This test verifies that cartesian_to_latitudinal is called with degrees=False
+    so that circmean/circstd receive values in radians. The bug was that without
+    degrees=False, values in degrees would be passed to circmean/circstd which
+    expect radians with low=-pi, high=pi.
+
+    Test conditions:
+    - Longitude values straddling +/-pi (wrapping point at 180 degrees)
+    - Latitude near equator (-4 degrees)
+
+    If the bug existed (degrees=True or default), circmean would receive values
+    like 179 or -179 degrees when it expects radians in [-pi, pi]. This would
+    produce nonsensical results because 179 >> pi.
+    """
+    # Mock time conversions - creates a time range of 5 seconds
+    mock_met_to_sclkticks.return_value = 1000
+    mock_sct_to_et.side_effect = lambda x: 100.0 if x == 1000 else 105.0
+
+    # Mock spin data
+    mock_spin_df = {
+        "spin_start_met": np.array([99.0, 100.0, 101.0, 102.0, 103.0, 104.0]),
+        "spin_period_sec": np.array([15.0, 15.0, 15.0, 15.0, 15.0, 15.0]),
+    }
+    mock_get_spin_data.return_value = pd.DataFrame(mock_spin_df)
+
+    # Mock instrument spin phase
+    mock_get_instrument_spin_phase.return_value = 0.5
+
+    # Create cartesian vectors that straddle the longitude wrapping point.
+    # Some points at +179 degrees and some at -179 degrees (which should
+    # average to ~180 degrees when using proper circular mean).
+    # Latitude near equator at -4 degrees.
+    #
+    # For spherical to cartesian (r=1):
+    # x = cos(lat) * cos(lon)
+    # y = cos(lat) * sin(lon)
+    # z = sin(lat)
+    lat_rad = np.deg2rad(-4.0)  # Near equator
+
+    # Create 5 time steps: [+179, -179, +178, -178, +180] degrees longitude
+    longitudes_deg = np.array([179.0, -179.0, 178.0, -178.0, 180.0])
+    longitudes_rad = np.deg2rad(longitudes_deg)
+
+    # Build cartesian vectors for each time step
+    n_times = len(longitudes_rad)
+    cartesian_vecs = np.zeros((n_times, 3))
+    for i, lon_rad in enumerate(longitudes_rad):
+        cartesian_vecs[i, 0] = np.cos(lat_rad) * np.cos(lon_rad)  # x
+        cartesian_vecs[i, 1] = np.cos(lat_rad) * np.sin(lon_rad)  # y
+        cartesian_vecs[i, 2] = np.sin(lat_rad)  # z
+
+    mock_frame_transform.return_value = cartesian_vecs
+
+    # Mock imap_state to return position and velocity for each time step
+    mock_imap_state.return_value = np.tile(
+        [[1e8, 2e8, 3e7, 10.0, 20.0, 5.0]], (n_times, 1)
+    )
+
+    # Create a minimal HistogramL1B-like object to test update_spice_parameters
+    class MockHistogram:
+        def __init__(self):
+            self.imap_start_time = 100.0
+            self.glows_time_offset = 5.0  # 5 second duration
+
+    mock_hist = MockHistogram()
+
+    # Call the actual update_spice_parameters method
+    HistogramL1B.update_spice_parameters(mock_hist)
+
+    # Verify the spin axis orientation values
+    lon_result = mock_hist.spin_axis_orientation_average[0]
+    lat_result = mock_hist.spin_axis_orientation_average[1]
+    lon_std = mock_hist.spin_axis_orientation_std_dev[0]
+    lat_std = mock_hist.spin_axis_orientation_std_dev[1]
+
+    # The circular mean of [179, -179, 178, -178, 180] should be ~180 degrees
+    # (or equivalently -180 degrees). The key test is that the result is NOT
+    # near 0 degrees, which would happen if the values weren't properly handled
+    # as circular data near the wrapping point.
+    #
+    # With the bug (degrees=True), circmean would receive [179, -179, ...] and
+    # interpret these as radians, giving completely wrong results.
+    #
+    # Check that longitude is near 180 degrees (could be reported as -180)
+    assert abs(abs(lon_result) - 180.0) < 5.0, (
+        f"Longitude {lon_result} should be near +/-180 degrees. "
+        "If near 0, the circular mean failed at the wrapping point."
+    )
+
+    # Latitude should be near -4 degrees
+    np.testing.assert_allclose(lat_result, -4.0, atol=1.0)
+
+    # Standard deviations should be small (all points are within a few degrees)
+    assert lon_std < 5.0, f"Longitude std dev {lon_std} should be small"
+    assert lat_std < 1.0, f"Latitude std dev {lat_std} should be small"

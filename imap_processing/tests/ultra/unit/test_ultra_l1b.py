@@ -227,7 +227,10 @@ def test_ultra_l1b_extendedspin(
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
-    ancillary_files = {}
+    ancillary_files = {
+        "l1b-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+    }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
     assert len(l1b_extendedspin_dataset) == 1
@@ -259,7 +262,10 @@ def test_cdf_extendedspin(
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
-    ancillary_files = {}
+    ancillary_files = {
+        "l1b-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+    }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
     """Tests that CDF file is created and contains same attributes as xarray."""
     l1b_extendedspin_dataset[0].attrs["Data_version"] = "999"
@@ -296,7 +302,10 @@ def test_cdf_goodtimes(
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
-    ancillary_files = {}
+    ancillary_files = {
+        "l1b-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+    }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
     goodtimes_dataset = ultra_l1b(
@@ -337,7 +346,10 @@ def test_cdf_badtimes(
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
-    ancillary_files = {}
+    ancillary_files = {
+        "l1b-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+    }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
     ancillary_files = {}
@@ -374,3 +386,34 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
         ultra_l1b(mock_data_l1a_rates_dict, ancillary_files)
+
+
+@pytest.mark.external_test_data
+def test_ultra_l1b_priority_de(
+    mock_get_annotated_particle_velocity,
+    de_dataset,
+    aux_dataset,
+    use_fake_spin_data_for_time,
+    ancillary_files,
+    use_fake_repoint_data_for_time,
+):
+    """Tests that priority de datasets can be created"""
+    data_dict = {}
+    # Create a spin table that cover spin 0-141
+    use_fake_spin_data_for_time(443640487, 443642460)
+    # Use repoint data that will NOT cover the event times to test flag setting
+    use_fake_repoint_data_for_time(np.arange(0, +86400 * 5, 86400))
+    de_dataset.attrs["Repointing"] = "repoint00001"
+    # Set the logical source to match the priority de key
+    # Use the de dataset because it should be treated the same as the priority dataset
+    # and the priority dataset takes a long time to create.
+    data_dict["imap_ultra_l1a_45sensor-priority-1-de"] = de_dataset
+    data_dict[aux_dataset.attrs["Logical_source"]] = aux_dataset
+
+    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
+
+    assert l1b_de_dataset[0]
+    assert (
+        l1b_de_dataset[0].attrs["Logical_source"]
+        == "imap_ultra_l1b_45sensor-priority-1-de"
+    )

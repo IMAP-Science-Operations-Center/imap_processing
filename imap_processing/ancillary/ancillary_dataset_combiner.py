@@ -431,16 +431,12 @@ class GlowsAncillaryCombiner(AncillaryCombiner):
                 lines = [line.strip() for line in f if not line.startswith("#")]
             identifiers = [line.split(" ", 1)[0] for line in lines]
             values = [float(line.split(" ", 1)[1]) for line in lines]
-            ds = xr.Dataset(
+            return xr.Dataset(
                 {
-                    "cps_per_r": (["start_time_utc"], values),  # floats
-                },
-                coords={
-                    "start_time_utc": np.array(identifiers, dtype="datetime64[s]")
-                },  # (e.g. '2025-07-01T00:00:00')
+                    "start_time_utc": (["time_block"], identifiers),
+                    "cps_per_r": (["time_block"], values),
+                }
             )
-
-            return ds.sortby("start_time_utc")
 
         elif filename.endswith(".json"):
             # Handle pipeline settings JSON file using the generic read_json method

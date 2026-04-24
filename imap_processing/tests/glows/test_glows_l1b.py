@@ -20,6 +20,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
+from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.spice.time import met_to_datetime64
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
@@ -629,6 +630,9 @@ def test_hist_spice_output(
         # (since the 0.05° threshold is exactly half the 0.1° bin spacing.
         assert np.count_nonzero(region_mask) == 1
 
+        assert np.all(uv_mask[1397:1437])
+        assert region_mask[1417]
+
         # Test flag_from_mask_dataset using the fixture data
         instr_mask = hist_data.flag_from_mask_dataset(
             day_exclusions.exclusions_by_instr_team
@@ -637,3 +641,35 @@ def test_hist_spice_output(
         assert np.count_nonzero(instr_mask) == 10
 
         # TODO: Maxine will validate actual data with GLOWS team
+
+
+def test_calculate_calculate_look_vectors_dps_uses_correct_azimuth_calculation(
+    furnish_kernels,
+):
+    kernels = [
+        "imap_130.tf",
+    ]
+    with furnish_kernels(kernels):
+        imap_spin_angle_bin_cntr = np.array([0, 90, 180, 270])
+        some_position_angle_offset_average = np.double(41.5)
+
+        expected_azimuth = (
+            np.array([360, 90, 180, 270]) - some_position_angle_offset_average
+        )
+        expected_radius = np.array([1, 1, 1, 1])
+
+        # As-built mounting elevation of GLOWS in the s/c frame is 15.025791 degrees
+        expected_elevation = np.array([15.025791, 15.025791, 15.025791, 15.025791])
+
+        look_vectors = HistogramL1B.calculate_look_vectors_dps(
+            imap_spin_angle_bin_cntr, some_position_angle_offset_average
+        )
+
+        actual_spherical = cartesian_to_spherical(look_vectors)
+        actual_azimuth = actual_spherical[:, 1]
+        actual_radius = actual_spherical[:, 0]
+        actual_elevation = actual_spherical[:, 2]
+
+        np.testing.assert_allclose(expected_azimuth, actual_azimuth)
+        np.testing.assert_allclose(expected_radius, actual_radius)
+        np.testing.assert_allclose(expected_elevation, actual_elevation)

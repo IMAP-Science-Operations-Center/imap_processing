@@ -239,11 +239,35 @@ def mock_conversion_table_dict():
 @pytest.fixture
 def mock_calibration_dataset():
     """Create a mock CalibrationDataset object for testing."""
+
+    # Both cps_per_r and start_time_utc are 2D: (epoch, *_dim_0).
     return xr.Dataset(
-        {"cps_per_r": xr.DataArray([0.849, 1.020], dims=["start_time_utc"])},
+        {
+            "cps_per_r": xr.DataArray(
+                [[0.849, 1.020, 1.500], [0.849, 1.020, 1.500]],
+                dims=["epoch", "cps_per_r_dim_0"],
+            ),
+            "start_time_utc": xr.DataArray(
+                np.array(
+                    [
+                        [
+                            "2011-09-19T09:58:04",
+                            "2011-09-20T18:12:48",
+                            "2011-09-21T18:15:50",
+                        ],
+                        [
+                            "2011-09-19T09:58:04",
+                            "2011-09-20T18:12:48",
+                            "2011-09-21T18:15:50",
+                        ],
+                    ],
+                ),
+                dims=["epoch", "start_time_utc_dim_0"],
+            ),
+        },
         coords={
-            "start_time_utc": np.array(
-                ["2011-09-19T09:58:04", "2011-09-20T18:12:48"], dtype="datetime64[s]"
+            "epoch": np.array(
+                ["2011-09-19T00:00:00", "2011-09-20T00:00:00"], dtype="datetime64[s]"
             )
         },
     )

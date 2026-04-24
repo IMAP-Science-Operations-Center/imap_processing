@@ -307,8 +307,9 @@ class TestLoPointingSet:
         # check that the midpoint_j2000_et property is equal to the expected value
         assert lo_pset.midpoint_j2000_et == ttj2000ns_to_et(
             lo_pset.epoch
-            + met_to_ttj2000ns(
-                lo_pset_ds.pointing_end_met - lo_pset_ds.pointing_start_met
+            + (
+                met_to_ttj2000ns(lo_pset_ds.pointing_end_met)
+                - met_to_ttj2000ns(lo_pset_ds.pointing_start_met)
             )
             / 2
         )

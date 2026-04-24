@@ -11,6 +11,7 @@ interacting with the API programmatically. It is the preferred way to use the AP
     :maxdepth: 1
 
     imap-data-access
+    spice-files
 
 Users may also download, upload, and query via the REST API directly through the browser, or via `curl` commands.
 The `REST API Specification`_ section describes the various endpoints that are supported, and how to use them.
@@ -18,7 +19,7 @@ The `REST API Specification`_ section describes the various endpoints that are s
 *Note: Several sections and links begin with* [WIP]. *As development on the API is ongoing, this indicates
 that the full implementation of the functionality is yet to be completed.*
 
-The API can be accessed from the following URL [WIP]: https://api.dev.imap-mission.com
+The API can be accessed from the following URL [WIP]: https://api.imap-mission.com
 
 Command Line Utility
 --------------------
@@ -162,7 +163,7 @@ for example, with ``IMAP_DATA_DIR=/data:``
 Data Access URL
 ^^^^^^^^^^^^^^^
 
-To change the default URL that the package accesses, you can set the environment variable ``IMAP_DATA_ACCESS_URL`` or within the package ``imap_data_access.config["DATA_ACCESS_URL"]``. The default is the development server (``https://api.dev.imap-mission.com``).
+To change the default URL that the package accesses, you can set the environment variable ``IMAP_DATA_ACCESS_URL`` or within the package ``imap_data_access.config["DATA_ACCESS_URL"]``. The default is the production server (``https://api.imap-mission.com``).
 
 File Validation
 ---------------
@@ -227,7 +228,7 @@ REST API Specification
 
     .. code-block:: bash
 
-       curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
+       curl -X GET -H "Accept: application/json" https://api.imap-mission.com/upload/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
 
 **Possible Responses:**
 
@@ -252,7 +253,7 @@ REST API Specification
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
+   curl -X GET -H "Accept: application/json" https://api.imap-mission.com/download/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
 
 **Possible Responses:**
 
@@ -270,7 +271,7 @@ REST API Specification
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?instrument=swe&data_level=l0&descriptor=sci&start_date=20240105&end_date=20240105&extension=pkts
+   curl -X GET -H "Accept: application/json" https://api.imap-mission.com/query?instrument=swe&data_level=l0&descriptor=sci&start_date=20240105&end_date=20240105&extension=pkts
 
 **Possible Responses:**
 

@@ -859,9 +859,9 @@ def flag_statistical_outliers(
         good_mask = ~curr_mask[e_idx]  # spin bins that are not currently flagged
         for it in range(n_iterations):
             counts = count_summary[e_idx, good_mask]
-            # Step 1. check if any energy bins have less than 3 spin bins with counts.
+            # Step 1. check if there are less than three valid counts.
             # If so, flag all spins for that energy bin and skip to the next iteration
-            if np.sum(counts > 0) < 3:
+            if len(counts) < 3:
                 quality_stats[e_idx] = True
                 curr_mask[e_idx] = True
                 convergence[e_idx] = True
@@ -940,6 +940,143 @@ def get_poisson_stats(counts: NDArray) -> tuple[float, NDArray]:
     std_ratio = std / np.sqrt(np.mean(counts)) - 1
     sub_mask = np.abs((counts - np.mean(counts)) / std) > 3
     return std_ratio, sub_mask
+
+
+def flag_upstream_ion(
+    de_dataset: xr.Dataset,
+    spin_tbin_edges: NDArray,
+    energy_ranges: NDArray,
+    mask: NDArray,
+    channels: list,
+    sensor_id: int = 90,
+) -> NDArray:
+    """
+    Flag upstream ion events.
+
+    Parameters
+    ----------
+    de_dataset : xr.Dataset
+        Direct event dataset.
+    spin_tbin_edges : NDArray
+        Edges of the spin time bins.
+    energy_ranges : NDArray
+        Array of energy range edges.
+    mask : NDArray
+        Mask indicating which events to consider for upstream ion flagging. This should
+        be a 2d boolean array of shape (n_energy_bins, n_spin_bins) where True
+        indicates the spin bins that have been flagged in previous steps
+        and should be excluded from the upstream ion flagging process.
+    channels : list
+        List of energy channel indices to use for upstream ion flagging.
+    sensor_id : int
+        Sensor ID (e.g., 45 or 90).
+
+    Returns
+    -------
+    flagged : NDArray
+        Boolean array of shape (n_spin_bins,) where True indicates spin bins flagged for
+        upstream ions. These flags are energy independent and should be applied across
+        all energy channels.
+    """
+    # validate that the channels provided are within the bounds of the energy ranges
+    if not np.all([ch in range(len(energy_ranges) - 1) for ch in channels]):
+        raise ValueError(
+            f"Channels provided for upstream ion flagging must be within the bounds"
+            f" of the energy ranges. Provided channels: {channels}, number of energy"
+            f" ranges: {len(energy_ranges) - 1}."
+        )
+    counts_sum = get_valid_de_count_summary(
+        de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
+    )[channels, :]  # shape (num_channels, n_spin_bins)
+    flagged = np.zeros(counts_sum.shape[1], dtype=bool)
+    channel_mask = ~mask[channels, :]
+    weights = channel_mask.sum(axis=0)
+    # Sum counts where the mask is True (valid)
+    sum_scaled_counts = np.where(channel_mask, counts_sum, 0).sum(axis=0)
+    # Get 1D array of valid spin bins
+    valid_bins = np.flatnonzero(weights > 0)
+    total_scaled = sum_scaled_counts[valid_bins]
+    if valid_bins.size == 0 or total_scaled.size == 0:
+        logger.info(
+            "Upstream Ion culling found no valid spin bins for evaluation; "
+            "returning all-False upstream ion flags."
+        )
+        return flagged
+
+    total_mean = np.mean(total_scaled)
+    # Set a threshold based on poisson stats for the total counts across the channels
+    thresh = total_mean + UltraConstants.UPSTREAM_SIG_THRESHOLD * np.sqrt(total_mean)
+    # Flag bins where the total counts across the channels exceed the threshold
+    flagged[valid_bins[total_scaled > thresh]] = True
+
+    num_culled: int = np.sum(flagged)
+    logger.info(
+        f"Upstream Ion culling removed {num_culled} spin bins. These are energy"
+        f" independent flags and will be applied across all {mask.shape[0]} energy"
+        f" channels."
+    )
+    return flagged
+
+
+def flag_spectral_events(
+    de_dataset: xr.Dataset,
+    spin_tbin_edges: NDArray,
+    energy_ranges: NDArray,
+    channels: list,
+    sensor_id: int = 90,
+) -> NDArray:
+    """
+    Flag spectral events.
+
+    Parameters
+    ----------
+    de_dataset : xr.Dataset
+        Direct event dataset.
+    spin_tbin_edges : NDArray
+        Edges of the spin time bins.
+    energy_ranges : NDArray
+        Array of energy range edges.
+    channels : list
+        List of energy channel indices to use for spectral flagging.
+    sensor_id : int
+        Sensor ID (e.g., 45 or 90).
+
+    Returns
+    -------
+    flagged : NDArray
+        Boolean array of shape (n_spin_bins,) where True indicates spin bins flagged for
+        spectral anomalies. These flags are energy independent and should be applied
+         across all energy channels.
+    """
+    # validate that the channels provided are within the bounds of the energy ranges
+    if not np.all([ch in range(len(energy_ranges) - 1) for ch in channels]):
+        raise ValueError(
+            f"Channels provided for spectral flagging must be within the bounds"
+            f" of the energy ranges. Provided channels: {channels}, number of energy"
+            f" ranges: {len(energy_ranges) - 1}."
+        )
+    counts_sum = get_valid_de_count_summary(
+        de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
+    )[channels, :]  # shape (num_channels, n_spin_bins)
+    # Flag spin bins where the signed count difference between adjacent selected
+    # energy channels exceeds a Poisson-based threshold. For each pair of
+    # adjacent channels, compute np.diff(counts_sum, axis=0) and compare that
+    # signed difference to a threshold scaled by the combined Poisson
+    # uncertainty (sqrt(N1 + N2)) of those two channels for each spin bin.
+    # If any adjacent channel pair exceeds the threshold for a spin bin, that
+    # spin bin is flagged across all energy ranges.
+    diff = np.diff(counts_sum, axis=0) - UltraConstants.SPECTRAL_SIG_THRESHOLD * (
+        np.sqrt(counts_sum[:-1] + counts_sum[1:])
+    )  # shape (num_channels - 1, n_spin_bins)
+    flagged = np.any(diff > 0, axis=0)  # shape (n_spin_bins,)
+    num_culled: int = np.sum(flagged)
+    logger.info(
+        f"Spectral culling removed {num_culled} spin bins using channels"
+        f" {channels} and threshold {UltraConstants.SPECTRAL_SIG_THRESHOLD}."
+        f" These are energy independent flags and will be applied across all"
+        f" energy channels."
+    )
+    return flagged
 
 
 def get_valid_de_count_summary(
@@ -1167,12 +1304,15 @@ def get_binned_energy_ranges(
     )
     energy_starts = [energy_bin_edges[i][0] for i in group_start_inds]
     # Append the stop energy of the last bin to cover the full range
-    last_group_end_ind = min(
-        group_start_inds[-1] + UltraConstants.N_CULL_EBINS, len(energy_bin_edges)
+    last_group_end_ind = int(
+        min(
+            int(group_start_inds[-1]) + UltraConstants.N_CULL_EBINS,
+            len(energy_bin_edges),
+        )
     )
     energy_ranges: np.ndarray = np.append(
         energy_starts,
-        energy_bin_edges[last_group_end_ind - 1][1],  # type: ignore[operator]
+        energy_bin_edges[last_group_end_ind - 1][1],
     )
     if max_energy is not None:
         # get the first index where the energy range exceeds the max energy

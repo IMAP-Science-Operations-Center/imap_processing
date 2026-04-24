@@ -1,0 +1,19 @@
+# THIS IS A TEST FILE AND SHOULD NOT BE USED IN PRODUCTION PROCESSING.
+#
+# Backgrounds Determination Configuration File
+# Valid start date: 2024-01-01 (from filename)
+# This file will be used in processing until a new calibration file is uploaded
+# to the SDC with either a higher version number or new date in the filename.
+# For details on how the SDC selects ancillary files for processing, see:
+# https://imap-processing.readthedocs.io/en/latest/data-access/calibration-files.html
+#
+# When creating PSET products, the following table will be used to determine per
+# calibration product backgrounds. The backgrounds for each calibration product are
+# computed individually and the sum is subtracted from the calibration product. Background
+# uncertainties are summed in quadrature and reported in background uncertainties.
+#
+calibration_prod,background_index,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,scaling_factor,uncertainty
+0,0,ABC1C2|ABC1,-20,16,-46,-15,-511,511,0,1023,0.00306,0.00030
+0,1,AB,-20,16,-46,-15,-511,511,0,1023,0.0189,0.0020
+1,0,BC1C2|AC1,-20,16,-46,-15,-511,511,0,1023,0.00306,0.00030
+1,1,AB,-20,16,-46,-15,-511,511,0,1023,0.0189,0.0020

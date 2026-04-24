@@ -27,7 +27,9 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_low_voltage,
     flag_rates,
     flag_scattering,
+    flag_spectral_events,
     flag_statistical_outliers,
+    flag_upstream_ion,
     get_binned_energy_ranges,
     get_binned_spins_edges,
     get_de_rejection_mask,
@@ -45,6 +47,30 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import get_spin_info
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+
+
+@pytest.fixture
+def setup_repoint_47_data():
+    """Fixture to set up data for validation test using repoint 47."""
+    de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
+    de_ds = xr.Dataset(
+        {
+            "de_event_met": ("epoch", de_df.event_times.values),
+            "energy_spacecraft": ("epoch", de_df.energy_spacecraft.values),
+            "quality_outliers": ("epoch", de_df.quality_outliers.values),
+            "quality_scattering": ("epoch", de_df.quality_scattering.values),
+            "ebin": ("epoch", de_df.ebin.values),
+        }
+    )
+    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
+    spin_bin_size = UltraConstants.SPIN_BIN_SIZE
+    spin_tbin_edges = get_binned_spins_edges(
+        xspin.spin_number.values,
+        xspin.spin_period.values,
+        xspin.spin_start_time.values,
+        spin_bin_size,
+    )
+    return de_ds, xspin, spin_tbin_edges
 
 
 @pytest.fixture
@@ -432,6 +458,9 @@ def test_get_energy_and_spin_dependent_rejection_mask():
             "quality_statistics": np.full(n_spins, 0),
             "energy_range_flags": energy_range_flags,
             "energy_range_edges": energy_range_edges,
+            "quality_upstream_ion_1": np.full(n_spins, 0),
+            "quality_upstream_ion_2": np.full(n_spins, 0),
+            "quality_spectral": np.full(n_spins, 0),
         }
     )
     # update quality flags to test that events get rejected
@@ -710,34 +739,15 @@ def test_flag_high_energy():
     3,
 )
 @pytest.mark.external_test_data
-def test_validate_high_energy_cull():
+def test_validate_high_energy_cull(setup_repoint_47_data):
     """Validate that high energy spins are correctly flagged"""
     # Mock thresholds to match the test data (I used fake ones to create more
     # complexity)
     mock_thresholds = np.array([0.05, 1.5, 0.6, 119.2, 0.2]) * 20
-    # read test data from csv files
-    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
     expected_qf = pd.read_csv(
         TEST_PATH / "validate_high_energy_culling_results_repoint00047_v2.csv"
     ).to_numpy()
-    de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
-    de_ds = xr.Dataset(
-        {
-            "de_event_met": ("epoch", de_df.event_times.values),
-            "energy_spacecraft": ("epoch", de_df.energy_spacecraft.values),
-            "quality_outliers": ("epoch", de_df.quality_outliers.values),
-            "quality_scattering": ("epoch", de_df.quality_scattering.values),
-            "ebin": ("epoch", de_df.ebin.values),
-        }
-    )
-    # Use constants from the code to ensure consistency with the actual culling code
-    spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    spin_tbin_edges = get_binned_spins_edges(
-        xspin.spin_number.values,
-        xspin.spin_period.values,
-        xspin.spin_start_time.values,
-        spin_bin_size,
-    )
+    de_ds, _, spin_tbin_edges = setup_repoint_47_data
     # Get the energy ranges
     energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
     e_flags = flag_high_energy(
@@ -859,31 +869,13 @@ def test_get_poisson_stats():
 
 
 @pytest.mark.external_test_data
-def test_validate_stat_cull():
+def test_validate_stat_cull(setup_repoint_47_data):
     """Validate that statistical-outlier quality flags match expected results."""
     # read test data from csv files
-    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
     results_df = pd.read_csv(
         TEST_PATH / "validate_stat_culling_results_repoint00047_v2.csv"
     )
-    de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
-    de_ds = xr.Dataset(
-        {
-            "de_event_met": ("epoch", de_df.event_times.values),
-            "energy_spacecraft": ("epoch", de_df.energy_spacecraft.values),
-            "quality_outliers": ("epoch", de_df.quality_outliers.values),
-            "quality_scattering": ("epoch", de_df.quality_scattering.values),
-            "ebin": ("epoch", de_df.ebin.values),
-        }
-    )
-    # Use constants from the code to ensure consistency with the actual culling code
-    spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    spin_tbin_edges = get_binned_spins_edges(
-        xspin.spin_number.values,
-        xspin.spin_period.values,
-        xspin.spin_start_time.values,
-        spin_bin_size,
-    )
+    de_ds, _, spin_tbin_edges = setup_repoint_47_data
     # Get the energy ranges
     energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
 
@@ -927,3 +919,78 @@ def test_get_binned_energy_ranges():
         [3.0, 6.96, 15.71, 34.9866, 77.9161, 116.276, 316.335]
     )
     np.testing.assert_array_equal(energy_ranges, expected_energy_ranges)
+
+
+@pytest.mark.external_test_data
+def test_validate_upstream_ion_cull(setup_repoint_47_data):
+    """Validate that upstream ion quality flags match expected results."""
+    # read test data from csv files
+    expected_results = pd.read_csv(
+        TEST_PATH / "validate_upstream_ion_1_culling_results_repoint00047_v1.csv"
+    ).to_numpy()
+    de_ds, _, spin_tbin_edges = setup_repoint_47_data
+    intervals, _, _ = build_energy_bins()
+    energy_ranges = get_binned_energy_ranges(intervals)
+    mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
+    mask[0:2, 0:2] = (
+        True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
+    )
+    flags = flag_upstream_ion(
+        de_ds,
+        spin_tbin_edges,
+        energy_ranges,
+        mask,
+        UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1,
+        90,
+    )
+    # Combine the flags with the mask to get the final expected results since the
+    # masked bins should be flagged as well.
+    results = flags | mask
+    np.testing.assert_array_equal(results, ~expected_results.astype(bool))
+
+
+@pytest.mark.external_test_data
+def test_upstream_ion_cull_invalid_channels(setup_repoint_47_data):
+    """Validate upstream ion error handling."""
+    de_ds, _, spin_tbin_edges = setup_repoint_47_data
+    intervals, _, _ = build_energy_bins()
+    energy_ranges = get_binned_energy_ranges(intervals)
+    mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
+    with pytest.raises(
+        ValueError,
+        match="Channels provided for upstream ion flagging"
+        " must be within the bounds of the energy ranges.",
+    ):
+        flag_upstream_ion(
+            de_ds,
+            spin_tbin_edges,
+            energy_ranges,
+            mask,
+            [5, 6, 7],  # Invalid channels that are out of bounds
+            90,
+        )
+
+
+@pytest.mark.external_test_data
+def test_validate_spectral_cull(setup_repoint_47_data):
+    """Validate that spectral flags match expected results."""
+    # read test data from csv files
+    expected_results = pd.read_csv(
+        TEST_PATH / "validate_spectral_culling_results_repoint00047_v1.csv"
+    ).to_numpy()
+    de_ds, _, spin_tbin_edges = setup_repoint_47_data
+    intervals, _, _ = build_energy_bins()
+    energy_ranges = get_binned_energy_ranges(intervals)
+    mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
+    mask[0:2, 0:2] = (
+        True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
+    )
+    flags = flag_spectral_events(
+        de_ds,
+        spin_tbin_edges,
+        energy_ranges,
+        UltraConstants.SPECTRAL_ENERGY_CHANNELS,
+        90,
+    )
+    results = flags | mask
+    np.testing.assert_array_equal(results, ~expected_results.astype(bool))

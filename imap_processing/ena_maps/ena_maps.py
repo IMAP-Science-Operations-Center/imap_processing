@@ -655,9 +655,11 @@ class UltraPointingSet(HealpixPointingSet):
             # Get counts in nested ordering. In nested ordering, the
             # pixels that need to be binned together to go from the counts nside to
             # the pset nside are contiguous in the array.
+            # Use nest2ring to get the indices to convert from ring to nest ordering if
+            # necessary.
             if not self.nested:
                 counts_n = counts[
-                    :, hp.ring2nest(counts_nside, np.arange(counts_n_pix))
+                    :, hp.nest2ring(counts_nside, np.arange(counts_n_pix))
                 ]
             else:
                 counts_n = counts
@@ -675,7 +677,7 @@ class UltraPointingSet(HealpixPointingSet):
                 # convert back to ring ordering if necessary and store in the
                 # downsampled counts array
                 binned_counts_n = binned_counts_n[
-                    :, hp.nest2ring(self.nside, np.arange(pset_n_pix))
+                    :, hp.ring2nest(self.nside, np.arange(pset_n_pix))
                 ]
 
             self.data["counts"] = xr.DataArray(
@@ -802,8 +804,8 @@ class LoPointingSet(LoHiBasePointingSet):
             The midpoint value [J2000 ET] of the pointing set.
         """
         epoch_delta = met_to_ttj2000ns(
-            self.data["pointing_end_met"].data - self.data["pointing_start_met"].data
-        )
+            self.data["pointing_end_met"].data
+        ) - met_to_ttj2000ns(self.data["pointing_start_met"].data)
         return float(ttj2000ns_to_et(self.epoch + epoch_delta / 2))
 
 

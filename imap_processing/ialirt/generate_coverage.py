@@ -1,10 +1,8 @@
 """Coverage time for each station."""
 
 import logging
-from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 from imap_processing.ialirt.constants import STATIONS, StationProperties
 from imap_processing.ialirt.process_ephemeris import calculate_azimuth_and_elevation
@@ -27,73 +25,8 @@ ALL_STATIONS = [
     "DSS-56",
     "DSS-74",
     "DSS-75",
+    "DSS-43",
 ]
-
-
-def parse_uksa_schedule_xlsx(xlsx_path: Path) -> list[tuple[str, str]]:
-    """
-    Parse the UKSA (GHY-6) availability sheet and return a list of contacts.
-
-    Parameters
-    ----------
-    xlsx_path : Path
-        Path to the UKSA (GHY-6) availability sheet.
-
-    Returns
-    -------
-    contacts : list[tuple[str, str]]
-        Available contacts for UKSA (GHY-6) availability sheet.
-    """
-    data = pd.read_excel(xlsx_path)
-
-    # Import start and stop times.
-    start_dt = (
-        data["Date"]
-        + pd.to_timedelta(
-            data["GHY-6 Start Availability Times  (5degrees) (UTC)"].astype(str)
-        )
-    ).to_numpy("datetime64[s]")
-
-    stop_dt = (
-        data["Date"]
-        + pd.to_timedelta(
-            data["GHY-6 Stop Availability Times  (5degrees) (UTC)"].astype(str)
-        )
-    ).to_numpy("datetime64[s]")
-
-    # Indicates whether or not setup or teardown should be taken from contact window.
-    notes = data["Short due to existing booking "].fillna("")
-
-    truncate_setup = (
-        notes.eq("Yes- setup needs to be included with the window")
-        | notes.eq("Yes- setup and teardown needs to be included with the window")
-    ).to_numpy()
-
-    truncate_teardown = (
-        notes.eq("Yes- tear down needs to be included within the window")
-        | notes.eq("Yes- setup and teardown needs to be included with the window")
-    ).to_numpy()
-
-    setup_time = data["Setup time"].iloc[0]
-    teardown_time = data["Tear down time"].iloc[0]
-
-    setup_seconds = setup_time.hour * 3600 + setup_time.minute * 60 + setup_time.second
-    teardown_seconds = (
-        teardown_time.hour * 3600 + teardown_time.minute * 60 + teardown_time.second
-    )
-
-    setup_delta = np.timedelta64(setup_seconds, "s")
-    teardown_delta = np.timedelta64(teardown_seconds, "s")
-
-    # Apply adjustments
-    start_dt[truncate_setup] += setup_delta
-    stop_dt[truncate_teardown] -= teardown_delta
-
-    # Format to strings with ms, append Z
-    start_str = np.datetime_as_string(start_dt, unit="ms")
-    stop_str = np.datetime_as_string(stop_dt, unit="ms")
-
-    return list(zip(start_str, stop_str, strict=False))
 
 
 def create_schedule_mask(

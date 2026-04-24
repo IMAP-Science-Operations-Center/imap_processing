@@ -33,10 +33,19 @@ def hi_goodtimes_dataset(hi_l1_test_data_path):
 
 
 @mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")
-def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
+def test_hi_l1c(
+    mock_generate_pset_dataset,
+    hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
+):
     """Test coverage for hi_l1c function"""
     mock_generate_pset_dataset.return_value = xr.Dataset()
-    pset = hi_l1c.hi_l1c(xr.Dataset(), hi_test_cal_prod_config_path, xr.Dataset())[0]
+    pset = hi_l1c.hi_l1c(
+        xr.Dataset(),
+        hi_test_cal_prod_config_path,
+        xr.Dataset(),
+        hi_test_background_config_path,
+    )[0]
     # Empty attributes, global values get added in post-processing
     assert pset.attrs == {}
 
@@ -47,6 +56,7 @@ def test_generate_pset_dataset(
     hi_l1b_de_dataset,
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
     use_fake_spin_data_for_time,
     use_fake_repoint_data_for_time,
     imap_ena_sim_metakernel,
@@ -64,7 +74,10 @@ def test_generate_pset_dataset(
     goodtimes = hi_goodtimes_dataset
 
     l1c_dataset = hi_l1c.generate_pset_dataset(
-        l1b_dataset, hi_test_cal_prod_config_path, goodtimes
+        l1b_dataset,
+        hi_test_cal_prod_config_path,
+        goodtimes,
+        hi_test_background_config_path,
     )
 
     assert l1c_dataset.epoch.data[0] == l1b_dataset.epoch.data[0].astype(np.int64)
@@ -97,6 +110,7 @@ def test_generate_pset_dataset_uses_midpoint_time(
     mock_pset_exposure,
     mock_pset_backgrounds,
     hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
 ):
     """Test that generate_pset_dataset uses midpoint ET for pset_geometry."""
     # Create a mock L1B dataset
@@ -129,12 +143,20 @@ def test_generate_pset_dataset_uses_midpoint_time(
     # Mock the return values for the sub-functions
     mock_pset_geometry.return_value = {}
     mock_pset_counts.return_value = {}
-    mock_pset_exposure.return_value = {}
+    # pset_exposure must return exposure_times for pset_backgrounds to use
+    mock_exposure_times = xr.DataArray(
+        np.ones((1, n_energy_steps, 3600), dtype=np.float32),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+    mock_pset_exposure.return_value = {"exposure_times": mock_exposure_times}
     mock_pset_backgrounds.return_value = {}
 
     # Call generate_pset_dataset
     _ = hi_l1c.generate_pset_dataset(
-        mock_l1b_dataset, hi_test_cal_prod_config_path, xr.Dataset()
+        mock_l1b_dataset,
+        hi_test_cal_prod_config_path,
+        xr.Dataset(),
+        hi_test_background_config_path,
     )
 
     # Calculate expected midpoint ET
@@ -240,6 +262,7 @@ def test_pset_counts(
     hi_l1b_de_dataset,
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
 ):
     """Test coverage for pset_counts function."""
     cal_config_df = utils.CalibrationProductConfig.from_csv(
@@ -264,6 +287,7 @@ def test_pset_counts_empty_l1b(
     hi_l1b_de_dataset,
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
+    hi_test_background_config_path,
 ):
     """Test coverage for pset_counts function when the input L1b contains no counts."""
     # Make a copy and modify it -
@@ -520,30 +544,245 @@ def test_pset_counts_goodtimes_filtering(
     assert counts_var["counts"].data[0, 0, 0, 1800] == 5
 
 
-def test_pset_backgrounds():
+@pytest.mark.external_test_data
+def test_pset_backgrounds(
+    hi_test_background_config_path,
+    hi_test_cal_prod_config_path,
+    hi_l1b_de_dataset,
+    hi_goodtimes_dataset,
+    use_fake_spin_data_for_time,
+    use_fake_repoint_data_for_time,
+):
     """Test coverage for pset_backgrounds function."""
-    # Create some fake coordinates to use
+    # Setup required SPICE data
+    use_fake_spin_data_for_time(482372987.999)
+    l1b_met = hi_l1b_de_dataset["ccsds_met"].values[0]
+    seconds_per_day = 24 * 60 * 60
+    use_fake_repoint_data_for_time(
+        np.asarray([l1b_met - 15 * 60, l1b_met + seconds_per_day]),
+        np.asarray([l1b_met, l1b_met + seconds_per_day + 1]),
+    )
+
+    # Load the background config
+    background_df = utils.BackgroundConfig.from_csv(hi_test_background_config_path)
+
+    # Create empty pset dataset to get coordinates
+    cal_config_df = utils.CalibrationProductConfig.from_csv(
+        hi_test_cal_prod_config_path
+    )
+    empty_pset = hi_l1c.empty_pset_dataset(
+        l1b_met,
+        hi_l1b_de_dataset.esa_energy_step,
+        cal_config_df.cal_prod_config.calibration_product_numbers,
+        HIAPID.H90_SCI_DE.sensor,
+    )
+
+    # Create exposure_times for the test
+    exposure_times_data = np.full(
+        (
+            len(empty_pset.coords["epoch"]),
+            len(empty_pset.coords["esa_energy_step"]),
+            len(empty_pset.coords["spin_angle_bin"]),
+        ),
+        1.0,
+        dtype=np.float32,
+    )
+    exposure_times = xr.DataArray(
+        exposure_times_data,
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+        coords={
+            "epoch": empty_pset.coords["epoch"],
+            "esa_energy_step": empty_pset.coords["esa_energy_step"],
+            "spin_angle_bin": empty_pset.coords["spin_angle_bin"],
+        },
+    )
+
+    # Call pset_backgrounds with the new signature
+    backgrounds_vars = hi_l1c.pset_backgrounds(
+        empty_pset.coords,
+        background_df,
+        hi_l1b_de_dataset,
+        hi_goodtimes_dataset,
+        exposure_times,
+    )
+
+    assert "background_rates" in backgrounds_vars
+    assert backgrounds_vars["background_rates"].data.shape == (
+        len(empty_pset.coords["epoch"]),
+        len(empty_pset.coords["esa_energy_step"]),
+        len(empty_pset.coords["calibration_prod"]),
+        len(empty_pset.coords["spin_angle_bin"]),
+    )
+
+    assert "background_rates_uncertainty" in backgrounds_vars
+    assert backgrounds_vars["background_rates_uncertainty"].data.shape == (
+        len(empty_pset.coords["epoch"]),
+        len(empty_pset.coords["esa_energy_step"]),
+        len(empty_pset.coords["calibration_prod"]),
+        len(empty_pset.coords["spin_angle_bin"]),
+    )
+
+
+@mock.patch("imap_processing.hi.hi_l1c.good_time_and_phase_mask")
+def test_compute_background_counts_missing_cal_prod_raises_error(
+    mock_good_time_and_phase_mask,
+    hi_test_background_config_path,
+):
+    """Test _compute_background_counts raises ValueError with invalid bkgnd config."""
+    # Mock good_time_and_phase_mask to return all True
+    mock_good_time_and_phase_mask.side_effect = lambda a, b, c: np.ones(
+        a.shape, dtype=bool
+    )
+    # Load the background config (has cal prods 0 and 1)
+    background_df = utils.BackgroundConfig.from_csv(hi_test_background_config_path)
+
+    # Create minimal pset_coords with a calibration product (999) that's
+    # NOT in the background config
+    missing_cal_prod = 999
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "calibration_prod": xr.DataArray(
+            np.array([0, 1, missing_cal_prod], dtype=np.int32),
+            dims=["calibration_prod"],
+        ),
+    }
+
+    hi_l1b_de_dataset = xr.Dataset(
+        {
+            "coincidence_type": xr.DataArray(
+                np.array([15], dtype=np.uint8), dims=["event_met"]
+            ),
+            "trigger_id": xr.DataArray(
+                np.array([0], dtype=np.float64),
+                dims=["event_met"],
+                attrs={"FILLVAL": 65535},
+            ),
+            "nominal_bin": xr.DataArray(
+                np.array([0], dtype=np.uint8), dims=["event_met"]
+            ),
+            "tof_ab": xr.DataArray(
+                np.array([50], dtype=np.float32), dims=["event_met"]
+            ),
+            "tof_ac1": xr.DataArray(
+                np.array([50], dtype=np.float32), dims=["event_met"]
+            ),
+            "tof_bc1": xr.DataArray(
+                np.array([50], dtype=np.float32), dims=["event_met"]
+            ),
+            "tof_c1c2": xr.DataArray(
+                np.array([50], dtype=np.float32), dims=["event_met"]
+            ),
+        },
+        coords={
+            "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+            "event_met": xr.DataArray(
+                np.array([0], dtype=np.float64), dims=["event_met"]
+            ),
+        },
+    )
+
+    # Verify that calling _compute_background_counts raises ValueError
+    # with expected message
+    with pytest.raises(
+        ValueError,
+        match=f"Calibration product {missing_cal_prod} not found "
+        f"in background configuration",
+    ):
+        hi_l1c._compute_background_counts(
+            pset_coords,
+            background_df,
+            hi_l1b_de_dataset,
+            xr.Dataset(),
+        )
+
+
+@mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
+def test_pset_backgrounds_cal_prod_mismatch_raises_error(
+    mock_compute_background_counts,
+):
+    """Test pset_backgrounds raises ValueError when cal prods don't match.
+
+    This tests the validation at lines 634-639 of hi_l1c.py that checks
+    if calibration products in pset_coords match those in background_config_df.
+    """
+    # Create pset_coords with calibration products [0, 1]
     n_epoch = 1
-    n_energy = 9
-    n_cal_prod = 2
+    n_energy = 2
     n_spin_bins = 3600
     pset_coords = {
-        "epoch": xr.DataArray(np.arange(n_epoch)),
-        "esa_energy_step": xr.DataArray(np.arange(n_energy) + 1),
-        "calibration_prod": xr.DataArray(np.arange(n_cal_prod)),
-        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins)),
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "esa_energy_step": xr.DataArray(
+            np.arange(n_energy) + 1, dims=["esa_energy_step"]
+        ),
+        "calibration_prod": xr.DataArray(
+            np.array([0, 1], dtype=np.int64),
+            dims=["calibration_prod"],
+        ),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
     }
-    backgrounds_vars = hi_l1c.pset_backgrounds(pset_coords)
-    assert "background_rates" in backgrounds_vars
-    np.testing.assert_array_equal(
-        backgrounds_vars["background_rates"].data,
-        np.zeros((n_epoch, n_energy, n_cal_prod, n_spin_bins)),
+
+    # Create a background config DataFrame with DIFFERENT calibration products [5, 6]
+    # This simulates a mismatch between pset_coords and background_config_df
+    background_config_data = {
+        "coincidence_type_list": ["ABC1C2", "ABC1C2"],
+        "coincidence_type_values": [[15], [15]],
+        "tof_ab_low": [0, 0],
+        "tof_ab_high": [100, 100],
+        "tof_ac1_low": [0, 0],
+        "tof_ac1_high": [100, 100],
+        "tof_bc1_low": [0, 0],
+        "tof_bc1_high": [100, 100],
+        "tof_c1c2_low": [0, 0],
+        "tof_c1c2_high": [100, 100],
+        "scaling_factor": [1.0, 1.0],
+        "uncertainty": [0.1, 0.1],
+    }
+    # Use calibration products [5, 6] which don't match pset_coords [0, 1]
+    mismatched_cal_prods = [5, 6]
+    background_indices = [0, 0]
+    multi_index = pd.MultiIndex.from_arrays(
+        [mismatched_cal_prods, background_indices],
+        names=["calibration_prod", "background_index"],
     )
-    assert "background_rates_uncertainty" in backgrounds_vars
-    np.testing.assert_array_equal(
-        backgrounds_vars["background_rates_uncertainty"].data,
-        np.ones((n_epoch, n_energy, n_cal_prod, n_spin_bins)),
+    background_df = pd.DataFrame(background_config_data, index=multi_index)
+
+    # Create mock exposure_times
+    exposure_times = xr.DataArray(
+        np.ones((n_epoch, n_energy, n_spin_bins), dtype=np.float32),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
     )
+
+    # Mock _compute_background_counts to return a DataArray with the mismatched
+    # calibration products (simulating what would happen if the earlier check
+    # didn't catch the mismatch)
+    mock_background_counts = xr.DataArray(
+        np.zeros((n_epoch, len(mismatched_cal_prods), 1)),
+        dims=["epoch", "calibration_prod", "background_index"],
+        coords={
+            "epoch": pset_coords["epoch"],
+            "calibration_prod": mismatched_cal_prods,
+            "background_index": [0],
+        },
+    )
+    mock_compute_background_counts.return_value = mock_background_counts
+
+    # Create minimal l1b dataset and goodtimes (not used due to mock)
+    l1b_de_dataset = xr.Dataset()
+    goodtimes_ds = xr.Dataset()
+
+    # Verify that pset_backgrounds raises ValueError with expected message
+    with pytest.raises(
+        ValueError,
+        match="Calibration products in pset_coords and "
+        "background_config_df do not match",
+    ):
+        hi_l1c.pset_backgrounds(
+            pset_coords,
+            background_df,
+            l1b_de_dataset,
+            goodtimes_ds,
+            exposure_times,
+        )
 
 
 @mock.patch("imap_processing.hi.hi_l1c.good_time_and_phase_mask")

@@ -879,11 +879,36 @@ class Hi(ProcessInstrument):
                         f"Expected exactly one DE science dependency. "
                         f"Got {l1b_de_paths}"
                     )
-                anc_paths = dependencies.get_file_paths(data_type="ancillary")
-                if len(anc_paths) != 1:
+
+                # Get ancillary dependencies
+                anc_dependencies = dependencies.get_processing_inputs(
+                    data_type="ancillary"
+                )
+                if len(anc_dependencies) != 2:
                     raise ValueError(
-                        f"Expected exactly one ancillary dependency. Got {anc_paths}"
+                        f"Expected two ancillary dependencies (cal-prod and "
+                        f"backgrounds). Got "
+                        f"{[anc_dep.descriptor for anc_dep in anc_dependencies]}"
                     )
+
+                # Create mapping from descriptor to path
+                anc_path_dict = {
+                    dep.descriptor.split("-", 1)[1]: dep.imap_file_paths[
+                        0
+                    ].construct_path()
+                    for dep in anc_dependencies
+                }
+
+                # Verify we have both required ancillary files
+                if (
+                    "cal-prod" not in anc_path_dict
+                    or "backgrounds" not in anc_path_dict
+                ):
+                    raise ValueError(
+                        f"Missing required ancillary files. Expected 'cal-prod' and "
+                        f"'backgrounds', got {list(anc_path_dict.keys())}"
+                    )
+
                 # Load goodtimes dependency
                 goodtimes_paths = dependencies.get_file_paths(
                     source="hi", data_type="l1b", descriptor="goodtimes"
@@ -893,10 +918,12 @@ class Hi(ProcessInstrument):
                         f"Expected exactly one goodtimes dependency. "
                         f"Got {goodtimes_paths}"
                     )
+
                 datasets = hi_l1c.hi_l1c(
                     load_cdf(l1b_de_paths[0]),
-                    anc_paths[0],
+                    anc_path_dict["cal-prod"],
                     load_cdf(goodtimes_paths[0]),
+                    anc_path_dict["backgrounds"],
                 )
         elif self.data_level == "l2":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")

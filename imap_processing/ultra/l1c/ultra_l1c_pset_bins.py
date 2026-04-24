@@ -661,7 +661,7 @@ def get_efficiencies_and_geometric_function(
 
             # Accumulate and sum eff and gf values
             bsfs = (
-                boundary_scale_factors[pixel_inds, i]
+                boundary_scale_factors[i, pixel_inds]
                 if apply_bsf
                 else np.ones(len(pixel_inds))
             )
