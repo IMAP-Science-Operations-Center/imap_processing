@@ -202,9 +202,11 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     else:
         # nso_spin_sector and nso_esa_step for comparison. Shape (epoch, 1, 1)
         # to broadcast
-        nso_spin_sector = unpacked_dataset["nso_spin_sector"].values[
-            :, np.newaxis, np.newaxis
-        ]
+        # These range from 0-23 so we need to mod them by 12 to make them compatible to
+        # the spin sector values in the data which range from 0-11
+        nso_spin_sector = (
+            unpacked_dataset["nso_spin_sector"].values[:, np.newaxis, np.newaxis] % 12
+        )
         nso_esa_step = unpacked_dataset["nso_energy_step"].values[
             :, np.newaxis, np.newaxis
         ]
