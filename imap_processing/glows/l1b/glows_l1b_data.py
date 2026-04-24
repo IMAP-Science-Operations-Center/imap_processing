@@ -897,7 +897,6 @@ class HistogramL1B:
     def update_spice_parameters(self) -> None:
         """Update SPICE parameters based on the current state."""
         data_start_met = self.imap_start_time
-        # use of imap_start_time and glows_time_offset is correct.
         data_end_met = np.double(self.imap_start_time) + np.double(
             self.imap_time_offset
         )
