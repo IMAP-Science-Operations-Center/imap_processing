@@ -505,3 +505,59 @@ class TestMapDescriptor:
     def test_principal_data_var(self, descriptor_str, expected_principal_data_var):
         md = MapDescriptor.from_string(descriptor_str)
         assert md.principal_data_var == expected_principal_data_var
+
+    @pytest.mark.parametrize(
+        "descriptor_str, expected_description",
+        [
+            (
+                "h45-ena-h-hf-nsp-full-hae-2deg-6mo",
+                "IMAP-Hi Instrument Level-2 45 degree sensor map of Hydrogen "
+                "ENA Intensity in the heliospheric frame with no survival correction "
+                "in the full spin direction over 6 months on rectangular 2 degree "
+                "tiling.",
+            ),
+            (
+                "hic-ena-h-hf-sp-ram-hae-nside64-1yr",
+                "IMAP-Hi Instrument Level-2 combined sensor map of Hydrogen "
+                "ENA Intensity in the heliospheric frame with survival probability "
+                "correction in the ram direction over 1 year on HEALPix nside 64 "
+                "tiling.",
+            ),
+            (
+                "u90-ena-h-hf-nsp-full-hae-nside128-6mo",
+                "IMAP-Ultra Instrument Level-2 90 degree sensor map of Hydrogen "
+                "ENA Intensity in the heliospheric frame with no survival correction "
+                "in the full spin direction over 6 months on HEALPix nside 128 tiling.",
+            ),
+            (
+                "ilo-isn-h-sf-nsp-ram-hae-2deg-3mo",
+                "IMAP-Lo Instrument Level-2 map of Interstellar Neutral Hydrogen "
+                "Rate in the spacecraft frame with no survival correction "
+                "in the ram direction over 3 months on rectangular 2 degree tiling.",
+            ),
+            (
+                "glx-int-uv-hf-nsp-full-hae-2deg-6mo",
+                "IMAP-GLOWS Instrument Level-2 map of UV Intensity "
+                "in the heliospheric frame with no survival correction "
+                "in the full spin direction over 6 months on rectangular 2 degree "
+                "tiling.",
+            ),
+            (
+                "idx-drt-dust-hf-nsp-full-hae-nside32-1yr",
+                "IMAP-IDEX Instrument Level-2 map of Dust Rate "
+                "in the heliospheric frame with no survival correction "
+                "in the full spin direction over 1 year on HEALPix nside 32 tiling.",
+            ),
+            (
+                "u45-ena-he-hk-sp-anti-hae-4deg-2mo",
+                "IMAP-Ultra Instrument Level-2 45 degree sensor map of Helium "
+                "ENA Intensity in the heliocentric kinetic frame with survival "
+                "probability correction in the anti-ram direction over 2 months "
+                "on rectangular 4 degree tiling.",
+            ),
+        ],
+    )
+    def test_to_logical_source_description(self, descriptor_str, expected_description):
+        md = MapDescriptor.from_string(descriptor_str)
+        actual_description = md.to_logical_source_description()
+        assert actual_description == expected_description

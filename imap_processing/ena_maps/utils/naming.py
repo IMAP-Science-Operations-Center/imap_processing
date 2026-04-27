@@ -231,6 +231,212 @@ class MapDescriptor:
         else:
             return None
 
+
+    def _get_instrument_str(self, full: bool = False) -> str:
+        """
+        Get formatted instrument name string.
+
+        Parameters
+        ----------
+        full : bool, optional
+            If True, return full format (e.g., "IMAP-Hi").
+            If False, return short format (e.g., "Hi"). Default is False.
+
+        Returns
+        -------
+        str
+            Formatted instrument name.
+        """
+        instrument_base = self.instrument.name.split("_")[0]
+        if instrument_base in ("IDEX", "GLOWS"):
+            return f"IMAP-{instrument_base}" if full else instrument_base
+        return f"IMAP-{instrument_base.title()}" if full else instrument_base.title()
+
+    def _get_sensor_str(self, full: bool = False) -> str:
+        """
+        Get formatted sensor string.
+
+        Parameters
+        ----------
+        full : bool, optional
+            If True, return full format (e.g., "45 degree sensor").
+            If False, return short format (e.g., "45"). Default is False.
+
+        Returns
+        -------
+        str
+            Formatted sensor string.
+        """
+        if self.sensor == "combined":
+            return "combined sensor" if full else " Combined"
+        elif self.sensor in ("45", "90"):
+            return f"{self.sensor} degree sensor" if full else str(self.sensor)
+        elif self.sensor:
+            return f"sensor {self.sensor}" if full else str(self.sensor)
+        return ""
+
+    def _get_species_str(self, full: bool = False) -> str:
+        """
+        Get formatted species string.
+
+        Parameters
+        ----------
+        full : bool, optional
+            If True, return full format (e.g., "Hydrogen").
+            If False, return short format (e.g., "H"). Default is False.
+
+        Returns
+        -------
+        str
+            Formatted species string.
+        """
+        if full:
+            species_names = {
+                "h": "Hydrogen",
+                "he": "Helium",
+                "o": "Oxygen",
+                "uv": "UV",
+            }
+            return species_names.get(self.species.lower(), self.species.title())
+        return "UV" if self.species == "uv" else self.species.title()
+
+    def _parse_principal_data(self) -> tuple[str, str]:
+        """
+        Parse principal_data and return (data_type, extras) tuple.
+
+        Returns
+        -------
+        tuple[str, str]
+            A tuple of (data_type, extras) parsed from principal_data.
+        """
+        m = re.match(
+            r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
+        )
+        return m.group(1), m.group(2)
+
+    def _get_frame_str(self, full: bool = False) -> str:
+        """
+        Get formatted frame string.
+
+        Parameters
+        ----------
+        full : bool, optional
+            If True, return full format (e.g., "heliospheric").
+            If False, return short format (e.g., "Helio"). Default is False.
+
+        Returns
+        -------
+        str
+            Formatted frame string.
+        """
+        if full:
+            return INERTIAL_FRAME_LONG_NAMES[self.frame_descriptor]
+        return {
+            "hf": "Helio",
+            "hk": "Helio Kin",
+            "sf": "SC",
+        }[self.frame_descriptor]
+
+    def _get_survival_str(self, full: bool = False) -> str:
+        """
+        Get formatted survival correction string.
+
+        Parameters
+        ----------
+        full : bool, optional
+            If True, return full format (e.g., "with survival probability correction").
+            If False, return short format (e.g., "Surv Corr"). Default is False.
+
+        Returns
+        -------
+        str
+            Formatted survival correction string.
+        """
+        if full:
+            if self.survival_corrected == "sp":
+                return "with survival probability correction"
+            return "with no survival correction"
+        return "Surv Corr" if self.survival_corrected == "sp" else "No Surv Corr"
+
+    def _get_spin_phase_str(self, full: bool = False) -> str:
+        """
+        Get formatted spin phase string.
+
+        Parameters
+        ----------
+        full : bool, optional
+            If True, return full format (e.g., "full spin").
+            If False, return short format (e.g., "Full Spin"). Default is False.
+
+        Returns
+        -------
+        str
+            Formatted spin phase string.
+        """
+        if full:
+            return {
+                "full": "full spin",
+                "ram": "ram",
+                "anti": "anti-ram",
+            }.get(self.spin_phase.lower(), self.spin_phase)
+        spin_phase = self.spin_phase.title()
+        return "Full Spin" if spin_phase == "Full" else spin_phase
+
+    def _get_resolution_str(self, full: bool = False) -> str:
+        """
+        Get formatted resolution string.
+
+        Parameters
+        ----------
+        full : bool, optional
+            If True, return full format (e.g., "rectangular 2 degree").
+            If False, return short format (e.g., "2 deg"). Default is False.
+
+        Returns
+        -------
+        str
+            Formatted resolution string.
+        """
+        m = re.match(r"^(\d+)deg|nside(\d+)", self.resolution_str)
+        if full:
+            if m.group(1):
+                return f"rectangular {m.group(1)} degree"
+            return f"HEALPix nside {m.group(2)}"
+        return f"{m.group(1)} deg" if m.group(1) else f"NSide {m.group(2)}"
+
+    def _get_duration_str(self, full: bool = False) -> str:
+        """
+        Get formatted duration string.
+
+        Parameters
+        ----------
+        full : bool, optional
+            If True, return full format (e.g., "6 months").
+            If False, return short format (e.g., "6 Mon"). Default is False.
+
+        Returns
+        -------
+        str
+            Formatted duration string.
+        """
+        if isinstance(self.duration, int):
+            return f"{self.duration} days" if full else f"{self.duration} Day"
+
+        m = re.match(r"^(\d+)(.*)$", self.duration)
+        num = int(m.group(1))
+        unit = m.group(2).lower()
+
+        if full:
+            if unit == "yr":
+                return f"{num} year" if num == 1 else f"{num} years"
+            elif unit == "mo":
+                return f"{num} month" if num == 1 else f"{num} months"
+            return f"{num} {unit}"
+
+        duration = f"{num} {m.group(2).title()}"
+        return duration + "n" if duration.endswith("Mo") else duration
+
+
     def build_catdesc(self, quantity_text: str) -> str:
         """
         Convert the MapDescriptor instance to a human-readable CATDESC string.
@@ -246,36 +452,19 @@ class MapDescriptor:
             Information in descriptor converted to SPDF CATDESC attribute. This
             is normally used for plot titles and should be under about 80 characters.
         """
-        instrument = self.instrument.name.split("_")[0]
-        if instrument not in ("IDEX", "GLOWS"):
-            instrument = instrument.title()
-        sensor = " Combined" if self.sensor == "combined" else self.sensor
-        species = "UV" if self.species == "uv" else self.species.title()
-        m = re.match(
-            r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
-        )
-        if m.group(1) == "isn":
+        instrument = self._get_instrument_str(full=False)
+        sensor = self._get_sensor_str(full=False)
+        species = self._get_species_str(full=False)
+        data_type, extras = self._parse_principal_data()
+        if data_type == "isn":
             species = "ISN " + species
-        extras = m.group(2)
         coord = self.coordinate_system.upper()
-        frame = {
-            "hf": "Helio",
-            "hk": "Helio Kin",
-            "sf": "SC",
-        }[self.frame_descriptor]
-        survival = "Surv Corr" if self.survival_corrected == "sp" else "No Surv Corr"
-        spin_phase = self.spin_phase.title()
-        if spin_phase == "Full":
-            spin_phase = "Full Spin"
-        m = re.match(r"^(\d+)deg|nside(\d+)", self.resolution_str)
-        resolution = f"{m.group(1)} deg" if m.group(1) else f"NSide {m.group(2)}"
-        if isinstance(self.duration, int):
-            duration = f"{self.duration} Day"
-        else:
-            m = re.match(r"^(\d+)(.*)$", self.duration)
-            duration = f"{m.group(1)} {m.group(2).title()}"
-            if duration.endswith("Mo"):
-                duration += "n"
+        frame = self._get_frame_str(full=False)
+        survival = self._get_survival_str(full=False)
+        spin_phase = self._get_spin_phase_str(full=False)
+        resolution = self._get_resolution_str(full=False)
+        duration = self._get_duration_str(full=False)
+
         catdesc = (
             f"IMAP {instrument}{sensor} {species} {quantity_text}, {coord} "
             f"{frame} Frame, {survival}, {spin_phase}, {resolution}, {duration}"
@@ -289,6 +478,52 @@ class MapDescriptor:
                 catdesc += f", {long_description}"
                 break
         return catdesc
+
+    def to_logical_source_description(self) -> str:
+        """
+        Convert the MapDescriptor instance to a Logical_source_description string.
+
+        Returns
+        -------
+        str
+            A full description suitable for the Logical_source_description
+            global CDF attribute.
+        """
+        instrument = self._get_instrument_str(full=True)
+        sensor = self._get_sensor_str(full=True)
+        species = self._get_species_str(full=True)
+        data_type, _ = self._parse_principal_data()
+        quantity = {
+            "drt": "Dust Rate",
+            "ena": "ENA Intensity",
+            "int": "Intensity",
+            "isn": "Rate",
+            "spx": "Spectral Index",
+            }[data_type]
+
+        # Handle special species cases
+        if data_type == "isn":
+            species = f"Interstellar Neutral {species}"
+        elif data_type == "drt":
+            # Dust rate maps don't have a species
+            species = ""
+
+        frame = self._get_frame_str(full=True)
+        survival = self._get_survival_str(full=True)
+        spin_phase = self._get_spin_phase_str(full=True)
+        duration = self._get_duration_str(full=True)
+        resolution = self._get_resolution_str(full=True)
+
+        # Build the full description
+        sensor_part = f" {sensor}" if sensor else ""
+        species_part = f"{species} " if species else ""
+        description = (
+            f"{instrument} Instrument Level-2{sensor_part} map of {species_part}"
+            f"{quantity} in the {frame} frame {survival} in the "
+            f"{spin_phase} direction over {duration} on {resolution} tiling."
+        )
+
+        return description
 
     @property
     def principal_data_var(self) -> str:
