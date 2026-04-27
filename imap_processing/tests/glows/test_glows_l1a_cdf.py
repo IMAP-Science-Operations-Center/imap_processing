@@ -1,4 +1,5 @@
 import dataclasses
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -9,6 +10,8 @@ from imap_processing.glows.l1a.glows_l1a import (
     generate_histogram_dataset,
 )
 from imap_processing.glows.utils.constants import TimeTuple
+
+VALIDATION_DATA = Path(__file__).parent / "validation_data"
 
 
 def test_generate_histogram_dataset(l1a_test_data):
@@ -57,6 +60,21 @@ def test_generate_histogram_dataset_filters_empty(l1a_test_data):
     assert len(dataset["epoch"].values) == 2
 
 
+def test_generate_histogram_dataset_filters_zero_imap_start_time(l1a_test_data):
+    histogram_l1a, _ = l1a_test_data
+    glows_attrs = create_glows_attr_obj()
+
+    zero_time_hist = MagicMock()
+    zero_time_hist.number_of_bins_per_histogram = 3600
+    zero_time_hist.imap_start_time = TimeTuple(0, 0)
+
+    mixed_list = [zero_time_hist, histogram_l1a[0], zero_time_hist, histogram_l1a[1]]
+
+    dataset = generate_histogram_dataset(mixed_list, glows_attrs)
+
+    assert len(dataset["epoch"].values) == 2
+
+
 def test_generate_de_dataset(l1a_test_data):
     _, de_l1a = l1a_test_data
     glows_attrs = create_glows_attr_obj()
@@ -80,3 +98,10 @@ def test_generate_de_dataset(l1a_test_data):
             [event.to_list() for event in de_l1a[-1].direct_events], ((0, 651), (0, 0))
         )
     ).all()
+
+
+def test_glows_l1a_no_zero_imap_start_time():
+    pkts = VALIDATION_DATA / "imap_glows_l0_raw_20260202-repoint00145_v001.pkts"
+    datasets = glows_l1a(pkts)
+    hist_dataset = next(ds for ds in datasets if "hist" in ds.attrs["Logical_source"])
+    assert (hist_dataset["imap_start_time"].values != 0).all()
