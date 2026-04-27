@@ -14,7 +14,7 @@ authors = [{name = "IMAP SDC Developers", email = "imap-sdc@lists.lasp.colorado.
 readme = "README.md"
 license = {text = "MIT"}
 keywords = ["IMAP", "SDC", "SOC", "Science Operations"]
-requires-python = ">=3.10,<3.14"  # upper bound due to scipy wheel availability; bump when scipy supports 3.14
+requires-python = ">=3.10,<3.13"  # upper bound due to scipy wheel availability; bump when scipy supports 3.14
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

@@ -63,18 +63,12 @@ This will create a new version of the ``poetry.lock`` file, which should be comm
 
 .. _poetry-dependency-groups-link:
 
-Dependency groups
-^^^^^^^^^^^^^^^^^^
+Optional extras
+^^^^^^^^^^^^^^^
 
-Poetry also provides dependency groups for separating dependencies into logical separations. If you are installing the project as an end user, you do not need the development tools. The testing environment does not need the documentation generation dependencies. In our case, the AWS Lambda environment does not need the same dependencies as the CDK deployment. Before you add a dependency to the main group, ask yourself if it would make more sense in one of the other existing dependency groups.
+This project uses PEP 621 optional dependencies (extras) to separate dependencies into logical groups. If you are installing the project as an end user, you do not need the development tools. The testing environment does not need the documentation generation dependencies. Before you add a dependency to the main dependencies, ask yourself if it would make more sense in one of the existing extras (``dev``, ``test``, ``doc``, ``tools``, ``map_visualization``).
 
-To add a dependency to an existing group, you can use the ``--group`` flag::
-
-    poetry add mkdocs --group docs
-
-These groups can be made optional as well, meaning they will not be installed by default when the user runs ``poetry install``. You can specify what groups to install using the ``--with`` or ``--without`` flags.
-
-Pip also provides a standard for optional dependencies. These can be installed when using ``pip`` instead of Poetry to install the dependencies. This goes under the ``[project.optional-dependencies]`` section in ``pyproject.toml``, using PEP 508 version specifiers. These are separate from, but similar to, the Poetry dependency groups. They can only be all installed or all not installed per extra, with no splitting out into specific groups like the Poetry dependency groups.
+To add a dependency to an existing extra, update the ``[project.optional-dependencies]`` section in ``pyproject.toml`` directly using PEP 508 version specifiers. These extras can be installed selectively when running ``poetry install`` or ``pip install``.
 
 .. _poetry-shell-link:
 
@@ -86,17 +80,14 @@ To install the Poetry project, you can use the `install <https://python-poetry.o
     # We use dynamic versioning, which requires a plugin to be installed first
     poetry self add "poetry-dynamic-versioning[plugin]"
 
-    # Install main dependencies and any dependency groups which are installed by default
+    # Install main dependencies only
     poetry install
 
-    # Install all extras
+    # Install all extras (dev, test, doc, tools, map_visualization)
     poetry install --all-extras
 
-    # install without specific dependency groups
-    poetry install --without test,docs
-
-    # Install with optional dependency groups
-    poetry install --with lambda_dev
+    # Install with specific extras
+    poetry install --extras "test doc"
 
 By default, this command will install dependencies out of the ``poetry.lock`` file.
 
