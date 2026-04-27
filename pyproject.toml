@@ -43,15 +43,15 @@ dependencies = [
     "scipy>=1.13,<2"
 ]
 
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">1.0.0,<2.0.0", extras = ["plugin"]}
-
 [tool.poetry]
 # Exclude tests from build
 exclude = ["imap_processing/tests"]
 include = ["imap_processing/_version.py",
            "imap_processing/ultra/l1c/sim_spice_kernels/*"]
 version = "0.0.0"
+
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">1.0.0,<2.0.0", extras = ["plugin"]}
 
 [project.scripts]
 imap_cli = 'imap_processing.cli:main'
