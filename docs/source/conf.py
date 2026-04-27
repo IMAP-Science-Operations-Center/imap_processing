@@ -133,6 +133,7 @@ nitpick_ignore_regex = [
     (r"py:class", r"^numpy\.(u?int(?:8|16|32|64))$"),
     (r"py:.*", r".*ProcessingInputCollection"),
     (r"py:.*", r"imap_data_access.*"),
+    (r"py:class", r"pandas\.core\.frame\.DataFrame"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class

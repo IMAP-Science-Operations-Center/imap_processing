@@ -87,7 +87,7 @@ def get_status_data(status_values: xr.DataArray, pkt_counters: xr.DataArray) -> 
 
     for pkt_num, decoder in decoders.items():
         status_subset = status_values[pkt_counters == pkt_num]
-        decoded_packet = decoder(int(status_subset))
+        decoded_packet = decoder(int(status_subset.item()))
         combined_packets.update(vars(decoded_packet))
 
     return combined_packets
