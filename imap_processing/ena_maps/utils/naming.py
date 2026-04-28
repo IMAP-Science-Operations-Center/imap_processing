@@ -452,23 +452,10 @@ class MapDescriptor:
             Information in descriptor converted to SPDF CATDESC attribute. This
             is normally used for plot titles and should be under about 80 characters.
         """
-        # Instrument name (e.g., "Hi", "Ultra", "GLOWS")
-        instrument_base = self.instrument.name.split("_")[0]
-        instrument = (
-            instrument_base
-            if instrument_base in ("IDEX", "GLOWS")
-            else instrument_base.title()
-        )
-
-        # Sensor (e.g., " Combined", "45", "")
-        if self.sensor == "combined":
-            sensor = " Combined"
-        elif self.sensor:
-            sensor = str(self.sensor)
-        else:
-            sensor = ""
-
-        # Species (e.g., "H", "He", "UV")
+        instrument = self.instrument.name.split("_")[0]
+        if instrument not in ("IDEX", "GLOWS"):
+            instrument = instrument.title()
+        sensor = " Combined" if self.sensor == "combined" else self.sensor
         species = "UV" if self.species == "uv" else self.species.title()
 
         data_type, extras = self._parse_principal_data()
@@ -486,14 +473,8 @@ class MapDescriptor:
             species = "ISN " + species
 
         coord = self.coordinate_system.upper()
-
-        # Frame (e.g., "Helio", "SC", "Helio Kin")
         frame = {"hf": "Helio", "hk": "Helio Kin", "sf": "SC"}[self.frame_descriptor]
-
-        # Survival correction
         survival = "Surv Corr" if self.survival_corrected == "sp" else "No Surv Corr"
-
-        # Spin phase (e.g., "Full Spin", "Ram", "Anti")
         spin_phase = self.spin_phase.title()
         spin_phase = "Full Spin" if spin_phase == "Full" else spin_phase
 
