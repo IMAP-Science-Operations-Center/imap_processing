@@ -316,8 +316,7 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
                 eventdata_array[i], count, ds["shcoarse"].values[i], bits_per_event
             )
             event_ids.extend(ids)
-    print("event ids", event_ids[0:10])
-    print("counts", counts)
+
     # Now we have the event data, we need to create the xarray dataset.
     # We cannot append to the existing dataset (sorted_packets)
     # because there are multiple events for each epoch.
@@ -343,7 +342,7 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
             data,
             dims=["epoch"],
         )
-    print(dataset.event_id.shape)
+
     return dataset
 
 
