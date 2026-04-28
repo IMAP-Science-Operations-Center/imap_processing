@@ -477,7 +477,7 @@ class TestUltraL2:
         assert map_dataset["epoch"].attrs["DELTA_MINUS_VAR"] == "epoch_delta_minus"
         assert "epoch_delta" in map_dataset
         assert "epoch_delta_minus" in map_dataset
-        assert map_dataset["epoch_delta_minus"].values == 0
+        np.testing.assert_array_equal(map_dataset["epoch_delta_minus"].values, 0)
 
     @pytest.mark.external_test_data
     @pytest.mark.usefixtures("_setup_spice_kernels_list")

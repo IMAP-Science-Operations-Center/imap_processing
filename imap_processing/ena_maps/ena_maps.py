@@ -1456,7 +1456,7 @@ class RectangularSkyMap(AbstractSkyMap):
                 )
             # Set the correct delta values for the time coordinate
             if coord_name == CoordNames.TIME.value:
-                # Delta minus is always zero b/c epoch is the start time
+                # Delta minus is always zero because epoch is the start time
                 cdf_ds[f"{coord_name}_delta_minus"] = xr.DataArray(
                     xr.zeros_like(cdf_ds[coord_name]),
                     name=f"{coord_name}_delta_minus",
