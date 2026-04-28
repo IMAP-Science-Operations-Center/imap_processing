@@ -274,9 +274,7 @@ def test_mag_attributes():
 def _ttj2000_day_bounds(day: np.datetime64) -> tuple[int, int]:
     day_start = day.astype("datetime64[s]") - np.timedelta64(30, "m")
     day_end = (
-        day.astype("datetime64[s]")
-        + np.timedelta64(1, "D")
-        + np.timedelta64(30, "m")
+        day.astype("datetime64[s]") + np.timedelta64(1, "D") + np.timedelta64(30, "m")
     )
     return (
         int(et_to_ttj2000ns(str_to_et(str(day_start)))),
@@ -305,9 +303,7 @@ def _build_day_aligned_mixed_l1b(day: np.datetime64) -> tuple[xr.Dataset, xr.Dat
 
     nm_start = day_start_ns + 300 * 1_000_000_000
     nm_end = nm_start + 120 * 1_000_000_000
-    nm_epochs = np.arange(
-        nm_start, nm_end + 1, step=500_000_000, dtype=np.int64
-    )
+    nm_epochs = np.arange(nm_start, nm_end + 1, step=500_000_000, dtype=np.int64)
     norm = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
 
     burst_epochs = np.arange(
@@ -335,14 +331,15 @@ def test_process_mag_l1c_leading_burst_only_coverage():
     # NM starts 5 minutes into the day window and lasts 2 minutes at 2 vec/s.
     nm_start = day_start_ns + 300 * 1_000_000_000
     nm_end = nm_start + 120 * 1_000_000_000
-    nm_epochs = np.arange(
-        nm_start, nm_end + 1, step=500_000_000, dtype=np.int64
-    )
+    nm_epochs = np.arange(nm_start, nm_end + 1, step=500_000_000, dtype=np.int64)
     norm = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
 
-    # Burst covers day_start_ns through 10 minutes into the day at 8 vec/s.
+    # Burst starts after the day window, so uncovered leading timestamps stay missing.
+    burst_start = day_start_ns + 10 * 1_000_000_000
+
+    # Burst covers 10 s through 10 minutes into the day at 8 vec/s.
     burst_epochs = np.arange(
-        day_start_ns,
+        burst_start,
         day_start_ns + 600 * 1_000_000_000 + 1,
         step=125_000_000,
         dtype=np.int64,
@@ -353,8 +350,14 @@ def test_process_mag_l1c_leading_burst_only_coverage():
     epochs_out = result[:, 0]
     flags = result[:, 5]
 
-    leading_burst_mask = (epochs_out < nm_start) & (
-        flags == ModeFlags.BURST.value
+    pre_burst_mask = epochs_out < burst_start
+    assert pre_burst_mask.sum() > 0
+    assert np.all(flags[pre_burst_mask] == ModeFlags.MISSING.value)
+
+    leading_burst_mask = (
+        (epochs_out >= burst_start)
+        & (epochs_out < nm_start)
+        & (flags == ModeFlags.BURST.value)
     )
     assert leading_burst_mask.sum() > 0, (
         "leading burst-only coverage was dropped; day_to_process not honored"
@@ -374,9 +377,7 @@ def test_process_mag_l1c_trailing_burst_only_coverage():
     nm_center = (day_start_ns + day_end_ns) // 2
     nm_start = nm_center - 60 * 1_000_000_000
     nm_end = nm_center + 60 * 1_000_000_000
-    nm_epochs = np.arange(
-        nm_start, nm_end + 1, step=500_000_000, dtype=np.int64
-    )
+    nm_epochs = np.arange(nm_start, nm_end + 1, step=500_000_000, dtype=np.int64)
     norm = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
 
     # Burst picks up 30 s before NM end and continues 10 minutes past NM end.
@@ -392,9 +393,7 @@ def test_process_mag_l1c_trailing_burst_only_coverage():
     epochs_out = result[:, 0]
     flags = result[:, 5]
 
-    trailing_burst_mask = (epochs_out > nm_end) & (
-        flags == ModeFlags.BURST.value
-    )
+    trailing_burst_mask = (epochs_out > nm_end) & (flags == ModeFlags.BURST.value)
     assert trailing_burst_mask.sum() > 0, (
         "trailing burst-only coverage was dropped; day_to_process not honored"
     )
@@ -415,9 +414,7 @@ def test_mag_l1c_mixed_input_uses_day_to_process():
 
     nm_start = day_start_ns + 600 * 1_000_000_000
     nm_end = nm_start + 60 * 1_000_000_000
-    nm_epochs = np.arange(
-        nm_start, nm_end + 1, step=500_000_000, dtype=np.int64
-    )
+    nm_epochs = np.arange(nm_start, nm_end + 1, step=500_000_000, dtype=np.int64)
     norm = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
 
     burst_epochs = np.arange(
