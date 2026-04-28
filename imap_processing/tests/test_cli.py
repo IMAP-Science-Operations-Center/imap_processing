@@ -623,8 +623,7 @@ def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
     """Test coverage for cli.Idex class with l1b data level"""
     mocks = mock_instrument_dependencies
     new_ds = xr.Dataset(data_vars={"epoch": [1]})
-    old_ds = xr.Dataset(data_vars={"epoch": [0]})
-    mocks["mock_load_cdf"].side_effect = [old_ds, new_ds]
+    mocks["mock_load_cdf"].side_effect = [new_ds]
     input_collection = ProcessingInputCollection(
         ScienceInput(
             "imap_idex_l1a_sci-1week_20251017_v001.cdf",
@@ -637,7 +636,7 @@ def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
 
     dependency_str = input_collection.serialize()
     instrument = Idex(
-        "l1b", "sci-1week", dependency_str, "20251017", "20251017", "v001", False
+        "l1b", "sci-1week", dependency_str, "20251017", None, "v001", False
     )
 
     instrument.process()
