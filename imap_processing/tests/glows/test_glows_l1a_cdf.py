@@ -1,17 +1,17 @@
 import dataclasses
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import numpy as np
 
+from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l1a.glows_l1a import (
     create_glows_attr_obj,
     generate_de_dataset,
     generate_histogram_dataset,
+    glows_l1a,
 )
+from imap_processing.glows.l1a.glows_l1a_data import HistogramL1A
 from imap_processing.glows.utils.constants import TimeTuple
-
-VALIDATION_DATA = Path(__file__).parent / "validation_data"
 
 
 def test_generate_histogram_dataset(l1a_test_data):
@@ -100,8 +100,13 @@ def test_generate_de_dataset(l1a_test_data):
     ).all()
 
 
-def test_glows_l1a_no_zero_imap_start_time():
-    pkts = VALIDATION_DATA / "imap_glows_l0_raw_20260202-repoint00145_v001.pkts"
-    datasets = glows_l1a(pkts)
+def test_glows_l1a_no_zero_imap_start_time(in_flight_packet_path):
+    hist_l0, _ = decom_packets(in_flight_packet_path)
+    hist_l1a = [HistogramL1A(h) for h in hist_l0]
+    non_empty = [h for h in hist_l1a if h.number_of_bins_per_histogram > 0]
+    excluded = [h for h in non_empty if h.imap_start_time.seconds == 0]
+
+    datasets = glows_l1a(in_flight_packet_path)
     hist_dataset = next(ds for ds in datasets if "hist" in ds.attrs["Logical_source"])
     assert (hist_dataset["imap_start_time"].values != 0).all()
+    assert len(excluded) == 77
