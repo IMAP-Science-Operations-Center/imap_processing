@@ -190,6 +190,19 @@ class TestUltraL2:
         for var in unexpected_vars:
             assert var not in rec_skymap.data_1d.data_vars
 
+    @pytest.mark.parametrize("epoch_dim_for_energy_delta", [True, False])
+    @pytest.mark.parametrize(
+        ["map_frame", "rtol"],
+        [
+            # Tight tolerance when 'projecting' to the same frame
+            ("IMAP_DPS", 1e-8),
+            # Loose tolerance of 30% error vs naive ena_intensity
+            # estimate with real projection.
+            # TODO: Ideally this tolerance will tighten if we can fix the issue with
+            # the exposure time for uneven numbers of pixels from each PointingSet.
+            ("ECLIPJ2000", 3e-1),
+        ],
+    )
     @pytest.mark.usefixtures("_mock_single_pset", "_setup_spice_kernels_list")
     def test_generate_ultra_healpix_skymap_single_pset(
         self, epoch_dim_for_energy_delta, map_frame, rtol, furnish_kernels
@@ -202,7 +215,7 @@ class TestUltraL2:
             energy_dependent_exposure=True,
         )
         # Set the values in the single input PSET for easy calculation
-        # of the expected ena_intensity and ena_intensity statistical uncertainty]
+        # of the expected ena_intensity and ena_intensity statistical uncertainty
         counts_fillval = 10
         pset["counts"].values = np.full_like(pset["counts"].values, counts_fillval)
         pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"])

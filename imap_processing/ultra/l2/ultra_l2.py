@@ -301,7 +301,7 @@ def generate_ultra_skymap(
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
     energy_bin_edges: np.ndarray | None = None,
     build_rectangular_map: bool = False,
-) -> tuple[ena_maps.HealpixSkyMap, NDArray]:
+) -> tuple[ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap, NDArray]:
     """
     Generate a skymap from ULTRA L1C pointing sets.
 
@@ -360,26 +360,32 @@ def generate_ultra_skymap(
     7. Calculate ena_intensity and its statistical uncertainty if the map is Healpix.
     8. Drop unnecessary variables from the map.
     """
+    output_map_type = output_map_structure.tiling_type
     if build_rectangular_map:
+        if output_map_type != ena_maps.SkyTilingType.RECTANGULAR:
+            raise ValueError(
+                "To build a rectangular map, the output_map_structure must"
+                " have tiling_type set to RECTANGULAR."
+            )
         # Initialize the RectangularSkyMap object
         skymap = ena_maps.RectangularSkyMap(
             spacing_deg=output_map_structure.spacing_deg,
             spice_frame=output_map_structure.spice_reference_frame,
         )
     else:
-        if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
+        if output_map_type is ena_maps.SkyTilingType.HEALPIX:
             map_nside, map_nested = (
                 output_map_structure.nside,
                 output_map_structure.nested,
             )
-        elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
+        elif output_map_type is ena_maps.SkyTilingType.RECTANGULAR:
             map_nside, map_nested = (
                 DEFAULT_L2_HEALPIX_NSIDE,
                 DEFAULT_L2_HEALPIX_NESTED,
             )
         else:
             raise ValueError(
-                f"Unsupported tiling type: {output_map_structure.tiling_type}. "
+                f"Unsupported tiling type: {output_map_type}. "
                 "Only HEALPIX and RECTANGULAR are supported."
             )
         # Initialize the HealpixSkyMap object
@@ -707,7 +713,7 @@ def ultra_l2(
             build_rectangular_map=True,
         )
         # Ensure that the epoch of the map is the earliest epoch of the input PSETs
-        rectangular_skymap.data_1d.assign_coords(
+        rectangular_skymap.data_1d = rectangular_skymap.data_1d.assign_coords(
             epoch=(
                 (CoordNames.TIME.value,),
                 [
@@ -716,7 +722,7 @@ def ultra_l2(
             ),
         )
     # Ensure that the epoch of the map is the earliest epoch of the input PSETs
-    healpix_skymap.data_1d.assign_coords(
+    healpix_skymap.data_1d = healpix_skymap.data_1d.assign_coords(
         epoch=(
             (CoordNames.TIME.value,),
             [
