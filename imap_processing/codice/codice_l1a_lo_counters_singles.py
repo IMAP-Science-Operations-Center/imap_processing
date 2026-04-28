@@ -166,7 +166,8 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         # to broadcast
         nso_spin_sector = (
             unpacked_dataset["nso_spin_sector"].values[:, np.newaxis, np.newaxis] % 12
-        )  # Modulo 12 since spin sector is reported as 0-23 but we want to
+        )  # Mod 12 since spin sector is reported as 0-23 but we want to compare to
+        # 0-11 bins in the data.
         # After modulo 12, we need to floor divide by 2 since the counters data has 6
         # spin sector bins (2 spin sectors per bin).
         nso_spin_sector = nso_spin_sector // 2
