@@ -202,8 +202,9 @@ def l1a_lo_priority(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
     else:
         # nso_spin_sector and nso_esa_step for comparison. Shape (epoch, 1, 1)
         # to broadcast
-        # These range from 0-23 so we need to mod them by 12 to make them compatible to
-        # the spin sector values in the data which range from 0-11
+        # Packet nso_spin_sector spans the full spin (0-23), but this product's
+        # spin_sector dimension is half-spin indexed (0-11), so modulo 12 is
+        # intentional to align packet NSO metadata with the data coordinates.
         nso_spin_sector = (
             unpacked_dataset["nso_spin_sector"].values[:, np.newaxis, np.newaxis] % 12
         )
