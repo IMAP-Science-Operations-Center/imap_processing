@@ -25,6 +25,7 @@ import imap_data_access
 import numpy as np
 import spiceypy
 import xarray as xr
+from cdflib.epochs import CDFepoch
 from cdflib.xarray import xarray_to_cdf
 from cdflib.xarray.xarray_to_cdf import ISTPError
 from imap_data_access.io import IMAPDataAccessError, download
@@ -88,6 +89,28 @@ from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
 
 logger = logging.getLogger(__name__)
+
+
+def _datetime64_to_tt2000(time: np.datetime64) -> np.int64:
+    """Convert a numpy datetime64 to CDF TT2000 nanoseconds."""
+    *parts, nanosecond = [
+        int(value) for value in re.split(r"[-T:.]", str(time.astype("datetime64[ns]")))
+    ]
+    return np.int64(
+        CDFepoch.compute_tt2000(
+            [
+                *parts,
+                nanosecond // 1_000_000,
+                (nanosecond // 1_000) % 1_000,
+                nanosecond % 1_000,
+            ]
+        )
+    )
+
+
+def _tt2000_to_string(epoch: np.int64) -> str:
+    """Convert CDF TT2000 nanoseconds to an ISO-8601 string."""
+    return CDFepoch.encode_tt2000(int(epoch))
 
 
 def _parse_args() -> argparse.Namespace:
@@ -577,6 +600,7 @@ class ProcessInstrument(ABC):
                     ds.attrs["Repointing"] = self.repointing
                 ds.attrs["Start_date"] = self.start_date
                 ds.attrs["Parents"] = parent_files
+                self._validate_output_dataset(ds)
                 products.append(write_cdf(ds))
             else:
                 # A path to a product that was already written out
@@ -584,6 +608,14 @@ class ProcessInstrument(ABC):
 
         self.upload_products(products)
         return products
+
+    def _validate_output_dataset(self, dataset: xr.Dataset) -> None:
+        """
+        Validate a processed dataset before writing it to CDF.
+
+        Subclasses can override this to enforce instrument-specific constraints.
+        """
+        return None
 
     @final
     def cleanup(self) -> None:
@@ -1348,6 +1380,69 @@ class Mag(ProcessInstrument):
                     f"monotonically increasing."
                 )
         return datasets
+
+    def _validate_output_dataset(self, dataset: xr.Dataset) -> None:
+        """
+        Validate MAG output epochs before writing them to CDF.
+
+        MAG L1A-L1C science products may include the 30 minute packet buffer on each
+        side of the processing day. L1D and L2 products are truncated to the UTC day.
+        """
+        ancillary_identifiers = {
+            "imap_mag_l1d_gradiometry-offsets-burst",
+            "imap_mag_l1d_gradiometry-offsets-norm",
+            "imap_mag_l1d_spin-offsets",
+        }
+        logical_source = dataset.attrs.get("Logical_source", "")
+        if isinstance(logical_source, list):
+            logical_source = logical_source[0]
+
+        if logical_source in ancillary_identifiers or "epoch" not in dataset:
+            return
+
+        source_parts = logical_source.split("_")
+        if len(source_parts) < 4 or source_parts[1] != "mag":
+            return
+
+        data_level = source_parts[2]
+        if data_level not in {"l1a", "l1b", "l1c", "l1d", "l2"}:
+            return
+
+        start_date = dataset.attrs.get("Start_date")
+        if start_date is None:
+            raise ValueError(
+                f"Cannot validate MAG epoch range for {logical_source}: "
+                "Start_date is not set."
+            )
+
+        day = np.datetime64(
+            f"{start_date[:4]}-{start_date[4:6]}-{start_date[6:]}", "ns"
+        )
+        buffer = (
+            np.timedelta64(30, "m")
+            if data_level in {"l1a", "l1b", "l1c"}
+            else np.timedelta64(0, "m")
+        )
+        min_epoch = _datetime64_to_tt2000(day - buffer)
+        max_epoch = _datetime64_to_tt2000(day + np.timedelta64(1, "D") + buffer)
+
+        epochs = np.asarray(dataset["epoch"].values, dtype=np.int64)
+        if epochs.size == 0:
+            return
+
+        actual_min = epochs.min()
+        actual_max = epochs.max()
+        if actual_min < min_epoch or actual_max > max_epoch:
+            raise ValueError(
+                f"MAG output epochs for {logical_source} fall outside the expected "
+                f"range for Start_date {start_date}. Expected "
+                f"{_tt2000_to_string(min_epoch)} to {_tt2000_to_string(max_epoch)}; "
+                f"first={_tt2000_to_string(epochs[0])}, "
+                f"last={_tt2000_to_string(epochs[-1])}, "
+                f"min={_tt2000_to_string(actual_min)}, "
+                f"max={_tt2000_to_string(actual_max)}, "
+                f"Parents={dataset.attrs.get('Parents', [])}."
+            )
 
     def post_processing(
         self,
