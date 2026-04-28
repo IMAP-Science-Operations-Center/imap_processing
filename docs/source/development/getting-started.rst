@@ -9,7 +9,7 @@ Installing requirements
 Poetry Installation and Setup
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``imap-processing`` uses :ref:`poetry-link` for dependency management. Check out our :ref:`style guide <poetry-environment>` for more information on specific IMAP Poetry usage.
+``imap-processing`` uses :ref:`poetry-link` for dependency management. Check out our :ref:`style guide <poetry-environment>` for more information on specific IMAP Poetry usage. If you are upgrading from Poetry 1.x, see :ref:`upgrading-poetry`.
 
 If you're running locally, you can install the Python requirements with Poetry.
 
