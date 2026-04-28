@@ -452,16 +452,51 @@ class MapDescriptor:
             Information in descriptor converted to SPDF CATDESC attribute. This
             is normally used for plot titles and should be under about 80 characters.
         """
-        instrument = self._get_instrument_str(full=False)
-        sensor = self._get_sensor_str(full=False)
-        species = self._get_species_str(full=False)
+        # Instrument name (e.g., "Hi", "Ultra", "GLOWS")
+        instrument_base = self.instrument.name.split("_")[0]
+        instrument = (
+            instrument_base
+            if instrument_base in ("IDEX", "GLOWS")
+            else instrument_base.title()
+        )
+
+        # Sensor (e.g., " Combined", "45", "")
+        if self.sensor == "combined":
+            sensor = " Combined"
+        elif self.sensor:
+            sensor = str(self.sensor)
+        else:
+            sensor = ""
+
+        # Species (e.g., "H", "He", "UV")
+        species = "UV" if self.species == "uv" else self.species.title()
+
         data_type, extras = self._parse_principal_data()
+
+        # Quantity (e.g., "Inten", "Rate", "Spectral")
+        quantity = {
+            "drt": "Rate",
+            "ena": "Inten",
+            "int": "Inten",
+            "isn": "Rate",
+            "spx": "Spectral",
+        }[data_type]
+
         if data_type == "isn":
             species = "ISN " + species
+
         coord = self.coordinate_system.upper()
-        frame = self._get_frame_str(full=False)
-        survival = self._get_survival_str(full=False)
-        spin_phase = self._get_spin_phase_str(full=False)
+
+        # Frame (e.g., "Helio", "SC", "Helio Kin")
+        frame = {"hf": "Helio", "hk": "Helio Kin", "sf": "SC"}[self.frame_descriptor]
+
+        # Survival correction
+        survival = "Surv Corr" if self.survival_corrected == "sp" else "No Surv Corr"
+
+        # Spin phase (e.g., "Full Spin", "Ram", "Anti")
+        spin_phase = self.spin_phase.title()
+        spin_phase = "Full Spin" if spin_phase == "Full" else spin_phase
+
         resolution = self._get_resolution_str(full=False)
         duration = self._get_duration_str(full=False)
 
@@ -489,17 +524,38 @@ class MapDescriptor:
             A full description suitable for the Logical_source_description
             global CDF attribute.
         """
-        instrument = self._get_instrument_str(full=True)
-        sensor = self._get_sensor_str(full=True)
-        species = self._get_species_str(full=True)
+        # Instrument name (e.g., "IMAP-Hi", "IMAP-Ultra", "IMAP-GLOWS")
+        instrument_base = self.instrument.name.split("_")[0]
+        instrument = (
+            f"IMAP-{instrument_base}"
+            if instrument_base in ("IDEX", "GLOWS")
+            else f"IMAP-{instrument_base.title()}"
+        )
+
+        # Sensor (e.g., "45 degree sensor", "combined sensor", "")
+        if self.sensor == "combined":
+            sensor = "combined sensor"
+        elif self.sensor in ("45", "90"):
+            sensor = f"{self.sensor} degree sensor"
+        elif self.sensor:
+            sensor = f"sensor {self.sensor}"
+        else:
+            sensor = ""
+
+        # Species (e.g., "Hydrogen", "Helium", "UV")
+        species_names = {"h": "Hydrogen", "he": "Helium", "o": "Oxygen", "uv": "UV"}
+        species = species_names.get(self.species.lower(), self.species.title())
+
         data_type, _ = self._parse_principal_data()
+
+        # Quantity (e.g., "ENA Intensity", "Rate", "Dust Rate")
         quantity = {
             "drt": "Dust Rate",
             "ena": "ENA Intensity",
             "int": "Intensity",
             "isn": "Rate",
             "spx": "Spectral Index",
-            }[data_type]
+        }[data_type]
 
         # Handle special species cases
         if data_type == "isn":
@@ -508,9 +564,22 @@ class MapDescriptor:
             # Dust rate maps don't have a species
             species = ""
 
-        frame = self._get_frame_str(full=True)
-        survival = self._get_survival_str(full=True)
-        spin_phase = self._get_spin_phase_str(full=True)
+        # Frame (e.g., "heliospheric", "spacecraft", "heliocentric kinetic")
+        frame = INERTIAL_FRAME_LONG_NAMES[self.frame_descriptor]
+
+        # Survival correction
+        if self.survival_corrected == "sp":
+            survival = "with survival probability correction"
+        else:
+            survival = "with no survival correction"
+
+        # Spin phase (e.g., "full spin", "ram", "anti-ram")
+        spin_phase = {
+            "full": "full spin",
+            "ram": "ram",
+            "anti": "anti-ram",
+        }.get(self.spin_phase.lower(), self.spin_phase)
+
         duration = self._get_duration_str(full=True)
         resolution = self._get_resolution_str(full=True)
 
