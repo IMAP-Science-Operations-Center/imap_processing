@@ -302,7 +302,7 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
         if count == 0:
             all_events.append(empty_event)
             all_indices.append(i)
-            event_ids.append("0x0")  # TODO ask ultra IT what to use here
+            event_ids.append("0x0")
         else:
             # Here there are multiple images in a single packet,
             # so we need to loop through each image and decompress it.
