@@ -294,7 +294,7 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
         )
         for field in field_ranges
     }
-    print("APID", apid)
+
     counts = ds["count"].values
     eventdata_array = ds["eventdata"].values
     event_ids: list[str] = []
