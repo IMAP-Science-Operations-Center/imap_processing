@@ -405,6 +405,11 @@ class MapDescriptor:
             Formatted resolution string.
         """
         m = re.match(r"^(\d+)deg|nside(\d+)", self.resolution_str)
+        if not m:
+            raise ValueError(
+                f"Invalid resolution_str format: {self.resolution_str}. "
+                "Expected format like '2deg' or 'nside32'."
+            )
         if full:
             if m.group(1):
                 return f"rectangular {m.group(1)} degree"
@@ -555,6 +560,9 @@ class MapDescriptor:
         # Frame (e.g., "heliospheric", "spacecraft", "heliocentric kinetic")
         frame = INERTIAL_FRAME_LONG_NAMES[self.frame_descriptor]
 
+        # Coordinate system (e.g., "HAE", "GCS")
+        coord = self.coordinate_system.upper()
+
         # Survival correction
         if self.survival_corrected == "sp":
             survival = "with survival probability correction"
@@ -572,12 +580,15 @@ class MapDescriptor:
         resolution = self._get_resolution_str(full=True)
 
         # Build the full description
+        # Order matches descriptor: instrument-sensor, quantity, species, frame,
+        # survival, spin_phase, coord, resolution, duration
         sensor_part = f" {sensor}" if sensor else ""
         species_part = f"{species} " if species else ""
         description = (
             f"{instrument} Instrument Level-2{sensor_part} map of {species_part}"
             f"{quantity} in the {frame} frame {survival} in the "
-            f"{spin_phase} direction over {duration} on {resolution} tiling."
+            f"{spin_phase} direction in {coord} coordinates on {resolution} "
+            f"tiling over {duration}."
         )
 
         return description

@@ -512,48 +512,51 @@ class TestMapDescriptor:
             (
                 "h45-ena-h-hf-nsp-full-hae-2deg-6mo",
                 "IMAP-Hi Instrument Level-2 45 degree sensor map of Hydrogen "
-                "ENA Intensity in the heliospheric frame with no survival correction "
-                "in the full spin direction over 6 months on rectangular 2 degree "
-                "tiling.",
+                "ENA Intensity in the heliospheric frame with no survival "
+                "correction in the full spin direction in HAE coordinates on "
+                "rectangular 2 degree tiling over 6 months.",
             ),
             (
                 "hic-ena-h-hf-sp-ram-hae-nside64-1yr",
                 "IMAP-Hi Instrument Level-2 combined sensor map of Hydrogen "
-                "ENA Intensity in the heliospheric frame with survival probability "
-                "correction in the ram direction over 1 year on HEALPix nside 64 "
-                "tiling.",
+                "ENA Intensity in the heliospheric frame with survival "
+                "probability correction in the ram direction in HAE coordinates "
+                "on HEALPix nside 64 tiling over 1 year.",
             ),
             (
                 "u90-ena-h-hf-nsp-full-hae-nside128-6mo",
                 "IMAP-Ultra Instrument Level-2 90 degree sensor map of Hydrogen "
-                "ENA Intensity in the heliospheric frame with no survival correction "
-                "in the full spin direction over 6 months on HEALPix nside 128 tiling.",
+                "ENA Intensity in the heliospheric frame with no survival "
+                "correction in the full spin direction in HAE coordinates on "
+                "HEALPix nside 128 tiling over 6 months.",
             ),
             (
                 "ilo-isn-h-sf-nsp-ram-hae-2deg-3mo",
                 "IMAP-Lo Instrument Level-2 map of Interstellar Neutral Hydrogen "
                 "Rate in the spacecraft frame with no survival correction "
-                "in the ram direction over 3 months on rectangular 2 degree tiling.",
+                "in the ram direction in HAE coordinates on rectangular 2 degree "
+                "tiling over 3 months.",
             ),
             (
                 "glx-int-uv-hf-nsp-full-hae-2deg-6mo",
                 "IMAP-GLOWS Instrument Level-2 map of UV Intensity "
                 "in the heliospheric frame with no survival correction "
-                "in the full spin direction over 6 months on rectangular 2 degree "
-                "tiling.",
+                "in the full spin direction in HAE coordinates on rectangular "
+                "2 degree tiling over 6 months.",
             ),
             (
                 "idx-drt-dust-hf-nsp-full-hae-nside32-1yr",
                 "IMAP-IDEX Instrument Level-2 map of Dust Rate "
                 "in the heliospheric frame with no survival correction "
-                "in the full spin direction over 1 year on HEALPix nside 32 tiling.",
+                "in the full spin direction in HAE coordinates on HEALPix "
+                "nside 32 tiling over 1 year.",
             ),
             (
                 "u45-ena-he-hk-sp-anti-hae-4deg-2mo",
                 "IMAP-Ultra Instrument Level-2 45 degree sensor map of Helium "
                 "ENA Intensity in the heliocentric kinetic frame with survival "
-                "probability correction in the anti-ram direction over 2 months "
-                "on rectangular 4 degree tiling.",
+                "probability correction in the anti-ram direction in HAE "
+                "coordinates on rectangular 4 degree tiling over 2 months.",
             ),
         ],
     )
