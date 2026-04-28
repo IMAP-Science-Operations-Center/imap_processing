@@ -876,10 +876,12 @@ def ultra_l2(
             ),
             inertial_frame_short_name=inertial_frame,
         )
-    # Use the MapDescriptor to generate the Logical_source_description
+    # Use the previously parsed MapDescriptor to generate the
+    # Logical_source_description
     if descriptor is not None:
-        md = MapDescriptor.from_string(descriptor)
-        map_attrs["Logical_source_description"] = md.to_logical_source_description()
+        map_attrs[
+            "Logical_source_description"
+        ] = map_descriptor.to_logical_source_description()
     else:
         map_attrs["Logical_source_description"] = map_attrs[
             "Logical_source_description"

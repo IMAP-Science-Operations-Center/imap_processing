@@ -1504,8 +1504,21 @@ class RectangularSkyMap(AbstractSkyMap):
                 sensor=sensor,
             )
         # Use the MapDescriptor to generate the Logical_source_description
-        md = naming.MapDescriptor.from_string(descriptor)
-        map_attrs["Logical_source_description"] = md.to_logical_source_description()
+        # when possible, but preserve previous behavior for non-descriptor
+        # strings so later validation still raises the intended errors.
+        try:
+            md = naming.MapDescriptor.from_string(descriptor)
+        except ValueError:
+            map_attrs["Logical_source_description"] = map_attrs[
+                "Logical_source_description"
+            ].format(
+                descriptor=descriptor,
+                sensor=sensor,
+            )
+        else:
+            map_attrs["Logical_source_description"] = (
+                md.to_logical_source_description()
+            )
         # Always add the following attributes to the map
         map_attrs.update(
             {

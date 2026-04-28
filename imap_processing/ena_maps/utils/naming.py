@@ -312,6 +312,13 @@ class MapDescriptor:
         m = re.match(
             r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
         )
+        if not m:
+            raise ValueError(
+                "Invalid principal_data format: "
+                f"{self.principal_data}. Expected one of 'drt', 'ena', 'int', "
+                "'isn', or 'spx' optionally followed by digits and trailing "
+                "non-separator text."
+            )
         return m.group(1), m.group(2)
 
     def _get_frame_str(self, full: bool = False) -> str:
