@@ -994,9 +994,6 @@ class TestRectangularSkyMap:
         # Check the epoch values
         assert CoordNames.TIME.value in cdf_dataset
         assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
-        assert (
-            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_PLUS_VAR"] == "epoch_delta"
-        )
         # Check epoch_delta
         assert (
             cdf_dataset[CoordNames.TIME.value].attrs["DELTA_PLUS_VAR"]
