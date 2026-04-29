@@ -20,14 +20,16 @@ Now, items placed in the source bucket will be automatically replicated to the b
 Copying items back into source account bucket
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To restore files from the backup bucket into the main account bucket, we are going to [assume the role](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-role.html#cli-role-prereqs) created by SdsDataManager stack in the source account. Here, "source account" refers to the account with SdsDataManager deployed into it (i.e. dev or prod).
+To restore files from the backup bucket into the main account bucket, we are going to `assume the role <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-role.html#cli-role-prereqs>`_ created by SdsDataManager stack in the source account. Here, "source account" refers to the account with SdsDataManager deployed into it (i.e. dev or prod).
 
 #. Update ``~/.aws/config`` to include a new profile for this role. Here, ``source_profile`` should be the source account profile
-```
-[profile backup-role]
-role_arn = arn:aws:iam::<source account number>:role/<role name>
-source_profile = imap
-```
+
+   .. code-block:: ini
+
+      [profile backup-role]
+      role_arn = arn:aws:iam::<source account number>:role/<role name>
+      source_profile = imap
+
 #. Update the role in the dev account to include a new principal:
 
     * Under the "Trust relationships" tab, edit the trust policy

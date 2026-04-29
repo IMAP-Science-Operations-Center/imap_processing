@@ -4,9 +4,9 @@ AWS Setup
 Download/requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
-Ensure you have installed nodejs (newer than version 14), AWS CLI, and Docker
+Ensure you have installed Node.js (newer than version 14), AWS CLI, and Docker
 
-- `nodejs <https://nodejs.org/en/download/>`_
+- `Node.js <https://nodejs.org/en/download/>`_
 - `AWS CLI <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html>`_
 - `Docker <https://docs.docker.com/get-docker/>`_
 

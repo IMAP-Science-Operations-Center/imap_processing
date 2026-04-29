@@ -40,7 +40,9 @@ Then you can deploy the architecture with the following command::
     cdk deploy --context account_name="dev" [ stack | --all ]
 
 After about 20-30 minutes or so, you should have a brand-new SDS set up in AWS.
-This is the repository for the cloud infrastructure on the IMAP mission.
+The cloud infrastructure CDK source for the IMAP mission is maintained in the
+``sds-data-manager`` repository; this page is mirrored in ``imap_processing``
+for documentation and reference only.
 
 Cleanup Resources
 ~~~~~~~~~~~~~~~~~

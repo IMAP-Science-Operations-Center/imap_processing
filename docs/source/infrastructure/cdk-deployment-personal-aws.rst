@@ -9,7 +9,7 @@ Deploy CDK to Personal AWS Account
    d. For "Root Group Email Address to Associate with Account", use your LASP email address
    e. For "Lead Technical Contact Name", use `Greg Lucas`
 
-2. Once the account is set up, `login in to AWS <https://signin.aws.amazon.com/signin?redirect_uri=https%3A%2F%2Fconsole.aws.amazon.com%2Fconsole%2Fhome%3FhashArgs%3D%2523%26isauthcode%3Dtrue%26state%3DhashArgsFromTB_us-east-2_bdb6cea710bddb8a&client_id=arn%3Aaws%3Asignin%3A%3A%3Aconsole%2Fcanvas&forceMobileApp=0&code_challenge=DSG8NACFeAjbOsDQjFFz6TvuW-ohRykiAIXkuEQriOI&code_challenge_method=SHA-256>`_ and create a user in IAM.
+2. Once the account is set up, `log in to AWS <https://signin.aws.amazon.com/signin?redirect_uri=https%3A%2F%2Fconsole.aws.amazon.com%2Fconsole%2Fhome%3FhashArgs%3D%2523%26isauthcode%3Dtrue%26state%3DhashArgsFromTB_us-east-2_bdb6cea710bddb8a&client_id=arn%3Aaws%3Asignin%3A%3A%3Aconsole%2Fcanvas&forceMobileApp=0&code_challenge=DSG8NACFeAjbOsDQjFFz6TvuW-ohRykiAIXkuEQriOI&code_challenge_method=SHA-256>`_ and create a user in IAM.
 
    a. You'll likely want to give your user the ``AdministratorAccess`` policy.
 
@@ -28,8 +28,8 @@ Deploy CDK to Personal AWS Account
         "region":"us-west-2"
     },
     "dev": {
-        "account": "449431850278",
-        "domain_name": "imap-mission.com",
+        "account": "111122223333",
+        "domain_name": "example.com",
         "region": "us-west-2"
     },
 
