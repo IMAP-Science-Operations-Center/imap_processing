@@ -1078,17 +1078,24 @@ class Idex(ProcessInstrument):
                     f"Unexpected dependencies found for IDEX L1B {self.descriptor}:"
                     f"{dependency_list}. Expected only {n_expected_deps} dependencies."
                 )
-            # get CDF file
             science_files = dependencies.get_file_paths(source="idex")
-            # Load all the science files. There should only be one, but in the case of
-            # multiple files, we want to make sure to load them all and select the one
-            # with the latest time.
-            science_datasets = [load_cdf(f) for f in science_files]
-            if not science_datasets:
+            if not science_files:
                 raise ValueError("No science files found for IDEX L1B processing.")
-            latest_file = max(science_datasets, key=lambda ds: ds["epoch"].data[0])
+            # IDEX l1b requires spice kernels and since there may be events that occur
+            # before the start date of the job, there is a buffer added to the upstream
+            # dependency query. This means that there may be multiple l1a science files
+            # that are returned but we only want to process the file with the same
+            # start date.
+            l1a_file = [f for f in science_files if self.start_date in f.name]
+            if not l1a_file:
+                raise ValueError(
+                    f"No L1A science file found for IDEX L1B processing with start "
+                    f"date {self.start_date}. Out of science files: {science_files}"
+                )
+            l1a_file = l1a_file[0]
+            logger.info(f"Processing IDEX l1b using l1a file: {l1a_file.name}")
             # process data
-            datasets = [idex_l1b(latest_file, self.descriptor)]
+            datasets = [idex_l1b(load_cdf(l1a_file), self.descriptor)]
         elif self.data_level == "l2a":
             if len(dependency_list) != 3:
                 raise ValueError(
