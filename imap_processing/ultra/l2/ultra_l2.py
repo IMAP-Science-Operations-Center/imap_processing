@@ -553,14 +553,9 @@ def generate_ultra_skymap(
 
     # Background rates must be scaled by
     # the ratio of the solid angles of the map pixel / pointing set pixel
-    if build_rectangular_map:
-        # For rectangular maps, the map pixel solid angle varies across the map, so we
-        # need to weight the background rates by the ratio of the map pixel solid angle
-        # to the pointing set pixel solid angle.
-        solid_angle = skymap.solid_angle_points
-    else:
-        solid_angle = skymap.solid_angle
-    skymap.data_1d["background_rates"] *= solid_angle / pointing_set.solid_angle
+    skymap.data_1d["background_rates"] *= (
+        skymap.solid_angle_points / pointing_set.solid_angle
+    )
 
     # Get the energy bin widths and deltas from a PointingSet
     # (they will all be the same)
