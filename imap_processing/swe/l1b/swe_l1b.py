@@ -12,6 +12,7 @@ from imap_data_access.processing_input import ProcessingInputCollection
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.quality_flags import SweL1bFlags
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.swe.utils import swe_constants
 from imap_processing.swe.utils.swe_utils import (
@@ -256,7 +257,7 @@ def apply_in_flight_calibration(
     corrected_counts: np.ndarray,
     acquisition_time: np.ndarray,
     in_flight_cal_files: list,
-) -> npt.NDArray:
+) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Apply in flight calibration to full cycle data.
 
@@ -268,10 +269,10 @@ def apply_in_flight_calibration(
     ----------
     corrected_counts : numpy.ndarray
         Corrected count of full cycle data. Data shape is
-        (N_ESA_STEPS, N_ANGLE_SECTORS, N_CEMS).
+        (n_epochs, N_ESA_STEPS, N_ANGLE_SECTORS, N_CEMS).
     acquisition_time : numpy.ndarray
         Acquisition time of full cycle data. Data shape is
-        (N_ESA_STEPS, N_ANGLE_SECTORS).
+        (n_epochs, N_ESA_STEPS, N_ANGLE_SECTORS).
     in_flight_cal_files : list
         List of in-flight calibration files.
 
@@ -279,21 +280,39 @@ def apply_in_flight_calibration(
     -------
     corrected_counts : numpy.ndarray
         Corrected count of full cycle data after applying in-flight calibration.
-        Array shape is (N_ESA_STEPS, N_ANGLE_SECTORS, N_CEMS).
+        Array shape is (n_epochs, N_ESA_STEPS, N_ANGLE_SECTORS, N_CEMS).
+    flags : numpy.ndarray
+        Per-epoch quality flags of shape (n_epochs,). The LAST_CAL_INTERVAL bit
+        is set for any epoch where at least one acquisition time falls in the
+        interval between the second-to-last and last calibration entries.
     """
     # Read in in-flight calibration data
     in_flight_cal_df = read_in_flight_cal_data(in_flight_cal_files)
+    cal_times = in_flight_cal_df["met_time"].values
     # calculate calibration factor.
     # return shape of calculate_calibration_factor is
     # (N_ESA_STEPS, N_ANGLE_SECTORS, N_CEMS) where
     # last 7 dimension contains calibration factor for each CEM detector.
     cal_factor = calculate_calibration_factor(
         acquisition_time,
-        in_flight_cal_df["met_time"].values,
+        cal_times,
         in_flight_cal_df.iloc[:, 1:].values,
     )
-    # Apply to full cycle data
-    return corrected_counts.astype(np.float64) * cal_factor
+
+    # Flag epochs where any acquisition time is extrapolated using the last
+    # two calibration entries, i.e. falls in (cal_times[-2], cal_times[-1]].
+    in_last_interval = acquisition_time > cal_times[-2]
+    # Reduce over all axes except the epoch axis (first axis)
+    epoch_in_last_interval = in_last_interval.any(
+        axis=tuple(range(1, in_last_interval.ndim))
+    )
+    flags = np.where(
+        epoch_in_last_interval,
+        SweL1bFlags.LAST_CAL_INTERVAL.value,
+        SweL1bFlags.NONE.value,
+    ).astype(np.uint8)
+
+    return corrected_counts.astype(np.float64) * cal_factor, flags
 
 
 def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
@@ -752,7 +771,7 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # Read in-flight calibration data
     in_flight_cal_files = dependencies.get_file_paths(descriptor="l1b-in-flight-cal")
 
-    inflight_applied_count = apply_in_flight_calibration(
+    inflight_applied_count, data_quality = apply_in_flight_calibration(
         corrected_count, acq_time, in_flight_cal_files
     )
 
@@ -913,6 +932,12 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
         esa_energies,
         dims=["epoch", "esa_step", "spin_sector"],
         attrs=cdf_attrs.get_variable_attributes("esa_energy"),
+    )
+
+    science_dataset["data_quality"] = xr.DataArray(
+        data_quality,
+        dims=["epoch"],
+        attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
 
     # create xarray dataarray for each data field

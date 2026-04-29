@@ -11,6 +11,7 @@ from imap_data_access.processing_input import (
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.quality_flags import SweL1bFlags
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.swe.l2.swe_l2 import (
@@ -329,7 +330,21 @@ def test_swe_l2_15sec(
     dependencies = ProcessingInputCollection(science_input, inflight_anc, eu_anc)
     l1b_dataset = swe_l1b(dependencies)[0]
     l1b_dataset.attrs["Data_version"] = "000"
+
+    # Test data acquisition times (~453051355) are before cal_times[-2] (553051294),
+    # so no epoch should have LAST_CAL_INTERVAL set.
+    assert not np.any(
+        l1b_dataset["data_quality"].values & SweL1bFlags.LAST_CAL_INTERVAL.value
+    )
+
     l2_dataset = swe_l2(l1b_dataset)
+
+    # Verify data_quality is propagated from L1B to L2 for downstream (L3) use.
+    assert "data_quality" in l2_dataset
+    np.testing.assert_array_equal(
+        l2_dataset["data_quality"].values,
+        l1b_dataset["data_quality"].values,
+    )
 
     assert isinstance(l2_dataset, xr.Dataset)
     assert l2_dataset["phase_space_density_spin_sector"].shape == (
