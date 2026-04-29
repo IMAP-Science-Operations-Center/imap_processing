@@ -879,11 +879,36 @@ class Hi(ProcessInstrument):
                         f"Expected exactly one DE science dependency. "
                         f"Got {l1b_de_paths}"
                     )
-                anc_paths = dependencies.get_file_paths(data_type="ancillary")
-                if len(anc_paths) != 1:
+
+                # Get ancillary dependencies
+                anc_dependencies = dependencies.get_processing_inputs(
+                    data_type="ancillary"
+                )
+                if len(anc_dependencies) != 2:
                     raise ValueError(
-                        f"Expected exactly one ancillary dependency. Got {anc_paths}"
+                        f"Expected two ancillary dependencies (cal-prod and "
+                        f"backgrounds). Got "
+                        f"{[anc_dep.descriptor for anc_dep in anc_dependencies]}"
                     )
+
+                # Create mapping from descriptor to path
+                anc_path_dict = {
+                    dep.descriptor.split("-", 1)[1]: dep.imap_file_paths[
+                        0
+                    ].construct_path()
+                    for dep in anc_dependencies
+                }
+
+                # Verify we have both required ancillary files
+                if (
+                    "cal-prod" not in anc_path_dict
+                    or "backgrounds" not in anc_path_dict
+                ):
+                    raise ValueError(
+                        f"Missing required ancillary files. Expected 'cal-prod' and "
+                        f"'backgrounds', got {list(anc_path_dict.keys())}"
+                    )
+
                 # Load goodtimes dependency
                 goodtimes_paths = dependencies.get_file_paths(
                     source="hi", data_type="l1b", descriptor="goodtimes"
@@ -893,10 +918,12 @@ class Hi(ProcessInstrument):
                         f"Expected exactly one goodtimes dependency. "
                         f"Got {goodtimes_paths}"
                     )
+
                 datasets = hi_l1c.hi_l1c(
                     load_cdf(l1b_de_paths[0]),
-                    anc_paths[0],
+                    anc_path_dict["cal-prod"],
                     load_cdf(goodtimes_paths[0]),
+                    anc_path_dict["backgrounds"],
                 )
         elif self.data_level == "l2":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
@@ -1051,17 +1078,24 @@ class Idex(ProcessInstrument):
                     f"Unexpected dependencies found for IDEX L1B {self.descriptor}:"
                     f"{dependency_list}. Expected only {n_expected_deps} dependencies."
                 )
-            # get CDF file
             science_files = dependencies.get_file_paths(source="idex")
-            # Load all the science files. There should only be one, but in the case of
-            # multiple files, we want to make sure to load them all and select the one
-            # with the latest time.
-            science_datasets = [load_cdf(f) for f in science_files]
-            if not science_datasets:
+            if not science_files:
                 raise ValueError("No science files found for IDEX L1B processing.")
-            latest_file = max(science_datasets, key=lambda ds: ds["epoch"].data[0])
+            # IDEX l1b requires spice kernels and since there may be events that occur
+            # before the start date of the job, there is a buffer added to the upstream
+            # dependency query. This means that there may be multiple l1a science files
+            # that are returned but we only want to process the file with the same
+            # start date.
+            l1a_file = [f for f in science_files if self.start_date in f.name]
+            if not l1a_file:
+                raise ValueError(
+                    f"No L1A science file found for IDEX L1B processing with start "
+                    f"date {self.start_date}. Out of science files: {science_files}"
+                )
+            l1a_file = l1a_file[0]
+            logger.info(f"Processing IDEX l1b using l1a file: {l1a_file.name}")
             # process data
-            datasets = [idex_l1b(latest_file, self.descriptor)]
+            datasets = [idex_l1b(load_cdf(l1a_file), self.descriptor)]
         elif self.data_level == "l2a":
             if len(dependency_list) != 3:
                 raise ValueError(

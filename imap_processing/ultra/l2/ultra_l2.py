@@ -620,6 +620,7 @@ def ultra_l2(
         Wrapped in a list for consistency with other product levels.
     """
     inertial_frame = "unknown"
+    descriptor_duration: str | None = None
     if descriptor is not None:
         logger.info(
             f"Using the provided descriptor '{descriptor}' to set the map structure."
@@ -628,6 +629,7 @@ def ultra_l2(
         map_descriptor = MapDescriptor.from_string(descriptor)
         output_map_structure = map_descriptor.to_empty_map()
         inertial_frame = map_descriptor.frame_descriptor
+        descriptor_duration = str(map_descriptor.duration)
     inertial_frame_long_name = INERTIAL_FRAME_LONG_NAMES.get(inertial_frame, "unknown")
 
     # Object which holds CDF attributes for the map
@@ -667,9 +669,13 @@ def ultra_l2(
     # TODO: replace 1 day in ns below with the actual end time of the last PSET.
     # Currently assumes the end time of the last PSET is 1 day after its start.
     map_duration_ns = (pset_epochs.max() + (86400 * 1e9)) - pset_epochs.min()
-    map_duration_months_int = ns_to_duration_months(map_duration_ns)
-    map_duration = f"{map_duration_months_int}mo"
-
+    # Use the duration from the descriptor if it is provided, otherwise use the
+    # calculated duration from the PSET epochs.
+    if descriptor_duration is None:
+        map_duration_months_int = ns_to_duration_months(map_duration_ns)
+        map_duration = f"{map_duration_months_int}mo"
+    else:
+        map_duration = descriptor_duration
     # Always add the common (non-tiling specific) attributes to the attr handler.
     # These can be updated/overwritten by the tiling specific attributes.
     cdf_attrs.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")

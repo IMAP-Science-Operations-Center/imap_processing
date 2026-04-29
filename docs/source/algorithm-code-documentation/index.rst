@@ -25,6 +25,7 @@ Instruments
    swapi
    swe
    ultra
+   quicklooks
 
 Utilities
 ---------

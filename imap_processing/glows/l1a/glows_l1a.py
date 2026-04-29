@@ -136,7 +136,7 @@ def process_de_l0(
             l1a_output.append(first_de)
 
     # Filter out DE records with no direct_events (incomplete packet sequences)
-    l1a_output = [de for de in l1a_output if de.direct_events is not None]
+    l1a_output = [de for de in l1a_output if de.direct_events]
 
     return l1a_output
 

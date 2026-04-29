@@ -859,9 +859,9 @@ def flag_statistical_outliers(
         good_mask = ~curr_mask[e_idx]  # spin bins that are not currently flagged
         for it in range(n_iterations):
             counts = count_summary[e_idx, good_mask]
-            # Step 1. check if any energy bins have less than 3 spin bins with counts.
+            # Step 1. check if there are less than three valid counts.
             # If so, flag all spins for that energy bin and skip to the next iteration
-            if np.sum(counts > 0) < 3:
+            if len(counts) < 3:
                 quality_stats[e_idx] = True
                 curr_mask[e_idx] = True
                 convergence[e_idx] = True

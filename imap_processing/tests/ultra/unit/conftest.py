@@ -559,6 +559,10 @@ def ancillary_files():
         / "imap_ultra_l1c-45sensor-static-dead-times_20250101_v000.csv",
         "l1c-90sensor-static-dead-times": path
         / "imap_ultra_l1c-90sensor-static-dead-times_20250101_v000.csv",
+        "l1c-45sensor-de-product-lookup": path
+        / "imap_ultra_l1c-45sensor-de-product-lookup_20251001_v001.csv",
+        "l1c-90sensor-de-product-lookup": path
+        / "imap_ultra_l1c-45sensor-de-product-lookup_20251001_v001.csv",
     }
 
 

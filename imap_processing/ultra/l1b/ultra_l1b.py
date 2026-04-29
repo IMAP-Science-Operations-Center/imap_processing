@@ -1,11 +1,17 @@
 """Calculate ULTRA L1b."""
 
+import logging
+import re
+
 import xarray as xr
 
 from imap_processing.ultra.l1b.badtimes import calculate_badtimes
 from imap_processing.ultra.l1b.de import calculate_de
 from imap_processing.ultra.l1b.extendedspin import calculate_extendedspin
 from imap_processing.ultra.l1b.goodtimes import calculate_goodtimes
+from imap_processing.ultra.l1b.lookup_utils import get_de_product_name
+
+logger = logging.getLogger(__name__)
 
 
 def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
@@ -32,15 +38,29 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
     3. l1b extended, goodtimes, badtimes created here
     """
     output_datasets = []
-
     # Account for possibility of having 45 and 90 in dictionary.
     for instrument_id in [45, 90]:
+        # Find any de product if it is in the data_dict
+        l1a_de_products = [
+            name
+            for name in data_dict.keys()
+            if re.search(rf"^imap_ultra_l1a_{instrument_id}sensor.*-de$", name)
+        ]
         # L1b de data will be created if L1a de data is available
-        if f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict:
+        # Including priority de products
+        if l1a_de_products:
+            l1a_de_product = l1a_de_products[0]
+            if len(l1a_de_products) > 1:
+                raise ValueError(
+                    f"Multiple L1a de products found for instrument {instrument_id}. "
+                    f"Expected only one but found {len(l1a_de_products)}: "
+                    f"{l1a_de_products}"
+                )
+            l1b_de_product = l1a_de_product.replace("l1a", "l1b")
             de_dataset = calculate_de(
-                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
+                data_dict[l1a_de_product],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-aux"],
-                f"imap_ultra_l1b_{instrument_id}sensor-de",
+                l1b_de_product,
                 ancillary_files,
             )
             output_datasets.append(de_dataset)
@@ -53,6 +73,23 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
             and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-status" in data_dict
         ):
+            # get repoint number
+            repoint = data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"].attrs.get(
+                "Repointing", None
+            )
+            if repoint is None:
+                raise ValueError("Repointing ID attribute is missing from the dataset.")
+            # Determine which l1b de product to use in calculating the goodtimes
+            # Will be either the raw de product or a priority 1-4 de product.
+            de_product_desc = get_de_product_name(
+                repoint, instrument_id, "l1b", ancillary_files
+            )
+            if de_product_desc not in data_dict:
+                raise ValueError(
+                    f"Selected L1B DE product '{de_product_desc}' for instrument "
+                    f"{instrument_id} is not present in data_dict. Available L1B DE "
+                    f"products: {data_dict.keys()}"
+                )
             extendedspin_dataset = calculate_extendedspin(
                 {
                     f"imap_ultra_l1a_{instrument_id}sensor-aux": data_dict[
@@ -64,13 +101,11 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
                     f"imap_ultra_l1a_{instrument_id}sensor-rates": data_dict[
                         f"imap_ultra_l1a_{instrument_id}sensor-rates"
                     ],
-                    f"imap_ultra_l1b_{instrument_id}sensor-de": data_dict[
-                        f"imap_ultra_l1b_{instrument_id}sensor-de"
-                    ],
                     f"imap_ultra_l1b_{instrument_id}sensor-status": data_dict[
                         f"imap_ultra_l1b_{instrument_id}sensor-status"
                     ],
                 },
+                data_dict[de_product_desc],
                 f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",
                 instrument_id,
             )

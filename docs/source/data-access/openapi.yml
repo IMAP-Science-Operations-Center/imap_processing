@@ -1,7 +1,7 @@
 openapi: 3.0.0
 servers:
-  - description: Development IMAP SDC Server
-host: https://api.dev.imap-mission.com/
+  - description: Production IMAP SDC Server
+host: https://api.imap-mission.com/
 info:
   version: "0.1.0"
   title: IMAP SDC API
@@ -230,3 +230,180 @@ paths:
                 items:
                   type: string
                   format: uri
+
+  '/spice-query':
+    get:
+      tags:
+        - SPICE Query
+      summary: Query for SPICE kernel metadata
+      operationId: spice-query
+      parameters:
+        - in: query
+          name: file_name
+          description: |
+            The name of a specific SPICE kernel file (e.g. ``naif0012.tls``).
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: start_time
+          description: |
+            Coverage start time in TDB seconds since J2000. Returns kernels whose
+            coverage ends on or after this time.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: end_time
+          description: |
+            Coverage end time in TDB seconds since J2000. Returns kernels whose
+            coverage begins on or before this time.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: type
+          description: |
+            The SPICE kernel type to filter by. Accepted values are:
+            ``leapseconds``, ``planetary_constants``, ``imap_frames``,
+            ``science_frames``, ``spacecraft_clock``, ``earth_attitude``,
+            ``planetary_ephemeris``, ``ephemeris_reconstructed``,
+            ``ephemeris_nominal``, ``ephemeris_predicted``, ``ephemeris_90days``,
+            ``ephemeris_long``, ``ephemeris_launch``, ``attitude_history``,
+            ``attitude_predict``, ``pointing_attitude``.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: latest
+          description: |
+            If ``True``, only return the latest version of each kernel matching
+            the other query parameters.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: start_ingest_date
+          description: |
+            Filter results to kernels ingested on or after this date, in the
+            format ``YYYYMMDD``.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: end_ingest_date
+          description: |
+            Filter results to kernels ingested on or before this date, in the
+            format ``YYYYMMDD``.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful query — returns a list of SPICE kernel metadata objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Invalid query parameter or parameter value
+          content:
+            application/json:
+              schema:
+                type: string
+
+  '/metakernel':
+    get:
+      tags:
+        - SPICE Query
+      summary: Retrieve a metakernel or list of SPICE kernel filenames for a time range
+      operationId: metakernel
+      parameters:
+        - in: query
+          name: start_time
+          description: |
+            Coverage start time. Accepts either TDB seconds since J2000 or a date
+            string in the format ``YYYYMMDD``.
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: end_time
+          description: |
+            Coverage end time. Accepts either TDB seconds since J2000 or a date
+            string in the format ``YYYYMMDD``.
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: spice_path
+          description: |
+            Root path for the SPICE directory. This path is prepended to all kernel file
+            locations in the returned metakernel. If omitted the paths are left
+            relative. Only applicable if ``list_files``` is ``False``.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: list_files
+          description: |
+            If ``True``, return only a list of kernel filenames instead of a full
+            metakernel file.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: require_coverage
+          description: |
+            If ``True``, the request will fail with a HTTP ``422`` status if there
+            are any gaps in coverage for the requested time range.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: file_types
+          description: |
+            Comma-separated list of kernel types to include. If omitted, all
+            available kernel types are included. Accepted values are:
+            ``leapseconds``, ``planetary_constants``, ``imap_frames``,
+            ``science_frames``, ``spacecraft_clock``, ``earth_attitude``,
+            ``planetary_ephemeris``, ``ephemeris_reconstructed``,
+            ``ephemeris_nominal``, ``ephemeris_predicted``, ``ephemeris_90days``,
+            ``ephemeris_long``, ``ephemeris_launch``, ``attitude_history``,
+            ``attitude_predict``, ``pointing_attitude``.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: |
+            Successful response. Returns a metakernel file (text/plain) when
+            ``list_files`` is ``False`` (default), or a JSON array of kernel
+            filenames when ``list_files`` is ``True``.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '404':
+          description: No kernel files found for the requested time range
+          content:
+            application/json:
+              schema:
+                type: string
+        '422':
+          description: |
+            Coverage gaps detected when ``require_coverage=True``. The response
+            body contains a list of the gap intervals.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
