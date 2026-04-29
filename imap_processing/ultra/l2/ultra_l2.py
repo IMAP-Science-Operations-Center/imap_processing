@@ -368,9 +368,11 @@ def generate_ultra_skymap(
                 " have tiling_type set to RECTANGULAR."
             )
         # Initialize the RectangularSkyMap object
-        skymap = ena_maps.RectangularSkyMap(
-            spacing_deg=output_map_structure.spacing_deg,
-            spice_frame=output_map_structure.spice_reference_frame,
+        skymap: ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap = (
+            ena_maps.RectangularSkyMap(
+                spacing_deg=output_map_structure.spacing_deg,
+                spice_frame=output_map_structure.spice_reference_frame,
+            )
         )
     else:
         if output_map_type is ena_maps.SkyTilingType.HEALPIX:
