@@ -10,6 +10,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.idex.idex_constants import DT_BLOCK
 from imap_processing.idex.idex_l1b import (
     TRIGGER_LABELS,
     EventMessage,
@@ -422,16 +423,26 @@ def test_no_valid_messages(decom_test_data_msg: xr.Dataset):
     assert result is None
 
 
-def test_get_event_dead_times():
-    """Test get_event_dead_times function."""
-    hdr_block = np.arange(64)
-    l1a_dataset = xr.Dataset(data_vars={"idx__txhdrblocks": xr.DataArray(hdr_block)})
-    dead_times = get_event_dead_time(l1a_dataset, get_idex_attrs("l1b"))["dead_time"]
+def test_get_event_dead_time():
+    """Check that dead time is computed correctly from txhdrblocks."""
+    base = np.array([0, 1, 3, 63, 0, 63], dtype=np.uint32)
+    shift = np.array([0, 1, 2, 15, 15, 0], dtype=np.uint32)
+    txhdrblocks = (base << 24) | (shift << 20)
 
-    # Physical deadtime can't be less than zero or greater than 4.06
-    max_expected_dead_time = 8
-    min_expected_dead_time = 0
+    l1a_dataset = xr.Dataset(
+        {"idx__txhdrblocks": xr.DataArray(txhdrblocks, dims="epoch")}
+    )
+    dead_time = get_event_dead_time(l1a_dataset, get_idex_attrs("l1b"))["dead_time"]
 
-    assert hdr_block.shape == dead_times.shape
-    assert np.all(dead_times >= min_expected_dead_time)
-    assert np.all(dead_times <= max_expected_dead_time)
+    expected_dead_time = (
+        base.astype(np.float64) * (2.0 ** shift.astype(np.float64)) * DT_BLOCK
+    )
+
+    np.testing.assert_array_equal(
+        dead_time.data,
+        expected_dead_time,
+        err_msg=(
+            "The dead_time values did not match the expected values: "
+            f"{expected_dead_time}. Found: {dead_time.data}"
+        ),
+    )
