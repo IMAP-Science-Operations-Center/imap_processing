@@ -402,7 +402,7 @@ def test_update_spice_parameters_spin_axis_near_wrapping_point(
     class MockHistogram:
         def __init__(self):
             self.imap_start_time = 100.0
-            self.glows_time_offset = 5.0  # 5 second duration
+            self.imap_time_offset = 5.0  # 5 second duration
 
     mock_hist = MockHistogram()
 
