@@ -11,6 +11,8 @@ from imap_processing.mag.l1b.mag_l1b import (
     mag_l1b,
     mag_l1b_processing,
     rescale_vector,
+    shift_time,
+    timeshift_vectors_per_second,
 )
 from imap_processing.tests.mag.conftest import (
     mag_l1a_dataset_generator,
@@ -207,6 +209,47 @@ def test_calibrate_vector():
     expected_vector = [4584.1029091, 27238.73161294, -38405.22240195, 0.0]
 
     assert np.allclose(cal_vector, expected_vector, atol=1e-9)
+
+
+def test_shift_time_preserves_int64_epoch_precision():
+    epoch_values = np.array(
+        [813411068230810679, 813411068238623179, 813411068246435679],
+        dtype=np.int64,
+    )
+    epoch_times = xr.DataArray(epoch_values, name="epoch", dims=["epoch"])
+    time_shift = xr.DataArray(np.array([0.0]), dims=["epoch"])
+
+    shifted_times = shift_time(epoch_times, time_shift)
+
+    assert shifted_times.dtype == np.int64
+    np.testing.assert_array_equal(shifted_times.data, epoch_values)
+    np.testing.assert_array_equal(np.diff(shifted_times.data), [7812500, 7812500])
+
+
+def test_shift_time_uses_integer_nanosecond_shift():
+    epoch_values = np.array(
+        [813411068230810679, 813411068238623179, 813411068246435679],
+        dtype=np.int64,
+    )
+    epoch_times = xr.DataArray(epoch_values, name="epoch", dims=["epoch"])
+    time_shift = xr.DataArray(np.array([1.23e-7]), dims=["epoch"])
+
+    shifted_times = shift_time(epoch_times, time_shift)
+
+    expected_times = epoch_values + 123
+    assert shifted_times.dtype == np.int64
+    np.testing.assert_array_equal(shifted_times.data, expected_times)
+    np.testing.assert_array_equal(np.diff(shifted_times.data), [7812500, 7812500])
+
+
+def test_timeshift_vectors_per_second_matches_epoch_shift():
+    time_shift = xr.DataArray(np.array([1.23e-7]), dims=["epoch"])
+
+    shifted_vecsec = timeshift_vectors_per_second(
+        "813411068230810679:128,813411070230810679:64", time_shift
+    )
+
+    assert shifted_vecsec == "813411068230810802:128,813411070230810802:64"
 
 
 def test_l1a_to_l1b(validation_l1a, mag_l1b_cal_dataset):

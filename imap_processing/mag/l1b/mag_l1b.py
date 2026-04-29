@@ -395,12 +395,31 @@ def shift_time(epoch_times: xr.DataArray, time_shift: xr.DataArray) -> xr.DataAr
         The shifted epoch times, equal to epoch_times with time_shift added to each
         value.
     """
-    if time_shift.size != 1:
-        raise ValueError("Time shift must be a single value.")
-    # Time shift is in seconds
-    time_shift_ns = time_shift.data * 1e9
+    time_shift_ns = _time_shift_to_nanoseconds(time_shift)
 
     return epoch_times + time_shift_ns
+
+
+def _time_shift_to_nanoseconds(time_shift: xr.DataArray) -> np.int64:
+    """
+    Convert a scalar time shift from seconds to integer nanoseconds.
+
+    Parameters
+    ----------
+    time_shift : xarray.DataArray
+        The time shift to apply for the given sensor. This should be one value and is
+        in seconds.
+
+    Returns
+    -------
+    numpy.int64
+        The time shift rounded to the nearest integer nanosecond.
+    """
+    if time_shift.size != 1:
+        raise ValueError("Time shift must be a single value.")
+
+    time_shift_seconds = float(np.asarray(time_shift.data).item())
+    return np.int64(round(time_shift_seconds * 1e9))
 
 
 def timeshift_vectors_per_second(
@@ -426,12 +445,12 @@ def timeshift_vectors_per_second(
     str
         The updated vectors per second attribute.
     """
-    time_shift_ns = time_shift.data * 1e9
+    time_shift_ns = _time_shift_to_nanoseconds(time_shift)
 
     vecsec = vectors_per_second_from_string(vectors_per_second)
     new_vecsec = ""
     for time, rate in vecsec.items():
         new_time = time + time_shift_ns
-        new_vecsec += f"{new_time.astype(np.int64)}:{rate},"
+        new_vecsec += f"{int(new_time)}:{rate},"
 
     return new_vecsec[:-1]
