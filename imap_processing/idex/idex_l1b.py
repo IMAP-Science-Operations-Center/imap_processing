@@ -536,13 +536,6 @@ def get_event_dead_time(
     dead_blocks_shift = (txhdrblocks >> 20) & 0b1111
     dead_blocks_base = (txhdrblocks >> 24) & 0b111111
 
-    print(
-        "txhdrblocks = "
-        f"{l1a_dataset['idx__txhdrblocks']}, "
-        f"Dead shift = {dead_blocks_shift}, "
-        f"dead base = {dead_blocks_base}"
-    )
-
     # Convert to float once
     base = dead_blocks_base.astype(np.float64)
     shift = dead_blocks_shift.astype(np.float64)
