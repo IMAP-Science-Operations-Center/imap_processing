@@ -334,16 +334,16 @@ def test_swe_l2_15sec(
     # Test data acquisition times (~453051355) are before cal_times[-2] (553051294),
     # so no epoch should have LAST_CAL_INTERVAL set.
     assert not np.any(
-        l1b_dataset["inflight_cal_flags"].values & SweL1bFlags.LAST_CAL_INTERVAL.value
+        l1b_dataset["data_quality"].values & SweL1bFlags.LAST_CAL_INTERVAL.value
     )
 
     l2_dataset = swe_l2(l1b_dataset)
 
-    # Verify inflight_cal_flags is propagated from L1B to L2 for downstream (L3) use.
-    assert "inflight_cal_flags" in l2_dataset
+    # Verify data_quality is propagated from L1B to L2 for downstream (L3) use.
+    assert "data_quality" in l2_dataset
     np.testing.assert_array_equal(
-        l2_dataset["inflight_cal_flags"].values,
-        l1b_dataset["inflight_cal_flags"].values,
+        l2_dataset["data_quality"].values,
+        l1b_dataset["data_quality"].values,
     )
 
     assert isinstance(l2_dataset, xr.Dataset)

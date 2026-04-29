@@ -771,7 +771,7 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # Read in-flight calibration data
     in_flight_cal_files = dependencies.get_file_paths(descriptor="l1b-in-flight-cal")
 
-    inflight_applied_count, inflight_cal_flags = apply_in_flight_calibration(
+    inflight_applied_count, data_quality = apply_in_flight_calibration(
         corrected_count, acq_time, in_flight_cal_files
     )
 
@@ -934,10 +934,10 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
         attrs=cdf_attrs.get_variable_attributes("esa_energy"),
     )
 
-    science_dataset["inflight_cal_flags"] = xr.DataArray(
-        inflight_cal_flags,
+    science_dataset["data_quality"] = xr.DataArray(
+        data_quality,
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("inflight_cal_flags"),
+        attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
 
     # create xarray dataarray for each data field

@@ -111,7 +111,7 @@ def test_in_flight_calibration_factor(l1a_test_data):
         )
 
 
-def test_inflight_cal_flags():
+def test_quality_flags_last_cal_interval():
     """Test that LAST_CAL_INTERVAL flag is set correctly per epoch.
 
     The test LUT has cal_times = [453050308, 553051294, 1782864000].
