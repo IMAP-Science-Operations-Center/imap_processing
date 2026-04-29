@@ -14,6 +14,7 @@ from imap_processing.idex.idex_l1b import (
     TRIGGER_LABELS,
     EventMessage,
     TriggerOrigin,
+    get_event_dead_time,
     get_spice_data,
     get_trigger_mode_and_level,
     get_trigger_origin,
@@ -419,3 +420,18 @@ def test_no_valid_messages(decom_test_data_msg: xr.Dataset):
     msg_ds.messages[:] = "Not a science or pulser event"
     result = idex_l1b(msg_ds, "msg")
     assert result is None
+
+
+def test_get_event_dead_times():
+    """Test get_event_dead_times function."""
+    hdr_block = np.arange(64)
+    l1a_dataset = xr.Dataset(data_vars={"idx__txhdrblocks": xr.DataArray(hdr_block)})
+    dead_times = get_event_dead_time(l1a_dataset, get_idex_attrs("l1b"))["dead_time"]
+
+    # Physical deadtime can't be less than zero or greater than 4.06
+    max_expected_dead_time = 8
+    min_expected_dead_time = 0
+
+    assert hdr_block.shape == dead_times.shape
+    assert np.all(dead_times >= min_expected_dead_time)
+    assert np.all(dead_times <= max_expected_dead_time)
