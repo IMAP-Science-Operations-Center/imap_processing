@@ -319,8 +319,6 @@ def calculate_accepted_pixels(  # noqa: PLR0912
             fwhm_phi_sum[:, accepted_pix] += np.where(valid_fwhm, fwhm_phi, 0.0).T
             sample_count[:, accepted_pix] += valid_fwhm.T.astype(sample_count.dtype)
 
-    print(np.any(fwhm_theta_sum > 0))
-    print(np.any(fwhm_phi_sum > 0))
     fwhm_phi_avg = np.zeros_like(fwhm_phi_sum)
     fwhm_theta_avg = np.zeros_like(fwhm_theta_sum)
     np.divide(fwhm_phi_sum, sample_count, out=fwhm_phi_avg, where=sample_count != 0)
