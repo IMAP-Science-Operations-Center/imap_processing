@@ -308,6 +308,9 @@ def calculate_accepted_pixels(  # noqa: PLR0912
                     scattering_thresholds=scattering_thresholds_for_energy_mean,
                 )
             )
+            if reject_scattering:
+                valid_pixels[i, :, accepted_pix] = scattering_mask.T
+
             # Accumulate FWHM values where theta and phi are finite
             valid_fwhm = np.isfinite(fwhm_theta) & np.isfinite(
                 fwhm_phi
