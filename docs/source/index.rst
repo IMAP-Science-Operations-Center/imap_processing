@@ -25,8 +25,9 @@ The explicit code interfaces and structure are described in the :ref:`algorithm-
    IMAP Data Access Tool <data-access/index>
    CDF Metadata Resources <cdf-metadata/index>
    Filename Conventions <filename-convention/index>
-   SDC Project Management <project-management/index>
    Algorithm Code Documentation <algorithm-code-documentation/index>
+   SDC Project Management <project-management/index>
+   Infrastructure <infrastructure/index>
 
 
 If you make use of any ``imap_processing`` code, please consider citing it in your research.
