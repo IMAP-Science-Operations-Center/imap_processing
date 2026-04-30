@@ -304,6 +304,8 @@ def test_mag_l1c_validation(test_number, sensor):
     expected_output = pd.read_csv(
         source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-out.csv"
     )
+    # T016 intentionally omits the Config-mode boundary sample that would require
+    # extrapolating beyond the CIC-filtered burst support.
     assert len(expected_output.index) == len(l1c["epoch"].data)
 
     for index in expected_output.index:

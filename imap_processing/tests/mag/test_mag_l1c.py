@@ -118,14 +118,14 @@ def test_interpolation_methods():
         InterpolationFunction.cubic_filtered,
     ],
 )
-def test_filtered_interpolation_methods_keep_tail_boundary_timestamp(method):
+def test_filtered_interpolation_methods_drop_unsupported_tail_timestamp(method):
     input_timestamps = np.arange(0.125, 8.001, step=0.125) * 1e9
     seconds = input_timestamps / 1e9
     input_vectors = np.column_stack(
         [seconds, seconds, seconds, np.ones(input_timestamps.size)]
     )
     # Tail boundary: 8.0 s is inside the original burst window but beyond the
-    # post-CIC filtered tail unless the method preserves it explicitly.
+    # post-CIC filtered tail, so it should be dropped rather than extrapolated.
     output_timestamps = np.array([7.5, 8.0]) * 1e9
 
     adjusted_time, output = method(
@@ -136,7 +136,7 @@ def test_filtered_interpolation_methods_keep_tail_boundary_timestamp(method):
         output_rate=VecSec.TWO_VECS_PER_S,
     )
 
-    assert np.array_equal(adjusted_time, output_timestamps)
+    assert np.array_equal(adjusted_time, np.array([7.5]) * 1e9)
 
 
 def test_process_mag_l1c(norm_dataset, burst_dataset):
