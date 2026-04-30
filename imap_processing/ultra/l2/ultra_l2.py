@@ -119,6 +119,14 @@ VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS = [
 ]
 VARIABLES_TO_SUM_OVER_COARSE_ENERGY_BINS = ["counts"]
 
+# Variables that must be converted from HEALPIX -> RECTANGULAR using recursive
+# subdivision. We do this only for ENA intensity products, while other variables are
+# projected directly on the rectangular grid from PSETs.
+RECURSIVE_HEALPIX_TO_RECTANGULAR_VARIABLES = [
+    "ena_intensity",
+    "ena_intensity_stat_uncert",
+]
+
 
 def get_variable_attributes_optional_energy_dependence(
     cdf_attrs: ImapCdfAttributes,
@@ -286,17 +294,18 @@ def bin_pset_energy_bins(
     return pset
 
 
-def generate_ultra_healpix_skymap(
+def generate_ultra_skymap(
     ultra_l1c_psets: list[str | xr.Dataset],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
     energy_bin_edges: np.ndarray | None = None,
-) -> tuple[ena_maps.HealpixSkyMap, NDArray]:
+    build_rectangular_map: bool = False,
+) -> tuple[ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap, NDArray]:
     """
-    Generate a Healpix skymap from ULTRA L1C pointing sets.
+    Generate a skymap from ULTRA L1C pointing sets.
 
-    This function combines IMAP Ultra L1C pointing sets into a single L2 HealpixSkyMap.
+    This function combines IMAP Ultra L1C pointing sets into a single L2 SkyMap.
     It handles the projection of values from pointing sets to the map, applies necessary
     weighting and background subtraction, and calculates ena_intensity
     and ena_intensity_stat_uncert.
@@ -313,12 +322,17 @@ def generate_ultra_healpix_skymap(
         Array of indices defining the new energy bin edges for binning
         L1C energy bins into coarser bins.
         Defaults to DEFAULT_BIN_EDGES defined in this module.
+    build_rectangular_map : bool, optional
+        Flag to indicate whether to build a rectangular map directly (True).
 
     Returns
     -------
-    ena_maps.HealpixSkyMap
-        HealpixSkyMap object containing the combined data from all pointing sets,
-        with calculated ena_intensity and its statistical uncertainty values.
+    ena_maps.SkyMap
+        Either a RectangularSkyMap or a HealpixSkyMap object containing the combined
+        data from all pointing sets. If the map is a Healpix it will contain
+        calculated ena_intensity and its statistical uncertainty values. If rectangular,
+        It will contain the projected and weighted values but not the calculated
+        ena_intensity.
     NDArray
         Array of epochs corresponding to the pointing sets used in the map.
 
@@ -330,7 +344,11 @@ def generate_ultra_healpix_skymap(
     Notes
     -----
     The structure of this function goes as follows:
-    1. Initialize the HealpixSkyMap object with the specified properties.
+    1. Initialize the SkyMap object with the specified properties.
+       - If ``build_rectangular_map=True``, project directly to a rectangular map.
+       - Otherwise, build a Healpix map (even when final output is rectangular),
+         because some derived variables are later converted via recursive
+         Healpix->Rectangular subdivision.
     2. Iterate over the input pointing sets and read them into UltraPointingSet objects.
     3. For each pointing set, weight certain variables by exposure and solid angle of
     the pointing set pixels.
@@ -339,23 +357,45 @@ def generate_ultra_healpix_skymap(
     (e.g., divide weighted quantities by their summed weights to
     get their weighted mean)
     6. Calculate corrected count rate with background subtraction applied.
-    7. Calculate ena_intensity and its statistical uncertainty.
+    7. Calculate ena_intensity and its statistical uncertainty if the map is Healpix.
     8. Drop unnecessary variables from the map.
     """
-    if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
-        map_nside, map_nested = (
-            output_map_structure.nside,
-            output_map_structure.nested,
+    output_map_type = output_map_structure.tiling_type
+    if build_rectangular_map:
+        if output_map_type != ena_maps.SkyTilingType.RECTANGULAR:
+            raise ValueError(
+                "To build a rectangular map, the output_map_structure must"
+                " have tiling_type set to RECTANGULAR."
+            )
+        # Initialize the RectangularSkyMap object
+        skymap: ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap = (
+            ena_maps.RectangularSkyMap(
+                spacing_deg=output_map_structure.spacing_deg,
+                spice_frame=output_map_structure.spice_reference_frame,
+            )
         )
     else:
-        map_nside, map_nested = (DEFAULT_L2_HEALPIX_NSIDE, DEFAULT_L2_HEALPIX_NESTED)
-
-    # Initialize the HealpixSkyMap object
-    skymap = ena_maps.HealpixSkyMap(
-        nside=map_nside,
-        nested=map_nested,
-        spice_frame=output_map_structure.spice_reference_frame,
-    )
+        if output_map_type is ena_maps.SkyTilingType.HEALPIX:
+            map_nside, map_nested = (
+                output_map_structure.nside,
+                output_map_structure.nested,
+            )
+        elif output_map_type is ena_maps.SkyTilingType.RECTANGULAR:
+            map_nside, map_nested = (
+                DEFAULT_L2_HEALPIX_NSIDE,
+                DEFAULT_L2_HEALPIX_NESTED,
+            )
+        else:
+            raise ValueError(
+                f"Unsupported tiling type: {output_map_type}. "
+                "Only HEALPIX and RECTANGULAR are supported."
+            )
+        # Initialize the HealpixSkyMap object
+        skymap = ena_maps.HealpixSkyMap(
+            nside=map_nside,
+            nested=map_nested,
+            spice_frame=output_map_structure.spice_reference_frame,
+        )
 
     # Add additional data variables to the map
     output_map_structure.values_to_push_project.extend(
@@ -515,9 +555,12 @@ def generate_ultra_healpix_skymap(
 
     # Background rates must be scaled by
     # the ratio of the solid angles of the map pixel / pointing set pixel
-    skymap.data_1d["background_rates"] *= skymap.solid_angle / pointing_set.solid_angle
+    skymap.data_1d["background_rates"] *= (
+        skymap.solid_angle_points / pointing_set.solid_angle
+    )
 
-    # Get the energy bin widths and deltasfrom a PointingSet (they will all be the same)
+    # Get the energy bin widths and deltas from a PointingSet
+    # (they will all be the same)
     delta_energy = pointing_set.data["energy_bin_delta"]
     if CoordNames.TIME.value in delta_energy.dims:
         delta_energy = delta_energy.mean(
@@ -529,28 +572,29 @@ def generate_ultra_healpix_skymap(
     # and ena_intensity.
     # These NaNs are not incorrect, so we temporarily ignore numpy div by 0 warnings.
     with np.errstate(divide="ignore"):
-        # Get corrected count rate with background subtraction applied
-        # TODO: do not remove background rates for now. Need to verify background
-        #       rates first.
-        skymap.data_1d["corrected_count_rate"] = (
-            skymap.data_1d["counts"].astype(float) / skymap.data_1d["exposure_factor"]
-        )  # - skymap.data_1d["background_rates"]
+        if not build_rectangular_map:
+            # Get corrected count rate with background subtraction applied
+            # TODO: do not remove background rates for now. Need to verify background
+            #       rates first.
+            skymap.data_1d["corrected_count_rate"] = (
+                skymap.data_1d["counts"].astype(float)
+                / skymap.data_1d["exposure_factor"]
+            )  # - skymap.data_1d["background_rates"]
 
-        # Calculate ena_intensity = corrected_counts / (
-        # sensitivity * solid_angle * delta_energy)
-        skymap.data_1d["ena_intensity"] = skymap.data_1d["corrected_count_rate"] / (
-            skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
-        )
+            # Calculate ena_intensity = corrected_counts / (
+            # sensitivity * solid_angle * delta_energy)
+            skymap.data_1d["ena_intensity"] = skymap.data_1d["corrected_count_rate"] / (
+                skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
+            )
 
-        skymap.data_1d["ena_intensity_stat_uncert"] = (
-            skymap.data_1d["counts"].astype(float) ** 0.5
-        ) / (
-            skymap.data_1d["exposure_factor"]
-            * skymap.data_1d["sensitivity"]
-            * skymap.solid_angle
-            * delta_energy
-        )
-
+            skymap.data_1d["ena_intensity_stat_uncert"] = (
+                skymap.data_1d["counts"].astype(float) ** 0.5
+            ) / (
+                skymap.data_1d["exposure_factor"]
+                * skymap.data_1d["sensitivity"]
+                * skymap.solid_angle
+                * delta_energy
+            )
         # Calculate the standard deviation of the observation date as:
         # sqrt((sum(obs_date^2) / N) - (sum(obs_date) / N)^2)
         # where sum here refers to the projection process
@@ -573,9 +617,10 @@ def generate_ultra_healpix_skymap(
         ).astype(np.int64)
 
     # Drop the variables that are no longer needed
-    skymap.data_1d = skymap.data_1d.drop_vars(
-        VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
+    vars_to_drop = set(VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION).intersection(
+        set(skymap.data_1d.data_vars)
     )
+    skymap.data_1d = skymap.data_1d.drop_vars(vars_to_drop)
     return skymap, np.array(all_pset_epochs)
 
 
@@ -651,13 +696,30 @@ def ultra_l2(
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
-    healpix_skymap, pset_epochs = generate_ultra_healpix_skymap(
+    healpix_skymap, pset_epochs = generate_ultra_skymap(
         ultra_l1c_psets=l1c_products,
         output_map_structure=output_map_structure,
         energy_bin_edges=energy_bin_edges,
     )
+    # Build the rectangular map
+    if output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
+        rectangular_skymap, _ = generate_ultra_skymap(
+            ultra_l1c_psets=l1c_products,
+            output_map_structure=output_map_structure,
+            energy_bin_edges=energy_bin_edges,
+            build_rectangular_map=True,
+        )
+        # Ensure that the epoch of the map is the earliest epoch of the input PSETs
+        rectangular_skymap.data_1d = rectangular_skymap.data_1d.assign_coords(
+            epoch=(
+                (CoordNames.TIME.value,),
+                [
+                    pset_epochs.min(),
+                ],
+            ),
+        )
     # Ensure that the epoch of the map is the earliest epoch of the input PSETs
-    healpix_skymap.data_1d.assign_coords(
+    healpix_skymap.data_1d = healpix_skymap.data_1d.assign_coords(
         epoch=(
             (CoordNames.TIME.value,),
             [
@@ -708,10 +770,16 @@ def ultra_l2(
         cdf_attrs.add_instrument_variable_attrs(
             instrument="enamaps", level="l2-rectangular"
         )
-        rectangular_skymap, subdiv_depth_dict = healpix_skymap.to_rectangular_skymap(
-            rect_spacing_deg=output_map_structure.spacing_deg,
-            value_keys=healpix_skymap.data_1d.data_vars,
+        intensity_rectangular_skymap, subdiv_depth_dict = (
+            healpix_skymap.to_rectangular_skymap(
+                rect_spacing_deg=output_map_structure.spacing_deg,
+                value_keys=RECURSIVE_HEALPIX_TO_RECTANGULAR_VARIABLES,
+            )
         )
+        # Merge recursively subdivided variables into the directly projected
+        # rectangular map.
+        for key in RECURSIVE_HEALPIX_TO_RECTANGULAR_VARIABLES:
+            rectangular_skymap.data_1d[key] = intensity_rectangular_skymap.data_1d[key]
 
         # Add the subdiv_depth_by_pixel of each key to the map dataset if requested
         if store_subdivision_depth:
@@ -729,7 +797,6 @@ def ultra_l2(
                         "long_name": f"Subdiv_depth of {key}",
                     },
                 )
-
         map_dataset = rectangular_skymap.to_dataset()
 
         # Add longitude_delta, latitude_delta to the map dataset
