@@ -136,19 +136,90 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
         np.asarray(acquisition_time_per_step),
         (len(unpacked_dataset["acq_start_seconds"]), 1),
     )
+    # ========== Apply NSO/RGFO Masking ===========
+    # After FSW changes on 20260129, The Lo L1A product contains variables that
+    # indicate the esa step and spin sector during which the RGFO or NSO limits are
+    # triggered. The spin sector variable ranges from 0-23 (normalized to 0-11) and is
+    # the instrument reported spin sector. The following algorithm defines when to
+    # assign NaN to the counters data product due to NSO operation:
+    # 1. For half_spin > nso_half_spin a set all data to NaN
+    # 2. For half_spin = nso_half_spin
+    #   a. For spin_sector > nso_spin_sector a set all data to NaN
+    #   b. For spin_sector = nso_spin_sector
+    #       i. For esa_step > nso_esa_step a set all data to NaN
     # For every energy after nso_half_spin, set data to fill values
+    # For data before 20260129 ( packet_version <=1 ) set all data to NaN where
+    # half_spin > nso_half_spin
+    packet_versions = unpacked_dataset["packet_version"].values
     nso_half_spin = unpacked_dataset["nso_half_spin"].values
-    nso_mask = (half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]) | (
-        half_spin_per_esa_step == HALF_SPIN_FILLVAL
-    )
-    counters_mask = nso_mask[:, :, np.newaxis, np.newaxis]
-    counters_mask = np.broadcast_to(counters_mask, counters_data.shape)
+    # TODO handle boundary days where the FSW changed halfway through the dataset. E.g
+    # Some packet_version = 1 and some = 2
+    if packet_versions[0] <= 1:
+        # For half_spin > NSO_half_spin, set to NaN
+        half_spin_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+            half_spin_per_esa_step == HALF_SPIN_FILLVAL
+        )
+        counters_mask = half_spin_mask[:, :, np.newaxis, np.newaxis]
+        counters_mask = np.broadcast_to(counters_mask, counters_data.shape)
+    else:
+        # nso_spin_sector and nso_esa_step for comparison. Shape (epoch, 1, 1)
+        # to broadcast
+        nso_spin_sector = (
+            unpacked_dataset["nso_spin_sector"].values[:, np.newaxis, np.newaxis] % 12
+        )  # Mod 12 since spin sector is reported as 0-23 but we want to compare to
+        # 0-11 bins in the data.
+        # After modulo 12, we need to floor divide by 2 since the counters data has 6
+        # spin sector bins (2 spin sectors per bin).
+        nso_spin_sector = nso_spin_sector // 2
+        # compare it to the 0-5 spin sector bins in the data
+        nso_esa_step = unpacked_dataset["nso_energy_step"].values[
+            :, np.newaxis, np.newaxis
+        ]
+        num_esa_steps = counters_data.shape[1]
+        num_spin_sectors = counters_data.shape[2]
+        # Create arrays for spin sectors and esa steps to compare with nso values.
+        # Shape (1, 1, spin_sector) and (1, esa_step, 1)
+        spin_sectors = np.arange(num_spin_sectors)[np.newaxis, np.newaxis, :]
+        esa_steps = np.arange(num_esa_steps)[np.newaxis, :, np.newaxis]
+        # Create a mask for half_spin > nso_half_spin. Shape (epoch, esa_step))
+        # This will be used below to set half_spin_per_esa_step to fillval and
+        # acquisition_time_per_step to NaN for those steps.
+        half_spin_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
+            half_spin_per_esa_step == HALF_SPIN_FILLVAL
+        )
+        # Create a mask for the boundary condition where half_spin == nso_half_spin.
+        at_boundary = (
+            half_spin_per_esa_step[:, :, np.newaxis]
+            == nso_half_spin[:, np.newaxis, np.newaxis]
+        )
+        boundary_half_spin_mask = (
+            at_boundary
+            &
+            # For spin_sector > nso_spin_sector, set to NaN
+            (
+                (spin_sectors > nso_spin_sector)
+                |
+                # For spin_sector = nso_spin_sector and esa_step > nso_esa_step,
+                # set to NaN
+                ((spin_sectors == nso_spin_sector) & (esa_steps > nso_esa_step))
+            )
+        )
+
+        # Combine masks. Shape (epoch, esa_step, spin_sector). This mask is True
+        # where data should be set to NaN
+        nso_mask = half_spin_mask[:, :, np.newaxis] | boundary_half_spin_mask
+        # Expand nso_mask to (epoch, 1, esa_step, spin_sector, 1) to apply to
+        # counters_data.
+        counters_mask = np.broadcast_to(
+            nso_mask[:, :, :, np.newaxis], counters_data.shape
+        )
+
     counters_data = counters_data.astype(np.float64)
     counters_data[counters_mask] = np.nan
-    # Set half_spin_per_esa_step to (fillval) where nso_mask is True
-    half_spin_per_esa_step[nso_mask] = HALF_SPIN_FILLVAL
-    # Set acquisition_time_per_step to nan where nso_mask is True
-    acquisition_time_per_step[nso_mask] = np.nan
+    # Set half_spin_per_esa_step to (fillval) where half_spin mask is True
+    half_spin_per_esa_step[half_spin_mask] = HALF_SPIN_FILLVAL
+    # Set acquisition_time_per_step to nan where half_spin_mask is True
+    acquisition_time_per_step[half_spin_mask] = np.nan
 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
@@ -308,7 +379,7 @@ def l1a_lo_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
             dims=("epoch",),
             attrs=cdf_attrs.get_variable_attributes(var),
         )
-    # Finally, add species data variables and their uncertainties.
+    # Finally, add counters data variables and their uncertainties.
     # Since singles only has one variable, we can directly add it here.
     l1a_dataset["apd_singles"] = xr.DataArray(
         counters_data,
