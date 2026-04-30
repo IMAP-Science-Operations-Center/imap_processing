@@ -1702,17 +1702,12 @@ class TestCalculateSputteringCorrections:
     def test_calculate_sputtering_corrections_no_csv_files(
         self, sample_dataset_with_sputtering_data, caplog
     ):
-        """Test that missing sputter CSV files skip the correction."""
+        """Test that missing sputter CSV files raise a ValueError."""
         h_dataset, o_dataset = sample_dataset_with_sputtering_data
-        original_intensity = h_dataset["ena_intensity"].copy()
 
         with patch("imap_processing.lo.l2.lo_l2.Path.glob", return_value=iter([])):
-            result = calculate_sputtering_corrections(h_dataset, o_dataset)
-
-        np.testing.assert_array_equal(
-            result["ena_intensity"].values,
-            original_intensity.values,
-        )
+            with pytest.raises(ValueError, match="No sputter correction files found"):
+                calculate_sputtering_corrections(h_dataset, o_dataset)
 
 
 class TestInitializeGeometricFactorVariables:
@@ -2262,17 +2257,14 @@ class TestCalculateBootstrapCorrections:
     def test_calculate_bootstrap_corrections_no_csv_files(
         self, sample_dataset_with_bootstrap_data, caplog
     ):
-        """Test that missing bootstrap CSV files apply no correction."""
+        """Test that missing bootstrap CSV files raise a ValueError."""
         dataset = sample_dataset_with_bootstrap_data.copy()
-        original_intensity = dataset["ena_intensity"].copy()
 
         with patch("imap_processing.lo.l2.lo_l2.Path.glob", return_value=iter([])):
-            result = calculate_bootstrap_corrections(dataset)
-
-        np.testing.assert_array_equal(
-            result["ena_intensity"].values,
-            original_intensity.values,
-        )
+            with pytest.raises(
+                ValueError, match="No bootstrap correction factor files found"
+            ):
+                calculate_bootstrap_corrections(dataset)
 
 
 # =============================================================================

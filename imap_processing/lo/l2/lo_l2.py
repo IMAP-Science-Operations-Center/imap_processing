@@ -256,15 +256,7 @@ def load_sputter_correction_data(
     sputter_files = sorted(anc_path.glob("*sputter-correction-factors*"))
 
     if not sputter_files:
-        return pd.DataFrame(
-            columns=[
-                "source_species",
-                "target_species",
-                "esa_step",
-                "sputter_factor",
-                "sputter_factor_uncertainty",
-            ]
-        )
+        raise ValueError("No sputter correction files found")
 
     df = pd.concat(
         [lo_ancillary.read_ancillary_file(f) for f in sputter_files],
@@ -292,7 +284,7 @@ def load_bootstrap_correction_data() -> pd.DataFrame:
     bootstrap_files = sorted(anc_path.glob("*bootstrap-correction-factors*"))
 
     if not bootstrap_files:
-        return pd.DataFrame(columns=["esa_step_i", "esa_step_k", "bootstrap_factor"])
+        raise ValueError("No bootstrap correction factor files found")
 
     return pd.concat(
         [lo_ancillary.read_ancillary_file(f) for f in bootstrap_files],
@@ -1104,11 +1096,6 @@ def calculate_sputtering_corrections(
     """
     logger.info("Applying sputtering corrections to hydrogen intensities")
     sputter_df = load_sputter_correction_data("o", "h")
-    if sputter_df.empty:
-        logger.warning(
-            "No sputter correction factors found; skipping sputtering correction"
-        )
-        return dataset
     energy_indices = (sputter_df["esa_step"].values - 1).tolist()
 
     small_dataset = dataset.isel(epoch=0, energy=energy_indices)
@@ -1194,27 +1181,20 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
 
     # Table 3 bootstrap terms h_i,k - load from an ancillary file
     bootstrap_df = load_bootstrap_correction_data()
-    if bootstrap_df.empty:
-        logger.warning(
-            "No bootstrap correction factors found; Bootstrap factors will be zero."
-        )
 
-    bootstrap_factor_array = np.zeros((7, 8))
-    for _, row in bootstrap_df.iterrows():
-        # esa_step_i and esa_step_k are 1-based; convert to 0-based indices
-        bootstrap_factor_array[
-            int(row["esa_step_i"]) - 1, int(row["esa_step_k"]) - 1
-        ] = row["bootstrap_factor"]
     # Create xarray DataArray with named dimensions for proper broadcasting
-    bootstrap_factor = xr.DataArray(
-        bootstrap_factor_array,
-        dims=["energy_i", "energy_k"],
-        coords={
-            "energy_i": dataset["energy"].values,
+    bootstrap_factor = (
+        bootstrap_df.set_index(["esa_step_i", "esa_step_k"])["bootstrap_factor"]
+        .to_xarray()
+        .fillna(0)
+        .reindex(esa_step_i=range(1, 8), esa_step_k=range(1, 9), fill_value=0)
+        .rename({"esa_step_i": "energy_i", "esa_step_k": "energy_k"})
+        .assign_coords(
+            energy_i=dataset["energy"].values,
             # Add an extra coordinate for the virtual E8 channel, unused
             # in the broadcasting calculations
-            "energy_k": np.concatenate([dataset["energy"].values, [np.nan]]),
-        },
+            energy_k=np.concatenate([dataset["energy"].values, [np.nan]]),
+        )
     )
 
     # Equation 14
