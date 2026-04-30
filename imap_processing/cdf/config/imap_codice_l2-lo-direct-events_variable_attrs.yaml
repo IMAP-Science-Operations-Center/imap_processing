@@ -7,63 +7,64 @@ max_int: &max_int 9223372036854775807
 # ------------------------------- Coordinates -------------------------------
 priority:
   CATDESC: Priority Level
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Priority Level
   FILLVAL: *uint8_fillval
   FORMAT: I1
   LABLAXIS: Priority
   SCALETYP: linear
   UNITS: " "
-  VALIDMIN: 0
   VALIDMAX: 7
+  VALIDMIN: 0
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 event_num:
   CATDESC: Event Number
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Event Number
   FILLVAL: *uint16_fillval
   FORMAT: I5
   LABLAXIS: Event Number
   SCALETYP: linear
   UNITS: " "
-  VALIDMIN: 0
   VALIDMAX: 10000
+  VALIDMIN: 0
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
-  FIELDNAM: epoch delta minus
   DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
+  FIELDNAM: epoch delta minus
   FILLVAL: -9223372036854775808
   FORMAT: I18
   LABLAXIS: Epoch Delta Minus
   SCALETYP: linear
   UNITS: ns
-  VALIDMIN: *min_int
   VALIDMAX: *max_int
+  VALIDMIN: *min_int
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
 
 epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
-  FIELDNAM: epoch delta plus
   DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
+  FIELDNAM: epoch delta plus
   FILLVAL: -9223372036854775808
   FORMAT: I18
   LABLAXIS: Epoch Delta Plus
   SCALETYP: linear
   UNITS: ns
-  VALIDMIN: *min_int
   VALIDMAX: *max_int
+  VALIDMIN: *min_int
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
 
 # ------------------------------- Data Variables -------------------------------
 num_events:
   CATDESC: Number of Events per Priority
   DEPEND_0: epoch
   DEPEND_1: priority
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Number of Events
   FILLVAL: *uint16_fillval
   FORMAT: I5
@@ -74,12 +75,12 @@ num_events:
   VALIDMAX: 10000
   VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 data_quality:
   CATDESC: Data Quality Flag per Priority
   DEPEND_0: epoch
   DEPEND_1: priority
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Data Quality
   FILLVAL: *uint8_fillval
   FORMAT: I3
@@ -90,13 +91,13 @@ data_quality:
   VALIDMAX: 255
   VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 energy_step:
   CATDESC: Energy Step Index
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Energy Step
   FILLVAL: *uint8_fillval
   FORMAT: I3
@@ -108,13 +109,13 @@ energy_step:
   VALIDMAX: 127
   VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 energy_per_charge:
   CATDESC: Energy per Charge
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
   FIELDNAM: Energy per Charge
   FILLVAL: *real_fillval
   FORMAT: F12.4
@@ -126,13 +127,13 @@ energy_per_charge:
   VALIDMAX: 200.0
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
 
 apd_energy:
   CATDESC: APD Energy
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:Energy
   FIELDNAM: APD Energy
   FILLVAL: *real_fillval
   FORMAT: F12.4
@@ -144,13 +145,13 @@ apd_energy:
   VALIDMAX: 512.0
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:Energy
 
 gain:
   CATDESC: Gain Setting
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Gain
   FILLVAL: *uint8_fillval
   FORMAT: I1
@@ -162,13 +163,13 @@ gain:
   VALIDMAX: 1
   VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 apd_id:
   CATDESC: APD Identifier
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: APD ID
   FILLVAL: *uint8_fillval
   FORMAT: I2
@@ -180,13 +181,13 @@ apd_id:
   VALIDMAX: 31
   VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 position:
   CATDESC: Position Index
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Position
   FILLVAL: *uint8_fillval
   FORMAT: I2
@@ -198,13 +199,13 @@ position:
   VALIDMAX: 31
   VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 multi_flag:
   CATDESC: Multiple Event Flag
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Multi Flag
   FILLVAL: *uint8_fillval
   FORMAT: I1
@@ -216,13 +217,13 @@ multi_flag:
   VALIDMAX: 1
   VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 type:
   CATDESC: Event Type
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Type
   FILLVAL: *uint8_fillval
   FORMAT: I1
@@ -234,13 +235,13 @@ type:
   VALIDMAX: 4
   VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 tof:
   CATDESC: Time of Flight
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:TimeOfFlight
   FIELDNAM: Time of Flight
   FILLVAL: *real_fillval
   FORMAT: F12.4
@@ -252,78 +253,77 @@ tof:
   VALIDMAX: 1024.0
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:TimeOfFlight
 
 spin_sector:
   CATDESC: Spin Sector Index
-  FIELDNAM: Spin Sector Index
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
-  LABL_PTR_1: priority_label
-  LABL_PTR_2: event_num_label
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+  FIELDNAM: Spin Sector Index
   FILLVAL: *uint8_fillval
   FORMAT: I2
   LABLAXIS: Spin Sector
+  LABL_PTR_1: priority_label
+  LABL_PTR_2: event_num_label
   SCALETYP: linear
   UNITS: " "
-  VALIDMIN: 0
   VALIDMAX: 23
+  VALIDMIN: 0
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 spin_angle:
-  VAR_TYPE: data
   CATDESC: Spin Angle
-  FIELDNAM: Spin Angle
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
+  FIELDNAM: Spin Angle
+  FILLVAL: *real_fillval
+  FORMAT: F8.2
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
   UNITS: degrees
-  FILLVAL: *real_fillval
   VALIDMAX: 360.0
   VALIDMIN: 0.0
-  FORMAT: F8.2
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
+  VAR_TYPE: data
 
 elevation_angle:
   CATDESC: Elevation Angle
-  FIELDNAM: Elevation Angle
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.ElevationAngle
+  FIELDNAM: Elevation Angle
+  FILLVAL: *real_fillval
+  FORMAT: F8.2
+  LABLAXIS: Elevation Angle
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
-  FORMAT: F8.2
-  FILLVAL: *real_fillval
-  LABLAXIS: Elevation Angle
   SCALETYP: linear
   UNITS: degrees
   VALIDMAX: 180.0
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.ElevationAngle
 
 esa_step:
   CATDESC: Energy per charge (E/q) sweeping step
-  FIELDNAM: Energy Index
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
-  LABL_PTR_1: priority_label
-  LABL_PTR_2: event_num_label
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: Energy Index
   FILLVAL: *uint8_fillval
   FORMAT: I3
   LABLAXIS: Energy Index
+  LABL_PTR_1: priority_label
+  LABL_PTR_2: event_num_label
   SCALETYP: linear
   UNITS: " "
-  VALIDMIN: 0
   VALIDMAX: 127
+  VALIDMIN: 0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 # ------------------------------- labels -------------------------------
 
 event_num_label:

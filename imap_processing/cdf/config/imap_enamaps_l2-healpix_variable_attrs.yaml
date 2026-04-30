@@ -3,10 +3,10 @@
 # ENA map attributes defined in imap_enamaps_l2-common_variable_attrs.yaml
 
 default_float32_attrs: &default_float32
-  FORMAT: F12.6
   FILLVAL: -1.0e31
-  VALIDMIN: -3.4028235e+38
+  FORMAT: F12.6
   VALIDMAX: 3.4028235e+38
+  VALIDMIN: -3.4028235e+38
   dtype: float32
 
 # Define Coordinates specifically for Healpix tiling
@@ -14,23 +14,23 @@ pixel_index:
   # Max number of pixels in Healpix style map which can fit into a 32-bit integer
   # is with Healpix nside parameter = 16384, npix = 3221225472. Use the max of uint32
   # as the fill value for the pixel index.
-  dtype: uint32
-  FILLVAL: 4294967295
-  VALIDMIN: 0
-  VALIDMAX: 3221225472
-  FORMAT: I12
   CATDESC: Healpix index corresponding to the bin center.
   FIELDNAM: pixel_index
+  FILLVAL: 4294967295
+  FORMAT: I12
   LABLAXIS: "HEALPix #"
   UNITS: " "
+  VALIDMAX: 3221225472
+  VALIDMIN: 0
   VAR_TYPE: support_data
+  dtype: uint32
 
 pixel_index_label:
-  VAR_TYPE: metadata
   CATDESC: Healpix index corresponding to the bin center.
+  DEPEND_1: pixel_index
   FIELDNAM: pixel_index
   FORMAT: A10
-  DEPEND_1: pixel_index
+  VAR_TYPE: metadata
 
 # All variables below override the initial attributes defined in the common ENA Map
 # attributes file, imap_enamaps_l2-common_variable_attrs.yaml

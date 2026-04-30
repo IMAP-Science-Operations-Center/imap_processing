@@ -19,8 +19,8 @@ epoch_delta_minus:
     LABLAXIS: epoch_delta_minus
     SCALETYP: linear
     UNITS: ns
-    VALIDMIN: *min_int
     VALIDMAX: *max_int
+    VALIDMIN: *min_int
     VAR_TYPE: support_data
 
 epoch_delta_plus:
@@ -31,8 +31,8 @@ epoch_delta_plus:
     LABLAXIS: epoch_delta_plus
     SCALETYP: linear
     UNITS: ns
-    VALIDMIN: *min_epoch
     VALIDMAX: *max_epoch
+    VALIDMIN: *min_epoch
     VAR_TYPE: support_data
 
 esa_step:
@@ -43,8 +43,8 @@ esa_step:
     LABLAXIS: Energy Index
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 127
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 event_num:
@@ -55,8 +55,8 @@ event_num:
     LABLAXIS: Event Number
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 10000
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 inst_az:
@@ -67,8 +67,8 @@ inst_az:
     LABLAXIS: Azimuth Index
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 31
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 spin_sector:
@@ -79,8 +79,8 @@ spin_sector:
     LABLAXIS: Spin Sector
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 12
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 spin_sector_pairs:
@@ -91,8 +91,8 @@ spin_sector_pairs:
     LABLAXIS: " "
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 6
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 priority:
@@ -103,8 +103,8 @@ priority:
     LABLAXIS: " "
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 7
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 k_factor_attrs:
@@ -115,8 +115,8 @@ k_factor_attrs:
     LABLAXIS: K Factor
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 1.0
     VALIDMAX: 100.0
+    VALIDMIN: 1.0
     VAR_TYPE: support_data
 
 # <=== Labels ===>
@@ -181,8 +181,8 @@ acquisition_time_per_esa_step:
     LABLAXIS: Acquisition Time
     SCALETYP: linear
     UNITS: ms
-    VALIDMIN: 0.000000
     VALIDMAX: 625.000000
+    VALIDMIN: 0.000000
     VAR_TYPE: support_data
 
 half_spin_per_esa_step:
@@ -195,8 +195,8 @@ half_spin_per_esa_step:
     LABLAXIS: Half Spin Number
     SCALETYP: linear
     UNITS: half spin number
-    VALIDMIN: 0
     VALIDMAX: 63
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 data_quality:
@@ -209,8 +209,8 @@ data_quality:
     LABLAXIS: Data Quality
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 1
+    VALIDMIN: 0
     VAR_TYPE: data
 
 packet_version:
@@ -223,8 +223,8 @@ packet_version:
     LABLAXIS: Packet Version
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 65535
+    VALIDMIN: 0
     VAR_TYPE: data
 
 voltage_table:
@@ -235,8 +235,8 @@ voltage_table:
     LABLAXIS: V
     SCALETYP: log
     UNITS: V
-    VALIDMIN: 0.5
     VALIDMAX: 14100.0
+    VALIDMIN: 0.5
     VAR_TYPE: support_data
 
 k_factor:
@@ -247,8 +247,8 @@ k_factor:
     LABLAXIS: K Factor
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 1.0
     VALIDMAX: 100.0
+    VALIDMIN: 1.0
     VAR_TYPE: support_data
 
 nso_half_spin:
@@ -261,8 +261,8 @@ nso_half_spin:
     LABLAXIS: NSO Half Spin
     SCALETYP: linear
     UNITS: half spin number
-    VALIDMIN: 0
     VALIDMAX: 255
+    VALIDMIN: 0
     VAR_NOTES: Indicates the half spin when No Scan Operation (NSO) was activated. In NSO, the ESA voltage is set to the first step in the scan and remains fixed until the next cycle boundary.
     VAR_TYPE: data
 
@@ -276,8 +276,8 @@ nso_spin_sector:
     LABLAXIS: NSO Spin Sector
     SCALETYP: linear
     UNITS:  spin sector
-    VALIDMIN: 0
     VALIDMAX: 255
+    VALIDMIN: 0
     VAR_NOTES: Indicates the spin sector when No Scan Operation (NSO) was activated. In NSO, the ESA voltage is set to the first step in the scan and remains fixed until the next cycle boundary.
     VAR_TYPE: data
 
@@ -291,8 +291,8 @@ nso_esa_step:
     LABLAXIS: NSO Energy Step
     SCALETYP: linear
     UNITS: energy step
-    VALIDMIN: 0
     VALIDMAX: 255
+    VALIDMIN: 0
     VAR_NOTES: Indicates the energy step when No Scan Operation (NSO) was activated. In NSO, the ESA voltage is set to the first step in the scan and remains fixed until the next cycle boundary.
     VAR_TYPE: data
 
@@ -306,8 +306,8 @@ rgfo_half_spin:
     LABLAXIS: RGFO Half Spin
     SCALETYP: linear
     UNITS: half spin number
-    VALIDMIN: 0
     VALIDMAX: 255
+    VALIDMIN: 0
     VAR_NOTES: Indicates the half spin when Reduced Gain Factor Operation (RGFO) was activated. In RGFO, the Entrance ESA voltage is reduced in order to limit the number of ions that reach the detectors.
     VAR_TYPE: data
 
@@ -321,8 +321,8 @@ rgfo_spin_sector:
     LABLAXIS: RGFO Spin Sector
     SCALETYP: linear
     UNITS:  spin sector
-    VALIDMIN: 0
     VALIDMAX: 255
+    VALIDMIN: 0
     VAR_NOTES: Indicates the spin sector when Reduced Gain Factor Operation (RGFO) was activated. In RGFO, the Entrance ESA voltage is reduced in order to limit the number of ions that reach the detectors.
     VAR_TYPE: data
 
@@ -336,8 +336,8 @@ rgfo_esa_step:
     LABLAXIS: RGFO Energy Step
     SCALETYP: linear
     UNITS: energy step
-    VALIDMIN: 0
     VALIDMAX: 255
+    VALIDMIN: 0
     VAR_NOTES: Indicates the energy step when Reduced Gain Factor Operation (RGFO) was activated. In RGFO, the Entrance ESA voltage is reduced in order to limit the number of ions that reach the detectors.
     VAR_TYPE: data
 
@@ -351,8 +351,8 @@ spin_period:
     LABLAXIS: Spin Period
     SCALETYP: linear
     UNITS: s
-    VALIDMIN: 0.0
     VALIDMAX: 16.0
+    VALIDMIN: 0.0
     VAR_TYPE: data
 
 st_bias_gain_mode:
@@ -365,8 +365,8 @@ st_bias_gain_mode:
     LABLAXIS: Suprathermal Bias Gain Mode
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 1
+    VALIDMIN: 0
     VAR_NOTES: Indicates whether FSW is tracking the Suprathermal High-Gain bias curve or the Suprathermal Low-Gain bias curve.
     VAR_TYPE: data
 
@@ -380,8 +380,8 @@ sw_bias_gain_mode:
     LABLAXIS: Solarwind Bias Gain Mode
     SCALETYP: linear
     UNITS: " "
-    VALIDMIN: 0
     VALIDMAX: 1
+    VALIDMIN: 0
     VAR_NOTES: Indicates whether FSW is tracking the Solarwind High-Gain bias curve or the Solarwind Low-Gain bias curve.
     VAR_TYPE: data
 
@@ -394,8 +394,8 @@ counters_base: &counters_base
     FORMAT: F32.9
     SCALETYP: linear
     UNITS: counts
-    VALIDMIN: 0
     VALIDMAX: *max_uint32
+    VALIDMIN: 0
     VAR_TYPE: data
 
 # <=== Hi-counters-aggregated ===>
@@ -525,17 +525,17 @@ hi-energy-attrs:
 
 hi-energy-delta-attrs:
     CATDESC: Energy Table {operation} value for {species}
-    FIELDNAM: Energy Delta {operation}
-    DEPEND_0: energy_{species}
     DELTA_MINUS_VAR: energy_{species}_minus
     DELTA_PLUS_VAR: energy_{species}_plus
+    DEPEND_0: energy_{species}
     DISPLAY_TYPE: no_plot
+    FIELDNAM: Energy Delta {operation}
     FILLVAL: *real_fillval
     FORMAT: F12.9
     SCALETYP: log
     UNITS: MeV/n
-    VALIDMIN: 0.0
     VALIDMAX: 200.00
+    VALIDMIN: 0.0
     VAR_TYPE: support_data
 
 
@@ -754,8 +754,8 @@ lo-angular-attrs:
     LABL_PTR_2: spin_sector_label
     LABL_PTR_3: inst_az_label
     UNITS: counts
-    VALIDMIN: 0
     VALIDMAX: *max_uint32
+    VALIDMIN: 0
     VAR_TYPE: data
 
 lo-angular-unc-attrs:
@@ -772,8 +772,8 @@ lo-angular-unc-attrs:
     LABL_PTR_2: spin_sector_label
     LABL_PTR_3: inst_az_label
     UNITS: counts
-    VALIDMIN: 0
     VALIDMAX: *max_uint32
+    VALIDMIN: 0
     VAR_TYPE: data
 
 # lo-sw-priority
@@ -842,8 +842,8 @@ lo-species-attrs:
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     UNITS: counts
-    VALIDMIN: 0
     VALIDMAX: *max_uint32
+    VALIDMIN: 0
     VAR_TYPE: data
 
 lo-pui-species-attrs:
@@ -858,8 +858,8 @@ lo-pui-species-attrs:
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     UNITS: counts
-    VALIDMIN: 0
     VALIDMAX: *max_uint32
+    VALIDMIN: 0
     VAR_TYPE: data
 
 lo-species-unc-attrs:
@@ -874,8 +874,8 @@ lo-species-unc-attrs:
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     UNITS: counts
-    VALIDMIN: 0
     VALIDMAX: *max_uint32
+    VALIDMIN: 0
     VAR_TYPE: data
 
 lo-pui-species-unc-attrs:
@@ -890,8 +890,8 @@ lo-pui-species-unc-attrs:
     LABL_PTR_1: esa_step_label
     LABL_PTR_2: spin_sector_label
     UNITS: counts
-    VALIDMIN: 0
     VALIDMAX: *max_uint32
+    VALIDMIN: 0
     VAR_TYPE: data
 
 # <=== Direct Events Attributes ===>

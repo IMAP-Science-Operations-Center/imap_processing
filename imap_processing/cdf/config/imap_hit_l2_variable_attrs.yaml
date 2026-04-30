@@ -1,28 +1,28 @@
 # <=== Defaults ===>
 default_particle_attrs: &default_particle
   DEPEND_0: epoch
-  VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
   FILLVAL: -1.00E+31
-  VALIDMIN: 0.0
-  VALIDMAX: 10000000000.0
   FORMAT: F14.3
-  UNITS: 1/(cm^2 s MeV/nuc sr)
-  SCALETYP: log
-  SCALEMIN: 0.0001
   SCALEMAX: 1000.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
+  SCALEMIN: 0.0001
+  SCALETYP: log
+  UNITS: 1/(cm^2 s MeV/nuc sr)
+  VALIDMAX: 10000000000.0
+  VALIDMIN: 0.0
+  VAR_TYPE: data
 
 default_energy_attrs: &default_energy
-  VAR_TYPE: support_data
-  LABLAXIS: Energy
-  FILLVAL: -1.00E+31
-  VALIDMIN: 0.0
-  VALIDMAX: 1000.0
-  FORMAT: F6.1
-  UNITS: MeV/nuc
-  SCALETYP: log
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
+  FILLVAL: -1.00E+31
+  FORMAT: F6.1
+  LABLAXIS: Energy
+  SCALETYP: log
+  UNITS: MeV/nuc
+  VALIDMAX: 1000.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 default_energy_delta_attrs: &default_energy_delta
   <<: *default_energy
@@ -30,170 +30,170 @@ default_energy_delta_attrs: &default_energy_delta
 
 default_uncertainty_attrs: &default_uncertainty
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  VALIDMIN: 0.0
-  VALIDMAX: 10000000000.0
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential_Uncertainty
   FILLVAL: -1.00E+31
   FORMAT: F14.3
   UNITS: 1/(cm^2 s MeV/nuc sr)
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential_Uncertainty
+  VALIDMAX: 10000000000.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 default_angle_attrs: &default_angle
-  VAR_TYPE: support_data
   FILLVAL: -1.00E+31
-  VALIDMIN: 0.0
-  VALIDMAX: 1000.0
   FORMAT: F12.2
-  UNITS: Deg
   SCALETYP: linear
+  UNITS: Deg
+  VALIDMAX: 1000.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 # <=== Coordinates ===>
 zenith:
   <<: *default_angle
   CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifer:DirectionAngle.PolarAngle
   FIELDNAM: Zenith
   LABLAXIS: Zenith
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifer:DirectionAngle.PolarAngle
 
 azimuth:
   <<: *default_angle
   CATDESC: Spin angle in 15 bins (0 deg. is zero of spin phase)
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifer:DirectionAngle.AzimuthAngle
   FIELDNAM: Azimuth
   LABLAXIS: Azimuth
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifer:DirectionAngle.AzimuthAngle
 
 h_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for H
-  FIELDNAM: H Energy
   DELTA_MINUS_VAR: h_energy_delta_minus
   DELTA_PLUS_VAR: h_energy_delta_plus
+  FIELDNAM: H Energy
 
 he3_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for He3
-  FIELDNAM: He3 Energy
   DELTA_MINUS_VAR: he3_energy_delta_minus
   DELTA_PLUS_VAR: he3_energy_delta_plus
+  FIELDNAM: He3 Energy
 
 he4_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for He4
-  FIELDNAM: He4 Energy
   DELTA_MINUS_VAR: he4_energy_delta_minus
   DELTA_PLUS_VAR: he4_energy_delta_plus
+  FIELDNAM: He4 Energy
 
 he_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for He
-  FIELDNAM: He Energy
   DELTA_MINUS_VAR: he_energy_delta_minus
   DELTA_PLUS_VAR: he_energy_delta_plus
+  FIELDNAM: He Energy
 
 c_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for C
-  FIELDNAM: C Energy
   DELTA_MINUS_VAR: c_energy_delta_minus
   DELTA_PLUS_VAR: c_energy_delta_plus
+  FIELDNAM: C Energy
 
 n_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for N
-  FIELDNAM: N Energy
   DELTA_MINUS_VAR: n_energy_delta_minus
   DELTA_PLUS_VAR: n_energy_delta_plus
+  FIELDNAM: N Energy
 
 o_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for O
-  FIELDNAM: O Energy
   DELTA_MINUS_VAR: o_energy_delta_minus
   DELTA_PLUS_VAR: o_energy_delta_plus
+  FIELDNAM: O Energy
 
 ne_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Ne
-  FIELDNAM: Ne Energy
   DELTA_MINUS_VAR: ne_energy_delta_minus
   DELTA_PLUS_VAR: ne_energy_delta_plus
+  FIELDNAM: Ne Energy
 
 na_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Na
-  FIELDNAM: Na Energy
   DELTA_MINUS_VAR: na_energy_delta_minus
   DELTA_PLUS_VAR: na_energy_delta_plus
+  FIELDNAM: Na Energy
 
 mg_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Mg
-  FIELDNAM: Mg Energy
   DELTA_MINUS_VAR: mg_energy_delta_minus
   DELTA_PLUS_VAR: mg_energy_delta_plus
+  FIELDNAM: Mg Energy
 
 si_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Si
-  FIELDNAM: Si Energy
   DELTA_MINUS_VAR: si_energy_delta_minus
   DELTA_PLUS_VAR: si_energy_delta_plus
+  FIELDNAM: Si Energy
 
 s_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for S
-  FIELDNAM: S Energy
   DELTA_MINUS_VAR: s_energy_delta_minus
   DELTA_PLUS_VAR: s_energy_delta_plus
+  FIELDNAM: S Energy
 
 al_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Al
-  FIELDNAM: Al Energy
   DELTA_MINUS_VAR: al_energy_delta_minus
   DELTA_PLUS_VAR: al_energy_delta_plus
+  FIELDNAM: Al Energy
 
 ar_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Ar
-  FIELDNAM: Ar Energy
   DELTA_MINUS_VAR: ar_energy_delta_minus
   DELTA_PLUS_VAR: ar_energy_delta_plus
+  FIELDNAM: Ar Energy
 
 ca_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Ca
-  FIELDNAM: Ca Energy
   DELTA_MINUS_VAR: ca_energy_delta_minus
   DELTA_PLUS_VAR: ca_energy_delta_plus
+  FIELDNAM: Ca Energy
 
 fe_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Fe
-  FIELDNAM: Fe Energy
   DELTA_MINUS_VAR: fe_energy_delta_minus
   DELTA_PLUS_VAR: fe_energy_delta_plus
+  FIELDNAM: Fe Energy
 
 ni_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for Ni
-  FIELDNAM: Ni Energy
   DELTA_MINUS_VAR: ni_energy_delta_minus
   DELTA_PLUS_VAR: ni_energy_delta_plus
+  FIELDNAM: Ni Energy
 
 nemgsi_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for NeMgSi
-  FIELDNAM: NeMgSi Energy
   DELTA_MINUS_VAR: nemgsi_energy_delta_minus
   DELTA_PLUS_VAR: nemgsi_energy_delta_plus
+  FIELDNAM: NeMgSi Energy
 
 cno_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nucleon for CNO
-  FIELDNAM: CNO Energy
   DELTA_MINUS_VAR: cno_energy_delta_minus
   DELTA_PLUS_VAR: cno_energy_delta_plus
+  FIELDNAM: CNO Energy
 
 
 # <=== Labels ===>
@@ -326,1247 +326,1247 @@ cno_energy_mean_label:
 # <=== Data Variables ===>
 
 dynamic_threshold_state:
-  DEPEND_0: epoch
-  VAR_TYPE: data
   CATDESC: Raw dynamic threshold state per integration
-  FIELDNAM: Dynamic threshold state
-  LABLAXIS: State
-  VALIDMIN: 0
-  VALIDMAX: 3
-  FILLVAL: -128
-  DISPLAY_TYPE: time_series
-  FORMAT: I1
-  UNITS: " "
-  SCALETYP: linear
-  SCALEMIN: 0
-  SCALEMAX: 1000
+  DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Dynamic threshold state
+  FILLVAL: -128
+  FORMAT: I1
+  LABLAXIS: State
+  SCALEMAX: 1000
+  SCALEMIN: 0
+  SCALETYP: linear
+  UNITS: " "
+  VALIDMAX: 3
+  VALIDMIN: 0
+  VAR_TYPE: data
 
 # Standard Intensity Variables
 h_standard_intensity:
   <<: *default_particle
-  DEPEND_1: h_energy_mean
   CATDESC: H Standard Omnidirectional Intensity in 12 energy bins
-  LABLAXIS: h_energy_mean_label
-  FIELDNAM: H Intensity Standard
   DELTA_MINUS_VAR: h_total_uncert_minus
   DELTA_PLUS_VAR: h_total_uncert_plus
+  DEPEND_1: h_energy_mean
+  FIELDNAM: H Intensity Standard
+  LABLAXIS: h_energy_mean_label
 
 he3_standard_intensity:
   <<: *default_particle
-  DEPEND_1: he3_energy_mean
   CATDESC: He3 Standard Omnidirectional Intensity in 11 energy bins
-  FIELDNAM: He3 Intensity Standard
-  LABLAXIS: he3_energy_mean_label
   DELTA_MINUS_VAR: he3_total_uncert_minus
   DELTA_PLUS_VAR: he3_total_uncert_plus
+  DEPEND_1: he3_energy_mean
+  FIELDNAM: He3 Intensity Standard
+  LABLAXIS: he3_energy_mean_label
 
 he4_standard_intensity:
   <<: *default_particle
-  DEPEND_1: he4_energy_mean
   CATDESC: He4 Standard Omnidirectional Intensity in 12 energy bins
-  FIELDNAM: He4 Intensity Standard
-  LABLAXIS: he4_energy_mean_label
   DELTA_MINUS_VAR: he4_total_uncert_minus
   DELTA_PLUS_VAR: he4_total_uncert_plus
+  DEPEND_1: he4_energy_mean
+  FIELDNAM: He4 Intensity Standard
+  LABLAXIS: he4_energy_mean_label
 
 he_standard_intensity:
   <<: *default_particle
-  DEPEND_1: he_energy_mean
   CATDESC: He (total) Standard Omnidirectional Intensity in 11 energy bins
-  FIELDNAM: He Intensity Standard
-  LABLAXIS: he_energy_mean_label
   DELTA_MINUS_VAR: he_total_uncert_minus
   DELTA_PLUS_VAR: he_total_uncert_plus
+  DEPEND_1: he_energy_mean
+  FIELDNAM: He Intensity Standard
+  LABLAXIS: he_energy_mean_label
 
 c_standard_intensity:
   <<: *default_particle
-  DEPEND_1: c_energy_mean
   CATDESC: C Standard Omnidirectional Intensity in 12 energy bins
-  FIELDNAM: C Intensity Standard
-  LABLAXIS: c_energy_mean_label
   DELTA_MINUS_VAR: c_total_uncert_minus
   DELTA_PLUS_VAR: c_total_uncert_plus
+  DEPEND_1: c_energy_mean
+  FIELDNAM: C Intensity Standard
+  LABLAXIS: c_energy_mean_label
 
 o_standard_intensity:
   <<: *default_particle
-  DEPEND_1: o_energy_mean
   CATDESC: O Standard Omnidirectional Intensity in 12 energy bins
-  FIELDNAM: O Intensity Standard
-  LABLAXIS: o_energy_mean_label
   DELTA_MINUS_VAR: o_total_uncert_minus
   DELTA_PLUS_VAR: o_total_uncert_plus
+  DEPEND_1: o_energy_mean
+  FIELDNAM: O Intensity Standard
+  LABLAXIS: o_energy_mean_label
 
 n_standard_intensity:
   <<: *default_particle
-  DEPEND_1: n_energy_mean
   CATDESC: N Standard Omnidirectional Intensity in 12 energy bins
-  FIELDNAM: N Intensity Standard
-  LABLAXIS: n_energy_mean_label
   DELTA_MINUS_VAR: n_total_uncert_minus
   DELTA_PLUS_VAR: n_total_uncert_plus
+  DEPEND_1: n_energy_mean
+  FIELDNAM: N Intensity Standard
+  LABLAXIS: n_energy_mean_label
 
 ne_standard_intensity:
   <<: *default_particle
-  DEPEND_1: ne_energy_mean
   CATDESC: Ne Standard Omnidirectional Intensity in 13 energy bins
-  FIELDNAM: Ne Intensity Standard
-  LABLAXIS: ne_energy_mean_label
   DELTA_MINUS_VAR: ne_total_uncert_minus
   DELTA_PLUS_VAR: ne_total_uncert_plus
+  DEPEND_1: ne_energy_mean
+  FIELDNAM: Ne Intensity Standard
+  LABLAXIS: ne_energy_mean_label
 
 na_standard_intensity:
   <<: *default_particle
-  DEPEND_1: na_energy_mean
   CATDESC: Na Standard Omnidirectional Intensity in 8 energy bins
-  FIELDNAM: Na Intensity Standard
-  LABLAXIS: na_energy_mean_label
   DELTA_MINUS_VAR: na_total_uncert_minus
   DELTA_PLUS_VAR: na_total_uncert_plus
+  DEPEND_1: na_energy_mean
+  FIELDNAM: Na Intensity Standard
+  LABLAXIS: na_energy_mean_label
 
 mg_standard_intensity:
   <<: *default_particle
-  DEPEND_1: mg_energy_mean
   CATDESC: Mg Standard Omnidirectional Intensity in 14 energy bins
-  FIELDNAM: Mg Intensity Standard
-  LABLAXIS: mg_energy_mean_label
   DELTA_MINUS_VAR: mg_total_uncert_minus
   DELTA_PLUS_VAR: mg_total_uncert_plus
+  DEPEND_1: mg_energy_mean
+  FIELDNAM: Mg Intensity Standard
+  LABLAXIS: mg_energy_mean_label
 
 al_standard_intensity:
   <<: *default_particle
-  DEPEND_1: al_energy_mean
   CATDESC: Al Standard Omnidirectional Intensity in 9 energy bins
-  FIELDNAM: Al Intensity Standard
-  LABLAXIS: al_energy_mean_label
   DELTA_MINUS_VAR: al_total_uncert_minus
   DELTA_PLUS_VAR: al_total_uncert_plus
+  DEPEND_1: al_energy_mean
+  FIELDNAM: Al Intensity Standard
+  LABLAXIS: al_energy_mean_label
 
 si_standard_intensity:
   <<: *default_particle
-  DEPEND_1: si_energy_mean
   CATDESC: Si Standard Omnidirectional Intensity in 14 energy bins
-  FIELDNAM: Si Intensity Standard
-  LABLAXIS: si_energy_mean_label
   DELTA_MINUS_VAR: si_total_uncert_minus
   DELTA_PLUS_VAR: si_total_uncert_plus
+  DEPEND_1: si_energy_mean
+  FIELDNAM: Si Intensity Standard
+  LABLAXIS: si_energy_mean_label
 
 s_standard_intensity:
   <<: *default_particle
-  DEPEND_1: s_energy_mean
   CATDESC: S Standard Omnidirectional Intensity in 13 energy bins
-  FIELDNAM: S Intensity Standard
-  LABLAXIS: s_energy_mean_label
   DELTA_MINUS_VAR: s_total_uncert_minus
   DELTA_PLUS_VAR: s_total_uncert_plus
+  DEPEND_1: s_energy_mean
+  FIELDNAM: S Intensity Standard
+  LABLAXIS: s_energy_mean_label
 
 ar_standard_intensity:
   <<: *default_particle
-  DEPEND_1: ar_energy_mean
   CATDESC: Ar Standard Omnidirectional Intensity in 13 energy bins
-  FIELDNAM: Ar Intensity Standard
-  LABLAXIS: ar_energy_mean_label
   DELTA_MINUS_VAR: ar_total_uncert_minus
   DELTA_PLUS_VAR: ar_total_uncert_plus
+  DEPEND_1: ar_energy_mean
+  FIELDNAM: Ar Intensity Standard
+  LABLAXIS: ar_energy_mean_label
 
 ca_standard_intensity:
   <<: *default_particle
-  DEPEND_1: ca_energy_mean
   CATDESC: Ca Standard Omnidirectional Intensity in 13 energy bins
-  FIELDNAM: Ca Intensity Standard
-  LABLAXIS: ca_energy_mean_label
   DELTA_MINUS_VAR: ca_total_uncert_minus
   DELTA_PLUS_VAR: ca_total_uncert_plus
+  DEPEND_1: ca_energy_mean
+  FIELDNAM: Ca Intensity Standard
+  LABLAXIS: ca_energy_mean_label
 
 fe_standard_intensity:
   <<: *default_particle
-  DEPEND_1: fe_energy_mean
   CATDESC: Fe Standard Omnidirectional Intensity in 16 energy bins
-  FIELDNAM: Fe Intensity Standard
-  LABLAXIS: fe_energy_mean_label
   DELTA_MINUS_VAR: fe_total_uncert_minus
   DELTA_PLUS_VAR: fe_total_uncert_plus
+  DEPEND_1: fe_energy_mean
+  FIELDNAM: Fe Intensity Standard
+  LABLAXIS: fe_energy_mean_label
 
 ni_standard_intensity:
   <<: *default_particle
-  DEPEND_1: ni_energy_mean
   CATDESC: Ni Standard Omnidirectional Intensity in 9 energy bins
-  FIELDNAM: Ni Intensity Standard
-  LABLAXIS: ni_energy_mean_label
   DELTA_MINUS_VAR: ni_total_uncert_minus
   DELTA_PLUS_VAR: ni_total_uncert_plus
+  DEPEND_1: ni_energy_mean
+  FIELDNAM: Ni Intensity Standard
+  LABLAXIS: ni_energy_mean_label
 
 # Summed Intensity Variables
 h_summed_intensity:
   <<: *default_particle
-  DEPEND_1: h_energy_mean
   CATDESC: H Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
-  LABLAXIS: h_energy_mean_label
-  FIELDNAM: H intensity summed
   DELTA_MINUS_VAR: h_total_uncert_minus
   DELTA_PLUS_VAR: h_total_uncert_plus
+  DEPEND_1: h_energy_mean
+  FIELDNAM: H intensity summed
+  LABLAXIS: h_energy_mean_label
 
 he3_summed_intensity:
   <<: *default_particle
-  DEPEND_1: he3_energy_mean
   CATDESC: He3 Summed Omnidirectional Intensity in 3 energy bins (useful for quiet times)
-  FIELDNAM: He3 intensity summed
-  LABLAXIS: he3_energy_mean_label
   DELTA_MINUS_VAR: he3_total_uncert_minus
   DELTA_PLUS_VAR: he3_total_uncert_plus
+  DEPEND_1: he3_energy_mean
+  FIELDNAM: He3 intensity summed
+  LABLAXIS: he3_energy_mean_label
 
 he4_summed_intensity:
   <<: *default_particle
-  DEPEND_1: he4_energy_mean
   CATDESC: He4 Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
-  FIELDNAM: He4 intensity summed
-  LABLAXIS: he4_energy_mean_label
   DELTA_MINUS_VAR: he4_total_uncert_minus
   DELTA_PLUS_VAR: he4_total_uncert_plus
+  DEPEND_1: he4_energy_mean
+  FIELDNAM: He4 intensity summed
+  LABLAXIS: he4_energy_mean_label
 
 he_summed_intensity:
   <<: *default_particle
-  DEPEND_1: he_energy_mean
   CATDESC: He (total) Summed Omnidirectional Intensity in 3 energy bins (useful for quiet times)
-  FIELDNAM: He intensity summed
-  LABLAXIS: he_energy_mean_label
   DELTA_MINUS_VAR: he_total_uncert_minus
   DELTA_PLUS_VAR: he_total_uncert_plus
+  DEPEND_1: he_energy_mean
+  FIELDNAM: He intensity summed
+  LABLAXIS: he_energy_mean_label
 
 c_summed_intensity:
   <<: *default_particle
-  DEPEND_1: c_energy_mean
   CATDESC: C Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
-  FIELDNAM: C intensity summed
-  LABLAXIS: c_energy_mean_label
   DELTA_MINUS_VAR: c_total_uncert_minus
   DELTA_PLUS_VAR: c_total_uncert_plus
+  DEPEND_1: c_energy_mean
+  FIELDNAM: C intensity summed
+  LABLAXIS: c_energy_mean_label
 
 o_summed_intensity:
   <<: *default_particle
-  DEPEND_1: o_energy_mean
   CATDESC: O Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
-  FIELDNAM: O intensity summed
-  LABLAXIS: o_energy_mean_label
   DELTA_MINUS_VAR: o_total_uncert_minus
   DELTA_PLUS_VAR: o_total_uncert_plus
+  DEPEND_1: o_energy_mean
+  FIELDNAM: O intensity summed
+  LABLAXIS: o_energy_mean_label
 
 n_summed_intensity:
   <<: *default_particle
-  DEPEND_1: n_energy_mean
   CATDESC: N Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
-  FIELDNAM: N intensity summed
-  LABLAXIS: n_energy_mean_label
   DELTA_MINUS_VAR: n_total_uncert_minus
   DELTA_PLUS_VAR: n_total_uncert_plus
+  DEPEND_1: n_energy_mean
+  FIELDNAM: N intensity summed
+  LABLAXIS: n_energy_mean_label
 
 ne_summed_intensity:
   <<: *default_particle
-  DEPEND_1: ne_energy_mean
   CATDESC: Ne Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
-  FIELDNAM: Ne intensity summed
-  LABLAXIS: ne_energy_mean_label
   DELTA_MINUS_VAR: ne_total_uncert_minus
   DELTA_PLUS_VAR: ne_total_uncert_plus
+  DEPEND_1: ne_energy_mean
+  FIELDNAM: Ne intensity summed
+  LABLAXIS: ne_energy_mean_label
 
 na_summed_intensity:
   <<: *default_particle
-  DEPEND_1: na_energy_mean
   CATDESC: Na Summed Omnidirectional Intensity in 2 energy bins (useful for quiet times)
-  FIELDNAM: Na intensity summed
-  LABLAXIS: na_energy_mean_label
   DELTA_MINUS_VAR: na_total_uncert_minus
   DELTA_PLUS_VAR: na_total_uncert_plus
+  DEPEND_1: na_energy_mean
+  FIELDNAM: Na intensity summed
+  LABLAXIS: na_energy_mean_label
 
 mg_summed_intensity:
   <<: *default_particle
-  DEPEND_1: mg_energy_mean
   CATDESC: Mg Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
-  FIELDNAM: Mg intensity summed
-  LABLAXIS: mg_energy_mean_label
   DELTA_MINUS_VAR: mg_total_uncert_minus
   DELTA_PLUS_VAR: mg_total_uncert_plus
+  DEPEND_1: mg_energy_mean
+  FIELDNAM: Mg intensity summed
+  LABLAXIS: mg_energy_mean_label
 
 al_summed_intensity:
   <<: *default_particle
-  DEPEND_1: al_energy_mean
   CATDESC: Al Summed Omnidirectional Intensity in 3 energy bins (useful for quiet times)
-  FIELDNAM: Al intensity summed
-  LABLAXIS: al_energy_mean_label
   DELTA_MINUS_VAR: al_total_uncert_minus
   DELTA_PLUS_VAR: al_total_uncert_plus
+  DEPEND_1: al_energy_mean
+  FIELDNAM: Al intensity summed
+  LABLAXIS: al_energy_mean_label
 
 si_summed_intensity:
   <<: *default_particle
-  DEPEND_1: si_energy_mean
   CATDESC: Si Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
-  FIELDNAM: Si intensity summed
-  LABLAXIS: si_energy_mean_label
   DELTA_MINUS_VAR: si_total_uncert_minus
   DELTA_PLUS_VAR: si_total_uncert_plus
+  DEPEND_1: si_energy_mean
+  FIELDNAM: Si intensity summed
+  LABLAXIS: si_energy_mean_label
 
 s_summed_intensity:
   <<: *default_particle
-  DEPEND_1: s_energy_mean
   CATDESC: S Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
-  FIELDNAM: S intensity summed
-  LABLAXIS: s_energy_mean_label
   DELTA_MINUS_VAR: s_total_uncert_minus
   DELTA_PLUS_VAR: s_total_uncert_plus
+  DEPEND_1: s_energy_mean
+  FIELDNAM: S intensity summed
+  LABLAXIS: s_energy_mean_label
 
 ar_summed_intensity:
   <<: *default_particle
-  DEPEND_1: ar_energy_mean
   CATDESC: Ar Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
-  FIELDNAM: Ar intensity summed
-  LABLAXIS: ar_energy_mean_label
   DELTA_MINUS_VAR: ar_total_uncert_minus
   DELTA_PLUS_VAR: ar_total_uncert_plus
+  DEPEND_1: ar_energy_mean
+  FIELDNAM: Ar intensity summed
+  LABLAXIS: ar_energy_mean_label
 
 ca_summed_intensity:
   <<: *default_particle
-  DEPEND_1: ca_energy_mean
   CATDESC: Ca Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
-  FIELDNAM: Ca intensity summed
-  LABLAXIS: ca_energy_mean_label
   DELTA_MINUS_VAR: ca_total_uncert_minus
   DELTA_PLUS_VAR: ca_total_uncert_plus
+  DEPEND_1: ca_energy_mean
+  FIELDNAM: Ca intensity summed
+  LABLAXIS: ca_energy_mean_label
 
 fe_summed_intensity:
   <<: *default_particle
-  DEPEND_1: fe_energy_mean
   CATDESC: Fe Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
-  FIELDNAM: Fe intensity summed
-  LABLAXIS: fe_energy_mean_label
   DELTA_MINUS_VAR: fe_total_uncert_minus
   DELTA_PLUS_VAR: fe_total_uncert_plus
+  DEPEND_1: fe_energy_mean
+  FIELDNAM: Fe intensity summed
+  LABLAXIS: fe_energy_mean_label
 
 ni_summed_intensity:
   <<: *default_particle
-  DEPEND_1: ni_energy_mean
   CATDESC: Ni Summed Omnidirectional Intensity in 3 energy bins (useful for quiet times)
-  FIELDNAM: Ni intensity summed
-  LABLAXIS: ni_energy_mean_label
   DELTA_MINUS_VAR: ni_total_uncert_minus
   DELTA_PLUS_VAR: ni_total_uncert_plus
+  DEPEND_1: ni_energy_mean
+  FIELDNAM: Ni intensity summed
+  LABLAXIS: ni_energy_mean_label
 
 # Energy Delta Variables
 h_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: h_energy_mean
   CATDESC: H energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: h_energy_mean
   FIELDNAM: H energy delta plus
 
 h_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: h_energy_mean
   CATDESC: H energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: h_energy_mean
   FIELDNAM: H energy delta minus
 
 he3_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: he3_energy_mean
   CATDESC: He3 energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: he3_energy_mean
   FIELDNAM: He3 energy delta plus
 
 he3_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: he3_energy_mean
   CATDESC: He3 energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: he3_energy_mean
   FIELDNAM: He3 energy delta minus
 
 he4_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: he4_energy_mean
   CATDESC: He4 energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: he4_energy_mean
   FIELDNAM: He4 energy delta plus
 
 he4_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: he4_energy_mean
   CATDESC: He4 energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: he4_energy_mean
   FIELDNAM: He4 energy delta minus
 
 he_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: he_energy_mean
   CATDESC: He energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: he_energy_mean
   FIELDNAM: He energy delta plus
 
 he_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: he_energy_mean
   CATDESC: He energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: he_energy_mean
   FIELDNAM: He energy delta minus
 
 c_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: c_energy_mean
   CATDESC: C energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: c_energy_mean
   FIELDNAM: C energy delta plus
 
 c_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: c_energy_mean
   CATDESC: C energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: c_energy_mean
   FIELDNAM: C energy delta minus
 
 o_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: o_energy_mean
   CATDESC: O energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: o_energy_mean
   FIELDNAM: O energy delta plus
 
 o_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: o_energy_mean
   CATDESC: O energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: o_energy_mean
   FIELDNAM: O energy delta minus
 
 n_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: n_energy_mean
   CATDESC: N energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: n_energy_mean
   FIELDNAM: N energy delta plus
 
 n_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: n_energy_mean
   CATDESC: N energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: n_energy_mean
   FIELDNAM: N energy delta minus
 
 ne_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: ne_energy_mean
   CATDESC: Ne energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: ne_energy_mean
   FIELDNAM: Ne energy delta plus
 
 ne_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: ne_energy_mean
   CATDESC: Ne energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: ne_energy_mean
   FIELDNAM: Ne energy delta minus
 
 na_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: na_energy_mean
   CATDESC: Na energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: na_energy_mean
   FIELDNAM: Na energy delta plus
 
 na_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: na_energy_mean
   CATDESC: Na energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: na_energy_mean
   FIELDNAM: Na energy delta minus
 
 mg_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: mg_energy_mean
   CATDESC: Mg energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: mg_energy_mean
   FIELDNAM: Mg energy delta plus
 
 mg_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: mg_energy_mean
   CATDESC: Mg energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: mg_energy_mean
   FIELDNAM: Mg energy delta minus
 
 al_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: al_energy_mean
   CATDESC: Al energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: al_energy_mean
   FIELDNAM: Al energy delta plus
 
 al_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: al_energy_mean
   CATDESC: Al energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: al_energy_mean
   FIELDNAM: Al energy delta minus
 
 si_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: si_energy_mean
   CATDESC: Si energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: si_energy_mean
   FIELDNAM: Si energy delta plus
 
 si_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: si_energy_mean
   CATDESC: Si energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: si_energy_mean
   FIELDNAM: Si energy delta minus
 
 s_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: s_energy_mean
   CATDESC: S energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: s_energy_mean
   FIELDNAM: S energy delta plus
 
 s_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: s_energy_mean
   CATDESC: S energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: s_energy_mean
   FIELDNAM: S energy delta minus
 
 ar_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: ar_energy_mean
   CATDESC: Ar energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: ar_energy_mean
   FIELDNAM: Ar energy delta plus
 
 ar_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: ar_energy_mean
   CATDESC: Ar energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: ar_energy_mean
   FIELDNAM: Ar energy delta minus
 
 ca_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: ca_energy_mean
   CATDESC: Ca energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: ca_energy_mean
   FIELDNAM: Ca energy delta plus
 
 ca_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: ca_energy_mean
   CATDESC: Ca energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: ca_energy_mean
   FIELDNAM: Ca energy delta minus
 
 fe_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: fe_energy_mean
   CATDESC: Fe energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: fe_energy_mean
   FIELDNAM: Fe energy delta plus
 
 fe_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: fe_energy_mean
   CATDESC: Fe energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: fe_energy_mean
   FIELDNAM: Fe energy delta minus
 
 ni_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: ni_energy_mean
   CATDESC: Ni energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: ni_energy_mean
   FIELDNAM: Ni energy delta plus
 
 ni_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: ni_energy_mean
   CATDESC: Ni energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: ni_energy_mean
   FIELDNAM: Ni energy delta minus
 
 # Uncertainty Variables (statistical, systematic, and total)
 h_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: h_energy_mean
   CATDESC: Plus statistical uncertainty for H
+  DEPEND_1: h_energy_mean
   FIELDNAM: H plus statistical uncertainty
   LABL_PTR_1: h_energy_mean_label
 
 h_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: h_energy_mean
   CATDESC: Minus statistical uncertainty for H
+  DEPEND_1: h_energy_mean
   FIELDNAM: H minus statistical uncertainty
   LABL_PTR_1: h_energy_mean_label
 
 h_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: h_energy_mean
   CATDESC: Plus Systematic uncertainty for H
+  DEPEND_1: h_energy_mean
   FIELDNAM: H Plus Systematic Uncertainty
   LABL_PTR_1: h_energy_mean_label
 
 h_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: h_energy_mean
   CATDESC: Minus systematic uncertainty for H
+  DEPEND_1: h_energy_mean
   FIELDNAM: H minus systematic uncertainty
   LABL_PTR_1: h_energy_mean_label
 
 h_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: h_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for H
+  DEPEND_1: h_energy_mean
   FIELDNAM: H plus total uncertainty
   LABL_PTR_1: h_energy_mean_label
 
 h_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: h_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for H
+  DEPEND_1: h_energy_mean
   FIELDNAM: H minus total uncertainty
   LABL_PTR_1: h_energy_mean_label
 
 he3_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: he3_energy_mean
   CATDESC: Plus statistical uncertainty for He3
+  DEPEND_1: he3_energy_mean
   FIELDNAM: He3 plus statistical uncertainty
   LABL_PTR_1: he3_energy_mean_label
 
 he3_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: he3_energy_mean
   CATDESC: Minus statistical uncertainty for He3
+  DEPEND_1: he3_energy_mean
   FIELDNAM: He3 minus statistical uncertainty
   LABL_PTR_1: he3_energy_mean_label
 
 he3_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: he3_energy_mean
   CATDESC: Plus systematic uncertainty for He3
+  DEPEND_1: he3_energy_mean
   FIELDNAM: He3 Plus Systematic Uncertainty
   LABL_PTR_1: he3_energy_mean_label
 
 he3_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: he3_energy_mean
   CATDESC: Minus systematic uncertainty for He3
+  DEPEND_1: he3_energy_mean
   FIELDNAM: He3 minus systematic uncertainty
   LABL_PTR_1: he3_energy_mean_label
 
 he3_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: he3_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He3
+  DEPEND_1: he3_energy_mean
   FIELDNAM: He3 Plus Total Uncertainty
   LABL_PTR_1: he3_energy_mean_label
 
 he3_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: he3_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He3
+  DEPEND_1: he3_energy_mean
   FIELDNAM: He3 minus total uncertainty
   LABL_PTR_1: he3_energy_mean_label
 
 he4_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: he4_energy_mean
   CATDESC: Plus statistical uncertainty for He4
+  DEPEND_1: he4_energy_mean
   FIELDNAM: He4 plus statistical uncertainty
   LABL_PTR_1: he4_energy_mean_label
 
 he4_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: he4_energy_mean
   CATDESC: Minus statistical uncertainty for He4
+  DEPEND_1: he4_energy_mean
   FIELDNAM: He4 minus statistical uncertainty
   LABL_PTR_1: he4_energy_mean_label
 
 he4_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: he4_energy_mean
   CATDESC: Plus systematic uncertainty for He4
+  DEPEND_1: he4_energy_mean
   FIELDNAM: He4 Plus Systematic Uncertainty
   LABL_PTR_1: he4_energy_mean_label
 
 he4_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: he4_energy_mean
   CATDESC: Minus systematic uncertainty for He4
+  DEPEND_1: he4_energy_mean
   FIELDNAM: He4 minus systematic uncertainty
   LABL_PTR_1: he4_energy_mean_label
 
 he4_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: he4_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He4
+  DEPEND_1: he4_energy_mean
   FIELDNAM: He4 plus total uncertainty
   LABL_PTR_1: he4_energy_mean_label
 
 he4_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: he4_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He4
+  DEPEND_1: he4_energy_mean
   FIELDNAM: He4 minus total uncertainty
   LABL_PTR_1: he4_energy_mean_label
 
 he_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: he_energy_mean
   CATDESC: Plus statistical uncertainty for He
+  DEPEND_1: he_energy_mean
   FIELDNAM: He plus statistical uncertainty
   LABL_PTR_1: he_energy_mean_label
 
 he_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: he_energy_mean
   CATDESC: Minus statistical uncertainty for He
+  DEPEND_1: he_energy_mean
   FIELDNAM: He minus statistical uncertainty
   LABL_PTR_1: he_energy_mean_label
 
 he_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: he_energy_mean
   CATDESC: Plus systematic uncertainty for He
+  DEPEND_1: he_energy_mean
   FIELDNAM: He plus systematic uncertainty
   LABL_PTR_1: he_energy_mean_label
 
 he_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: he_energy_mean
   CATDESC: Minus systematic uncertainty for He
+  DEPEND_1: he_energy_mean
   FIELDNAM: He minus systematic uncertainty
   LABL_PTR_1: he_energy_mean_label
 
 he_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: he_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He
+  DEPEND_1: he_energy_mean
   FIELDNAM: He plus total uncertainty
   LABL_PTR_1: he_energy_mean_label
 
 he_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: he_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He
+  DEPEND_1: he_energy_mean
   FIELDNAM: He Minus Total Uncertainty
   LABL_PTR_1: he_energy_mean_label
 
 c_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: c_energy_mean
   CATDESC: Plus statistical uncertainty for C
+  DEPEND_1: c_energy_mean
   FIELDNAM: C plus statistical uncertainty
   LABL_PTR_1: c_energy_mean_label
 
 c_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: c_energy_mean
   CATDESC: Minus statistical uncertainty for C
+  DEPEND_1: c_energy_mean
   FIELDNAM: C minus statistical uncertainty
   LABL_PTR_1: c_energy_mean_label
 
 c_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: c_energy_mean
   CATDESC: Plus systematic uncertainty for C
+  DEPEND_1: c_energy_mean
   FIELDNAM: C Plus Systematic Uncertainty
   LABL_PTR_1: c_energy_mean_label
 
 c_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: c_energy_mean
   CATDESC: Minus systematic uncertainty for C
+  DEPEND_1: c_energy_mean
   FIELDNAM: C minus systematic uncertainty
   LABL_PTR_1: c_energy_mean_label
 
 c_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: c_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for C
+  DEPEND_1: c_energy_mean
   FIELDNAM: C plus total uncertainty
   LABL_PTR_1: c_energy_mean_label
 
 c_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: c_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for C
+  DEPEND_1: c_energy_mean
   FIELDNAM: C Minus Total Uncertainty
   LABL_PTR_1: c_energy_mean_label
 
 o_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: o_energy_mean
   CATDESC: Plus statistical uncertainty for O
+  DEPEND_1: o_energy_mean
   FIELDNAM: O plus statistical uncertainty
   LABL_PTR_1: o_energy_mean_label
 
 o_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: o_energy_mean
   CATDESC: Minus statistical uncertainty for O
+  DEPEND_1: o_energy_mean
   FIELDNAM: O minus statistical uncertainty
   LABL_PTR_1: o_energy_mean_label
 
 o_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: o_energy_mean
   CATDESC: Plus systematic uncertainty for O
+  DEPEND_1: o_energy_mean
   FIELDNAM: O Plus Systematic Uncertainty
   LABL_PTR_1: o_energy_mean_label
 
 o_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: o_energy_mean
   CATDESC: Minus systematic uncertainty for O
+  DEPEND_1: o_energy_mean
   FIELDNAM: O minus systematic uncertainty
   LABL_PTR_1: o_energy_mean_label
 
 o_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: o_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for O
+  DEPEND_1: o_energy_mean
   FIELDNAM: O plus total uncertainty
   LABL_PTR_1: o_energy_mean_label
 
 o_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: o_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for O
+  DEPEND_1: o_energy_mean
   FIELDNAM: O Minus Total Uncertainty
   LABL_PTR_1: o_energy_mean_label
 
 n_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: n_energy_mean
   CATDESC: Plus statistical uncertainty for N
+  DEPEND_1: n_energy_mean
   FIELDNAM: N plus statistical uncertainty
   LABL_PTR_1: n_energy_mean_label
 
 n_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: n_energy_mean
   CATDESC: Minus statistical uncertainty for N
+  DEPEND_1: n_energy_mean
   FIELDNAM: N minus statistical uncertainty
   LABL_PTR_1: n_energy_mean_label
 
 n_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: n_energy_mean
   CATDESC: Plus systematic uncertainty for N
+  DEPEND_1: n_energy_mean
   FIELDNAM: N Plus Systematic Uncertainty
   LABL_PTR_1: n_energy_mean_label
 
 n_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: n_energy_mean
   CATDESC: Minus systematic uncertainty for N
+  DEPEND_1: n_energy_mean
   FIELDNAM: N minus systematic uncertainty
   LABL_PTR_1: n_energy_mean_label
 
 n_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: n_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for N
+  DEPEND_1: n_energy_mean
   FIELDNAM: N plus total uncertainty
   LABL_PTR_1: n_energy_mean_label
 
 n_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: n_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for N
+  DEPEND_1: n_energy_mean
   FIELDNAM: N Minus Total Uncertainty
   LABL_PTR_1: n_energy_mean_label
 
 ne_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: ne_energy_mean
   CATDESC: Plus statistical uncertainty for Ne
+  DEPEND_1: ne_energy_mean
   FIELDNAM: Ne plus statistical uncertainty
   LABL_PTR_1: ne_energy_mean_label
 
 ne_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: ne_energy_mean
   CATDESC: Minus statistical uncertainty for Ne
+  DEPEND_1: ne_energy_mean
   FIELDNAM: Ne minus statistical uncertainty
   LABL_PTR_1: ne_energy_mean_label
 
 ne_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: ne_energy_mean
   CATDESC: Plus systematic uncertainty for Ne
+  DEPEND_1: ne_energy_mean
   FIELDNAM: Ne Plus Systematic Uncertainty
   LABL_PTR_1: ne_energy_mean_label
 
 ne_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: ne_energy_mean
   CATDESC: Minus systematic uncertainty for Ne
+  DEPEND_1: ne_energy_mean
   FIELDNAM: Ne minus systematic uncertainty
   LABL_PTR_1: ne_energy_mean_label
 
 ne_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: ne_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ne
+  DEPEND_1: ne_energy_mean
   FIELDNAM: Ne plus total uncertainty
   LABL_PTR_1: ne_energy_mean_label
 
 ne_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: ne_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ne
+  DEPEND_1: ne_energy_mean
   FIELDNAM: Ne minus total uncertainty
   LABL_PTR_1: ne_energy_mean_label
 
 na_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: na_energy_mean
   CATDESC: Plus statistical uncertainty for Na
+  DEPEND_1: na_energy_mean
   FIELDNAM: Na plus statistical uncertainty
   LABL_PTR_1: na_energy_mean_label
 
 na_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: na_energy_mean
   CATDESC: Minus statistical uncertainty for Na
+  DEPEND_1: na_energy_mean
   FIELDNAM: Na minus statistical uncertainty
   LABL_PTR_1: na_energy_mean_label
 
 na_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: na_energy_mean
   CATDESC: Plus systematic uncertainty for Na
+  DEPEND_1: na_energy_mean
   FIELDNAM: Na Plus Systematic Uncertainty
   LABL_PTR_1: na_energy_mean_label
 
 na_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: na_energy_mean
   CATDESC: Minus systematic uncertainty for Na
+  DEPEND_1: na_energy_mean
   FIELDNAM: Na minus systematic uncertainty
   LABL_PTR_1: na_energy_mean_label
 
 na_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: na_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Na
+  DEPEND_1: na_energy_mean
   FIELDNAM: Na plus total uncertainty
   LABL_PTR_1: na_energy_mean_label
 
 na_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: na_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Na
+  DEPEND_1: na_energy_mean
   FIELDNAM: Na minus total uncertainty
   LABL_PTR_1: na_energy_mean_label
 
 mg_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: mg_energy_mean
   CATDESC: Plus statistical uncertainty for Mg
+  DEPEND_1: mg_energy_mean
   FIELDNAM: Mg plus statistical uncertainty
   LABL_PTR_1: mg_energy_mean_label
 
 mg_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: mg_energy_mean
   CATDESC: Minus statistical uncertainty for Mg
+  DEPEND_1: mg_energy_mean
   FIELDNAM: Mg minus statistical uncertainty
   LABL_PTR_1: mg_energy_mean_label
 
 mg_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: mg_energy_mean
   CATDESC: Plus systematic uncertainty for Mg
+  DEPEND_1: mg_energy_mean
   FIELDNAM: Mg Plus Systematic Uncertainty
   LABL_PTR_1: mg_energy_mean_label
 
 mg_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: mg_energy_mean
   CATDESC: Minus systematic uncertainty for Mg
+  DEPEND_1: mg_energy_mean
   FIELDNAM: Mg minus systematic uncertainty
   LABL_PTR_1: mg_energy_mean_label
 
 mg_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: mg_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Mg
+  DEPEND_1: mg_energy_mean
   FIELDNAM: Mg plus total uncertainty
   LABL_PTR_1: mg_energy_mean_label
 
 mg_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: mg_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Mg
+  DEPEND_1: mg_energy_mean
   FIELDNAM: Mg minus total uncertainty
   LABL_PTR_1: mg_energy_mean_label
 
 al_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: al_energy_mean
   CATDESC: Plus statistical uncertainty for Al
+  DEPEND_1: al_energy_mean
   FIELDNAM: Al plus statistical uncertainty
   LABL_PTR_1: al_energy_mean_label
 
 al_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: al_energy_mean
   CATDESC: Minus statistical uncertainty for Al
+  DEPEND_1: al_energy_mean
   FIELDNAM: Al minus statistical uncertainty
   LABL_PTR_1: al_energy_mean_label
 
 al_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: al_energy_mean
   CATDESC: Plus systematic uncertainty for Al
+  DEPEND_1: al_energy_mean
   FIELDNAM: Al Plus Systematic Uncertainty
   LABL_PTR_1: al_energy_mean_label
 
 al_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: al_energy_mean
   CATDESC: Minus systematic uncertainty for Al
+  DEPEND_1: al_energy_mean
   FIELDNAM: Al minus systematic uncertainty
   LABL_PTR_1: al_energy_mean_label
 
 al_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: al_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Al
+  DEPEND_1: al_energy_mean
   FIELDNAM: Al plus total uncertainty
   LABL_PTR_1: al_energy_mean_label
 
 al_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: al_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Al
+  DEPEND_1: al_energy_mean
   FIELDNAM: Al minus total uncertainty
   LABL_PTR_1: al_energy_mean_label
 
 si_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: si_energy_mean
   CATDESC: Plus statistical uncertainty for Si
+  DEPEND_1: si_energy_mean
   FIELDNAM: Si plus statistical uncertainty
   LABL_PTR_1: si_energy_mean_label
 
 si_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: si_energy_mean
   CATDESC: Minus statistical uncertainty for Si
+  DEPEND_1: si_energy_mean
   FIELDNAM: Si minus statistical uncertainty
   LABL_PTR_1: si_energy_mean_label
 
 si_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: si_energy_mean
   CATDESC: Plus systematic uncertainty for Si
+  DEPEND_1: si_energy_mean
   FIELDNAM: Si Plus Systematic Uncertainty
   LABL_PTR_1: si_energy_mean_label
 
 si_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: si_energy_mean
   CATDESC: Minus systematic uncertainty for Si
+  DEPEND_1: si_energy_mean
   FIELDNAM: Si minus systematic uncertainty
   LABL_PTR_1: si_energy_mean_label
 
 si_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: si_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Si
+  DEPEND_1: si_energy_mean
   FIELDNAM: Si plus total uncertainty
   LABL_PTR_1: si_energy_mean_label
 
 si_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: si_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Si
+  DEPEND_1: si_energy_mean
   FIELDNAM: Si minus total uncertainty
   LABL_PTR_1: si_energy_mean_label
 
 s_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: s_energy_mean
   CATDESC: Plus statistical uncertainty for S
+  DEPEND_1: s_energy_mean
   FIELDNAM: S plus statistical uncertainty
   LABL_PTR_1: s_energy_mean_label
 
 s_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: s_energy_mean
   CATDESC: Minus statistical uncertainty for S
+  DEPEND_1: s_energy_mean
   FIELDNAM: S minus statistical uncertainty
   LABL_PTR_1: s_energy_mean_label
 
 s_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: s_energy_mean
   CATDESC: Plus systematic uncertainty for S
+  DEPEND_1: s_energy_mean
   FIELDNAM: S Plus Systematic Uncertainty
   LABL_PTR_1: s_energy_mean_label
 
 s_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: s_energy_mean
   CATDESC: Minus systematic uncertainty for S
+  DEPEND_1: s_energy_mean
   FIELDNAM: S minus systematic uncertainty
   LABL_PTR_1: s_energy_mean_label
 
 s_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: s_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for S
+  DEPEND_1: s_energy_mean
   FIELDNAM: S plus total uncertainty
   LABL_PTR_1: s_energy_mean_label
 
 s_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: s_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for S
+  DEPEND_1: s_energy_mean
   FIELDNAM: S minus total uncertainty
   LABL_PTR_1: s_energy_mean_label
 
 ar_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: ar_energy_mean
   CATDESC: Plus statistical uncertainty for Ar
+  DEPEND_1: ar_energy_mean
   FIELDNAM: Ar plus statistical uncertainty
   LABL_PTR_1: ar_energy_mean_label
 
 ar_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: ar_energy_mean
   CATDESC: Minus statistical uncertainty for Ar
+  DEPEND_1: ar_energy_mean
   FIELDNAM: Ar minus statistical uncertainty
   LABL_PTR_1: ar_energy_mean_label
 
 ar_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: ar_energy_mean
   CATDESC: Plus systematic uncertainty for Ar
+  DEPEND_1: ar_energy_mean
   FIELDNAM: Ar Plus Systematic Uncertainty
   LABL_PTR_1: ar_energy_mean_label
 
 ar_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: ar_energy_mean
   CATDESC: Minus systematic uncertainty for Ar
+  DEPEND_1: ar_energy_mean
   FIELDNAM: Ar minus systematic uncertainty
   LABL_PTR_1: ar_energy_mean_label
 
 ar_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: ar_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ar
+  DEPEND_1: ar_energy_mean
   FIELDNAM: Ar plus total uncertainty
   LABL_PTR_1: ar_energy_mean_label
 
 ar_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: ar_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ar
+  DEPEND_1: ar_energy_mean
   FIELDNAM: Ar minus total uncertainty
   LABL_PTR_1: ar_energy_mean_label
 
 ca_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: ca_energy_mean
   CATDESC: Plus statistical uncertainty for Ca
+  DEPEND_1: ca_energy_mean
   FIELDNAM: Ca plus statistical uncertainty
   LABL_PTR_1: ca_energy_mean_label
 
 ca_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: ca_energy_mean
   CATDESC: Minus statistical uncertainty for Ca
+  DEPEND_1: ca_energy_mean
   FIELDNAM: Ca minus statistical uncertainty
   LABL_PTR_1: ca_energy_mean_label
 
 ca_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: ca_energy_mean
   CATDESC: Plus systematic uncertainty for Ca
+  DEPEND_1: ca_energy_mean
   FIELDNAM: Ca Plus Systematic Uncertainty
   LABL_PTR_1: ca_energy_mean_label
 
 ca_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: ca_energy_mean
   CATDESC: Minus systematic uncertainty for Ca
+  DEPEND_1: ca_energy_mean
   FIELDNAM: Ca minus systematic uncertainty
   LABL_PTR_1: ca_energy_mean_label
 
 ca_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: ca_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ca
+  DEPEND_1: ca_energy_mean
   FIELDNAM: Ca plus total uncertainty
   LABL_PTR_1: ca_energy_mean_label
 
 ca_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: ca_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ca
+  DEPEND_1: ca_energy_mean
   FIELDNAM: Ca minus total uncertainty
   LABL_PTR_1: ca_energy_mean_label
 
 fe_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: fe_energy_mean
   CATDESC: Plus statistical uncertainty for Fe
+  DEPEND_1: fe_energy_mean
   FIELDNAM: Fe plus statistical uncertainty
   LABL_PTR_1: fe_energy_mean_label
 
 fe_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: fe_energy_mean
   CATDESC: Minus statistical uncertainty for Fe
+  DEPEND_1: fe_energy_mean
   FIELDNAM: Fe minus statistical uncertainty
   LABL_PTR_1: fe_energy_mean_label
 
 fe_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: fe_energy_mean
   CATDESC: Plus systematic uncertainty for Fe
+  DEPEND_1: fe_energy_mean
   FIELDNAM: Fe Plus Systematic Uncertainty
   LABL_PTR_1: fe_energy_mean_label
 
 fe_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: fe_energy_mean
   CATDESC: Minus systematic uncertainty for Fe
+  DEPEND_1: fe_energy_mean
   FIELDNAM: Fe minus systematic uncertainty
   LABL_PTR_1: fe_energy_mean_label
 
 fe_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: fe_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Fe
+  DEPEND_1: fe_energy_mean
   FIELDNAM: Fe plus total uncertainty
   LABL_PTR_1: fe_energy_mean_label
 
 fe_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: fe_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Fe
+  DEPEND_1: fe_energy_mean
   FIELDNAM: Fe minus total uncertainty
   LABL_PTR_1: fe_energy_mean_label
 
 ni_stat_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: ni_energy_mean
   CATDESC: Plus statistical uncertainty for Ni
+  DEPEND_1: ni_energy_mean
   FIELDNAM: Ni plus statistical uncertainty
   LABL_PTR_1: ni_energy_mean_label
 
 ni_stat_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: ni_energy_mean
   CATDESC: Minus statistical uncertainty for Ni
+  DEPEND_1: ni_energy_mean
   FIELDNAM: Ni minus statistical uncertainty
   LABL_PTR_1: ni_energy_mean_label
 
 ni_sys_err_plus:
   <<: *default_uncertainty
-  DEPEND_1: ni_energy_mean
   CATDESC: Plus systematic uncertainty for Ni
+  DEPEND_1: ni_energy_mean
   FIELDNAM: Ni Plus Systematic Uncertainty
   LABL_PTR_1: ni_energy_mean_label
 
 ni_sys_err_minus:
   <<: *default_uncertainty
-  DEPEND_1: ni_energy_mean
   CATDESC: Minus systematic uncertainty for Ni
+  DEPEND_1: ni_energy_mean
   FIELDNAM: Ni minus systematic uncertainty
   LABL_PTR_1: ni_energy_mean_label
 
 ni_total_uncert_plus:
   <<: *default_uncertainty
-  DEPEND_1: ni_energy_mean
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ni
+  DEPEND_1: ni_energy_mean
   FIELDNAM: Ni plus total uncertainty
   LABL_PTR_1: ni_energy_mean_label
 
 ni_total_uncert_minus:
   <<: *default_uncertainty
-  DEPEND_1: ni_energy_mean
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ni
+  DEPEND_1: ni_energy_mean
   FIELDNAM: Ni minus total uncertainty
   LABL_PTR_1: ni_energy_mean_label
 
@@ -1577,423 +1577,423 @@ ni_total_uncert_minus:
 h_macropixel_intensity:
   <<: *default_particle
   CATDESC: H Macropixel Intensity
+  DELTA_MINUS_VAR: h_total_uncert_minus
+  DELTA_PLUS_VAR: h_total_uncert_plus
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: H Intensity Macropixel
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  FIELDNAM: H Intensity Macropixel
-  DELTA_MINUS_VAR: h_total_uncert_minus
-  DELTA_PLUS_VAR: h_total_uncert_plus
 
 he4_macropixel_intensity:
   <<: *default_particle
   CATDESC: He4 Macropixel Intensity
+  DELTA_MINUS_VAR: he4_total_uncert_minus
+  DELTA_PLUS_VAR: he4_total_uncert_plus
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: He4 Intensity Macropixel
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  FIELDNAM: He4 Intensity Macropixel
-  DELTA_MINUS_VAR: he4_total_uncert_minus
-  DELTA_PLUS_VAR: he4_total_uncert_plus
 
 cno_macropixel_intensity:
   <<: *default_particle
   CATDESC: C, N, O Macropixel Intensity
+  DELTA_MINUS_VAR: cno_total_uncert_minus
+  DELTA_PLUS_VAR: cno_total_uncert_plus
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: CNO Intensity Macropixel
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  FIELDNAM: CNO Intensity Macropixel
-  DELTA_MINUS_VAR: cno_total_uncert_minus
-  DELTA_PLUS_VAR: cno_total_uncert_plus
 
 nemgsi_macropixel_intensity:
   <<: *default_particle
   CATDESC: NeMgSi Macropixel Intensity
+  DELTA_MINUS_VAR: nemgsi_total_uncert_minus
+  DELTA_PLUS_VAR: nemgsi_total_uncert_plus
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: NeMgSi Intensity Macropixel
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  FIELDNAM: NeMgSi Intensity Macropixel
-  DELTA_MINUS_VAR: nemgsi_total_uncert_minus
-  DELTA_PLUS_VAR: nemgsi_total_uncert_plus
 
 fe_macropixel_intensity:
   <<: *default_particle
   CATDESC: Fe Macropixel Intensity
+  DELTA_MINUS_VAR: fe_total_uncert_minus
+  DELTA_PLUS_VAR: fe_total_uncert_plus
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: Fe Intensity Macropixel
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  FIELDNAM: Fe Intensity Macropixel
-  DELTA_MINUS_VAR: fe_total_uncert_minus
-  DELTA_PLUS_VAR: fe_total_uncert_plus
 
 # Energy Delta Variables
 cno_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_1: cno_energy_mean
   CATDESC: C, N, O energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_1: cno_energy_mean
   FIELDNAM: CNO energy delta plus
 
 cno_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_1: cno_energy_mean
   CATDESC: C, N, O energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_1: cno_energy_mean
   FIELDNAM: CNO energy delta minus
 
 nemgsi_energy_delta_plus:
     <<: *default_energy_delta
-    DEPEND_1: nemgsi_energy_mean
     CATDESC: Ne, Mg, Si energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
+    DEPEND_1: nemgsi_energy_mean
     FIELDNAM: NeMgSi energy delta plus
 
 nemgsi_energy_delta_minus:
     <<: *default_energy_delta
-    DEPEND_1: nemgsi_energy_mean
     CATDESC: Ne, Mg, Si energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
+    DEPEND_1: nemgsi_energy_mean
     FIELDNAM: NeMgSi energy delta minus
 
 # Uncertainty Variables (statistical, systematic, and total)
 h_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for H Macropixel
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: H plus statistical uncertainty
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus statistical uncertainty for H Macropixel
-  FIELDNAM: H plus statistical uncertainty
 
 h_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for H Macropixel
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: H minus statistical uncertainty
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus statistical uncertainty for H Macropixel
-  FIELDNAM: H minus statistical uncertainty
 
 h_sys_err_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus systematic uncertainty for H Macropixel
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: H Plus Systematic Uncertainty
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus systematic uncertainty for H Macropixel
-  FIELDNAM: H Plus Systematic Uncertainty
 
 h_sys_err_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus systematic uncertainty for H Macropixel
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: H minus systematic uncertainty
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus systematic uncertainty for H Macropixel
-  FIELDNAM: H minus systematic uncertainty
 
 h_total_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for H Macropixel
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: H plus total uncertainty
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for H Macropixel
-  FIELDNAM: H plus total uncertainty
 
 h_total_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for H Macropixel
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: H minus total uncertainty
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for H Macropixel
-  FIELDNAM: H minus total uncertainty
 
 he4_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for He4 Macropixel
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: He4 plus statistical uncertainty
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus statistical uncertainty for He4 Macropixel
-  FIELDNAM: He4 plus statistical uncertainty
 
 he4_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for He4 Macropixel
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: He4 minus statistical uncertainty
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus statistical uncertainty for He4 Macropixel
-  FIELDNAM: He4 minus statistical uncertainty
 
 he4_sys_err_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus systematic uncertainty for He4 Macropixel
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: He4 Plus Systematic Uncertainty
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus systematic uncertainty for He4 Macropixel
-  FIELDNAM: He4 Plus Systematic Uncertainty
 
 he4_sys_err_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus systematic uncertainty for He4 Macropixel
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: He4 minus systematic uncertainty
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus systematic uncertainty for He4 Macropixel
-  FIELDNAM: He4 minus systematic uncertainty
 
 he4_total_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He4 Macropixel
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: He4 plus total uncertainty
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He4 Macropixel
-  FIELDNAM: He4 plus total uncertainty
 
 he4_total_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He4 Macropixel
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: He4 minus total uncertainty
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He4 Macropixel
-  FIELDNAM: He4 minus total uncertainty
 
 cno_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for C, N, O Macropixel
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: CNO plus statistical uncertainty
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus statistical uncertainty for C, N, O Macropixel
-  FIELDNAM: CNO plus statistical uncertainty
 
 cno_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for C, N, O Macropixel
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: CNO minus statistical uncertainty
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus statistical uncertainty for C, N, O Macropixel
-  FIELDNAM: CNO minus statistical uncertainty
 
 cno_sys_err_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus systematic uncertainty for C, N, O Macropixel
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: CNO Plus Systematic Uncertainty
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus systematic uncertainty for C, N, O Macropixel
-  FIELDNAM: CNO Plus Systematic Uncertainty
 
 cno_sys_err_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus systematic uncertainty for C, N, O Macropixel
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: CNO minus systematic uncertainty
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus systematic uncertainty for C, N, O Macropixel
-  FIELDNAM: CNO minus systematic uncertainty
 
 cno_total_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for C, N, O Macropixel
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: CNO plus total uncertainty
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for C, N, O Macropixel
-  FIELDNAM: CNO plus total uncertainty
 
 cno_total_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for C, N, O Macropixel
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: CNO minus total uncertainty
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for C, N, O Macropixel
-  FIELDNAM: CNO minus total uncertainty
 
 nemgsi_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for Ne, Mg, Si Macropixel
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: NeMgSi plus statistical uncertainty
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus statistical uncertainty for Ne, Mg, Si Macropixel
-  FIELDNAM: NeMgSi plus statistical uncertainty
 
 nemgsi_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for Ne, Mg, Si Macropixel
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: NeMgSi minus statistical uncertainty
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus statistical uncertainty for Ne, Mg, Si Macropixel
-  FIELDNAM: NeMgSi minus statistical uncertainty
 
 nemgsi_sys_err_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus systematic uncertainty for Ne, Mg, Si Macropixel
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: NeMgSi Plus Systematic Uncertainty
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus systematic uncertainty for Ne, Mg, Si Macropixel
-  FIELDNAM: NeMgSi Plus Systematic Uncertainty
 
 nemgsi_sys_err_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus systematic uncertainty for Ne, Mg, Si Macropixel
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: NeMgSi minus systematic uncertainty
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus systematic uncertainty for Ne, Mg, Si Macropixel
-  FIELDNAM: NeMgSi minus systematic uncertainty
 
 nemgsi_total_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ne, Mg, Si Macropixel
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: NeMgSi plus total uncertainty
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ne, Mg, Si Macropixel
-  FIELDNAM: NeMgSi plus total uncertainty
 
 nemgsi_total_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ne, Mg, Si Macropixel
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: NeMgSi minus total uncertainty
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ne, Mg, Si Macropixel
-  FIELDNAM: NeMgSi minus total uncertainty
 
 fe_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for Fe Macropixel
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: Fe plus statistical uncertainty
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus statistical uncertainty for Fe Macropixel
-  FIELDNAM: Fe plus statistical uncertainty
 
 fe_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for Fe Macropixel
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: Fe minus statistical uncertainty
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus statistical uncertainty for Fe Macropixel
-  FIELDNAM: Fe minus statistical uncertainty
 
 fe_sys_err_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus systematic uncertainty for Fe Macropixel
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: Fe Plus Systematic Uncertainty
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus systematic uncertainty for Fe Macropixel
-  FIELDNAM: Fe Plus Systematic Uncertainty
 
 fe_sys_err_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus systematic uncertainty for Fe Macropixel
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: Fe minus systematic uncertainty
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus systematic uncertainty for Fe Macropixel
-  FIELDNAM: Fe minus systematic uncertainty
 
 fe_total_uncert_plus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Fe Macropixel
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: Fe plus total uncertainty
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Fe Macropixel
-  FIELDNAM: Fe plus total uncertainty
 
 fe_total_uncert_minus_macropixel:
   <<: *default_uncertainty
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Fe Macropixel
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
   DEPEND_3: zenith
+  FIELDNAM: Fe minus total uncertainty
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Fe Macropixel
-  FIELDNAM: Fe minus total uncertainty
 
 
 

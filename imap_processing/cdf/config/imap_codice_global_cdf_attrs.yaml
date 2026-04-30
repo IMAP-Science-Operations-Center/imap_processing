@@ -1,6 +1,7 @@
 instrument_base: &instrument_base
   Descriptor: &desc
     CoDICE>Compact Dual Ion Composition Experiment
+  Instrument_type: Particles (space)
   TEXT: &txt >
     The Compact Dual Ion Composition Experiment (CoDICE) will measure the distributions and composition of interstellar
     pickup ions (PUIs), particles that make it through the heliosheath into the heliosphere. CoDICE also collects and
@@ -11,7 +12,6 @@ instrument_base: &instrument_base
     measured by the common TOF / E system. These measurements are critical in determining the Local Interstellar Medium
     (LISM) composition and flow properties, the origin of the enigmatic suprathermal tails on the solar wind
     distributions and advance understanding of the acceleration of particles in the heliosphere.
-  Instrument_type: Particles (space)
 
 
 # L1a

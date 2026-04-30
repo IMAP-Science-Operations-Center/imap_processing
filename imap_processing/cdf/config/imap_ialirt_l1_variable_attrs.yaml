@@ -1,22 +1,22 @@
 # Epochs
 instrument_epoch: &instrument_epoch
   CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  CDF_DATA_TYPE: "CDF_TIME_TT2000"
+  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
   FIELDNAM: epoch
-  LABLAXIS: epoch
   FILLVAL: -9223372036854775808
   FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
-  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
+  LABLAXIS: epoch
   MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
   RESOLUTION: ' '
-  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
-  CDF_DATA_TYPE: "CDF_TIME_TT2000"
+  SCALETYP: linear
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  UNITS: ns
+  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
+  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
+  VAR_TYPE: support_data
 
 codice_hi_epoch:
     <<: *instrument_epoch
@@ -60,65 +60,65 @@ default_attrs: &default
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   FORMAT: I12
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
   UNITS: " "
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: data
 
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
   FORMAT: I3
-  VALIDMIN: 0
   VALIDMAX: 255
+  VALIDMIN: 0
   dtype: uint8
 
 default_uint16_attrs: &default_uint16
   <<: *default
   FILLVAL: 65535
   FORMAT: I5
-  VALIDMIN: 0
   VALIDMAX: 65535
+  VALIDMIN: 0
   dtype: uint16
 
 default_uint32_attrs: &default_uint32
   <<: *default
   FILLVAL: 4294967295
   FORMAT: I10
-  VALIDMIN: 0
   VALIDMAX: 4294967295
+  VALIDMIN: 0
   dtype: uint32
 
 default_int64_attrs: &default_int64
   <<: *default
   FILLVAL: -9223372036854775808
   FORMAT: I20
-  VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
   dtype: int64
 
 default_int32_attrs: &default_int32
   <<: *default
   FILLVAL: -2147483648
   FORMAT: I10
-  VALIDMIN: -2147483648
   VALIDMAX: 2147483647
+  VALIDMIN: -2147483648
   dtype: int32
 
 default_float32_attrs: &default_float32
   <<: *default
   FILLVAL: -1.0e31
   FORMAT: F12.6
-  VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
+  VALIDMIN: -3.4028235e+38
   dtype: float32
 
 default_float64_attrs: &default_float64
   <<: *default
   FILLVAL: -1.0e31
   FORMAT: F10.2
-  VALIDMIN: -1.7976931348623157e+308
   VALIDMAX: 1.7976931348623157e+308
+  VALIDMIN: -1.7976931348623157e+308
   dtype: float64
 
 # Labels
@@ -126,544 +126,544 @@ B_GSM_labels:
   CATDESC: B GSM component labels
   FIELDNAM: B GSM component labels
   FORMAT: A8
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 B_GSE_labels:
   CATDESC: B GSE component labels
   FIELDNAM: B GSE component labels
   FORMAT: A8
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 B_RTN_labels:
   CATDESC: B RTN component labels B radial (RTN), B tangential (RTN), B normal (RTN)
   FIELDNAM: B RTN component labels
   FORMAT: A18
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 sc_GSM_position_labels:
   CATDESC: Spacecraft position labels in GSM coordinates
   FIELDNAM: Spacecraft GSM position labels
   FORMAT: A8
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 sc_GSM_velocity_labels:
   CATDESC: Spacecraft velocity labels in GSM coordinates
   FIELDNAM: Spacecraft GSM velocity labels
   FORMAT: A8
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 sc_GSE_position_labels:
   CATDESC: Spacecraft position labels in GSE coordinates
   FIELDNAM: Spacecraft GSE position labels
   FORMAT: A8
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 sc_GSE_velocity_labels:
   CATDESC: Spacecraft velocity labels in GSE coordinates
   FIELDNAM: Spacecraft GSE velocity labels
   FORMAT: A8
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 codice_hi_energy_center:
   CATDESC: CoDICE-Hi proton energy bin (MeV)
+  DELTA_MINUS_VAR: codice_hi_energy_minus
+  DELTA_PLUS_VAR: codice_hi_energy_plus
   FIELDNAM: CoDICE-Hi proton energy bin
-  VAR_TYPE: support_data
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  LABLAXIS: Proton energy bin
   UNITS: "MeV"
   VALIDMAX: 20.0
   VALIDMIN: 0.0
-  DELTA_PLUS_VAR: codice_hi_energy_plus
-  DELTA_MINUS_VAR: codice_hi_energy_minus
-  FILLVAL: -1.0e31
-  FORMAT: F12.6
+  VAR_TYPE: support_data
   dtype: float32
-  LABLAXIS: Proton energy bin
 
 codice_hi_energy_minus:
   CATDESC: CoDICE-Hi proton energy bin lower delta (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin lower delta
-  VAR_TYPE: support_data
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  LABLAXIS: Energy lower delta
   UNITS: "MeV"
   VALIDMAX: 20.0
   VALIDMIN: 0.0
-  FILLVAL: -1.0e31
-  FORMAT: F12.6
+  VAR_TYPE: support_data
   dtype: float32
-  LABLAXIS: Energy lower delta
 
 codice_hi_energy_plus:
   CATDESC: CoDICE-Hi proton energy bin upper delta (MeV)
   FIELDNAM: CoDICE-Hi proton energy bin upper delta
-  VAR_TYPE: support_data
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  LABLAXIS: Energy upper delta
   UNITS: "MeV"
   VALIDMAX: 20.0
   VALIDMIN: 0.0
-  FILLVAL: -1.0e31
-  FORMAT: F12.6
+  VAR_TYPE: support_data
   dtype: float32
-  LABLAXIS: Energy upper delta
 
 codice_hi_polar:
   CATDESC: Polar Angle
   FIELDNAM: Polar Angle
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
   LABLAXIS: Polar Angle
   SCALETYP: linear
   UNITS: degrees
-  VALIDMIN: 0.0
   VALIDMAX: 180.0
+  VALIDMIN: 0.0
   VAR_TYPE: support_data
-  FILLVAL: -1.0e31
-  FORMAT: F12.6
   dtype: float32
 
 codice_hi_polar_labels:
   CATDESC: CoDICE-Hi polar labels
   FIELDNAM: CoDICE-Hi polar labels
   FORMAT: A12
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 codice_hi_spin_sector:
   CATDESC: CoDICE-Hi spin sector index
   FIELDNAM: CoDICE-Hi spin sector index
   FORMAT: I2
-  VAR_TYPE: support_data
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 3
-  dtype: int32
   LABLAXIS: Spin sector index
+  UNITS: " "
+  VALIDMAX: 3
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+  dtype: int32
 
 codice_hi_spin_sector_labels:
   CATDESC: CoDICE-Hi spin sector labels
   FIELDNAM: CoDICE-Hi spin sector labels
   FORMAT: A8
-  VAR_TYPE: metadata
   UNITS: " "
+  VAR_TYPE: metadata
 
 swe_electron_energy:
   CATDESC: SWE electron channels (nominal central energies)
   FIELDNAM: SWE electron channels
-  LABLAXIS: SWE electron channels
-  VAR_TYPE: support_data
-  UNITS: "eV"
-  VALIDMIN: 0.0
-  VALIDMAX: 2000.0
   FILLVAL: -1.0e31
   FORMAT: F6.1
+  LABLAXIS: SWE electron channels
+  UNITS: "eV"
+  VALIDMAX: 2000.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
   dtype: float32
 
 # Variables
 codice_hi_h:
   <<: *default_float32
   CATDESC: Proton flux from CoDICE-Hi in 15 energy bins between 0.02 to 3.62 MeV over 4 spin angles and 4 polar angles
-  FIELDNAM: H+ intensity
-  LABLAXIS: H+ intensity
   DEPEND_0: codice_hi_epoch
-  UNITS: "counts / cm2-sr-s-MeV"
-  VALIDMIN: 0
-  VALIDMAX: 100000000.0
   DEPEND_1: codice_hi_energy_center
   DEPEND_2: codice_hi_spin_sector
   DEPEND_3: codice_hi_polar
   DISPLAY_TYPE: no_plot
+  FIELDNAM: H+ intensity
   FORMAT: F11.1
+  LABLAXIS: H+ intensity
+  UNITS: "counts / cm2-sr-s-MeV"
+  VALIDMAX: 100000000.0
+  VALIDMIN: 0
   VAR_NOTES: Energy ranges (MeV) are 0.0200 to 0.0283, 0.0283 to 0.0400, 0.0400 to 0.0566, 0.0566 to 0.0800, 0.0800 to 0.113, 0.113 to 0.160, 0.160 to 0.226, 0.226 to 0.320, 0.320 to 0.453, 0.453 to 0.640, 0.640 to 0.905, 0.905 to 1.28, 1.28 to 1.81, 1.81 to 2.56, 2.56 to 3.62.
 
 codice_lo_c_over_o_abundance:
   <<: *default_float32
   CATDESC: C/O elemental abundance ratio from CoDICE-Lo
-  FIELDNAM: C/O abundance ratio
-  LABLAXIS: C/O ratio
   DEPEND_0: codice_lo_epoch
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 100000000.0
+  FIELDNAM: C/O abundance ratio
   FORMAT: F16.6
+  LABLAXIS: C/O ratio
+  UNITS: " "
+  VALIDMAX: 100000000.0
+  VALIDMIN: 0
 
 codice_lo_mg_over_o_abundance:
   <<: *default_float32
   CATDESC: Mg/O elemental abundance ratio from CoDICE-Lo
-  FIELDNAM: Mg/O abundance ratio
-  LABLAXIS: Mg/O ratio
   DEPEND_0: codice_lo_epoch
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 100000000.0
+  FIELDNAM: Mg/O abundance ratio
   FORMAT: F16.6
+  LABLAXIS: Mg/O ratio
+  UNITS: " "
+  VALIDMAX: 100000000.0
+  VALIDMIN: 0
 
 codice_lo_fe_over_o_abundance:
   <<: *default_float32
   CATDESC: Fe/O elemental abundance ratio from CoDICE-Lo
-  FIELDNAM: Fe/O abundance ratio
-  LABLAXIS: Fe/O ratio
   DEPEND_0: codice_lo_epoch
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 100000000.0
+  FIELDNAM: Fe/O abundance ratio
   FORMAT: F16.6
+  LABLAXIS: Fe/O ratio
+  UNITS: " "
+  VALIDMAX: 100000000.0
+  VALIDMIN: 0
 
 codice_lo_c_plus_6_over_c_plus_5:
   <<: *default_float32
   CATDESC: C+6/C+5 charge state ratio from CoDICE-Lo
-  FIELDNAM: C+6/C+5 charge state ratio
-  LABLAXIS: C+6/C+5 ratio
   DEPEND_0: codice_lo_epoch
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 100000000.0
+  FIELDNAM: C+6/C+5 charge state ratio
   FORMAT: F16.6
+  LABLAXIS: C+6/C+5 ratio
+  UNITS: " "
+  VALIDMAX: 100000000.0
+  VALIDMIN: 0
 
 codice_lo_o_plus_7_over_o_plus_6:
   <<: *default_float32
   CATDESC: O+7/O+6 charge state ratio from CoDICE-Lo
-  FIELDNAM: O7+/O6+ charge state ratio
-  LABLAXIS: O7+/O6+ ratio
   DEPEND_0: codice_lo_epoch
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 100000000.0
+  FIELDNAM: O7+/O6+ charge state ratio
   FORMAT: F16.6
+  LABLAXIS: O7+/O6+ ratio
+  UNITS: " "
+  VALIDMAX: 100000000.0
+  VALIDMIN: 0
 
 codice_lo_fe_low_over_fe_high:
   <<: *default_float32
   CATDESC: Fe low/Fe high charge state ratio from CoDICE-Lo
-  FIELDNAM: Fe low/high charge state ratio
-  LABLAXIS: Fe low/high ratio
   DEPEND_0: codice_lo_epoch
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 100000000.0
+  FIELDNAM: Fe low/high charge state ratio
   FORMAT: F16.6
+  LABLAXIS: Fe low/high ratio
+  UNITS: " "
+  VALIDMAX: 100000000.0
+  VALIDMIN: 0
 
 hit_e_a_side_low_en:
   <<: *default_float32
   CATDESC: Count rates from HIT for electrons above 0.5 MeV, A-side aperture (anti-sunward) look direction
+  DEPEND_0: hit_epoch
   FIELDNAM: Low energy electron count rate (A-side)
   LABLAXIS: A-side e- >0.5 MeV
-  DEPEND_0: hit_epoch
   UNITS: counts
-  VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_a_side_med_en:
   <<: *default_float32
   CATDESC: Counts from HIT for electrons below 1 MeV, A-side aperture (sunward directed particles) look direction
-  FIELDNAM: Medium energy electron count rate (A-side)
-  LABLAXIS: A-side e- <1 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts
-  VALIDMIN: 0
-  VALIDMAX: 1000000000.0
+  FIELDNAM: Medium energy electron count rate (A-side)
   FORMAT: F17.6
+  LABLAXIS: A-side e- <1 MeV
+  UNITS: counts
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_a_side_high_en:
   <<: *default_float32
   CATDESC: High energy (>3 MeV) electron count rate (A-side, anti-sunward)
+  DEPEND_0: hit_epoch
   FIELDNAM: High energy electron count rate (A-side)
   LABLAXIS: A-side e- >3 MeV
-  DEPEND_0: hit_epoch
   UNITS: counts
-  VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_b_side_low_en:
   <<: *default_float32
   CATDESC: Count rates from HIT for electrons above 0.5 MeV, B-side aperture (sunward) look direction
+  DEPEND_0: hit_epoch
   FIELDNAM: Low energy electron count rate (B-side)
   LABLAXIS: B-side e- >0.5 MeV
-  DEPEND_0: hit_epoch
   UNITS: counts
-  VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_b_side_med_en:
   <<: *default_float32
   CATDESC: Counts from HIT for electrons below 1 MeV, B-side aperture (anti-sunward directed particles) look direction
-  FIELDNAM: Medium energy electron count rate (B-side)
-  LABLAXIS: B-side e- <1 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts
-  VALIDMIN: 0
-  VALIDMAX: 1000000000.0
+  FIELDNAM: Medium energy electron count rate (B-side)
   FORMAT: F17.6
+  LABLAXIS: B-side e- <1 MeV
+  UNITS: counts
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_e_b_side_high_en:
   <<: *default_float32
   CATDESC: High energy (>3 MeV) electron count rate (B-side, sunward)
+  DEPEND_0: hit_epoch
   FIELDNAM: High energy electron count rate (B-side)
   LABLAXIS: B-side e- >3 MeV
-  DEPEND_0: hit_epoch
   UNITS: counts
-  VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_h_omni_low_en:
   <<: *default_float32
   CATDESC: Counts from HIT for protons between 6 to 8 MeV, omnidirectional
-  FIELDNAM: Proton count rate 6 to 8 MeV (omni)
-  LABLAXIS: Omni H+ 6 to 8 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts
-  VALIDMIN: 0
-  VALIDMAX: 1000000000.0
+  FIELDNAM: Proton count rate 6 to 8 MeV (omni)
   FORMAT: F17.6
+  LABLAXIS: Omni H+ 6 to 8 MeV
+  UNITS: counts
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_h_omni_med_en:
   <<: *default_float32
   CATDESC: Counts from HIT for protons between 12 to 15 MeV, omnidirectional
-  FIELDNAM: Proton count rate 12 to 15 MeV (omni)
-  LABLAXIS: Omni H+ 12 to 15 MeV
   DEPEND_0: hit_epoch
-  UNITS: counts
-  VALIDMIN: 0
-  VALIDMAX: 1000000000.0
+  FIELDNAM: Proton count rate 12 to 15 MeV (omni)
   FORMAT: F17.6
+  LABLAXIS: Omni H+ 12 to 15 MeV
+  UNITS: counts
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_h_a_side_high_en:
   <<: *default_float32
   CATDESC: High energy (>70 MeV) proton count rate (A-side, anti-sunward)
+  DEPEND_0: hit_epoch
   FIELDNAM: Proton count rate >70 MeV (A-side)
   LABLAXIS: A-side H >70 MeV
-  DEPEND_0: hit_epoch
   UNITS: counts
-  VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_h_b_side_high_en:
   <<: *default_float32
   CATDESC: High energy (>70 MeV) proton count rate (B-side, sunward)
+  DEPEND_0: hit_epoch
   FIELDNAM: Proton count rate >70 MeV (B-side)
   LABLAXIS: B-side H >70 MeV
-  DEPEND_0: hit_epoch
   UNITS: counts
-  VALIDMIN: 0
   VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
 hit_he_omni_low_en:
   <<: *default_float32
   CATDESC: Counts from HIT for He4 between 6 to 8 MeV/nuc, omnidirectional
-  FIELDNAM: Helium count rate 6 to 8 MeV/nuc (omni)
-  LABLAXIS: Omni He 6 to 8 MeV/nuc
   DEPEND_0: hit_epoch
-  UNITS: counts
-  VALIDMIN: 0
-  VALIDMAX: 1000000000.0
+  FIELDNAM: Helium count rate 6 to 8 MeV/nuc (omni)
   FORMAT: F17.6
+  LABLAXIS: Omni He 6 to 8 MeV/nuc
+  UNITS: counts
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 hit_he_omni_high_en:
   <<: *default_float32
   CATDESC: Counts from HIT for He4 between 15 to 70 MeV/nuc, omnidirectional
-  FIELDNAM: Helium count rate 15 to 70 MeV/nuc (omni)
-  LABLAXIS: Omni He 15 to 70 MeV/nuc
   DEPEND_0: hit_epoch
-  UNITS: counts
-  VALIDMIN: 0
-  VALIDMAX: 1000000000.0
+  FIELDNAM: Helium count rate 15 to 70 MeV/nuc (omni)
   FORMAT: F17.6
+  LABLAXIS: Omni He 15 to 70 MeV/nuc
+  UNITS: counts
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
   VAR_NOTES: Omni indicates the sum of the number of particles divided by the area of the full sky.
 
 mag_B_magnitude:
   <<: *default_float32
   CATDESC: Magnitude of the magnetic field vector from MAG
+  DEPEND_0: mag_epoch
   FIELDNAM: B vector magnitude
   LABLAXIS: B Magnitude
-  DEPEND_0: mag_epoch
   UNITS: nT
-  VALIDMIN: 0.0
   VALIDMAX: 65000.0
+  VALIDMIN: 0.0
 
 mag_theta_B_GSE:
   <<: *default_float32
   CATDESC: Elevation (theta) angle of the magnetic field in GSE coordinates from MAG
+  DEPEND_0: mag_epoch
   FIELDNAM: B elevation angle in GSE coordinates
   LABLAXIS: B elevation (GSE)
-  DEPEND_0: mag_epoch
   UNITS: degrees
-  VALIDMIN: -90.0
   VALIDMAX: 90.0
+  VALIDMIN: -90.0
 
 mag_phi_B_GSE:
   <<: *default_float32
   CATDESC: Azimuth (phi) angle of the magnetic field in GSE coordinates from MAG
+  DEPEND_0: mag_epoch
   FIELDNAM: B azimuth angle in GSE coordinates
   LABLAXIS: B azimuth (GSE)
-  DEPEND_0: mag_epoch
   UNITS: degrees
-  VALIDMIN: 0.0
   VALIDMAX: 360.0
+  VALIDMIN: 0.0
 
 mag_theta_B_GSM:
   <<: *default_float32
   CATDESC: Elevation (theta) angle of the magnetic field in GSM coordinates from MAG
+  DEPEND_0: mag_epoch
   FIELDNAM: B elevation angle in GSM coordinates
   LABLAXIS: B elevation (GSM)
-  DEPEND_0: mag_epoch
   UNITS: degrees
-  VALIDMIN: -90.0
   VALIDMAX: 90.0
+  VALIDMIN: -90.0
 
 mag_phi_B_GSM:
   <<: *default_float32
   CATDESC: Azimuth (phi) angle of the magnetic field in GSM coordinates from MAG
+  DEPEND_0: mag_epoch
   FIELDNAM: B azimuth angle in GSM coordinates
   LABLAXIS: B azimuth (GSM)
-  DEPEND_0: mag_epoch
   UNITS: degrees
-  VALIDMIN: 0.0
   VALIDMAX: 360.0
+  VALIDMIN: 0.0
 
 mag_B_GSE:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSE coordinates from MAG
-  FIELDNAM: B vector in GSE coordinates
-  LABLAXIS: B (GSE)
   DEPEND_0: mag_epoch
+  FIELDNAM: B vector in GSE coordinates
+  FORMAT: F13.6
+  LABLAXIS: B (GSE)
   LABL_PTR_1: B_GSE_labels
   UNITS: nT
-  FORMAT: F13.6
-  VALIDMIN: -65000.0
   VALIDMAX: 65000.0
+  VALIDMIN: -65000.0
 
 mag_B_GSM:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSM coordinates from MAG
-  FIELDNAM: B vector in GSM coordinates
-  LABLAXIS: B (GSM)
   DEPEND_0: mag_epoch
+  FIELDNAM: B vector in GSM coordinates
+  FORMAT: F13.6
+  LABLAXIS: B (GSM)
   LABL_PTR_1: B_GSM_labels
   UNITS: nT
-  FORMAT: F13.6
-  VALIDMIN: -65000.0
   VALIDMAX: 65000.0
+  VALIDMIN: -65000.0
 
 mag_B_RTN:
   <<: *default_float32
   CATDESC: Magnetic field vector in RTN coordinates from MAG
-  FIELDNAM: B vector in RTN coordinates
-  LABLAXIS: B (RTN)
   DEPEND_0: mag_epoch
+  FIELDNAM: B vector in RTN coordinates
+  FORMAT: F13.6
+  LABLAXIS: B (RTN)
   LABL_PTR_1: B_RTN_labels
   UNITS: nT
-  FORMAT: F13.6
-  VALIDMIN: -65000.0
   VALIDMAX: 65000.0
+  VALIDMIN: -65000.0
 
 swapi_pseudo_proton_density:
   <<: *default_float32
   CATDESC: Pseudo solar wind proton number density from SWAPI
+  DEPEND_0: swapi_epoch
   FIELDNAM: SW proton pseudo density
   LABLAXIS: SW p pseudo N
-  DEPEND_0: swapi_epoch
   UNITS: 1/cm^3
-  VALIDMIN: 0.0
   VALIDMAX: 1000.0
+  VALIDMIN: 0.0
   VAR_NOTES: The pseudo density is derived using a simplified analytical model of solar wind proton density.
 
 swapi_pseudo_proton_speed:
   <<: *default_float32
   CATDESC: Pseudo solar wind proton speed from SWAPI
+  DEPEND_0: swapi_epoch
   FIELDNAM: SW proton pseudo V in solar inertial frame
   LABLAXIS: SW p pseudo V
-  DEPEND_0: swapi_epoch
   UNITS: km/sec
-  VALIDMIN: 0.0
   VALIDMAX: 10000.0
+  VALIDMIN: 0.0
   VAR_NOTES: The pseudo speed is derived using a simplified analytical model of solar wind proton speed.
 
 swapi_pseudo_proton_temperature:
   <<: *default_float32
   CATDESC: Pseudo solar wind proton temperature from SWAPI
-  FIELDNAM: SW proton pseudo temperature
-  LABLAXIS: SW p pseudo T
   DEPEND_0: swapi_epoch
-  UNITS: Kelvin
-  VALIDMIN: 0.0
-  VALIDMAX: 50000000.0
-  VAR_NOTES: The pseudo temperature is derived using a simplified analytical model of solar wind proton speed.
+  FIELDNAM: SW proton pseudo temperature
   FORMAT: F15.6
+  LABLAXIS: SW p pseudo T
+  UNITS: Kelvin
+  VALIDMAX: 50000000.0
+  VALIDMIN: 0.0
+  VAR_NOTES: The pseudo temperature is derived using a simplified analytical model of solar wind proton speed.
 
 # SWE Normalized Counts
 swe_normalized_counts:
   <<: *default_int64
   CATDESC: Normalized electron counts from SWE in 8 energy bins between 100.4 to 1101 eV
-  FIELDNAM: Normalized electron counts
-  UNITS: normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 5000000000000
+  DEPEND_0: swe_epoch
   DEPEND_1: swe_electron_energy
   DISPLAY_TYPE: stack_plot
-  SCALETYP: log
+  FIELDNAM: Normalized electron counts
   LABLAXIS: Electron counts
-  DEPEND_0: swe_epoch
+  SCALETYP: log
+  UNITS: normalized counts
+  VALIDMAX: 5000000000000
+  VALIDMIN: 0
   VAR_NOTES: The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
 
 swe_counterstreaming_electrons:
   <<: *default_uint8
   CATDESC: Binary value from SWE indicating the presence (1) or absence (0) of counterstreaming electron flow
+  DEPEND_0: swe_epoch
   FIELDNAM: Counterstreaming e- (1=counterstreaming)
   LABLAXIS: Counterstreaming e-
-  DEPEND_0: swe_epoch
   UNITS: "1=counterstreaming"
-  VALIDMIN: 0
   VALIDMAX: 1
+  VALIDMIN: 0
   VAR_NOTES: A value of 1 indicates that counterstreaming electrons were observed, a value of 0 indicates unidirectional electron flow.
 
 sc_position_GSE:
   <<: *default_float32
   CATDESC: Spacecraft position vector in GSE coordinates
   FIELDNAM: Spacecraft position in GSE
-  LABLAXIS: SC position (GSE)
-  UNITS: km
-  LABL_PTR_1: sc_GSE_position_labels
-  VALIDMIN: -3000000.0
-  VALIDMAX: 3000000.0
   FORMAT: F15.6
+  LABLAXIS: SC position (GSE)
+  LABL_PTR_1: sc_GSE_position_labels
+  UNITS: km
+  VALIDMAX: 3000000.0
+  VALIDMIN: -3000000.0
 
 sc_velocity_GSE:
   <<: *default_float32
   CATDESC: Spacecraft velocity vector in GSE coordinates
   FIELDNAM: Spacecraft velocity in GSE
   LABLAXIS: SC velocity (GSE)
-  UNITS: km/s
   LABL_PTR_1: sc_GSE_velocity_labels
-  VALIDMIN: -1000.0
+  UNITS: km/s
   VALIDMAX: 1000.0
+  VALIDMIN: -1000.0
 
 sc_position_GSM:
   <<: *default_float32
   CATDESC: Spacecraft position in GSM coordinates
   FIELDNAM: Spacecraft position in GSM coordinates
-  LABLAXIS: SC position (GSM)
-  UNITS: km
-  LABL_PTR_1: sc_GSM_position_labels
-  VALIDMIN: -3000000.0
-  VALIDMAX: 3000000.0
   FORMAT: F15.6
+  LABLAXIS: SC position (GSM)
+  LABL_PTR_1: sc_GSM_position_labels
+  UNITS: km
+  VALIDMAX: 3000000.0
+  VALIDMIN: -3000000.0
 
 sc_velocity_GSM:
   <<: *default_float32
   CATDESC: Spacecraft velocity vector in GSM coordinates
   FIELDNAM: Spacecraft velocity in GSM
   LABLAXIS: SC velocity (GSM)
-  UNITS: km/s
   LABL_PTR_1: sc_GSM_velocity_labels
-  VALIDMIN: -1000.0
+  UNITS: km/s
   VALIDMAX: 1000.0
+  VALIDMIN: -1000.0

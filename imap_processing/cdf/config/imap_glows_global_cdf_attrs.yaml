@@ -1,5 +1,6 @@
 instrument_base: &instrument_base
   Descriptor: GLOWS>GLObal Solar Wind Structure
+  Instrument_type: Imagers (space)
   TEXT: >
     The GLObal Solar Wind Structure (GLOWS) is a non-imaging single-pixel Lyman-alpha
     photometer to investigate the global heliolatitudinal structure of the solar wind
@@ -10,7 +11,6 @@ instrument_base: &instrument_base
     along a scanning circle in the sky.
     GLOWS design and assembly is led by the Space Research Center, Warsaw, Poland
     (CBK PAN). See https://imap.princeton.edu/instruments/glows for more details.
-  Instrument_type: Imagers (space)
 
 imap_glows_l1a_hist:
   <<: *instrument_base

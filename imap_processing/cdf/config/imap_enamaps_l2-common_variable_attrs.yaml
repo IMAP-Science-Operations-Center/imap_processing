@@ -19,114 +19,114 @@ default_int64_attrs: &default_int64
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
-  UNITS: " "
   FORMAT: I20
+  UNITS: " "
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: data
   dtype: int64
 
 default_float32_attrs: &default_float32
-  FORMAT: F18.6
   FILLVAL: -1.0e31
-  VALIDMIN: -3.4028235e+38
+  FORMAT: F18.6
   VALIDMAX: 3.4028235e+38
+  VALIDMIN: -3.4028235e+38
   dtype: float32
 
 # Define Coordinate(s) which are tiling-independent
 energy:
   <<: *default_float32
   CATDESC: Geometric mean of energy bin.
-  FIELDNAM: energy_bin_geometric_mean
-  LABLAXIS: Energy bin geometric mean
-  UNITS: KeV
-  VAR_TYPE: support_data
-  SCALETYP: linear
   # We might not have these set up yet
   DELTA_MINUS_VAR: energy_delta_minus
   DELTA_PLUS_VAR: energy_delta_plus
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Incident
+  FIELDNAM: energy_bin_geometric_mean
+  LABLAXIS: Energy bin geometric mean
+  SCALETYP: linear
+  UNITS: KeV
+  VAR_TYPE: support_data
 
 energy_label:
-  VAR_TYPE: metadata
   CATDESC: Label variable for energy coordinate
+  DEPEND_1: energy
   FIELDNAM: energy label
   FORMAT: A16
-  DEPEND_1: energy
+  VAR_TYPE: metadata
 
 energy_delta_minus:
   <<: *default_float32
-  VAR_TYPE: support_data
   CATDESC: Difference between the energy bin center and lower edge.
-  LABLAXIS: energy
-  UNITS: KeV
-  FIELDNAM: energy delta minus
-  DISPLAY_TYPE: no_plot
   DEPEND_1: energy
-  LABL_PTR_1: energy_label
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: energy delta minus
+  LABLAXIS: energy
+  LABL_PTR_1: energy_label
+  UNITS: KeV
+  VAR_TYPE: support_data
 
 energy_delta_plus:
   <<: *default_float32
-  VAR_TYPE: support_data
   CATDESC: Difference between the energy bin center and upper edge.
-  LABLAXIS: energy
-  UNITS: KeV
-  FIELDNAM: energy delta plus
-  DISPLAY_TYPE: no_plot
   DEPEND_1: energy
-  LABL_PTR_1: energy_label
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: energy delta plus
+  LABLAXIS: energy
+  LABL_PTR_1: energy_label
+  UNITS: KeV
+  VAR_TYPE: support_data
 
 epoch:
-  CATDESC: Map time range start, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: J2000 Nanoseconds
-  DELTA_PLUS_VAR: epoch_delta
-  DELTA_MINUS_VAR: epoch_delta_minus
   BIN_LOCATION: 0
+  CATDESC: Map time range start, number of nanoseconds since J2000 with leap seconds included
+  DELTA_MINUS_VAR: epoch_delta_minus
+  DELTA_PLUS_VAR: epoch_delta
+  FIELDNAM: J2000 Nanoseconds
 
 epoch_delta:
   <<: *default_int64
   CATDESC: Number of nanoseconds covered by data included in this map product.
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+  DISPLAY_TYPE: no_plot
   FIELDNAM: epoch delta
+  TIME_SCALE: Terrestrial Time
   UNITS: ns
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  TIME_SCALE: Terrestrial Time
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 epoch_delta_minus:
   <<: *default_int64
   CATDESC: Number of nanoseconds before epoch included in this map product (always equal to zero).
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+  DISPLAY_TYPE: no_plot
   FIELDNAM: epoch delta minus
+  TIME_SCALE: Terrestrial Time
   UNITS: ns
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  TIME_SCALE: Terrestrial Time
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 # These two coordinates will be treated differently in the
 # HEALPix and rectangular tilings. They will be substantially overridden
 # in the tiling-specific YAML files.
 longitude:
   <<: *default_float32
+  DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.AzimuthAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   FIELDNAM: "{frame} Longitude"
   LABLAXIS: "{frame} Longitude"
   UNITS: deg
-  VAR_TYPE: support_data
-  VALIDMIN: 0
   VALIDMAX: 360
-  DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.AzimuthAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 latitude:
   <<: *default_float32
+  DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.ElevationAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   FIELDNAM: "{frame} Latitude"
   LABLAXIS: "{frame} Latitude"
   UNITS: deg
-  VAR_TYPE: support_data
-  VALIDMIN: -90
   VALIDMAX: 90
-  DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.ElevationAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  VALIDMIN: -90
+  VAR_TYPE: support_data
 
 # Define Data variables, but not their pixel-level DEPENDs
 # (e.g. pixel_index for HEALPix maps, longitude/latitude for rectangular maps).
@@ -134,230 +134,230 @@ latitude:
 ena_intensity:
   <<: *default_float32
   CATDESC: Mono-energetic ENA intensity.
-  FIELDNAM: Intensity
-  UNITS: cm -2 s -1 sr -1 keV -1
   DELTA_MINUS_VAR: ena_intensity_stat_uncert
   DELTA_PLUS_VAR: ena_intensity_stat_uncert
   DEPEND_0: epoch
-  VAR_TYPE: data
-  LABLAXIS: Intensity
-  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Intensity
+  LABLAXIS: Intensity
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: data
 
 ena_intensity_stat_uncert:
   <<: *default_float32
   CATDESC: ENA intensity statistical uncertainty.
-  FIELDNAM: Intensity stat unc
-  UNITS: cm -2 s -1 sr -1 keV -1
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: Statistical Unc
-  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Intensity stat unc
+  LABLAXIS: Statistical Unc
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: support_data
 
 ena_intensity_sys_err:
   <<: *default_float32
   CATDESC: ENA intensity non-statistical error.
-  FIELDNAM: Intensity non-stat error
-  UNITS: cm -2 s -1 sr -1 keV -1
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: Non-statistical Error
-  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Intensity non-stat error
+  LABLAXIS: Non-statistical Error
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: support_data
 
 ena_count_rate:
   <<: *default_float32
   CATDESC: Mono-energetic ENA Rate.
-  FIELDNAM: Rate
-  UNITS: counts/s
   DEPEND_0: epoch
-  VAR_TYPE: data
-  LABLAXIS: Rate
-  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Rate
+  LABLAXIS: Rate
+  UNITS: counts/s
+  VAR_TYPE: data
 
 ena_count_rate_stat_uncert:
   <<: *default_float32
   CATDESC: ENA Rate statistical uncertainty.
-  FIELDNAM: Rate Uncertainty
-  UNITS: counts/s
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: Rate Uncertainty
-  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Rate Uncertainty
+  LABLAXIS: Rate Uncertainty
+  UNITS: counts/s
+  VAR_TYPE: support_data
 
 bg_rate:
   <<: *default_float32
   CATDESC: Total background count rate from non-ENA (non-heliospheric) sources, as calculated by ground processing; makes sense only for "uncombined" calibration products.
-  FIELDNAM: Background Rate
-  UNITS: count s-1
   DEPEND_0: epoch
-  VAR_TYPE: data
-  LABLAXIS: Rate
-  DISPLAY_TYPE: map_image
-  FORMAT: F6.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Rate
+  FORMAT: F6.3
+  LABLAXIS: Rate
+  UNITS: count s-1
+  VAR_TYPE: data
 
 bg_rate_stat_uncert:
   <<: *default_float32
   CATDESC: Statistical uncertainty in the background count rate from non-ENA (non-heliospheric) sources.
-  FIELDNAM: Background Rate Stat Uncertainty
-  UNITS: count s-1
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: Rate Uncertainty
-  DISPLAY_TYPE: map_image
-  FORMAT: F6.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Rate Stat Uncertainty
+  FORMAT: F6.3
+  LABLAXIS: Rate Uncertainty
+  UNITS: count s-1
+  VAR_TYPE: support_data
 
 bg_rate_sys_err:
   <<: *default_float32
   CATDESC: Systematic error in the background count rate from non-ENA (non-heliospheric) sources.
-  FIELDNAM: Background Rate Sys Error
-  UNITS: count s-1
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: Rate Error
-  DISPLAY_TYPE: map_image
-  FORMAT: F6.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Rate Sys Error
+  FORMAT: F6.3
+  LABLAXIS: Rate Error
+  UNITS: count s-1
+  VAR_TYPE: support_data
 
 bg_intensity:
   <<: *default_float32
   CATDESC: Total background intensity from non-ENA (non-heliospheric) sources
-  FIELDNAM: Background Intensity
-  UNITS: cm -2 s -1 sr -1 keV -1
   DEPEND_0: epoch
-  VAR_TYPE: data
-  LABLAXIS: Intensity
-  DISPLAY_TYPE: map_image
-  FORMAT: F8.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Intensity
+  FORMAT: F8.3
+  LABLAXIS: Intensity
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: data
 
 bg_intensity_stat_uncert:
   <<: *default_float32
   CATDESC: Uncertainty in the background intensity from non-ENA (non-heliospheric) sources.
-  FIELDNAM: Background Intensity Statistical Uncertainty
-  UNITS: cm -2 s -1 sr -1 keV -1
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: Intensity Uncertainty
-  DISPLAY_TYPE: map_image
-  FORMAT: F8.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Intensity Statistical Uncertainty
+  FORMAT: F8.3
+  LABLAXIS: Intensity Uncertainty
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: support_data
 
 bg_intensity_sys_err:
   <<: *default_float32
   CATDESC: Non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
-  FIELDNAM: Background Intensity Non-statistical Error
-  UNITS: cm -2 s -1 sr -1 keV -1
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: Intensity Non-statistical Error
-  DISPLAY_TYPE: map_image
-  FORMAT: F8.3
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Intensity Non-statistical Error
+  FORMAT: F8.3
+  LABLAXIS: Intensity Non-statistical Error
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: support_data
 
 ena_count:
   <<: *default_float32
   CATDESC: Mono-energetic ENA Count.
-  FIELDNAM: Count
-  UNITS: counts
   DEPEND_0: epoch
-  VAR_TYPE: data
-  LABLAXIS: Count
-  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Count
+  LABLAXIS: Count
+  UNITS: counts
+  VAR_TYPE: data
 
 sensitivity:
   <<: *default_float32
   CATDESC: Averaged instrument sensitive area
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Sensitivity
+  LABLAXIS: sensitivity
   UNITS: cm^2
   VAR_TYPE: support_data
-  LABLAXIS: sensitivity
-  DISPLAY_TYPE: no_plot
-  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 exposure_factor: &exposure_factor
   <<: *default_float32
   CATDESC: Exact or approximate time over which counts are accumulated.
-  FIELDNAM: Exposure Times
   DEPEND_0: epoch
-  UNITS: s
-  VAR_TYPE: data
-  LABLAXIS: Exposure
-  DISPLAY_TYPE: no_plot
-  FORMAT: F5.2
-  VAR_NOTES: Exact or approximate exposure time over which counts in a pixel are accumulated.  Used as a weighting factor for combining data quantities sensibly.
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Exposure Times
+  FORMAT: F5.2
+  LABLAXIS: Exposure
+  UNITS: s
+  VAR_NOTES: Exact or approximate exposure time over which counts in a pixel are accumulated.  Used as a weighting factor for combining data quantities sensibly.
+  VAR_TYPE: data
 
 geometric_function:
   <<: *default_float32
   CATDESC: Averaged aperture area as seen by the backstop.
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Geometric Function
+  LABLAXIS: Geometric Function
   UNITS: cm^2
   VAR_TYPE: support_data
-  LABLAXIS: Geometric Function
-  DISPLAY_TYPE: no_plot
-  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 efficiency:
   <<: *default_float32
   CATDESC: Efficiency of the instrument in converting ENAs to valid events
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Other
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Efficiency
+  LABLAXIS: Efficiency
   UNITS: " "
   VAR_TYPE: support_data
-  LABLAXIS: Efficiency
-  DISPLAY_TYPE: no_plot
-  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Other
 
 positional_uncert_theta:
   <<: *default_float32
   CATDESC: Averaged position uncertainty along the theta dimension of the instrument
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Positional Uncertainty Theta
+  LABLAXIS: Position Uncertainty Theta
   UNITS: degrees
   VAR_TYPE: support_data
-  LABLAXIS: Position Uncertainty Theta
-  DISPLAY_TYPE: no_plot
-  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 positional_uncert_phi:
   <<: *default_float32
   CATDESC: Averaged position uncertainty along the phi dimension of the instrument
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Positional Uncertainty Phi
+  LABLAXIS: Position Uncertainty Phi
   UNITS: degrees
   VAR_TYPE: support_data
-  LABLAXIS: Position Uncertainty Phi
-  DISPLAY_TYPE: no_plot
-  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 obs_date: &obs_date
   <<: *default_int64
-  datatype: int64
   CATDESC: Mean collection date of data in a pixel
-  FIELDNAM: J2000 Nanoseconds
-  UNITS: ns
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: epoch
-  DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>TemporalDescription:TimeSpan,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: J2000 Nanoseconds
+  LABLAXIS: epoch
+  UNITS: ns
+  VAR_TYPE: support_data
+  datatype: int64
 
 obs_date_range:
   <<: *default_int64
-  datatype: int64
   CATDESC: Standard deviation of the observation date.
-  FIELDNAM: Observation date range
-  UNITS: ns
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  LABLAXIS: epoch
-  DISPLAY_TYPE: no_plot
-  TIME_SCALE: Terrestrial Time
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Observation date range
+  LABLAXIS: epoch
+  TIME_SCALE: Terrestrial Time
+  UNITS: ns
+  VAR_TYPE: support_data
+  datatype: int64
 
 # These copied metadata vars will allow for variables
 # to be either energy-dependent or independent.
@@ -374,10 +374,10 @@ obs_date_range_energy_independent:
 solid_angle:
   <<: *default_float32
   CATDESC: Solid angle subtended by each pixel.
-  FIELDNAM: Solid Angle
   DEPEND_0: epoch
-  VAR_TYPE: support_data
-  UNITS: sr
-  LABLAXIS: Solid Angle
-  DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Solid Angle
+  LABLAXIS: Solid Angle
+  UNITS: sr
+  VAR_TYPE: support_data

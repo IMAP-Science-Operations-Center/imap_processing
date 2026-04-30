@@ -7,11 +7,11 @@ default_attrs: &default
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   FORMAT: I12
-  VALIDMIN: 0
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
-  UNITS: ' '
   SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: 0
+  VAR_TYPE: data
 
 hk_support_attrs: &hk_support_default
   <<: *default
@@ -26,23 +26,23 @@ default_uint32_attrs: &default_uint32
   <<: *default
   FILLVAL: 4294967295
   FORMAT: I10
-  VALIDMIN: 0
   VALIDMAX: 4294967295
+  VALIDMIN: 0
   dtype: uint32
 
 # <=== Coordinates ===>
 adc_channels:   # adc_channels is a dependency for leak_i data variable
-  DISPLAY_TYPE: no_plot
-  FILLVAL: -9223372036854775808
-  UNITS: ' '
-  SCALETYP: linear
-  VALIDMIN: 0
-  VALIDMAX: 63
-  VAR_TYPE: metadata
   CATDESC: ADC Channel
+  DISPLAY_TYPE: no_plot
   FIELDNAM: ADC Channel
-  LABLAXIS: Channel
+  FILLVAL: -9223372036854775808
   FORMAT: I2
+  LABLAXIS: Channel
+  SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 63
+  VALIDMIN: 0
+  VAR_TYPE: metadata
 
 # <=== Label Attributes ===>
 # LABL_PTR_i expects VAR_TYPE of metadata with char data type
@@ -64,485 +64,485 @@ sc_tick:
 
 fsw_version_a:
   <<: *hk_support_default
-  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number A
-  LABLAXIS: FSW A
   FORMAT: I2
+  LABLAXIS: FSW A
+  VALIDMAX: 63
 
 fsw_version_b:
   <<: *hk_support_default
-  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number B
-  LABLAXIS: FSW B
   FORMAT: I2
+  LABLAXIS: FSW B
+  VALIDMAX: 63
 
 fsw_version_c:
   <<: *hk_support_default
-  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number C
-  LABLAXIS: FSW C
   FORMAT: I2
+  LABLAXIS: FSW C
+  VALIDMAX: 63
 
 num_good_cmds:
   <<: *hk_support_default
-  VALIDMAX: 255
   CATDESC: Number of Good Commands
   FIELDNAM: Number of Good Commands
-  LABLAXIS: Counts
   FORMAT: I3
+  LABLAXIS: Counts
+  VALIDMAX: 255
 
 last_good_cmd:
   <<: *hk_support_default
-  VALIDMAX: 255
   CATDESC: Last Good Command
   FIELDNAM: Last Good Command
-  LABLAXIS: Last cmd
   FORMAT: I3
+  LABLAXIS: Last cmd
+  VALIDMAX: 255
 
 last_good_seq_num:
   <<: *hk_support_default
-  VALIDMAX: 255
   CATDESC: Last Good Sequence Number
   FIELDNAM: Last Good Sequence Number
-  LABLAXIS: Last num
   FORMAT: I3
+  LABLAXIS: Last num
+  VALIDMAX: 255
 
 num_bad_cmds:
   <<: *hk_support_default
-  VALIDMAX: 255
   CATDESC: Number of Bad Commands
   FIELDNAM: Number of Bad Commands
-  LABLAXIS: Counts
   FORMAT: I3
+  LABLAXIS: Counts
+  VALIDMAX: 255
 
 last_bad_cmd:
   <<: *hk_support_default
-  VALIDMAX: 255
   CATDESC: Last Bad Command
   FIELDNAM: Last Bad Command
-  LABLAXIS: Last cmd
   FORMAT: I3
+  LABLAXIS: Last cmd
+  VALIDMAX: 255
 
 last_bad_seq_num:
   <<: *hk_support_default
-  VALIDMAX: 255
   CATDESC: Last Bad Sequence Number
   FIELDNAM: Last Bad Sequence Number
-  LABLAXIS: Last num
   FORMAT: I3
+  LABLAXIS: Last num
+  VALIDMAX: 255
 
 fee_running:
   <<: *metadata_default
   CATDESC: State - FEE Running (1) or Reset (0)
   FIELDNAM: FEE Running (1) or Reset (0)
-  LABLAXIS: State
   FORMAT: A7
+  LABLAXIS: State
 
 mram_disabled:
   <<: *metadata_default
   CATDESC: State - MRAM Disabled (1) or Enabled (0)
   FIELDNAM: MRAM Disabled (1) or Enabled (0)
-  LABLAXIS: State
   FORMAT: A8
+  LABLAXIS: State
 
 enable_50khz:
   <<: *metadata_default
   CATDESC: State - 50kHz Enabled (1) or Disabled (0)
   FIELDNAM: 50kHz Enabled (1) or Disabled (0)
-  LABLAXIS: State
   FORMAT: A8
+  LABLAXIS: State
 
 enable_hvps:
   <<: *metadata_default
   CATDESC: State - HVPS Enabled (1) or Disabled (0)
   FIELDNAM: HVPS Enabled (1) or Disabled (0)
-  LABLAXIS: State
   FORMAT: A8
+  LABLAXIS: State
 
 table_status:
   <<: *metadata_default
   CATDESC: State - Table Status OK (1) or Error (0)
   FIELDNAM: Table Status OK (1) or Error (0)
-  LABLAXIS: Status
   FORMAT: A5
+  LABLAXIS: Status
 
 heater_control:
   <<: *metadata_default
   CATDESC: State - Heater Control (0=None, 1=Pri, 2=Sec)
   FIELDNAM: Heater Control (0=None, 1=Pri, 2=Sec)
-  LABLAXIS: State
   FORMAT: A4
+  LABLAXIS: State
 
 adc_mode:
   <<: *metadata_default
   CATDESC: State - ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold
   FIELDNAM: ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold)
-  LABLAXIS: ADC mode
   FORMAT: A12
+  LABLAXIS: ADC mode
 
 mode:
   <<: *metadata_default
   CATDESC: State - Mode (0=Boot, 1=Maintenance, 2=Standby, 3=Science)
   FIELDNAM: Mode (0=Boot, 1=Maintenance, 2=Standby, 3=Science)
-  LABLAXIS: Mode
   FORMAT: A11
+  LABLAXIS: Mode
 
 dyn_thresh_lvl:
   <<: *hk_support_default
-  VALIDMAX: 3
   CATDESC: Dynamic Threshold Level (0-3)
   FIELDNAM: Dynamic Threshold Level (0-3)
-  LABLAXIS: Level
   FORMAT: I1
+  LABLAXIS: Level
+  VALIDMAX: 3
 
 num_evnt_last_hk:
   <<: *hk_support_default
-  VALIDMAX: 4294967295
   CATDESC: Number of Events Since Last HK Update
   FIELDNAM: Number of Events Since Last HK Update
-  LABLAXIS: Num events
   FORMAT: I10
+  LABLAXIS: Num events
+  VALIDMAX: 4294967295
 
 num_errors:
   <<: *hk_support_default
-  VALIDMAX: 255
   CATDESC: Number of Errors
   FIELDNAM: Number of Errors
-  LABLAXIS: Num errors
   FORMAT: I3
+  LABLAXIS: Num errors
+  VALIDMAX: 255
 
 last_error_num:
   <<: *metadata_default
   CATDESC: State - Last Error Number
   FIELDNAM: Last Error Number
-  LABLAXIS: Error num
   FORMAT: A18
+  LABLAXIS: Error num
 
 code_checksum:
   <<: *hk_support_default
-  VALIDMAX: 65535
   CATDESC: Code Checksum
   FIELDNAM: Code Checksum
-  LABLAXIS: Checksum
   FORMAT: I5
+  LABLAXIS: Checksum
+  VALIDMAX: 65535
 
 spin_period_short:
   <<: *hk_support_default
-  VALIDMAX: 65535
   CATDESC: Spin Period Short at T=0
   FIELDNAM: Spin Period Short at T=0
-  LABLAXIS: Spin period short
   FORMAT: I5
+  LABLAXIS: Spin period short
+  VALIDMAX: 65535
 
 spin_period_long:
   <<: *hk_support_default
-  VALIDMAX: 65535
   CATDESC: Spin Period Long at T=0
   FIELDNAM: Spin Period Long at T=0
-  LABLAXIS: Spin period long
   FORMAT: I5
+  LABLAXIS: Spin period long
+  VALIDMAX: 65535
 
 leak_i:
   <<: *hk_support_default
-  DEPEND_1: adc_channels
   CATDESC: Leakage Current [I]
+  DEPEND_1: adc_channels
   FIELDNAM: Leakage Current [I]
+  FORMAT: I19
   LABLAXIS: Current I
   labl_ptr: adc_channels
-  FORMAT: I19
 
 phasic_stat:
   <<: *metadata_default
   CATDESC: State - Phasic Status
   FIELDNAM: Phasic Status
-  LABLAXIS: Status
   FORMAT: A7
+  LABLAXIS: Status
 
 active_heater:
   <<: *metadata_default
   CATDESC: State - Active Heater
   FIELDNAM: Active Heater
-  LABLAXIS: State
   FORMAT: A9
+  LABLAXIS: State
 
 heater_on:
   <<: *metadata_default
   CATDESC: State - Heater On/Off
   FIELDNAM: Heater On/Off
-  LABLAXIS: State
   FORMAT: A3
+  LABLAXIS: State
 
 test_pulser_on:
   <<: *metadata_default
   CATDESC: State - Test Pulser On/Off
   FIELDNAM: Test Pulser On/Off
-  LABLAXIS: State
   FORMAT: A3
+  LABLAXIS: State
 
 dac0_enable:
   <<: *metadata_default
   CATDESC: State - DAC 0 Enable
   FIELDNAM: DAC 0 Enable
-  LABLAXIS: State
   FORMAT: A7
+  LABLAXIS: State
 
 dac1_enable:
   <<: *metadata_default
   CATDESC: State - DAC 1 Enable
   FIELDNAM: DAC 1 Enable
-  LABLAXIS: State
   FORMAT: A7
+  LABLAXIS: State
 
 preamp_l234a:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: Preamp L234A Voltage
   FIELDNAM: Preamp L234A Voltage
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 preamp_l1a:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: Preamp L1A Voltage
   FIELDNAM: Preamp L1A Voltage
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 preamp_l1b:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: Preamp L1B Voltage
   FIELDNAM: Preamp L1B Voltage
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 preamp_l234b:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: Preamp L234B Voltage
   FIELDNAM: Preamp L234B Voltage
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 temp0:
   <<: *default
-  VALIDMIN: -25
-  VALIDMAX: 10000000000
   CATDESC: FEE LDO Regulator Mounted on the Board Next to the Low-dropout Regulator
   FIELDNAM: FEE LDO Regulator
-  LABLAXIS: Temperature
-  FORMAT: F9.3
-  UNITS: C
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Temperature
+  UNITS: C
+  VALIDMAX: 10000000000
+  VALIDMIN: -25
 
 temp1:
   <<: *default
-  VALIDMIN: -25
-  VALIDMAX: 10000000000
   CATDESC: Primary Heater Mounted on the Board Next to the Primary Heater Circuit
   FIELDNAM: Primary Heater
-  LABLAXIS: Temperature
-  FORMAT: F9.3
-  UNITS: C
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Temperature
+  UNITS: C
+  VALIDMAX: 10000000000
+  VALIDMIN: -25
 
 temp2:
   <<: *default
-  VALIDMIN: -25
-  VALIDMAX: 10000000000
   CATDESC: FEE FPGA Mounted on the Board Next to the FPGA
   FIELDNAM: FEE FPGA
-  LABLAXIS: Temperature
-  FORMAT: F9.3
-  UNITS: C
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Temperature
+  UNITS: C
+  VALIDMAX: 10000000000
+  VALIDMIN: -25
 
 temp3:
   <<: *default
-  VALIDMIN: -25
-  VALIDMAX: 10000000000
   CATDESC: Secondary Heater
   FIELDNAM: Secondary Heater
-  LABLAXIS: Temperature
-  FORMAT: F9.3
-  UNITS: C
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Temperature
+  UNITS: C
+  VALIDMAX: 10000000000
+  VALIDMIN: -25
 
 analog_temp:
   <<: *default
-  VALIDMIN: -25
-  VALIDMAX: 10000000000
   CATDESC: Chassis Temp Mounted on the Analog Board Close to Thermostats, Heaters, and Chassis
   FIELDNAM: Analog Temp
-  LABLAXIS: Temperature
-  FORMAT: F9.3
-  UNITS: C
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Temperature
+  UNITS: C
+  VALIDMAX: 10000000000
+  VALIDMIN: -25
 
 hvps_temp:
   <<: *default
-  VALIDMIN: -25
-  VALIDMAX: 10000000000
   CATDESC: Board Temp Mounted Inside Faraday Cage in Middle of Board Near Connector Side
   FIELDNAM: Board Temp
-  LABLAXIS: Temperature
-  FORMAT: F9.3
-  UNITS: C
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Temperature
+  UNITS: C
+  VALIDMAX: 10000000000
+  VALIDMIN: -25
 
 idpu_temp:
   <<: *default
-  VALIDMIN: -25
-  VALIDMAX: 10000000000
   CATDESC: LDO Temp Mounted on Top of the Low-dropout Regulator
   FIELDNAM: LDO Temp
-  LABLAXIS: Temperature
-  FORMAT: F9.3
-  UNITS: C
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Temperature
+  UNITS: C
+  VALIDMAX: 10000000000
+  VALIDMIN: -25
 
 lvps_temp:
   <<: *default
-  VALIDMIN: -25
-  VALIDMAX: 10000000000
   CATDESC: Board Temp Mounted in the Middle of Board on Opposite Side of Hottest Component
   FIELDNAM: Board Temp
-  LABLAXIS: Temperature
-  FORMAT: F9.3
-  UNITS: C
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Temperature
+  UNITS: C
+  VALIDMAX: 10000000000
+  VALIDMIN: -25
 
 ebox_3d4vd:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: 3.4VD Ebox (Digital)
   FIELDNAM: 3.4VD Ebox (Digital)
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 ebox_5d1vd:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: 5.1VD Ebox (Digital)
   FIELDNAM: 5.1VD Ebox (Digital)
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 ebox_p12va:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: +12VA Ebox (Analog)
   FIELDNAM: +12VA Ebox (Analog)
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 ebox_m12va:
   <<: *default
-  VALIDMIN: -12.2
-  VALIDMAX: 10000000000
   CATDESC: -12VA Ebox (Analog)
   FIELDNAM: -12VA Ebox (Analog)
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
+  VALIDMIN: -12.2
 
 ebox_p5d7va:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: +5.7VA Ebox (Analog)
   FIELDNAM: +5.7VA Ebox (Analog)
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 ebox_m5d7va:
   <<: *default
-  VALIDMIN: -6
-  VALIDMAX: 10000000000
   CATDESC: -5.7VA Ebox (Analog)
   FIELDNAM: -5.7VA Ebox (Analog)
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
+  VALIDMIN: -6
 
 ref_p5v:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: +5V ref
   FIELDNAM: +5V ref
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 l1ab_bias:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: L1A/B Bias
   FIELDNAM: L1A/B Bias
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 l2ab_bias:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: L2A/B Bias
   FIELDNAM: L2A/B Bias
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 l34a_bias:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: L3/4A Bias
   FIELDNAM: L3/4A Bias
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 l34b_bias:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: L3/4B Bias
   FIELDNAM: L3/4B Bias
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
 ebox_p2d0vd:
   <<: *default
-  VALIDMAX: 10000000000
   CATDESC: +2.0VD Ebox (Digital)
   FIELDNAM: +2.0VD Ebox (Digital)
-  LABLAXIS: Voltage
-  FORMAT: F9.3
-  UNITS: V
   FILLVAL: -1.0000000E+31
+  FORMAT: F9.3
+  LABLAXIS: Voltage
+  UNITS: V
+  VALIDMAX: 10000000000
 
