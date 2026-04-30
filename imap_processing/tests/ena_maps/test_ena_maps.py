@@ -1010,7 +1010,7 @@ class TestRectangularSkyMap:
         )
         # Check epoch_delta_minus
         assert f"{CoordNames.TIME.value}_delta_minus" in cdf_dataset
-        assert cdf_dataset[f"{CoordNames.TIME.value}_delta_minus"].values[0] == 0
+        assert cdf_dataset[f"{CoordNames.TIME.value}_delta_minus"].values == 0
 
         # Energy related checks
         assert CoordNames.ENERGY_L2.value in cdf_dataset
