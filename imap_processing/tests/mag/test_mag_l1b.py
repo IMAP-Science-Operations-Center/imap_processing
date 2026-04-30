@@ -245,6 +245,7 @@ def test_shift_time_preserves_int64_precision():
     np.testing.assert_array_equal(zero.values, epoch.values)
 
     shifted = shift_time(epoch, xr.DataArray(np.array([1.2345e-5]), dims="epoch"))
+    assert shifted.dtype == np.int64
     np.testing.assert_array_equal(shifted.values, epoch.values + 12345)
 
 
