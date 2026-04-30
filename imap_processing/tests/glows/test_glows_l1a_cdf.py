@@ -2,6 +2,7 @@ import dataclasses
 from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l1a.glows_l1a import (
@@ -100,6 +101,7 @@ def test_generate_de_dataset(l1a_test_data):
     ).all()
 
 
+@pytest.mark.external_test_data
 def test_glows_l1a_no_zero_imap_start_time(in_flight_packet_path):
     hist_l0, _ = decom_packets(in_flight_packet_path)
     hist_l1a = [HistogramL1A(h) for h in hist_l0]
