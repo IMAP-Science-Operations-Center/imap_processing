@@ -12,9 +12,6 @@ def test_cdf_attribute_yaml_keys_are_sorted():
 
     for path in sorted(CONFIG_DIR.glob("*_attrs.yaml")):
         doc = yaml.compose(path.read_text())
-        if not isinstance(doc, MappingNode):
-            continue
-
         for top_key_node, top_value_node in doc.value:
             if not isinstance(top_value_node, MappingNode):
                 continue
