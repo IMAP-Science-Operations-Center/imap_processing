@@ -10,10 +10,12 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.idex.idex_constants import DT_BLOCK
 from imap_processing.idex.idex_l1b import (
     TRIGGER_LABELS,
     EventMessage,
     TriggerOrigin,
+    get_event_dead_time,
     get_spice_data,
     get_trigger_mode_and_level,
     get_trigger_origin,
@@ -419,3 +421,28 @@ def test_no_valid_messages(decom_test_data_msg: xr.Dataset):
     msg_ds.messages[:] = "Not a science or pulser event"
     result = idex_l1b(msg_ds, "msg")
     assert result is None
+
+
+def test_get_event_dead_time():
+    """Check that dead time is computed correctly from txhdrblocks."""
+    base = np.array([0, 1, 3, 63, 0, 63], dtype=np.uint32)
+    shift = np.array([0, 1, 2, 15, 15, 0], dtype=np.uint32)
+    txhdrblocks = (base << 24) | (shift << 20)
+
+    l1a_dataset = xr.Dataset(
+        {"idx__txhdrblocks": xr.DataArray(txhdrblocks, dims="epoch")}
+    )
+    dead_time = get_event_dead_time(l1a_dataset, get_idex_attrs("l1b"))["dead_time"]
+
+    expected_dead_time = (
+        base.astype(np.float64) * (2.0 ** shift.astype(np.float64)) * DT_BLOCK
+    )
+
+    np.testing.assert_array_equal(
+        dead_time.data,
+        expected_dead_time,
+        err_msg=(
+            "The dead_time values did not match the expected values: "
+            f"{expected_dead_time}. Found: {dead_time.data}"
+        ),
+    )
