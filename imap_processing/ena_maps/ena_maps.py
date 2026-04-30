@@ -1516,9 +1516,7 @@ class RectangularSkyMap(AbstractSkyMap):
                 sensor=sensor,
             )
         else:
-            map_attrs["Logical_source_description"] = (
-                md.to_logical_source_description()
-            )
+            map_attrs["Logical_source_description"] = md.to_logical_source_description()
         # Always add the following attributes to the map
         map_attrs.update(
             {

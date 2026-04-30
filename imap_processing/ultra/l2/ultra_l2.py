@@ -879,9 +879,9 @@ def ultra_l2(
     # Use the previously parsed MapDescriptor to generate the
     # Logical_source_description
     if descriptor is not None:
-        map_attrs[
-            "Logical_source_description"
-        ] = map_descriptor.to_logical_source_description()
+        map_attrs["Logical_source_description"] = (
+            map_descriptor.to_logical_source_description()
+        )
     else:
         map_attrs["Logical_source_description"] = map_attrs[
             "Logical_source_description"
