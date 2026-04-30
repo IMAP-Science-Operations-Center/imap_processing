@@ -564,6 +564,12 @@ class TestUltraL2:
         # Check energy deltas
         assert "energy_delta_plus" in map_dataset
         assert "energy_delta_minus" in map_dataset
+        # Check epoch deltas
+        assert map_dataset["epoch"].attrs["DELTA_PLUS_VAR"] == "epoch_delta"
+        assert map_dataset["epoch"].attrs["DELTA_MINUS_VAR"] == "epoch_delta_minus"
+        assert "epoch_delta" in map_dataset
+        assert "epoch_delta_minus" in map_dataset
+        np.testing.assert_array_equal(map_dataset["epoch_delta_minus"].values, 0)
 
     @pytest.mark.external_test_data
     @pytest.mark.usefixtures("_setup_spice_kernels_list")

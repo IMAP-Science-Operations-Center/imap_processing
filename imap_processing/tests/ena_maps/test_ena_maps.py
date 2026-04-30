@@ -994,15 +994,23 @@ class TestRectangularSkyMap:
         # Check the epoch values
         assert CoordNames.TIME.value in cdf_dataset
         assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
-        assert (
-            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_PLUS_VAR"] == "epoch_delta"
-        )
         # Check epoch_delta
+        assert (
+            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_PLUS_VAR"]
+            == f"{CoordNames.TIME.value}_delta"
+        )
+        assert (
+            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_MINUS_VAR"]
+            == f"{CoordNames.TIME.value}_delta_minus"
+        )
         assert f"{CoordNames.TIME.value}_delta" in cdf_dataset
         assert (
             cdf_dataset[f"{CoordNames.TIME.value}_delta"].values[0]
             == skymap.max_epoch - skymap.min_epoch
         )
+        # Check epoch_delta_minus
+        assert f"{CoordNames.TIME.value}_delta_minus" in cdf_dataset
+        assert cdf_dataset[f"{CoordNames.TIME.value}_delta_minus"].values == 0
 
         # Energy related checks
         assert CoordNames.ENERGY_L2.value in cdf_dataset

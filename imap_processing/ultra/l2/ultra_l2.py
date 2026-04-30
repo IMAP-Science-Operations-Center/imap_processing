@@ -874,6 +874,12 @@ def ultra_l2(
         map_dataset["ena_intensity_stat_uncert"],
     )
 
+    # Add epoch_delta_minus
+    map_dataset.coords["epoch_delta_minus"] = xr.DataArray(
+        [0],
+        dims=(CoordNames.TIME.value,),
+    )
+    map_dataset.coords["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta_minus"
     # Add epoch_delta
     map_dataset.coords["epoch_delta"] = xr.DataArray(
         [
