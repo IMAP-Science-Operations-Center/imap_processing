@@ -50,4 +50,4 @@ After install
 
 After install, reinstall the project using `poetry install --all-extras`.
 
-If you see any issues, please reach out to Maxine (maxine.hartnett@lasp.colorado.edu) for troubleshooting help.
+If you see any issues, please reach out to the SDC team (imap-sdc@lists.lasp.colorado.edu) for troubleshooting help.
