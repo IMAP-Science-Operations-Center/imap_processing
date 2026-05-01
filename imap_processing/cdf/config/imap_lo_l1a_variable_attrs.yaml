@@ -80,7 +80,6 @@ spin_default_attrs: &spin_default
 
 esa_step_label:
    CATDESC: ESA Steps
-   DEPEND_1: esa_step
    FIELDNAM: ESA Steps
    FORMAT: A1
    VAR_TYPE: metadata
@@ -109,7 +108,6 @@ shcoarse:
 ## Coordinates
 direct_events_label:
    CATDESC: Direct Events
-   DEPEND_1: direct_events
    FIELDNAM: DE
    FORMAT: A15
    VAR_TYPE: metadata
@@ -239,7 +237,6 @@ passes:
 ## Coordinates
 azimuth_6_label:
   CATDESC: azimuth spin bins (<num packets>, 6 degrees)
-  DEPEND_1: azimuth_6
   FIELDNAM: Azimuth bins
   FORMAT: A3
   VAR_TYPE: metadata
@@ -255,7 +252,6 @@ azimuth_6:
 
 azimuth_60_label:
   CATDESC: azimuth spin bins (<num packets>, 60 degrees)
-  DEPEND_1: azimuth_60
   FIELDNAM: Azimuth bins
   FORMAT: A3
   VAR_TYPE: metadata
@@ -420,7 +416,6 @@ spin:
 spin_label:
   CATDESC: Spin numbers in pointing
   FIELDNAM: Spin numbers
-  DEPEND_1: spin
   FORMAT: A3
   VAR_TYPE: metadata
 
