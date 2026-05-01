@@ -2,6 +2,7 @@
 
 import logging
 from dataclasses import Field
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -9,6 +10,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.lo import constants as c
 from imap_processing.lo import lo_ancillary
 from imap_processing.lo.l1b.tof_conversions import (
     TOF0_CONV,
@@ -172,22 +174,17 @@ MONITOR_RATE_FIELDS = [
 
 # Fields to include in the split background rates/goodtimes datasets
 BACKGROUND_RATE_FIELDS = [
-    "start_met",
-    "end_met",
-    "bin_start",
-    "bin_end",
     "h_background_rates",
     "h_background_variance",
     "o_background_rates",
     "o_background_variance",
+    "h_synthetic_floor",
+    "h_proxy_floor",
+    "o_synthetic_floor",
+    "o_proxy_floor",
 ]
-GOODTIMES_FIELDS = [
-    "gt_start_met",
-    "gt_end_met",
-    "bin_start",
-    "bin_end",
-    "esa_goodtime_flags",
-]
+
+GOODTIMES_FIELDS = ["gt_start_met", "gt_end_met", "pivot", "pivot_de"]
 
 # -------------------------------------------------------------------
 DE_CLOCK_TICK_S = 4.096e-3  # seconds per DE clock tick
@@ -2501,8 +2498,7 @@ def l1b_star(
 def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     sci_dependencies: dict,
     attr_mgr_l1b: ImapCdfAttributes,
-    cycle_count: int = 10,
-    delay_max: int = 840,
+    delay_max: int | None = None,
 ) -> xr.Dataset:
     """
     Create the IMAP-Lo L1B Background dataset.
@@ -2515,10 +2511,9 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
         Dictionary of datasets needed for L1B data product creation in xarray Datasets.
     attr_mgr_l1b : ImapCdfAttributes
         Attribute manager for L1B dataset metadata.
-    cycle_count : int
-        Maximum number of ASCs to group together (default: 10).
-    delay_max : int
-        Maximum allowed delay between entries in seconds (default: 840).
+    delay_max : int | None
+        Maximum time gap [s] between consecutive histogram epochs before treating them
+        as separate intervals. If None, the default value of 100 is used.
 
     Returns
     -------
@@ -2526,308 +2521,286 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
         L1B bgrates dataset with ESA flags per epoch and bin.
         Each dataset also includes a background rate.
     """
-    l1b_histrates = sci_dependencies["imap_lo_l1b_histrates"]
-    # l1b_nhk = sci_dependencies["imap_lo_l1b_nhk"]
+    if delay_max is None:
+        delay_max = c.DELAY_MAX
 
-    # Initialize the dataset
-    l1b_backgrounds_and_goodtimes_ds = xr.Dataset()
-    datasets_to_return = []
+    elems = c.ELEMS  # shortcut
 
-    # Set the expected background rate based on the pivot angle
-    # This assumes a static pivot_angle for the entire pointing
-    # pivot_angle = _get_nearest_pivot_angle(l1b_histrates["epoch"].values[0], l1b_nhk)
-    # if (pivot_angle < 95.0) & (pivot_angle > 85.0):
-    #    h_bg_rate_nom = 0.0028
-    # else:
-    #    h_bg_rate_nom = 0.0033
-    h_bg_rate_nom = 0.0028
-    o_bg_rate_nom = h_bg_rate_nom / 100
+    cdf_hist = sci_dependencies["imap_lo_l1b_histrates"]
+    cdf_de = sci_dependencies["imap_lo_l1b_de"]
+    cdf_hk = sci_dependencies["imap_lo_l1b_nhk"]
 
-    interval_nom = 420 * cycle_count  # seconds
-    exposure = interval_nom * 0.5  # 50% duty cycle
+    pivot_de: float = cdf_de["pivot_angle"].item() if "pivot_angle" in cdf_de else 0.0
+    pivot: float = 0.0
 
-    h_intensity = np.sum(
-        l1b_histrates["h_counts"][:, 0:NUM_ESA_STEPS, 20:50], axis=(1, 2)
-    )
-    o_intensity = np.sum(
-        l1b_histrates["o_counts"][:, 0:NUM_ESA_STEPS, 20:50], axis=(1, 2)
-    )
-
-    # Use proper SPICE-based time conversion with current kernels
-    # Note: The reference script adds +9 seconds because they use an
-    # "older time kernel (pre 2012)"
-    # We use current SPICE kernels, so we should NOT add that offset
-    met = ttj2000ns_to_met(l1b_histrates["epoch"].values)
-
-    max_row_count = np.shape(h_intensity)[0]
-    bg_start_met = xr.DataArray([0.0])
-    bg_end_met = xr.DataArray([0.0])
-    epochs = l1b_histrates["epoch"].values.copy()
-    epochs = xr.DataArray(epochs, dims=["epoch"])
-    goodtimes = xr.DataArray(np.zeros((max_row_count, 2), dtype=np.int64))
-    h_background_rate = xr.DataArray(np.zeros((1, NUM_ESA_STEPS), dtype=np.float32))
-    h_background_rate_variance = xr.DataArray(
-        np.zeros((1, NUM_ESA_STEPS), dtype=np.float32)
-    )
-    o_background_rate = xr.DataArray(np.zeros((1, NUM_ESA_STEPS), dtype=np.float32))
-    o_background_rate_variance = xr.DataArray(
-        np.zeros((1, NUM_ESA_STEPS), dtype=np.float32)
-    )
-
-    # Walk through the histrate data in chunks of cycle_count (10)
-    # and identify goodtime intervals and calculate background rates
-    row_count = 0
-    sum_h_bg_counts = 0.0
-    sum_h_bg_exposure = 0.0
-    sum_o_bg_counts = 0.0
-    begin = 0.0
-    end = 0.0
-    logger.debug(
-        f"Starting goodtimes calculation with {max_row_count} epochs, "
-        f"cycle_count={cycle_count}, delay_max={delay_max}"
-    )
-    logger.debug(f"h_bg_rate_nom={h_bg_rate_nom}, exposure={exposure}")
-    for index in range(0, max_row_count, cycle_count):
-        # Calculate the interval for this chunk
-        if (index + cycle_count - 1) < max_row_count:
-            interval = met[index + cycle_count - 1] - met[index]
-        else:
-            interval = interval_nom * max_row_count
-
-        logger.debug(
-            f"\n  Index {index}: met[{index}]="
-            f"{met[index] if index < max_row_count else 'N/A'}, "
-            f"interval={interval}, begin={begin}"
+    if "pcc_coarse_pot_pri" in cdf_hk:
+        hk_epoch_ets = ttj2000ns_to_et(cdf_hk["epoch"])
+        start_et_hk = (
+            hk_epoch_ets[0] + timedelta(hours=c.PIVOT_HK_HOUR_RANGE[0]).total_seconds()
+        )
+        end_et_hk = (
+            hk_epoch_ets[0] + timedelta(hours=c.PIVOT_HK_HOUR_RANGE[1]).total_seconds()
         )
 
-        # Skip this chunk if the interval is too large (indicates a gap)
-        if interval > (interval_nom + delay_max):
-            logger.debug(
-                f"    Skipping chunk due to large interval ({interval} > "
-                f"{interval_nom + delay_max})"
-            )
-            # If we were tracking a goodtime interval, close it before the gap
+        coarse_pot_pri = cdf_hk["pcc_coarse_pot_pri"].values
+        pivot = np.nanmedian(  # type: ignore
+            coarse_pot_pri[(hk_epoch_ets >= start_et_hk) & (hk_epoch_ets <= end_et_hk)]
+        )
+        if np.isnan(pivot):
+            pivot = 90.0
+    else:
+        pivot = 90.0
+
+    epoch_ttj2000 = cdf_hist["epoch"].values
+    n_epochs = epoch_ttj2000.shape[0]
+    met = ttj2000ns_to_met(epoch_ttj2000)
+
+    # Get year and day-of-year for the anti-RAM threshold override lookup
+    epoch_utc_str = et_to_utc(ttj2000ns_to_et(epoch_ttj2000[0]))
+    epoch_start_dt = datetime.strptime(epoch_utc_str.split("T")[0], "%Y-%m-%d")
+    epoch_year = epoch_start_dt.year
+    epoch_doy = epoch_start_dt.timetuple().tm_yday
+
+    # Choose background rate thresholds based on pivot orientation.
+    if c.PIVOT_90_RANGE[0] < pivot < c.PIVOT_90_RANGE[1]:
+        bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_90
+        bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_90
+    else:
+        bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_NON_90
+        bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_NON_90
+
+    # Manual overrides of the anti-RAM threshold for anomalous days.
+    bg_rate_anti_ram_nominal = c.BG_RATE_ANTI_RAM_OVERRIDES.get(
+        (epoch_year, epoch_doy), bg_rate_anti_ram_nominal
+    )
+
+    ram_esa_indices = [i - 1 for i in c.RAM_ESA_LEVELS]  # Convert to 0-indexed
+
+    # Sum histogram counts over the relevant angular bins for each species and
+    # direction. RAM counts use only certain ESA steps; anti-RAM counts use all.
+    elem_ram_counts = {}
+    elem_anti_ram_counts = {}
+    for elem in elems:
+        elem_counts = cdf_hist[f"{elem.lower()}_counts"].values
+        elem_ram_counts[elem] = sum(
+            np.sum(elem_counts[:, ram_esa_indices, b], axis=(1, 2))
+            for b in c.RAM_HISTOGRAM_BINS
+        )
+        elem_anti_ram_counts[elem] = sum(
+            np.sum(elem_counts[:, :, b], axis=(1, 2)) for b in c.ANTI_RAM_HISTOGRAM_BINS
+        )
+
+    # Pre-compute expected exposure times [s] for the averaging and summing windows.
+    exposure = c.HISTOGRAM_CYCLE_EPOCHS * c.N_CYCLE_AVE * c.EXPOSURE_FACTOR
+    exposure_ram = exposure * len(c.RAM_ESA_LEVELS) / c.N_ESA_LEVELS
+    exposure_sum = c.HISTOGRAM_CYCLE_EPOCHS * c.N_CYCLE_SUM * c.EXPOSURE_FACTOR
+
+    # Walk through histogram epochs one N_CYCLE_SUM block at a time.
+    begin = end = 0.0
+    interval = c.HISTOGRAM_CYCLE_EPOCHS * c.N_CYCLE_SUM
+    synthetic_floors = {e: 0.0 for e in elems}  # Accumulated model-predicted BG counts
+    proxy_floors = {
+        e: 0.0 for e in elems
+    }  # Accumulated measured anti-RAM counts (BG proxy)
+    goodtime_exposure_avg = goodtime_exposure_sum = 0.0
+    goodtime_rows = []
+
+    for i in range(0, n_epochs, c.N_CYCLE_SUM):
+        measured_interval = interval
+        if i + c.N_CYCLE_SUM < n_epochs:
+            measured_interval = met[i + c.N_CYCLE_SUM] - met[i]
+
+        if measured_interval > (interval + delay_max):
             if begin > 0.0:
-                end = met[index - 1]
-                logger.debug(f"    Closing interval before gap: {begin} -> {end}")
-
-                epochs[row_count] = l1b_histrates["epoch"][index - 1].values.item()
-                goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
-                logger.debug(
-                    f"    STORED interval {row_count} (large interval): "
-                    f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
+                end = met[i - 1]
+                goodtime_rows.append(
+                    (
+                        begin,
+                        end,
+                        bg_rate_anti_ram_nominal,
+                        goodtime_exposure_avg,
+                        goodtime_exposure_sum,
+                    )
                 )
-
-                row_count += 1
-                begin = 0.0
-                end = 0.0
-
-            # Skip this chunk after closing interval
+                begin = end = 0.0
             continue
 
-        # Check for time gap from previous chunk
+        # A large gap (missing data) forces the current good-time interval to close.
         delta_time = 0.0
-        if index > 0:
-            delta_time = met[index] - (met[index - 1] + 420)
-            logger.debug(
-                f"    Delta time from previous: {delta_time} (max: {delay_max})"
+        if i > 0:
+            delta_time = met[i] - (met[i - 1] + c.HISTOGRAM_CYCLE_EPOCHS)
+
+        if (delta_time > c.DELAY_MAX) and (begin > 0.0):
+            end = met[i - 1]
+            goodtime_rows.append(
+                (
+                    begin,
+                    end,
+                    bg_rate_anti_ram_nominal,
+                    goodtime_exposure_avg,
+                    goodtime_exposure_sum,
+                )
             )
+            begin = end = 0.0
 
-        # If there's a gap and we have an active interval, close it
-        if (delta_time > delay_max) & (begin > 0.0):
-            end = met[index - 1]
-            logger.debug(f"    Closing interval due to time gap: {begin} -> {end}")
+        # Sliding window centered on epoch i for rate averaging
+        window_avg_start = max(int(i - c.N_CYCLE_AVE // 2), 0)
+        window_avg_end = min(n_epochs, window_avg_start + c.N_CYCLE_AVE)
+        if (window_avg_end - window_avg_start) < c.N_CYCLE_AVE:
+            window_avg_start = max(window_avg_end - c.N_CYCLE_AVE, 0)
 
-            epochs[row_count] = l1b_histrates["epoch"][index - 1].values.item()
-            goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
-            logger.debug(
-                f"    STORED interval {row_count} (time gap): "
-                f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
-            )
+        # Sliding window centered on epoch i for accumulating counts
+        window_sum_start = max(int(i - c.N_CYCLE_SUM // 2), 0)
+        window_sum_end = min(n_epochs, window_sum_start + c.N_CYCLE_SUM)
+        if (window_sum_end - window_sum_start) < c.N_CYCLE_SUM:
+            window_sum_start = max(window_avg_end - c.N_CYCLE_SUM, 0)
 
-            row_count += 1
-            begin = 0.0
-            end = 0.0
-
-        # Calculate counts and rate for this chunk
-        antiram_h_counts = float(np.sum(h_intensity[index : index + cycle_count]))
-        antiram_o_counts = float(np.sum(o_intensity[index : index + cycle_count]))
-        antiram_h_rate = antiram_h_counts / exposure
-
-        logger.debug(
-            f"    Rate: {antiram_h_rate:.6f}, threshold: {h_bg_rate_nom:.6f}, "
-            f"counts: {antiram_h_counts}"
+        # Estimate background rates from the averaged H counts
+        ram_rate = (
+            np.sum(elem_ram_counts["H"][window_avg_start:window_avg_end]) / exposure_ram
+        )
+        anti_ram_rate = (
+            np.sum(elem_anti_ram_counts["H"][window_avg_start:window_avg_end])
+            / exposure
         )
 
-        # If rate is below threshold, accumulate for background
-        if antiram_h_rate < h_bg_rate_nom:
+        # good-time = intervals where background rates are below threshold
+        if (ram_rate < bg_rate_ram_nominal) and (
+            anti_ram_rate < bg_rate_anti_ram_nominal
+        ):
             if begin == 0.0:
-                begin = met[index]
-                logger.debug(f"    Starting new interval at {begin}")
+                begin = met[i]  # Start a new good-time interval
 
-            sum_h_bg_counts = sum_h_bg_counts + antiram_h_counts
-            sum_o_bg_counts = sum_o_bg_counts + antiram_o_counts
-            sum_h_bg_exposure = sum_h_bg_exposure + exposure
-
-        # If rate exceeds threshold, close the interval if one is active
-        if antiram_h_rate >= h_bg_rate_nom:
-            if begin > 0.0:
-                end = met[index - 1]
-                logger.debug(
-                    f"    Closing interval due to rate threshold: {begin} -> {end}"
-                )
-                print("    antiram_h_rate: ", antiram_h_rate, " at index ", index)
-                print("l1b_histrates epoch: ", l1b_histrates["epoch"][index - 1].values)
-                epochs[row_count] = l1b_histrates["epoch"][index - 1].values.item()
-                goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
-                logger.debug(
-                    f"    STORED interval {row_count} (rate threshold): "
-                    f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
+            for elem in elems:
+                synthetic_floors[elem] += c.BG_RATES[elem] * exposure
+                proxy_floors[elem] += np.sum(
+                    elem_anti_ram_counts["H"][window_sum_start:window_sum_end]
                 )
 
-                row_count += 1
-                begin = 0.0
-                end = 0.0
+            goodtime_exposure_avg += exposure
+            goodtime_exposure_sum += exposure_sum
 
-    # Handle the final interval if one is still open
-    if (end == 0.0) & (begin > 0.0):
-        end = met[max_row_count - 1]
+        elif begin > 0.0:
+            # Background exceeded threshold; close the current good-time interval.
+            end = met[i - 1]
+            goodtime_rows.append(
+                (
+                    begin,
+                    end,
+                    bg_rate_anti_ram_nominal,
+                    goodtime_exposure_avg,
+                    goodtime_exposure_sum,
+                )
+            )
+            begin = end = 0.0
+
+    if (end == 0.0) and (begin > 0.0):
+        end = met[n_epochs - 1]
         if end > begin:
-            epochs[row_count] = l1b_histrates["epoch"][max_row_count - 1]
-            goodtimes[row_count, :] = [int(begin - 620), int(end + 320)]
-            logger.debug(
-                f"    STORED interval {row_count} (final): "
-                f"{int(begin - 620)} -> {int(end + 320)} (raw: {begin} -> {end})"
+            goodtime_rows.append(
+                (
+                    begin,
+                    end,
+                    bg_rate_anti_ram_nominal,
+                    goodtime_exposure_avg,
+                    goodtime_exposure_sum,
+                )
             )
 
-            row_count += 1
-            begin = 0.0
-            end = 0.0
+    # Compute background rates per species
+    bg_rates_out = {}
+    sigma_bg_rates_out = {}
+    for elem in elems:
+        if goodtime_exposure_avg == 0:
+            bg_rate = bg_rate_anti_ram_nominal * c.BG_RATE_FALLBACK_SCALE[elem]
+            sigma_bg_rate = bg_rate
+        else:
+            bg_rate = synthetic_floors[elem] / goodtime_exposure_avg
+            sigma_bg_rate = np.sqrt(synthetic_floors[elem]) / goodtime_exposure_avg
 
-    # Record the background rates for the entire pointing
-    if sum_h_bg_exposure > 0.0:
-        h_bg_rate = sum_h_bg_counts / sum_h_bg_exposure
-        h_bg_rate_variance = np.sqrt(sum_h_bg_counts) / sum_h_bg_exposure
-        o_bg_rate = sum_o_bg_counts / sum_h_bg_exposure
-        o_bg_rate_variance = np.sqrt(sum_o_bg_counts) / sum_h_bg_exposure
+        if bg_rate == 0.0:
+            bg_rate = bg_rate_anti_ram_nominal / c.BG_RATE_FLOOR_DIVISOR[elem]
+            sigma_bg_rate = bg_rate
+        if sigma_bg_rate == 0.0:
+            sigma_bg_rate = bg_rate
 
-        if h_bg_rate_variance <= 0.0:
-            h_bg_rate_variance = h_bg_rate
+        bg_rates_out[elem] = bg_rate
+        sigma_bg_rates_out[elem] = sigma_bg_rate
 
-        if o_bg_rate_variance <= 0.0:
-            o_bg_rate_variance = o_bg_rate
+    # Final adjustment - add padding to each goodtime interval
+    for i, (begin, end, *other) in enumerate(goodtime_rows):
+        goodtime_rows[i] = (
+            begin - c.GOODTIME_PADDING,
+            end + c.GOODTIME_PADDING,
+            *other,
+        )
 
-        if h_bg_rate <= 0.0:
-            h_bg_rate = h_bg_rate_nom / 50.0
-            h_bg_rate_variance = h_bg_rate
+    if len(goodtime_rows) == 0:
+        goodtime_rows = [(0, 0, 0, 0, 0)]
 
-        if o_bg_rate <= 0.0:
-            o_bg_rate = o_bg_rate_nom * 0.3
-            o_bg_rate_variance = o_bg_rate
+    # Initialize the dataset
+    datasets_to_return = []
+    l1b_combined_ds = xr.Dataset()
 
-        h_background_rate[0, :] = np.full(NUM_ESA_STEPS, h_bg_rate)
-        h_background_rate_variance[0, :] = np.full(NUM_ESA_STEPS, h_bg_rate_variance)
-        o_background_rate[0, :] = np.full(NUM_ESA_STEPS, o_bg_rate)
-        o_background_rate_variance[0, :] = np.full(NUM_ESA_STEPS, o_bg_rate_variance)
-        bg_start_met[0] = met[0]
-        bg_end_met[0] = met[max_row_count - 1]
+    epoch_values = met_to_ttj2000ns(np.array([r[0] for r in goodtime_rows]))
 
-    # Handle case where no goodtimes were found -- produce a
-    # single record with invalid times (the defaults above)
-    if row_count == 0:
-        row_count = 1
-
-    # Trim arrays to actual size
-    epoch = epochs.isel(epoch=slice(0, row_count))
-    goodtimes = goodtimes.isel(dim_0=slice(0, row_count))
-
-    l1b_backgrounds_and_goodtimes_ds["epoch"] = xr.DataArray(
-        data=epoch,
+    l1b_combined_ds["epoch"] = xr.DataArray(
+        data=epoch_values,
         name="epoch",
         dims=["epoch"],
         attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
     )
-    l1b_backgrounds_and_goodtimes_ds["epoch"].attrs["DEPEND_0"] = "epoch"
-    l1b_backgrounds_and_goodtimes_ds["start_met"] = xr.DataArray(
-        data=bg_start_met,
-        name="start_met",
-        dims=["met"],
-        attrs=attr_mgr_l1b.get_variable_attributes("met"),
+    l1b_combined_ds["epoch"].attrs["DEPEND_0"] = "epoch"
+
+    l1b_combined_ds["pivot"] = xr.DataArray(
+        data=np.float32(pivot),
+        name="pivot",
     )
-    l1b_backgrounds_and_goodtimes_ds["end_met"] = xr.DataArray(
-        data=bg_end_met,
-        name="end_met",
-        dims=["met"],
-        attrs=attr_mgr_l1b.get_variable_attributes("met"),
+    l1b_combined_ds["pivot_de"] = xr.DataArray(
+        data=np.float32(pivot_de),
+        name="pivot_de",
     )
-    l1b_backgrounds_and_goodtimes_ds["gt_start_met"] = xr.DataArray(
-        data=goodtimes[:, 0],
+
+    l1b_combined_ds["gt_start_met"] = xr.DataArray(
+        data=np.array([r[0] for r in goodtime_rows], dtype=np.int64),
         name="Goodtime_start",
         dims=["epoch"],
-        # attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
     )
-    l1b_backgrounds_and_goodtimes_ds["gt_end_met"] = xr.DataArray(
-        data=goodtimes[:, 1],
+    l1b_combined_ds["gt_end_met"] = xr.DataArray(
+        data=np.array([r[1] for r in goodtime_rows], dtype=np.int64),
         name="Goodtime_end",
         dims=["epoch"],
-        # attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
     )
-    l1b_backgrounds_and_goodtimes_ds["h_background_rates"] = xr.DataArray(
-        data=h_background_rate,
-        name="h_bg_rate",
-        dims=["met", "esa_step"],
-        # attrs=attr_mgr_l1b.get_variable_attributes("esa_background_rates"),
-    )
-    l1b_backgrounds_and_goodtimes_ds["h_background_variance"] = xr.DataArray(
-        data=h_background_rate_variance,
-        name="h_bg_rate_variance",
-        dims=["met", "esa_step"],
-    )
-    l1b_backgrounds_and_goodtimes_ds["o_background_rates"] = xr.DataArray(
-        data=o_background_rate,
-        name="o_bg_rate",
-        dims=["met", "esa_step"],
-        # attrs=attr_mgr_l1b.get_variable_attributes("esa_background_rates"),
-    )
-    l1b_backgrounds_and_goodtimes_ds["o_background_variance"] = xr.DataArray(
-        data=o_background_rate_variance,
-        name="o_bg_rate_variance",
-        dims=["met", "esa_step"],
-    )
+    # Per-species scalar variables
+    for elem in elems:
+        elem_lower = elem.lower()
+        # For *_background_rates, and *_background_variance for each species,
+        # we return a (1, N_ESA_LEVELS) array of identical values to be backward
+        # compatible with an old implementation of the algorithm.
+        l1b_combined_ds[f"{elem_lower}_background_rates"] = xr.DataArray(
+            data=np.full((1, c.N_ESA_LEVELS), bg_rates_out[elem]),
+            name=f"{elem_lower}_background_rates",
+        )
+        l1b_combined_ds[f"{elem_lower}_background_variance"] = xr.DataArray(
+            data=np.full((1, c.N_ESA_LEVELS), sigma_bg_rates_out[elem]),
+            name=f"{elem_lower}_background_variance",
+        )
+        l1b_combined_ds[f"{elem_lower}_synthetic_floor"] = xr.DataArray(
+            data=np.float32(synthetic_floors[elem]),
+            name=f"{elem_lower}_synthetic_floor",
+        )
+        l1b_combined_ds[f"{elem_lower}_proxy_floor"] = xr.DataArray(
+            data=np.float32(proxy_floors[elem]),
+            name=f"{elem_lower}_proxy_floor",
+        )
 
-    # We're only creating one record for all bins for now
-    # Note that this is true for both GoodTimes and background rates,
-    # so we cheat here by just using one record.
-    l1b_backgrounds_and_goodtimes_ds["bin_start"] = xr.DataArray(
-        data=np.zeros(row_count, dtype=int),
-        name="bin_start",
-        dims=["epoch"],
-        # attrs=attr_mgr_l1b.get_variable_attributes("bin_start"),
-    )
-    l1b_backgrounds_and_goodtimes_ds["bin_end"] = xr.DataArray(
-        data=np.zeros(row_count, dtype=int) + 59,
-        name="bin_end",
-        dims=["epoch"],
-        # attrs=attr_mgr_l1b.get_variable_attributes("bin_end"),
-    )
-
-    # For now, set all ESA flags to 1 (good) since we don't have
-    # an algorithm for this yet
-    l1b_backgrounds_and_goodtimes_ds["esa_goodtime_flags"] = xr.DataArray(
-        data=np.zeros((row_count, NUM_ESA_STEPS), dtype=int) + 1,
-        name="E-step",
-        dims=["epoch", "esa_step"],
-        # attrs=attr_mgr_l1b.get_variable_attributes("esa_goodtime_flags"),
-    )
-
-    logger.info("L1B Background Rates and Goodtimes created successfully")
+    logger.info("L1B Background Rates and Bettertimes created successfully")
 
     l1b_bgrates_ds, l1b_goodtimes_ds = split_backgrounds_and_goodtimes_dataset(
-        l1b_backgrounds_and_goodtimes_ds, attr_mgr_l1b
+        l1b_combined_ds, attr_mgr_l1b
     )
     datasets_to_return.extend([l1b_bgrates_ds, l1b_goodtimes_ds])
-    print("epoch bgrates meta", l1b_bgrates_ds["epoch"].attrs)
-    print("epoch goodtimes meta", l1b_goodtimes_ds["epoch"].attrs)
+
     return datasets_to_return
 
 
@@ -2853,7 +2826,6 @@ def split_backgrounds_and_goodtimes_dataset(
     l1b_goodtimes_rates : xr.Dataset
         The L1B goodtimes rates dataset.
     """
-    # Use centralized lists for fields to include in split datasets
     l1b_goodtimes_ds = l1b_backgrounds_and_goodtimes_ds[GOODTIMES_FIELDS]
     l1b_goodtimes_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_goodtimes")
     lib_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[BACKGROUND_RATE_FIELDS]
