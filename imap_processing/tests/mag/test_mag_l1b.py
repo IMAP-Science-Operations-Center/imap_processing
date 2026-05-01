@@ -11,6 +11,8 @@ from imap_processing.mag.l1b.mag_l1b import (
     mag_l1b,
     mag_l1b_processing,
     rescale_vector,
+    shift_time,
+    timeshift_vectors_per_second,
 )
 from imap_processing.tests.mag.conftest import (
     mag_l1a_dataset_generator,
@@ -226,3 +228,30 @@ def test_l1a_to_l1b(validation_l1a, mag_l1b_cal_dataset):
 
     assert len(l1b[0]["vectors"].data) > 0
     assert len(l1b[1]["vectors"].data) > 0
+
+
+def test_shift_time_preserves_int64_precision():
+    # Issue #3102: TT2000 epochs near 8e17 ns must stay int64; float promotion
+    # silently quantizes them.
+    epoch = xr.DataArray(
+        np.array(
+            [813411068230810679, 813411068238623179, 813411068246435679],
+            dtype=np.int64,
+        ),
+        dims="epoch",
+    )
+
+    zero = shift_time(epoch, xr.DataArray(np.array([0.0]), dims="epoch"))
+    np.testing.assert_array_equal(zero.values, epoch.values)
+
+    shifted = shift_time(epoch, xr.DataArray(np.array([1.2345e-5]), dims="epoch"))
+    assert shifted.dtype == np.int64
+    np.testing.assert_array_equal(shifted.values, epoch.values + 12345)
+
+
+def test_timeshift_vectors_per_second_preserves_int64_precision():
+    shift = xr.DataArray(np.array([1.2345e-5]), dims="epoch")
+    out = timeshift_vectors_per_second(
+        "813411068230810679:128,813411500000000000:128", shift
+    )
+    assert out == "813411068230823024:128,813411500000012345:128"

@@ -82,12 +82,23 @@ epoch:
   CATDESC: Map time range start, number of nanoseconds since J2000 with leap seconds included
   FIELDNAM: J2000 Nanoseconds
   DELTA_PLUS_VAR: epoch_delta
+  DELTA_MINUS_VAR: epoch_delta_minus
   BIN_LOCATION: 0
 
 epoch_delta:
   <<: *default_int64
   CATDESC: Number of nanoseconds covered by data included in this map product.
   FIELDNAM: epoch delta
+  UNITS: ns
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  TIME_SCALE: Terrestrial Time
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+
+epoch_delta_minus:
+  <<: *default_int64
+  CATDESC: Number of nanoseconds before epoch included in this map product (always equal to zero).
+  FIELDNAM: epoch delta minus
   UNITS: ns
   VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot

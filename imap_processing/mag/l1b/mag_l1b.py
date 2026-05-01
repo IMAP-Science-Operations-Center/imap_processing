@@ -398,7 +398,7 @@ def shift_time(epoch_times: xr.DataArray, time_shift: xr.DataArray) -> xr.DataAr
     if time_shift.size != 1:
         raise ValueError("Time shift must be a single value.")
     # Time shift is in seconds
-    time_shift_ns = time_shift.data * 1e9
+    time_shift_ns = np.int64(round(time_shift.data.item() * 1e9))
 
     return epoch_times + time_shift_ns
 
@@ -426,7 +426,7 @@ def timeshift_vectors_per_second(
     str
         The updated vectors per second attribute.
     """
-    time_shift_ns = time_shift.data * 1e9
+    time_shift_ns = np.int64(round(time_shift.data.item() * 1e9))
 
     vecsec = vectors_per_second_from_string(vectors_per_second)
     new_vecsec = ""

@@ -26,6 +26,7 @@ from xarray import DataArray
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.idex_constants import (
+    DT_BLOCK,
     IDEX_EVENT_REFERENCE_FRAME,
     ConversionFactors,
 )
@@ -245,6 +246,8 @@ def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
         l1a_dataset, var_information_df, idex_attrs
     )
 
+    dead_time = get_event_dead_time(l1a_dataset, idex_attrs)
+
     waveforms_converted = convert_waveforms(l1a_dataset, idex_attrs)
 
     # Get spice data and save them as xr.DataArrays in the output. Spice data is not
@@ -259,6 +262,7 @@ def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
     prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample", "aid"]
     data_vars = (
         processed_vars
+        | dead_time
         | waveforms_converted
         | trigger_settings
         | spice_data
@@ -494,6 +498,57 @@ def get_trigger_origin(
             data=np.squeeze(origin_labels),
             dims="epoch",
             attrs=idex_attrs.get_variable_attributes("trigger_origin"),
+        )
+    }
+
+
+def get_event_dead_time(
+    l1a_dataset: xr.Dataset,
+    idex_attrs: ImapCdfAttributes,
+) -> dict[str, xr.DataArray]:
+    """
+    Compute event dead time (in seconds) from packed txhdrblocks.
+
+    The dead time is encoded via two bitfields:
+    - dead_blocks_base  (6 bits)
+    - dead_blocks_shift (4 bits)
+
+    Dead time is computed as:
+        dead_time = dead_blocks_base * 2**dead_blocks_shift * DT_BLOCK
+
+    where DT_BLOCK is the duration of a single low-rate block.
+
+    Parameters
+    ----------
+    l1a_dataset : xarray.Dataset
+        IDEX L1A dataset containing the packed `idx__txhdrblocks` variable.
+    idex_attrs : ImapCdfAttributes
+        CDF attribute manager object.
+
+    Returns
+    -------
+    dict[str, xarray.DataArray]
+        Dictionary containing the `dead_time` DataArray (seconds).
+    """
+    txhdrblocks = l1a_dataset["idx__txhdrblocks"].data
+
+    # Extract bitfields
+    dead_blocks_shift = (txhdrblocks >> 20) & 0b1111
+    dead_blocks_base = (txhdrblocks >> 24) & 0b111111
+
+    # Convert to float once
+    base = dead_blocks_base.astype(np.float64)
+    shift = dead_blocks_shift.astype(np.float64)
+
+    # Compute dead time
+    dead_time_array: NDArray[np.float64] = base * np.power(2.0, shift) * DT_BLOCK
+
+    return {
+        "dead_time": xr.DataArray(
+            name="dead_time",
+            data=dead_time_array,
+            dims="epoch",
+            attrs=idex_attrs.get_variable_attributes("dead_time"),
         )
     }
 

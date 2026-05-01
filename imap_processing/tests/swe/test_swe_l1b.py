@@ -12,6 +12,7 @@ from imap_data_access.processing_input import (
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.quality_flags import SweL1bFlags
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.l1b.swe_l1b import (
@@ -79,7 +80,7 @@ def test_in_flight_calibration_factor(l1a_test_data):
         imap_module_directory
         / "tests/swe/lut/imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
     ]
-    calibrated_count = apply_in_flight_calibration(
+    calibrated_count, _ = apply_in_flight_calibration(
         one_full_cycle_data,
         acquisition_time,
         in_flight_cal_files,
@@ -108,6 +109,59 @@ def test_in_flight_calibration_factor(l1a_test_data):
         apply_in_flight_calibration(
             one_full_cycle_data, acquisition_time, in_flight_cal_files
         )
+
+
+def test_quality_flags_last_cal_interval():
+    """Test that LAST_CAL_INTERVAL flag is set correctly per epoch.
+
+    The test LUT has cal_times = [453050308, 553051294, 1782864000].
+    LAST_CAL_INTERVAL is set when any acquisition time > cal_times[-2] = 553051294.
+    The halfway met_time point of the last calibration interval is 1167957647.
+    """
+    in_flight_cal_files = [
+        imap_module_directory
+        / "tests/swe/lut/imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
+    ]
+    n_cycles = 3
+    counts = np.ones(
+        (
+            n_cycles,
+            swe_constants.N_ESA_STEPS,
+            swe_constants.N_ANGLE_SECTORS,
+            swe_constants.N_CEMS,
+        )
+    )
+    # cycle 0: all times before last cal interval
+    acq_time = np.full(
+        (n_cycles, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS),
+        453051355.0,
+    )
+    # cycle 1: all times in last cal interval, halfway between MET with CEM detector
+    # factor 1.0 and MET with CEM detector factor 2.0
+    acq_time[1, :, :] = 1167957647.0
+    # cycle 2: mixed - one time (for first ESA level and first angle sector) in last
+    # cal interval, halfway between MET with CEM detector factor 1.0 and MET with CEM
+    # detector factor 2.0
+    acq_time[2, 0, 0] = 1167957647.0
+
+    corrected_counts, flags = apply_in_flight_calibration(
+        counts, acq_time, in_flight_cal_files
+    )
+
+    assert not (flags[0] & SweL1bFlags.LAST_CAL_INTERVAL.value)
+    # all counts for cycle 0 stay the same
+    np.testing.assert_allclose(corrected_counts[0, ...], 1)
+
+    assert flags[1] & SweL1bFlags.LAST_CAL_INTERVAL.value
+    # all counts for cycle 1 scale by a factor of 1.5
+    np.testing.assert_allclose(corrected_counts[1, ...], 1.5)
+
+    assert flags[2] & SweL1bFlags.LAST_CAL_INTERVAL.value
+    # all counts for cycle 2 + the first ESA level + the first angle sector
+    # scale by a factor of 1.5
+    np.testing.assert_allclose(corrected_counts[2, 0, 0, :], 1.5)
+    # all other counts for cycle 2 remain the same
+    np.testing.assert_allclose(corrected_counts[2, 1:, 1:, :], 1)
 
 
 def test_swe_l1b_conversion(decom_test_data_derived):

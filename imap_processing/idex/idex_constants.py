@@ -46,6 +46,11 @@ NS_TO_S = 1e-9
 # Microseconds to seconds conversion
 US_TO_S = 1e-6
 
+# Low-rate timing constants
+LOW_SAMPLE_RATE_HZ: float = 4.0625e6
+SAMPLES_PER_BLOCK: int = 8
+DT_BLOCK: float = SAMPLES_PER_BLOCK / LOW_SAMPLE_RATE_HZ
+
 # Seconds in a day
 SECONDS_IN_DAY = 86400
 # Nanoseconds in day
