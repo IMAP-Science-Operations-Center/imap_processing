@@ -111,7 +111,7 @@ lint.ignore = [
 # RUF043 pattern match has regex characters like a period (.) that are not escaped
 # RUF059 unused variables unpacked
 # S603 unchecked input in subprocess call is fine in our tests
-"*/tests/*" = ["D", "PT006", "RUF043", "RUF059", "S101", "S603", "PLW0108"]
+"*/tests/*" = ["D", "PT006", "RUF043", "RUF059", "S101", "S603", "PLW0108", "RUF061"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

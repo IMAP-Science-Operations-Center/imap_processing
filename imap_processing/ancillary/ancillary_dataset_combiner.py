@@ -231,7 +231,7 @@ class AncillaryCombiner:
 
         # sort by version
         sorted_data_list = sorted(
-            self.timestamped_data, key=lambda x: (int(x.version[-3:]))
+            self.timestamped_data, key=lambda x: int(x.version[-3:])
         )
 
         epoch_data = xr.date_range(
