@@ -123,8 +123,3 @@ Our tests are run using pytest:
 
     source $(poetry env info --path)/bin/activate
     pytest
-
-Related Information
--------------------
-
-For more information relating to infrastructure, see `sds-data-manager <https://sds-data-manager.readthedocs.io/en/latest/>`_.
