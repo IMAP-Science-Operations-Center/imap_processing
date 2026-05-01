@@ -4,12 +4,13 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
 from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
-from imap_processing.glows.l2.glows_l2 import glows_l2
+from imap_processing.glows.l2.glows_l2 import create_l2_dataset, glows_l2
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
@@ -156,6 +157,14 @@ def test_generate_l2(
         )
         assert np.isclose(
             l2.hv_voltage_std_dev, expected_values["hv_voltage_std_dev"], 0.01
+        )
+
+        cdf_attrs = ImapCdfAttributes()
+        cdf_attrs.add_instrument_global_attrs("glows")
+        cdf_attrs.add_instrument_variable_attrs("glows", "l2")
+        assert (
+            create_l2_dataset(l2, cdf_attrs)["epoch"].data[0]
+            == (l2.start_time + l2.end_time) / 2
         )
 
         # Test case 2: L1B dataset has no good times (all flags 0)

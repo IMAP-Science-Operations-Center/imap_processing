@@ -375,7 +375,9 @@ def generate_histogram_dataset(
     }
 
     for index, hist in enumerate(hist_l1a_list):
-        epoch_time = met_to_ttj2000ns(hist.imap_start_time.to_seconds())
+        epoch_time = met_to_ttj2000ns(
+            hist.imap_start_time.to_seconds() + hist.imap_time_offset.to_seconds() / 2
+        )
         # Assign histogram data, padding with zeros if shorter than max_bins
         hist_len = len(hist.histogram)
         hist_data[index, :hist_len] = hist.histogram
