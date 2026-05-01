@@ -370,10 +370,20 @@ class HistogramL2:
         """
         active_flags = np.array(pipeline_settings.active_bad_time_flags, dtype=float)
 
+        # Apply sunrise/sunset offsets to extend the night region around
+        # is_night transitions before selecting good blocks.
+        flags = self.apply_is_night_offsets(
+            l1b_dataset["flags"].data,
+            is_night_idx=GlowsConstants.IS_NIGHT_FLAG_IDX,
+            sunrise_offset=int(pipeline_settings.sunrise_offset),
+            sunset_offset=int(pipeline_settings.sunset_offset),
+        )
+        flags_da = xr.DataArray(flags, dims=l1b_dataset["flags"].dims)
+
         # Select the good blocks (i.e. epoch values) according to the flags. Drop any
         # bad blocks before processing.
         good_data = l1b_dataset.isel(
-            epoch=self.return_good_times(l1b_dataset["flags"], active_flags)
+            epoch=self.return_good_times(flags_da, active_flags)
         )
         # TODO: bad angle filter
         # TODO: filter bad bins out. Needs to happen here while everything is still
@@ -532,6 +542,98 @@ class HistogramL2:
         # where all the active indices == 1.
         good_times = np.where(np.all(flags[:, active_flags == 1] == 1, axis=1))[0]
         return good_times
+
+    @staticmethod
+    def apply_is_night_offsets(
+        flags: np.ndarray,
+        is_night_idx: int,
+        sunrise_offset: int,
+        sunset_offset: int,
+    ) -> np.ndarray:
+        """
+        Apply sunrise/sunset offsets to is_night transitions.
+
+        Per algorithm doc v4.4.7, Sec. 3.9.1, item 2 (raw is_night: 1=night, 0=day):
+
+        sunset_offset applies at both transitions:
+          >0: night shortens by N at each end (first N night epochs at sunset become
+              day; last N night epochs before sunrise become day)
+          <0: night extends by |N| at each end
+
+        sunrise_offset is an additional adjustment at sunrise (is_night 1->0) only:
+          >0: night extends N histograms past the raw sunrise transition
+          <0: night shortens by |N| before the raw sunrise transition
+
+        In the processed flags array: 0 = bad (night), 1 = good (day).
+
+        Parameters
+        ----------
+        flags : numpy.ndarray
+            Flags array with shape (n_epochs, FLAG_LENGTH), 0=bad, 1=good.
+        is_night_idx : int
+            Column index of the is_night flag in the flags array.
+        sunrise_offset : int
+            Additional histogram shift at the sunrise (is_night 1->0) transition.
+        sunset_offset : int
+            Histogram shift applied at both the sunset and sunrise transitions.
+
+        Returns
+        -------
+        numpy.ndarray
+            Returns the original flags array if no offsets are applied,
+            otherwise returns a modified copy.
+
+        Notes
+        -----
+        Algorithm doc v4.4.7, Sec. 3.9.1, item 2
+        is_night: 1 = daytime (good), 0 = night (bad)
+        """
+        # If sunrise_offset=0 and sunset_offset=0 then no corrections are needed
+        # relative to is_night transition set onboard.
+        if sunrise_offset == 0 and sunset_offset == 0:
+            return flags
+
+        flags_with_offsets = flags.copy()
+
+        is_night_col = flags[:, is_night_idx]
+        n = flags.shape[0]
+        diff = np.diff(is_night_col.astype(int))
+        sunset_index = np.where(diff == -1)[0]
+        sunrise_index = np.where(diff == 1)[0]
+
+        if sunrise_offset > 0:
+            # Night (flag = 0) extends by sunrise_offset relative
+            # to is_night 0 -> 1 transition.
+            for i in sunrise_index:
+                flags_with_offsets[
+                    i + 1 : min(n, i + 1 + sunrise_offset), is_night_idx
+                ] = 0
+
+        elif sunrise_offset < 0:
+            # Night (flag = 0) shortens by sunrise_offset relative
+            # to is_night 0 -> 1 transition.
+            for i in sunrise_index:
+                flags_with_offsets[
+                    max(0, i + 1 + sunrise_offset) : i + 1, is_night_idx
+                ] = 1
+
+        if sunset_offset > 0:
+            # Night (flag = 0) shortens by sunset_offset relative
+            # to is_night 1 -> 0 transition.
+            for i in sunset_index:
+                flags_with_offsets[
+                    i + 1 : min(n, i + 1 + sunset_offset), is_night_idx
+                ] = 1
+
+        elif sunset_offset < 0:
+            # Night (flag = 0) extends by sunset_offset relative
+            # to is_night 1 -> 0 transition.
+            for i in sunset_index:
+                flags_with_offsets[
+                    max(0, i + 1 + sunset_offset) : i + 1, is_night_idx
+                ] = 0
+
+        return flags_with_offsets
 
     def compute_position_angle(self) -> float:
         """

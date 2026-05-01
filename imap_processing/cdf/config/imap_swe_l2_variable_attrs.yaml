@@ -299,3 +299,24 @@ acq_duration:
   UNITS: microseconds
   VAR_TYPE: support_data
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Array
+
+data_quality:
+  CATDESC: >
+    In-flight calibration quality flags. Bit 2 (LAST_CAL_INTERVAL): set if any
+    acquisition time in this cycle was extrapolated using the last two entries
+    in the calibration table.
+  FIELDNAM: SWE data quality flags
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: 255
+  FORMAT: I3
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 255
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  VAR_NOTES: >
+    There is 1 flag currently in use. Stored as a bitwise flag. Bit 2
+    (LAST_CAL_INTERVAL, value 4): counter values were extrapolated using the last two
+    calibration table entries. All other bits are reserved.
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality

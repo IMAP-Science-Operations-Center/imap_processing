@@ -141,7 +141,7 @@ EXTERNAL_TEST_DATA = [
 
     # IDEX
     ("idex_l1a_validation_file.h5", "idex/test_data/"),
-    ("imap_idex_l1b_sci_20231218_v002.h5", "idex/test_data/"),
+    ("imap_idex_l1b_sci_20231218_v003.h5", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv", "idex/test_data/"),
 
@@ -277,5 +277,7 @@ EXTERNAL_TEST_DATA = [
     ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat", "swe/l2_validation/"),
 
     # GLOWS
-    ("combined_de_l1a.csv", "glows/validation_data")
+    ("combined_de_l1a.csv", "glows/validation_data"),
+    ("imap_glows_l0_raw_20260202-repoint00145_v001.pkts", "glows/validation_data"),
+    ("imap_glows_l0_raw_20251113-repoint00047_v001.pkts", "glows/validation_data")
 ]  # fmt: skip

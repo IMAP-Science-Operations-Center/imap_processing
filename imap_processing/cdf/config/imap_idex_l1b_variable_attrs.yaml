@@ -6,6 +6,8 @@ data_max: &data_max 4095
 spice_data_min: &spice_data_min -2.0e7
 spice_data_max: &spice_data_max 2.0e7
 
+dead_max: &dead_max 4.065248492307693
+
 # <=== Base Attributes ===>
 string_base_attrs: &string_base
   CATDESC: " "
@@ -391,6 +393,20 @@ current_neg2p5v_bus:
   CATDESC: Negative current reading on -2.5V bus on LVPS Board (ADC 1 channel 7)
   LABLAXIS: Current
   UNITS: A
+
+# <=== Dead Time Attributes ===>
+dead_time:
+  <<: *l1b_data_base
+  CATDESC: Event dead time
+  VALIDMIN: *data_min
+  VALIDMAX: *dead_max
+  DEPEND_0: epoch
+  FORMAT: F12.6
+  UNITS: s
+  VAR_TYPE: data
+  FIELDNAM: event_dead_time
+  FILLVAL: *double_fillval
+  LABLAXIS: event_dead_time
 
 # <=== Spice Data Attributes ===>
 ephemeris_position_x:

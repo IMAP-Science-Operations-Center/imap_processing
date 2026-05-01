@@ -136,7 +136,7 @@ def process_de_l0(
             l1a_output.append(first_de)
 
     # Filter out DE records with no direct_events (incomplete packet sequences)
-    l1a_output = [de for de in l1a_output if de.direct_events is not None]
+    l1a_output = [de for de in l1a_output if de.direct_events]
 
     return l1a_output
 
@@ -328,6 +328,15 @@ def generate_histogram_dataset(
     hist_l1a_list = [
         hist for hist in hist_l1a_list if hist.number_of_bins_per_histogram > 0
     ]
+
+    # Filter out histograms with imap_start_time == 0 (invalid timing data).
+    valid_hists = [hist for hist in hist_l1a_list if hist.imap_start_time.seconds != 0]
+    if len(valid_hists) < len(hist_l1a_list):
+        logger.warning(
+            f"GLOWS: Filtered out {len(hist_l1a_list) - len(valid_hists)} "
+            f"histogram(s) with imap_start_time == 0."
+        )
+    hist_l1a_list = valid_hists
 
     # Store timestamps for each HistogramL1A object.
     time_data: np.ndarray = np.zeros(len(hist_l1a_list), dtype=np.int64)

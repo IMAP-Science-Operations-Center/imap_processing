@@ -112,7 +112,7 @@ class TestUltraL2:
         ],
     )
     @pytest.mark.usefixtures("_mock_single_pset", "_setup_spice_kernels_list")
-    def test_generate_ultra_healpix_skymap_single_pset(
+    def test_generate_ultra_rectangular_skymap_single_pset(
         self, epoch_dim_for_energy_delta, map_frame, rtol, furnish_kernels
     ):
         # Avoid modifying the original pset
@@ -141,9 +141,101 @@ class TestUltraL2:
             pset["energy_bin_delta"] = pset["energy_bin_delta"].expand_dims(
                 {CoordNames.TIME.value: pset["epoch"].values}
             )
+        # Create the rectangular skymap in the desired frame.
+        with furnish_kernels(self.required_kernel_names):
+            rec_skymap, _ = ultra_l2.generate_ultra_skymap(
+                ultra_l1c_psets=[
+                    pset,
+                ],
+                output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
+                    {
+                        "sky_tiling_type": "RECTANGULAR",
+                        "spice_reference_frame": "ECLIPJ2000",
+                        "values_to_push_project": [
+                            "counts",
+                        ],
+                        "values_to_pull_project": [
+                            "exposure_factor",
+                            "sensitivity",
+                            "geometric_function",
+                            "efficiency",
+                            "scatter_theta",
+                            "scatter_phi",
+                            "background_rates",
+                        ],
+                        "spacing_deg": 2.0,
+                    }
+                ),
+                build_rectangular_map=True,
+            )
+
+        assert rec_skymap.spacing_deg == 2.0
+
+        # Check that required variables are present, and dropped variables are not
+        expected_vars = [
+            "counts",
+            "background_rates",
+            "obs_date_range",
+            "exposure_factor",
+            "sensitivity",
+            "geometric_function",
+            "efficiency",
+            "scatter_theta",
+            "scatter_phi",
+            "obs_date",
+        ]
+        for var in expected_vars:
+            assert var in rec_skymap.data_1d.data_vars
+        unexpected_vars = ultra_l2.VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION
+        for var in unexpected_vars:
+            assert var not in rec_skymap.data_1d.data_vars
+
+    @pytest.mark.parametrize("epoch_dim_for_energy_delta", [True, False])
+    @pytest.mark.parametrize(
+        ["map_frame", "rtol"],
+        [
+            # Tight tolerance when 'projecting' to the same frame
+            ("IMAP_DPS", 1e-8),
+            # Loose tolerance of 30% error vs naive ena_intensity
+            # estimate with real projection.
+            # TODO: Ideally this tolerance will tighten if we can fix the issue with
+            # the exposure time for uneven numbers of pixels from each PointingSet.
+            ("ECLIPJ2000", 3e-1),
+        ],
+    )
+    @pytest.mark.usefixtures("_mock_single_pset", "_setup_spice_kernels_list")
+    def test_generate_ultra_healpix_skymap_single_pset(
+        self, epoch_dim_for_energy_delta, map_frame, rtol, furnish_kernels
+    ):
+        # Avoid modifying the original pset
+        pset = mock_l1c_pset_product_healpix(
+            nside=128,
+            stripe_center_lat=0,
+            timestr="2025-05-15T12:00:00",
+            energy_dependent_exposure=True,
+        )
+        # Set the values in the single input PSET for easy calculation
+        # of the expected ena_intensity and ena_intensity statistical uncertainty
+        counts_fillval = 10
+        pset["counts"].values = np.full_like(pset["counts"].values, counts_fillval)
+        pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"])
+        pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
+        pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
+        pset["geometric_function"].values = np.ones_like(pset["sensitivity"].values)
+        pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
+        pset["efficiency"] = xr.ones_like(pset["sensitivity"])
+        pset["scatter_theta"] = xr.ones_like(pset["sensitivity"])
+        pset["scatter_phi"] = xr.ones_like(pset["sensitivity"])
+
+        pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
+        if epoch_dim_for_energy_delta:
+            # add an extra dim to the start
+            pset["energy_bin_delta"] = pset["energy_bin_delta"].expand_dims(
+                {CoordNames.TIME.value: pset["epoch"].values}
+            )
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
-            hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
+            hp_skymap, _ = ultra_l2.generate_ultra_skymap(
                 ultra_l1c_psets=[
                     pset,
                 ],
@@ -275,7 +367,7 @@ class TestUltraL2:
 
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
-            hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
+            hp_skymap, _ = ultra_l2.generate_ultra_skymap(
                 ultra_l1c_psets=[pset, pset_quality],
                 output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                     {
@@ -332,7 +424,7 @@ class TestUltraL2:
             [],
         ):
             with furnish_kernels(self.required_kernel_names):
-                hp_skymap, pset_epochs = ultra_l2.generate_ultra_healpix_skymap(
+                hp_skymap, pset_epochs = ultra_l2.generate_ultra_skymap(
                     ultra_l1c_psets=self.ultra_psets,
                     output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                         {
@@ -472,6 +564,12 @@ class TestUltraL2:
         # Check energy deltas
         assert "energy_delta_plus" in map_dataset
         assert "energy_delta_minus" in map_dataset
+        # Check epoch deltas
+        assert map_dataset["epoch"].attrs["DELTA_PLUS_VAR"] == "epoch_delta"
+        assert map_dataset["epoch"].attrs["DELTA_MINUS_VAR"] == "epoch_delta_minus"
+        assert "epoch_delta" in map_dataset
+        assert "epoch_delta_minus" in map_dataset
+        np.testing.assert_array_equal(map_dataset["epoch_delta_minus"].values, 0)
 
     @pytest.mark.external_test_data
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
@@ -726,13 +824,15 @@ class TestUltraL2:
         with furnish_kernels(self.required_kernel_names):
             output_map = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
-                descriptor="u90-ena-h-sf-nsp-full-hae-nside32-6mo",
+                descriptor="u90-ena-h-sf-nsp-full-hae-nside32-3mo",
             )[0]
 
         assert "spacecraft frame" in output_map.attrs["Logical_source_description"]
+        # Check that the logical source contains the expected information from the
+        # descriptor string
         assert (
             output_map.attrs["Logical_source"]
-            == "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-nside32-6mo"
+            == "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-nside32-3mo"
         )
         assert output_map.attrs["Spice_reference_frame"] == "IMAP_HAE"
         assert output_map.attrs["HEALPix_nside"] == "32"

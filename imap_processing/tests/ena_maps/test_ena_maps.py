@@ -307,8 +307,9 @@ class TestLoPointingSet:
         # check that the midpoint_j2000_et property is equal to the expected value
         assert lo_pset.midpoint_j2000_et == ttj2000ns_to_et(
             lo_pset.epoch
-            + met_to_ttj2000ns(
-                lo_pset_ds.pointing_end_met - lo_pset_ds.pointing_start_met
+            + (
+                met_to_ttj2000ns(lo_pset_ds.pointing_end_met)
+                - met_to_ttj2000ns(lo_pset_ds.pointing_start_met)
             )
             / 2
         )
@@ -993,15 +994,23 @@ class TestRectangularSkyMap:
         # Check the epoch values
         assert CoordNames.TIME.value in cdf_dataset
         assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
-        assert (
-            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_PLUS_VAR"] == "epoch_delta"
-        )
         # Check epoch_delta
+        assert (
+            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_PLUS_VAR"]
+            == f"{CoordNames.TIME.value}_delta"
+        )
+        assert (
+            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_MINUS_VAR"]
+            == f"{CoordNames.TIME.value}_delta_minus"
+        )
         assert f"{CoordNames.TIME.value}_delta" in cdf_dataset
         assert (
             cdf_dataset[f"{CoordNames.TIME.value}_delta"].values[0]
             == skymap.max_epoch - skymap.min_epoch
         )
+        # Check epoch_delta_minus
+        assert f"{CoordNames.TIME.value}_delta_minus" in cdf_dataset
+        assert cdf_dataset[f"{CoordNames.TIME.value}_delta_minus"].values == 0
 
         # Energy related checks
         assert CoordNames.ENERGY_L2.value in cdf_dataset

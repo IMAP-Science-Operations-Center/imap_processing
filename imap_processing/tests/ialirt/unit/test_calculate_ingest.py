@@ -32,6 +32,14 @@ def test_packets_created():
             "last_data_received": [],
             "rate_kbps": [],
         },
+        "tlmrelay": {
+            "last_data_received": [
+                "2026-01-01T00:00:00Z",
+            ],
+            "rate_kbps": [
+                0.0,
+            ],
+        },
     }
 
     assert actual_output == expected

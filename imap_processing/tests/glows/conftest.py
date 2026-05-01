@@ -23,10 +23,38 @@ def packet_path():
 
 
 @pytest.fixture
+def repoint_packet_path():
+    current_directory = Path(__file__).parent
+    return (
+        current_directory
+        / "validation_data"
+        / "imap_glows_l0_raw_20260202-repoint00145_v001.pkts"
+    )
+
+
+@pytest.fixture
+def in_flight_packet_path():
+    current_directory = Path(__file__).parent
+    return (
+        current_directory
+        / "validation_data"
+        / "imap_glows_l0_raw_20251113-repoint00047_v001.pkts"
+    )
+
+
+@pytest.fixture
 def decom_test_data(packet_path):
     """Read test data from file"""
 
     data_packet_list = decom_glows.decom_packets(packet_path)
+    return data_packet_list
+
+
+@pytest.fixture
+def in_flight_decom_test_data(in_flight_packet_path):
+    """Read test data from file"""
+
+    data_packet_list = decom_glows.decom_packets(in_flight_packet_path)
     return data_packet_list
 
 
