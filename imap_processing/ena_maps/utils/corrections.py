@@ -761,7 +761,7 @@ def apply_compton_getting_correction(
         Must contain the following variables:
           - sc_velocity: velocity vector of the spacecraft in the HAE frame at
             the midpoint time of the pointing [km/s]. See the
-            `add_spacecraft_velocity_to_pset` function.
+            `add_spacecraft_position_and_velocity_to_pset` function.
           - hae_longitude: PSET bin longitudes in the HAE frame (degrees)
           - hae_latitude: PSET bin latitudes in the HAE frame (degrees)
     energy_hf : xr.DataArray

@@ -220,7 +220,7 @@ def expected_bg():
 @patch("imap_processing.lo.l1c.lo_l1c.set_background_rates")
 @patch("imap_processing.lo.l1c.lo_l1c.filter_goodtimes")
 @patch("imap_processing.lo.l1c.lo_l1c.set_pointing_directions")
-@patch("imap_processing.lo.l1c.lo_l1c.add_spacecraft_velocity_to_pset")
+@patch("imap_processing.lo.l1c.lo_l1c.add_spacecraft_position_and_velocity_to_pset")
 def test_lo_l1c(
     mock_add_spacecraft_velocity,
     mock_set_pointing_directions,
