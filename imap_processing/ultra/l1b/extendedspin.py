@@ -75,9 +75,6 @@ def calculate_extendedspin(
     inst_qf = flag_imap_instruments(de_dataset["spin"].values)
 
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    print("SDC spin[:5]:", spin[:5])
-    print("SDC spin_starttime[:5]:", spin_starttime[:5])
-    print("SDC len(spin):", len(spin))
     spin_tbin_edges = get_binned_spins_edges(
         spin, spin_period, spin_starttime, spin_bin_size
     )
@@ -94,7 +91,6 @@ def calculate_extendedspin(
     intervals, _, _ = build_energy_bins()
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(intervals)
-    print("SDC energy_ranges:", energy_ranges)
     energy_bin_flags = get_energy_range_flags(energy_ranges)
     # Calculate the high energy quality flags
     energy_thresholds = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS

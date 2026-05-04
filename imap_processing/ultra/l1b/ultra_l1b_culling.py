@@ -1015,11 +1015,6 @@ def flag_upstream_ion(
         f" independent flags and will be applied across all {mask.shape[0]} energy"
         f" channels."
     )
-    # SDC - add inside flag_upstream_ion
-    # SDC - inside flag_upstream_ion, first call only
-    print("SDC upstream_1 total_scaled[:5]:", total_scaled[:5])
-    print("SDC upstream_1 thresh:", thresh)
-    print("SDC upstream_1 flagged bins:", np.where(flagged)[0])
     return flagged
 
 
@@ -1167,14 +1162,12 @@ def get_valid_events_per_energy_range(
     )
     valid_outliers = de_dataset["quality_outliers"].values == 0
     valid_scattering = de_dataset["quality_scattering"].values == 0
-    print("SDC valid_outliers:", valid_outliers)
-    print("SDC valid_scattering:", valid_scattering)
     # TODO what about species non-proton? For those psets dont cull based on
     #   High energy?
     ebin = de_dataset["ebin"].values
     valid_ebin = np.isin(ebin, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"])
     for i in range(len(energy_ranges) - 1):
-        energy_mask = (event_energies > energy_ranges[i]) & (
+        energy_mask = (event_energies >= energy_ranges[i]) & (
             event_energies < energy_ranges[i + 1]
         )
         if not np.any(energy_mask):
@@ -1201,9 +1194,6 @@ def get_valid_events_per_energy_range(
                 valid_earth_angle,
             ]
         )
-    # SDC - inside get_valid_events_per_energy_range, after computing valid_events
-    for i in range(len(energy_ranges) - 1):
-        print(f"SDC energy bin {i} n_valid_events={np.sum(valid_events[i])}")
     return valid_events
 
 

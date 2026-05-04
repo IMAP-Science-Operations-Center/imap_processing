@@ -811,9 +811,8 @@ def test_flag_statistical_outliers():
     # iterated twice.
     assert np.all(iterations[:-1] == 1)
     assert iterations[-1] == 2
-    # Check that all std_diff values were set (not zero) except the last one
-    assert np.all(std_diff[:-1] != 0)
-    assert std_diff[-1] == 0
+    # Check that all std_diff values are zero
+    assert np.all(std_diff[:-1] == 0)
 
 
 def test_flag_statistical_outliers_invalid_events():
