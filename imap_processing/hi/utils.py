@@ -592,14 +592,7 @@ class CalibrationProductConfig(_BaseConfigAccessor):
 
 @pd.api.extensions.register_dataframe_accessor("background_config")
 class BackgroundConfig(_BaseConfigAccessor):
-    """
-    Register custom accessor for background configuration DataFrames.
-
-    Parameters
-    ----------
-    pandas_obj : pandas.DataFrame
-        DataFrame to register the accessor on.
-    """
+    """Register custom accessor for background configuration DataFrames."""
 
     index_columns = (
         "calibration_prod",
@@ -624,28 +617,33 @@ class BackgroundConfig(_BaseConfigAccessor):
         for limit in ["low", "high"]
     )
 
-    def __init__(self, pandas_obj: pd.DataFrame) -> None:
-        super().__init__(pandas_obj)
-        self._validate_tof_consistency()
-
-    def _validate_tof_consistency(self) -> None:
+    def _validate(self, df: pd.DataFrame) -> None:
         """
-        Validate that TOF windows are consistent across esa_energy_step.
+        Validate the background configuration.
 
-        For each (calibration_prod, background_index) combination, all TOF
-        window columns and coincidence_type_list must have identical values
-        across all esa_energy_step values.
+        Extends base validation to also verify that TOF windows and coincidence
+        types are consistent across esa_energy_step for each (calibration_prod,
+        background_index) combination.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame to validate.
 
         Raises
         ------
+        AttributeError
+            If required columns or index are missing.
         ValueError
             If TOF windows or coincidence types differ across ESA energy steps.
         """
+        super()._validate(df)
+
         # Columns that must be consistent across ESA steps
         consistency_columns = [*self.tof_columns, "coincidence_type_list"]
 
         # Group by (calibration_prod, background_index) and check consistency
-        grouped = self._obj.groupby(level=["calibration_prod", "background_index"])
+        grouped = df.groupby(level=["calibration_prod", "background_index"])
 
         for (cal_prod, bg_idx), group in grouped:
             for col in consistency_columns:
