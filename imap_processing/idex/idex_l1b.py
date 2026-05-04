@@ -50,7 +50,7 @@ class EventMessage(Enum):
     """Enum class for event messages."""
 
     PULSER_ON = "SEQ success (len=0x0580, opCodeLCDictionary(enstim))"
-    PULSER_OFF = "SEQ success (len=0x0580, opCodeLCDictionary(susprel))"
+    PULSER_OFF = "UPK stim pulser operation completed, , PulserSel=0x00000007"
     SCIENCE_ON = (
         "SCI state change: sciState16Dictionary(ACQSETUP) ==> sciState16Dictionary(ACQ)"
     )
