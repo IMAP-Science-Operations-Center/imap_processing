@@ -224,7 +224,7 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         }
     )
 
-    # add the spacecraft velocity and direction
+    # add the spacecraft position and velocity and direction, and their unit vectors
     pset = add_spacecraft_position_and_velocity_to_pset(pset)
 
     return [pset]

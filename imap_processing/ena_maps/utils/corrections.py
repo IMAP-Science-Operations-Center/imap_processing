@@ -478,7 +478,7 @@ def add_spacecraft_position_and_velocity_to_pset(
     if pointing_duration_ns <= 0:
         logger.warning(
             "Pointing duration is zero or negative. "
-            "Setting spacecraft positiona and velocity to zero."
+            "Setting spacecraft position and velocity to zero."
         )
         sc_position_vector = np.zeros(3)  # Zero position vector
         sc_velocity_vector = np.zeros(3)  # Zero velocity vector
