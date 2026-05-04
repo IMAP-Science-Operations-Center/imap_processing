@@ -2754,7 +2754,7 @@ class TestProcessSinglePset:
             # Check that CG correction was NOT called
             mock_cg.assert_not_called()
 
-            # Check that spacecraft velocity and ram mask were called instead
+            # Check that the ram mask was called instead
             mock_ram_mask.assert_called_once()
 
 
