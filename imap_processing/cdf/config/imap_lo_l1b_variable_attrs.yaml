@@ -171,3 +171,135 @@ count_per_bin:
   LABLAXIS: Sample Count
   DEPEND_0: epoch
   DEPEND_1: spin_angle
+
+pivot:
+  CATDESC: Pivot angle derived from housekeeping data
+  FIELDNAM: Pivot Angle
+  FORMAT: F8.3
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 180.0
+  VAR_TYPE: support_data
+  UNITS: deg
+  LABLAXIS: Pivot Angle
+
+pivot_de:
+  CATDESC: Pivot angle derived from direct event data
+  FIELDNAM: Pivot Angle (DE)
+  FORMAT: F8.3
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 180.0
+  VAR_TYPE: support_data
+  UNITS: deg
+  LABLAXIS: Pivot Angle DE
+
+gt_start_met:
+  <<: *default
+  CATDESC: Good time interval start in Mission Elapsed Time
+  FIELDNAM: Good Time Start MET
+  FORMAT: F19.3
+  FILLVAL: -1.0000000E+31
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: support_data
+  UNITS: s
+  LABLAXIS: GT Start
+
+gt_end_met:
+  <<: *default
+  CATDESC: Good time interval end in Mission Elapsed Time
+  FIELDNAM: Good Time End MET
+  FORMAT: F19.3
+  FILLVAL: -1.0000000E+31
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: support_data
+  UNITS: s
+  LABLAXIS: GT End
+
+h_background_rates:
+  CATDESC: Hydrogen background rates per ESA level
+  FIELDNAM: H Background Rates
+  FORMAT: F12.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: data
+  UNITS: counts/s
+  LABLAXIS: H BG Rate
+
+h_background_variance:
+  CATDESC: Hydrogen background rate variance per ESA level
+  FIELDNAM: H Background Variance
+  FORMAT: F12.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: data
+  UNITS: (counts/s)^2
+  LABLAXIS: H BG Variance
+
+h_synthetic_floor:
+  CATDESC: Hydrogen synthetic background floor
+  FIELDNAM: H Synthetic Floor
+  FORMAT: F12.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: support_data
+  UNITS: counts/s
+  LABLAXIS: H Synthetic Floor
+
+h_proxy_floor:
+  CATDESC: Hydrogen proxy background floor
+  FIELDNAM: H Proxy Floor
+  FORMAT: F12.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: support_data
+  UNITS: counts/s
+  LABLAXIS: H Proxy Floor
+
+o_background_rates:
+  CATDESC: Oxygen background rates per ESA level
+  FIELDNAM: O Background Rates
+  FORMAT: F12.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: data
+  UNITS: counts/s
+  LABLAXIS: O BG Rate
+
+o_background_variance:
+  CATDESC: Oxygen background rate variance per ESA level
+  FIELDNAM: O Background Variance
+  FORMAT: F12.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: data
+  UNITS: (counts/s)^2
+  LABLAXIS: O BG Variance
+
+o_synthetic_floor:
+  CATDESC: Oxygen synthetic background floor
+  FIELDNAM: O Synthetic Floor
+  FORMAT: F12.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: support_data
+  UNITS: counts/s
+  LABLAXIS: O Synthetic Floor
+
+o_proxy_floor:
+  CATDESC: Oxygen proxy background floor
+  FIELDNAM: O Proxy Floor
+  FORMAT: F12.6
+  FILLVAL: -1.0000000E+31
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0000000E+31
+  VAR_TYPE: support_data
+  UNITS: counts/s
+  LABLAXIS: O Proxy Floor

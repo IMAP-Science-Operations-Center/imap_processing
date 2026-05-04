@@ -36,6 +36,7 @@ from imap_processing.spice.spin import (
     interpolate_spin_data,
 )
 from imap_processing.spice.time import (
+    epoch_to_doy,
     epoch_to_fractional_doy,
     et_to_utc,
     met_to_ttj2000ns,
@@ -2558,7 +2559,7 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     epoch_utc_str = et_to_utc(ttj2000ns_to_et(epoch_ttj2000[0]))
     epoch_start_dt = datetime.strptime(epoch_utc_str.split("T")[0], "%Y-%m-%d")
     epoch_year = epoch_start_dt.year
-    epoch_doy = epoch_start_dt.timetuple().tm_yday
+    epoch_doy = epoch_to_doy(epoch_ttj2000[:1])[0]
 
     # Choose background rate thresholds based on pivot orientation.
     if c.PIVOT_90_RANGE[0] < pivot < c.PIVOT_90_RANGE[1]:
@@ -2754,43 +2755,58 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     l1b_combined_ds["pivot"] = xr.DataArray(
         data=np.float32(pivot),
         name="pivot",
+        attrs=attr_mgr_l1b.get_variable_attributes("pivot"),
     )
     l1b_combined_ds["pivot_de"] = xr.DataArray(
         data=np.float32(pivot_de),
         name="pivot_de",
+        attrs=attr_mgr_l1b.get_variable_attributes("pivot_de"),
     )
 
     l1b_combined_ds["gt_start_met"] = xr.DataArray(
-        data=np.array([r[0] for r in goodtime_rows], dtype=np.int64),
+        data=np.array([r[0] for r in goodtime_rows], dtype=np.float32),
         name="Goodtime_start",
         dims=["epoch"],
+        attrs=attr_mgr_l1b.get_variable_attributes("gt_start_met"),
     )
     l1b_combined_ds["gt_end_met"] = xr.DataArray(
-        data=np.array([r[1] for r in goodtime_rows], dtype=np.int64),
+        data=np.array([r[1] for r in goodtime_rows], dtype=np.float32),
         name="Goodtime_end",
         dims=["epoch"],
+        attrs=attr_mgr_l1b.get_variable_attributes("gt_end_met"),
     )
+
     # Per-species scalar variables
     for elem in elems:
         elem_lower = elem.lower()
         # For *_background_rates, and *_background_variance for each species,
-        # we return a (1, N_ESA_LEVELS) array of identical values to be backward
+        # we return a (N_ESA_LEVELS) array of identical values to be backward
         # compatible with an old implementation of the algorithm.
         l1b_combined_ds[f"{elem_lower}_background_rates"] = xr.DataArray(
-            data=np.full((1, c.N_ESA_LEVELS), bg_rates_out[elem]),
+            data=np.full(c.N_ESA_LEVELS, bg_rates_out[elem]),
             name=f"{elem_lower}_background_rates",
+            attrs=attr_mgr_l1b.get_variable_attributes(
+                f"{elem_lower}_background_rates"
+            ),
+            dims=["esa_step"],
         )
         l1b_combined_ds[f"{elem_lower}_background_variance"] = xr.DataArray(
-            data=np.full((1, c.N_ESA_LEVELS), sigma_bg_rates_out[elem]),
+            data=np.full(c.N_ESA_LEVELS, sigma_bg_rates_out[elem]),
             name=f"{elem_lower}_background_variance",
+            attrs=attr_mgr_l1b.get_variable_attributes(
+                f"{elem_lower}_background_variance"
+            ),
+            dims=["esa_step"],
         )
         l1b_combined_ds[f"{elem_lower}_synthetic_floor"] = xr.DataArray(
             data=np.float32(synthetic_floors[elem]),
             name=f"{elem_lower}_synthetic_floor",
+            attrs=attr_mgr_l1b.get_variable_attributes(f"{elem_lower}_synthetic_floor"),
         )
         l1b_combined_ds[f"{elem_lower}_proxy_floor"] = xr.DataArray(
             data=np.float32(proxy_floors[elem]),
             name=f"{elem_lower}_proxy_floor",
+            attrs=attr_mgr_l1b.get_variable_attributes(f"{elem_lower}_proxy_floor"),
         )
 
     logger.info("L1B Background Rates and Bettertimes created successfully")
