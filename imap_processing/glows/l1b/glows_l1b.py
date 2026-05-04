@@ -1,6 +1,7 @@
 """Methods for processing GLOWS L1B data."""
 
 import dataclasses
+import logging
 
 import numpy as np
 import xarray as xr
@@ -15,6 +16,8 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     PipelineSettings,
 )
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
+
+logger = logging.getLogger(__name__)
 
 
 def glows_l1b(
@@ -251,6 +254,16 @@ def process_histogram(
         The DataArrays for each variable in the L1B dataset. These can be assembled
         directly into a DataSet with the appropriate attributes.
     """
+    invalid_mask = l1a["imap_start_time"].values == 0.0
+    if invalid_mask.any():
+        logger.warning(
+            "GLOWS L1B: Skipping %d histogram(s) with imap_start_time=0.0 "
+            "(invalid timing data) at epochs: %s",
+            invalid_mask.sum(),
+            l1a["epoch"].values[invalid_mask],
+        )
+        l1a = l1a.isel(epoch=~invalid_mask)
+
     dataarrays = [l1a[i] for i in l1a.keys()]
 
     input_dims: list = [[] for i in l1a.keys()]
