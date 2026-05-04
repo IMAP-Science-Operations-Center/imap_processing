@@ -240,6 +240,13 @@ def get_event_id(
     met_hex = format(shcoarse, "08x")
     for i in range(count):
         start_bit = i * bits_per_event
+        if start_bit + bits_per_event > len(binary):
+            logger.warning(
+                f"Event ID calculation warning: event {i} expected {bits_per_event} "
+                f"bits starting at bit {start_bit} ({start_bit + bits_per_event} total)"
+                f", but binary string is only {len(binary)} bits. Truncating to "
+                f"available bits."
+            )
         event_bits = binary[start_bit : start_bit + bits_per_event]
         # Convert the event bits to an integer, then to a hex string, and concatenate
         # with the met hex to create the event ID.

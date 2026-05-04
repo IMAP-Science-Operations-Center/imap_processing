@@ -1183,10 +1183,10 @@ spare3:
 
 event_id:
   DEPEND_0: epoch
-  FILLVAL: " "
+  FILLVAL: "0x0"
   FORMAT: A50
   VAR_TYPE: metadata
-  CATDESC: Calculated unique event IDs 50 character hex strings.
+  CATDESC: Calculated unique event IDs as 50 character hex strings.
   FIELDNAM: event id
   LABLAXIS: event_id
 
