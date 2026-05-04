@@ -167,7 +167,7 @@ def test_generate_l2(
         cdf_attrs.add_instrument_global_attrs("glows")
         cdf_attrs.add_instrument_variable_attrs("glows", "l2")
         assert (
-            create_l2_dataset(l2, cdf_attrs, l1b_hist_dataset)["epoch"].data[0]
+            create_l2_dataset(l2, cdf_attrs, l1b_hist_dataset.attrs)["epoch"].data[0]
             == (l2.start_time + l2.end_time) / 2
         )
 
