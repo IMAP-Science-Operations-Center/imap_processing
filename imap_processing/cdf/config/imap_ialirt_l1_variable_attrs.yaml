@@ -240,6 +240,20 @@ codice_hi_spin_sector:
   VAR_TYPE: support_data
   dtype: int32
 
+codice_hi_spin_angle:
+  CATDESC: CoDICE-Hi spin angle for each spin sector and polar angle pair
+  FIELDNAM: CoDICE-Hi spin angle
+  FORMAT: F12.6
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMIN: 0.0
+  VALIDMAX: 360.0
+  FILLVAL: -1.0e31
+  dtype: float32
+  DEPEND_1: codice_hi_spin_sector
+  DEPEND_2: codice_hi_polar
+
 codice_hi_spin_sector_labels:
   CATDESC: CoDICE-Hi spin sector labels
   FIELDNAM: CoDICE-Hi spin sector labels
@@ -265,8 +279,7 @@ codice_hi_h:
   CATDESC: Proton flux from CoDICE-Hi in 15 energy bins between 0.02 to 3.62 MeV over 4 spin angles and 4 polar angles
   DEPEND_0: codice_hi_epoch
   DEPEND_1: codice_hi_energy_center
-  DEPEND_2: codice_hi_spin_sector
-  DEPEND_3: codice_hi_polar
+  DEPEND_2: codice_hi_spin_angle
   DISPLAY_TYPE: no_plot
   FIELDNAM: H+ intensity
   FORMAT: F11.1

@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.ialirt.utils.constants import swe_energy
+from imap_processing.ialirt.utils.constants import HI_IALIRT_SPIN_ANGLE, swe_energy
 from imap_processing.ialirt.utils.create_xarray import create_xarray_from_records
 
 
@@ -166,3 +166,12 @@ def test_create_dataset():
     )
 
     assert test_data_path.exists()
+
+    # codice_hi_spin_angle should be a 2D array of actual spin angles (degrees).
+    # Shape: (spin_sector=4, polar=4).
+    spin_angle = dataset["codice_hi_spin_angle"]
+    assert spin_angle.dims == ("codice_hi_spin_sector", "codice_hi_polar")
+    assert spin_angle.shape == (4, 4)
+    npt.assert_allclose(
+        spin_angle.values, HI_IALIRT_SPIN_ANGLE.T.astype(np.float32), rtol=1e-6
+    )
