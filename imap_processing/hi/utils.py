@@ -599,22 +599,19 @@ class BackgroundConfig(_BaseConfigAccessor):
         "background_index",
         "esa_energy_step",
     )
-    required_columns = (
-        "coincidence_type_list",
-        *[
-            f"tof_{det_pair}_{limit}"
-            for det_pair in _BaseConfigAccessor.tof_detector_pairs
-            for limit in ["low", "high"]
-        ],
-        "scaling_factor",
-        "uncertainty",
-    )
     # Columns that must be consistent across esa_energy_step for each
     # (calibration_prod, background_index) combination
     tof_columns = tuple(
         f"tof_{det_pair}_{limit}"
         for det_pair in _BaseConfigAccessor.tof_detector_pairs
         for limit in ["low", "high"]
+    )
+
+    required_columns = (
+        "coincidence_type_list",
+        *tof_columns,
+        "scaling_factor",
+        "uncertainty",
     )
 
     def _validate(self, df: pd.DataFrame) -> None:

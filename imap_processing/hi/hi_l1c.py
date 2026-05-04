@@ -674,10 +674,10 @@ def pset_backgrounds(
     total_unc_transposed = total_unc.transpose(*output_dims)
 
     output_vars["background_rates"].values[:] = total_rates_transposed.values[
-        :, :, :, np.newaxis
+        ..., np.newaxis
     ]
     output_vars["background_rates_uncertainty"].values[:] = total_unc_transposed.values[
-        :, :, :, np.newaxis
+        ..., np.newaxis
     ]
 
     return output_vars
