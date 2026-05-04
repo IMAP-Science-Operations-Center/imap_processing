@@ -1027,7 +1027,6 @@ def flag_spectral_events(
     de_dataset: xr.Dataset,
     spin_tbin_edges: NDArray,
     energy_ranges: NDArray,
-    mask: NDArray,
     channels: list,
     sensor_id: int = 90,
 ) -> NDArray:
@@ -1042,8 +1041,6 @@ def flag_spectral_events(
         Edges of the spin time bins.
     energy_ranges : NDArray
         Array of energy range edges.
-    mask : NDArray
-        Mask indicating which events to consider for spectral flagging.
     channels : list
         List of energy channel indices to use for spectral flagging.
     sensor_id : int
@@ -1066,9 +1063,6 @@ def flag_spectral_events(
     counts_sum = get_valid_de_count_summary(
         de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
     )[channels, :]  # shape (num_channels, n_spin_bins)
-    valid_bins = np.all(
-        ~mask[channels, :], axis=0
-    )  # Get valid spin bins across the selected channels; shape (n_spin_bins,)
     # Flag spin bins where the signed count difference between adjacent selected
     # energy channels exceeds a Poisson-based threshold. For each pair of
     # adjacent channels, compute np.diff(counts_sum, axis=0) and compare that
@@ -1076,12 +1070,10 @@ def flag_spectral_events(
     # uncertainty (sqrt(N1 + N2)) of those two channels for each spin bin.
     # If any adjacent channel pair exceeds the threshold for a spin bin, that
     # spin bin is flagged across all energy ranges.
-    valid_counts_sum = counts_sum[:, valid_bins]
-    diff = np.diff(valid_counts_sum, axis=0) - UltraConstants.SPECTRAL_SIG_THRESHOLD * (
-        np.sqrt(valid_counts_sum[:-1] + valid_counts_sum[1:])
+    diff = np.diff(counts_sum, axis=0) - UltraConstants.SPECTRAL_SIG_THRESHOLD * (
+        np.sqrt(counts_sum[:-1] + counts_sum[1:])
     )  # shape (num_channels - 1, n_spin_bins)
-    flagged = np.zeros(counts_sum.shape[1], dtype=bool)
-    flagged[valid_bins] = np.any(diff > 0, axis=0)  # shape (n_spin_bins,)
+    flagged = np.any(diff > 0, axis=0)  # shape (n_spin_bins,)
     num_culled: int = np.sum(flagged)
     logger.info(
         f"Spectral culling removed {num_culled} spin bins using channels"

@@ -131,7 +131,6 @@ def calculate_extendedspin(
         de_dataset,
         spin_tbin_edges,
         energy_ranges,
-        mask,
         UltraConstants.SPECTRAL_ENERGY_CHANNELS,
         instrument_id,
     )
