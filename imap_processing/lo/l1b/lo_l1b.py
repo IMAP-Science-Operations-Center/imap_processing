@@ -2526,14 +2526,14 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
 
     elems = c.ELEMS  # shortcut
 
-    cdf_hist = sci_dependencies["imap_lo_l1b_histrates"]
-    cdf_de = sci_dependencies["imap_lo_l1b_de"]
-    cdf_hk = sci_dependencies["imap_lo_l1b_nhk"]
+    pivot_de: float = 0.0
+    cdf_de = sci_dependencies.get("imap_lo_l1b_de")
+    if cdf_de is not None:
+        pivot_de = cdf_de["pivot_angle"].item() if "pivot_angle" in cdf_de else 0.0
 
-    pivot_de: float = cdf_de["pivot_angle"].item() if "pivot_angle" in cdf_de else 0.0
-    pivot: float = 0.0
-
-    if "pcc_coarse_pot_pri" in cdf_hk:
+    pivot: float = 90.0
+    cdf_hk = sci_dependencies.get("imap_lo_l1b_nhk")
+    if cdf_hk is not None and "pcc_coarse_pot_pri" in cdf_hk:
         hk_epoch_ets = ttj2000ns_to_et(cdf_hk["epoch"])
         start_et_hk = (
             hk_epoch_ets[0] + timedelta(hours=c.PIVOT_HK_HOUR_RANGE[0]).total_seconds()
@@ -2548,9 +2548,8 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
         )
         if np.isnan(pivot):
             pivot = 90.0
-    else:
-        pivot = 90.0
 
+    cdf_hist = sci_dependencies["imap_lo_l1b_histrates"]
     epoch_ttj2000 = cdf_hist["epoch"].values
     n_epochs = epoch_ttj2000.shape[0]
     met = ttj2000ns_to_met(epoch_ttj2000)
