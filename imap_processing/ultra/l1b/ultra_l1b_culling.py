@@ -844,7 +844,8 @@ def flag_statistical_outliers(
     quality_stats: np.ndarray = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
     # Initialize a mask to keep track of spin bins that have been flagged across all
     # energy bins
-    all_channel_mask: np.ndarray = np.zeros(spin_bin_size, dtype=bool)
+    # all_channel_mask: np.ndarray = np.zeros(spin_bin_size, dtype=bool)
+    all_channel_mask: np.ndarray = curr_mask[0, :].copy()
     # Initialize convergence array to keep track of poisson stats
     convergence = np.full(n_energy_bins, False)
     # Keep track of how many iterations we have done of flagging outliers and
@@ -852,6 +853,7 @@ def flag_statistical_outliers(
     iterations = np.zeros(n_energy_bins)
     # keep track of the standard deviation difference from poisson stats per energy bin
     std_diff: np.ndarray = np.zeros(n_energy_bins, dtype=float)
+
     count_summary = get_valid_de_count_summary(
         de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
     )  # shape (n_energy_bins, n_spin_bins)
@@ -1194,6 +1196,7 @@ def get_valid_events_per_energy_range(
                 valid_earth_angle,
             ]
         )
+
     return valid_events
 
 
