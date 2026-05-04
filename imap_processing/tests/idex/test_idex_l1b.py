@@ -356,10 +356,6 @@ def test_validate_l1b_idex_data_variables(
                 ).all(), warning
 
             else:
-                if cdf_var == "TOF_Low":
-                    continue
-                if cdf_var == "dead_time":
-                    continue
                 np.testing.assert_array_almost_equal(
                     l1b_dataset[cdf_var].data,
                     np.squeeze(l1b_example_data[var]),
