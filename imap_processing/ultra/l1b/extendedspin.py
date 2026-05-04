@@ -75,6 +75,9 @@ def calculate_extendedspin(
     inst_qf = flag_imap_instruments(de_dataset["spin"].values)
 
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
+    print("SDC spin[:5]:", spin[:5])
+    print("SDC spin_starttime[:5]:", spin_starttime[:5])
+    print("SDC len(spin):", len(spin))
     spin_tbin_edges = get_binned_spins_edges(
         spin, spin_period, spin_starttime, spin_bin_size
     )
@@ -91,6 +94,7 @@ def calculate_extendedspin(
     intervals, _, _ = build_energy_bins()
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(intervals)
+    print("SDC energy_ranges:", energy_ranges)
     energy_bin_flags = get_energy_range_flags(energy_ranges)
     # Calculate the high energy quality flags
     energy_thresholds = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS
@@ -102,9 +106,10 @@ def calculate_extendedspin(
         energy_thresholds,
         instrument_id,
     )
-    # Combine high energy and voltage flags to use for statistical outlier flagging.
-    mask = (
-        voltage_qf[np.newaxis, :] | high_energy_qf
+    # For the following culls, mask the spins that have already been flagged for
+    # low voltage
+    mask = np.repeat(
+        voltage_qf[np.newaxis, :], len(energy_ranges) - 1, axis=0
     )  # Shape (n_energy_bins, n_spins_bins)
     upstream_ion_qf_1 = flag_upstream_ion(
         de_dataset,
@@ -114,9 +119,6 @@ def calculate_extendedspin(
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1,
         instrument_id,
     )
-    # Update mask to include upstream ion flags from the first set of energy channels
-    # before flagging with the second set of energy channels
-    mask = mask | upstream_ion_qf_1
     upstream_ion_qf_2 = flag_upstream_ion(
         de_dataset,
         spin_tbin_edges,
@@ -129,12 +131,13 @@ def calculate_extendedspin(
         de_dataset,
         spin_tbin_edges,
         energy_ranges,
+        mask,
         UltraConstants.SPECTRAL_ENERGY_CHANNELS,
         instrument_id,
     )
-    # Update mask to include upstream ion flags #2 and spectral flags before flagging
-    # statistical outliers
-    mask = mask | upstream_ion_qf_2 | spectral_qf
+    # Update mask to include high energy,  upstream ion flags and spectral flags
+    # before flagging statistical outliers
+    mask = mask | upstream_ion_qf_1 | upstream_ion_qf_2 | spectral_qf | high_energy_qf
     stat_outliers_qf, _, _, _ = flag_statistical_outliers(
         de_dataset,
         spin_tbin_edges,

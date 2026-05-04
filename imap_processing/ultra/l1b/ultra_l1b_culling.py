@@ -1015,6 +1015,11 @@ def flag_upstream_ion(
         f" independent flags and will be applied across all {mask.shape[0]} energy"
         f" channels."
     )
+    # SDC - add inside flag_upstream_ion
+    # SDC - inside flag_upstream_ion, first call only
+    print("SDC upstream_1 total_scaled[:5]:", total_scaled[:5])
+    print("SDC upstream_1 thresh:", thresh)
+    print("SDC upstream_1 flagged bins:", np.where(flagged)[0])
     return flagged
 
 
@@ -1022,6 +1027,7 @@ def flag_spectral_events(
     de_dataset: xr.Dataset,
     spin_tbin_edges: NDArray,
     energy_ranges: NDArray,
+    mask: NDArray,
     channels: list,
     sensor_id: int = 90,
 ) -> NDArray:
@@ -1036,6 +1042,8 @@ def flag_spectral_events(
         Edges of the spin time bins.
     energy_ranges : NDArray
         Array of energy range edges.
+    mask : NDArray
+        Mask indicating which events to consider for spectral flagging.
     channels : list
         List of energy channel indices to use for spectral flagging.
     sensor_id : int
@@ -1058,6 +1066,9 @@ def flag_spectral_events(
     counts_sum = get_valid_de_count_summary(
         de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
     )[channels, :]  # shape (num_channels, n_spin_bins)
+    valid_bins = np.all(
+        ~mask[channels, :], axis=0
+    )  # Get valid spin bins across the selected channels; shape (n_spin_bins,)
     # Flag spin bins where the signed count difference between adjacent selected
     # energy channels exceeds a Poisson-based threshold. For each pair of
     # adjacent channels, compute np.diff(counts_sum, axis=0) and compare that
@@ -1065,10 +1076,12 @@ def flag_spectral_events(
     # uncertainty (sqrt(N1 + N2)) of those two channels for each spin bin.
     # If any adjacent channel pair exceeds the threshold for a spin bin, that
     # spin bin is flagged across all energy ranges.
-    diff = np.diff(counts_sum, axis=0) - UltraConstants.SPECTRAL_SIG_THRESHOLD * (
-        np.sqrt(counts_sum[:-1] + counts_sum[1:])
+    valid_counts_sum = counts_sum[:, valid_bins]
+    diff = np.diff(valid_counts_sum, axis=0) - UltraConstants.SPECTRAL_SIG_THRESHOLD * (
+        np.sqrt(valid_counts_sum[:-1] + valid_counts_sum[1:])
     )  # shape (num_channels - 1, n_spin_bins)
-    flagged = np.any(diff > 0, axis=0)  # shape (n_spin_bins,)
+    flagged = np.zeros(counts_sum.shape[1], dtype=bool)
+    flagged[valid_bins] = np.any(diff > 0, axis=0)  # shape (n_spin_bins,)
     num_culled: int = np.sum(flagged)
     logger.info(
         f"Spectral culling removed {num_culled} spin bins using channels"
@@ -1162,12 +1175,14 @@ def get_valid_events_per_energy_range(
     )
     valid_outliers = de_dataset["quality_outliers"].values == 0
     valid_scattering = de_dataset["quality_scattering"].values == 0
+    print("SDC valid_outliers:", valid_outliers)
+    print("SDC valid_scattering:", valid_scattering)
     # TODO what about species non-proton? For those psets dont cull based on
     #   High energy?
     ebin = de_dataset["ebin"].values
     valid_ebin = np.isin(ebin, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"])
     for i in range(len(energy_ranges) - 1):
-        energy_mask = (event_energies >= energy_ranges[i]) & (
+        energy_mask = (event_energies > energy_ranges[i]) & (
             event_energies < energy_ranges[i + 1]
         )
         if not np.any(energy_mask):
@@ -1194,7 +1209,9 @@ def get_valid_events_per_energy_range(
                 valid_earth_angle,
             ]
         )
-
+    # SDC - inside get_valid_events_per_energy_range, after computing valid_events
+    for i in range(len(energy_ranges) - 1):
+        print(f"SDC energy bin {i} n_valid_events={np.sum(valid_events[i])}")
     return valid_events
 
 

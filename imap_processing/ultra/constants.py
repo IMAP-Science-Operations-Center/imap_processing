@@ -206,7 +206,7 @@ class UltraConstants:
     MAX_ENERGY_THRESHOLD = 116.0
     # Angle threshold in radians for ULTRA 45 degree culling.
     # This is only needed for ULTRA 45 since Earth may be in the FOV.
-    EARTH_ANGLE_45_THRESHOLD = np.radians(20)
+    EARTH_ANGLE_45_THRESHOLD = np.radians(15)
     # An array of energy thresholds to use for culling. Each one corresponds to
     # the number of energy bins used.
     # n_bins=len(PSET_ENERGY_BIN_EDGES)[BASE_CULL_EBIN:] // N_CULL_EBINS
