@@ -336,8 +336,9 @@ def calculate_velocity_and_mass(
     log_a_t: float = np.log10(t_rise_params[0])
     try:
         root = root_scalar(
-            lambda lv: log_smooth_powerlaw(lv, log_a_t, t_rise_params[1:])
-            - np.log10(t_rise),
+            lambda lv: (
+                log_smooth_powerlaw(lv, log_a_t, t_rise_params[1:]) - np.log10(t_rise)
+            ),
             bracket=[-1, 2],
         )
         v_est = 10**root.root

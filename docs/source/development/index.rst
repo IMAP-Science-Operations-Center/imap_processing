@@ -23,5 +23,6 @@ be versioned appropriately to correspond with the code that produced them.
     git-workflow-and-style-guide/index
     poetry
     release-workflow
+    upgrading-poetry
     technology-stack
     tools/index

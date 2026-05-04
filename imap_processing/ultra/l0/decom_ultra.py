@@ -7,7 +7,6 @@ from typing import cast
 
 import numpy as np
 import xarray as xr
-from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ultra.l0.decom_tools import (
@@ -32,7 +31,10 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_RATES,
     PacketProperties,
 )
-from imap_processing.utils import combine_segmented_packets, convert_to_binary_string
+from imap_processing.utils import (
+    combine_segmented_packets,
+    convert_to_binary_string,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -208,41 +210,50 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
     return dataset
 
 
-def get_event_id(shcoarse: NDArray) -> NDArray:
+def get_event_id(
+    event_data: bytes, count: int, shcoarse: int, bits_per_event: int
+) -> list:
     """
     Get unique event IDs using data from events packets.
 
     Parameters
     ----------
-    shcoarse : numpy.ndarray
-        SHCOARSE (MET).
+    event_data : bytes
+        Raw event data from the packet.
+    count : int
+        Number of events in the packet.
+    shcoarse : int
+        The met value for the packet.
+    bits_per_event : int
+        Bits allocated for each event in the packet. This differs between event data
+        and energy event data packets.
 
     Returns
     -------
     event_ids : numpy.ndarray
         Ultra events data with calculated unique event IDs as 64-bit integers.
     """
+    binary = convert_to_binary_string(event_data)
+    # For all packets with event data, parses the binary string
     event_ids = []
-    packet_counters = {}
-
-    for met in shcoarse:
-        # Initialize the counter for a new packet (MET value)
-        if met not in packet_counters:
-            packet_counters[met] = 0
-        else:
-            packet_counters[met] += 1
-
-        # Left shift SHCOARSE (u32) by 31 bits, to make room for our event counters
-        # (31 rather than 32 to keep it positive in the int64 representation)
-        # Append the current number of events in this packet to the right-most bits
-        # This makes each event a unique value including the MET and event number
-        # in the packet
-        # NOTE: CDF does not allow for uint64 values,
-        # so we use int64 representation here
-        event_id = (np.int64(met) << np.int64(31)) | np.int64(packet_counters[met])
-        event_ids.append(event_id)
-
-    return np.array(event_ids, dtype=np.int64)
+    # Get the met value and convert to hex (4 bytes -> 8 hex )
+    met_hex = format(shcoarse, "08x")
+    for i in range(count):
+        start_bit = i * bits_per_event
+        if start_bit + bits_per_event > len(binary):
+            logger.warning(
+                f"Event ID calculation warning: event {i} expected {bits_per_event} "
+                f"bits starting at bit {start_bit} ({start_bit + bits_per_event} total)"
+                f", but binary string is only {len(binary)} bits. Truncating to "
+                f"available bits."
+            )
+        event_bits = binary[start_bit : start_bit + bits_per_event]
+        # Convert the event bits to an integer, then to a hex string, and concatenate
+        # with the met hex to create the event ID.
+        # Prepend "00" to the event bits to get an integral number of bytes
+        # (168 bits --> 21 bytes)
+        event_ids.append(met_hex + format(int("00" + event_bits, 2), "042x"))
+    return event_ids
 
 
 def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
@@ -270,8 +281,10 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
     )
     if apid in all_event_apids:
         field_ranges = EVENT_FIELD_RANGES
+        bits_per_event = 166
     elif apid in ULTRA_ENERGY_EVENTS.apid:
         field_ranges = ENERGY_EVENT_FIELD_RANGES
+        bits_per_event = 41
     else:
         raise ValueError(f"APID {apid} not recognized for Ultra events processing.")
 
@@ -290,11 +303,12 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
 
     counts = ds["count"].values
     eventdata_array = ds["eventdata"].values
-
+    event_ids: list[str] = []
     for i, count in enumerate(counts):
         if count == 0:
             all_events.append(empty_event)
             all_indices.append(i)
+            event_ids.append("0x0")
         else:
             # Here there are multiple images in a single packet,
             # so we need to loop through each image and decompress it.
@@ -304,6 +318,10 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
             all_events.extend(event_data_list)
             # Keep track of how many times does the event occurred at this epoch.
             all_indices.extend([i] * count)
+            ids = get_event_id(
+                eventdata_array[i], count, ds["shcoarse"].values[i], bits_per_event
+            )
+            event_ids.extend(ids)
 
     # Now we have the event data, we need to create the xarray dataset.
     # We cannot append to the existing dataset (sorted_packets)
@@ -319,11 +337,9 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
     for key in field_ranges:
         expanded_data[key] = np.array([event[key] for event in all_events])
 
-    event_ids = get_event_id(expanded_data["shcoarse"])
-
     coords = {
         "epoch": ds["epoch"].values[idx],
-        "event_id": ("epoch", event_ids),
+        "event_id": ("epoch", np.array(event_ids)),
     }
 
     dataset = xr.Dataset(coords=coords)

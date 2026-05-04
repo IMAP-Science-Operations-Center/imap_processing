@@ -541,8 +541,8 @@ def test_validate_l1b_standard_rates_data(
     """A test to validate the standard rates dataset created by the L1B processing."""
 
     # Mock the livetime_fraction_calculation to use the old behavior (input / 270)
-    livetime_fraction_calculation_mock.side_effect = (
-        lambda livetime_counter: livetime_counter / 270
+    livetime_fraction_calculation_mock.side_effect = lambda livetime_counter: (
+        livetime_counter / 270
     )
 
     # Create the dataset with the mock in place

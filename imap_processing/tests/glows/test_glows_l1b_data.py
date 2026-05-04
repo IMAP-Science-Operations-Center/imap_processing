@@ -158,7 +158,10 @@ def test_validation_data_histogram(
     }
 
     for validation_output in out["output"]:
-        epoch_val = met_to_ttj2000ns(validation_output["imap_start_time"])
+        epoch_val = met_to_ttj2000ns(
+            validation_output["imap_start_time"]
+            + validation_output["imap_end_time_offset"] / 2
+        )
 
         # Skip validation data that doesn't match our single dataset timerange
         if epoch_val > end_time:

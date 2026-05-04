@@ -362,16 +362,17 @@ def test_msg_dataset(decom_test_data_msg: xr.Dataset):
     decom_test_data_msg : xarray.Dataset
         The raw l1a dataset to test with.
     """
-    assert "shcoarse" in decom_test_data_msg
-    assert "shfine" in decom_test_data_msg
+    assert "elsec_evtpkt" in decom_test_data_msg
+    assert "elssec_evtpkt" in decom_test_data_msg
     # Assert epoch is calculated using fine grained clock ticks
     expected_epoch = met_to_ttj2000ns(
-        decom_test_data_msg["shcoarse"] + decom_test_data_msg["shfine"] * 20e-6
+        decom_test_data_msg["elsec_evtpkt"]
+        + decom_test_data_msg["elssec_evtpkt"] * 20e-6
     )
     np.testing.assert_array_equal(decom_test_data_msg.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
     filename_l1a = write_cdf(decom_test_data_msg)
-    assert filename_l1a.name == "imap_idex_l1a_msg_20250108_v999.cdf"
+    assert filename_l1a.name == "imap_idex_l1a_msg_20100101_v999.cdf"
 
     # Validate the messages with the IDEX team example data
     example_data = pd.read_csv(

@@ -94,11 +94,10 @@ def create_l2_dataset(
     xarray.Dataset
         L2 dataset for output to CDF file.
     """
-    # Each L2 file only has one timestamp.
-    # TODO: If we want this to point to the start time, we need to set the attribute
-    #  variable BIN_LOCATION to 0. Otherwise, we need this to be halfway between start
-    #  time and end time.
-    time_data = np.array([histogram_l2.start_time], dtype=np.float64)
+    # Each L2 file only has one timestamp: the midpoint between start and end time.
+    time_data = np.array(
+        [(histogram_l2.start_time + histogram_l2.end_time) / 2], dtype=np.float64
+    )
     # TODO: Create CDF attributes
     epoch_time = xr.DataArray(
         time_data,

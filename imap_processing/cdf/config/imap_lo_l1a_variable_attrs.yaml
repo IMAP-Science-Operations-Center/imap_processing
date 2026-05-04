@@ -91,7 +91,6 @@ esa_step_coord:
   VALIDMAX: 7
   FORMAT: I1
   CATDESC: Energy Step
-  DEPEND_1: esa_step
   FIELDNAM: Energy Step
   LABLAXIS: ESA
   LABL_PTR_1: esa_step_label
@@ -248,7 +247,6 @@ azimuth_6:
   VALIDMAX: 59
   CATDESC: azimuth spin bins (<num packets>, 6 degrees)
   FIELDNAM: Azimuth bins
-  DEPEND_1: azimuth_6
   LABLAXIS: Az bins
   LABL_PTR_1: azimuth_6_label
 
@@ -264,7 +262,6 @@ azimuth_60:
   VALIDMAX: 5
   CATDESC: azimuth spin bins (<num packets>, 60 degrees)
   FIELDNAM: Azimuth bins
-  DEPEND_1: azimuth_60
   LABLAXIS: Az bins
   LABL_PTR_1: azimuth_60_label
 
@@ -413,7 +410,6 @@ spin:
   <<: *default_uint16
   CATDESC: Spin numbers in pointing
   FIELDNAM: Spin numbers
-  DEPEND_1: spin
   VAR_TYPE: support_data
   LABLAXIS: Spin numbers
 

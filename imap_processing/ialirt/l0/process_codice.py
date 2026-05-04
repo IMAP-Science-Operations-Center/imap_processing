@@ -324,7 +324,7 @@ def calculate_ratios(
         summed_pseudo_density = pseudo_density.sum(dim="esa_step").squeeze(
             "spin_sector"
         )  # (epoch,)
-        pseudo_density_dict[species] = summed_pseudo_density.values
+        pseudo_density_dict[species] = summed_pseudo_density.values.item()
 
     # Denominator.
     # Note that outside of this test a zero value denominator
@@ -495,7 +495,7 @@ def process_codice(
                 _populate_instrument_header_items(met)
                 | {
                     "instrument": f"{sensor}",
-                    "codice_lo_epoch": int(l1a_lo["epoch"]),
+                    "codice_lo_epoch": int(l1a_lo["epoch"].item()),
                     f"{sensor}_c_over_o_abundance": l2_lo.c_over_o_abundance,
                     f"{sensor}_mg_over_o_abundance": l2_lo.mg_over_o_abundance,
                     f"{sensor}_fe_over_o_abundance": l2_lo.fe_over_o_abundance,

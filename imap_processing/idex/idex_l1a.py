@@ -129,20 +129,25 @@ class PacketParser:
             The processed message data.
         """
         # Convert the time to epoch time in nanoseconds since J2000 in the TT timescale
-        epoch = calculate_idex_event_time(data["shcoarse"].data, data["shfine"].data)
+        # elsec_evtpkt is the coarse time in seconds, elssec_evtpkt is the fine time in
+        # 20-microsecond intervals. We need to combine these to get the actual event
+        # time.
+        epoch = calculate_idex_event_time(
+            data["elsec_evtpkt"].data, data["elssec_evtpkt"].data
+        )
         # initialize dataset with time variables
         l1a_msg_ds = xr.Dataset(
             data_vars={
                 "epoch": xr.DataArray(epoch, name="epoch", dims=["epoch"]),
-                "shfine": xr.DataArray(
-                    data["shfine"].data,
+                "elsec_evtpkt": xr.DataArray(
+                    data["elsec_evtpkt"].data,
                     dims=["epoch"],
-                    attrs=self.idex_attrs.get_variable_attributes("shfine"),
+                    attrs=self.idex_attrs.get_variable_attributes("elsec_evtpkt"),
                 ),
-                "shcoarse": xr.DataArray(
-                    data["shcoarse"].data,
+                "elssec_evtpkt": xr.DataArray(
+                    data["elssec_evtpkt"].data,
                     dims=["epoch"],
-                    attrs=self.idex_attrs.get_variable_attributes("shcoarse"),
+                    attrs=self.idex_attrs.get_variable_attributes("elssec_evtpkt"),
                 ),
             },
             attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg"),

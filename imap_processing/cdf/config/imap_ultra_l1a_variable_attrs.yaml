@@ -1182,8 +1182,11 @@ spare3:
   DEPEND_0: epoch
 
 event_id:
-  <<: *default_int64
-  CATDESC: Calculated unique event IDs as 64-bit integers.
+  DEPEND_0: epoch
+  FILLVAL: "0x0"
+  FORMAT: A50
+  VAR_TYPE: metadata
+  CATDESC: Calculated unique event IDs as 50 character hex strings.
   FIELDNAM: event id
   LABLAXIS: event_id
 

@@ -207,7 +207,24 @@ shfine:
   FIELDNAM: Secondary header fine time
   VALIDMAX: *max_uint16
   LABLAXIS: Packet Generation Time (Fine)
+  UNITS: microseconds
+  FILLVAL: 65535
+
+elsec_evtpkt:
+  <<: *trigger_base
+  CATDESC: Time of event message, as integer seconds.
+  FIELDNAM: Event message coarse time
+  LABLAXIS: Event Message Time (Coarse)
   UNITS: seconds
+  FILLVAL: 4294967295
+
+elssec_evtpkt:
+  <<: *trigger_base
+  CATDESC: Time of event message, each DN represents 20usec within current second.
+  FIELDNAM: Event message fine time
+  VALIDMAX: *max_uint16
+  LABLAXIS: Event Message Time (Fine)
+  UNITS: microseconds
   FILLVAL: 65535
 
 messages:
