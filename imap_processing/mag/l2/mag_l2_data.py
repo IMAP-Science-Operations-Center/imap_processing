@@ -323,6 +323,9 @@ class MagL2L1dBase:
         if self.epoch_et is not None:
             self.epoch_et = self.epoch_et[day_start_index:day_end_index]
 
+        if self.epoch.shape[0] == 0:
+            raise ValueError("After truncating to 24 hours, no data remains.")
+
     @staticmethod
     def calculate_magnitude(
         vectors: np.ndarray,

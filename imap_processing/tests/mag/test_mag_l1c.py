@@ -13,6 +13,7 @@ from imap_processing.mag.l1c.mag_l1c import (
     fill_normal_data,
     find_all_gaps,
     find_gaps,
+    generate_missing_timestamps,
     generate_timeline,
     interpolate_gaps,
     mag_l1c,
@@ -109,10 +110,41 @@ def test_interpolation_methods():
         assert len(output) == 20
 
 
+@pytest.mark.parametrize(
+    "method",
+    [
+        InterpolationFunction.linear_filtered,
+        InterpolationFunction.quadratic_filtered,
+        InterpolationFunction.cubic_filtered,
+    ],
+)
+def test_filtered_interpolation_methods_drop_unsupported_tail_timestamp(method):
+    input_timestamps = np.arange(0.125, 8.001, step=0.125) * 1e9
+    seconds = input_timestamps / 1e9
+    input_vectors = np.column_stack(
+        [seconds, seconds, seconds, np.ones(input_timestamps.size)]
+    )
+    # Tail boundary: 8.0 s is inside the original burst window but beyond the
+    # post-CIC filtered tail, so it should be dropped rather than extrapolated.
+    output_timestamps = np.array([7.5, 8.0]) * 1e9
+
+    adjusted_time, output = method(
+        input_vectors,
+        input_timestamps,
+        output_timestamps,
+        input_rate=VecSec.EIGHT_VECS_PER_S,
+        output_rate=VecSec.TWO_VECS_PER_S,
+    )
+
+    assert np.array_equal(adjusted_time, np.array([7.5]) * 1e9)
+
+
 def test_process_mag_l1c(norm_dataset, burst_dataset):
     l1c = process_mag_l1c(norm_dataset, burst_dataset, InterpolationFunction.linear)
     expected_output_timeline = (
-        np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.75, 5.25, 5.5, 5.75, 6])
+        np.array(
+            [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6]
+        )
         * 1e9
     )
     assert np.array_equal(l1c[:, 0], expected_output_timeline)
@@ -122,12 +154,12 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         np.count_nonzero([np.sum(l1c[i, 1:4]) for i in range(l1c.shape[0])])
         == l1c.shape[0] - 1
     )
-    expected_flags = np.zeros(15)
+    expected_flags = np.zeros(17)
     # filled sections should have 1 as a flag
     expected_flags[5:8] = 1
-    expected_flags[10:11] = 1
+    expected_flags[10:13] = 1
     # last datapoint in the gap is missing a value
-    expected_flags[11] = -1
+    expected_flags[13] = -1
     assert np.array_equal(l1c[:, 5], expected_flags)
     assert np.array_equal(l1c[:5, 1:5], norm_dataset["vectors"].data[:5, :])
     for i in range(5, 8):
@@ -140,7 +172,7 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
 
     assert np.array_equal(l1c[8:10, 1:5], norm_dataset["vectors"].data[5:7, :])
-    for i in range(10, 11):
+    for i in range(10, 13):
         e = l1c[i, 0]
         burst_vectors = burst_dataset.sel(epoch=int(e), method="nearest")[
             "vectors"
@@ -149,7 +181,8 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         # identical.
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
 
-    assert np.array_equal(l1c[11, 1:5], [0, 0, 0, 0])
+    assert np.array_equal(l1c[13, 1:5], [0, 0, 0, 0])
+    assert np.array_equal(l1c[14:, 1:5], norm_dataset["vectors"].data[7:, :])
 
 
 def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
@@ -435,6 +468,26 @@ def test_find_gaps():
     assert np.array_equal(gaps, expected_return)
 
 
+def test_find_all_gaps_uses_observed_transition_boundary():
+    epoch_transition = np.array([0, 0.5, 1, 1.5, 2, 10, 11, 12, 13, 14, 15, 16]) * 1e9
+    vectors_per_second_transition = vectors_per_second_from_string("0:2,15000000000:1")
+    output_transition = find_all_gaps(epoch_transition, vectors_per_second_transition)
+    expected_transition = np.array([[2 * 1e9, 10 * 1e9, 2]])
+    assert np.array_equal(output_transition, expected_transition)
+
+
+def test_generate_missing_timestamps_uses_gap_rate():
+    gap = np.array([1_000_000_000, 2_000_000_000, 4], dtype=np.int64)
+    expected_output = np.array(
+        [1_000_000_000, 1_250_000_000, 1_500_000_000, 1_750_000_000], dtype=np.int64
+    )
+    assert np.array_equal(generate_missing_timestamps(gap), expected_output)
+
+    legacy_gap = np.array([1_000_000_000, 2_000_000_000], dtype=np.int64)
+    legacy_expected = np.array([1_000_000_000, 1_500_000_000], dtype=np.int64)
+    assert np.array_equal(generate_missing_timestamps(legacy_gap), legacy_expected)
+
+
 def test_generate_timeline():
     epoch_test = generate_test_epoch(
         3, [VecSec.FOUR_VECS_PER_S], gaps=[[0.5, 1], [2, 3]]
@@ -503,6 +556,49 @@ def test_generate_timeline():
     # Expected result: properly sorted timeline with gap fills
     expected_edge = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]) * 1e9
     assert np.array_equal(output_edge, expected_edge)
+
+    # Test Case: Gap fill uses the gap rate instead of a fixed 0.5 second cadence
+    epoch_rate_gap = np.array([0, 0.25, 0.5, 0.75, 1, 4, 4.25, 4.5]) * 1e9
+    gaps_rate_gap = np.array([[1_000_000_000, 4_000_000_000, 4]])
+    output_rate_gap = generate_timeline(epoch_rate_gap, gaps_rate_gap)
+    expected_rate_gap = (
+        np.array(
+            [
+                0,
+                0.25,
+                0.5,
+                0.75,
+                1,
+                1.25,
+                1.5,
+                1.75,
+                2,
+                2.25,
+                2.5,
+                2.75,
+                3,
+                3.25,
+                3.5,
+                3.75,
+                4,
+                4.25,
+                4.5,
+            ]
+        )
+        * 1e9
+    )
+    assert np.array_equal(output_rate_gap, expected_rate_gap)
+
+    # Test Case: Adjacent gaps share a real epoch boundary at gap[0].
+    # generate_timeline() should not duplicate that boundary timestamp:
+    # np.arange() is end-exclusive for each generated segment, and the
+    # epoch-copy/final-append logic preserves the real boundary sample once.
+    epoch_adj = np.array([0, 0.5, 1, 2, 3, 3.5, 4]) * 1e9
+    gaps_adj = np.array([[1e9, 2e9, 2], [2e9, 3e9, 4]])
+    output_adj = generate_timeline(epoch_adj, gaps_adj)
+    expected_adj = np.array([0, 0.5, 1, 1.5, 2, 2.25, 2.5, 2.75, 3, 3.5, 4]) * 1e9
+    assert np.array_equal(output_adj, expected_adj)
+    assert len(output_adj) == len(np.unique(output_adj))
 
 
 def test_gap_detection_timeline_generation_workflow():

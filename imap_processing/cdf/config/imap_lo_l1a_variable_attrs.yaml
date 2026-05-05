@@ -88,7 +88,6 @@ esa_step_coord:
   <<: *coord_default
   <<: *default_uint8
   CATDESC: Energy Step
-  DEPEND_1: esa_step
   FIELDNAM: Energy Step
   FORMAT: I1
   LABLAXIS: ESA
@@ -246,7 +245,6 @@ azimuth_6:
   <<: *coord_default
   <<: *default_uint8
   CATDESC: azimuth spin bins (<num packets>, 6 degrees)
-  DEPEND_1: azimuth_6
   FIELDNAM: Azimuth bins
   LABLAXIS: Az bins
   LABL_PTR_1: azimuth_6_label
@@ -262,7 +260,6 @@ azimuth_60:
   <<: *coord_default
   <<: *default_uint8
   CATDESC: azimuth spin bins (<num packets>, 60 degrees)
-  DEPEND_1: azimuth_60
   FIELDNAM: Azimuth bins
   LABLAXIS: Az bins
   LABL_PTR_1: azimuth_60_label
@@ -412,7 +409,6 @@ count:
 spin:
   <<: *default_uint16
   CATDESC: Spin numbers in pointing
-  DEPEND_1: spin
   FIELDNAM: Spin numbers
   LABLAXIS: Spin numbers
   VAR_TYPE: support_data

@@ -13,6 +13,7 @@ from imap_processing.glows.l1a.glows_l1a import (
 )
 from imap_processing.glows.l1a.glows_l1a_data import HistogramL1A
 from imap_processing.glows.utils.constants import TimeTuple
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 def test_generate_histogram_dataset(l1a_test_data):
@@ -41,6 +42,12 @@ def test_generate_histogram_dataset(l1a_test_data):
 
     for i in range(len(dataset["histogram"].data)):
         assert (dataset["histogram"].data[i] == histogram_l1a[i].histogram).all()
+
+    for i, hist in enumerate(histogram_l1a):
+        expected_epoch = met_to_ttj2000ns(
+            hist.imap_start_time.to_seconds() + hist.imap_time_offset.to_seconds() / 2
+        )
+        assert dataset["epoch"].data[i] == expected_epoch
 
 
 def test_generate_histogram_dataset_filters_empty(l1a_test_data):

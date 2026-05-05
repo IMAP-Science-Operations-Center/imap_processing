@@ -260,10 +260,6 @@ def test_mag_l1b_validation(test_number, mocks):
 @pytest.mark.parametrize(("sensor"), ["mago", "magi"])
 @pytest.mark.external_test_data
 def test_mag_l1c_validation(test_number, sensor):
-    if test_number not in ["013", "014", "024"]:
-        pytest.skip("All L1C edge cases are not yet complete")
-
-    # We expect tests 013 and 014 to pass. 015 and 016 are not yet complete.
     # timestamp = (
     #     (np.datetime64("2025-03-11T12:22:50.706034") - np.datetime64(TTJ2000_EPOCH))
     #     / np.timedelta64(1, "ns")
@@ -308,6 +304,9 @@ def test_mag_l1c_validation(test_number, sensor):
     expected_output = pd.read_csv(
         source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-out.csv"
     )
+    # T016 intentionally omits the Config-mode boundary sample that would require
+    # extrapolating beyond the CIC-filtered burst support.
+    assert len(expected_output.index) == len(l1c["epoch"].data)
 
     for index in expected_output.index:
         assert np.allclose(

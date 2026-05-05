@@ -71,11 +71,11 @@ def glows_l2(
         logger.warning("All flux and exposure times are zero. Returning empty list.")
         return []
     else:
-        return [create_l2_dataset(l2, cdf_attrs)]
+        return [create_l2_dataset(l2, cdf_attrs, input_dataset.attrs)]
 
 
 def create_l2_dataset(
-    histogram_l2: HistogramL2, attrs: ImapCdfAttributes
+    histogram_l2: HistogramL2, attrs: ImapCdfAttributes, input_attrs: dict
 ) -> xr.Dataset:
     """
     Create a xarray dataset from a HistogramL2 dataclass.
@@ -88,17 +88,18 @@ def create_l2_dataset(
         L2 data.
     attrs : ImapCdfAttributes
         CDF attributes for GLOWS L2.
+    input_attrs : dict
+        Global attributes from the input L1B dataset to propagate.
 
     Returns
     -------
     xarray.Dataset
         L2 dataset for output to CDF file.
     """
-    # Each L2 file only has one timestamp.
-    # TODO: If we want this to point to the start time, we need to set the attribute
-    #  variable BIN_LOCATION to 0. Otherwise, we need this to be halfway between start
-    #  time and end time.
-    time_data = np.array([histogram_l2.start_time], dtype=np.float64)
+    # Each L2 file only has one timestamp: the midpoint between start and end time.
+    time_data = np.array(
+        [(histogram_l2.start_time + histogram_l2.end_time) / 2], dtype=np.float64
+    )
     # TODO: Create CDF attributes
     epoch_time = xr.DataArray(
         time_data,
@@ -149,6 +150,11 @@ def create_l2_dataset(
         },
         attrs=attrs.get_global_attributes("imap_glows_l2_hist"),
     )
+
+    output.attrs["flight_software_version"] = input_attrs.get(
+        "flight_software_version", ""
+    )
+    output.attrs["pkts_file_name"] = input_attrs.get("pkts_file_name", [])
 
     ecliptic_variables = [
         "spacecraft_location_average",

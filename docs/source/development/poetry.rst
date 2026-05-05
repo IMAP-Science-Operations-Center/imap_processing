@@ -20,7 +20,7 @@ These advantages ensure that we can all install the same versions of tools, that
 
 Poetry also provides tools for automatically bumping dependency versions only where it makes sense. You can specify when a dependency should get a version change using Poetry's extensive `dependency specification <https://python-poetry.org/docs/dependency-specification/>`_ formatting.
 
-Finally, Poetry provides a :ref:`shell <poetry-shell-link>`, which you can use as a virtual environment. This shell is automatically tied to the project directory, and allows developers to install dependency versions in an isolated environment. This means that, for example, if you have a different project using the same package with a different version, you can have each project with it's own version kept separate from conflicts.
+Finally, Poetry manages a virtual environment tied to the project directory, which allows developers to install dependency versions in an isolated environment. This means that, for example, if you have a different project using the same package with a different version, you can have each project with its own version kept separate from conflicts. See :ref:`poetry-shell-link` for how to activate it.
 
 We have a :ref:`Poetry style guide<poetry-environment>` for specific recommendations about using Poetry in these projects.
 
@@ -52,7 +52,7 @@ Poetry has a command to `add a new dependency <https://python-poetry.org/docs/ma
     # Add a new dependency with default latest version
     poetry add pendulum
 
-These dependencies are then added automatically to the ``pyproject.toml`` file. The overall project dependencies go under ``[tool.poetry.dependencies]``. The main project dependencies are always installed.
+These dependencies are then added automatically to the ``pyproject.toml`` file. The main project dependencies go under the ``[project]`` table as a ``dependencies`` list, using `PEP 508 <https://peps.python.org/pep-0508/>`_ version specifiers (e.g. ``numpy>=1.24,<2``). Dependencies in ``[tool.poetry.group.*]`` sections continue to use Poetry's caret notation. The main project dependencies are always installed.
 
 You can also update the ``pyproject.toml`` file directly, using the existing formatting or the `Poetry documentation on it <https://python-poetry.org/docs/pyproject/>`_ as a guide.
 
@@ -63,52 +63,84 @@ This will create a new version of the ``poetry.lock`` file, which should be comm
 
 .. _poetry-dependency-groups-link:
 
-Dependency groups
-^^^^^^^^^^^^^^^^^^
+Optional extras
+^^^^^^^^^^^^^^^
 
-Poetry also provides dependency groups for separating dependencies into logical separations. If you are installing the project as an end user, you do not need the development tools. The testing environment does not need the documentation generation dependencies. In our case, the AWS Lambda environment does not need the same dependencies as the CDK deployment. Before you add a dependency to the main group, ask yourself if it would make more sense in one of the other existing dependency groups.
+This project uses PEP 621 optional dependencies (extras) to separate dependencies into logical groups. If you are installing the project as an end user, you do not need the development tools. The testing environment does not need the documentation generation dependencies. Before you add a dependency to the main dependencies, ask yourself if it would make more sense in one of the existing extras (``dev``, ``test``, ``doc``, ``tools``, ``map_visualization``).
 
-To add a dependency to an existing group, you can use the ``--group`` flag::
-
-    poetry add mkdocs --group docs
-
-These groups can be made optional as well, meaning they will not be installed by default when the user runs ``poetry install``. You can specify what groups to install using the ``--with`` or ``--without`` flags.
-
-Pip also provides a standard for optional dependencies. These can be installed when using ``pip`` instead of Poetry to install the dependencies. This goes under the ``[tool.poetry.extras]`` section in ``pyproject.toml``. These are separate, but similar to the optional dependencies. They can only be all installed or all not installed, with no splitting out into specific groups like the dependency groups.
+To add a dependency to an existing extra, update the ``[project.optional-dependencies]`` section in ``pyproject.toml`` directly using PEP 508 version specifiers. These extras can be installed selectively when running ``poetry install`` or ``pip install``.
 
 .. _poetry-shell-link:
 
-Installing and the Poetry Shell
---------------------------------
+Installing and Activating the Virtual Environment
+-------------------------------------------------
 
 To install the Poetry project, you can use the `install <https://python-poetry.org/docs/cli/#install>`_ command::
 
     # We use dynamic versioning, which requires a plugin to be installed first
-    poetry self add poetry-dynamic-versioning
+    poetry self add "poetry-dynamic-versioning[plugin]"
 
-    # Install main dependencies and any dependency groups which are installed by default
+    # Install main dependencies only
     poetry install
 
-    # Install all extras
+    # Install all extras (dev, test, doc, tools, map_visualization)
     poetry install --all-extras
 
-    # install without specific dependency groups
-    poetry install --without test,docs
+    # Install with specific extras
+    poetry install --extras "test doc"
 
-    # Install with optional dependency groups
-    poetry install --with lambda_dev
+By default, this command will install dependencies out of the ``poetry.lock`` file.
 
-By default, this command will install dependencies out of the ``poetry.lock`` file. This will also install into your Poetry shell for the project.
+.. note::
 
-The Poetry shell is a virtual environment tool provided by Poetry. To start the Poetry shell, with your dependencies installed, you can use the poetry `shell <https://python-poetry.org/docs/cli/#shell>`_ command::
+    ``poetry shell`` was removed in Poetry 2. To activate the Poetry-managed
+    virtual environment, use:
 
-    poetry shell
+    .. code-block:: bash
 
-    # To exit the shell
-    exit
+        source $(poetry env info --path)/bin/activate
 
-However, you are not required to use the Poetry shell as your virtual environment manager if you have another tool you prefer.
+        # To exit the virtual environment
+        deactivate
 
-Poetry will, by default, not create a new virtual environment if it detects that it is running in a virtual environment already. So, for example, you can use a `Conda environment <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_ by activating the environment first, and then running `poetry install`.
+    On Windows (PowerShell):
+
+    .. code-block:: powershell
+
+        & (poetry env info --path)\Scripts\activate.ps1
+
+    You can also run a single command inside the environment without activating
+    it using ``poetry run``::
+
+        poetry run pytest
+
+.. _venv-alternative-link:
+
+Using a plain ``venv`` instead of Poetry's virtual environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you prefer to manage your virtual environment with the standard Python
+``venv`` module rather than Poetry, you can do so by creating the environment
+first and then running ``poetry install`` (or ``pip install``) inside it.
+Poetry will detect the active virtual environment and install into it instead
+of creating its own:
+
+.. code-block:: bash
+
+    # Create and activate a venv
+    python3 -m venv .venv
+    source .venv/bin/activate   # Windows: .venv\Scripts\activate.ps1
+
+    # Install via Poetry (uses the active venv)
+    poetry self add "poetry-dynamic-versioning[plugin]"
+    poetry install --all-extras
+
+    # Or install directly with pip using the pyproject.toml extras
+    pip install -e ".[dev,test,tools]"
+
+The ``venv`` approach avoids the need for ``poetry shell`` entirely: your
+shell is already in the virtual environment after running ``source .venv/bin/activate``.
+
+Poetry will, by default, not create a new virtual environment if it detects that it is running in a virtual environment already. So, for example, you can use a `Conda environment <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_ by activating the environment first, and then running ``poetry install``.
 
 There are also `settings <https://python-poetry.org/docs/configuration/#virtualenvscreate>`_ surrounding the virtual environment that you can change to suit your workflow.

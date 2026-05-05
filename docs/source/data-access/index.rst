@@ -165,6 +165,46 @@ Data Access URL
 
 To change the default URL that the package accesses, you can set the environment variable ``IMAP_DATA_ACCESS_URL`` or within the package ``imap_data_access.config["DATA_ACCESS_URL"]``. The default is the production server (``https://api.imap-mission.com``).
 
+API Key Management
+------------------
+
+Management of API keys is done through a script located in the
+``sds_data_manager/lambda_code/authorization`` directory of the
+`sds-data-manager <https://github.com/IMAP-Science-Operations-Center/sds-data-manager>`_
+repository. That script can add, remove, and list current keys. To add a key,
+provide the name and email of the associated user or account and receive an API
+key to give to the external user for access.
+
+Scope Options
+^^^^^^^^^^^^^
+
+When creating or updating API keys, you can specify different scopes to control
+access:
+
+- ``full``: Full read and write access to all endpoints and data
+- ``read``: Read-only access. Can query and download data but cannot upload or
+  modify files
+
+Usage Examples
+^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    python sds_data_manager/lambda_code/authorization/manage_api_keys.py list
+    python sds_data_manager/lambda_code/authorization/manage_api_keys.py add <owner> <email> <scope>
+    python sds_data_manager/lambda_code/authorization/manage_api_keys.py remove <key>
+    python sds_data_manager/lambda_code/authorization/manage_api_keys.py update_permission <owner> <email> <scope>
+
+    # Example: add a user with full access
+    AWS_PROFILE=imap-sdc-dev AWS_DEFAULT_REGION=us-west-2 \
+      python sds_data_manager/lambda_code/authorization/manage_api_keys.py \
+          add "First Last" "user@example.com" "full"
+
+    # Example: add a user with read-only access
+    AWS_PROFILE=imap-sdc-dev AWS_DEFAULT_REGION=us-west-2 \
+      python sds_data_manager/lambda_code/authorization/manage_api_keys.py \
+          add "Read User" "reader@example.com" "read"
+
 File Validation
 ---------------
 
