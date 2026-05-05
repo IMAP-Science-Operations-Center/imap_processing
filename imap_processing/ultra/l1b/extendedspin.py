@@ -98,7 +98,6 @@ def calculate_extendedspin(
         de_dataset,
         spin_tbin_edges,
         energy_ranges,
-        voltage_qf,
         energy_thresholds,
         instrument_id,
     )
@@ -176,6 +175,12 @@ def calculate_extendedspin(
     stop_per_spin[valid] = pulses.stop_per_spin[idx[valid]]
     coin_per_spin[valid] = pulses.coin_per_spin[idx[valid]]
 
+    # To be consistent with the ULTRA IT implementation, apply the low voltage mask
+    # to the high energy and upstream ion flags
+    upstream_ion_qf_2 |= voltage_qf
+    upstream_ion_qf_1 |= voltage_qf
+    high_energy_qf |= voltage_qf
+    spectral_qf |= voltage_qf
     # high energy and statistical outlier flags are energy dependent boolean arrays
     # with shape (n_energy_bins, n_spin_bins). We want to collapse the energy dimension
     # using a bitwise OR to get a single boolean flag per spin.

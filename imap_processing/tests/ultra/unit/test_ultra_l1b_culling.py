@@ -707,7 +707,6 @@ def test_flag_high_energy():
         de_dataset,
         spin_tbin_edges,
         energy_range_edges,
-        None,
         cull_thresholds,
         90,
     )
@@ -750,9 +749,7 @@ def test_validate_high_energy_cull(setup_repoint_47_data):
     de_ds, _, spin_tbin_edges = setup_repoint_47_data
     # Get the energy ranges
     energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
-    e_flags = flag_high_energy(
-        de_ds, spin_tbin_edges, energy_ranges, None, mock_thresholds
-    )
+    e_flags = flag_high_energy(de_ds, spin_tbin_edges, energy_ranges, mock_thresholds)
     np.testing.assert_array_equal(e_flags, ~expected_qf.astype(bool))
 
 
@@ -812,7 +809,8 @@ def test_flag_statistical_outliers():
     assert np.all(iterations[:-1] == 1)
     assert iterations[-1] == 2
     # Check that all std_diff values are zero
-    assert np.all(std_diff[:-1] == 0)
+    assert np.all(std_diff[:-1] != 0)
+    assert std_diff[-1] == 0
 
 
 def test_flag_statistical_outliers_invalid_events():
@@ -838,10 +836,9 @@ def test_flag_statistical_outliers_invalid_events():
         energy_range_edges,
         mask,
     )
-    # check that no flags are set because there were no valid events to calculate
-    # statistics on.
+    # check that all flags are set because the mask marks all events as invalid.
     np.testing.assert_array_equal(
-        quality_flags, np.zeros_like(quality_flags, dtype=bool)
+        quality_flags, np.ones_like(quality_flags, dtype=bool)
     )
     # check that all energy bins are marked as converged (no valid events is not a
     # failure case for convergence since we just can't calculate statistics.
@@ -872,11 +869,11 @@ def test_validate_stat_cull(setup_repoint_47_data):
     """Validate that statistical-outlier quality flags match expected results."""
     # read test data from csv files
     results_df = pd.read_csv(
-        TEST_PATH / "validate_stat_culling_results_repoint00047_v2.csv"
+        TEST_PATH / "validate_stat_culling_results_repoint00047_v3.csv"
     )
     de_ds, _, spin_tbin_edges = setup_repoint_47_data
     # Get the energy ranges
-    energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
+    energy_ranges = get_binned_energy_ranges(build_energy_bins()[0])
 
     # Create a mask of flagged events to test that the stat cull algorithm
     # properly ignores these. The test data was created using this exact mask as well.

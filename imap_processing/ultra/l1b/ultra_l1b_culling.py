@@ -687,7 +687,6 @@ def flag_high_energy(
     de_dataset: xr.Dataset,
     spin_tbin_edges: NDArray,
     energy_ranges: NDArray,
-    mask: NDArray = None,
     energy_thresholds: np.ndarray = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS,
     sensor_id: int = 90,
 ) -> NDArray:
@@ -702,10 +701,6 @@ def flag_high_energy(
         Edges of the spin time bins.
     energy_ranges : numpy.ndarray
         Array of energy range edges.
-    mask : numpy.ndarray, optional
-        Mask indicating which events to consider for high energy flagging
-         (e.g., after low voltage culling). True indicates the spin bins that should
-         NOT be considered for high energy flagging.
     energy_thresholds : numpy.ndarray
         Array of count thresholds for flagging high energy events corresponding to
          each energy range.
@@ -732,10 +727,6 @@ def flag_high_energy(
             f"HIGH_ENERGY_CULL_CHANNEL ({cull_channel}) is out of bounds"
             f" for {n_energy_bins} energy ranges."
         )
-
-    # Initialize all spin bins to have no high energy flag
-    spin_bin_size = len(spin_tbin_edges) - 1
-    quality_flags: np.ndarray = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
     # Get valid events and counts at each spin bin for the
     # designated culling channel.
     de_counts = get_valid_de_count_summary(
@@ -752,18 +743,12 @@ def flag_high_energy(
         cull_channel_counts[np.newaxis, :] >= energy_thresholds
     )  # (n_energy_bins, n_spin_bins)
 
-    if mask is not None:
-        quality_flags[:, ~mask] = flagged[:, ~mask]
-    else:
-        quality_flags = flagged
-
-    num_culled: int = np.sum(quality_flags)
     logger.info(
-        f"High energy culling removed {num_culled} spin bins across {n_energy_bins} "
+        f"Found {np.sum(flagged)} high energy spin bins across {n_energy_bins} "
         f"energy channels. Energy thresholds: {energy_thresholds.flatten()}, "
     )
 
-    return quality_flags
+    return flagged
 
 
 def flag_statistical_outliers(
