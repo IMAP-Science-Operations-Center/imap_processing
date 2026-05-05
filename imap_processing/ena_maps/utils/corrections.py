@@ -491,6 +491,11 @@ def add_spacecraft_position_and_velocity_to_pset(
         sc_position_vector = sc_state[0:3]
         sc_velocity_vector = sc_state[3:6]
 
+    # Store spacecraft position as DataArray
+    pset["sc_position"] = xr.DataArray(
+        sc_position_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
+    )
+
     # Store spacecraft velocity as DataArray
     pset["sc_velocity"] = xr.DataArray(
         sc_velocity_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
@@ -498,16 +503,8 @@ def add_spacecraft_position_and_velocity_to_pset(
 
     # Calculate spacecraft speed and direction
     sc_velocity_km_per_sec = np.linalg.norm(pset["sc_velocity"], axis=-1, keepdims=True)
-    pset["sc_direction_vector"] = pset["sc_velocity"] / sc_velocity_km_per_sec
-
-    # Store spacecraft position as DataArray
-    pset["sc_position"] = xr.DataArray(
-        sc_position_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
-    )
-
-    # Calculate spacecraft position direction
-    sc_position_km = np.linalg.norm(pset["sc_position"], axis=-1, keepdims=True)
-    pset["sc_position_direction_vector"] = pset["sc_position"] / sc_position_km
+    if (sc_velocity_km_per_sec != 0).all():
+        pset["sc_direction_vector"] = pset["sc_velocity"] / sc_velocity_km_per_sec
 
     return pset
 

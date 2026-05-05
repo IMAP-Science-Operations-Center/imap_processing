@@ -2711,6 +2711,13 @@ class TestProcessSinglePset:
             mock_cg.return_value = pset
             mock_ram_mask.return_value = pset
 
+            # Mock the spacecraft velocity
+            pset["sc_velocity"] = xr.DataArray(
+                data=[400, 0, 0],  # 400 km/s in x direction
+                dims="component",
+                coords={"component": ["vx", "vy", "vz"]},
+            )
+
             # Process with hf frame
             _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=True)
 
@@ -2747,6 +2754,13 @@ class TestProcessSinglePset:
             mock_add_ef.return_value = pset
             mock_calc_ef.return_value = pset
             mock_cg.return_value = pset
+
+            # Mock the spacecraft velocity
+            pset["sc_velocity"] = xr.DataArray(
+                data=[400, 0, 0],  # 400 km/s in x direction
+                dims="component",
+                coords={"component": ["vx", "vy", "vz"]},
+            )
 
             # Process with sc frame
             _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=False)

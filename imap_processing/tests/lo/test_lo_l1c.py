@@ -248,7 +248,6 @@ def test_lo_l1c(
         np.ones(PSET_SHAPE, dtype=np.float32),
         dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
     )
-    mock_add_spacecraft_velocity.side_effect = lambda pset: pset
     expected_logical_source = "imap_lo_l1c_pset"
 
     # Act
@@ -259,9 +258,9 @@ def test_lo_l1c(
     # Verify that pivot_angle is passed through from l1b_de
     assert "pivot_angle" in output_dataset
     assert output_dataset["pivot_angle"].values[0] == 45.0
-    # We want sc velocity and direction added to the l1c pointing sets,
-    # not waiting until CG is needed.
-    mock_add_spacecraft_velocity.assert_called_once()
+    # Verify that spacecraft position and velocity are added to the pset
+    assert "sc_position" in output_dataset
+    assert "sc_velocity" in output_dataset
 
 
 def test_filter_goodtimes(l1b_de, anc_dependencies):

@@ -9,6 +9,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.corrections import (
     add_spacecraft_position_and_velocity_to_pset,
 )
@@ -221,11 +222,27 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             "esa_energy_step": ESA_ENERGY_STEPS,
             "spin_angle": SPIN_ANGLE_BIN_CENTERS,
             "off_angle": OFF_ANGLE_BIN_CENTERS,
+            "component": ["x", "y", "z"],
         }
     )
 
-    # add the spacecraft position and velocity and direction, and their unit vectors
-    pset = add_spacecraft_position_and_velocity_to_pset(pset)
+    # Get the spacecraft position and velocity and direction
+    pset_with_spacecraft_data = add_spacecraft_position_and_velocity_to_pset(pset)
+
+    # Add the spacecraft position and velocity vectors to the pset
+    pset["sc_position"] = xr.DataArray(
+        data=pset_with_spacecraft_data["sc_position"],
+        name="component",
+        dims=[CoordNames.CARTESIAN_VECTOR.value],
+        attrs=attr_mgr.get_variable_attributes("sc_position"),
+    )
+
+    pset["sc_velocity"] = xr.DataArray(
+        data=pset_with_spacecraft_data["sc_velocity"],
+        name="component",
+        dims=[CoordNames.CARTESIAN_VECTOR.value],
+        attrs=attr_mgr.get_variable_attributes("sc_velocity"),
+    )
 
     return [pset]
 
