@@ -618,9 +618,11 @@ class BackgroundConfig(_BaseConfigAccessor):
         """
         Validate the background configuration.
 
-        Extends base validation to also verify that TOF windows and coincidence
-        types are consistent across esa_energy_step for each (calibration_prod,
-        background_index) combination.
+        Extends base validation to verify:
+        1. TOF windows and coincidence types are consistent across esa_energy_step
+           for each (calibration_prod, background_index) combination.
+        2. All required columns (coincidence_type_list, TOF windows, scaling_factor,
+           uncertainty) are non-null for every row.
 
         Parameters
         ----------
@@ -632,9 +634,33 @@ class BackgroundConfig(_BaseConfigAccessor):
         AttributeError
             If required columns or index are missing.
         ValueError
-            If TOF windows or coincidence types differ across ESA energy steps.
+            If TOF windows or coincidence types differ across ESA energy steps,
+            or if any required values are null/missing.
         """
         super()._validate(df)
+
+        # Check that all required columns have non-null values for every row
+        # This catches cases where forward-fill didn't populate values
+        # (e.g., missing first row in a group) or where scaling_factor/uncertainty
+        # are missing for some ESA steps
+        required_non_null = [
+            "coincidence_type_list",
+            *self.tof_columns,
+            "scaling_factor",
+            "uncertainty",
+        ]
+
+        for col in required_non_null:
+            null_mask = df[col].isna()
+            if null_mask.any():
+                # Get the index values of rows with null values
+                null_rows = df.index[null_mask].tolist()
+                raise ValueError(
+                    f"Null values found in required column '{col}' for rows: "
+                    f"{null_rows}. All background configuration rows must have "
+                    f"non-null values for coincidence_type_list, TOF windows, "
+                    f"scaling_factor, and uncertainty."
+                )
 
         # Columns that must be consistent across ESA steps
         consistency_columns = [*self.tof_columns, "coincidence_type_list"]

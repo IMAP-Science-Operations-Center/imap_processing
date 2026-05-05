@@ -585,6 +585,48 @@ calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coi
         # Verify scaling factors are NOT forward-filled (they vary by ESA)
         assert list(group_0_0["scaling_factor"]) == [0.01, 0.02, 0.03]
 
+    def test_validate_fails_on_missing_scaling_factor(self):
+        """Test that validation fails when scaling_factor is missing for some rows."""
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,,0.002,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+        """
+        with pytest.raises(ValueError, match="Null values found in required column"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+    def test_validate_fails_on_missing_uncertainty(self):
+        """Test that validation fails when uncertainty is missing for some rows."""
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+        """
+        with pytest.raises(ValueError, match="Null values found in required column"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+    def test_validate_fails_on_missing_coincidence_type_list(self):
+        """Test validation fails when coincidence_type_list is missing for a group."""
+        # First row of group is missing coincidence_type_list, so ffill has no source
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,,-20,16,-46,-15,-511,511,0,1023
+        """
+        with pytest.raises(ValueError, match="Null values found in required column"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+    def test_validate_fails_on_missing_tof_column(self):
+        """Test validation fails when TOF column is missing for a group."""
+        # First row of group is missing tof_ab_low, so ffill has no source
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,,,,,,,,,
+        """
+        with pytest.raises(ValueError, match="Null values found in required column"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
 
 class TestGetTofWindowMask:
     """Test suite for get_tof_window_mask function."""
