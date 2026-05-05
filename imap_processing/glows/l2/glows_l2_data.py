@@ -325,7 +325,7 @@ class HistogramL2:
 
     number_of_good_l1b_inputs: int
     total_l1b_inputs: int
-    identifier: int  # TODO: Should be the official pointing number
+    identifier: int
     start_time: np.double
     end_time: np.double
     daily_lightcurve: DailyLightcurve
@@ -391,7 +391,8 @@ class HistogramL2:
 
         self.total_l1b_inputs = len(l1b_dataset["epoch"])
         self.number_of_good_l1b_inputs = len(good_data["epoch"])
-        self.identifier = -1  # TODO: retrieve from spin table
+        repointing = l1b_dataset.attrs.get("Repointing")
+        self.identifier = int(repointing.replace("repoint", ""))
         # TODO fill this in
         self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH))
 

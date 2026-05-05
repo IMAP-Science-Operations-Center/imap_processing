@@ -483,6 +483,7 @@ def l1b_dataset_full():
             "imap_time_offset": (["epoch"], [60.0, 60.0]),
         },
         coords={"epoch": xr.DataArray(epoch, dims=["epoch"])},
+        attrs={"Repointing": "repoint00047"},
     )
 
 

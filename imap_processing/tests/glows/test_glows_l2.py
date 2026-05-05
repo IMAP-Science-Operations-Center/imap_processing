@@ -67,11 +67,13 @@ def test_glows_l2(
         mock_pipeline_settings,
         mock_conversion_table_dict,
     )
+    l1b_hist_dataset.attrs["Repointing"] = "repoint00047"
 
     # Test case 1: L1B dataset has good times
     l2 = glows_l2(l1b_hist_dataset, mock_pipeline_settings, mock_calibration_dataset)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
+    assert l2["identifier"].values[0] == 47
     assert "flight_software_version" in l2.attrs
     assert "pkts_file_name" in l2.attrs
     assert "flight_software_version" not in l2.data_vars
@@ -130,6 +132,7 @@ def test_generate_l2(
         mock_pipeline_settings,
         mock_conversion_table_dict,
     )
+    l1b_hist_dataset.attrs["Repointing"] = "repoint00047"
     day = et_to_datetime64(ttj2000ns_to_et(l1b_hist_dataset["epoch"].data[0]))
     pipeline_settings = PipelineSettings(
         mock_pipeline_settings.sel(epoch=day, method="nearest")
