@@ -13,25 +13,25 @@ sample_rate_max: &sample_rate_max 130
 
 # <=== Base Attributes ===>
 string_base_attrs: &string_base
-  DEPEND_0: epoch
   CATDESC: " "
+  DEPEND_0: epoch
   FIELDNAM: " "
   FILLVAL: " "
   FORMAT: A3
   VAR_TYPE: metadata
 
 l1a_data_base: &l1a_data_base
-  VALIDMIN: *data_min
-  VALIDMAX: *data_max
-  DISPLAY_TYPE: spectrogram
-  DEPEND_0: epoch
-  FORMAT: I12
-  UNITS: dN
-  VAR_TYPE: data
   CATDESC: ""
+  DEPEND_0: epoch
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: ""
   FILLVAL: *int_fillval
+  FORMAT: I12
   LABLAXIS: ""
+  UNITS: dN
+  VALIDMAX: *data_max
+  VALIDMIN: *data_min
+  VAR_TYPE: data
 
 l1a_tof_base: &l1a_tof_base
   <<: *l1a_data_base
@@ -44,75 +44,76 @@ l1a_target_base: &l1a_target_base
   LABL_PTR_1: time_low_sample_rate_label
 
 sample_rate_base: &sample_rate_base
-  DISPLAY_TYPE: no_plot
   CATDESC: ""
+  DEPEND_0: epoch
+  DISPLAY_TYPE: no_plot
   FIELDNAM: ""
   FILLVAL: -1.0e+31
-  VALIDMIN: *sample_rate_min
-  VALIDMAX: *sample_rate_max
-  DEPEND_0: epoch
   FORMAT: F64.5
-  SCALETYP: linear
   LABLAXIS: Time
+  SCALETYP: linear
   UNITS: microseconds
-  VAR_TYPE: data
+  VALIDMAX: *sample_rate_max
+  VALIDMIN: *sample_rate_min
   VAR_NOTES:  The number of microseconds since the event.
               0 is the start of data collection, negative
               numbers represent data collected prior to a dust event
+  VAR_TYPE: data
 
 trigger_base: &trigger_base
-  VALIDMIN: 0
-  VALIDMAX: *max_uint32
+  CATDESC: ""
   DEPEND_0: epoch
   DISPLAY_TYPE: no_plot
-  CATDESC: ""
   FIELDNAM: ""
-  VAR_TYPE: support_data
   FILLVAL: *int_fillval
-  LABLAXIS: ""
   FORMAT: I10
+  LABLAXIS: ""
   UNITS: " "
+  VALIDMAX: *max_uint32
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 # <=== LABL_PTR_i Attributes ===>
 time_high_sample_rate_label:
   CATDESC: High sample rate time steps for a dust event.
+  DEPEND_1: time_high_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: High Sample Rate Time
   FORMAT: A5
   VAR_TYPE: metadata
-  DEPEND_1: time_high_sample_rate_index
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 time_low_sample_rate_label:
   CATDESC: Low sample rate time steps for a dust event.
+  DEPEND_1: time_low_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Low Sample Rate Time
   FORMAT: A5
   VAR_TYPE: metadata
-  DEPEND_1: time_low_sample_rate_index
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # <=== Instrument Setting Attributes ===>
 low_sample_rate_attrs:
   <<:  *sample_rate_base
   CATDESC: Low sample rate time steps for a dust event.
+  DEPEND_1: time_low_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   FIELDNAM: Low Sample Rate Time
   VAR_NOTES: The low sample rate in microseconds. Steps are approximately 1/4.025
              microseconds in duration. Used by the Ion_Grid, Target_Low, and
              Target_High variables.
-  DEPEND_1: time_low_sample_rate_index
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 high_sample_rate_attrs:
   <<:  *sample_rate_base
   CATDESC: High sample rate time steps for a dust event.
+  DEPEND_1: time_high_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   FIELDNAM: High Sample Rate Time
   VAR_NOTES: The high sample rate in microseconds. Steps are approximately 1/260
     microseconds in duration. Used by the TOF_High, TOF_Mid, and
     TOF_Low variables.
-  DEPEND_1: time_high_sample_rate_index
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 time_low_sample_rate_index:
   CATDESC: Low sampling rate time index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Low sample rate
   FILLVAL: *int_fillval
   FORMAT: I3
@@ -122,10 +123,10 @@ time_low_sample_rate_index:
   VALIDMAX: 511
   VALIDMIN: 0
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 time_high_sample_rate_index:
   CATDESC: High sampling rate time index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: High sample rate
   FILLVAL: *int_fillval
   FORMAT: I4
@@ -135,7 +136,6 @@ time_high_sample_rate_index:
   VALIDMAX: 8188
   VALIDMIN: 0
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 tof_high_attrs:
   <<: *l1a_tof_base
@@ -157,9 +157,9 @@ tof_mid_attrs:
 
 tof_low_attrs:
   <<: *l1a_tof_base
-  FILLVAL: *int_fillval
   CATDESC: Time of flight waveform on the low-gain channel
   FIELDNAM: Low Gain Time of Flight
+  FILLVAL: *int_fillval
   LABLAXIS: TOF Low Ampl.
   VAR_NOTES: Low gain channel of the time-of-flight signal.
         Sampled at 260 Megasamples per second, with a 10-bit resolution.
@@ -197,35 +197,35 @@ shcoarse:
   <<: *trigger_base
   CATDESC: Time of packet generation (not data acquisition), as integer seconds since epoch
   FIELDNAM: Secondary header coarse time
+  FILLVAL: 4294967295
   LABLAXIS: Packet Generation Time (Coarse)
   UNITS: seconds
-  FILLVAL: 4294967295
 
 shfine:
   <<: *trigger_base
   CATDESC: Time of packet generation, each DN represents 20usec within current second
   FIELDNAM: Secondary header fine time
-  VALIDMAX: *max_uint16
+  FILLVAL: 65535
   LABLAXIS: Packet Generation Time (Fine)
   UNITS: microseconds
-  FILLVAL: 65535
+  VALIDMAX: *max_uint16
 
 elsec_evtpkt:
   <<: *trigger_base
   CATDESC: Time of event message, as integer seconds.
   FIELDNAM: Event message coarse time
+  FILLVAL: 4294967295
   LABLAXIS: Event Message Time (Coarse)
   UNITS: seconds
-  FILLVAL: 4294967295
 
 elssec_evtpkt:
   <<: *trigger_base
   CATDESC: Time of event message, each DN represents 20usec within current second.
   FIELDNAM: Event message fine time
-  VALIDMAX: *max_uint16
+  FILLVAL: 65535
   LABLAXIS: Event Message Time (Fine)
   UNITS: microseconds
-  FILLVAL: 65535
+  VALIDMAX: *max_uint16
 
 messages:
   <<: *string_base
@@ -261,8 +261,8 @@ idx__sci0spare1:
   <<: *trigger_base
   CATDESC: Spare for alignment
   FIELDNAM: Sci spare 1
-  VALIDMAX: 8191
   LABLAXIS: Sci Spare 1
+  VALIDMAX: 8191
 
 idx__sci0pack:
   <<: *string_base
@@ -283,36 +283,36 @@ idx__sci0evtnum:
   <<: *trigger_base
   CATDESC: Event number
   FIELDNAM: Event number
-  VALIDMAX: *max_uint16
   LABLAXIS: Event Number
+  VALIDMAX: *max_uint16
 
 idx__sci0cat:
   <<: *trigger_base
   CATDESC: Category assigned to this event (for most recent processing operation)
   FIELDNAM: Category
-  VALIDMAX: *max_uint16
   LABLAXIS: Category
+  VALIDMAX: *max_uint16
 
 idx__sci0qual:
   <<: *trigger_base
   CATDESC: Quality factor assigned to this category
   FIELDNAM: Quality factor
-  VALIDMAX: *max_uint8
   LABLAXIS: Quality factor
+  VALIDMAX: *max_uint8
 
 idx__sci0fragoff:
   <<: *trigger_base
   CATDESC: Starting offset for this data when reconstructing data that spans multiple packets (fragmented)
   FIELDNAM: Fragmentation offset
-  VALIDMAX: *max_uint16
   LABLAXIS: Offset
+  VALIDMAX: *max_uint16
 
 idx__sci0ver:
   <<: *trigger_base
   CATDESC: Science CSC version number for this header
   FIELDNAM: Version number
-  VALIDMAX: *max_uint16
   LABLAXIS: Version number
+  VALIDMAX: *max_uint16
 
 idx__sci0time32:
   <<: *trigger_base
@@ -348,64 +348,64 @@ idx__txhdrsp00:
   <<: *trigger_base
   CATDESC: Spare for alignment
   FIELDNAM: Spare 0
-  VALIDMAX: *max_uint16
   LABLAXIS: Spare 0
+  VALIDMAX: *max_uint16
 
 idx__txhdrtimesec1:
   <<: *trigger_base
   CATDESC: Trigger time, bits 31:16 of the coarse timestamp (integer seconds since epoch)
   FIELDNAM: Trigger time
-  VALIDMAX: *max_uint16
   LABLAXIS: Trigger Time
+  VALIDMAX: *max_uint16
 
 idx__txhdrtimesec2:
   <<: *trigger_base
   CATDESC: Trigger time, bits 15:0 of the coarse timestamp (integer seconds since epoch)
   FIELDNAM: Trigger time
-  VALIDMAX: *max_uint16
   LABLAXIS: Trigger Time
+  VALIDMAX: *max_uint16
 
 idx__txhdrtimesubs:
   <<: *trigger_base
   CATDESC: Trigger time, subseconds field
   FIELDNAM: Trigger time
-  VALIDMAX: *max_uint16
   LABLAXIS: Trigger time
+  VALIDMAX: *max_uint16
 
 idx__txhdrsp01:
   <<: *trigger_base
   CATDESC: Spare for alignment
   FIELDNAM: Spare 1
-  VALIDMAX: 1
   LABLAXIS: Spare 1
+  VALIDMAX: 1
 
 idx__txhdrtrigoffset:
   <<: *trigger_base
   CATDESC: Trigger offset
   FIELDNAM: Trigger offset
-  VALIDMAX: 7
   LABLAXIS: Trigger offset
+  VALIDMAX: 7
 
 idx__txhdrsp02:
   <<: *trigger_base
   CATDESC: Spare for alignment
   FIELDNAM: Spare 2
-  VALIDMAX: 1
   LABLAXIS: Spare 2
+  VALIDMAX: 1
 
 idx__txhdrtrigid:
   <<: *trigger_base
   CATDESC: Identifies which channel(s) caused this event to be captured (multiple concurrent triggers are possible)
   FIELDNAM: Trigger ID
-  VALIDMAX: 1024
   LABLAXIS: Trigger ID
+  VALIDMAX: 1024
 
 idx__txhdrevtnum:
   <<: *trigger_base
   CATDESC: Event number, an incrementing counter to uniquely identify one event in dataset
   FIELDNAM: Event Number
-  VALIDMAX: *max_uint16
   LABLAXIS: Event Number
+  VALIDMAX: *max_uint16
 
 idx__txhdrblocks:
   <<: *trigger_base
@@ -453,15 +453,15 @@ idx__txhdrsp03:
   <<: *trigger_base
   CATDESC: Spare for alignment
   FIELDNAM: Spare 3
-  VALIDMAX: 1
   LABLAXIS: Spare 3
+  VALIDMAX: 1
 
 idx__txhdrlsadc:
   <<: *trigger_base
   CATDESC: Settings for Low Speed (target) ADC triggering
   FIELDNAM: Low Speed ADC triggering
-  VALIDMAX: 16777215
   LABLAXIS: ADC Triggering
+  VALIDMAX: 16777215
 
 idx__txhdrpolstat:
   <<: *string_base
@@ -472,8 +472,8 @@ idx__txhdrsp04:
   <<: *trigger_base
   CATDESC: Spare for alignment
   FIELDNAM: Spare 4
-  VALIDMAX: 4194303
   LABLAXIS: Spare 4
+  VALIDMAX: 4194303
 
 idx__txhdrpolctrl:
   <<: *string_base
@@ -494,22 +494,22 @@ idx__txhdrmgtrigmode:
   <<: *trigger_base
   CATDESC: Trigger mode for mid-gain TOF channel
   FIELDNAM: MG trigger mode
-  VALIDMAX: 3
   LABLAXIS: Trigger Mode
+  VALIDMAX: 3
 
 idx__txhdrlgtrigmode:
   <<: *trigger_base
   CATDESC: Trigger mode for low-gain TOF channel
   FIELDNAM: LG trigger mode
-  VALIDMAX: 3
   LABLAXIS: Trigger Mode
+  VALIDMAX: 3
 
 idx__txhdrhgtrigmode:
   <<: *trigger_base
   CATDESC: Trigger mode for high-gain TOF channel
   FIELDNAM: HG trigger mode
-  VALIDMAX: 3
   LABLAXIS: Trigger Mode
+  VALIDMAX: 3
 
 idx__txhdrsp05:
   <<: *trigger_base
@@ -731,22 +731,22 @@ idx__txhdrfswmajor:
   <<: *trigger_base
   CATDESC: Major version number for FSW
   FIELDNAM: Major version
-  VALIDMAX: *max_uint8
   LABLAXIS: Major Version
+  VALIDMAX: *max_uint8
 
 idx__txhdrfswminor:
   <<: *trigger_base
   CATDESC: Minor version number for FSW
   FIELDNAM: Minor version
-  VALIDMAX: *max_uint8
   LABLAXIS: Minor Version
+  VALIDMAX: *max_uint8
 
 idx__txhdrfswpatch:
   <<: *trigger_base
   CATDESC: Patch version number for FSW
   FIELDNAM: Patch version
-  VALIDMAX: *max_uint16
   LABLAXIS: Patch Version
+  VALIDMAX: *max_uint16
 
 idx__txhdrfswhvstat:
   <<: *trigger_base
@@ -814,12 +814,12 @@ idx__syncsci0pkt:
   <<: *trigger_base
   CATDESC: Synchronization marker
   FIELDNAM: Synchronization marker
-  VALIDMAX: *max_uint16
   LABLAXIS: Synchronization Marker
+  VALIDMAX: *max_uint16
 
 idx__crcsci0pkt:
   <<: *trigger_base
   CATDESC: CRC CCITT-16
   FIELDNAM: CRC CCITT-16
-  VALIDMAX: *max_uint16
   LABLAXIS: CRC CCITT-16
+  VALIDMAX: *max_uint16

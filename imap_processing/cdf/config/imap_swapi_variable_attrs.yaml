@@ -1,6 +1,7 @@
 # <=== Coordinates ===>
 esa_step:
   CATDESC: Energy step id in lookup table
+  DICT_KEY: "SPASE>Support>SupportQuantity:Other"
   FIELDNAM: Energy Step
   FILLVAL: 255
   FORMAT: I2
@@ -10,7 +11,6 @@ esa_step:
   VALIDMAX: 71
   VALIDMIN: 0
   VAR_TYPE: support_data
-  DICT_KEY: "SPASE>Support>SupportQuantity:Other"
 
 # <=== LABL_PTR_i Attributes ===>
 esa_step_label:
@@ -23,32 +23,32 @@ esa_step_label:
 counts_default: &counts_default
   DEPEND_0: epoch
   DEPEND_1: esa_step
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:Counts,Qualifier:Array
   DISPLAY_TYPE: spectrogram
-  LABL_PTR_1: esa_step_label
   FILLVAL: -1.0000000E+31
   FORMAT: I5
-  UNITS: counts
-  VALIDMIN: 0
-  VALIDMAX: 65535
-  VAR_TYPE: data
+  LABL_PTR_1: esa_step_label
   SCALETYP: linear
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:Counts,Qualifier:Array
+  UNITS: counts
+  VALIDMAX: 65535
+  VALIDMIN: 0
+  VAR_TYPE: data
 
 flags_default:
   CATDESC: Bitwise flag. There are 13 flags. See VAR_NOTES for more details.
-  FIELDNAM: Quality Flag
-  LABLAXIS: Flags
   DEPEND_0: epoch
   DEPEND_1: esa_step
+  DICT_KEY: SPASE>Support>SupportQuantity:EncodedParameter
   DISPLAY_TYPE: spectrogram
-  LABL_PTR_1: esa_step_label
+  FIELDNAM: Quality Flag
   FILLVAL: 65535
   FORMAT: I5
-  UNITS: ' '
-  VALIDMIN: 0
-  VALIDMAX: 8191
-  VAR_TYPE: data
+  LABLAXIS: Flags
+  LABL_PTR_1: esa_step_label
   SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 8191
+  VALIDMIN: 0
   VAR_NOTES: >
     There are 13 flags in total, first three flags are from science packets
     and remaining 10 flags are from housekeeping packets. Flags are stored
@@ -57,107 +57,107 @@ flags_default:
     Then, the remaining 13 bits from right are used for 13 flags. The flags are
     as follows, "OVR_T_ST", "UND_T_ST", "PCEM_CNT_ST", "SCEM_CNT_ST","PCEM_V_ST",
     "PCEM_I_ST", "PCEM_INT_ST", "SCEM_V_ST", "SCEM_I_ST", "SCEM_INT_ST".
-  DICT_KEY: SPASE>Support>SupportQuantity:EncodedParameter
+  VAR_TYPE: data
 
 counts_uncertainty_default: &counts_uncertainty_default
   DEPEND_0: epoch
   DEPEND_1: esa_step
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:Counts,Qualifier:Uncertainty
   DISPLAY_TYPE: spectrogram
-  LABL_PTR_1: esa_step_label
   FILLVAL: -1.0000000E+31
   FORMAT: E19.5
-  UNITS: counts
-  VALIDMIN: 0.0
-  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
-  VAR_TYPE: data
+  LABL_PTR_1: esa_step_label
   SCALETYP: linear
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:Counts,Qualifier:Uncertainty
+  UNITS: counts
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VALIDMIN: 0.0
+  VAR_TYPE: data
 
 rate_uncertainty_default: &rate_uncertainty_default
   DEPEND_0: epoch
   DEPEND_1: esa_step
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:CountRate,Qualifier:Uncertainty
   DISPLAY_TYPE: spectrogram
-  LABL_PTR_1: esa_step_label
   FILLVAL: -1.0000000E+31
   FORMAT: E19.5
-  UNITS: counts
-  VALIDMIN: 0.0
-  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
-  VAR_TYPE: data
+  LABL_PTR_1: esa_step_label
   SCALETYP: linear
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:CountRate,Qualifier:Uncertainty
+  UNITS: counts
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VALIDMIN: 0.0
+  VAR_TYPE: data
 
 rate_default: &rate_default
   DEPEND_0: epoch
   DEPEND_1: esa_step
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:CountRate,Qualifier:Average
   DISPLAY_TYPE: spectrogram
-  LABL_PTR_1: esa_step_label
   FILLVAL: -1.0000000E+31
   FORMAT: E19.5
-  UNITS: counts/s
-  VALIDMIN: 0.0
-  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
-  VAR_TYPE: data
+  LABL_PTR_1: esa_step_label
   SCALETYP: linear
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:CountRate,Qualifier:Average
+  UNITS: counts/s
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VALIDMIN: 0.0
+  VAR_TYPE: data
 
 esa_energy:
   CATDESC: ESA Energy.
-  FIELDNAM: ESA Energy
-  LABLAXIS: Energy(eV)
   DEPEND_0: epoch
   DEPEND_1: esa_step
-  LABL_PTR_1: esa_step_label
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
+  FIELDNAM: ESA Energy
   FILLVAL: -9223372036854775808
   FORMAT: I5
-  UNITS: eV / q
-  VALIDMIN: 0
-  VALIDMAX: 65535
-  VAR_TYPE: support_data
+  LABLAXIS: Energy(eV)
+  LABL_PTR_1: esa_step_label
   SCALETYP: linear
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
+  UNITS: eV / q
+  VALIDMAX: 65535
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 metadata_default: &metadata_default
   DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FILLVAL: 65535
   FORMAT: I5
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 65535
-  VAR_TYPE: support_data
   SCALETYP: linear
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  UNITS: " "
+  VALIDMAX: 65535
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 sci_start_time:
   CATDESC: Start time of sweep in UTC
   DEPEND_0: epoch
+  DICT_KEY: "SPASE>Support>SupportQantity:Temporal"
   FIELDNAM: Science Start time
   FORMAT: " "
   VAR_TYPE: support_data
-  DICT_KEY: "SPASE>Support>SupportQantity:Temporal"
 
 # Minimum attrs setting for HK data
 hk_attrs: &hk_attrs
   CATDESC: Housekeeping data
-  FIELDNAM: Housekeeping
-  LABLAXIS: Values
   DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: Housekeeping
   FILLVAL: -9223372036854775808
   FORMAT: I19
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: support_data
+  LABLAXIS: Values
   SCALETYP: linear
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  UNITS: " "
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 # L1B HK data attrs for data with string values
 l1b_hk_string_attrs: &l1b_hk_string_attrs
   CATDESC: Housekeeping derived data
+  DEPEND_0: epoch
   FIELDNAM: Housekeeing Human Readable State
   FORMAT: A80
   VAR_TYPE: metadata
-  DEPEND_0: epoch
 
 pcem_counts:
   <<: *counts_default

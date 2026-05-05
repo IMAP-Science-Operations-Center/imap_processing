@@ -49,46 +49,46 @@ cem_id_label:
 default_attrs: &default
   DEPEND_0: epoch
   DISPLAY_TYPE: 'no_plot'
-  LABLAXIS: ' '
   FILLVAL: -9223372036854775808
   FORMAT: I19
-  UNITS: ' '
-  VALIDMIN: 0
-  VALIDMAX: 9223372036854769664
-  VAR_TYPE: support_data
+  LABLAXIS: ' '
   SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 9223372036854769664
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 raw_counts:
   CATDESC: Raw Counts stored in 8bits length
   DEPEND_0: epoch
   DEPEND_1: spin_sector
   DEPEND_2: cem_id
-  LABL_PTR_1: spin_sector_label
-  LABL_PTR_2: cem_id_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Raw Counts
+  FILLVAL: -9223372036854775808
   FORMAT: I3
+  LABL_PTR_1: spin_sector_label
+  LABL_PTR_2: cem_id_label
+  SCALETYP: linear
   UNITS: counts
   VALIDMAX: 255
   VALIDMIN: 0
-  FILLVAL: -9223372036854775808
   VAR_TYPE: data
-  SCALETYP: linear
 
 science_data:
   CATDESC: Decompressed Counts
   DEPEND_0: epoch
   DEPEND_1: spin_sector
   DEPEND_2: cem_id
-  LABL_PTR_1: spin_sector_label
-  LABL_PTR_2: cem_id_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Decompressed Counts
+  FILLVAL: -9223372036854775808
   FORMAT: I5
+  LABL_PTR_1: spin_sector_label
+  LABL_PTR_2: cem_id_label
   UNITS: counts
   VALIDMAX: 66539
   VALIDMIN: 0
-  FILLVAL: -9223372036854775808
   VAR_TYPE: data
 
 shcoarse:
@@ -239,12 +239,12 @@ cksum:
 non_science_attrs:
   CATDESC: SWE data
   DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
   FIELDNAM: SWE Raw Data
   FILLVAL: -9223372036854775808
   FORMAT: I19
-  UNITS: ' '
   LABLAXIS: Values
-  VALIDMIN: 0
+  UNITS: ' '
   VALIDMAX: 9223372036854769664
+  VALIDMIN: 0
   VAR_TYPE: support_data
-  DISPLAY_TYPE: time_series

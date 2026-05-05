@@ -19,41 +19,41 @@ flags_label:
 
 default_attrs: &default_attrs
   # TODO: Remove unneeded attributes once SAMMI is fixed
-  RESOLUTION: ' '
   DISPLAY_TYPE: no_plot
+  FILLVAL: *int_fillval
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ' '
   TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
   UNITS: ' '
-  FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
 
 support_data_defaults: &support_data_defaults
   <<: *default_attrs
   DEPEND_0: epoch
-  VALIDMIN: 0
-  VALIDMAX: 1
   DISPLAY_TYPE: time_series
-  VAR_TYPE: support_data
   FORMAT: I10
   RESOLUTION: ISO8601
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 # UTC Strings
 time_data_defaults: &time_data_defaults
   <<: *support_data_defaults
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   FILLVAL: ' '
   FORMAT: A30
   UNITS: N/A
-  VALIDMIN: ' '
   VALIDMAX: ' '
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+  VALIDMIN: ' '
 
 lightcurve_defaults: &lightcurve_defaults
   <<: *support_data_defaults
-  DISPLAY_TYPE: no_plot
   DEPEND_1: bins
-  VAR_TYPE: data
+  DISPLAY_TYPE: no_plot
   LABL_PTR_1: bins_label
+  VAR_TYPE: data
 
   derived_from_spice_kernels: &derived_from_spice_kernels
     VAR_NOTES: Derived from SPICE Kernels
@@ -406,8 +406,8 @@ bad_time_flag_occurrences:
   FIELDNAM: Occurrences of bad-time flags
   FILLVAL: -1.0E+31
   FORMAT: I5
-  LABL_PTR_1: flags_label # MS: I do not understand this
   LABLAXIS: No. of cases
+  LABL_PTR_1: flags_label # MS: I do not understand this
   VALIDMAX: 20000
 
 spin_angle:

@@ -72,6 +72,10 @@ def test_glows_l2(
     l2 = glows_l2(l1b_hist_dataset, mock_pipeline_settings, mock_calibration_dataset)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
+    assert "flight_software_version" in l2.attrs
+    assert "pkts_file_name" in l2.attrs
+    assert "flight_software_version" not in l2.data_vars
+    assert "pkts_file_name" not in l2.data_vars
 
     # Test case 2: L1B dataset has no good times (all flags 0)
     l1b_hist_dataset_no_good_times = l1b_hist_dataset.copy(deep=True)
@@ -163,7 +167,7 @@ def test_generate_l2(
         cdf_attrs.add_instrument_global_attrs("glows")
         cdf_attrs.add_instrument_variable_attrs("glows", "l2")
         assert (
-            create_l2_dataset(l2, cdf_attrs)["epoch"].data[0]
+            create_l2_dataset(l2, cdf_attrs, l1b_hist_dataset.attrs)["epoch"].data[0]
             == (l2.start_time + l2.end_time) / 2
         )
 

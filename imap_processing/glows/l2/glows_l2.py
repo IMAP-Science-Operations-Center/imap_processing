@@ -71,11 +71,11 @@ def glows_l2(
         logger.warning("All flux and exposure times are zero. Returning empty list.")
         return []
     else:
-        return [create_l2_dataset(l2, cdf_attrs)]
+        return [create_l2_dataset(l2, cdf_attrs, input_dataset.attrs)]
 
 
 def create_l2_dataset(
-    histogram_l2: HistogramL2, attrs: ImapCdfAttributes
+    histogram_l2: HistogramL2, attrs: ImapCdfAttributes, input_attrs: dict
 ) -> xr.Dataset:
     """
     Create a xarray dataset from a HistogramL2 dataclass.
@@ -88,6 +88,8 @@ def create_l2_dataset(
         L2 data.
     attrs : ImapCdfAttributes
         CDF attributes for GLOWS L2.
+    input_attrs : dict
+        Global attributes from the input L1B dataset to propagate.
 
     Returns
     -------
@@ -148,6 +150,11 @@ def create_l2_dataset(
         },
         attrs=attrs.get_global_attributes("imap_glows_l2_hist"),
     )
+
+    output.attrs["flight_software_version"] = input_attrs.get(
+        "flight_software_version", ""
+    )
+    output.attrs["pkts_file_name"] = input_attrs.get("pkts_file_name", [])
 
     ecliptic_variables = [
         "spacecraft_location_average",

@@ -6,25 +6,25 @@ default_attrs: &default
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   FORMAT: I12
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
   UNITS: ' '
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: data
 
 default_coords: &default_coords
   # Assumed values for all coordinate attrs unless overwritten
-  FORMAT: F2.4  # Float with 4 digits
-  VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
+  FORMAT: F2.4  # Float with 4 digits
   UNITS: counts
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: support_data
 
 mag_support_attrs: &support_default
     <<: *default
-    VAR_TYPE: support_data
     DICT_KEY: SPASE>Support>SupportQuantity:Other
+    VAR_TYPE: support_data
 
 mag_metadata_attrs: &metadata_default
     <<: *default
@@ -46,26 +46,26 @@ raw_vector_attrs: &raw_vectors_default
   <<: *default
   CATDESC: Raw unprocessed magnetic field vector data in bytes
   DEPEND_1: direction
-  LABL_PTR_1: direction_label
   FIELDNAM: Magnetic Field Vector
   FORMAT: I3
+  LABL_PTR_1: direction_label
 
 vector_attrs: &vectors_default
     <<: *default
     CATDESC: Magnetic field vectors with x y z and sensor range varying by time
     DEPEND_1: direction
     FIELDNAM: Magnetic Field
-    LABL_PTR_1: direction_label
     FILLVAL: 9223372036854775807
     FORMAT: F12.5
+    LABL_PTR_1: direction_label
 
 mag_flag_attrs:
     <<: *default
-    VALIDMIN: 0
-    VALIDMAX: 1
     DISPLAY_TYPE: time_series
     FILLVAL: 255
     FORMAT: I1
+    VALIDMAX: 1
+    VALIDMIN: 0
 
 raw_direction_attrs:
     <<: *default_coords
@@ -76,45 +76,45 @@ raw_direction_attrs:
 direction_attrs:
     <<: *default_coords
     CATDESC: Magnetic field vector
+    DISPLAY_TYPE: time_series
     FIELDNAM: \[xyz\] magnetic field vector
     FORMAT: I3
-    VAR_TYPE: support_data
-    DISPLAY_TYPE: time_series
     LABLAXIS: Magnetic field vector
+    VAR_TYPE: support_data
 
 compression_attrs:
   <<: *default_coords
   CATDESC: Data compression flag
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Compression
-  LABLAXIS: Compressed
   FORMAT: I2
-  VAR_TYPE: support_data
+  LABLAXIS: Compressed
   VALIDMAX: 21
   VALIDMIN: 0
-  DISPLAY_TYPE: no_plot
+  VAR_TYPE: support_data
 
 compression_flags_attrs:
   <<: *support_default
   CATDESC: Compression information per time stamp, includes a flag and the compression width
-  FIELDNAM: Compression information per time stamp
   DEPEND_0: epoch
   DEPEND_1: compression
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Compression information per time stamp
   FORMAT: I2
+  LABL_PTR_1: compression_label
   VALIDMAX: 21
   VALIDMIN: 0
-  LABL_PTR_1: compression_label
-  DISPLAY_TYPE: no_plot
 
 compression:
     <<: *support_default
     CATDESC: Data compression flag
+    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
     FIELDNAM: Data is compressed
-    LABLAXIS: Compressed
     FILLVAL: 255
     FORMAT: I1
+    LABLAXIS: Compressed
     VALIDMAX: 1
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 compression_width:
   <<: *support_default
@@ -122,9 +122,9 @@ compression_width:
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FIELDNAM: Compressed data bit width
-  LABLAXIS: Bit width
   FILLVAL: 255
   FORMAT: I2
+  LABLAXIS: Bit width
   UNITS: 'bits'
   VALIDMAX: 21
   VALIDMIN: 0
@@ -132,26 +132,26 @@ compression_width:
 pri_sens:
     <<: *support_default
     CATDESC: Indicates the primary sensor. 0 is MAGo, 1 is MAGi
+    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
     FIELDNAM: Primary Sensor
-    LABLAXIS: Primary Sensor
     FILLVAL: 255
     FORMAT: I1
+    LABLAXIS: Primary Sensor
     UNITS: ' '
     VALIDMAX: 1
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 vecsec:
     <<: *support_default
     CATDESC: Vectors per second
+    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
     FIELDNAM: Vectors per second
-    LABLAXIS: Vectors/sec
     FILLVAL: 0
     FORMAT: I3
+    LABLAXIS: Vectors/sec
     UNITS: 'Hz'
     VALIDMAX: 128
     VALIDMIN: 1
-    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 vectors:
     <<: *vectors_default

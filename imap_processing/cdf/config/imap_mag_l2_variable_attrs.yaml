@@ -6,25 +6,25 @@ default_attrs: &default
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   FORMAT: I12
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
   UNITS: ' '
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: data
 
 default_coords: &default_coords
   # Assumed values for all coordinate attrs unless overwritten
-  FORMAT: F2.4  # Float with 4 digits
-  VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
+  FORMAT: F2.4  # Float with 4 digits
   UNITS: counts
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: support_data
 
 mag_support_attrs: &support_default
     <<: *default
-    VAR_TYPE: support_data
     DICT_KEY: SPASE>Support>SupportQuantity:Other
+    VAR_TYPE: support_data
 
 mag_metadata_attrs: &metadata_default
     <<: *default
@@ -45,13 +45,13 @@ compression_label:
 vector_attrs: &vectors_default
     <<: *default
     CATDESC: Magnetic field vectors with x y z varying by time
+    CDF_DATA_TYPE: CDF_FLOAT
     DEPEND_1: direction
+    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
     FIELDNAM: Magnetic Field Vector
-    LABL_PTR_1: direction_label
     FILLVAL: 9223372036854775807
     FORMAT: F12.5
-    CDF_DATA_TYPE: CDF_FLOAT
-    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
+    LABL_PTR_1: direction_label
 
 # Frame-specific vector attributes
 vector_attrs_srf:
@@ -82,71 +82,71 @@ vector_attrs_rtn:
 direction_attrs:
     <<: *default_coords
     CATDESC: Magnetic field vector
+    DICT_KEY: SPASE>Support>SupportQuantity:Orientation
+    DISPLAY_TYPE: time_series
     FIELDNAM: \[xyz\] magnetic field vector
     FORMAT: I3
-    VAR_TYPE: support_data
-    DISPLAY_TYPE: time_series
     LABLAXIS: Magnetic field vector
-    DICT_KEY: SPASE>Support>SupportQuantity:Orientation
+    VAR_TYPE: support_data
 
 
 magnitude:
   <<: *support_default
   CATDESC: Magnitude of the magnetic field vector
-  FIELDNAM: Magnetic Field Magnitude
-  LABLAXIS: "|B|"
-  FORMAT: F12.5
-  FILLVAL: -1.0e+31
-  UNITS: nT
-  VALIDMIN: 0
-  VALIDMAX: 1.0e+5
   CDF_DATA_TYPE: CDF_FLOAT
   DICT_KEY: SPASE>Field>FieldQuantity:Magnetic,Qualifier:Scalar
+  FIELDNAM: Magnetic Field Magnitude
+  FILLVAL: -1.0e+31
+  FORMAT: F12.5
+  LABLAXIS: "|B|"
+  UNITS: nT
+  VALIDMAX: 1.0e+5
+  VALIDMIN: 0
 
 range:
   <<: *support_default
   CATDESC: Sensor range setting
+  CDF_DATA_TYPE: CDF_UINT1
+  DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
   FIELDNAM: Sensor Range
-  LABLAXIS: Range
   FILLVAL: 255
   FORMAT: I1
+  LABLAXIS: Range
   UNITS: ' '
   VALIDMAX: 3
   VALIDMIN: 0
-  CDF_DATA_TYPE: CDF_UINT1
-  DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 pri_sens:
     <<: *support_default
     CATDESC: Indicates the primary sensor. 0 is MAGo, 1 is MAGi
+    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
     FIELDNAM: Primary Sensor
-    LABLAXIS: Primary Sensor
     FILLVAL: 255
     FORMAT: I1
+    LABLAXIS: Primary Sensor
     UNITS: ' '
     VALIDMAX: 1
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 
 qf_bitmask:
   <<: *support_default
   CATDESC: Eight-bit Data quality bitmask
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Quality Flag
-  LABLAXIS: QF
   FILLVAL: 255
   FORMAT: I3
+  LABLAXIS: QF
   VALIDMAX: 255
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 qf:
   <<: *support_default
   CATDESC: Data quality flag
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Quality Flag
-  LABLAXIS: QF
   FILLVAL: 255
   FORMAT: I1
+  LABLAXIS: QF
   VALIDMAX: 1
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality

@@ -132,6 +132,11 @@ AXIS_COUNT = 3
 RANGE_BIT_WIDTH = 2
 MAX_COMPRESSED_VECTOR_BITS = 60
 FILLVAL = -1e31
+# Relative tolerance for L1C timestamp-gap checks; allows small clock-drift
+# variation around the expected cadence before a spacing is treated as a gap.
+# This is 7.5% of expected_gap = 1e9 / vectors_per_second ns
+# (75, 37.5, 18.75, or 9.375 ms at 1, 2, 4, or 8 Hz, respectively).
+L1C_TIMESTAMP_GAP_TOLERANCE = 0.075
 
 
 def vectors_per_second_from_string(vecsec_string: str) -> dict:
