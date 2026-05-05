@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -107,7 +108,7 @@ def lo_l2(
     )
 
     logger.info("Step 5: Finalizing dataset with attributes")
-    dataset = sky_map.build_cdf_dataset(
+    dataset = cast(RectangularSkyMap, sky_map).build_cdf_dataset(
         instrument="lo", level="l2", descriptor=descriptor, external_map_dataset=dataset
     )
 
