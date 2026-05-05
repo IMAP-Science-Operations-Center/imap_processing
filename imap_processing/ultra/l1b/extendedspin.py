@@ -98,6 +98,7 @@ def calculate_extendedspin(
         de_dataset,
         spin_tbin_edges,
         energy_ranges,
+        voltage_qf,
         energy_thresholds,
         instrument_id,
     )
