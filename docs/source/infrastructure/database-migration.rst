@@ -10,33 +10,36 @@ Docs: https://alembic.sqlalchemy.org/en/latest/index.html
 
 ----
 
-**Full Migration Workflow (DEV and PROD)**
-------------------------------------------
+**Migration Workflow (Separated: DEV Test and PROD Deploy)**
+-------------------------------------------------------------
 
 .. warning::
 
-    Be **extremely careful** to never mix up DEV and PROD environments.
-    Double-check your ``DATABASE_URL`` before running any commands.
-    Mistakes can cause data loss or downtime.
+    Be **extremely careful** to never mix up DEV and PROD.
+    ``DATABASE_URL`` is what determines which database you are operating on.
+    Before any command that can change schema/data, verify:
+    1) ``DATABASE_URL`` points to the intended RDS instance (DEV or PROD)
+    2) ``alembic current`` matches the intended environment
 
-Follow these steps **in order** for every migration:
+A) DEV Migration + Testing (Steps 1–6)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. **Make your changes to the models**
 
-   Make your desired changes to the models in ``sds_data_manager/lambda_code/SDSCode/database/models.py``
+   Make your desired changes to the models in ``sds_data_manager/lambda_code/SDSCode/database/models.py``.
 
 2. **Create a revision (DEV ONLY)**
 
-    This step compares the models in the code to the current database schema in DEV and generates a migration file.
-    A Migration file is a Python script that defines the changes to be made to the database schema. It contains an
-    "upgrade" function that applies the changes and a "downgrade" function that reverts them.
+   This compares the database RDS instance in aws to the DEV schema and generates a migration file with ``upgrade``
+and ``downgrade``.
 
    .. important::
 
-      Never create migrations on PROD. Only do this in your DEV environment.
+      Never create revisions on PROD.
 
    .. code-block:: bash
 
+       export DATABASE_URL=dev_database_url
        alembic revision --autogenerate -m "description"
 
    This generates a new file in ``alembic/versions/``. **Always review the file before applying** — Alembic cannot
@@ -49,23 +52,16 @@ Follow these steps **in order** for every migration:
 
    .. code-block:: bash
 
+       export DATABASE_URL=dev_database_url
        alembic upgrade head --sql
 
-   This is safe to run at any time — it does not modify the database.
-
-4. **Apply to DEV**
-
-   .. warning::
-
-       Always test on DEV first before applying to PROD.
+4. **Apply migration to DEV**
 
    .. code-block:: bash
 
        export DATABASE_URL=dev_database_url
+       alembic current
        alembic upgrade head
-
-   The first time ``alembic upgrade head`` is run it will create an ``alembic_version`` table in the database
-   to track the current schema version.
 
 5. **Test on DEV**
 
@@ -76,43 +72,46 @@ Follow these steps **in order** for every migration:
 
    .. code-block:: bash
 
+       export DATABASE_URL=dev_database_url
        alembic downgrade -1
 
    Make sure the downgrade works as expected.
 
-7. **Commit and Push Migration Files**
+B) PROD Verification + Deployment (Steps 7–10)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   Commit your code changes **and** the new migration file(s).
+7. **Commit and push migration file + code changes**
 
-8. **Open a PR and have it reviewed**
+8. **Open PR, review, approve, merge**
 
-   Open a pull request for your changes, have them reviewed and approved, and merge into the main branch.
-
-9. **Apply to DEV and then PROD**
-
-   - Once your changes are merged, rebase against dev to pull in the new migration file.
-   - Set the correct ``DATABASE_URL`` for DEV.
+   First re-check DEV after merge:
 
    .. code-block:: bash
 
        export DATABASE_URL=dev_database_url
+       alembic current
        alembic upgrade head
 
-    - Test on DEV again to confirm everything works after merging.
+   Then repeat **Step 3 (Dry Run)**, but on PROD:
 
-    - Then set the ``DATABASE_URL`` for PROD and apply.
+   .. warning::
+
+      PROD safety gate (must all be true):
+      - ``DATABASE_URL=prod_database_url``
+      - URL host/DB clearly match the PROD RDS instance
+      - ``alembic current`` is the expected PROD revision
 
    .. code-block:: bash
 
-       export DATABASE_URL=dev_database_url
+       export DATABASE_URL=prod_database_url
+       alembic current
+       alembic upgrade head --sql
        alembic upgrade head
 
+10. **Post-deploy monitoring (DEV + PROD)**
 
-
-10. **Monitor both databases after applying**
-
-    Confirm there are no issues in either environment. Both Dev and Prod should be synced to the same schema version in
-    the code.
+    Confirm both environments are healthy and at expected revision:
+    run ``alembic current`` and functional checks.
 
 ----
 
@@ -159,6 +158,7 @@ To find the credentials:
 2. Go to **Secrets Manager** → **Secrets** → ``sdp-database-cred``
 3. Click **Retrieve secret value**
 4. Construct the URL from those values
+5. Verify the URL points to the intended RDS instance (DEV vs PROD)
 
 Export the URL:
 
@@ -175,7 +175,8 @@ Test the connection:
 .. warning::
 
     Always double check which database your ``DATABASE_URL`` is pointing to before running any commands.
-    It is easy to accidentally run against the wrong database. Always test on DEV first before applying to PROD.
+    ``DATABASE_URL`` is the environment boundary between DEV and PROD.
+    Always test on DEV first before applying to PROD.
 
 
 Downtime Considerations
