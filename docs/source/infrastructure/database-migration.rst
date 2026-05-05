@@ -30,8 +30,7 @@ A) DEV Migration + Testing (Steps 1–6)
 
 2. **Create a revision (DEV ONLY)**
 
-   This compares the database RDS instance in aws to the DEV schema and generates a migration file with ``upgrade``
-and ``downgrade``.
+   This compares the database RDS instance in aws to the DEV schema and generates a migration file with ``upgrade`` and ``downgrade``.
 
    .. important::
 
