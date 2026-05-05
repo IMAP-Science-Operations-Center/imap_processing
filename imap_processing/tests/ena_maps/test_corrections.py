@@ -114,7 +114,7 @@ class TestPowerLawFluxCorrector:
 
         corr = PowerLawFluxCorrector(lo_coeffs_file)
         # Create 2D arrays (n_energy, n_pixels)
-        fluxes = ((np.arange(7) * 1000**2)[::-1])[:, np.newaxis]
+        fluxes = ((np.ones(7) * 1000**2)[::-1])[:, np.newaxis]
         energies = np.arange(1, 8) + 1
         _, _, n_iter = corr.predictor_corrector_iteration(
             fluxes,
@@ -365,12 +365,13 @@ class TestPowerLawFluxCorrector:
         corr = PowerLawFluxCorrector(lo_coeffs_file)
 
         # Create 2D array with 7 energy levels and 8 spatial pixels
-        n_energy = 7
+        energies = np.array([16.35, 30.56, 56.42, 105.21, 199.79, 407.49, 795.28])
+        n_energy = len(energies)
         n_pixels = 8
-        energies = np.arange(1, n_energy + 1) + 1
 
         # Create base fluxes that vary across pixels
-        base_fluxes = ((np.arange(n_energy) + 1) * 1000**2)[::-1]
+        base_fluxes = np.array([1000, 800, 50, 200, 1, 30, 10])
+        # base_fluxes = ((np.arange(n_energy) + 1) * 1000**2)[::-1]
         fluxes = (
             base_fluxes[:, np.newaxis] * np.linspace(0.9, 1.1, n_pixels)[np.newaxis, :]
         )
