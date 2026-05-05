@@ -410,8 +410,10 @@ def test_process_histogram_skips_zero_imap_start_time(
         mock_ancillary_parameters,
         pipeline_settings,
     )
-    # 2 invalid epochs dropped; 18 valid epochs remain
-    assert output[0].sizes["epoch"] == 18
+    # 2 invalid epochs dropped; 18 valid epochs remain in every output DataArray
+    for da in output:
+        assert da.sizes["epoch"] == 18
+    assert len(output[0].coords["epoch"]) == 18
 
 
 def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
