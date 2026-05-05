@@ -235,6 +235,18 @@ class TestPowerLawFluxCorrector:
             corrected_fluxes.squeeze(), expected_corr_fluxes, rtol=1e-2
         )
 
+    def test_predictor_corrector_zero_flux_convergence(self, hi_coeffs_file):
+        """Test that convergence is achieved when we have a zero flux."""
+        flux_corr = PowerLawFluxCorrector(hi_coeffs_file)
+        energies, flux_dict, background_dict = self.create_hi_test_data()
+        # set flux for ESA 9 to zero
+        flux_dict["J"][-1] = 0
+        # Reshape to 2D arrays (n_energy, n_pixels)
+        _, _, n_iterations = flux_corr.predictor_corrector_iteration(
+            flux_dict["J"][:, np.newaxis], flux_dict["delta_J"][:, np.newaxis], energies
+        )
+        assert np.all(n_iterations < 20)
+
     @mock.patch(
         "imap_processing.ena_maps.utils.corrections.PowerLawFluxCorrector.predictor_corrector_iteration"
     )

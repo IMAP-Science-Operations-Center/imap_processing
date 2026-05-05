@@ -323,7 +323,7 @@ class PowerLawFluxCorrector:
             with np.errstate(divide="ignore", invalid="ignore"):
                 ratios_sq = (source_fluxes_new / source_fluxes_prev) ** 2
             # Compute chi per pixel (mean over energy axis)
-            chi_n = np.sqrt(np.mean(ratios_sq, axis=0)) - 1
+            chi_n = np.sqrt(np.nanmean(ratios_sq, axis=0)) - 1
 
             # Determine which pixels converged this iteration
             # Start with all False, then set True for newly converged pixels
