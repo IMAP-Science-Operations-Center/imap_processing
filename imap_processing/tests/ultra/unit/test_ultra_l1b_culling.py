@@ -707,6 +707,7 @@ def test_flag_high_energy():
         de_dataset,
         spin_tbin_edges,
         energy_range_edges,
+        None,
         cull_thresholds,
         90,
     )
@@ -749,7 +750,9 @@ def test_validate_high_energy_cull(setup_repoint_47_data):
     de_ds, _, spin_tbin_edges = setup_repoint_47_data
     # Get the energy ranges
     energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
-    e_flags = flag_high_energy(de_ds, spin_tbin_edges, energy_ranges, mock_thresholds)
+    e_flags = flag_high_energy(
+        de_ds, spin_tbin_edges, energy_ranges, None, mock_thresholds
+    )
     np.testing.assert_array_equal(e_flags, ~expected_qf.astype(bool))
 
 
@@ -808,7 +811,7 @@ def test_flag_statistical_outliers():
     # iterated twice.
     assert np.all(iterations[:-1] == 1)
     assert iterations[-1] == 2
-    # Check that all std_diff values are zero
+    # Check that all std_diff values were set (not zero) except the last one
     assert np.all(std_diff[:-1] != 0)
     assert std_diff[-1] == 0
 
