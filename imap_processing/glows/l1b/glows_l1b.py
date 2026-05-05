@@ -82,7 +82,10 @@ def glows_l1b(
         input_dataset, ancillary_exclusions, ancillary_parameters, pipeline_settings
     )
     output_dataset = create_l1b_hist_output(
-        output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
+        output_dataarrays,
+        output_dataarrays[0].coords["epoch"],
+        input_dataset["bins"],
+        cdf_attrs,
     )
 
     output_dataset.attrs["flight_software_version"] = input_dataset.attrs[
@@ -347,7 +350,7 @@ def create_l1b_hist_output(
         fields in the HistogramL1B dataclass, which also describes each variable.
     epoch : xr.DataArray
         The epoch DataArray to use as a coordinate in the output dataset. Generally
-        equal to the L1A epoch.
+        equal to the L1A epoch, except when values are dropped for no data.
     bin_coord : xr.DataArray
         An arange DataArray for the bins coordinate. Nominally expected to be equal to
         `xr.DataArray(np.arange(number_of_bins_per_histogram), name="bins",
