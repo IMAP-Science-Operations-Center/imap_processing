@@ -437,7 +437,8 @@ def add_spacecraft_position_and_velocity_to_pset(
     ----------
     pset : xr.Dataset
         Pointing set dataset to be updated. Must contain "epoch" coordinate
-        and "epoch_delta" data variable.
+        and "epoch_delta" data variable or "pointing_start_met" and
+        "pointing_end_met" data variables to compute.
 
     Returns
     -------
@@ -449,9 +450,7 @@ def add_spacecraft_position_and_velocity_to_pset(
     -----
     Adds the following DataArrays to input dataset:
     - "sc_velocity": Spacecraft velocity vector (km/s) with dims ["x_y_z"]
-    - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
     - "sc_position": Spacecraft position vector (km) with dims ["x_y_z"]
-    - "sc_position_direction_vector": Spacecraft position unit vector w/ dims ["x_y_z"]
     """
     # Hi and Lo need to use different methods for computing the Pointing
     # midpoint time.
@@ -500,11 +499,6 @@ def add_spacecraft_position_and_velocity_to_pset(
     pset["sc_velocity"] = xr.DataArray(
         sc_velocity_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
     )
-
-    # Calculate spacecraft speed and direction
-    sc_velocity_km_per_sec = np.linalg.norm(pset["sc_velocity"], axis=-1, keepdims=True)
-    if (sc_velocity_km_per_sec != 0).all():
-        pset["sc_direction_vector"] = pset["sc_velocity"] / sc_velocity_km_per_sec
 
     return pset
 

@@ -222,7 +222,7 @@ def expected_bg():
 @patch("imap_processing.lo.l1c.lo_l1c.set_pointing_directions")
 @patch("imap_processing.lo.l1c.lo_l1c.add_spacecraft_position_and_velocity_to_pset")
 def test_lo_l1c(
-    mock_add_spacecraft_velocity,
+    mock_add_spacecraft_position_and_velocity_to_pset,
     mock_set_pointing_directions,
     mock_filter_goodtimes,
     mock_set_background_rates,
@@ -248,6 +248,14 @@ def test_lo_l1c(
         np.ones(PSET_SHAPE, dtype=np.float32),
         dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
     )
+
+    # Pass through the pset with sc_position and sc_velocity added
+    def mock_add_sc_pos_vel(pset):
+        pset["sc_position"] = xr.DataArray(np.zeros(3), dims=["x_y_z"])
+        pset["sc_velocity"] = xr.DataArray(np.zeros(3), dims=["x_y_z"])
+        return pset
+
+    mock_add_spacecraft_position_and_velocity_to_pset.side_effect = mock_add_sc_pos_vel
     expected_logical_source = "imap_lo_l1c_pset"
 
     # Act
@@ -258,9 +266,6 @@ def test_lo_l1c(
     # Verify that pivot_angle is passed through from l1b_de
     assert "pivot_angle" in output_dataset
     assert output_dataset["pivot_angle"].values[0] == 45.0
-    # Verify that spacecraft position and velocity are added to the pset
-    assert "sc_position" in output_dataset
-    assert "sc_velocity" in output_dataset
 
 
 def test_filter_goodtimes(l1b_de, anc_dependencies):

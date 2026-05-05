@@ -9,7 +9,6 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.corrections import (
     add_spacecraft_position_and_velocity_to_pset,
 )
@@ -227,21 +226,16 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     )
 
     # Get the spacecraft position and velocity and direction
-    pset_with_spacecraft_data = add_spacecraft_position_and_velocity_to_pset(pset)
+    pset = add_spacecraft_position_and_velocity_to_pset(pset)
 
-    # Add the spacecraft position and velocity vectors to the pset
-    pset["sc_position"] = xr.DataArray(
-        data=pset_with_spacecraft_data["sc_position"],
-        name="component",
-        dims=[CoordNames.CARTESIAN_VECTOR.value],
-        attrs=attr_mgr.get_variable_attributes("sc_position"),
-    )
-
-    pset["sc_velocity"] = xr.DataArray(
-        data=pset_with_spacecraft_data["sc_velocity"],
-        name="component",
-        dims=[CoordNames.CARTESIAN_VECTOR.value],
-        attrs=attr_mgr.get_variable_attributes("sc_velocity"),
+    # Update the attributes for the spacecraft position and velocity variables
+    pset["sc_position"].attrs.update(attr_mgr.get_variable_attributes("sc_position"))
+    pset["sc_velocity"].attrs.update(attr_mgr.get_variable_attributes("sc_velocity"))
+    pset["label_vector_HAE"] = xr.DataArray(
+        np.array(["x HAE", "y HAE", "z HAE"], dtype=str),
+        name="label_vector_HAE",
+        dims=[" "],
+        attrs=attr_mgr.get_variable_attributes("label_vector_HAE", check_schema=False),
     )
 
     return [pset]

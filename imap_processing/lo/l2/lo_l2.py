@@ -370,16 +370,7 @@ def process_single_pset(
     # Step 3: Calculate efficiency-corrected quantities
     pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
 
-    # Step 4: Calculate the spacecraft velocity unit vector
-    sc_velocity_km_per_sec = np.linalg.norm(
-        pset_processed["sc_velocity"], axis=-1, keepdims=True
-    )
-    if (sc_velocity_km_per_sec != 0).all():
-        pset_processed["sc_direction_vector"] = (
-            pset_processed["sc_velocity"] / sc_velocity_km_per_sec
-        )
-
-    # Step 5: Optionally apply CG correction, and calculate ram-mask
+    # Step 4: Optionally apply CG correction and calculate ram-mask
     if cg_correct:
         # NOTE: Heliospheric frame energy selection for CG correction
         # The heliospheric (HF) energies passed to the CG correction algorithm

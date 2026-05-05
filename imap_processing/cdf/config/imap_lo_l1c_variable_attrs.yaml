@@ -287,15 +287,15 @@ o_background_rates_sys_err:
 sc_velocity:
   <<: *default_float32
   CATDESC: x,y,z-components in the HAE coordinate system of the mean velocity vector, in km/s
-  DEPEND_0: component
   FIELDNAM: sc_velocity
   LABLAXIS: spacecraft velocity
+  LABL_PTR_1: label_vector_HAE
   UNITS: "km/s"
 
 sc_position:
   <<: *default_float32
   CATDESC: x,y,z-components in the HAE coordinate system of the mean spacraft position, in km
-  DEPEND_0: component
   FIELDNAM: sc_position
   LABLAXIS: spacecraft position
+  LABL_PTR_1: label_vector_HAE
   UNITS: "km"

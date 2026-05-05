@@ -541,27 +541,11 @@ class TestComptonGettingCorrection:
             mock_hi_pset["sc_velocity"].values, np.array([10.0, 20.0, 30.0])
         )
 
-        # Verify sc_direction_vector was added
-        assert "sc_direction_vector" in mock_hi_pset
-        expected_speed = np.sqrt(10**2 + 20**2 + 30**2)
-        expected_direction = np.array([10.0, 20.0, 30.0]) / expected_speed
-        np.testing.assert_allclose(
-            mock_hi_pset["sc_direction_vector"].values, expected_direction
-        )
-
         # Verify sc_position was added
         assert "sc_position" in mock_hi_pset
         assert isinstance(mock_hi_pset["sc_position"], xr.DataArray)
         np.testing.assert_array_equal(
             mock_hi_pset["sc_position"].values, np.array([1e8, 2e8, 3e8])
-        )
-
-        # Verify sc_position_direction_vector was added
-        assert "sc_position_direction_vector" in mock_hi_pset
-        expected_dist = np.sqrt(1e8**2 + 2e8**2 + 3e8**2)
-        expected_pos_direction = np.array([1e8, 2e8, 3e8]) / expected_dist
-        np.testing.assert_allclose(
-            mock_hi_pset["sc_position_direction_vector"].values, expected_pos_direction
         )
 
     @mock.patch("imap_processing.ena_maps.utils.corrections.ttj2000ns_to_et")
@@ -598,27 +582,11 @@ class TestComptonGettingCorrection:
             mock_lo_pset["sc_velocity"].values, np.array([15.0, 25.0, 35.0])
         )
 
-        # Verify sc_direction_vector was added
-        assert "sc_direction_vector" in mock_lo_pset
-        expected_speed = np.sqrt(15**2 + 25**2 + 35**2)
-        expected_direction = np.array([15.0, 25.0, 35.0]) / expected_speed
-        np.testing.assert_allclose(
-            mock_lo_pset["sc_direction_vector"].values, expected_direction
-        )
-
         # Verify sc_position was added
         assert "sc_position" in mock_lo_pset
         assert isinstance(mock_lo_pset["sc_position"], xr.DataArray)
         np.testing.assert_array_equal(
             mock_lo_pset["sc_position"].values, np.array([1e8, 2e8, 3e8])
-        )
-
-        # Verify sc_position_direction_vector was added
-        assert "sc_position_direction_vector" in mock_lo_pset
-        expected_dist = np.sqrt(1e8**2 + 2e8**2 + 3e8**2)
-        expected_pos_direction = np.array([1e8, 2e8, 3e8]) / expected_dist
-        np.testing.assert_allclose(
-            mock_lo_pset["sc_position_direction_vector"].values, expected_pos_direction
         )
 
     def test_add_spacecraft_position_and_velocity_unsupported_instrument(self):
@@ -645,9 +613,6 @@ class TestComptonGettingCorrection:
         # Both sc_velocity and sc_position should be zero vectors
         np.testing.assert_array_equal(result["sc_velocity"].values, np.zeros(3))
         np.testing.assert_array_equal(result["sc_position"].values, np.zeros(3))
-        # Direction vectors are derived from the zero vectors; just confirm keys exist
-        assert "sc_direction_vector" in result
-        assert "sc_position_direction_vector" in result
 
     def test_add_cartesian_look_direction(self, mock_hi_pset):
         """Test that look directions are correctly calculated and added."""
@@ -733,7 +698,6 @@ class TestComptonGettingCorrection:
 
         # Verify all intermediate variables were added
         assert "sc_velocity" in mock_hi_pset
-        assert "sc_direction_vector" in mock_hi_pset
         assert "look_direction" in mock_hi_pset
         assert "energy_hf" in mock_hi_pset
         assert "energy_sc" in mock_hi_pset
