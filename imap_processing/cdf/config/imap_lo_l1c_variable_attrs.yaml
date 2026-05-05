@@ -13,15 +13,15 @@ default_float32_attrs: &default_float32
   <<: *default
   FILLVAL: -1.0e31
   FORMAT: F12.6
-  VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
+  VALIDMIN: -3.4028235e+38
   dtype: float32
 
 component:
   CATDESC: Cartesian components (x,y,z)
   FIELDNAM: component
-  LABLAXIS: component
   FORMAT: A3
+  LABLAXIS: component
   VAR_TYPE: metadata
 
 # Non-epoch Coordinates
