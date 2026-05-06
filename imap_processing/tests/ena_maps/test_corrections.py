@@ -1611,6 +1611,334 @@ class TestInterpolateMapFluxToHelioFrame:
         # Allow for some numerical variation due to interpolation
         np.testing.assert_allclose(ratio, 0.2, rtol=0.01)
 
+    def test_linear_fallback_when_flux_left_zero(self):
+        """Test that linear interpolation is used when flux_left is zero."""
+        n_energy = 3
+        n_spatial = 2
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create flux where one pixel has zero flux at energy index 0
+        flux = np.array(
+            [
+                [0.0, 1.0],  # energy 0: pixel 0 is zero
+                [1.0, 2.0],  # energy 1
+                [0.5, 1.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * np.maximum(flux, 0.1)
+        sys_err = 0.05 * np.maximum(flux, 0.1)
+
+        # Set energy_sc to be between energy channels 0 and 1
+        energy_sc = np.array(
+            [
+                [750.0, 750.0],  # interpolating between 500 and 1000
+                [1500.0, 1500.0],  # interpolating between 1000 and 2000
+                [1800.0, 1800.0],  # near the boundary
+            ]
+        )
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        # Verify results are finite (not NaN) where we expect valid values
+        result_flux = result_ds["ena_intensity"].values
+
+        # With linear fallback, pixel 0 at energy 0 should produce a valid result
+        # because we're interpolating between 0 (at 500eV) and 1 (at 1000eV)
+        # Linear interpolation at 750eV: 0 + (1-0) * (750-500)/(1000-500) = 0.5
+        # Then energy scaling: 0.5 * (500/750) = 1/3
+        expected_flux = 0.5 * (500.0 / 750.0)  # = 1/3
+        np.testing.assert_allclose(
+            result_flux[0, 0],
+            expected_flux,
+            rtol=1e-10,
+            err_msg="Linear fallback should produce correct interpolated value",
+        )
+
+        # Statistical uncertainty should also be finite
+        result_stat_unc = result_ds["ena_intensity_stat_uncert"].values
+        assert np.isfinite(result_stat_unc[0, 0]), (
+            "Statistical uncertainty should be finite with linear fallback"
+        )
+
+    def test_linear_fallback_when_flux_right_zero(self):
+        """Test that linear interpolation is used when flux_right is zero."""
+        n_energy = 3
+        n_spatial = 2
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create flux where one pixel has zero flux at energy index 1
+        flux = np.array(
+            [
+                [1.0, 1.0],  # energy 0
+                [0.0, 2.0],  # energy 1: pixel 0 is zero
+                [0.5, 1.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * np.maximum(flux, 0.1)
+        sys_err = 0.05 * np.maximum(flux, 0.1)
+
+        # Set energy_sc to be between energy channels 0 and 1
+        energy_sc = np.array(
+            [
+                [750.0, 750.0],  # interpolating between 500 and 1000
+                [1500.0, 1500.0],  # interpolating between 1000 and 2000
+                [1800.0, 1800.0],  # near the boundary
+            ]
+        )
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        result_flux = result_ds["ena_intensity"].values
+
+        # With linear fallback, pixel 0 at energy 0 should produce a valid result
+        # Linear interpolation from flux=1 at 500eV to flux=0 at 1000eV
+        # At 750eV: 1 + (0-1) * (750-500)/(1000-500) = 1 - 0.5 = 0.5
+        # Then energy scaling: 0.5 * (500/750) = 1/3
+        expected_flux = 0.5 * (500.0 / 750.0)  # = 1/3
+        np.testing.assert_allclose(
+            result_flux[0, 0],
+            expected_flux,
+            rtol=1e-10,
+            err_msg="Linear fallback should produce correct interpolated value",
+        )
+
+    def test_linear_fallback_when_both_fluxes_zero(self):
+        """Test that both bounding fluxes being zero produces zero output."""
+        n_energy = 3
+        n_spatial = 2
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create flux where pixel 0 has zero flux at both energy 0 and 1
+        flux = np.array(
+            [
+                [0.0, 1.0],  # energy 0: pixel 0 is zero
+                [0.0, 2.0],  # energy 1: pixel 0 is zero
+                [0.5, 1.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * np.maximum(flux, 0.1)
+        sys_err = 0.05 * np.maximum(flux, 0.1)
+
+        # Set energy_sc to be between energy channels 0 and 1 for first energy
+        energy_sc = np.array(
+            [
+                [750.0, 750.0],  # interpolating between 500 and 1000
+                [1500.0, 1500.0],
+                [1800.0, 1800.0],
+            ]
+        )
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        result_flux = result_ds["ena_intensity"].values
+
+        # When both bounding fluxes are zero, linear interpolation gives 0
+        # Result should be 0 (not NaN)
+        assert result_flux[0, 0] == 0.0, (
+            "When both bounding fluxes are zero, result should be 0"
+        )
+
+    def test_negative_interpolated_flux_clamped_to_zero(self):
+        """Test that negative interpolated flux is clamped to zero."""
+        n_energy = 3
+        n_spatial = 1
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create flux that decreases steeply - linear extrapolation could go negative
+        flux = np.array(
+            [
+                [2.0],  # energy 0
+                [0.1],  # energy 1: much smaller
+                [0.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * flux
+        sys_err = 0.05 * flux
+
+        # Set energy_sc beyond the range to trigger extrapolation
+        # At energy index 0, set energy_sc below 500eV to extrapolate
+        energy_sc = np.array(
+            [
+                [400.0],  # Below lowest ESA energy - will use channels 0,1
+                [800.0],
+                [1500.0],
+            ]
+        )
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        result_flux = result_ds["ena_intensity"].values
+
+        # All flux values should be non-negative
+        assert np.all(result_flux >= 0), "All interpolated flux values should be >= 0"
+
+    def test_linear_and_powerlaw_mixed(self):
+        """Test correct interpolation method for mixed zero/positive flux."""
+        n_energy = 3
+        n_spatial = 4
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create mixed flux data:
+        # - Pixel 0: zero at left boundary (needs linear)
+        # - Pixel 1: zero at right boundary (needs linear)
+        # - Pixel 2: all positive (can use power-law)
+        # - Pixel 3: zero at both (needs linear, result=0)
+        flux = np.array(
+            [
+                [0.0, 1.0, 1.0, 0.0],  # energy 0
+                [1.0, 0.0, 2.0, 0.0],  # energy 1
+                [0.5, 0.5, 1.5, 0.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * np.maximum(flux, 0.1)
+        sys_err = 0.05 * np.maximum(flux, 0.1)
+
+        # Set energy_sc to be between energy channels 0 and 1
+        energy_sc = np.full((n_energy, n_spatial), 750.0)
+        energy_sc[1, :] = 1500.0
+        energy_sc[2, :] = 1800.0
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        result_flux = result_ds["ena_intensity"].values
+
+        # Check that all pixels at energy 0 have finite, non-negative results
+        assert np.all(np.isfinite(result_flux[0, :])), (
+            "All pixels should have finite results"
+        )
+        assert np.all(result_flux[0, :] >= 0), "All flux values should be non-negative"
+
+        # Pixel 0: Linear interpolation from 0 to 1 at 750eV should give positive
+        assert result_flux[0, 0] > 0, (
+            "Pixel 0 should have positive flux (linear from 0 to 1)"
+        )
+
+        # Pixel 1: Linear interpolation from 1 to 0 at 750eV should give positive
+        assert result_flux[0, 1] > 0, (
+            "Pixel 1 should have positive flux (linear from 1 to 0)"
+        )
+
+        # Pixel 2: Power-law interpolation should give positive
+        assert result_flux[0, 2] > 0, "Pixel 2 should have positive flux (power-law)"
+
+        # Pixel 3: Both bounds zero, should be zero
+        assert result_flux[0, 3] == 0.0, "Pixel 3 should be zero (both bounds zero)"
+
 
 class TestGetPsetDirectionalMask:
     """Test suite for get_pset_direction_bin_mask function."""
