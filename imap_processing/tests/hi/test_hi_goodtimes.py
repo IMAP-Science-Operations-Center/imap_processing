@@ -23,6 +23,7 @@ from imap_processing.hi.hi_goodtimes import (
     _identify_cull_pattern,
     create_goodtimes_dataset,
     hi_goodtimes,
+    mark_bad_esa_voltage,
     mark_bad_tdc_cal,
     mark_drf_times,
     mark_incomplete_spin_sets,
@@ -86,6 +87,7 @@ class TestCullCode:
         assert CullCode.STAT_FILTER_0 == 16
         assert CullCode.STAT_FILTER_1 == 32
         assert CullCode.STAT_FILTER_2 == 64
+        assert CullCode.BAD_ESA_VOLTAGE == 128
 
     def test_cull_code_is_int(self):
         """Test that CullCode values are integers."""
@@ -4132,3 +4134,102 @@ class TestHiGoodtimes:
 
             # Should return finalized dataset, not original
             assert result == [mock_finalized]
+
+
+class TestMarkBadEsaVoltage:
+    """Tests for mark_bad_esa_voltage culling function."""
+
+    @pytest.fixture
+    def goodtimes_for_esa(self):
+        """Create a goodtimes dataset for ESA voltage testing."""
+        # METs at 50-second intervals
+        met_values = np.array([1000.0, 1050.0, 1100.0, 1150.0, 1200.0])
+        return xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((5, 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                ),
+                "esa_step": xr.DataArray(np.array([1, 2, 3, 4, 5]), dims=["met"]),
+            },
+            coords={
+                "met": met_values,
+                "spin_bin": np.arange(90),
+            },
+        )
+
+    @pytest.fixture
+    def l1b_de_all_valid(self):
+        """L1B DE with all valid esa_energy_step values."""
+        return xr.Dataset(
+            {
+                "esa_step_met": (["epoch"], np.array([1000, 1050, 1100, 1150, 1200])),
+                "esa_energy_step": (["epoch"], np.array([1, 2, 3, 4, 5])),  # All valid
+            }
+        )
+
+    @pytest.fixture
+    def l1b_de_with_zero(self):
+        """L1B DE with esa_energy_step=0 (calibration)."""
+        ds = xr.Dataset(
+            {
+                "esa_step_met": (["epoch"], np.array([1000, 1050, 1100, 1150, 1200])),
+                "esa_energy_step": (["epoch"], np.array([1, 0, 3, 4, 5])),  # 0 at idx 1
+            }
+        )
+        ds["esa_energy_step"].attrs["FILLVAL"] = 255
+        return ds
+
+    @pytest.fixture
+    def l1b_de_with_fillval(self):
+        """L1B DE with esa_energy_step=FILLVAL (voltage mismatch)."""
+        ds = xr.Dataset(
+            {
+                "esa_step_met": (["epoch"], np.array([1000, 1050, 1100, 1150, 1200])),
+                "esa_energy_step": (
+                    ["epoch"],
+                    np.array([1, 2, 255, 4, 5]),
+                ),  # FILLVAL at idx 2
+            }
+        )
+        ds["esa_energy_step"].attrs["FILLVAL"] = 255
+        return ds
+
+    def test_mark_bad_esa_voltage_all_valid(self, goodtimes_for_esa, l1b_de_all_valid):
+        """Test that no times are marked when all ESA energy steps are valid."""
+        mark_bad_esa_voltage(goodtimes_for_esa, l1b_de_all_valid)
+        assert np.all(goodtimes_for_esa["cull_flags"].values == CullCode.GOOD)
+
+    def test_mark_bad_esa_voltage_with_zero(self, goodtimes_for_esa, l1b_de_with_zero):
+        """Test that times are marked when esa_energy_step=0 (calibration)."""
+        mark_bad_esa_voltage(goodtimes_for_esa, l1b_de_with_zero)
+
+        # MET 1050 (index 1) should be culled
+        assert np.all(
+            goodtimes_for_esa["cull_flags"].values[1, :] == CullCode.BAD_ESA_VOLTAGE
+        )
+        # Other times should remain good
+        assert np.all(goodtimes_for_esa["cull_flags"].values[0, :] == CullCode.GOOD)
+        assert np.all(goodtimes_for_esa["cull_flags"].values[2, :] == CullCode.GOOD)
+
+    def test_mark_bad_esa_voltage_with_fillval(
+        self, goodtimes_for_esa, l1b_de_with_fillval
+    ):
+        """Test that times are marked when esa_energy_step=FILLVAL."""
+        mark_bad_esa_voltage(goodtimes_for_esa, l1b_de_with_fillval)
+
+        # MET 1100 (index 2) should be culled
+        assert np.all(
+            goodtimes_for_esa["cull_flags"].values[2, :] == CullCode.BAD_ESA_VOLTAGE
+        )
+        # Other times should remain good
+        assert np.all(goodtimes_for_esa["cull_flags"].values[0, :] == CullCode.GOOD)
+        assert np.all(goodtimes_for_esa["cull_flags"].values[1, :] == CullCode.GOOD)
+
+    def test_mark_bad_esa_voltage_custom_cull_code(
+        self, goodtimes_for_esa, l1b_de_with_zero
+    ):
+        """Test using a custom cull code."""
+        custom_code = 200
+        mark_bad_esa_voltage(goodtimes_for_esa, l1b_de_with_zero, cull_code=custom_code)
+        assert np.all(goodtimes_for_esa["cull_flags"].values[1, :] == custom_code)
