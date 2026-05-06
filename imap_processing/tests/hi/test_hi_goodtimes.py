@@ -3790,6 +3790,7 @@ class TestApplyGoodtimesFilters:
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv"
             ) as mock_cal_load,
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_esa_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
@@ -3812,7 +3813,7 @@ class TestApplyGoodtimesFilters:
             mock_cal_load.assert_called_once_with(cal_path)
 
     def test_calls_all_filters(self, tmp_path):
-        """Test that all 7 filters are called."""
+        """Test that all 8 filters are called."""
         mock_goodtimes = MagicMock()
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
             "good_bins": 100,
@@ -3827,6 +3828,7 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_esa_voltage") as mock_f0,
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"
             ) as mock_f1,
@@ -3852,6 +3854,7 @@ class TestApplyGoodtimesFilters:
                 cal_product_config_path=tmp_path / "cal.csv",
             )
 
+            mock_f0.assert_called_once()
             mock_f1.assert_called_once()
             mock_f2.assert_called_once()
             mock_f3.assert_called_once()
@@ -3876,6 +3879,7 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_esa_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
@@ -3911,6 +3915,7 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_esa_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),

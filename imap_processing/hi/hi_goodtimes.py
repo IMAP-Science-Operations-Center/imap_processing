@@ -219,7 +219,7 @@ def _apply_goodtimes_filters(
     """
     Apply all goodtimes culling filters to the dataset.
 
-    Modifies goodtimes_ds in place by applying filters 1-7.
+    Modifies goodtimes_ds in place by applying filters 0-7.
 
     Parameters
     ----------
