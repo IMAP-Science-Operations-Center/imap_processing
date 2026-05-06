@@ -205,6 +205,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             vectorize=True,
             output_dtypes=[np.float64] * 6,
             keep_attrs=True,
+            kwargs={"waveform_name": waveform},
         )
         # Calculate mass and velocity estimates
         velocity_mass_results = xr.apply_ufunc(
@@ -749,7 +750,9 @@ def calculate_area_under_emg(time_slice: np.ndarray, param: np.ndarray) -> float
 def estimate_dust_mass(
     low_sampling_time: xr.DataArray,
     target_signal: xr.DataArray,
-    remove_noise: bool = True,
+    #remove_noise: bool = True,
+    remove_noise: bool = False,
+    waveform_name: str = "",
 ) -> tuple[NDArray, float, float, float, NDArray]:
     """
     Filter and fit the target or ion grid signals to get the total dust impact charge.
@@ -782,34 +785,61 @@ def estimate_dust_mass(
     """
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
-    good_mask = np.logical_and(
-        time >= BaselineNoiseTime.START,
-        time <= BaselineNoiseTime.STOP,
-    )
+    window_start = float(np.min(time))
+    window_stop = window_start + 5.0
+    good_mask = np.logical_and(time >= window_start, time <= window_stop)
     if not np.any(good_mask):
         logger.warning(
             "Unable to find baseline noise. "
-            f"There is no signal from {BaselineNoiseTime.START} to "
-            f"{BaselineNoiseTime.STOP} ns."
+            f"There is no signal in the first 5 microseconds of the waveform "
+            f"({window_start} to {window_stop} us)."
         )
     if remove_noise:
-        # Remove noise due to "microphonics"
-        signal = remove_signal_noise(time, signal, good_mask)
-    # Time before image charge
-    pre = -2.0
-    # Get signal values where the time is before the image charge
-    signal_before_imapact = signal[time < pre]
-    # Center the baseline signal around zero
-    signal_baseline = signal_before_imapact - np.mean(signal_before_imapact)
+        logger.debug(
+            "estimate_dust_mass fits the raw low-rate waveform directly; "
+            "remove_noise is ignored for this fit path."
+        )
+    signal_before_impact = signal[good_mask]
+    baseline_mean = float(np.mean(signal_before_impact))
+    channel_name = waveform_name or str(getattr(target_signal, "name", ""))
 
     # Initial Guess for the parameters of the ion grid signal
     time_of_impact = 0.0  # Time of dust hit
-    constant_offset = 0.0  # Initial baseline
-    amplitude: float = np.max(signal)  # Signal height
-    rise_time = 0.371  # How fast the signal rises (s)
-    discharge_time = 0.371  # How fast signal decays (s)
+    constant_offset = baseline_mean
+    signal_relative_to_baseline = np.asarray(signal - baseline_mean, dtype=float)
+    if np.any(np.isfinite(signal_relative_to_baseline)):
+        amplitude = float(
+            signal_relative_to_baseline[
+                np.nanargmax(np.abs(signal_relative_to_baseline))
+            ]
+        )
+    else:
+        amplitude = float("nan")
+    if channel_name != "Ion_Grid" and (not np.isfinite(amplitude) or amplitude <= 0.0):
+        amplitude = float(np.max(signal) - baseline_mean)
+    if not np.isfinite(amplitude):
+        amplitude = float(np.max(signal))
+    if channel_name != "Ion_Grid" and amplitude <= 0.0:
+        amplitude = float(np.max(signal))
 
-    p0 = [time_of_impact, constant_offset, amplitude, rise_time, discharge_time]
+    rise_time_0 = 0.371  # How fast the signal rises (s)
+    discharge_time_0 = 37.1  # How fast signal decays (s)
+
+    p0 = [time_of_impact, constant_offset, amplitude, rise_time_0, discharge_time_0]
+    positive_min = np.finfo(float).eps
+    amplitude_lower_bound = positive_min
+    amplitude_upper_bound = np.inf
+    if channel_name == "Ion_Grid":
+        if np.isfinite(amplitude) and amplitude < 0.0:
+            amplitude_lower_bound = -np.inf
+            amplitude_upper_bound = -positive_min
+        else:
+            amplitude_lower_bound = positive_min
+            amplitude_upper_bound = np.inf
+    bounds = (
+        [-np.inf, -np.inf, amplitude_lower_bound, positive_min, positive_min],
+        [np.inf, np.inf, amplitude_upper_bound, np.inf, np.inf],
+    )
 
     try:
         with np.errstate(invalid="ignore", over="ignore"):
@@ -818,6 +848,7 @@ def estimate_dust_mass(
                 time,
                 signal,
                 p0=p0,
+                bounds=bounds,
                 maxfev=100_000,  # , epsfcn=1e-10
             )
     except RuntimeError as e:
@@ -836,8 +867,11 @@ def estimate_dust_mass(
         )
 
     impact_fit = fit_impact(time, *param)
-    # Calculate the resulting signal amplitude after removing baseline noise
-    sig_amp = max(impact_fit) - np.mean(signal_baseline)
+    # Evaluate the analytic extremum of the fitted pulse instead of relying on the
+    # discrete sample grid.
+    t_max = param[0] + param[3] * np.log((param[4] / param[3]) + 1.0)
+    y_max = float(fit_impact(np.asarray([t_max], dtype=float), *param)[0])
+    sig_amp = abs(float(y_max - param[1]))
     chisqr, redchi = chi_square(signal, impact_fit, len(p0))
 
     return param, float(sig_amp), chisqr, redchi, impact_fit
