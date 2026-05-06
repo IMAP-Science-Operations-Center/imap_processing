@@ -750,7 +750,7 @@ def calculate_area_under_emg(time_slice: np.ndarray, param: np.ndarray) -> float
 def estimate_dust_mass(
     low_sampling_time: xr.DataArray,
     target_signal: xr.DataArray,
-    #remove_noise: bool = True,
+    # remove_noise: bool = True,
     remove_noise: bool = False,
     waveform_name: str = "",
 ) -> tuple[NDArray, float, float, float, NDArray]:
@@ -766,6 +766,8 @@ def estimate_dust_mass(
     remove_noise : bool
         If true, attempt to remove background noise, otherwise fit on the unfiltered
         signal.
+    waveform_name : str
+        Channel name used to select channel-specific fit bounds.
 
     Returns
     -------
@@ -826,16 +828,16 @@ def estimate_dust_mass(
     discharge_time_0 = 37.1  # How fast signal decays (s)
 
     p0 = [time_of_impact, constant_offset, amplitude, rise_time_0, discharge_time_0]
-    positive_min = np.finfo(float).eps
-    amplitude_lower_bound = positive_min
-    amplitude_upper_bound = np.inf
+    positive_min = float(np.finfo(float).eps)
+    amplitude_lower_bound: float = positive_min
+    amplitude_upper_bound: float = float(np.inf)
     if channel_name == "Ion_Grid":
         if np.isfinite(amplitude) and amplitude < 0.0:
-            amplitude_lower_bound = -np.inf
+            amplitude_lower_bound = float(-np.inf)
             amplitude_upper_bound = -positive_min
         else:
             amplitude_lower_bound = positive_min
-            amplitude_upper_bound = np.inf
+            amplitude_upper_bound = float(np.inf)
     bounds = (
         [-np.inf, -np.inf, amplitude_lower_bound, positive_min, positive_min],
         [np.inf, np.inf, amplitude_upper_bound, np.inf, np.inf],
