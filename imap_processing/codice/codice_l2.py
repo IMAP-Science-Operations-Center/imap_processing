@@ -1328,6 +1328,10 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         cdf_attrs.get_global_attributes("imap_codice_l2_lo-direct-events")
     )
     for var in l2_dataset.data_vars:
+        if "nso" in var or "rgfo" in var:
+            # skip adding attributes for these variables. They should already
+            # have attrs carried over from l1a.
+            continue
         l2_dataset[var].attrs.update(cdf_attrs.get_variable_attributes(var))
     # Update coord attributes
     l2_dataset["priority"].attrs.update(

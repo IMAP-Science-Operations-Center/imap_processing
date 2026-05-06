@@ -84,7 +84,6 @@ data_quality:
   FIELDNAM: Data Quality
   FILLVAL: *uint8_fillval
   FORMAT: I3
-  LABLAXIS: Data Quality
   LABL_PTR_1: priority_label
   SCALETYP: linear
   UNITS: " "
@@ -324,6 +323,7 @@ esa_step:
   VALIDMAX: 127
   VALIDMIN: 0
   VAR_TYPE: data
+
 # ------------------------------- labels -------------------------------
 
 event_num_label:
