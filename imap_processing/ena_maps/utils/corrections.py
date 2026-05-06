@@ -287,6 +287,13 @@ class PowerLawFluxCorrector:
         converged = np.zeros(observed_fluxes.shape[1:], dtype=bool)
         n_iterations = np.zeros(observed_fluxes.shape[1:], dtype=int)
 
+        # Mark pixels that are all zeros or all NaNs as already converged
+        # These pixels have no meaningful data to iterate on
+        all_zero_or_nan = np.all(
+            (observed_fluxes == 0) | ~np.isfinite(observed_fluxes), axis=0
+        )
+        converged[all_zero_or_nan] = True
+
         for iteration in range(max_iterations):
             # Get mask for unconverged pixels
             not_converged = ~converged
