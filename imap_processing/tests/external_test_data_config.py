@@ -17,9 +17,6 @@ EXTERNAL_TEST_DATA = [
     # CoDICE
     # L0 data
     ("imap_codice_l0_lo-sw-species_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_l0_lo-nsw-species_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_l0_lo-sw-angular_20250814_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_l0_lo-nsw-angular_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_lo-nsw-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_lo-sw-priority_20250814_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_lo-counters-aggregated_20250814_v001.pkts", "codice/data/l1a_input/"),
@@ -55,10 +52,7 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l1a_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     ("imap_codice_l1a_hi-ialirt_20260331_v0.0.22.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-nsw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
-    (f"imap_codice_l1a_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
-    (f"imap_codice_l1a_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-sw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
-    (f"imap_codice_l1a_lo-nsw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     (f"imap_codice_l1a_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1a_validation"),
     # L1B Input data is same as L1A validation data
 
@@ -72,14 +66,9 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l1b_lo-counters-aggregated_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-counters-singles_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
-    (f"imap_codice_l1b_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-nsw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
-    (f"imap_codice_l1b_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-sw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
-    (f"imap_codice_l1b_lo-nsw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
-    (f"imap_codice_l1b_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
-    (f"imap_codice_l1b_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     # L2 LUT input data
     ("imap_codice_l2-hi-omni-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-hi-sectored-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
@@ -95,9 +84,6 @@ EXTERNAL_TEST_DATA = [
     # L2 Validation data
     (f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
-    (f"imap_codice_l2_lo-nsw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
-    (f"imap_codice_l2_lo-sw-angular_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
-    (f"imap_codice_l2_lo-nsw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_hi-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),

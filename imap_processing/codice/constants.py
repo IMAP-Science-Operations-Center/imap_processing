@@ -846,20 +846,11 @@ L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
     "lo-counters-singles": {
         "num_spin_sectors": 2,
     },
-    "lo-nsw-angular": {
-        "num_spin_sectors": 1,
-    },
-    "lo-sw-angular": {
-        "num_spin_sectors": 1,
-    },
     "lo-nsw-priority": {
         "num_spin_sectors": 1,
     },
     "lo-sw-priority": {
         "num_spin_sectors": 1,
-    },
-    "lo-nsw-species": {
-        "num_spin_sectors": 12,
     },
     "lo-sw-species": {
         "num_spin_sectors": 12,
@@ -887,16 +878,6 @@ LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES = [
     "fe_loq",
 ]
 LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES = [
-    "heplus",
-    "cnoplus",
-]
-LO_NSW_SPECIES_VARIABLE_NAMES = [
-    "hplus",
-    "heplusplus",
-    "c",
-    "o",
-    "ne_si_mg",
-    "fe",
     "heplus",
     "cnoplus",
 ]
