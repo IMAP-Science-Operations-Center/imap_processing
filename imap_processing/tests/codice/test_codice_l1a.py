@@ -60,24 +60,11 @@ def test_updated_packet_version(mock_get_file_paths, codice_lut_path, caplog):
                 f"Expected variable '{var}' not found in dataset"
             )
 
-        print(caplog.text)
-        # # check that warnings are logged for missing "desired" species
-        # assert (
-        #     "Desired species heplusplus not found in actual species names from LUT"
-        #     in caplog.text
-        # )
-        # assert (
-        #     "Desired species oplus6 not found in actual species names from LUT"
-        #     in caplog.text
-        # )
-        # assert (
-        #     "Desired species heplus not found in actual species names from LUT"
-        #     in caplog.text
-        # )
-        # assert (
-        #     "Desired species cnoplus not found in actual species names from LUT"
-        #     in caplog.text
-        # )
+        # check that a warning is logged for the missing "cnoplus" species
+        assert (
+            "Desired species cnoplus not found in actual species names from LUT"
+            in caplog.text
+        )
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
