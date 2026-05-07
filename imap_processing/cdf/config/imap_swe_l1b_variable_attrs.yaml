@@ -138,9 +138,12 @@ acquisition_time:
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Acquisition time by volt step and spin sector
   FILLVAL: -9223372036854775808
+  FORMAT: I10
   LABL_PTR_1: esa_step_label
   LABL_PTR_2: spin_sector_label
   UNITS: sec
+  VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
+  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
   VAR_NOTES: >
     This stores the acquisition times of each measurement. This time is
     calculated by combining ACQ_START_COARSE, ACQ_START_FINE,
