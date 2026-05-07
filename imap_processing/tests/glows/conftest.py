@@ -324,6 +324,7 @@ def mock_pipeline_settings():
             ),
             "sunrise_offset": (["epoch"], [0.0] * len(epoch_range)),
             "sunset_offset": (["epoch"], [0.0] * len(epoch_range)),
+            "spin_offset_correction": (["epoch"], [5.0] * len(epoch_range)),
             "n_sigma_threshold_lower": (["epoch"], [3.0] * len(epoch_range)),
             "n_sigma_threshold_upper": (["epoch"], [3.0] * len(epoch_range)),
             "relative_difference_threshold": (["epoch"], [7.0e-5] * len(epoch_range)),
@@ -361,10 +362,10 @@ def mock_ecliptic_bin_centers(monkeypatch):
     )
 
 
-def mock_update_spice_parameters(self, *args, **kwargs):
+def mock_update_spice_parameters(self, spin_offset_correction=0.0, *args, **kwargs):
     self.spin_period_ground_average = np.float64(0.0)
     self.spin_period_ground_std_dev = np.float64(0.0)
-    self.position_angle_offset_average = np.float64(0.0)
+    self.position_angle_offset_average = np.float64(spin_offset_correction)
     self.position_angle_offset_std_dev = np.float64(0.0)
     self.spin_axis_orientation_average = np.zeros(2, dtype=np.float64)
     self.spin_axis_orientation_std_dev = np.zeros(2, dtype=np.float64)

@@ -443,7 +443,9 @@ class HistogramL2:
             good_data["spin_period_ground_average"].std(dim="epoch", keepdims=True).data
         )
 
-        position_angle = self.compute_position_angle()
+        position_angle = self.compute_position_angle(
+            pipeline_settings.spin_offset_correction
+        )
         self.position_angle_offset_average: np.double = np.double(position_angle)
 
         # Always zero - per algorithm doc 10.6
@@ -636,17 +638,23 @@ class HistogramL2:
 
         return flags_with_offsets
 
-    def compute_position_angle(self) -> float:
+    def compute_position_angle(self, spin_offset_correction: float = 0.0) -> float:
         """
         Compute the position angle based on the instrument mounting.
 
         This number is not expected to change significantly. It is the same for all L1B
         blocks (epoch values).
 
+        Parameters
+        ----------
+        spin_offset_correction : float
+            Constant spin angle offset [degrees] from pipeline settings, applied
+            to correct a systematic bias in observed star positions. Default: 0.0.
+
         Returns
         -------
         float
-            The GLOWS mounting position angle.
+            The GLOWS mounting position angle, including spin offset correction.
         """
         # Calculation described in algorithm doc 10.6 (Eq. 30):
         # psi_G_eff = 360 - psi_GLOWS
@@ -659,7 +667,7 @@ class HistogramL2:
         # delta_psi_G_eff is assumed to be 0 per instrument team decision (aka this
         # doesn't move from the SPICE determined mounting angle.
         glows_mounting_azimuth, _ = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
-        return (360.0 - glows_mounting_azimuth) % 360.0
+        return (360.0 - glows_mounting_azimuth + spin_offset_correction) % 360.0
 
     @staticmethod
     def get_calibration_factor(

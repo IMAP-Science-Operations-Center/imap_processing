@@ -182,6 +182,8 @@ def test_validation_data_histogram(
                 decimal=1,
             )
 
+    assert np.all(l1b["position_angle_offset_average"].data == pytest.approx(5.0))
+
 
 def test_validation_data_de(
     l1a_dataset,

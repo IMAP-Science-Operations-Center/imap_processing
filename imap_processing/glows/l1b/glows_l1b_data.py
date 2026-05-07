@@ -65,6 +65,10 @@ class PipelineSettings:  # numpydoc ignore=PR02
         Offset in hours to adjust sunset time relative to onboard settings
         for fine-tuning the day/night boundary determination.
 
+    spin_offset_correction : float
+        Constant spin angle offset [degrees] applied to fix a constant
+        spin offset observed for stars as seen by GLOWS.
+
     processing_thresholds : dict
         Various thresholds and parameters for ground processing pipeline
         that control sensitivity and quality criteria for L1B data processing.
@@ -94,6 +98,7 @@ class PipelineSettings:  # numpydoc ignore=PR02
     active_bad_time_flags: list[bool] = field(init=False)
     sunrise_offset: float = field(init=False)
     sunset_offset: float = field(init=False)
+    spin_offset_correction: float = field(init=False)
     processing_thresholds: dict = field(init=False)
 
     def __post_init__(self, pipeline_dataset: xr.Dataset) -> None:
@@ -169,6 +174,11 @@ class PipelineSettings:  # numpydoc ignore=PR02
         # Extract sunrise/sunset offsets (default to 0.0 if not present)
         self.sunrise_offset = float(pipeline_dataset.get("sunrise_offset", 0.0))
         self.sunset_offset = float(pipeline_dataset.get("sunset_offset", 0.0))
+
+        # Extract spin-offset correction in deg units (default to 0.0 if not present)
+        self.spin_offset_correction = float(
+            pipeline_dataset.get("spin_offset_correction", 0.0)
+        )
 
         # Extract processing thresholds (collect all threshold-related variables)
         self.processing_thresholds = {}
@@ -847,7 +857,7 @@ class HistogramL1B:
         day = met_to_datetime64(self.imap_start_time)
 
         # Add SPICE related variables
-        self.update_spice_parameters()
+        self.update_spice_parameters(pipeline_settings.spin_offset_correction)
         # Calculate the spin angle bin center using actual histogram length from L1A
         n_bins = len(self.histogram)
         phi = (np.arange(n_bins, dtype=np.float64) + 0.5) / n_bins
@@ -894,8 +904,17 @@ class HistogramL1B:
         self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
         self.flags = self.compute_flags(pipeline_settings)
 
-    def update_spice_parameters(self) -> None:
-        """Update SPICE parameters based on the current state."""
+    def update_spice_parameters(self, spin_offset_correction: float = 0.0) -> None:
+        """
+        Update SPICE parameters based on the current state.
+
+        Parameters
+        ----------
+        spin_offset_correction : float
+            Constant spin angle offset [degrees] from pipeline settings, added
+            to position_angle_offset_average to correct a systematic bias in
+            observed star positions. Default: 0.0.
+        """
         data_start_met = self.imap_start_time
         data_end_met = np.double(self.imap_start_time) + np.double(
             self.imap_time_offset
@@ -925,7 +944,9 @@ class HistogramL1B:
             ),
             degrees=True,
         )
-        self.position_angle_offset_average = np.double(angle_offset)
+        self.position_angle_offset_average = np.double(angle_offset) + np.double(
+            spin_offset_correction
+        )
         self.position_angle_offset_std_dev = np.double(
             0.0
         )  # Set to zero per algorithm document
@@ -1087,7 +1108,9 @@ class HistogramL1B:
             Array of shape (nbin, 3) representing the look directions in DPS frame
             for each of the bins.
         """
-        azimuth = (imap_spin_angle_bin_cntr - position_angle_offset_average) % 360.0
+        azimuth = (
+            imap_spin_angle_bin_cntr - position_angle_offset_average + 360.0
+        ) % 360.0
 
         # Instrument pointing direction in the DPS frame.
         az_el = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
