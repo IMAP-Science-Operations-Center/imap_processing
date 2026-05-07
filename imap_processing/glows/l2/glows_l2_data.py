@@ -394,7 +394,7 @@ class HistogramL2:
         repointing = l1b_dataset.attrs.get("Repointing")
         self.identifier = int(repointing.replace("repoint", ""))
         # TODO fill this in
-        self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH))
+        self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH), dtype=np.uint16)
 
         if len(good_data["epoch"]) != 0:
             # Generate outputs that are passed in directly from L1B
