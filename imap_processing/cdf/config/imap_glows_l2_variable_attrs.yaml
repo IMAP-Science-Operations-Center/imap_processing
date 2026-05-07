@@ -408,8 +408,8 @@ bad_time_flag_occurrences:
   FORMAT: I5
   LABLAXIS: No. of cases
   LABL_PTR_1: flags_label # MS: I do not understand this
-  VALIDMIN: 0
   VALIDMAX: 65535
+  VALIDMIN: 0
 
 spin_angle:
   <<: *lightcurve_defaults
