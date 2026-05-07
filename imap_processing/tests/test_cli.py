@@ -429,7 +429,8 @@ def test_hi_l1b_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
 
 
 @mock.patch("imap_processing.cli.lo_l2.lo_l2", autospec=True)
-def test_lo_l2(mock_lo_l2, mock_instrument_dependencies):
+@mock.patch("imap_processing.cli.Lo.pre_processing")
+def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies):
     mocks = mock_instrument_dependencies
 
     descriptor = "some-ena-map-descriptor"
@@ -445,7 +446,7 @@ def test_lo_l2(mock_lo_l2, mock_instrument_dependencies):
     )
 
     mocks["mock_load_cdf"].side_effect = [mock_loaded_pset_1, sentinel.loaded_pset_2]
-    mocks["mock_pre_processing"].return_value = processing_input
+    mock_lo_pre_processing.return_value = processing_input
 
     output_l2_dataset = xr.Dataset()
     mock_lo_l2.return_value = [output_l2_dataset]
