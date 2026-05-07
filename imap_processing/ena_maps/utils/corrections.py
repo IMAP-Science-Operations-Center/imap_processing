@@ -287,6 +287,13 @@ class PowerLawFluxCorrector:
         converged = np.zeros(observed_fluxes.shape[1:], dtype=bool)
         n_iterations = np.zeros(observed_fluxes.shape[1:], dtype=int)
 
+        # Mark pixels that are all zeros or all NaNs as already converged
+        # These pixels have no meaningful data to iterate on
+        all_zero_or_nan = np.all(
+            (observed_fluxes == 0) | ~np.isfinite(observed_fluxes), axis=0
+        )
+        converged[all_zero_or_nan] = True
+
         for iteration in range(max_iterations):
             # Get mask for unconverged pixels
             not_converged = ~converged
@@ -323,7 +330,7 @@ class PowerLawFluxCorrector:
             with np.errstate(divide="ignore", invalid="ignore"):
                 ratios_sq = (source_fluxes_new / source_fluxes_prev) ** 2
             # Compute chi per pixel (mean over energy axis)
-            chi_n = np.sqrt(np.mean(ratios_sq, axis=0)) - 1
+            chi_n = np.abs(np.sqrt(np.nanmean(ratios_sq, axis=0)) - 1)
 
             # Determine which pixels converged this iteration
             # Start with all False, then set True for newly converged pixels
@@ -880,16 +887,24 @@ def interpolate_map_flux_to_helio_frame(
         stat_unc_left = stat_unc.isel({"energy": left_idx_da})
         stat_unc_right = stat_unc.isel({"energy": right_idx_da})
         sys_err_left = sys_err.isel({"energy": left_idx_da})
+        sys_err_right = sys_err.isel({"energy": right_idx_da})
 
-        # Step 3: Perform power-law interpolation to spacecraft energy
-        # slope = log(f_right/f_left) / log(e_right/e_left)
-        # flux_sc = f_left * (energy_sc / e_left)^slope
+        # Step 3: Perform interpolation to spacecraft energy
+        # Use power-law interpolation when both bounding fluxes are positive,
+        # otherwise fall back to linear interpolation to avoid log(0) issues.
+
+        # Interpolation fraction for linear fallback
+        interp_fraction = (energy_sc - energy_left) / (energy_right - energy_left)
+
+        # Determine which pixels need linear interpolation (zero/negative flux)
+        use_linear = (flux_left <= 0) | (flux_right <= 0)
+
         with np.errstate(divide="ignore", invalid="ignore"):
-            # Calculate slope for power-law interpolation
+            # === Power-law interpolation (Equations 72-76) ===
+            # slope = log(f_right/f_left) / log(e_right/e_left)
+            # flux_sc = f_left * (energy_sc / e_left)^slope
             slope = np.log(flux_right / flux_left) / np.log(energy_right / energy_left)
-
-            # Interpolate flux using power-law
-            flux_sc = flux_left * ((energy_sc / energy_left) ** slope)
+            flux_sc_powerlaw = flux_left * ((energy_sc / energy_left) ** slope)
 
             # Interpolation factor for uncertainty propagation (Equations 75 & 76)
             unc_factor = np.log(energy_sc / energy_left) / np.log(
@@ -899,7 +914,7 @@ def interpolate_map_flux_to_helio_frame(
             # Statistical uncertainty propagation (Equation 75):
             # δJ = J * sqrt((δJ_left/J_left)^2 * (1 + unc_factor^2)
             #               + unc_factor^2 * (δJ_right/J_right)^2)
-            stat_unc_sc = flux_sc * np.sqrt(
+            stat_unc_sc_powerlaw = flux_sc_powerlaw * np.sqrt(
                 (stat_unc_left / flux_left) ** 2 * (1.0 + unc_factor**2)
                 + unc_factor**2 * (stat_unc_right / flux_right) ** 2
             )
@@ -908,7 +923,28 @@ def interpolate_map_flux_to_helio_frame(
             # σJ^g = σJ^src_kref * (⟨E^s_kref⟩ / E^ESA_kref)^γ_kref * (E^h / ⟨E^s_kref⟩)
             # Systematic error scales proportionally with flux during power-law
             # interpolation
-            sys_err_sc = sys_err_left * ((energy_sc / energy_left) ** slope)
+            sys_err_sc_powerlaw = sys_err_left * ((energy_sc / energy_left) ** slope)
+
+            # === Linear interpolation (fallback for zero/negative flux) ===
+            # flux_sc = flux_left + (flux_right - flux_left) * f
+            # where f = (energy_sc - energy_left) / (energy_right - energy_left)
+            flux_sc_linear = flux_left + (flux_right - flux_left) * interp_fraction
+
+            # Statistical uncertainty: sqrt((1-f)^2 * σ_left^2 + f^2 * σ_right^2)
+            stat_unc_sc_linear = np.sqrt(
+                (1 - interp_fraction) ** 2 * stat_unc_left**2
+                + interp_fraction**2 * stat_unc_right**2
+            )
+
+            # Systematic error: linear interpolation
+            sys_err_sc_linear = (
+                sys_err_left + (sys_err_right - sys_err_left) * interp_fraction
+            )
+
+        # Merge: use linear where needed, power-law otherwise
+        flux_sc = xr.where(use_linear, flux_sc_linear, flux_sc_powerlaw)
+        stat_unc_sc = xr.where(use_linear, stat_unc_sc_linear, stat_unc_sc_powerlaw)
+        sys_err_sc = xr.where(use_linear, sys_err_sc_linear, sys_err_sc_powerlaw)
 
         # Step 4: Energy scaling transformation (Liouville theorem)
         # flux_helio = flux_sc * (helio_energy / energy_sc)
@@ -919,6 +955,9 @@ def interpolate_map_flux_to_helio_frame(
             flux_helio = flux_sc * energy_ratio
             stat_unc_helio = stat_unc_sc * energy_ratio
             sys_err_helio = sys_err_sc * energy_ratio
+
+        # Clamp negative fluxes to zero (can occur from linear extrapolation)
+        flux_helio = flux_helio.where(flux_helio >= 0, 0.0)
 
         # Set any location where the value is not finite to NaN (converts +/-inf to NaN)
         flux_helio = flux_helio.where(np.isfinite(flux_helio), np.nan)

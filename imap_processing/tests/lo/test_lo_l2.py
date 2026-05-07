@@ -1699,6 +1699,16 @@ class TestCalculateSputteringCorrections:
                 f"Energy index {idx} should be modified"
             )
 
+    def test_calculate_sputtering_corrections_no_csv_files(
+        self, sample_dataset_with_sputtering_data, caplog
+    ):
+        """Test that missing sputter CSV files raise a ValueError."""
+        h_dataset, o_dataset = sample_dataset_with_sputtering_data
+
+        with patch("imap_processing.lo.l2.lo_l2.Path.glob", return_value=iter([])):
+            with pytest.raises(ValueError, match="No sputter correction files found"):
+                calculate_sputtering_corrections(h_dataset, o_dataset)
+
 
 class TestInitializeGeometricFactorVariables:
     """Tests for the initialize_geometric_factor_variables function."""
@@ -2243,6 +2253,18 @@ class TestCalculateBootstrapCorrections:
         assert np.all(np.isfinite(result["ena_intensity"].values)), (
             "All intensities should be finite"
         )
+
+    def test_calculate_bootstrap_corrections_no_csv_files(
+        self, sample_dataset_with_bootstrap_data, caplog
+    ):
+        """Test that missing bootstrap CSV files raise a ValueError."""
+        dataset = sample_dataset_with_bootstrap_data.copy()
+
+        with patch("imap_processing.lo.l2.lo_l2.Path.glob", return_value=iter([])):
+            with pytest.raises(
+                ValueError, match="No bootstrap correction factor files found"
+            ):
+                calculate_bootstrap_corrections(dataset)
 
 
 # =============================================================================

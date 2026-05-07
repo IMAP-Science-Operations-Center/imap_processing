@@ -16,3 +16,4 @@ directly updating infrastructure for running algorithm generation code.
     backup-deploy
     s3-replication
     ialirt-setup
+    database-migration

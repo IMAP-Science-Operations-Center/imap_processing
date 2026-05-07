@@ -436,8 +436,8 @@ class TestBackgroundConfig:
             df = pd.DataFrame(
                 {col: [1, 2, 3] for col in include_columns},
                 index=pd.MultiIndex.from_tuples(
-                    [(0, 0), (0, 1), (1, 0)],
-                    names=["calibration_prod", "background_index"],
+                    [(0, 0, 1), (0, 1, 1), (1, 0, 1)],
+                    names=["calibration_prod", "background_index", "esa_energy_step"],
                 ),
             )
             with pytest.raises(AttributeError, match="Required column.*"):
@@ -447,9 +447,13 @@ class TestBackgroundConfig:
         """Test coverage for from_csv function."""
         df = BackgroundConfig.from_csv(hi_test_background_config_path)
         # Verify coincidence_type_list is a tuple
-        assert isinstance(df["coincidence_type_list"][0, 0], tuple)
-        # Verify MultiIndex
-        assert df.index.names == ["calibration_prod", "background_index"]
+        assert isinstance(df["coincidence_type_list"][0, 0, 1], tuple)
+        # Verify MultiIndex has 3 levels including esa_energy_step
+        assert df.index.names == [
+            "calibration_prod",
+            "background_index",
+            "esa_energy_step",
+        ]
 
     def test_added_coincidence_type_values_column(self, hi_test_background_config_path):
         """Test that coincidence_type_values column is added correctly."""
@@ -476,10 +480,10 @@ class TestBackgroundConfig:
     def test_calibration_product_numbers_arbitrary_values(self):
         """Test calibration_product_numbers with arbitrary non-sequential values."""
         csv_content = """\
-calibration_prod,background_index,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,scaling_factor,uncertainty
-10,0,ABC1C2,-20,16,-46,-15,-511,511,0,1023,0.01,0.001
-5,0,BC1C2,-20,16,-46,-15,-511,511,0,1023,0.02,0.002
-100,0,AB,-20,16,-46,-15,-511,511,0,1023,0.03,0.003
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+10,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+5,0,1,0.02,0.002,BC1C2,-20,16,-46,-15,-511,511,0,1023
+100,0,1,0.03,0.003,AB,-20,16,-46,-15,-511,511,0,1023
         """
 
         df = BackgroundConfig.from_csv(io.StringIO(csv_content))
@@ -488,6 +492,140 @@ calibration_prod,background_index,coincidence_type_list,tof_ab_low,tof_ab_high,t
         # Should return sorted unique calibration product numbers
         np.testing.assert_array_equal(cal_prod_numbers, np.array([5, 10, 100]))
         assert isinstance(cal_prod_numbers, np.ndarray)
+
+    def test_validate_tof_consistency_passes(self):
+        """Test that TOF consistency validation passes with consistent TOF windows."""
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,3,0.03,0.003,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+        """
+        # Should not raise - TOF windows and coincidence_type_list are consistent
+        df = BackgroundConfig.from_csv(io.StringIO(csv_content))
+        assert len(df) == 3
+
+    def test_validate_tof_consistency_fails_on_different_tof_windows(self):
+        """Test that TOF consistency validation fails with inconsistent TOF windows."""
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,ABC1C2,-25,16,-46,-15,-511,511,0,1023
+        """
+        # Should raise ValueError because tof_ab_low differs between ESA steps
+        with pytest.raises(ValueError, match="Inconsistent tof_ab_low values"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+    def test_validate_tof_consistency_fails_on_different_coincidence_types(self):
+        """Test TOF consistency validation fails with inconsistent coincidence types."""
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,AB,-20,16,-46,-15,-511,511,0,1023
+        """
+        # Should raise ValueError because coincidence_type_list differs between
+        # ESA steps
+        with pytest.raises(
+            ValueError, match="Inconsistent coincidence_type_list values"
+        ):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+    def test_get_tof_config(self):
+        """Test get_tof_config returns one row per calibration_prod/background_index."""
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,3,0.03,0.003,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,1,1,0.05,0.005,AB,-10,20,-30,-10,-400,400,0,800
+0,1,2,0.06,0.006,AB,-10,20,-30,-10,-400,400,0,800
+        """
+        df = BackgroundConfig.from_csv(io.StringIO(csv_content))
+        tof_config = df.background_config.get_tof_config()
+
+        # Should have 2 rows: (0, 0) and (0, 1)
+        assert len(tof_config) == 2
+        assert tof_config.index.names == ["calibration_prod", "background_index"]
+
+        # Verify TOF columns are present
+        assert "tof_ab_low" in tof_config.columns
+        assert "coincidence_type_list" in tof_config.columns
+        assert "coincidence_type_values" in tof_config.columns
+
+        # Verify values from first row of each group
+        assert tof_config.loc[(0, 0), "tof_ab_low"] == -20
+        assert tof_config.loc[(0, 1), "tof_ab_low"] == -10
+
+    def test_forward_fill_tof_columns(self):
+        """Test that TOF columns are forward-filled from first row of each group."""
+        # CSV with TOF values only on first row of each (cal_prod, bg_index) group
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,,,,,,,,,
+0,0,3,0.03,0.003,,,,,,,,,
+0,1,1,0.05,0.005,AB,-10,20,-30,-10,-400,400,5,800
+0,1,2,0.06,0.006,,,,,,,,,
+        """
+        df = BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+        # Verify TOF columns were forward-filled
+        # All rows in group (0, 0) should have tof_ab_low = -20
+        group_0_0 = df.loc[(0, 0)]
+        assert all(group_0_0["tof_ab_low"] == -20)
+        assert all(group_0_0["tof_c1c2_high"] == 1023)
+        assert all(group_0_0["coincidence_type_list"] == ("ABC1C2",))
+
+        # All rows in group (0, 1) should have tof_ab_low = -10
+        group_0_1 = df.loc[(0, 1)]
+        assert all(group_0_1["tof_ab_low"] == -10)
+        assert all(group_0_1["tof_c1c2_high"] == 800)
+        assert all(group_0_1["coincidence_type_list"] == ("AB",))
+
+        # Verify scaling factors are NOT forward-filled (they vary by ESA)
+        assert list(group_0_0["scaling_factor"]) == [0.01, 0.02, 0.03]
+
+    def test_validate_fails_on_missing_scaling_factor(self):
+        """Test that validation fails when scaling_factor is missing for some rows."""
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,,0.002,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+        """
+        with pytest.raises(ValueError, match="Null values found in required column"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+    def test_validate_fails_on_missing_uncertainty(self):
+        """Test that validation fails when uncertainty is missing for some rows."""
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,,ABC1C2,-20,16,-46,-15,-511,511,0,1023
+        """
+        with pytest.raises(ValueError, match="Null values found in required column"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+    def test_validate_fails_on_missing_coincidence_type_list(self):
+        """Test validation fails when coincidence_type_list is missing for a group."""
+        # First row of group is missing coincidence_type_list, so ffill has no source
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,,-20,16,-46,-15,-511,511,0,1023
+        """
+        with pytest.raises(ValueError, match="Null values found in required column"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
+
+    def test_validate_fails_on_missing_tof_column(self):
+        """Test validation fails when TOF column is missing for a group."""
+        # First row of group is missing tof_ab_low, so ffill has no source
+        csv_content = """\
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.01,0.001,ABC1C2,,16,-46,-15,-511,511,0,1023
+0,0,2,0.02,0.002,,,,,,,,,
+        """
+        with pytest.raises(ValueError, match="Null values found in required column"):
+            BackgroundConfig.from_csv(io.StringIO(csv_content))
 
 
 class TestGetTofWindowMask:
@@ -1197,35 +1335,55 @@ class TestIterBackgroundEventsByConfig:
 
     @pytest.fixture
     def mock_background_config(self):
-        """Create a mock background config DataFrame."""
+        """Create a mock background config DataFrame.
+
+        This creates a full background config with 3-level index
+        (calibration_prod, background_index, esa_energy_step) and then
+        returns the TOF config (2-level index) which is what
+        iter_background_events_by_config expects.
+        """
         # Create a config with 2 calibration products, 2 background indices each
-        # Note: No esa_energy_step in the index (backgrounds are across all ESA steps)
+        # Include esa_energy_step in index (required for validation)
+        # TOF windows are the same across ESA steps, scaling factors can vary
         data = {
             "coincidence_type_list": [
-                ("A",),  # cal_prod=1, bg_index=0
-                ("B",),  # cal_prod=1, bg_index=1
-                ("C1",),  # cal_prod=2, bg_index=0
-                ("C2",),  # cal_prod=2, bg_index=1 (invalid, but for testing)
+                ("A",),  # cal_prod=1, bg_index=0, esa=1
+                ("A",),  # cal_prod=1, bg_index=0, esa=2
+                ("B",),  # cal_prod=1, bg_index=1, esa=1
+                ("B",),  # cal_prod=1, bg_index=1, esa=2
+                ("C1",),  # cal_prod=2, bg_index=0, esa=1
+                ("C1",),  # cal_prod=2, bg_index=0, esa=2
+                ("C2",),  # cal_prod=2, bg_index=1, esa=1 (invalid, but for testing)
+                ("C2",),  # cal_prod=2, bg_index=1, esa=2 (invalid, but for testing)
             ],
-            "tof_ab_low": [10, 10, 10, 10],
-            "tof_ab_high": [100, 100, 100, 100],
-            "tof_ac1_low": [5, 5, 5, 5],
-            "tof_ac1_high": [80, 80, 80, 80],
-            "tof_bc1_low": [-50, -50, -50, -50],
-            "tof_bc1_high": [50, 50, 50, 50],
-            "tof_c1c2_low": [20, 20, 20, 20],
-            "tof_c1c2_high": [120, 120, 120, 120],
-            "scaling_factor": [1.0, 1.0, 1.0, 1.0],
-            "uncertainty": [0.1, 0.1, 0.1, 0.1],
+            "tof_ab_low": [10, 10, 10, 10, 10, 10, 10, 10],
+            "tof_ab_high": [100, 100, 100, 100, 100, 100, 100, 100],
+            "tof_ac1_low": [5, 5, 5, 5, 5, 5, 5, 5],
+            "tof_ac1_high": [80, 80, 80, 80, 80, 80, 80, 80],
+            "tof_bc1_low": [-50, -50, -50, -50, -50, -50, -50, -50],
+            "tof_bc1_high": [50, 50, 50, 50, 50, 50, 50, 50],
+            "tof_c1c2_low": [20, 20, 20, 20, 20, 20, 20, 20],
+            "tof_c1c2_high": [120, 120, 120, 120, 120, 120, 120, 120],
+            "scaling_factor": [1.0, 1.1, 1.0, 1.1, 1.0, 1.1, 1.0, 1.1],
+            "uncertainty": [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
         }
         index = pd.MultiIndex.from_tuples(
-            [(1, 0), (1, 1), (2, 0), (2, 1)],
-            names=["calibration_prod", "background_index"],
+            [
+                (1, 0, 1),
+                (1, 0, 2),
+                (1, 1, 1),
+                (1, 1, 2),
+                (2, 0, 1),
+                (2, 0, 2),
+                (2, 1, 1),
+                (2, 1, 2),
+            ],
+            names=["calibration_prod", "background_index", "esa_energy_step"],
         )
         df = pd.DataFrame(data, index=index)
         # Trigger the accessor to add coincidence_type_values column
-        _ = df.background_config.calibration_product_numbers
-        return df
+        # and return the TOF config (2-level index for iter_background_events_by_config)
+        return df.background_config.get_tof_config()
 
     @pytest.fixture
     def mock_de_dataset(self):
@@ -1282,10 +1440,12 @@ class TestIterBackgroundEventsByConfig:
             mock_de_dataset, mock_background_config
         ):
             # Check that config_row has expected attributes
+            # Note: The TOF config from get_tof_config() doesn't include
+            # scaling_factor or uncertainty (those are ESA-dependent)
             assert hasattr(config_row, "Index")
             assert hasattr(config_row, "coincidence_type_values")
-            assert hasattr(config_row, "scaling_factor")
-            assert hasattr(config_row, "uncertainty")
+            assert hasattr(config_row, "tof_ab_low")
+            assert hasattr(config_row, "tof_ab_high")
             # Check that filtered_ds is an xarray Dataset
             assert isinstance(filtered_ds, xr.Dataset)
             assert "event_met" in filtered_ds.dims
