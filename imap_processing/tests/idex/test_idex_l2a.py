@@ -366,6 +366,146 @@ def test_estimate_dust_mass_no_noise_removal():
     assert np.allclose(result, signal)
 
 
+def test_estimate_dust_mass_logs_baseline_warning(caplog):
+    """
+    Test that estimate_dust_mass() logs a warning if no baseline is found.
+    """
+    time = xr.DataArray(np.linspace(-60, 60, 16))
+    signal = xr.DataArray(np.linspace(0, 1, 16))
+    original_any = np.any
+
+    def fake_any(arr):
+        fake_any.calls += 1
+        if fake_any.calls == 1:
+            return False
+        return original_any(arr)
+
+    fake_any.calls = 0
+
+    with (
+        mock.patch("imap_processing.idex.idex_l2a.np.any", side_effect=fake_any),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.curve_fit",
+            return_value=(np.array([0.0, 0.0, 1.0, 0.371, 37.1]), None),
+        ),
+        caplog.at_level("WARNING"),
+    ):
+        estimate_dust_mass(time, signal)
+
+    assert any(
+        "Unable to find baseline noise" in message
+        for message in caplog.text.splitlines()
+    )
+
+
+def test_estimate_dust_mass_remove_noise_logs_debug(caplog):
+    """
+    Test that estimate_dust_mass() logs that remove_noise is ignored.
+    """
+    time = xr.DataArray(np.linspace(-60, 60, 64))
+    signal = xr.DataArray(
+        fit_impact(
+            time.data,
+            time_of_impact=0.0,
+            constant_offset=1.0,
+            amplitude=10.0,
+            rise_time=0.371,
+            discharge_time=0.371,
+        )
+    )
+
+    with caplog.at_level("DEBUG"):
+        estimate_dust_mass(time, signal, remove_noise=True)
+
+    assert any(
+        "remove_noise is ignored for this fit path" in message
+        for message in caplog.text.splitlines()
+    )
+
+
+def test_estimate_dust_mass_nonfinite_signal_fallbacks():
+    """
+    Test fallback handling when the input signal is entirely non-finite.
+    """
+    time = xr.DataArray(np.linspace(-60, 60, 16))
+    signal = xr.DataArray(np.full(16, np.nan))
+
+    with mock.patch(
+        "imap_processing.idex.idex_l2a.curve_fit",
+        return_value=(np.array([0.0, 0.0, 1.0, 0.371, 37.1]), None),
+    ) as mocked_curve_fit:
+        estimate_dust_mass(time, signal)
+
+    assert np.isnan(mocked_curve_fit.call_args.kwargs["p0"][2])
+
+
+def test_estimate_dust_mass_non_ion_grid_negative_amplitude_fallback():
+    """
+    Test the non-Ion_Grid negative-amplitude fallback path.
+    """
+    time = xr.DataArray(np.linspace(-60, 60, 16))
+    signal = xr.DataArray(np.full(16, -2.0))
+
+    with mock.patch(
+        "imap_processing.idex.idex_l2a.curve_fit",
+        return_value=(np.array([0.0, -2.0, -2.0, 0.371, 37.1]), None),
+    ) as mocked_curve_fit:
+        estimate_dust_mass(time, signal)
+
+    assert mocked_curve_fit.call_args.kwargs["p0"][2] == -2.0
+
+
+def test_estimate_dust_mass_ion_grid_negative_amplitude_bounds():
+    """
+    Test that Ion Grid fits allow negative amplitudes.
+    """
+    time = xr.DataArray(np.linspace(-60, 60, 64))
+    signal = xr.DataArray(
+        fit_impact(
+            time.data,
+            time_of_impact=0.0,
+            constant_offset=0.0,
+            amplitude=-5.0,
+            rise_time=0.371,
+            discharge_time=0.371,
+        )
+    )
+
+    with mock.patch(
+        "imap_processing.idex.idex_l2a.curve_fit",
+        return_value=(np.array([0.0, 0.0, -5.0, 0.371, 37.1]), None),
+    ) as mocked_curve_fit:
+        estimate_dust_mass(time, signal, waveform_name="Ion_Grid")
+
+    bounds = mocked_curve_fit.call_args.kwargs["bounds"]
+    assert bounds[0][2] == -np.inf
+    assert bounds[1][2] < 0.0
+
+
+def test_estimate_dust_mass_curve_fit_failure_returns_nans(caplog):
+    """
+    Test that estimate_dust_mass() returns NaNs if the fit fails.
+    """
+    time = xr.DataArray(np.linspace(-60, 60, 16))
+    signal = xr.DataArray(np.linspace(0, 1, 16))
+
+    with (
+        mock.patch(
+            "imap_processing.idex.idex_l2a.curve_fit",
+            side_effect=RuntimeError("fit failed"),
+        ),
+        caplog.at_level("WARNING"),
+    ):
+        param, sig_amp, chisqr, redchi, result = estimate_dust_mass(time, signal)
+
+    assert any("Failed to fit curve" in message for message in caplog.text.splitlines())
+    assert np.all(np.isnan(param))
+    assert np.isnan(sig_amp)
+    assert np.isnan(chisqr)
+    assert np.isnan(redchi)
+    assert np.all(np.isnan(result))
+
+
 def test_lowpass_filter():
     """
     Tests that the lowpass filter is filtering out high frequency signals.

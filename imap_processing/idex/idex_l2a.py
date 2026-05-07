@@ -750,7 +750,6 @@ def calculate_area_under_emg(time_slice: np.ndarray, param: np.ndarray) -> float
 def estimate_dust_mass(
     low_sampling_time: xr.DataArray,
     target_signal: xr.DataArray,
-    # remove_noise: bool = True,
     remove_noise: bool = False,
     waveform_name: str = "",
 ) -> tuple[NDArray, float, float, float, NDArray]:
@@ -787,14 +786,15 @@ def estimate_dust_mass(
     """
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
-    window_start = float(np.min(time))
-    window_stop = window_start + 5.0
-    good_mask = np.logical_and(time >= window_start, time <= window_stop)
+    # window_start = float(np.min(time))
+    window_stop = float(np.min(time)) + 5.0
+    # good_mask = np.logical_and(time >= window_start, time <= window_stop)
+    good_mask = time <= window_stop
     if not np.any(good_mask):
         logger.warning(
             "Unable to find baseline noise. "
             f"There is no signal in the first 5 microseconds of the waveform "
-            f"({window_start} to {window_stop} us)."
+            f"(Beginning to {window_stop} us)."
         )
     if remove_noise:
         logger.debug(
