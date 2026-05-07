@@ -524,7 +524,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             chunk_epoch = self.epoch[chunk_indices[0] : chunk_indices[-1]]
 
             if len(chunk_epoch) == 0:
-                logging.warning(
+                logger.warning(
                     "Skipping empty chunk at spin_starts index %d",
                     chunk_start,
                 )

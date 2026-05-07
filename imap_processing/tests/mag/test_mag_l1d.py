@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import patch
 
 import numpy as np
@@ -289,6 +290,39 @@ def test_calculate_spin_offsets(
 
     np.testing.assert_allclose(offsets["x_offset"].data, expected_x_avg)
     np.testing.assert_allclose(offsets["y_offset"].data, expected_y_avg)
+
+
+def test_calculate_spin_offsets_empty_chunk(mag_l1d_test_class, caplog):
+    # 166 points with 15-sample spin period produces 11 spin_starts.
+    # With spin_count_calibration=2, the last chunk (index 10) contains only
+    # one spin_start, making chunk_epoch empty and triggering the warning path.
+    n = 166
+    mag_l1d_test_class.vectors = np.ones((n, 3))
+    mag_l1d_test_class.epoch = np.arange(n, dtype=np.float64) * 1e9
+    mag_l1d_test_class.frame = ValidFrames.SRF
+    mag_l1d_test_class.config.spin_count_calibration = 2
+
+    phase = (np.arange(n) % 15) / 15.0
+
+    with (
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.ttj2000ns_to_met",
+            side_effect=lambda *args, **kwargs: args[0] / 1e9,
+        ),
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.spin.get_spacecraft_spin_phase",
+            return_value=phase,
+        ),
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.spin.get_spin_data",
+            return_value={"spin_period_sec": np.array([15.0])},
+        ),
+        caplog.at_level(logging.WARNING),
+    ):
+        offsets = mag_l1d_test_class.calculate_spin_offsets()
+
+    assert "Skipping empty chunk" in caplog.text
+    assert len(offsets["epoch"]) == 5
 
 
 def test_apply_spin_offsets(mag_l1d_test_class, fake_mag_spin_data, furnish_kernels):
