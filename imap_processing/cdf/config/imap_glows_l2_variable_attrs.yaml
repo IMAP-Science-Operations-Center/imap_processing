@@ -404,11 +404,12 @@ bad_time_flag_occurrences:
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: no_plot
   FIELDNAM: Occurrences of bad-time flags
-  FILLVAL: -1.0E+31
+  FILLVAL: 65535
   FORMAT: I5
   LABLAXIS: No. of cases
   LABL_PTR_1: flags_label # MS: I do not understand this
-  VALIDMAX: 20000
+  VALIDMAX: 65535
+  VALIDMIN: 0
 
 spin_angle:
   <<: *lightcurve_defaults

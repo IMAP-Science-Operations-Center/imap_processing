@@ -412,6 +412,12 @@ def test_update_spice_parameters_spin_axis_near_wrapping_point(
     # Call the actual update_spice_parameters method
     HistogramL1B.update_spice_parameters(mock_hist)
 
+    # Verify spin_offset_correction shifts position_angle_offset_average by the
+    # given amount.
+    base_angle = mock_hist.position_angle_offset_average
+    HistogramL1B.update_spice_parameters(mock_hist, spin_offset_correction=5.0)
+    assert mock_hist.position_angle_offset_average == pytest.approx(base_angle + 5.0)
+
     # Verify the spin axis orientation values
     lon_result = mock_hist.spin_axis_orientation_average[0]
     lat_result = mock_hist.spin_axis_orientation_average[1]

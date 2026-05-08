@@ -160,7 +160,7 @@ EXTERNAL_TEST_DATA = [
     ("status_test_data_repoint00047.csv", "ultra/data/l1/"),
     ("voltage_culling_results_repoint00047.csv", "ultra/data/l1/"),
     ("validate_high_energy_culling_results_repoint00047_v2.csv", "ultra/data/l1/"),
-    ("validate_stat_culling_results_repoint00047_v2.csv", "ultra/data/l1/"),
+    ("validate_stat_culling_results_repoint00047_v3.csv", "ultra/data/l1/"),
     ("validate_upstream_ion_1_culling_results_repoint00047_v1.csv", "ultra/data/l1/"),
     ("validate_spectral_culling_results_repoint00047_v1.csv", "ultra/data/l1/"),
     ("de_test_data_repoint00047.csv", "ultra/data/l1/"),

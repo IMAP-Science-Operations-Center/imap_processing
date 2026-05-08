@@ -64,6 +64,7 @@ from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
+from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -1133,6 +1134,53 @@ class Idex(ProcessInstrument):
 class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
 
+    def pre_processing(self) -> ProcessingInputCollection:
+        """
+        Complete pre-processing.
+
+        Extends the base pre-processing by filtering Lo PSET science inputs to
+        only those whose ``pivot_angle`` is within
+        ``LoConstants.PSET_PIVOT_ANGLE_TOLERANCE`` of
+        ``LoConstants.PSET_PIVOT_ANGLE``. PSET files that fall outside this
+        range are dropped before processing begins.
+
+        Returns
+        -------
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+        """
+        datasets = super().pre_processing()
+        new_datasets = ProcessingInputCollection()
+
+        for processing_input in datasets.get_processing_inputs():
+            if (
+                processing_input.source == "lo"
+                and processing_input.descriptor == "pset"
+            ):
+                valid_filenames = []
+                for imap_file_path in processing_input.imap_file_paths:
+                    pset = load_cdf(imap_file_path.construct_path())
+                    if "pivot_angle" in pset:
+                        if (
+                            abs(
+                                pset["pivot_angle"].item()
+                                - LoConstants.PSET_PIVOT_ANGLE
+                            )
+                            < LoConstants.PSET_PIVOT_ANGLE_TOLERANCE
+                        ):
+                            valid_filenames.append(str(imap_file_path.filename))
+                        else:
+                            logger.info(
+                                f"Dropping pset {imap_file_path.filename} because "
+                                f"pivot angle is not in range."
+                            )
+                if valid_filenames:
+                    new_datasets.add(type(processing_input)(*valid_filenames))
+            else:
+                new_datasets.add(processing_input)
+
+        return new_datasets
+
     def do_processing(
         self, dependencies: ProcessingInputCollection
     ) -> list[xr.Dataset]:
@@ -1193,6 +1241,10 @@ class Lo(ProcessInstrument):
             anc_dependencies = dependencies.get_file_paths(data_type="ancillary")
 
             # Load all pset files into datasets
+            if not science_files:
+                logger.info("No valid psets found for L2 processing.")
+                return datasets
+
             psets = [load_cdf(file) for file in science_files]
             data_dict[psets[0].attrs["Logical_source"]] = psets
             datasets = lo_l2.lo_l2(data_dict, anc_dependencies, self.descriptor)

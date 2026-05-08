@@ -433,6 +433,18 @@ def test_compute_position_angle():
     assert result == pytest.approx(90.0)
 
 
+@patch(
+    "imap_processing.glows.l2.glows_l2_data.get_instrument_mounting_az_el",
+    return_value=(270.0, 0.0),
+)
+def test_compute_position_angle_spin_offset_correction(mock_az_el):
+    """spin_offset_correction shifts the position angle by the given amount."""
+
+    assert HistogramL2.compute_position_angle(None, 0.0) == 90.0
+    assert HistogramL2.compute_position_angle(None, 5.0) == 95.0
+    assert HistogramL2.compute_position_angle(None, -10.0) == 80.0
+
+
 @pytest.fixture
 def l1b_dataset_full():
     """Minimal L1B dataset with all variables required by HistogramL2.

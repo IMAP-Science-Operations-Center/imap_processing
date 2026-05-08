@@ -179,6 +179,7 @@ def test_generate_l2(
         ds = HistogramL2(l1b_hist_dataset, pipeline_settings, mock_calibration_dataset)
         expected_number_of_good_l1b_inputs = 0
         assert ds.number_of_good_l1b_inputs == expected_number_of_good_l1b_inputs
+        assert ds.bad_time_flag_occurrences.dtype == np.uint16
 
 
 def test_bin_exclusions(l1b_hists):

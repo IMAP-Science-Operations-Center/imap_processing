@@ -102,9 +102,10 @@ def calculate_extendedspin(
         energy_thresholds,
         instrument_id,
     )
-    # Combine high energy and voltage flags to use for statistical outlier flagging.
-    mask = (
-        voltage_qf[np.newaxis, :] | high_energy_qf
+    # For the following culls, mask the spins that have already been flagged for
+    # low voltage
+    mask = np.repeat(
+        voltage_qf[np.newaxis, :], len(energy_ranges) - 1, axis=0
     )  # Shape (n_energy_bins, n_spins_bins)
     upstream_ion_qf_1 = flag_upstream_ion(
         de_dataset,
@@ -114,9 +115,6 @@ def calculate_extendedspin(
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1,
         instrument_id,
     )
-    # Update mask to include upstream ion flags from the first set of energy channels
-    # before flagging with the second set of energy channels
-    mask = mask | upstream_ion_qf_1
     upstream_ion_qf_2 = flag_upstream_ion(
         de_dataset,
         spin_tbin_edges,
@@ -132,9 +130,9 @@ def calculate_extendedspin(
         UltraConstants.SPECTRAL_ENERGY_CHANNELS,
         instrument_id,
     )
-    # Update mask to include upstream ion flags #2 and spectral flags before flagging
-    # statistical outliers
-    mask = mask | upstream_ion_qf_2 | spectral_qf
+    # Update mask to include high energy,  upstream ion flags and spectral flags
+    # before flagging statistical outliers
+    mask = mask | upstream_ion_qf_1 | upstream_ion_qf_2 | spectral_qf | high_energy_qf
     stat_outliers_qf, _, _, _ = flag_statistical_outliers(
         de_dataset,
         spin_tbin_edges,
@@ -178,6 +176,12 @@ def calculate_extendedspin(
     stop_per_spin[valid] = pulses.stop_per_spin[idx[valid]]
     coin_per_spin[valid] = pulses.coin_per_spin[idx[valid]]
 
+    # To be consistent with the ULTRA IT implementation, apply the low voltage mask
+    # to the high energy and upstream ion flags
+    upstream_ion_qf_2 |= voltage_qf
+    upstream_ion_qf_1 |= voltage_qf
+    high_energy_qf |= voltage_qf
+    spectral_qf |= voltage_qf
     # high energy and statistical outlier flags are energy dependent boolean arrays
     # with shape (n_energy_bins, n_spin_bins). We want to collapse the energy dimension
     # using a bitwise OR to get a single boolean flag per spin.

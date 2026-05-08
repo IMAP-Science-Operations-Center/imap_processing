@@ -324,6 +324,7 @@ def mock_pipeline_settings():
             ),
             "sunrise_offset": (["epoch"], [0.0] * len(epoch_range)),
             "sunset_offset": (["epoch"], [0.0] * len(epoch_range)),
+            "spin_offset_correction": (["epoch"], [0.0] * len(epoch_range)),
             "n_sigma_threshold_lower": (["epoch"], [3.0] * len(epoch_range)),
             "n_sigma_threshold_upper": (["epoch"], [3.0] * len(epoch_range)),
             "relative_difference_threshold": (["epoch"], [7.0e-5] * len(epoch_range)),
