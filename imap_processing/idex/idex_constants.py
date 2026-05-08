@@ -55,6 +55,8 @@ DT_BLOCK: float = SAMPLES_PER_BLOCK / LOW_SAMPLE_RATE_HZ
 SECONDS_IN_DAY = 86400
 # Nanoseconds in day
 NANOSECONDS_IN_DAY = SECONDS_IN_DAY * int(1e9)
+# Picocoulombs to coulombs conversion factor
+PICOCOULOMB_TO_COULOMB = 1e-12
 # fg to kg conversion factor
 FG_TO_KG = 1e-15
 

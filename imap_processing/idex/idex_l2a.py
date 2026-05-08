@@ -353,7 +353,7 @@ def calculate_velocity_and_mass(
 
     log_a_y: float = float(yield_params[0])
     yield_val = 10 ** log_smooth_powerlaw(np.log10(v_est), log_a_y, yield_params[1:])
-    sig_amp_coulombs = sig_amp * 1e-12
+    sig_amp_coulombs = sig_amp * idex_constants.PICOCOULOMB_TO_COULOMB
     mass_est = sig_amp_coulombs / yield_val
 
     return v_est, mass_est
