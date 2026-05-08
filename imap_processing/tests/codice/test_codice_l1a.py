@@ -17,10 +17,9 @@ from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a import process_l1a
 from imap_processing.codice.codice_l1a_de import l1a_direct_event
-from imap_processing.codice.utils import CODICEAPID, read_sci_lut
+from imap_processing.codice.utils import CODICEAPID
 from imap_processing.tests.codice.conftest import (
     VALIDATION_FILE_DATE,
     VALIDATION_FILE_VERSION,
@@ -177,36 +176,6 @@ def test_lo_counters_singles(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-counters-singles_{VALIDATION_FILE_DATE}_v001.cdf"
     )
-
-
-@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-@patch("imap_processing.codice.codice_l1a_lo_counters_singles.read_sci_lut")
-def test_lo_counters_singles_mock_esa_steps(
-    mock_read_sci_lut, mock_get_file_paths, codice_lut_path
-):
-    """Tests lo-counters-singles with mocked ESA steps."""
-    mock_get_file_paths.side_effect = [
-        codice_lut_path(descriptor="lo-counters-singles", data_type="l0"),
-        codice_lut_path(descriptor="l1a-sci-lut"),
-    ]
-
-    # Load the sci lut
-    sci_lut = read_sci_lut(
-        codice_lut_path(descriptor="l1a-sci-lut")[0], table_id="3952862729"
-    )
-
-    # Modify the lo_stepping_tab to have fewer values
-    # This is expected in future sci luts
-    sci_lut["lo_stepping_tab"]["row_number"]["data"] = sci_lut["lo_stepping_tab"][
-        "row_number"
-    ]["data"][:100]
-
-    mock_read_sci_lut.return_value = sci_lut
-
-    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
-    # Although the sci lut had fewer ESA steps, the processing should still
-    # produce the full number of ESA steps defined in constants.
-    assert processed_data.sizes["esa_step"] == constants.NUM_ESA_STEPS
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")

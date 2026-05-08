@@ -18,12 +18,10 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
     CoDICECompression,
-    ViewTabInfo,
     calculate_acq_time_per_step,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
-    get_view_tab_info,
-    read_sci_lut,
+    get_view_tab_obj,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 
@@ -48,30 +46,72 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
     """
     # Get these values from unpacked data. These are used to
     # lookup in LUT table.
-    table_id = unpacked_dataset["table_id"].values[0]
     view_id = unpacked_dataset["view_id"].values[0]
     apid = unpacked_dataset["pkt_apid"].values[0]
     plan_id = unpacked_dataset["plan_id"].values[0]
     plan_step = unpacked_dataset["plan_step"].values[0]
 
+    unique_table_ids = np.unique(unpacked_dataset["table_id"].values)
+    processed = [
+        _process_lo_species(
+            unpacked_dataset.isel(
+                epoch=unpacked_dataset["table_id"].values == table_id
+            ),
+            lut_file,
+            table_id,
+            view_id,
+            apid,
+            plan_id,
+            plan_step,
+        )
+        for table_id in unique_table_ids
+    ]
+    if len(processed) == 1:
+        return processed[0]
+    return xr.concat(processed, dim="epoch").sortby("epoch")
+
+
+def _process_lo_species(
+    group_ds: xr.Dataset,
+    lut_file: Path,
+    table_id: str,
+    view_id: int,
+    apid: int,
+    plan_id: int,
+    plan_step: int,
+) -> xr.Dataset:
+    """
+    Process a single table-ID group of CoDICE Lo Species L1A data.
+
+    Parameters
+    ----------
+    group_ds : xarray.Dataset
+        Dataset filtered to a single table_id.
+    lut_file : Path
+        Path to the LUT file for processing.
+    table_id : str
+        The table ID for this group.
+    view_id : int
+        View ID (uniform across the product).
+    apid : int
+        APID (uniform across the product).
+    plan_id : int
+        Plan ID (uniform across the product).
+    plan_step : int
+        Plan step (uniform across the product).
+
+    Returns
+    -------
+    xarray.Dataset
+        The processed L1A dataset for this table-ID group.
+    """
     logger.info(
         f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
 
     # ========== Get LUT Data ===========
-    # Read information from LUT
-    sci_lut_data = read_sci_lut(lut_file, table_id)
-
-    view_tab_info = get_view_tab_info(sci_lut_data, view_id, apid)
-    view_tab_obj = ViewTabInfo(
-        apid=apid,
-        view_id=view_id,
-        sensor=view_tab_info["sensor"],
-        three_d_collapsed=view_tab_info["3d_collapse"],
-        collapse_table=view_tab_info["collapse_table"],
-        compression=view_tab_info["compression"],
-    )
+    sci_lut_data, view_tab_obj = get_view_tab_obj(lut_file, table_id, view_id, apid)
     if view_tab_obj.sensor != 0:
         raise ValueError("Unsupported sensor ID for Lo species processing.")
 
@@ -127,10 +167,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
 
     compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
-    binary_data_list = unpacked_dataset["data"].values
-    byte_count_list = unpacked_dataset["byte_count"].values
-
-    # The decompressed data in the shape of (epoch, n). Then reshape later.
+    binary_data_list = group_ds["data"].values
+    byte_count_list = group_ds["byte_count"].values
     decompressed_data = [
         decompress(
             packet_data[:byte_count],
@@ -168,23 +206,20 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
     acquisition_time_per_step = calculate_acq_time_per_step(
         sci_lut_data["lo_stepping_tab"]
     )
-    # Get acquisition time per esa step
-    # TODO: Handle epoch dependent acquisition time and half spin per esa step
-    #   For now, just tile the same array for all epochs.
-    #   Eventually we may have data from a day where the LUT changed. If this is the
-    #  case, we need to split the data by epoch and assign different acquisition times
+    # Get acquisition time per esa step. Each group shares the same table_id, so
+    # all epochs within the group use the same LUT values.
     half_spin_per_esa_step = np.tile(
         np.asarray(
             half_spin_per_esa_step,
         ).astype(np.uint8),
-        (len(unpacked_dataset["acq_start_seconds"]), 1),
+        (len(group_ds["acq_start_seconds"]), 1),
     )
     acquisition_time_per_step = np.tile(
         np.asarray(acquisition_time_per_step),
-        (len(unpacked_dataset["acq_start_seconds"]), 1),
+        (len(group_ds["acq_start_seconds"]), 1),
     )
     # For every energy after nso_half_spin, set data to fill values
-    nso_half_spin = unpacked_dataset["nso_half_spin"].values
+    nso_half_spin = group_ds["nso_half_spin"].values
     nso_mask = (half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]) | (
         half_spin_per_esa_step == HALF_SPIN_FILLVAL
     )
@@ -208,9 +243,9 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
     epoch_center, deltas = get_codice_epoch_time(
-        unpacked_dataset["acq_start_seconds"].values,
-        unpacked_dataset["acq_start_subseconds"].values,
-        unpacked_dataset["spin_period"].values,
+        group_ds["acq_start_seconds"].values,
+        group_ds["acq_start_subseconds"].values,
+        group_ds["spin_period"].values,
         view_tab_obj,
     )
 
@@ -288,7 +323,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
     )
     # Add first few unique variables
     l1a_dataset["spin_period"] = xr.DataArray(
-        unpacked_dataset["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
+        group_ds["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("spin_period"),
     )
@@ -303,7 +338,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
         attrs=cdf_attrs.get_variable_attributes("voltage_table", check_schema=False),
     )
     l1a_dataset["data_quality"] = xr.DataArray(
-        unpacked_dataset["suspect"].values,
+        group_ds["suspect"].values,
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )
@@ -315,14 +350,14 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
         ),
     )
     # Rename vars
-    unpacked_dataset = unpacked_dataset.rename(
+    group_ds = group_ds.rename(
         {
             k: v
             for k, v in [
                 ("rgfo_energy_step", "rgfo_esa_step"),
                 ("nso_energy_step", "nso_esa_step"),
             ]
-            if k in unpacked_dataset
+            if k in group_ds
         }
     )
     # These variables were added to the packet definition after 20260129, so they only
@@ -337,10 +372,8 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
         "nso_esa_step",
     ]
     for var in l1a_additional_vars:
-        if var not in unpacked_dataset:
-            unpacked_dataset[var] = np.full(
-                unpacked_dataset.sizes["epoch"], fill_value=np.nan
-            )
+        if var not in group_ds:
+            group_ds[var] = np.full(group_ds.sizes["epoch"], fill_value=np.nan)
 
     # Carry over these variables from unpacked data to l1a_dataset
     l1a_carryover_vars = [
@@ -354,7 +387,7 @@ def l1a_lo_species(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset: 
     # Loop through them since we need to set their attrs too
     for var in l1a_carryover_vars:
         l1a_dataset[var] = xr.DataArray(
-            unpacked_dataset[var].values,
+            group_ds[var].values,
             dims=("epoch",),
             attrs=cdf_attrs.get_variable_attributes(var),
         )

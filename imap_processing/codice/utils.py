@@ -155,6 +155,41 @@ def get_view_tab_info(json_data: dict, view_id: int, apid: int) -> dict:
     return view_tab
 
 
+def get_view_tab_obj(
+    lut_file: Path, table_id: str, view_id: int, apid: int
+) -> tuple[dict, "ViewTabInfo"]:
+    """
+    Read the SCI-LUT and build a ViewTabInfo for the given table ID.
+
+    Parameters
+    ----------
+    lut_file : Path
+        Path to the SCI-LUT JSON file.
+    table_id : str
+        Table identifier to extract from the JSON.
+    view_id : int
+        The view ID from the packet.
+    apid : int
+        The APID from the packet.
+
+    Returns
+    -------
+    tuple[dict, ViewTabInfo]
+        The SCI-LUT data dict and a populated ViewTabInfo for the given table ID.
+    """
+    sci_lut_data = read_sci_lut(lut_file, table_id)
+    view_tab_info = get_view_tab_info(sci_lut_data, view_id, apid)
+    view_tab_obj = ViewTabInfo(
+        apid=apid,
+        view_id=view_id,
+        sensor=view_tab_info["sensor"],
+        three_d_collapsed=view_tab_info["3d_collapse"],
+        collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
+    )
+    return sci_lut_data, view_tab_obj
+
+
 def get_collapse_pattern_shape(
     json_data: dict, sensor_id: int, collapse_table_id: int
 ) -> tuple[int, ...]:
