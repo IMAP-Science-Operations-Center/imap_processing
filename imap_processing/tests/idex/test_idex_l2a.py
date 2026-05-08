@@ -370,9 +370,14 @@ def test_velocity_and_mass_estimate(ancillary_files):
     yield_params = pd.read_csv(
         ancillary_files["l2a-calibration-curve-yield-params"], skiprows=1, header=None
     ).values.flatten()[:8]
-    estimates = calculate_velocity_and_mass(10, 2, t_rise_params, yield_params)
+    expected_velocity = 5.0
+    t_rise = 10 ** log_smooth_powerlaw(
+        np.log10(expected_velocity), float(t_rise_params[0]), t_rise_params[1:]
+    )
+    estimates = calculate_velocity_and_mass(10, t_rise, t_rise_params, yield_params)
     assert len(estimates) == 2
     assert not np.any(np.isnan(estimates))
+    assert estimates[0] == pytest.approx(expected_velocity, rel=1e-12)
 
 
 def test_analyze_peaks_perfect_fits():
