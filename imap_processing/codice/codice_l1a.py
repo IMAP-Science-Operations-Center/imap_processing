@@ -30,6 +30,7 @@ from imap_processing.codice.codice_l1a_lo_priority import l1a_lo_priority
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.utils import (
     CODICEAPID,
+    process_by_table_id,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -79,21 +80,18 @@ def process_l1a(  # noqa: PLR0912
 
         if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             logger.info("Processing Lo SW Species Counts")
-            datasets.append(l1a_lo_species(datasets_by_apid[apid], lut_file))
-        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-            logger.info("Processing Lo NSW Species Counts")
-            datasets.append(l1a_lo_species(datasets_by_apid[apid], lut_file))
-        elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
-            logger.info("Processing Lo SW Angular Counts")
-            datasets.append(l1a_lo_angular(datasets_by_apid[apid], lut_file))
-        elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
-            logger.info("Processing Lo NSW Angular Counts")
-            datasets.append(l1a_lo_angular(datasets_by_apid[apid], lut_file))
+            datasets.append(
+                process_by_table_id(datasets_by_apid[apid], lut_file, l1a_lo_species)
+            )
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-            datasets.append(l1a_hi_omni(datasets_by_apid[apid], lut_file))
+            datasets.append(
+                process_by_table_id(datasets_by_apid[apid], lut_file, l1a_hi_omni)
+            )
         elif apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
             logger.info("Processing Hi Sectored Species Counts")
-            datasets.append(l1a_hi_sectored(datasets_by_apid[apid], lut_file))
+            datasets.append(
+                process_by_table_id(datasets_by_apid[apid], lut_file, l1a_hi_sectored)
+            )
         elif apid == CODICEAPID.COD_HI_PHA:
             logger.info("Processing Direct Events for Hi")
             datasets.append(l1a_direct_event(datasets_by_apid[apid], apid=apid))
@@ -105,26 +103,42 @@ def process_l1a(  # noqa: PLR0912
             CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
         ]:
             logger.info(f"Processing {apid} Priority Counts")
-            datasets.append(l1a_lo_priority(datasets_by_apid[apid], lut_file))
+            datasets.append(
+                process_by_table_id(datasets_by_apid[apid], lut_file, l1a_lo_priority)
+            )
         elif apid == CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES:
             logger.info("Processing Hi Priority Counts")
-            datasets.append(l1a_hi_priority(datasets_by_apid[apid], lut_file))
+            datasets.append(
+                process_by_table_id(datasets_by_apid[apid], lut_file, l1a_hi_priority)
+            )
         elif apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
             logger.info("Processing Hi Counters aggregated")
             datasets.append(
-                l1a_hi_counters_aggregated(datasets_by_apid[apid], lut_file)
+                process_by_table_id(
+                    datasets_by_apid[apid], lut_file, l1a_hi_counters_aggregated
+                )
             )
         elif apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
             logger.info("Processing Hi Counters singles")
-            datasets.append(l1a_hi_counters_singles(datasets_by_apid[apid], lut_file))
+            datasets.append(
+                process_by_table_id(
+                    datasets_by_apid[apid], lut_file, l1a_hi_counters_singles
+                )
+            )
         elif apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
             logger.info("Processing Lo Counters aggregated")
             datasets.append(
-                l1a_lo_counters_aggregated(datasets_by_apid[apid], lut_file)
+                process_by_table_id(
+                    datasets_by_apid[apid], lut_file, l1a_lo_counters_aggregated
+                )
             )
         elif apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
             logger.info("Processing Lo Counters singles")
-            datasets.append(l1a_lo_counters_singles(datasets_by_apid[apid], lut_file))
+            datasets.append(
+                process_by_table_id(
+                    datasets_by_apid[apid], lut_file, l1a_lo_counters_singles
+                )
+            )
         elif apid == CODICEAPID.COD_NHK:
             logger.info("Processing l1a housekeeping data")
             cdf_attrs = ImapCdfAttributes()

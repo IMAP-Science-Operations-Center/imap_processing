@@ -21,48 +21,7 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_hi_omni(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
-    """
-    Process CoDICE Hi Omni L1A data.
-
-    Parameters
-    ----------
-    unpacked_dataset : xarray.Dataset
-        Unpacked dataset from L0 packet file.
-    lut_file : Path
-        Path to the LUT file for processing.
-
-    Returns
-    -------
-    xarray.Dataset
-        Processed L1A dataset for Hi Omni data.
-    """
-    view_id = unpacked_dataset["view_id"].values[0]
-    apid = unpacked_dataset["pkt_apid"].values[0]
-    plan_id = unpacked_dataset["plan_id"].values[0]
-    plan_step = unpacked_dataset["plan_step"].values[0]
-
-    unique_table_ids = np.unique(unpacked_dataset["table_id"].values)
-    processed = [
-        _process_hi_omni(
-            unpacked_dataset.isel(
-                epoch=unpacked_dataset["table_id"].values == table_id
-            ),
-            lut_file,
-            table_id,
-            view_id,
-            apid,
-            plan_id,
-            plan_step,
-        )
-        for table_id in unique_table_ids
-    ]
-    if len(processed) == 1:
-        return processed[0]
-    return xr.concat(processed, dim="epoch").sortby("epoch")
-
-
-def _process_hi_omni(
+def l1a_hi_omni(
     group_ds: xr.Dataset,
     lut_file: Path,
     table_id: str,
@@ -94,7 +53,7 @@ def _process_hi_omni(
     Returns
     -------
     xarray.Dataset
-        Processed L1A dataset for this table-ID group.
+        Processed L1A dataset for input table-ID group.
     """
     logger.info(
         f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
