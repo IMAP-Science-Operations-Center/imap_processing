@@ -70,10 +70,10 @@ def load_calibration_files(ancillary_files: dict) -> tuple[NDArray, NDArray]:
     """
     # Load calibration coefficients from ancillary files
     t_rise_params = pd.read_csv(
-        ancillary_files["l2a-calibration-curve-yield-params"], skiprows=1, header=None
+        ancillary_files["l2a-calibration-curve-t-rise"], skiprows=1, header=None
     ).values.flatten()[:8]
     yield_params = pd.read_csv(
-        ancillary_files["l2a-calibration-curve-t-rise"], skiprows=1, header=None
+        ancillary_files["l2a-calibration-curve-yield-params"], skiprows=1, header=None
     ).values.flatten()[:8]
     return t_rise_params, yield_params
 
@@ -319,13 +319,13 @@ def calculate_velocity_and_mass(
     Parameters
     ----------
     sig_amp : float
-        Signal amplitude.
+        Signal amplitude (pC).
     t_rise : float
-        T_rise fit parameter from the target fit.
+        T_rise fit parameter from the target fit (us).
     t_rise_params : np.ndarray
-        Calibration parameters for rise time.
+        Calibration parameters for rise time (us)
     yield_params : np.ndarray
-        Calibration parameters for yield.
+        Calibration parameters for yield. 
 
     Returns
     -------
@@ -338,7 +338,10 @@ def calculate_velocity_and_mass(
     try:
         root = root_scalar(
             lambda lv: (
-                log_smooth_powerlaw(lv, log_a_t, t_rise_params[1:]) - np.log10(t_rise)
+                log_smooth_powerlaw(
+                    lv, log_a_t, t_rise_params[1:], label="t_rise"
+                )
+                - np.log10(t_rise)
             ),
             bracket=[-1, 2],
         )
@@ -352,40 +355,54 @@ def calculate_velocity_and_mass(
         return np.nan, np.nan
 
     log_a_y: float = np.log10(yield_params[0])
-    yield_val = 10 ** log_smooth_powerlaw(np.log10(v_est), log_a_y, yield_params[1:])
-    mass_est = sig_amp / yield_val
+    yield_val = 10 ** log_smooth_powerlaw(
+        np.log10(v_est), log_a_y, yield_params[1:], label="yield"
+    )
+    sig_amp_coulombs = sig_amp * 1e-12
+    mass_est = sig_amp_coulombs / yield_val
 
     return v_est, mass_est
 
 
-def log_smooth_powerlaw(log_v: float, log_a: float, params: np.ndarray) -> float:
+def log_smooth_powerlaw(
+    log_v: float, log_a: float, params: np.ndarray, label: str = "unknown"
+) -> float:
     """
-    Define a smoothly transitioning power law to fit the calibration curve to.
+    Define a smoothly transitioning power law used by the IDEX calibration curves.
+
+    This helper is used in two ways:
+    - rise-time calibration: log10(rise_time [us]) to log10(velocity [km/s])
+    - yield calibration: log10(velocity [km/s]) to log10(charge_yield [C/kg])
 
     Parameters
     ----------
     log_v : float
-        Velocity.
+        The log10 input to the calibration curve.
+        This is either log10(rise_time [us]) for the rise-time case or
+        log10(velocity [km/s]) for the yield case.
     log_a : float
-        Scale factor.
+        log10 of the calibration scale factor A.
     params : np.ndarray
-        Calibration parameters for the power law.
+        Calibration parameters for the power law
+        [a1, a2, a3, vb, vc, k, m].
 
     Returns
     -------
     float
-        The value of the power law at the given velocity.
+        The calibrated log10 output.
+        This is either log10(velocity [km/s]) for the rise-time case or
+        log10(charge_yield [C/kg]) for the yield case.
     """
     # Unpack the rest of the calibration parameters
     # a1, a2, and a3 are the power law exponents for the low, medium, and high-velocity
     # segments.
     # vb and vc are the characteristic speeds where the slope transition happens, and k
     # setting the sharpness of the transitions.
-    a1, a2, a3, vb, vc, _k, m = params
+    a1, a2, a3, vb, vc, k, m = params
     v = 10**log_v
     base = log_a + a1 * log_v
-    transition1 = (1 + (v / vb) ** m) ** ((a2 - a1) / m)
-    transition2 = (1 + (v / vc) ** m) ** ((a3 - a2) / m)
+    transition1 = (1 + (v / vb) ** k) ** ((a2 - a1) / k)
+    transition2 = (1 + (v / vc) ** k) ** ((a3 - a2) / k)
     return base + np.log10(transition1 * transition2)
 
 
@@ -759,7 +776,7 @@ def estimate_dust_mass(
     Parameters
     ----------
     low_sampling_time : xarray.DataArray
-        The low sampling time array.
+        The low sampling time array in microseconds.
     target_signal : xarray.DataArray
         Target signal data.
     remove_noise : bool
@@ -824,8 +841,8 @@ def estimate_dust_mass(
     if channel_name != "Ion_Grid" and amplitude <= 0.0:
         amplitude = float(np.max(signal))
 
-    rise_time_0 = 0.371  # How fast the signal rises (s)
-    discharge_time_0 = 37.1  # How fast signal decays (s)
+    rise_time_0 = 0.371  # How fast the signal rises (us)
+    discharge_time_0 = 37.1  # How fast signal decays (us)
 
     p0 = [time_of_impact, constant_offset, amplitude, rise_time_0, discharge_time_0]
     positive_min = float(np.finfo(float).eps)
@@ -893,13 +910,13 @@ def fit_impact(
     Parameters
     ----------
     time : np.ndarray
-        Time values for the signal.
+        Time values for the signal (us).
     time_of_impact : float
-        Time of dust impact.
+        Time of dust impact (us).
     constant_offset : float
         Initial baseline noise.
     amplitude : float
-        Signal height.
+        Signal height (pC).
     rise_time : float
         How fast the signal rises (s).
     discharge_time : float
