@@ -1480,3 +1480,38 @@ def test_combine_maps_handles_nan_intensity(mock_sky_map_for_combine):
         expected_normal,
         decimal=5,
     )
+
+
+def test_combine_maps_handles_nan_uncertainties(mock_sky_map_for_combine):
+    """Test that combine_maps handles NaN values in uncertainties correctly.
+
+    When one map has NaN values in ena_intensity_stat_uncert, the weight for
+    that map should be zero, so the combined result uses only the other map's
+    value.
+    """
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine(intensity_offset=20)
+
+    # Set NaN in stat_uncert - should result in zero weight for that map
+    ram_stat_unc = ram_map.data_1d["ena_intensity_stat_uncert"].values.copy()
+    ram_stat_unc[0, 0, 0, 0] = np.nan
+    ram_map.data_1d["ena_intensity_stat_uncert"] = xr.DataArray(
+        ram_stat_unc, dims=ram_map.data_1d["ena_intensity_stat_uncert"].dims
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    # Combined intensity at NaN uncertainty position should use only anti's
+    # value since ram has zero weight (due to NaN uncertainty)
+    assert np.isfinite(result.data_1d["ena_intensity"].values[0, 0, 0, 0])
+    # The result should be anti's intensity since ram has zero weight
+    expected_intensity = 70.0  # anti's intensity
+    np.testing.assert_almost_equal(
+        result.data_1d["ena_intensity"].values[0, 0, 0, 0],
+        expected_intensity,
+        decimal=5,
+    )
+
+    # Combined stat_uncert should also be finite (from anti's value)
+    assert np.isfinite(result.data_1d["ena_intensity_stat_uncert"].values[0, 0, 0, 0])
