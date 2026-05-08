@@ -792,7 +792,7 @@ def mock_pset_dataset():
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_renames_variables(
     mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
 ):
@@ -824,7 +824,7 @@ def test_process_single_pset_renames_variables(
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_adds_obs_date(
     mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
 ):
@@ -853,7 +853,7 @@ def test_process_single_pset_adds_obs_date(
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_exposure_time_weighting(
     mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
 ):
@@ -879,7 +879,7 @@ def test_process_single_pset_exposure_time_weighting(
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_calls_velocity_and_ram_mask(
     mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
 ):
@@ -911,7 +911,7 @@ def test_process_single_pset_calls_velocity_and_ram_mask(
 
 @mock.patch("imap_processing.hi.hi_l2.apply_compton_getting_correction")
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_applies_cg_for_hf_frame(
     mock_add_velocity, mock_calc_ram_mask, mock_apply_cg, mock_pset_dataset
 ):
@@ -942,7 +942,7 @@ def test_process_single_pset_applies_cg_for_hf_frame(
 
 @mock.patch("imap_processing.hi.hi_l2.apply_compton_getting_correction")
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_no_cg_for_sf_frame(
     mock_add_velocity, mock_calc_ram_mask, mock_apply_cg, mock_pset_dataset
 ):

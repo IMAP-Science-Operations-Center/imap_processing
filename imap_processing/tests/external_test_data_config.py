@@ -141,7 +141,7 @@ EXTERNAL_TEST_DATA = [
 
     # IDEX
     ("idex_l1a_validation_file.h5", "idex/test_data/"),
-    ("imap_idex_l1b_sci_20231218_v003.h5", "idex/test_data/"),
+    ("imap_idex_l1b_sci_20231218_v004.h5", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv", "idex/test_data/"),
     ("imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv", "idex/test_data/"),
 
@@ -160,7 +160,7 @@ EXTERNAL_TEST_DATA = [
     ("status_test_data_repoint00047.csv", "ultra/data/l1/"),
     ("voltage_culling_results_repoint00047.csv", "ultra/data/l1/"),
     ("validate_high_energy_culling_results_repoint00047_v2.csv", "ultra/data/l1/"),
-    ("validate_stat_culling_results_repoint00047_v2.csv", "ultra/data/l1/"),
+    ("validate_stat_culling_results_repoint00047_v3.csv", "ultra/data/l1/"),
     ("validate_upstream_ion_1_culling_results_repoint00047_v1.csv", "ultra/data/l1/"),
     ("validate_spectral_culling_results_repoint00047_v1.csv", "ultra/data/l1/"),
     ("de_test_data_repoint00047.csv", "ultra/data/l1/"),

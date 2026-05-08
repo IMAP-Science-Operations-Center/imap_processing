@@ -844,7 +844,7 @@ def flag_statistical_outliers(
     quality_stats: np.ndarray = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
     # Initialize a mask to keep track of spin bins that have been flagged across all
     # energy bins
-    all_channel_mask: np.ndarray = np.zeros(spin_bin_size, dtype=bool)
+    all_channel_mask: np.ndarray = curr_mask[0, :].copy()
     # Initialize convergence array to keep track of poisson stats
     convergence = np.full(n_energy_bins, False)
     # Keep track of how many iterations we have done of flagging outliers and

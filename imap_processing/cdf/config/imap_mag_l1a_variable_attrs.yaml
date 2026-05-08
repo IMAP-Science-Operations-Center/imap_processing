@@ -6,25 +6,25 @@ default_attrs: &default
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   FORMAT: I12
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
   UNITS: ' '
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: data
 
 default_coords: &default_coords
   # Assumed values for all coordinate attrs unless overwritten
-  FORMAT: F2.4  # Float with 4 digits
-  VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
+  FORMAT: F2.4  # Float with 4 digits
   UNITS: counts
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: support_data
 
 mag_support_attrs: &support_default
     <<: *default
-    VAR_TYPE: support_data
     DICT_KEY: SPASE>Support>SupportQuantity:Other
+    VAR_TYPE: support_data
 
 mag_metadata_attrs: &metadata_default
     <<: *default
@@ -46,26 +46,26 @@ raw_vector_attrs: &raw_vectors_default
   <<: *default
   CATDESC: Raw unprocessed magnetic field vector data in bytes
   DEPEND_1: direction
-  LABL_PTR_1: direction_label
   FIELDNAM: Magnetic Field Vector
   FORMAT: I3
+  LABL_PTR_1: direction_label
 
 vector_attrs: &vectors_default
     <<: *default
     CATDESC: Magnetic field vector with x y z and sensor range varying by time
     DEPEND_1: direction
     FIELDNAM: Magnetic Field Vector
-    LABL_PTR_1: direction_label
     FILLVAL: 9223372036854775807
     FORMAT: F12.5
+    LABL_PTR_1: direction_label
 
 mag_flag_attrs:
     <<: *default
-    VALIDMIN: 0
-    VALIDMAX: 1
     DISPLAY_TYPE: time_series
     FILLVAL: 255
     FORMAT: I1
+    VALIDMAX: 1
+    VALIDMIN: 0
 
 raw_direction_attrs:
     <<: *default_coords
@@ -76,42 +76,42 @@ raw_direction_attrs:
 direction_attrs:
     <<: *default_coords
     CATDESC: Magnetic field vector
+    DISPLAY_TYPE: time_series
     FIELDNAM: \[xyz\] magnetic field vector
     FORMAT: I3
-    VAR_TYPE: support_data
-    DISPLAY_TYPE: time_series
     LABLAXIS: Magnetic field vector
+    VAR_TYPE: support_data
 
 compression_attrs:
   <<: *default_coords
   CATDESC: Data compression flag
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Compression
-  LABLAXIS: Compressed
   FORMAT: I2
-  VAR_TYPE: support_data
+  LABLAXIS: Compressed
   VALIDMAX: 21
   VALIDMIN: 0
-  DISPLAY_TYPE: no_plot
+  VAR_TYPE: support_data
 
 compression_flags_attrs:
   <<: *support_default
   CATDESC: Compression information per time stamp, includes a flag and the compression width
-  FIELDNAM: Compression information per time stamp
   DEPEND_0: epoch
   DEPEND_1: compression
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Compression information per time stamp
   FORMAT: I2
+  LABL_PTR_1: compression_label
   VALIDMAX: 21
   VALIDMIN: 0
-  LABL_PTR_1: compression_label
-  DISPLAY_TYPE: no_plot
 
 pus_version:
     <<: *support_default
     CATDESC: PUS Version number
     FIELDNAM: PUS Version number
-    LABLAXIS: PUS Version
     FILLVAL: 8
     FORMAT: I1
+    LABLAXIS: PUS Version
     VALIDMAX: 7
     VALIDMIN: 0
 
@@ -119,9 +119,9 @@ pus_stype:
     <<: *support_default
     CATDESC: PUS Service type
     FIELDNAM: PUS Service type
-    LABLAXIS: PUS type
     FILLVAL: 255
     FORMAT: I3
+    LABLAXIS: PUS type
     VALIDMAX: 255
     VALIDMIN: 0
 
@@ -129,9 +129,9 @@ pus_ssubtype:
     <<: *support_default
     CATDESC: PUS Service subtype. Equal to the number of seconds of data minus 1
     FIELDNAM: Number of seconds of data minus 1
-    LABLAXIS: PUS Subtype
     FILLVAL: 255
     FORMAT: I3
+    LABLAXIS: PUS Subtype
     UNITS: 's'
     VALIDMAX: 255
     VALIDMIN: 0
@@ -139,13 +139,13 @@ pus_ssubtype:
 compression:
     <<: *support_default
     CATDESC: Data compression flag
+    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
     FIELDNAM: Data is compressed
-    LABLAXIS: Compressed
     FILLVAL: 255
     FORMAT: I1
+    LABLAXIS: Compressed
     VALIDMAX: 1
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 compression_width:
   <<: *support_default
@@ -153,9 +153,9 @@ compression_width:
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FIELDNAM: Compressed data bit width
-  LABLAXIS: Bit width
   FILLVAL: 255
   FORMAT: I2
+  LABLAXIS: Bit width
   UNITS: 'bits'
   VALIDMAX: 21
   VALIDMIN: 0
@@ -163,112 +163,112 @@ compression_width:
 mago_act:
     <<: *support_default
     CATDESC: MAGo Active status
+    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
     FIELDNAM: MAGo Sensor Active
-    LABLAXIS: MAGo Active
     FILLVAL: 255
     FORMAT: I1
+    LABLAXIS: MAGo Active
     UNITS: ' '
     VALIDMAX: 1
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 magi_act:
     <<: *support_default
     CATDESC: MAGi Active status
+    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
     FIELDNAM: MAGi Sensor Active
-    LABLAXIS: MAGi Active
     FILLVAL: 255
     FORMAT: I1
+    LABLAXIS: MAGi Active
     UNITS: ' '
     VALIDMAX: 1
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 pri_sens:
     <<: *support_default
     CATDESC: Indicates the primary sensor. 0 is MAGo, 1 is MAGi
+    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
     FIELDNAM: Primary Sensor
-    LABLAXIS: Primary Sensor
     FILLVAL: 255
     FORMAT: I1
+    LABLAXIS: Primary Sensor
     UNITS: ' '
     VALIDMAX: 1
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 pri_vecsec:
     <<: *support_default
     CATDESC: Primary vectors per second
+    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
     FIELDNAM: Primary vectors per second
-    LABLAXIS: Primary Vectors
     FILLVAL: 0
     FORMAT: I3
+    LABLAXIS: Primary Vectors
     UNITS: 'Hz'
     VALIDMAX: 128
     VALIDMIN: 1
-    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 sec_vecsec:
     <<: *support_default
     CATDESC: Secondary vectors per second
+    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
     FIELDNAM: Secondary vectors per second
-    LABLAXIS: Secondary Vectorss
     FILLVAL: 0
     FORMAT: I3
+    LABLAXIS: Secondary Vectorss
     UNITS: 'Hz'
     VALIDMAX: 128
     VALIDMIN: 1
-    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 pri_coarsetm:
     <<: *support_default
     CATDESC: Primary coarse time, mission SCLK in whole seconds
+    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
     FIELDNAM: Primary coarse time
-    LABLAXIS: Primary coarse time
     FILLVAL: 4294967295
     FORMAT: I10
+    LABLAXIS: Primary coarse time
     UNITS: 's'
     VALIDMAX: 4294967295
     VALIDMIN: 0
     VAR_TYPE: support_data
-    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 pri_fntm:
     <<: *support_default
     CATDESC: Primary fine time, mission SCLK in 16bit subseconds
+    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
     FIELDNAM: Primary fine time (16 bit subsecond)
-    LABLAXIS: Primary fine time
     FILLVAL: 65536
     FORMAT: I5
+    LABLAXIS: Primary fine time
     UNITS: ' '
     VALIDMAX: 65535
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 sec_coarsetm:
     <<: *support_default
     CATDESC: Secondary coarse time, mission SCLK in whole seconds
+    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
     FIELDNAM: Secondary coarse time
-    LABLAXIS: Secondary coarse time
     FILLVAL: 4294967295
     FORMAT: I10
+    LABLAXIS: Secondary coarse time
     UNITS: 's'
     VALIDMAX: 4294967295
     VALIDMIN: 0
     VAR_TYPE: support_data
-    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 sec_fntm:
     <<: *support_default
     CATDESC: Secondary fine time, mission SCLK in 16bit subseconds
+    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
     FIELDNAM: Secondary fine time (16 bit subsecond)
-    LABLAXIS: Secondary fine time
     FILLVAL: 65536
     FORMAT: I5
+    LABLAXIS: Secondary fine time
     UNITS: ' '
     VALIDMAX: 65535
     VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 vectors:
     <<: *raw_vectors_default
@@ -281,58 +281,58 @@ vectors:
 version:
   <<: *metadata_default
   CATDESC: CCSDS Packet version number
+  DICT_KEY: SPASE>Support>SupportQuantity:HouseKeeping
   FIELDNAM: CCSDS Packet version number
-  LABLAXIS: CCSDS Packet version
   FILLVAL: 8
   FORMAT: I1
+  LABLAXIS: CCSDS Packet version
   UNITS: ' '
   VALIDMAX: 7
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:HouseKeeping
 
 type:
   <<: *metadata_default
   CATDESC: CCSDS Packet type
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: CCSDS Packet type
-  LABLAXIS: Packet Type
   FILLVAL: 2
   FORMAT: I1
+  LABLAXIS: Packet Type
   UNITS: ' '
   VALIDMAX: 1
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 sec_hdr_flg:
   <<: *metadata_default
   CATDESC: CCSDS Packet Secondary header flag
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: CCSDS Packet Secondary header flag
-  LABLAXIS: Sec header flag
   FILLVAL: 2
   FORMAT: I1
+  LABLAXIS: Sec header flag
   UNITS: ' '
   VALIDMAX: 1
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 pkt_apid:
   <<: *metadata_default
   CATDESC: CCSDS Packet Application Process ID
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: CCSDS Packet Application Process ID
-  LABLAXIS: APID
   FILLVAL: 2048
   FORMAT: H3
+  LABLAXIS: APID
   UNITS: ' '
   VALIDMAX: 2047
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 seq_flgs:
   <<: *metadata_default
   CATDESC: CCSDS Packet Grouping flags
   FIELDNAM: CCSDS Packet Grouping flags
-  LABLAXIS: Packet Grouping
   FILLVAL: 4
   FORMAT: I1
+  LABLAXIS: Packet Grouping
   UNITS: ' '
   VALIDMAX: 3
   VALIDMIN: 0
@@ -340,22 +340,22 @@ seq_flgs:
 src_seq_ctr:
   <<: *metadata_default
   CATDESC: CCSDS Packet Source Sequence Counter
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
   FIELDNAM: CCSDS Packet Source Sequence Counter
-  LABLAXIS: Seq Counter
   FILLVAL: 16384
   FORMAT: I5
+  LABLAXIS: Seq Counter
   UNITS: ' '
   VALIDMAX: 16383
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 pkt_len:
   <<: *metadata_default
   CATDESC: CCSDS Packet Length
   FIELDNAM: CCSDS Packet Length
-  LABLAXIS: Packet Length
   FILLVAL: 65535
   FORMAT: I5
+  LABLAXIS: Packet Length
   UNITS: ' '
   VALIDMAX: 65535
   VALIDMIN: 0

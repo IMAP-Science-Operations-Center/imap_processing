@@ -1,6 +1,7 @@
 default: &default
   Descriptor:
     MAG>Magnetometer
+  Instrument_type: Magnetic Fields (space)
   TEXT: >
     The IMAP magnetometer MAG consists of two vector magnetic field sensors
     which measure the magnetic field in the vicinity of the
@@ -10,7 +11,6 @@ default: &default
     MAG design, assembly, operations, and calibration are led by Imperial
     College London. See
     https://imap.princeton.edu/spacecraft/instruments/magnetometer-mag for more details.
-  Instrument_type: Magnetic Fields (space)
 
 imap_mag_l1a_norm-raw:
     <<: *default

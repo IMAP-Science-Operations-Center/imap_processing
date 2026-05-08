@@ -260,10 +260,18 @@ def calculate_accepted_pixels(  # noqa: PLR0912
                 if reject_scattering:
                     valid_pixels[i, e_ind, accepted_pix] = scattering_mask.flatten()
 
-                # Accumulate FWHM values
-                fwhm_theta_sum[e_ind, accepted_pix] += fwhm_theta.flatten()
-                fwhm_phi_sum[e_ind, accepted_pix] += fwhm_phi.flatten()
-                sample_count[e_ind, accepted_pix] += 1
+                # Accumulate FWHM values only where BOTH theta and phi are finite
+                valid_fwhm = np.isfinite(fwhm_theta) & np.isfinite(fwhm_phi)
+                fwhm_theta_sum[e_ind, accepted_pix] += np.where(
+                    valid_fwhm, fwhm_theta, 0.0
+                ).ravel()
+                fwhm_phi_sum[e_ind, accepted_pix] += np.where(
+                    valid_fwhm, fwhm_phi, 0.0
+                ).ravel()
+                sample_count[e_ind, accepted_pix] += valid_fwhm.ravel().astype(
+                    sample_count.dtype
+                )
+
         else:
             # Energy independent FOR indices
             if not np.any(for_inds):
@@ -303,15 +311,19 @@ def calculate_accepted_pixels(  # noqa: PLR0912
             if reject_scattering:
                 valid_pixels[i, :, accepted_pix] = scattering_mask.T
 
-            # Accumulate FWHM values
-            fwhm_theta_sum[:, accepted_pix] += fwhm_theta.T
-            fwhm_phi_sum[:, accepted_pix] += fwhm_phi.T
-            sample_count[:, accepted_pix] += 1
+            # Accumulate FWHM values where theta and phi are finite
+            valid_fwhm = np.isfinite(fwhm_theta) & np.isfinite(
+                fwhm_phi
+            )  # (npix, n_energy)
+            fwhm_theta_sum[:, accepted_pix] += np.where(valid_fwhm, fwhm_theta, 0.0).T
+            fwhm_phi_sum[:, accepted_pix] += np.where(valid_fwhm, fwhm_phi, 0.0).T
+            sample_count[:, accepted_pix] += valid_fwhm.T.astype(sample_count.dtype)
 
     fwhm_phi_avg = np.zeros_like(fwhm_phi_sum)
     fwhm_theta_avg = np.zeros_like(fwhm_theta_sum)
     np.divide(fwhm_phi_sum, sample_count, out=fwhm_phi_avg, where=sample_count != 0)
     np.divide(fwhm_theta_sum, sample_count, out=fwhm_theta_avg, where=sample_count != 0)
+
     return (
         valid_pixels,
         fwhm_theta_avg,

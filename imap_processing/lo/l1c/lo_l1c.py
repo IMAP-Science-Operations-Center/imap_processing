@@ -9,7 +9,9 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.ena_maps.utils.corrections import add_spacecraft_velocity_to_pset
+from imap_processing.ena_maps.utils.corrections import (
+    add_spacecraft_position_and_velocity_to_pset,
+)
 from imap_processing.lo import lo_ancillary
 from imap_processing.lo.l1b.lo_l1b import set_bad_or_goodtimes
 from imap_processing.spice.geometry import (
@@ -222,8 +224,18 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         }
     )
 
-    # add the spacecraft velocity and direction
-    pset = add_spacecraft_velocity_to_pset(pset)
+    # Get the spacecraft position and velocity and direction
+    pset = add_spacecraft_position_and_velocity_to_pset(pset)
+
+    # Update the attributes for the spacecraft position and velocity variables
+    pset["sc_position"].attrs.update(attr_mgr.get_variable_attributes("sc_position"))
+    pset["sc_velocity"].attrs.update(attr_mgr.get_variable_attributes("sc_velocity"))
+    pset["label_vector_HAE"] = xr.DataArray(
+        np.array(["x HAE", "y HAE", "z HAE"], dtype=str),
+        name="label_vector_HAE",
+        dims=[" "],
+        attrs=attr_mgr.get_variable_attributes("label_vector_HAE", check_schema=False),
+    )
 
     return [pset]
 

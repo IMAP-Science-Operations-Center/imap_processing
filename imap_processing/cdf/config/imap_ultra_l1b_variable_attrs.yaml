@@ -4,89 +4,89 @@ default_attrs: &default
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   FORMAT: I12
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
   UNITS: " "
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
+  VAR_TYPE: data
 
 component:
   CATDESC: Velocity components (vx, vy, vz)
   FIELDNAM: component
-  LABLAXIS: component
   FORMAT: A3
+  LABLAXIS: component
   VAR_TYPE: metadata
 
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
   FORMAT: I3
-  VALIDMIN: 0
   VALIDMAX: 255
+  VALIDMIN: 0
   dtype: uint8
 
 default_uint16_attrs: &default_uint16
   <<: *default
   FILLVAL: 65535
   FORMAT: I5
-  VALIDMIN: 0
   VALIDMAX: 65535
+  VALIDMIN: 0
   dtype: uint16
 
 default_uint32_attrs: &default_uint32
   <<: *default
   FILLVAL: 4294967295
   FORMAT: I10
-  VALIDMIN: 0
   VALIDMAX: 4294967295
+  VALIDMIN: 0
   dtype: uint32
 
 default_int64_attrs: &default_int64
   <<: *default
   FILLVAL: -9223372036854775808
   FORMAT: I20
-  VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
   dtype: int64
 
 default_int32_attrs: &default_int32
   <<: *default
   FILLVAL: -2147483648
   FORMAT: I10
-  VALIDMIN: -2147483648
   VALIDMAX: 2147483647
+  VALIDMIN: -2147483648
   dtype: int32
 
 default_float32_attrs: &default_float32
   <<: *default
   FILLVAL: -1.0e31
   FORMAT: F12.6
-  VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
+  VALIDMIN: -3.4028235e+38
   dtype: float32
 
 default_float64_attrs: &default_float64
   <<: *default
   FILLVAL: -1.0e31
   FORMAT: F10.2
-  VALIDMIN: -1.7976931348623157e+308
   VALIDMAX: 1.7976931348623157e+308
+  VALIDMIN: -1.7976931348623157e+308
   dtype: float64
 
 computed_ebin:
   <<: *default_uint8
   CATDESC: Computed event bin index
+  DEPEND_0: epoch
   FIELDNAM: Computed ebin
   LABLAXIS: computed_ebin
   UNITS: " "
-  DEPEND_0: epoch
 
 ebin:
   <<: *default_uint8
   CATDESC: Event bin index
+  DEPEND_0: epoch
   FIELDNAM: Ebin
   LABLAXIS: ebin
   UNITS: " "
-  DEPEND_0: epoch
 
 x_front:
   <<: *default_float32
@@ -238,8 +238,8 @@ energy_heliosphere:
 
 species:
   <<: *default_uint8
-  DISPLAY_TYPE: no_plot
   CATDESC: Label species type. Non-proton (heavy ion) = 0, proton = 1, misc = 3
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Label species type.
   LABLAXIS: species
   UNITS: " "
@@ -353,34 +353,34 @@ de_event_met:
   DISPLAY_TYPE: no_plot
   FIELDNAM: Mission Elapsed Time
   LABLAXIS: DE MET
+  SCALE_TYP: linear
   UNITS: ns
   VAR_TYPE: support_data
-  SCALE_TYP: linear
 
 spin_start_time:
   <<: *default
   CATDESC: Spin start time from Universal Spin Table.
+  DEPEND_0: spin_number
   FIELDNAM: spin_start_time
   LABLAXIS: spin start time
   # TODO: come back to format
   UNITS: s
-  DEPEND_0: spin_number
 
 spin_period:
   <<: *default
   CATDESC: Spin period from Universal Spin Table.
+  DEPEND_0: spin_number
   FIELDNAM: spin_period
   LABLAXIS: spin_period
   UNITS: s
-  DEPEND_0: spin_number
 
 spin_rate:
   <<: *default
   CATDESC: Spin rate from Universal Spin Table.
+  DEPEND_0: spin_number
   FIELDNAM: spin_rate
   LABLAXIS: spin_rate
   UNITS: rpm
-  DEPEND_0: spin_number
 
 rate_start_pulses:
   <<: *default
@@ -426,90 +426,90 @@ rate_rejected_events:
 ena_rates:
   <<: *default_float32
   CATDESC: Rates calculated from de packet.
-  FIELDNAM: ena_rates
-  LABLAXIS: ena rates
   DEPEND_0: energy_bin_geometric_mean
   DEPEND_1: spin_number
+  FIELDNAM: ena_rates
+  LABLAXIS: ena rates
   UNITS: " "
 
 start_pulses_per_spin:
   <<: *default_float32
   CATDESC: Total start pulses per spin.
+  DEPEND_0: spin_number
   FIELDNAM: start_pulses_per_spin
   LABLAXIS: start pulses per spin
-  DEPEND_0: spin_number
   UNITS: " "
 
 stop_pulses_per_spin:
   <<: *default_float32
   CATDESC: Total start pulses per spin.
+  DEPEND_0: spin_number
   FIELDNAM: stop_pulses_per_spin
   LABLAXIS: stop pulses per spin
-  DEPEND_0: spin_number
   UNITS: " "
 
 coin_pulses_per_spin:
   <<: *default_float32
   CATDESC: Total coincidence pulses per spin.
+  DEPEND_0: spin_number
   FIELDNAM: coin_pulses_per_spin
   LABLAXIS: coin_pulses_per_spin
-  DEPEND_0: spin_number
   UNITS: " "
 
 rejected_events_per_spin:
   <<: *default_uint16
   CATDESC: Rejected events per spin.
+  DEPEND_0: spin_number
   FIELDNAM: rejected_events_per_spin
   LABLAXIS: rejected events per spin
-  DEPEND_0: spin_number
   UNITS: " "
 
 ena_rates_threshold:
   <<: *default_float32
   CATDESC: Rates threshold used for flagging data.
-  FIELDNAM: ena_rates_threshold
-  LABLAXIS: ena_rates_threshold
   DEPEND_0: energy_bin_geometric_mean
   DEPEND_1: spin_number
+  FIELDNAM: ena_rates_threshold
+  LABLAXIS: ena_rates_threshold
   UNITS: " "
 
 quality_ena_rates:
   <<: *default_uint16
   CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
+  DEPEND_0: spin_number
   FIELDNAM: quality_ena_rates
   LABLAXIS: quality_ena_rates
-  DEPEND_0: spin_number
   UNITS: " "
 
 quality_attitude:
   <<: *default_uint16
   CATDESC: Spin filter derived from IMAP attitude. Bitwise flagging used to filter the spin.
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
   FIELDNAM: quality_attitude
   LABLAXIS: quality attitude
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: spin_number
-  DEPEND_1: energy_bin_geometric_mean
 
 quality_instruments:
   <<: *default_uint16
   CATDESC: Spin filter derived from instruments other than Ultra. Bitwise flagging used to filter the spin.
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
   FIELDNAM: quality_instruments
   LABLAXIS: quality instruments
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: spin_number
-  DEPEND_1: energy_bin_geometric_mean
 
 quality_hk:
   <<: *default_uint16
   CATDESC: Spin filter derived from housekeeping data. Bitwise flagging used to filter the spin.
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
   FIELDNAM: quality_hk
   LABLAXIS: quality hk
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: spin_number
-  DEPEND_1: energy_bin_geometric_mean
 
 quality_outliers:
   <<: *default_uint16
@@ -522,61 +522,61 @@ quality_outliers:
 quality_scattering:
   <<: *default_uint16
   CATDESC: Quality flag for direct event scattering.
+  DEPEND_0: spin_number
   FIELDNAM: quality_scattering
   LABLAXIS: quality_scattering
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: spin_number
 
 quality_low_voltage:
   <<: *default_uint16
   CATDESC: Quality flag for low voltage spins.
+  DEPEND_0: spin_number
   FIELDNAM: quality_low_voltage
   LABLAXIS: quality_low_voltage
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: spin_number
 
 quality_high_energy:
   <<: *default_uint16
   CATDESC: Quality flag for high energy spins.
+  DEPEND_0: spin_number
   FIELDNAM: quality_high_energy
   LABLAXIS: quality_high_energy
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: spin_number
 
 quality_statistics:
   <<: *default_uint16
   CATDESC: Quality flag for spins that are statistically inconsistent.
+  DEPEND_0: spin_number
   FIELDNAM: quality_statistics
   LABLAXIS: quality_statistics
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: spin_number
 
 energy_range_edges:
   CATDESC: Energy range edges used for culling data.
+  DEPEND_0: energy_range_edges_dim
   DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Range Edges
   FILLVAL: -1.0e+31
   FORMAT: F12.4
   LABLAXIS: Energy Edges
   UNITS: keV
-  VALIDMIN: 0.0
   VALIDMAX: 5000
+  VALIDMIN: 0.0
   VAR_TYPE: support_data
-  DEPEND_0: energy_range_edges_dim
 
 energy_range_flags:
   CATDESC: Bit flags describing culling energy ranges.
+  DEPEND_0: energy_range_flags_dim
   DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Range Flags
   FILLVAL: 0
   FORMAT: I5
   LABLAXIS: Range Flags
   UNITS: " "
-  VALIDMIN: 1
   VALIDMAX: 65534
+  VALIDMIN: 1
   VAR_TYPE: support_data
-  DEPEND_0: energy_range_flags_dim

@@ -3,53 +3,53 @@
 # ENA map attributes defined in imap_enamaps_l2-common_variable_attrs.yaml
 
 default_float32_attrs: &default_float32
-  FORMAT: F12.6
   FILLVAL: -1.0e31
-  VALIDMIN: -3.4028235e+38
+  FORMAT: F12.6
   VALIDMAX: 3.4028235e+38
+  VALIDMIN: -3.4028235e+38
   dtype: float32
 
 # Define Coordinates specifically for Rectangular tiling
 
 longitude_label:
-  VAR_TYPE: metadata
   CATDESC: Label variable for longitude.
+  DEPEND_1: longitude
   FIELDNAM: longitude label
   FORMAT: A8
-  DEPEND_1: longitude
+  VAR_TYPE: metadata
 
 longitude_delta:
-  VAR_TYPE: support_data
-  dtype: float32
   CATDESC: Half-width of longitude pixel
   DEPEND_1: longitude
-  FORMAT: F12.6
-  UNITS: degrees
-  FIELDNAM: longitude delta
-  LABL_PTR_1: longitude_label
-  VALIDMIN: 0.0
-  VALIDMAX: 180.0
   DICT_KEY: SPASE>Support>SupportQuantity:Other
-
-latitude_label:
-  VAR_TYPE: metadata
-  CATDESC: Label variable for latitude.
-  FIELDNAM: latitude label
-  FORMAT: A8
-  DEPEND_1: latitude
-
-latitude_delta:
+  FIELDNAM: longitude delta
+  FORMAT: F12.6
+  LABL_PTR_1: longitude_label
+  UNITS: degrees
+  VALIDMAX: 180.0
+  VALIDMIN: 0.0
   VAR_TYPE: support_data
   dtype: float32
+
+latitude_label:
+  CATDESC: Label variable for latitude.
+  DEPEND_1: latitude
+  FIELDNAM: latitude label
+  FORMAT: A8
+  VAR_TYPE: metadata
+
+latitude_delta:
   CATDESC: Half-width of latitude pixel
   DEPEND_1: latitude
-  FORMAT: F12.6
-  UNITS: degrees
-  FIELDNAM: latitude delta
-  LABL_PTR_1: latitude_label
-  VALIDMIN: 0.0
-  VALIDMAX: 90.0
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: latitude delta
+  FORMAT: F12.6
+  LABL_PTR_1: latitude_label
+  UNITS: degrees
+  VALIDMAX: 90.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
+  dtype: float32
 
 # All variables below override the initial attributes defined in the common ENA Map
 # attributes file, imap_enamaps_l2-common_variable_attrs.yaml
@@ -58,21 +58,21 @@ longitude:
   CATDESC: "Pixel center longitude in {frame} reference frame in the range [0, 360]"
   DELTA_MINUS_VAR: longitude_delta
   DELTA_PLUS_VAR: longitude_delta
-  SCALETYP: linear
+  FORMAT: I3
   LABL_PTR_1: longitude_label
   MONOTON: INCREASE
-  FORMAT: I3
+  SCALETYP: linear
 
 
 latitude:
+  BIN_LOCATION: 0.5
   CATDESC: "Pixel center latitude in {frame} reference frame in the range [-90, 90]"
   DELTA_MINUS_VAR: latitude_delta
   DELTA_PLUS_VAR: latitude_delta
-  SCALETYP: linear
+  FORMAT: I2
   LABL_PTR_1: latitude_label
   MONOTON: INCREASE
-  BIN_LOCATION: 0.5
-  FORMAT: I2
+  SCALETYP: linear
 
 # Define Data variables
 ena_intensity:

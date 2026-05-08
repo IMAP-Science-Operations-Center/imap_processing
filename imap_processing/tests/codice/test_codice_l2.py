@@ -60,10 +60,8 @@ def mock_get_file_paths(codice_lut_path):
         "imap_data_access.processing_input.ProcessingInputCollection.get_file_paths"
     ) as mock_get_file_paths:
         # Ensure the side effect treats science inputs as L1B for these L2 tests
-        mock_get_file_paths.side_effect = (
-            lambda descriptor, data_type=None: codice_lut_path(
-                descriptor, data_type="l1b"
-            )
+        mock_get_file_paths.side_effect = lambda descriptor, data_type=None: (
+            codice_lut_path(descriptor, data_type="l1b")
         )
         yield mock_get_file_paths
 

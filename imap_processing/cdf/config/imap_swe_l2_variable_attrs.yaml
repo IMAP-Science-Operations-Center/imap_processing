@@ -45,11 +45,11 @@ inst_az:
   UNITS: Degree
   VALIDMAX: 359.999
   VALIDMIN: 0.00
-  VAR_TYPE: support_data
   VAR_NOTES: >
     Bin CENTERS  - Assuming 0.5 sec measurements and a spin starting
     at Angle=0, these are the angles at the middle of each measurement
     bin.
+  VAR_TYPE: support_data
 
 cem_id:
   CATDESC: CEM detector number
@@ -132,17 +132,17 @@ inst_az_spin_sector:
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
-  LABL_PTR_1: esa_step_label
-  LABL_PTR_2: spin_sector_label
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array,CoordinateSystemName:SC,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Spin Angle
   FILLVAL: -1.0E+31
   FORMAT: E10.5
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
   UNITS: Degree
   VALIDMAX: 359.99
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array,CoordinateSystemName:SC,CoordinateRepresentation:Spherical
 
 phase_space_density_spin_sector:
   CATDESC: Phase space density organized by ESA step and spin sector and CEM
@@ -150,18 +150,18 @@ phase_space_density_spin_sector:
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
-  LABL_PTR_1: esa_step_label
-  LABL_PTR_2: spin_sector_label
-  LABL_PTR_3: cem_id_label
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Phase Space Density
   FILLVAL: -1.0E+31
-  UNITS: s^3 / cm^6
   FORMAT: E14.7
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  LABL_PTR_3: cem_id_label
+  UNITS: s^3 / cm^6
   VALIDMAX: 0.000000000000001
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
 
 
 phase_space_density:
@@ -170,18 +170,18 @@ phase_space_density:
   DEPEND_1: energy
   DEPEND_2: inst_az
   DEPEND_3: inst_el
-  LABL_PTR_1: energy_label
-  LABL_PTR_2: inst_az_label
-  LABL_PTR_3: inst_el_label
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Phase Space Density
   FILLVAL: -1.0E+31
-  UNITS: s^3 / cm^6
   FORMAT: E14.7
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: inst_az_label
+  LABL_PTR_3: inst_el_label
+  UNITS: s^3 / cm^6
   VALIDMAX: 1.0E-15
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
 
 flux_spin_sector:
   CATDESC: Number flux organized by ESA step and spin sector and CEM
@@ -189,18 +189,18 @@ flux_spin_sector:
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
-  LABL_PTR_1: esa_step_label
-  LABL_PTR_2: spin_sector_label
-  LABL_PTR_3: cem_id_label
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Flux
   FILLVAL: -1.0E+31
-  UNITS: 1 / (2 * eV * cm^2 * s * ster)
   FORMAT: E14.7
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  LABL_PTR_3: cem_id_label
+  UNITS: 1 / (2 * eV * cm^2 * s * ster)
   VALIDMAX: 1.0E+9
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
 
 flux:
   CATDESC: Number flux organized by energy (eV), spin angle, CEM angle
@@ -208,115 +208,115 @@ flux:
   DEPEND_1: energy
   DEPEND_2: inst_az
   DEPEND_3: inst_el
-  LABL_PTR_1: energy_label
-  LABL_PTR_2: inst_az_label
-  LABL_PTR_3: inst_el_label
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Flux
   FILLVAL: -1.0E+31
-  UNITS: 1 / (2 * eV * cm^2 * s * ster)
   FORMAT: E14.7
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: inst_az_label
+  LABL_PTR_3: inst_el_label
+  UNITS: 1 / (2 * eV * cm^2 * s * ster)
   VALIDMAX: 1.0E+9
   VALIDMIN: 0.0
   VAR_TYPE: data
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
 
 psd_stat_uncert:
   CATDESC: Phase space density statistical uncertainty
-  FIELDNAM: Phase Space Density Stats Uncertainty
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Phase Space Density Stats Uncertainty
+  FILLVAL: -1.0000000E+31
+  FORMAT: E19.5
   LABL_PTR_1: esa_step_label
   LABL_PTR_2: spin_sector_label
   LABL_PTR_3: cem_id_label
-  DISPLAY_TYPE: spectrogram
-  FILLVAL: -1.0000000E+31
-  FORMAT: E19.5
-  UNITS: counts
-  VALIDMIN: 0.0
-  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
-  VAR_TYPE: data
   SCALETYP: linear
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+  UNITS: counts
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VALIDMIN: 0.0
+  VAR_TYPE: data
 
 flux_stat_uncert:
   CATDESC: Flux statistical uncertainty
-  FIELDNAM: Flux Stats Uncertainty
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Flux Stats Uncertainty
+  FILLVAL: -1.0000000E+31
+  FORMAT: E19.5
   LABL_PTR_1: esa_step_label
   LABL_PTR_2: spin_sector_label
   LABL_PTR_3: cem_id_label
-  DISPLAY_TYPE: spectrogram
-  FILLVAL: -1.0000000E+31
-  FORMAT: E19.5
-  UNITS: counts
-  VALIDMIN: 0.0
-  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
-  VAR_TYPE: data
   SCALETYP: linear
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+  UNITS: counts
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VALIDMIN: 0.0
+  VAR_TYPE: data
 
 acquisition_time:
   CATDESC: Acquisition time organized by ESA step and spin sector
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
-  LABL_PTR_1: esa_step_label
-  LABL_PTR_2: spin_sector_label
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Array
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Acquisition time by ESA step and spin sector
   FILLVAL: -1.0E+31
   FORMAT: E20.4
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  UNITS: sec
   VALIDMAX: 9223372036854775807
   VALIDMIN: 0
-  UNITS: sec
-  VAR_TYPE: support_data
   VAR_NOTES: >
     This stores the acquisition times of each measurement. This time is
     calculated by combining ACQ_START_COARSE, ACQ_START_FINE,
     acquisition duration and settle duration. It is center time of each
     science measurement (each energy and angle step).
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Array
+  VAR_TYPE: support_data
 
 acq_duration:
   CATDESC: Acquisition duration
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
-  LABL_PTR_1: esa_step_label
-  LABL_PTR_2: spin_sector_label
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Array
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Acquisition Duration
-  FORMAT: I10
-  VALIDMIN: 0
-  VALIDMAX: 4290000000
   FILLVAL: -9223372036854775808
+  FORMAT: I10
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
   UNITS: microseconds
+  VALIDMAX: 4290000000
+  VALIDMIN: 0
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Array
 
 data_quality:
   CATDESC: >
     In-flight calibration quality flags. Bit 2 (LAST_CAL_INTERVAL): set if any
     acquisition time in this cycle was extrapolated using the last two entries
     in the calibration table.
-  FIELDNAM: SWE data quality flags
   DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: time_series
+  FIELDNAM: SWE data quality flags
   FILLVAL: 255
   FORMAT: I3
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 255
-  VAR_TYPE: support_data
   SCALETYP: linear
+  UNITS: " "
+  VALIDMAX: 255
+  VALIDMIN: 0
   VAR_NOTES: >
     There is 1 flag currently in use. Stored as a bitwise flag. Bit 2
     (LAST_CAL_INTERVAL, value 4): counter values were extrapolated using the last two
     calibration table entries. All other bits are reserved.
-  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
+  VAR_TYPE: support_data

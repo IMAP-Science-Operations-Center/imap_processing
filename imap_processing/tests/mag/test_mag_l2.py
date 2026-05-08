@@ -304,6 +304,30 @@ def test_midnight_boundary(norm_dataset):
     assert midnight not in l2.epoch
 
 
+def test_truncate_to_24h_no_data_raises(norm_dataset):
+    day = np.datetime64("2025-10-17").astype("datetime64[D]")
+
+    # Shift all timestamps 5 days forward so none fall within the target day
+    shifted_timestamps = norm_dataset["epoch"].data + int(5 * 8.64e13)
+
+    l2 = MagL2(
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=shifted_timestamps,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    with pytest.raises(
+        ValueError, match="After truncating to 24 hours, no data remains."
+    ):
+        l2.truncate_to_24h(day)
+
+
 @pytest.mark.parametrize(
     ("time_shift", "start_diff", "end_diff"),
     # 3 hours in ns

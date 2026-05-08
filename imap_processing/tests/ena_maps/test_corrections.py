@@ -13,7 +13,7 @@ from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
     _add_cartesian_look_direction,
     _calculate_compton_getting_transform,
-    add_spacecraft_velocity_to_pset,
+    add_spacecraft_position_and_velocity_to_pset,
     apply_compton_getting_correction,
     calculate_ram_mask,
     get_pset_directional_mask,
@@ -114,7 +114,7 @@ class TestPowerLawFluxCorrector:
 
         corr = PowerLawFluxCorrector(lo_coeffs_file)
         # Create 2D arrays (n_energy, n_pixels)
-        fluxes = ((np.arange(7) * 1000**2)[::-1])[:, np.newaxis]
+        fluxes = ((np.ones(7) * 1000**2)[::-1])[:, np.newaxis]
         energies = np.arange(1, 8) + 1
         _, _, n_iter = corr.predictor_corrector_iteration(
             fluxes,
@@ -235,6 +235,18 @@ class TestPowerLawFluxCorrector:
             corrected_fluxes.squeeze(), expected_corr_fluxes, rtol=1e-2
         )
 
+    def test_predictor_corrector_zero_flux_convergence(self, hi_coeffs_file):
+        """Test that convergence is achieved when we have a zero flux."""
+        flux_corr = PowerLawFluxCorrector(hi_coeffs_file)
+        energies, flux_dict, background_dict = self.create_hi_test_data()
+        # set flux for ESA 9 to zero
+        flux_dict["J"][-1] = 0
+        # Reshape to 2D arrays (n_energy, n_pixels)
+        _, _, n_iterations = flux_corr.predictor_corrector_iteration(
+            flux_dict["J"][:, np.newaxis], flux_dict["delta_J"][:, np.newaxis], energies
+        )
+        assert np.all(n_iterations < 20)
+
     @mock.patch(
         "imap_processing.ena_maps.utils.corrections.PowerLawFluxCorrector.predictor_corrector_iteration"
     )
@@ -353,12 +365,13 @@ class TestPowerLawFluxCorrector:
         corr = PowerLawFluxCorrector(lo_coeffs_file)
 
         # Create 2D array with 7 energy levels and 8 spatial pixels
-        n_energy = 7
+        energies = np.array([16.35, 30.56, 56.42, 105.21, 199.79, 407.49, 795.28])
+        n_energy = len(energies)
         n_pixels = 8
-        energies = np.arange(1, n_energy + 1) + 1
 
         # Create base fluxes that vary across pixels
-        base_fluxes = ((np.arange(n_energy) + 1) * 1000**2)[::-1]
+        base_fluxes = np.array([1000, 800, 50, 200, 1, 30, 10])
+        # base_fluxes = ((np.arange(n_energy) + 1) * 1000**2)[::-1]
         fluxes = (
             base_fluxes[:, np.newaxis] * np.linspace(0.9, 1.1, n_pixels)[np.newaxis, :]
         )
@@ -516,10 +529,10 @@ class TestComptonGettingCorrection:
 
     @mock.patch("imap_processing.ena_maps.utils.corrections.ttj2000ns_to_et")
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
-    def test_add_spacecraft_velocity_to_pset(
+    def test_add_spacecraft_position_and_velocity_to_pset(
         self, mock_imap_state, mock_ttj2000_to_et, mock_hi_pset
     ):
-        """Test that spacecraft velocity is correctly added to pointing set."""
+        """Test that spacecraft position and velocity are correctly added to pset."""
         # Mock conversion from TTJ2000ns to ET
         et = 1000.0
         mock_ttj2000_to_et.return_value = et
@@ -527,7 +540,7 @@ class TestComptonGettingCorrection:
         mock_sc_state = np.array([1e8, 2e8, 3e8, 10.0, 20.0, 30.0])  # km and km/s
         mock_imap_state.return_value = mock_sc_state
 
-        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
+        mock_hi_pset = add_spacecraft_position_and_velocity_to_pset(mock_hi_pset)
 
         # Verify SPICE was called correctly
         mock_imap_state.assert_called_once_with(
@@ -541,20 +554,19 @@ class TestComptonGettingCorrection:
             mock_hi_pset["sc_velocity"].values, np.array([10.0, 20.0, 30.0])
         )
 
-        # Verify sc_direction_vector was added
-        assert "sc_direction_vector" in mock_hi_pset
-        expected_speed = np.sqrt(10**2 + 20**2 + 30**2)
-        expected_direction = np.array([10.0, 20.0, 30.0]) / expected_speed
-        np.testing.assert_allclose(
-            mock_hi_pset["sc_direction_vector"].values, expected_direction
+        # Verify sc_position was added
+        assert "sc_position" in mock_hi_pset
+        assert isinstance(mock_hi_pset["sc_position"], xr.DataArray)
+        np.testing.assert_array_equal(
+            mock_hi_pset["sc_position"].values, np.array([1e8, 2e8, 3e8])
         )
 
     @mock.patch("imap_processing.ena_maps.utils.corrections.ttj2000ns_to_et")
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
-    def test_add_spacecraft_velocity_to_pset_lo(
+    def test_add_spacecraft_position_and_velocity_to_pset_lo(
         self, mock_imap_state, mock_ttj2000_to_et, mock_lo_pset
     ):
-        """Test that spacecraft velocity is correctly added to Lo pointing set."""
+        """Test that S/C position and velocity are correctly added to Lo pset."""
         # Mock conversion from TTJ2000ns to ET
         et = 1000.0
         mock_ttj2000_to_et.return_value = et
@@ -568,7 +580,7 @@ class TestComptonGettingCorrection:
         # Midpoint: epoch + pointing_duration_ns / 2
         expected_midpoint_time_ns = mock_lo_pset["epoch"].values[0] + 1e11 / 2
 
-        mock_lo_pset = add_spacecraft_velocity_to_pset(mock_lo_pset)
+        mock_lo_pset = add_spacecraft_position_and_velocity_to_pset(mock_lo_pset)
 
         # Verify SPICE was called correctly
         mock_ttj2000_to_et.assert_called_once_with(expected_midpoint_time_ns)
@@ -583,15 +595,14 @@ class TestComptonGettingCorrection:
             mock_lo_pset["sc_velocity"].values, np.array([15.0, 25.0, 35.0])
         )
 
-        # Verify sc_direction_vector was added
-        assert "sc_direction_vector" in mock_lo_pset
-        expected_speed = np.sqrt(15**2 + 25**2 + 35**2)
-        expected_direction = np.array([15.0, 25.0, 35.0]) / expected_speed
-        np.testing.assert_allclose(
-            mock_lo_pset["sc_direction_vector"].values, expected_direction
+        # Verify sc_position was added
+        assert "sc_position" in mock_lo_pset
+        assert isinstance(mock_lo_pset["sc_position"], xr.DataArray)
+        np.testing.assert_array_equal(
+            mock_lo_pset["sc_position"].values, np.array([1e8, 2e8, 3e8])
         )
 
-    def test_add_spacecraft_velocity_unsupported_instrument(self):
+    def test_add_spacecraft_position_and_velocity_unsupported_instrument(self):
         """Test that unsupported instrument raises NotImplementedError."""
         # Create a dataset with unsupported Logical_source
         unsupported_pset = xr.Dataset(
@@ -603,7 +614,18 @@ class TestComptonGettingCorrection:
         )
 
         with pytest.raises(NotImplementedError, match="does not support PSETs"):
-            add_spacecraft_velocity_to_pset(unsupported_pset)
+            add_spacecraft_position_and_velocity_to_pset(unsupported_pset)
+
+    def test_add_spacecraft_position_and_velocity_zero_duration(self, mock_hi_pset):
+        """Test that zero pointing duration sets pos and velocity to zero vectors."""
+        # Set epoch_delta to zero to simulate an empty/filtered pointing set
+        mock_hi_pset["epoch_delta"] = xr.DataArray(np.array([0.0]), dims=["epoch"])
+
+        result = add_spacecraft_position_and_velocity_to_pset(mock_hi_pset)
+
+        # Both sc_velocity and sc_position should be zero vectors
+        np.testing.assert_array_equal(result["sc_velocity"].values, np.zeros(3))
+        np.testing.assert_array_equal(result["sc_position"].values, np.zeros(3))
 
     def test_add_cartesian_look_direction(self, mock_hi_pset):
         """Test that look directions are correctly calculated and added."""
@@ -627,7 +649,7 @@ class TestComptonGettingCorrection:
         mock_sc_state = np.array([1e8, 2e8, 3e8, 10.0, 20.0, 30.0])
         mock_imap_state.return_value = mock_sc_state
 
-        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
+        mock_hi_pset = add_spacecraft_position_and_velocity_to_pset(mock_hi_pset)
         mock_hi_pset = _add_cartesian_look_direction(mock_hi_pset)
 
         # Create energy array
@@ -682,14 +704,13 @@ class TestComptonGettingCorrection:
         )
 
         # add the required sc_velocity to the pointing set
-        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
+        mock_hi_pset = add_spacecraft_position_and_velocity_to_pset(mock_hi_pset)
 
         # Apply the full correction
         mock_hi_pset = apply_compton_getting_correction(mock_hi_pset, energy_hf)
 
         # Verify all intermediate variables were added
         assert "sc_velocity" in mock_hi_pset
-        assert "sc_direction_vector" in mock_hi_pset
         assert "look_direction" in mock_hi_pset
         assert "energy_hf" in mock_hi_pset
         assert "energy_sc" in mock_hi_pset
@@ -1610,6 +1631,334 @@ class TestInterpolateMapFluxToHelioFrame:
         ratio = background_values / signal_values
         # Allow for some numerical variation due to interpolation
         np.testing.assert_allclose(ratio, 0.2, rtol=0.01)
+
+    def test_linear_fallback_when_flux_left_zero(self):
+        """Test that linear interpolation is used when flux_left is zero."""
+        n_energy = 3
+        n_spatial = 2
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create flux where one pixel has zero flux at energy index 0
+        flux = np.array(
+            [
+                [0.0, 1.0],  # energy 0: pixel 0 is zero
+                [1.0, 2.0],  # energy 1
+                [0.5, 1.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * np.maximum(flux, 0.1)
+        sys_err = 0.05 * np.maximum(flux, 0.1)
+
+        # Set energy_sc to be between energy channels 0 and 1
+        energy_sc = np.array(
+            [
+                [750.0, 750.0],  # interpolating between 500 and 1000
+                [1500.0, 1500.0],  # interpolating between 1000 and 2000
+                [1800.0, 1800.0],  # near the boundary
+            ]
+        )
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        # Verify results are finite (not NaN) where we expect valid values
+        result_flux = result_ds["ena_intensity"].values
+
+        # With linear fallback, pixel 0 at energy 0 should produce a valid result
+        # because we're interpolating between 0 (at 500eV) and 1 (at 1000eV)
+        # Linear interpolation at 750eV: 0 + (1-0) * (750-500)/(1000-500) = 0.5
+        # Then energy scaling: 0.5 * (500/750) = 1/3
+        expected_flux = 0.5 * (500.0 / 750.0)  # = 1/3
+        np.testing.assert_allclose(
+            result_flux[0, 0],
+            expected_flux,
+            rtol=1e-10,
+            err_msg="Linear fallback should produce correct interpolated value",
+        )
+
+        # Statistical uncertainty should also be finite
+        result_stat_unc = result_ds["ena_intensity_stat_uncert"].values
+        assert np.isfinite(result_stat_unc[0, 0]), (
+            "Statistical uncertainty should be finite with linear fallback"
+        )
+
+    def test_linear_fallback_when_flux_right_zero(self):
+        """Test that linear interpolation is used when flux_right is zero."""
+        n_energy = 3
+        n_spatial = 2
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create flux where one pixel has zero flux at energy index 1
+        flux = np.array(
+            [
+                [1.0, 1.0],  # energy 0
+                [0.0, 2.0],  # energy 1: pixel 0 is zero
+                [0.5, 1.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * np.maximum(flux, 0.1)
+        sys_err = 0.05 * np.maximum(flux, 0.1)
+
+        # Set energy_sc to be between energy channels 0 and 1
+        energy_sc = np.array(
+            [
+                [750.0, 750.0],  # interpolating between 500 and 1000
+                [1500.0, 1500.0],  # interpolating between 1000 and 2000
+                [1800.0, 1800.0],  # near the boundary
+            ]
+        )
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        result_flux = result_ds["ena_intensity"].values
+
+        # With linear fallback, pixel 0 at energy 0 should produce a valid result
+        # Linear interpolation from flux=1 at 500eV to flux=0 at 1000eV
+        # At 750eV: 1 + (0-1) * (750-500)/(1000-500) = 1 - 0.5 = 0.5
+        # Then energy scaling: 0.5 * (500/750) = 1/3
+        expected_flux = 0.5 * (500.0 / 750.0)  # = 1/3
+        np.testing.assert_allclose(
+            result_flux[0, 0],
+            expected_flux,
+            rtol=1e-10,
+            err_msg="Linear fallback should produce correct interpolated value",
+        )
+
+    def test_linear_fallback_when_both_fluxes_zero(self):
+        """Test that both bounding fluxes being zero produces zero output."""
+        n_energy = 3
+        n_spatial = 2
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create flux where pixel 0 has zero flux at both energy 0 and 1
+        flux = np.array(
+            [
+                [0.0, 1.0],  # energy 0: pixel 0 is zero
+                [0.0, 2.0],  # energy 1: pixel 0 is zero
+                [0.5, 1.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * np.maximum(flux, 0.1)
+        sys_err = 0.05 * np.maximum(flux, 0.1)
+
+        # Set energy_sc to be between energy channels 0 and 1 for first energy
+        energy_sc = np.array(
+            [
+                [750.0, 750.0],  # interpolating between 500 and 1000
+                [1500.0, 1500.0],
+                [1800.0, 1800.0],
+            ]
+        )
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        result_flux = result_ds["ena_intensity"].values
+
+        # When both bounding fluxes are zero, linear interpolation gives 0
+        # Result should be 0 (not NaN)
+        assert result_flux[0, 0] == 0.0, (
+            "When both bounding fluxes are zero, result should be 0"
+        )
+
+    def test_negative_interpolated_flux_clamped_to_zero(self):
+        """Test that negative interpolated flux is clamped to zero."""
+        n_energy = 3
+        n_spatial = 1
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create flux that decreases steeply - linear extrapolation could go negative
+        flux = np.array(
+            [
+                [2.0],  # energy 0
+                [0.1],  # energy 1: much smaller
+                [0.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * flux
+        sys_err = 0.05 * flux
+
+        # Set energy_sc beyond the range to trigger extrapolation
+        # At energy index 0, set energy_sc below 500eV to extrapolate
+        energy_sc = np.array(
+            [
+                [400.0],  # Below lowest ESA energy - will use channels 0,1
+                [800.0],
+                [1500.0],
+            ]
+        )
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        result_flux = result_ds["ena_intensity"].values
+
+        # All flux values should be non-negative
+        assert np.all(result_flux >= 0), "All interpolated flux values should be >= 0"
+
+    def test_linear_and_powerlaw_mixed(self):
+        """Test correct interpolation method for mixed zero/positive flux."""
+        n_energy = 3
+        n_spatial = 4
+
+        esa_energies_vals = np.array([500.0, 1000.0, 2000.0])
+
+        # Create mixed flux data:
+        # - Pixel 0: zero at left boundary (needs linear)
+        # - Pixel 1: zero at right boundary (needs linear)
+        # - Pixel 2: all positive (can use power-law)
+        # - Pixel 3: zero at both (needs linear, result=0)
+        flux = np.array(
+            [
+                [0.0, 1.0, 1.0, 0.0],  # energy 0
+                [1.0, 0.0, 2.0, 0.0],  # energy 1
+                [0.5, 0.5, 1.5, 0.5],  # energy 2
+            ]
+        )
+        stat_unc = 0.1 * np.maximum(flux, 0.1)
+        sys_err = 0.05 * np.maximum(flux, 0.1)
+
+        # Set energy_sc to be between energy channels 0 and 1
+        energy_sc = np.full((n_energy, n_spatial), 750.0)
+        energy_sc[1, :] = 1500.0
+        energy_sc[2, :] = 1800.0
+
+        map_ds = xr.Dataset(
+            {
+                "ena_intensity": (["energy", "spatial"], flux),
+                "ena_intensity_stat_uncert": (["energy", "spatial"], stat_unc),
+                "ena_intensity_sys_err": (["energy", "spatial"], sys_err),
+                "energy_sc": (["energy", "spatial"], energy_sc),
+            },
+            coords={
+                "energy": np.arange(n_energy),
+                "spatial": np.arange(n_spatial),
+            },
+        )
+
+        esa_energies = xr.DataArray(
+            esa_energies_vals,
+            dims=["energy"],
+            coords={"energy": np.arange(n_energy)},
+        )
+        helio_energies = esa_energies.copy()
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        result_flux = result_ds["ena_intensity"].values
+
+        # Check that all pixels at energy 0 have finite, non-negative results
+        assert np.all(np.isfinite(result_flux[0, :])), (
+            "All pixels should have finite results"
+        )
+        assert np.all(result_flux[0, :] >= 0), "All flux values should be non-negative"
+
+        # Pixel 0: Linear interpolation from 0 to 1 at 750eV should give positive
+        assert result_flux[0, 0] > 0, (
+            "Pixel 0 should have positive flux (linear from 0 to 1)"
+        )
+
+        # Pixel 1: Linear interpolation from 1 to 0 at 750eV should give positive
+        assert result_flux[0, 1] > 0, (
+            "Pixel 1 should have positive flux (linear from 1 to 0)"
+        )
+
+        # Pixel 2: Power-law interpolation should give positive
+        assert result_flux[0, 2] > 0, "Pixel 2 should have positive flux (power-law)"
+
+        # Pixel 3: Both bounds zero, should be zero
+        assert result_flux[0, 3] == 0.0, "Pixel 3 should be zero (both bounds zero)"
 
 
 class TestGetPsetDirectionalMask:

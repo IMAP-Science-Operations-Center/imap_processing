@@ -28,13 +28,13 @@ bins_label:
 
 default_attrs: &default_attrs
   # TODO: Remove unneeded attributes once SAMMI is fixed
-  RESOLUTION: ' '
   DISPLAY_TYPE: no_plot
+  FILLVAL: *int_fillval
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ' '
   TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
   UNITS: ' '
-  FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
 
 derived_from_spice_kernels: &derived_from_spice_kernels
@@ -43,20 +43,20 @@ derived_from_spice_kernels: &derived_from_spice_kernels
 support_data_defaults: &support_data_defaults
   <<: *default_attrs
   DEPEND_0: epoch
-  VALIDMIN: 0
-  VALIDMAX: 1
   DISPLAY_TYPE: time_series
-  VAR_TYPE: support_data
   FORMAT: I10
   RESOLUTION: ISO8601
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 time_data_defaults: &time_data_defaults
   <<: *support_data_defaults
   FILLVAL: 1.0E+31
   FORMAT: F17.6
   UNITS: s
-  VALIDMIN: 0.0
   VALIDMAX: 4294967295.0
+  VALIDMIN: 0.0
 
 flag_data_defaults: &flag_data_defaults
   <<: *support_data_defaults
@@ -79,15 +79,15 @@ bins_attrs:
 
 within_the_second_attrs: # Used to be per_second_attrs
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 50000
   CATDESC: Ordinal number of direct event within a second
-  FIELDNAM: Ordinal number of direct event
-  FORMAT: I5
-  VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot
-  LABLAXIS: Event no.
+  FIELDNAM: Ordinal number of direct event
   FILLVAL: *max_uint16
+  FORMAT: I5
+  LABLAXIS: Event no.
+  VALIDMAX: 50000
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 #direct_event_components_attrs:
 #  <<:  *default_attrs
@@ -123,8 +123,8 @@ histogram:
   FIELDNAM: Histogram of photon counts
   FILLVAL: *max_uint16
   FORMAT: I3
-  LABL_PTR_1: bins_label
   LABLAXIS: Counts
+  LABL_PTR_1: bins_label
   UNITS: '#'
   VALIDMAX: 255
   VALIDMIN: 0
@@ -195,10 +195,10 @@ number_of_spins_per_block:
 
 unique_block_identifier:
   CATDESC: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+  DEPEND_0: epoch
   FIELDNAM: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
   FORMAT: A19
   VAR_TYPE: support_data
-  DEPEND_0: epoch
 
 number_of_bins_per_histogram:
   <<: *support_data_defaults
@@ -212,27 +212,27 @@ number_of_bins_per_histogram:
 
 ecliptic_attrs:
   <<: *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 2
   CATDESC: Component index for cartesian ecliptic coordinates
   FIELDNAM: Component index
+  FILLVAL: 255
+  FORMAT: I1
   LABLAXIS: Index
   UNITS: ' '
-  FILLVAL: 255
+  VALIDMAX: 2
+  VALIDMIN: 0
   VAR_TYPE: support_data
-  FORMAT: I1
 
 latitudinal_attrs:
   <<: *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 360
   CATDESC: Component index for cartesian latitudinal coordinates
   FIELDNAM: Component index
+  FILLVAL: 999
+  FORMAT: I3
   LABLAXIS: Index
   UNITS: ' '
-  FILLVAL: 999
+  VALIDMAX: 360
+  VALIDMIN: 0
   VAR_TYPE: support_data
-  FORMAT: I3
 
 number_of_events:
   <<: *support_data_defaults
@@ -251,8 +251,8 @@ filter_temperature_average:
   FORMAT: F6.2
   LABLAXIS: Temp
   UNITS: Celsius
-  VALIDMIN: -30.0
   VALIDMAX: 60.0
+  VALIDMIN: -30.0
 
 filter_temperature_std_dev:
   <<: *support_data_defaults
@@ -283,8 +283,8 @@ hv_voltage_std_dev:
   FORMAT: E9.3
   LABLAXIS: HV std dev
   UNITS: 'V'
-  VALIDMIN: 0.0
   VALIDMAX: 3500.0
+  VALIDMIN: 0.0
 
 spin_period_average:
   <<: *support_data_defaults
@@ -296,8 +296,8 @@ spin_period_average:
   FORMAT: F9.6
   LABLAXIS: Period
   UNITS: s
-  VALIDMIN: 14.6
   VALIDMAX: 15.4
+  VALIDMIN: 14.6
   #VAR_TYPE: support_data
 
 spin_period_std_dev:
@@ -308,8 +308,8 @@ spin_period_std_dev:
   FORMAT: E9.3
   LABLAXIS: Period std dev
   UNITS: s
-  VALIDMIN: 0.0
   VALIDMAX: 9.9
+  VALIDMIN: 0.0
 
 # TODO review these
 spin_period_ground_average:
@@ -322,8 +322,8 @@ spin_period_ground_average:
   FORMAT: F9.6
   LABLAXIS: Period
   UNITS: s
-  VALIDMIN: 14.6
   VALIDMAX: 15.4
+  VALIDMIN: 14.6
   #VAR_TYPE: support_data
 
 spin_period_ground_std_dev:
@@ -334,8 +334,8 @@ spin_period_ground_std_dev:
   FORMAT: E9.3
   LABLAXIS: Period std dev
   UNITS: s
-  VALIDMIN: 0.0
   VALIDMAX: 9.9
+  VALIDMIN: 0.0
 
 pulse_length_average:
   <<: *support_data_defaults
@@ -345,8 +345,8 @@ pulse_length_average:
   FORMAT: F5.2
   LABLAXIS: Pulse len
   UNITS: us
-  VALIDMIN: 0.0
   VALIDMAX: 12.75
+  VALIDMIN: 0.0
 
 pulse_length_std_dev:
   <<: *support_data_defaults
@@ -356,8 +356,8 @@ pulse_length_std_dev:
   FORMAT: E9.3
   LABLAXIS: Pulse std dev
   UNITS: us
-  VALIDMIN: 0.0
   VALIDMAX: 12.75
+  VALIDMIN: 0.0
 
 position_angle_offset_average:
   <<: *support_data_defaults
@@ -368,8 +368,8 @@ position_angle_offset_average:
   FORMAT: F10.6
   LABLAXIS: Offset angle
   UNITS: 'degrees'
-  VALIDMIN: 0.0
   VALIDMAX: 360.0
+  VALIDMIN: 0.0
 
 position_angle_offset_std_dev:
   <<: *support_data_defaults
@@ -380,8 +380,8 @@ position_angle_offset_std_dev:
   FORMAT: E9.3
   LABLAXIS: Offset std dev
   UNITS: 'degrees'
-  VALIDMIN: 0.0
   VALIDMAX: 360.0
+  VALIDMIN: 0.0
 
 spin_axis_orientation_average: # this is a two-element variable, DEPEND needed?
   <<: *support_data_defaults
@@ -392,8 +392,8 @@ spin_axis_orientation_average: # this is a two-element variable, DEPEND needed?
   FORMAT: F7.3
   LABLAXIS: Lon/lat # see comment in the section start
   UNITS: 'degrees'
-  VALIDMIN: -90.0
   VALIDMAX: 360.0
+  VALIDMIN: -90.0
 
 spin_axis_orientation_std_dev: # this is a two-element variable, DEPEND needed?
   <<: *support_data_defaults
@@ -404,63 +404,63 @@ spin_axis_orientation_std_dev: # this is a two-element variable, DEPEND needed?
   FORMAT: E9.3
   LABLAXIS: Lon/lat std dev
   UNITS: 'degrees'
-  VALIDMIN: 0.0
   VALIDMAX: 360.0
+  VALIDMIN: 0.0
 
 spacecraft_location_average:
   <<: *support_data_defaults
   <<: *derived_from_spice_kernels
+  CATDESC: Spin-block-averaged spacecraft location (ecliptic frame)
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
-  CATDESC: Spin-block-averaged spacecraft location (ecliptic frame)
   FIELDNAM: Average spacecraft location
   FILLVAL: 1.0E+31
   FORMAT: E13.6
   LABLAXIS: Loc
   UNITS: 'km'
-  VALIDMIN: -9.999999999E+8
   VALIDMAX: 9.999999999E+8
+  VALIDMIN: -9.999999999E+8
 
 spacecraft_location_std_dev:
   <<: *support_data_defaults
   <<: *derived_from_spice_kernels
+  CATDESC: Standard deviation of spacecraft location
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
-  CATDESC: Standard deviation of spacecraft location
   FIELDNAM: Std dev of spacecraft location
   FILLVAL: 1.0E+31
   FORMAT: E9.3
   LABLAXIS: Loc std dev
   UNITS: 'km'
-  VALIDMIN: 0.0
   VALIDMAX: 50000.0 # 50 km/s * 15.38 s * 64 spins < 50000.0
+  VALIDMIN: 0.0
 
 spacecraft_velocity_average:
   <<: *support_data_defaults
   <<: *derived_from_spice_kernels
+  CATDESC: Spin-block-averaged spacecraft velocity (ecliptic frame)
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
-  CATDESC: Spin-block-averaged spacecraft velocity (ecliptic frame)
   FIELDNAM: Average spacecraft velocity
   FILLVAL: 1.0E+31
   FORMAT: E13.6
   LABLAXIS: Vsc
   UNITS: 'km/s'
-  VALIDMIN: -50.0
   VALIDMAX: 50.0
+  VALIDMIN: -50.0
 
 spacecraft_velocity_std_dev:
   <<: *support_data_defaults
+  CATDESC: Standard deviation of spacecraft velocity
   DEPEND_1: ecliptic
   DISPLAY_TYPE: no_plot
-  CATDESC: Standard deviation of spacecraft velocity
   FIELDNAM: Std dev of spacecraft velocity
   FILLVAL: 1.0E+31
   FORMAT: E9.3
   LABLAXIS: Vsc std dev
   UNITS: 'km/s'
-  VALIDMIN: 0.0
   VALIDMAX: 10.0
+  VALIDMIN: 0.0
 
 # End of not-in--dicts in generate_de_dataset
 
@@ -489,32 +489,32 @@ number_of_de_packets:
 imap_time_last_pps:
   <<: *time_data_defaults
   CATDESC: Latest PPS arrival time (IMAP clock)
-  FIELDNAM: Latest PPS time (IMAP clock)
   DISPLAY_TYPE: no_plot
-  LABLAXIS: PPS time
-  FORMAT: I10
-  VALIDMAX: *max_uint32_min_one
+  FIELDNAM: Latest PPS time (IMAP clock)
   FILLVAL: *max_uint32
+  FORMAT: I10
+  LABLAXIS: PPS time
+  VALIDMAX: *max_uint32_min_one
 
 glows_time_last_pps:
   <<: *time_data_defaults
   CATDESC: Latest PPS arrival time (GLOWS clock)
-  FIELDNAM: Latest PPS time (GLOWS clock)
   DISPLAY_TYPE: no_plot
+  FIELDNAM: Latest PPS time (GLOWS clock)
+  FILLVAL: 1.0e+31
   LABLAXIS: PPS time
   VALIDMAX: 4294967295.0
-  FILLVAL: 1.0e+31
 
 imap_time_next_pps:
   <<: *time_data_defaults
   CATDESC: Next PPS estimated arrival time (IMAP clock)
-  FIELDNAM: Next PPS time (IMAP clock)
   DISPLAY_TYPE: no_plot
+  FIELDNAM: Next PPS time (IMAP clock)
   FILLVAL: *max_uint32
-  LABLAXIS: PPS time
+  FILLVAL: *max_uint32
   FORMAT: I10
+  LABLAXIS: PPS time
   VALIDMAX: *max_uint32_min_one
-  FILLVAL: *max_uint32
 
 #catbed_heater_active:
 #  <<: *flag_data_defaults
@@ -544,23 +544,23 @@ spin_period:
   FORMAT: F9.6
   LABLAXIS: Spin period
   UNITS: s
-  VALIDMIN: 14.6
   VALIDMAX: 15.4
+  VALIDMIN: 14.6
 
 # TODO: Review this
 imap_spin_angle_bin_cntr:
   <<: *support_data_defaults
   <<: *derived_from_spice_kernels
-  DISPLAY_TYPE: no_plot
-  DEPEND_1: bins
   CATDESC: IMAP spin angle for bin centers
+  DEPEND_1: bins
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Spin angle for bin centers
   FILLVAL: 1.0E+31
   FORMAT: F7.3
   LABLAXIS: Spin angle
   UNITS: 'degrees'
-  VALIDMIN: 0.0
   VALIDMAX: 360.0
+  VALIDMIN: 0.0
 
 spin_phase_at_next_pps:
   <<: *support_data_defaults
@@ -570,8 +570,8 @@ spin_phase_at_next_pps:
   FORMAT: F7.3
   LABLAXIS: Spin phase
   UNITS: 'degrees'
-  VALIDMIN: 0.0
   VALIDMAX: 360.0
+  VALIDMIN: 0.0
 
 number_of_completed_spins:
   <<: *support_data_defaults
@@ -590,8 +590,8 @@ filter_temperature:
   FORMAT: F6.2
   LABLAXIS: Temp
   UNITS: Celsius
-  VALIDMIN: -30.0
   VALIDMAX: 60.0
+  VALIDMIN: -30.0
 
 hv_voltage:
   <<: *support_data_defaults
@@ -642,30 +642,30 @@ hv_voltage:
 
 direct_event_glows_times:
   <<: *time_data_defaults
+  CATDESC: Times of direct events (photon detection times, GLOWS clock)
   DEPEND_1: within_the_second
   DISPLAY_TYPE: no_plot
-  VAR_TYPE: data
-  CATDESC: Times of direct events (photon detection times, GLOWS clock)
   FIELDNAM: Direct-event times (GLOWS clock)
-  LABLAXIS: DE time
   FILLVAL: 1.0e+31
+  LABLAXIS: DE time
   VALIDMAX: 4294967295.0
+  VAR_TYPE: data
 
 # TODO: review
 direct_event_pulse_lengths:
   <<: *support_data_defaults
+  CATDESC: Pulse lengths for direct events
   DEPEND_1: within_the_second
   DISPLAY_TYPE: no_plot
-  LABL_PTR_1: within_the_second_label
-  VAR_TYPE: support_data
-  CATDESC: Pulse lengths for direct events
   FIELDNAM: Pulse lengths for direct events
-  LABLAXIS: Pulse len
   FILLVAL: 1.0E+31
   FORMAT: F5.2
+  LABLAXIS: Pulse len
+  LABL_PTR_1: within_the_second_label
   UNITS: us
-  VALIDMIN: 0.0
   VALIDMAX: 12.75
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 missing_packets_sequence: # Used to be missing_packets_sequence
   <<: *support_data_defaults
@@ -681,26 +681,26 @@ missing_packets_sequence: # Used to be missing_packets_sequence
 # MS: this needs to be thoroughly discussed
 bad_time_flag_hist_attrs: # MS: this should be different for DE and HIST
   <<: *default_attrs
-  FILLVAL: -1
   CATDESC: Flag index for histogram flags
   FIELDNAM: Flag index
-  UNITS: ' '
+  FILLVAL: -1
   FORMAT: I2
   LABLAXIS: Index
-  VALIDMIN: 0
+  UNITS: ' '
   VALIDMAX: 16
+  VALIDMIN: 0
   VAR_TYPE: support_data
 
 flag_de_attrs: # MS: this should be different for DE and HIST
   <<: *default_attrs
-  FILLVAL: -1
   CATDESC: Flag index for DE flags
   FIELDNAM: Flag index
-  UNITS: ' '
+  FILLVAL: -1
   FORMAT: I2
   LABLAXIS: Index
-  VALIDMIN: 0
+  UNITS: ' '
   VALIDMAX: 16
+  VALIDMIN: 0
   VAR_TYPE: support_data
 
 flags_set_onboard:
@@ -716,14 +716,14 @@ flags_set_onboard:
 bad_angle_flags_attrs:
     <<: *default_attrs
     CATDESC: Binary mask for bad-angle flags
-    FIELDNAM: Mask with bad-angle flags
     DISPLAY_TYPE: no_plot
-    LABLAXIS: Bad-angle mask
+    FIELDNAM: Mask with bad-angle flags
     FILLVAL: -1
-    UNITS: ' '
     FORMAT: I2
-    VALIDMIN: 0
+    LABLAXIS: Bad-angle mask
+    UNITS: ' '
     VALIDMAX: 16
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 
@@ -733,32 +733,32 @@ bad_angle_flags_attrs:
 histogram_flag_array: # MS does not understand what is this exactly
   <<: *flag_data_defaults
   CATDESC: Bad-angle mask for histogram bins
+  DEPEND_1: bad_angle_flags
+  DEPEND_2: bins
   DISPLAY_TYPE: no_plot
   FIELDNAM: Bad-angle mask for histogram
   LABLAXIS: Mask
-  DEPEND_1: bad_angle_flags
-  DEPEND_2: bins
-  VALIDMIN: 0
   VALIDMAX: 1
+  VALIDMIN: 0
 
 de_flags:
   <<: *flag_data_defaults
-  DEPEND_1: flags
   CATDESC: Flags for per-second-grouped direct events
-  FIELDNAM: Flags for direct events
+  DEPEND_1: flags
   DISPLAY_TYPE: no_plot
-  VALIDMIN: 0
+  FIELDNAM: Flags for direct events
   VALIDMAX: 1
+  VALIDMIN: 0
 
 # Decoded on-board flags into a length 16 array
 flags: # MS: is this related to flags_set_onboard?
   <<: *support_data_defaults
   CATDESC: Bad-time mask for histogram
+  DEPEND_1: bad_time_flags
   DISPLAY_TYPE: no_plot
   FIELDNAM: Bad-time mask for histogram
-  LABLAXIS: Mask
-  DEPEND_1: bad_time_flags
-  VALIDMIN: 0
-  VALIDMAX: 1
-  FORMAT: I1
   FILLVAL: -128
+  FORMAT: I1
+  LABLAXIS: Mask
+  VALIDMAX: 1
+  VALIDMIN: 0

@@ -305,14 +305,16 @@ def add_species_energy(data: pd.DataFrame) -> pd.DataFrame:
         )
     )
     data["species"] = data["mod_10"].apply(
-        lambda row: MOD_VALUE_TO_SPECIES_ENERGY_MAP[row]["species"]
-        if row is not None
-        else None
+        lambda row: (
+            MOD_VALUE_TO_SPECIES_ENERGY_MAP[row]["species"] if row is not None else None
+        )
     )
     data["energy_bin"] = data["mod_10"].apply(
-        lambda row: MOD_VALUE_TO_SPECIES_ENERGY_MAP[row]["energy_bin"]
-        if row is not None
-        else None
+        lambda row: (
+            MOD_VALUE_TO_SPECIES_ENERGY_MAP[row]["energy_bin"]
+            if row is not None
+            else None
+        )
     )
     data.drop(columns=["sectorates_by_mod_val", "mod_10"], inplace=True)
     return data

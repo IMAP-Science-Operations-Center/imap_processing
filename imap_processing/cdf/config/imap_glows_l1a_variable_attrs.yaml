@@ -13,24 +13,24 @@ bins_label:
 
 default_attrs: &default_attrs
   # TODO: Remove unneeded attributes once SAMMI is fixed
-  RESOLUTION: ' '
   DISPLAY_TYPE: no_plot
+  FILLVAL: *int_fillval
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ' '
   TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
   UNITS: ' '
-  FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
 
 support_data_defaults: &support_data_defaults
   <<: *default_attrs
   DEPEND_0: epoch
-  VALIDMIN: 0
-  VALIDMAX: 1
   DISPLAY_TYPE: time_series
-  VAR_TYPE: support_data
   FORMAT: I10
   RESOLUTION: ISO8601
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 bins_attrs:
   <<:  *default_attrs
@@ -47,14 +47,14 @@ bins_attrs:
 
 within_the_second: # Used to be per_second_attrs
   <<:  *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 50000
   CATDESC: Ordinal number of direct event within a second
+  DISPLAY_TYPE: time_series
   FIELDNAM: Ordinal number of direct event
   FORMAT: I5
-  VAR_TYPE: support_data
-  DISPLAY_TYPE: time_series
   LABLAXIS: Event no.
+  VALIDMAX: 50000
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 direct_event_components_attrs:
   <<:  *default_attrs

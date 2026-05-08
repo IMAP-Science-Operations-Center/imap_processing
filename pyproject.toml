@@ -65,7 +65,7 @@ repository = "https://github.com/IMAP-Science-Operations-Center/imap_processing"
 # ------------
 
 [project.optional-dependencies]
-dev = ["pre-commit>=3.3.3,<4", "ruff==0.2.1", "mypy==1.10.1"]
+dev = ["pre-commit>=3.3.3,<4", "ruff==0.15.2", "mypy==1.10.1"]
 doc = ["numpydoc>=1.5.0,<2", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi>=0.8.3,<0.9"]
 test = ["openpyxl>=3.0.7", "pytest>=6.2.5", "pytest-cov>=4.0.0,<5", "pytest-xdist>=3.2,<4", "requests>=2.32.3,<3", "netcdf4>=1.7.2,<2"]
 tools = ["openpyxl>=3.0.7", "pandas>=2.0.0"]
@@ -111,7 +111,7 @@ lint.ignore = [
 # RUF043 pattern match has regex characters like a period (.) that are not escaped
 # RUF059 unused variables unpacked
 # S603 unchecked input in subprocess call is fine in our tests
-"*/tests/*" = ["D", "PT006", "RUF043", "RUF059", "S101", "S603"]
+"*/tests/*" = ["D", "PT006", "RUF043", "RUF059", "S101", "S603", "PLW0108", "RUF061"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

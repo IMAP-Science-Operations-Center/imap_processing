@@ -5,194 +5,194 @@ double_fillval: &double_fillval -1.0E31
 # Label attributes
 mass_labels:
   CATDESC: Labels for Mass
-  FIELDNAM: Mass
-  VAR_TYPE: metadata
-  FORMAT: A8
   DEPEND_1: mass
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: Mass
+  FORMAT: A8
+  VAR_TYPE: metadata
 
 charge_labels:
   CATDESC: Labels for Impact Charge (fC)
-  FIELDNAM: Impact Charge (fC)
-  VAR_TYPE: metadata
-  FORMAT: A8
   DEPEND_1: impact_charge
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: Impact Charge (fC)
+  FORMAT: A8
+  VAR_TYPE: metadata
 
 spin_phase_labels:
   CATDESC: Labels for Spin Phase (deg)
-  FIELDNAM: Spin Phase (deg)
-  VAR_TYPE: metadata
-  FORMAT: A8
   DEPEND_1: spin_phase
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: Spin Phase (deg)
+  FORMAT: A8
+  VAR_TYPE: metadata
 
 # Index attributes
 mass:
   CATDESC: Log-spaced mass
-  FIELDNAM: Mass
-  UNITS: kg
-  FORMAT: E10.4
-  VAR_TYPE: support_data
-  SCALETYP: log
-  LABLAXIS: Mass
-  VALIDMIN: 0.0
-  VALIDMAX: 1.00e-14
-  FILLVAL: *double_fillval
-  LABL_PTR_1: mass_labels
   DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Mass
+  FIELDNAM: Mass
+  FILLVAL: *double_fillval
+  FORMAT: E10.4
+  LABLAXIS: Mass
+  LABL_PTR_1: mass_labels
+  SCALETYP: log
+  UNITS: kg
+  VALIDMAX: 1.00e-14
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 spin_phase:
     CATDESC: The spacecraft spin phase at the time of detection
-    VAR_NOTES: This is given in 4 bins [315-45, 45-135, 135-225, 225-315] degrees.
+    DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array
     FIELDNAM: Spin Phase
-    LABLAXIS: Spin Phase
-    VAR_TYPE: support_data
-    SCALETYP: linear
     FILLVAL: *int_fillval
     FORMAT: I8
-    VALIDMIN: 0
-    VALIDMAX: 360
+    LABLAXIS: Spin Phase
     LABL_PTR_1: spin_phase_labels
+    SCALETYP: linear
     UNITS: deg
-    DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array
+    VALIDMAX: 360
+    VALIDMIN: 0
+    VAR_NOTES: This is given in 4 bins [315-45, 45-135, 135-225, 225-315] degrees.
+    VAR_TYPE: support_data
 
 impact_charge:
     CATDESC: Log-spaced impact charge
+    DICT_KEY: SPASE>Support>SupportQuantity:Other
     FIELDNAM: Impact Charge
-    LABLAXIS: Impact Charge
-    VAR_TYPE: support_data
-    SCALETYP: log
     FILLVAL: *int_fillval
     FORMAT: E10.3
-    VALIDMIN: 0.0
-    VALIDMAX: 1.00e04
+    LABLAXIS: Impact Charge
     LABL_PTR_1: spin_phase_labels
+    SCALETYP: log
     UNITS: fC
-    DICT_KEY: SPASE>Support>SupportQuantity:Other
+    VALIDMAX: 1.00e04
+    VALIDMIN: 0.0
+    VAR_TYPE: support_data
 
 
 # Base attributes for charge and mass variables
 base_charge: &base_charge
     CATDESC: " "
-    FIELDNAM: " "
     DEPEND_0: epoch
     DEPEND_1: impact_charge
     DEPEND_2: spin_phase
-    LABL_PTR_1: charge_labels
-    LABL_PTR_2: spin_phase_labels
     DISPLAY_TYPE: spectrogram
-    VAR_TYPE: data
+    FIELDNAM: " "
     FILLVAL: *int_fillval
     FORMAT: E10.3
-    VALIDMIN: -1
+    LABL_PTR_1: charge_labels
+    LABL_PTR_2: spin_phase_labels
     VALIDMAX: *int_maxval
+    VALIDMIN: -1
+    VAR_TYPE: data
 
 base_mass: &base_mass
     CATDESC: " "
-    FIELDNAM: " "
     DEPEND_0: epoch
     DEPEND_1: mass
     DEPEND_2: spin_phase
-    LABL_PTR_1: mass_labels
-    LABL_PTR_2: spin_phase_labels
     DISPLAY_TYPE: spectrogram
-    VAR_TYPE: data
+    FIELDNAM: " "
     FILLVAL: *int_fillval
     FORMAT: E10.3
-    VALIDMIN: 0.0
+    LABL_PTR_1: mass_labels
+    LABL_PTR_2: spin_phase_labels
     VALIDMAX: *int_maxval
+    VALIDMIN: 0.0
+    VAR_TYPE: data
 
 rate_by_charge:
     <<: *base_charge
     CATDESC: Count rate per day by impact charge and spin phase.
-    FIELDNAM: Rate by Charge
-    UNITS: day^-1
-    FILLVAL: *double_fillval
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
+    FIELDNAM: Rate by Charge
+    FILLVAL: *double_fillval
+    UNITS: day^-1
 
 rate_by_mass:
     <<: *base_mass
     CATDESC: Count rate per day by mass and spin phase.
-    FIELDNAM: Rate by Mass
-    UNITS: day^-1
-    FILLVAL: *double_fillval
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
+    FIELDNAM: Rate by Mass
+    FILLVAL: *double_fillval
+    UNITS: day^-1
 
 counts_by_charge:
     <<: *base_charge
     CATDESC: Count by impact charge and spin phase.
+    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
     FIELDNAM: Counts by Charge
     FORMAT: I8
     UNITS: counts
-    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
 counts_by_mass:
     <<: *base_mass
     CATDESC: Count by mass and spin phase.
+    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
     FIELDNAM: Counts by Mass
     FORMAT: I8
     UNITS: counts
-    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
 impact_day_of_year:
     CATDESC: The unique day of the years when dust impacts occurred.
-    FIELDNAM: Impact Day of Year
-    LABLAXIS: Impact DOY
     DEPEND_0: epoch
+    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
     DISPLAY_TYPE: time_series
+    FIELDNAM: Impact Day of Year
     FILLVAL: *int_fillval
     FORMAT: I3
-    VALIDMIN: 1
-    VALIDMAX: 366
-    VAR_TYPE: data
+    LABLAXIS: Impact DOY
     UNITS: days
-    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+    VALIDMAX: 366
+    VALIDMIN: 1
+    VAR_TYPE: data
 
 rate_calculation_quality_flags:
   CATDESC: Quality flag for rate calculation (1 = good, 0 = insufficient IDEX uptime data)
-  FIELDNAM: Rate Quality Flag
-  LABLAXIS: Quality Flag
   DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:QualityFlag
   DISPLAY_TYPE: time_series
+  FIELDNAM: Rate Quality Flag
   FILLVAL: 255
   FORMAT: I1
-  VALIDMIN: 0
-  VALIDMAX: 1
-  VAR_TYPE: data
+  LABLAXIS: Quality Flag
   UNITS: " "
-  DICT_KEY: SPASE>Support>SupportQuantity:QualityFlag
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: data
 
 on_off_times:
     CATDESC: Science acquisition on/off event times.
-    FIELDNAM: On/Off Times
-    LABLAXIS: On/Off Times
-    FILLVAL: -9223372036854775808
-    FORMAT: " "
-    VALIDMIN: 315576066184000000
-    VALIDMAX: 3155716869184000000
-    UNITS: ns
-    VAR_TYPE: support_data
-    SCALETYP: linear
-    MONOTON: INCREASE
-    TIME_BASE: J2000
-    TIME_SCALE: Terrestrial Time
-    REFERENCE_POSITION: Rotating Earth Geoid
-    RESOLUTION: ' '
     CDF_DATA_TYPE: "CDF_TIME_TT2000"
     DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+    FIELDNAM: On/Off Times
+    FILLVAL: -9223372036854775808
+    FORMAT: " "
+    LABLAXIS: On/Off Times
+    MONOTON: INCREASE
+    REFERENCE_POSITION: Rotating Earth Geoid
+    RESOLUTION: ' '
+    SCALETYP: linear
+    TIME_BASE: J2000
+    TIME_SCALE: Terrestrial Time
+    UNITS: ns
+    VALIDMAX: 3155716869184000000
+    VALIDMIN: 315576066184000000
+    VAR_TYPE: support_data
 
 on_off_events:
   CATDESC: Science acquisition on/off event values (1 = on, 0 = off).
-  FIELDNAM: On/Off Events
-  LABLAXIS: On/Off Events
   DEPEND_0: on_off_times
-  VAR_TYPE: support_data
-  SCALETYP: linear
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: On/Off Events
   FILLVAL: 255
   FORMAT: I1
-  VALIDMIN: 0
-  VALIDMAX: 1
+  LABLAXIS: On/Off Events
+  SCALETYP: linear
   UNITS: " "
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 

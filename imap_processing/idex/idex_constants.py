@@ -67,7 +67,7 @@ class ConversionFactors(float, Enum):
     """Conversion factor values (DN to picocoulombs) for each of the six waveforms."""
 
     TOF_High = 2.89e-4
-    TOF_Low = 5.14e-4
+    TOF_Low = 5.14e-1
     TOF_Mid = 1.13e-2
     Target_Low = 1.58e1
     Target_High = 1.63e-1

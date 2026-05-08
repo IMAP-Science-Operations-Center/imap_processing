@@ -1,0 +1,3 @@
+source_species,target_species,esa_step,sputter_factor,sputter_factor_uncertainty
+o,h,5,0.15,0.05
+o,h,6,0.01,0.008

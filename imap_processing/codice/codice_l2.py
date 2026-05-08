@@ -1321,24 +1321,17 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         kev.astype(np.float32).reshape(l2_dataset["energy_step"].shape),
     )
     # Drop unused variables
-    vars_to_drop = [
-        "spare",
-        "sw_bias_gain_mode",
-        "st_bias_gain_mode",
-        "k_factor",
-        "rgfo_esa_step",
-        "rgfo_spin_sector",
-        "rgfo_half_spin",
-        "nso_esa_step",
-        "nso_spin_sector",
-        "nso_half_spin",
-    ]
+    vars_to_drop = ["spare", "sw_bias_gain_mode", "st_bias_gain_mode", "k_factor"]
     l2_dataset = l2_dataset.drop_vars(vars_to_drop)
     # Update variable attributes
     l2_dataset.attrs.update(
         cdf_attrs.get_global_attributes("imap_codice_l2_lo-direct-events")
     )
     for var in l2_dataset.data_vars:
+        if "nso" in var or "rgfo" in var:
+            # skip adding attributes for these variables. They should already
+            # have attrs carried over from l1a.
+            continue
         l2_dataset[var].attrs.update(cdf_attrs.get_variable_attributes(var))
     # Update coord attributes
     l2_dataset["priority"].attrs.update(
