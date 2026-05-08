@@ -221,7 +221,6 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             "esa_energy_step": ESA_ENERGY_STEPS,
             "spin_angle": SPIN_ANGLE_BIN_CENTERS,
             "off_angle": OFF_ANGLE_BIN_CENTERS,
-            "component": ["x", "y", "z"],
         }
     )
 

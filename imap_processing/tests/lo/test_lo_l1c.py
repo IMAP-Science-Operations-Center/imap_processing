@@ -266,6 +266,9 @@ def test_lo_l1c(
     # Verify that pivot_angle is passed through from l1b_de
     assert "pivot_angle" in output_dataset
     assert output_dataset["pivot_angle"].values[0] == 45.0
+    mock_add_spacecraft_position_and_velocity_to_pset.assert_called_once()
+    assert "sc_position" in output_dataset
+    assert "sc_velocity" in output_dataset
 
 
 def test_filter_goodtimes(l1b_de, anc_dependencies):
