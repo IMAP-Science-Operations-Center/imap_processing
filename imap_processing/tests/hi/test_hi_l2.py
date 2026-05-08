@@ -733,6 +733,86 @@ def test_combine_calibration_products_edge_cases():
         assert "calibration_prod" not in result_ds[var].dims
 
 
+def test_combine_calibration_products_nan_handling():
+    """Test that combine_calibration_products handles NaN values correctly.
+
+    Tests the skipna=True, min_count=1 behavior:
+    - When one calibration product has NaN, the result should use the valid values
+    - When ALL calibration products have NaN at a position, the result should be NaN
+    """
+    # Create test dataset with 2 calibration products
+    coords = {
+        "epoch": 1,
+        "esa_energy_step": 2,
+        "calibration_prod": 2,
+        "longitude": 2,
+        "latitude": 1,
+    }
+
+    # Shape: (1, 2, 2, 2, 1) - epoch, energy, cal_prod, lon, lat
+    shape = (1, 2, 2, 2, 1)
+
+    # Create base arrays with valid values
+    intensity = np.full(shape, 100.0)
+    stat_uncert = np.full(shape, 10.0)
+    sys_err = np.full(shape, 5.0)
+    signal_rates = np.full(shape, 500.0)
+    bg_rate = np.full(shape, 20.0)
+    bg_rate_sys_err = np.full(shape, 2.0)
+    exposure_factor = np.full(shape, 1.0)
+
+    # Set NaN in one calibration product's uncertainty at position [0,0,0,0,0]
+    # The other calibration product is valid, so result should be finite
+    stat_uncert[0, 0, 0, 0, 0] = np.nan
+
+    # Set NaN in both calibration products at position [0,1,:,0,0]
+    # Since ALL products have NaN, result should be NaN (due to min_count=1)
+    stat_uncert[0, 1, 0, 0, 0] = np.nan
+    stat_uncert[0, 1, 1, 0, 0] = np.nan
+
+    # Set NaN in sys_err for one product at position [0,0,0,1,0]
+    sys_err[0, 0, 0, 1, 0] = np.nan
+
+    # Set NaN in sys_err for both products at position [0,1,:,1,0]
+    sys_err[0, 1, 0, 1, 0] = np.nan
+    sys_err[0, 1, 1, 1, 0] = np.nan
+
+    dim_names = list(coords.keys())
+    test_ds = xr.Dataset(
+        {
+            "ena_intensity": xr.DataArray(intensity, dims=dim_names),
+            "ena_intensity_stat_uncert": xr.DataArray(stat_uncert, dims=dim_names),
+            "ena_intensity_sys_err": xr.DataArray(sys_err, dims=dim_names),
+            "ena_signal_rates": xr.DataArray(signal_rates, dims=dim_names),
+            "bg_rate": xr.DataArray(bg_rate, dims=dim_names),
+            "bg_rate_sys_err": xr.DataArray(bg_rate_sys_err, dims=dim_names),
+            "exposure_factor": xr.DataArray(exposure_factor, dims=dim_names),
+        }
+    )
+
+    geom_factors = xr.DataArray(
+        np.ones((2, 2)), dims=["esa_energy_step", "calibration_prod"]
+    )
+
+    esa_energies = xr.DataArray(np.array([1.0, 2.0]), dims=["esa_energy_step"])
+
+    result_ds = combine_calibration_products(test_ds, geom_factors, esa_energies)
+
+    # Test 1: When one product has NaN stat_uncert, result should be finite
+    # (skipna=True uses the valid value from the other product)
+    assert np.isfinite(result_ds["ena_intensity_stat_uncert"].values[0, 0, 0, 0])
+
+    # Test 2: When ALL products have NaN stat_uncert, result should be NaN
+    # (min_count=1 ensures at least one valid value is needed)
+    assert np.isnan(result_ds["ena_intensity_stat_uncert"].values[0, 1, 0, 0])
+
+    # Test 3: When one product has NaN sys_err, result should be finite
+    assert np.isfinite(result_ds["ena_intensity_sys_err"].values[0, 0, 1, 0])
+
+    # Test 4: When ALL products have NaN sys_err, result should be NaN
+    assert np.isnan(result_ds["ena_intensity_sys_err"].values[0, 1, 1, 0])
+
+
 # =============================================================================
 # PSET PROCESSING TESTS
 # =============================================================================
