@@ -22,6 +22,8 @@ from imap_processing.idex.idex_l2a import (
     estimate_dust_mass,
     fit_impact,
     idex_l2a,
+    load_calibration_files,
+    log_smooth_powerlaw,
     remove_signal_noise,
     sine_fit,
     time_to_mass,
@@ -64,6 +66,13 @@ def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
     combined_sig = sine_signal + (time * 5)
 
     return combined_sig
+
+
+def _write_calibration_csv(path, values):
+    """Write a one-row calibration CSV with the ancillary-file structure."""
+    header = "A,a1,a2,a3,v_b,v_c,k,sigma,delta\n"
+    row = ",".join(str(value) for value in values) + "\n"
+    path.write_text(header + row)
 
 
 @pytest.mark.external_test_data
@@ -273,6 +282,56 @@ def test_analyze_peaks_warning(caplog):
     np.testing.assert_array_equal(redchi, np.zeros(redchi.shape))
     np.testing.assert_array_equal(fit_params, np.zeros(fit_params.shape))
     np.testing.assert_array_equal(area_under_curve, np.zeros(area_under_curve.shape))
+
+
+def test_load_calibration_files_returns_expected_t_rise_params(tmp_path):
+    """Tests that t-rise ancillary values are loaded into t_rise_params."""
+    expected_t_rise_params = np.array([3.6, -0.2, -2.0, 0.38, 5.1, 13.7, 13.3, 0.28])
+    yield_values = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40, 1.47])
+
+    t_rise_path = tmp_path / "t_rise.csv"
+    yield_path = tmp_path / "yield.csv"
+    _write_calibration_csv(t_rise_path, expected_t_rise_params)
+    _write_calibration_csv(yield_path, yield_values)
+
+    t_rise_params, _yield_params = load_calibration_files(
+        {
+            "l2a-calibration-curve-t-rise": t_rise_path,
+            "l2a-calibration-curve-yield-params": yield_path,
+        }
+    )
+
+    np.testing.assert_allclose(t_rise_params, expected_t_rise_params)
+
+
+def test_load_calibration_files_returns_expected_yield_params(tmp_path):
+    """Tests that yield ancillary values are loaded into yield_params."""
+    t_rise_values = np.array([3.6, -0.2, -2.0, 0.38, 5.1, 13.7, 13.3, 0.28, 1.33])
+    expected_yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
+
+    t_rise_path = tmp_path / "t_rise.csv"
+    yield_path = tmp_path / "yield.csv"
+    _write_calibration_csv(t_rise_path, t_rise_values)
+    _write_calibration_csv(yield_path, expected_yield_params)
+
+    _t_rise_params, yield_params = load_calibration_files(
+        {
+            "l2a-calibration-curve-t-rise": t_rise_path,
+            "l2a-calibration-curve-yield-params": yield_path,
+        }
+    )
+
+    np.testing.assert_allclose(yield_params, expected_yield_params)
+
+
+def test_log_smooth_powerlaw_yield_curve_at_10_km_s():
+    """Tests that the yield calibration returns the expected value at 10 km/s."""
+    yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
+
+    log_yield = log_smooth_powerlaw(np.log10(10.0), yield_params[0], yield_params[1:])
+    yield_value = 10**log_yield
+
+    assert yield_value == pytest.approx(755.0, rel=1e-3)
 
 
 @pytest.mark.external_test_data
