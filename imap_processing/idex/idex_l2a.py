@@ -323,9 +323,9 @@ def calculate_velocity_and_mass(
     t_rise : float
         T_rise fit parameter from the target fit (us).
     t_rise_params : np.ndarray
-        Calibration parameters for rise time (us)
+        Calibration parameters for rise time (us).
     yield_params : np.ndarray
-        Calibration parameters for yield. 
+        Calibration parameters for yield.
 
     Returns
     -------
@@ -338,10 +338,7 @@ def calculate_velocity_and_mass(
     try:
         root = root_scalar(
             lambda lv: (
-                log_smooth_powerlaw(
-                    lv, log_a_t, t_rise_params[1:], label="t_rise"
-                )
-                - np.log10(t_rise)
+                log_smooth_powerlaw(lv, log_a_t, t_rise_params[1:]) - np.log10(t_rise)
             ),
             bracket=[-1, 2],
         )
@@ -355,18 +352,14 @@ def calculate_velocity_and_mass(
         return np.nan, np.nan
 
     log_a_y: float = np.log10(yield_params[0])
-    yield_val = 10 ** log_smooth_powerlaw(
-        np.log10(v_est), log_a_y, yield_params[1:], label="yield"
-    )
+    yield_val = 10 ** log_smooth_powerlaw(np.log10(v_est), log_a_y, yield_params[1:])
     sig_amp_coulombs = sig_amp * 1e-12
     mass_est = sig_amp_coulombs / yield_val
 
     return v_est, mass_est
 
 
-def log_smooth_powerlaw(
-    log_v: float, log_a: float, params: np.ndarray, label: str = "unknown"
-) -> float:
+def log_smooth_powerlaw(log_v: float, log_a: float, params: np.ndarray) -> float:
     """
     Define a smoothly transitioning power law used by the IDEX calibration curves.
 
@@ -379,9 +372,9 @@ def log_smooth_powerlaw(
     log_v : float
         The log10 input to the calibration curve.
         This is either log10(rise_time [us]) for the rise-time case or
-        log10(velocity [km/s]) for the yield case.
+        Log10(velocity [km/s]) for the yield case.
     log_a : float
-        log10 of the calibration scale factor A.
+        Log10 of the calibration scale factor A.
     params : np.ndarray
         Calibration parameters for the power law
         [a1, a2, a3, vb, vc, k, m].
@@ -398,7 +391,7 @@ def log_smooth_powerlaw(
     # segments.
     # vb and vc are the characteristic speeds where the slope transition happens, and k
     # setting the sharpness of the transitions.
-    a1, a2, a3, vb, vc, k, m = params
+    a1, a2, a3, vb, vc, k, _m = params
     v = 10**log_v
     base = log_a + a1 * log_v
     transition1 = (1 + (v / vb) ** k) ** ((a2 - a1) / k)
