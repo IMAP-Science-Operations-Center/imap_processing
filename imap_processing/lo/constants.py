@@ -9,20 +9,18 @@ ELEMS = ("H", "O")
 # Hours into the day (UTC) for HK data to calculate median for pivot angle estimation.
 PIVOT_HK_HOUR_RANGE: tuple[int, int] = (3, 15)
 
-# Per-day overrides for the anti-RAM background rate. Keyed by (year, day-of-year)
-BG_RATE_ANTI_RAM_OVERRIDES: dict[tuple[int, int], float] = {
-    (2026, 62): 0.0014,
-    (2026, 64): 0.0,
-    (2026, 65): 0.0,
-    (2026, 91): 0.03,
-}
-
-# One histogram accumulation cycle duration [s]
-HISTOGRAM_CYCLE_EPOCHS: int = 420
-
 N_CYCLE_SUM: int = 1  # Granularity of goodtime boundaries
 N_CYCLE_AVE: int = 7  # Cycles to average over when estimating background rates
 N_ESA_LEVELS: int = 7  # Total number of ESA levels
+N_SPINS_PER_ESA_LEVEL: int = 4  # Spins per ESA step within one histogram cycle
+
+# Nominal spin period [s]. True spin duration is NOT 15 seconds.
+NOMINAL_SPIN_PERIOD_SEC: float = 15.0
+
+# One histogram accumulation cycle duration [s]
+HISTOGRAM_CYCLE_EPOCHS: int = (
+    N_ESA_LEVELS * N_SPINS_PER_ESA_LEVEL * int(NOMINAL_SPIN_PERIOD_SEC)
+)
 RAM_ESA_LEVELS: tuple[int, ...] = (
     6,
     7,

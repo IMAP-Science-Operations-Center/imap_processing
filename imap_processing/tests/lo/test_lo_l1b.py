@@ -122,6 +122,10 @@ def anc_dependencies():
         str(
             imap_module_directory / "tests/lo/test_anc/imap_lo_esa-mode-lut_v001.csv",
         ),
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/imap_lo_bg-rates-anti-ram-overrides_20250901_v001.csv",
+        ),
     ]
 
 
@@ -2191,7 +2195,7 @@ def test_get_pivot_angle_from_nhk():
     assert pivot_angle == expected_pivot_angle
 
 
-def test_l1b_bgrates_and_goodtimes_basic(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
     """Test basic functionality of l1b_bgrates_and_goodtimes."""
     # Arrange - Create a simple L1B histogram rates dataset
     # with enough data points to create goodtime intervals
@@ -2225,7 +2229,9 @@ def test_l1b_bgrates_and_goodtimes_basic(attr_mgr_l1b):
     }
 
     # Act
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
 
     # Assert - Should return a list with two datasets
     assert isinstance(result, list)
@@ -2259,7 +2265,7 @@ def test_l1b_bgrates_and_goodtimes_basic(attr_mgr_l1b):
     )
 
 
-def test_l1b_bgrates_and_goodtimes_with_gap(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_with_gap(anc_dependencies, attr_mgr_l1b):
     """Test l1b_bgrates_and_goodtimes handles data gaps correctly."""
     # Arrange - Create dataset with a large gap in the middle
     num_epochs_first = 50
@@ -2308,7 +2314,9 @@ def test_l1b_bgrates_and_goodtimes_with_gap(attr_mgr_l1b):
     }
 
     # Act
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
 
     # Assert
     l1b_bgrates_ds, l1b_goodtimes_ds = result
@@ -2326,7 +2334,7 @@ def test_l1b_bgrates_and_goodtimes_with_gap(attr_mgr_l1b):
         assert interval_duration < gap_size
 
 
-def test_l1b_bgrates_and_goodtimes_high_rate(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_high_rate(anc_dependencies, attr_mgr_l1b):
     """Test l1b_bgrates_and_goodtimes handles high count rates correctly."""
     # Arrange - Create dataset with high rates that exceed threshold
     num_epochs = 100
@@ -2370,7 +2378,9 @@ def test_l1b_bgrates_and_goodtimes_high_rate(attr_mgr_l1b):
     }
 
     # Act
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
 
     # Assert
     l1b_bgrates_ds, l1b_goodtimes_ds = result
@@ -2383,7 +2393,7 @@ def test_l1b_bgrates_and_goodtimes_high_rate(attr_mgr_l1b):
     assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
 
 
-def test_l1b_bgrates_and_goodtimes_no_goodtimes(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_no_goodtimes(anc_dependencies, attr_mgr_l1b):
     """When no goodtimes are detected the function should still return datasets."""
     num_epochs = 50
     met_start = 473389200
@@ -2415,7 +2425,7 @@ def test_l1b_bgrates_and_goodtimes_no_goodtimes(attr_mgr_l1b):
     }
 
     _, goodtimes_ds = l1b_bgrates_and_goodtimes(
-        sci_dependencies, attr_mgr_l1b, delay_max=840
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
     )
 
     # When no goodtimes are detected a single fallback row (0, 0) is used.
@@ -2424,7 +2434,7 @@ def test_l1b_bgrates_and_goodtimes_no_goodtimes(attr_mgr_l1b):
     assert int(goodtimes_ds["gt_end_met"].values[0]) == 0
 
 
-def test_l1b_bgrates_and_goodtimes_empty_dataset(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_empty_dataset(anc_dependencies, attr_mgr_l1b):
     """Test l1b_bgrates_and_goodtimes handles edge case with minimal data."""
     # Arrange - Create minimal dataset (just enough for one cycle)
     num_epochs = 10
@@ -2457,7 +2467,9 @@ def test_l1b_bgrates_and_goodtimes_empty_dataset(attr_mgr_l1b):
     }
 
     # Act
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
 
     # Assert - Should still create valid datasets even with minimal data
     l1b_bgrates_ds, l1b_goodtimes_ds = result
@@ -2531,7 +2543,9 @@ def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
     assert goodtimes_ds["pivot_de"].dims == ()
 
 
-def test_l1b_bgrates_and_goodtimes_ram_and_anti_ram_bins(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_ram_and_anti_ram_bins(
+    anc_dependencies, attr_mgr_l1b
+):
     """Test that the function correctly uses bins anti-RAM 20-50 and RAM 0-20/50-60."""
     # Arrange - Create dataset with specific counts in different azimuth bins
     num_epochs = 30
@@ -2578,7 +2592,9 @@ def test_l1b_bgrates_and_goodtimes_ram_and_anti_ram_bins(attr_mgr_l1b):
         "imap_lo_l1b_nhk": cdf_hk,
     }
 
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
     # Should create goodtime intervals because RAM and anti-RAM bins have low counts
@@ -2587,7 +2603,7 @@ def test_l1b_bgrates_and_goodtimes_ram_and_anti_ram_bins(attr_mgr_l1b):
     assert l1b_bgrates_ds["h_synthetic_floor"].values > 0
 
 
-def test_l1b_bgrates_and_goodtimes_variance_calculation(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_variance_calculation(anc_dependencies, attr_mgr_l1b):
     """Test that variance is calculated correctly and handles edge cases."""
     # Arrange
     num_epochs = 30
@@ -2624,7 +2640,9 @@ def test_l1b_bgrates_and_goodtimes_variance_calculation(attr_mgr_l1b):
     }
 
     # Act
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
 
     # Assert
     l1b_bgrates_ds, l1b_goodtimes_ds = result
@@ -2638,7 +2656,7 @@ def test_l1b_bgrates_and_goodtimes_variance_calculation(attr_mgr_l1b):
     assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
 
 
-def test_l1b_bgrates_and_goodtimes_offset_application(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_offset_application(anc_dependencies, attr_mgr_l1b):
     """Test that padding is applied to goodtime intervals."""
     # Arrange
     num_epochs = 30
@@ -2671,7 +2689,9 @@ def test_l1b_bgrates_and_goodtimes_offset_application(attr_mgr_l1b):
     }
 
     # Act
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
 
     # Assert
     l1b_bgrates_ds, l1b_goodtimes_ds = result
@@ -2687,7 +2707,9 @@ def test_l1b_bgrates_and_goodtimes_offset_application(attr_mgr_l1b):
     assert l1b_goodtimes_ds["gt_end_met"].values[0] >= raw_end
 
 
-def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(
+    anc_dependencies, attr_mgr_l1b
+):
     """Test interval closure when transitioning from low to high rate
     (covers begin > 0.0 block)."""
     # Arrange - Create dataset that transitions from LOW to HIGH rates
@@ -2727,7 +2749,9 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(attr_mgr_l1b):
     }
 
     # Act
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
 
     # Assert
     l1b_bgrates_ds, l1b_goodtimes_ds = result
@@ -2752,7 +2776,9 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(attr_mgr_l1b):
     assert np.all(l1b_bgrates_ds["o_background_variance"].values > 0)
 
 
-def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(attr_mgr_l1b):
+def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(
+    anc_dependencies, attr_mgr_l1b
+):
     """Test multiple intervals created by multiple rate transitions."""
     # Arrange - Create dataset with HIGH -> LOW -> HIGH -> LOW pattern
     # This tests multiple calls to the "if begin > 0.0:" code path
@@ -2795,7 +2821,9 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(attr_mgr_
     }
 
     # Act
-    result = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b, delay_max=840)
+    result = l1b_bgrates_and_goodtimes(
+        sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+    )
 
     # Assert
     l1b_bgrates_ds, l1b_goodtimes_ds = result

@@ -2,11 +2,12 @@
 
 import logging
 from dataclasses import Field
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import spiceypy
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -36,7 +37,6 @@ from imap_processing.spice.spin import (
     interpolate_spin_data,
 )
 from imap_processing.spice.time import (
-    epoch_to_doy,
     epoch_to_fractional_doy,
     et_to_utc,
     met_to_ttj2000ns,
@@ -255,7 +255,7 @@ def lo_l1b(
 
     elif descriptor == "goodtimes":
         logger.info("\nProcessing IMAP-Lo L1B Background Rates and Goodtimes...")
-        ds = l1b_bgrates_and_goodtimes(sci_dependencies, attr_mgr_l1b)
+        ds = l1b_bgrates_and_goodtimes(sci_dependencies, anc_dependencies, attr_mgr_l1b)
         datasets_to_return.extend(ds)
 
     else:
@@ -1668,10 +1668,18 @@ def resweep_histogram_data(
     exposure_factor_60deg = np.zeros_like(
         l1b_histrates["start_a_counts"].values, dtype=int
     )
-    # We have 4 spins per ESA step in an ASC, so we need to place
-    # 4 spins into each bin as our multiplication factor
-    np.add.at(exposure_factor_6deg, (slice(None), energy_mapping, slice(None)), 4)
-    np.add.at(exposure_factor_60deg, (slice(None), energy_mapping, slice(None)), 4)
+    # We have N_SPINS_PER_ESA_LEVEL spins per ESA step in an ASC, so we need to place
+    # N_SPINS_PER_ESA_LEVEL spins into each bin as our multiplication factor
+    np.add.at(
+        exposure_factor_6deg,
+        (slice(None), energy_mapping, slice(None)),
+        c.N_SPINS_PER_ESA_LEVEL,
+    )
+    np.add.at(
+        exposure_factor_60deg,
+        (slice(None), energy_mapping, slice(None)),
+        c.N_SPINS_PER_ESA_LEVEL,
+    )
 
     # Create a dictionary to hold exposure factors for both bin types
     exposure_factors = {}
@@ -1840,9 +1848,11 @@ def calculate_de_rates(
 
     # exposure time shape: (num_asc, num_esa_steps)
     exposure_time: np.ndarray = np.zeros((num_asc, 7), dtype=float)
-    # exposure_time_6deg = 4 * avg_spin_per_asc / 60
-    # 4 sweeps per ASC (28 / 7) in 60 bins
-    asc_avg_spin_durations = 4 * l1b_de["avg_spin_durations"].data[unique_idx] / 60
+    # exposure_time_6deg = N_SPINS_PER_ESA_LEVEL * avg_spin_per_asc / 60
+    # N_SPINS_PER_ESA_LEVEL sweeps per ASC (28 / 7) in 60 bins
+    asc_avg_spin_durations = (
+        c.N_SPINS_PER_ESA_LEVEL * l1b_de["avg_spin_durations"].data[unique_idx] / 60
+    )
     np.add.at(
         exposure_time,
         (slice(None), energy_step_mapping),
@@ -2498,6 +2508,7 @@ def l1b_star(
 
 def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     sci_dependencies: dict,
+    anc_dependencies: list,
     attr_mgr_l1b: ImapCdfAttributes,
     delay_max: int | None = None,
 ) -> xr.Dataset:
@@ -2510,6 +2521,8 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     ----------
     sci_dependencies : dict
         Dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    anc_dependencies : list
+        List of ancillary file paths.
     attr_mgr_l1b : ImapCdfAttributes
         Attribute manager for L1B dataset metadata.
     delay_max : int | None
@@ -2556,10 +2569,9 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     met = ttj2000ns_to_met(epoch_ttj2000)
 
     # Get year and day-of-year for the anti-RAM threshold override lookup
-    epoch_utc_str = et_to_utc(ttj2000ns_to_et(epoch_ttj2000[0]))
-    epoch_start_dt = datetime.strptime(epoch_utc_str.split("T")[0], "%Y-%m-%d")
+    epoch_start_dt = spiceypy.et2datetime(ttj2000ns_to_et(epoch_ttj2000[0]))
     epoch_year = epoch_start_dt.year
-    epoch_doy = epoch_to_doy(epoch_ttj2000[:1])[0]
+    epoch_doy = epoch_start_dt.timetuple().tm_yday
 
     # Choose background rate thresholds based on pivot orientation.
     if c.PIVOT_90_RANGE[0] < pivot < c.PIVOT_90_RANGE[1]:
@@ -2570,7 +2582,16 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
         bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_NON_90
 
     # Manual overrides of the anti-RAM threshold for anomalous days.
-    bg_rate_anti_ram_nominal = c.BG_RATE_ANTI_RAM_OVERRIDES.get(
+    overrides_anc_files = [
+        s for s in anc_dependencies if "bg-rates-anti-ram-overrides" in str(s)
+    ]
+    if overrides_anc_files:
+        overrides = lo_ancillary.read_ancillary_file(str(overrides_anc_files[0]))
+        overrides = overrides.set_index(["year", "doy"])["counts/s"].to_dict()
+    else:
+        overrides = {}
+
+    bg_rate_anti_ram_nominal = overrides.get(
         (epoch_year, epoch_doy), bg_rate_anti_ram_nominal
     )
 
@@ -2591,6 +2612,7 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
         )
 
     # Pre-compute expected exposure times [s] for the averaging and summing windows.
+    # Exposure is tied to the histogram cadence rather than the total pointing duration.
     exposure = c.HISTOGRAM_CYCLE_EPOCHS * c.N_CYCLE_AVE * c.EXPOSURE_FACTOR
     exposure_ram = exposure * len(c.RAM_ESA_LEVELS) / c.N_ESA_LEVELS
     exposure_sum = c.HISTOGRAM_CYCLE_EPOCHS * c.N_CYCLE_SUM * c.EXPOSURE_FACTOR
