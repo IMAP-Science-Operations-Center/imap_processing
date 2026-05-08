@@ -334,6 +334,32 @@ def test_log_smooth_powerlaw_yield_curve_at_10_km_s():
     assert yield_value == pytest.approx(755.0, rel=1e-3)
 
 
+def test_calculate_velocity_and_mass_at_10_km_s():
+    """Tests mass estimation using a mocked 10 km/s velocity solution."""
+    t_rise_params = np.array([3.6, -0.2, -2.0, 0.38, 5.1, 13.7, 13.3, 0.28])
+    yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
+    sig_amp_pc = 10.0
+
+    # This test intentionally bypasses the t_rise -> velocity inversion.
+    # The t_rise calibration path is currently under review and will be
+    # covered by a dedicated follow-up test once that behavior is finalized.
+    mocked_root = mock.Mock()
+    mocked_root.root = 1.0  # 10**1.0 == 10 km/s
+
+    with mock.patch(
+        "imap_processing.idex.idex_l2a.root_scalar", return_value=mocked_root
+    ):
+        velocity_estimate, mass_estimate = calculate_velocity_and_mass(
+            sig_amp_pc, 2.0, t_rise_params, yield_params
+        )
+
+    expected_yield = 755.0090524738858
+    expected_mass_kg = sig_amp_pc * 1e-12 / expected_yield
+
+    assert velocity_estimate == pytest.approx(10.0, rel=1e-12)
+    assert mass_estimate == pytest.approx(expected_mass_kg, rel=1e-12)
+
+
 @pytest.mark.external_test_data
 def test_velocity_and_mass_estimate(ancillary_files):
     """Tests that the velocity and mass estimate function."""
