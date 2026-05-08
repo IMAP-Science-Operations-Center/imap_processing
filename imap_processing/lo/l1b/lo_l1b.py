@@ -11,8 +11,8 @@ import spiceypy
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.lo import constants as c
 from imap_processing.lo import lo_ancillary
+from imap_processing.lo.constants import LoConstants as c  # noqa: N813
 from imap_processing.lo.l1b.tof_conversions import (
     TOF0_CONV,
     TOF1_CONV,
