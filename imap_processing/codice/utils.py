@@ -165,7 +165,7 @@ def get_view_tab_obj(
 
     Parameters
     ----------
-    lut_file : Path
+    lut_file : pathlib.Path
         Path to the SCI-LUT JSON file.
     table_id : str
         Table identifier to extract from the JSON.
@@ -211,7 +211,7 @@ def process_by_table_id(
     ----------
     unpacked_dataset : xarray.Dataset
         Full unpacked dataset from the L0 packet file.
-    lut_file : Path
+    lut_file : pathlib.Path
         Path to the SCI-LUT JSON file passed through to *process_fn*.
     process_fn : Callable
         The private ``_process_xxx`` function to call for each table_id group.

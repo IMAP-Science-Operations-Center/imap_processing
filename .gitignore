@@ -173,6 +173,7 @@ cython_debug/
 # Data that is downloaded
 data/
 test_data/
+/imap_processing/tests/glows/validation_data/
 /imap_processing/tests/mag/validation/L1c/T013/mag-l1b-l1c-t013-magi-burst-in.csv
 /imap_processing/tests/mag/validation/L1c/T013/mag-l1b-l1c-t013-mago-burst-in.csv
 /imap_processing/tests/mag/validation/L1c/T014/mag-l1b-l1c-t014-magi-burst-in.csv

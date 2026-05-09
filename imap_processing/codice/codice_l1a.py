@@ -83,6 +83,17 @@ def process_l1a(  # noqa: PLR0912
             datasets.append(
                 process_by_table_id(datasets_by_apid[apid], lut_file, l1a_lo_species)
             )
+        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
+            logger.info("Processing Lo NSW Species Counts")
+            datasets.append(
+                process_by_table_id(datasets_by_apid[apid], lut_file, l1a_lo_species)
+            )
+        elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
+            logger.info("Processing Lo SW Angular Counts")
+            datasets.append(l1a_lo_angular(datasets_by_apid[apid], lut_file))
+        elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
+            logger.info("Processing Lo NSW Angular Counts")
+            datasets.append(l1a_lo_angular(datasets_by_apid[apid], lut_file))
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
             datasets.append(
                 process_by_table_id(datasets_by_apid[apid], lut_file, l1a_hi_omni)
