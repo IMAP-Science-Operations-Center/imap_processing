@@ -2786,13 +2786,13 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     )
 
     l1b_combined_ds["gt_start_met"] = xr.DataArray(
-        data=np.array([r[0] for r in goodtime_rows], dtype=np.float32),
+        data=np.array([r[0] for r in goodtime_rows], dtype=np.float64),
         name="Goodtime_start",
         dims=["epoch"],
         attrs=attr_mgr_l1b.get_variable_attributes("gt_start_met"),
     )
     l1b_combined_ds["gt_end_met"] = xr.DataArray(
-        data=np.array([r[1] for r in goodtime_rows], dtype=np.float32),
+        data=np.array([r[1] for r in goodtime_rows], dtype=np.float64),
         name="Goodtime_end",
         dims=["epoch"],
         attrs=attr_mgr_l1b.get_variable_attributes("gt_end_met"),
