@@ -2873,7 +2873,9 @@ def split_backgrounds_and_goodtimes_dataset(
         ]
     )
 
-    lib_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
-    lib_bgrates_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_bgrates")
+    l1b_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
+    l1b_bgrates_ds["epoch"] = l1b_backgrounds_and_goodtimes_ds["epoch"]
+    l1b_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
+    l1b_bgrates_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_bgrates")
 
-    return lib_bgrates_ds, l1b_goodtimes_ds
+    return l1b_bgrates_ds, l1b_goodtimes_ds
