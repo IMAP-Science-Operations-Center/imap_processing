@@ -26,6 +26,7 @@ class LoConstants:
     N_CYCLE_AVE: int = 7  # Cycles to average over when estimating background rates
     N_ESA_LEVELS: int = 7  # Total number of ESA levels
     N_SPINS_PER_ESA_LEVEL: int = 4  # Spins per ESA step within one histogram cycle
+    N_SPIN_ANGLE_BINS: int = 60  # Number of angular bins within a spin
 
     # Nominal spin period [s]. True spin duration is NOT 15 seconds.
     NOMINAL_SPIN_PERIOD_SEC: float = 15.0
