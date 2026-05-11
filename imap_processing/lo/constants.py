@@ -20,7 +20,7 @@ class LoConstants:
 
     # Hours into the day (UTC) for HK data to calculate median for pivot angle
     # estimation.
-    PIVOT_HK_HOUR_RANGE: tuple[int, int] = (3, 15)
+    PIVOT_HK_HOUR_RANGE: tuple[float, float] = (0.5, 22.5)
 
     N_CYCLE_SUM: int = 1  # Granularity of goodtime boundaries
     N_CYCLE_AVE: int = 7  # Cycles to average over when estimating background rates
