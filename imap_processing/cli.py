@@ -423,12 +423,12 @@ class ProcessInstrument(ABC):
                     logger.info(f"Uploading file: {filename}")
                     imap_data_access.upload(filename)
                 except IMAPDataAccessError as e:
-                    msg = str(e)
-                    if "FileAlreadyExists" in msg and "409" in msg:
+                    message = str(e)
+                    if "FileAlreadyExists" in message and "409" in message:
                         logger.warning("Skipping upload of existing file, %s", filename)
                         continue
                     else:
-                        logger.error(f"Upload failed with error: {msg}")
+                        logger.error(f"Upload failed with error: {message}")
                 except Exception as e:
                     logger.error(f"Upload failed unknown error: {e}")
 
@@ -1082,7 +1082,7 @@ class Idex(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="idex")
             datasets = idex_l1a(science_files, self.start_date)
         elif self.data_level == "l1b":
-            n_expected_deps = 3 if self.descriptor == "sci-1week" else 1
+            n_expected_deps = 3 if self.descriptor == "sci-10days" else 1
             if len(dependency_list) != n_expected_deps:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L1B {self.descriptor}:"
@@ -1126,12 +1126,14 @@ class Idex(ProcessInstrument):
                     f"{dependency_list}. Expected three or four dependencies."
                 )
             sci_files = dependencies.get_file_paths(
-                source="idex", descriptor="sci-1week"
+                source="idex", descriptor="sci-10days"
             )
             sci_dependencies = [load_cdf(f) for f in sci_files]
             # sort science files by the first epoch value
             sci_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
-            hk_files = dependencies.get_file_paths(source="idex", descriptor="msg")
+            hk_files = dependencies.get_file_paths(
+                source="idex", descriptor="msg-10days"
+            )
             # Remove duplicate housekeeping files
             hk_dependencies = [load_cdf(dep) for dep in list(set(hk_files))]
             # sort housekeeping files by the first epoch value

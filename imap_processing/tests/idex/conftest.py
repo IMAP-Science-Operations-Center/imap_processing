@@ -19,8 +19,8 @@ TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
 L1B_EXAMPLE_FILE = TEST_DATA_PATH / "imap_idex_l1b_sci_20231218_v004.h5"
 
-L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
-L1B_MSG_CDF = TEST_DATA_PATH / "imap_idex_l1b_msg_20250108_v001.cdf"
+L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-10days_20251017_v001.cdf"
+L1B_MSG_CDF = TEST_DATA_PATH / "imap_idex_l1b_msg-10days_20250108_v001.cdf"
 
 pytestmark = pytest.mark.external_test_data
 
@@ -34,7 +34,7 @@ def decom_test_data_sci() -> xr.Dataset:
     dataset : xarray.Dataset
         A ``xarray`` dataset containing the science test data
     """
-    return PacketParser(TEST_L0_FILE_SCI).data["l1a_sci-1week"]
+    return PacketParser(TEST_L0_FILE_SCI).data["l1a_sci-10days"]
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def decom_test_data_catlst() -> list[xr.Dataset]:
         A list of ``xarray`` dataset containing the catalog list summary datasets.
     """
     data = PacketParser(TEST_L0_FILE_CATLST).data
-    return [data["l1a_catlst"], data["l1b_catlst"]]
+    return [data["l1a_catlst-10days"], data["l1b_catlst-10days"]]
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def decom_test_data_msg() -> xr.Dataset:
     dataset : xarray.Dataset
         ``xarray`` dataset containing the event log data.
     """
-    return PacketParser(TEST_L0_FILE_MSG).data["l1a_msg"]
+    return PacketParser(TEST_L0_FILE_MSG).data["l1a_msg-10days"]
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def test_l1b_msg(decom_test_data_msg) -> xr.Dataset:
     dataset : xarray.Dataset
         ``xarray`` dataset containing the event log data.
     """
-    return idex_l1b(decom_test_data_msg, "msg")
+    return idex_l1b(decom_test_data_msg, "msg-10days")
 
 
 @pytest.fixture
@@ -125,7 +125,7 @@ def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Data
     """
 
     mock_get_spice_data.side_effect = get_spice_data_side_effect_func
-    dataset = idex_l1b(decom_test_data_sci, "sci-1week")
+    dataset = idex_l1b(decom_test_data_sci, "sci-10days")
     return dataset
 
 

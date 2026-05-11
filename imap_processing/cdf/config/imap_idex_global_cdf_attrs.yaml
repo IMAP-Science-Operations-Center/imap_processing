@@ -11,45 +11,45 @@ instrument_base: &instrument_base
 
 imap_idex_l1a_sci:
   <<: *instrument_base
-  Data_type: L1A_SCI-1WEEK>Level-1A Science Weekly Data
-  Logical_source: imap_idex_l1a_sci-1week
-  Logical_source_description: IMAP Mission IDEX Instrument Level-1A Weekly Data.
+  Data_type: L1A_SCI-10DAYS>Level-1A Science Data
+  Logical_source: imap_idex_l1a_sci-10days
+  Logical_source_description: IMAP Mission IDEX Instrument Level-1A 10-Day Data.
 
-imap_idex_l1a_msg:
+imap_idex_l1a_msg-10days:
   <<: *instrument_base
-  Data_type: L1A_MSG>Level-1A Event Message Data
-  Logical_source: imap_idex_l1a_msg
+  Data_type: L1A_MSG-10DAYS>Level-1A Event Message Data
+  Logical_source: imap_idex_l1a_msg-10days
   Logical_source_description: IMAP Mission IDEX Instrument Level-1A Event Message Data.
 
-imap_idex_l1a_catlst:
+imap_idex_l1a_catlst-10days:
   <<: *instrument_base
-  Data_type: L1A_CATLST>Level-1A Packet Catalog Summary Data
-  Logical_source: imap_idex_l1a_catlst
+  Data_type: L1A_CATLST-10DAYS>Level-1A Packet Catalog Summary Data
+  Logical_source: imap_idex_l1a_catlst-10days
   Logical_source_description: IMAP Mission IDEX Instrument Level-1A Packet Catalog Summary Data.
 
 imap_idex_l1b_sci:
   <<: *instrument_base
-  Data_type: L1B_SCI-1WEEK>Level-1B Science Weekly Data
-  Logical_source: imap_idex_l1b_sci-1week
-  Logical_source_description: IMAP Mission IDEX Instrument Level-1B Weekly Data.
+  Data_type: L1B_SCI-10DAYS>Level-1B Science 10-Day Data
+  Logical_source: imap_idex_l1b_sci-10days
+  Logical_source_description: IMAP Mission IDEX Instrument Level-1B 10-Day Data.
 
-imap_idex_l1b_msg:
+imap_idex_l1b_msg-10days:
   <<: *instrument_base
-  Data_type: L1B_MSG>Level-1B Event Message Data
-  Logical_source: imap_idex_l1b_msg
+  Data_type: L1B_MSG-10DAYS>Level-1B Event Message Data
+  Logical_source: imap_idex_l1b_msg-10days
   Logical_source_description: IMAP Mission IDEX Instrument Level-1B Event Message Data.
 
-imap_idex_l1b_catlst:
+imap_idex_l1b_catlst-10days:
   <<: *instrument_base
-  Data_type: L1B_CATLST>Level-1B Packet Catalog Summary Data
-  Logical_source: imap_idex_l1b_catlst
+  Data_type: L1B_CATLST-10DAYS>Level-1B Packet Catalog Summary Data
+  Logical_source: imap_idex_l1b_catlst-10days
   Logical_source_description: IMAP Mission IDEX Instrument Level-1B Packet Catalog Summary Data.
 
 imap_idex_l2a_sci:
   <<: *instrument_base
-  Data_type: L2A_SCI-1WEEK>Level-2A Science Weekly Data
-  Logical_source: imap_idex_l2a_sci-1week
-  Logical_source_description: IMAP Mission IDEX Instrument Level-2A Weekly Data
+  Data_type: L2A_SCI-10DAYS>Level-2A Science 10-Day Data
+  Logical_source: imap_idex_l2a_sci-10days
+  Logical_source_description: IMAP Mission IDEX Instrument Level-2A 10-Day Data
 
 imap_idex_l2b_sci:
   <<: *instrument_base

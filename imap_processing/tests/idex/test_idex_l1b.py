@@ -54,7 +54,7 @@ def test_l1b_logical_source(l1b_dataset: xr.Dataset):
     l1b_dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    expected_src = "imap_idex_l1b_sci-1week"
+    expected_src = "imap_idex_l1b_sci-10days"
     assert l1b_dataset.attrs["Logical_source"] == expected_src
 
 
@@ -69,7 +69,7 @@ def test_idex_cdf_file(l1b_dataset: xr.Dataset):
 
     file_name = write_cdf(l1b_dataset)
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1b_sci-1week_20231218_v999.cdf"
+    assert file_name.name == "imap_idex_l1b_sci-10days_20231218_v999.cdf"
 
 
 def test_idex_waveform_units(l1b_dataset: xr.Dataset):
@@ -381,7 +381,7 @@ def test_l1b_msg_processing(decom_test_data_msg: xr.Dataset):
     msg_ds.messages[20] = EventMessage.PULSER_ON.value
     msg_ds.messages[22] = EventMessage.PULSER_OFF.value
     # Process the MSG data with the l1b function
-    test_l1b_msg = idex_l1b(msg_ds, "msg")
+    test_l1b_msg = idex_l1b(msg_ds, "msg-10days")
     expected_vars = [
         "epoch",
         "pulser_on",
@@ -419,7 +419,7 @@ def test_no_valid_messages(decom_test_data_msg: xr.Dataset):
     msg_ds = decom_test_data_msg.copy()
     # Set all messages to a value that is not a valid pulser on or off event
     msg_ds.messages[:] = "Not a science or pulser event"
-    result = idex_l1b(msg_ds, "msg")
+    result = idex_l1b(msg_ds, "msg-10days")
     assert result is None
 
 

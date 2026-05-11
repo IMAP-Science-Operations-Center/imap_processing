@@ -134,7 +134,7 @@ class PacketParser:
 
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
-            self.data["l1a_sci-1week"] = self._create_science_dataset(science_packets)
+            self.data["l1a_sci-10days"] = self._create_science_dataset(science_packets)
         datasets_by_level = {"l1a": raw_datset_by_apid, "l1b": derived_datasets_by_apid}
         for level, dataset in datasets_by_level.items():
             # Only produce l1a products for event messages. L1b will be processed in a
@@ -144,19 +144,19 @@ class PacketParser:
                 data = dataset[IDEXAPID.IDEX_EVT]
                 processed_data = self._create_evt_msg_data(data)
                 processed_data["epoch"].attrs = epoch_attrs
-                self.data["l1a_msg"] = processed_data
+                self.data["l1a_msg-10days"] = processed_data
 
             if IDEXAPID.IDEX_CATLST in dataset:
                 logger.info(f"Processing IDEX {level} CATLST data")
                 data = dataset[IDEXAPID.IDEX_CATLST]
                 data.attrs = self.idex_attrs.get_global_attributes(
-                    f"imap_idex_{level}_catlst"
+                    f"imap_idex_{level}_catlst-10days"
                 )
                 data["epoch"] = calculate_idex_event_time(
                     data["shcoarse"].data, data["shfine"].data
                 )
                 data["epoch"].attrs = epoch_attrs
-                self.data[f"{level}_catlst"] = data
+                self.data[f"{level}_catlst-10days"] = data
 
         logger.info("IDEX L1A data processing completed.")
 
@@ -196,7 +196,7 @@ class PacketParser:
                     attrs=self.idex_attrs.get_variable_attributes("elssec_evtpkt"),
                 ),
             },
-            attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg"),
+            attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg-10days"),
         )
         # Load the event decoding dictionaries
         with open(
@@ -268,7 +268,9 @@ class PacketParser:
                 "messages", check_schema=False
             ),
         )
-        l1a_msg_ds.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_msg")
+        l1a_msg_ds.attrs = self.idex_attrs.get_global_attributes(
+            "imap_idex_l1a_msg-10days"
+        )
         return l1a_msg_ds
 
     def _create_science_dataset(self, science_decom_packet_list: list) -> xr.Dataset:

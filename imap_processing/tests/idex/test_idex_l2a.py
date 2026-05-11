@@ -2,7 +2,6 @@
 
 from unittest import mock
 
-import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -53,7 +52,7 @@ def l2a_dataset(
         "imap_processing.idex.idex_l1b.get_spice_data",
         return_value={"spin_phase": spin_phase_angles},
     ):
-        dataset = idex_l2a(idex_l1b(decom_test_data_sci, "sci-1week"), ancillary_files)
+        dataset = idex_l2a(idex_l1b(decom_test_data_sci, "sci-10days"), ancillary_files)
     return dataset
 
 
@@ -87,13 +86,13 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     l2a_dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    expected_src = "imap_idex_l2a_sci-1week"
+    expected_src = "imap_idex_l2a_sci-10days"
     assert l2a_dataset.attrs["Logical_source"] == expected_src
     # Verify the CDF file can be created with no errors.
     l2a_dataset.attrs["Data_version"] = "999"
     file_name = write_cdf(l2a_dataset)
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"
+    assert file_name.name == "imap_idex_l2a_sci-10days_20231218_v999.cdf"
     cdf_file = cdflib.CDF(file_name)
     spin_phase_info = cdf_file.varinq("spin_phase")
     spin_phase_attrs = cdf_file.varattsget("spin_phase")

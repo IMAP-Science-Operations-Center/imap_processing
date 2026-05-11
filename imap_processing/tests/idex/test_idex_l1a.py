@@ -33,7 +33,7 @@ def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
     file_name = write_cdf(decom_test_data_sci)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1a_sci-1week_20231218_v999.cdf"
+    assert file_name.name == "imap_idex_l1a_sci-10days_20231218_v999.cdf"
 
 
 def test_bad_cdf_attributes(decom_test_data_sci: xr.Dataset):
@@ -109,7 +109,7 @@ def test_incomplete_event(caplog):
         "imap_processing.idex.idex_l1a.decom_packets",
         return_value=(packets, xr.Dataset(), xr.Dataset()),
     ):
-        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data["l1a_sci-1week"]
+        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data["l1a_sci-10days"]
     # Assert that all the events are present except for one.
     assert len(l1a_dataset["epoch"]) == 13
     assert "Missing packet for event number 1" in caplog.text
@@ -200,8 +200,8 @@ def test_compressed_packet():
     compressed = Path(f"{TEST_DATA_DIR}/compressed_2023_102_14_24_55.pkts")
     non_compressed = Path(f"{TEST_DATA_DIR}/non_compressed_2023_102_14_22_26.pkts")
 
-    decompressed = PacketParser(compressed).data["l1a_sci-1week"]
-    expected = PacketParser(non_compressed).data["l1a_sci-1week"]
+    decompressed = PacketParser(compressed).data["l1a_sci-10days"]
+    expected = PacketParser(non_compressed).data["l1a_sci-10days"]
 
     waveforms = [
         "TOF_High",
@@ -350,10 +350,10 @@ def test_catlst_dataset(decom_test_data_catlst: list[xr.Dataset]):
         np.testing.assert_array_equal(ds.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
     filename_l1a = write_cdf(decom_test_data_catlst[0])
-    assert filename_l1a.name == "imap_idex_l1a_catlst_20241206_v999.cdf"
+    assert filename_l1a.name == "imap_idex_l1a_catlst-10days_20241206_v999.cdf"
 
     filename_l1b = write_cdf(decom_test_data_catlst[1])
-    assert filename_l1b.name == "imap_idex_l1b_catlst_20241206_v999.cdf"
+    assert filename_l1b.name == "imap_idex_l1b_catlst-10days_20241206_v999.cdf"
 
 
 def test_msg_dataset(decom_test_data_msg: xr.Dataset):
@@ -374,7 +374,7 @@ def test_msg_dataset(decom_test_data_msg: xr.Dataset):
     np.testing.assert_array_equal(decom_test_data_msg.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
     filename_l1a = write_cdf(decom_test_data_msg)
-    assert filename_l1a.name == "imap_idex_l1a_msg_20100101_v999.cdf"
+    assert filename_l1a.name == "imap_idex_l1a_msg-10days_20100101_v999.cdf"
 
     # Validate the messages with the IDEX team example data
     example_data = pd.read_csv(
