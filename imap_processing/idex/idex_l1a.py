@@ -45,7 +45,7 @@ def idex_l1a(packet_files: list[Path], start_date: str) -> list[xr.Dataset]:
 
     Parameters
     ----------
-    packet_files : list[Path]
+    packet_files : list[pathlib.Path]
         List of paths to IDEX L0 packet files to process. These l0 files should all
         contain data that belongs in the same 10-day window specified by start_date.
     start_date : str
@@ -54,7 +54,7 @@ def idex_l1a(packet_files: list[Path], start_date: str) -> list[xr.Dataset]:
 
     Returns
     -------
-    list[xr.Dataset]
+    list[xarray.Dataset]
         A list of xarray Datasets containing the processed IDEX L1a data products.
     """
     idex_products = []
