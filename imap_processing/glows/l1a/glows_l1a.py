@@ -338,6 +338,15 @@ def generate_histogram_dataset(
         )
     hist_l1a_list = valid_hists
 
+    # Filter out histograms with no recorded events (all-zero histogram data).
+    valid_hists = [hist for hist in hist_l1a_list if hist.number_of_events > 0]
+    if len(valid_hists) < len(hist_l1a_list):
+        logger.warning(
+            f"GLOWS: Filtered out {len(hist_l1a_list) - len(valid_hists)} "
+            f"histogram(s) with number_of_events == 0."
+        )
+    hist_l1a_list = valid_hists
+
     # Store timestamps for each HistogramL1A object.
     time_data: np.ndarray = np.zeros(len(hist_l1a_list), dtype=np.int64)
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A

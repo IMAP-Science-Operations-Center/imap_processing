@@ -83,6 +83,22 @@ def test_generate_histogram_dataset_filters_zero_imap_start_time(l1a_test_data):
     assert len(dataset["epoch"].values) == 2
 
 
+def test_generate_histogram_dataset_filters_zero_events(l1a_test_data):
+    histogram_l1a, _ = l1a_test_data
+    glows_attrs = create_glows_attr_obj()
+
+    zero_event_hist = MagicMock()
+    zero_event_hist.number_of_bins_per_histogram = 3600
+    zero_event_hist.imap_start_time = histogram_l1a[0].imap_start_time
+    zero_event_hist.number_of_events = 0
+
+    mixed_list = [zero_event_hist, histogram_l1a[0], zero_event_hist, histogram_l1a[1]]
+
+    dataset = generate_histogram_dataset(mixed_list, glows_attrs)
+
+    assert len(dataset["epoch"].values) == 2
+
+
 def test_generate_de_dataset(l1a_test_data):
     _, de_l1a = l1a_test_data
     glows_attrs = create_glows_attr_obj()
