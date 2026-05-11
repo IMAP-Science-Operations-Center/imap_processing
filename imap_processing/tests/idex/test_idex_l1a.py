@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from unittest import mock
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -12,8 +13,9 @@ from cdflib.xarray.xarray_to_cdf import ISTPError
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.decode import _decode_sub_frame, read_bits, rice_decode
-from imap_processing.idex.idex_l1a import PacketParser
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.idex.idex_l1a import PacketParser, _yyyymmdd_to_ttj2000ns
+from imap_processing.idex.idex_utils import get_10_day_window_end_date
+from imap_processing.spice.time import et_to_ttj2000ns, met_to_ttj2000ns, str_to_et
 from imap_processing.tests.idex.conftest import TEST_L0_FILE_SCI
 from imap_processing.utils import packet_generator
 
@@ -107,7 +109,7 @@ def test_incomplete_event(caplog):
         "imap_processing.idex.idex_l1a.decom_packets",
         return_value=(packets, xr.Dataset(), xr.Dataset()),
     ):
-        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data[0]
+        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data["l1a_sci-1week"]
     # Assert that all the events are present except for one.
     assert len(l1a_dataset["epoch"]) == 13
     assert "Missing packet for event number 1" in caplog.text
@@ -198,8 +200,8 @@ def test_compressed_packet():
     compressed = Path(f"{TEST_DATA_DIR}/compressed_2023_102_14_24_55.pkts")
     non_compressed = Path(f"{TEST_DATA_DIR}/non_compressed_2023_102_14_22_26.pkts")
 
-    decompressed = PacketParser(compressed).data[0]
-    expected = PacketParser(non_compressed).data[0]
+    decompressed = PacketParser(compressed).data["l1a_sci-1week"]
+    expected = PacketParser(non_compressed).data["l1a_sci-1week"]
 
     waveforms = [
         "TOF_High",
@@ -381,3 +383,37 @@ def test_msg_dataset(decom_test_data_msg: xr.Dataset):
 
     messages = example_data.iloc[:, 1].tolist()
     np.testing.assert_array_equal(decom_test_data_msg["messages"].data, messages)
+
+
+def test_get_window_end_date():
+    """Verify that the end date is returned for a 10-day window."""
+    assert get_10_day_window_end_date("20260101") == "20260110"
+    assert get_10_day_window_end_date("20261226") == "20270101"
+
+    with pytest.raises(
+        ValueError,
+        match="Start date 20260102 is not an IDEX defined "
+        "start date for a 10-day window.",
+    ):
+        # This invalid start date should raise an error.
+        get_10_day_window_end_date("20260102")
+
+
+def test_get_window_invalid_lookup():
+    """Verify that an invalid lookup table raises an error."""
+    with patch(
+        "imap_processing.idex.idex_utils.IDEX_10_DAY_RANGES_PATH",
+        "imap_processing/tests/idex/test_data/test_idex_10_day_window.csv",
+    ):
+        message = (
+            "There should only be one row where start_date is equal to 20250101. "
+            "Please check lookup table"
+        )
+        with pytest.raises(ValueError, match=message):
+            get_10_day_window_end_date("20250101")
+
+
+def test_yyyymmdd_to_ttj2000ns():
+    """Verify YYYYMMDD dates convert to TTJ2000ns using UTC."""
+    expected = np.int64(et_to_ttj2000ns(str_to_et("2026-01-01T00:00:00")))
+    assert _yyyymmdd_to_ttj2000ns("20260101") == expected

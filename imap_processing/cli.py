@@ -60,7 +60,7 @@ from imap_processing.hi import hi_goodtimes, hi_l1a, hi_l1b, hi_l1c, hi_l2
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.hit.l2.hit_l2 import hit_l2
-from imap_processing.idex.idex_l1a import PacketParser
+from imap_processing.idex.idex_l1a import idex_l1a
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
@@ -1078,9 +1078,9 @@ class Idex(ProcessInstrument):
                     f"Unexpected dependencies found for IDEX L1A:"
                     f"{dependency_list}. Expected only two dependency."
                 )
-            # get l0 file
+            # get l0 files
             science_files = dependencies.get_file_paths(source="idex")
-            datasets = PacketParser(science_files[0]).data
+            datasets = idex_l1a(science_files, self.start_date)
         elif self.data_level == "l1b":
             n_expected_deps = 3 if self.descriptor == "sci-1week" else 1
             if len(dependency_list) != n_expected_deps:

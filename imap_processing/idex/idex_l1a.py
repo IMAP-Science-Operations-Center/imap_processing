@@ -16,6 +16,8 @@ Examples
 
 import json
 import logging
+from collections import defaultdict
+from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
 
@@ -30,11 +32,55 @@ from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.evt_msg_decode_utils import render_event_template
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
-from imap_processing.idex.idex_utils import get_idex_attrs
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.idex.idex_utils import get_10_day_window_end_date, get_idex_attrs
+from imap_processing.spice.time import et_to_ttj2000ns, met_to_ttj2000ns, str_to_et
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
+
+
+def idex_l1a(packet_files: list[Path], start_date: str) -> list[xr.Dataset]:
+    """
+    Process a list of IDEX L0 packet files into a single xarray.Dataset.
+
+    Parameters
+    ----------
+    packet_files : list[Path]
+        List of paths to IDEX L0 packet files to process. These l0 files should all
+        contain data that belongs in the same 10-day window specified by start_date.
+    start_date : str
+        The start date of the 10-day window in YYYYMMDD format. Used to filter the
+        data for the 10-day window.
+
+    Returns
+    -------
+    list[xr.Dataset]
+        A list of xarray Datasets containing the processed IDEX L1a data products.
+    """
+    idex_products = []
+    # decom each idex l0 file and gather the data for each product type
+    # (science, event message, catlst) into separate lists
+    data_dicts = defaultdict(list)
+    for packet_file in packet_files:
+        data = PacketParser(packet_file).data
+        for product, dataset in data.items():
+            data_dicts[product].append(dataset)
+    # Get the end date of the data window. This will be used to filter events.
+    end_date = get_10_day_window_end_date(start_date)
+    # Convert from strings to ttj2000ns for easier epoch comparison
+    start_epoch_ns = _yyyymmdd_to_ttj2000ns(start_date)
+    end_epoch_ns = _yyyymmdd_to_ttj2000ns(end_date)
+    # combine the data for each product type into a single dataset.
+    # filter each dataset for epochs that are within the 10-day window range.
+    for datasets in data_dicts.values():
+        concat_ds = xr.concat(datasets, dim="epoch").sortby("epoch")
+        in_window_mask = (concat_ds["epoch"] >= start_epoch_ns) & (
+            concat_ds["epoch"] < end_epoch_ns
+        )
+        filtered_ds = concat_ds.where(in_window_mask, drop=True)
+        idex_products.append(filtered_ds)
+
+    return idex_products
 
 
 class Scitype(IntEnum):
@@ -76,7 +122,7 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one L1a file.
         """
-        self.data = []
+        self.data = {}
         self.idex_attrs = get_idex_attrs("l1a")
         epoch_attrs = self.idex_attrs.get_variable_attributes(
             "epoch", check_schema=False
@@ -88,7 +134,7 @@ class PacketParser:
 
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
-            self.data.append(self._create_science_dataset(science_packets))
+            self.data["l1a_sci-1week"] = self._create_science_dataset(science_packets)
         datasets_by_level = {"l1a": raw_datset_by_apid, "l1b": derived_datasets_by_apid}
         for level, dataset in datasets_by_level.items():
             # Only produce l1a products for event messages. L1b will be processed in a
@@ -98,7 +144,7 @@ class PacketParser:
                 data = dataset[IDEXAPID.IDEX_EVT]
                 processed_data = self._create_evt_msg_data(data)
                 processed_data["epoch"].attrs = epoch_attrs
-                self.data.append(processed_data)
+                self.data["l1a_msg"] = processed_data
 
             if IDEXAPID.IDEX_CATLST in dataset:
                 logger.info(f"Processing IDEX {level} CATLST data")
@@ -110,7 +156,7 @@ class PacketParser:
                     data["shcoarse"].data, data["shfine"].data
                 )
                 data["epoch"].attrs = epoch_attrs
-                self.data.append(data)
+                self.data[f"{level}_catlst"] = data
 
         logger.info("IDEX L1A data processing completed.")
 
@@ -356,6 +402,24 @@ def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int
                 int(waveform_raw[i + 20 : i + 32], 2),
             ]
     return ints
+
+
+def _yyyymmdd_to_ttj2000ns(date_str: str) -> np.int64:
+    """
+    Convert a YYYYMMDD date to TTJ2000 nanoseconds.
+
+    Parameters
+    ----------
+    date_str : str
+        The date string in YYYYMMDD format.
+
+    Returns
+    -------
+    int
+        The corresponding time in TTJ2000 nanoseconds.
+    """
+    date_string = datetime.strptime(date_str, "%Y%m%d").strftime("%Y-%m-%dT00:00:00")
+    return np.int64(et_to_ttj2000ns(str_to_et(date_string)))
 
 
 def calculate_idex_event_time(
