@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 def idex_l1a(packet_files: list[Path], start_date: str) -> list[xr.Dataset]:
     """
-    Process a list of IDEX L0 packet files into a single xarray.Dataset.
+    Process a list of IDEX L0 packet files into a list of xarray Datasets.
 
     Parameters
     ----------
