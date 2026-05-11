@@ -14,8 +14,8 @@ class LoConstants:
     # as sufficiently close to the required value.
     PSET_PIVOT_ANGLE_TOLERANCE: float = 2.0
 
-    # Ion species tracked. "H" is mandatory; any others for which we have histrates
-    # may be added here.
+    # Ion species tracked. "H" is mandatory (and should be the first element);
+    # any others for which we have histrates may be added here.
     ELEMS = ("H", "O")
 
     # Hours into the day (UTC) for HK data to calculate median for pivot angle

@@ -2592,7 +2592,7 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
         if f"{elem.lower()}_counts" in cdf_hist.data_vars:
             elem_counts = cdf_hist[f"{elem.lower()}_counts"].values
         else:
-            elem_counts = np.zeros((n_epochs, c.N_ESA_LEVELS, c.N_SPIN_ANGLE_BINS))
+            elem_counts = np.zeros_like(cdf_hist["h_counts"].values)
         elem_ram_counts[elem] = sum(
             np.sum(elem_counts[:, ram_esa_indices, b], axis=(1, 2))
             for b in c.RAM_HISTOGRAM_BINS
@@ -2686,7 +2686,7 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
             for elem in elems:
                 synthetic_floors[elem] += c.BG_RATES.get(elem, 0) * exposure
                 proxy_floors[elem] += np.sum(
-                    elem_anti_ram_counts["H"][window_sum_start:window_sum_end]
+                    elem_anti_ram_counts[elem][window_sum_start:window_sum_end]
                 )
 
             goodtime_exposure_avg += exposure
@@ -2798,7 +2798,7 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
             data=np.full(c.N_ESA_LEVELS, bg_rates_out[elem]),
             name=f"{elem_lower}_background_rates",
             attrs=attr_mgr_l1b.get_variable_attributes(
-                f"{elem_lower}_background_rates", check_schema=False
+                f"{elem_lower}_background_rates"
             ),
             dims=["esa_step"],
         )
@@ -2806,23 +2806,19 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
             data=np.full(c.N_ESA_LEVELS, sigma_bg_rates_out[elem]),
             name=f"{elem_lower}_background_variance",
             attrs=attr_mgr_l1b.get_variable_attributes(
-                f"{elem_lower}_background_variance", check_schema=False
+                f"{elem_lower}_background_variance"
             ),
             dims=["esa_step"],
         )
         l1b_combined_ds[f"{elem_lower}_synthetic_floor"] = xr.DataArray(
             data=np.float32(synthetic_floors[elem]),
             name=f"{elem_lower}_synthetic_floor",
-            attrs=attr_mgr_l1b.get_variable_attributes(
-                f"{elem_lower}_synthetic_floor", check_schema=False
-            ),
+            attrs=attr_mgr_l1b.get_variable_attributes(f"{elem_lower}_synthetic_floor"),
         )
         l1b_combined_ds[f"{elem_lower}_proxy_floor"] = xr.DataArray(
             data=np.float32(proxy_floors[elem]),
             name=f"{elem_lower}_proxy_floor",
-            attrs=attr_mgr_l1b.get_variable_attributes(
-                f"{elem_lower}_proxy_floor", check_schema=False
-            ),
+            attrs=attr_mgr_l1b.get_variable_attributes(f"{elem_lower}_proxy_floor"),
         )
 
     logger.info("L1B Background Rates and Bettertimes created successfully")
@@ -2867,10 +2863,15 @@ def split_backgrounds_and_goodtimes_dataset(
         "_synthetic_floor",
         "_proxy_floor",
     ]
-    background_rate_fields = []
-    for data_var in l1b_backgrounds_and_goodtimes_ds.data_vars:
-        if any(data_var.endswith(suffix) for suffix in background_rate_field_suffixes):
-            background_rate_fields.append(data_var)
+    background_rate_fields = sorted(
+        [
+            data_var
+            for data_var in l1b_backgrounds_and_goodtimes_ds.data_vars
+            if any(
+                data_var.endswith(suffix) for suffix in background_rate_field_suffixes
+            )
+        ]
+    )
 
     lib_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
     lib_bgrates_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_bgrates")
