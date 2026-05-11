@@ -12,7 +12,7 @@ class LoConstants:
     PSET_PIVOT_ANGLE: float = 90.0
     # Absolute tolerance [degrees] for accepting a pset's pivot angle
     # as sufficiently close to the required value.
-    PSET_PIVOT_ANGLE_TOLERANCE: float = 2.0
+    PSET_PIVOT_ANGLE_TOLERANCE: float = 45.0
 
     # Ion species tracked. "H" is mandatory; any others for which we have histrates
     # may be added here.

@@ -484,7 +484,7 @@ def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_lo
     mock_super_pre_processing.return_value = base_collection
     mock_load_cdf.side_effect = [
         xr.Dataset({"pivot_angle": xr.DataArray(90.1)}),
-        xr.Dataset({"pivot_angle": xr.DataArray(105.0)}),
+        xr.Dataset({"pivot_angle": xr.DataArray(30.0)}),
     ]
 
     instrument = Lo(
