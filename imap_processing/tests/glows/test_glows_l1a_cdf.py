@@ -83,6 +83,18 @@ def test_generate_histogram_dataset_filters_zero_imap_start_time(l1a_test_data):
     assert len(dataset["epoch"].values) == 2
 
 
+@pytest.mark.external_test_data
+def test_generate_histogram_dataset_deduplicates(in_flight_packet_path):
+    hist_l0, _ = decom_packets(in_flight_packet_path)
+    hist_l1a = [HistogramL1A(h) for h in hist_l0]
+    glows_attrs = create_glows_attr_obj()
+
+    dataset = generate_histogram_dataset(hist_l1a, glows_attrs)
+
+    epochs = dataset["epoch"].values.tolist()
+    assert len(epochs) == len(set(epochs))
+
+
 def test_generate_de_dataset(l1a_test_data):
     _, de_l1a = l1a_test_data
     glows_attrs = create_glows_attr_obj()
