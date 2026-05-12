@@ -10,6 +10,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1b.lo_l1b import (
     DE_CLOCK_TICK_S,
     calculate_de_rates,
@@ -2841,3 +2842,87 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(
     # Background rates should be positive for all intervals
     assert np.all(l1b_bgrates_ds["h_background_rates"].values > 0)
     assert np.all(l1b_bgrates_ds["o_background_rates"].values > 0)
+
+
+def test_l1b_bgrates_when_synthetic_floor_is_zero(anc_dependencies, attr_mgr_l1b):
+    num_epochs = 100
+    met_start = 473389200
+    met_spacing = 42
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # Low counts so that goodtime intervals are found
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.00028
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.000028
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {
+        "imap_lo_l1b_histrates": l1b_histrates,
+        "imap_lo_l1b_de": xr.Dataset(),
+        "imap_lo_l1b_nhk": xr.Dataset(),
+    }
+
+    patched_bg_rates = dict(LoConstants.BG_RATES)
+    patched_bg_rates["H"] = 0.0
+    with patch.object(LoConstants, "BG_RATES", patched_bg_rates):
+        bgrates_ds, _ = l1b_bgrates_and_goodtimes(
+            sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+        )
+
+    # After the floor: bg_rate = anti_ram_nominal / BG_RATE_FLOOR_DIVISOR["H"] > 0
+    assert np.all(bgrates_ds["h_background_rates"].values > 0)
+
+
+def test_l1b_bgrates_sigma_when_anti_ram_nominal_is_zero(
+    anc_dependencies, attr_mgr_l1b
+):
+    num_epochs = 50
+    met_start = 473389200
+    met_spacing = 42
+    met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
+    epoch_times = met_to_ttj2000ns(met_times)
+
+    # High counts everywhere so no goodtime intervals are found
+    h_counts = np.ones((num_epochs, 7, 60)) * 0.1
+    o_counts = np.ones((num_epochs, 7, 60)) * 0.01
+
+    l1b_histrates = xr.Dataset(
+        {
+            "h_counts": (("epoch", "esa_step", "spin_bin_6"), h_counts),
+            "o_counts": (("epoch", "esa_step", "spin_bin_6"), o_counts),
+        },
+        coords={
+            "epoch": epoch_times,
+            "esa_step": np.arange(1, 8),
+            "spin_bin_6": np.arange(60),
+        },
+    )
+
+    sci_dependencies = {
+        "imap_lo_l1b_histrates": l1b_histrates,
+        "imap_lo_l1b_de": xr.Dataset(),
+        "imap_lo_l1b_nhk": xr.Dataset(),
+    }
+
+    # Zero the anti-RAM threshold so bg_rate_anti_ram_nominal = 0
+    with (
+        patch.object(LoConstants, "THRESHOLD_BG_RATE_ANTI_RAM_90", 0.0),
+        patch.object(LoConstants, "THRESHOLD_BG_RATE_ANTI_RAM_NON_90", 0.0),
+    ):
+        bgrates_ds, _ = l1b_bgrates_and_goodtimes(
+            sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
+        )
+
+    assert np.all(bgrates_ds["h_background_rates"].values == 0.0)
+    assert np.all(bgrates_ds["h_background_variance"].values == 0.0)
