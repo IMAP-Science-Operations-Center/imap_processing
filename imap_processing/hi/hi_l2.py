@@ -464,6 +464,8 @@ def calculate_ena_intensity(
         map_ds["ena_signal_rate_stat_unc"] / flux_conversion_divisor
     )
 
+    # Ignore numpy divide by zero and zero/zero warnings. Setting pixels with
+    # zero exposure time to NaN is the correct behavior.
     with np.errstate(divide="ignore", invalid="ignore"):
         map_ds["ena_intensity_sys_err"] = (
             np.sqrt(map_ds["bg_rate"] * map_ds["exposure_factor"])
