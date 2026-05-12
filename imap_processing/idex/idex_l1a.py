@@ -80,7 +80,15 @@ def idex_l1a(
     # combine the data for each product type into a single dataset.
     # filter each dataset for epochs that are within the 10-day window range.
     for product, datasets in data_dicts.items():
-        concat_ds = xr.concat(datasets, dim="epoch").sortby("epoch")
+        concat_ds = xr.concat(
+            datasets,
+            dim="epoch",
+            # Keep non-epoch support variables (e.g. label/index vectors) from a
+            # single dataset instead of broadcasting them across epochs.
+            data_vars="minimal",
+            coords="minimal",
+            compat="override",
+        ).sortby("epoch")
         in_window_mask = (concat_ds["epoch"] >= window_start_date_ns) & (
             concat_ds["epoch"] < window_end_date_ns
         )
