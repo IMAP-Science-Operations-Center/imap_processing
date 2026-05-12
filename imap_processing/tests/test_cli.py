@@ -665,8 +665,8 @@ def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
     mocks["mock_load_cdf"].side_effect = [new_ds]
     input_collection = ProcessingInputCollection(
         ScienceInput(
-            "imap_idex_l1a_sci-1week_20251017_v001.cdf",
-            "imap_idex_l1a_sci-1week_20251012_v001.cdf",
+            "imap_idex_l1a_sci-10days_20251017_v001.cdf",
+            "imap_idex_l1a_sci-10days_20251012_v001.cdf",
         ),
         SPICEInput("naif0012.tls", "imap_sclk_0000.tsc"),
         SpinInput("imap_2025_306_2025_307_01.spin"),
@@ -675,7 +675,7 @@ def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
 
     dependency_str = input_collection.serialize()
     instrument = Idex(
-        "l1b", "sci-1week", dependency_str, "20251017", None, "v001", False
+        "l1b", "sci-10days", dependency_str, "20251017", None, "v001", False
     )
 
     instrument.process()
@@ -692,8 +692,8 @@ def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     mock_idex_l2b.return_value = [xr.Dataset(), xr.Dataset()]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
     input_collection = ProcessingInputCollection(
-        ScienceInput("imap_idex_l1b_evt_20251015_v002.cdf"),
-        ScienceInput("imap_idex_l2a_sci-1week_20251017_v018.cdf"),
+        ScienceInput("imap_idex_l1b_msg-10days_20251015_v002.cdf"),
+        ScienceInput("imap_idex_l2a_sci-10days_20251017_v018.cdf"),
         SPICEInput("naif0012.tls", "imap_sclk_0000.tsc"),
     )
     mocks["mock_pre_processing"].return_value = input_collection

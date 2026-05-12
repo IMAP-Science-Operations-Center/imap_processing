@@ -115,8 +115,7 @@ def test_idex_l1a_decom_no_data(caplog):
     # We also expect a warning to be logged that no data was found for the window
     message = (
         "No data found for dates 820497669184000000 - 821275269184000000 for"
-        " l1a_msg-10days in packet files: ['imap_idex_l0_raw_20231218_v001.pkts'"
-        ", 'imap_idex_l0_raw_20231218_v001.pkts']"
+        " l1a_msg-10days"
     )
     assert message in caplog.text
 
