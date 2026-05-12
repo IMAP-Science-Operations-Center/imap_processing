@@ -28,7 +28,7 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_lo_species(
+def l1a_lo_species(  # noqa: PLR0912
     group_ds: xr.Dataset,
     lut_file: Path,
     table_id: str,
@@ -103,7 +103,7 @@ def l1a_lo_species(
         # are referencing is actually data that we want to toss out and fill with
         # fill vals. This only affects data before the LUT was updated
         # (table_id 3978152295).
-        if table_id <= 3978152295:
+        if int(table_id) <= 3978152295:
             actual_species_names = [
                 "junk" if name == "cnoplus" else name for name in actual_species_names
             ]
