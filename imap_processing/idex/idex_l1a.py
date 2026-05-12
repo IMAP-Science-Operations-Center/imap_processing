@@ -16,6 +16,7 @@ Examples
 
 import json
 import logging
+import os
 from collections import defaultdict
 from enum import IntEnum
 from os import path
@@ -144,7 +145,8 @@ class PacketParser:
         science_packets, raw_datset_by_apid, derived_datasets_by_apid = decom_packets(
             packet_file
         )
-
+        filename = os.path.basename(packet_file)
+        logger.info(f"Processing IDEX L1A Packet {filename}")
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
             self.data["l1a_sci-10days"] = self._create_science_dataset(science_packets)
