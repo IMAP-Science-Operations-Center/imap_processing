@@ -27,7 +27,7 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_lo_species(  # noqa: PLR0912
+def l1a_lo_species(
     group_ds: xr.Dataset,
     lut_file: Path,
     table_id: str,
