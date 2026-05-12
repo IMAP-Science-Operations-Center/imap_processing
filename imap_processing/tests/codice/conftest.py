@@ -145,7 +145,7 @@ def codice_lut_path():
                 / "l1a_input"
                 / "imap_codice_l0_hskp_20250814_v001.pkts"
             ]
-        if descriptor == "lo-nsw-species" and data_type == "l1b":
+        elif descriptor == "lo-sw-species" and data_type == "l1b":
             return [
                 imap_module_directory
                 / "tests"
@@ -153,7 +153,7 @@ def codice_lut_path():
                 / "data"
                 / "l1b_validation"
                 / (
-                    f"imap_codice_l1b_lo-nsw-species_{VALIDATION_FILE_DATE}"
+                    f"imap_codice_l1b_lo-sw-species_{VALIDATION_FILE_DATE}"
                     f"_{VALIDATION_FILE_VERSION}.cdf"
                 )
             ]
