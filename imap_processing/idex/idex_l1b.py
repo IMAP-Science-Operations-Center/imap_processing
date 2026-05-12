@@ -128,7 +128,7 @@ def idex_l1b(l1a_dataset: xr.Dataset, descriptor: str) -> xr.Dataset | None:
         IDEX L1a dataset to process.
     descriptor : str
         Descriptor to determine the type of l1b processing to perform. E.g. "sci-10days"
-        or "msg".
+        or "msg-10days".
 
     Returns
     -------

@@ -13,9 +13,12 @@ from cdflib.xarray.xarray_to_cdf import ISTPError
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.decode import _decode_sub_frame, read_bits, rice_decode
-from imap_processing.idex.idex_l1a import PacketParser, _yyyymmdd_to_ttj2000ns
+from imap_processing.idex.idex_l1a import (
+    PacketParser,
+    idex_l1a,
+)
 from imap_processing.idex.idex_utils import get_10_day_window_end_date
-from imap_processing.spice.time import et_to_ttj2000ns, met_to_ttj2000ns, str_to_et
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.tests.idex.conftest import TEST_L0_FILE_SCI
 from imap_processing.utils import packet_generator
 
@@ -89,6 +92,41 @@ def test_bad_cdf_file_data(decom_test_data_sci: xr.Dataset):
         write_cdf(decom_test_data_sci, istp=True, terminate_on_warning=True)
 
     del decom_test_data_sci["Bad_data"]
+
+
+def test_idex_l1a_decom():
+    """Verify idex_l1a function returns the correct datasets."""
+    with mock.patch(
+        "imap_processing.idex.idex_l1a.get_10_day_window_end_date"
+    ) as mock_get_window_end_date:
+        mock_get_window_end_date.return_value = "20231228"
+        datasets = idex_l1a([TEST_L0_FILE_SCI, TEST_L0_FILE_SCI], "20231218")
+
+    assert len(datasets) == 2
+    # We should have 28 science events
+    assert len(datasets[0].epoch) == 28
+
+
+def test_idex_l1a_decom_no_data(caplog):
+    """Verify idex_l1a function returns None if there is no data for the window."""
+    datasets = idex_l1a([TEST_L0_FILE_SCI], "20260101")
+    # If there is no data in the window we expect an empty list
+    assert datasets == []
+    # We also expect a warning to be logged that no data was found for the window
+    message = (
+        "No data found for dates 820497669184000000 - 821275269184000000 for"
+        " l1a_msg-10days in packet files: ['imap_idex_l0_raw_20231218_v001.pkts'"
+        ", 'imap_idex_l0_raw_20231218_v001.pkts']"
+    )
+    assert message in caplog.text
+
+
+def test_idex_l1a_invalid_window_start():
+    """Verify that the idex_l1a function raises an error with an invalid start date."""
+    with pytest.raises(
+        ValueError, match="Start date 20231218 is not an IDEX defined start date"
+    ):
+        idex_l1a([TEST_L0_FILE_SCI], "20231218")
 
 
 def test_incomplete_event(caplog):
@@ -411,9 +449,3 @@ def test_get_window_invalid_lookup():
         )
         with pytest.raises(ValueError, match=message):
             get_10_day_window_end_date("20250101")
-
-
-def test_yyyymmdd_to_ttj2000ns():
-    """Verify YYYYMMDD dates convert to TTJ2000ns using UTC."""
-    expected = np.int64(et_to_ttj2000ns(str_to_et("2026-01-01T00:00:00")))
-    assert _yyyymmdd_to_ttj2000ns("20260101") == expected

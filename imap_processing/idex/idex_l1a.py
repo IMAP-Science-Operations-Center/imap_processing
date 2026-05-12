@@ -17,8 +17,8 @@ Examples
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime
 from enum import IntEnum
+from os import path
 from pathlib import Path
 
 import numpy as np
@@ -33,13 +33,18 @@ from imap_processing.idex.evt_msg_decode_utils import render_event_template
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.idex.idex_utils import get_10_day_window_end_date, get_idex_attrs
-from imap_processing.spice.time import et_to_ttj2000ns, met_to_ttj2000ns, str_to_et
+from imap_processing.spice.time import (
+    met_to_ttj2000ns,
+    str_yyyymmdd_to_ttj2000ns,
+)
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
 
 
-def idex_l1a(packet_files: list[Path], start_date: str) -> list[xr.Dataset]:
+def idex_l1a(
+    packet_files: list[Path], window_start_date: str
+) -> list[xr.Dataset | None]:
     """
     Process a list of IDEX L0 packet files into a list of xarray Datasets.
 
@@ -48,14 +53,15 @@ def idex_l1a(packet_files: list[Path], start_date: str) -> list[xr.Dataset]:
     packet_files : list[pathlib.Path]
         List of paths to IDEX L0 packet files to process. These l0 files should all
         contain data that belongs in the same 10-day window specified by start_date.
-    start_date : str
+    window_start_date : str
         The start date of the 10-day window in YYYYMMDD format. Used to filter the
         data for the 10-day window.
 
     Returns
     -------
-    list[xarray.Dataset]
-        A list of xarray Datasets containing the processed IDEX L1a data products.
+    list[xarray.Dataset|None]
+        A list of xarray Datasets containing the processed IDEX L1a data products. If
+        There is no Data found for the 10-day window, None is returned.
     """
     idex_products = []
     # decom each idex l0 file and gather the data for each product type
@@ -66,18 +72,25 @@ def idex_l1a(packet_files: list[Path], start_date: str) -> list[xr.Dataset]:
         for product, dataset in data.items():
             data_dicts[product].append(dataset)
     # Get the end date of the data window. This will be used to filter events.
-    end_date = get_10_day_window_end_date(start_date)
+    window_end_date = get_10_day_window_end_date(window_start_date)
     # Convert from strings to ttj2000ns for easier epoch comparison
-    start_epoch_ns = _yyyymmdd_to_ttj2000ns(start_date)
-    end_epoch_ns = _yyyymmdd_to_ttj2000ns(end_date)
+    window_start_date_ns = str_yyyymmdd_to_ttj2000ns(window_start_date)
+    window_end_date_ns = str_yyyymmdd_to_ttj2000ns(window_end_date)
     # combine the data for each product type into a single dataset.
     # filter each dataset for epochs that are within the 10-day window range.
-    for datasets in data_dicts.values():
+    for product, datasets in data_dicts.items():
         concat_ds = xr.concat(datasets, dim="epoch").sortby("epoch")
-        in_window_mask = (concat_ds["epoch"] >= start_epoch_ns) & (
-            concat_ds["epoch"] < end_epoch_ns
+        in_window_mask = (concat_ds["epoch"] >= window_start_date_ns) & (
+            concat_ds["epoch"] < window_end_date_ns
         )
         filtered_ds = concat_ds.where(in_window_mask, drop=True)
+        if len(filtered_ds.epoch) == 0:
+            logger.warning(
+                f"No data found for dates {window_start_date_ns} - {window_end_date_ns}"
+                f" for {product} in packet files: "
+                f"{[path.basename(f) for f in packet_files]}"
+            )
+            continue
         idex_products.append(filtered_ds)
 
     return idex_products
@@ -404,24 +417,6 @@ def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int
                 int(waveform_raw[i + 20 : i + 32], 2),
             ]
     return ints
-
-
-def _yyyymmdd_to_ttj2000ns(date_str: str) -> np.int64:
-    """
-    Convert a YYYYMMDD date to TTJ2000 nanoseconds.
-
-    Parameters
-    ----------
-    date_str : str
-        The date string in YYYYMMDD format.
-
-    Returns
-    -------
-    int
-        The corresponding time in TTJ2000 nanoseconds.
-    """
-    date_string = datetime.strptime(date_str, "%Y%m%d").strftime("%Y-%m-%dT00:00:00")
-    return np.int64(et_to_ttj2000ns(str_to_et(date_string)))
 
 
 def calculate_idex_event_time(
