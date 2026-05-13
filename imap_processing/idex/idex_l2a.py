@@ -300,6 +300,116 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             "target_fit_parameter_labels", check_schema=False
         ),
     )
+    """
+    We're inserting a NaN block here for the 2026 June release while the
+    IDEX science team works through validating the fitting routines and
+    derived values.
+    """
+
+    # Ion Grid Fitting:
+    l2a_dataset["ion_grid_chi_squared"].data = np.full(
+        l2a_dataset["ion_grid_chi_squared"].shape, np.nan
+    )
+
+    l2a_dataset["ion_grid_dust_mass_estimate"].data = np.full(
+        l2a_dataset["ion_grid_dust_mass_estimate"].shape, np.nan
+    )
+
+    l2a_dataset["ion_grid_fit_parameters"].data = np.full(
+        l2a_dataset["ion_grid_fit_parameters"].shape, np.nan
+    )
+
+    l2a_dataset["ion_grid_fit_results"].data = np.full(
+        l2a_dataset["ion_grid_fit_results"].shape, np.nan
+    )
+
+    l2a_dataset["ion_grid_impact_charge"].data = np.full(
+        l2a_dataset["ion_grid_impact_charge"].shape, np.nan
+    )
+
+    l2a_dataset["ion_grid_reduced_chi_squared"].data = np.full(
+        l2a_dataset["ion_grid_reduced_chi_squared"].shape, np.nan
+    )
+
+    # Target Low Fitting:
+    l2a_dataset["target_low_chi_squared"].data = np.full(
+        l2a_dataset["target_low_chi_squared"].shape, np.nan
+    )
+
+    l2a_dataset["target_low_dust_mass_estimate"].data = np.full(
+        l2a_dataset["target_low_dust_mass_estimate"].shape, np.nan
+    )
+
+    l2a_dataset["target_low_fit_parameters"].data = np.full(
+        l2a_dataset["target_low_fit_parameters"].shape, np.nan
+    )
+
+    l2a_dataset["target_low_fit_results"].data = np.full(
+        l2a_dataset["target_low_fit_results"].shape, np.nan
+    )
+
+    l2a_dataset["target_low_impact_charge"].data = np.full(
+        l2a_dataset["target_low_impact_charge"].shape, np.nan
+    )
+
+    l2a_dataset["target_low_reduced_chi_squared"].data = np.full(
+        l2a_dataset["target_low_reduced_chi_squared"].shape, np.nan
+    )
+
+    # Target High Fitting:
+    l2a_dataset["target_high_chi_squared"].data = np.full(
+        l2a_dataset["target_high_chi_squared"].shape, np.nan
+    )
+
+    l2a_dataset["target_high_dust_mass_estimate"].data = np.full(
+        l2a_dataset["target_high_dust_mass_estimate"].shape, np.nan
+    )
+
+    l2a_dataset["target_high_fit_parameters"].data = np.full(
+        l2a_dataset["target_high_fit_parameters"].shape, np.nan
+    )
+
+    l2a_dataset["target_high_fit_results"].data = np.full(
+        l2a_dataset["target_high_fit_results"].shape, np.nan
+    )
+
+    l2a_dataset["target_high_impact_charge"].data = np.full(
+        l2a_dataset["target_high_impact_charge"].shape, np.nan
+    )
+
+    l2a_dataset["target_high_reduced_chi_squared"].data = np.full(
+        l2a_dataset["target_high_reduced_chi_squared"].shape, np.nan
+    )
+
+    # TOF / Mass-spec Fitting
+    l2a_dataset["tof_peak_area_under_fit"].data = np.full(
+        l2a_dataset["tof_peak_area_under_fit"].shape, np.nan
+    )
+
+    l2a_dataset["tof_peak_chi_square"].data = np.full(
+        l2a_dataset["tof_peak_chi_square"].shape, np.nan
+    )
+
+    l2a_dataset["tof_peak_fit_parameters"].data = np.full(
+        l2a_dataset["tof_peak_fit_parameters"].shape, np.nan
+    )
+
+    l2a_dataset["tof_peak_kappa"].data = np.full(
+        l2a_dataset["tof_peak_kappa"].shape, np.nan
+    )
+
+    l2a_dataset["tof_peak_reduced_chi_square"].data = np.full(
+        l2a_dataset["tof_peak_reduced_chi_square"].shape, np.nan
+    )
+
+    l2a_dataset["tof_snr"].data = np.full(l2a_dataset["tof_snr"].shape, np.nan)
+
+    l2a_dataset["mass"].data = np.full(l2a_dataset["mass"].shape, np.nan)
+
+    l2a_dataset["mass_labels"].data = np.full(l2a_dataset["mass_labels"].shape, np.nan)
+
+    l2a_dataset["mass_scale"].data = np.full(l2a_dataset["mass_scale"].shape, np.nan)
+
     logger.info("IDEX L2A science data processing completed.")
     l2a_dataset.attrs.update(idex_attrs.get_global_attributes("imap_idex_l2a_sci"))
     return l2a_dataset
