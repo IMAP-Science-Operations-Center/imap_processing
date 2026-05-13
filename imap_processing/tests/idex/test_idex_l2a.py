@@ -93,7 +93,6 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"
 
-    # TODO: remove this NAN block when fitting logic is applied
     expected_vars = [
         "tof_snr",
         "tof_peak_kappa",
@@ -136,25 +135,29 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
             f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
         )
 
+    # TODO: remove this NAN block when fitting logic is applied
     expected_nan_vars = [
-        "ion_grid_chi_squared",
+        # "ion_grid_chi_squared",
         "ion_grid_dust_mass_estimate",
-        "ion_grid_fit_parameters",
-        "ion_grid_fit_results",
-        "ion_grid_impact_charge",
-        "ion_grid_reduced_chi_squared",
-        "target_low_chi_squared",
+        "ion_grid_velocity_estimate",
+        # "ion_grid_fit_parameters",
+        # "ion_grid_fit_results",
+        # "ion_grid_impact_charge",
+        # "ion_grid_reduced_chi_squared",
+        # "target_low_chi_squared",
         "target_low_dust_mass_estimate",
-        "target_low_fit_parameters",
-        "target_low_fit_results",
-        "target_low_impact_charge",
-        "target_low_reduced_chi_squared",
-        "target_high_chi_squared",
+        "target_low_velocity_estimate",
+        # "target_low_fit_parameters",
+        # "target_low_fit_results",
+        # "target_low_impact_charge",
+        # "target_low_reduced_chi_squared",
+        # "target_high_chi_squared",
         "target_high_dust_mass_estimate",
-        "target_high_fit_parameters",
-        "target_high_fit_results",
-        "target_high_impact_charge",
-        "target_high_reduced_chi_squared",
+        "target_high_velocity_estimate",
+        ##"target_high_fit_parameters",
+        # "target_high_fit_results",
+        # "target_high_impact_charge",
+        # "target_high_reduced_chi_squared",
         "tof_peak_area_under_fit",
         "tof_peak_chi_square",
         "tof_peak_fit_parameters",
