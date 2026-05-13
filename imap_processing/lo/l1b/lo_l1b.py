@@ -2561,12 +2561,13 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     epoch_doy = epoch_start_dt.timetuple().tm_yday
 
     # Choose background rate thresholds based on pivot orientation.
-    if c.PIVOT_90_RANGE[0] < pivot < c.PIVOT_90_RANGE[1]:
-        bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_90
-        bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_90
-    else:
-        bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_NON_90
-        bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_NON_90
+    bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_DEFAULT
+    bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT
+    for (low, high), (ram_thresh, anti_ram_thresh) in c.PIVOT_ANGLE_THRESHOLDS.items():
+        if low < pivot < high:
+            bg_rate_ram_nominal = ram_thresh
+            bg_rate_anti_ram_nominal = anti_ram_thresh
+            break
 
     # Manual overrides of the anti-RAM threshold for anomalous days.
     overrides_anc_files = [

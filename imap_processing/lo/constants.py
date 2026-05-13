@@ -53,18 +53,23 @@ class LoConstants:
     # Minimum non-zero background rate floor = nominal / divisor
     BG_RATE_FLOOR_DIVISOR: ClassVar[dict[str, float]] = {"H": 50.0, "O": 150.0}
 
-    # Maximum acceptable background count rates [counts/s]. There are separate
-    # thresholds for RAM vs. anti-RAM, and for pivot near 90 deg vs. others.
-    THRESHOLD_BG_RATE_RAM_90: float = 0.014
-    THRESHOLD_BG_RATE_ANTI_RAM_90: float = 0.007
-    THRESHOLD_BG_RATE_RAM_NON_90: float = 0.0175
-    THRESHOLD_BG_RATE_ANTI_RAM_NON_90: float = 0.00875
+    # Background-rate thresholds [counts/s] by pivot-angle range (low, high) [deg].
+    # Each value is (ram_threshold, anti_ram_threshold).
+    # The first matching open interval (low < pivot < high) is used; if none matches,
+    # THRESHOLD_BG_RATE_RAM_DEFAULT / THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT apply.
+    PIVOT_ANGLE_THRESHOLDS: ClassVar[dict[tuple[float, float], tuple[float, float]]] = {
+        (88.0, 92.0): (0.014, 0.007),
+        (73.0, 77.0): (0.0175, 0.00875),
+        (103.0, 107.0): (0.0112, 0.0056),
+    }
+
+    # Default background-rate thresholds [counts/s] when no pivot range matches.
+    THRESHOLD_BG_RATE_RAM_DEFAULT: float = 0.0175
+    THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT: float = 0.00875
 
     # Maximum time gap [s] between consecutive histogram epochs before treating them as
     # separate intervals.
     DELAY_MAX: int = 100
-    # Pivot angles within this range [degrees] are treated as "near 90".
-    PIVOT_90_RANGE: tuple[float, float] = 88.0, 92.0
     # Fraction of each cycle duration that contributes actual exposure.
     EXPOSURE_FACTOR: float = 0.5
     # Padding [s] added to begin/end of each goodtime interval to ensure complete

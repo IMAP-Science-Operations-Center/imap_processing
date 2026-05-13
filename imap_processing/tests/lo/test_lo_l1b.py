@@ -2915,10 +2915,10 @@ def test_l1b_bgrates_sigma_when_anti_ram_nominal_is_zero(
         "imap_lo_l1b_nhk": xr.Dataset(),
     }
 
-    # Zero the anti-RAM threshold so bg_rate_anti_ram_nominal = 0
+    # Zero the anti-RAM threshold so bg_rate_anti_ram_nominal = 0 for any pivot angle
     with (
-        patch.object(LoConstants, "THRESHOLD_BG_RATE_ANTI_RAM_90", 0.0),
-        patch.object(LoConstants, "THRESHOLD_BG_RATE_ANTI_RAM_NON_90", 0.0),
+        patch.object(LoConstants, "PIVOT_ANGLE_THRESHOLDS", {}),
+        patch.object(LoConstants, "THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT", 0.0),
     ):
         bgrates_ds, _ = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
