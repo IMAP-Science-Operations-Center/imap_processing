@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 from imap_data_access import ProcessingInputCollection
@@ -307,6 +308,29 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_v999.cdf"
+
+
+@pytest.mark.parametrize("descriptor", ["hi-omni", "hi-sectored"])
+def test_l1b_hi_epoch_delta_cdf_metadata(descriptor, codice_lut_path):
+    with patch(
+        "imap_data_access.processing_input.ProcessingInputCollection.get_file_paths"
+    ) as mock_get_file_paths:
+        mock_get_file_paths.side_effect = [
+            codice_lut_path(descriptor=descriptor, data_type="l0"),
+            codice_lut_path(descriptor="l1a-sci-lut"),
+        ]
+
+        l1a_file_path = write_cdf(process_l1a(dependency=ProcessingInputCollection())[0])
+        processed_data = process_codice_l1b(file_path=l1a_file_path)
+        cdf_file_path = write_cdf(processed_data)
+
+    cdf_file = cdflib.CDF(cdf_file_path)
+
+    for var in ["epoch_delta_minus", "epoch_delta_plus"]:
+        var_info = cdf_file.varinq(var)
+        var_attrs = cdf_file.varattsget(var)
+        assert var_info.Data_Type_Description == "CDF_DOUBLE"
+        assert np.isclose(var_attrs["FILLVAL"], np.float64(-1.0e31))
 
 
 @pytest.mark.xfail(reason="Need to revisit in future PR")
