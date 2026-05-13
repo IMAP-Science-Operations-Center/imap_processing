@@ -210,7 +210,7 @@ def create_l2_dataset(
         if key == "number_of_bins":
             # number_of_bins does not have a bins dimension.
             output[key] = xr.DataArray(
-                np.array([value]),
+                np.array([value], dtype=np.uint16),
                 dims=["epoch"],
                 attrs=attrs.get_variable_attributes(key),
             )
@@ -220,8 +220,22 @@ def create_l2_dataset(
             # here, filling unused bins with the variable's CDF FILLVAL.
             var_attrs = attrs.get_variable_attributes(key)
             fillval = var_attrs["FILLVAL"]
-            padded = np.full(GlowsConstants.STANDARD_BIN_COUNT, fillval)
-            padded[:n_bins] = value
+            value_array = np.asarray(value)
+            padded_dtype = value_array.dtype
+            if np.issubdtype(padded_dtype, np.integer):
+                try:
+                    cast_fillval = np.array(fillval, dtype=padded_dtype).item()
+                except (OverflowError, TypeError, ValueError):
+                    padded_dtype = np.result_type(padded_dtype, np.asarray(fillval).dtype)
+                else:
+                    if cast_fillval != fillval:
+                        padded_dtype = np.result_type(
+                            padded_dtype, np.asarray(fillval).dtype
+                        )
+            padded = np.full(
+                GlowsConstants.STANDARD_BIN_COUNT, fillval, dtype=padded_dtype
+            )
+            padded[:n_bins] = value_array
             output[key] = xr.DataArray(
                 np.array([padded]),
                 dims=["epoch", "bins"],

@@ -483,6 +483,7 @@ flux_uncertainties:
 histogram_flag_array:
   <<: *lightcurve_defaults
   CATDESC: Bad-angle flags for histogram bins
+  CDF_DATA_TYPE: CDF_UINT1
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Bad-angle flags for histogram
   FILLVAL: 255
@@ -522,9 +523,10 @@ ecliptic_lat:
 number_of_bins:
   <<: *support_data_defaults
   CATDESC: Number of bins in histogram
+  CDF_DATA_TYPE: CDF_UINT2
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Number of bins in histogram
-  FILLVAL: -9223372036854775808
+  FILLVAL: *max_uint16
   FORMAT: I4
   LABLAXIS: No. of bins
   UNITS: ' '
