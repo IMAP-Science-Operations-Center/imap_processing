@@ -568,6 +568,22 @@ def process_lo_species_intensity(
     for species in species_list:
         dataset[species].data[half_spin_boundary] = np.nan
 
+    for var in ["nso_esa_step", "nso_spin_sector"]:
+        if var in dataset:
+            fillval = dataset[var].attrs["FILLVAL"]
+            restored_values = dataset[var].data.astype(np.float64, copy=True)
+            restored_values = np.nan_to_num(
+                restored_values, nan=fillval, posinf=fillval, neginf=fillval
+            )
+            restored_values = np.clip(np.rint(restored_values), 0, 255).astype(
+                np.uint8
+            )
+            dataset[var] = xr.DataArray(
+                restored_values,
+                dims=dataset[var].dims,
+                attrs=dataset[var].attrs,
+            )
+
     return dataset
 
 

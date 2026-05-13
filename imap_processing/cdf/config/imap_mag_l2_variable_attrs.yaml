@@ -49,7 +49,7 @@ vector_attrs: &vectors_default
     DEPEND_1: direction
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
     FIELDNAM: Magnetic Field Vector
-    FILLVAL: 9223372036854775807
+    FILLVAL: -1.0e31
     FORMAT: F12.5
     LABL_PTR_1: direction_label
 
