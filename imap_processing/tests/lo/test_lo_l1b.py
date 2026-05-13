@@ -34,8 +34,6 @@ from imap_processing.lo.l1b.lo_l1b import (
     lo_l1b,
     resweep_histogram_data,
     set_avg_spin_durations_per_event,
-    set_bad_or_goodtimes,
-    set_bad_times,
     set_coincidence_type,
     set_each_event_epoch,
     set_esa_mode,
@@ -46,7 +44,6 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_spin_cycle_from_spin_data,
     split_backgrounds_and_goodtimes_dataset,
 )
-from imap_processing.lo.lo_ancillary import read_ancillary_file
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import (
     et_to_met,
@@ -762,45 +759,6 @@ def test_identify_species(attr_mgr_l1b):
 
     # Assert
     np.testing.assert_array_equal(l1b_de["species"], expected_species)
-
-
-def test_set_bad_times(anc_dependencies):
-    # Arrange
-    l1b_de = xr.Dataset(
-        {
-            "esa_step": ("epoch", [1, 1, 3, 1]),
-            "spin_bin": ("epoch", [1900, 2000, 3000, 2]),
-        },
-        coords={
-            "epoch": met_to_ttj2000ns([473385599, 473385600, 473385601, 473385602]),
-        },
-    )
-
-    expected_bad_times = np.array([0, 1, 0, 0])
-
-    # Act
-    l1b_de = set_bad_times(l1b_de, anc_dependencies)
-
-    # Assert
-    np.testing.assert_array_equal(l1b_de["badtimes"], expected_bad_times)
-
-
-def test_set_bad_or_goodtimes(anc_dependencies):
-    # Arrange
-    # badtimes ancillary
-    df = read_ancillary_file(anc_dependencies[1])
-
-    epoch = met_to_ttj2000ns([473385599, 473385600, 473385601, 473385602])
-    esa_step = np.array([1, 1, 3, 1])
-    spin_bin = np.array([1900, 2000, 3000, 2])
-
-    expected_bad_times = np.array([0, 1, 0, 0])
-
-    # Act
-    badtimes = set_bad_or_goodtimes(df, epoch, esa_step, spin_bin)
-
-    # Assert
-    np.testing.assert_array_equal(badtimes, expected_bad_times)
 
 
 @patch(

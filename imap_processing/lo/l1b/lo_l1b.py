@@ -6,7 +6,6 @@ from datetime import timedelta
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import spiceypy
 import xarray as xr
 
@@ -323,8 +322,6 @@ def l1b_de(
     # calculate and set the pointing bin based on the spin phase
     # pointing bin is 3600 x 40 bins
     l1b_de = set_pointing_bin(l1b_de)
-    # set the badtimes
-    l1b_de = set_bad_times(l1b_de, anc_dependencies)
     return l1b_de
 
 
@@ -1123,108 +1120,6 @@ def identify_species(l1b_de: xr.Dataset) -> xr.Dataset:
     )
 
     return l1b_de
-
-
-def set_bad_times(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
-    """
-    Set the bad times for each direct event.
-
-    Parameters
-    ----------
-    l1b_de : xarray.Dataset
-        The L1B DE dataset.
-    anc_dependencies : list
-        List of ancillary file paths.
-
-    Returns
-    -------
-    l1b_de : xarray.Dataset
-        The L1B DE dataset with the bad times added.
-    """
-    badtimes_df = lo_ancillary.read_ancillary_file(
-        next(str(s) for s in anc_dependencies if "bad-times" in str(s))
-    )
-
-    esa_steps = l1b_de["esa_step"].values
-    epochs = l1b_de["epoch"].values
-    spin_bins = l1b_de["spin_bin"].values
-
-    badtimes = set_bad_or_goodtimes(badtimes_df, epochs, esa_steps, spin_bins)
-
-    # 1 = badtime, 0 = not badtime
-    l1b_de["badtimes"] = xr.DataArray(
-        badtimes,
-        dims=["epoch"],
-        # TODO: Add to yaml
-        # attrs=attr_mgr.get_variable_attributes("bad_times"),
-    )
-
-    return l1b_de
-
-
-def set_bad_or_goodtimes(
-    times_df: pd.DataFrame,
-    epochs: np.ndarray,
-    esa_steps: np.ndarray,
-    spin_bins: np.ndarray,
-) -> np.ndarray:
-    """
-    Find the good/bad time flags for each epoch based on the provided times DataFrame.
-
-    Parameters
-    ----------
-    times_df : pd.DataFrame
-        Good or Bad times dataframe containing time ranges and corresponding flags.
-    epochs : np.ndarray
-        Array of epochs in TTJ2000ns format.
-    esa_steps : np.ndarray
-        Array of ESA steps corresponding to each epoch.
-    spin_bins : np.ndarray
-        Array of spin bins corresponding to each epoch.
-
-    Returns
-    -------
-    time_flags : np.ndarray
-        Array of time good or bad time flags for each epoch.
-    """
-    if "BadTime_start" in times_df.columns and "BadTime_end" in times_df.columns:
-        times_start = met_to_ttj2000ns(times_df["BadTime_start"])
-        times_end = met_to_ttj2000ns(times_df["BadTime_end"])
-    elif "GoodTime_start" in times_df.columns and "GoodTime_end" in times_df.columns:
-        times_start = met_to_ttj2000ns(times_df["GoodTime_start"])
-        times_end = met_to_ttj2000ns(times_df["GoodTime_end"])
-    else:
-        raise ValueError("DataFrame must contain either BadTime or GoodTime columns.")
-
-    # Create masks for time and bin ranges using broadcasting
-    # the bin_start and bin_end are 6 degree bins and need to be converted to
-    # 0.1 degree bins to align with the spin_bins, so multiply by 60
-    time_mask = (epochs[:, None] >= times_start) & (epochs[:, None] <= times_end)
-    # The ancillary file binning uses 0-59 for the 6 degree bins, so add 1 to bin_end
-    # so the upper bound is inclusive of the full bin range.
-    bin_mask = (spin_bins[:, None] >= times_df["bin_start"].values * 60) & (
-        spin_bins[:, None] < (times_df["bin_end"].values + 1) * 60
-    )
-
-    # Combined mask for epochs that fall within the time and bin ranges
-    combined_mask = time_mask & bin_mask
-
-    # TODO: Handle the case where no matching rows are found, because
-    #       otherwise, the bacgkround rates will be set to 0 for those epochs,
-    #       which is not correct.
-
-    # Get the time flags for each epoch's esa_step from matching rows
-    time_flags: np.ndarray = np.zeros(len(epochs), dtype=int)
-    for epoch_idx in range(len(epochs)):
-        matching_rows = np.where(combined_mask[epoch_idx])[0]
-        if len(matching_rows) > 0:
-            # Use the first matching row
-            row_idx = matching_rows[0]
-            esa_step = esa_steps[epoch_idx]
-            if f"E-Step{esa_step}" in times_df.columns:
-                time_flags[epoch_idx] = times_df[f"E-Step{esa_step}"].iloc[row_idx]
-
-    return time_flags
 
 
 def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
