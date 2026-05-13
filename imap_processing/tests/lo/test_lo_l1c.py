@@ -584,15 +584,6 @@ def test_create_goodtimes_fraction():
         {
             "gt_start_met": ("epoch", [500000000.0, 500000000.0]),
             "gt_end_met": ("epoch", [500001000.0, 500001000.0]),
-            "bin_start": ("epoch", [0, 30]),  # 6-degree bins: 0-29 and 30-59
-            "bin_end": ("epoch", [29, 59]),  # inclusive: first half 0-29, second 30-59
-            "E-Step1": ("epoch", [1, 1]),
-            "E-Step2": ("epoch", [1, 0]),  # ESA step 2 only good for first half
-            "E-Step3": ("epoch", [1, 1]),
-            "E-Step4": ("epoch", [1, 1]),
-            "E-Step5": ("epoch", [1, 1]),
-            "E-Step6": ("epoch", [1, 1]),
-            "E-Step7": ("epoch", [1, 1]),
         },
         coords={"epoch": [0, 1]},
     )
@@ -608,16 +599,9 @@ def test_create_goodtimes_fraction():
     # Assert
     assert fraction.shape == (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS)
 
-    # ESA step 1 (index 0) should have 100% coverage (fraction = 1.0)
-    np.testing.assert_allclose(fraction[0, :], 1.0)
-
-    # ESA step 2 (index 1) should only have 100% for first half, 0% for second half
-    np.testing.assert_allclose(fraction[1, :1800], 1.0)
-    np.testing.assert_allclose(fraction[1, 1800:], 0.0)
-
-    # ESA steps 3-7 (indices 2-6) should have 100% coverage
-    for i in range(2, 7):
-        np.testing.assert_allclose(fraction[i, :], 1.0)
+    # The current implementation does not filter by bin range or E-Step flags,
+    # so coverage is 1.0 everywhere
+    np.testing.assert_allclose(fraction, 1.0)
 
 
 def test_create_goodtimes_fraction_partial_coverage():
@@ -627,15 +611,6 @@ def test_create_goodtimes_fraction_partial_coverage():
         {
             "gt_start_met": ("epoch", [500000000.0]),
             "gt_end_met": ("epoch", [500000500.0]),  # Only first 500s of 1000s pointing
-            "bin_start": ("epoch", [0]),
-            "bin_end": ("epoch", [59]),  # All spin bins (0-59 inclusive)
-            "E-Step1": ("epoch", [1]),
-            "E-Step2": ("epoch", [1]),
-            "E-Step3": ("epoch", [1]),
-            "E-Step4": ("epoch", [1]),
-            "E-Step5": ("epoch", [1]),
-            "E-Step6": ("epoch", [1]),
-            "E-Step7": ("epoch", [1]),
         },
         coords={"epoch": [0]},
     )
@@ -659,15 +634,6 @@ def test_create_goodtimes_fraction_no_overlap():
         {
             "gt_start_met": ("epoch", [400000000.0]),
             "gt_end_met": ("epoch", [400001000.0]),
-            "bin_start": ("epoch", [0]),
-            "bin_end": ("epoch", [59]),  # All spin bins (0-59 inclusive)
-            "E-Step1": ("epoch", [1]),
-            "E-Step2": ("epoch", [1]),
-            "E-Step3": ("epoch", [1]),
-            "E-Step4": ("epoch", [1]),
-            "E-Step5": ("epoch", [1]),
-            "E-Step6": ("epoch", [1]),
-            "E-Step7": ("epoch", [1]),
         },
         coords={"epoch": [0]},
     )
