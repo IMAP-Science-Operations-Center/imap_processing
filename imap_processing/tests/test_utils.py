@@ -6,6 +6,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory, utils
+from imap_processing.spice.time import str_yyyymmdd_to_ttj2000ns
 from imap_processing.ultra.utils.ultra_l1_utils import extract_data_dict
 
 
@@ -396,3 +397,32 @@ def test_extract_data_dict():
     }
     np.testing.assert_array_equal(result["field_a"], np.array([1, 2, 3]))
     np.testing.assert_array_equal(result["spin_number"], np.array([0, 1, 2]))
+
+
+def test_filter_day_boundary_data():
+    """Test filter_day_boundary_data filters epochs outside the processing day."""
+
+    start_date = "20250901"
+    start = str_yyyymmdd_to_ttj2000ns(start_date)
+    one_day_ns = np.int64(86_400 * 1_000_000_000)
+
+    # Epochs: one before the day, three within, one after
+    epoch_values = np.array(
+        [
+            start - 1,  # before day boundary
+            start,  # exactly at start (included)
+            start + one_day_ns // 2,  # midday (included)
+            start + one_day_ns - 1,  # last ns of day (included)
+            start + one_day_ns,  # exactly at next day start (excluded)
+        ],
+        dtype=np.int64,
+    )
+    ds = xr.Dataset(
+        {"value": ("epoch", np.arange(len(epoch_values)))},
+        coords={"epoch": epoch_values},
+    )
+
+    result = utils.filter_day_boundary_data(ds, start_date)
+
+    assert result.dims["epoch"] == 3
+    np.testing.assert_array_equal(result["epoch"].values, epoch_values[1:4])
