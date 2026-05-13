@@ -1,6 +1,7 @@
 import json
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -125,6 +126,11 @@ def test_swapi_l2_cdf(
     )
     l2_cdf = write_cdf(l2_dataset)
     assert l2_cdf.name == "imap_swapi_l2_sci_20240924_v999.cdf"
+    cdf_file = cdflib.CDF(l2_cdf)
+    esa_energy_info = cdf_file.varinq("esa_energy")
+    esa_energy_attrs = cdf_file.varattsget("esa_energy")
+    assert esa_energy_info.Data_Type_Description == "CDF_DOUBLE"
+    assert np.isclose(esa_energy_attrs["FILLVAL"], np.float64(-1.0e31))
 
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(
