@@ -604,9 +604,5 @@ def filter_day_boundary_data(dataset: xr.Dataset, start_date: str) -> xr.Dataset
     # which is the start of the next day, minus 1 nanosecond to get the end of the
     # current day
     end_ttj2000ns = str_yyyymmdd_to_ttj2000ns(next_day) - 1
-    logger.info(
-        f"Filtering dataset for day boundary. Keeping data between "
-        f"{start_date} and "
-        f"{next_day}."
-    )
+    logger.info(f"Filtering dataset out of day boundary of {start_date}.")
     return dataset.sel(epoch=slice(start_ttj2000ns, end_ttj2000ns))
