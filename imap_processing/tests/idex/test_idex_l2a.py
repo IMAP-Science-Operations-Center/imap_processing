@@ -93,6 +93,7 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"
 
+    # TODO: remove this NAN block when fitting logic is applied
     expected_vars = [
         "tof_snr",
         "tof_peak_kappa",
