@@ -320,7 +320,8 @@ def test_l1b_hi_epoch_delta_cdf_metadata(descriptor, codice_lut_path):
             codice_lut_path(descriptor="l1a-sci-lut"),
         ]
 
-        l1a_file_path = write_cdf(process_l1a(dependency=ProcessingInputCollection())[0])
+        l1a_dataset = process_l1a(dependency=ProcessingInputCollection())[0]
+        l1a_file_path = write_cdf(l1a_dataset)
         processed_data = process_codice_l1b(file_path=l1a_file_path)
         cdf_file_path = write_cdf(processed_data)
 

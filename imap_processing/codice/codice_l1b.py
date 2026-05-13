@@ -23,7 +23,19 @@ logger = logging.getLogger(__name__)
 
 
 def _cast_epoch_delta_vars_to_float64(dataset: xr.Dataset) -> xr.Dataset:
-    """Normalize epoch delta support vars to floating-point before CDF write-out."""
+    """
+    Normalize epoch delta support vars to floating-point before CDF write-out.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset whose epoch delta support variables should be normalized.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset with epoch delta support variables stored as ``float64``.
+    """
     for var in ["epoch_delta_plus", "epoch_delta_minus"]:
         if var in dataset:
             dataset[var] = xr.DataArray(

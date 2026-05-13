@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.constants import FILLVAL, DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames

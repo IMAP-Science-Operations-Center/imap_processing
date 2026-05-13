@@ -575,9 +575,7 @@ def process_lo_species_intensity(
             restored_values = np.nan_to_num(
                 restored_values, nan=fillval, posinf=fillval, neginf=fillval
             )
-            restored_values = np.clip(np.rint(restored_values), 0, 255).astype(
-                np.uint8
-            )
+            restored_values = np.clip(np.rint(restored_values), 0, 255).astype(np.uint8)
             dataset[var] = xr.DataArray(
                 restored_values,
                 dims=dataset[var].dims,

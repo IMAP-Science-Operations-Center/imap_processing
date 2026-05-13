@@ -65,6 +65,7 @@ def _generate_hi_l1b_file(descriptor: str, codice_lut_path):
 
 def _mock_l2_file_paths(descriptor: str, l1b_file, codice_lut_path):
     """Return a side effect that points L2 processing at a generated L1B file."""
+
     def _side_effect(request_descriptor=None, data_type=None, **kwargs):
         request_descriptor = kwargs.get("descriptor", request_descriptor)
         if request_descriptor == descriptor:
@@ -123,7 +124,7 @@ def test_l2_hi_omni(mock_get_file_paths):
         # Tests that dimensions match
         assert processed_l2[variable].dims == val_data[variable].dims, (
             f"Dimension mismatch in coordinate '{variable}'"
-    )
+        )
 
     processed_l2.attrs["Data_version"] = "001"
     omni_cdf_file = write_cdf(processed_l2)
@@ -223,9 +224,7 @@ def test_l2_hi_sectored(mock_get_file_paths):
         ("hi-sectored", "imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"),
     ],
 )
-def test_l2_hi_epoch_delta_cdf_metadata(
-    descriptor, efficiency_file, codice_lut_path
-):
+def test_l2_hi_epoch_delta_cdf_metadata(descriptor, efficiency_file, codice_lut_path):
     l1b_file = _generate_hi_l1b_file(descriptor, codice_lut_path)
     dependencies = ProcessingInputCollection(
         AncillaryInput(efficiency_file),
