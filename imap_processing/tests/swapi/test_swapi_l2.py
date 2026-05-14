@@ -131,6 +131,8 @@ def test_swapi_l2_cdf(
     esa_energy_attrs = cdf_file.varattsget("esa_energy")
     assert esa_energy_info.Data_Type_Description == "CDF_DOUBLE"
     assert np.isclose(esa_energy_attrs["FILLVAL"], np.float64(-1.0e31))
+    assert esa_energy_attrs["VALIDMAX"] == np.float64(65535.0)
+    assert esa_energy_attrs["VALIDMIN"] == np.float64(0.0)
 
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(
