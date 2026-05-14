@@ -260,8 +260,8 @@ spin_sector:
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
   FIELDNAM: Spin Sector Index
-  FILLVAL: *real_fillval
-  FORMAT: F8.1
+  FILLVAL: *uint8_fillval
+  FORMAT: I3
   LABLAXIS: Spin Sector
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
