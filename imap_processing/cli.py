@@ -77,6 +77,7 @@ from imap_processing.mag.l1d.mag_l1d import mag_l1d
 from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
 from imap_processing.spice import pointing_frame, repoint, spin
+from imap_processing.spice.time import et_to_ttj2000ns, str_to_et
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
@@ -427,6 +428,41 @@ class ProcessInstrument(ABC):
                         logger.error(f"Upload failed with error: {msg}")
                 except Exception as e:
                     logger.error(f"Upload failed unknown error: {e}")
+
+    def _check_epochs_within_day(
+        self,
+        datasets: list[xr.Dataset],
+        day: np.datetime64,
+    ) -> None:
+        """
+        Raise an error if any dataset epoch falls more than 24 hours outside day.
+
+        A tolerance of ±24 hours around the expected processing day is allowed
+        to accommodate data that straddles midnight. Epochs beyond that window
+        may indicate the wrong input file was provided.
+
+        Parameters
+        ----------
+        datasets : list[xarray.Dataset]
+            Datasets whose ``epoch`` coordinate will be checked.
+        day : numpy.datetime64
+            The expected processing day (nominally self.start_date).
+
+        Raises
+        ------
+        ValueError
+            If any epoch value is more than 24 hours before ``day`` or more
+            than 24 hours after the end of ``day``.
+        """
+        lower = et_to_ttj2000ns(str_to_et(str(day - np.timedelta64(1, "D"))))
+        upper = et_to_ttj2000ns(str_to_et(str(day + np.timedelta64(2, "D"))))
+        for dataset in datasets:
+            epoch_ns = dataset["epoch"].values
+            if np.any(epoch_ns < lower) or np.any(epoch_ns >= upper):
+                raise ValueError(
+                    f"Data contains epochs more than 24 hours outside "
+                    f"the expected processing day {day}."
+                )
 
     @final
     def process(self) -> None:
@@ -1406,6 +1442,9 @@ class Mag(ProcessInstrument):
                     f"Timestamps for output file {ds.attrs['Logical_source']} are not "
                     f"monotonically increasing."
                 )
+            # Will raise an error if any timestamps are outside the current day
+            self._check_epochs_within_day(ds, current_day)
+
         return datasets
 
     def post_processing(
