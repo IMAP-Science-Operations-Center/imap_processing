@@ -459,9 +459,13 @@ class ProcessInstrument(ABC):
         for dataset in datasets:
             epoch_ns = dataset["epoch"].values
             if np.any(epoch_ns < lower) or np.any(epoch_ns >= upper):
+                dataset_logical_id = dataset.attrs.get(
+                    "Logical_source", "unknown dataset"
+                )
+
                 raise ValueError(
-                    f"Data contains epochs more than 24 hours outside "
-                    f"the expected processing day {day}."
+                    f"Data in {dataset_logical_id} contains epochs more than 24 hours "
+                    f"outside the expected processing day {day}."
                 )
 
     @final
@@ -1442,6 +1446,7 @@ class Mag(ProcessInstrument):
                     f"Timestamps for output file {ds.attrs['Logical_source']} are not "
                     f"monotonically increasing."
                 )
+
         # Will raise an error if any timestamps are outside the current day
         self._check_epochs_within_day(datasets, current_day)
 

@@ -905,7 +905,7 @@ def test_post_processing(
         # 1 ns before lower bound — more than 24h outside, raises
         (-1, True),
         # 1 ns past upper bound — more than 24h outside, raises
-        (int(3 * 86400 * 1e9), True),
+        (int(3 * 86400 * 1e9 + 1), True),
     ],
 )
 def test_check_epochs_within_day(epoch_ns, raises):
