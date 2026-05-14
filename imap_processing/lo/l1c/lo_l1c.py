@@ -675,7 +675,7 @@ def create_goodtimes_fraction(
     ----------
     goodtimes_ds : xarray.Dataset
         Dataset containing the good-times data with variables:
-        gt_start_met, gt_end_met, bin_start, bin_end, E-Step1 - E-Step7.
+        gt_start_met, gt_end_met.
     pointing_start_met : float
         The start MET time of the pointing.
     pointing_end_met : float
@@ -730,15 +730,11 @@ def create_goodtimes_fraction(
         # Calculate fraction of pointing duration covered by this good-time
         time_fraction = overlap_duration / total_pointing_duration
 
-        # spin_bin_start and spin_bin_end cover the entire 360 degree range
-        # Convert to 0.1-degree resolution (multiply by 60)
-        spin_bin_start = 0
-        spin_bin_end = 3600
-
-        # For each ESA step, accumulate the fractional coverage
-        for esa_idx in range(N_ESA_ENERGY_STEPS):
-            # Add this time fraction to the affected bins
-            goodtimes_fraction[esa_idx, spin_bin_start:spin_bin_end] += time_fraction
+        # For each ESA step, accumulate the fractional coverage.
+        # Add this time fraction to the affected bins.
+        # Note that all ESA Levels and all N_SPIN_ANGLE_BINS currently get the
+        # same increment, pending algorithmic changes in the future.
+        goodtimes_fraction += time_fraction
 
     # Clip to [0, 1] in case of overlapping good-time periods
     goodtimes_fraction = np.clip(goodtimes_fraction, 0.0, 1.0)
