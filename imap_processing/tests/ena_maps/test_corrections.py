@@ -1390,6 +1390,33 @@ class TestInterpolateMapFluxToHelioFrame:
         assert not np.any(np.isinf(stat_unc))
         assert not np.any(np.isinf(sys_err))
 
+    def test_nan_input_propagation(self):
+        """Test that NaN inputs properly propagate to NaN outputs."""
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=3
+        )
+
+        # Set some input values to NaN
+        map_ds["ena_intensity"].values[1, 0] = np.nan
+        map_ds["ena_intensity_stat_uncert"].values[1, 1] = np.nan
+        map_ds["ena_intensity_sys_err"].values[1, 2] = np.nan
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        # NaN in flux should propagate to flux, stat_uncert, and sys_err
+        # at that location
+        assert np.isnan(result_ds["ena_intensity"].values[1, 0])
+        assert np.isnan(result_ds["ena_intensity_stat_uncert"].values[1, 0])
+        assert np.isnan(result_ds["ena_intensity_sys_err"].values[1, 0])
+
+        # NaN in stat_uncert input should result in NaN stat_uncert output
+        assert np.isnan(result_ds["ena_intensity_stat_uncert"].values[1, 1])
+
+        # NaN in sys_err input should result in NaN sys_err output
+        assert np.isnan(result_ds["ena_intensity_sys_err"].values[1, 2])
+
     def test_multidimensional_spatial_coords(self):
         """Test that interpolation works with multi-dimensional spatial coordinates."""
 

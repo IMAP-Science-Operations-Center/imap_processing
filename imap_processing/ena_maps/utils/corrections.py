@@ -962,7 +962,7 @@ def interpolate_map_flux_to_helio_frame(
             sys_err_helio = sys_err_sc * energy_ratio
 
         # Clamp negative fluxes to zero (can occur from linear extrapolation)
-        flux_helio = flux_helio.where(flux_helio >= 0, 0.0)
+        flux_helio = xr.where(flux_helio < 0, 0.0, flux_helio)
 
         # Set any location where the value is not finite to NaN (converts +/-inf to NaN)
         flux_helio = flux_helio.where(np.isfinite(flux_helio), np.nan)

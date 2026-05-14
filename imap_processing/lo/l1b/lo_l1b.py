@@ -173,23 +173,10 @@ MONITOR_RATE_FIELDS = [
     "spin_cycle",
 ]
 
-# Fields to include in the split background rates/goodtimes datasets
-BACKGROUND_RATE_FIELDS = [
-    "h_background_rates",
-    "h_background_variance",
-    "o_background_rates",
-    "o_background_variance",
-    "h_synthetic_floor",
-    "h_proxy_floor",
-    "o_synthetic_floor",
-    "o_proxy_floor",
-]
-
 GOODTIMES_FIELDS = ["gt_start_met", "gt_end_met", "pivot", "pivot_de"]
 
 # -------------------------------------------------------------------
 DE_CLOCK_TICK_S = 4.096e-3  # seconds per DE clock tick
-NUM_ESA_STEPS = 7
 
 
 def lo_l1b(
@@ -1847,7 +1834,7 @@ def calculate_de_rates(
         )
 
     # exposure time shape: (num_asc, num_esa_steps)
-    exposure_time: np.ndarray = np.zeros((num_asc, 7), dtype=float)
+    exposure_time: np.ndarray = np.zeros((num_asc, c.N_ESA_LEVELS), dtype=float)
     # exposure_time_6deg = N_SPINS_PER_ESA_LEVEL * avg_spin_per_asc / 60
     # N_SPINS_PER_ESA_LEVEL sweeps per ASC (28 / 7) in 60 bins
     asc_avg_spin_durations = (
@@ -1860,7 +1847,7 @@ def calculate_de_rates(
     )
 
     # Create output arrays
-    output_shape = (num_asc, 7, 60)
+    output_shape = (num_asc, c.N_ESA_LEVELS, c.N_SPIN_ANGLE_BINS)
     h_counts = np.zeros(output_shape)
     o_counts = np.zeros(output_shape)
     triple_counts = np.zeros(output_shape)
@@ -2574,12 +2561,13 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     epoch_doy = epoch_start_dt.timetuple().tm_yday
 
     # Choose background rate thresholds based on pivot orientation.
-    if c.PIVOT_90_RANGE[0] < pivot < c.PIVOT_90_RANGE[1]:
-        bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_90
-        bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_90
-    else:
-        bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_NON_90
-        bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_NON_90
+    bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_DEFAULT
+    bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT
+    for (low, high), (ram_thresh, anti_ram_thresh) in c.PIVOT_ANGLE_THRESHOLDS.items():
+        if low < pivot < high:
+            bg_rate_ram_nominal = ram_thresh
+            bg_rate_anti_ram_nominal = anti_ram_thresh
+            break
 
     # Manual overrides of the anti-RAM threshold for anomalous days.
     overrides_anc_files = [
@@ -2602,7 +2590,10 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     elem_ram_counts = {}
     elem_anti_ram_counts = {}
     for elem in elems:
-        elem_counts = cdf_hist[f"{elem.lower()}_counts"].values
+        if f"{elem.lower()}_counts" in cdf_hist.data_vars:
+            elem_counts = cdf_hist[f"{elem.lower()}_counts"].values
+        else:
+            elem_counts = np.zeros_like(cdf_hist["h_counts"].values)
         elem_ram_counts[elem] = sum(
             np.sum(elem_counts[:, ram_esa_indices, b], axis=(1, 2))
             for b in c.RAM_HISTOGRAM_BINS
@@ -2694,9 +2685,9 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
                 begin = met[i]  # Start a new good-time interval
 
             for elem in elems:
-                synthetic_floors[elem] += c.BG_RATES[elem] * exposure
+                synthetic_floors[elem] += c.BG_RATES.get(elem, 0) * exposure
                 proxy_floors[elem] += np.sum(
-                    elem_anti_ram_counts["H"][window_sum_start:window_sum_end]
+                    elem_anti_ram_counts[elem][window_sum_start:window_sum_end]
                 )
 
             goodtime_exposure_avg += exposure
@@ -2734,14 +2725,14 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     sigma_bg_rates_out = {}
     for elem in elems:
         if goodtime_exposure_avg == 0:
-            bg_rate = bg_rate_anti_ram_nominal * c.BG_RATE_FALLBACK_SCALE[elem]
+            bg_rate = bg_rate_anti_ram_nominal * c.BG_RATE_FALLBACK_SCALE.get(elem, 0)
             sigma_bg_rate = bg_rate
         else:
             bg_rate = synthetic_floors[elem] / goodtime_exposure_avg
             sigma_bg_rate = np.sqrt(synthetic_floors[elem]) / goodtime_exposure_avg
 
         if bg_rate == 0.0:
-            bg_rate = bg_rate_anti_ram_nominal / c.BG_RATE_FLOOR_DIVISOR[elem]
+            bg_rate = bg_rate_anti_ram_nominal / c.BG_RATE_FLOOR_DIVISOR.get(elem, 1)
             sigma_bg_rate = bg_rate
         if sigma_bg_rate == 0.0:
             sigma_bg_rate = bg_rate
@@ -2786,13 +2777,13 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     )
 
     l1b_combined_ds["gt_start_met"] = xr.DataArray(
-        data=np.array([r[0] for r in goodtime_rows], dtype=np.float32),
+        data=np.array([r[0] for r in goodtime_rows], dtype=np.float64),
         name="Goodtime_start",
         dims=["epoch"],
         attrs=attr_mgr_l1b.get_variable_attributes("gt_start_met"),
     )
     l1b_combined_ds["gt_end_met"] = xr.DataArray(
-        data=np.array([r[1] for r in goodtime_rows], dtype=np.float32),
+        data=np.array([r[1] for r in goodtime_rows], dtype=np.float64),
         name="Goodtime_end",
         dims=["epoch"],
         attrs=attr_mgr_l1b.get_variable_attributes("gt_end_met"),
@@ -2865,7 +2856,27 @@ def split_backgrounds_and_goodtimes_dataset(
     """
     l1b_goodtimes_ds = l1b_backgrounds_and_goodtimes_ds[GOODTIMES_FIELDS]
     l1b_goodtimes_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_goodtimes")
-    lib_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[BACKGROUND_RATE_FIELDS]
-    lib_bgrates_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_bgrates")
 
-    return lib_bgrates_ds, l1b_goodtimes_ds
+    # Suffixes for fields that we accept as belonging to `l1b_bgrates`.
+    background_rate_field_suffixes = [
+        "_background_rates",
+        "_background_variance",
+        "_synthetic_floor",
+        "_proxy_floor",
+    ]
+    background_rate_fields = sorted(
+        [
+            data_var
+            for data_var in l1b_backgrounds_and_goodtimes_ds.data_vars
+            if any(
+                data_var.endswith(suffix) for suffix in background_rate_field_suffixes
+            )
+        ]
+    )
+
+    l1b_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
+    l1b_bgrates_ds["epoch"] = l1b_backgrounds_and_goodtimes_ds["epoch"]
+    l1b_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
+    l1b_bgrates_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_bgrates")
+
+    return l1b_bgrates_ds, l1b_goodtimes_ds

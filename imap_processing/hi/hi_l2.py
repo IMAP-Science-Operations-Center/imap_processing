@@ -463,11 +463,15 @@ def calculate_ena_intensity(
     map_ds["ena_intensity_stat_uncert"] = (
         map_ds["ena_signal_rate_stat_unc"] / flux_conversion_divisor
     )
-    map_ds["ena_intensity_sys_err"] = (
-        np.sqrt(map_ds["bg_rate"] * map_ds["exposure_factor"])
-        / map_ds["exposure_factor"]
-        / flux_conversion_divisor
-    )
+
+    # Ignore numpy divide by zero and zero/zero warnings. Setting pixels with
+    # zero exposure time to NaN is the correct behavior.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        map_ds["ena_intensity_sys_err"] = (
+            np.sqrt(map_ds["bg_rate"] * map_ds["exposure_factor"])
+            / map_ds["exposure_factor"]
+            / flux_conversion_divisor
+        )
 
     # Combine calibration products using proper weighted averaging
     # as described in Hi Algorithm Document Section 3.1.2
@@ -540,11 +544,16 @@ def combine_calibration_products(
     map_ds["ena_intensity"] = combined_flux
     # Statistical uncertainty
     map_ds["ena_intensity_stat_uncert"] = np.sqrt(
-        1 / (1 / (map_ds["ena_intensity_stat_uncert"] ** 2)).sum(dim="calibration_prod")
+        1
+        / (1 / (map_ds["ena_intensity_stat_uncert"] ** 2)).sum(
+            dim="calibration_prod", skipna=True, min_count=1
+        )
     )
     # For systematic error, just do quadrature sum over the systematic error for
     # each calibration product.
-    map_ds["ena_intensity_sys_err"] = np.sqrt((sys_err**2).sum(dim="calibration_prod"))
+    map_ds["ena_intensity_sys_err"] = np.sqrt(
+        (sys_err**2).sum(dim="calibration_prod", skipna=True, min_count=1)
+    )
 
     return map_ds
 

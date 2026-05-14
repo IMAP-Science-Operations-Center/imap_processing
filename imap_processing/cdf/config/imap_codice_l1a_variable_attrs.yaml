@@ -902,6 +902,7 @@ de_2d_attrs:
   DEPEND_0: epoch
   DEPEND_1: priority
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: spectogram
   FIELDNAM: Direct Event Data
   FILLVAL: -9223372036854775808
   FORMAT: I5
@@ -919,6 +920,7 @@ de_3d_attrs:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: spectogram
   FIELDNAM: Direct Event Data
   FILLVAL: -9223372036854775808
   FORMAT: I{num_digits}
