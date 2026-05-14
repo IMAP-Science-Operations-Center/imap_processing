@@ -147,7 +147,6 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
         "tof_peak_reduced_chi_square",
         "tof_snr",
         "mass",
-        "mass_labels",
         "mass_scale",
     ]
     for var in expected_nan_vars:

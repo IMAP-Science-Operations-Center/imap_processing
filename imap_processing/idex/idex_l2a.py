@@ -300,11 +300,11 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             "target_fit_parameter_labels", check_schema=False
         ),
     )
-    """
-    We're inserting a NaN block here for the 2026 June release while the
-    IDEX science team works through validating the fitting routines and
-    derived values.
-    """
+
+    # We're inserting a NaN block here for the 2026 June release while the
+    # IDEX science team works through validating the fitting routines and
+    # derived values.
+
     # Ion Grid Fitting:
     l2a_dataset["ion_grid_dust_mass_estimate"].data = np.full(
         l2a_dataset["ion_grid_dust_mass_estimate"].shape, np.nan
@@ -338,8 +338,6 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     l2a_dataset["tof_snr"].data = np.full(l2a_dataset["tof_snr"].shape, np.nan)
 
     l2a_dataset["mass"].data = np.full(l2a_dataset["mass"].shape, np.nan)
-
-    l2a_dataset["mass_labels"].data = np.full(l2a_dataset["mass_labels"].shape, np.nan)
 
     l2a_dataset["mass_scale"].data = np.full(l2a_dataset["mass_scale"].shape, np.nan)
     # End NaN block

@@ -366,11 +366,10 @@ def idex_l2b(
 
     l2c_dataset.attrs.update(map_attrs)
 
-    """
-    We're inserting a NaN block here for the 2026 June release while the
-    IDEX science team works through validating the fitting routines and
-    derived values.
-    """
+    # We're inserting a NaN block here for the 2026 June release while the
+    # IDEX science team works through validating the fitting routines and
+    # derived values.
+
     # L2B Block
     l2b_dataset["counts_by_mass"].data = np.full(
         l2b_dataset["counts_by_mass"].shape, np.nan
