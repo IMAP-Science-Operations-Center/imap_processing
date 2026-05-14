@@ -241,6 +241,9 @@ def test_glows_l2_cdf_metadata(
     assert list(flags_label_values) == list(BAD_TIME_FLAG_NAMES)
     assert max(len(name) for name in BAD_TIME_FLAG_NAMES) <= int(
         flags_label_attrs["FORMAT"][1:]
+    ), (
+        "Update flags_label FORMAT in imap_glows_l2_variable_attrs.yaml "
+        "if a flag name exceeds A42."
     )
 
     assert bad_time_info.Data_Type_Description == "CDF_UINT2"
