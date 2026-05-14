@@ -1,10 +1,13 @@
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import write_cdf
+from imap_processing.glows import BAD_TIME_FLAG_NAMES
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
 from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
@@ -180,6 +183,69 @@ def test_generate_l2(
         expected_number_of_good_l1b_inputs = 0
         assert ds.number_of_good_l1b_inputs == expected_number_of_good_l1b_inputs
         assert ds.bad_time_flag_occurrences.dtype == np.uint16
+
+
+@patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_glows_l2_cdf_metadata(
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    mock_compute_position_angle,
+    l1a_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
+    mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
+):
+    """Written GLOWS L2 CDF metadata should match the intended label and attr types."""
+    mock_spice_function.side_effect = mock_update_spice_parameters
+
+    l1b_hist_dataset = glows_l1b(
+        l1a_dataset[0],
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
+        mock_conversion_table_dict,
+    )
+    l1b_hist_dataset.attrs["Repointing"] = "repoint00047"
+    l2_dataset = glows_l2(
+        l1b_hist_dataset, mock_pipeline_settings, mock_calibration_dataset
+    )[0]
+    cdf_path = write_cdf(l2_dataset)
+
+    cdf_file = cdflib.CDF(cdf_path)
+    bins_label_info = cdf_file.varinq("bins_label")
+    bins_label_attrs = cdf_file.varattsget("bins_label")
+    bins_label_values = cdf_file.varget("bins_label")
+    flags_label_info = cdf_file.varinq("flags_label")
+    flags_label_attrs = cdf_file.varattsget("flags_label")
+    flags_label_values = cdf_file.varget("flags_label")
+    bad_time_info = cdf_file.varinq("bad_time_flag_occurrences")
+    bad_time_attrs = cdf_file.varattsget("bad_time_flag_occurrences")
+    global_attrs = cdf_file.globalattsget()
+
+    assert bins_label_info.Data_Type_Description == "CDF_CHAR"
+    assert bins_label_attrs["FORMAT"] == "A4"
+    assert list(bins_label_values[:5]) == ["0", "1", "2", "3", "4"]
+
+    assert flags_label_info.Data_Type_Description == "CDF_CHAR"
+    assert flags_label_attrs["FORMAT"] == "A42"
+    assert list(flags_label_values) == list(BAD_TIME_FLAG_NAMES)
+    assert max(len(name) for name in BAD_TIME_FLAG_NAMES) <= int(
+        flags_label_attrs["FORMAT"][1:]
+    )
+
+    assert bad_time_info.Data_Type_Description == "CDF_UINT2"
+    assert bad_time_attrs["FORMAT"] == "I5"
+    assert global_attrs["flight_software_version"] == ["131329"]
 
 
 def test_bin_exclusions(l1b_hists):
