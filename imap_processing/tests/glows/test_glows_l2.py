@@ -13,7 +13,11 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
-from imap_processing.glows.l2.glows_l2 import create_l2_dataset, glows_l2
+from imap_processing.glows.l2.glows_l2 import (
+    _normalize_global_attr_to_string,
+    create_l2_dataset,
+    glows_l2,
+)
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
@@ -249,6 +253,22 @@ def test_glows_l2_cdf_metadata(
     assert bad_time_info.Data_Type_Description == "CDF_UINT2"
     assert bad_time_attrs["FORMAT"] == "I5"
     assert global_attrs["flight_software_version"] == ["131329"]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (None, ""),
+        ("131329", "131329"),
+        ([], ""),
+        (np.array([]), ""),
+        ([131329], "131329"),
+        ((131329,), "131329"),
+        (np.array([131329]), "131329"),
+    ],
+)
+def test_normalize_global_attr_to_string(value, expected):
+    assert _normalize_global_attr_to_string(value) == expected
 
 
 def test_bin_exclusions(l1b_hists):
