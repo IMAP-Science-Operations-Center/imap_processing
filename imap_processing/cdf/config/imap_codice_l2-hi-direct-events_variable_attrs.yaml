@@ -277,7 +277,7 @@ ssd_energy:
 energy_per_nuc:
   CATDESC: Energy per Nucleon
   DEPEND_0: epoch
-  DEPEND_1: priority_label
+  DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   DISPLAY_TYPE: spectrogram

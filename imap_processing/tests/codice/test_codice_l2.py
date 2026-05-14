@@ -807,3 +807,8 @@ def test_codice_l2_direct_events_display_type_cdf_metadata(
             f"{variable} DISPLAY_TYPE must be stored as a string"
         )
         assert attrs["DISPLAY_TYPE"] == expected_display_type
+
+    if descriptor == "hi-direct-events":
+        attrs = cdf_file.varattsget("energy_per_nuc")
+        assert attrs["DEPEND_1"] == "priority"
+        assert attrs["LABL_PTR_1"] == "priority_label"
