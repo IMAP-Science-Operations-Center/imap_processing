@@ -1442,8 +1442,8 @@ class Mag(ProcessInstrument):
                     f"Timestamps for output file {ds.attrs['Logical_source']} are not "
                     f"monotonically increasing."
                 )
-            # Will raise an error if any timestamps are outside the current day
-            self._check_epochs_within_day(ds, current_day)
+        # Will raise an error if any timestamps are outside the current day
+        self._check_epochs_within_day(datasets, current_day)
 
         return datasets
 
