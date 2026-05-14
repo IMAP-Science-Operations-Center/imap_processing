@@ -3,6 +3,7 @@
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -43,6 +44,50 @@ EXPECTED_LOGICAL_SOURCES = [
     "imap_codice_l2_lo-direct-events",
 ]
 
+DIRECT_EVENT_LUTS = {
+    "lo-direct-events": [
+        "l2-lo-onboard-energy-table",
+        "l2-lo-onboard-energy-bins",
+        "l2-lo-onboard-mpq-cal",
+        "l2-lo-onboard-mpq-cal",
+    ],
+    "hi-direct-events": [
+        "l2-hi-energy-table",
+        "l2-hi-tof-table",
+    ],
+}
+
+DIRECT_EVENT_DISPLAY_TYPES = {
+    "lo-direct-events": {
+        "num_events": "time_series",
+        "data_quality": "no_plot",
+        "gain": "no_plot",
+        "multi_flag": "no_plot",
+        "spin_angle": "spectrogram",
+        "elevation_angle": "spectrogram",
+        "tof": "spectrogram",
+        "type": "no_plot",
+        "apd_energy": "spectrogram",
+        "apd_id": "no_plot",
+        "energy_per_charge": "spectrogram",
+        "energy_step": "no_plot",
+        "position": "no_plot",
+    },
+    "hi-direct-events": {
+        "num_events": "time_series",
+        "data_quality": "no_plot",
+        "gain": "no_plot",
+        "multi_flag": "no_plot",
+        "spin_angle": "spectrogram",
+        "elevation_angle": "spectrogram",
+        "tof": "spectrogram",
+        "type": "no_plot",
+        "ssd_energy": "spectrogram",
+        "energy_per_nuc": "spectrogram",
+        "ssd_id": "no_plot",
+    },
+}
+
 
 @pytest.fixture
 def processing_dependencies(codice_lut_path):
@@ -78,6 +123,27 @@ def mock_cdf_attrs():
         "test-product-var2": {"attr2": "value2"},
     }[var]
     return cdf_attrs
+
+
+def _generate_direct_events_l2_file(mock_get_file_paths, codice_lut_path, descriptor):
+    """Generate a fresh CoDICE direct-events L2 CDF for metadata assertions."""
+    mock_get_file_paths.side_effect = [
+        codice_lut_path(descriptor=descriptor, data_type="l0")
+    ]
+    l1a_cdf = process_l1a(ProcessingInputCollection())[0]
+    processed_l1a_file = write_cdf(l1a_cdf)
+    file_path = processed_l1a_file.as_posix()
+    mock_get_file_paths.side_effect = [
+        [file_path],
+        [file_path],
+        *[
+            codice_lut_path(descriptor=lut_descriptor)
+            for lut_descriptor in DIRECT_EVENT_LUTS[descriptor]
+        ],
+    ]
+    processed_l2_ds = process_codice_l2(descriptor, ProcessingInputCollection())
+    processed_l2_ds.attrs["Data_version"] = "001"
+    return write_cdf(processed_l2_ds)
 
 
 @pytest.fixture
@@ -720,3 +786,24 @@ def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
     errors = CDFValidator().validate(file)
     assert not errors
     load_cdf(file)
+
+
+@pytest.mark.parametrize("descriptor", ["lo-direct-events", "hi-direct-events"])
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_codice_l2_direct_events_display_type_cdf_metadata(
+    mock_get_file_paths, codice_lut_path, descriptor
+):
+    file = _generate_direct_events_l2_file(
+        mock_get_file_paths, codice_lut_path, descriptor
+    )
+    cdf_file = cdflib.CDF(str(file))
+
+    for variable, expected_display_type in DIRECT_EVENT_DISPLAY_TYPES[
+        descriptor
+    ].items():
+        attrs = cdf_file.varattsget(variable)
+        assert "DISPLAY_TYPE" in attrs, f"{variable} is missing DISPLAY_TYPE"
+        assert isinstance(attrs["DISPLAY_TYPE"], str), (
+            f"{variable} DISPLAY_TYPE must be stored as a string"
+        )
+        assert attrs["DISPLAY_TYPE"] == expected_display_type

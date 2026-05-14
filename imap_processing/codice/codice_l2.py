@@ -1332,7 +1332,7 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
             # skip adding attributes for these variables. They should already
             # have attrs carried over from l1a.
             continue
-        l2_dataset[var].attrs.update(cdf_attrs.get_variable_attributes(var))
+        l2_dataset[var].attrs = cdf_attrs.get_variable_attributes(var)
     # Update coord attributes
     l2_dataset["priority"].attrs.update(
         cdf_attrs.get_variable_attributes("priority", check_schema=False)
@@ -1461,7 +1461,7 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         cdf_attrs.get_global_attributes("imap_codice_l2_hi-direct-events")
     )
     for var in l2_dataset.data_vars:
-        l2_dataset[var].attrs.update(cdf_attrs.get_variable_attributes(var))
+        l2_dataset[var].attrs = cdf_attrs.get_variable_attributes(var)
     # Update coord attributes
     l2_dataset["priority"].attrs.update(
         cdf_attrs.get_variable_attributes("priority", check_schema=False)

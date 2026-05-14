@@ -67,10 +67,10 @@ num_events:
   DEPEND_0: epoch
   DEPEND_1: priority
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: time_series
   FIELDNAM: Number of Events
   FILLVAL: *uint16_fillval
   FORMAT: I5
-  LABLAXIS: Number of Events
   LABL_PTR_1: priority_label
   SCALETYP: linear
   UNITS: " "
@@ -83,10 +83,10 @@ data_quality:
   DEPEND_0: epoch
   DEPEND_1: priority
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Data Quality
   FILLVAL: *uint8_fillval
   FORMAT: I3
-  LABLAXIS: Data Quality
   LABL_PTR_1: priority_label
   SCALETYP: linear
   UNITS: " "
@@ -100,10 +100,10 @@ energy_step:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Energy Step
   FILLVAL: *uint8_fillval
   FORMAT: I3
-  LABLAXIS: Energy Step
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -118,10 +118,10 @@ energy_per_charge:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Energy per Charge
   FILLVAL: *real_fillval
   FORMAT: F12.4
-  LABLAXIS: Energy per Charge
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -136,10 +136,10 @@ gain:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Gain
   FILLVAL: *uint8_fillval
   FORMAT: I1
-  LABLAXIS: Gain
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -154,10 +154,10 @@ multi_flag:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Multi Flag
   FILLVAL: *uint8_fillval
   FORMAT: I1
-  LABLAXIS: Multi Flag
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -172,10 +172,10 @@ type:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Type
   FILLVAL: *uint8_fillval
   FORMAT: I1
-  LABLAXIS: Type
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -190,10 +190,10 @@ tof:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:TimeOfFlight
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Time of Flight
   FILLVAL: *real_fillval
   FORMAT: F12.4
-  LABLAXIS: TOF
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -226,6 +226,7 @@ spin_angle:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Spin Angle
   FILLVAL: *real_fillval
   FORMAT: F8.2
@@ -243,10 +244,10 @@ elevation_angle:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.ElevationAngle
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Elevation Angle
   FILLVAL: *real_fillval
   FORMAT: F8.2
-  LABLAXIS: Elevation Angle
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -261,10 +262,10 @@ ssd_energy:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:Energy
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: SSD Energy
   FILLVAL: *real_fillval
   FORMAT: F12.4
-  LABLAXIS: SSD Energy
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -279,10 +280,10 @@ energy_per_nuc:
   DEPEND_1: priority_label
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Energy per Nucleon
   FILLVAL: *real_fillval
   FORMAT: F12.4
-  LABLAXIS: Energy per Nucleon
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
@@ -297,10 +298,10 @@ ssd_id:
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: no_plot
   FIELDNAM: SSD ID
   FILLVAL: *uint8_fillval
   FORMAT: I2
-  LABLAXIS: SSD ID
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
