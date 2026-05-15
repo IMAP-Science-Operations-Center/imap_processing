@@ -415,6 +415,6 @@ def test_yyyymmdd_to_ttj2000ns():
 def test_yyyymmdd_to_ttj2000ns_invalid_date():
     """Verify a value error is raised when a date is invalid."""
     with pytest.raises(
-        ValueError, match="Date string must be 8 characters long in yyyymmdd format."
+        ValueError, match="Date 202601012 must be 8 characters long in yyyymmdd format."
     ):
         str_yyyymmdd_to_ttj2000ns("202601012")

@@ -89,10 +89,10 @@ def idex_l1a(
             coords="minimal",
             compat="override",
         ).sortby("epoch")
-        in_window_mask = (concat_ds["epoch"] >= window_start_date_ns) & (
+        mask = (concat_ds["epoch"] >= window_start_date_ns) & (
             concat_ds["epoch"] < window_end_date_ns
         )
-        filtered_ds = concat_ds.where(in_window_mask, drop=True)
+        filtered_ds = concat_ds.isel(epoch=mask)
         if len(filtered_ds.epoch) == 0:
             logger.warning(
                 f"No data found for dates {window_start_date_ns} - {window_end_date_ns}"
