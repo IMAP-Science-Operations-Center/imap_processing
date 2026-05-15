@@ -20,6 +20,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
+from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.spice.time import met_to_datetime64
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
@@ -44,7 +45,7 @@ def hist_dataset():
         "spin_period_variance": np.zeros((20,)),
         "pulse_length_average": np.zeros((20,)),
         "pulse_length_variance": np.zeros((20,)),
-        "imap_start_time": np.zeros((20,)),
+        "imap_start_time": np.arange(1, 21, dtype=np.float64),
         "imap_time_offset": np.zeros((20,)),
         "glows_start_time": np.zeros((20,)),
         "glows_time_offset": np.zeros((20,)),
@@ -378,6 +379,43 @@ def test_bins_from_histogram_not_nbins(
             assert da.sizes["bins"] == 3600
 
 
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_process_histogram_skips_zero_imap_start_time(
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+    mock_pipeline_settings,
+):
+    mock_spice_function.side_effect = mock_update_spice_parameters
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
+
+    # Set two epochs to invalid time
+    hist_dataset["imap_start_time"].values[3] = 0.0
+    hist_dataset["imap_start_time"].values[7] = 0.0
+
+    output = process_histogram(
+        hist_dataset,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
+        pipeline_settings,
+    )
+    # 2 invalid epochs dropped; 18 valid epochs remain in every output DataArray
+    for da in output:
+        assert da.sizes["epoch"] == 18
+    assert len(output[0].coords["epoch"]) == 18
+
+
 def test_process_de(de_dataset, ancillary_dict, mock_ancillary_parameters):
     output = process_de(de_dataset, mock_ancillary_parameters)
 
@@ -629,6 +667,9 @@ def test_hist_spice_output(
         # (since the 0.05° threshold is exactly half the 0.1° bin spacing.
         assert np.count_nonzero(region_mask) == 1
 
+        assert np.all(uv_mask[1397:1437])
+        assert region_mask[1417]
+
         # Test flag_from_mask_dataset using the fixture data
         instr_mask = hist_data.flag_from_mask_dataset(
             day_exclusions.exclusions_by_instr_team
@@ -637,3 +678,35 @@ def test_hist_spice_output(
         assert np.count_nonzero(instr_mask) == 10
 
         # TODO: Maxine will validate actual data with GLOWS team
+
+
+def test_calculate_calculate_look_vectors_dps_uses_correct_azimuth_calculation(
+    furnish_kernels,
+):
+    kernels = [
+        "imap_130.tf",
+    ]
+    with furnish_kernels(kernels):
+        imap_spin_angle_bin_cntr = np.array([0, 90, 180, 270])
+        some_position_angle_offset_average = np.double(41.5)
+
+        expected_azimuth = (
+            np.array([360, 90, 180, 270]) - some_position_angle_offset_average
+        )
+        expected_radius = np.array([1, 1, 1, 1])
+
+        # As-built mounting elevation of GLOWS in the s/c frame is 15.025791 degrees
+        expected_elevation = np.array([15.025791, 15.025791, 15.025791, 15.025791])
+
+        look_vectors = HistogramL1B.calculate_look_vectors_dps(
+            imap_spin_angle_bin_cntr, some_position_angle_offset_average
+        )
+
+        actual_spherical = cartesian_to_spherical(look_vectors)
+        actual_azimuth = actual_spherical[:, 1]
+        actual_radius = actual_spherical[:, 0]
+        actual_elevation = actual_spherical[:, 2]
+
+        np.testing.assert_allclose(expected_azimuth, actual_azimuth)
+        np.testing.assert_allclose(expected_radius, actual_radius)
+        np.testing.assert_allclose(expected_elevation, actual_elevation)

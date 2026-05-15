@@ -13,12 +13,14 @@ from imap_processing.mag.l1c.mag_l1c import (
     fill_normal_data,
     find_all_gaps,
     find_gaps,
+    generate_missing_timestamps,
     generate_timeline,
     interpolate_gaps,
     mag_l1c,
     process_mag_l1c,
     vectors_per_second_from_string,
 )
+from imap_processing.spice.time import et_to_ttj2000ns, str_to_et
 from imap_processing.tests.mag.conftest import (
     generate_test_epoch,
     mag_l1a_dataset_generator,
@@ -109,10 +111,41 @@ def test_interpolation_methods():
         assert len(output) == 20
 
 
+@pytest.mark.parametrize(
+    "method",
+    [
+        InterpolationFunction.linear_filtered,
+        InterpolationFunction.quadratic_filtered,
+        InterpolationFunction.cubic_filtered,
+    ],
+)
+def test_filtered_interpolation_methods_drop_unsupported_tail_timestamp(method):
+    input_timestamps = np.arange(0.125, 8.001, step=0.125) * 1e9
+    seconds = input_timestamps / 1e9
+    input_vectors = np.column_stack(
+        [seconds, seconds, seconds, np.ones(input_timestamps.size)]
+    )
+    # Tail boundary: 8.0 s is inside the original burst window but beyond the
+    # post-CIC filtered tail, so it should be dropped rather than extrapolated.
+    output_timestamps = np.array([7.5, 8.0]) * 1e9
+
+    adjusted_time, output = method(
+        input_vectors,
+        input_timestamps,
+        output_timestamps,
+        input_rate=VecSec.EIGHT_VECS_PER_S,
+        output_rate=VecSec.TWO_VECS_PER_S,
+    )
+
+    assert np.array_equal(adjusted_time, np.array([7.5]) * 1e9)
+
+
 def test_process_mag_l1c(norm_dataset, burst_dataset):
     l1c = process_mag_l1c(norm_dataset, burst_dataset, InterpolationFunction.linear)
     expected_output_timeline = (
-        np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.75, 5.25, 5.5, 5.75, 6])
+        np.array(
+            [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6]
+        )
         * 1e9
     )
     assert np.array_equal(l1c[:, 0], expected_output_timeline)
@@ -122,12 +155,12 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         np.count_nonzero([np.sum(l1c[i, 1:4]) for i in range(l1c.shape[0])])
         == l1c.shape[0] - 1
     )
-    expected_flags = np.zeros(15)
+    expected_flags = np.zeros(17)
     # filled sections should have 1 as a flag
     expected_flags[5:8] = 1
-    expected_flags[10:11] = 1
+    expected_flags[10:13] = 1
     # last datapoint in the gap is missing a value
-    expected_flags[11] = -1
+    expected_flags[13] = -1
     assert np.array_equal(l1c[:, 5], expected_flags)
     assert np.array_equal(l1c[:5, 1:5], norm_dataset["vectors"].data[:5, :])
     for i in range(5, 8):
@@ -140,7 +173,7 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
 
     assert np.array_equal(l1c[8:10, 1:5], norm_dataset["vectors"].data[5:7, :])
-    for i in range(10, 11):
+    for i in range(10, 13):
         e = l1c[i, 0]
         burst_vectors = burst_dataset.sel(epoch=int(e), method="nearest")[
             "vectors"
@@ -149,7 +182,8 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         # identical.
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
 
-    assert np.array_equal(l1c[11, 1:5], [0, 0, 0, 0])
+    assert np.array_equal(l1c[13, 1:5], [0, 0, 0, 0])
+    assert np.array_equal(l1c[14:, 1:5], norm_dataset["vectors"].data[7:, :])
 
 
 def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
@@ -203,8 +237,11 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
     assert np.allclose(output, expected_output)
 
 
-def test_mag_l1c(norm_dataset, burst_dataset):
-    l1c = mag_l1c(burst_dataset, np.datetime64("2025-01-01"), norm_dataset)
+def test_mag_l1c():
+    day = np.datetime64("2025-01-01")
+    norm_dataset, burst_dataset = _build_day_aligned_mixed_l1b(day)
+
+    l1c = mag_l1c(burst_dataset, day, norm_dataset)
     assert l1c["vector_magnitude"].shape == (len(l1c["epoch"].data),)
     assert l1c["vector_magnitude"].data[0] == np.linalg.norm(l1c["vectors"].data[0][:4])
     assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(
@@ -222,13 +259,203 @@ def test_mag_l1c(norm_dataset, burst_dataset):
         assert var in l1c.data_vars
 
 
-def test_mag_attributes(norm_dataset, burst_dataset):
-    output = mag_l1c(norm_dataset, np.datetime64("2025-01-01"), burst_dataset)
+def test_mag_attributes():
+    day = np.datetime64("2025-01-01")
+    norm_dataset, burst_dataset = _build_day_aligned_mixed_l1b(day)
+
+    output = mag_l1c(norm_dataset, day, burst_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     expected_attrs = ["missing_sequences", "interpolation_method"]
     for attr in expected_attrs:
         assert attr in output.attrs
+
+
+def _ttj2000_day_bounds(day: np.datetime64) -> tuple[int, int]:
+    day_start = day.astype("datetime64[s]") - np.timedelta64(30, "m")
+    day_end = (
+        day.astype("datetime64[s]") + np.timedelta64(1, "D") + np.timedelta64(30, "m")
+    )
+    return (
+        int(et_to_ttj2000ns(str_to_et(str(day_start)))),
+        int(et_to_ttj2000ns(str_to_et(str(day_end)))),
+    )
+
+
+def _build_mag_l1b(
+    epochs: np.ndarray, logical_source: str, vps_attr: str
+) -> xr.Dataset:
+    dataset = mag_l1a_dataset_generator(len(epochs))
+    dataset["epoch"] = xr.DataArray(
+        epochs.astype(np.int64), name="epoch", dims=["epoch"]
+    )
+    dataset.attrs["Logical_source"] = logical_source
+    dataset.attrs["vectors_per_second"] = vps_attr
+    vectors = np.array(
+        [[i, i, i, 2] for i in range(1, len(epochs) + 1)], dtype=np.float64
+    )
+    dataset["vectors"].data = vectors
+    return dataset
+
+
+def _build_day_aligned_mixed_l1b(day: np.datetime64) -> tuple[xr.Dataset, xr.Dataset]:
+    day_start_ns, _ = _ttj2000_day_bounds(day)
+
+    nm_start = day_start_ns + 300 * 1_000_000_000
+    nm_end = nm_start + 120 * 1_000_000_000
+    nm_epochs = np.arange(nm_start, nm_end + 1, step=500_000_000, dtype=np.int64)
+    norm = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
+
+    burst_epochs = np.arange(
+        day_start_ns,
+        day_start_ns + 600 * 1_000_000_000 + 1,
+        step=125_000_000,
+        dtype=np.int64,
+    )
+    burst = _build_mag_l1b(burst_epochs, "imap_mag_l1b_burst-mago", "0:8")
+
+    return norm, burst
+
+
+def test_process_mag_l1c_leading_burst_only_coverage():
+    """Burst coverage before the NM window must be interpolated as BURST.
+
+    Regression for issue 2925: with both norm and burst L1B inputs present, the
+    previous code forced ``day_to_process`` to None, so ``find_all_gaps`` did not
+    emit a leading day-boundary gap and burst samples preceding the NM file were
+    silently dropped.
+    """
+    day = np.datetime64("2025-01-01")
+    day_start_ns, _ = _ttj2000_day_bounds(day)
+
+    # NM starts 5 minutes into the day window and lasts 2 minutes at 2 vec/s.
+    nm_start = day_start_ns + 300 * 1_000_000_000
+    nm_end = nm_start + 120 * 1_000_000_000
+    nm_epochs = np.arange(nm_start, nm_end + 1, step=500_000_000, dtype=np.int64)
+    norm = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
+
+    # Burst starts after the day window, so uncovered leading timestamps stay missing.
+    burst_start = day_start_ns + 10 * 1_000_000_000
+
+    # Burst covers 10 s through 10 minutes into the day at 8 vec/s.
+    burst_epochs = np.arange(
+        burst_start,
+        day_start_ns + 600 * 1_000_000_000 + 1,
+        step=125_000_000,
+        dtype=np.int64,
+    )
+    burst = _build_mag_l1b(burst_epochs, "imap_mag_l1b_burst-mago", "0:8")
+
+    result = process_mag_l1c(norm, burst, InterpolationFunction.linear, day)
+    epochs_out = result[:, 0]
+    flags = result[:, 5]
+
+    pre_burst_mask = epochs_out < burst_start
+    assert pre_burst_mask.sum() > 0
+    assert np.all(flags[pre_burst_mask] == ModeFlags.MISSING.value)
+
+    leading_burst_mask = (
+        (epochs_out >= burst_start)
+        & (epochs_out < nm_start)
+        & (flags == ModeFlags.BURST.value)
+    )
+    assert leading_burst_mask.sum() > 0, (
+        "leading burst-only coverage was dropped; day_to_process not honored"
+    )
+
+    nm_mask = np.isin(epochs_out, nm_epochs)
+    assert nm_mask.sum() == nm_epochs.size
+    assert np.all(flags[nm_mask] == ModeFlags.NORM.value)
+
+
+def test_process_mag_l1c_trailing_burst_only_coverage():
+    """Burst coverage after the NM window must be interpolated as BURST."""
+    day = np.datetime64("2025-01-01")
+    day_start_ns, day_end_ns = _ttj2000_day_bounds(day)
+
+    # NM sits mid-day, spanning 2 minutes at 2 vec/s.
+    nm_center = (day_start_ns + day_end_ns) // 2
+    nm_start = nm_center - 60 * 1_000_000_000
+    nm_end = nm_center + 60 * 1_000_000_000
+    nm_epochs = np.arange(nm_start, nm_end + 1, step=500_000_000, dtype=np.int64)
+    norm = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
+
+    # Burst picks up 30 s before NM end and continues 10 minutes past NM end.
+    burst_epochs = np.arange(
+        nm_end - 30 * 1_000_000_000,
+        nm_end + 600 * 1_000_000_000 + 1,
+        step=125_000_000,
+        dtype=np.int64,
+    )
+    burst = _build_mag_l1b(burst_epochs, "imap_mag_l1b_burst-mago", "0:8")
+
+    result = process_mag_l1c(norm, burst, InterpolationFunction.linear, day)
+    epochs_out = result[:, 0]
+    flags = result[:, 5]
+
+    trailing_burst_mask = (epochs_out > nm_end) & (flags == ModeFlags.BURST.value)
+    assert trailing_burst_mask.sum() > 0, (
+        "trailing burst-only coverage was dropped; day_to_process not honored"
+    )
+
+    nm_mask = np.isin(epochs_out, nm_epochs)
+    assert nm_mask.sum() == nm_epochs.size
+    assert np.all(flags[nm_mask] == ModeFlags.NORM.value)
+
+
+def test_mag_l1c_mixed_input_uses_day_to_process():
+    """Public mag_l1c entry point must honor day_to_process on mixed inputs.
+
+    End-to-end regression that guards the ``day_to_process`` pass-through in
+    mag_l1c() against re-introduction of the old short-circuit to None.
+    """
+    day = np.datetime64("2025-01-01")
+    day_start_ns, _ = _ttj2000_day_bounds(day)
+
+    nm_start = day_start_ns + 600 * 1_000_000_000
+    nm_end = nm_start + 60 * 1_000_000_000
+    nm_epochs = np.arange(nm_start, nm_end + 1, step=500_000_000, dtype=np.int64)
+    norm = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
+
+    burst_epochs = np.arange(
+        day_start_ns,
+        day_start_ns + 900 * 1_000_000_000 + 1,
+        step=125_000_000,
+        dtype=np.int64,
+    )
+    burst = _build_mag_l1b(burst_epochs, "imap_mag_l1b_burst-mago", "0:8")
+
+    output = mag_l1c(norm, day, burst)
+    epochs_out = output["epoch"].data
+
+    assert epochs_out[0] < nm_start, (
+        "mag_l1c output collapsed to NM window; day_to_process not honored"
+    )
+    assert int((epochs_out < nm_start).sum()) > 0
+
+
+def test_mag_l1c_burst_only_generates_l1c_output():
+    """Burst-only L1C generation still fills the day window from BM data."""
+    day = np.datetime64("2025-01-01")
+    day_start_ns, _ = _ttj2000_day_bounds(day)
+
+    # Burst covers the first 2 minutes of the day window at 8 vec/s.
+    burst_epochs = np.arange(
+        day_start_ns,
+        day_start_ns + 120 * 1_000_000_000 + 1,
+        step=125_000_000,
+        dtype=np.int64,
+    )
+    burst = _build_mag_l1b(burst_epochs, "imap_mag_l1b_burst-magi", "0:8")
+
+    output = mag_l1c(burst, day)
+    epochs_out = output["epoch"].data
+
+    assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-magi"
+    assert len(epochs_out) > 0
+    assert epochs_out.min() >= burst_epochs.min()
+    assert epochs_out.max() <= burst_epochs.max()
+    assert np.all(output["generated_flag"].data == ModeFlags.BURST.value)
 
 
 def test_missing_burst_file(norm_dataset, burst_dataset):
@@ -435,6 +662,26 @@ def test_find_gaps():
     assert np.array_equal(gaps, expected_return)
 
 
+def test_find_all_gaps_uses_observed_transition_boundary():
+    epoch_transition = np.array([0, 0.5, 1, 1.5, 2, 10, 11, 12, 13, 14, 15, 16]) * 1e9
+    vectors_per_second_transition = vectors_per_second_from_string("0:2,15000000000:1")
+    output_transition = find_all_gaps(epoch_transition, vectors_per_second_transition)
+    expected_transition = np.array([[2 * 1e9, 10 * 1e9, 2]])
+    assert np.array_equal(output_transition, expected_transition)
+
+
+def test_generate_missing_timestamps_uses_gap_rate():
+    gap = np.array([1_000_000_000, 2_000_000_000, 4], dtype=np.int64)
+    expected_output = np.array(
+        [1_000_000_000, 1_250_000_000, 1_500_000_000, 1_750_000_000], dtype=np.int64
+    )
+    assert np.array_equal(generate_missing_timestamps(gap), expected_output)
+
+    legacy_gap = np.array([1_000_000_000, 2_000_000_000], dtype=np.int64)
+    legacy_expected = np.array([1_000_000_000, 1_500_000_000], dtype=np.int64)
+    assert np.array_equal(generate_missing_timestamps(legacy_gap), legacy_expected)
+
+
 def test_generate_timeline():
     epoch_test = generate_test_epoch(
         3, [VecSec.FOUR_VECS_PER_S], gaps=[[0.5, 1], [2, 3]]
@@ -503,6 +750,49 @@ def test_generate_timeline():
     # Expected result: properly sorted timeline with gap fills
     expected_edge = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]) * 1e9
     assert np.array_equal(output_edge, expected_edge)
+
+    # Test Case: Gap fill uses the gap rate instead of a fixed 0.5 second cadence
+    epoch_rate_gap = np.array([0, 0.25, 0.5, 0.75, 1, 4, 4.25, 4.5]) * 1e9
+    gaps_rate_gap = np.array([[1_000_000_000, 4_000_000_000, 4]])
+    output_rate_gap = generate_timeline(epoch_rate_gap, gaps_rate_gap)
+    expected_rate_gap = (
+        np.array(
+            [
+                0,
+                0.25,
+                0.5,
+                0.75,
+                1,
+                1.25,
+                1.5,
+                1.75,
+                2,
+                2.25,
+                2.5,
+                2.75,
+                3,
+                3.25,
+                3.5,
+                3.75,
+                4,
+                4.25,
+                4.5,
+            ]
+        )
+        * 1e9
+    )
+    assert np.array_equal(output_rate_gap, expected_rate_gap)
+
+    # Test Case: Adjacent gaps share a real epoch boundary at gap[0].
+    # generate_timeline() should not duplicate that boundary timestamp:
+    # np.arange() is end-exclusive for each generated segment, and the
+    # epoch-copy/final-append logic preserves the real boundary sample once.
+    epoch_adj = np.array([0, 0.5, 1, 2, 3, 3.5, 4]) * 1e9
+    gaps_adj = np.array([[1e9, 2e9, 2], [2e9, 3e9, 4]])
+    output_adj = generate_timeline(epoch_adj, gaps_adj)
+    expected_adj = np.array([0, 0.5, 1, 1.5, 2, 2.25, 2.5, 2.75, 3, 3.5, 4]) * 1e9
+    assert np.array_equal(output_adj, expected_adj)
+    assert len(output_adj) == len(np.unique(output_adj))
 
 
 def test_gap_detection_timeline_generation_workflow():

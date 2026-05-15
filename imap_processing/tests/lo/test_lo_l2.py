@@ -10,6 +10,9 @@ import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.ena_maps import RectangularSkyMap
+from imap_processing.ena_maps.utils.corrections import (
+    add_spacecraft_position_and_velocity_to_pset,
+)
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.l1c.lo_l1c import (
     ESA_ENERGY_STEPS,
@@ -1699,6 +1702,16 @@ class TestCalculateSputteringCorrections:
                 f"Energy index {idx} should be modified"
             )
 
+    def test_calculate_sputtering_corrections_no_csv_files(
+        self, sample_dataset_with_sputtering_data, caplog
+    ):
+        """Test that missing sputter CSV files raise a ValueError."""
+        h_dataset, o_dataset = sample_dataset_with_sputtering_data
+
+        with patch("imap_processing.lo.l2.lo_l2.Path.glob", return_value=iter([])):
+            with pytest.raises(ValueError, match="No sputter correction files found"):
+                calculate_sputtering_corrections(h_dataset, o_dataset)
+
 
 class TestInitializeGeometricFactorVariables:
     """Tests for the initialize_geometric_factor_variables function."""
@@ -2244,6 +2257,18 @@ class TestCalculateBootstrapCorrections:
             "All intensities should be finite"
         )
 
+    def test_calculate_bootstrap_corrections_no_csv_files(
+        self, sample_dataset_with_bootstrap_data, caplog
+    ):
+        """Test that missing bootstrap CSV files raise a ValueError."""
+        dataset = sample_dataset_with_bootstrap_data.copy()
+
+        with patch("imap_processing.lo.l2.lo_l2.Path.glob", return_value=iter([])):
+            with pytest.raises(
+                ValueError, match="No bootstrap correction factor files found"
+            ):
+                calculate_bootstrap_corrections(dataset)
+
 
 # =============================================================================
 # INTEGRATION TESTS
@@ -2462,7 +2487,11 @@ class TestIntegration:
     ):
         """Test the main lo_l2 function with no mocking."""
         # Test with oxygen data to reduce test run-time
-        sci_dependencies = {"imap_lo_l1c_pset": [load_cdf(ibex_pset_file)]}
+        psets = load_cdf(ibex_pset_file)
+        psets.attrs["Logical_source"] = "imap_lo_l1c_pset"
+        psets = add_spacecraft_position_and_velocity_to_pset(psets)
+
+        sci_dependencies = {"imap_lo_l1c_pset": [psets]}
         anc_dependencies = [lo_flux_factors_file]  # Include flux factors file
         descriptor = "l090-ena-o-hf-nsp-ram-hae-6deg-3mo"
 
@@ -2694,9 +2723,6 @@ class TestProcessSinglePset:
                 "imap_processing.lo.l2.lo_l2.calculate_efficiency_corrected_quantities"
             ) as mock_calc_ef,
             patch(
-                "imap_processing.lo.l2.lo_l2.add_spacecraft_velocity_to_pset"
-            ) as mock_add_sv,
-            patch(
                 "imap_processing.lo.l2.lo_l2.apply_compton_getting_correction"
             ) as mock_cg,
             patch("imap_processing.lo.l2.lo_l2.calculate_ram_mask") as mock_ram_mask,
@@ -2704,15 +2730,18 @@ class TestProcessSinglePset:
             mock_norm.return_value = pset
             mock_add_ef.return_value = pset
             mock_calc_ef.return_value = pset
-            mock_add_sv.return_value = pset
             mock_cg.return_value = pset
             mock_ram_mask.return_value = pset
 
+            # Mock the spacecraft velocity
+            pset["sc_velocity"] = xr.DataArray(
+                data=[400, 0, 0],  # 400 km/s in x direction
+                dims="component",
+                coords={"component": ["vx", "vy", "vz"]},
+            )
+
             # Process with hf frame
             _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=True)
-
-            # Check that add_spacecraft_velocity_to_pset was called
-            mock_add_sv.assert_called_once()
 
             # Check that CG correction was called
             mock_cg.assert_called_once()
@@ -2741,9 +2770,6 @@ class TestProcessSinglePset:
             patch(
                 "imap_processing.lo.l2.lo_l2.apply_compton_getting_correction"
             ) as mock_cg,
-            patch(
-                "imap_processing.lo.l2.lo_l2.add_spacecraft_velocity_to_pset"
-            ) as mock_sc_vel,
             patch("imap_processing.lo.l2.lo_l2.calculate_ram_mask") as mock_ram_mask,
         ):
             mock_norm.return_value = pset
@@ -2751,14 +2777,20 @@ class TestProcessSinglePset:
             mock_calc_ef.return_value = pset
             mock_cg.return_value = pset
 
+            # Mock the spacecraft velocity
+            pset["sc_velocity"] = xr.DataArray(
+                data=[400, 0, 0],  # 400 km/s in x direction
+                dims="component",
+                coords={"component": ["vx", "vy", "vz"]},
+            )
+
             # Process with sc frame
             _ = process_single_pset(pset, sample_efficiency_data, "h", cg_correct=False)
 
             # Check that CG correction was NOT called
             mock_cg.assert_not_called()
 
-            # Check that spacecraft velocity and ram mask were called instead
-            mock_sc_vel.assert_called_once()
+            # Check that the ram mask was called instead
             mock_ram_mask.assert_called_once()
 
 

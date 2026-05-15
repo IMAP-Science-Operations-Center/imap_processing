@@ -23,10 +23,31 @@ def test_lo_l1a():
 
     # Assert
     assert len(output_dataset) == len(expected_logical_source)
+
+    no_depend_0_vars = [
+        "direct_events",
+        "coincidence_type",
+        "de_time",
+        "mode",
+        "esa_step",
+        "tof0",
+        "tof1",
+        "tof2",
+        "tof3",
+        "pos",
+        "cksm",
+        "spin",
+        "azimuth_6",
+        "azimuth_60",
+        "spin_label",
+    ]
     for dataset, logical_source in zip(
         output_dataset, expected_logical_source, strict=False
     ):
         assert logical_source == dataset.attrs["Logical_source"]
+        for var in dataset:
+            if var in no_depend_0_vars or var.endswith("label"):
+                assert "DEPEND_0" not in dataset[var].attrs
 
 
 def test_lo_l1a_dataset():

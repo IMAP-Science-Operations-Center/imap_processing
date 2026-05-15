@@ -557,12 +557,15 @@ def test_expected_hist_results(l1a_dataset):
     ]
 
     for data in out["output"]:
-        epoch_val = met_to_ttj2000ns(
-            TimeTuple(
-                data["imap_start_time"]["seconds"],
-                data["imap_start_time"]["subseconds"],
-            ).to_seconds()
-        )
+        imap_start = TimeTuple(
+            data["imap_start_time"]["seconds"],
+            data["imap_start_time"]["subseconds"],
+        ).to_seconds()
+        imap_offset = TimeTuple(
+            data["imap_end_time_offset"]["seconds"],
+            data["imap_end_time_offset"]["subseconds"],
+        ).to_seconds()
+        epoch_val = met_to_ttj2000ns(imap_start + imap_offset / 2)
 
         # Validation data spans the two obs days, so this selects the correct output
         dataset_index = 1 if epoch_val > end_time else 0
@@ -589,3 +592,11 @@ def test_glows_l1a_no_packet_data(decom_packets_mock):
     decom_packets_mock.return_value = ([], [])
     output = glows_l1a("fake/filepath/packets.bin")
     assert output == []
+
+
+@pytest.mark.external_test_data
+def test_glows_l1a_empty_de_packet(repoint_packet_path):
+    """Test that L1A processing handles packets with no direct event data."""
+    result = glows_l1a(repoint_packet_path)
+
+    assert len(result) == 2

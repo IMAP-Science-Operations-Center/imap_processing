@@ -17,7 +17,7 @@ TEST_L0_FILE_MSG = TEST_DATA_PATH / "imap_idex_l0_raw_20250108_v001.pkts"  # 141
 TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 1419
 
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
-L1B_EXAMPLE_FILE = TEST_DATA_PATH / "imap_idex_l1b_sci_20231218_v002.h5"
+L1B_EXAMPLE_FILE = TEST_DATA_PATH / "imap_idex_l1b_sci_20231218_v004.h5"
 
 L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
 L1B_MSG_CDF = TEST_DATA_PATH / "imap_idex_l1b_msg_20250108_v001.cdf"
@@ -214,5 +214,5 @@ def ancillary_files():
         "l2a-calibration-curve-yield-params": path
         / "imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv",
         "l2a-calibration-curve-t-rise": path
-        / "imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv",
+        / "imap_idex_l2a-calibration-curve-t-rise_20250101_v002.csv",
     }

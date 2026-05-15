@@ -22,6 +22,7 @@ from imap_processing.codice.codice_l2 import (
     get_geometric_factor_lut,
     process_lo_species_intensity,
 )
+from imap_processing.codice.utils import process_by_table_id
 from imap_processing.ialirt.utils.grouping import (
     _populate_instrument_header_items,
     find_groups,
@@ -324,7 +325,7 @@ def calculate_ratios(
         summed_pseudo_density = pseudo_density.sum(dim="esa_step").squeeze(
             "spin_sector"
         )  # (epoch,)
-        pseudo_density_dict[species] = summed_pseudo_density.values
+        pseudo_density_dict[species] = summed_pseudo_density.values.item()
 
     # Denominator.
     # Note that outside of this test a zero value denominator
@@ -473,7 +474,7 @@ def process_codice(
             cod_lo_dataset = create_xarray_dataset(
                 cod_lo_science_values, cod_lo_metadata_values, "lo"
             )
-            l1a_lo = l1a_lo_species(cod_lo_dataset, l1a_lut_path)
+            l1a_lo = process_by_table_id(cod_lo_dataset, l1a_lut_path, l1a_lo_species)
             l1b_lo = cast(
                 xr.Dataset,
                 convert_to_rates(
@@ -495,7 +496,7 @@ def process_codice(
                 _populate_instrument_header_items(met)
                 | {
                     "instrument": f"{sensor}",
-                    "codice_lo_epoch": int(l1a_lo["epoch"]),
+                    "codice_lo_epoch": int(l1a_lo["epoch"].item()),
                     f"{sensor}_c_over_o_abundance": l2_lo.c_over_o_abundance,
                     f"{sensor}_mg_over_o_abundance": l2_lo.mg_over_o_abundance,
                     f"{sensor}_fe_over_o_abundance": l2_lo.fe_over_o_abundance,

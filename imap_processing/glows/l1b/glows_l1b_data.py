@@ -65,6 +65,10 @@ class PipelineSettings:  # numpydoc ignore=PR02
         Offset in hours to adjust sunset time relative to onboard settings
         for fine-tuning the day/night boundary determination.
 
+    spin_offset_correction : float
+        Constant spin angle offset [degrees] applied to fix a constant
+        spin offset observed for stars as seen by GLOWS.
+
     processing_thresholds : dict
         Various thresholds and parameters for ground processing pipeline
         that control sensitivity and quality criteria for L1B data processing.
@@ -94,6 +98,7 @@ class PipelineSettings:  # numpydoc ignore=PR02
     active_bad_time_flags: list[bool] = field(init=False)
     sunrise_offset: float = field(init=False)
     sunset_offset: float = field(init=False)
+    spin_offset_correction: float = field(init=False)
     processing_thresholds: dict = field(init=False)
 
     def __post_init__(self, pipeline_dataset: xr.Dataset) -> None:
@@ -169,6 +174,11 @@ class PipelineSettings:  # numpydoc ignore=PR02
         # Extract sunrise/sunset offsets (default to 0.0 if not present)
         self.sunrise_offset = float(pipeline_dataset.get("sunrise_offset", 0.0))
         self.sunset_offset = float(pipeline_dataset.get("sunset_offset", 0.0))
+
+        # Extract spin-offset correction in deg units (default to 0.0 if not present)
+        self.spin_offset_correction = float(
+            pipeline_dataset.get("spin_offset_correction", 0.0)
+        )
 
         # Extract processing thresholds (collect all threshold-related variables)
         self.processing_thresholds = {}
@@ -847,7 +857,7 @@ class HistogramL1B:
         day = met_to_datetime64(self.imap_start_time)
 
         # Add SPICE related variables
-        self.update_spice_parameters()
+        self.update_spice_parameters(pipeline_settings.spin_offset_correction)
         # Calculate the spin angle bin center using actual histogram length from L1A
         n_bins = len(self.histogram)
         phi = (np.arange(n_bins, dtype=np.float64) + 0.5) / n_bins
@@ -894,12 +904,20 @@ class HistogramL1B:
         self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
         self.flags = self.compute_flags(pipeline_settings)
 
-    def update_spice_parameters(self) -> None:
-        """Update SPICE parameters based on the current state."""
+    def update_spice_parameters(self, spin_offset_correction: float = 0.0) -> None:
+        """
+        Update SPICE parameters based on the current state.
+
+        Parameters
+        ----------
+        spin_offset_correction : float
+            Constant spin angle offset [degrees] from pipeline settings, added
+            to position_angle_offset_average to correct a systematic bias in
+            observed star positions. Default: 0.0.
+        """
         data_start_met = self.imap_start_time
-        # use of imap_start_time and glows_time_offset is correct.
         data_end_met = np.double(self.imap_start_time) + np.double(
-            self.glows_time_offset
+            self.imap_time_offset
         )
         data_start_time_et = sct_to_et(met_to_sclkticks(data_start_met))
         data_end_time_et = sct_to_et(met_to_sclkticks(data_end_met))
@@ -926,7 +944,9 @@ class HistogramL1B:
             ),
             degrees=True,
         )
-        self.position_angle_offset_average = np.double(angle_offset)
+        self.position_angle_offset_average = np.double(angle_offset) + np.double(
+            spin_offset_correction
+        )
         self.position_angle_offset_std_dev = np.double(
             0.0
         )  # Set to zero per algorithm document
@@ -939,15 +959,17 @@ class HistogramL1B:
                 np.array([0, 0, 1]),
                 SpiceFrame.IMAP_SPACECRAFT,
                 SpiceFrame.ECLIPJ2000,
-            )
+            ),
+            degrees=False,
         )
         # Calculate circular statistics for longitude (wraps around)
         lon_mean = circmean(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
         lon_std = circstd(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
         lat_mean = circmean(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
         lat_std = circstd(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
-        self.spin_axis_orientation_average = np.array([lon_mean, lat_mean])
-        self.spin_axis_orientation_std_dev = np.array([lon_std, lat_std])
+        # Convert circular statistics to degrees and store
+        self.spin_axis_orientation_average = np.degrees(np.array([lon_mean, lat_mean]))
+        self.spin_axis_orientation_std_dev = np.degrees(np.array([lon_std, lat_std]))
 
         # Calculate spacecraft location and velocity
         # ------------------------------------------
@@ -1065,6 +1087,45 @@ class HistogramL1B:
 
         return np.concatenate([onboard_flags, ground_flags])
 
+    @staticmethod
+    def calculate_look_vectors_dps(
+        imap_spin_angle_bin_cntr: np.ndarray, position_angle_offset_average: np.double
+    ) -> np.ndarray:
+        """
+        Calculate the look direction vectors in DPS frame for a histogramming block.
+
+        Parameters
+        ----------
+        imap_spin_angle_bin_cntr : numpy.ndarray
+            Array of shape (3600) representing the centers of the spin angle bins.
+        position_angle_offset_average : float
+            Effective offset angle defined in section 10.6 of the algorithm document,
+            i.e. Angle from GLOWS instrument to spin angle 0 in DPS frame.
+
+        Returns
+        -------
+        look_vecs_dps : numpy.ndarray
+            Array of shape (nbin, 3) representing the look directions in DPS frame
+            for each of the bins.
+        """
+        azimuth = (
+            imap_spin_angle_bin_cntr - position_angle_offset_average + 360.0
+        ) % 360.0
+
+        # Instrument pointing direction in the DPS frame.
+        az_el = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
+        elevation = az_el[1]
+
+        spherical = np.stack(
+            [np.ones_like(azimuth), azimuth, np.full_like(azimuth, elevation)],
+            axis=-1,
+        )  # (nbin, 3)
+
+        # Convert to unit cartesian vectors.
+        look_vecs_dps = spherical_to_cartesian(spherical)  # (nbin, 3)
+
+        return look_vecs_dps
+
     def flag_uv_and_excluded(self, exclusions: AncillaryExclusions) -> tuple:
         """
         Create boolean mask where True means bin is within radius of UV source.
@@ -1081,25 +1142,12 @@ class HistogramL1B:
         inside_excluded_region : np.ndarray
             Boolean mask for inside excluded region.
         """
-        # Rotate spin-angle bin centers by the instrument position-angle offset
-        # so azimuth=0 aligns with the instrument pointing direction.
-        azimuth = (
-            self.imap_spin_angle_bin_cntr + self.position_angle_offset_average
-        ) % 360.0
-        # Ephemeris start time of the histogram accumulation.
         data_start_time_et = sct_to_et(met_to_sclkticks(self.imap_start_time))
 
-        # Instrument pointing direction in the DPS frame.
-        az_el = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
-        elevation = az_el[1]
-
-        spherical = np.stack(
-            [np.ones_like(azimuth), azimuth, np.full_like(azimuth, elevation)],
-            axis=-1,
-        )  # (nbin, 3)
-
-        # Convert to unit cartesian vectors.
-        look_vecs_dps = spherical_to_cartesian(spherical)  # (nbin, 3)
+        # Calculate unit cartesian vectors in DPS.
+        look_vecs_dps = self.calculate_look_vectors_dps(
+            self.imap_spin_angle_bin_cntr, self.position_angle_offset_average
+        )
 
         # Transform unit cartesian vectors to ECLIPJ2000 frame.
         look_vecs_ecl = frame_transform(
@@ -1136,7 +1184,6 @@ class HistogramL1B:
         # the same direction and needs mask.
         # If dot product -> 0 the two directions are perpendicular on the sky.
         uv_cos_sep = look_vecs_ecl @ uv_vecs.T  # (nbin, n_src)
-
         # Determine if the pixel is too close to any of the source radii.
         close_to_uv_source = np.any(
             uv_cos_sep >= np.cos(uv_radius)[None, :], axis=1

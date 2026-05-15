@@ -441,6 +441,14 @@ class DirectEventL1A:
             An array containing DirectEvent objects.
         """
         # read the first direct event, which is always uncompressed
+
+        if len(direct_events) < 8:
+            logger.warning(
+                "GLOWS: Direct event data is too short to contain any events "
+                f"(got {len(direct_events)} bytes, need at least 8). "
+                "Returning empty event list."
+            )
+            return []
         current_event = self._build_uncompressed_event(direct_events[:8])
         processed_events = [current_event]
 

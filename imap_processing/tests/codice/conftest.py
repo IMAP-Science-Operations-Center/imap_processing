@@ -37,33 +37,6 @@ def codice_lut_path():
                 / "l1a_input"
                 / f"imap_codice_l0_lo-sw-species_{VALIDATION_FILE_DATE}_v001.pkts"
             ]
-        elif descriptor == "lo-nsw-species" and data_type == "l0":
-            return [
-                imap_module_directory
-                / "tests"
-                / "codice"
-                / "data"
-                / "l1a_input"
-                / f"imap_codice_l0_lo-nsw-species_{VALIDATION_FILE_DATE}_v001.pkts"
-            ]
-        elif descriptor == "lo-sw-angular" and data_type == "l0":
-            return [
-                imap_module_directory
-                / "tests"
-                / "codice"
-                / "data"
-                / "l1a_input"
-                / f"imap_codice_l0_lo-sw-angular_{VALIDATION_FILE_DATE}_v001.pkts"
-            ]
-        elif descriptor == "lo-nsw-angular" and data_type == "l0":
-            return [
-                imap_module_directory
-                / "tests"
-                / "codice"
-                / "data"
-                / "l1a_input"
-                / f"imap_codice_l0_lo-nsw-angular_{VALIDATION_FILE_DATE}_v001.pkts"
-            ]
         elif descriptor == "hi-sectored" and data_type == "l0":
             return [
                 imap_module_directory
@@ -172,18 +145,6 @@ def codice_lut_path():
                 / "l1a_input"
                 / "imap_codice_l0_hskp_20250814_v001.pkts"
             ]
-        if descriptor == "lo-nsw-species" and data_type == "l1b":
-            return [
-                imap_module_directory
-                / "tests"
-                / "codice"
-                / "data"
-                / "l1b_validation"
-                / (
-                    f"imap_codice_l1b_lo-nsw-species_{VALIDATION_FILE_DATE}"
-                    f"_{VALIDATION_FILE_VERSION}.cdf"
-                )
-            ]
         elif descriptor == "lo-sw-species" and data_type == "l1b":
             return [
                 imap_module_directory
@@ -193,24 +154,6 @@ def codice_lut_path():
                 / "l1b_validation"
                 / (
                     f"imap_codice_l1b_lo-sw-species_{VALIDATION_FILE_DATE}"
-                    f"_{VALIDATION_FILE_VERSION}.cdf"
-                )
-            ]
-        elif descriptor == "lo-nsw-angular" and data_type == "l1b":
-            return [
-                TEST_DATA_PATH
-                / "l1b_validation"
-                / (
-                    f"imap_codice_l1b_lo-nsw-angular_{VALIDATION_FILE_DATE}"
-                    f"_{VALIDATION_FILE_VERSION}.cdf"
-                )
-            ]
-        elif descriptor == "lo-sw-angular" and data_type == "l1b":
-            return [
-                TEST_DATA_PATH
-                / "l1b_validation"
-                / (
-                    f"imap_codice_l1b_lo-sw-angular_{VALIDATION_FILE_DATE}"
                     f"_{VALIDATION_FILE_VERSION}.cdf"
                 )
             ]

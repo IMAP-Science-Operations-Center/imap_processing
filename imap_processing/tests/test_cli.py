@@ -190,7 +190,8 @@ def test_validate_args(
 
 
 @mock.patch("imap_processing.cli.codice_l1a.process_l1a")
-def test_codice(mock_process_l1a, mock_instrument_dependencies):
+@mock.patch("imap_processing.cli.filter_day_boundary_data")
+def test_codice(mock_filter, mock_process_l1a, mock_instrument_dependencies):
     """Test coverage for cli.CoDICE class"""
 
     test_dataset = xr.Dataset({}, attrs={"cdf_filename": "file0"})
@@ -201,6 +202,7 @@ def test_codice(mock_process_l1a, mock_instrument_dependencies):
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "file0"
     mock_process_l1a.return_value = [test_dataset]
+    mock_filter.side_effect = lambda ds, _: ds
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
     mocks["mock_pre_processing"].return_value = input_collection
 
@@ -429,7 +431,8 @@ def test_hi_l1b_goodtimes(mock_hi_goodtimes, mock_instrument_dependencies):
 
 
 @mock.patch("imap_processing.cli.lo_l2.lo_l2", autospec=True)
-def test_lo_l2(mock_lo_l2, mock_instrument_dependencies):
+@mock.patch("imap_processing.cli.Lo.pre_processing")
+def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies):
     mocks = mock_instrument_dependencies
 
     descriptor = "some-ena-map-descriptor"
@@ -445,7 +448,7 @@ def test_lo_l2(mock_lo_l2, mock_instrument_dependencies):
     )
 
     mocks["mock_load_cdf"].side_effect = [mock_loaded_pset_1, sentinel.loaded_pset_2]
-    mocks["mock_pre_processing"].return_value = processing_input
+    mock_lo_pre_processing.return_value = processing_input
 
     output_l2_dataset = xr.Dataset()
     mock_lo_l2.return_value = [output_l2_dataset]
@@ -467,6 +470,42 @@ def test_lo_l2(mock_lo_l2, mock_instrument_dependencies):
         descriptor,
     )
     mocks["mock_write_cdf"].assert_called_once_with(output_l2_dataset)
+
+
+@mock.patch("imap_processing.cli.load_cdf")
+@mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
+def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_load_cdf):
+    valid_pset = "imap_lo_l1c_pset_20250415_v001.cdf"
+    invalid_pset = "imap_lo_l1c_pset_20250416_v001.cdf"
+    non_pset = "imap_lo_l1a_de_20260415-repoint00217_v001.cdf"
+
+    base_collection = ProcessingInputCollection(
+        ScienceInput(valid_pset, invalid_pset),
+        ScienceInput(non_pset),
+    )
+    mock_super_pre_processing.return_value = base_collection
+    mock_load_cdf.side_effect = [
+        xr.Dataset({"pivot_angle": xr.DataArray(90.1)}),
+        xr.Dataset({"pivot_angle": xr.DataArray(30.0)}),
+    ]
+
+    instrument = Lo(
+        "l2",
+        "some-descriptor",
+        base_collection.serialize(),
+        "20250415",
+        "20250416",
+        "v001",
+        False,
+    )
+    result = instrument.pre_processing()
+
+    result_inputs = list(result.get_processing_inputs())
+    assert len(result_inputs) == 2
+
+    pset_input, non_pset_input = result_inputs
+    assert [str(fp.filename) for fp in pset_input.imap_file_paths] == [valid_pset]
+    assert [str(fp.filename) for fp in non_pset_input.imap_file_paths] == [non_pset]
 
 
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)
@@ -623,8 +662,7 @@ def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
     """Test coverage for cli.Idex class with l1b data level"""
     mocks = mock_instrument_dependencies
     new_ds = xr.Dataset(data_vars={"epoch": [1]})
-    old_ds = xr.Dataset(data_vars={"epoch": [0]})
-    mocks["mock_load_cdf"].side_effect = [old_ds, new_ds]
+    mocks["mock_load_cdf"].side_effect = [new_ds]
     input_collection = ProcessingInputCollection(
         ScienceInput(
             "imap_idex_l1a_sci-1week_20251017_v001.cdf",
@@ -637,7 +675,7 @@ def test_idex_l1b(mock_idex_l1b, mock_instrument_dependencies):
 
     dependency_str = input_collection.serialize()
     instrument = Idex(
-        "l1b", "sci-1week", dependency_str, "20251017", "20251017", "v001", False
+        "l1b", "sci-1week", dependency_str, "20251017", None, "v001", False
     )
 
     instrument.process()
@@ -788,6 +826,7 @@ def test_spin_and_repoint_table_handling():
         instrument.process()
 
 
+@mock.patch("imap_processing.cli.filter_day_boundary_data")
 @mock.patch("imap_processing.cli.swe_l1a")
 @pytest.mark.parametrize(
     "query_return, expected_warning",
@@ -803,7 +842,11 @@ def test_spin_and_repoint_table_handling():
     ],
 )
 def test_post_processing(
-    mock_swe_l1a, mock_instrument_dependencies, query_return, expected_warning
+    mock_swe_l1a,
+    mock_filter,
+    mock_instrument_dependencies,
+    query_return,
+    expected_warning,
 ):
     """Test coverage for post processing"""
     mocks = mock_instrument_dependencies
@@ -826,6 +869,7 @@ def test_post_processing(
 
     test_ds = xr.Dataset()
     mock_swe_l1a.return_value = [test_ds]
+    mock_filter.side_effect = lambda ds, _: ds
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_swe_l0_raw_20100105_v001.pkts"),
         SPICEInput("naif0012.tls", "imap_sclk_0001.tsc"),

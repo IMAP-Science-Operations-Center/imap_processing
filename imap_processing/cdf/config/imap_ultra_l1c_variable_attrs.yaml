@@ -10,25 +10,25 @@ default_attrs: &default
   DISPLAY_TYPE: time_series
   FILLVAL: *min_int
   FORMAT: I12
-  VALIDMIN: *min_int
-  VALIDMAX: *max_int
-  VAR_TYPE: data
   UNITS: " "
+  VALIDMAX: *max_int
+  VALIDMIN: *min_int
+  VAR_TYPE: data
 
 default_float32_attrs: &default_float32
   <<: *default
   FILLVAL: *float_32_fillval
   FORMAT: F12.6
-  VALIDMIN: *min_float
   VALIDMAX: *max_float
+  VALIDMIN: *min_float
   dtype: float32
 
 default_uint16_attrs: &default_uint16
   <<: *default
   FILLVAL: 65535
   FORMAT: I5
-  VALIDMIN: 0
   VALIDMAX: 65535
+  VALIDMIN: 0
   dtype: uint16
 
 energy_dependent_attrs: &energy_dependent
@@ -91,13 +91,13 @@ efficiency:
   FIELDNAM: efficiency
   LABLAXIS: Efficiency
   UNITS: " "
-  VALIDMIN: 0.0
   VALIDMAX: 1.0
+  VALIDMIN: 0.0
 
 exposure_factor:
   <<: *energy_dependent
-  DEPEND_0: epoch
   CATDESC: Exposure time with the deadtime correction applied for a pointing.
+  DEPEND_0: epoch
   FIELDNAM: exposure_factor
   LABLAXIS: exposure factor
   # TODO: come back to format
@@ -106,9 +106,9 @@ exposure_factor:
 helio_exposure_factor:
   <<: *energy_dependent
   CATDESC: Exposure time with the deadtime correction applied for a pointing.
+  DEPEND_0: epoch
   FIELDNAM: exposure_factor
   LABLAXIS: exposure factor
-  DEPEND_0: epoch
   # TODO: come back to format
   UNITS: seconds
 
@@ -136,25 +136,25 @@ scatter_threshold:
 counts:
   <<: *default
   CATDESC: Counts for a spin.
-  VAR_NOTES: Counts healpix maps are sampled at finer resolution to help maintain the pointing accuracy for each event.
-    Since count maps are a binned integral quantity, they necessarily require a non-spun approach per Pointing, unlike
-    exposure time and sensitivities.
   DEPEND_1: energy_bin_geometric_mean
   DEPEND_2: counts_pixel_index
   FIELDNAM: counts
   LABLAXIS: counts
   # TODO: come back to format
   UNITS: counts
+  VAR_NOTES: Counts healpix maps are sampled at finer resolution to help maintain the pointing accuracy for each event.
+    Since count maps are a binned integral quantity, they necessarily require a non-spun approach per Pointing, unlike
+    exposure time and sensitivities.
 
 
 quality_flags:
   <<: *default_uint16
   CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
-  FIELDNAM: quality_ena_rates
-  LABLAXIS: quality_ena_rates
   DEPEND_0: epoch
   DEPEND_1: spin_number
   DEPEND_2: energy_bin_geometric_mean
+  FIELDNAM: quality_ena_rates
+  LABLAXIS: quality_ena_rates
   UNITS: " "
 
 background_rates:
@@ -184,13 +184,13 @@ shcoarse:
 epoch_delta:
   <<: *default
   CATDESC: Number of nanoseconds in spacecraft pointing covered by this pointing set product
+  DISPLAY_TYPE: no_plot
   FIELDNAM: epoch delta
+  FORMAT: I20
+  SCALE_TYPE: linear
+  TIME_SCALE: Terrestrial Time
   UNITS: ns
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  TIME_SCALE: Terrestrial Time
-  SCALE_TYPE: linear
-  FORMAT: I20
   dtype: int64
 
 energy_bin_delta:
@@ -203,70 +203,70 @@ energy_bin_delta:
 
 energy_delta_minus:
   <<: *default_float32
-  VAR_TYPE: support_data
   CATDESC: Difference between the energy bin center and lower edge.
+  DEPEND_1: energy_bin_geometric_mean
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: energy_bin_delta_minus
   LABLAXIS: energy
   UNITS: KeV
-  FIELDNAM: energy_bin_delta_minus
-  DISPLAY_TYPE: no_plot
-  DEPEND_1: energy_bin_geometric_mean
+  VAR_TYPE: support_data
 
 energy_delta_plus:
   <<: *default_float32
-  VAR_TYPE: support_data
   CATDESC: Difference between the energy bin center and upper edge.
+  DEPEND_1: energy_bin_geometric_mean
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: energy_bin_delta_plus
   LABLAXIS: energy
   UNITS: KeV
-  FIELDNAM: energy_bin_delta_plus
-  DISPLAY_TYPE: no_plot
-  DEPEND_1: energy_bin_geometric_mean
+  VAR_TYPE: support_data
 
 
 # COORDS
 energy_bin_geometric_mean:
-  FILLVAL: *float_32_fillval
   CATDESC: Geometric mean energy of each energy bin.
   DISPLAY_TYPE: no_plot
   FIELDNAM: energy_bin_geometric_mean
+  FILLVAL: *float_32_fillval
   FORMAT: F12.6
   LABLAXIS: Energy
   UNITS: keV
-  VALIDMIN: *min_float
   VALIDMAX: *max_float
+  VALIDMIN: *min_float
   VAR_TYPE: support_data
 
 pixel_index:
-  FILLVAL: *min_int
   CATDESC: HEALPix pixel index.
   DISPLAY_TYPE: no_plot
   FIELDNAM: pixel_index
+  FILLVAL: *min_int
   FORMAT: I12
   LABLAXIS: Pixel Index
   UNITS: " "
-  VALIDMIN: *min_int
   VALIDMAX: *max_int
+  VALIDMIN: *min_int
   VAR_TYPE: support_data
 
 counts_pixel_index:
-  FILLVAL: *min_int
   CATDESC: Counts variable HEALPix pixel index.
   DISPLAY_TYPE: no_plot
   FIELDNAM: counts_pixel_index
+  FILLVAL: *min_int
   FORMAT: I12
   LABLAXIS: Counts Pixel Index
   UNITS: " "
-  VALIDMIN: *min_int
   VALIDMAX: *max_int
+  VALIDMIN: *min_int
   VAR_TYPE: support_data
 
 spin_phase_step:
-  FILLVAL: *min_int
   CATDESC: Spin phase step index (1ms resolution).
   DISPLAY_TYPE: no_plot
   FIELDNAM: spin_phase_step
+  FILLVAL: *min_int
   FORMAT: I12
   LABLAXIS: Spin Phase Step
   UNITS: " "
-  VALIDMIN: *min_int
   VALIDMAX: *max_int
+  VALIDMIN: *min_int
   VAR_TYPE: support_data

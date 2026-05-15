@@ -12,8 +12,44 @@
 # computed individually and the sum is subtracted from the calibration product. Background
 # uncertainties are summed in quadrature and reported in background uncertainties.
 #
-calibration_prod,background_index,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,scaling_factor,uncertainty
-0,0,ABC1C2|ABC1,-20,16,-46,-15,-511,511,0,1023,0.00306,0.00030
-0,1,AB,-20,16,-46,-15,-511,511,0,1023,0.0189,0.0020
-1,0,BC1C2|AC1,-20,16,-46,-15,-511,511,0,1023,0.00306,0.00030
-1,1,AB,-20,16,-46,-15,-511,511,0,1023,0.0189,0.0020
+# TOF windows and coincidence_type_list only need to be specified on the first row
+# of each (calibration_prod, background_index) group. Subsequent rows will inherit
+# these values. scaling_factor and uncertainty must be specified for each ESA step.
+#
+calibration_prod,background_index,esa_energy_step,scaling_factor,uncertainty,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,0,1,0.00306,0.00030,ABC1C2|ABC1,-20,16,-46,-15,-511,511,0,1023
+0,0,2,0.00310,0.00031,,,,,,,,,
+0,0,3,0.00315,0.00032,,,,,,,,,
+0,0,4,0.00320,0.00033,,,,,,,,,
+0,0,5,0.00325,0.00034,,,,,,,,,
+0,0,6,0.00330,0.00035,,,,,,,,,
+0,0,7,0.00335,0.00036,,,,,,,,,
+0,0,8,0.00340,0.00037,,,,,,,,,
+0,0,9,0.00345,0.00038,,,,,,,,,
+0,1,1,0.0189,0.0020,AB,-20,16,-46,-15,-511,511,0,1023
+0,1,2,0.0191,0.0021,,,,,,,,,
+0,1,3,0.0193,0.0022,,,,,,,,,
+0,1,4,0.0195,0.0023,,,,,,,,,
+0,1,5,0.0197,0.0024,,,,,,,,,
+0,1,6,0.0199,0.0025,,,,,,,,,
+0,1,7,0.0201,0.0026,,,,,,,,,
+0,1,8,0.0203,0.0027,,,,,,,,,
+0,1,9,0.0205,0.0028,,,,,,,,,
+1,0,1,0.00306,0.00030,BC1C2|AC1,-20,16,-46,-15,-511,511,0,1023
+1,0,2,0.00308,0.00031,,,,,,,,,
+1,0,3,0.00310,0.00032,,,,,,,,,
+1,0,4,0.00312,0.00033,,,,,,,,,
+1,0,5,0.00314,0.00034,,,,,,,,,
+1,0,6,0.00316,0.00035,,,,,,,,,
+1,0,7,0.00318,0.00036,,,,,,,,,
+1,0,8,0.00320,0.00037,,,,,,,,,
+1,0,9,0.00322,0.00038,,,,,,,,,
+1,1,1,0.0189,0.0020,AB,-20,16,-46,-15,-511,511,0,1023
+1,1,2,0.0190,0.0021,,,,,,,,,
+1,1,3,0.0191,0.0022,,,,,,,,,
+1,1,4,0.0192,0.0023,,,,,,,,,
+1,1,5,0.0193,0.0024,,,,,,,,,
+1,1,6,0.0194,0.0025,,,,,,,,,
+1,1,7,0.0195,0.0026,,,,,,,,,
+1,1,8,0.0196,0.0027,,,,,,,,,
+1,1,9,0.0197,0.0028,,,,,,,,,

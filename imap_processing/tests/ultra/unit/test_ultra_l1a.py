@@ -1,6 +1,5 @@
 """Test ULTRA L1a CDFs."""
 
-import numpy as np
 import pytest
 import xarray as xr
 
@@ -508,14 +507,18 @@ def test_cdf_startup(ccsds_path_all_apids):
 
 def test_get_event_id():
     """Test get_event_id"""
-    data = np.array([445015662, 445015663, 445015664, 445015664])
-    decom_events = get_event_id(data)
-    counters_for_met = []
-    for i in range(len(decom_events)):
-        event_id = decom_events[i]
-        met_extracted = event_id >> np.int64(31)
-
-        assert met_extracted == np.int64(data[i])
-        counters_for_met.append(event_id & np.int64(0x7FFFFFFF))
-
-    assert counters_for_met == [0, 0, 0, 1]
+    # example event bytes
+    event_data = (
+        b"\x929\xc4=\x05\x13\xf2dC\x0c`\x002\xb2\xb3\x80\nUQ\xb5BH"
+        b'\xe6\x114\x10O\t\xb1\x08\x0e`\x00\xd6\x89"\x00)UF\xd6I'
+    )
+    met = 445015657
+    count = 2
+    event_ids = get_event_id(event_data, count, met, 166)
+    assert len(event_ids) == count
+    # Check that they are all unique
+    assert len(set(event_ids)) == count
+    # Check that they are all strings of 50 characters
+    assert all(
+        isinstance(event_id, str) and len(event_id) == 50 for event_id in event_ids
+    )

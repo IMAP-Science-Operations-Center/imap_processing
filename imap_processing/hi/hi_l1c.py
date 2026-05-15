@@ -451,7 +451,7 @@ def _compute_background_counts(
         The PSET coordinates from the xarray.Dataset.
     background_config_df : pandas.DataFrame
         Background configuration DataFrame with MultiIndex
-        (calibration_prod, background_index).
+        (calibration_prod, background_index, esa_energy_step).
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
     goodtimes_ds : xarray.Dataset
@@ -513,20 +513,22 @@ def _compute_background_counts(
     if n_events == 0:
         return background_counts
 
+    # Get TOF configuration (one row per calibration_prod, background_index)
+    # TOF windows are the same across ESA steps, so we use get_tof_config()
+    tof_config = background_config_df.background_config.get_tof_config()
+
     for cal_prod in pset_coords["calibration_prod"].values:
-        # Check that cal_prod exists in background_config_df
-        if cal_prod not in background_config_df.index.get_level_values(
-            "calibration_prod"
-        ):
+        # Check that cal_prod exists in tof_config
+        if cal_prod not in tof_config.index.get_level_values("calibration_prod"):
             raise ValueError(
                 f"Calibration product {cal_prod} not found in background "
                 f"configuration. Available calibration products: "
-                f"{sorted(background_config_df.index.get_level_values('calibration_prod').unique().tolist())}"
+                f"{sorted(tof_config.index.get_level_values('calibration_prod').unique().tolist())}"
             )
 
-        # Take a cross-section of the background configuration DataFrame
+        # Take a cross-section of the TOF configuration DataFrame
         # to get rows relevant to the current calibration product
-        cal_prod_rows = background_config_df.xs(cal_prod, level="calibration_prod")
+        cal_prod_rows = tof_config.xs(cal_prod, level="calibration_prod")
 
         # Use iter_background_events_by_config to get filtered events
         for config_row, filtered_de_ds in iter_background_events_by_config(
@@ -564,7 +566,8 @@ def pset_backgrounds(
 
     Computes background counts internally by filtering and binning events
     according to the background configuration, then calculates background
-    rates and uncertainties.
+    rates and uncertainties. Scaling factors and uncertainties are applied
+    per ESA energy step.
 
     Parameters
     ----------
@@ -572,7 +575,7 @@ def pset_backgrounds(
         The PSET coordinates from the xarray.Dataset.
     background_config_df : pandas.DataFrame
         Background configuration DataFrame with MultiIndex
-        (calibration_prod, background_index).
+        (calibration_prod, background_index, esa_energy_step).
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
     goodtimes_ds : xarray.Dataset
@@ -617,17 +620,37 @@ def pset_backgrounds(
     count_rates = background_counts / total_exposure_time
 
     # Convert background config DataFrame to xarray Dataset
+    # Config now has dims: (calibration_prod, background_index, esa_energy_step)
     config_ds = background_config_df.to_xarray()
-    if not config_ds["calibration_prod"].equals(pset_coords["calibration_prod"]):
+
+    # Validate calibration products match (compare values, not DataArray metadata)
+    if not np.array_equal(
+        config_ds["calibration_prod"].values, pset_coords["calibration_prod"].values
+    ):
         raise ValueError(
             f"Calibration products in pset_coords and background_config_df "
             f"do not match. pset_coords: {pset_coords['calibration_prod'].values}, "
             f"background_config_df: {config_ds['calibration_prod'].values}"
         )
+
+    # Validate ESA energy steps match (compare values, not DataArray metadata)
+    if not np.array_equal(
+        config_ds["esa_energy_step"].values, pset_coords["esa_energy_step"].values
+    ):
+        raise ValueError(
+            f"ESA energy steps in pset_coords and background_config_df "
+            f"do not match. pset_coords: {pset_coords['esa_energy_step'].values}, "
+            f"background_config_df: {config_ds['esa_energy_step'].values}"
+        )
+
+    # scaling_factors_da: (calibration_prod, background_index, esa_energy_step)
     scaling_factors_da = config_ds["scaling_factor"]
     uncertainties_da = config_ds["uncertainty"]
 
     # Compute scaled rates
+    # count_rates: (epoch, calibration_prod, background_index)
+    # scaling_factors_da: (calibration_prod, background_index, esa_energy_step)
+    # scaled_rates: (epoch, calibration_prod, background_index, esa_energy_step)
     scaled_rates = count_rates * scaling_factors_da
 
     # Compute uncertainties (Poisson + scaling factor, combined in quadrature)
@@ -638,17 +661,23 @@ def pset_backgrounds(
     combined_unc = np.sqrt(poisson_unc**2 + scaling_unc**2)
 
     # Sum over background_index dimension to get final rates
+    # total_rates: (epoch, calibration_prod, esa_energy_step)
     total_rates = scaled_rates.sum(dim="background_index", skipna=True)
     total_unc = np.sqrt((combined_unc**2).sum(dim="background_index", skipna=True))
 
-    # Broadcast to (epoch, esa_energy_step, calibration_prod, spin_angle_bin)
-    # Backgrounds are isotropic and independent of ESA step, so we
-    # broadcast across esa_energy_step and spin_angle_bin dimensions.
-    output_vars["background_rates"].values[:] = total_rates.values[
-        :, np.newaxis, :, np.newaxis
+    # Broadcast to output variable dimensions (e.g., epoch, esa_energy_step,
+    # calibration_prod, spin_angle_bin). Backgrounds are isotropic, so we
+    # broadcast across the last dimension (spin_angle_bin).
+    # Get the output dimension order from the output variable (excluding last dim)
+    output_dims = output_vars["background_rates"].dims[:-1]
+    total_rates_transposed = total_rates.transpose(*output_dims)
+    total_unc_transposed = total_unc.transpose(*output_dims)
+
+    output_vars["background_rates"].values[:] = total_rates_transposed.values[
+        ..., np.newaxis
     ]
-    output_vars["background_rates_uncertainty"].values[:] = total_unc.values[
-        :, np.newaxis, :, np.newaxis
+    output_vars["background_rates_uncertainty"].values[:] = total_unc_transposed.values[
+        ..., np.newaxis
     ]
 
     return output_vars

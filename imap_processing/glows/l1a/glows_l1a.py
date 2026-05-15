@@ -136,7 +136,7 @@ def process_de_l0(
             l1a_output.append(first_de)
 
     # Filter out DE records with no direct_events (incomplete packet sequences)
-    l1a_output = [de for de in l1a_output if de.direct_events is not None]
+    l1a_output = [de for de in l1a_output if de.direct_events]
 
     return l1a_output
 
@@ -329,6 +329,34 @@ def generate_histogram_dataset(
         hist for hist in hist_l1a_list if hist.number_of_bins_per_histogram > 0
     ]
 
+    # Filter out histograms with imap_start_time == 0 (invalid timing data).
+    valid_hists = [hist for hist in hist_l1a_list if hist.imap_start_time.seconds != 0]
+    if len(valid_hists) < len(hist_l1a_list):
+        logger.warning(
+            f"GLOWS: Filtered out {len(hist_l1a_list) - len(valid_hists)} "
+            f"histogram(s) with imap_start_time == 0."
+        )
+    hist_l1a_list = valid_hists
+
+    # Deduplicate by (imap_start_time, imap_time_offset), keeping the first occurrence.
+    seen_times: dict = {}
+    for hist in hist_l1a_list:
+        key = (
+            hist.imap_start_time.seconds,
+            hist.imap_start_time.subseconds,
+            hist.imap_time_offset.seconds,
+            hist.imap_time_offset.subseconds,
+        )
+        if key not in seen_times:
+            seen_times[key] = hist
+    dedup_hists = list(seen_times.values())
+    if len(dedup_hists) < len(hist_l1a_list):
+        logger.warning(
+            f"GLOWS: Filtered out {len(hist_l1a_list) - len(dedup_hists)} "
+            f"duplicate histogram(s) by imap_start_time and imap_time_offset."
+        )
+    hist_l1a_list = dedup_hists
+
     # Store timestamps for each HistogramL1A object.
     time_data: np.ndarray = np.zeros(len(hist_l1a_list), dtype=np.int64)
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
@@ -366,7 +394,9 @@ def generate_histogram_dataset(
     }
 
     for index, hist in enumerate(hist_l1a_list):
-        epoch_time = met_to_ttj2000ns(hist.imap_start_time.to_seconds())
+        epoch_time = met_to_ttj2000ns(
+            hist.imap_start_time.to_seconds() + hist.imap_time_offset.to_seconds() / 2
+        )
         # Assign histogram data, padding with zeros if shorter than max_bins
         hist_len = len(hist.histogram)
         hist_data[index, :hist_len] = hist.histogram

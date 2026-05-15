@@ -804,8 +804,8 @@ class LoPointingSet(LoHiBasePointingSet):
             The midpoint value [J2000 ET] of the pointing set.
         """
         epoch_delta = met_to_ttj2000ns(
-            self.data["pointing_end_met"].data
-        ) - met_to_ttj2000ns(self.data["pointing_start_met"].data)
+            self.data["pointing_end_met"].item()
+        ) - met_to_ttj2000ns(self.data["pointing_start_met"].item())
         return float(ttj2000ns_to_et(self.epoch + epoch_delta / 2))
 
 
@@ -1454,13 +1454,20 @@ class RectangularSkyMap(AbstractSkyMap):
                     name=f"{coord_name}_label",
                     dims=[coord_name],
                 )
-            # We can set the correct delta value of the spatial coordinates
+            # Set the correct delta values for the time coordinate
             if coord_name == CoordNames.TIME.value:
+                # Delta minus is always zero because epoch is the start time
+                cdf_ds[f"{coord_name}_delta_minus"] = xr.DataArray(
+                    xr.zeros_like(cdf_ds[coord_name]),
+                    name=f"{coord_name}_delta_minus",
+                    dims=[coord_name],
+                )
                 cdf_ds[f"{coord_name}_delta"] = xr.DataArray(
                     xr.full_like(cdf_ds[coord_name], self.max_epoch - self.min_epoch),
                     name=f"{coord_name}_delta",
                     dims=[coord_name],
                 )
+            # Set the correct delta values of the spatial coordinates
             elif coord_name in self.spatial_coords:
                 cdf_ds[f"{coord_name}_delta"] = xr.DataArray(
                     xr.full_like(cdf_ds[coord_name], self.spacing_deg / 2),

@@ -523,6 +523,14 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             chunk_vectors = self.vectors[chunk_indices[0] : chunk_indices[-1]]
             chunk_epoch = self.epoch[chunk_indices[0] : chunk_indices[-1]]
 
+            if len(chunk_epoch) == 0:
+                logger.warning(
+                    "Skipping empty chunk at spin_starts index %d",
+                    chunk_start,
+                )
+                chunk_start = chunk_start + self.config.spin_count_calibration
+                continue
+
             # Check if more than half of the chunk data is NaN before processing
             x_valid_count: int = int(np.sum(~np.isnan(chunk_vectors[:, 0])))
             y_valid_count: int = int(np.sum(~np.isnan(chunk_vectors[:, 1])))

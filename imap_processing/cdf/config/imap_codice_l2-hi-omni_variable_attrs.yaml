@@ -8,45 +8,45 @@ max_int: &max_int 9223372036854775807
 
 # --------------------------- Default attributes -----------------------------
 energy_attrs: &energy_default
-  VAR_TYPE: support_data
   CATDESC: Geometric mean energy per nucleon
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
   DISPLAY_TYPE: time_series
   FIELDNAM: Energy Table
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
-  FORMAT: F32.1
-  FILLVAL: *real_fillval
   VALIDMAX: 200.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
+  VAR_TYPE: support_data
 
 # ------------------------------- Coordinates -------------------------------
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta minus
   FILLVAL: *min_int
   FORMAT: I19
   LABLAXIS: Epoch Delta Minus
   SCALETYP: linear
   UNITS: ns
-  VALIDMIN: *min_int
   VALIDMAX: *max_int
+  VALIDMIN: *min_int
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
 
 epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta plus
   FILLVAL: *min_int
   FORMAT: I19
   LABLAXIS: Epoch Delta Plus
   SCALETYP: linear
   UNITS: ns
-  VALIDMIN: *min_int
   VALIDMAX: *max_int
+  VALIDMIN: *min_int
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
 
 energy_cno:
   <<: *energy_default
@@ -186,9 +186,9 @@ energy_uh_label:
 # --------------------------- Dataset variable attrs ------------------------
 # The following are set in multiple data products
 data_quality:
-  VAR_TYPE: data
-  DEPEND_0: epoch
   CATDESC: Indicates whether data quality is suspect (1).
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: time_series
   FIELDNAM: Data Quality
   FILLVAL: *uint8_fillval
@@ -198,430 +198,430 @@ data_quality:
   UNITS: ' '
   VALIDMAX: 1
   VALIDMIN: 0
+  VAR_TYPE: data
   VAR_TYPE: support_data
-  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 # ----- hi-omni Attributes -----
 # Species plus and minus attrs:
 energy_c_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_c
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_c_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_c
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 energy_fe_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_fe
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_fe_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_fe
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 energy_h_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_h
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_h_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_h
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 energy_he3_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_he3
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_he3_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_he3
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 energy_he4_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_he4
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_he4_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_he4
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 energy_junk_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_junk
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_junk_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_junk
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 energy_ne_mg_si_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_ne_mg_si
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_ne_mg_si_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_ne_mg_si
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 energy_o_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_o
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_o_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_o
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 energy_uh_minus:
   <<: *energy_default
   CATDESC: Energy Table Minus value
-  FIELDNAM: energy delta minus
   DEPEND_1: energy_uh
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta minus
 
 energy_uh_plus:
   <<: *energy_default
   CATDESC: Energy Table Plus value
-  FIELDNAM: energy delta plus
   DEPEND_1: energy_uh
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+  FIELDNAM: energy delta plus
 
 # Uncertainty attrs:
 unc_c:
-  FIELDNAM: Uncertainties for c
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for c (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
+  DEPEND_0: epoch
   DEPEND_1: energy_c
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for c
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABL_PTR_1: energy_c_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 unc_fe:
-  FIELDNAM: Uncertainties for fe
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for fe (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
+  DEPEND_0: epoch
   DEPEND_1: energy_fe
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for fe
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABL_PTR_1: energy_fe_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 unc_h:
-  FIELDNAM: Uncertainties for h
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for h (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
+  DEPEND_0: epoch
   DEPEND_1: energy_h
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for h
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABL_PTR_1: energy_h_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 unc_he3:
-  FIELDNAM: Uncertainties for he3
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for he3 (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
+  DEPEND_0: epoch
   DEPEND_1: energy_he3
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for he3
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABL_PTR_1: energy_he3_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 unc_he4:
-  FIELDNAM: Uncertainties for he4
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for he4 (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
+  DEPEND_0: epoch
   DEPEND_1: energy_he4
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for he4
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABL_PTR_1: energy_he4_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 unc_junk:
-  FIELDNAM: Uncertainties for junk
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for junk (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
+  DEPEND_0: epoch
   DEPEND_1: energy_junk
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for junk
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABL_PTR_1: energy_junk_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 unc_ne_mg_si:
-  FIELDNAM: Uncertainties for ne-mg-si
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for ne-mg-si (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
+  DEPEND_0: epoch
   DEPEND_1: energy_ne_mg_si
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for ne-mg-si
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABL_PTR_1: energy_ne_mg_si_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 unc_o:
-  FIELDNAM: Uncertainties for o
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for o (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
+  DEPEND_0: epoch
   DEPEND_1: energy_o
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for o
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
   LABL_PTR_1: energy_o_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
 
 unc_uh:
-  FIELDNAM: Uncertainties for uh
-  VALIDMIN: 0.0
-  VALIDMAX: 4096.0
-  UNITS: '# / cm2 s sr MeV/nuc'
-  FORMAT: F32.1
   CATDESC: Uncertainties for uh (Root 2 spacing)
-  VAR_TYPE: support_data
-  SI_CONVERSION: ' > '
-  SCALETYP: log
-  FILLVAL: *real_fillval
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
   COORDINATE_SYSTEM: instrument frame
-  DEPEND_1: energy_uh
-  LABL_PTR_1: energy_uh_label
-c:
-  VAR_TYPE: data
   DEPEND_0: epoch
+  DEPEND_1: energy_uh
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uncertainties for uh
+  FILLVAL: *real_fillval
+  FORMAT: F32.1
+  LABL_PTR_1: energy_uh_label
+  SCALETYP: log
+  SI_CONVERSION: ' > '
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 4096.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
+c:
+  CATDESC: c (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_c
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - c
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_c_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: c (Root 2 spacing)
-  DEPEND_1: energy_c
-  LABL_PTR_1: energy_c_label
+  VAR_TYPE: data
 
 fe:
-  VAR_TYPE: data
+  CATDESC: fe (Root 2 spacing)
   DEPEND_0: epoch
+  DEPEND_1: energy_fe
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - fe
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_fe_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: fe (Root 2 spacing)
-  DEPEND_1: energy_fe
-  LABL_PTR_1: energy_fe_label
+  VAR_TYPE: data
 
 h:
-  VAR_TYPE: data
+  CATDESC: h (Root 2 spacing)
   DEPEND_0: epoch
+  DEPEND_1: energy_h
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - h
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_h_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: h (Root 2 spacing)
-  DEPEND_1: energy_h
-  LABL_PTR_1: energy_h_label
+  VAR_TYPE: data
 
 he3:
-  VAR_TYPE: data
+  CATDESC: he3 (Root 2 spacing)
   DEPEND_0: epoch
+  DEPEND_1: energy_he3
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - he3
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_he3_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: he3 (Root 2 spacing)
-  DEPEND_1: energy_he3
-  LABL_PTR_1: energy_he3_label
+  VAR_TYPE: data
 
 he4:
-  VAR_TYPE: data
+  CATDESC: he4 (Root 2 spacing)
   DEPEND_0: epoch
+  DEPEND_1: energy_he4
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - he4
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_he4_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: he4 (Root 2 spacing)
-  DEPEND_1: energy_he4
-  LABL_PTR_1: energy_he4_label
+  VAR_TYPE: data
 
 junk:
-  VAR_TYPE: data
+  CATDESC: junk (Root 2 spacing)
   DEPEND_0: epoch
+  DEPEND_1: energy_junk
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - junk
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_junk_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: junk (Root 2 spacing)
-  DEPEND_1: energy_junk
-  LABL_PTR_1: energy_junk_label
+  VAR_TYPE: data
 
 ne_mg_si:
-  VAR_TYPE: data
+  CATDESC: ne-mg-si (Root 2 spacing)
   DEPEND_0: epoch
+  DEPEND_1: energy_ne_mg_si
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - ne-mg-si
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_ne_mg_si_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: ne-mg-si (Root 2 spacing)
-  DEPEND_1: energy_ne_mg_si
-  LABL_PTR_1: energy_ne_mg_si_label
+  VAR_TYPE: data
 
 o:
-  VAR_TYPE: data
+  CATDESC: o (Root 2 spacing)
   DEPEND_0: epoch
+  DEPEND_1: energy_o
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - o
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_o_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: o (Root 2 spacing)
-  DEPEND_1: energy_o
-  LABL_PTR_1: energy_o_label
+  VAR_TYPE: data
 
 uh:
-  VAR_TYPE: data
+  CATDESC: uh (Root 2 spacing)
   DEPEND_0: epoch
+  DEPEND_1: energy_uh
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
   FIELDNAM: Diff. Intensity - uh
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABL_PTR_1: energy_uh_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  CATDESC: uh (Root 2 spacing)
-  DEPEND_1: energy_uh
-  LABL_PTR_1: energy_uh_label
+  VAR_TYPE: data

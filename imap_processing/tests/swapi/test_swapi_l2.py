@@ -1,6 +1,7 @@
 import json
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -15,6 +16,8 @@ from imap_processing.swapi.l2.swapi_l2 import (
     swapi_l2,
 )
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
+
+SWAPI_RATE_VALIDMAX = 65535 / SWAPI_LIVETIME
 
 
 @pytest.fixture(scope="session")
@@ -125,6 +128,26 @@ def test_swapi_l2_cdf(
     )
     l2_cdf = write_cdf(l2_dataset)
     assert l2_cdf.name == "imap_swapi_l2_sci_20240924_v999.cdf"
+    cdf_file = cdflib.CDF(l2_cdf)
+    esa_energy_info = cdf_file.varinq("esa_energy")
+    sci_start_time_attrs = cdf_file.varattsget("sci_start_time")
+    assert esa_energy_info.Data_Type_Description == "CDF_DOUBLE"
+    assert sci_start_time_attrs["FORMAT"] == "A23"
+
+    rate_variables = [
+        "swp_pcem_rate",
+        "swp_scem_rate",
+        "swp_coin_rate",
+        "swp_pcem_rate_stat_uncert_plus",
+        "swp_pcem_rate_stat_uncert_minus",
+        "swp_scem_rate_stat_uncert_plus",
+        "swp_scem_rate_stat_uncert_minus",
+        "swp_coin_rate_stat_uncert_plus",
+        "swp_coin_rate_stat_uncert_minus",
+    ]
+    for variable in rate_variables:
+        variable_attrs = cdf_file.varattsget(variable)
+        assert np.isclose(variable_attrs["VALIDMAX"], SWAPI_RATE_VALIDMAX)
 
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(

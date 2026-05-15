@@ -176,7 +176,7 @@ def test_hi_l2(
     assert l2_dataset.attrs["Logical_source"] == f"imap_hi_l2_{descriptor_str}"
     assert "Hi90" in l2_dataset.attrs["Logical_source_description"]
 
-    assert len(l2_dataset.data_vars) == 15
+    assert len(l2_dataset.data_vars) == 16
     np.testing.assert_array_equal(
         l2_dataset["ena_intensity"].dims, ["epoch", "energy", "longitude", "latitude"]
     )
@@ -733,6 +733,86 @@ def test_combine_calibration_products_edge_cases():
         assert "calibration_prod" not in result_ds[var].dims
 
 
+def test_combine_calibration_products_nan_handling():
+    """Test that combine_calibration_products handles NaN values correctly.
+
+    Tests the skipna=True, min_count=1 behavior:
+    - When one calibration product has NaN, the result should use the valid values
+    - When ALL calibration products have NaN at a position, the result should be NaN
+    """
+    # Create test dataset with 2 calibration products
+    coords = {
+        "epoch": 1,
+        "esa_energy_step": 2,
+        "calibration_prod": 2,
+        "longitude": 2,
+        "latitude": 1,
+    }
+
+    # Shape: (1, 2, 2, 2, 1) - epoch, energy, cal_prod, lon, lat
+    shape = (1, 2, 2, 2, 1)
+
+    # Create base arrays with valid values
+    intensity = np.full(shape, 100.0)
+    stat_uncert = np.full(shape, 10.0)
+    sys_err = np.full(shape, 5.0)
+    signal_rates = np.full(shape, 500.0)
+    bg_rate = np.full(shape, 20.0)
+    bg_rate_sys_err = np.full(shape, 2.0)
+    exposure_factor = np.full(shape, 1.0)
+
+    # Set NaN in one calibration product's uncertainty at position [0,0,0,0,0]
+    # The other calibration product is valid, so result should be finite
+    stat_uncert[0, 0, 0, 0, 0] = np.nan
+
+    # Set NaN in both calibration products at position [0,1,:,0,0]
+    # Since ALL products have NaN, result should be NaN (due to min_count=1)
+    stat_uncert[0, 1, 0, 0, 0] = np.nan
+    stat_uncert[0, 1, 1, 0, 0] = np.nan
+
+    # Set NaN in sys_err for one product at position [0,0,0,1,0]
+    sys_err[0, 0, 0, 1, 0] = np.nan
+
+    # Set NaN in sys_err for both products at position [0,1,:,1,0]
+    sys_err[0, 1, 0, 1, 0] = np.nan
+    sys_err[0, 1, 1, 1, 0] = np.nan
+
+    dim_names = list(coords.keys())
+    test_ds = xr.Dataset(
+        {
+            "ena_intensity": xr.DataArray(intensity, dims=dim_names),
+            "ena_intensity_stat_uncert": xr.DataArray(stat_uncert, dims=dim_names),
+            "ena_intensity_sys_err": xr.DataArray(sys_err, dims=dim_names),
+            "ena_signal_rates": xr.DataArray(signal_rates, dims=dim_names),
+            "bg_rate": xr.DataArray(bg_rate, dims=dim_names),
+            "bg_rate_sys_err": xr.DataArray(bg_rate_sys_err, dims=dim_names),
+            "exposure_factor": xr.DataArray(exposure_factor, dims=dim_names),
+        }
+    )
+
+    geom_factors = xr.DataArray(
+        np.ones((2, 2)), dims=["esa_energy_step", "calibration_prod"]
+    )
+
+    esa_energies = xr.DataArray(np.array([1.0, 2.0]), dims=["esa_energy_step"])
+
+    result_ds = combine_calibration_products(test_ds, geom_factors, esa_energies)
+
+    # Test 1: When one product has NaN stat_uncert, result should be finite
+    # (skipna=True uses the valid value from the other product)
+    assert np.isfinite(result_ds["ena_intensity_stat_uncert"].values[0, 0, 0, 0])
+
+    # Test 2: When ALL products have NaN stat_uncert, result should be NaN
+    # (min_count=1 ensures at least one valid value is needed)
+    assert np.isnan(result_ds["ena_intensity_stat_uncert"].values[0, 1, 0, 0])
+
+    # Test 3: When one product has NaN sys_err, result should be finite
+    assert np.isfinite(result_ds["ena_intensity_sys_err"].values[0, 0, 1, 0])
+
+    # Test 4: When ALL products have NaN sys_err, result should be NaN
+    assert np.isnan(result_ds["ena_intensity_sys_err"].values[0, 1, 1, 0])
+
+
 # =============================================================================
 # PSET PROCESSING TESTS
 # =============================================================================
@@ -792,7 +872,7 @@ def mock_pset_dataset():
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_renames_variables(
     mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
 ):
@@ -824,7 +904,7 @@ def test_process_single_pset_renames_variables(
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_adds_obs_date(
     mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
 ):
@@ -853,7 +933,7 @@ def test_process_single_pset_adds_obs_date(
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_exposure_time_weighting(
     mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
 ):
@@ -879,7 +959,7 @@ def test_process_single_pset_exposure_time_weighting(
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_calls_velocity_and_ram_mask(
     mock_add_velocity, mock_calc_ram_mask, mock_pset_dataset
 ):
@@ -911,7 +991,7 @@ def test_process_single_pset_calls_velocity_and_ram_mask(
 
 @mock.patch("imap_processing.hi.hi_l2.apply_compton_getting_correction")
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_applies_cg_for_hf_frame(
     mock_add_velocity, mock_calc_ram_mask, mock_apply_cg, mock_pset_dataset
 ):
@@ -942,7 +1022,7 @@ def test_process_single_pset_applies_cg_for_hf_frame(
 
 @mock.patch("imap_processing.hi.hi_l2.apply_compton_getting_correction")
 @mock.patch("imap_processing.hi.hi_l2.calculate_ram_mask")
-@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_velocity_to_pset")
+@mock.patch("imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset")
 def test_process_single_pset_no_cg_for_sf_frame(
     mock_add_velocity, mock_calc_ram_mask, mock_apply_cg, mock_pset_dataset
 ):
@@ -1480,3 +1560,38 @@ def test_combine_maps_handles_nan_intensity(mock_sky_map_for_combine):
         expected_normal,
         decimal=5,
     )
+
+
+def test_combine_maps_handles_nan_uncertainties(mock_sky_map_for_combine):
+    """Test that combine_maps handles NaN values in uncertainties correctly.
+
+    When one map has NaN values in ena_intensity_stat_uncert, the weight for
+    that map should be zero, so the combined result uses only the other map's
+    value.
+    """
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine(intensity_offset=20)
+
+    # Set NaN in stat_uncert - should result in zero weight for that map
+    ram_stat_unc = ram_map.data_1d["ena_intensity_stat_uncert"].values.copy()
+    ram_stat_unc[0, 0, 0, 0] = np.nan
+    ram_map.data_1d["ena_intensity_stat_uncert"] = xr.DataArray(
+        ram_stat_unc, dims=ram_map.data_1d["ena_intensity_stat_uncert"].dims
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    # Combined intensity at NaN uncertainty position should use only anti's
+    # value since ram has zero weight (due to NaN uncertainty)
+    assert np.isfinite(result.data_1d["ena_intensity"].values[0, 0, 0, 0])
+    # The result should be anti's intensity since ram has zero weight
+    expected_intensity = 70.0  # anti's intensity
+    np.testing.assert_almost_equal(
+        result.data_1d["ena_intensity"].values[0, 0, 0, 0],
+        expected_intensity,
+        decimal=5,
+    )
+
+    # Combined stat_uncert should also be finite (from anti's value)
+    assert np.isfinite(result.data_1d["ena_intensity_stat_uncert"].values[0, 0, 0, 0])

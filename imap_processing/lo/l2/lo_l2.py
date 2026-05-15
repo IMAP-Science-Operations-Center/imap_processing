@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,6 @@ from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.ena_maps import AbstractSkyMap, RectangularSkyMap
 from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
-    add_spacecraft_velocity_to_pset,
     apply_compton_getting_correction,
     calculate_ram_mask,
     get_pset_directional_mask,
@@ -108,7 +108,7 @@ def lo_l2(
     )
 
     logger.info("Step 5: Finalizing dataset with attributes")
-    dataset = sky_map.build_cdf_dataset(  # type: ignore[attr-defined]
+    dataset = cast(RectangularSkyMap, sky_map).build_cdf_dataset(
         instrument="lo", level="l2", descriptor=descriptor, external_map_dataset=dataset
     )
 
@@ -228,6 +228,66 @@ def load_efficiency_data(anc_dependencies: list) -> pd.DataFrame:
     logger.debug(f"Loading {len(efficiency_files)} efficiency factor files")
     return pd.concat(
         [lo_ancillary.read_ancillary_file(anc_file) for anc_file in efficiency_files],
+        ignore_index=True,
+    )
+
+
+def load_sputter_correction_data(
+    source_species: str, target_species: str
+) -> pd.DataFrame:
+    """
+    Load sputter correction factors from an ancillary file.
+
+    Parameters
+    ----------
+    source_species : str
+        The species doing the sputtering (e.g. "o" for oxygen).
+    target_species : str
+        The species being corrected (e.g. "h" for hydrogen).
+
+    Returns
+    -------
+    pd.DataFrame
+        Rows matching the given species pair, sorted ascending by esa_step,
+        with columns: source_species, target_species, esa_step,
+        sputter_factor, sputter_factor_uncertainty.
+    """
+    anc_path = Path(__file__).parent.parent / "ancillary_data"
+    sputter_files = sorted(anc_path.glob("*sputter-correction-factors*"))
+
+    if not sputter_files:
+        raise ValueError("No sputter correction files found")
+
+    df = pd.concat(
+        [lo_ancillary.read_ancillary_file(f) for f in sputter_files],
+        ignore_index=True,
+    )
+    mask = (df["source_species"] == source_species) & (
+        df["target_species"] == target_species
+    )
+    result = df[mask].sort_values("esa_step").reset_index(drop=True)
+    return result
+
+
+def load_bootstrap_correction_data() -> pd.DataFrame:
+    """
+    Load bootstrap correction factors from an ancillary file.
+
+    Returns
+    -------
+    pd.DataFrame
+        Bootstrap correction factors with columns: esa_step_i, esa_step_k,
+        bootstrap_factor. Indices are 1-based ESA step numbers where esa_step_k=8
+        refers to the virtual E8 channel.
+    """
+    anc_path = Path(__file__).parent.parent / "ancillary_data"
+    bootstrap_files = sorted(anc_path.glob("*bootstrap-correction-factors*"))
+
+    if not bootstrap_files:
+        raise ValueError("No bootstrap correction factor files found")
+
+    return pd.concat(
+        [lo_ancillary.read_ancillary_file(f) for f in bootstrap_files],
         ignore_index=True,
     )
 
@@ -371,10 +431,7 @@ def process_single_pset(
     # Step 3: Calculate efficiency-corrected quantities
     pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
 
-    # Step 4: Add s/c velocity, optionally apply CG correction, and calculate
-    # ram-mask
-    pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
-
+    # Step 4: Optionally apply CG correction and calculate ram-mask
     if cg_correct:
         # NOTE: Heliospheric frame energy selection for CG correction
         # The heliospheric (HF) energies passed to the CG correction algorithm
@@ -1012,6 +1069,7 @@ def calculate_sputtering_corrections(
     """
     Calculate sputtering corrections from oxygen intensities.
 
+    Correction factors are read from imap_lo_sputter-correction-factors_v001.csv.
     Only for Oxygen sputtering and correction only at ESA levels 5 and 6
     for 90 degree maps. If off-angle maps are made, we may have to extend
     this to levels 3 and 4 as well.
@@ -1034,8 +1092,9 @@ def calculate_sputtering_corrections(
         uncertainties.
     """
     logger.info("Applying sputtering corrections to hydrogen intensities")
-    # Only apply sputtering correction to esa levels 5 and 6 (indices 4 and 5)
-    energy_indices = [4, 5]
+    sputter_df = load_sputter_correction_data("o", "h")
+    energy_indices = (sputter_df["esa_step"].values - 1).tolist()
+
     small_dataset = dataset.isel(epoch=0, energy=energy_indices)
     o_small_dataset = o_dataset.isel(epoch=0, energy=energy_indices)
 
@@ -1054,9 +1113,10 @@ def calculate_sputtering_corrections(
         + o_small_dataset["bg_intensity_stat_uncert"] ** 2
     )
 
-    # NOTE: From table 2 of the mapping document, for energy level 5 and 6
     sputter_correction_factor = xr.DataArray(
-        [0.15, 0.01], dims=["energy"], coords={"energy": small_dataset["energy"]}
+        sputter_df["sputter_factor"].values,
+        dims=["energy"],
+        coords={"energy": small_dataset["energy"]},
     )
     # Equation 11
     # Remove the sputtered oxygen intensity to correct the original H intensity
@@ -1116,28 +1176,22 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     """
     logger.info("Applying bootstrap corrections")
 
-    # Table 3 bootstrap terms h_i,k - convert to xarray for better dimension handling
-    bootstrap_factor_array = np.array(
-        [
-            [0, 0.03, 0.01, 0, 0, 0, 0, 0],
-            [0, 0, 0.05, 0.02, 0.01, 0, 0, 0],
-            [0, 0, 0, 0.09, 0.03, 0.016, 0.01, 0],
-            [0, 0, 0, 0, 0.16, 0.068, 0.016, 0.01],
-            [0, 0, 0, 0, 0, 0.29, 0.068, 0.016],
-            [0, 0, 0, 0, 0, 0, 0.52, 0.061],
-            [0, 0, 0, 0, 0, 0, 0, 0.75],
-        ]
-    )
+    # Table 3 bootstrap terms h_i,k - load from an ancillary file
+    bootstrap_df = load_bootstrap_correction_data()
+
     # Create xarray DataArray with named dimensions for proper broadcasting
-    bootstrap_factor = xr.DataArray(
-        bootstrap_factor_array,
-        dims=["energy_i", "energy_k"],
-        coords={
-            "energy_i": dataset["energy"].values,
+    bootstrap_factor = (
+        bootstrap_df.set_index(["esa_step_i", "esa_step_k"])["bootstrap_factor"]
+        .to_xarray()
+        .fillna(0)
+        .reindex(esa_step_i=range(1, 8), esa_step_k=range(1, 9), fill_value=0)
+        .rename({"esa_step_i": "energy_i", "esa_step_k": "energy_k"})
+        .assign_coords(
+            energy_i=dataset["energy"].values,
             # Add an extra coordinate for the virtual E8 channel, unused
             # in the broadcasting calculations
-            "energy_k": np.concatenate([dataset["energy"].values, [np.nan]]),
-        },
+            energy_k=np.concatenate([dataset["energy"].values, [np.nan]]),
+        )
     )
 
     # Equation 14

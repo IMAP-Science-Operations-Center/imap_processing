@@ -22,24 +22,24 @@ spin_sector:
   LABLAXIS: " "
   SCALETYP: linear
   UNITS: " "
-  VALIDMIN: 0
   VALIDMAX: 24
+  VALIDMIN: 0
   VAR_TYPE: support_data
 
 # spin angle:
 spin_angle:
-  VAR_TYPE: support_data
   CATDESC: Spin Angle
+  DEPEND_1: spin_sector
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
   FIELDNAM: Spin Angle
+  FILLVAL: *real_fillval
+  FORMAT: '%f'
+  LABL_PTR_1: spin_sector_label
   SCALETYP: linear
   UNITS: degrees
-  FILLVAL: *real_fillval
   VALIDMAX: 360.0
   VALIDMIN: 0.0
-  FORMAT: '%f'
-  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
-  DEPEND_1: spin_sector
-  LABL_PTR_1: spin_sector_label
+  VAR_TYPE: support_data
 
 # ------------------------------- labels -------------------------------
 elevation_angle_label:
@@ -56,6 +56,7 @@ lo-angular-attrs:
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
     DEPEND_3: elevation_angle
+    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
     DISPLAY_TYPE: time_series
     FIELDNAM: "{direction} - {species}"
     FILLVAL: *real_fillval
@@ -64,10 +65,9 @@ lo-angular-attrs:
     LABL_PTR_2: spin_sector_label
     LABL_PTR_3: elevation_angle_label
     UNITS: "#/(cm^2-s-sr-keV/q)"
-    VALIDMIN: 0.0
     VALIDMAX: 16777216.0
+    VALIDMIN: 0.0
     VAR_TYPE: data
-    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 lo-angular-unc-attrs:
     CATDESC: "{species} {direction} species uncertainty"
@@ -75,6 +75,7 @@ lo-angular-unc-attrs:
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
     DEPEND_3: elevation_angle
+    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
     DISPLAY_TYPE: time_series
     FIELDNAM: "{direction} - {species}"
     FILLVAL: *real_fillval
@@ -83,7 +84,6 @@ lo-angular-unc-attrs:
     LABL_PTR_2: spin_sector_label
     LABL_PTR_3: elevation_angle_label
     UNITS: "#/(cm^2-s-sr-keV/q)"
-    VALIDMIN: 0.0
     VALIDMAX: 16777216.0
+    VALIDMIN: 0.0
     VAR_TYPE: data
-    DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty

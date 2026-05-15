@@ -6,7 +6,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-STATIONS = ["Kiel", "UKSA"]
+STATIONS = ["Kiel", "UKSA", "tlmrelay"]
 
 
 def packets_created(start_file_creation: datetime, lines: list) -> dict:
@@ -50,7 +50,7 @@ def packets_created(start_file_creation: datetime, lines: list) -> dict:
             # Handle end of year rollover
             prev = prev_doy[station]
 
-            if prev is not None and doy < prev:
+            if prev is not None and doy < prev and prev > 300 and doy < 30:
                 station_year[station] += 1
 
             prev_doy[station] = doy

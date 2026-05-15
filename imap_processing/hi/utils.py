@@ -597,22 +597,123 @@ class BackgroundConfig(_BaseConfigAccessor):
     index_columns = (
         "calibration_prod",
         "background_index",
+        "esa_energy_step",
     )
+    # Columns that must be consistent across esa_energy_step for each
+    # (calibration_prod, background_index) combination
+    tof_columns = tuple(
+        f"tof_{det_pair}_{limit}"
+        for det_pair in _BaseConfigAccessor.tof_detector_pairs
+        for limit in ["low", "high"]
+    )
+
     required_columns = (
         "coincidence_type_list",
-        *[
-            f"tof_{det_pair}_{limit}"
-            for det_pair in _BaseConfigAccessor.tof_detector_pairs
-            for limit in ["low", "high"]
-        ],
+        *tof_columns,
         "scaling_factor",
         "uncertainty",
     )
+
+    def _validate(self, df: pd.DataFrame) -> None:
+        """
+        Validate the background configuration.
+
+        Extends base validation to verify:
+        1. TOF windows and coincidence types are consistent across esa_energy_step
+           for each (calibration_prod, background_index) combination.
+        2. All required columns (coincidence_type_list, TOF windows, scaling_factor,
+           uncertainty) are non-null for every row.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame to validate.
+
+        Raises
+        ------
+        AttributeError
+            If required columns or index are missing.
+        ValueError
+            If TOF windows or coincidence types differ across ESA energy steps,
+            or if any required values are null/missing.
+        """
+        super()._validate(df)
+
+        # Check that all required columns have non-null values for every row
+        # This catches cases where forward-fill didn't populate values
+        # (e.g., missing first row in a group) or where scaling_factor/uncertainty
+        # are missing for some ESA steps
+        required_non_null = [
+            "coincidence_type_list",
+            *self.tof_columns,
+            "scaling_factor",
+            "uncertainty",
+        ]
+
+        for col in required_non_null:
+            null_mask = df[col].isna()
+            if null_mask.any():
+                # Get the index values of rows with null values
+                null_rows = df.index[null_mask].tolist()
+                raise ValueError(
+                    f"Null values found in required column '{col}' for rows: "
+                    f"{null_rows}. All background configuration rows must have "
+                    f"non-null values for coincidence_type_list, TOF windows, "
+                    f"scaling_factor, and uncertainty."
+                )
+
+        # Columns that must be consistent across ESA steps
+        consistency_columns = [*self.tof_columns, "coincidence_type_list"]
+
+        # Group by (calibration_prod, background_index) and check consistency
+        grouped = df.groupby(level=["calibration_prod", "background_index"])
+
+        for (cal_prod, bg_idx), group in grouped:
+            for col in consistency_columns:
+                unique_values = group[col].unique()
+                if len(unique_values) > 1:
+                    raise ValueError(
+                        f"Inconsistent {col} values across esa_energy_step for "
+                        f"calibration_prod={cal_prod}, background_index={bg_idx}. "
+                        f"Found values: {unique_values.tolist()}. "
+                        f"TOF windows and coincidence types must be identical "
+                        f"across all ESA energy steps."
+                    )
+
+    def get_tof_config(self) -> pd.DataFrame:
+        """
+        Get TOF window configuration with one row per background.
+
+        Returns one row per (calibration_prod, background_index) combination.
+        Since TOF windows are validated to be consistent across esa_energy_step,
+        this returns the first row for each (calibration_prod, background_index)
+        combination containing only the TOF-related columns.
+
+        Returns
+        -------
+        tof_config : pandas.DataFrame
+            DataFrame indexed by (calibration_prod, background_index) with
+            coincidence_type_list, coincidence_type_values, and TOF window columns.
+        """
+        tof_cols = [
+            "coincidence_type_list",
+            "coincidence_type_values",
+            *self.tof_columns,
+        ]
+        return self._obj.groupby(level=["calibration_prod", "background_index"])[
+            tof_cols
+        ].first()
 
     @classmethod
     def from_csv(cls, path: str | Path | IO[str]) -> pd.DataFrame:
         """
         Read background configuration CSV file into a pandas.DataFrame.
+
+        TOF window columns and coincidence_type_list can be specified only on
+        the first row of each (calibration_prod, background_index) group and
+        will be forward-filled to subsequent rows. This reduces redundancy in
+        the CSV file since these values must be identical across ESA energy
+        steps.
 
         Parameters
         ----------
@@ -625,12 +726,40 @@ class BackgroundConfig(_BaseConfigAccessor):
             Validated background configuration DataFrame with
             coincidence_type_values column added.
         """
+
+        def parse_coincidence_list(s: str) -> tuple | None:
+            """
+            Parse coincidence type list, returning None for empty strings.
+
+            Parameters
+            ----------
+            s : str
+                Pipe-delimited string of coincidence types.
+
+            Returns
+            -------
+            tuple or None
+                Tuple of coincidence type strings, or None if input is empty.
+            """
+            if pd.isna(s) or s == "":
+                return None
+            return tuple(s.split("|"))
+
         df = pd.read_csv(
             path,
             index_col=cls.index_columns,
-            converters={"coincidence_type_list": lambda s: tuple(s.split("|"))},
+            converters={"coincidence_type_list": parse_coincidence_list},
             comment="#",
         )
+
+        # Forward-fill TOF columns and coincidence_type_list within each
+        # (calibration_prod, background_index) group. This allows the CSV to
+        # specify these values only on the first row of each group.
+        fill_columns = ["coincidence_type_list", *cls.tof_columns]
+        df[fill_columns] = df.groupby(level=["calibration_prod", "background_index"])[
+            fill_columns
+        ].ffill()
+
         # Trigger the accessor to run validation and add coincidence_type_values
         _ = df.background_config.calibration_product_numbers
         return df

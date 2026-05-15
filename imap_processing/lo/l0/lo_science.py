@@ -213,10 +213,11 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     # data will use a direct event index for the
     # pointing as its coordinate/dimension
     for field in de_fields:
+        attrs = attr_mgr.get_variable_attributes(field, check_schema=False)
         dataset[field] = xr.DataArray(
-            np.full(num_de, attr_mgr.get_variable_attributes(field)["FILLVAL"]),
+            np.full(num_de, attrs["FILLVAL"]),
             dims="direct_events",
-            attrs=attr_mgr.get_variable_attributes(field),
+            attrs=attrs,
         )
     dataset["passes"] = xr.DataArray(
         np.full(

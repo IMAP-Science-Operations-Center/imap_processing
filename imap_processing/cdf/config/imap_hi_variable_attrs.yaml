@@ -3,64 +3,64 @@ default_attrs: &default
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FORMAT: I12
+  SCALE_TYPE: linear
   UNITS: " "
   VAR_TYPE: data
-  SCALE_TYPE: linear
 
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
   FORMAT: I3
-  VALIDMIN: 0
   VALIDMAX: 255
+  VALIDMIN: 0
   dtype: uint8
 
 default_uint16_attrs: &default_uint16
   <<: *default
   FILLVAL: 65535
   FORMAT: I5
-  VALIDMIN: 0
   VALIDMAX: 65535
+  VALIDMIN: 0
   dtype: uint16
 
 default_uint32_attrs: &default_uint32
   <<: *default
   FILLVAL: 4294967295
   FORMAT: I10
-  VALIDMIN: 0
   VALIDMAX: 4294967295
+  VALIDMIN: 0
   dtype: uint32
 
 default_int64_attrs: &default_int64
   <<: *default
   FILLVAL: -9223372036854775808
   FORMAT: I20
-  VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
+  VALIDMIN: -9223372036854775808
   dtype: int64
 
 default_int32_attrs: &default_int32
   <<: *default
   FILLVAL: -2147483648
   FORMAT: I10
-  VALIDMIN: -2147483648
   VALIDMAX: 2147483647
+  VALIDMIN: -2147483648
   dtype: int32
 
 default_float32_attrs: &default_float32
   <<: *default
   FILLVAL: -1.0e31
   FORMAT: F10.2
-  VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
+  VALIDMIN: -3.4028235e+38
   dtype: float32
 
 default_float64_attrs: &default_float64
   <<: *default
   FILLVAL: -1.0e31
   FORMAT: F10.2
-  VALIDMIN: -1.7976931348623157e+308
   VALIDMAX: 1.7976931348623157e+308
+  VALIDMIN: -1.7976931348623157e+308
   dtype: float64
 
 default_ccsds_version: &default_ccsds_version
@@ -126,8 +126,8 @@ hi_esa_step: &hi_esa_step
   FILLVAL: 255
   FORMAT: I2
   LABLAXIS: ESA step
-  VALIDMIN: 0
   VALIDMAX: 16
+  VALIDMIN: 0
   VAR_NOTES: >
     ESA (electrostatic analyzer) stepping number is 4-bit integer value that indicates
     which row of the onboard stepping table was used to set voltages of the inner and
@@ -203,8 +203,8 @@ hi_de_trigger_id:
   FILLVAL: 0
   FORMAT: I1
   LABLAXIS: ID
-  VALIDMIN: 1
   VALIDMAX: 3
+  VALIDMIN: 1
   VAR_NOTES: >
     The trigger ID is 2-bits. It represents which detector was
     hit first. It can be 1, 2, 3 for detector A, B, C respectively.
@@ -258,15 +258,15 @@ hi_hist_angle_label:
   VAR_TYPE: metadata
 
 hi_hist_angle:
-  SCALE_TYPE: linear
   CATDESC: Angle bin centers for histogram data.
   FIELDNAM: ANGLE
   FILLVAL: 65535
-  VALIDMIN: 0
-  VALIDMAX: 360
   FORMAT: I3
-  UNITS: deg
   LABLAXIS: ANGLE
+  SCALE_TYPE: linear
+  UNITS: deg
+  VALIDMAX: 360
+  VALIDMIN: 0
   VAR_TYPE: support_data
   dtype: uint16
 
@@ -306,11 +306,11 @@ hi_hist_num_of_spins:
 hi_hist_counters:
   <<: *default_uint16
   CATDESC: Angular histogram of {counter_name} type events
-  FIELDNAM: "{counter_name} histogram"
-  VALIDMAX: 4095
   DEPEND_1: angle
-  LABL_PTR_1: angle_label
+  FIELDNAM: "{counter_name} histogram"
   FORMAT: I4
+  LABL_PTR_1: angle_label
+  VALIDMAX: 4095
 
 hi_hist_cksum:
   <<: *default_ccsds_cksum
@@ -324,8 +324,8 @@ hi_de_coincidence_type:
   FILLVAL: 0
   FORMAT: I2
   LABLAXIS: Type
-  VALIDMIN: 0
   VALIDMAX: 15
+  VALIDMIN: 0
   VAR_NOTES: >
     A 4-bit quantity, representable as a hexadecimal digit,
     made up of the ORed quantities: (A hit? 8:0) | (B hit? 4:0)
@@ -336,8 +336,8 @@ default_esa_energy_step: &default_esa_energy_step
   FIELDNAM: ESA energy step
   FILLVAL: 255
   FORMAT: I2
-  VALIDMIN: 0
   VALIDMAX: 12
+  VALIDMIN: 0
 
 hi_de_esa_energy_step:
   <<: *default_uint8
@@ -350,8 +350,8 @@ default_l1b_tof: &default_l1b_tof
   FORMAT: I3
   LABLAXIS: Time of Flight
   UNITS: ns
-  VALIDMIN: -512
   VALIDMAX: 512
+  VALIDMIN: -512
 
 hi_de_tof_ab:
   <<: *default_l1b_tof
@@ -380,8 +380,8 @@ hi_de_spin_phase:
   FIELDNAM: Spin Phase
   FORMAT: F4.3
   LABLAXIS: Spin Phase
-  VALIDMIN: 0
   VALIDMAX: 1
+  VALIDMIN: 0
 
 hi_de_hae_latitude:
   <<: *default_float32
@@ -390,9 +390,9 @@ hi_de_hae_latitude:
   FIELDNAM: Ecliptic Latitude
   FORMAT: F5.2
   LABLAXIS: Lat
-  VALIDMIN: -180
-  VALIDMAX: 180
   UNITS: deg
+  VALIDMAX: 180
+  VALIDMIN: -180
 
 hi_de_hae_longitude:
   <<: *default_float32
@@ -401,9 +401,9 @@ hi_de_hae_longitude:
   FIELDNAM: Ecliptic Longitude
   FORMAT: F5.2
   LABLAXIS: Lon
-  VALIDMIN: 0
-  VALIDMAX: 360
   UNITS: deg
+  VALIDMAX: 360
+  VALIDMIN: 0
 
 hi_de_quality_flag:
   <<: *default_uint16
@@ -413,8 +413,8 @@ hi_de_quality_flag:
   FILLVAL: 65535
   FORMAT: I5
   LABLAXIS: Qlt Flag
-  VALIDMIN: 0
   VALIDMAX: 65535
+  VALIDMIN: 0
   VAR_NOTES: >
     Bitwise quality flag {TODO: Store bitwise definition here?}
 
@@ -425,8 +425,8 @@ hi_de_nominal_bin:
   FIELDNAM: Histogram Bin Number
   FORMAT: I2
   LABLAXIS: Hist Bin \#
-  VALIDMIN: 0
   VALIDMAX: 89
+  VALIDMIN: 0
 
 hi_de_esa_step_met:
   <<: *default_float64
@@ -442,8 +442,8 @@ hi_de_ccsds_qf:
   FIELDNAM: CCSDS Quality Flag
   FORMAT: I3
   LABLAXIS: CCSDS QF
-  VALIDMIN: 0
   VALIDMAX: 255
+  VALIDMIN: 0
   VAR_NOTES: >
     Bitwise quality flag for CCSDS packet. Bit 0 (value 1): packet was full
     (contained 664 events). Bit 2 (value 4): packet contained events from an
@@ -453,27 +453,27 @@ hi_de_ccsds_qf:
 
 # Define override values for epoch as defined in imap_constant_attrs.yaml
 hi_pset_epoch:
+  BIN_LOCATION: 0
   CATDESC: Start time of pointing, number of nanoseconds since J2000 with leap seconds included
   DELTA_PLUS_VAR: epoch_delta
-  BIN_LOCATION: 0
 
 hi_pset_epoch_delta:
   <<: *default_int64
   CATDESC: Number of nanoseconds in spacecraft pointing covered by this pointing set product
+  DISPLAY_TYPE: no_plot
   FIELDNAM: epoch delta
+  TIME_SCALE: Terrestrial Time
   UNITS: ns
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  TIME_SCALE: Terrestrial Time
 
 hi_pset_esa_energy_step:
   <<: *default_esa_energy_step
   LABLAXIS: Energy Step
-  UNITS: " "
-  VALIDMIN: 0
-  VALIDMAX: 12
-  SCALE_TYP: linear
   MONOTON: INCREASE
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 12
+  VALIDMIN: 0
   VAR_TYPE: support_data
   dtype: uint8
 
@@ -483,11 +483,11 @@ hi_pset_calibration_prod:
   FILLVAL: 65535
   FORMAT: I1
   LABLAXIS: Calibration Prod
-  UNITS: " "
-  SCALE_TYP: linear
   MONOTON: INCREASE
-  VALIDMIN: 0
+  SCALE_TYP: linear
+  UNITS: " "
   VALIDMAX: 9
+  VALIDMIN: 0
   VAR_TYPE: support_data
   dtype: uint8
 
@@ -497,16 +497,16 @@ hi_pset_spin_angle_bin:
   FILLVAL: 65535
   FORMAT: I3
   LABLAXIS: Bin Index
-  UNITS: " "
-  SCALE_TYP: linear
   MONOTON: INCREASE
-  VALIDMIN: 0
+  SCALE_TYP: linear
+  UNITS: " "
   VALIDMAX: 3599
-  VAR_TYPE: support_data
+  VALIDMIN: 0
   VAR_NOTES: >
     Bins are defined by spin angle about the mean axis of rotation for the pointing set.
     Spin angle bins start at closest to ecliptic North. Bin zero is centered at 0.05 degrees
     spinward of ecliptic North and all bins are 0.1 degrees wide.
+  VAR_TYPE: support_data
   dtype: uint16
 
 # Based on SPDF example of a vector magnetic field variable at the following link,
@@ -515,117 +515,117 @@ hi_pset_spin_angle_bin:
 hi_pset_despun_z:
   <<: *default_float32
   CATDESC: Unit vector corresponding to Despun Pointing Frame z-axis in HAE Ecliptic coordinates
+  DISPLAY_TYPE: no_plot
   FIELDNAM: Despun Frame z-axis in HAE coordinates
   FORMAT: F5.3
   LABL_PTR_1: label_vector_HAE
   UNITS: " "
-  VALIDMIN: -1
   VALIDMAX: 1
-  DISPLAY_TYPE: no_plot
+  VALIDMIN: -1
   VAR_TYPE: support_data
 
 hi_pset_hae_latitude:
   <<: *default_float32
   CATDESC: Latitude of bin center in HAE coordinates
-  FIELDNAM: HAE Latitude
   DEPEND_0: epoch
   DEPEND_1: spin_angle_bin
   DISPLAY_TYPE: no_plot
+  FIELDNAM: HAE Latitude
   FORMAT: F5.2
   LABLAXIS: Latitude
   UNITS: deg
-  VALIDMIN: 0
   VALIDMAX: 180
+  VALIDMIN: 0
 
 hi_pset_hae_longitude:
   <<: *default_float32
   CATDESC: Longitude of bin center in HAE coordinates
-  FIELDNAM: HAE Longitude
   DEPEND_0: epoch
   DEPEND_1: spin_angle_bin
   DISPLAY_TYPE: no_plot
+  FIELDNAM: HAE Longitude
   FORMAT: F5.2
   LABLAXIS: Latitude
   UNITS: deg
-  VALIDMIN: 0
   VALIDMAX: 360
+  VALIDMIN: 0
 
 hi_pset_counts:
   <<: *default_uint16
   CATDESC: Binned direct events counts during good times
-  FIELDNAM: Binned DE counts
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
   DEPEND_2: calibration_prod
   DEPEND_3: spin_angle_bin
+  DISPLAY_TYPE: stack_plot
+  FIELDNAM: Binned DE counts
+  FORMAT: I5
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: calibration_prod_label
   LABL_PTR_3: spin_bin_label
-  DISPLAY_TYPE: stack_plot
-  FORMAT: I5
 
 hi_pset_exposure_times:
   <<: *default_float32
   CATDESC: Exposure times for each bin during good times
-  FIELDNAM: Bin exposure times
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
   DEPEND_2: spin_angle_bin
+  DISPLAY_TYPE: stack_plot
+  FIELDNAM: Bin exposure times
+  FORMAT: F6.2
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: spin_bin_label
   UNITS: sec
-  DISPLAY_TYPE: stack_plot
-  FORMAT: F6.2
 
 hi_pset_background_rates:
   <<: *default_float32
   CATDESC: Background count rates
-  FIELDNAM: Background count rates
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
   DEPEND_2: calibration_prod
   DEPEND_3: spin_angle_bin
+  DISPLAY_TYPE: stack_plot
+  FIELDNAM: Background count rates
+  FORMAT: F4.2
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: calibration_prod_label
   LABL_PTR_3: spin_bin_label
   UNITS: counts / s
-  DISPLAY_TYPE: stack_plot
-  FORMAT: F4.2
 
 hi_pset_background_rates_uncertainty:
   <<: *default_float32
   CATDESC: Background count rate uncertainties
-  FIELDNAM: Background count rate uncertainties
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
   DEPEND_2: calibration_prod
   DEPEND_3: spin_angle_bin
+  DISPLAY_TYPE: stack_plot
+  FIELDNAM: Background count rate uncertainties
+  FORMAT: F4.2
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: calibration_prod_label
   LABL_PTR_3: spin_bin_label
   UNITS: counts / s
-  DISPLAY_TYPE: stack_plot
-  FORMAT: F4.2
 
 # <=== pset label Attributes ===>
 hi_pset_spin_bin_label:
   CATDESC: Label spin angle bin
-  FIELDNAM: Label spin angle bin
   DEPEND_1: spin_angle_bin
+  FIELDNAM: Label spin angle bin
   FORMAT: A4
   VAR_TYPE: metadata
 
 hi_pset_esa_energy_step_label:
   CATDESC: Label esa step
-  FIELDNAM: Label esa step
   DEPEND_1: esa_energy_step
+  FIELDNAM: Label esa step
   FORMAT: A4
   VAR_TYPE: metadata
 
 hi_pset_calibration_prod_label:
   CATDESC: Label calibration product
-  FIELDNAM: Label calibration product
   DEPEND_1: calibration_prod
+  FIELDNAM: Label calibration product
   FORMAT: A4
   VAR_TYPE: metadata
 
@@ -639,24 +639,24 @@ hi_pset_label_vector_HAE:
 hi_goodtimes_met:
   <<: *default_float64
   CATDESC: Mission Elapsed Time for each 8-spin histogram packet
-  FIELDNAM: MET
   DEPEND_0: epoch
+  FIELDNAM: MET
   LABLAXIS: MET
   UNITS: s
-  VAR_TYPE: support_data
-  VALIDMIN: 0
   VALIDMAX: 1.7976931348623157e+308
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 hi_goodtimes_cull_flags:
   <<: *default_uint8
   CATDESC: Cull flags indicating good (0) or bad (non-zero) times per spin bin
-  FIELDNAM: Cull Flags
   DEPEND_0: epoch
   DEPEND_1: spin_bin
-  LABL_PTR_1: spin_bin_label
-  LABLAXIS: Cull Code
-  UNITS: " "
   DISPLAY_TYPE: spectrogram
+  FIELDNAM: Cull Flags
+  LABLAXIS: Cull Code
+  LABL_PTR_1: spin_bin_label
+  UNITS: " "
   VAR_NOTES: >
     Cull flags array with dimensions (epoch, spin_bin). Value of 0 indicates good time,
     non-zero values indicate bad times with specific cull reason codes.
@@ -665,13 +665,13 @@ hi_goodtimes_cull_flags:
 hi_goodtimes_esa_step:
   <<: *default_uint8
   CATDESC: ESA energy step for each 8-spin histogram packet
-  FIELDNAM: ESA Step
   DEPEND_0: epoch
+  FIELDNAM: ESA Step
   LABLAXIS: ESA Step
   UNITS: " "
-  VAR_TYPE: support_data
-  VALIDMIN: 1
   VALIDMAX: 10
+  VALIDMIN: 1
+  VAR_TYPE: support_data
 
 hi_goodtimes_spin_bin:
   CATDESC: Spin angle bin index
@@ -680,18 +680,18 @@ hi_goodtimes_spin_bin:
   FORMAT: I2
   LABLAXIS: Spin Bin
   UNITS: " "
-  VALIDMIN: 0
   VALIDMAX: 89
-  VAR_TYPE: support_data
+  VALIDMIN: 0
   VAR_NOTES: >
     Spin angle bins numbered 0-89, covering 0-360 degrees of spacecraft spin.
     Each bin is 4 degrees wide.
+  VAR_TYPE: support_data
   dtype: uint8
 
 hi_goodtimes_spin_bin_label:
   CATDESC: Label for spin bin
-  FIELDNAM: Spin Bin Label
   DEPEND_0: spin_bin
+  FIELDNAM: Spin Bin Label
   FORMAT: A3
   VAR_TYPE: metadata
 

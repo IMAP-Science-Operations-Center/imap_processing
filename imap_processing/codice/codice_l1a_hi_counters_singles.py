@@ -11,57 +11,55 @@ from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CoDICECompression,
-    ViewTabInfo,
     get_codice_epoch_time,
     get_collapse_pattern_shape,
-    get_view_tab_info,
-    read_sci_lut,
+    get_view_tab_obj,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
 
-def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.Dataset:
+def l1a_hi_counters_singles(
+    group_ds: xr.Dataset,
+    lut_file: Path,
+    table_id: str,
+    view_id: int,
+    apid: int,
+    plan_id: int,
+    plan_step: int,
+) -> xr.Dataset:
     """
-    Process CoDICE Hi Counters singles L1A data.
+    Process a single table-ID group of CoDICE Hi Counters Singles L1A data.
 
     Parameters
     ----------
-    unpacked_dataset : xarray.Dataset
-        Unpacked dataset from L0 packet file.
+    group_ds : xarray.Dataset
+        Dataset filtered to a single table_id.
     lut_file : Path
         Path to the LUT file for processing.
+    table_id : str
+        The table ID for this group.
+    view_id : int
+        View ID (uniform across the product).
+    apid : int
+        APID (uniform across the product).
+    plan_id : int
+        Plan ID (uniform across the product).
+    plan_step : int
+        Plan step (uniform across the product).
 
     Returns
     -------
     xarray.Dataset
-        Processed L1A dataset for Hi Omni data.
+        Processed L1A dataset for input table-ID group.
     """
-    # lookup in LUT table.
-    table_id = unpacked_dataset["table_id"].values[0]
-    view_id = unpacked_dataset["view_id"].values[0]
-    apid = unpacked_dataset["pkt_apid"].values[0]
-    plan_id = unpacked_dataset["plan_id"].values[0]
-    plan_step = unpacked_dataset["plan_step"].values[0]
-
     logger.info(
         f"Processing species with - APID: {apid} / 0x{apid:X}, View ID: {view_id}, "
         f"Table ID: {table_id}, Plan ID: {plan_id}, Plan Step: {plan_step}"
     )
     # ========== Get LUT Data ===========
-    # Read information from LUT
-    sci_lut_data = read_sci_lut(lut_file, table_id)
-
-    view_tab_info = get_view_tab_info(sci_lut_data, view_id, apid)
-    view_tab_obj = ViewTabInfo(
-        apid=apid,
-        view_id=view_id,
-        sensor=view_tab_info["sensor"],
-        three_d_collapsed=view_tab_info["3d_collapse"],
-        collapse_table=view_tab_info["collapse_table"],
-        compression=view_tab_info["compression"],
-    )
+    sci_lut_data, view_tab_obj = get_view_tab_obj(lut_file, table_id, view_id, apid)
 
     if view_tab_obj.sensor != 1:
         raise ValueError("Unsupported sensor ID for Hi processing.")
@@ -82,8 +80,8 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
 
     compression_algorithm = CoDICECompression(view_tab_obj.compression)
     # Decompress data using byte count information from decommed data
-    binary_data_list = unpacked_dataset["data"].values
-    byte_count_list = unpacked_dataset["byte_count"].values
+    binary_data_list = group_ds["data"].values
+    byte_count_list = group_ds["byte_count"].values
 
     # The decompressed data in the shape of (epoch, n). Then reshape later.
     decompressed_data = [
@@ -103,9 +101,9 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
     # ========= Get Epoch Time Data ===========
     # Epoch center time and delta
     epoch_center, deltas = get_codice_epoch_time(
-        unpacked_dataset["acq_start_seconds"].values,
-        unpacked_dataset["acq_start_subseconds"].values,
-        unpacked_dataset["spin_period"].values,
+        group_ds["acq_start_seconds"].values,
+        group_ds["acq_start_subseconds"].values,
+        group_ds["spin_period"].values,
         view_tab_obj,
     )
 
@@ -153,12 +151,12 @@ def l1a_hi_counters_singles(unpacked_dataset: xr.Dataset, lut_file: Path) -> xr.
 
     # Add first few unique variables
     l1a_dataset["spin_period"] = xr.DataArray(
-        unpacked_dataset["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
+        group_ds["spin_period"].values * constants.SPIN_PERIOD_CONVERSION,
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("spin_period"),
     )
     l1a_dataset["data_quality"] = xr.DataArray(
-        unpacked_dataset["suspect"].values,
+        group_ds["suspect"].values,
         dims=("epoch",),
         attrs=cdf_attrs.get_variable_attributes("data_quality"),
     )

@@ -6,18 +6,22 @@ Poetry Environment
 :ref:`Poetry <poetry-link>` is used for dependency management within this project. To update dependencies, you can either update
 ``pyproject.toml`` manually, or use ``poetry add <dependency>``.
 
-If you do add dependencies, please make sure you define the version numbers mindfully. The best way to do this is to use
-`caret notation <https://python-poetry.org/docs/dependency-specification/#caret-requirements>`_ to allow for minor
-version updates. For example, if you have tested the code using numpy version ``1.24.2``, the best way to specify the
-dependency is to allow for updates to the right most version number:
+If you do add dependencies, please make sure you define the version numbers mindfully. The required syntax depends on
+which section of ``pyproject.toml`` you are editing:
 
-::
+* **``[project] dependencies``** (main runtime deps) and **``[project.optional-dependencies]``** (extras) use
+  `PEP 508 <https://peps.python.org/pep-0508/>`_ specifiers. For example, if you have tested with numpy
+  ``1.24.2`` and want to allow patch and minor updates up to the next major version::
 
-    numpy = "^1.24"
+      "numpy>=1.24,<2"
 
-This will allow for patches for security reasons without upgrading to ``1.25`` or beyond. Use your best judgement for
-when packages can upgrade automatically, but try and avoid specifying only one specific version unless it is absolutely
-required.
+* **``[tool.poetry.group.*]``** sections (dev/test groups used only by Poetry) may continue to use
+  `Poetry caret notation <https://python-poetry.org/docs/dependency-specification/#caret-requirements>`_::
+
+      numpy = "^1.24"
+
+  Both forms allow updates to the rightmost non-zero version component. Use your best judgement for when packages can
+  upgrade automatically, but try to avoid pinning a single exact version unless it is absolutely required.
 
 The ``poetry.lock`` file contains the existing dependencies for the project. These are the dependencies that you should
 install to ensure you're getting the accepted versions for every package. If the ``poetry.lock`` file is not up-to-date,

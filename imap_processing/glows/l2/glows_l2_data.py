@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
 from imap_processing.glows.utils.constants import GlowsConstants
+from imap_processing.quality_flags import GLOWSL1bFlags
 from imap_processing.spice.geometry import (
     SpiceFrame,
     frame_transform_az_el,
@@ -325,7 +326,7 @@ class HistogramL2:
 
     number_of_good_l1b_inputs: int
     total_l1b_inputs: int
-    identifier: int  # TODO: Should be the official pointing number
+    identifier: int
     start_time: np.double
     end_time: np.double
     daily_lightcurve: DailyLightcurve
@@ -385,15 +386,24 @@ class HistogramL2:
         good_data = l1b_dataset.isel(
             epoch=self.return_good_times(flags_da, active_flags)
         )
+        # Exclude histograms where all bins have is_excluded_by_instr_team set.
+        # Per cbk implementation: GLOWS team marks such histograms as entirely bad;
+        # they are dropped here and do not contribute to the L2 histogram_flag_array.
+        excl_flag_val = GLOWSL1bFlags.IS_EXCLUDED_BY_INSTR_TEAM.value
+        excl_row = good_data["histogram_flag_array"].data[:, 2, :]  # (n_epochs, n_bins)
+        not_all_excl = ~np.all(excl_row == excl_flag_val, axis=1)
+        good_data = good_data.isel(epoch=np.where(not_all_excl)[0])
+
         # TODO: bad angle filter
         # TODO: filter bad bins out. Needs to happen here while everything is still
         #       per-timestamp.
 
         self.total_l1b_inputs = len(l1b_dataset["epoch"])
         self.number_of_good_l1b_inputs = len(good_data["epoch"])
-        self.identifier = -1  # TODO: retrieve from spin table
+        repointing = l1b_dataset.attrs.get("Repointing")
+        self.identifier = int(repointing.replace("repoint", ""))
         # TODO fill this in
-        self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH))
+        self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH), dtype=np.uint16)
 
         if len(good_data["epoch"]) != 0:
             # Generate outputs that are passed in directly from L1B
@@ -442,7 +452,9 @@ class HistogramL2:
             good_data["spin_period_ground_average"].std(dim="epoch", keepdims=True).data
         )
 
-        position_angle = self.compute_position_angle()
+        position_angle = self.compute_position_angle(
+            pipeline_settings.spin_offset_correction
+        )
         self.position_angle_offset_average: np.double = np.double(position_angle)
 
         # Always zero - per algorithm doc 10.6
@@ -635,17 +647,23 @@ class HistogramL2:
 
         return flags_with_offsets
 
-    def compute_position_angle(self) -> float:
+    def compute_position_angle(self, spin_offset_correction: float = 0.0) -> float:
         """
         Compute the position angle based on the instrument mounting.
 
         This number is not expected to change significantly. It is the same for all L1B
         blocks (epoch values).
 
+        Parameters
+        ----------
+        spin_offset_correction : float
+            Constant spin angle offset [degrees] from pipeline settings, applied
+            to correct a systematic bias in observed star positions. Default: 0.0.
+
         Returns
         -------
         float
-            The GLOWS mounting position angle.
+            The GLOWS mounting position angle, including spin offset correction.
         """
         # Calculation described in algorithm doc 10.6 (Eq. 30):
         # psi_G_eff = 360 - psi_GLOWS
@@ -658,7 +676,7 @@ class HistogramL2:
         # delta_psi_G_eff is assumed to be 0 per instrument team decision (aka this
         # doesn't move from the SPICE determined mounting angle.
         glows_mounting_azimuth, _ = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
-        return (360.0 - glows_mounting_azimuth) % 360.0
+        return (360.0 - glows_mounting_azimuth + spin_offset_correction) % 360.0
 
     @staticmethod
     def get_calibration_factor(

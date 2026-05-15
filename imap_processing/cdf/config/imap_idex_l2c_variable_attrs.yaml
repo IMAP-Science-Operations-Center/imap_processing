@@ -5,33 +5,33 @@ double_fillval: &double_fillval -1.0E31
 # Base attributes for charge and mass variables
 base_charge: &base_charge
   CATDESC: " "
-  FIELDNAM: " "
   DEPEND_0: epoch
   DEPEND_1: impact_charge
   DEPEND_2: spin_phase
-  LABL_PTR_1: charge_labels
-  LABL_PTR_2: spin_phase_labels
   DISPLAY_TYPE: spectrogram
-  VAR_TYPE: data
+  FIELDNAM: " "
   FILLVAL: *int_fillval
   FORMAT: E10.3
-  VALIDMIN: -1
+  LABL_PTR_1: charge_labels
+  LABL_PTR_2: spin_phase_labels
   VALIDMAX: *int_maxval
+  VALIDMIN: -1
+  VAR_TYPE: data
 
 base_mass: &base_mass
   CATDESC: " "
-  FIELDNAM: " "
   DEPEND_0: epoch
   DEPEND_1: mass
   DEPEND_2: spin_phase
-  LABL_PTR_1: mass_labels
-  LABL_PTR_2: spin_phase_labels
   DISPLAY_TYPE: spectrogram
-  VAR_TYPE: data
+  FIELDNAM: " "
   FILLVAL: *int_fillval
   FORMAT: E10.3
-  VALIDMIN: 0.0
+  LABL_PTR_1: mass_labels
+  LABL_PTR_2: spin_phase_labels
   VALIDMAX: *int_maxval
+  VALIDMIN: 0.0
+  VAR_TYPE: data
 
 base_charge_map: &base_charge_map
   <<: *base_charge
@@ -50,105 +50,105 @@ base_mass_map: &base_mass_map
 # Label attributes
 rectangular_lon_pixel_label:
   CATDESC: Longitude pixel index label for IDEX SkyMap.
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Longitude pixel label
   FORMAT: A5
   VAR_TYPE: metadata
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 rectangular_lat_pixel_label:
   CATDESC: Latitude pixel index label for IDEX SkyMap.
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
   FIELDNAM: Latitude pixel label
   FORMAT: A5
   VAR_TYPE: metadata
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # Vars
 rectangular_lon_pixel:
   CATDESC: Longitude pixel center for IDEX SkyMap
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
   FIELDNAM: Rectangular Longitude Center
+  FILLVAL: *double_fillval
   FORMAT: F12.6
   LABLAXIS: Longitude Pixel
-  VAR_TYPE: support_data
   UNITS: degrees
-  VALIDMIN: 0
   VALIDMAX: 360
-  FILLVAL: *double_fillval
-  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 rectangular_lat_pixel:
   CATDESC: Latitude pixel center for IDEX SkyMap
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
   FIELDNAM: Rectangular Latitude Center
+  FILLVAL: *double_fillval
   FORMAT: F12.6
   LABLAXIS: Latitude Pixel
-  VAR_TYPE: support_data
   UNITS: degrees
-  VALIDMIN: -90
   VALIDMAX: 90
-  FILLVAL: *double_fillval
-  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+  VALIDMIN: -90
+  VAR_TYPE: support_data
 
 rate_by_charge_map:
   <<: *base_charge_map
   CATDESC: Count rate per day by impact charge, longitude, and latitude.
-  FIELDNAM: Rate by Charge Map
-  UNITS: day^-1
-  FILLVAL: *double_fillval
   DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+  FIELDNAM: Rate by Charge Map
+  FILLVAL: *double_fillval
+  UNITS: day^-1
 
 counts_by_charge_map:
   <<: *base_charge_map
   CATDESC: Count by impact charge, longitude, and latitude.
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
   FIELDNAM: Counts by Charge Map
   FORMAT: I8
   UNITS: counts
-  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
 counts_by_mass_map:
   <<: *base_mass_map
   CATDESC: Count by mass, longitude, and latitude.
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
   FIELDNAM: Counts by Mass Map
   FORMAT: I8
   UNITS: counts
-  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
 rate_by_mass_map:
   <<: *base_mass_map
   CATDESC: Count rate per day by mass, longitude, and latitude.
-  FIELDNAM: Rate by Mass Map
-  UNITS: day^-1
-  FILLVAL: *double_fillval
   DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+  FIELDNAM: Rate by Mass Map
+  FILLVAL: *double_fillval
+  UNITS: day^-1
 
 
 on_off_times:
     CATDESC: Science acquisition on/off event times.
-    FIELDNAM: On/Off Times
-    LABLAXIS: On/Off Times
-    FILLVAL: -9223372036854775808
-    FORMAT: " "
-    VALIDMIN: 315576066184000000
-    VALIDMAX: 3155716869184000000
-    UNITS: ns
-    VAR_TYPE: support_data
-    SCALETYP: linear
-    MONOTON: INCREASE
-    TIME_BASE: J2000
-    TIME_SCALE: Terrestrial Time
-    REFERENCE_POSITION: Rotating Earth Geoid
-    RESOLUTION: ' '
     CDF_DATA_TYPE: "CDF_TIME_TT2000"
     DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+    FIELDNAM: On/Off Times
+    FILLVAL: -9223372036854775808
+    FORMAT: " "
+    LABLAXIS: On/Off Times
+    MONOTON: INCREASE
+    REFERENCE_POSITION: Rotating Earth Geoid
+    RESOLUTION: ' '
+    SCALETYP: linear
+    TIME_BASE: J2000
+    TIME_SCALE: Terrestrial Time
+    UNITS: ns
+    VALIDMAX: 3155716869184000000
+    VALIDMIN: 315576066184000000
+    VAR_TYPE: support_data
 
 on_off_events:
   CATDESC: Science acquisition on/off event values (1 = on, 0 = off).
-  FIELDNAM: On/Off Events
-  LABLAXIS: On/Off Events
   DEPEND_0: on_off_times
-  VAR_TYPE: support_data
-  SCALETYP: linear
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  FIELDNAM: On/Off Events
   FILLVAL: 255
   FORMAT: I1
-  VALIDMIN: 0
-  VALIDMAX: 1
+  LABLAXIS: On/Off Events
+  SCALETYP: linear
   UNITS: " "
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: support_data

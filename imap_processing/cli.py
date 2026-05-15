@@ -64,6 +64,7 @@ from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
+from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -86,6 +87,10 @@ from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
+from imap_processing.utils import (
+    check_epochs_within_day_offsets,
+    filter_day_boundary_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -617,6 +622,8 @@ class Codice(ProcessInstrument):
         if self.data_level == "l1a":
             # process data
             datasets = codice_l1a.process_l1a(dependencies)
+            for i, ds in enumerate(datasets):
+                datasets[i] = filter_day_boundary_data(ds, self.start_date)
 
         if self.data_level == "l1b":
             science_files = dependencies.get_file_paths(source="codice")
@@ -1078,17 +1085,24 @@ class Idex(ProcessInstrument):
                     f"Unexpected dependencies found for IDEX L1B {self.descriptor}:"
                     f"{dependency_list}. Expected only {n_expected_deps} dependencies."
                 )
-            # get CDF file
             science_files = dependencies.get_file_paths(source="idex")
-            # Load all the science files. There should only be one, but in the case of
-            # multiple files, we want to make sure to load them all and select the one
-            # with the latest time.
-            science_datasets = [load_cdf(f) for f in science_files]
-            if not science_datasets:
+            if not science_files:
                 raise ValueError("No science files found for IDEX L1B processing.")
-            latest_file = max(science_datasets, key=lambda ds: ds["epoch"].data[0])
+            # IDEX l1b requires spice kernels and since there may be events that occur
+            # before the start date of the job, there is a buffer added to the upstream
+            # dependency query. This means that there may be multiple l1a science files
+            # that are returned but we only want to process the file with the same
+            # start date.
+            l1a_file = [f for f in science_files if self.start_date in f.name]
+            if not l1a_file:
+                raise ValueError(
+                    f"No L1A science file found for IDEX L1B processing with start "
+                    f"date {self.start_date}. Out of science files: {science_files}"
+                )
+            l1a_file = l1a_file[0]
+            logger.info(f"Processing IDEX l1b using l1a file: {l1a_file.name}")
             # process data
-            datasets = [idex_l1b(latest_file, self.descriptor)]
+            datasets = [idex_l1b(load_cdf(l1a_file), self.descriptor)]
         elif self.data_level == "l2a":
             if len(dependency_list) != 3:
                 raise ValueError(
@@ -1125,6 +1139,53 @@ class Idex(ProcessInstrument):
 
 class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
+
+    def pre_processing(self) -> ProcessingInputCollection:
+        """
+        Complete pre-processing.
+
+        Extends the base pre-processing by filtering Lo PSET science inputs to
+        only those whose ``pivot_angle`` is within
+        ``LoConstants.PSET_PIVOT_ANGLE_TOLERANCE`` of
+        ``LoConstants.PSET_PIVOT_ANGLE``. PSET files that fall outside this
+        range are dropped before processing begins.
+
+        Returns
+        -------
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+        """
+        datasets = super().pre_processing()
+        new_datasets = ProcessingInputCollection()
+
+        for processing_input in datasets.get_processing_inputs():
+            if (
+                processing_input.source == "lo"
+                and processing_input.descriptor == "pset"
+            ):
+                valid_filenames = []
+                for imap_file_path in processing_input.imap_file_paths:
+                    pset = load_cdf(imap_file_path.construct_path())
+                    if "pivot_angle" in pset:
+                        if (
+                            abs(
+                                pset["pivot_angle"].item()
+                                - LoConstants.PSET_PIVOT_ANGLE
+                            )
+                            < LoConstants.PSET_PIVOT_ANGLE_TOLERANCE
+                        ):
+                            valid_filenames.append(str(imap_file_path.filename))
+                        else:
+                            logger.info(
+                                f"Dropping pset {imap_file_path.filename} because "
+                                f"pivot angle is not in range."
+                            )
+                if valid_filenames:
+                    new_datasets.add(type(processing_input)(*valid_filenames))
+            else:
+                new_datasets.add(processing_input)
+
+        return new_datasets
 
     def do_processing(
         self, dependencies: ProcessingInputCollection
@@ -1186,6 +1247,10 @@ class Lo(ProcessInstrument):
             anc_dependencies = dependencies.get_file_paths(data_type="ancillary")
 
             # Load all pset files into datasets
+            if not science_files:
+                logger.info("No valid psets found for L2 processing.")
+                return datasets
+
             psets = [load_cdf(file) for file in science_files]
             data_dict[psets[0].attrs["Logical_source"]] = psets
             datasets = lo_l2.lo_l2(data_dict, anc_dependencies, self.descriptor)
@@ -1347,6 +1412,10 @@ class Mag(ProcessInstrument):
                     f"Timestamps for output file {ds.attrs['Logical_source']} are not "
                     f"monotonically increasing."
                 )
+
+        # Will raise an error if any timestamps are outside the current day
+        check_epochs_within_day_offsets(datasets, current_day)
+
         return datasets
 
     def post_processing(
@@ -1509,6 +1578,8 @@ class Swapi(ProcessInstrument):
 
             # process science or housekeeping data
             datasets = swapi_l1(dependencies, descriptor=self.descriptor)
+            for i, ds in enumerate(datasets):
+                datasets[i] = filter_day_boundary_data(ds, self.start_date)
         elif self.data_level == "l2":
             if len(dependency_list) != 3:
                 raise ValueError(
@@ -1565,6 +1636,8 @@ class Swe(ProcessInstrument):
                 )
             science_files = dependencies.get_file_paths(source="swe")
             datasets = swe_l1a(str(science_files[0]))
+            for i, ds in enumerate(datasets):
+                datasets[i] = filter_day_boundary_data(ds, self.start_date)
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
 

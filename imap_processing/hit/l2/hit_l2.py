@@ -315,7 +315,7 @@ def calculate_intensities_for_a_species(
     dynamic_threshold_states = updated_ds["dynamic_threshold_state"].values
     unique_states = np.unique(dynamic_threshold_states)
     species_name = (
-        species_variable.split("_")[0]
+        species_variable.split("_", maxsplit=1)[0]
         if "_uncert_" in species_variable
         else species_variable
     )

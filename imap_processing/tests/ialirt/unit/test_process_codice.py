@@ -26,6 +26,7 @@ from imap_processing.codice.codice_l2 import (
     process_lo_species_intensity,
 )
 from imap_processing.codice.decompress import decompress
+from imap_processing.codice.utils import process_by_table_id
 from imap_processing.ialirt.l0.process_codice import (
     COD_HI_COUNTER,
     COD_LO_COUNTER,
@@ -558,7 +559,7 @@ def test_group_and_decompress_ialirt_cod_lo(
         np.testing.assert_array_equal(decompressed_values, test_decom_data_array)
 
     dataset = create_xarray_dataset(science_values, metadata_values, "lo")
-    result = l1a_lo_species(dataset, l1a_lut_path)
+    result = process_by_table_id(dataset, l1a_lut_path, l1a_lo_species)
 
     expected_species = [
         "heplusplus",
