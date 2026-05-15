@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
 from imap_processing.glows.utils.constants import GlowsConstants
+from imap_processing.quality_flags import GLOWSL1bFlags
 from imap_processing.spice.geometry import (
     SpiceFrame,
     frame_transform_az_el,
@@ -385,6 +386,14 @@ class HistogramL2:
         good_data = l1b_dataset.isel(
             epoch=self.return_good_times(flags_da, active_flags)
         )
+        # Exclude histograms where all bins have is_excluded_by_instr_team set.
+        # Per cbk implementation: GLOWS team marks such histograms as entirely bad;
+        # they are dropped here and do not contribute to the L2 histogram_flag_array.
+        excl_flag_val = GLOWSL1bFlags.IS_EXCLUDED_BY_INSTR_TEAM.value
+        excl_row = good_data["histogram_flag_array"].data[:, 2, :]  # (n_epochs, n_bins)
+        not_all_excl = ~np.all(excl_row == excl_flag_val, axis=1)
+        good_data = good_data.isel(epoch=np.where(not_all_excl)[0])
+
         # TODO: bad angle filter
         # TODO: filter bad bins out. Needs to happen here while everything is still
         #       per-timestamp.
