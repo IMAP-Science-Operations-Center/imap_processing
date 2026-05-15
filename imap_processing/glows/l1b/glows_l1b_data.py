@@ -953,18 +953,19 @@ class HistogramL1B:
 
         # Calculate spin axis orientation
 
-        spin_axis_all_times = geometry.cartesian_to_latitudinal(
+        spin_axis_all_times = geometry.cartesian_to_spherical(
             geometry.frame_transform(
                 time_range,
                 np.array([0, 0, 1]),
                 SpiceFrame.IMAP_SPACECRAFT,
                 SpiceFrame.ECLIPJ2000,
             ),
-            degrees=False,
         )
         # Calculate circular statistics for longitude (wraps around)
-        lon_mean = circmean(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
-        lon_std = circstd(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
+        # Convert to radians for use with circular statistics methods
+        spin_axis_all_times = np.radians(spin_axis_all_times)
+        lon_mean = circmean(spin_axis_all_times[..., 1], low=0, high=2 * np.pi)
+        lon_std = circstd(spin_axis_all_times[..., 1], low=0, high=2 * np.pi)
         lat_mean = circmean(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
         lat_std = circstd(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
         # Convert circular statistics to degrees and store

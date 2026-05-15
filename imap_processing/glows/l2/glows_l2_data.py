@@ -5,6 +5,7 @@ from dataclasses import InitVar, dataclass, field
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
+from scipy.stats import circmean, circstd
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
@@ -470,16 +471,21 @@ class HistogramL2:
             .std(dim="epoch")
             .data[np.newaxis, :]
         )
-        self.spin_axis_orientation_average = (
-            good_data["spin_axis_orientation_average"]
-            .mean(dim="epoch")
-            .data[np.newaxis, :]
-        )
-        self.spin_axis_orientation_std_dev = (
-            good_data["spin_axis_orientation_average"]
-            .std(dim="epoch")
-            .data[np.newaxis, :]
-        )
+        spin_axis_data = good_data[
+            "spin_axis_orientation_average"
+        ].data  # (n_epochs, 2)
+        if spin_axis_data.shape[0] > 0:
+            # Use circular statistics for longitude since it will be near the 0->360
+            # boundary. Latitude will never be near the pole, so standard mean and
+            # std functions are appropriate
+            lon_avg = circmean(np.radians(spin_axis_data[:, 0]), low=0, high=2 * np.pi)
+            lon_std = circstd(np.radians(spin_axis_data[:, 0]), low=0, high=360)
+            lat_avg = float(np.mean(spin_axis_data[:, 1]))
+            lat_std = float(np.std(spin_axis_data[:, 1]))
+        else:
+            lon_avg = lon_std = lat_avg = lat_std = np.nan
+        self.spin_axis_orientation_average = np.array([[np.degrees(lon_avg), lat_avg]])
+        self.spin_axis_orientation_std_dev = np.array([[np.degrees(lon_std), lat_std]])
 
         # Select calibration factor corresponding to the mid-epoch in the L1B data.
         if len(good_data["epoch"].data) != 0:
