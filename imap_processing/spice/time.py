@@ -445,3 +445,25 @@ def epoch_to_fractional_doy(epoch: int | Iterable[int]) -> float | np.ndarray:
     vectorized_et_to_frac_doy = _vectorize(single_et_to_fractional_doy, otypes=[float])
 
     return vectorized_et_to_frac_doy(et)
+
+
+def str_yyyymmdd_to_ttj2000ns(date_str: str) -> np.int64:
+    """
+    Convert a YYYYMMDD date string to TTJ2000 nanoseconds.
+
+    Parameters
+    ----------
+    date_str : str
+        The date string in YYYYMMDD format.
+
+    Returns
+    -------
+    int
+        The corresponding time in TTJ2000 nanoseconds.
+    """
+    if len(date_str) != 8:
+        raise ValueError(
+            f"Date {date_str} must be 8 characters long in yyyymmdd format."
+        )
+    date_string = datetime.strptime(date_str, "%Y%m%d").strftime("%Y-%m-%dT00:00:00")
+    return np.int64(et_to_ttj2000ns(str_to_et(date_string)))

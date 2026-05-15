@@ -300,6 +300,48 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             "target_fit_parameter_labels", check_schema=False
         ),
     )
+
+    # We're inserting a NaN block here for the 2026 June release while the
+    # IDEX science team works through validating the fitting routines and
+    # derived values.
+
+    # Ion Grid Fitting:
+    l2a_dataset["ion_grid_dust_mass_estimate"].data = np.full(
+        l2a_dataset["ion_grid_dust_mass_estimate"].shape, np.nan
+    )
+
+    l2a_dataset["ion_grid_velocity_estimate"].data = np.full(
+        l2a_dataset["ion_grid_velocity_estimate"].shape, np.nan
+    )
+
+    # TOF / Mass-spec Fitting
+    l2a_dataset["tof_peak_area_under_fit"].data = np.full(
+        l2a_dataset["tof_peak_area_under_fit"].shape, np.nan
+    )
+
+    l2a_dataset["tof_peak_chi_square"].data = np.full(
+        l2a_dataset["tof_peak_chi_square"].shape, np.nan
+    )
+
+    l2a_dataset["tof_peak_fit_parameters"].data = np.full(
+        l2a_dataset["tof_peak_fit_parameters"].shape, np.nan
+    )
+
+    l2a_dataset["tof_peak_kappa"].data = np.full(
+        l2a_dataset["tof_peak_kappa"].shape, np.nan
+    )
+
+    l2a_dataset["tof_peak_reduced_chi_square"].data = np.full(
+        l2a_dataset["tof_peak_reduced_chi_square"].shape, np.nan
+    )
+
+    l2a_dataset["tof_snr"].data = np.full(l2a_dataset["tof_snr"].shape, np.nan)
+
+    l2a_dataset["mass"].data = np.full(l2a_dataset["mass"].shape, np.nan)
+
+    l2a_dataset["mass_scale"].data = np.full(l2a_dataset["mass_scale"].shape, np.nan)
+    # End NaN block
+
     logger.info("IDEX L2A science data processing completed.")
     l2a_dataset.attrs.update(idex_attrs.get_global_attributes("imap_idex_l2a_sci"))
     return l2a_dataset
@@ -334,21 +376,8 @@ def calculate_velocity_and_mass(
     mass_est : float
         Estimated mass.
     """
-    log_a_t: float = float(t_rise_params[0])
-    try:
-        root = root_scalar(
-            lambda lv: (
-                log_smooth_powerlaw(lv, log_a_t, t_rise_params[1:]) - np.log10(t_rise)
-            ),
-            bracket=[-1, 2],
-        )
-        v_est = 10**root.root
-    except Exception:
-        logger.error(
-            "Unable to calculate velocity and mass estimate. "
-            "The root finding failed for power law function. "
-            "Returning nans for the estimate."
-        )
+    v_est = invert_rise_time_to_velocity(t_rise, t_rise_params)
+    if not np.isfinite(v_est):
         return np.nan, np.nan
 
     log_a_y: float = float(yield_params[0])
@@ -359,20 +388,69 @@ def calculate_velocity_and_mass(
     return v_est, mass_est
 
 
+def invert_rise_time_to_velocity(t_rise: float, t_rise_params: np.ndarray) -> float:
+    """
+    Invert the rise-time calibration to estimate impact velocity.
+
+    The rise-time calibration is defined in the forward direction as
+    rise_time = f(velocity). This helper numerically inverts that relation to recover
+    velocity from a fitted rise time.
+
+    Parameters
+    ----------
+    t_rise : float
+        Fitted target rise time in microseconds.
+    t_rise_params : np.ndarray
+        Calibration parameters for the forward rise-time curve
+        [A, a1, a2, a3, vb, vc, k, m].
+
+    Returns
+    -------
+    float
+        Estimated impact velocity in km/s, or NaN if the inversion fails.
+    """
+    if not np.isfinite(t_rise) or t_rise <= 0.0:
+        logger.error(
+            "Unable to calculate velocity estimate from rise time %.6g. "
+            "Rise time must be finite and positive. Returning nan.",
+            t_rise,
+        )
+        return np.nan
+
+    log_a_t: float = float(t_rise_params[0])
+    target_log_t_rise = np.log10(t_rise)
+    try:
+        root = root_scalar(
+            lambda log_v: (
+                log_smooth_powerlaw(log_v, log_a_t, t_rise_params[1:])
+                - target_log_t_rise
+            ),
+            bracket=[-1, 2],
+            method="brentq",
+        )
+        return 10**root.root
+    except Exception:
+        logger.error(
+            "Unable to calculate velocity estimate from rise time %.6g. "
+            "The rise-time calibration inversion failed. Returning nan.",
+            t_rise,
+        )
+        return np.nan
+
+
 def log_smooth_powerlaw(log_v: float, log_a: float, params: np.ndarray) -> float:
     """
     Define a smoothly transitioning power law used by the IDEX calibration curves.
 
     This helper is used in two ways:
-    - rise-time calibration: log10(rise_time [us]) to log10(velocity [km/s])
+    - rise-time calibration: log10(velocity [km/s]) to log10(rise_time [us])
     - yield calibration: log10(velocity [km/s]) to log10(charge_yield [C/kg])
 
     Parameters
     ----------
     log_v : float
         The log10 input to the calibration curve.
-        This is either log10(rise_time [us]) for the rise-time case or
-        Log10(velocity [km/s]) for the yield case.
+        This is log10(velocity [km/s]) for both the rise-time and yield cases.
     log_a : float
         Log10 of the calibration scale factor A.
     params : np.ndarray
@@ -383,7 +461,7 @@ def log_smooth_powerlaw(log_v: float, log_a: float, params: np.ndarray) -> float
     -------
     float
         The calibrated log10 output.
-        This is either log10(velocity [km/s]) for the rise-time case or
+        This is either log10(rise_time [us]) for the rise-time case or
         log10(charge_yield [C/kg]) for the yield case.
     """
     # Unpack the rest of the calibration parameters

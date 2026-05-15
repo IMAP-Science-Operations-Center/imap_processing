@@ -214,5 +214,5 @@ def ancillary_files():
         "l2a-calibration-curve-yield-params": path
         / "imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv",
         "l2a-calibration-curve-t-rise": path
-        / "imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv",
+        / "imap_idex_l2a-calibration-curve-t-rise_20250101_v002.csv",
     }

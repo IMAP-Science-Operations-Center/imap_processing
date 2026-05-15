@@ -137,7 +137,7 @@ checks = ["all", #report on all checks, except the following
     "SA01", # Ignore See Also section not found
     "ES01", # Ignore No extended summary found
     "RT02" ] # Ignore The first line of the Returns section
-exclude = ['__init__' ] # don't report on objects that match any of these regex
+exclude = ['__init__', '_version'] # don't report on objects that match any of these regex
 override_SS05 = [  # override SS05 to allow docstrings starting with these words
     '^Process ',
 ]

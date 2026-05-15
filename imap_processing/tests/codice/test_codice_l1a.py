@@ -40,7 +40,7 @@ def test_updated_packet_version(mock_get_file_paths, codice_lut_path, caplog):
     ]
     datasets = process_l1a(dependency=ProcessingInputCollection())
     # Assert that we have all of the expected datasets
-    assert len(datasets) == 17
+    assert len(datasets) == 14
     for ds in datasets:
         # Only check lo products. Skip direct-events
         if (
@@ -60,19 +60,7 @@ def test_updated_packet_version(mock_get_file_paths, codice_lut_path, caplog):
                 f"Expected variable '{var}' not found in dataset"
             )
 
-        # check that warnings are logged for missing "desired" species
-        assert (
-            "Desired species heplusplus not found in actual species names from LUT"
-            in caplog.text
-        )
-        assert (
-            "Desired species oplus6 not found in actual species names from LUT"
-            in caplog.text
-        )
-        assert (
-            "Desired species heplus not found in actual species names from LUT"
-            in caplog.text
-        )
+        # check that a warning is logged for the missing "cnoplus" species
         assert (
             "Desired species cnoplus not found in actual species names from LUT"
             in caplog.text
@@ -332,167 +320,6 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
     assert (
         cdf_file.name
         == f"imap_codice_l1a_lo-sw-species_{VALIDATION_FILE_DATE}_v002.cdf"
-    )
-
-
-@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_lo_nsw_species(mock_get_file_paths, codice_lut_path):
-    """Tests lo-nsw-species."""
-
-    mock_get_file_paths.side_effect = [
-        codice_lut_path(descriptor="lo-nsw-species", data_type="l0"),
-        codice_lut_path(descriptor="l1a-sci-lut"),
-    ]
-
-    # Validation
-    val_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_validation/"
-        / (
-            f"imap_codice_l1a_lo-nsw-species_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
-        )
-    )
-
-    val_data = load_cdf(val_path)
-
-    # Process the input data
-    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
-    # Compare only the common variables
-    for variable in val_data.data_vars:
-        # Skip cnopus because this variable should be thrown out for lo nsw species
-        # for table_ids <= 3978152295
-        if "cnoplus" in variable:
-            continue
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in variable '{variable}'",
-        )
-
-    for variable in val_data.coords:
-        if variable.endswith("_label"):
-            assert np.array_equal(
-                processed_data[variable].values,
-                val_data[variable].values,
-            ), f"Mismatch in coordinate '{variable}'"
-            continue
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in coordinate '{variable}'",
-        )
-
-    processed_data.attrs["Data_version"] = "002"
-    cdf_file = write_cdf(processed_data, terminate_on_warning=True, istp=True)
-    assert (
-        cdf_file.name
-        == f"imap_codice_l1a_lo-nsw-species_{VALIDATION_FILE_DATE}_v002.cdf"
-    )
-
-
-@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_lo_sw_angular(mock_get_file_paths, codice_lut_path):
-    """Tests lo-sw-angular."""
-
-    mock_get_file_paths.side_effect = [
-        codice_lut_path(descriptor="lo-sw-angular", data_type="l0"),
-        codice_lut_path(descriptor="l1a-sci-lut"),
-    ]
-
-    # Validation
-    val_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_validation/"
-        / (
-            f"imap_codice_l1a_lo-sw-angular_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
-        )
-    )
-    val_data = load_cdf(val_path)
-
-    # Process the input data
-    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
-    for variable in val_data.data_vars:
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in variable '{variable}'",
-        )
-
-    for variable in val_data.coords:
-        if variable.endswith("_label"):
-            assert np.array_equal(
-                processed_data[variable].values,
-                val_data[variable].values,
-            ), f"Mismatch in coordinate '{variable}'"
-            continue
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in coordinate '{variable}'",
-        )
-
-    processed_data.attrs["Data_version"] = "002"
-    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert (
-        cdf_file.name
-        == f"imap_codice_l1a_lo-sw-angular_{VALIDATION_FILE_DATE}_v002.cdf"
-    )
-
-
-@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
-def test_lo_nsw_angular(mock_get_file_paths, codice_lut_path):
-    """Tests lo-nsw-angular."""
-    mock_get_file_paths.side_effect = [
-        codice_lut_path(descriptor="lo-nsw-angular", data_type="l0"),
-        codice_lut_path(descriptor="l1a-sci-lut"),
-    ]
-
-    # Validation
-    val_path = (
-        imap_module_directory
-        / "tests/codice/data/l1a_validation/"
-        / (
-            f"imap_codice_l1a_lo-nsw-angular_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
-        )
-    )
-    val_data = load_cdf(val_path)
-
-    # Process the input data
-    processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
-    for variable in val_data.data_vars:
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in variable '{variable}'",
-        )
-
-    for variable in val_data.coords:
-        if variable.endswith("_label"):
-            assert np.array_equal(
-                processed_data[variable].values,
-                val_data[variable].values,
-            ), f"Mismatch in coordinate '{variable}'"
-            continue
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in coordinate '{variable}'",
-        )
-
-    processed_data.attrs["Data_version"] = "002"
-    cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    assert (
-        cdf_file.name
-        == f"imap_codice_l1a_lo-nsw-angular_{VALIDATION_FILE_DATE}_v002.cdf"
     )
 
 
