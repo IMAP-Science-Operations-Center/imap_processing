@@ -366,6 +366,38 @@ def idex_l2b(
 
     l2c_dataset.attrs.update(map_attrs)
 
+    # We're inserting a NaN block here for the 2026 June release while the
+    # IDEX science team works through validating the fitting routines and
+    # derived values.
+
+    # L2B Block
+    l2b_dataset["counts_by_mass"].data = np.full(
+        l2b_dataset["counts_by_mass"].shape, np.nan
+    )
+    l2b_dataset["counts_by_charge"].data = np.full(
+        l2b_dataset["counts_by_charge"].shape, np.nan
+    )
+    l2b_dataset["rate_by_mass"].data = np.full(
+        l2b_dataset["rate_by_mass"].shape, np.nan
+    )
+    l2b_dataset["rate_by_charge"].data = np.full(
+        l2b_dataset["rate_by_charge"].shape, np.nan
+    )
+
+    # L2C Block
+    l2c_dataset["counts_by_mass_map"].data = np.full(
+        l2c_dataset["counts_by_mass_map"].shape, np.nan
+    )
+    l2c_dataset["counts_by_charge_map"].data = np.full(
+        l2c_dataset["counts_by_charge_map"].shape, np.nan
+    )
+    l2c_dataset["rate_by_mass_map"].data = np.full(
+        l2c_dataset["rate_by_mass_map"].shape, np.nan
+    )
+    l2c_dataset["rate_by_charge_map"].data = np.full(
+        l2c_dataset["rate_by_charge_map"].shape, np.nan
+    )
+
     logger.info("IDEX L2B and L2C science data processing completed.")
     return [l2b_dataset, l2c_dataset]
 

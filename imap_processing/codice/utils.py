@@ -6,11 +6,13 @@ other CoDICE processing modules.
 """
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
 
 import numpy as np
+import xarray as xr
 
 from imap_processing.codice import constants
 
@@ -153,6 +155,98 @@ def get_view_tab_info(json_data: dict, view_id: int, apid: int) -> dict:
     # 'compression':0}
     view_tab = json_data.get("view_tab").get(f"({view_id}, {apid_hex})")
     return view_tab
+
+
+def get_view_tab_obj(
+    lut_file: Path, table_id: str, view_id: int, apid: int
+) -> tuple[dict, "ViewTabInfo"]:
+    """
+    Read the SCI-LUT and build a ViewTabInfo for the given table ID.
+
+    Parameters
+    ----------
+    lut_file : pathlib.Path
+        Path to the SCI-LUT JSON file.
+    table_id : str
+        Table identifier to extract from the JSON.
+    view_id : int
+        The view ID from the packet.
+    apid : int
+        The APID from the packet.
+
+    Returns
+    -------
+    tuple[dict, ViewTabInfo]
+        The SCI-LUT data dict and a populated ViewTabInfo for the given table ID.
+    """
+    sci_lut_data = read_sci_lut(lut_file, table_id)
+    view_tab_info = get_view_tab_info(sci_lut_data, view_id, apid)
+    view_tab_obj = ViewTabInfo(
+        apid=apid,
+        view_id=view_id,
+        sensor=view_tab_info["sensor"],
+        three_d_collapsed=view_tab_info["3d_collapse"],
+        collapse_table=view_tab_info["collapse_table"],
+        compression=view_tab_info["compression"],
+    )
+    return sci_lut_data, view_tab_obj
+
+
+def process_by_table_id(
+    unpacked_dataset: xr.Dataset,
+    lut_file: Path,
+    process_fn: Callable[..., xr.Dataset],
+) -> xr.Dataset:
+    """
+    Split dataset by unique table_id values, process each group, and recombine.
+
+    This is the shared wrapper logic used by all non-DE/NHK L1A processing
+    functions. It extracts the fields that are uniform across a packet stream
+    (``view_id``, ``apid``, ``plan_id``, ``plan_step``), iterates over every
+    unique ``table_id`` found in the dataset, filters to that group via
+    ``isel``, calls *process_fn* for each group, and finally concatenates the
+    results sorted by epoch.
+
+    Parameters
+    ----------
+    unpacked_dataset : xarray.Dataset
+        Full unpacked dataset from the L0 packet file.
+    lut_file : pathlib.Path
+        Path to the SCI-LUT JSON file passed through to *process_fn*.
+    process_fn : Callable
+        The private ``_process_xxx`` function to call for each table_id group.
+        It must accept the signature
+        ``(group_ds, lut_file, table_id, view_id, apid, plan_id, plan_step)``
+        and return an ``xr.Dataset``.
+
+    Returns
+    -------
+    xarray.Dataset
+        Combined L1A dataset sorted by epoch.
+    """
+    view_id = unpacked_dataset["view_id"].values[0]
+    apid = unpacked_dataset["pkt_apid"].values[0]
+    plan_id = unpacked_dataset["plan_id"].values[0]
+    plan_step = unpacked_dataset["plan_step"].values[0]
+
+    unique_table_ids = np.unique(unpacked_dataset["table_id"].values)
+    processed = [
+        process_fn(
+            unpacked_dataset.isel(
+                epoch=unpacked_dataset["table_id"].values == table_id
+            ),
+            lut_file,
+            table_id,
+            view_id,
+            apid,
+            plan_id,
+            plan_step,
+        )
+        for table_id in unique_table_ids
+    ]
+    if len(processed) == 1:
+        return processed[0]
+    return xr.concat(processed, dim="epoch").sortby("epoch")
 
 
 def get_collapse_pattern_shape(
@@ -384,16 +478,6 @@ def calculate_acq_time_per_step(
     np.ndarray
         Array of acquisition times per step of shape (num_esa_steps,).
     """
-    # TODO: Handle time-varying num_steps_data length
-    #   The num_steps_data length can change over time (e.g., 6 → 3 steps) and is not
-    #   constant. E.g. at a day where the LUT changes we need to handle that. Update the
-    #   computation to:
-    #   Use the actual length of num_steps_data at each point in time instead of
-    #   assuming a constant value
-    #   - Make the calculation time-varying with epoch dependency
-    #   - Ensure values are divided by their corresponding epoch in L1B processing
-    #   - These tunable values are used to calculate acquisition time per step
-
     # These tunable values are used to calculate acquisition time per step
     tunable_values = low_stepping_tab["tunable_values"]
 

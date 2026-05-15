@@ -9,6 +9,21 @@ default_attrs: &default
   VALIDMIN: 0
   VAR_TYPE: data
 
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  VALIDMAX: 3.4028235e+38
+  VALIDMIN: -3.4028235e+38
+  dtype: float32
+
+component:
+  CATDESC: Cartesian components (x,y,z)
+  FIELDNAM: component
+  FORMAT: A3
+  LABLAXIS: component
+  VAR_TYPE: metadata
+
 # Non-epoch Coordinates
 esa_energy_step_label:
   CATDESC: ESA Steps
@@ -268,3 +283,27 @@ o_background_rates_sys_err:
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: spin_angle_label
   LABL_PTR_3: off_angle_label
+
+sc_velocity:
+  <<: *default_float32
+  CATDESC: x,y,z-components in the HAE coordinate system of the mean velocity vector, in km/s
+  FIELDNAM: sc_velocity
+  FORMAT: F12.2
+  LABLAXIS: spacecraft velocity
+  LABL_PTR_1: label_vector_HAE
+  UNITS: "km/s"
+
+sc_position:
+  <<: *default_float32
+  CATDESC: x,y,z-components in the HAE coordinate system of the mean spacecraft position, in km
+  FIELDNAM: sc_position
+  FORMAT: F12.2
+  LABLAXIS: spacecraft position
+  LABL_PTR_1: label_vector_HAE
+  UNITS: "km"
+
+label_vector_HAE:
+  CATDESC: Cartesian components (x,y,z)
+  FIELDNAM: Cartesian components
+  FORMAT: A5
+  VAR_TYPE: metadata

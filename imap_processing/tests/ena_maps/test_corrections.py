@@ -13,7 +13,7 @@ from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
     _add_cartesian_look_direction,
     _calculate_compton_getting_transform,
-    add_spacecraft_velocity_to_pset,
+    add_spacecraft_position_and_velocity_to_pset,
     apply_compton_getting_correction,
     calculate_ram_mask,
     get_pset_directional_mask,
@@ -529,10 +529,10 @@ class TestComptonGettingCorrection:
 
     @mock.patch("imap_processing.ena_maps.utils.corrections.ttj2000ns_to_et")
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
-    def test_add_spacecraft_velocity_to_pset(
+    def test_add_spacecraft_position_and_velocity_to_pset(
         self, mock_imap_state, mock_ttj2000_to_et, mock_hi_pset
     ):
-        """Test that spacecraft velocity is correctly added to pointing set."""
+        """Test that spacecraft position and velocity are correctly added to pset."""
         # Mock conversion from TTJ2000ns to ET
         et = 1000.0
         mock_ttj2000_to_et.return_value = et
@@ -540,7 +540,7 @@ class TestComptonGettingCorrection:
         mock_sc_state = np.array([1e8, 2e8, 3e8, 10.0, 20.0, 30.0])  # km and km/s
         mock_imap_state.return_value = mock_sc_state
 
-        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
+        mock_hi_pset = add_spacecraft_position_and_velocity_to_pset(mock_hi_pset)
 
         # Verify SPICE was called correctly
         mock_imap_state.assert_called_once_with(
@@ -554,20 +554,19 @@ class TestComptonGettingCorrection:
             mock_hi_pset["sc_velocity"].values, np.array([10.0, 20.0, 30.0])
         )
 
-        # Verify sc_direction_vector was added
-        assert "sc_direction_vector" in mock_hi_pset
-        expected_speed = np.sqrt(10**2 + 20**2 + 30**2)
-        expected_direction = np.array([10.0, 20.0, 30.0]) / expected_speed
-        np.testing.assert_allclose(
-            mock_hi_pset["sc_direction_vector"].values, expected_direction
+        # Verify sc_position was added
+        assert "sc_position" in mock_hi_pset
+        assert isinstance(mock_hi_pset["sc_position"], xr.DataArray)
+        np.testing.assert_array_equal(
+            mock_hi_pset["sc_position"].values, np.array([1e8, 2e8, 3e8])
         )
 
     @mock.patch("imap_processing.ena_maps.utils.corrections.ttj2000ns_to_et")
     @mock.patch("imap_processing.ena_maps.utils.corrections.geometry.imap_state")
-    def test_add_spacecraft_velocity_to_pset_lo(
+    def test_add_spacecraft_position_and_velocity_to_pset_lo(
         self, mock_imap_state, mock_ttj2000_to_et, mock_lo_pset
     ):
-        """Test that spacecraft velocity is correctly added to Lo pointing set."""
+        """Test that S/C position and velocity are correctly added to Lo pset."""
         # Mock conversion from TTJ2000ns to ET
         et = 1000.0
         mock_ttj2000_to_et.return_value = et
@@ -581,7 +580,7 @@ class TestComptonGettingCorrection:
         # Midpoint: epoch + pointing_duration_ns / 2
         expected_midpoint_time_ns = mock_lo_pset["epoch"].values[0] + 1e11 / 2
 
-        mock_lo_pset = add_spacecraft_velocity_to_pset(mock_lo_pset)
+        mock_lo_pset = add_spacecraft_position_and_velocity_to_pset(mock_lo_pset)
 
         # Verify SPICE was called correctly
         mock_ttj2000_to_et.assert_called_once_with(expected_midpoint_time_ns)
@@ -596,15 +595,14 @@ class TestComptonGettingCorrection:
             mock_lo_pset["sc_velocity"].values, np.array([15.0, 25.0, 35.0])
         )
 
-        # Verify sc_direction_vector was added
-        assert "sc_direction_vector" in mock_lo_pset
-        expected_speed = np.sqrt(15**2 + 25**2 + 35**2)
-        expected_direction = np.array([15.0, 25.0, 35.0]) / expected_speed
-        np.testing.assert_allclose(
-            mock_lo_pset["sc_direction_vector"].values, expected_direction
+        # Verify sc_position was added
+        assert "sc_position" in mock_lo_pset
+        assert isinstance(mock_lo_pset["sc_position"], xr.DataArray)
+        np.testing.assert_array_equal(
+            mock_lo_pset["sc_position"].values, np.array([1e8, 2e8, 3e8])
         )
 
-    def test_add_spacecraft_velocity_unsupported_instrument(self):
+    def test_add_spacecraft_position_and_velocity_unsupported_instrument(self):
         """Test that unsupported instrument raises NotImplementedError."""
         # Create a dataset with unsupported Logical_source
         unsupported_pset = xr.Dataset(
@@ -616,7 +614,18 @@ class TestComptonGettingCorrection:
         )
 
         with pytest.raises(NotImplementedError, match="does not support PSETs"):
-            add_spacecraft_velocity_to_pset(unsupported_pset)
+            add_spacecraft_position_and_velocity_to_pset(unsupported_pset)
+
+    def test_add_spacecraft_position_and_velocity_zero_duration(self, mock_hi_pset):
+        """Test that zero pointing duration sets pos and velocity to zero vectors."""
+        # Set epoch_delta to zero to simulate an empty/filtered pointing set
+        mock_hi_pset["epoch_delta"] = xr.DataArray(np.array([0.0]), dims=["epoch"])
+
+        result = add_spacecraft_position_and_velocity_to_pset(mock_hi_pset)
+
+        # Both sc_velocity and sc_position should be zero vectors
+        np.testing.assert_array_equal(result["sc_velocity"].values, np.zeros(3))
+        np.testing.assert_array_equal(result["sc_position"].values, np.zeros(3))
 
     def test_add_cartesian_look_direction(self, mock_hi_pset):
         """Test that look directions are correctly calculated and added."""
@@ -640,7 +649,7 @@ class TestComptonGettingCorrection:
         mock_sc_state = np.array([1e8, 2e8, 3e8, 10.0, 20.0, 30.0])
         mock_imap_state.return_value = mock_sc_state
 
-        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
+        mock_hi_pset = add_spacecraft_position_and_velocity_to_pset(mock_hi_pset)
         mock_hi_pset = _add_cartesian_look_direction(mock_hi_pset)
 
         # Create energy array
@@ -695,14 +704,13 @@ class TestComptonGettingCorrection:
         )
 
         # add the required sc_velocity to the pointing set
-        mock_hi_pset = add_spacecraft_velocity_to_pset(mock_hi_pset)
+        mock_hi_pset = add_spacecraft_position_and_velocity_to_pset(mock_hi_pset)
 
         # Apply the full correction
         mock_hi_pset = apply_compton_getting_correction(mock_hi_pset, energy_hf)
 
         # Verify all intermediate variables were added
         assert "sc_velocity" in mock_hi_pset
-        assert "sc_direction_vector" in mock_hi_pset
         assert "look_direction" in mock_hi_pset
         assert "energy_hf" in mock_hi_pset
         assert "energy_sc" in mock_hi_pset
@@ -1381,6 +1389,33 @@ class TestInterpolateMapFluxToHelioFrame:
         assert not np.any(np.isinf(flux))
         assert not np.any(np.isinf(stat_unc))
         assert not np.any(np.isinf(sys_err))
+
+    def test_nan_input_propagation(self):
+        """Test that NaN inputs properly propagate to NaN outputs."""
+        map_ds, esa_energies, helio_energies = self.create_test_map_dataset(
+            n_energy=3, n_spatial=3
+        )
+
+        # Set some input values to NaN
+        map_ds["ena_intensity"].values[1, 0] = np.nan
+        map_ds["ena_intensity_stat_uncert"].values[1, 1] = np.nan
+        map_ds["ena_intensity_sys_err"].values[1, 2] = np.nan
+
+        result_ds = interpolate_map_flux_to_helio_frame(
+            map_ds, esa_energies, helio_energies, ["ena_intensity"]
+        )
+
+        # NaN in flux should propagate to flux, stat_uncert, and sys_err
+        # at that location
+        assert np.isnan(result_ds["ena_intensity"].values[1, 0])
+        assert np.isnan(result_ds["ena_intensity_stat_uncert"].values[1, 0])
+        assert np.isnan(result_ds["ena_intensity_sys_err"].values[1, 0])
+
+        # NaN in stat_uncert input should result in NaN stat_uncert output
+        assert np.isnan(result_ds["ena_intensity_stat_uncert"].values[1, 1])
+
+        # NaN in sys_err input should result in NaN sys_err output
+        assert np.isnan(result_ds["ena_intensity_sys_err"].values[1, 2])
 
     def test_multidimensional_spatial_coords(self):
         """Test that interpolation works with multi-dimensional spatial coordinates."""

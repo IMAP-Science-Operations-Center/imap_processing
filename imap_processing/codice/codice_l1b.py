@@ -91,8 +91,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     if descriptor in [
         "lo-counters-aggregated",
         "lo-counters-singles",
-        "lo-nsw-angular",
-        "lo-sw-angular",
         "lo-nsw-priority",
         "lo-sw-priority",
     ]:
@@ -117,7 +115,6 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         ]
         dataset = dataset.drop_vars(drop_variables)
     elif descriptor in [
-        "lo-nsw-species",
         "lo-sw-species",
         "lo-ialirt",
     ]:

@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,6 @@ from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.ena_maps import AbstractSkyMap, RectangularSkyMap
 from imap_processing.ena_maps.utils.corrections import (
     PowerLawFluxCorrector,
-    add_spacecraft_velocity_to_pset,
     apply_compton_getting_correction,
     calculate_ram_mask,
     get_pset_directional_mask,
@@ -108,7 +108,7 @@ def lo_l2(
     )
 
     logger.info("Step 5: Finalizing dataset with attributes")
-    dataset = sky_map.build_cdf_dataset(  # type: ignore[attr-defined]
+    dataset = cast(RectangularSkyMap, sky_map).build_cdf_dataset(
         instrument="lo", level="l2", descriptor=descriptor, external_map_dataset=dataset
     )
 
@@ -431,10 +431,7 @@ def process_single_pset(
     # Step 3: Calculate efficiency-corrected quantities
     pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
 
-    # Step 4: Add s/c velocity, optionally apply CG correction, and calculate
-    # ram-mask
-    pset_processed = add_spacecraft_velocity_to_pset(pset_processed)
-
+    # Step 4: Optionally apply CG correction and calculate ram-mask
     if cg_correct:
         # NOTE: Heliospheric frame energy selection for CG correction
         # The heliospheric (HF) energies passed to the CG correction algorithm

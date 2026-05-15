@@ -3,6 +3,7 @@
 import collections
 import logging
 from collections.abc import Generator
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -13,7 +14,10 @@ from space_packet_parser.exceptions import UnrecognizedPacketTypeError
 from space_packet_parser.generators.ccsds import SequenceFlags
 from space_packet_parser.xtce import definitions, encodings, parameter_types
 
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import (
+    met_to_ttj2000ns,
+    str_yyyymmdd_to_ttj2000ns,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -568,3 +572,37 @@ def convert_to_binary_string(data: bytes) -> str:
     """
     binary_str_data = f"{int.from_bytes(data, byteorder='big'):0{len(data) * 8}b}"
     return binary_str_data
+
+
+def filter_day_boundary_data(dataset: xr.Dataset, start_date: str) -> xr.Dataset:
+    """
+    Filter out data that falls outside of the day boundary.
+
+    This is needed for instruments that have a daily data and where the first
+    and last packets of the day may fall outside of the day boundary. This is
+    currently only needed for instrument with buffer data, but could be used by
+    other instruments in the future if they have similar issues.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to filter.
+    start_date : str
+        The start date for the day boundary filter in 'YYYYMMDD' format.
+
+    Returns
+    -------
+    filtered_dataset : xr.Dataset
+        The filtered dataset with only data that falls within the day boundary.
+    """
+    start_ttj2000ns = str_yyyymmdd_to_ttj2000ns(start_date)
+    next_day = (datetime.strptime(start_date, "%Y%m%d") + timedelta(days=1)).strftime(
+        "%Y%m%d"
+    )
+
+    # Eg. if start_date is 20250101, then we end_date to be 20250102T00:00:00.000000000
+    # which is the start of the next day, minus 1 nanosecond to get the end of the
+    # current day
+    end_ttj2000ns = str_yyyymmdd_to_ttj2000ns(next_day) - 1
+    logger.info(f"Filtering dataset out of day boundary of {start_date}.")
+    return dataset.sel(epoch=slice(start_ttj2000ns, end_ttj2000ns))

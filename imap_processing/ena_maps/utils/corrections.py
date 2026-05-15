@@ -434,28 +434,30 @@ class PowerLawFluxCorrector:
         return corrected_flux_da, corrected_unc_da
 
 
-def add_spacecraft_velocity_to_pset(
+def add_spacecraft_position_and_velocity_to_pset(
     pset: xr.Dataset,
 ) -> xr.Dataset:
     """
-    Calculate and add spacecraft velocity data to pointing set dataset.
+    Calculate and add spacecraft position and velocity data to pointing set dataset.
 
     Parameters
     ----------
     pset : xr.Dataset
         Pointing set dataset to be updated. Must contain "epoch" coordinate
-        and "epoch_delta" data variable.
+        and "epoch_delta" data variable or "pointing_start_met" and
+        "pointing_end_met" data variables to compute.
 
     Returns
     -------
     pset_processed : xarray.Dataset
-        Pointing set dataset with spacecraft velocity data added.
+        Pointing set dataset with spacecraft position and velocity data added.
+        These values are calculated at the midpoint time of the pointing.
 
     Notes
     -----
     Adds the following DataArrays to input dataset:
     - "sc_velocity": Spacecraft velocity vector (km/s) with dims ["x_y_z"]
-    - "sc_direction_vector": Spacecraft velocity unit vector with dims ["x_y_z"]
+    - "sc_position": Spacecraft position vector (km) with dims ["x_y_z"]
     """
     # Hi and Lo need to use different methods for computing the Pointing
     # midpoint time.
@@ -472,7 +474,7 @@ def add_spacecraft_velocity_to_pset(
         ) * 1e9
     else:
         raise NotImplementedError(
-            f"add_spacecraft_velocity_to_pset does not support PSETs with "
+            f"add_spacecraft_position_and_velocity_to_pset does not support PSETs with "
             f"Logical_source: {pset.attrs['Logical_source']}"
         )
 
@@ -482,8 +484,9 @@ def add_spacecraft_velocity_to_pset(
     if pointing_duration_ns <= 0:
         logger.warning(
             "Pointing duration is zero or negative. "
-            "Setting spacecraft velocity to zero."
+            "Setting spacecraft position and velocity to zero."
         )
+        sc_position_vector = np.zeros(3)  # Zero position vector
         sc_velocity_vector = np.zeros(3)  # Zero velocity vector
     else:
         # Compute ephemeris time (J2000 seconds) of PSET midpoint
@@ -491,16 +494,18 @@ def add_spacecraft_velocity_to_pset(
 
         # Get spacecraft state in HAE frame
         sc_state = geometry.imap_state(et, ref_frame=geometry.SpiceFrame.IMAP_HAE)
+        sc_position_vector = sc_state[0:3]
         sc_velocity_vector = sc_state[3:6]
+
+    # Store spacecraft position as DataArray
+    pset["sc_position"] = xr.DataArray(
+        sc_position_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
+    )
 
     # Store spacecraft velocity as DataArray
     pset["sc_velocity"] = xr.DataArray(
         sc_velocity_vector, dims=[CoordNames.CARTESIAN_VECTOR.value]
     )
-
-    # Calculate spacecraft speed and direction
-    sc_velocity_km_per_sec = np.linalg.norm(pset["sc_velocity"], axis=-1, keepdims=True)
-    pset["sc_direction_vector"] = pset["sc_velocity"] / sc_velocity_km_per_sec
 
     return pset
 
@@ -754,7 +759,7 @@ def apply_compton_getting_correction(
         Must contain the following variables:
           - sc_velocity: velocity vector of the spacecraft in the HAE frame at
             the midpoint time of the pointing [km/s]. See the
-            `add_spacecraft_velocity_to_pset` function.
+            `add_spacecraft_position_and_velocity_to_pset` function.
           - hae_longitude: PSET bin longitudes in the HAE frame (degrees)
           - hae_latitude: PSET bin latitudes in the HAE frame (degrees)
     energy_hf : xr.DataArray
@@ -957,7 +962,7 @@ def interpolate_map_flux_to_helio_frame(
             sys_err_helio = sys_err_sc * energy_ratio
 
         # Clamp negative fluxes to zero (can occur from linear extrapolation)
-        flux_helio = flux_helio.where(flux_helio >= 0, 0.0)
+        flux_helio = xr.where(flux_helio < 0, 0.0, flux_helio)
 
         # Set any location where the value is not finite to NaN (converts +/-inf to NaN)
         flux_helio = flux_helio.where(np.isfinite(flux_helio), np.nan)
