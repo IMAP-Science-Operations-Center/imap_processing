@@ -28,18 +28,13 @@ from imap_processing.codice.constants import (
     HI_OMNI_VARIABLE_NAMES,
     HI_SECTORED_VARIABLE_NAMES,
     L2_HI_SECTORED_ANGLE,
-    LO_NSW_ANGULAR_VARIABLE_NAMES,
-    LO_NSW_SPECIES_VARIABLE_NAMES,
     LO_POSITION_TO_ELEVATION_ANGLE,
-    LO_SW_ANGULAR_VARIABLE_NAMES,
     LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES,
     LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES,
-    NSW_POSITIONS,
     PUI_POSITIONS,
     SOLAR_WIND_POSITIONS,
     SSD_ID_TO_ELEVATION,
     SSD_ID_TO_SPIN_ANGLE,
-    SW_POSITIONS,
 )
 from imap_processing.codice.utils import apply_replacements_to_attrs
 
@@ -568,156 +563,6 @@ def process_lo_species_intensity(
     for species in species_list:
         dataset[species].data[half_spin_boundary] = np.nan
 
-    return dataset
-
-
-def process_lo_angular_intensity(
-    dataset: xr.Dataset,
-    species_list: list,
-    geometric_factors: xr.DataArray,
-    efficiency: pd.DataFrame,
-    positions: list,
-) -> xr.Dataset:
-    """
-    Process the lo-species L2 dataset to calculate angular intensities.
-
-    Parameters
-    ----------
-    dataset : xarray.Dataset
-        The L2 dataset to process.
-    species_list : list
-        List of species variable names to calculate intensity.
-    geometric_factors : xarray.DataArray
-        The geometric factors array with shape (epoch, esa_steps).
-    efficiency : pandas.DataFrame
-        The efficiency lookup table.
-    positions : list
-        A list of position indices to select from the geometric factor and
-        efficiency lookup tables.
-
-    Returns
-    -------
-    xarray.Dataset
-        The updated L2 dataset with angular intensities calculated.
-    """
-    # Calculate the angular intensities using the provided geometric factors and
-    # efficiency.
-    dataset = calculate_intensity(
-        dataset,
-        species_list,
-        geometric_factors,
-        efficiency,
-        positions,
-        average_across_positions=False,
-    )
-
-    # transform positions to elevation angles
-    if positions == SW_POSITIONS:
-        pos_to_el = LO_POSITION_TO_ELEVATION_ANGLE["sw"]
-        position_index_to_adjust = 0
-        direction = "Sunward"
-    elif positions == NSW_POSITIONS:
-        pos_to_el = LO_POSITION_TO_ELEVATION_ANGLE["nsw"]
-        position_index_to_adjust = 9
-        direction = "Non-Sunward"
-    else:
-        raise ValueError("Unknown positions for elevation angle mapping.")
-
-    # Create a new coordinate for elevation_angle based on inst_az
-    dataset = dataset.assign_coords(
-        elevation_angle=(
-            "inst_az",
-            [pos_to_el[pos] for pos in dataset["inst_az"].data],
-        )
-    )
-    # add uncertainties to species list
-    species_list = species_list + [f"unc_{var}" for var in species_list]
-
-    # Take the mean across elevation angles and restore the original dimension order
-    dataset_converted = (
-        dataset[species_list]
-        .groupby("elevation_angle")
-        .sum(keep_attrs=True, skipna=False)  # One position should always contain zeros
-        # so sum is safe
-        # Restore original dimension order because groupby moves the grouped
-        # dimension to the front
-        .transpose("epoch", "esa_step", "spin_sector", "elevation_angle", ...)
-    )
-    # Create a new coordinate for spin angle based on spin_sector
-    # Use equation from section 11.2.2 of algorithm document
-    dataset = dataset.assign_coords(
-        spin_angle=("spin_sector", dataset["spin_sector"].data * 15.0 + 7.5)
-    )
-    dataset = dataset.drop_vars(species_list).merge(dataset_converted)
-
-    # Positions 0 and 10 only observe half of the 24 spins for each esa step.
-    # To account for this, we replicate the counts observed in position 0 and 10 for
-    # each esa step to either spin angles 0-11 or 12-23, depending on the pixel
-    # orientation (A/B). See section 11.2.2 of the CoDICE algorithm document
-    # Use the variable "half_spin_per_esa_step" to determine the pixel orientations.
-    # When the half spin number is even, the configuration is A and when the half spin
-    # is odd, the configuration is B.
-    # TODO handle when half_spin_per_esa_step changes in the middle of the dataset
-    half_spin_per_esa_step = dataset["half_spin_per_esa_step"].data[0]
-    # only consider valid half spin values
-    valid_half_spin = half_spin_per_esa_step != HALF_SPIN_FILLVAL
-    a_inds = np.nonzero(valid_half_spin & (half_spin_per_esa_step % 2 == 0))[0]
-    b_inds = np.nonzero(valid_half_spin & (half_spin_per_esa_step % 2 == 1))[0]
-
-    position_index = position_index_to_adjust
-    for species in species_list:
-        # Create a copy of the dataset to avoid modifying the original
-        species_data = dataset[species].data.copy()
-        # Determine the correct spin indices based on the position
-        spin_sectors = dataset["spin_sector"].data
-        spin_inds_1 = np.where(spin_sectors >= 12)[0]
-        spin_inds_2 = np.where(spin_sectors < 12)[0]
-
-        # if position_index is 9, swap the spin indices
-        if position_index == 9:
-            spin_inds_1, spin_inds_2 = spin_inds_2, spin_inds_1
-
-        # Assign the values to the correct positions and spin sectors
-        dataset[species].values[
-            :, a_inds[:, np.newaxis], spin_inds_1, position_index
-        ] = species_data[:, a_inds[:, np.newaxis], spin_inds_2, position_index]
-
-        dataset[species].values[
-            :, b_inds[:, np.newaxis], spin_inds_2, position_index
-        ] = species_data[:, b_inds[:, np.newaxis], spin_inds_1, position_index]
-    cdf_attrs = ImapCdfAttributes()
-    cdf_attrs.add_instrument_variable_attrs("codice", "l2-lo-angular")
-    species_attrs = cdf_attrs.get_variable_attributes("lo-angular-attrs")
-    unc_attrs = cdf_attrs.get_variable_attributes("lo-angular-unc-attrs")
-
-    # update species attrs
-    for species in species_list:
-        attrs = unc_attrs if "unc" in species else species_attrs
-        # Replace {species} and {direction} in attrs
-        attrs = apply_replacements_to_attrs(
-            attrs, {"species": species, "direction": direction}
-        )
-        dataset[species].attrs.update(attrs)
-
-    # make sure elevation_angle is a coordinate and has the right attrs
-    dataset["elevation_angle"].attrs.update(
-        cdf_attrs.get_variable_attributes("elevation_angle", check_schema=False)
-    )
-    dataset["elevation_angle_label"] = xr.DataArray(
-        dataset["elevation_angle"].data.astype(str),
-        dims=("elevation_angle",),
-        attrs=cdf_attrs.get_variable_attributes(
-            "elevation_angle_label", check_schema=False
-        ),
-    )
-    # update spin angle attributes
-    dataset["spin_angle"].attrs = cdf_attrs.get_variable_attributes(
-        "spin_angle", check_schema=False
-    )
-    # update spin sector attributes
-    dataset["spin_sector"].attrs = cdf_attrs.get_variable_attributes(
-        "spin_sector", check_schema=False
-    )
     return dataset
 
 
@@ -1517,9 +1362,6 @@ def process_codice_l2(
     # Compute geometric factors needed for intensity calculations
     if dataset_name in [
         "imap_codice_l2_lo-sw-species",
-        "imap_codice_l2_lo-nsw-species",
-        "imap_codice_l2_lo-nsw-angular",
-        "imap_codice_l2_lo-sw-angular",
     ]:
         cdf_attrs = ImapCdfAttributes()
         cdf_attrs.add_instrument_global_attrs("codice")
@@ -1555,57 +1397,6 @@ def process_codice_l2(
             )
             l2_dataset.attrs.update(
                 cdf_attrs.get_global_attributes("imap_codice_l2_lo-sw-species")
-            )
-        elif dataset_name == "imap_codice_l2_lo-nsw-species":
-            geometric_factors = compute_geometric_factors(
-                l2_dataset, geometric_factor_lookup
-            )
-            # Filter the efficiency lookup table for non-solar wind efficiencies
-            efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
-            # Calculate the non-sunward species intensities using equation
-            # described in section 11.2.3 of algorithm document.
-            l2_dataset = process_lo_species_intensity(
-                l2_dataset,
-                LO_NSW_SPECIES_VARIABLE_NAMES,
-                geometric_factors,
-                efficiencies,
-                NSW_POSITIONS,
-            )
-            l2_dataset.attrs.update(
-                cdf_attrs.get_global_attributes("imap_codice_l2_lo-nsw-species")
-            )
-        elif dataset_name == "imap_codice_l2_lo-sw-angular":
-            geometric_factors = compute_geometric_factors(
-                l2_dataset, geometric_factor_lookup, angular_product=True
-            )
-            efficiencies = efficiency_lookup[efficiency_lookup["product"] == "sw"]
-            # Calculate the sunward solar wind angular intensities using equation
-            # described in section 11.2.2 of algorithm document.
-            l2_dataset = process_lo_angular_intensity(
-                l2_dataset,
-                LO_SW_ANGULAR_VARIABLE_NAMES,
-                geometric_factors,
-                efficiencies,
-                SW_POSITIONS,
-            )
-            l2_dataset.attrs.update(
-                cdf_attrs.get_global_attributes("imap_codice_l2_lo-sw-angular")
-            )
-        if dataset_name == "imap_codice_l2_lo-nsw-angular":
-            geometric_factors = compute_geometric_factors(
-                l2_dataset, geometric_factor_lookup, angular_product=True
-            )
-            # Calculate the non sunward angular intensities
-            efficiencies = efficiency_lookup[efficiency_lookup["product"] == "nsw"]
-            l2_dataset = process_lo_angular_intensity(
-                l2_dataset,
-                LO_NSW_ANGULAR_VARIABLE_NAMES,
-                geometric_factors,
-                efficiencies,
-                NSW_POSITIONS,
-            )
-            l2_dataset.attrs.update(
-                cdf_attrs.get_global_attributes("imap_codice_l2_lo-nsw-angular")
             )
 
     if dataset_name in [

@@ -11,7 +11,6 @@ from imap_processing.codice import constants
 from imap_processing.codice.constants import (
     HALF_SPIN_FILLVAL,
     LO_IALIRT_VARIABLE_NAMES,
-    LO_NSW_SPECIES_VARIABLE_NAMES,
     LO_SW_SPECIES_VARIABLE_NAMES,
 )
 from imap_processing.codice.decompress import decompress
@@ -28,7 +27,7 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def l1a_lo_species(  # noqa: PLR0912
+def l1a_lo_species(
     group_ds: xr.Dataset,
     lut_file: Path,
     table_id: str,
@@ -73,7 +72,7 @@ def l1a_lo_species(  # noqa: PLR0912
         raise ValueError("Unsupported sensor ID for Lo species processing.")
 
     # ========= Decompress and Reshape Data ===========
-    # Lookup SW or NSW species based on APID
+    # Lookup SW species based on APID
     if view_tab_obj.apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
             "sw"
@@ -85,28 +84,6 @@ def l1a_lo_species(  # noqa: PLR0912
             + LO_SW_SPECIES_VARIABLE_NAMES
         )
         logical_source_id = "imap_codice_l1a_lo-sw-species"
-    elif view_tab_obj.apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-        actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
-            "nsw"
-        ]["species_names"]
-        desired_species_names = set(
-            sci_lut_data["data_product_lo_tab"]["0"]["species"]["nsw"][
-                "desired_species_names"
-            ]
-            + LO_NSW_SPECIES_VARIABLE_NAMES
-        )
-        logical_source_id = "imap_codice_l1a_lo-nsw-species"
-        # Rename "cnoplus" to "junk" if we are processing NSW angular data. Although
-        # cnoplus is in desired, and actual species name in the LUT, it is referencing
-        # different "cnoplus" data his is to handle the bug in which the spacecraft was
-        # sending data down "off by one" and getting mislabeled. The cnoplus data we
-        # are referencing is actually data that we want to toss out and fill with
-        # fill vals. This only affects data before the LUT was updated
-        # (table_id 3978152295).
-        if int(table_id) <= 3978152295:
-            actual_species_names = [
-                "junk" if name == "cnoplus" else name for name in actual_species_names
-            ]
     elif view_tab_obj.apid == CODICEAPID.COD_LO_IAL:
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
             "species_names"

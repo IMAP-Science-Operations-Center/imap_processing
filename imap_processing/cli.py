@@ -87,6 +87,7 @@ from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
+from imap_processing.utils import filter_day_boundary_data
 
 logger = logging.getLogger(__name__)
 
@@ -618,6 +619,8 @@ class Codice(ProcessInstrument):
         if self.data_level == "l1a":
             # process data
             datasets = codice_l1a.process_l1a(dependencies)
+            for i, ds in enumerate(datasets):
+                datasets[i] = filter_day_boundary_data(ds, self.start_date)
 
         if self.data_level == "l1b":
             science_files = dependencies.get_file_paths(source="codice")
@@ -1568,6 +1571,8 @@ class Swapi(ProcessInstrument):
 
             # process science or housekeeping data
             datasets = swapi_l1(dependencies, descriptor=self.descriptor)
+            for i, ds in enumerate(datasets):
+                datasets[i] = filter_day_boundary_data(ds, self.start_date)
         elif self.data_level == "l2":
             if len(dependency_list) != 3:
                 raise ValueError(
@@ -1624,6 +1629,8 @@ class Swe(ProcessInstrument):
                 )
             science_files = dependencies.get_file_paths(source="swe")
             datasets = swe_l1a(str(science_files[0]))
+            for i, ds in enumerate(datasets):
+                datasets[i] = filter_day_boundary_data(ds, self.start_date)
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
 

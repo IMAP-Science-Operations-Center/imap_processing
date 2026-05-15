@@ -22,6 +22,7 @@ from imap_processing.idex.idex_l2a import (
     estimate_dust_mass,
     fit_impact,
     idex_l2a,
+    invert_rise_time_to_velocity,
     load_calibration_files,
     log_smooth_powerlaw,
     remove_signal_noise,
@@ -133,6 +134,24 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     for var in l2a_dataset.data_vars:
         assert "DICT_KEY" in l2a_dataset[var].attrs, (
             f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
+        )
+
+    # TODO: remove this NAN block when fitting logic is applied
+    expected_nan_vars = [
+        "ion_grid_dust_mass_estimate",
+        "ion_grid_velocity_estimate",
+        "tof_peak_area_under_fit",
+        "tof_peak_chi_square",
+        "tof_peak_fit_parameters",
+        "tof_peak_kappa",
+        "tof_peak_reduced_chi_square",
+        "tof_snr",
+        "mass",
+        "mass_scale",
+    ]
+    for var in expected_nan_vars:
+        assert np.isnan(l2a_dataset[var].data).all(), (
+            f"Variable {var} should be fully NaN for the temporary L2A patch."
         )
 
 
@@ -286,7 +305,7 @@ def test_analyze_peaks_warning(caplog):
 
 def test_load_calibration_files_returns_expected_t_rise_params(tmp_path):
     """Tests that t-rise ancillary values are loaded into t_rise_params."""
-    expected_t_rise_params = np.array([3.6, -0.2, -2.0, 0.38, 5.1, 13.7, 13.3, 0.28])
+    expected_t_rise_params = np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28])
     yield_values = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40, 1.47])
 
     t_rise_path = tmp_path / "t_rise.csv"
@@ -306,7 +325,7 @@ def test_load_calibration_files_returns_expected_t_rise_params(tmp_path):
 
 def test_load_calibration_files_returns_expected_yield_params(tmp_path):
     """Tests that yield ancillary values are loaded into yield_params."""
-    t_rise_values = np.array([3.6, -0.2, -2.0, 0.38, 5.1, 13.7, 13.3, 0.28, 1.33])
+    t_rise_values = np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28, 1.33])
     expected_yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
 
     t_rise_path = tmp_path / "t_rise.csv"
@@ -334,9 +353,30 @@ def test_log_smooth_powerlaw_yield_curve_at_10_km_s():
     assert yield_value == pytest.approx(755.0, rel=1e-3)
 
 
+def test_invert_rise_time_to_velocity_at_10_km_s():
+    """Tests that the rise-time calibration can be inverted back to 10 km/s."""
+    t_rise_params = np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28])
+    expected_velocity = 10.0
+    t_rise = 10 ** log_smooth_powerlaw(
+        np.log10(expected_velocity), float(t_rise_params[0]), t_rise_params[1:]
+    )
+
+    velocity_estimate = invert_rise_time_to_velocity(t_rise, t_rise_params)
+
+    assert velocity_estimate == pytest.approx(expected_velocity, rel=1e-12)
+
+
+def test_invert_rise_time_to_velocity_invalid_t_rise_returns_nan():
+    """Tests that non-positive or non-finite rise times return NaN."""
+    t_rise_params = np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28])
+
+    assert np.isnan(invert_rise_time_to_velocity(np.nan, t_rise_params))
+    assert np.isnan(invert_rise_time_to_velocity(0.0, t_rise_params))
+
+
 def test_calculate_velocity_and_mass_at_10_km_s():
     """Tests mass estimation using a mocked 10 km/s velocity solution."""
-    t_rise_params = np.array([3.6, -0.2, -2.0, 0.38, 5.1, 13.7, 13.3, 0.28])
+    t_rise_params = np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28])
     yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
     sig_amp_pc = 10.0
 
