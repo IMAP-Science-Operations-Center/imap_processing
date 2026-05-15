@@ -260,7 +260,7 @@ def filter_goodtimes(l1b_de: xr.Dataset, goodtimes_ds: xr.Dataset) -> xr.Dataset
 
     # Keep events that fall within any goodtime window
     in_goodtime = np.any(
-        (epochs[:, None] >= gt_starts) & (epochs[:, None] <= gt_ends),
+        (epochs[:, np.newaxis] >= gt_starts) & (epochs[:, np.newaxis] <= gt_ends),
         axis=1,
     )
 
