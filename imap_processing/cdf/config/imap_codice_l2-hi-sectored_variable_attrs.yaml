@@ -24,8 +24,8 @@ epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta minus
-  FILLVAL: *real_fillval
-  FORMAT: F19.1
+  FILLVAL: *min_int
+  FORMAT: I19
   LABLAXIS: Epoch Delta Minus
   SCALETYP: linear
   UNITS: ns
@@ -37,8 +37,8 @@ epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta plus
-  FILLVAL: *real_fillval
-  FORMAT: F19.1
+  FILLVAL: *min_int
+  FORMAT: I19
   LABLAXIS: Epoch Delta Plus
   SCALETYP: linear
   UNITS: ns

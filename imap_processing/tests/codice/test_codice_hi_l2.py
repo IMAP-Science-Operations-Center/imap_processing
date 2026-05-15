@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-import cdflib
 import numpy as np
 import pytest
 from imap_data_access.processing_input import (
@@ -11,8 +10,6 @@ from imap_data_access.processing_input import (
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.codice.codice_l1a import process_l1a
-from imap_processing.codice.codice_l1b import process_codice_l1b
 from imap_processing.codice.codice_l2 import (
     process_codice_l2,
 )
@@ -22,57 +19,6 @@ from imap_processing.tests.codice.conftest import (
 )
 
 pytestmark = pytest.mark.external_test_data
-
-
-def _generate_hi_l1b_file(descriptor: str, codice_lut_path):
-    """Generate a fresh Hi L1B CDF for metadata regression tests.
-
-    We need this helper because the checked-in ``tests/codice/data/l1b_validation``
-    artifacts predate the epoch-delta dtype fix and still serialize
-    ``epoch_delta_plus`` / ``epoch_delta_minus`` as integer CDF variables.
-    The L2 metadata tests below are specifically trying to verify the current
-    regenerated pipeline behavior, so they must consume an L1B file produced by
-    the current L1A -> L1B code path instead of the historical validation
-    artifact.
-
-    If we later refresh the Hi L1B validation CDFs to include this dtype fix,
-    this helper can be removed and the L2 metadata tests can go back to using
-    the checked-in ``l1b_validation`` files directly.
-    """
-
-    def _lookup_l1_inputs(request_descriptor=None, data_type=None, **kwargs):
-        # ``process_l1a()`` asks for two different inputs through the same file
-        # lookup hook:
-        # 1. the raw science packet via ``data_type='l0'`` with no descriptor
-        # 2. the science LUT via ``descriptor='l1a-sci-lut'``
-        #
-        # Patch the lookup so the real production code can run unchanged while
-        # the test routes those requests to the correct local test artifacts.
-        request_descriptor = kwargs.get("descriptor", request_descriptor)
-        if request_descriptor is None and data_type == "l0":
-            return codice_lut_path(descriptor, data_type="l0")
-        return codice_lut_path(request_descriptor, data_type)
-
-    with patch(
-        "imap_data_access.processing_input.ProcessingInputCollection.get_file_paths"
-    ) as mock_get_file_paths:
-        mock_get_file_paths.side_effect = _lookup_l1_inputs
-        processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
-        processed_l1b = process_codice_l1b(processed_l1a_file)
-        processed_l1b.attrs["Data_version"] = "001"
-        return write_cdf(processed_l1b)
-
-
-def _mock_l2_file_paths(descriptor: str, l1b_file, codice_lut_path):
-    """Return a side effect that points L2 processing at a generated L1B file."""
-
-    def _side_effect(request_descriptor=None, data_type=None, **kwargs):
-        request_descriptor = kwargs.get("descriptor", request_descriptor)
-        if request_descriptor == descriptor:
-            return [l1b_file]
-        return codice_lut_path(request_descriptor, data_type)
-
-    return _side_effect
 
 
 @pytest.fixture
@@ -215,34 +161,3 @@ def test_l2_hi_sectored(mock_get_file_paths):
         sectored_cdf_file.name
         == f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}_v001.cdf"
     )
-
-
-@pytest.mark.parametrize(
-    ("descriptor", "efficiency_file"),
-    [
-        ("hi-omni", "imap_codice_l2-hi-omni-efficiency_20251212_v003.csv"),
-        ("hi-sectored", "imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"),
-    ],
-)
-def test_l2_hi_epoch_delta_cdf_metadata(descriptor, efficiency_file, codice_lut_path):
-    l1b_file = _generate_hi_l1b_file(descriptor, codice_lut_path)
-    dependencies = ProcessingInputCollection(
-        AncillaryInput(efficiency_file),
-        ScienceInput(l1b_file.name),
-    )
-
-    with patch(
-        "imap_data_access.processing_input.ProcessingInputCollection.get_file_paths"
-    ) as mock_get_file_paths:
-        mock_get_file_paths.side_effect = _mock_l2_file_paths(
-            descriptor, l1b_file, codice_lut_path
-        )
-        processed_l2 = process_codice_l2(descriptor, dependencies)
-
-    processed_l2.attrs["Data_version"] = "001"
-    cdf_file = cdflib.CDF(write_cdf(processed_l2))
-    for var in ["epoch_delta_minus", "epoch_delta_plus"]:
-        var_info = cdf_file.varinq(var)
-        var_attrs = cdf_file.varattsget(var)
-        assert var_info.Data_Type_Description == "CDF_DOUBLE"
-        assert np.isclose(var_attrs["FILLVAL"], np.float64(-1.0e31))

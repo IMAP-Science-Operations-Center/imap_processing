@@ -22,30 +22,6 @@ from imap_processing.codice import constants
 logger = logging.getLogger(__name__)
 
 
-def _cast_epoch_delta_vars_to_float64(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Normalize epoch delta support vars to floating-point before CDF write-out.
-
-    Parameters
-    ----------
-    dataset : xarray.Dataset
-        Dataset whose epoch delta support variables should be normalized.
-
-    Returns
-    -------
-    xarray.Dataset
-        Dataset with epoch delta support variables stored as ``float64``.
-    """
-    for var in ["epoch_delta_plus", "epoch_delta_minus"]:
-        if var in dataset:
-            dataset[var] = xr.DataArray(
-                dataset[var].data.astype(np.float64),
-                dims=dataset[var].dims,
-                attrs=dataset[var].attrs,
-            )
-    return dataset
-
-
 def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     """
     Apply a conversion from counts to rates.
@@ -207,9 +183,6 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
 
     # Use the L1a data product as a starting point for L1b
     l1b_dataset = l1a_dataset.copy(deep=True)
-
-    if descriptor in ["hi-omni", "hi-sectored"]:
-        l1b_dataset = _cast_epoch_delta_vars_to_float64(l1b_dataset)
 
     # Update the global attributes
     l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
