@@ -22,7 +22,6 @@ from imap_processing.spice.spin import get_spin_data, get_spin_number
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
-    ttj2000ns_to_met,
 )
 
 N_ESA_ENERGY_STEPS = 7
@@ -103,9 +102,10 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             pointing_start_met = 0.0
             pointing_end_met = 0.0
         else:
-            # Set the pointing start and end times based on the first epoch
             pointing_start_met, pointing_end_met = get_pointing_times(
-                float(ttj2000ns_to_met(l1b_goodtimes_only["epoch"][0].item()).item())
+                float(
+                    sci_dependencies["imap_lo_l1b_goodtimes"]["gt_start_met"].values[0]
+                )
             )
 
         pset = xr.Dataset(
@@ -264,7 +264,7 @@ def filter_goodtimes(l1b_de: xr.Dataset, goodtimes_ds: xr.Dataset) -> xr.Dataset
         axis=1,
     )
 
-    return l1b_de.sel(epoch=in_goodtime)
+    return l1b_de.isel(epoch=in_goodtime)
 
 
 def get_triple_coincidences(de: xr.Dataset) -> xr.Dataset:
