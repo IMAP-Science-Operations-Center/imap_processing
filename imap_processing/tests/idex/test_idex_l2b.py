@@ -83,14 +83,15 @@ def test_l2c_attrs_and_vars(
     """
     l2c_dataset = l2b_and_l2c_datasets[1]
     assert l2c_dataset.attrs["Logical_source"] == "imap_idex_l2c_rectangular-map-1mo"
+    # TODO: Uncomment when NAN block fixed
     # The total counts in the map should be equal to the number of dust events
     # in the l2a_dataset (*2 because the l2b fixture counts are doubled)
-    np.testing.assert_allclose(
-        l2c_dataset["counts_by_charge_map"].sum(), len(l2a_dataset.epoch) * 2
-    )
-    np.testing.assert_allclose(
-        l2c_dataset["counts_by_mass_map"].sum(), len(l2a_dataset.epoch) * 2
-    )
+    # np.testing.assert_allclose(
+    #     l2c_dataset["counts_by_charge_map"].sum(), len(l2a_dataset.epoch) * 2
+    # )
+    # np.testing.assert_allclose(
+    #     l2c_dataset["counts_by_mass_map"].sum(), len(l2a_dataset.epoch) * 2
+    # )
     assert l2c_dataset.sizes == {
         "on_off_times": 4,
         "epoch": 2,
@@ -108,6 +109,18 @@ def test_l2c_attrs_and_vars(
     for var in l2c_dataset.data_vars:
         assert "DICT_KEY" in l2c_dataset[var].attrs, (
             f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
+        )
+
+    # TODO: This NAN check to be REMOVED in future
+    expected_nan_vars = [
+        "counts_by_charge_map",
+        "counts_by_mass_map",
+        "rate_by_charge_map",
+        "rate_by_mass_map",
+    ]
+    for var in expected_nan_vars:
+        assert np.isnan(l2c_dataset[var].data).all(), (
+            f"Variable {var} should be fully NaN for the temporary L2B/L2C patch."
         )
 
 
@@ -135,6 +148,18 @@ def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
     for var in l2b_dataset.data_vars:
         assert "DICT_KEY" in l2b_dataset[var].attrs, (
             f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
+        )
+
+    # TODO: This NAN check to be REMOVED in future
+    expected_nan_vars = [
+        "counts_by_charge",
+        "counts_by_mass",
+        "rate_by_charge",
+        "rate_by_mass",
+    ]
+    for var in expected_nan_vars:
+        assert np.isnan(l2b_dataset[var].data).all(), (
+            f"Variable {var} should be fully NaN for the temporary L2B patch."
         )
 
 

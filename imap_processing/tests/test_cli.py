@@ -190,7 +190,8 @@ def test_validate_args(
 
 
 @mock.patch("imap_processing.cli.codice_l1a.process_l1a")
-def test_codice(mock_process_l1a, mock_instrument_dependencies):
+@mock.patch("imap_processing.cli.filter_day_boundary_data")
+def test_codice(mock_filter, mock_process_l1a, mock_instrument_dependencies):
     """Test coverage for cli.CoDICE class"""
 
     test_dataset = xr.Dataset({}, attrs={"cdf_filename": "file0"})
@@ -201,6 +202,7 @@ def test_codice(mock_process_l1a, mock_instrument_dependencies):
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "file0"
     mock_process_l1a.return_value = [test_dataset]
+    mock_filter.side_effect = lambda ds, _: ds
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
     mocks["mock_pre_processing"].return_value = input_collection
 
@@ -824,6 +826,7 @@ def test_spin_and_repoint_table_handling():
         instrument.process()
 
 
+@mock.patch("imap_processing.cli.filter_day_boundary_data")
 @mock.patch("imap_processing.cli.swe_l1a")
 @pytest.mark.parametrize(
     "query_return, expected_warning",
@@ -839,7 +842,11 @@ def test_spin_and_repoint_table_handling():
     ],
 )
 def test_post_processing(
-    mock_swe_l1a, mock_instrument_dependencies, query_return, expected_warning
+    mock_swe_l1a,
+    mock_filter,
+    mock_instrument_dependencies,
+    query_return,
+    expected_warning,
 ):
     """Test coverage for post processing"""
     mocks = mock_instrument_dependencies
@@ -862,6 +869,7 @@ def test_post_processing(
 
     test_ds = xr.Dataset()
     mock_swe_l1a.return_value = [test_ds]
+    mock_filter.side_effect = lambda ds, _: ds
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_swe_l0_raw_20100105_v001.pkts"),
         SPICEInput("naif0012.tls", "imap_sclk_0001.tsc"),
