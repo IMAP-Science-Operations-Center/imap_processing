@@ -901,38 +901,3 @@ def test_post_processing(
         "naif0012.tls",
         "imap_sclk_0001.tsc",
     ]
-
-
-@pytest.mark.parametrize(
-    "epoch_ns,raises",
-    [
-        # midday of expected day — passes
-        (int(1.5 * 86400 * 1e9), False),
-        # exactly at lower tolerance boundary (24h before day start) — passes
-        (0, False),
-        # 1 ns before lower bound — more than 24h outside, raises
-        (-1, True),
-        # 1 ns past upper bound — more than 24h outside, raises
-        (int(3 * 86400 * 1e9 + 1), True),
-    ],
-)
-def test_check_epochs_within_day(epoch_ns, raises):
-    """_check_epochs_within_day raises only when epoch is >24h outside expected day."""
-    # lower = expected_day - 1 day (J2000 ns = 0), upper = expected_day + 2 days
-    lower_ns = 0
-    upper_ns = int(3 * 86400 * 1e9)
-    instrument = Swe("l1a", "raw", "[]", "20250101", None, "v001", False)
-    day = np.datetime64("2025-01-01", "D")
-    ds = xr.Dataset({"epoch": xr.DataArray(np.array([epoch_ns], dtype=np.int64))})
-    with (
-        mock.patch("imap_processing.cli.str_to_et", return_value=0.0),
-        mock.patch(
-            "imap_processing.cli.et_to_ttj2000ns",
-            side_effect=[float(lower_ns), float(upper_ns)],
-        ),
-    ):
-        if raises:
-            with pytest.raises(ValueError, match="more than 24 hours outside"):
-                instrument._check_epochs_within_day([ds], day)
-        else:
-            instrument._check_epochs_within_day([ds], day)

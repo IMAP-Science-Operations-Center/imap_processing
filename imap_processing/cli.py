@@ -77,7 +77,6 @@ from imap_processing.mag.l1d.mag_l1d import mag_l1d
 from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
 from imap_processing.spice import pointing_frame, repoint, spin
-from imap_processing.spice.time import et_to_ttj2000ns, str_to_et
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
@@ -88,7 +87,10 @@ from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
-from imap_processing.utils import filter_day_boundary_data
+from imap_processing.utils import (
+    check_epochs_within_day_offsets,
+    filter_day_boundary_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -429,45 +431,6 @@ class ProcessInstrument(ABC):
                         logger.error(f"Upload failed with error: {msg}")
                 except Exception as e:
                     logger.error(f"Upload failed unknown error: {e}")
-
-    def _check_epochs_within_day(
-        self,
-        datasets: list[xr.Dataset],
-        day: np.datetime64,
-    ) -> None:
-        """
-        Raise an error if any dataset epoch falls more than 24 hours outside day.
-
-        A tolerance of ±24 hours around the expected processing day is allowed
-        to accommodate data that straddles midnight. Epochs beyond that window
-        may indicate the wrong input file was provided.
-
-        Parameters
-        ----------
-        datasets : list[xarray.Dataset]
-            Datasets whose ``epoch`` coordinate will be checked.
-        day : numpy.datetime64
-            The expected processing day (nominally self.start_date).
-
-        Raises
-        ------
-        ValueError
-            If any epoch value is more than 24 hours before ``day`` or more
-            than 24 hours after the end of ``day``.
-        """
-        lower = et_to_ttj2000ns(str_to_et(str(day - np.timedelta64(1, "D"))))
-        upper = et_to_ttj2000ns(str_to_et(str(day + np.timedelta64(2, "D"))))
-        for dataset in datasets:
-            epoch_ns = dataset["epoch"].values
-            if np.any(epoch_ns < lower) or np.any(epoch_ns >= upper):
-                dataset_logical_id = dataset.attrs.get(
-                    "Logical_source", "unknown dataset"
-                )
-
-                raise ValueError(
-                    f"Data in {dataset_logical_id} contains epochs more than 24 hours "
-                    f"outside the expected processing day {day}."
-                )
 
     @final
     def process(self) -> None:
@@ -1451,7 +1414,7 @@ class Mag(ProcessInstrument):
                 )
 
         # Will raise an error if any timestamps are outside the current day
-        self._check_epochs_within_day(datasets, current_day)
+        check_epochs_within_day_offsets(datasets, current_day)
 
         return datasets
 
