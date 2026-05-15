@@ -113,7 +113,7 @@ esa_energy:
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
   UNITS: eV / q
-  VALIDMAX: 65535.0
+  VALIDMAX: 21000.0
   VALIDMIN: 0.0
   VAR_TYPE: support_data
 
