@@ -2206,6 +2206,9 @@ def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
 
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
+    # Check that bgrates dataset is cdf-able by writing to file
+    _ = write_cdf(l1b_bgrates_ds)
+
     # Check bgrates dataset structure (BACKGROUND_RATE_FIELDS)
     assert "h_background_rates" in l1b_bgrates_ds.data_vars
     assert "h_background_variance" in l1b_bgrates_ds.data_vars
@@ -2215,6 +2218,9 @@ def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
     assert "o_background_variance" in l1b_bgrates_ds.data_vars
     assert "o_synthetic_floor" in l1b_bgrates_ds.data_vars
     assert "o_proxy_floor" in l1b_bgrates_ds.data_vars
+
+    # Check that goodtimes dataset is cdf-able by writing to file
+    _ = write_cdf(l1b_goodtimes_ds)
 
     # Check goodtimes dataset structure (GOODTIMES_FIELDS)
     assert "gt_start_met" in l1b_goodtimes_ds.data_vars

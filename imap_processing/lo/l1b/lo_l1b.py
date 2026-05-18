@@ -2654,23 +2654,36 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
 
     epoch_values = met_to_ttj2000ns(np.array([r[0] for r in goodtime_rows]))
 
-    l1b_combined_ds["epoch"] = xr.DataArray(
-        data=epoch_values,
-        name="epoch",
-        dims=["epoch"],
-        attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
+    l1b_combined_ds.assign_coords(
+        epoch=xr.DataArray(
+            data=epoch_values,
+            name="epoch",
+            dims=["epoch"],
+            attrs=attr_mgr_l1b.get_variable_attributes("epoch", check_schema=False),
+        )
     )
-    l1b_combined_ds["epoch"].attrs["DEPEND_0"] = "epoch"
+
+    # esa_step is a coordinate in this dataset, so pop the DEPEND_0 attribute
+    esa_step_attrs = attr_mgr_l1b.get_variable_attributes("esa_step")
+    esa_step_attrs.pop("DEPEND_0")
+    l1b_combined_ds.assign_coords(
+        esa_step=xr.DataArray(
+            data=np.arange(c.N_ESA_LEVELS + 1),
+            name="esa_step",
+            dims=["esa_step"],
+            attrs=esa_step_attrs,
+        )
+    )
 
     l1b_combined_ds["pivot"] = xr.DataArray(
         data=np.float32(pivot),
         name="pivot",
-        attrs=attr_mgr_l1b.get_variable_attributes("pivot"),
+        attrs=attr_mgr_l1b.get_variable_attributes("pivot", check_schema=False),
     )
     l1b_combined_ds["pivot_de"] = xr.DataArray(
         data=np.float32(pivot_de),
         name="pivot_de",
-        attrs=attr_mgr_l1b.get_variable_attributes("pivot_de"),
+        attrs=attr_mgr_l1b.get_variable_attributes("pivot_de", check_schema=False),
     )
 
     l1b_combined_ds["gt_start_met"] = xr.DataArray(
@@ -2696,7 +2709,8 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
             data=np.full(c.N_ESA_LEVELS, bg_rates_out[elem]),
             name=f"{elem_lower}_background_rates",
             attrs=attr_mgr_l1b.get_variable_attributes(
-                f"{elem_lower}_background_rates"
+                f"{elem_lower}_background_rates",
+                check_schema=False,
             ),
             dims=["esa_step"],
         )
@@ -2704,19 +2718,24 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
             data=np.full(c.N_ESA_LEVELS, sigma_bg_rates_out[elem]),
             name=f"{elem_lower}_background_variance",
             attrs=attr_mgr_l1b.get_variable_attributes(
-                f"{elem_lower}_background_variance"
+                f"{elem_lower}_background_variance",
+                check_schema=False,
             ),
             dims=["esa_step"],
         )
         l1b_combined_ds[f"{elem_lower}_synthetic_floor"] = xr.DataArray(
             data=np.float32(synthetic_floors[elem]),
             name=f"{elem_lower}_synthetic_floor",
-            attrs=attr_mgr_l1b.get_variable_attributes(f"{elem_lower}_synthetic_floor"),
+            attrs=attr_mgr_l1b.get_variable_attributes(
+                f"{elem_lower}_synthetic_floor", check_schema=False
+            ),
         )
         l1b_combined_ds[f"{elem_lower}_proxy_floor"] = xr.DataArray(
             data=np.float32(proxy_floors[elem]),
             name=f"{elem_lower}_proxy_floor",
-            attrs=attr_mgr_l1b.get_variable_attributes(f"{elem_lower}_proxy_floor"),
+            attrs=attr_mgr_l1b.get_variable_attributes(
+                f"{elem_lower}_proxy_floor", check_schema=False
+            ),
         )
 
     logger.info("L1B Background Rates and Bettertimes created successfully")
@@ -2773,7 +2792,6 @@ def split_backgrounds_and_goodtimes_dataset(
 
     l1b_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
     l1b_bgrates_ds["epoch"] = l1b_backgrounds_and_goodtimes_ds["epoch"]
-    l1b_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
     l1b_bgrates_ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_bgrates")
 
     return l1b_bgrates_ds, l1b_goodtimes_ds
