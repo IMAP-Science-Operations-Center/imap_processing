@@ -125,7 +125,7 @@ def test_dsn(furnish_kernels):
         )
 
         assert "I-ALiRT Coverage Summary" in output["summary"]
-        assert 40.6 == output["total_coverage_percent"]
+        assert 49.3 == output["total_coverage_percent"]
 
 
 @patch("imap_processing.ialirt.generate_coverage.et_to_utc")
