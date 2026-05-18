@@ -9,7 +9,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1b.lo_l1b import (
     DE_CLOCK_TICK_S,
@@ -308,8 +308,6 @@ def test_lo_l1b_histogram_rates(
     assert l1b_datasets[-1]["exposure_time_60deg"].values[0, 0, 0] == 20
 
 
-# @pytest.mark.external_kernel
-# @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_create_datasets():
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
@@ -333,6 +331,9 @@ def test_create_datasets():
     ]
 
     dataset = create_datasets(attr_mgr, logical_source, data_fields)
+
+    # verify that epoch does not have a DEPEND_0 attribute
+    assert "DEPEND_0" not in dataset["epoch"].attrs
 
     assert len(dataset.tof0.shape) == 1
     assert dataset.tof0.shape[0] == 3
@@ -1445,6 +1446,10 @@ def test_calculate_de_rates(
 
     result = calculate_de_rates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
 
+    # Test that result can be written to CDF - this verifies that
+    # attributes are ok with cdflib
+    _ = write_cdf(result)
+
     assert result.attrs["Logical_source"] == "imap_lo_l1b_derates"
     assert "epoch" in result.coords
     assert "esa_step" in result.coords
@@ -1975,6 +1980,9 @@ class TestL1bStar:
         l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
 
         # Assert - Check spin_angle coordinate attributes
+        # Check that resulting dataset is cdf-able by writing to file
+        _ = write_cdf(l1b_star_ds)
+
         assert l1b_star_ds.coords["spin_angle"].attrs["UNITS"] == "deg"
         assert l1b_star_ds.coords["spin_angle"].attrs["VALIDMIN"] == 0.0
         assert l1b_star_ds.coords["spin_angle"].attrs["VALIDMAX"] == 360.0

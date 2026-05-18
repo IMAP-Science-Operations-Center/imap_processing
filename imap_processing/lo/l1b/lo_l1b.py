@@ -1285,7 +1285,7 @@ def create_datasets(
         data=epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("epoch"),
+        attrs=attr_mgr.get_variable_attributes("epoch", check_schema=False),
     )
 
     if logical_source == "imap_lo_l1b_de":
@@ -1837,7 +1837,9 @@ def calculate_de_rates(
     ds = set_esa_mode(pointing_start_met, pointing_end_met, anc_dependencies, ds)
 
     ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_derates")
-    ds["epoch"].attrs = attr_mgr_l1b.get_variable_attributes("epoch")
+    ds["epoch"].attrs = attr_mgr_l1b.get_variable_attributes(
+        "epoch", check_schema=False
+    )
 
     return ds
 
@@ -2318,7 +2320,7 @@ def l1b_star(
             "epoch": xr.DataArray(
                 group_epochs,
                 dims=["epoch"],
-                attrs=attr_mgr_l1b.get_variable_attributes("epoch"),
+                attrs=attr_mgr_l1b.get_variable_attributes("epoch", check_schema=False),
             ),
             "spin_angle": xr.DataArray(
                 spin_angle,
