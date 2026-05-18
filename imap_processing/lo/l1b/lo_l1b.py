@@ -2654,26 +2654,23 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
 
     epoch_values = met_to_ttj2000ns(np.array([r[0] for r in goodtime_rows]))
 
-    l1b_combined_ds.assign_coords(
-        epoch=xr.DataArray(
-            data=epoch_values,
-            name="epoch",
-            dims=["epoch"],
-            attrs=attr_mgr_l1b.get_variable_attributes("epoch", check_schema=False),
-        )
+    l1b_combined_ds["epoch"] = xr.DataArray(
+        data=epoch_values,
+        name="epoch",
+        dims=["epoch"],
+        attrs=attr_mgr_l1b.get_variable_attributes("epoch", check_schema=False),
     )
 
     # esa_step is a coordinate in this dataset, so pop the DEPEND_0 attribute
     esa_step_attrs = attr_mgr_l1b.get_variable_attributes("esa_step")
     esa_step_attrs.pop("DEPEND_0")
-    l1b_combined_ds.assign_coords(
-        esa_step=xr.DataArray(
-            data=np.arange(c.N_ESA_LEVELS + 1),
-            name="esa_step",
-            dims=["esa_step"],
-            attrs=esa_step_attrs,
-        )
+    l1b_combined_ds["esa_step"] = xr.DataArray(
+        data=np.arange(c.N_ESA_LEVELS, dtype=np.uint8) + 1,
+        name="esa_step",
+        dims=["esa_step"],
+        attrs=esa_step_attrs,
     )
+    l1b_combined_ds = l1b_combined_ds.set_coords(["epoch", "esa_step"])
 
     l1b_combined_ds["pivot"] = xr.DataArray(
         data=np.float32(pivot),
