@@ -64,11 +64,15 @@ def idex_l1a(
         A list of xarray Datasets containing the processed IDEX L1a data products. If
         There is no Data found for the 10-day window, None is returned.
     """
+    # Sort packet files so latest version comes last
+    # This ensures when we drop duplicate events (if any), the latest file's data is
+    # kept.
+    sorted_packet_files = sorted(packet_files)
     idex_products = []
     # decom each idex l0 file and gather the data for each product type
     # (science, event message, catlst) into separate lists
     data_dicts = defaultdict(list)
-    for packet_file in packet_files:
+    for packet_file in sorted_packet_files:
         data = PacketParser(packet_file).data
         for product, dataset in data.items():
             data_dicts[product].append(dataset)
@@ -80,15 +84,21 @@ def idex_l1a(
     # combine the data for each product type into a single dataset.
     # filter each dataset for epochs that are within the 10-day window range.
     for product, datasets in data_dicts.items():
-        concat_ds = xr.concat(
-            datasets,
-            dim="epoch",
-            # Keep non-epoch support variables (e.g. label/index vectors) from a
-            # single dataset instead of broadcasting them across epochs.
-            data_vars="minimal",
-            coords="minimal",
-            compat="override",
-        ).sortby("epoch")
+        concat_ds = (
+            xr.concat(
+                datasets,
+                dim="epoch",
+                # Keep non-epoch support variables (e.g. label/index vectors) from a
+                # single dataset instead of broadcasting them across epochs.
+                data_vars="minimal",
+                coords="minimal",
+                compat="override",
+                # Drop duplicate epochs, keeping the last one (which will be from the
+                # latest file due to sorting above)
+            )
+            .sortby("epoch")
+            .drop_duplicates("epoch", keep="last")
+        )
         mask = (concat_ds["epoch"] >= window_start_date_ns) & (
             concat_ds["epoch"] < window_end_date_ns
         )
