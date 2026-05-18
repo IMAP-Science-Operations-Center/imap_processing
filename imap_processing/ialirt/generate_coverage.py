@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 ALL_STATIONS = [
     "Kiel",
+    "SANSA",
     "DSS-24",
     "DSS-25",
     "DSS-26",
@@ -110,6 +111,7 @@ def generate_coverage(  # noqa: PLR0912
 
     stations = {
         "Kiel": STATIONS["Kiel"],
+        "SANSA": STATIONS["SANSA"],
     }
     coverage_dict = {}
     outage_dict = {}

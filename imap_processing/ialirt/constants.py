@@ -93,9 +93,9 @@ STATIONS = {
         schedule_end=None,
     ),
     "SANSA": StationProperties(
-        longitude=27.714,  # degrees East (negative = West)
-        latitude=-25.888,  # degrees North (negative = South)
-        altitude=1.542,  # approx 1542 meters
+        longitude=27.707468,  # degrees East (negative = West)
+        latitude=-25.886476,  # degrees North (negative = South)
+        altitude=1.545,  # approx 1545 meters
         min_elevation_deg=2,  # 5 degrees is the requirement
         schedule_start=None,
         schedule_end=None,
