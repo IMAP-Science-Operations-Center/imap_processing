@@ -822,6 +822,7 @@ def test_is_coin_ph_valid(test_fixture, ancillary_files):
     )
 
 
+@pytest.mark.external_test_data
 def test_get_efficiency_interpolator(ancillary_files):
 
     # Test that the interpolator is created and that the min/max values are correct
