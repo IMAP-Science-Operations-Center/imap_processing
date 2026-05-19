@@ -505,6 +505,8 @@ unc_uh:
   VAR_TYPE: support_data
 c:
   CATDESC: Differential intensity for C at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_c
+  DELTA_PLUS_VAR: unc_c
   DEPEND_0: epoch
   DEPEND_1: energy_c
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -521,6 +523,8 @@ c:
 
 fe:
   CATDESC: Differential intensity for Fe at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_fe
+  DELTA_PLUS_VAR: unc_fe
   DEPEND_0: epoch
   DEPEND_1: energy_fe
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -537,6 +541,8 @@ fe:
 
 h:
   CATDESC: Differential intensity for H at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_h
+  DELTA_PLUS_VAR: unc_h
   DEPEND_0: epoch
   DEPEND_1: energy_h
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -553,6 +559,8 @@ h:
 
 he3:
   CATDESC: Differential intensity for He3 at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_he3
+  DELTA_PLUS_VAR: unc_he3
   DEPEND_0: epoch
   DEPEND_1: energy_he3
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -569,6 +577,8 @@ he3:
 
 he4:
   CATDESC: Differential intensity for He4 at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_he4
+  DELTA_PLUS_VAR: unc_he4
   DEPEND_0: epoch
   DEPEND_1: energy_he4
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -585,6 +595,8 @@ he4:
 
 junk:
   CATDESC: Differential intensity for Junk at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_junk
+  DELTA_PLUS_VAR: unc_junk
   DEPEND_0: epoch
   DEPEND_1: energy_junk
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -601,6 +613,8 @@ junk:
 
 ne_mg_si:
   CATDESC: Differential intensity for Ne+Mg+Si at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_ne_mg_si
+  DELTA_PLUS_VAR: unc_ne_mg_si
   DEPEND_0: epoch
   DEPEND_1: energy_ne_mg_si
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -617,6 +631,8 @@ ne_mg_si:
 
 o:
   CATDESC: Differential intensity for O at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_o
+  DELTA_PLUS_VAR: unc_o
   DEPEND_0: epoch
   DEPEND_1: energy_o
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -633,6 +649,8 @@ o:
 
 uh:
   CATDESC: Differential intensity for UH at root-2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_uh
+  DELTA_PLUS_VAR: unc_uh
   DEPEND_0: epoch
   DEPEND_1: energy_uh
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential

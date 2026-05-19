@@ -78,7 +78,21 @@ def _format_hi_energy_labels(
     species: str,
     energies: NDArray[np.floating],
 ) -> NDArray[np.str_]:
-    """Return human-readable Hi energy channel labels."""
+    """
+    Return human-readable Hi energy channel labels.
+
+    Parameters
+    ----------
+    species : str
+        The Hi species key used to look up the user-facing label text.
+    energies : NDArray[np.floating]
+        Energy-per-nucleon values for the species channels.
+
+    Returns
+    -------
+    NDArray[np.str_]
+        Human-readable energy-channel labels.
+    """
     species_display = HI_SPECIES_DISPLAY_NAMES[species]
     return np.array(
         [f"{species_display} int @{energy:.3f} MeV/nuc" for energy in energies]

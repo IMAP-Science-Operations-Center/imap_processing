@@ -25,7 +25,9 @@ pytestmark = pytest.mark.external_test_data
 
 def _expected_hi_energy_labels(species: str, energies: np.ndarray) -> np.ndarray:
     species_display = HI_SPECIES_DISPLAY_NAMES[species]
-    return np.array([f"{species_display} int @{energy:.3f} MeV/nuc" for energy in energies])
+    return np.array(
+        [f"{species_display} int @{energy:.3f} MeV/nuc" for energy in energies]
+    )
 
 
 @pytest.fixture
@@ -112,15 +114,16 @@ def test_l2_hi_omni(mock_get_file_paths):
         assert energy_h_attrs["CATDESC"] == "Geometric mean energy per nucleon for H"
         assert energy_h_attrs["FIELDNAM"] == "H Energy"
         h_attrs = cdf_file.varattsget("h")
-        assert (
-            h_attrs["CATDESC"]
-            == "Differential intensity for H at root-2-spaced energy-per-nucleon channels"
+        assert h_attrs["CATDESC"] == (
+            "Differential intensity for H at root-2-spaced energy-per-nucleon channels"
         )
+        assert h_attrs["DELTA_MINUS_VAR"] == "unc_h"
+        assert h_attrs["DELTA_PLUS_VAR"] == "unc_h"
         assert h_attrs["FIELDNAM"] == "Differential Intensity - H"
         unc_h_attrs = cdf_file.varattsget("unc_h")
-        assert (
-            unc_h_attrs["CATDESC"]
-            == "Uncertainty in differential intensity for H at root-2-spaced energy-per-nucleon channels"
+        assert unc_h_attrs["CATDESC"] == (
+            "Uncertainty in differential intensity for H at root-2-spaced "
+            "energy-per-nucleon channels"
         )
         assert unc_h_attrs["FIELDNAM"] == "Uncertainty - H"
         np.testing.assert_array_equal(
@@ -239,15 +242,15 @@ def test_l2_hi_sectored(mock_get_file_paths):
         assert energy_h_attrs["CATDESC"] == "Geometric mean energy per nucleon for H"
         assert energy_h_attrs["FIELDNAM"] == "H Energy"
         h_attrs = cdf_file.varattsget("h")
-        assert (
-            h_attrs["CATDESC"]
-            == "Differential intensity for H by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels"
+        assert h_attrs["CATDESC"] == (
+            "Differential intensity for H by energy, spin sector, and "
+            "elevation at x2-spaced energy-per-nucleon channels"
         )
         assert h_attrs["FIELDNAM"] == "Differential Intensity - H"
         unc_h_attrs = cdf_file.varattsget("unc_h")
-        assert (
-            unc_h_attrs["CATDESC"]
-            == "Uncertainty in differential intensity for H by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels"
+        assert unc_h_attrs["CATDESC"] == (
+            "Uncertainty in differential intensity for H by energy, spin "
+            "sector, and elevation at x2-spaced energy-per-nucleon channels"
         )
         assert unc_h_attrs["FIELDNAM"] == "Uncertainty - H"
         np.testing.assert_array_equal(
