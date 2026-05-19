@@ -124,27 +124,27 @@ spin_sector_label:
 
 # ------------------------------- Labels ------------------------------------
 energy_cno_label:
-  CATDESC: Energy CNO
-  FIELDNAM: Energy CNO
-  FORMAT: A6
+  CATDESC: Energy-channel labels for CNO differential intensity
+  FIELDNAM: CNO Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_fe_label:
-  CATDESC: Energy Fe
-  FIELDNAM: Energy Fe
-  FORMAT: A6
+  CATDESC: Energy-channel labels for Fe differential intensity
+  FIELDNAM: Fe Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_h_label:
-  CATDESC: Energy H
-  FIELDNAM: Energy H
-  FORMAT: A6
+  CATDESC: Energy-channel labels for H differential intensity
+  FIELDNAM: H Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_he3he4_label:
-  CATDESC: Energy He3He4
-  FIELDNAM: Energy He3He4
-  FORMAT: A6
+  CATDESC: Energy-channel labels for He3+He4 differential intensity
+  FIELDNAM: He3+He4 Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 # --------------------------- Dataset variable attrs ------------------------

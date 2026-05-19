@@ -12,6 +12,7 @@ from imap_data_access.processing_input import (
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l2 import (
+    HI_SPECIES_DISPLAY_NAMES,
     process_codice_l2,
 )
 from imap_processing.tests.codice.conftest import (
@@ -20,6 +21,11 @@ from imap_processing.tests.codice.conftest import (
 )
 
 pytestmark = pytest.mark.external_test_data
+
+
+def _expected_hi_energy_labels(species: str, energies: np.ndarray) -> np.ndarray:
+    species_display = HI_SPECIES_DISPLAY_NAMES[species]
+    return np.array([f"{species_display} int @{energy:.3f} MeV/nuc" for energy in energies])
 
 
 @pytest.fixture
@@ -62,6 +68,17 @@ def test_l2_hi_omni(mock_get_file_paths):
 
     # Check coordinates
     for variable in val_data.coords:
+        if variable.startswith("energy_") and variable.endswith("_label"):
+            species = variable.removeprefix("energy_").removesuffix("_label")
+            np.testing.assert_array_equal(
+                processed_l2[variable].values,
+                _expected_hi_energy_labels(
+                    species,
+                    processed_l2[f"energy_{species}"].values,
+                ),
+                err_msg=f"Mismatch in coordinate '{variable}'",
+            )
+            continue
         np.testing.assert_allclose(
             processed_l2[variable].values,
             val_data[variable].values,
@@ -84,6 +101,17 @@ def test_l2_hi_omni(mock_get_file_paths):
         assert cdf_file.varattsget("energy_h")["FORMAT"] == "F12.6"
         assert cdf_file.varattsget("energy_h_minus")["FORMAT"] == "F12.6"
         assert cdf_file.varattsget("energy_h_plus")["FORMAT"] == "F12.6"
+        energy_h_label_attrs = cdf_file.varattsget("energy_h_label")
+        assert energy_h_label_attrs["FORMAT"] == "A32"
+        assert (
+            energy_h_label_attrs["CATDESC"]
+            == "Energy-channel labels for H differential intensity"
+        )
+        assert energy_h_label_attrs["FIELDNAM"] == "H Energy Channel Labels"
+        np.testing.assert_array_equal(
+            cdf_file.varget("energy_h_label"),
+            _expected_hi_energy_labels("h", processed_l2["energy_h"].values),
+        )
 
 
 def test_l2_hi_sectored(mock_get_file_paths):
@@ -145,6 +173,17 @@ def test_l2_hi_sectored(mock_get_file_paths):
 
     # Check coordinates
     for variable in val_data.coords:
+        if variable.startswith("energy_") and variable.endswith("_label"):
+            species = variable.removeprefix("energy_").removesuffix("_label")
+            np.testing.assert_array_equal(
+                processed_l2[variable].values,
+                _expected_hi_energy_labels(
+                    species,
+                    processed_l2[f"energy_{species}"].values,
+                ),
+                err_msg=f"Mismatch in coordinate '{variable}'",
+            )
+            continue
         if variable.endswith("_label"):
             assert np.array_equal(
                 processed_l2[variable].values,
@@ -174,3 +213,14 @@ def test_l2_hi_sectored(mock_get_file_paths):
         assert cdf_file.varattsget("energy_h")["FORMAT"] == "F12.6"
         assert cdf_file.varattsget("energy_h_minus")["FORMAT"] == "F12.6"
         assert cdf_file.varattsget("energy_h_plus")["FORMAT"] == "F12.6"
+        energy_h_label_attrs = cdf_file.varattsget("energy_h_label")
+        assert energy_h_label_attrs["FORMAT"] == "A32"
+        assert (
+            energy_h_label_attrs["CATDESC"]
+            == "Energy-channel labels for H differential intensity"
+        )
+        assert energy_h_label_attrs["FIELDNAM"] == "H Energy Channel Labels"
+        np.testing.assert_array_equal(
+            cdf_file.varget("energy_h_label"),
+            _expected_hi_energy_labels("h", processed_l2["energy_h"].values),
+        )

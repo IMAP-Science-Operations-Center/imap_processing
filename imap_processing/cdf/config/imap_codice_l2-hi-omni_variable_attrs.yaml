@@ -118,69 +118,69 @@ epoch_delta_plus_label:
 
 # ------------------------------- Labels ------------------------------------
 energy_cno_label:
-  CATDESC: Energy CNO
-  FIELDNAM: Energy CNO
-  FORMAT: A6
+  CATDESC: Energy-channel labels for CNO differential intensity
+  FIELDNAM: CNO Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_fe_label:
-  CATDESC: Energy Fe
-  FIELDNAM: Energy Fe
-  FORMAT: A6
+  CATDESC: Energy-channel labels for Fe differential intensity
+  FIELDNAM: Fe Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_h_label:
-  CATDESC: Energy H
-  FIELDNAM: Energy H
-  FORMAT: A6
+  CATDESC: Energy-channel labels for H differential intensity
+  FIELDNAM: H Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_he3he4_label:
-  CATDESC: Energy He3He4
-  FIELDNAM: Energy He3He4
-  FORMAT: A6
+  CATDESC: Energy-channel labels for He3+He4 differential intensity
+  FIELDNAM: He3+He4 Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_c_label:
-  CATDESC: Energy C
-  FIELDNAM: Energy C
-  FORMAT: A6
+  CATDESC: Energy-channel labels for C differential intensity
+  FIELDNAM: C Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_he3_label:
-  CATDESC: Energy He3
-  FIELDNAM: Energy He3
-  FORMAT: A6
+  CATDESC: Energy-channel labels for He3 differential intensity
+  FIELDNAM: He3 Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_he4_label:
-  CATDESC: Energy He4
-  FIELDNAM: Energy He4
-  FORMAT: A6
+  CATDESC: Energy-channel labels for He4 differential intensity
+  FIELDNAM: He4 Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_junk_label:
-  CATDESC: Energy Junk
-  FIELDNAM: Energy Junk
-  FORMAT: A6
+  CATDESC: Energy-channel labels for Junk differential intensity
+  FIELDNAM: Junk Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_ne_mg_si_label:
-  CATDESC: Energy NeMgSi
-  FIELDNAM: Energy NeMgSi
-  FORMAT: A6
+  CATDESC: Energy-channel labels for Ne+Mg+Si differential intensity
+  FIELDNAM: Ne+Mg+Si Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_o_label:
-  CATDESC: Energy O
-  FIELDNAM: Energy O
-  FORMAT: A6
+  CATDESC: Energy-channel labels for O differential intensity
+  FIELDNAM: O Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 energy_uh_label:
-  CATDESC: Energy UH
-  FIELDNAM: Energy UH
-  FORMAT: A6
+  CATDESC: Energy-channel labels for UH differential intensity
+  FIELDNAM: UH Energy Channel Labels
+  FORMAT: A32
   VAR_TYPE: metadata
 
 # --------------------------- Dataset variable attrs ------------------------
