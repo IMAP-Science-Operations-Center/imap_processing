@@ -54,6 +54,25 @@ HI_SPECIES_DISPLAY_NAMES = {
     "junk": "Junk",
 }
 
+LO_SW_SPECIES_DISPLAY_NAMES = {
+    "hplus": "H+",
+    "heplus": "He+",
+    "heplusplus": "He++",
+    "cplus4": "C4+",
+    "cplus5": "C5+",
+    "cplus6": "C6+",
+    "oplus5": "O5+",
+    "oplus6": "O6+",
+    "oplus7": "O7+",
+    "oplus8": "O8+",
+    "ne": "Ne",
+    "mg": "Mg",
+    "si": "Si",
+    "fe_loq": "Fe LoQ",
+    "fe_hiq": "Fe HiQ",
+    "cnoplus": "CNO+",
+}
+
 
 def _format_hi_energy_labels(
     species: str,
@@ -571,7 +590,17 @@ def process_lo_species_intensity(
     for species in species_list:
         attrs = unc_attrs if "unc" in species else species_attrs
         # Replace {species} and {direction} in attrs
-        attrs = apply_replacements_to_attrs(attrs, {"species": species})
+        base_species = species.removeprefix("unc_")
+        attrs = apply_replacements_to_attrs(
+            attrs,
+            {
+                "species": species,
+                "species_display": LO_SW_SPECIES_DISPLAY_NAMES.get(
+                    base_species,
+                    base_species,
+                ),
+            },
+        )
         dataset[species].attrs.update(attrs)
 
     # Since the RGFO mode is implemented within a half-spin at a given esa step and

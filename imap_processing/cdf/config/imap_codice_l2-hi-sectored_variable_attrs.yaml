@@ -72,23 +72,31 @@ spin_sector:
 
 energy_cno:
   <<: *energy_default
+  CATDESC: Geometric mean energy per nucleon for CNO
   DELTA_MINUS_VAR: energy_cno_minus
   DELTA_PLUS_VAR: energy_cno_plus
+  FIELDNAM: CNO Energy
 
 energy_fe:
   <<: *energy_default
+  CATDESC: Geometric mean energy per nucleon for Fe
   DELTA_MINUS_VAR: energy_fe_minus
   DELTA_PLUS_VAR: energy_fe_plus
+  FIELDNAM: Fe Energy
 
 energy_h:
   <<: *energy_default
+  CATDESC: Geometric mean energy per nucleon for H
   DELTA_MINUS_VAR: energy_h_minus
   DELTA_PLUS_VAR: energy_h_plus
+  FIELDNAM: H Energy
 
 energy_he3he4:
   <<: *energy_default
+  CATDESC: Geometric mean energy per nucleon for He3+He4
   DELTA_MINUS_VAR: energy_he3he4_minus
   DELTA_PLUS_VAR: energy_he3he4_plus
+  FIELDNAM: He3+He4 Energy
 
 # ------------------------------- Label vars --------------------------------
 event_num_label:
@@ -175,10 +183,10 @@ species_dim_attrs: &species_dim_attrs
 # species:
 cno:
   <<: *species_dim_attrs
-  CATDESC: cno (x2 spacing)
+  CATDESC: Differential intensity for CNO by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: cno
+  FIELDNAM: Differential Intensity - CNO
   FILLVAL: *real_fillval
   FORMAT: E14.7
   SCALETYP: log
@@ -189,10 +197,10 @@ cno:
 
 fe:
   <<: *species_dim_attrs
-  CATDESC: fe (x2 spacing)
+  CATDESC: Differential intensity for Fe by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: fe
+  FIELDNAM: Differential Intensity - Fe
   FILLVAL: *real_fillval
   FORMAT: F32.1
   SCALETYP: log
@@ -203,10 +211,10 @@ fe:
 
 h:
   <<: *species_dim_attrs
-  CATDESC: h (x2 spacing)
+  CATDESC: Differential intensity for H by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: h
+  FIELDNAM: Differential Intensity - H
   FILLVAL: *real_fillval
   FORMAT: F32.1
   SCALETYP: log
@@ -217,10 +225,10 @@ h:
 
 he3he4:
   <<: *species_dim_attrs
-  CATDESC: he3he4 (x2 spacing)
+  CATDESC: Differential intensity for He3+He4 by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: he3he4
+  FIELDNAM: Differential Intensity - He3+He4
   FILLVAL: *real_fillval
   FORMAT: F32.1
   SCALETYP: log
@@ -232,10 +240,10 @@ he3he4:
 # uncertainties:
 unc_cno:
   <<: *species_dim_attrs
-  CATDESC: Uncertainties for cno (x2 spacing)
+  CATDESC: Uncertainty in differential intensity for CNO by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
   COORDINATE_SYSTEM: instrument frame
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Uncertainties for cno
+  FIELDNAM: Uncertainty - CNO
   FILLVAL: *real_fillval
   FORMAT: F32.1
   SCALETYP: log
@@ -247,10 +255,10 @@ unc_cno:
 
 unc_fe:
   <<: *species_dim_attrs
-  CATDESC: Uncertainties for fe (x2 spacing)
+  CATDESC: Uncertainty in differential intensity for Fe by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
   COORDINATE_SYSTEM: instrument frame
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Uncertainties for fe
+  FIELDNAM: Uncertainty - Fe
   FILLVAL: *real_fillval
   FORMAT: F32.1
   SCALETYP: log
@@ -262,11 +270,11 @@ unc_fe:
 
 unc_h:
   <<: *species_dim_attrs
-  CATDESC: Uncertainties for h (x2 spacing)
+  CATDESC: Uncertainty in differential intensity for H by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Uncertainties for h
+  FIELDNAM: Uncertainty - H
   FILLVAL: *real_fillval
   FORMAT: F32.1
   SCALETYP: log
@@ -278,10 +286,10 @@ unc_h:
 
 unc_he3he4:
   <<: *species_dim_attrs
-  CATDESC: Uncertainties for he3he4 (x2 spacing)
+  CATDESC: Uncertainty in differential intensity for He3+He4 by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
   COORDINATE_SYSTEM: instrument frame
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Uncertainties for he3he4
+  FIELDNAM: Uncertainty - He3+He4
   FILLVAL: *real_fillval
   FORMAT: F32.1
   SCALETYP: log
@@ -293,10 +301,10 @@ unc_he3he4:
 
 # energy deltas:
 energy_cno_minus:
-  CATDESC: Energy Table Minus value
+  CATDESC: Lower energy half-width for CNO
   DEPEND_1: energy_cno
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
-  FIELDNAM: energy delta minus
+  FIELDNAM: CNO Energy Delta Minus
   FILLVAL: *real_fillval
   FORMAT: F12.6
   LABLAXIS: Energy
@@ -307,10 +315,10 @@ energy_cno_minus:
   VAR_TYPE: support_data
 
 energy_cno_plus:
-  CATDESC: Energy Table Plus value
+  CATDESC: Upper energy half-width for CNO
   DEPEND_1: energy_cno
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
-  FIELDNAM: energy delta plus
+  FIELDNAM: CNO Energy Delta Plus
   FILLVAL: *real_fillval
   FORMAT: F12.6
   LABLAXIS: Energy
@@ -321,10 +329,10 @@ energy_cno_plus:
   VAR_TYPE: support_data
 
 energy_fe_minus:
-  CATDESC: Energy Table Minus value
+  CATDESC: Lower energy half-width for Fe
   DEPEND_1: energy_fe
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
-  FIELDNAM: energy delta minus
+  FIELDNAM: Fe Energy Delta Minus
   FILLVAL: *real_fillval
   FORMAT: F12.6
   LABLAXIS: Energy
@@ -335,10 +343,10 @@ energy_fe_minus:
   VAR_TYPE: support_data
 
 energy_fe_plus:
-  CATDESC: Energy Table Plus value
+  CATDESC: Upper energy half-width for Fe
   DEPEND_1: energy_fe
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
-  FIELDNAM: energy delta plus
+  FIELDNAM: Fe Energy Delta Plus
   FILLVAL: *real_fillval
   FORMAT: F12.6
   LABLAXIS: Energy
@@ -349,10 +357,10 @@ energy_fe_plus:
   VAR_TYPE: support_data
 
 energy_h_minus:
-  CATDESC: Energy Table Minus value
+  CATDESC: Lower energy half-width for H
   DEPEND_1: energy_h
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
-  FIELDNAM: energy delta minus
+  FIELDNAM: H Energy Delta Minus
   FILLVAL: *real_fillval
   FORMAT: F12.6
   LABLAXIS: Energy
@@ -363,10 +371,10 @@ energy_h_minus:
   VAR_TYPE: support_data
 
 energy_h_plus:
-  CATDESC: Energy Table Plus value
+  CATDESC: Upper energy half-width for H
   DEPEND_1: energy_h
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
-  FIELDNAM: energy delta plus
+  FIELDNAM: H Energy Delta Plus
   FILLVAL: *real_fillval
   FORMAT: F12.6
   LABLAXIS: Energy
@@ -377,10 +385,10 @@ energy_h_plus:
   VAR_TYPE: support_data
 
 energy_he3he4_minus:
-  CATDESC: Energy Table Minus value
+  CATDESC: Lower energy half-width for He3+He4
   DEPEND_1: energy_he3he4
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
-  FIELDNAM: energy delta minus
+  FIELDNAM: He3+He4 Energy Delta Minus
   FILLVAL: *real_fillval
   FORMAT: F12.6
   LABLAXIS: Energy
@@ -391,10 +399,10 @@ energy_he3he4_minus:
   VAR_TYPE: support_data
 
 energy_he3he4_plus:
-  CATDESC: Energy Table Plus value
+  CATDESC: Upper energy half-width for He3+He4
   DEPEND_1: energy_he3he4
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
-  FIELDNAM: energy delta plus
+  FIELDNAM: He3+He4 Energy Delta Plus
   FILLVAL: *real_fillval
   FORMAT: F12.6
   LABLAXIS: Energy

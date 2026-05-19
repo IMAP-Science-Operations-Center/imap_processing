@@ -75,13 +75,13 @@ lo-pui-species-attrs:
     VAR_TYPE: data
 
 lo-sw-species-attrs:
-  CATDESC: "{species} Solar Wind Sunward Species"
+  CATDESC: "Differential intensity for sunward solar-wind {species_display}"
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: "Sunward - {species}"
+  FIELDNAM: "Sunward Differential Intensity - {species_display}"
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: esa_step_label
@@ -129,13 +129,13 @@ lo-pui-species-unc-attrs:
     VAR_TYPE: data
 
 lo-sw-species-unc-attrs:
-    CATDESC: "{species} Solar Wind Sunward Species uncertainty"
+    CATDESC: "Uncertainty in differential intensity for sunward solar-wind {species_display}"
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
     DISPLAY_TYPE: spectrogram
-    FIELDNAM: "Sunward - {species}"
+    FIELDNAM: "Sunward Uncertainty - {species_display}"
     FILLVAL: *real_fillval
     FORMAT: F32.1
     LABL_PTR_1: esa_step_label

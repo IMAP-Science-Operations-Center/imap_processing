@@ -3,6 +3,7 @@
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -379,7 +380,20 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         )
     processed_2_ds.attrs["Data_version"] = "001"
     assert processed_2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-species"
-    write_cdf(processed_2_ds)
+    cdf_path = write_cdf(processed_2_ds)
+    with cdflib.CDF(cdf_path) as cdf_file:
+        hplus_attrs = cdf_file.varattsget("hplus")
+        assert (
+            hplus_attrs["CATDESC"]
+            == "Differential intensity for sunward solar-wind H+"
+        )
+        assert hplus_attrs["FIELDNAM"] == "Sunward Differential Intensity - H+"
+        unc_hplus_attrs = cdf_file.varattsget("unc_hplus")
+        assert (
+            unc_hplus_attrs["CATDESC"]
+            == "Uncertainty in differential intensity for sunward solar-wind H+"
+        )
+        assert unc_hplus_attrs["FIELDNAM"] == "Sunward Uncertainty - H+"
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
