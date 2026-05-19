@@ -566,6 +566,28 @@ def process_lo_species_intensity(
     return dataset
 
 
+def _attach_epoch_delta_links(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Attach ISTP delta-variable links to the final epoch coordinate.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The final CoDICE L2 dataset to update.
+
+    Returns
+    -------
+    xarray.Dataset
+        The input dataset with ``epoch`` delta-link attrs attached when the
+        required variables are present.
+    """
+    if {"epoch", "epoch_delta_minus", "epoch_delta_plus"}.issubset(dataset.variables):
+        dataset["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta_minus"
+        dataset["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta_plus"
+
+    return dataset
+
+
 def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
     """
     Process the hi-omni L1B dataset to calculate omni-directional intensities.
@@ -779,9 +801,6 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
         "epoch_delta_minus": l1b_dataset["epoch_delta_minus"],
     }
 
-    l1b_dataset["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta_minus"
-    l1b_dataset["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta_plus"
-
     l1b_dataset = l1b_dataset.assign_coords(new_coords)
 
     return l1b_dataset
@@ -905,9 +924,6 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
         },
         attrs=cdf_attrs.get_global_attributes("imap_codice_l2_hi-sectored"),
     )
-
-    l1b_dataset["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta_minus"
-    l1b_dataset["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta_plus"
 
     efficiencies_file = dependencies.get_file_paths(
         descriptor="l2-hi-sectored-efficiency"
@@ -1459,6 +1475,15 @@ def process_codice_l2(
     for var in vars_to_drop:
         if var in l2_dataset.data_vars:
             l2_dataset = l2_dataset.drop_vars(var)
+
+    if dataset_name in {
+        "imap_codice_l2_hi-omni",
+        "imap_codice_l2_hi-sectored",
+        "imap_codice_l2_lo-sw-species",
+        "imap_codice_l2_hi-direct-events",
+        "imap_codice_l2_lo-direct-events",
+    }:
+        l2_dataset = _attach_epoch_delta_links(l2_dataset)
 
     logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 

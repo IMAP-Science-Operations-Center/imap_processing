@@ -429,7 +429,8 @@ def get_codice_epoch_time(
     -------
     tuple[np.ndarray, np.ndarray]
         (center_times (s), delta_times (ns)). center_times is converted to
-        nanoseconds at CDF write time.
+        nanoseconds at CDF write time. delta_times is returned as integer
+        nanoseconds.
     """
     # If Lo sensor
     if view_tab_obj.sensor == 0:
@@ -437,20 +438,21 @@ def get_codice_epoch_time(
         # 32 half spins makes full 16 spins for all non direct event products.
         # But Lo direct event's spins is also 16 spins. Because of that, we can use
         # the same calculation for all Lo products.
-        num_spins = 16.0
+        num_spins = 16
     # If Hi sensor and Direct Event product
     elif view_tab_obj.sensor == 1 and view_tab_obj.apid == CODICEAPID.COD_HI_PHA:
         # Use constant 16 spins for Hi PHA
-        num_spins = 16.0
+        num_spins = 16
     # If Non-Direct Event Hi product
     else:
         # Use 3d_collapsed value from LUT for other Hi products
-        num_spins = view_tab_obj.three_d_collapsed
+        num_spins = int(view_tab_obj.three_d_collapsed)
 
     # Units of 'spin ticks', where one 'spin tick' equals 320 microseconds.
-    # It takes multiple spins to collect data for a view.
-    spin_period_ns = spin_period.astype(np.float64) * 320 * 1e3  # Convert to ns
-    delta_times = (num_spins * spin_period_ns) / 2
+    # It takes multiple spins to collect data for a view. Keep the full delta
+    # calculation in integer nanoseconds so the written CDF type is CDF_INT8.
+    spin_period_ns: np.ndarray = spin_period.astype(np.int64) * 320_000
+    delta_times: np.ndarray = (num_spins * spin_period_ns) // 2
     # subseconds need to converted to seconds using this formula per CoDICE team:
     #   subseconds / 65536 gives seconds
     center_times_seconds = (

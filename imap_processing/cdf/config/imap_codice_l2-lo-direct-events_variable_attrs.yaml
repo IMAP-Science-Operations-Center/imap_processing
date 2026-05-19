@@ -37,12 +37,12 @@ epoch_delta_minus:
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta minus
   FILLVAL: -9223372036854775808
-  FORMAT: I18
+  FORMAT: I19
   LABLAXIS: Epoch Delta Minus
   SCALETYP: linear
   UNITS: ns
-  VALIDMAX: *max_int
-  VALIDMIN: *min_int
+  VALIDMAX: 128000000000
+  VALIDMIN: 0
   VAR_TYPE: support_data
 
 epoch_delta_plus:
@@ -51,12 +51,12 @@ epoch_delta_plus:
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta plus
   FILLVAL: -9223372036854775808
-  FORMAT: I18
+  FORMAT: I19
   LABLAXIS: Epoch Delta Plus
   SCALETYP: linear
   UNITS: ns
-  VALIDMAX: *max_int
-  VALIDMIN: *min_int
+  VALIDMAX: 128000000000
+  VALIDMIN: 0
   VAR_TYPE: support_data
 
 # ------------------------------- Data Variables -------------------------------

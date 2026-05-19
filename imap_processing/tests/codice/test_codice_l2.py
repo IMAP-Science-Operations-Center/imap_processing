@@ -3,6 +3,7 @@
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -34,6 +35,26 @@ from imap_processing.tests.codice.conftest import (
 )
 
 pytestmark = pytest.mark.external_test_data
+
+EXPECTED_EPOCH_DELTA_VALIDMAX = 128000000000
+
+
+def assert_l2_epoch_delta_cdf_metadata(cdf_file):
+    """Assert L2 epoch delta vars and epoch links are written correctly."""
+    cdf = cdflib.CDF(cdf_file)
+    epoch_attrs = cdf.varattsget("epoch")
+    assert epoch_attrs["DELTA_MINUS_VAR"] == "epoch_delta_minus"
+    assert epoch_attrs["DELTA_PLUS_VAR"] == "epoch_delta_plus"
+
+    for variable in ("epoch_delta_minus", "epoch_delta_plus"):
+        info = cdf.varinq(variable)
+        attrs = cdf.varattsget(variable)
+        assert info.Data_Type_Description == "CDF_INT8"
+        assert attrs["FILLVAL"] == -9223372036854775808
+        assert attrs["FORMAT"] == "I19"
+        assert attrs["VALIDMIN"] == 0
+        assert attrs["VALIDMAX"] == EXPECTED_EPOCH_DELTA_VALIDMAX
+
 
 EXPECTED_LOGICAL_SOURCES = [
     "imap_codice_l2_hi-direct-events",
@@ -379,7 +400,8 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         )
     processed_2_ds.attrs["Data_version"] = "001"
     assert processed_2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-species"
-    write_cdf(processed_2_ds)
+    cdf_file = write_cdf(processed_2_ds)
+    assert_l2_epoch_delta_cdf_metadata(cdf_file)
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -439,6 +461,7 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     processed_l2_ds.attrs["Data_version"] = "001"
     assert processed_l2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-direct-events"
     file = write_cdf(processed_l2_ds)
+    assert_l2_epoch_delta_cdf_metadata(file)
     errors = CDFValidator().validate(file)
     assert not errors
     load_cdf(file)
@@ -492,6 +515,7 @@ def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
     processed_l2_ds.attrs["Data_version"] = "001"
     assert processed_l2_ds.attrs["Logical_source"] == "imap_codice_l2_hi-direct-events"
     file = write_cdf(processed_l2_ds)
+    assert_l2_epoch_delta_cdf_metadata(file)
     errors = CDFValidator().validate(file)
     assert not errors
     load_cdf(file)
