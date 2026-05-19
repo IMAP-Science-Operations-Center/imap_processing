@@ -217,7 +217,7 @@ def test_lo_l1c(
     repoint_met,
 ):
     # Arrange
-    repoint_start_met = 51100000.0
+    repoint_start_met = 511000000.0
     repoint_stride_seconds = 86400  # 1 day stride
     data = {
         "imap_lo_l1b_de": l1b_de_spin,
