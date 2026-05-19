@@ -162,7 +162,6 @@ data_quality:
   VALIDMAX: 1
   VALIDMIN: 0
   VAR_TYPE: data
-  VAR_TYPE: support_data
 
 species_dim_attrs: &species_dim_attrs
   DEPEND_0: epoch

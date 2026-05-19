@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 from imap_data_access.processing_input import (
@@ -77,6 +78,9 @@ def test_l2_hi_omni(mock_get_file_paths):
     assert (
         omni_cdf_file.name == f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    with cdflib.CDF(omni_cdf_file) as cdf_file:
+        data_quality_attrs = cdf_file.varattsget("data_quality")
+        assert data_quality_attrs["VAR_TYPE"] == "data"
 
 
 def test_l2_hi_sectored(mock_get_file_paths):
@@ -161,3 +165,6 @@ def test_l2_hi_sectored(mock_get_file_paths):
         sectored_cdf_file.name
         == f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    with cdflib.CDF(sectored_cdf_file) as cdf_file:
+        data_quality_attrs = cdf_file.varattsget("data_quality")
+        assert data_quality_attrs["VAR_TYPE"] == "data"

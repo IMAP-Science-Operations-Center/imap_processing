@@ -199,7 +199,6 @@ data_quality:
   VALIDMAX: 1
   VALIDMIN: 0
   VAR_TYPE: data
-  VAR_TYPE: support_data
 
 # ----- hi-omni Attributes -----
 # Species plus and minus attrs:
