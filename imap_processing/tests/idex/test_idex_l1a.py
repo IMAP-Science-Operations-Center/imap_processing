@@ -1,5 +1,6 @@
 """Tests the L1 processing for decommutated IDEX data"""
 
+from copy import deepcopy
 from pathlib import Path
 from unittest import mock
 
@@ -111,6 +112,79 @@ def test_incomplete_event(caplog):
     # Assert that all the events are present except for one.
     assert len(l1a_dataset["epoch"]) == 13
     assert "Missing packet for event number 1" in caplog.text
+
+
+def test_duplicate_science_fragment_is_dropped(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify exact duplicate science fragments are ignored."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    duplicate_packet = deepcopy(packets[1])
+    packets = [*packets[:2], duplicate_packet, *packets[2:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = PacketParser(TEST_L0_FILE_SCI).data[0]
+
+    xr.testing.assert_equal(deduped, decom_test_data_sci)
+    assert "Skipping duplicate copy" in caplog.text
+
+
+def test_shorter_duplicate_science_fragment_is_replaced(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify a longer retransmitted fragment replaces a shorter copy."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    shorter_packet = deepcopy(packets[1])
+    shorter_packet["IDX__SCI0RAW"] = bytes(shorter_packet["IDX__SCI0RAW"])[:-10]
+    packets = [*packets[:1], shorter_packet, *packets[1:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = PacketParser(TEST_L0_FILE_SCI).data[0]
+
+    xr.testing.assert_equal(deduped, decom_test_data_sci)
+    assert "Replacing shorter science fragment" in caplog.text
+
+
+def test_conflicting_duplicate_science_fragment_skips_event(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify conflicting duplicate fragments cause the event to be skipped."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    conflicting_packet = deepcopy(packets[1])
+    raw = bytearray(bytes(conflicting_packet["IDX__SCI0RAW"]))
+    raw[-1] ^= 0x01
+    conflicting_packet["IDX__SCI0RAW"] = bytes(raw)
+    packets = [*packets[:2], conflicting_packet, *packets[2:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = PacketParser(TEST_L0_FILE_SCI).data[0]
+
+    assert len(deduped["epoch"]) == len(decom_test_data_sci["epoch"]) - 1
+    assert "Conflicting duplicate packet for event number" in caplog.text
 
 
 def test_idex_tof_high_data_from_cdf(decom_test_data_sci: xr.Dataset):
