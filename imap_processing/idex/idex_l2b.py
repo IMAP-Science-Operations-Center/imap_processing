@@ -44,6 +44,7 @@ from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.spice.time import epoch_to_doy, et_to_datetime64, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
+
 # Bin edges
 MASS_BIN_EDGES = np.array(
     [
@@ -81,6 +82,8 @@ SPIN_PHASE_BIN_EDGES = np.array([0, 90, 180, 270, 360])
 SKY_GRID = AzElSkyGrid(IDEX_SPACING_DEG)
 LON_BINS_EDGES = SKY_GRID.az_bin_edges
 LAT_BINS_EDGES = SKY_GRID.el_bin_edges
+
+IDEX_INT_FILLVAL = np.iinfo(np.int64).min
 
 
 def idex_l2b(
@@ -366,16 +369,16 @@ def idex_l2b(
 
     l2c_dataset.attrs.update(map_attrs)
 
-    # We're inserting a NaN block here for the 2026 June release while the
+    # We're inserting a placeholder block here for the 2026 June release while the
     # IDEX science team works through validating the fitting routines and
     # derived values.
 
     # L2B Block
     l2b_dataset["counts_by_mass"].data = np.full(
-        l2b_dataset["counts_by_mass"].shape, np.nan
+        l2b_dataset["counts_by_mass"].shape, IDEX_INT_FILLVAL, dtype=np.int64
     )
     l2b_dataset["counts_by_charge"].data = np.full(
-        l2b_dataset["counts_by_charge"].shape, np.nan
+        l2b_dataset["counts_by_charge"].shape, IDEX_INT_FILLVAL, dtype=np.int64
     )
     l2b_dataset["rate_by_mass"].data = np.full(
         l2b_dataset["rate_by_mass"].shape, np.nan
@@ -386,10 +389,10 @@ def idex_l2b(
 
     # L2C Block
     l2c_dataset["counts_by_mass_map"].data = np.full(
-        l2c_dataset["counts_by_mass_map"].shape, np.nan
+        l2c_dataset["counts_by_mass_map"].shape, IDEX_INT_FILLVAL, dtype=np.int64
     )
     l2c_dataset["counts_by_charge_map"].data = np.full(
-        l2c_dataset["counts_by_charge_map"].shape, np.nan
+        l2c_dataset["counts_by_charge_map"].shape, IDEX_INT_FILLVAL, dtype=np.int64
     )
     l2c_dataset["rate_by_mass_map"].data = np.full(
         l2c_dataset["rate_by_mass_map"].shape, np.nan

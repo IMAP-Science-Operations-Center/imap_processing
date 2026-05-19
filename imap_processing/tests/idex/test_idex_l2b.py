@@ -1,5 +1,6 @@
 """Tests the L2b processing for IDEX data"""
 
+import cdflib
 import numpy as np
 import pytest
 import xarray as xr
@@ -23,6 +24,8 @@ from imap_processing.idex.idex_l2b import (
     get_science_acquisition_on_percentage,
     idex_l2b,
 )
+
+INT_FILLVAL = np.iinfo(np.int64).min
 
 
 @pytest.fixture
@@ -66,6 +69,12 @@ def test_l2b_logical_source_and_cdf(l2b_and_l2c_datasets: list[xr.Dataset]):
 
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2b_sci-1mo_20251017_v999.cdf"
+    with cdflib.CDF(file_name) as cdf_file:
+        for variable_name in ("counts_by_charge", "counts_by_mass"):
+            var_info = cdf_file.varinq(variable_name)
+            var_attrs = cdf_file.varattsget(variable_name)
+            assert var_info.Data_Type_Description == "CDF_INT8"
+            assert int(var_attrs["FILLVAL"]) == INT_FILLVAL
 
 
 def test_l2c_attrs_and_vars(
@@ -105,16 +114,30 @@ def test_l2c_attrs_and_vars(
     rect_file_name = write_cdf(l2c_dataset)
     assert rect_file_name.exists()
     assert rect_file_name.name == "imap_idex_l2c_rectangular-map-1mo_20251017_v999.cdf"
+    with cdflib.CDF(rect_file_name) as cdf_file:
+        for variable_name in ("counts_by_charge_map", "counts_by_mass_map"):
+            var_info = cdf_file.varinq(variable_name)
+            var_attrs = cdf_file.varattsget(variable_name)
+            assert var_info.Data_Type_Description == "CDF_INT8"
+            assert int(var_attrs["FILLVAL"]) == INT_FILLVAL
 
     for var in l2c_dataset.data_vars:
         assert "DICT_KEY" in l2c_dataset[var].attrs, (
             f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
         )
 
-    # TODO: This NAN check to be REMOVED in future
-    expected_nan_vars = [
+    expected_fill_vars = [
         "counts_by_charge_map",
         "counts_by_mass_map",
+    ]
+    for var in expected_fill_vars:
+        expected_fill = np.full(l2c_dataset[var].shape, INT_FILLVAL, dtype=np.int64)
+        assert np.array_equal(l2c_dataset[var].data, expected_fill), (
+            f"Variable {var} should be fully set to the integer fill value "
+            "for the temporary L2B/L2C patch."
+        )
+
+    expected_nan_vars = [
         "rate_by_charge_map",
         "rate_by_mass_map",
     ]
@@ -150,10 +173,18 @@ def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
             f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
         )
 
-    # TODO: This NAN check to be REMOVED in future
-    expected_nan_vars = [
+    expected_fill_vars = [
         "counts_by_charge",
         "counts_by_mass",
+    ]
+    for var in expected_fill_vars:
+        expected_fill = np.full(l2b_dataset[var].shape, INT_FILLVAL, dtype=np.int64)
+        assert np.array_equal(l2b_dataset[var].data, expected_fill), (
+            f"Variable {var} should be fully set to the integer fill value "
+            "for the temporary L2B patch."
+        )
+
+    expected_nan_vars = [
         "rate_by_charge",
         "rate_by_mass",
     ]
