@@ -152,7 +152,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
         # NOTE: this ignore is needed to avoid a mypy error in Git
         # tests.
-        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[ # type: ignore[index]
+        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[  # type: ignore[index]
             "sectorates"
         ].values[i]
 
