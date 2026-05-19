@@ -11,7 +11,7 @@ energy_attrs: &energy_default
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
   FIELDNAM: Energy Table
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: linear
   UNITS: MeV/nuc
@@ -298,7 +298,7 @@ energy_cno_minus:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   FIELDNAM: energy delta minus
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
@@ -312,7 +312,7 @@ energy_cno_plus:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   FIELDNAM: energy delta plus
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
@@ -326,7 +326,7 @@ energy_fe_minus:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   FIELDNAM: energy delta minus
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
@@ -340,7 +340,7 @@ energy_fe_plus:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   FIELDNAM: energy delta plus
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
@@ -354,7 +354,7 @@ energy_h_minus:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   FIELDNAM: energy delta minus
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
@@ -368,7 +368,7 @@ energy_h_plus:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   FIELDNAM: energy delta plus
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
@@ -382,7 +382,7 @@ energy_he3he4_minus:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   FIELDNAM: energy delta minus
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
@@ -396,7 +396,7 @@ energy_he3he4_plus:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
   FIELDNAM: energy delta plus
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc

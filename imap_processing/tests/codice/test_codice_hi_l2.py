@@ -81,6 +81,9 @@ def test_l2_hi_omni(mock_get_file_paths):
     with cdflib.CDF(omni_cdf_file) as cdf_file:
         data_quality_attrs = cdf_file.varattsget("data_quality")
         assert data_quality_attrs["VAR_TYPE"] == "data"
+        assert cdf_file.varattsget("energy_h")["FORMAT"] == "F12.6"
+        assert cdf_file.varattsget("energy_h_minus")["FORMAT"] == "F12.6"
+        assert cdf_file.varattsget("energy_h_plus")["FORMAT"] == "F12.6"
 
 
 def test_l2_hi_sectored(mock_get_file_paths):
@@ -168,3 +171,6 @@ def test_l2_hi_sectored(mock_get_file_paths):
     with cdflib.CDF(sectored_cdf_file) as cdf_file:
         data_quality_attrs = cdf_file.varattsget("data_quality")
         assert data_quality_attrs["VAR_TYPE"] == "data"
+        assert cdf_file.varattsget("energy_h")["FORMAT"] == "F12.6"
+        assert cdf_file.varattsget("energy_h_minus")["FORMAT"] == "F12.6"
+        assert cdf_file.varattsget("energy_h_plus")["FORMAT"] == "F12.6"

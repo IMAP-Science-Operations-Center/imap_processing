@@ -13,7 +13,7 @@ energy_attrs: &energy_default
   DISPLAY_TYPE: time_series
   FIELDNAM: Energy Table
   FILLVAL: *real_fillval
-  FORMAT: F32.1
+  FORMAT: F12.6
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
