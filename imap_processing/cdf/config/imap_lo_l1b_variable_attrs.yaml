@@ -218,7 +218,8 @@ gt_end_met:
 
 h_background_rates:
   CATDESC: Hydrogen background rates per ESA level
-  DEPEND_0: esa_step
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
   FIELDNAM: H Background Rates
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -230,7 +231,8 @@ h_background_rates:
 
 h_background_variance:
   CATDESC: Hydrogen background rate variance per ESA level
-  DEPEND_0: esa_step
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
   FIELDNAM: H Background Variance
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -242,6 +244,7 @@ h_background_variance:
 
 h_synthetic_floor:
   CATDESC: Hydrogen synthetic background floor
+  DEPEND_0: epoch
   FIELDNAM: H Synthetic Floor
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -253,6 +256,7 @@ h_synthetic_floor:
 
 h_proxy_floor:
   CATDESC: Hydrogen proxy background floor
+  DEPEND_0: epoch
   FIELDNAM: H Proxy Floor
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -264,7 +268,8 @@ h_proxy_floor:
 
 o_background_rates:
   CATDESC: Oxygen background rates per ESA level
-  DEPEND_0: esa_step
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
   FIELDNAM: O Background Rates
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -276,7 +281,8 @@ o_background_rates:
 
 o_background_variance:
   CATDESC: Oxygen background rate variance per ESA level
-  DEPEND_0: esa_step
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
   FIELDNAM: O Background Variance
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -288,6 +294,7 @@ o_background_variance:
 
 o_synthetic_floor:
   CATDESC: Oxygen synthetic background floor
+  DEPEND_0: epoch
   FIELDNAM: O Synthetic Floor
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -299,6 +306,7 @@ o_synthetic_floor:
 
 o_proxy_floor:
   CATDESC: Oxygen proxy background floor
+  DEPEND_0: epoch
   FIELDNAM: O Proxy Floor
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
