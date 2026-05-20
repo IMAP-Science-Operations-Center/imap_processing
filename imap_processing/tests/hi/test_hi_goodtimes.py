@@ -3980,7 +3980,7 @@ class TestHiGoodtimes:
             "cull_code_counts": {},
         }
         mock_goodtimes.goodtimes.finalize_dataset.return_value = MagicMock()
-        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_datasets = [MagicMock() for _ in range(9)]
         mock_hk = MagicMock()
 
         with (
@@ -4053,7 +4053,7 @@ class TestHiGoodtimes:
             mock_goodtimes.__getitem__.assert_called_with("cull_flags")
 
     def test_calls_apply_filters_when_full_de_set(self, tmp_path):
-        """Test that _apply_goodtimes_filters is called with 7 DE datasets."""
+        """Test that _apply_goodtimes_filters is called with 9 DE datasets."""
         mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
         mock_goodtimes = MagicMock()
         mock_goodtimes.attrs = {"sensor": "45sensor"}
@@ -4066,7 +4066,7 @@ class TestHiGoodtimes:
             "cull_code_counts": {},
         }
         mock_goodtimes.goodtimes.finalize_dataset.return_value = MagicMock()
-        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_datasets = [MagicMock() for _ in range(9)]
         mock_hk = MagicMock()
 
         with (
@@ -4111,7 +4111,7 @@ class TestHiGoodtimes:
         }
         mock_finalized = MagicMock()
         mock_goodtimes.goodtimes.finalize_dataset.return_value = mock_finalized
-        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_datasets = [MagicMock() for _ in range(9)]
         mock_hk = MagicMock()
 
         with (

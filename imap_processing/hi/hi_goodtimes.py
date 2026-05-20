@@ -23,6 +23,9 @@ from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
+# Define number of nearest l1b de datasets required
+N_NEAREST_L1B_DE_DATASETS = 8
+
 # Structured dtype for good time intervals
 INTERVAL_DTYPE: np.dtype = np.dtype(
     [
@@ -79,8 +82,8 @@ def hi_goodtimes(
         Repointing identifier for the current pointing (e.g., "repoint00001").
         Used to identify which dataset in l1b_de_datasets is the current one.
     l1b_de_datasets : list[xr.Dataset]
-        L1B DE datasets for surrounding pointings. Typically includes
-        current plus 3 preceding and 3 following pointings (7 total).
+        L1B DE datasets for surrounding pointings. Typically, includes
+        current plus 4 preceding and 4 following pointings (9 total).
         Statistical filters 0 and 1 use all datasets; other filters use
         only the current pointing.
     l1b_hk : xr.Dataset
@@ -101,19 +104,19 @@ def hi_goodtimes(
     See IMAP-Hi Algorithm Document Sections 2.2.4 and 2.3.2 for details
     on each culling algorithm.
 
-    Processing requires that repointing + 3 has occurred (so that statistical
+    Processing requires that repointing + 4 has occurred (so that statistical
     filters can use surrounding pointings). Due to challenges with dependency
     management in the batch starter, it was decided to design the Hi goodtimes
     to set the L1B DE dependencies as not required and handle the final logic for
-    checking L1B DE dependencies in this function. If repointing + 3 has not yet
-    completed, an empty list is returned. If repointing + 3 has occurred but
-    not all 7 DE files are available, all times are marked as bad.
+    checking L1B DE dependencies in this function. If repointing + 4 has not yet
+    completed, an empty list is returned. If repointing + 4 has occurred but
+    not all 9 DE files are available, all times are marked as bad.
     """
     logger.info("Starting Hi goodtimes processing")
 
     # Parse the current repoint ID and check if we can process yet
     current_repoint_id = int(current_repointing.replace("repoint", ""))
-    future_repoint_id = current_repoint_id + 3
+    future_repoint_id = int(current_repoint_id + N_NEAREST_L1B_DE_DATASETS // 2)
 
     # Check if the future repointing has finished by checking that the next
     # repoint is in the repoint dataframe.
@@ -136,8 +139,8 @@ def hi_goodtimes(
     # Create the goodtimes dataset from the current pointing
     goodtimes_ds = create_goodtimes_dataset(current_l1b_de)
 
-    # Check if we have the full set of 7 DE files for nominal processing
-    if len(l1b_de_datasets) == 7:
+    # Check if we have the full set of N+1 DE files for nominal processing
+    if len(l1b_de_datasets) == N_NEAREST_L1B_DE_DATASETS + 1:
         _apply_goodtimes_filters(
             goodtimes_ds,
             l1b_de_datasets,
@@ -150,8 +153,8 @@ def hi_goodtimes(
         # Incomplete DE file set - mark all times as bad
         logger.warning(
             f"Incomplete DE file set for {current_repointing}: "
-            f"expected 7 files, got {len(l1b_de_datasets)}. "
-            "Marking all times as bad."
+            f"expected {N_NEAREST_L1B_DE_DATASETS + 1} files, got "
+            f"{len(l1b_de_datasets)}. Marking all times as bad."
         )
         goodtimes_ds["cull_flags"][:, :] = CullCode.INCOMPLETE_SPIN
 
