@@ -17,7 +17,7 @@ from imap_processing.spice.geometry import (
     frame_transform_az_el,
     lo_instrument_pointing,
 )
-from imap_processing.spice.repoint import get_pointing_times
+from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.spin import get_spin_data, get_spin_number
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
@@ -91,11 +91,13 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             l1b_de, sci_dependencies["imap_lo_l1b_goodtimes"]
         )
 
-        # Get pointing times from the goodtimes dataset - this should always
-        # be valid even if no events fall within the goodtime windows
-        pointing_start_met, pointing_end_met = get_pointing_times(
-            float(sci_dependencies["imap_lo_l1b_goodtimes"]["gt_start_met"].values[0])
-        )
+        # Get the pointing times from the repoint ID stored in the l1b_de dataset
+        repoint_id = l1b_de.attrs.get("Repointing", None)
+        if repoint_id is None:
+            raise ValueError(
+                "Repointing ID attribute is missing from the L1B DE dataset."
+            )
+        pointing_start_met, pointing_end_met = get_pointing_times_from_id(repoint_id)
 
         # Handle case where no good times are found after filtering,
         # which would lead to an empty dataset with zero counts

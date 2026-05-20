@@ -104,6 +104,7 @@ def l1b_de_spin():
         coords={
             "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 902),
         },
+        attrs={"Repointing": "repoint00000"},
     )
     return l1b_de
 
