@@ -995,7 +995,10 @@ class Hit(ProcessInstrument):
                     f"L0 and time kernels."
                 )
             # process data to L1A products
-            science_files = dependencies.get_file_paths(source="hit", descriptor="raw")
+            # TODO: revert to 'raw' in issue #3215 work
+            science_files = dependencies.get_file_paths(
+                source="hit", descriptor="pha-telemetry-corrected"
+            )
             datasets = hit_l1a(science_files[0], self.start_date)
 
         elif self.data_level == "l1b":

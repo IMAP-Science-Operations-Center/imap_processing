@@ -150,6 +150,8 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
 
     # Update counts for science frames where data is available
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
+        # NOTE: this ignore is needed to avoid a mypy error in Git
+        # tests.
         data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[  # type: ignore[index]
             "sectorates"
         ].values[i]
@@ -389,8 +391,6 @@ def subset_sectored_counts(
         A dataset of complete sectored counts and corresponding livetime values
         for the processing day.
     """
-    # TODO: Update to use fill values for partial frames rather than drop them
-
     # Modify livetime_counter to use a new epoch coordinate
     # that is aligned with the original epoch dimension. This
     # ensures that livetime doesn't get filtered when the original
@@ -612,10 +612,10 @@ def process_science(
     sci_dataset = decom_hit(dataset)
 
     # Create dataset for sectored data organized by species type
-    sectored_dataset = subcom_sectorates(sci_dataset)
+    # sectored_dataset = subcom_sectorates(sci_dataset)
 
     # Subset sectored data for complete sets (10 min intervals covering all species)
-    sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
+    # sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
 
     # TODO:
     #  - headers are values per packet rather than per frame. Do these need to align
@@ -637,11 +637,11 @@ def process_science(
 
     # Calculate uncertainties for count rates
     count_rates_dataset = calculate_uncertainties(count_rates_dataset)
-    sectored_count_rates_dataset = calculate_uncertainties(sectored_dataset)
+    # sectored_count_rates_dataset = calculate_uncertainties(sectored_dataset)
 
     l1a_datasets: dict = {
         "imap_hit_l1a_counts-standard": count_rates_dataset,
-        "imap_hit_l1a_counts-sectored": sectored_count_rates_dataset,
+        # "imap_hit_l1a_counts-sectored": sectored_count_rates_dataset,
         "imap_hit_l1a_direct-events": pha_raw_dataset,
     }
 
