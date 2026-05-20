@@ -1171,7 +1171,7 @@ def get_fwhm(
 def get_efficiency_interpolator(
     ancillary_files: dict,
     sensor: str,
-) -> tuple[RegularGridInterpolator, tuple, tuple]:
+) -> tuple[RegularGridInterpolator, tuple, tuple, tuple]:
     """
     Return a callable function that interpolates efficiency values for each event.
 
@@ -1190,6 +1190,8 @@ def get_efficiency_interpolator(
         Minimum and maximum theta values in the lookup table.
     phi_min_max : tuple
         Minimum and maximum phi values in the lookup table.
+    energy_min_max : tuple
+        Minimum and maximum energy values in the lookup table.
     """
     lookup_table = get_energy_efficiencies(ancillary_files, sensor)
 
@@ -1205,6 +1207,7 @@ def get_efficiency_interpolator(
     # Find the min and max values for theta and phi
     theta_min_max = (theta_vals.min(), theta_vals.max())
     phi_min_max = (phi_vals.min(), phi_vals.max())
+    energy_min_max = (np.asarray(energy_vals).min(), np.asarray(energy_vals).max())
 
     interpolator = RegularGridInterpolator(
         (theta_vals, phi_vals, energy_vals),
@@ -1213,7 +1216,7 @@ def get_efficiency_interpolator(
         fill_value=FILLVAL_FLOAT32,
     )
 
-    return interpolator, theta_min_max, phi_min_max
+    return interpolator, theta_min_max, phi_min_max, energy_min_max
 
 
 def get_efficiency(
@@ -1249,7 +1252,7 @@ def get_efficiency(
         Interpolated efficiency values.
     """
     if not interpolator:
-        interpolator, _, _ = get_efficiency_interpolator(ancillary_files, sensor)
+        interpolator, _, _, _ = get_efficiency_interpolator(ancillary_files, sensor)
 
     return interpolator((theta_inst, phi_inst, energy))
 

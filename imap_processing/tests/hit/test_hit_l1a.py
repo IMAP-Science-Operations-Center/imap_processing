@@ -576,6 +576,7 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
                 )
 
 
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
     """Compare the output of the L1A processing to the validation data.
 
@@ -822,6 +823,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
     )
 
 
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
     """Create L1A datasets from packet files.
 

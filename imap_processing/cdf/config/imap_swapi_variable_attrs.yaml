@@ -83,7 +83,7 @@ rate_uncertainty_default: &rate_uncertainty_default
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
   UNITS: counts
-  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VALIDMAX: 4.519655172413793E+05 # 65535 counts / 0.145 s livetime
   VALIDMIN: 0.0
   VAR_TYPE: data
 
@@ -97,7 +97,7 @@ rate_default: &rate_default
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
   UNITS: counts/s
-  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VALIDMAX: 4.519655172413793E+05 # 65535 counts / 0.145 s livetime
   VALIDMIN: 0.0
   VAR_TYPE: data
 
@@ -133,7 +133,7 @@ sci_start_time:
   DEPEND_0: epoch
   DICT_KEY: "SPASE>Support>SupportQantity:Temporal"
   FIELDNAM: Science Start time
-  FORMAT: " "
+  FORMAT: A23
   VAR_TYPE: support_data
 
 # Minimum attrs setting for HK data

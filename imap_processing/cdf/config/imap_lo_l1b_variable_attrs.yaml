@@ -218,6 +218,7 @@ gt_end_met:
 
 h_background_rates:
   CATDESC: Hydrogen background rates per ESA level
+  DEPEND_0: esa_step
   FIELDNAM: H Background Rates
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -229,6 +230,7 @@ h_background_rates:
 
 h_background_variance:
   CATDESC: Hydrogen background rate variance per ESA level
+  DEPEND_0: esa_step
   FIELDNAM: H Background Variance
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -262,6 +264,7 @@ h_proxy_floor:
 
 o_background_rates:
   CATDESC: Oxygen background rates per ESA level
+  DEPEND_0: esa_step
   FIELDNAM: O Background Rates
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6
@@ -273,6 +276,7 @@ o_background_rates:
 
 o_background_variance:
   CATDESC: Oxygen background rate variance per ESA level
+  DEPEND_0: esa_step
   FIELDNAM: O Background Variance
   FILLVAL: -1.0000000E+31
   FORMAT: F12.6

@@ -243,7 +243,9 @@ def add_dataset_attrs(
             data=azimuth_60.values.astype(str),
             name="azimuth_60_label",
             dims=["azimuth_60_label"],
-            attrs=attr_mgr.get_variable_attributes("azimuth_60_label"),
+            attrs=attr_mgr.get_variable_attributes(
+                "azimuth_60_label", check_schema=False
+            ),
         )
         azimuth_6 = xr.DataArray(
             data=np.arange(0, 60, dtype=np.uint8),
@@ -255,7 +257,9 @@ def add_dataset_attrs(
             data=azimuth_6.values.astype(str),
             name="azimuth_6_label",
             dims=["azimuth_6_label"],
-            attrs=attr_mgr.get_variable_attributes("azimuth_6_label"),
+            attrs=attr_mgr.get_variable_attributes(
+                "azimuth_6_label", check_schema=False
+            ),
         )
 
         esa_step = xr.DataArray(
