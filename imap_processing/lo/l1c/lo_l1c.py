@@ -17,7 +17,7 @@ from imap_processing.spice.geometry import (
     frame_transform_az_el,
     lo_instrument_pointing,
 )
-from imap_processing.spice.repoint import get_pointing_times
+from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.spin import get_spin_data, get_spin_number
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
@@ -91,21 +91,20 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             l1b_de, sci_dependencies["imap_lo_l1b_goodtimes"]
         )
 
+        # Get the pointing times from the repoint ID stored in the l1b_de dataset
+        repoint_id = l1b_de.attrs.get("Repointing", None)
+        if repoint_id is None:
+            raise ValueError(
+                "Repointing ID attribute is missing from the L1B DE dataset."
+            )
+        pointing_start_met, pointing_end_met = get_pointing_times_from_id(repoint_id)
+
         # Handle case where no good times are found after filtering,
-        # which would lead to an empty dataset
+        # which would lead to an empty dataset with zero counts
         if len(l1b_goodtimes_only["epoch"]) == 0:
             logging.warning(
                 "No good times found in L1B DE dataset after filtering. "
-                "Creating empty PSET dataset with zero counts and exposure time."
-            )
-            # Set dummy pointing start and end METs
-            pointing_start_met = 0.0
-            pointing_end_met = 0.0
-        else:
-            pointing_start_met, pointing_end_met = get_pointing_times(
-                float(
-                    sci_dependencies["imap_lo_l1b_goodtimes"]["gt_start_met"].values[0]
-                )
+                "Creating PSET dataset with zero counts and exposure time."
             )
 
         pset = xr.Dataset(
@@ -147,12 +146,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         )
 
         # Get the start and end spin numbers based on the pointing start and end MET
-        if 0 == pointing_start_met:
-            start_spin_number = 0
-            end_spin_number = 0
-        else:
-            start_spin_number = get_spin_number(pset["pointing_start_met"].item())
-            end_spin_number = get_spin_number(pset["pointing_end_met"].item())
+        start_spin_number = get_spin_number(pset["pointing_start_met"].item())
+        end_spin_number = get_spin_number(pset["pointing_end_met"].item())
         pset["start_spin_number"] = xr.DataArray(
             [start_spin_number],
             dims="epoch",
@@ -1148,24 +1143,6 @@ def set_pointing_directions(
     hae_latitude : xr.DataArray
         The HAE latitude for each spin and off angle bin.
     """
-    # Handle case where epoch is empty
-    if epoch == met_to_ttj2000ns(0):
-        return xr.DataArray(
-            data=np.zeros(
-                (1, len(SPIN_ANGLE_BIN_CENTERS), len(OFF_ANGLE_BIN_CENTERS)),
-                dtype=np.float64,
-            ),
-            dims=["epoch", "spin_angle", "off_angle"],
-            attrs=attr_mgr.get_variable_attributes("hae_longitude"),
-        ), xr.DataArray(
-            data=np.zeros(
-                (1, len(SPIN_ANGLE_BIN_CENTERS), len(OFF_ANGLE_BIN_CENTERS)),
-                dtype=np.float64,
-            ),
-            dims=["epoch", "spin_angle", "off_angle"],
-            attrs=attr_mgr.get_variable_attributes("hae_latitude"),
-        )
-
     et = ttj2000ns_to_et(epoch)
     # create a meshgrid of spin and off angles using the bin centers
     spin, off = np.meshgrid(
