@@ -3026,6 +3026,19 @@ class TestSumEsaCounts:
         assert "esa_energy_step" in summed[0].dims
         assert summed[0].coords["esa_energy_step"].values.tolist() == [-1]
 
+    def test_ccsds_met_has_pseudo_esa_dimension(self):
+        """Test that ccsds_met has pseudo-ESA dimension for structural consistency."""
+        ds = self._create_per_sweep_dataset()
+        per_sweep_datasets = {0: ds}
+
+        summed = _sum_esa_counts(per_sweep_datasets, [7, 8, 9])
+
+        # ccsds_met should have same dimensions as qualified_count
+        assert "ccsds_met" in summed[0].data_vars
+        assert summed[0]["ccsds_met"].dims == summed[0]["qualified_count"].dims
+        assert "esa_energy_step" in summed[0]["ccsds_met"].dims
+        assert summed[0]["ccsds_met"].coords["esa_energy_step"].values.tolist() == [-1]
+
     def test_preserves_sweep_dimension(self):
         """Test that sweep dimension is preserved."""
         ds = self._create_per_sweep_dataset(n_sweeps=5)
@@ -3469,6 +3482,97 @@ class TestStatisticalFilter1:
 
         # All times should still be good (normal data, no pre-filter)
         assert np.all(goodtimes_for_filter1["cull_flags"].values == CullCode.GOOD)
+
+    def test_prefilter_mask_broadcast_and_combination(self, goodtimes_for_filter1):
+        """Test that prefilter mask is correctly broadcast and combined.
+
+        This test mocks _identify_cull_pattern to return specific masks:
+        - Pre-filter (summed): marks sweep 0 as bad
+        - Per-ESA: marks sweep 1, ESA 5 as bad
+
+        Expected result:
+        - Sweep 0, ESAs 7,8,9 should be marked (from pre-filter broadcast)
+        - Sweep 1, ESA 5 should be marked (from per-ESA filter)
+        - Other positions should NOT be marked
+        """
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=0.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=500.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=1000.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=2500.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=3500.0),
+        ]
+
+        for ds in l1b_de_datasets:
+            ds["qualified_mask"] = xr.DataArray(
+                np.isin(ds["coincidence_type"].values, [12]),
+                dims=["event_met"],
+            )
+
+        # Track call count to return different masks for pre-filter vs per-ESA
+        call_count = [0]
+
+        def mock_identify_cull_pattern(current_counts, median, sigma, **kwargs):
+            """Return specific masks based on call order."""
+            call_count[0] += 1
+            esa_coords = current_counts.coords["esa_energy_step"].values
+            sweep_coords = current_counts.coords["esa_sweep"].values
+
+            # Create mask matching input dimensions exactly
+            mask = xr.zeros_like(current_counts, dtype=bool)
+
+            if call_count[0] == 1:
+                # First call: pre-filter (summed ESAs) - mark sweep 0
+                # Summed data has single pseudo-ESA (-1)
+                mask.loc[{"esa_sweep": 0}] = True
+            # Second call: per-ESA filter - mark sweep 1, ESA 5
+            elif 5 in esa_coords and 1 in sweep_coords:
+                mask.loc[{"esa_sweep": 1, "esa_energy_step": 5}] = True
+
+            return mask
+
+        with patch(
+            "imap_processing.hi.hi_goodtimes._identify_cull_pattern",
+            side_effect=mock_identify_cull_pattern,
+        ):
+            mark_statistical_filter_1(
+                goodtimes_for_filter1,
+                l1b_de_datasets,
+                current_index=2,
+                prefilter_esa_steps=[7, 8, 9],
+            )
+
+        # Verify the masks were combined correctly
+        esa_steps = goodtimes_for_filter1["esa_step"].values
+        cull_flags = goodtimes_for_filter1["cull_flags"].values
+
+        # goodtimes has 18 METs with ESA steps [1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9]
+        # Sweep 0 = first 9 METs (indices 0-8), Sweep 1 = next 9 METs (indices 9-17)
+
+        # Check sweep 0, ESAs 7,8,9 are marked (from pre-filter broadcast)
+        # ESA 7 is at index 6, ESA 8 at index 7, ESA 9 at index 8 (in sweep 0)
+        for idx in [6, 7, 8]:  # ESAs 7, 8, 9 in sweep 0
+            assert np.any(cull_flags[idx] != CullCode.GOOD), (
+                f"Sweep 0, ESA {esa_steps[idx]} should be marked by pre-filter"
+            )
+
+        # Check sweep 0, ESAs 1-6 are NOT marked (pre-filter only applies to 7,8,9)
+        for idx in [0, 1, 2, 3, 4, 5]:  # ESAs 1-6 in sweep 0
+            assert np.all(cull_flags[idx] == CullCode.GOOD), (
+                f"Sweep 0, ESA {esa_steps[idx]} should NOT be marked"
+            )
+
+        # Check sweep 1, ESA 5 is marked (from per-ESA filter)
+        # Sweep 1 starts at index 9, ESA 5 is at index 9+4=13
+        assert np.any(cull_flags[13] != CullCode.GOOD), (
+            "Sweep 1, ESA 5 should be marked by per-ESA filter"
+        )
+
+        # Check sweep 1, ESAs 7,8,9 are NOT marked (pre-filter only marked sweep 0)
+        for idx in [15, 16, 17]:  # ESAs 7, 8, 9 in sweep 1
+            assert np.all(cull_flags[idx] == CullCode.GOOD), (
+                f"Sweep 1, ESA {esa_steps[idx]} should NOT be marked"
+            )
 
 
 class TestFindEventClusters:

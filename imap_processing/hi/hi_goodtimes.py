@@ -111,7 +111,7 @@ def hi_goodtimes(
     management in the batch starter, it was decided to design the Hi goodtimes
     to set the L1B DE dependencies as not required and handle the final logic for
     checking L1B DE dependencies in this function. If repointing + 4 has not yet
-    completed, an empty list is returned. If repointing + 4 has occurred but
+    completed, a ValueError is raised. If repointing + 4 has occurred but
     not all 9 DE files are available, all times are marked as bad.
     """
     logger.info("Starting Hi goodtimes processing")
@@ -1917,10 +1917,13 @@ def _sum_esa_counts(
             summed_counts = selected.sum(dim="esa_energy_step")
 
         # Create new dataset with single "pseudo-ESA" dimension (-1 indicates summed)
+        # Use first ESA's MET values, expanded to include pseudo-ESA dimension
+        # for structural consistency with per-sweep datasets
+        summed_met = ds["ccsds_met"].isel(esa_energy_step=0)
         summed_ds = xr.Dataset(
             {
                 "qualified_count": summed_counts.expand_dims(esa_energy_step=[-1]),
-                "ccsds_met": ds["ccsds_met"].isel(esa_energy_step=0),
+                "ccsds_met": summed_met.expand_dims(esa_energy_step=[-1]),
             }
         )
         summed_datasets[idx] = summed_ds
@@ -1940,8 +1943,11 @@ def _identify_cull_pattern(
     Identify 2D cull pattern for statistical filter 1 using convolution.
 
     Detects three patterns:
-    1. Consecutive runs: 3+ consecutive sweeps exceeding threshold with ESA neighbor
-       confirmation (isotropic excursion pattern from C implementation)
+    1. Consecutive runs: 3+ consecutive sweeps exceeding threshold. When there
+       are 3 or more ESA energy steps, ESA neighbor confirmation is required
+       (isotropic excursion pattern from C implementation). When there are fewer
+       than 3 ESA steps (e.g., summed pre-filter data), consecutive runs are
+       marked without neighbor confirmation.
     2. Isolated intervals: Good intervals surrounded by bad on both sides in time
     3. Extreme outliers: Any position exceeding 5-sigma threshold
 
@@ -2090,9 +2096,10 @@ def mark_statistical_filter_1(
         Goodtimes dataset for the current Pointing to update.
     l1b_de_datasets : list[xarray.Dataset]
         List of L1B DE datasets for surrounding Pointings. Typically includes
-        current plus 3 preceding and 3 following Pointings. Each dataset must
-        contain a "qualified_mask" DataArray indicating which events qualify
-        for calibration products (checking both coincidence_type AND TOF).
+        current plus 4 preceding and 4 following Pointings (9 total). Each
+        dataset must contain a "qualified_mask" DataArray indicating which
+        events qualify for calibration products (checking both coincidence_type
+        AND TOF).
     current_index : int
         Index of the current Pointing in l1b_de_datasets.
     consecutive_threshold_sigma : float, optional
