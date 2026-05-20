@@ -44,7 +44,7 @@ energy:
   FIELDNAM: energy_bin_geometric_mean
   LABLAXIS: Energy bin geometric mean
   SCALETYP: linear
-  UNITS: KeV
+  UNITS: keV
   VAR_TYPE: support_data
 
 energy_label:
@@ -63,7 +63,7 @@ energy_delta_minus:
   FIELDNAM: energy delta minus
   LABLAXIS: energy
   LABL_PTR_1: energy_label
-  UNITS: KeV
+  UNITS: keV
   VAR_TYPE: support_data
 
 energy_delta_plus:
@@ -75,7 +75,7 @@ energy_delta_plus:
   FIELDNAM: energy delta plus
   LABLAXIS: energy
   LABL_PTR_1: energy_label
-  UNITS: KeV
+  UNITS: keV
   VAR_TYPE: support_data
 
 epoch:
