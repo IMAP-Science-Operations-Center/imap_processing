@@ -87,7 +87,10 @@ from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
-from imap_processing.utils import filter_day_boundary_data
+from imap_processing.utils import (
+    check_epochs_within_day_offsets,
+    filter_day_boundary_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -992,7 +995,10 @@ class Hit(ProcessInstrument):
                     f"L0 and time kernels."
                 )
             # process data to L1A products
-            science_files = dependencies.get_file_paths(source="hit", descriptor="raw")
+            # TODO: revert to 'raw' in issue #3215 work
+            science_files = dependencies.get_file_paths(
+                source="hit", descriptor="pha-telemetry-corrected"
+            )
             datasets = hit_l1a(science_files[0], self.start_date)
 
         elif self.data_level == "l1b":
@@ -1233,6 +1239,12 @@ class Lo(ProcessInstrument):
                 source="lo", data_type="ancillary"
             )
             science_files = dependencies.get_file_paths(source="lo", descriptor="de")
+            science_files += dependencies.get_file_paths(
+                source="lo", data_type="l1b", descriptor="goodtimes"
+            )
+            science_files += dependencies.get_file_paths(
+                source="lo", data_type="l1b", descriptor="bgrates"
+            )
             for file in science_files:
                 dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
@@ -1409,6 +1421,10 @@ class Mag(ProcessInstrument):
                     f"Timestamps for output file {ds.attrs['Logical_source']} are not "
                     f"monotonically increasing."
                 )
+
+        # Will raise an error if any timestamps are outside the current day
+        check_epochs_within_day_offsets(datasets, current_day)
+
         return datasets
 
     def post_processing(

@@ -9,7 +9,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1b.lo_l1b import (
     DE_CLOCK_TICK_S,
@@ -34,8 +34,6 @@ from imap_processing.lo.l1b.lo_l1b import (
     lo_l1b,
     resweep_histogram_data,
     set_avg_spin_durations_per_event,
-    set_bad_or_goodtimes,
-    set_bad_times,
     set_coincidence_type,
     set_each_event_epoch,
     set_esa_mode,
@@ -46,7 +44,6 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_spin_cycle_from_spin_data,
     split_backgrounds_and_goodtimes_dataset,
 )
-from imap_processing.lo.lo_ancillary import read_ancillary_file
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import (
     et_to_met,
@@ -311,8 +308,6 @@ def test_lo_l1b_histogram_rates(
     assert l1b_datasets[-1]["exposure_time_60deg"].values[0, 0, 0] == 20
 
 
-# @pytest.mark.external_kernel
-# @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_create_datasets():
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
@@ -336,6 +331,9 @@ def test_create_datasets():
     ]
 
     dataset = create_datasets(attr_mgr, logical_source, data_fields)
+
+    # verify that epoch does not have a DEPEND_0 attribute
+    assert "DEPEND_0" not in dataset["epoch"].attrs
 
     assert len(dataset.tof0.shape) == 1
     assert dataset.tof0.shape[0] == 3
@@ -762,45 +760,6 @@ def test_identify_species(attr_mgr_l1b):
 
     # Assert
     np.testing.assert_array_equal(l1b_de["species"], expected_species)
-
-
-def test_set_bad_times(anc_dependencies):
-    # Arrange
-    l1b_de = xr.Dataset(
-        {
-            "esa_step": ("epoch", [1, 1, 3, 1]),
-            "spin_bin": ("epoch", [1900, 2000, 3000, 2]),
-        },
-        coords={
-            "epoch": met_to_ttj2000ns([473385599, 473385600, 473385601, 473385602]),
-        },
-    )
-
-    expected_bad_times = np.array([0, 1, 0, 0])
-
-    # Act
-    l1b_de = set_bad_times(l1b_de, anc_dependencies)
-
-    # Assert
-    np.testing.assert_array_equal(l1b_de["badtimes"], expected_bad_times)
-
-
-def test_set_bad_or_goodtimes(anc_dependencies):
-    # Arrange
-    # badtimes ancillary
-    df = read_ancillary_file(anc_dependencies[1])
-
-    epoch = met_to_ttj2000ns([473385599, 473385600, 473385601, 473385602])
-    esa_step = np.array([1, 1, 3, 1])
-    spin_bin = np.array([1900, 2000, 3000, 2])
-
-    expected_bad_times = np.array([0, 1, 0, 0])
-
-    # Act
-    badtimes = set_bad_or_goodtimes(df, epoch, esa_step, spin_bin)
-
-    # Assert
-    np.testing.assert_array_equal(badtimes, expected_bad_times)
 
 
 @patch(
@@ -1487,6 +1446,10 @@ def test_calculate_de_rates(
 
     result = calculate_de_rates(sci_dependencies, anc_dependencies, attr_mgr_l1b)
 
+    # Test that result can be written to CDF - this verifies that
+    # attributes are ok with cdflib
+    _ = write_cdf(result)
+
     assert result.attrs["Logical_source"] == "imap_lo_l1b_derates"
     assert "epoch" in result.coords
     assert "esa_step" in result.coords
@@ -2017,6 +1980,9 @@ class TestL1bStar:
         l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
 
         # Assert - Check spin_angle coordinate attributes
+        # Check that resulting dataset is cdf-able by writing to file
+        _ = write_cdf(l1b_star_ds)
+
         assert l1b_star_ds.coords["spin_angle"].attrs["UNITS"] == "deg"
         assert l1b_star_ds.coords["spin_angle"].attrs["VALIDMIN"] == 0.0
         assert l1b_star_ds.coords["spin_angle"].attrs["VALIDMAX"] == 360.0
@@ -2240,6 +2206,11 @@ def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
 
     l1b_bgrates_ds, l1b_goodtimes_ds = result
 
+    # Check that bgrates dataset is cdf-able by writing to file
+    _ = write_cdf(l1b_bgrates_ds)
+    assert "epoch" in l1b_bgrates_ds.coords
+    assert "esa_step" in l1b_bgrates_ds.coords
+
     # Check bgrates dataset structure (BACKGROUND_RATE_FIELDS)
     assert "h_background_rates" in l1b_bgrates_ds.data_vars
     assert "h_background_variance" in l1b_bgrates_ds.data_vars
@@ -2249,6 +2220,10 @@ def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
     assert "o_background_variance" in l1b_bgrates_ds.data_vars
     assert "o_synthetic_floor" in l1b_bgrates_ds.data_vars
     assert "o_proxy_floor" in l1b_bgrates_ds.data_vars
+
+    # Check that goodtimes dataset is cdf-able by writing to file
+    _ = write_cdf(l1b_goodtimes_ds)
+    assert "epoch" in l1b_goodtimes_ds.coords
 
     # Check goodtimes dataset structure (GOODTIMES_FIELDS)
     assert "gt_start_met" in l1b_goodtimes_ds.data_vars

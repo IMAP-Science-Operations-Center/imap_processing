@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from scipy.interpolate import RegularGridInterpolator
 
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
@@ -22,6 +23,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_de_energy_kev,
     get_de_velocity,
     get_efficiency,
+    get_efficiency_interpolator,
     get_energy_pulse_height,
     get_energy_ssd,
     get_event_times,
@@ -818,3 +820,18 @@ def test_is_coin_ph_valid(test_fixture, ancillary_files):
     assert len(etof) == np.count_nonzero(combined_mask) + np.count_nonzero(
         quality_flags
     )
+
+
+@pytest.mark.external_test_data
+def test_get_efficiency_interpolator(ancillary_files):
+
+    # Test that the interpolator is created and that the min/max values are correct
+    eff_interpolator, theta_min_max, phi_min_max, e_min_max = (
+        get_efficiency_interpolator(ancillary_files, "ultra45")
+    )
+
+    assert isinstance(eff_interpolator, RegularGridInterpolator)
+
+    assert theta_min_max == (-52.7, 52.7)
+    assert phi_min_max == (-60, 60)
+    assert e_min_max == (3, 80)

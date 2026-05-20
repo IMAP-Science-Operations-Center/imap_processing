@@ -1,5 +1,7 @@
 """Tests coverage for imap_processing/utils.py"""
 
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -8,6 +10,7 @@ import xarray as xr
 from imap_processing import imap_module_directory, utils
 from imap_processing.spice.time import str_yyyymmdd_to_ttj2000ns
 from imap_processing.ultra.utils.ultra_l1_utils import extract_data_dict
+from imap_processing.utils import check_epochs_within_day_offsets
 
 
 def test_convert_raw_to_eu(tmp_path):
@@ -424,5 +427,36 @@ def test_filter_day_boundary_data():
 
     result = utils.filter_day_boundary_data(ds, start_date)
 
-    assert result.dims["epoch"] == 3
+    assert result.sizes["epoch"] == 3
     np.testing.assert_array_equal(result["epoch"].values, epoch_values[1:4])
+
+
+@pytest.mark.parametrize(
+    "epoch_ns,raises",
+    [
+        # midday of expected day — passes
+        (int(1.5 * 86400 * 1e9), False),
+        # exactly at lower tolerance boundary (24h before day start) — passes
+        (0, False),
+        # 1 ns before lower bound — more than 24h outside, raises
+        (-1, True),
+        # 1 ns past upper bound — more than 24h outside, raises
+        (int(3 * 86400 * 1e9 + 1), True),
+    ],
+)
+def test_check_epochs_within_day(epoch_ns, raises):
+    """_check_epochs_within_day raises only when epoch is >24h outside expected day."""
+    # lower = expected_day - 1 day (J2000 ns = 0), upper = expected_day + 2 days
+    lower_ns = 0
+    upper_ns = int(3 * 86400 * 1e9)
+    day = np.datetime64("2025-01-01", "D")
+    ds = xr.Dataset({"epoch": xr.DataArray(np.array([epoch_ns], dtype=np.int64))})
+    with mock.patch(
+        "imap_processing.utils.str_yyyymmdd_to_ttj2000ns",
+        side_effect=[lower_ns, upper_ns],
+    ):
+        if raises:
+            with pytest.raises(ValueError, match="more than 24 hours outside"):
+                check_epochs_within_day_offsets([ds], day)
+        else:
+            check_epochs_within_day_offsets([ds], day)

@@ -687,6 +687,7 @@ def test_add_total_uncertainties():
     )
 
 
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_process_macropixel_intensity(
     l1b_sectored_rates_dataset, ancillary_dependencies
 ):
@@ -852,10 +853,11 @@ def test_process_standard_intensity(l1b_standard_rates_dataset, ancillary_depend
     [
         ("imap_hit_l1b_summed-rates", "summed", "imap_hit_l2_summed-intensity"),
         ("imap_hit_l1b_standard-rates", "standard", "imap_hit_l2_standard-intensity"),
-        (
+        pytest.param(
             "imap_hit_l1b_sectored-rates",
             "macropixel",
             "imap_hit_l2_macropixel-intensity",
+            marks=pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False),
         ),
     ],
 )

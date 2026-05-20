@@ -5,10 +5,12 @@ from dataclasses import InitVar, dataclass, field
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
+from scipy.stats import circmean, circstd
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
 from imap_processing.glows.utils.constants import GlowsConstants
+from imap_processing.quality_flags import GLOWSL1bFlags
 from imap_processing.spice.geometry import (
     SpiceFrame,
     frame_transform_az_el,
@@ -385,6 +387,14 @@ class HistogramL2:
         good_data = l1b_dataset.isel(
             epoch=self.return_good_times(flags_da, active_flags)
         )
+        # Exclude histograms where all bins have is_excluded_by_instr_team set.
+        # Per cbk implementation: GLOWS team marks such histograms as entirely bad;
+        # they are dropped here and do not contribute to the L2 histogram_flag_array.
+        excl_flag_val = GLOWSL1bFlags.IS_EXCLUDED_BY_INSTR_TEAM.value
+        excl_row = good_data["histogram_flag_array"].data[:, 2, :]  # (n_epochs, n_bins)
+        not_all_excl = ~np.all(excl_row == excl_flag_val, axis=1)
+        good_data = good_data.isel(epoch=np.where(not_all_excl)[0])
+
         # TODO: bad angle filter
         # TODO: filter bad bins out. Needs to happen here while everything is still
         #       per-timestamp.
@@ -470,16 +480,21 @@ class HistogramL2:
             .std(dim="epoch")
             .data[np.newaxis, :]
         )
-        self.spin_axis_orientation_average = (
-            good_data["spin_axis_orientation_average"]
-            .mean(dim="epoch")
-            .data[np.newaxis, :]
-        )
-        self.spin_axis_orientation_std_dev = (
-            good_data["spin_axis_orientation_average"]
-            .std(dim="epoch")
-            .data[np.newaxis, :]
-        )
+        spin_axis_data = good_data[
+            "spin_axis_orientation_average"
+        ].data  # (n_epochs, 2)
+        if spin_axis_data.shape[0] > 0:
+            # Use circular statistics for longitude since it will be near the 0->360
+            # boundary. Latitude will never be near the pole, so standard mean and
+            # std functions are appropriate
+            lon_avg = circmean(np.radians(spin_axis_data[:, 0]), low=0, high=2 * np.pi)
+            lon_std = circstd(np.radians(spin_axis_data[:, 0]), low=0, high=360)
+            lat_avg = float(np.mean(spin_axis_data[:, 1]))
+            lat_std = float(np.std(spin_axis_data[:, 1]))
+        else:
+            lon_avg = lon_std = lat_avg = lat_std = np.nan
+        self.spin_axis_orientation_average = np.array([[np.degrees(lon_avg), lat_avg]])
+        self.spin_axis_orientation_std_dev = np.array([[np.degrees(lon_std), lat_std]])
 
         # Select calibration factor corresponding to the mid-epoch in the L1B data.
         if len(good_data["epoch"].data) != 0:

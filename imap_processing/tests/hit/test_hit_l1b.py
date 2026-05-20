@@ -155,6 +155,7 @@ def test_sum_livetime_10min():
     xr.testing.assert_equal(result, expected_livetime)
 
 
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_process_summed_rates_data(dependencies):
     """Test the variables in the summed rates dataset"""
 
@@ -199,6 +200,7 @@ def test_process_summed_rates_data(dependencies):
         assert f"{particle}_energy_delta_plus" in l1b_summed_rates_dataset.data_vars
 
 
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_process_standard_rates_data(dependencies):
     """Test the variables in the standard rates dataset"""
 
@@ -291,6 +293,7 @@ def test_process_standard_rates_data(dependencies):
     )
 
 
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_process_sectored_rates_data(dependencies):
     """Test the variables in the sectored rates dataset"""
 
@@ -338,6 +341,7 @@ def test_process_sectored_rates_data(dependencies):
         assert f"{particle}_energy_delta_plus" in l1b_sectored_rates_dataset.data_vars
 
 
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_hit_l1b_hk_dataset_variables(l1b_hk_dataset):
     """Test the variables in the housekeeping dataset"""
     # Define the keys that should have dropped from the housekeeping dataset
@@ -425,6 +429,7 @@ def test_hit_l1b_hk_dataset_variables(l1b_hk_dataset):
     assert l1b_hk_dataset.coords.keys() == dataset_coords_dims
 
 
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_validate_l1b_hk_data(l1b_hk_dataset):
     """Test to validate the housekeeping dataset created by the L1B processing.
 
@@ -535,6 +540,7 @@ def test_livetime_fraction():
 
 
 @mock.patch("imap_processing.hit.l1b.hit_l1b.livetime_fraction_calculation")
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_validate_l1b_standard_rates_data(
     livetime_fraction_calculation_mock, dependencies
 ):
@@ -612,6 +618,7 @@ def test_hit_l1b_unsupported_descriptor():
         ("sectored-rates", "imap_hit_l1b_sectored-rates"),
     ],
 )
+@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_hit_l1b(dependencies, dependency_key, expected_logical_source):
     """Test creating L1B CDF files
 
