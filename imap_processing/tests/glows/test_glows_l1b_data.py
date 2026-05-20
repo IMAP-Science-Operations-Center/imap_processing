@@ -342,20 +342,17 @@ def test_update_spice_parameters_spin_axis_near_wrapping_point(
     mock_get_instrument_spin_phase,
     mock_imap_state,
 ):
-    """Test spin axis orientation calculation near the longitude wrapping point.
+    """Test spin axis orientation longitude is in [0, 360] near the 0/360 boundary.
 
-    This test verifies that cartesian_to_latitudinal is called with degrees=False
-    so that circmean/circstd receive values in radians. The bug was that without
-    degrees=False, values in degrees would be passed to circmean/circstd which
-    expect radians with low=-pi, high=pi.
+    Verifies that circmean correctly averages longitudes that straddle the 0/360
+    degree boundary and that the result is wrapped to [0, 360) rather than [-180, 180].
 
     Test conditions:
-    - Longitude values straddling +/-pi (wrapping point at 180 degrees)
+    - Longitude values straddling 0/360 degrees
     - Latitude near equator (-4 degrees)
 
-    If the bug existed (degrees=True or default), circmean would receive values
-    like 179 or -179 degrees when it expects radians in [-pi, pi]. This would
-    produce nonsensical results because 179 >> pi.
+    Arithmetic mean of [359, 1, 358, 2, 0] would give ~144 degrees (wrong).
+    Correct circular mean should give ~0 degrees.
     """
     # Mock time conversions - creates a time range of 5 seconds
     mock_met_to_sclkticks.return_value = 1000
@@ -371,10 +368,8 @@ def test_update_spice_parameters_spin_axis_near_wrapping_point(
     # Mock instrument spin phase
     mock_get_instrument_spin_phase.return_value = 0.5
 
-    # Create cartesian vectors that straddle the longitude wrapping point.
-    # Some points at +179 degrees and some at -179 degrees (which should
-    # average to ~180 degrees when using proper circular mean).
-    # Latitude near equator at -4 degrees.
+    # Create cartesian vectors that straddle the 0/360 degree boundary.
+    # Points at [359, 1, 358, 2, 0] degrees longitude, latitude near equator.
     #
     # For spherical to cartesian (r=1):
     # x = cos(lat) * cos(lon)
@@ -382,8 +377,8 @@ def test_update_spice_parameters_spin_axis_near_wrapping_point(
     # z = sin(lat)
     lat_rad = np.deg2rad(-4.0)  # Near equator
 
-    # Create 5 time steps: [+179, -179, +178, -178, +180] degrees longitude
-    longitudes_deg = np.array([179.0, -179.0, 178.0, -178.0, 180.0])
+    # Equivalent in [-180, 180] range: [-1, 1, -2, 2, 0] degrees
+    longitudes_deg = np.array([359.0, 1.0, 358.0, 2.0, 0.0])
     longitudes_rad = np.deg2rad(longitudes_deg)
 
     # Build cartesian vectors for each time step
@@ -424,18 +419,14 @@ def test_update_spice_parameters_spin_axis_near_wrapping_point(
     lon_std = mock_hist.spin_axis_orientation_std_dev[0]
     lat_std = mock_hist.spin_axis_orientation_std_dev[1]
 
-    # The circular mean of [179, -179, 178, -178, 180] should be ~180 degrees
-    # (or equivalently -180 degrees). The key test is that the result is NOT
-    # near 0 degrees, which would happen if the values weren't properly handled
-    # as circular data near the wrapping point.
-    #
-    # With the bug (degrees=True), circmean would receive [179, -179, ...] and
-    # interpret these as radians, giving completely wrong results.
-    #
-    # Check that longitude is near 180 degrees (could be reported as -180)
-    assert abs(abs(lon_result) - 180.0) < 5.0, (
-        f"Longitude {lon_result} should be near +/-180 degrees. "
-        "If near 0, the circular mean failed at the wrapping point."
+    # Output longitude must be in [0, 360).
+    assert 0.0 <= lon_result < 360.0, f"Longitude {lon_result} is outside [0, 360)."
+
+    # Circular mean of values near 0/360 boundary should be near 0 degrees,
+    # not near 144 degrees (arithmetic mean) or 180 degrees.
+    assert lon_result < 5.0 or lon_result > 355.0, (
+        f"Longitude {lon_result} should be near 0/360 degrees. "
+        "If near 144 or 180, the circular mean failed at the wrapping point."
     )
 
     # Latitude should be near -4 degrees

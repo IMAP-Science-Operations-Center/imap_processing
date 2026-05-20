@@ -110,7 +110,7 @@ imap_lo_l1b_bgrates:
 imap_lo_l1b_goodtimes:
   <<: *instrument_base
   Data_type: L1B_goodtimes>Level-1B Goodtimes List
-  Logical_source: imap_lo_l1b_good-times
+  Logical_source: imap_lo_l1b_goodtimes
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
 
 imap_lo_l1c_goodtimes:

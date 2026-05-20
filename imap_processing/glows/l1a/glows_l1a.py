@@ -338,6 +338,25 @@ def generate_histogram_dataset(
         )
     hist_l1a_list = valid_hists
 
+    # Deduplicate by (imap_start_time, imap_time_offset), keeping the first occurrence.
+    seen_times: dict = {}
+    for hist in hist_l1a_list:
+        key = (
+            hist.imap_start_time.seconds,
+            hist.imap_start_time.subseconds,
+            hist.imap_time_offset.seconds,
+            hist.imap_time_offset.subseconds,
+        )
+        if key not in seen_times:
+            seen_times[key] = hist
+    dedup_hists = list(seen_times.values())
+    if len(dedup_hists) < len(hist_l1a_list):
+        logger.warning(
+            f"GLOWS: Filtered out {len(hist_l1a_list) - len(dedup_hists)} "
+            f"duplicate histogram(s) by imap_start_time and imap_time_offset."
+        )
+    hist_l1a_list = dedup_hists
+
     # Store timestamps for each HistogramL1A object.
     time_data: np.ndarray = np.zeros(len(hist_l1a_list), dtype=np.int64)
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A

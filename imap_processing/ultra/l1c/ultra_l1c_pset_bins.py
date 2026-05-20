@@ -577,8 +577,8 @@ def get_efficiencies_and_geometric_function(
     """
     sensor_name = f"ultra{sensor_id}"
     # Load callable efficiency interpolator function
-    eff_interpolator, theta_min_max, phi_min_max = get_efficiency_interpolator(
-        ancillary_files, sensor_name
+    eff_interpolator, theta_min_max, phi_min_max, e_min_max = (
+        get_efficiency_interpolator(ancillary_files, sensor_name)
     )
     # load geometric factor lookup table
     geometric_lookup_table = load_geometric_factor_tables(
@@ -649,7 +649,7 @@ def get_efficiencies_and_geometric_function(
             )
             energy = energy_bin_geometric_means[energy_bin_idx]
             # Clip energy to calibrated range
-            energy_clipped = np.clip(energy, 3.0, 80.0)
+            energy_clipped = np.clip(energy, e_min_max[0], e_min_max[1])
             eff_values = get_efficiency(
                 np.full(pixel_inds.size, energy_clipped),
                 phi_at_spin_clipped[pixel_inds],

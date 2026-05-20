@@ -521,3 +521,45 @@ def test_position_angle_offset_average(
         l2 = HistogramL2(l1b_dataset_full, pipeline_settings, mock_calibration_dataset)
 
         assert l2.position_angle_offset_average == pytest.approx(mock_pa)
+
+
+# ── spin_axis_orientation_average tests ──────────────────────────────────────
+
+
+def test_spin_axis_orientation_average_wrapping(
+    l1b_dataset_full,
+    pipeline_settings,
+    mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
+):
+    """Longitude averaging uses circular mean to handle the 0/360 boundary correctly.
+
+    Arithmetic mean of [358, 2] gives 180 (wrong).
+    Circular mean correctly gives ~0.
+    """
+    wrapping_dataset = l1b_dataset_full.copy()
+    wrapping_dataset["spin_axis_orientation_average"] = xr.DataArray(
+        np.array([[358.0, 5.0], [2.0, 5.0]]),
+        dims=["epoch", "lonlat"],
+    )
+
+    with (
+        patch.object(HistogramL2, "compute_position_angle", return_value=42.5),
+        patch.object(HistogramL2, "get_calibration_factor", return_value=1.0),
+    ):
+        l2 = HistogramL2(wrapping_dataset, pipeline_settings, mock_calibration_dataset)
+
+    lon_avg = l2.spin_axis_orientation_average[0, 0]
+    lat_avg = l2.spin_axis_orientation_average[0, 1]
+
+    # Result must be in [0, 360).
+    assert 0.0 <= lon_avg < 360.0, f"Longitude {lon_avg} is outside [0, 360)."
+
+    # Circular mean of 358 and 2 should be near 0 (both within 2° of boundary),
+    # not 180 (arithmetic mean).
+    assert lon_avg < 5.0 or lon_avg > 355.0, (
+        f"Longitude {lon_avg} should be near 0/360, not near 180."
+    )
+
+    # Latitude is not circular — arithmetic mean of [5, 5] = 5.
+    assert lat_avg == pytest.approx(5.0)

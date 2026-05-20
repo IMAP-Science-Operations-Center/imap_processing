@@ -12,8 +12,6 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps.utils.corrections import (
     add_spacecraft_position_and_velocity_to_pset,
 )
-from imap_processing.lo import lo_ancillary
-from imap_processing.lo.l1b.lo_l1b import set_bad_or_goodtimes
 from imap_processing.spice.geometry import (
     SpiceFrame,
     frame_transform_az_el,
@@ -24,7 +22,6 @@ from imap_processing.spice.spin import get_spin_data, get_spin_number
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
-    ttj2000ns_to_met,
 )
 
 N_ESA_ENERGY_STEPS = 7
@@ -90,7 +87,9 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     if "imap_lo_l1b_de" in sci_dependencies:
         logical_source = "imap_lo_l1c_pset"
         l1b_de = sci_dependencies["imap_lo_l1b_de"]
-        l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
+        l1b_goodtimes_only = filter_goodtimes(
+            l1b_de, sci_dependencies["imap_lo_l1b_goodtimes"]
+        )
 
         # Handle case where no good times are found after filtering,
         # which would lead to an empty dataset
@@ -103,9 +102,10 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             pointing_start_met = 0.0
             pointing_end_met = 0.0
         else:
-            # Set the pointing start and end times based on the first epoch
             pointing_start_met, pointing_end_met = get_pointing_times(
-                float(ttj2000ns_to_met(l1b_goodtimes_only["epoch"][0].item()).item())
+                float(
+                    sci_dependencies["imap_lo_l1b_goodtimes"]["gt_start_met"].values[0]
+                )
             )
 
         pset = xr.Dataset(
@@ -174,15 +174,12 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         pset["h_counts"] = create_pset_counts(l1b_goodtimes_only, FilterType.HYDROGEN)
         pset["o_counts"] = create_pset_counts(l1b_goodtimes_only, FilterType.OXYGEN)
 
-        # Read good-times for exposure time calculation
-        goodtimes_df = lo_ancillary.read_ancillary_file(
-            next(str(s) for s in anc_dependencies if "good-times" in str(s))
-        )
-
         # Set the exposure time using statistical off-pointing sampling
         # with good-times filtering applied
         pset["exposure_time"] = calculate_exposure_times(
-            pointing_start_met, pointing_end_met, goodtimes_df
+            pointing_start_met,
+            pointing_end_met,
+            sci_dependencies["imap_lo_l1b_goodtimes"],
         )
 
         # Set backgrounds
@@ -191,10 +188,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             pset["h_background_rates_stat_uncert"],
             pset["h_background_rates_sys_err"],
         ) = set_background_rates(
-            pset["pointing_start_met"].item(),
-            pset["pointing_end_met"].item(),
             FilterType.HYDROGEN,
-            anc_dependencies,
+            sci_dependencies,
             attr_mgr,
         )
 
@@ -203,10 +198,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             pset["o_background_rates_stat_uncert"],
             pset["o_background_rates_sys_err"],
         ) = set_background_rates(
-            pset["pointing_start_met"].item(),
-            pset["pointing_end_met"].item(),
             FilterType.OXYGEN,
-            anc_dependencies,
+            sci_dependencies,
             attr_mgr,
         )
 
@@ -240,43 +233,38 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     return [pset]
 
 
-def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
+def filter_goodtimes(l1b_de: xr.Dataset, goodtimes_ds: xr.Dataset) -> xr.Dataset:
     """
     Filter the L1B Direct Event dataset to only include good times.
 
-    The good times are read from the sweep table ancillary file.
+    The good times are read from the L1B goodtimes dataset produced by
+    l1b_bgrates_and_goodtimes.
 
     Parameters
     ----------
     l1b_de : xarray.Dataset
         L1B Direct Event dataset.
-
-    anc_dependencies : list
-        Ancillary files needed for L1C data product creation.
+    goodtimes_ds : xarray.Dataset
+        L1B goodtimes dataset containing gt_start_met and gt_end_met variables
+        that define good time windows in MET seconds.
 
     Returns
     -------
-    l1b_de : xarray.Dataset
-        Filtered L1B Direct Event dataset.
+    xarray.Dataset
+        Filtered L1B Direct Event dataset containing only events within good
+        time windows.
     """
-    # The goodtimes are one of several ancillary files needed for L1C processing
-    goodtimes_table_df = lo_ancillary.read_ancillary_file(
-        next(str(s) for s in anc_dependencies if "good-times" in str(s))
-    )
-
-    esa_steps = l1b_de["esa_step"].values
     epochs = l1b_de["epoch"].values
-    spin_bins = l1b_de["spin_bin"].values
+    gt_starts = met_to_ttj2000ns(goodtimes_ds["gt_start_met"].values)
+    gt_ends = met_to_ttj2000ns(goodtimes_ds["gt_end_met"].values)
 
-    # Get array of bools for each epoch 1 = good time, 0 not good time
-    goodtimes_mask = set_bad_or_goodtimes(
-        goodtimes_table_df, epochs, esa_steps, spin_bins
+    # Keep events that fall within any goodtime window
+    in_goodtime = np.any(
+        (epochs[:, np.newaxis] >= gt_starts) & (epochs[:, np.newaxis] <= gt_ends),
+        axis=1,
     )
 
-    # Filter the dataset using the mask
-    filtered_epochs = l1b_de.sel(epoch=goodtimes_mask.astype(bool))
-
-    return filtered_epochs
+    return l1b_de.isel(epoch=in_goodtime)
 
 
 def get_triple_coincidences(de: xr.Dataset) -> xr.Dataset:
@@ -671,7 +659,7 @@ def calculate_bin_weights(off_angles: np.ndarray) -> np.ndarray:
 
 
 def create_goodtimes_fraction(
-    goodtimes_df: pd.DataFrame,
+    goodtimes_ds: xr.Dataset,
     pointing_start_met: float,
     pointing_end_met: float,
 ) -> np.ndarray:
@@ -685,9 +673,9 @@ def create_goodtimes_fraction(
 
     Parameters
     ----------
-    goodtimes_df : pandas.DataFrame
-        DataFrame containing the good-times ancillary data with columns:
-        GoodTime_start, GoodTime_end, bin_start, bin_end, E-Step1 through E-Step7.
+    goodtimes_ds : xarray.Dataset
+        Dataset containing the good-times data with variables:
+        gt_start_met, gt_end_met.
     pointing_start_met : float
         The start MET time of the pointing.
     pointing_end_met : float
@@ -712,12 +700,12 @@ def create_goodtimes_fraction(
         return goodtimes_fraction
 
     # Filter good-times to only those overlapping with the pointing period
-    pointing_goodtimes = goodtimes_df[
-        (goodtimes_df["GoodTime_start"] < pointing_end_met)
-        & (goodtimes_df["GoodTime_end"] > pointing_start_met)
-    ]
+    pointing_goodtimes_mask = (
+        (goodtimes_ds["gt_start_met"] < pointing_end_met)
+        & (goodtimes_ds["gt_end_met"] > pointing_start_met)
+    ).values
 
-    if len(pointing_goodtimes) == 0:
+    if not pointing_goodtimes_mask.any():
         logging.warning(
             f"No good-times found for pointing period "
             f"[{pointing_start_met}, {pointing_end_met}]. "
@@ -725,11 +713,15 @@ def create_goodtimes_fraction(
         )
         return goodtimes_fraction
 
+    pointing_goodtimes = goodtimes_ds.isel(epoch=pointing_goodtimes_mask)
+
     # Process each good-time row and accumulate fractional coverage
-    for _, row in pointing_goodtimes.iterrows():
+    for i in range(len(pointing_goodtimes["epoch"])):
+        row = pointing_goodtimes.isel(epoch=i)
+
         # Calculate the overlap between this good-time period and the pointing
-        goodtime_start = max(row["GoodTime_start"], pointing_start_met)
-        goodtime_end = min(row["GoodTime_end"], pointing_end_met)
+        goodtime_start = max(float(row["gt_start_met"]), pointing_start_met)
+        goodtime_end = min(float(row["gt_end_met"]), pointing_end_met)
         overlap_duration = goodtime_end - goodtime_start
 
         if overlap_duration <= 0:
@@ -738,25 +730,11 @@ def create_goodtimes_fraction(
         # Calculate fraction of pointing duration covered by this good-time
         time_fraction = overlap_duration / total_pointing_duration
 
-        # Convert bin_start/bin_end from 6-degree to 0.1-degree resolution
-        # bin_start and bin_end are in units of 6-degree bins (0-59), inclusive
-        # We need to convert to 0.1-degree bins (0-3599)
-        bin_start_6deg = int(row["bin_start"])
-        bin_end_6deg = int(row["bin_end"])
-
-        # Convert to 0.1-degree resolution (multiply by 60)
-        # bin_end is inclusive, so add 1 after scaling for Python slice indexing
-        spin_bin_start = bin_start_6deg * 60
-        spin_bin_end = (bin_end_6deg + 1) * 60  # +1 because bin_end is inclusive
-
-        # For each ESA step, accumulate the fractional coverage
-        for esa_idx in range(N_ESA_ENERGY_STEPS):
-            esa_step_col = f"E-Step{esa_idx + 1}"
-            if row[esa_step_col] == 1:
-                # Add this time fraction to the affected bins
-                goodtimes_fraction[esa_idx, spin_bin_start:spin_bin_end] += (
-                    time_fraction
-                )
+        # For each ESA step, accumulate the fractional coverage.
+        # Add this time fraction to the affected bins.
+        # Note that all ESA Levels and all N_SPIN_ANGLE_BINS currently get the
+        # same increment, pending algorithmic changes in the future.
+        goodtimes_fraction += time_fraction
 
     # Clip to [0, 1] in case of overlapping good-time periods
     goodtimes_fraction = np.clip(goodtimes_fraction, 0.0, 1.0)
@@ -775,7 +753,7 @@ def create_goodtimes_fraction(
 def calculate_exposure_times(
     pointing_start_met: float,
     pointing_end_met: float,
-    goodtimes_df: pd.DataFrame | None = None,
+    goodtimes_ds: xr.Dataset | None = None,
     n_representative_spins: int = DEFAULT_N_REPRESENTATIVE_SPINS,
 ) -> xr.DataArray:
     """
@@ -793,8 +771,8 @@ def calculate_exposure_times(
         The start MET time of the pointing.
     pointing_end_met : float
         The end MET time of the pointing.
-    goodtimes_df : pandas.DataFrame, optional
-        DataFrame containing the good-times ancillary data. If provided,
+    goodtimes_ds : xarray.Dataset, optional
+        Dataset containing the good-times data. If provided,
         exposure times will be zeroed for invalid spin_angle bins and ESA steps.
     n_representative_spins : int, optional
         Number of representative spins to sample. Default is 5.
@@ -876,9 +854,9 @@ def calculate_exposure_times(
     ).copy()
 
     # Apply good-times fraction if provided
-    if goodtimes_df is not None:
+    if goodtimes_ds is not None:
         goodtimes_fraction = create_goodtimes_fraction(
-            goodtimes_df, pointing_start_met, pointing_end_met
+            goodtimes_ds, pointing_start_met, pointing_end_met
         )
         # Expand fraction to include off_angle dimension
         # (fraction is same for all off_angles)
@@ -1046,27 +1024,27 @@ def create_datasets(
 
 
 def set_background_rates(
-    pointing_start_met: float,
-    pointing_end_met: float,
     species: FilterType,
-    anc_dependencies: list,
+    sci_dependencies: dict,
     attr_mgr: ImapCdfAttributes,
 ) -> tuple[xr.DataArray, xr.DataArray, xr.DataArray]:
     """
     Set the background rates for the specified species.
 
-    The background rates are set to a constant value of 0.01 counts/s for all bins.
+    Background rates and statistical uncertainties are read from the
+    ``imap_lo_l1b_bgrates`` dataset in ``sci_dependencies``. Each species
+    provides a 1-D array of shape ``(N_ESA_ENERGY_STEPS,)`` that is broadcast
+    uniformly across all spin-angle and off-angle bins. If the bgrates dataset
+    is absent, all arrays default to zero.
 
     Parameters
     ----------
-    pointing_start_met : float
-        The start MET time of the pointing.
-    pointing_end_met : float
-        The end MET time of the pointing.
     species : FilterType
         The species to set the background rates for. Can be "h" or "o".
-    anc_dependencies : list
-        Ancillary files needed for L1C data product creation.
+    sci_dependencies : dict
+        Science dependency datasets. Expected to contain the key
+        ``"imap_lo_l1b_bgrates"`` with variables
+        ``"{species}_background_rates"`` and ``"{species}_background_variance"``.
     attr_mgr : ImapCdfAttributes
         Attribute manager used to get the L1C attributes.
 
@@ -1094,43 +1072,30 @@ def set_background_rates(
         dtype=np.float16,
     )
 
-    # read in the background rates from ancillary file
-    if species == FilterType.HYDROGEN:
-        background_df = lo_ancillary.read_ancillary_file(
-            next(str(s) for s in anc_dependencies if "hydrogen-background" in str(s))
-        )
-    else:
-        background_df = lo_ancillary.read_ancillary_file(
-            next(str(s) for s in anc_dependencies if "oxygen-background" in str(s))
-        )
+    bgrates_ds = sci_dependencies.get("imap_lo_l1b_bgrates")
+    if bgrates_ds is not None:
+        species_key = species.value
+        rate_field = f"{species_key}_background_rates"
+        variance_field = f"{species_key}_background_variance"
 
-    # find to the rows for the current pointing
-    # TODO: This assumes that the backgrounds will never change mid-pointing.
-    #    Is that a safe assumption?
-    pointing_bg_df = background_df[
-        (background_df["GoodTime_start"] < pointing_end_met)
-        & (background_df["GoodTime_end"] > pointing_start_met)
-    ]
+        if rate_field in bgrates_ds:
+            rates_per_esa = bgrates_ds[
+                rate_field
+            ].values  # shape: (N_ESA_ENERGY_STEPS,)
+            bg_rates = np.broadcast_to(
+                rates_per_esa[:, np.newaxis, np.newaxis],
+                (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),
+            ).astype(np.float16)
 
-    # convert the bin start and end resolution from 6 degrees to 0.1 degrees
-    pointing_bg_df["bin_start"] = pointing_bg_df["bin_start"] * 60
-    # The bin_end index is inclusive, so add one and convert to 0.1
-    # degree resolution
-    pointing_bg_df["bin_end"] = (pointing_bg_df["bin_end"] + 1) * 60
-    # for each row in the bg ancillary file for this pointing
-    for _, row in pointing_bg_df.iterrows():
-        bin_start = int(row["bin_start"])
-        bin_end = int(row["bin_end"])
-        # for each energy step, set the background rate and uncertainty
-        for esa_step in range(0, 7):
-            value = row[f"E-Step{esa_step + 1}"]
-            if row["rate/sigma"] == "rate":
-                bg_rates[esa_step, bin_start:bin_end, :] = value
-            elif row["rate/sigma"] == "sigma":
-                bg_sys_err[esa_step, bin_start:bin_end, :] = value
-            else:
-                raise ValueError("Unknown background type in ancillary file.")
-    # set the background rates, uncertainties, and systematic errors
+        if variance_field in bgrates_ds:
+            var_per_esa = bgrates_ds[
+                variance_field
+            ].values  # shape: (N_ESA_ENERGY_STEPS,)
+            bg_stat_uncert = np.broadcast_to(
+                var_per_esa[:, np.newaxis, np.newaxis],
+                (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),
+            ).astype(np.float16)
+
     bg_rates_data = xr.DataArray(
         data=bg_rates[np.newaxis, :, :, :],
         dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],

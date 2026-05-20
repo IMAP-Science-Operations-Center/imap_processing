@@ -152,8 +152,8 @@ class UltraConstants:
     ETOFOFF2_EVENTFILTER = -50
     ETOFSLOPE1_EVENTFILTER = 6667
     ETOFSLOPE2_EVENTFILTER = 7500
-    ETOFMAX_EVENTFILTER = 90
-    ETOFMIN_EVENTFILTER = -400
+    ETOFMAX_EVENTFILTER = 100
+    ETOFMIN_EVENTFILTER = 0
     TOFDIFFTPMIN_EVENTFILTER = 226
     TOFDIFFTPMAX_EVENTFILTER = 266
 
@@ -184,7 +184,7 @@ class UltraConstants:
     # Restricted FOV theta/phi acceptance limits (degrees).
     # Samples outside these bounds are excluded from GF, efficiency, exposure,
     # and counts maps at L1C (fine energy bin maps only).
-    RESTRICTED_FOV_THETA_LOW_DEG_45: float = -43.0
+    RESTRICTED_FOV_THETA_LOW_DEG_45: float = -46.0
     RESTRICTED_FOV_THETA_HIGH_DEG_45: float = 43.0
     RESTRICTED_FOV_THETA_LOW_DEG_90: float = -43.0
     RESTRICTED_FOV_THETA_HIGH_DEG_90: float = 43.0

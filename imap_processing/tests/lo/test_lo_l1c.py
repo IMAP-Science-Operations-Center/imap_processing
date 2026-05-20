@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
 import pytest
 import xarray as xr
 
@@ -179,41 +178,25 @@ def doubles_counts(counts):
 
 
 @pytest.fixture
-def expected_bg():
-    expected_rates = np.array(
-        [
-            [
-                np.full((3600, 40), 0.0098),
-                np.full((3600, 40), 0.0089),
-                np.full((3600, 40), 0.0118),
-                np.full((3600, 40), 0.0113),
-                np.full((3600, 40), 0.0056),
-                np.full((3600, 40), 0.0008),
-                np.full((3600, 40), 0.0),
-            ]
-        ],
-        dtype=np.float16,
+def l1b_bgrates_ds():
+    h_rates = np.array([0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07], dtype=np.float32)
+    h_var = np.array(
+        [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007], dtype=np.float32
     )
-
-    expected_err = np.array(
-        [
-            [
-                np.full((3600, 40), 0.0025),
-                np.full((3600, 40), 0.002),
-                np.full((3600, 40), 0.0015),
-                np.full((3600, 40), 0.0015),
-                np.full((3600, 40), 0.001),
-                np.full((3600, 40), 0.0008),
-                np.full((3600, 40), 0.0),
-            ]
-        ],
-        dtype=np.float16,
+    o_rates = np.array(
+        [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007], dtype=np.float32
     )
-
-    expected_uncert = np.zeros((1, 7, 3600, 40), dtype=np.float16)
-
-    expected_bg = (expected_rates, expected_uncert, expected_err)
-    return expected_bg
+    o_var = np.array(
+        [0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007], dtype=np.float32
+    )
+    return xr.Dataset(
+        {
+            "h_background_rates": ("esa_step", h_rates),
+            "h_background_variance": ("esa_step", h_var),
+            "o_background_rates": ("esa_step", o_rates),
+            "o_background_variance": ("esa_step", o_var),
+        }
+    )
 
 
 @patch("imap_processing.lo.l1c.lo_l1c.calculate_exposure_times")
@@ -234,7 +217,16 @@ def test_lo_l1c(
     repoint_met,
 ):
     # Arrange
-    data = {"imap_lo_l1b_de": l1b_de_spin}
+    data = {
+        "imap_lo_l1b_de": l1b_de_spin,
+        "imap_lo_l1b_goodtimes": xr.Dataset(
+            {
+                "gt_start_met": ("epoch", [511000000.0]),
+                "gt_end_met": ("epoch", [511100000.0]),
+            },
+            coords={"epoch": met_to_ttj2000ns([511000000.0])},
+        ),
+    }
     use_fake_spin_data_for_time(511000000)
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
     mock_set_background_rates.return_value = (None, None, None)
@@ -271,35 +263,37 @@ def test_lo_l1c(
     assert "sc_velocity" in output_dataset
 
 
-def test_filter_goodtimes(l1b_de, anc_dependencies):
+def test_filter_goodtimes():
     # Arrange
+    event_mets = [473389199, 473389200, 473389201, 473389202, 473389203, 473407619]
     l1b_de_all = xr.Dataset(
         {
             "esa_step": ("epoch", [1, 2, 1, 4, 5, 2]),
             "spin_bin": ("epoch", [1900, 2000, 3000, 3000, 3000, 3000]),
         },
-        coords={
-            "epoch": met_to_ttj2000ns(
-                [
-                    473389199,
-                    473389200,
-                    473389201,
-                    473389202,
-                    473389203,
-                    473407619,
-                ]
-            )
-        },
+        coords={"epoch": met_to_ttj2000ns(event_mets)},
     )
-    expected_goodtimes_mask = [False, False, True, False, True, False]
 
-    l1b_goodtimes_onl_expected = l1b_de_all.isel(epoch=expected_goodtimes_mask)
+    # Two goodtime windows: [473389201, 473389203] and [473407619, 473407620]
+    gt_starts = np.array([473389201.0, 473407619.0])
+    goodtimes_ds = xr.Dataset(
+        {
+            "gt_start_met": ("epoch", gt_starts),
+            "gt_end_met": ("epoch", [473389203.0, 473407620.0]),
+        },
+        coords={"epoch": met_to_ttj2000ns(gt_starts)},
+    )
+
+    # Events at MET 473389201-473389203 and 473407619 fall inside goodtime windows;
+    # 473389199 and 473389200 are before the first window.
+    expected_mask = [False, False, True, True, True, True]
+    expected = l1b_de_all.isel(epoch=expected_mask)
 
     # Act
-    l1b_goodtimes_only = filter_goodtimes(l1b_de_all, anc_dependencies)
+    result = filter_goodtimes(l1b_de_all, goodtimes_ds)
 
     # Assert
-    xr.testing.assert_equal(l1b_goodtimes_only, l1b_goodtimes_onl_expected)
+    xr.testing.assert_equal(result, expected)
 
 
 def test_lo_l1c_no_goodtimes(
@@ -310,7 +304,17 @@ def test_lo_l1c_no_goodtimes(
     repoint_met,
 ):
     # Arrange
-    data = {"imap_lo_l1b_de": l1b_de_spin}
+    # Goodtime window [0, 1] does not cover any event
+    data = {
+        "imap_lo_l1b_de": l1b_de_spin,
+        "imap_lo_l1b_goodtimes": xr.Dataset(
+            {
+                "gt_start_met": ("epoch", [0.0]),
+                "gt_end_met": ("epoch", [1.0]),
+            },
+            coords={"epoch": met_to_ttj2000ns([0.0])},
+        ),
+    }
     use_fake_spin_data_for_time(511000000)
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
     expected_logical_source = "imap_lo_l1c_pset"
@@ -573,23 +577,15 @@ def test_calculate_bin_weights_distributed():
 
 def test_create_goodtimes_fraction():
     """Test good-times fractional coverage calculation from ancillary data."""
-    # Arrange - create a simple goodtimes DataFrame
+    # Arrange - create a simple goodtimes Dataset
     # Good-times cover the full pointing duration for all spin bins
     # bin_start and bin_end are inclusive, 0-indexed (0-59 for 6-degree bins)
-    goodtimes_df = pd.DataFrame(
+    goodtimes_ds = xr.Dataset(
         {
-            "GoodTime_start": [500000000.0, 500000000.0],
-            "GoodTime_end": [500001000.0, 500001000.0],
-            "bin_start": [0, 30],  # 6-degree bins: 0-29 and 30-59
-            "bin_end": [29, 59],  # inclusive: first half bins 0-29, second half 30-59
-            "E-Step1": [1, 1],
-            "E-Step2": [1, 0],  # ESA step 2 only good for first half
-            "E-Step3": [1, 1],
-            "E-Step4": [1, 1],
-            "E-Step5": [1, 1],
-            "E-Step6": [1, 1],
-            "E-Step7": [1, 1],
-        }
+            "gt_start_met": ("epoch", [500000000.0, 500000000.0]),
+            "gt_end_met": ("epoch", [500001000.0, 500001000.0]),
+        },
+        coords={"epoch": [0, 1]},
     )
 
     pointing_start_met = 500000000.0
@@ -597,41 +593,26 @@ def test_create_goodtimes_fraction():
 
     # Act
     fraction = create_goodtimes_fraction(
-        goodtimes_df, pointing_start_met, pointing_end_met
+        goodtimes_ds, pointing_start_met, pointing_end_met
     )
 
     # Assert
     assert fraction.shape == (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS)
 
-    # ESA step 1 (index 0) should have 100% coverage (fraction = 1.0)
-    np.testing.assert_allclose(fraction[0, :], 1.0)
-
-    # ESA step 2 (index 1) should only have 100% for first half, 0% for second half
-    np.testing.assert_allclose(fraction[1, :1800], 1.0)
-    np.testing.assert_allclose(fraction[1, 1800:], 0.0)
-
-    # ESA steps 3-7 (indices 2-6) should have 100% coverage
-    for i in range(2, 7):
-        np.testing.assert_allclose(fraction[i, :], 1.0)
+    # The current implementation does not filter by bin range or E-Step flags,
+    # so coverage is 1.0 everywhere
+    np.testing.assert_allclose(fraction, 1.0)
 
 
 def test_create_goodtimes_fraction_partial_coverage():
     """Test good-times with partial time coverage of pointing period."""
     # Arrange - good-times cover only half of the pointing duration
-    goodtimes_df = pd.DataFrame(
+    goodtimes_ds = xr.Dataset(
         {
-            "GoodTime_start": [500000000.0],
-            "GoodTime_end": [500000500.0],  # Only first 500s of 1000s pointing
-            "bin_start": [0],
-            "bin_end": [59],  # All spin bins (0-59 inclusive)
-            "E-Step1": [1],
-            "E-Step2": [1],
-            "E-Step3": [1],
-            "E-Step4": [1],
-            "E-Step5": [1],
-            "E-Step6": [1],
-            "E-Step7": [1],
-        }
+            "gt_start_met": ("epoch", [500000000.0]),
+            "gt_end_met": ("epoch", [500000500.0]),  # Only first 500s of 1000s pointing
+        },
+        coords={"epoch": [0]},
     )
 
     pointing_start_met = 500000000.0
@@ -639,7 +620,7 @@ def test_create_goodtimes_fraction_partial_coverage():
 
     # Act
     fraction = create_goodtimes_fraction(
-        goodtimes_df, pointing_start_met, pointing_end_met
+        goodtimes_ds, pointing_start_met, pointing_end_met
     )
 
     # Assert - all bins should have 50% coverage
@@ -649,20 +630,12 @@ def test_create_goodtimes_fraction_partial_coverage():
 def test_create_goodtimes_fraction_no_overlap():
     """Test good-times fraction when no good-times overlap with pointing."""
     # Arrange - goodtimes outside pointing period
-    goodtimes_df = pd.DataFrame(
+    goodtimes_ds = xr.Dataset(
         {
-            "GoodTime_start": [400000000.0],
-            "GoodTime_end": [400001000.0],
-            "bin_start": [0],
-            "bin_end": [59],  # All spin bins (0-59 inclusive)
-            "E-Step1": [1],
-            "E-Step2": [1],
-            "E-Step3": [1],
-            "E-Step4": [1],
-            "E-Step5": [1],
-            "E-Step6": [1],
-            "E-Step7": [1],
-        }
+            "gt_start_met": ("epoch", [400000000.0]),
+            "gt_end_met": ("epoch", [400001000.0]),
+        },
+        coords={"epoch": [0]},
     )
 
     pointing_start_met = 500000000.0
@@ -670,7 +643,7 @@ def test_create_goodtimes_fraction_no_overlap():
 
     # Act
     fraction = create_goodtimes_fraction(
-        goodtimes_df, pointing_start_met, pointing_end_met
+        goodtimes_ds, pointing_start_met, pointing_end_met
     )
 
     # Assert - all zeros since no overlap
@@ -678,46 +651,57 @@ def test_create_goodtimes_fraction_no_overlap():
 
 
 @pytest.mark.parametrize("species", [FilterType.HYDROGEN, FilterType.OXYGEN])
-def test_set_background_rates(
-    l1b_de_spin, anc_dependencies, attr_mgr, species, expected_bg
-):
+def test_set_background_rates(l1b_bgrates_ds, attr_mgr, species):
     # Arrange
-    pointing_start_met = 473389200.0
-    pointing_end_met = 473472000.0
+    sci_deps = {"imap_lo_l1b_bgrates": l1b_bgrates_ds}
+    species_key = species.value
+    expected_rates = l1b_bgrates_ds[f"{species_key}_background_rates"].values
+    expected_var = l1b_bgrates_ds[f"{species_key}_background_variance"].values
 
     # Act
-    rates, uncert, err = set_background_rates(
-        pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
-    )
+    rates, uncert, err = set_background_rates(species, sci_deps, attr_mgr)
 
-    # Assert
-    np.testing.assert_array_equal(
-        rates.values,
-        expected_bg[0],
-    )
-    np.testing.assert_array_equal(
-        uncert.values,
-        expected_bg[1],
-    )
-    np.testing.assert_array_equal(
-        err.values,
-        expected_bg[2],
-    )
+    # Assert shape
+    assert rates.shape == (1, N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS)
+    assert uncert.shape == (1, N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS)
+    assert err.shape == (1, N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS)
+
+    # Rates and uncertainties must be uniform across spatial bins for each ESA step
+    for i in range(N_ESA_ENERGY_STEPS):
+        np.testing.assert_array_equal(
+            rates.values[0, i, :, :],
+            np.full(
+                (N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),
+                expected_rates[i],
+                dtype=np.float16,
+            ),
+        )
+        np.testing.assert_array_equal(
+            uncert.values[0, i, :, :],
+            np.full(
+                (N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS), expected_var[i], dtype=np.float16
+            ),
+        )
+
+    # Systematic error is always zero
+    np.testing.assert_array_equal(err.values, 0)
 
 
-def test_set_background_rates_species_error(anc_dependencies, attr_mgr):
-    # Arrange
-    pointing_start_met = 473389100.0
-    pointing_end_met = 473472100.0
-    species = FilterType.DOUBLES
+def test_set_background_rates_no_bgrates(attr_mgr):
+    """Returns zeros when imap_lo_l1b_bgrates is absent from sci_dependencies."""
+    rates, uncert, err = set_background_rates(FilterType.HYDROGEN, {}, attr_mgr)
 
+    np.testing.assert_array_equal(rates.values, 0)
+    np.testing.assert_array_equal(uncert.values, 0)
+    np.testing.assert_array_equal(err.values, 0)
+
+
+def test_set_background_rates_species_error(attr_mgr):
     # Act
     with pytest.raises(
         ValueError, match="Species must be 'h' or 'o', but got doubles."
     ):
-        rates, uncert, err = set_background_rates(
-            pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
-        )
+        set_background_rates(FilterType.DOUBLES, {}, attr_mgr)
 
 
 def test_set_pointing_directions(attr_mgr):
