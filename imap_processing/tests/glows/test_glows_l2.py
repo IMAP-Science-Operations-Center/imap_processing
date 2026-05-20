@@ -225,34 +225,34 @@ def test_glows_l2_cdf_metadata(
     )[0]
     cdf_path = write_cdf(l2_dataset)
 
-    cdf_file = cdflib.CDF(cdf_path)
-    bins_label_info = cdf_file.varinq("bins_label")
-    bins_label_attrs = cdf_file.varattsget("bins_label")
-    bins_label_values = cdf_file.varget("bins_label")
-    flags_label_info = cdf_file.varinq("flags_label")
-    flags_label_attrs = cdf_file.varattsget("flags_label")
-    flags_label_values = cdf_file.varget("flags_label")
-    bad_time_info = cdf_file.varinq("bad_time_flag_occurrences")
-    bad_time_attrs = cdf_file.varattsget("bad_time_flag_occurrences")
-    global_attrs = cdf_file.globalattsget()
+    with cdflib.CDF(cdf_path) as cdf_file:
+        bins_label_info = cdf_file.varinq("bins_label")
+        bins_label_attrs = cdf_file.varattsget("bins_label")
+        bins_label_values = cdf_file.varget("bins_label")
+        flags_label_info = cdf_file.varinq("flags_label")
+        flags_label_attrs = cdf_file.varattsget("flags_label")
+        flags_label_values = cdf_file.varget("flags_label")
+        bad_time_info = cdf_file.varinq("bad_time_flag_occurrences")
+        bad_time_attrs = cdf_file.varattsget("bad_time_flag_occurrences")
+        global_attrs = cdf_file.globalattsget()
 
-    assert bins_label_info.Data_Type_Description == "CDF_CHAR"
-    assert bins_label_attrs["FORMAT"] == "A4"
-    assert list(bins_label_values[:5]) == ["0", "1", "2", "3", "4"]
+        assert bins_label_info.Data_Type_Description == "CDF_CHAR"
+        assert bins_label_attrs["FORMAT"] == "A4"
+        assert list(bins_label_values[:5]) == ["0", "1", "2", "3", "4"]
 
-    assert flags_label_info.Data_Type_Description == "CDF_CHAR"
-    assert flags_label_attrs["FORMAT"] == "A42"
-    assert list(flags_label_values) == list(BAD_TIME_FLAG_NAMES)
-    assert max(len(name) for name in BAD_TIME_FLAG_NAMES) <= int(
-        flags_label_attrs["FORMAT"][1:]
-    ), (
-        "Update flags_label FORMAT in imap_glows_l2_variable_attrs.yaml "
-        "if a flag name exceeds A42."
-    )
+        assert flags_label_info.Data_Type_Description == "CDF_CHAR"
+        assert flags_label_attrs["FORMAT"] == "A42"
+        assert list(flags_label_values) == list(BAD_TIME_FLAG_NAMES)
+        assert max(len(name) for name in BAD_TIME_FLAG_NAMES) <= int(
+            flags_label_attrs["FORMAT"][1:]
+        ), (
+            "Update flags_label FORMAT in imap_glows_l2_variable_attrs.yaml "
+            "if a flag name exceeds A42."
+        )
 
-    assert bad_time_info.Data_Type_Description == "CDF_UINT2"
-    assert bad_time_attrs["FORMAT"] == "I5"
-    assert global_attrs["flight_software_version"] == ["131329"]
+        assert bad_time_info.Data_Type_Description == "CDF_UINT2"
+        assert bad_time_attrs["FORMAT"] == "I5"
+        assert global_attrs["flight_software_version"] == ["131329"]
 
 
 @pytest.mark.parametrize(
