@@ -571,19 +571,18 @@ def test_codice_l2_direct_events_display_type_cdf_metadata(
     file = _generate_direct_events_l2_file(
         mock_get_file_paths, codice_lut_path, descriptor
     )
-    cdf_file = cdflib.CDF(str(file))
+    with cdflib.CDF(str(file)) as cdf_file:
+        for variable, expected_display_type in DIRECT_EVENT_DISPLAY_TYPES[
+            descriptor
+        ].items():
+            attrs = cdf_file.varattsget(variable)
+            assert "DISPLAY_TYPE" in attrs, f"{variable} is missing DISPLAY_TYPE"
+            assert isinstance(attrs["DISPLAY_TYPE"], str), (
+                f"{variable} DISPLAY_TYPE must be stored as a string"
+            )
+            assert attrs["DISPLAY_TYPE"] == expected_display_type
 
-    for variable, expected_display_type in DIRECT_EVENT_DISPLAY_TYPES[
-        descriptor
-    ].items():
-        attrs = cdf_file.varattsget(variable)
-        assert "DISPLAY_TYPE" in attrs, f"{variable} is missing DISPLAY_TYPE"
-        assert isinstance(attrs["DISPLAY_TYPE"], str), (
-            f"{variable} DISPLAY_TYPE must be stored as a string"
-        )
-        assert attrs["DISPLAY_TYPE"] == expected_display_type
-
-    if descriptor == "hi-direct-events":
-        attrs = cdf_file.varattsget("energy_per_nuc")
-        assert attrs["DEPEND_1"] == "priority"
-        assert attrs["LABL_PTR_1"] == "priority_label"
+        if descriptor == "hi-direct-events":
+            attrs = cdf_file.varattsget("energy_per_nuc")
+            assert attrs["DEPEND_1"] == "priority"
+            assert attrs["LABL_PTR_1"] == "priority_label"
