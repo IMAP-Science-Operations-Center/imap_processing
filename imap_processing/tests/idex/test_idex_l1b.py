@@ -23,6 +23,7 @@ from imap_processing.idex.idex_l1b import (
     unpack_instrument_settings,
 )
 from imap_processing.idex.idex_utils import get_idex_attrs
+from imap_processing.spice.time import ttj2000ns_to_met
 from imap_processing.tests.idex import conftest
 
 
@@ -236,7 +237,6 @@ def test_get_spice_data(
     mock_spice_functions,
     use_fake_spin_data_for_time,
     decom_test_data_sci,
-    furnish_kernels,
 ):
     """
     Test the get_spice_data() function.
@@ -246,15 +246,14 @@ def test_get_spice_data(
     decom_test_data_sci : xarray.Dataset
         L1a dataset
     """
-    kernels = ["naif0012.tls"]
-    times = decom_test_data_sci["shcoarse"].data
+    times = ttj2000ns_to_met(decom_test_data_sci["epoch"].data)
     use_fake_spin_data_for_time(np.min(times), np.max(times))
 
     # Mock attribute manager variable attrs
     idex_attrs = ImapCdfAttributes()
 
     with (
-        furnish_kernels(kernels),
+        # furnish_kernels(kernels),
         mock.patch.object(idex_attrs, "get_variable_attributes") as mock_attrs,
     ):
         mock_attrs.return_value = {"CATDESC": "Test var"}

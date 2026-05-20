@@ -103,8 +103,9 @@ def test_idex_l1a_decom():
         datasets = idex_l1a([TEST_L0_FILE_SCI, TEST_L0_FILE_SCI], "20231218")
 
     assert len(datasets) == 2
-    # We should have 28 science events
-    assert len(datasets[0].epoch) == 28
+    # We should have 14 science events
+    # The duplicates will be dropped.
+    assert len(datasets[0].epoch) == 14
 
 
 def test_idex_l1a_decom_no_data(caplog):
