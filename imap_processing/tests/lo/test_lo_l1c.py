@@ -104,6 +104,7 @@ def l1b_de_spin():
         coords={
             "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 902),
         },
+        attrs={"Repointing": "repoint00000"},
     )
     return l1b_de
 
@@ -296,7 +297,13 @@ def test_filter_goodtimes():
     xr.testing.assert_equal(result, expected)
 
 
+@patch("imap_processing.lo.l1c.lo_l1c.calculate_exposure_times")
+@patch("imap_processing.lo.l1c.lo_l1c.set_pointing_directions")
+@patch("imap_processing.lo.l1c.lo_l1c.add_spacecraft_position_and_velocity_to_pset")
 def test_lo_l1c_no_goodtimes(
+    mock_add_spacecraft_position_and_velocity_to_pset,
+    mock_set_pointing_directions,
+    mock_calculate_exposure_times,
     l1b_de_spin,
     anc_dependencies,
     use_fake_repoint_data_for_time,
@@ -304,20 +311,49 @@ def test_lo_l1c_no_goodtimes(
     repoint_met,
 ):
     # Arrange
-    # Goodtime window [0, 1] does not cover any event
+    # Goodtime window [511000000, 511000900] is within the repoint period
+    # but before all events (which start at 511000902)
+    goodtime_start = 511000000.0
+    goodtime_end = 511000900.0
     data = {
         "imap_lo_l1b_de": l1b_de_spin,
         "imap_lo_l1b_goodtimes": xr.Dataset(
             {
-                "gt_start_met": ("epoch", [0.0]),
-                "gt_end_met": ("epoch", [1.0]),
+                "gt_start_met": ("epoch", [goodtime_start]),
+                "gt_end_met": ("epoch", [goodtime_end]),
             },
-            coords={"epoch": met_to_ttj2000ns([0.0])},
+            coords={"epoch": met_to_ttj2000ns([goodtime_start])},
         ),
     }
     use_fake_spin_data_for_time(511000000)
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
     expected_logical_source = "imap_lo_l1c_pset"
+
+    # Mock exposure time calculation to return zeros (no events in goodtimes)
+    mock_calculate_exposure_times.return_value = xr.DataArray(
+        np.zeros(PSET_SHAPE, dtype=np.float32),
+        dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
+    )
+
+    # Mock pointing directions to return valid non-zero values
+    mock_set_pointing_directions.return_value = (
+        xr.DataArray(
+            np.ones((1, 3600, 40)) * 180.0,
+            dims=["epoch", "spin_angle", "off_angle"],
+        ),
+        xr.DataArray(
+            np.ones((1, 3600, 40)) * 45.0,
+            dims=["epoch", "spin_angle", "off_angle"],
+        ),
+    )
+
+    # Mock spacecraft position/velocity
+    def mock_add_sc_pos_vel(pset):
+        pset["sc_position"] = xr.DataArray(np.array([1.0, 2.0, 3.0]), dims=["x_y_z"])
+        pset["sc_velocity"] = xr.DataArray(np.array([0.1, 0.2, 0.3]), dims=["x_y_z"])
+        return pset
+
+    mock_add_spacecraft_position_and_velocity_to_pset.side_effect = mock_add_sc_pos_vel
 
     # Act
     output_dataset = lo_l1c(data, anc_dependencies)[0]
@@ -327,15 +363,45 @@ def test_lo_l1c_no_goodtimes(
     # Verify that pivot_angle is passed through from l1b_de
     assert "pivot_angle" in output_dataset
     assert output_dataset["pivot_angle"].values[0] == 45.0
+
+    # Verify that times are valid (not zeros/junk)
+    # Pointing start is repoint start (511000000) + 15 minutes (900 seconds)
+    assert output_dataset["pointing_start_met"].values[0] == 511000900.0
+    assert (
+        output_dataset["pointing_end_met"].values[0]
+        > output_dataset["pointing_start_met"].values[0]
+    )
+
+    # Verify counts are zeros (no events in goodtimes window)
     expected_counts = np.zeros((1, 7, 3600, 40))
     np.testing.assert_array_equal(output_dataset["h_counts"], expected_counts)
     np.testing.assert_array_equal(output_dataset["o_counts"], expected_counts)
     np.testing.assert_array_equal(output_dataset["doubles_counts"], expected_counts)
     np.testing.assert_array_equal(output_dataset["triples_counts"], expected_counts)
+
+    # Verify exposure times are zeros (mocked)
+    np.testing.assert_array_equal(output_dataset["exposure_time"], expected_counts)
+
+    # Verify background rates are zeros (no bgrates dependency provided)
     np.testing.assert_array_equal(output_dataset["h_background_rates"], expected_counts)
     np.testing.assert_array_equal(output_dataset["o_background_rates"], expected_counts)
-    expected = np.zeros((1, 3600, 40))
-    np.testing.assert_array_equal(output_dataset["hae_latitude"], expected)
+
+    # Verify geometry is computed (not zeros) - mocked to return valid values
+    assert "hae_latitude" in output_dataset
+    assert "hae_longitude" in output_dataset
+    # HAE values should be the mocked non-zero values
+    np.testing.assert_array_equal(
+        output_dataset["hae_longitude"].values, np.ones((1, 3600, 40)) * 180.0
+    )
+    np.testing.assert_array_equal(
+        output_dataset["hae_latitude"].values, np.ones((1, 3600, 40)) * 45.0
+    )
+
+    # Verify spacecraft position/velocity are valid (not zeros)
+    assert "sc_position" in output_dataset
+    assert "sc_velocity" in output_dataset
+    np.testing.assert_array_equal(output_dataset["sc_position"].values, [1.0, 2.0, 3.0])
+    np.testing.assert_array_equal(output_dataset["sc_velocity"].values, [0.1, 0.2, 0.3])
 
 
 def test_create_pset_counts(l1b_de):
@@ -444,6 +510,57 @@ def test_calculate_exposure_times(use_fake_spin_data_for_time):
                 exposure_times.values[0, 0, :, :],
                 exposure_times.values[0, i, :, :],
             )
+
+
+def test_calculate_exposure_times_no_goodtimes_overlap(use_fake_spin_data_for_time):
+    """Test that exposure times are zero when goodtimes don't overlap with pointing."""
+    # Arrange
+    # Pointing period is [511000100, 511000200]
+    pointing_start_met = 511000100.0
+    pointing_end_met = 511000200.0
+    use_fake_spin_data_for_time(pointing_start_met)
+
+    # Goodtimes window [511000000, 511000050] ends before pointing starts
+    goodtimes_ds = xr.Dataset(
+        {
+            "gt_start_met": ("epoch", [511000000.0]),
+            "gt_end_met": ("epoch", [511000050.0]),
+        },
+        coords={"epoch": [0]},
+    )
+
+    with (
+        patch(
+            "imap_processing.lo.l1c.lo_l1c.lo_instrument_pointing"
+        ) as mock_lo_instrument_pointing,
+        patch(
+            "imap_processing.lo.l1c.lo_l1c.met_to_ttj2000ns"
+        ) as mock_met_to_ttj2000ns,
+        patch("imap_processing.lo.l1c.lo_l1c.ttj2000ns_to_et") as mock_ttj2000ns_to_et,
+    ):
+        # Mock the time conversions to pass through
+        mock_met_to_ttj2000ns.side_effect = lambda x: x * 1e9
+        mock_ttj2000ns_to_et.side_effect = lambda x: x / 1e9
+
+        # Mock lo_instrument_pointing
+        def mock_pointing(ets, pivot_angle, to_frame):
+            n_times = len(np.atleast_1d(ets))
+            return np.column_stack([np.full(n_times, 270.0), np.zeros(n_times)])
+
+        mock_lo_instrument_pointing.side_effect = mock_pointing
+
+        # Act
+        exposure_times = calculate_exposure_times(
+            pointing_start_met,
+            pointing_end_met,
+            goodtimes_ds=goodtimes_ds,
+            n_representative_spins=3,
+        )
+
+        # Assert
+        # All exposure times should be zero since goodtimes don't overlap
+        assert exposure_times.shape == PSET_SHAPE
+        np.testing.assert_array_equal(exposure_times.values, 0.0)
 
 
 def test_get_representative_spin_times(use_fake_spin_data_for_time):
