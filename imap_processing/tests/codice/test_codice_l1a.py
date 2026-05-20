@@ -35,15 +35,15 @@ EXPECTED_EPOCH_DELTA_VALIDMAX = 128000000000
 
 def assert_epoch_delta_cdf_metadata(cdf_file):
     """Assert the written epoch delta variables use integer duration metadata."""
-    cdf = cdflib.CDF(cdf_file)
-    for variable in ("epoch_delta_minus", "epoch_delta_plus"):
-        info = cdf.varinq(variable)
-        attrs = cdf.varattsget(variable)
-        assert info.Data_Type_Description == "CDF_INT8"
-        assert attrs["FILLVAL"] == -9223372036854775808
-        assert attrs["FORMAT"] == "I19"
-        assert attrs["VALIDMIN"] == 0
-        assert attrs["VALIDMAX"] == EXPECTED_EPOCH_DELTA_VALIDMAX
+    with cdflib.CDF(cdf_file) as cdf:
+        for variable in ("epoch_delta_minus", "epoch_delta_plus"):
+            info = cdf.varinq(variable)
+            attrs = cdf.varattsget(variable)
+            assert info.Data_Type_Description == "CDF_INT8"
+            assert attrs["FILLVAL"] == -9223372036854775808
+            assert attrs["FORMAT"] == "I19"
+            assert attrs["VALIDMIN"] == 0
+            assert attrs["VALIDMAX"] == EXPECTED_EPOCH_DELTA_VALIDMAX
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")

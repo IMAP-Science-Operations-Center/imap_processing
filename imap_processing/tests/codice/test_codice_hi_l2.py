@@ -26,19 +26,19 @@ EXPECTED_EPOCH_DELTA_VALIDMAX = 128000000000
 
 def assert_l2_epoch_delta_cdf_metadata(cdf_file):
     """Assert L2 epoch delta vars and epoch links are written correctly."""
-    cdf = cdflib.CDF(cdf_file)
-    epoch_attrs = cdf.varattsget("epoch")
-    assert epoch_attrs["DELTA_MINUS_VAR"] == "epoch_delta_minus"
-    assert epoch_attrs["DELTA_PLUS_VAR"] == "epoch_delta_plus"
+    with cdflib.CDF(cdf_file) as cdf:
+        epoch_attrs = cdf.varattsget("epoch")
+        assert epoch_attrs["DELTA_MINUS_VAR"] == "epoch_delta_minus"
+        assert epoch_attrs["DELTA_PLUS_VAR"] == "epoch_delta_plus"
 
-    for variable in ("epoch_delta_minus", "epoch_delta_plus"):
-        info = cdf.varinq(variable)
-        attrs = cdf.varattsget(variable)
-        assert info.Data_Type_Description == "CDF_INT8"
-        assert attrs["FILLVAL"] == -9223372036854775808
-        assert attrs["FORMAT"] == "I19"
-        assert attrs["VALIDMIN"] == 0
-        assert attrs["VALIDMAX"] == EXPECTED_EPOCH_DELTA_VALIDMAX
+        for variable in ("epoch_delta_minus", "epoch_delta_plus"):
+            info = cdf.varinq(variable)
+            attrs = cdf.varattsget(variable)
+            assert info.Data_Type_Description == "CDF_INT8"
+            assert attrs["FILLVAL"] == -9223372036854775808
+            assert attrs["FORMAT"] == "I19"
+            assert attrs["VALIDMIN"] == 0
+            assert attrs["VALIDMAX"] == EXPECTED_EPOCH_DELTA_VALIDMAX
 
 
 @pytest.fixture
