@@ -95,6 +95,10 @@ class HiConstants:
         in Filter 2.
     STAT_FILTER_2_BIN_PADDING : int
         Number of bins to add on each side of pulse angle range in Filter 2.
+    EXCESS_BACKGROUND_COUNT_RATE : float
+        Constant rate offset (per second) to subtract from combined background
+        rates. Corrects for excess counts from the outer ESA during background
+        testing. Applied after summing individual background components.
     """
 
     # TODO: read DE_CLOCK_TICK_US from
@@ -128,6 +132,11 @@ class HiConstants:
     STAT_FILTER_2_MIN_EVENTS = 6
     STAT_FILTER_2_MAX_TIME_DELTA = 5000 * DE_CLOCK_TICK_S
     STAT_FILTER_2_BIN_PADDING = 1
+
+    # Background rate correction
+    # Constant offset to subtract from combined background rates to correct
+    # for excess counts from the outer ESA during background testing.
+    EXCESS_BACKGROUND_COUNT_RATE = 0.003  # per second
 
 
 def parse_sensor_number(full_string: str) -> int:
