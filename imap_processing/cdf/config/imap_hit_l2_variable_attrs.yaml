@@ -331,7 +331,7 @@ dynamic_threshold_state:
   DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
   DISPLAY_TYPE: time_series
   FIELDNAM: Dynamic threshold state
-  FILLVAL: -128
+  FILLVAL: 255
   FORMAT: I1
   LABLAXIS: State
   SCALEMAX: 1000
@@ -1994,7 +1994,6 @@ fe_total_uncert_minus_macropixel:
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-
 
 
 

@@ -143,7 +143,7 @@ def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
     spin_phase_angles = xr.DataArray(
         name="spin_phase",
         dims=["epoch"],
-        data=np.random.randint(0, 360, len(l1a_ds.epoch)),
+        data=np.random.uniform(0.0, 360.0, len(l1a_ds.epoch)),
         attrs=idex_attrs.get_variable_attributes("spin_phase"),
     )
     longitude = xr.DataArray(

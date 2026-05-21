@@ -563,6 +563,20 @@ def process_lo_species_intensity(
     for species in species_list:
         dataset[species].data[half_spin_boundary] = np.nan
 
+    for var in ["nso_esa_step", "nso_spin_sector"]:
+        if var in dataset:
+            fillval = dataset[var].attrs["FILLVAL"]
+            restored_values = dataset[var].data.astype(np.float64, copy=True)
+            restored_values = np.nan_to_num(
+                restored_values, nan=fillval, posinf=fillval, neginf=fillval
+            )
+            restored_values = np.clip(np.rint(restored_values), 0, 255).astype(np.uint8)
+            dataset[var] = xr.DataArray(
+                restored_values,
+                dims=dataset[var].dims,
+                attrs=dataset[var].attrs,
+            )
+
     return dataset
 
 
@@ -1093,6 +1107,10 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         l2_dataset["position"].dims,
         elevation_angle.astype(np.float32),
     )
+    spin_sector_attrs = cdf_attrs.get_variable_attributes(
+        "spin_sector", check_schema=False
+    )
+    spin_sector_fillval = np.uint8(spin_sector_attrs["FILLVAL"])
     # Convert spin_sector to spin_angle in degrees
     # Use equation from section 11.2.2 of algorithm document
     # Shift all spin sectors for all positions 13 - 24 adding 12 and mod 24
@@ -1104,13 +1122,16 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     )
     l2_dataset["spin_angle"] = l2_dataset["spin_sector"].astype(np.float32) * 15.0 + 7.5
 
-    # Set spin angle and sector to NaN for invalid positions (>23)
+    # Preserve spin_sector as an integer index while marking invalid sectors.
+    invalid_spin_sector = ~np.isfinite(original_spin_sector) | (
+        original_spin_sector > 23
+    )
     l2_dataset["spin_angle"] = xr.where(
-        (original_spin_sector > 23), np.nan, l2_dataset["spin_angle"]
+        invalid_spin_sector, np.nan, l2_dataset["spin_angle"]
     )
     l2_dataset["spin_sector"] = xr.where(
-        (original_spin_sector > 23), np.nan, l2_dataset["spin_sector"]
-    )
+        invalid_spin_sector, spin_sector_fillval, l2_dataset["spin_sector"]
+    ).astype(np.uint8)
     # convert apd energy to physical units
     # Set the gain labels based on gain values
     gains = l2_dataset["gain"].values.ravel()
