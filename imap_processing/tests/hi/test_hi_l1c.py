@@ -888,9 +888,9 @@ def test_pset_backgrounds_esa_energy_step_mismatch_raises_error(
 
 @mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
 def test_pset_backgrounds_applies_offset_correction(mock_compute_background_counts):
-    """Test that pset_backgrounds subtracts BACKGROUND_OUTER_ESA_OFFSET from rates.
+    """Test that pset_backgrounds subtracts EXCESS_BACKGROUND_COUNT_RATE from rates.
 
-    The function should subtract HiConstants.BACKGROUND_OUTER_ESA_OFFSET (0.003/s)
+    The function should subtract HiConstants.EXCESS_BACKGROUND_COUNT_RATE (0.003/s)
     from the combined background rates after computing them.
     """
     # Create minimal pset_coords
