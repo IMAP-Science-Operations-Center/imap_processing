@@ -266,7 +266,7 @@ class PacketParser:
                         continue
                     # Initial packet for new dust event. Further packets will fill in
                     # data.
-                    dust_events[event_key] = RawDustEvent(packet)
+                    dust_events[event_key] = RawDustEvent(packet, event_key)
                     active_event_keys[event_number] = event_key
                 elif event_number not in active_event_keys:
                     raise KeyError(
@@ -421,6 +421,8 @@ class RawDustEvent:
     ----------
     header_packet : space_packet_parser.SpacePacket
         The FPGA metadata event header.
+    event_key : EventKey
+        Stable event identifier for this science event header.
 
     Attributes
     ----------
@@ -471,7 +473,9 @@ class RawDustEvent:
     MAX_HIGH_BLOCKS = 16
     MAX_LOW_BLOCKS = 64
 
-    def __init__(self, header_packet: space_packet_parser.SpacePacket) -> None:
+    def __init__(
+        self, header_packet: space_packet_parser.SpacePacket, event_key: EventKey
+    ) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -485,6 +489,8 @@ class RawDustEvent:
         ----------
         header_packet : space_packet_parser.SpacePacket
             The FPGA metadata event header.
+        event_key : EventKey
+            Stable event identifier for this science event header.
         """
         # Calculate the impact time in seconds since epoch
         self.impact_time = 0
@@ -500,7 +506,7 @@ class RawDustEvent:
         )
 
         self.event_number = int(header_packet["IDX__SCI0EVTNUM"])
-        self.event_key = self.get_event_key(header_packet)
+        self.event_key = event_key
 
         # The actual trigger time for the low and high sample rate in
         # microseconds since the impact time
