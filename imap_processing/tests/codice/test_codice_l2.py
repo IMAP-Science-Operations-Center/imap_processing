@@ -397,7 +397,7 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
             l2_val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
-    )
+        )
     processed_2_ds.attrs["Data_version"] = "001"
     assert processed_2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-species"
     cdf_file_path = write_cdf(processed_2_ds)
