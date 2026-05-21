@@ -2451,8 +2451,8 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     epoch_ttj2000 = cdf_hist["epoch"].values
     n_epochs = epoch_ttj2000.shape[0]
     met = ttj2000ns_to_met(epoch_ttj2000)
-    pointing_mid_met = get_pointing_mid_time(met[0])
-    pointing_mid_epoch = met_to_ttj2000ns(np.array([pointing_mid_met]))
+    pointing_start_met, _ = get_pointing_times(met[0])
+    pointing_start_epoch = met_to_ttj2000ns(np.array([pointing_start_met]))
 
     # Get year and day-of-year for the anti-RAM threshold override lookup
     epoch_start_dt = spiceypy.et2datetime(ttj2000ns_to_et(epoch_ttj2000[0]))
@@ -2740,7 +2740,7 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     logger.info("L1B Background Rates and Bettertimes created successfully")
 
     l1b_bgrates_ds, l1b_goodtimes_ds = split_backgrounds_and_goodtimes_dataset(
-        l1b_combined_ds, attr_mgr_l1b, pointing_mid_epoch
+        l1b_combined_ds, attr_mgr_l1b, pointing_start_epoch
     )
     datasets_to_return.extend([l1b_bgrates_ds, l1b_goodtimes_ds])
 
@@ -2750,7 +2750,7 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
 def split_backgrounds_and_goodtimes_dataset(
     l1b_backgrounds_and_goodtimes_ds: xr.Dataset,
     attr_mgr_l1b: ImapCdfAttributes,
-    pointing_mid_epoch: int | np.ndarray,
+    pointing_start_epoch: int | np.ndarray,
 ) -> tuple[xr.Dataset, xr.Dataset]:
     """
     Separate the L1B backgrounds and goodtimes dataset.
@@ -2763,8 +2763,8 @@ def split_backgrounds_and_goodtimes_dataset(
     attr_mgr_l1b : ImapCdfAttributes
         Attribute manager used to get the L1B background rates and
         goodtimes dataset attributes.
-    pointing_mid_epoch : int | np.ndarray
-        Pointing midpoint time in TT2000 nanoseconds, used as the epoch coordinate for
+    pointing_start_epoch : int | np.ndarray
+        Pointing start time in TT2000 nanoseconds, used as the epoch coordinate for
         the bgrates dataset. An int or a single-element ndarray.
 
     Returns
@@ -2796,7 +2796,7 @@ def split_backgrounds_and_goodtimes_dataset(
 
     l1b_bgrates_ds = l1b_backgrounds_and_goodtimes_ds[background_rate_fields]
     l1b_bgrates_ds["epoch"] = xr.DataArray(
-        np.atleast_1d(pointing_mid_epoch).astype(np.int64),
+        np.atleast_1d(pointing_start_epoch).astype(np.int64),
         dims=["epoch"],
         attrs=attr_mgr_l1b.get_variable_attributes("epoch", check_schema=False),
     )

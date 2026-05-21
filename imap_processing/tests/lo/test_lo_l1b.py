@@ -2169,7 +2169,6 @@ def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
     num_epochs = 100
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473391300  # 473389200 + 100*42/2
 
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
@@ -2198,8 +2197,8 @@ def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2254,7 +2253,6 @@ def test_l1b_bgrates_and_goodtimes_with_gap(anc_dependencies, attr_mgr_l1b):
     met_start = 473389200
     met_spacing = 42
     gap_size = 10000  # Large gap (> delay_max + interval_nom)
-    met_midpoint = 473396300  # 473389200 + (50*42 + 10000 + 50*42) / 2
 
     # First segment
     met_times_first = np.arange(
@@ -2297,8 +2295,8 @@ def test_l1b_bgrates_and_goodtimes_with_gap(anc_dependencies, attr_mgr_l1b):
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2326,7 +2324,6 @@ def test_l1b_bgrates_and_goodtimes_high_rate(anc_dependencies, attr_mgr_l1b):
     num_epochs = 100
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473391300  # 473389200 + 100*42/2
 
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
@@ -2366,8 +2363,8 @@ def test_l1b_bgrates_and_goodtimes_high_rate(anc_dependencies, attr_mgr_l1b):
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2389,7 +2386,6 @@ def test_l1b_bgrates_and_goodtimes_no_goodtimes(anc_dependencies, attr_mgr_l1b):
     num_epochs = 50
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473390250  # 473389200 + 50 * 42 / 2
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
 
@@ -2416,8 +2412,8 @@ def test_l1b_bgrates_and_goodtimes_no_goodtimes(anc_dependencies, attr_mgr_l1b):
     }
 
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         _, goodtimes_ds = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2435,7 +2431,6 @@ def test_l1b_bgrates_and_goodtimes_empty_dataset(anc_dependencies, attr_mgr_l1b)
     num_epochs = 10
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473389410  # 473389200 + 10*42/2
 
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
@@ -2464,8 +2459,8 @@ def test_l1b_bgrates_and_goodtimes_empty_dataset(anc_dependencies, attr_mgr_l1b)
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2487,7 +2482,7 @@ def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
     n_esa = 7
     met_starts = np.arange(473389200, 473389200 + num_records * 420, 420)
     epoch_times = met_to_ttj2000ns(met_starts)
-    pointing_mid_epoch = met_to_ttj2000ns(met_starts[0] + 630).item()
+    pointing_start_epoch = met_to_ttj2000ns(met_starts[0]).item()
 
     combined_ds = xr.Dataset(
         coords={"epoch": epoch_times},
@@ -2519,7 +2514,7 @@ def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
 
     # Act
     bgrates_ds, goodtimes_ds = split_backgrounds_and_goodtimes_dataset(
-        combined_ds, attr_mgr_l1b, pointing_mid_epoch
+        combined_ds, attr_mgr_l1b, pointing_start_epoch
     )
 
     # Assert - _background_rates/_background_variance are (epoch, esa_step)
@@ -2544,7 +2539,7 @@ def test_split_backgrounds_and_goodtimes_dataset(attr_mgr_l1b):
         assert bgrates_ds[field].shape == (1,)
 
     assert len(bgrates_ds["epoch"]) == 1
-    np.testing.assert_array_equal(bgrates_ds["epoch"].values, pointing_mid_epoch)
+    np.testing.assert_array_equal(bgrates_ds["epoch"].values, pointing_start_epoch)
 
     # Assert - goodtimes dataset contains the expected fields
     assert "gt_start_met" in goodtimes_ds.data_vars
@@ -2571,7 +2566,6 @@ def test_l1b_bgrates_and_goodtimes_ram_and_anti_ram_bins(
     num_epochs = 30
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473389830  # 473389200 + 30*42/2
 
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
@@ -2614,8 +2608,8 @@ def test_l1b_bgrates_and_goodtimes_ram_and_anti_ram_bins(
     }
 
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2634,7 +2628,6 @@ def test_l1b_bgrates_and_goodtimes_variance_calculation(anc_dependencies, attr_m
     num_epochs = 30
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473389830  # 473389200 + 30*42/2
 
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
@@ -2667,8 +2660,8 @@ def test_l1b_bgrates_and_goodtimes_variance_calculation(anc_dependencies, attr_m
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2692,7 +2685,6 @@ def test_l1b_bgrates_and_goodtimes_offset_application(anc_dependencies, attr_mgr
     num_epochs = 30
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473389830  # 473389200 + 30*42/2
 
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
@@ -2721,8 +2713,8 @@ def test_l1b_bgrates_and_goodtimes_offset_application(anc_dependencies, attr_mgr
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2752,7 +2744,6 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(
     num_epochs = 50  # Need at least 5 cycles (50 epochs / 10 per cycle)
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473390250  # 473389200 + 50*42/2
 
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
@@ -2786,8 +2777,8 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2825,7 +2816,6 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(
     num_epochs = 80
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473390880  # 473389200 + 80*42/2
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
 
@@ -2862,8 +2852,8 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-        return_value=met_midpoint,
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
             sci_dependencies, anc_dependencies, attr_mgr_l1b, delay_max=840
@@ -2891,7 +2881,6 @@ def test_l1b_bgrates_when_synthetic_floor_is_zero(anc_dependencies, attr_mgr_l1b
     num_epochs = 100
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473391300  # 473389200 + 100*42/2
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
 
@@ -2921,8 +2910,8 @@ def test_l1b_bgrates_when_synthetic_floor_is_zero(anc_dependencies, attr_mgr_l1b
     patched_bg_rates["H"] = 0.0
     with (
         patch(
-            "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-            return_value=met_midpoint,
+            "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+            return_value=(met_start, met_start + 1),
         ),
         patch.object(LoConstants, "BG_RATES", patched_bg_rates),
     ):
@@ -2940,7 +2929,6 @@ def test_l1b_bgrates_sigma_when_anti_ram_nominal_is_zero(
     num_epochs = 50
     met_start = 473389200
     met_spacing = 42
-    met_midpoint = 473390250  # 473389200 + 50*42/2
     met_times = np.arange(met_start, met_start + num_epochs * met_spacing, met_spacing)
     epoch_times = met_to_ttj2000ns(met_times)
 
@@ -2969,8 +2957,8 @@ def test_l1b_bgrates_sigma_when_anti_ram_nominal_is_zero(
     # Zero the anti-RAM threshold so bg_rate_anti_ram_nominal = 0 for any pivot angle
     with (
         patch(
-            "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
-            return_value=met_midpoint,
+            "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+            return_value=(met_start, met_start + 1),
         ),
         patch.object(LoConstants, "PIVOT_ANGLE_THRESHOLDS", {}),
         patch.object(LoConstants, "THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT", 0.0),
