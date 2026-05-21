@@ -192,10 +192,10 @@ def l1b_bgrates_ds():
     )
     return xr.Dataset(
         {
-            "h_background_rates": ("esa_step", h_rates),
-            "h_background_variance": ("esa_step", h_var),
-            "o_background_rates": ("esa_step", o_rates),
-            "o_background_variance": ("esa_step", o_var),
+            "h_background_rates": (["epoch", "esa_step"], h_rates[np.newaxis, :]),
+            "h_background_variance": (["epoch", "esa_step"], h_var[np.newaxis, :]),
+            "o_background_rates": (["epoch", "esa_step"], o_rates[np.newaxis, :]),
+            "o_background_variance": (["epoch", "esa_step"], o_var[np.newaxis, :]),
         }
     )
 
@@ -226,6 +226,8 @@ def test_lo_l1c(
             {
                 "gt_start_met": ("epoch", [repoint_start_met]),
                 "gt_end_met": ("epoch", [repoint_start_met]),
+                "pivot": ([45.0]),
+                "pivot_de": ([45.0]),
             },
             coords={"epoch": met_to_ttj2000ns([repoint_start_met])},
         ),
@@ -264,7 +266,7 @@ def test_lo_l1c(
 
     # Assert
     assert expected_logical_source == output_dataset.attrs["Logical_source"]
-    # Verify that pivot_angle is passed through from l1b_de
+    # Verify that pivot_angle is passed through from l1b_goodtimes
     assert "pivot_angle" in output_dataset
     assert output_dataset["pivot_angle"].values[0] == 45.0
     mock_add_spacecraft_position_and_velocity_to_pset.assert_called_once()
@@ -339,6 +341,8 @@ def test_lo_l1c_no_goodtimes(
             {
                 "gt_start_met": ("epoch", [goodtime_start]),
                 "gt_end_met": ("epoch", [goodtime_end]),
+                "pivot": ([45.0]),
+                "pivot_de": ([45.0]),
             },
             coords={"epoch": met_to_ttj2000ns([goodtime_start])},
         ),
@@ -378,7 +382,7 @@ def test_lo_l1c_no_goodtimes(
 
     # Assert
     assert expected_logical_source == output_dataset.attrs["Logical_source"]
-    # Verify that pivot_angle is passed through from l1b_de
+    # Verify that pivot_angle is passed through from l1b_goodtimes
     assert "pivot_angle" in output_dataset
     assert output_dataset["pivot_angle"].values[0] == 45.0
 
@@ -790,8 +794,8 @@ def test_set_background_rates(l1b_bgrates_ds, attr_mgr, species):
     # Arrange
     sci_deps = {"imap_lo_l1b_bgrates": l1b_bgrates_ds}
     species_key = species.value
-    expected_rates = l1b_bgrates_ds[f"{species_key}_background_rates"].values
-    expected_var = l1b_bgrates_ds[f"{species_key}_background_variance"].values
+    expected_rates = l1b_bgrates_ds[f"{species_key}_background_rates"].values[0]
+    expected_var = l1b_bgrates_ds[f"{species_key}_background_variance"].values[0]
 
     # Act
     rates, uncert, err = set_background_rates(species, sci_deps, attr_mgr)
