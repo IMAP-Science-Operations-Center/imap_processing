@@ -20,6 +20,10 @@ energy_attrs: &energy_default
   VAR_TYPE: support_data
 
 # ------------------------------- Coordinates -------------------------------
+epoch:
+  DELTA_MINUS_VAR: epoch_delta_minus
+  DELTA_PLUS_VAR: epoch_delta_plus
+
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty

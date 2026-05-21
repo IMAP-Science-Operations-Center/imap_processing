@@ -5,6 +5,10 @@ real_fillval: &real_fillval -1.0e+31
 min_int: &min_int -9223372036854775808
 max_int: &max_int 9223372036854775807
 # ------------------------------- Coordinates -------------------------------
+epoch:
+  DELTA_MINUS_VAR: epoch_delta_minus
+  DELTA_PLUS_VAR: epoch_delta_plus
+
 priority:
   CATDESC: Priority Level
   DICT_KEY: SPASE>Support>SupportQuantity:Other

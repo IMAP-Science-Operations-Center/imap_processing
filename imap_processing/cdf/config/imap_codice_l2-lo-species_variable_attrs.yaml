@@ -5,6 +5,10 @@ max_float: &max_float 3.4028235e+38
 species_valid_max: &species_valid_max 1e20
 
 # ------------------------------- Coordinates -------------------------------
+epoch:
+  DELTA_MINUS_VAR: epoch_delta_minus
+  DELTA_PLUS_VAR: epoch_delta_plus
+
 elevation_angle:
   CATDESC: Elevation Angle
   FIELDNAM: Elevation Angle

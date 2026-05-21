@@ -577,27 +577,9 @@ def process_lo_species_intensity(
                 attrs=dataset[var].attrs,
             )
 
-    return dataset
-
-
-def _attach_epoch_delta_links(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Attach ISTP delta-variable links to the final epoch coordinate.
-
-    Parameters
-    ----------
-    dataset : xarray.Dataset
-        The final CoDICE L2 dataset to update.
-
-    Returns
-    -------
-    xarray.Dataset
-        The input dataset with ``epoch`` delta-link attrs attached when the
-        required variables are present.
-    """
-    if {"epoch", "epoch_delta_minus", "epoch_delta_plus"}.issubset(dataset.variables):
-        dataset["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta_minus"
-        dataset["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta_plus"
+    dataset["epoch"].attrs.update(
+        cdf_attrs.get_variable_attributes("epoch", check_schema=False)
+    )
 
     return dataset
 
@@ -1496,15 +1478,6 @@ def process_codice_l2(
     for var in vars_to_drop:
         if var in l2_dataset.data_vars:
             l2_dataset = l2_dataset.drop_vars(var)
-
-    if dataset_name in {
-        "imap_codice_l2_hi-omni",
-        "imap_codice_l2_hi-sectored",
-        "imap_codice_l2_lo-sw-species",
-        "imap_codice_l2_hi-direct-events",
-        "imap_codice_l2_lo-direct-events",
-    }:
-        l2_dataset = _attach_epoch_delta_links(l2_dataset)
 
     logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 
