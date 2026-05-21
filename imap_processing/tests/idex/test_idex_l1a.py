@@ -26,6 +26,24 @@ from imap_processing.utils import packet_generator
 TEST_DATA_DIR = f"{imap_module_directory}/tests/idex/test_data"
 
 
+def _science_dataset(parser: PacketParser) -> xr.Dataset:
+    """Return the parsed L1A science dataset regardless of container layout."""
+    data = parser.data
+    if isinstance(data, xr.Dataset):
+        return data
+    if isinstance(data, dict):
+        if "l1a_sci-10days" in data:
+            return data["l1a_sci-10days"]
+        for dataset in data.values():
+            if isinstance(dataset, xr.Dataset) and "TOF_High" in dataset:
+                return dataset
+    if isinstance(data, (list, tuple)):
+        for dataset in data:
+            if isinstance(dataset, xr.Dataset) and "TOF_High" in dataset:
+                return dataset
+    raise AssertionError("Unable to locate science dataset in PacketParser output")
+
+
 def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
     """Verify the CDF file can be created with no errors.
 
@@ -171,7 +189,7 @@ def test_duplicate_science_fragment_is_dropped(
             "imap_processing.idex.idex_l1a.decom_packets",
             return_value=(packets, xr.Dataset(), xr.Dataset()),
         ):
-            deduped = PacketParser(TEST_L0_FILE_SCI).data[0]
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
 
     xr.testing.assert_equal(deduped, decom_test_data_sci)
     assert "Skipping duplicate copy" in caplog.text
@@ -195,7 +213,7 @@ def test_shorter_duplicate_science_fragment_is_replaced(
             "imap_processing.idex.idex_l1a.decom_packets",
             return_value=(packets, xr.Dataset(), xr.Dataset()),
         ):
-            deduped = PacketParser(TEST_L0_FILE_SCI).data[0]
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
 
     xr.testing.assert_equal(deduped, decom_test_data_sci)
     assert "Replacing shorter science fragment" in caplog.text
@@ -221,7 +239,7 @@ def test_conflicting_duplicate_science_fragment_skips_event(
             "imap_processing.idex.idex_l1a.decom_packets",
             return_value=(packets, xr.Dataset(), xr.Dataset()),
         ):
-            deduped = PacketParser(TEST_L0_FILE_SCI).data[0]
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
 
     assert len(deduped["epoch"]) == len(decom_test_data_sci["epoch"]) - 1
     assert "Conflicting duplicate packet for event number" in caplog.text
