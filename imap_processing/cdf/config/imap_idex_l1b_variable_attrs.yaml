@@ -483,8 +483,8 @@ spin_phase:
   CATDESC: IMAP Spin Phase
   DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
   FIELDNAM: Spin Phase
-  FILLVAL: *int_fillval
-  FORMAT: I3
+  FILLVAL: *double_fillval
+  FORMAT: F8.3
   LABLAXIS: Spin Phase
   UNITS: Degrees
   VALIDMAX: 360
@@ -499,4 +499,3 @@ solar_longitude:
   UNITS: Degrees
   VALIDMAX: 180
   VALIDMIN: -180
-

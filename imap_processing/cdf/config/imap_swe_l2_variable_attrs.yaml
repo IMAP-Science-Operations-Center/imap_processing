@@ -291,7 +291,7 @@ acq_duration:
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Array
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Acquisition Duration
-  FILLVAL: -9223372036854775808
+  FILLVAL: 4294967295
   FORMAT: I10
   LABL_PTR_1: esa_step_label
   LABL_PTR_2: spin_sector_label

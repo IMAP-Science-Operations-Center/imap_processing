@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -44,7 +45,7 @@ def l2a_dataset(
     """
     idex_attrs = get_idex_attrs("l1b")
     spin_phase_angles = xr.DataArray(
-        np.random.randint(0, 360, len(l1b_dataset.epoch)),
+        np.random.uniform(0.0, 360.0, len(l1b_dataset.epoch)),
         dims="epoch",
         attrs=idex_attrs.get_variable_attributes("spin_phase"),
     )
@@ -93,6 +94,11 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     file_name = write_cdf(l2a_dataset)
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"
+    cdf_file = cdflib.CDF(file_name)
+    spin_phase_info = cdf_file.varinq("spin_phase")
+    spin_phase_attrs = cdf_file.varattsget("spin_phase")
+    assert spin_phase_info.Data_Type_Description == "CDF_DOUBLE"
+    assert np.isclose(spin_phase_attrs["FILLVAL"], np.float64(-1.0e31))
 
     expected_vars = [
         "tof_snr",
