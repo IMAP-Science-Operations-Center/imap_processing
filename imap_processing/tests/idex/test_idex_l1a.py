@@ -195,6 +195,29 @@ def test_duplicate_science_fragment_is_dropped(
     assert "Skipping duplicate copy" in caplog.text
 
 
+def test_duplicate_header_packet_is_dropped(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify exact duplicate header packets are ignored."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    duplicate_header = deepcopy(packets[0])
+    packets = [packets[0], duplicate_header, *packets[1:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
+
+    xr.testing.assert_equal(deduped, decom_test_data_sci)
+    assert "Duplicate header packet for event" in caplog.text
+
+
 def test_shorter_duplicate_science_fragment_is_replaced(
     decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
 ):
@@ -217,6 +240,30 @@ def test_shorter_duplicate_science_fragment_is_replaced(
 
     xr.testing.assert_equal(deduped, decom_test_data_sci)
     assert "Replacing shorter science fragment" in caplog.text
+
+
+def test_shorter_duplicate_science_fragment_is_ignored(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify a shorter retransmitted fragment is ignored."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    shorter_packet = deepcopy(packets[1])
+    shorter_packet["IDX__SCI0RAW"] = bytes(shorter_packet["IDX__SCI0RAW"])[:-10]
+    packets = [*packets[:2], shorter_packet, *packets[2:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
+
+    xr.testing.assert_equal(deduped, decom_test_data_sci)
+    assert "Ignoring shorter duplicate science fragment" in caplog.text
 
 
 def test_conflicting_duplicate_science_fragment_skips_event(
