@@ -2187,6 +2187,7 @@ def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2197,7 +2198,7 @@ def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2285,6 +2286,7 @@ def test_l1b_bgrates_and_goodtimes_with_gap(anc_dependencies, attr_mgr_l1b):
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2295,7 +2297,7 @@ def test_l1b_bgrates_and_goodtimes_with_gap(anc_dependencies, attr_mgr_l1b):
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2353,6 +2355,7 @@ def test_l1b_bgrates_and_goodtimes_high_rate(anc_dependencies, attr_mgr_l1b):
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2363,7 +2366,7 @@ def test_l1b_bgrates_and_goodtimes_high_rate(anc_dependencies, attr_mgr_l1b):
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2403,6 +2406,7 @@ def test_l1b_bgrates_and_goodtimes_no_goodtimes(anc_dependencies, attr_mgr_l1b):
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2412,7 +2416,7 @@ def test_l1b_bgrates_and_goodtimes_no_goodtimes(anc_dependencies, attr_mgr_l1b):
     }
 
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         _, goodtimes_ds = l1b_bgrates_and_goodtimes(
@@ -2449,6 +2453,7 @@ def test_l1b_bgrates_and_goodtimes_empty_dataset(anc_dependencies, attr_mgr_l1b)
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2459,7 +2464,7 @@ def test_l1b_bgrates_and_goodtimes_empty_dataset(anc_dependencies, attr_mgr_l1b)
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2595,6 +2600,7 @@ def test_l1b_bgrates_and_goodtimes_ram_and_anti_ram_bins(
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     # Required dependencies added in the updated function signature
@@ -2608,7 +2614,7 @@ def test_l1b_bgrates_and_goodtimes_ram_and_anti_ram_bins(
     }
 
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2650,6 +2656,7 @@ def test_l1b_bgrates_and_goodtimes_variance_calculation(anc_dependencies, attr_m
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2660,7 +2667,7 @@ def test_l1b_bgrates_and_goodtimes_variance_calculation(anc_dependencies, attr_m
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2703,6 +2710,7 @@ def test_l1b_bgrates_and_goodtimes_offset_application(anc_dependencies, attr_mgr
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2713,7 +2721,7 @@ def test_l1b_bgrates_and_goodtimes_offset_application(anc_dependencies, attr_mgr
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2767,6 +2775,7 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2777,7 +2786,7 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_low_to_high(
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2842,6 +2851,7 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2852,7 +2862,7 @@ def test_l1b_bgrates_and_goodtimes_rate_transition_high_to_low_to_high(
 
     # Act
     with patch(
-        "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+        "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
         return_value=(met_start, met_start + 1),
     ):
         result = l1b_bgrates_and_goodtimes(
@@ -2898,6 +2908,7 @@ def test_l1b_bgrates_when_synthetic_floor_is_zero(anc_dependencies, attr_mgr_l1b
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2910,7 +2921,7 @@ def test_l1b_bgrates_when_synthetic_floor_is_zero(anc_dependencies, attr_mgr_l1b
     patched_bg_rates["H"] = 0.0
     with (
         patch(
-            "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+            "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
             return_value=(met_start, met_start + 1),
         ),
         patch.object(LoConstants, "BG_RATES", patched_bg_rates),
@@ -2946,6 +2957,7 @@ def test_l1b_bgrates_sigma_when_anti_ram_nominal_is_zero(
             "esa_step": np.arange(1, 8),
             "spin_bin_6": np.arange(60),
         },
+        attrs={"Repointing": "repoint00001"},
     )
 
     sci_dependencies = {
@@ -2957,7 +2969,7 @@ def test_l1b_bgrates_sigma_when_anti_ram_nominal_is_zero(
     # Zero the anti-RAM threshold so bg_rate_anti_ram_nominal = 0 for any pivot angle
     with (
         patch(
-            "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+            "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
             return_value=(met_start, met_start + 1),
         ),
         patch.object(LoConstants, "PIVOT_ANGLE_THRESHOLDS", {}),

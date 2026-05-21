@@ -28,6 +28,7 @@ from imap_processing.spice.geometry import (
 from imap_processing.spice.repoint import (
     get_pointing_mid_time,
     get_pointing_times,
+    get_pointing_times_from_id,
     interpolate_repoint_data,
 )
 from imap_processing.spice.spin import (
@@ -2451,7 +2452,13 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     epoch_ttj2000 = cdf_hist["epoch"].values
     n_epochs = epoch_ttj2000.shape[0]
     met = ttj2000ns_to_met(epoch_ttj2000)
-    pointing_start_met, _ = get_pointing_times(met[0])
+
+    repoint_id = cdf_hist.attrs.get("Repointing", None)
+    if repoint_id is None:
+        raise ValueError(
+            "Repointing ID attribute is missing from the L1B hist dataset."
+        )
+    pointing_start_met, _ = get_pointing_times_from_id(repoint_id)
     pointing_start_epoch = met_to_ttj2000ns(np.array([pointing_start_met]))
 
     # Get year and day-of-year for the anti-RAM threshold override lookup
