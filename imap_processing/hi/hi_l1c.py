@@ -569,6 +569,11 @@ def pset_backgrounds(
     rates and uncertainties. Scaling factors and uncertainties are applied
     per ESA energy step.
 
+    After computing the combined background rate, a constant offset
+    (HiConstants.EXCESS_BACKGROUND_COUNT_RATE) is subtracted to correct for
+    excess counts from the outer ESA during background testing. The result
+    is clipped to zero to prevent negative rates.
+
     Parameters
     ----------
     pset_coords : dict[str, xarray.DataArray]
@@ -664,6 +669,10 @@ def pset_backgrounds(
     # total_rates: (epoch, calibration_prod, esa_energy_step)
     total_rates = scaled_rates.sum(dim="background_index", skipna=True)
     total_unc = np.sqrt((combined_unc**2).sum(dim="background_index", skipna=True))
+
+    # Apply outer ESA background offset correction (do not go negative)
+    # This corrects for excess counts from the outer ESA during background testing.
+    total_rates = np.maximum(total_rates - HiConstants.EXCESS_BACKGROUND_COUNT_RATE, 0)
 
     # Broadcast to output variable dimensions (e.g., epoch, esa_energy_step,
     # calibration_prod, spin_angle_bin). Backgrounds are isotropic, so we

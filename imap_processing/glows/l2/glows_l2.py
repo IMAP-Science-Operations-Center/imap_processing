@@ -23,6 +23,40 @@ from imap_processing.spice.time import (
 logger = logging.getLogger(__name__)
 
 
+def _pad_daily_lightcurve_bins(value: object, fillval: object) -> np.ndarray:
+    """
+    Pad chopped daily-lightcurve bin data back to the standard bin count.
+
+    Parameters
+    ----------
+    value : object
+        Chopped daily-lightcurve bin data.
+    fillval : object
+        CDF fill value used for padded bins.
+
+    Returns
+    -------
+    numpy.ndarray
+        Bin data padded to the standard bin count.
+    """
+    value_array = np.asarray(value)
+    padded_dtype = value_array.dtype
+    fillval_dtype = np.asarray(fillval).dtype
+
+    if np.issubdtype(padded_dtype, np.integer):
+        try:
+            cast_fillval = np.array(fillval, dtype=padded_dtype).item()
+        except (OverflowError, TypeError, ValueError):
+            padded_dtype = np.result_type(padded_dtype, fillval_dtype)
+        else:
+            if cast_fillval != fillval:
+                padded_dtype = np.result_type(padded_dtype, fillval_dtype)
+
+    padded = np.full(GlowsConstants.STANDARD_BIN_COUNT, fillval, dtype=padded_dtype)
+    padded[: len(value_array)] = value_array
+    return padded
+
+
 def glows_l2(
     input_dataset: xr.Dataset,
     pipeline_settings_dataset: xr.Dataset,
@@ -193,7 +227,9 @@ def create_l2_dataset(
             # Convert time to UTC
             utc_string = [met_to_utc(ttj2000ns_to_met(value))]
             output[key] = xr.DataArray(
-                utc_string, dims=["epoch"], attrs=attrs.get_variable_attributes(key)
+                utc_string,
+                dims=["epoch"],
+                attrs=attrs.get_variable_attributes(key),
             )
         elif key != "daily_lightcurve":
             val = value
@@ -205,12 +241,11 @@ def create_l2_dataset(
                 attrs=attrs.get_variable_attributes(key),
             )
 
-    n_bins = histogram_l2.daily_lightcurve.number_of_bins
     for key, value in dataclasses.asdict(histogram_l2.daily_lightcurve).items():
         if key == "number_of_bins":
             # number_of_bins does not have a bins dimension.
             output[key] = xr.DataArray(
-                np.array([value]),
+                np.array([value], dtype=np.uint16),
                 dims=["epoch"],
                 attrs=attrs.get_variable_attributes(key),
             )
@@ -219,9 +254,7 @@ def create_l2_dataset(
             # avoid operating on FILLVAL data. Re-expand to STANDARD_BIN_COUNT
             # here, filling unused bins with the variable's CDF FILLVAL.
             var_attrs = attrs.get_variable_attributes(key)
-            fillval = var_attrs["FILLVAL"]
-            padded = np.full(GlowsConstants.STANDARD_BIN_COUNT, fillval)
-            padded[:n_bins] = value
+            padded = _pad_daily_lightcurve_bins(value, var_attrs["FILLVAL"])
             output[key] = xr.DataArray(
                 np.array([padded]),
                 dims=["epoch", "bins"],

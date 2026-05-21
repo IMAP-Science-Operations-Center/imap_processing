@@ -16,7 +16,10 @@ Examples
 
 import json
 import logging
+import os
+from collections import defaultdict
 from enum import IntEnum
+from os import path
 from pathlib import Path
 from typing import NamedTuple
 
@@ -31,11 +34,86 @@ from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.evt_msg_decode_utils import render_event_template
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
-from imap_processing.idex.idex_utils import get_idex_attrs
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.idex.idex_utils import get_10_day_window_end_date, get_idex_attrs
+from imap_processing.spice.time import (
+    met_to_ttj2000ns,
+    str_yyyymmdd_to_ttj2000ns,
+)
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
+
+
+def idex_l1a(
+    packet_files: list[Path], window_start_date: str
+) -> list[xr.Dataset | None]:
+    """
+    Process a list of IDEX L0 packet files into a list of xarray Datasets.
+
+    Parameters
+    ----------
+    packet_files : list[pathlib.Path]
+        List of paths to IDEX L0 packet files to process. These l0 files should all
+        contain data that belongs in the same 10-day window specified by start_date.
+    window_start_date : str
+        The start date of the 10-day window in YYYYMMDD format. Used to filter the
+        data for the 10-day window.
+
+    Returns
+    -------
+    list[xarray.Dataset|None]
+        A list of xarray Datasets containing the processed IDEX L1a data products. If
+        There is no Data found for the 10-day window, None is returned.
+    """
+    # Sort packet files so latest version comes last
+    # This ensures when we drop duplicate events (if any), the latest file's data is
+    # kept.
+    sorted_packet_files = sorted(packet_files)
+    idex_products = []
+    # decom each idex l0 file and gather the data for each product type
+    # (science, event message, catlst) into separate lists
+    data_dicts = defaultdict(list)
+    for packet_file in sorted_packet_files:
+        data = PacketParser(packet_file).data
+        for product, dataset in data.items():
+            data_dicts[product].append(dataset)
+    # Get the end date of the data window. This will be used to filter events.
+    window_end_date = get_10_day_window_end_date(window_start_date)
+    # Convert from strings to ttj2000ns for easier epoch comparison
+    window_start_date_ns = str_yyyymmdd_to_ttj2000ns(window_start_date)
+    window_end_date_ns = str_yyyymmdd_to_ttj2000ns(window_end_date)
+    # combine the data for each product type into a single dataset.
+    # filter each dataset for epochs that are within the 10-day window range.
+    for product, datasets in data_dicts.items():
+        concat_ds = (
+            xr.concat(
+                datasets,
+                dim="epoch",
+                # Keep non-epoch support variables (e.g. label/index vectors) from a
+                # single dataset instead of broadcasting them across epochs.
+                data_vars="minimal",
+                coords="minimal",
+                compat="override",
+                # Drop duplicate epochs, keeping the last one (which will be from the
+                # latest file due to sorting above)
+            )
+            .sortby("epoch")
+            .drop_duplicates("epoch", keep="last")
+        )
+        mask = (concat_ds["epoch"] >= window_start_date_ns) & (
+            concat_ds["epoch"] < window_end_date_ns
+        )
+        filtered_ds = concat_ds.isel(epoch=mask)
+        if len(filtered_ds.epoch) == 0:
+            logger.warning(
+                f"No data found for dates {window_start_date_ns} - {window_end_date_ns}"
+                f" for {product} in packet files: "
+                f"{[path.basename(f) for f in packet_files]}"
+            )
+            continue
+        idex_products.append(filtered_ds)
+
+    return idex_products
 
 
 class Scitype(IntEnum):
@@ -86,7 +164,7 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one L1a file.
         """
-        self.data = []
+        self.data = {}
         self.idex_attrs = get_idex_attrs("l1a")
         epoch_attrs = self.idex_attrs.get_variable_attributes(
             "epoch", check_schema=False
@@ -95,10 +173,11 @@ class PacketParser:
         science_packets, raw_datset_by_apid, derived_datasets_by_apid = decom_packets(
             packet_file
         )
-
+        filename = os.path.basename(packet_file)
+        logger.info(f"Processing IDEX L1A Packet {filename}")
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
-            self.data.append(self._create_science_dataset(science_packets))
+            self.data["l1a_sci-10days"] = self._create_science_dataset(science_packets)
         datasets_by_level = {"l1a": raw_datset_by_apid, "l1b": derived_datasets_by_apid}
         for level, dataset in datasets_by_level.items():
             # Only produce l1a products for event messages. L1b will be processed in a
@@ -108,19 +187,19 @@ class PacketParser:
                 data = dataset[IDEXAPID.IDEX_EVT]
                 processed_data = self._create_evt_msg_data(data)
                 processed_data["epoch"].attrs = epoch_attrs
-                self.data.append(processed_data)
+                self.data["l1a_msg-10days"] = processed_data
 
             if IDEXAPID.IDEX_CATLST in dataset:
                 logger.info(f"Processing IDEX {level} CATLST data")
                 data = dataset[IDEXAPID.IDEX_CATLST]
                 data.attrs = self.idex_attrs.get_global_attributes(
-                    f"imap_idex_{level}_catlst"
+                    f"imap_idex_{level}_catlst-10days"
                 )
                 data["epoch"] = calculate_idex_event_time(
                     data["shcoarse"].data, data["shfine"].data
                 )
                 data["epoch"].attrs = epoch_attrs
-                self.data.append(data)
+                self.data[f"{level}_catlst-10days"] = data
 
         logger.info("IDEX L1A data processing completed.")
 
@@ -160,7 +239,7 @@ class PacketParser:
                     attrs=self.idex_attrs.get_variable_attributes("elssec_evtpkt"),
                 ),
             },
-            attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg"),
+            attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg-10days"),
         )
         # Load the event decoding dictionaries
         with open(
@@ -232,7 +311,9 @@ class PacketParser:
                 "messages", check_schema=False
             ),
         )
-        l1a_msg_ds.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_msg")
+        l1a_msg_ds.attrs = self.idex_attrs.get_global_attributes(
+            "imap_idex_l1a_msg-10days"
+        )
         return l1a_msg_ds
 
     def _create_science_dataset(self, science_decom_packet_list: list) -> xr.Dataset:

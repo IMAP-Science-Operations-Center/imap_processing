@@ -208,7 +208,7 @@ energy_delta_minus:
   DISPLAY_TYPE: no_plot
   FIELDNAM: energy_bin_delta_minus
   LABLAXIS: energy
-  UNITS: KeV
+  UNITS: keV
   VAR_TYPE: support_data
 
 energy_delta_plus:
@@ -218,7 +218,7 @@ energy_delta_plus:
   DISPLAY_TYPE: no_plot
   FIELDNAM: energy_bin_delta_plus
   LABLAXIS: energy
-  UNITS: KeV
+  UNITS: keV
   VAR_TYPE: support_data
 
 

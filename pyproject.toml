@@ -12,13 +12,12 @@ dynamic = ["version"]
 description = "IMAP Science Operations Center Processing"
 authors = [{name = "IMAP SDC Developers", email = "imap-sdc@lists.lasp.colorado.edu"}]
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 keywords = ["IMAP", "SDC", "SOC", "Science Operations"]
 requires-python = ">=3.10,<3.13"  # upper bound due to scipy wheel availability; bump when scipy supports 3.14
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",

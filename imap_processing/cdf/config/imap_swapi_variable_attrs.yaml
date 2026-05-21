@@ -107,14 +107,14 @@ esa_energy:
   DEPEND_1: esa_step
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
   FIELDNAM: ESA Energy
-  FILLVAL: -9223372036854775808
-  FORMAT: I5
+  FILLVAL: -1.0000000E+31
+  FORMAT: F8.1
   LABLAXIS: Energy(eV)
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
   UNITS: eV / q
-  VALIDMAX: 65535
-  VALIDMIN: 0
+  VALIDMAX: 21000.0
+  VALIDMIN: 0.0
   VAR_TYPE: support_data
 
 metadata_default: &metadata_default

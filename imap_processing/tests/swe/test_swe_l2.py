@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 import xarray as xr
@@ -378,6 +379,11 @@ def test_swe_l2_15sec(
     l2_dataset.attrs["Data_version"] = "002"
     l2_cdf_filepath = write_cdf(l2_dataset)
     assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"
+    cdf_file = cdflib.CDF(l2_cdf_filepath)
+    acq_duration_info = cdf_file.varinq("acq_duration")
+    acq_duration_attrs = cdf_file.varattsget("acq_duration")
+    assert acq_duration_info.Data_Type_Description == "CDF_UINT4"
+    assert acq_duration_attrs["FILLVAL"] == np.uint32(4294967295)
 
     # --------- sector validation--------
     sector_psd_data = l2_dataset["phase_space_density_spin_sector"].data

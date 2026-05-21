@@ -1,5 +1,7 @@
 """IMAP-HI Goodtimes processing module."""
 
+from __future__ import annotations
+
 import logging
 from enum import IntEnum
 from pathlib import Path
@@ -22,6 +24,9 @@ from imap_processing.spice.repoint import get_repoint_data
 from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
+
+# Define number of nearest l1b de datasets required
+N_NEAREST_L1B_DE_DATASETS = 8
 
 # Structured dtype for good time intervals
 INTERVAL_DTYPE: np.dtype = np.dtype(
@@ -79,8 +84,8 @@ def hi_goodtimes(
         Repointing identifier for the current pointing (e.g., "repoint00001").
         Used to identify which dataset in l1b_de_datasets is the current one.
     l1b_de_datasets : list[xr.Dataset]
-        L1B DE datasets for surrounding pointings. Typically includes
-        current plus 3 preceding and 3 following pointings (7 total).
+        L1B DE datasets for surrounding pointings. Typically, includes
+        current plus 4 preceding and 4 following pointings (9 total).
         Statistical filters 0 and 1 use all datasets; other filters use
         only the current pointing.
     l1b_hk : xr.Dataset
@@ -101,19 +106,19 @@ def hi_goodtimes(
     See IMAP-Hi Algorithm Document Sections 2.2.4 and 2.3.2 for details
     on each culling algorithm.
 
-    Processing requires that repointing + 3 has occurred (so that statistical
+    Processing requires that repointing + 4 has occurred (so that statistical
     filters can use surrounding pointings). Due to challenges with dependency
     management in the batch starter, it was decided to design the Hi goodtimes
     to set the L1B DE dependencies as not required and handle the final logic for
-    checking L1B DE dependencies in this function. If repointing + 3 has not yet
-    completed, an empty list is returned. If repointing + 3 has occurred but
-    not all 7 DE files are available, all times are marked as bad.
+    checking L1B DE dependencies in this function. If repointing + 4 has not yet
+    completed, a ValueError is raised. If repointing + 4 has occurred but
+    not all 9 DE files are available, all times are marked as bad.
     """
     logger.info("Starting Hi goodtimes processing")
 
     # Parse the current repoint ID and check if we can process yet
     current_repoint_id = int(current_repointing.replace("repoint", ""))
-    future_repoint_id = current_repoint_id + 3
+    future_repoint_id = int(current_repoint_id + N_NEAREST_L1B_DE_DATASETS // 2)
 
     # Check if the future repointing has finished by checking that the next
     # repoint is in the repoint dataframe.
@@ -136,8 +141,8 @@ def hi_goodtimes(
     # Create the goodtimes dataset from the current pointing
     goodtimes_ds = create_goodtimes_dataset(current_l1b_de)
 
-    # Check if we have the full set of 7 DE files for nominal processing
-    if len(l1b_de_datasets) == 7:
+    # Check if we have the full set of N+1 DE files for nominal processing
+    if len(l1b_de_datasets) == N_NEAREST_L1B_DE_DATASETS + 1:
         _apply_goodtimes_filters(
             goodtimes_ds,
             l1b_de_datasets,
@@ -150,8 +155,8 @@ def hi_goodtimes(
         # Incomplete DE file set - mark all times as bad
         logger.warning(
             f"Incomplete DE file set for {current_repointing}: "
-            f"expected 7 files, got {len(l1b_de_datasets)}. "
-            "Marking all times as bad."
+            f"expected {N_NEAREST_L1B_DE_DATASETS + 1} files, got "
+            f"{len(l1b_de_datasets)}. Marking all times as bad."
         )
         goodtimes_ds["cull_flags"][:, :] = CullCode.INCOMPLETE_SPIN
 
@@ -1870,6 +1875,62 @@ def _compute_median_and_sigma_per_esa(
     return median_per_esa, sigma_per_esa
 
 
+def _sum_esa_counts(
+    per_sweep_datasets: dict[int, xr.Dataset],
+    esa_steps_to_sum: list[int],
+) -> dict[int, xr.Dataset]:
+    """
+    Sum qualified counts across specified ESA energy steps.
+
+    Creates a new set of datasets where qualified_count is summed across
+    the specified ESA energy steps. The resulting datasets have a single
+    "pseudo-ESA" dimension with value -1.
+
+    Parameters
+    ----------
+    per_sweep_datasets : dict[int, xr.Dataset]
+        Dictionary mapping pointing index to per-sweep dataset with
+        dims (esa_sweep, esa_energy_step).
+    esa_steps_to_sum : list[int]
+        ESA energy steps to sum (e.g., [7, 8, 9]).
+
+    Returns
+    -------
+    dict[int, xr.Dataset]
+        Dictionary with same structure but qualified_count summed across
+        specified ESA steps. The esa_energy_step dimension is reduced to
+        a single value (-1) indicating summed data.
+    """
+    summed_datasets = {}
+
+    for idx, ds in per_sweep_datasets.items():
+        # Select only the specified ESA steps that exist in this dataset
+        available_esas = ds.coords["esa_energy_step"].values
+        esas_to_select = [e for e in esa_steps_to_sum if e in available_esas]
+
+        if not esas_to_select:
+            # No matching ESAs, create empty summed dataset
+            summed_counts = ds["qualified_count"].isel(esa_energy_step=0) * 0
+        else:
+            # Sum counts across specified ESA energy steps
+            selected = ds["qualified_count"].sel(esa_energy_step=esas_to_select)
+            summed_counts = selected.sum(dim="esa_energy_step")
+
+        # Create new dataset with single "pseudo-ESA" dimension (-1 indicates summed)
+        # Use first ESA's MET values, expanded to include pseudo-ESA dimension
+        # for structural consistency with per-sweep datasets
+        summed_met = ds["ccsds_met"].isel(esa_energy_step=0)
+        summed_ds = xr.Dataset(
+            {
+                "qualified_count": summed_counts.expand_dims(esa_energy_step=[-1]),
+                "ccsds_met": summed_met.expand_dims(esa_energy_step=[-1]),
+            }
+        )
+        summed_datasets[idx] = summed_ds
+
+    return summed_datasets
+
+
 def _identify_cull_pattern(
     current_counts: xr.DataArray,
     median_per_esa: xr.DataArray,
@@ -1882,8 +1943,11 @@ def _identify_cull_pattern(
     Identify 2D cull pattern for statistical filter 1 using convolution.
 
     Detects three patterns:
-    1. Consecutive runs: 3+ consecutive sweeps exceeding threshold with ESA neighbor
-       confirmation (isotropic excursion pattern from C implementation)
+    1. Consecutive runs: 3+ consecutive sweeps exceeding threshold. When there
+       are 3 or more ESA energy steps, ESA neighbor confirmation is required
+       (isotropic excursion pattern from C implementation). When there are fewer
+       than 3 ESA steps (e.g., summed pre-filter data), consecutive runs are
+       marked without neighbor confirmation.
     2. Isolated intervals: Good intervals surrounded by bad on both sides in time
     3. Extreme outliers: Any position exceeding 5-sigma threshold
 
@@ -1941,18 +2005,25 @@ def _identify_cull_pattern(
     )
     in_consecutive_run = (run_positions >= 1) & exceeds_arr.astype(bool)
 
-    # Check ESA neighbors at same time position using convolution along ESA axis
-    # Kernel [1, 0, 1] sums neighbors without counting self
-    # Use cval=1 so edges pass the neighbor check (matches C implementation where
-    # edges are treated as "not good", i.e., the check passes at boundaries)
-    esa_neighbor_kernel = np.array([1, 0, 1])
-    esa_neighbor_exceeds = convolve1d(
-        exceeds_arr, esa_neighbor_kernel, axis=1, mode="constant", cval=1
-    )
-    has_esa_neighbor = esa_neighbor_exceeds >= 1
+    # Only check ESA neighbors if we have at least 3 ESA energy steps
+    # (neighbor check requires adjacent ESAs to be meaningful)
+    n_esa_steps = current_counts.sizes.get("esa_energy_step", 0)
+    if n_esa_steps >= 3:
+        # Check ESA neighbors at same time position using convolution along ESA axis
+        # Kernel [1, 0, 1] sums neighbors without counting self
+        # Use cval=1 so edges pass the neighbor check (matches C implementation where
+        # edges are treated as "not good", i.e., the check passes at boundaries)
+        esa_neighbor_kernel = np.array([1, 0, 1])
+        esa_neighbor_exceeds = convolve1d(
+            exceeds_arr, esa_neighbor_kernel, axis=1, mode="constant", cval=1
+        )
+        has_esa_neighbor = esa_neighbor_exceeds >= 1
 
-    # Combine: in a consecutive run AND has ESA neighbor exceeding at same time
-    cull_arr |= in_consecutive_run & has_esa_neighbor
+        # Combine: in a consecutive run AND has ESA neighbor exceeding at same time
+        cull_arr |= in_consecutive_run & has_esa_neighbor
+    else:
+        # Not enough ESA steps for neighbor check - just use consecutive runs
+        cull_arr |= in_consecutive_run
 
     # === Pass 2: Mark isolated good intervals (orphans) ===
     # Pattern: [bad, good, bad] in time dimension
@@ -1997,6 +2068,7 @@ def mark_statistical_filter_1(
     min_consecutive_intervals: int = HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE,
     cull_code: int = CullCode.STAT_FILTER_1,
     min_pointings: int = HiConstants.STAT_FILTER_MIN_POINTINGS,
+    prefilter_esa_steps: list[int] | None = None,
 ) -> None:
     """
     Apply Statistical Filter 1 to detect isotropic count rate increases.
@@ -2006,7 +2078,13 @@ def mark_statistical_filter_1(
     a limited time. It operates per sensor, per ESA energy step, per 8-spin
     interval, summing counts over all angles.
 
-    The filter applies three passes:
+    The filter applies a pre-filter step followed by three passes:
+
+    Pre-filter (for ESAs 7, 8, 9):
+        Apply the filter algorithm to the SUM of counts across prefilter_esa_steps.
+        Bad times from this pre-filter apply to ALL prefilter ESA steps.
+
+    Per-ESA filter passes:
     1. Mark intervals where counts exceed median + consecutive_threshold_sigma
        for at least min_consecutive_intervals AND in at least one adjacent ESA step.
     2. Remove isolated good intervals (good sandwiched between two bad).
@@ -2018,9 +2096,10 @@ def mark_statistical_filter_1(
         Goodtimes dataset for the current Pointing to update.
     l1b_de_datasets : list[xarray.Dataset]
         List of L1B DE datasets for surrounding Pointings. Typically includes
-        current plus 3 preceding and 3 following Pointings. Each dataset must
-        contain a "qualified_mask" DataArray indicating which events qualify
-        for calibration products (checking both coincidence_type AND TOF).
+        current plus 4 preceding and 4 following Pointings (9 total). Each
+        dataset must contain a "qualified_mask" DataArray indicating which
+        events qualify for calibration products (checking both coincidence_type
+        AND TOF).
     current_index : int
         Index of the current Pointing in l1b_de_datasets.
     consecutive_threshold_sigma : float, optional
@@ -2033,10 +2112,14 @@ def mark_statistical_filter_1(
         Minimum consecutive intervals above threshold.
         Default is HiConstants.STAT_FILTER_1_MIN_CONSECUTIVE.
     cull_code : int, optional
-        Cull code to use for marking bad times. Default is CullCode.LOOSE.
+        Cull code to use for marking bad times. Default is CullCode.STAT_FILTER_1.
     min_pointings : int, optional
         Minimum number of Pointings required.
         Default is HiConstants.STAT_FILTER_MIN_POINTINGS.
+    prefilter_esa_steps : list[int], optional
+        ESA energy steps to sum for pre-filtering. Default is [7, 8, 9].
+        The pre-filter applies the algorithm to the sum of these ESAs and
+        marks bad times for all of them.
 
     Raises
     ------
@@ -2050,6 +2133,10 @@ def mark_statistical_filter_1(
     Statistical Filter 0 and other angle-independent filters.
     """
     logger.info("Running mark_statistical_filter_1 culling")
+
+    # Default pre-filter ESAs
+    if prefilter_esa_steps is None:
+        prefilter_esa_steps = [7, 8, 9]
 
     # Validate inputs
     if current_index < 0 or current_index >= len(l1b_de_datasets):
@@ -2083,6 +2170,56 @@ def mark_statistical_filter_1(
     current_ds = per_sweep_datasets[current_index]
     current_counts = current_ds["qualified_count"]
 
+    # =========================================================================
+    # Step 3: Pre-filter for summed ESAs (e.g., 7, 8, 9)
+    # =========================================================================
+    # Initialize pre-filter mask to False (no culling)
+    prefilter_cull_mask = xr.zeros_like(current_counts, dtype=bool)
+
+    if prefilter_esa_steps:
+        logger.info(
+            f"Statistical Filter 1: Pre-filtering summed ESAs {prefilter_esa_steps}"
+        )
+
+        # 3a. Sum counts for pre-filter ESAs
+        summed_datasets = _sum_esa_counts(per_sweep_datasets, prefilter_esa_steps)
+
+        # 3b. Compute median and sigma for the summed data
+        summed_median, summed_sigma = _compute_median_and_sigma_per_esa(summed_datasets)
+
+        if not np.all(np.isnan(summed_median.values)):
+            # 3c. Get current pointing's summed data
+            current_summed = summed_datasets[current_index]["qualified_count"]
+
+            # 3d. Identify cull pattern (ESA neighbor check auto-skipped for single ESA)
+            summed_cull_mask = _identify_cull_pattern(
+                current_summed,
+                summed_median,
+                summed_sigma,
+                consecutive_threshold_sigma=consecutive_threshold_sigma,
+                extreme_threshold_sigma=extreme_threshold_sigma,
+                min_consecutive=min_consecutive_intervals,
+            )
+
+            # 3e. Broadcast summed cull mask to pre-filter ESA steps
+            # summed_cull_mask has shape (esa_sweep, 1) - squeeze and broadcast
+            summed_cull_1d = summed_cull_mask.squeeze(dim="esa_energy_step")
+            prefilter_esa_mask = current_counts.coords["esa_energy_step"].isin(
+                prefilter_esa_steps
+            )
+            # Broadcast: True for sweeps in summed_cull AND ESAs in prefilter_esa_steps
+            prefilter_cull_mask = summed_cull_1d & prefilter_esa_mask
+
+            n_prefilter_bad = int(summed_cull_mask.sum())
+            logger.info(
+                f"Statistical Filter 1 pre-filter: {n_prefilter_bad} sweeps flagged"
+            )
+
+    # =========================================================================
+    # Step 4: Normal per-ESA filtering
+    # =========================================================================
+    logger.info("Statistical Filter 1: Running normal per-ESA filtering")
+
     # Identify cull pattern using convolution-based detection
     cull_mask = _identify_cull_pattern(
         current_counts,
@@ -2093,10 +2230,15 @@ def mark_statistical_filter_1(
         min_consecutive=min_consecutive_intervals,
     )
 
-    # Apply culling to goodtimes - get METs where cull_mask is True
-    if cull_mask.any():
+    # =========================================================================
+    # Step 5: Combine masks and apply
+    # =========================================================================
+    combined_cull_mask = cull_mask | prefilter_cull_mask
+
+    # Apply culling to goodtimes - get METs where combined_cull_mask is True
+    if combined_cull_mask.any():
         # Use xarray's where to get METs for culled intervals, then flatten
-        mets_to_cull = current_ds["ccsds_met"].where(cull_mask).values.ravel()
+        mets_to_cull = current_ds["ccsds_met"].where(combined_cull_mask).values.ravel()
         # Remove NaN values
         mets_to_cull = mets_to_cull[~np.isnan(mets_to_cull)]
 

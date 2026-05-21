@@ -20,6 +20,7 @@ from imap_processing.spice.time import (
     sct_to_et,
     sct_to_ttj2000s,
     str_to_et,
+    str_yyyymmdd_to_ttj2000ns,
     ttj2000ns_to_et,
     ttj2000ns_to_met,
 )
@@ -403,3 +404,17 @@ class TestEpochToFractionalDoy:
         doys = epoch_to_fractional_doy(epochs)
         assert np.all(doys >= 1.0)
         assert np.all(doys < 367.0)
+
+
+def test_yyyymmdd_to_ttj2000ns():
+    """Verify YYYYMMDD dates convert to TTJ2000ns using UTC."""
+    expected = np.int64(et_to_ttj2000ns(str_to_et("2026-01-01T00:00:00")))
+    assert str_yyyymmdd_to_ttj2000ns("20260101") == expected
+
+
+def test_yyyymmdd_to_ttj2000ns_invalid_date():
+    """Verify a value error is raised when a date is invalid."""
+    with pytest.raises(
+        ValueError, match="Date 202601012 must be 8 characters long in yyyymmdd format."
+    ):
+        str_yyyymmdd_to_ttj2000ns("202601012")

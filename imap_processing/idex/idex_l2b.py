@@ -14,8 +14,8 @@ Examples
     l0_file_hk = "imap_processing/tests/idex/imap_idex_l0_raw_20250108_v001.pkts"
     l1a_data, _ = PacketParser(l0_file)
     _, l1a_msg_data = PacketParser(l0_file_hk)
-    msg_data_l1b = idex_l1b(msg_data_l1a, "msg")
-    l1b_data = idex_l1b(l1a_data, "sci-1week")
+    msg_data_l1b = idex_l1b(msg_data_l1a, "msg-10days")
+    l1b_data = idex_l1b(l1a_data, "sci-10days")
 
     l1a_data = idex_l2a(l1b_data)
     l2b_and_l2c_datasets = idex_l2b(l2a_data, [msg_data_l1b])

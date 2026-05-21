@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 
+from imap_processing import imap_module_directory
 from imap_processing.spice.geometry import SpiceFrame
 
 
@@ -63,6 +64,12 @@ FG_TO_KG = 1e-15
 TARGET_HIGH_FREQUENCY_CUTOFF = 100
 
 TARGET_NOISE_FREQUENCY = 7000
+
+# This CSV was provided by the IDEX team.
+# It defines the start and stop date of each 10-day window for IDEX l1a processing.
+# All IDEX data will be grouped into these 10-day windows from l1a-l2a.
+# the last window of each year may be less than 10 days. That is expected.
+IDEX_10_DAY_RANGES_PATH = f"{imap_module_directory}/idex/idex_10_day_CDF_names.csv"
 
 
 class ConversionFactors(float, Enum):

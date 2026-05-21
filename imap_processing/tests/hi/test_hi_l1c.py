@@ -886,6 +886,186 @@ def test_pset_backgrounds_esa_energy_step_mismatch_raises_error(
         )
 
 
+@mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
+def test_pset_backgrounds_applies_offset_correction(mock_compute_background_counts):
+    """Test that pset_backgrounds subtracts EXCESS_BACKGROUND_COUNT_RATE from rates.
+
+    The function should subtract HiConstants.EXCESS_BACKGROUND_COUNT_RATE (0.003/s)
+    from the combined background rates after computing them.
+    """
+    # Create minimal pset_coords
+    n_epoch = 1
+    n_energy = 2
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "esa_energy_step": xr.DataArray(np.array([1, 2]), dims=["esa_energy_step"]),
+        "calibration_prod": xr.DataArray(
+            np.array([0], dtype=np.int64),
+            dims=["calibration_prod"],
+        ),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
+    }
+
+    # Create background config with scaling_factor=1 and uncertainty=0 for simplicity
+    background_config_data = {
+        "coincidence_type_list": [("ABC1C2",), ("ABC1C2",)],
+        "coincidence_type_values": [(15,), (15,)],
+        "tof_ab_low": [0, 0],
+        "tof_ab_high": [100, 100],
+        "tof_ac1_low": [0, 0],
+        "tof_ac1_high": [100, 100],
+        "tof_bc1_low": [0, 0],
+        "tof_bc1_high": [100, 100],
+        "tof_c1c2_low": [0, 0],
+        "tof_c1c2_high": [100, 100],
+        "scaling_factor": [1.0, 1.0],
+        "uncertainty": [0.0, 0.0],
+    }
+    cal_prods = [0, 0]
+    background_indices = [0, 0]
+    esa_steps = [1, 2]
+    multi_index = pd.MultiIndex.from_arrays(
+        [cal_prods, background_indices, esa_steps],
+        names=["calibration_prod", "background_index", "esa_energy_step"],
+    )
+    background_df = pd.DataFrame(background_config_data, index=multi_index)
+
+    # Create exposure times that sum to 1.0 second for easy rate calculation
+    exposure_times = xr.DataArray(
+        np.full((n_epoch, n_energy, n_spin_bins), 1.0 / (n_energy * n_spin_bins)),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+
+    # Mock _compute_background_counts to return counts that give a known rate
+    # With 100 counts and total_exposure_time=1.0s, rate = 100/s before offset
+    mock_background_counts = xr.DataArray(
+        np.array([[[100]]]),  # shape: (epoch=1, calibration_prod=1, background_index=1)
+        dims=["epoch", "calibration_prod", "background_index"],
+        coords={
+            "epoch": pset_coords["epoch"],
+            "calibration_prod": [0],
+            "background_index": [0],
+        },
+    )
+    mock_compute_background_counts.return_value = mock_background_counts
+
+    # Create minimal l1b dataset and goodtimes (not used due to mock)
+    l1b_de_dataset = xr.Dataset()
+    goodtimes_ds = xr.Dataset()
+
+    # Call pset_backgrounds
+    result = hi_l1c.pset_backgrounds(
+        pset_coords,
+        background_df,
+        l1b_de_dataset,
+        goodtimes_ds,
+        exposure_times,
+    )
+
+    # Expected rate: 100/s (count rate) * 1.0 (scaling) - 0.003 (offset) = 99.997
+    expected_rate = 100.0 - HiConstants.EXCESS_BACKGROUND_COUNT_RATE
+    # All values should be the same (broadcast across all dimensions)
+    np.testing.assert_allclose(
+        result["background_rates"].values,
+        expected_rate,
+        rtol=1e-6,
+        err_msg="Background rate offset correction not applied correctly",
+    )
+
+
+@mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
+def test_pset_backgrounds_offset_does_not_go_negative(mock_compute_background_counts):
+    """Test that pset_backgrounds clips rates to 0 after offset subtraction.
+
+    When the background rate is less than the offset (0.003/s), the result
+    should be clipped to 0 rather than going negative.
+    """
+
+    # Create minimal pset_coords
+    n_epoch = 1
+    n_energy = 2
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "esa_energy_step": xr.DataArray(np.array([1, 2]), dims=["esa_energy_step"]),
+        "calibration_prod": xr.DataArray(
+            np.array([0], dtype=np.int64),
+            dims=["calibration_prod"],
+        ),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
+    }
+
+    # Create background config
+    background_config_data = {
+        "coincidence_type_list": [("ABC1C2",), ("ABC1C2",)],
+        "coincidence_type_values": [(15,), (15,)],
+        "tof_ab_low": [0, 0],
+        "tof_ab_high": [100, 100],
+        "tof_ac1_low": [0, 0],
+        "tof_ac1_high": [100, 100],
+        "tof_bc1_low": [0, 0],
+        "tof_bc1_high": [100, 100],
+        "tof_c1c2_low": [0, 0],
+        "tof_c1c2_high": [100, 100],
+        "scaling_factor": [1.0, 1.0],
+        "uncertainty": [0.0, 0.0],
+    }
+    cal_prods = [0, 0]
+    background_indices = [0, 0]
+    esa_steps = [1, 2]
+    multi_index = pd.MultiIndex.from_arrays(
+        [cal_prods, background_indices, esa_steps],
+        names=["calibration_prod", "background_index", "esa_energy_step"],
+    )
+    background_df = pd.DataFrame(background_config_data, index=multi_index)
+
+    # Create exposure times that sum to 1.0 second
+    exposure_times = xr.DataArray(
+        np.full((n_epoch, n_energy, n_spin_bins), 1.0 / (n_energy * n_spin_bins)),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+
+    # Mock _compute_background_counts to return very small counts
+    # With 0.001 counts and total_exposure_time=1.0s, rate = 0.001/s before offset
+    # After subtracting 0.003 offset, would be -0.002, but should be clipped to 0
+    mock_background_counts = xr.DataArray(
+        np.array([[[0.001]]]),
+        dims=["epoch", "calibration_prod", "background_index"],
+        coords={
+            "epoch": pset_coords["epoch"],
+            "calibration_prod": [0],
+            "background_index": [0],
+        },
+    )
+    mock_compute_background_counts.return_value = mock_background_counts
+
+    # Create minimal l1b dataset and goodtimes (not used due to mock)
+    l1b_de_dataset = xr.Dataset()
+    goodtimes_ds = xr.Dataset()
+
+    # Call pset_backgrounds
+    result = hi_l1c.pset_backgrounds(
+        pset_coords,
+        background_df,
+        l1b_de_dataset,
+        goodtimes_ds,
+        exposure_times,
+    )
+
+    # Verify rate is 0 (clipped, not negative)
+    assert np.all(result["background_rates"].values >= 0), (
+        "Background rates should not be negative after offset subtraction"
+    )
+    # Since 0.001 - 0.003 = -0.002, should be clipped to 0
+    np.testing.assert_allclose(
+        result["background_rates"].values,
+        0.0,
+        atol=1e-10,
+        err_msg="Background rates should be clipped to 0 when offset exceeds rate",
+    )
+
+
 @mock.patch("imap_processing.hi.hi_l1c.good_time_and_phase_mask")
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
 @mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)
