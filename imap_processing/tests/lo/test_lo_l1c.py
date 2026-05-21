@@ -218,18 +218,26 @@ def test_lo_l1c(
     repoint_met,
 ):
     # Arrange
+    repoint_start_met = 511000000.0
+    repoint_stride_seconds = 86400  # 1 day stride
     data = {
         "imap_lo_l1b_de": l1b_de_spin,
         "imap_lo_l1b_goodtimes": xr.Dataset(
             {
-                "gt_start_met": ("epoch", [511000000.0]),
-                "gt_end_met": ("epoch", [511100000.0]),
+                "gt_start_met": ("epoch", [repoint_start_met]),
+                "gt_end_met": ("epoch", [repoint_start_met]),
             },
-            coords={"epoch": met_to_ttj2000ns([511000000.0])},
+            coords={"epoch": met_to_ttj2000ns([repoint_start_met])},
         ),
     }
-    use_fake_spin_data_for_time(511000000)
-    use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
+    use_fake_spin_data_for_time(repoint_start_met)
+    use_fake_repoint_data_for_time(
+        np.arange(
+            repoint_start_met,
+            repoint_start_met + repoint_stride_seconds * 5,
+            repoint_stride_seconds,
+        )
+    )
     mock_set_background_rates.return_value = (None, None, None)
     mock_filter_goodtimes.return_value = l1b_de_spin
     mock_set_pointing_directions.return_value = (
@@ -262,6 +270,16 @@ def test_lo_l1c(
     mock_add_spacecraft_position_and_velocity_to_pset.assert_called_once()
     assert "sc_position" in output_dataset
     assert "sc_velocity" in output_dataset
+    # Verify that set_pointing_directions uses pointing midpoint
+    # Repoint table starts at 511000000, has a 15-minute repoint followed by
+    # a 24-hour - 15-minute pointing. So, pointing midpoint is:
+    expected_pointing_midpoint = (
+        repoint_start_met + 15 * 60 + repoint_start_met + repoint_stride_seconds
+    ) / 2
+    np.testing.assert_almost_equal(
+        mock_set_pointing_directions.call_args[0][0],
+        met_to_ttj2000ns(expected_pointing_midpoint),
+    )
 
 
 def test_filter_goodtimes():

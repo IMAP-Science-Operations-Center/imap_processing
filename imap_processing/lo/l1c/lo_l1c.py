@@ -198,8 +198,14 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             attr_mgr,
         )
 
+        # Use pointing midpoint time to query DPS kernel in order to avoid potential
+        # querying outside of pointing due to rounding errors
+        pointing_midpoint_met = (
+            pset["pointing_start_met"].item() + pset["pointing_end_met"].item()
+        ) / 2
+        pointing_midpoint_ttj2000ns = met_to_ttj2000ns(pointing_midpoint_met)
         pset["hae_longitude"], pset["hae_latitude"] = set_pointing_directions(
-            pset["epoch"].item(), attr_mgr, pset["pivot_angle"].values[0].item()
+            pointing_midpoint_ttj2000ns, attr_mgr, pset["pivot_angle"].values[0].item()
         )
 
     pset.attrs = attr_mgr.get_global_attributes(logical_source)
