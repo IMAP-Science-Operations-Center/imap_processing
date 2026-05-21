@@ -128,7 +128,7 @@ class Scitype(IntEnum):
     ION_GRID = 64
 
 
-class EventKey(NamedTuple):
+class _EventKey(NamedTuple):
     """Stable identifier for one IDEX science event."""
 
     coarse_upper: int
@@ -330,14 +330,14 @@ class PacketParser:
         xarray.Dataset
             Dataset containing processed dust events.
         """
-        dust_events: dict[EventKey, RawDustEvent] = {}
-        active_event_keys: dict[int, EventKey] = {}
+        dust_events: dict[_EventKey, RawDustEvent] = {}
+        active_event_keys: dict[int, _EventKey] = {}
         for packet in science_decom_packet_list:
             if "IDX__SCI0TYPE" in packet:
                 scitype = packet["IDX__SCI0TYPE"]
                 event_number = int(packet["IDX__SCI0EVTNUM"])
                 if scitype == Scitype.FIRST_PACKET:
-                    event_key = RawDustEvent.get_event_key(packet)
+                    event_key = RawDustEvent._get_event_key(packet)
                     if event_key in dust_events:
                         logger.warning(
                             "Duplicate header packet for event %s. Skipping duplicate.",
@@ -502,7 +502,7 @@ class RawDustEvent:
     ----------
     header_packet : space_packet_parser.SpacePacket
         The FPGA metadata event header.
-    event_key : EventKey
+    event_key : tuple[int, int, int, int]
         Stable event identifier for this science event header.
 
     Attributes
@@ -555,7 +555,9 @@ class RawDustEvent:
     MAX_LOW_BLOCKS = 64
 
     def __init__(
-        self, header_packet: space_packet_parser.SpacePacket, event_key: EventKey
+        self,
+        header_packet: space_packet_parser.SpacePacket,
+        event_key: tuple[int, int, int, int],
     ) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
@@ -570,7 +572,7 @@ class RawDustEvent:
         ----------
         header_packet : space_packet_parser.SpacePacket
             The FPGA metadata event header.
-        event_key : EventKey
+        event_key : tuple[int, int, int, int]
             Stable event identifier for this science event header.
         """
         # Calculate the impact time in seconds since epoch
@@ -623,7 +625,7 @@ class RawDustEvent:
         self.cdf_attrs = get_idex_attrs("l1a")
 
     @staticmethod
-    def get_event_key(packet: space_packet_parser.SpacePacket) -> EventKey:
+    def _get_event_key(packet: space_packet_parser.SpacePacket) -> _EventKey:
         """
         Return a stable identifier for one science event header.
 
@@ -634,11 +636,11 @@ class RawDustEvent:
 
         Returns
         -------
-        EventKey
+        tuple[int, int, int, int]
             Stable event identifier built from the transmit timestamp and
             event number.
         """
-        return EventKey(
+        return _EventKey(
             int(packet["IDX__TXHDRTIMESEC1"]),
             int(packet["IDX__TXHDRTIMESEC2"]),
             int(packet["IDX__TXHDRTIMESUBS"]),
