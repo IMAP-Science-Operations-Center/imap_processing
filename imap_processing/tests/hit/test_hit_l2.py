@@ -1,11 +1,13 @@
 from unittest.mock import Mock, patch
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import (
     SUMMED_PARTICLE_ENERGY_RANGE_MAPPING,
@@ -885,3 +887,10 @@ def test_hit_l2(
         dependencies[dataset_key], ancillary_dependencies[ancillary_key]
     )
     assert l2_dataset.attrs["Logical_source"] == expected_logical_source
+    l2_dataset.attrs["Data_version"] = "001"
+    l2_cdf_filepath = write_cdf(l2_dataset)
+    cdf_file = cdflib.CDF(l2_cdf_filepath)
+    dynamic_threshold_info = cdf_file.varinq("dynamic_threshold_state")
+    dynamic_threshold_attrs = cdf_file.varattsget("dynamic_threshold_state")
+    assert dynamic_threshold_info.Data_Type_Description == "CDF_UINT1"
+    assert dynamic_threshold_attrs["FILLVAL"] == np.uint8(255)

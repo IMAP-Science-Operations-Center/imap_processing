@@ -84,7 +84,7 @@ data_quality:
   DEPEND_1: priority
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Data Quality
-  FILLVAL: *uint8_fillval
+  FILLVAL: *uint16_fillval
   FORMAT: I3
   LABLAXIS: Data Quality
   LABL_PTR_1: priority_label

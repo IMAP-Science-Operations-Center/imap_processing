@@ -1,10 +1,12 @@
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.constants import FILLVAL, DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
@@ -140,6 +142,13 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
     for i, dataset in enumerate(l2):
         assert expected_frames[i].var_name in dataset.data_vars
         assert expected_frames[i].name in dataset.attrs["Data_type"]
+        dataset.attrs["Data_version"] = "001"
+        cdf_filepath = write_cdf(dataset)
+        cdf_file = cdflib.CDF(cdf_filepath)
+        vector_info = cdf_file.varinq(expected_frames[i].var_name)
+        vector_attrs = cdf_file.varattsget(expected_frames[i].var_name)
+        assert vector_info.Data_Type_Description == "CDF_FLOAT"
+        assert np.isclose(vector_attrs["FILLVAL"], np.float32(-1.0e31))
 
 
 def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):

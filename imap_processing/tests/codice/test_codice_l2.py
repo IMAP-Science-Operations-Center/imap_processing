@@ -397,11 +397,17 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
             l2_val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
-        )
+    )
     processed_2_ds.attrs["Data_version"] = "001"
     assert processed_2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-species"
-    cdf_file = write_cdf(processed_2_ds)
-    assert_l2_epoch_delta_cdf_metadata(cdf_file)
+    cdf_file_path = write_cdf(processed_2_ds)
+    assert_l2_epoch_delta_cdf_metadata(cdf_file_path)
+    with cdflib.CDF(cdf_file_path) as cdf_file:
+        for var in ["nso_esa_step", "nso_spin_sector"]:
+            var_info = cdf_file.varinq(var)
+            var_attrs = cdf_file.varattsget(var)
+            assert var_info.Data_Type_Description == "CDF_UINT1"
+            assert var_attrs["FILLVAL"] == np.uint8(255)
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -424,6 +430,30 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     ]
 
     processed_l2_ds = process_codice_l2("lo-direct-events", ProcessingInputCollection())
+    l1a_input_ds = load_cdf(processed_l1a_file)
+    original_spin_sector = l1a_input_ds["spin_sector"].values
+    # Mirror the LO direct-event spin-sector remapping so this test catches any
+    # unintended changes to valid sector values while still checking that only
+    # invalid sectors are replaced with the uint8 fill value.
+    expected_spin_sector = np.where(
+        (l1a_input_ds["position"].values >= 13)
+        & (l1a_input_ds["position"].values <= 24),
+        (original_spin_sector + 12) % 24,
+        original_spin_sector,
+    )
+    invalid_spin_sector = ~np.isfinite(original_spin_sector) | (
+        original_spin_sector > 23
+    )
+    expected_spin_sector = np.where(
+        invalid_spin_sector, np.uint8(255), expected_spin_sector
+    ).astype(np.uint8)
+    assert processed_l2_ds["spin_sector"].dtype == np.uint8
+    np.testing.assert_array_equal(
+        processed_l2_ds["spin_sector"].values,
+        expected_spin_sector,
+        err_msg="LO direct-event spin_sector values changed unexpectedly",
+    )
+
     l2_val_data = (
         imap_module_directory
         / "tests"
@@ -464,6 +494,15 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     assert_l2_epoch_delta_cdf_metadata(file)
     errors = CDFValidator().validate(file)
     assert not errors
+    cdf_file = cdflib.CDF(file)
+    spin_sector_info = cdf_file.varinq("spin_sector")
+    spin_sector_attrs = cdf_file.varattsget("spin_sector")
+    data_quality_info = cdf_file.varinq("data_quality")
+    data_quality_attrs = cdf_file.varattsget("data_quality")
+    assert spin_sector_info.Data_Type_Description == "CDF_UINT1"
+    assert spin_sector_attrs["FILLVAL"] == np.uint8(255)
+    assert data_quality_info.Data_Type_Description == "CDF_UINT2"
+    assert data_quality_attrs["FILLVAL"] == np.uint16(65535)
     load_cdf(file)
 
 
@@ -518,4 +557,9 @@ def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
     assert_l2_epoch_delta_cdf_metadata(file)
     errors = CDFValidator().validate(file)
     assert not errors
+    cdf_file = cdflib.CDF(file)
+    data_quality_info = cdf_file.varinq("data_quality")
+    data_quality_attrs = cdf_file.varattsget("data_quality")
+    assert data_quality_info.Data_Type_Description == "CDF_UINT2"
+    assert data_quality_attrs["FILLVAL"] == np.uint16(65535)
     load_cdf(file)
