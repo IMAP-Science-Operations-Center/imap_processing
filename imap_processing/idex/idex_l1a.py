@@ -16,8 +16,12 @@ Examples
 
 import json
 import logging
+import os
+from collections import defaultdict
 from enum import IntEnum
+from os import path
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -30,11 +34,86 @@ from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.evt_msg_decode_utils import render_event_template
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
-from imap_processing.idex.idex_utils import get_idex_attrs
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.idex.idex_utils import get_10_day_window_end_date, get_idex_attrs
+from imap_processing.spice.time import (
+    met_to_ttj2000ns,
+    str_yyyymmdd_to_ttj2000ns,
+)
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
+
+
+def idex_l1a(
+    packet_files: list[Path], window_start_date: str
+) -> list[xr.Dataset | None]:
+    """
+    Process a list of IDEX L0 packet files into a list of xarray Datasets.
+
+    Parameters
+    ----------
+    packet_files : list[pathlib.Path]
+        List of paths to IDEX L0 packet files to process. These l0 files should all
+        contain data that belongs in the same 10-day window specified by start_date.
+    window_start_date : str
+        The start date of the 10-day window in YYYYMMDD format. Used to filter the
+        data for the 10-day window.
+
+    Returns
+    -------
+    list[xarray.Dataset|None]
+        A list of xarray Datasets containing the processed IDEX L1a data products. If
+        There is no Data found for the 10-day window, None is returned.
+    """
+    # Sort packet files so latest version comes last
+    # This ensures when we drop duplicate events (if any), the latest file's data is
+    # kept.
+    sorted_packet_files = sorted(packet_files)
+    idex_products = []
+    # decom each idex l0 file and gather the data for each product type
+    # (science, event message, catlst) into separate lists
+    data_dicts = defaultdict(list)
+    for packet_file in sorted_packet_files:
+        data = PacketParser(packet_file).data
+        for product, dataset in data.items():
+            data_dicts[product].append(dataset)
+    # Get the end date of the data window. This will be used to filter events.
+    window_end_date = get_10_day_window_end_date(window_start_date)
+    # Convert from strings to ttj2000ns for easier epoch comparison
+    window_start_date_ns = str_yyyymmdd_to_ttj2000ns(window_start_date)
+    window_end_date_ns = str_yyyymmdd_to_ttj2000ns(window_end_date)
+    # combine the data for each product type into a single dataset.
+    # filter each dataset for epochs that are within the 10-day window range.
+    for product, datasets in data_dicts.items():
+        concat_ds = (
+            xr.concat(
+                datasets,
+                dim="epoch",
+                # Keep non-epoch support variables (e.g. label/index vectors) from a
+                # single dataset instead of broadcasting them across epochs.
+                data_vars="minimal",
+                coords="minimal",
+                compat="override",
+                # Drop duplicate epochs, keeping the last one (which will be from the
+                # latest file due to sorting above)
+            )
+            .sortby("epoch")
+            .drop_duplicates("epoch", keep="last")
+        )
+        mask = (concat_ds["epoch"] >= window_start_date_ns) & (
+            concat_ds["epoch"] < window_end_date_ns
+        )
+        filtered_ds = concat_ds.isel(epoch=mask)
+        if len(filtered_ds.epoch) == 0:
+            logger.warning(
+                f"No data found for dates {window_start_date_ns} - {window_end_date_ns}"
+                f" for {product} in packet files: "
+                f"{[path.basename(f) for f in packet_files]}"
+            )
+            continue
+        idex_products.append(filtered_ds)
+
+    return idex_products
 
 
 class Scitype(IntEnum):
@@ -47,6 +126,15 @@ class Scitype(IntEnum):
     TARGET_LOW = 16
     TARGET_HIGH = 32
     ION_GRID = 64
+
+
+class _EventKey(NamedTuple):
+    """Stable identifier for one IDEX science event."""
+
+    coarse_upper: int
+    coarse_lower: int
+    fine_subseconds: int
+    event_number: int
 
 
 class PacketParser:
@@ -76,7 +164,7 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one L1a file.
         """
-        self.data = []
+        self.data = {}
         self.idex_attrs = get_idex_attrs("l1a")
         epoch_attrs = self.idex_attrs.get_variable_attributes(
             "epoch", check_schema=False
@@ -85,10 +173,11 @@ class PacketParser:
         science_packets, raw_datset_by_apid, derived_datasets_by_apid = decom_packets(
             packet_file
         )
-
+        filename = os.path.basename(packet_file)
+        logger.info(f"Processing IDEX L1A Packet {filename}")
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
-            self.data.append(self._create_science_dataset(science_packets))
+            self.data["l1a_sci-10days"] = self._create_science_dataset(science_packets)
         datasets_by_level = {"l1a": raw_datset_by_apid, "l1b": derived_datasets_by_apid}
         for level, dataset in datasets_by_level.items():
             # Only produce l1a products for event messages. L1b will be processed in a
@@ -98,19 +187,19 @@ class PacketParser:
                 data = dataset[IDEXAPID.IDEX_EVT]
                 processed_data = self._create_evt_msg_data(data)
                 processed_data["epoch"].attrs = epoch_attrs
-                self.data.append(processed_data)
+                self.data["l1a_msg-10days"] = processed_data
 
             if IDEXAPID.IDEX_CATLST in dataset:
                 logger.info(f"Processing IDEX {level} CATLST data")
                 data = dataset[IDEXAPID.IDEX_CATLST]
                 data.attrs = self.idex_attrs.get_global_attributes(
-                    f"imap_idex_{level}_catlst"
+                    f"imap_idex_{level}_catlst-10days"
                 )
                 data["epoch"] = calculate_idex_event_time(
                     data["shcoarse"].data, data["shfine"].data
                 )
                 data["epoch"].attrs = epoch_attrs
-                self.data.append(data)
+                self.data[f"{level}_catlst-10days"] = data
 
         logger.info("IDEX L1A data processing completed.")
 
@@ -150,7 +239,7 @@ class PacketParser:
                     attrs=self.idex_attrs.get_variable_attributes("elssec_evtpkt"),
                 ),
             },
-            attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg"),
+            attrs=self.idex_attrs.get_global_attributes("imap_idex_l1a_msg-10days"),
         )
         # Load the event decoding dictionaries
         with open(
@@ -222,7 +311,9 @@ class PacketParser:
                 "messages", check_schema=False
             ),
         )
-        l1a_msg_ds.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_msg")
+        l1a_msg_ds.attrs = self.idex_attrs.get_global_attributes(
+            "imap_idex_l1a_msg-10days"
+        )
         return l1a_msg_ds
 
     def _create_science_dataset(self, science_decom_packet_list: list) -> xr.Dataset:
@@ -239,23 +330,35 @@ class PacketParser:
         xarray.Dataset
             Dataset containing processed dust events.
         """
-        dust_events = {}
+        dust_events: dict[_EventKey, RawDustEvent] = {}
+        active_event_keys: dict[int, _EventKey] = {}
         for packet in science_decom_packet_list:
             if "IDX__SCI0TYPE" in packet:
                 scitype = packet["IDX__SCI0TYPE"]
-                event_number = packet["IDX__SCI0EVTNUM"]
+                event_number = int(packet["IDX__SCI0EVTNUM"])
                 if scitype == Scitype.FIRST_PACKET:
-                    # Initial packet for new dust event
-                    # Further packets will fill in data
-                    dust_events[event_number] = RawDustEvent(packet)
-                elif event_number not in dust_events:
+                    event_key = RawDustEvent._get_event_key(packet)
+                    if event_key in dust_events:
+                        logger.warning(
+                            "Duplicate header packet for event %s. Skipping duplicate.",
+                            event_key,
+                        )
+                        active_event_keys[event_number] = event_key
+                        continue
+                    # Initial packet for new dust event. Further packets will fill in
+                    # data.
+                    dust_events[event_key] = RawDustEvent(packet, event_key)
+                    active_event_keys[event_number] = event_key
+                elif event_number not in active_event_keys:
                     raise KeyError(
                         f"Have not receive header information from event number\
                             {event_number}.  Packets are possibly out of order!"
                     )
                 else:
                     # Populate the IDEXRawDustEvent with 1's and 0's
-                    dust_events[event_number]._populate_bit_strings(packet)
+                    dust_events[active_event_keys[event_number]]._populate_bit_strings(
+                        packet
+                    )
             else:
                 logger.warning(f"Unhandled packet received: {packet}")
 
@@ -399,6 +502,8 @@ class RawDustEvent:
     ----------
     header_packet : space_packet_parser.SpacePacket
         The FPGA metadata event header.
+    event_key : tuple[int, int, int, int]
+        Stable event identifier for this science event header.
 
     Attributes
     ----------
@@ -449,7 +554,11 @@ class RawDustEvent:
     MAX_HIGH_BLOCKS = 16
     MAX_LOW_BLOCKS = 64
 
-    def __init__(self, header_packet: space_packet_parser.SpacePacket) -> None:
+    def __init__(
+        self,
+        header_packet: space_packet_parser.SpacePacket,
+        event_key: tuple[int, int, int, int],
+    ) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -463,6 +572,8 @@ class RawDustEvent:
         ----------
         header_packet : space_packet_parser.SpacePacket
             The FPGA metadata event header.
+        event_key : tuple[int, int, int, int]
+            Stable event identifier for this science event header.
         """
         # Calculate the impact time in seconds since epoch
         self.impact_time = 0
@@ -477,7 +588,8 @@ class RawDustEvent:
             header_packet["IDX__TXHDRTIMESUBS"],
         )
 
-        self.event_number = header_packet["IDX__SCI0EVTNUM"]
+        self.event_number = int(header_packet["IDX__SCI0EVTNUM"])
+        self.event_key = event_key
 
         # The actual trigger time for the low and high sample rate in
         # microseconds since the impact time
@@ -496,45 +608,64 @@ class RawDustEvent:
             f"telemetry_items:\n{self.telemetry_items}"
         )  # Log values here in case of error
 
-        # Initialize the binary data received from future packets
-        self.TOF_High_bits = ""
-        self.TOF_Mid_bits = ""
-        self.TOF_Low_bits = ""
-        self.Target_Low_bits = ""
-        self.Target_High_bits = ""
-        self.Ion_Grid_bits = ""
+        # Keep one fragment per (science type, fragment offset) slot and assemble the
+        # bit strings later. This lets us drop exact retransmit duplicates and prefer a
+        # more complete fragment if a shorter copy also arrived.
+        self.fragments_by_scitype: dict[Scitype, dict[int, bytes]] = {
+            Scitype.TOF_HIGH: {},
+            Scitype.TOF_LOW: {},
+            Scitype.TOF_MID: {},
+            Scitype.TARGET_LOW: {},
+            Scitype.TARGET_HIGH: {},
+            Scitype.ION_GRID: {},
+        }
+        self.conflicting_fragment_slots: set[tuple[int, int]] = set()
 
         self.compressed = self.telemetry_items["idx__sci0comp"]
         self.cdf_attrs = get_idex_attrs("l1a")
 
-    def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
+    @staticmethod
+    def _get_event_key(packet: space_packet_parser.SpacePacket) -> _EventKey:
         """
-        Append data to the appropriate bit string.
+        Return a stable identifier for one science event header.
 
-        This function determines which variable to append the bits to, given a
-        specific scitype.
+        Parameters
+        ----------
+        packet : space_packet_parser.SpacePacket
+            The IDEX science header packet.
+
+        Returns
+        -------
+        tuple[int, int, int, int]
+            Stable event identifier built from the transmit timestamp and
+            event number.
+        """
+        return _EventKey(
+            int(packet["IDX__TXHDRTIMESEC1"]),
+            int(packet["IDX__TXHDRTIMESEC2"]),
+            int(packet["IDX__TXHDRTIMESUBS"]),
+            int(packet["IDX__TXHDREVTNUM"]),
+        )
+
+    def _assemble_bits(self, scitype: Scitype) -> str:
+        """
+        Assemble stored fragment bytes into one channel bitstring.
 
         Parameters
         ----------
         scitype : Scitype
-            The science type of the data.
-        bits : str
-            The binary data to append.
+            Science channel to assemble.
+
+        Returns
+        -------
+        str
+            Concatenated binary string for the requested science channel.
         """
-        if scitype == Scitype.TOF_HIGH:
-            self.TOF_High_bits += bits
-        elif scitype == Scitype.TOF_LOW:
-            self.TOF_Low_bits += bits
-        elif scitype == Scitype.TOF_MID:
-            self.TOF_Mid_bits += bits
-        elif scitype == Scitype.TARGET_LOW:
-            self.Target_Low_bits += bits
-        elif scitype == Scitype.TARGET_HIGH:
-            self.Target_High_bits += bits
-        elif scitype == Scitype.ION_GRID:
-            self.Ion_Grid_bits += bits
-        else:
-            logger.warning("Unknown science type received: [%s]", scitype)
+        fragments = self.fragments_by_scitype[scitype]
+        return "".join(
+            convert_to_binary_string(fragments[fragoff])
+            for fragoff in sorted(fragments)
+        )
 
     def _set_sample_trigger_times(
         self, packet: space_packet_parser.SpacePacket
@@ -740,9 +871,60 @@ class RawDustEvent:
             A single science data packet for one of the 6.
             IDEX observables.
         """
-        scitype = packet["IDX__SCI0TYPE"]
-        raw_science_bits = convert_to_binary_string(packet["IDX__SCI0RAW"])
-        self._append_raw_data(scitype, raw_science_bits)
+        scitype = Scitype(int(packet["IDX__SCI0TYPE"]))
+        fragoff = int(packet["IDX__SCI0FRAGOFF"])
+        raw_fragment = bytes(packet["IDX__SCI0RAW"])
+        fragment_slot = (int(scitype), fragoff)
+        stored_fragments = self.fragments_by_scitype[scitype]
+        existing_fragment = stored_fragments.get(fragoff)
+
+        if existing_fragment is None:
+            stored_fragments[fragoff] = raw_fragment
+            return
+
+        if raw_fragment == existing_fragment:
+            logger.warning(
+                "Duplicate science fragment for event %s scitype=%s fragoff=%s. "
+                "Skipping duplicate copy.",
+                self.event_key,
+                int(scitype),
+                fragoff,
+            )
+            return
+
+        if len(raw_fragment) > len(existing_fragment):
+            logger.warning(
+                "Replacing shorter science fragment for event %s scitype=%s "
+                "fragoff=%s (%s bytes -> %s bytes).",
+                self.event_key,
+                int(scitype),
+                fragoff,
+                len(existing_fragment),
+                len(raw_fragment),
+            )
+            stored_fragments[fragoff] = raw_fragment
+            return
+
+        if len(raw_fragment) < len(existing_fragment):
+            logger.warning(
+                "Ignoring shorter duplicate science fragment for event %s scitype=%s "
+                "fragoff=%s (%s bytes < %s bytes).",
+                self.event_key,
+                int(scitype),
+                fragoff,
+                len(raw_fragment),
+                len(existing_fragment),
+            )
+            return
+
+        logger.warning(
+            "Conflicting science fragments for event %s scitype=%s fragoff=%s. "
+            "Skipping event.",
+            self.event_key,
+            int(scitype),
+            fragoff,
+        )
+        self.conflicting_fragment_slots.add(fragment_slot)
 
     def process(self) -> Dataset | None:
         """
@@ -757,6 +939,13 @@ class RawDustEvent:
         dataset : xarray.Dataset, None
             A Dataset object containing the data from a single impact.
         """
+        if self.conflicting_fragment_slots:
+            logger.warning(
+                "Conflicting duplicate packet for event number %s. Skipping event.",
+                self.event_number,
+            )
+            return None
+
         # Create an object for CDF attrs
         idex_attrs = self.cdf_attrs
 
@@ -781,37 +970,61 @@ class RawDustEvent:
             # Process the 6 primary data variables
             "TOF_High": xr.DataArray(
                 name="TOF_High",
-                data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
+                data=[
+                    self._parse_high_sample_waveform(
+                        self._assemble_bits(Scitype.TOF_HIGH)
+                    )
+                ],
                 dims=("epoch", "time_high_sample_rate_index"),
                 attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
             ),
             "TOF_Low": xr.DataArray(
                 name="TOF_Low",
-                data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
+                data=[
+                    self._parse_high_sample_waveform(
+                        self._assemble_bits(Scitype.TOF_LOW)
+                    )
+                ],
                 dims=("epoch", "time_high_sample_rate_index"),
                 attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
             ),
             "TOF_Mid": xr.DataArray(
                 name="TOF_Mid",
-                data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
+                data=[
+                    self._parse_high_sample_waveform(
+                        self._assemble_bits(Scitype.TOF_MID)
+                    )
+                ],
                 dims=("epoch", "time_high_sample_rate_index"),
                 attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
             ),
             "Target_High": xr.DataArray(
                 name="Target_High",
-                data=[self._parse_low_sample_waveform(self.Target_High_bits)],
+                data=[
+                    self._parse_low_sample_waveform(
+                        self._assemble_bits(Scitype.TARGET_HIGH)
+                    )
+                ],
                 dims=("epoch", "time_low_sample_rate_index"),
                 attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
             ),
             "Target_Low": xr.DataArray(
                 name="Target_Low",
-                data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
+                data=[
+                    self._parse_low_sample_waveform(
+                        self._assemble_bits(Scitype.TARGET_LOW)
+                    )
+                ],
                 dims=("epoch", "time_low_sample_rate_index"),
                 attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
             ),
             "Ion_Grid": xr.DataArray(
                 name="Ion_Grid",
-                data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
+                data=[
+                    self._parse_low_sample_waveform(
+                        self._assemble_bits(Scitype.ION_GRID)
+                    )
+                ],
                 dims=("epoch", "time_low_sample_rate_index"),
                 attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
             ),

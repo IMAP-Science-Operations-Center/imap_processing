@@ -14,25 +14,25 @@ max_epoch: &max_epoch 3155630469184000000
 epoch_delta_minus:
     CATDESC: Time from acquisition start to acquisition center
     FIELDNAM: epoch_delta_minus
-    FILLVAL: *real_fillval
-    FORMAT: F30.9
+    FILLVAL: *int_fillval
+    FORMAT: I19
     LABLAXIS: epoch_delta_minus
     SCALETYP: linear
     UNITS: ns
-    VALIDMAX: *max_int
-    VALIDMIN: *min_int
+    VALIDMAX: 128000000000
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 epoch_delta_plus:
     CATDESC: Time from acquisition center to acquisition end
     FIELDNAM: epoch_delta_plus
-    FILLVAL: *real_fillval
-    FORMAT: F30.9
+    FILLVAL: *int_fillval
+    FORMAT: I19
     LABLAXIS: epoch_delta_plus
     SCALETYP: linear
     UNITS: ns
-    VALIDMAX: *max_epoch
-    VALIDMIN: *min_epoch
+    VALIDMAX: 128000000000
+    VALIDMIN: 0
     VAR_TYPE: support_data
 
 esa_step:

@@ -112,8 +112,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             attrs=attr_mgr.get_global_attributes(logical_source),
         )
 
-        # pass-through of the pivot_angle from L1B DE
-        pset["pivot_angle"] = l1b_de["pivot_angle"]
+        pset["pivot_angle"] = sci_dependencies["imap_lo_l1b_goodtimes"]["pivot"]
+        pset["pivot_angle_de"] = sci_dependencies["imap_lo_l1b_goodtimes"]["pivot_de"]
 
         # ESA mode needs to be added to L1B DE. Adding try statement
         # to avoid error until it's available in the dataset
@@ -1080,18 +1080,18 @@ def set_background_rates(
         variance_field = f"{species_key}_background_variance"
 
         if rate_field in bgrates_ds:
-            rates_per_esa = bgrates_ds[
-                rate_field
-            ].values  # shape: (N_ESA_ENERGY_STEPS,)
+            rates_per_esa = bgrates_ds[rate_field].values[
+                0
+            ]  # shape: (N_ESA_ENERGY_STEPS,)
             bg_rates = np.broadcast_to(
                 rates_per_esa[:, np.newaxis, np.newaxis],
                 (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),
             ).astype(np.float16)
 
         if variance_field in bgrates_ds:
-            var_per_esa = bgrates_ds[
-                variance_field
-            ].values  # shape: (N_ESA_ENERGY_STEPS,)
+            var_per_esa = bgrates_ds[variance_field].values[
+                0
+            ]  # shape: (N_ESA_ENERGY_STEPS,)
             bg_stat_uncert = np.broadcast_to(
                 var_per_esa[:, np.newaxis, np.newaxis],
                 (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS),

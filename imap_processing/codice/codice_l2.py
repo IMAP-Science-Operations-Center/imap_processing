@@ -645,6 +645,10 @@ def process_lo_species_intensity(
                 attrs=dataset[var].attrs,
             )
 
+    dataset["epoch"].attrs.update(
+        cdf_attrs.get_variable_attributes("epoch", check_schema=False)
+    )
+
     return dataset
 
 
@@ -864,9 +868,6 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
         "epoch_delta_minus": l1b_dataset["epoch_delta_minus"],
     }
 
-    l1b_dataset["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta_minus"
-    l1b_dataset["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta_plus"
-
     l1b_dataset = l1b_dataset.assign_coords(new_coords)
 
     return l1b_dataset
@@ -993,9 +994,6 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
         },
         attrs=cdf_attrs.get_global_attributes("imap_codice_l2_hi-sectored"),
     )
-
-    l1b_dataset["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta_minus"
-    l1b_dataset["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta_plus"
 
     efficiencies_file = dependencies.get_file_paths(
         descriptor="l2-hi-sectored-efficiency"
@@ -1272,7 +1270,7 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
             # skip adding attributes for these variables. They should already
             # have attrs carried over from l1a.
             continue
-        l2_dataset[var].attrs.update(cdf_attrs.get_variable_attributes(var))
+        l2_dataset[var].attrs = cdf_attrs.get_variable_attributes(var)
     # Update coord attributes
     l2_dataset["priority"].attrs.update(
         cdf_attrs.get_variable_attributes("priority", check_schema=False)
@@ -1401,7 +1399,7 @@ def process_hi_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         cdf_attrs.get_global_attributes("imap_codice_l2_hi-direct-events")
     )
     for var in l2_dataset.data_vars:
-        l2_dataset[var].attrs.update(cdf_attrs.get_variable_attributes(var))
+        l2_dataset[var].attrs = cdf_attrs.get_variable_attributes(var)
     # Update coord attributes
     l2_dataset["priority"].attrs.update(
         cdf_attrs.get_variable_attributes("priority", check_schema=False)

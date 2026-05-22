@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 from scipy.stats import circmean, circstd
 
-from imap_processing.glows import FLAG_LENGTH
+from imap_processing.glows import BAD_TIME_FLAG_NAMES, FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
 from imap_processing.quality_flags import GLOWSL1bFlags
 from imap_processing.spice import geometry
@@ -135,37 +135,18 @@ class PipelineSettings:  # numpydoc ignore=PR02
             self.active_bad_angle_flags = [True, True, True, True]
 
         # Extract active bad-time flags (default to all True if not present)
-        _time_flag_names = [
-            "is_pps_missing",
-            "is_time_status_missing",
-            "is_phase_missing",
-            "is_spin_period_missing",
-            "is_overexposed",
-            "is_direct_event_non_monotonic",
-            "is_night",
-            "is_hv_test_in_progress",
-            "is_test_pulse_in_progress",
-            "is_memory_error_detected",
-            "is_generated_on_ground",
-            "is_beyond_daily_statistical_error",
-            "is_temperature_std_dev_beyond_threshold",
-            "is_hv_voltage_std_dev_beyond_threshold",
-            "is_spin_period_std_dev_beyond_threshold",
-            "is_pulse_length_std_dev_beyond_threshold",
-            "is_spin_period_difference_beyond_threshold",
-        ]
         if "active_bad_time_flags" in pipeline_dataset.data_vars:
             self.active_bad_time_flags = list(
                 pipeline_dataset["active_bad_time_flags"].values
             )
         elif any(
             f"active_bad_time_flags_{n}" in pipeline_dataset.data_vars
-            for n in _time_flag_names
+            for n in BAD_TIME_FLAG_NAMES
         ):
             # Flattened format from convert_json_to_dataset
             self.active_bad_time_flags = [
                 bool(pipeline_dataset[f"active_bad_time_flags_{name}"].values)
-                for name in _time_flag_names
+                for name in BAD_TIME_FLAG_NAMES
             ]
         else:
             # Default: assume all bad-time flags are active

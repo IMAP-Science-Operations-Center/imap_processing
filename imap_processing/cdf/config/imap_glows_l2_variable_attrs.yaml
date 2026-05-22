@@ -11,10 +11,10 @@ bins_label:
   VAR_TYPE: metadata
 
 flags_label:
-#  CATDESC: L1B flag identifier for daily-ocurrence counter
-  CATDESC: Flag names for daily-occurence counters of L1B flags
+#  CATDESC: L1B flag identifier for daily-occurrence counter
+  CATDESC: Flag names for daily-occurrence counters of L1B flags
   FIELDNAM: L1B flag name
-  FORMAT: A4
+  FORMAT: A42
   VAR_TYPE: metadata
 
 default_attrs: &default_attrs

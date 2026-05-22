@@ -11,6 +11,7 @@ caused too much complexity.
 import logging
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 from imap_data_access import ProcessingInputCollection
@@ -28,6 +29,21 @@ from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 pytestmark = pytest.mark.external_test_data
+
+EXPECTED_EPOCH_DELTA_VALIDMAX = 128000000000
+
+
+def assert_epoch_delta_cdf_metadata(cdf_file):
+    """Assert the written epoch delta variables use integer duration metadata."""
+    with cdflib.CDF(cdf_file) as cdf:
+        for variable in ("epoch_delta_minus", "epoch_delta_plus"):
+            info = cdf.varinq(variable)
+            attrs = cdf.varattsget(variable)
+            assert info.Data_Type_Description == "CDF_INT8"
+            assert attrs["FILLVAL"] == -9223372036854775808
+            assert attrs["FORMAT"] == "I19"
+            assert attrs["VALIDMIN"] == 0
+            assert attrs["VALIDMAX"] == EXPECTED_EPOCH_DELTA_VALIDMAX
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -435,6 +451,7 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert cdf_file.name == f"imap_codice_l1a_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
+    assert_epoch_delta_cdf_metadata(cdf_file)
 
 
 @pytest.mark.xfail(reason="Need to revisit in future PR")
@@ -670,3 +687,4 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_hi-direct-events_{VALIDATION_FILE_DATE}_v002.cdf"
     )
+    assert_epoch_delta_cdf_metadata(cdf_file)

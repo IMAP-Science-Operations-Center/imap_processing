@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.glows import FLAG_LENGTH
+from imap_processing.glows import BAD_TIME_FLAG_NAMES, FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import (
     PipelineSettings,
 )
@@ -21,6 +21,32 @@ from imap_processing.spice.time import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_global_attr_to_string(value: object) -> str:
+    """
+    Convert a scalar-like global attribute value to a CDF_CHAR-compatible string.
+
+    Parameters
+    ----------
+    value : object
+        Global attribute value to normalize.
+
+    Returns
+    -------
+    str
+        String representation suitable for writing as a CDF_CHAR global attribute.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple, np.ndarray)):
+        array = np.asarray(value)
+        if array.size == 0:
+            return ""
+        value = array.reshape(-1)[0]
+    return str(value)
 
 
 def _pad_daily_lightcurve_bins(value: object, fillval: object) -> np.ndarray:
@@ -150,8 +176,9 @@ def create_l2_dataset(
     )
 
     bins_label = xr.DataArray(
-        -1,
+        bins.data.astype(str),
         name="bins_label",
+        dims=["bins_label"],
         attrs=attrs.get_variable_attributes("bins_label", check_schema=False),
     )
 
@@ -162,8 +189,9 @@ def create_l2_dataset(
     )
 
     flags_label = xr.DataArray(
-        -1,
+        np.array(BAD_TIME_FLAG_NAMES),
         name="flags_label",
+        dims=["flags_label"],
         attrs=attrs.get_variable_attributes("flags_label", check_schema=False),
     )
 
@@ -185,8 +213,8 @@ def create_l2_dataset(
         attrs=attrs.get_global_attributes("imap_glows_l2_hist"),
     )
 
-    output.attrs["flight_software_version"] = input_attrs.get(
-        "flight_software_version", ""
+    output.attrs["flight_software_version"] = _normalize_global_attr_to_string(
+        input_attrs.get("flight_software_version", "")
     )
     output.attrs["pkts_file_name"] = input_attrs.get("pkts_file_name", [])
 

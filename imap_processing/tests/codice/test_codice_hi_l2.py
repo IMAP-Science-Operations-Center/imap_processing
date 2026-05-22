@@ -22,6 +22,28 @@ from imap_processing.tests.codice.conftest import (
 
 pytestmark = pytest.mark.external_test_data
 
+# epoch_delta = num_spins * spin_period / 2, with spin_period VALIDMAX = 16 s
+# and num_spins max = 16 in the current CoDICE timing model. That yields a
+# worst-case delta of 128 s = 128000000000 ns.
+EXPECTED_EPOCH_DELTA_VALIDMAX = 128000000000
+
+
+def assert_l2_epoch_delta_cdf_metadata(cdf_file):
+    """Assert L2 epoch delta vars and epoch links are written correctly."""
+    with cdflib.CDF(cdf_file) as cdf:
+        epoch_attrs = cdf.varattsget("epoch")
+        assert epoch_attrs["DELTA_MINUS_VAR"] == "epoch_delta_minus"
+        assert epoch_attrs["DELTA_PLUS_VAR"] == "epoch_delta_plus"
+
+        for variable in ("epoch_delta_minus", "epoch_delta_plus"):
+            info = cdf.varinq(variable)
+            attrs = cdf.varattsget(variable)
+            assert info.Data_Type_Description == "CDF_INT8"
+            assert attrs["FILLVAL"] == -9223372036854775808
+            assert attrs["FORMAT"] == "I19"
+            assert attrs["VALIDMIN"] == 0
+            assert attrs["VALIDMAX"] == EXPECTED_EPOCH_DELTA_VALIDMAX
+
 
 def _expected_hi_energy_labels(species: str, energies: np.ndarray) -> np.ndarray:
     species_display = HI_SPECIES_DISPLAY_NAMES[species]
@@ -97,6 +119,7 @@ def test_l2_hi_omni(mock_get_file_paths):
     assert (
         omni_cdf_file.name == f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert_l2_epoch_delta_cdf_metadata(omni_cdf_file)
     with cdflib.CDF(omni_cdf_file) as cdf_file:
         data_quality_attrs = cdf_file.varattsget("data_quality")
         assert data_quality_attrs["VAR_TYPE"] == "data"
@@ -225,6 +248,7 @@ def test_l2_hi_sectored(mock_get_file_paths):
         sectored_cdf_file.name
         == f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert_l2_epoch_delta_cdf_metadata(sectored_cdf_file)
     with cdflib.CDF(sectored_cdf_file) as cdf_file:
         data_quality_attrs = cdf_file.varattsget("data_quality")
         assert data_quality_attrs["VAR_TYPE"] == "data"

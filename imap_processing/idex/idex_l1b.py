@@ -40,7 +40,7 @@ from imap_processing.spice.geometry import (
     solar_longitude,
 )
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
-from imap_processing.spice.time import ttj2000ns_to_et
+from imap_processing.spice.time import et_to_met, ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
@@ -127,17 +127,17 @@ def idex_l1b(l1a_dataset: xr.Dataset, descriptor: str) -> xr.Dataset | None:
     l1a_dataset : xarray.Dataset
         IDEX L1a dataset to process.
     descriptor : str
-        Descriptor to determine the type of l1b processing to perform. E.g. "sci-1week"
-        or "msg".
+        Descriptor to determine the type of l1b processing to perform. E.g. "sci-10days"
+        or "msg-10days".
 
     Returns
     -------
     l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the processed data and supporting metadata.
     """
-    if descriptor.startswith("sci"):
+    if descriptor.startswith("sci-10days"):
         return idex_l1b_science(l1a_dataset)
-    elif descriptor.startswith("msg"):
+    elif descriptor.startswith("msg-10days"):
         return idex_l1b_msg(l1a_dataset)
     else:
         raise ValueError(f"Unsupported descriptor: {descriptor}")
@@ -166,7 +166,7 @@ def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset | None:
     idex_attrs = get_idex_attrs("l1b")
     # set up a dataset with only epoch.
     l1b_dataset = setup_dataset(l1a_dataset, [], idex_attrs, data_vars=None)
-    l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_msg")
+    l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_msg-10days")
     # Compute science_on and pulser_on variables based on the event message. The
     # "science_on" variable indicates when the science data collection is turned on or
     # off and the "pulser_on" variable indicates when the pulser is turned on or off.
@@ -573,8 +573,8 @@ def get_spice_data(
     """
     # convert 'epoch' from nanoseconds to seconds since j2000
     et = ttj2000ns_to_et(l1a_dataset["epoch"].data)
-    # Get 'shcoarse' (Mission Elapsed Time)
-    met = l1a_dataset["shcoarse"].data
+    # Get (Mission Elapsed Time)
+    met = et_to_met(et)
     # Get spacecraft spin phase in degrees
     spin_phase = get_spacecraft_spin_phase(query_met_times=met)
     imap_spin_phase = get_spin_angle(spin_phase, degrees=True)

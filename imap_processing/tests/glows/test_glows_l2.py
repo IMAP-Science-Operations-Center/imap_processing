@@ -7,12 +7,17 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.glows import BAD_TIME_FLAG_NAMES
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
 from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
-from imap_processing.glows.l2.glows_l2 import create_l2_dataset, glows_l2
+from imap_processing.glows.l2.glows_l2 import (
+    _normalize_global_attr_to_string,
+    create_l2_dataset,
+    glows_l2,
+)
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
@@ -191,6 +196,73 @@ def test_generate_l2(
     return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
 )
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_glows_l2_cdf_metadata(
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    mock_compute_position_angle,
+    l1a_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
+    mock_conversion_table_dict,
+    mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
+):
+    """Written GLOWS L2 CDF metadata should match the intended label and attr types."""
+    mock_spice_function.side_effect = mock_update_spice_parameters
+
+    l1b_hist_dataset = glows_l1b(
+        l1a_dataset[0],
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
+        mock_conversion_table_dict,
+    )
+    l1b_hist_dataset.attrs["Repointing"] = "repoint00047"
+    l2_dataset = glows_l2(
+        l1b_hist_dataset, mock_pipeline_settings, mock_calibration_dataset
+    )[0]
+    l2_dataset.attrs["Data_version"] = "001"
+    cdf_path = write_cdf(l2_dataset)
+
+    with cdflib.CDF(cdf_path) as cdf_file:
+        bins_label_info = cdf_file.varinq("bins_label")
+        bins_label_attrs = cdf_file.varattsget("bins_label")
+        bins_label_values = cdf_file.varget("bins_label")
+        flags_label_info = cdf_file.varinq("flags_label")
+        flags_label_attrs = cdf_file.varattsget("flags_label")
+        flags_label_values = cdf_file.varget("flags_label")
+        bad_time_info = cdf_file.varinq("bad_time_flag_occurrences")
+        bad_time_attrs = cdf_file.varattsget("bad_time_flag_occurrences")
+        global_attrs = cdf_file.globalattsget()
+
+        assert bins_label_info.Data_Type_Description == "CDF_CHAR"
+        assert bins_label_attrs["FORMAT"] == "A4"
+        assert list(bins_label_values[:5]) == ["0", "1", "2", "3", "4"]
+
+        assert flags_label_info.Data_Type_Description == "CDF_CHAR"
+        assert flags_label_attrs["FORMAT"] == "A42"
+        assert list(flags_label_values) == list(BAD_TIME_FLAG_NAMES)
+        assert max(len(name) for name in BAD_TIME_FLAG_NAMES) <= int(
+            flags_label_attrs["FORMAT"][1:]
+        ), (
+            "Update flags_label FORMAT in imap_glows_l2_variable_attrs.yaml "
+            "if a flag name exceeds A42."
+        )
+
+        assert bad_time_info.Data_Type_Description == "CDF_UINT2"
+        assert bad_time_attrs["FORMAT"] == "I5"
+        assert global_attrs["flight_software_version"] == ["131329"]
+
+
+@patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_glows_l2_cdf_fillvals(
     mock_spice_function,
     mock_flag_uv_and_excluded,
@@ -220,25 +292,40 @@ def test_glows_l2_cdf_fillvals(
     )[0]
     l2_dataset.attrs["Data_version"] = "001"
     cdf_file_path = write_cdf(l2_dataset)
-    cdf_file = cdflib.CDF(cdf_file_path)
+    with cdflib.CDF(cdf_file_path) as cdf_file:
+        histogram_flag_info = cdf_file.varinq("histogram_flag_array")
+        histogram_flag_attrs = cdf_file.varattsget("histogram_flag_array")
+        number_of_bins_info = cdf_file.varinq("number_of_bins")
+        number_of_bins_attrs = cdf_file.varattsget("number_of_bins")
+        photon_flux_info = cdf_file.varinq("photon_flux")
+        photon_flux_attrs = cdf_file.varattsget("photon_flux")
+        ecliptic_lon_info = cdf_file.varinq("ecliptic_lon")
+        ecliptic_lon_attrs = cdf_file.varattsget("ecliptic_lon")
 
-    histogram_flag_info = cdf_file.varinq("histogram_flag_array")
-    histogram_flag_attrs = cdf_file.varattsget("histogram_flag_array")
-    number_of_bins_info = cdf_file.varinq("number_of_bins")
-    number_of_bins_attrs = cdf_file.varattsget("number_of_bins")
-    photon_flux_info = cdf_file.varinq("photon_flux")
-    photon_flux_attrs = cdf_file.varattsget("photon_flux")
-    ecliptic_lon_info = cdf_file.varinq("ecliptic_lon")
-    ecliptic_lon_attrs = cdf_file.varattsget("ecliptic_lon")
+        assert histogram_flag_info.Data_Type_Description == "CDF_UINT1"
+        assert histogram_flag_attrs["FILLVAL"] == np.uint8(255)
+        assert number_of_bins_info.Data_Type_Description == "CDF_UINT2"
+        assert number_of_bins_attrs["FILLVAL"] == np.uint16(65535)
+        assert photon_flux_info.Data_Type_Description == "CDF_DOUBLE"
+        assert np.isclose(photon_flux_attrs["FILLVAL"], np.float64(-1.0e31))
+        assert ecliptic_lon_info.Data_Type_Description == "CDF_DOUBLE"
+        assert np.isclose(ecliptic_lon_attrs["FILLVAL"], np.float64(-1.0e31))
 
-    assert histogram_flag_info.Data_Type_Description == "CDF_UINT1"
-    assert histogram_flag_attrs["FILLVAL"] == np.uint8(255)
-    assert number_of_bins_info.Data_Type_Description == "CDF_UINT2"
-    assert number_of_bins_attrs["FILLVAL"] == np.uint16(65535)
-    assert photon_flux_info.Data_Type_Description == "CDF_DOUBLE"
-    assert np.isclose(photon_flux_attrs["FILLVAL"], np.float64(-1.0e31))
-    assert ecliptic_lon_info.Data_Type_Description == "CDF_DOUBLE"
-    assert np.isclose(ecliptic_lon_attrs["FILLVAL"], np.float64(-1.0e31))
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (None, ""),
+        ("131329", "131329"),
+        ([], ""),
+        (np.array([]), ""),
+        ([131329], "131329"),
+        ((131329,), "131329"),
+        (np.array([131329]), "131329"),
+    ],
+)
+def test_normalize_global_attr_to_string(value, expected):
+    assert _normalize_global_attr_to_string(value) == expected
 
 
 def test_bin_exclusions(l1b_hists):

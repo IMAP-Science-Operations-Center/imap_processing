@@ -23,6 +23,7 @@ from imap_processing.idex.idex_l1b import (
     unpack_instrument_settings,
 )
 from imap_processing.idex.idex_utils import get_idex_attrs
+from imap_processing.spice.time import ttj2000ns_to_met
 from imap_processing.tests.idex import conftest
 
 
@@ -54,7 +55,7 @@ def test_l1b_logical_source(l1b_dataset: xr.Dataset):
     l1b_dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    expected_src = "imap_idex_l1b_sci-1week"
+    expected_src = "imap_idex_l1b_sci-10days"
     assert l1b_dataset.attrs["Logical_source"] == expected_src
 
 
@@ -69,7 +70,7 @@ def test_idex_cdf_file(l1b_dataset: xr.Dataset):
 
     file_name = write_cdf(l1b_dataset)
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1b_sci-1week_20231218_v999.cdf"
+    assert file_name.name == "imap_idex_l1b_sci-10days_20231218_v999.cdf"
 
 
 def test_idex_waveform_units(l1b_dataset: xr.Dataset):
@@ -236,7 +237,6 @@ def test_get_spice_data(
     mock_spice_functions,
     use_fake_spin_data_for_time,
     decom_test_data_sci,
-    furnish_kernels,
 ):
     """
     Test the get_spice_data() function.
@@ -246,15 +246,14 @@ def test_get_spice_data(
     decom_test_data_sci : xarray.Dataset
         L1a dataset
     """
-    kernels = ["naif0012.tls"]
-    times = decom_test_data_sci["shcoarse"].data
+    times = ttj2000ns_to_met(decom_test_data_sci["epoch"].data)
     use_fake_spin_data_for_time(np.min(times), np.max(times))
 
     # Mock attribute manager variable attrs
     idex_attrs = ImapCdfAttributes()
 
     with (
-        furnish_kernels(kernels),
+        # furnish_kernels(kernels),
         mock.patch.object(idex_attrs, "get_variable_attributes") as mock_attrs,
     ):
         mock_attrs.return_value = {"CATDESC": "Test var"}
@@ -381,7 +380,7 @@ def test_l1b_msg_processing(decom_test_data_msg: xr.Dataset):
     msg_ds.messages[20] = EventMessage.PULSER_ON.value
     msg_ds.messages[22] = EventMessage.PULSER_OFF.value
     # Process the MSG data with the l1b function
-    test_l1b_msg = idex_l1b(msg_ds, "msg")
+    test_l1b_msg = idex_l1b(msg_ds, "msg-10days")
     expected_vars = [
         "epoch",
         "pulser_on",
@@ -419,7 +418,7 @@ def test_no_valid_messages(decom_test_data_msg: xr.Dataset):
     msg_ds = decom_test_data_msg.copy()
     # Set all messages to a value that is not a valid pulser on or off event
     msg_ds.messages[:] = "Not a science or pulser event"
-    result = idex_l1b(msg_ds, "msg")
+    result = idex_l1b(msg_ds, "msg-10days")
     assert result is None
 
 

@@ -21,6 +21,7 @@ from imap_processing.hi.hi_goodtimes import (
     _find_event_clusters,
     _get_sweep_indices,
     _identify_cull_pattern,
+    _sum_esa_counts,
     create_goodtimes_dataset,
     hi_goodtimes,
     mark_bad_esa_voltage,
@@ -2701,6 +2702,78 @@ class TestIdentifyCullPattern:
         assert cull_mask.sel(esa_sweep=2, esa_energy_step=3).values
         assert cull_mask.sel(esa_sweep=3, esa_energy_step=3).values
 
+    def test_single_esa_skips_neighbor_check(self):
+        """Test consecutive runs are marked without ESA neighbor check (1-ESA)"""
+        # Create data with only 1 ESA energy step (simulates summed pre-filter data)
+        n_sweeps = 10
+        counts = xr.DataArray(
+            np.zeros((n_sweeps, 1)),
+            dims=["esa_sweep", "esa_energy_step"],
+            coords={
+                "esa_sweep": np.arange(n_sweeps),
+                "esa_energy_step": [-1],  # Pseudo-ESA for summed data
+            },
+        )
+        median = xr.DataArray(
+            [10.0],
+            dims=["esa_energy_step"],
+            coords={"esa_energy_step": [-1]},
+        )
+        sigma = xr.DataArray(
+            [3],
+            dims=["esa_energy_step"],
+            coords={"esa_energy_step": [-1]},
+        )
+
+        # Create 4 consecutive high counts - threshold = 10 + 1.8*3 = 15.4
+        counts.loc[2:5, -1] = 20
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # With single ESA, consecutive runs should be marked WITHOUT ESA neighbor check
+        # (ESA neighbor check is auto-skipped when n_esa_steps < 3)
+        assert cull_mask.sel(esa_sweep=2, esa_energy_step=-1).values
+        assert cull_mask.sel(esa_sweep=3, esa_energy_step=-1).values
+        assert cull_mask.sel(esa_sweep=4, esa_energy_step=-1).values
+        assert cull_mask.sel(esa_sweep=5, esa_energy_step=-1).values
+        # Other sweeps should not be marked
+        assert not cull_mask.sel(esa_sweep=0, esa_energy_step=-1).values
+        assert not cull_mask.sel(esa_sweep=1, esa_energy_step=-1).values
+
+    def test_two_esa_steps_skips_neighbor_check(self):
+        """Test that 2 ESA steps also skips ESA neighbor check."""
+        # Create data with only 2 ESA energy steps
+        n_sweeps = 10
+        counts = xr.DataArray(
+            np.zeros((n_sweeps, 2)),
+            dims=["esa_sweep", "esa_energy_step"],
+            coords={
+                "esa_sweep": np.arange(n_sweeps),
+                "esa_energy_step": [1, 2],
+            },
+        )
+        median = xr.DataArray(
+            [10.0, 10.0],
+            dims=["esa_energy_step"],
+            coords={"esa_energy_step": [1, 2]},
+        )
+        sigma = xr.DataArray(
+            [3, 3],
+            dims=["esa_energy_step"],
+            coords={"esa_energy_step": [1, 2]},
+        )
+
+        # Create 4 consecutive high counts at ESA 1 only (no neighbor)
+        counts.loc[2:5, 1] = 20
+
+        cull_mask = _identify_cull_pattern(counts, median, sigma)
+
+        # With 2 ESA steps, consecutive runs should be marked WITHOUT ESA neighbor check
+        assert cull_mask.sel(esa_sweep=2, esa_energy_step=1).values
+        assert cull_mask.sel(esa_sweep=3, esa_energy_step=1).values
+        assert cull_mask.sel(esa_sweep=4, esa_energy_step=1).values
+        assert cull_mask.sel(esa_sweep=5, esa_energy_step=1).values
+
 
 class TestComputeQualifiedCountsPerSweep:
     """Test suite for _compute_qualified_counts_per_sweep() helper function."""
@@ -2883,6 +2956,145 @@ class TestBuildPerSweepDatasets:
         # Should have per-sweep datasets for both indices
         assert 0 in per_sweep_datasets
         assert 1 in per_sweep_datasets
+
+
+class TestSumEsaCounts:
+    """Test suite for _sum_esa_counts() helper function."""
+
+    def _create_per_sweep_dataset(
+        self, n_sweeps: int = 2, esa_steps: list[int] | None = None
+    ) -> xr.Dataset:
+        """Create a per-sweep dataset with specified ESA steps."""
+        if esa_steps is None:
+            esa_steps = list(range(1, 10))  # ESA steps 1-9
+
+        # Create counts: sweep index + ESA step (so we can verify the sum)
+        counts = np.zeros((n_sweeps, len(esa_steps)))
+        for i, esa in enumerate(esa_steps):
+            counts[:, i] = esa * 10  # ESA 7 = 70, ESA 8 = 80, ESA 9 = 90
+
+        # Create MET values for each position
+        mets = np.arange(1000.0, 1000.0 + n_sweeps * len(esa_steps) * 60, 60).reshape(
+            n_sweeps, len(esa_steps)
+        )
+
+        return xr.Dataset(
+            {
+                "qualified_count": xr.DataArray(
+                    counts,
+                    dims=["esa_sweep", "esa_energy_step"],
+                    coords={
+                        "esa_sweep": np.arange(n_sweeps),
+                        "esa_energy_step": esa_steps,
+                    },
+                ),
+                "ccsds_met": xr.DataArray(
+                    mets,
+                    dims=["esa_sweep", "esa_energy_step"],
+                    coords={
+                        "esa_sweep": np.arange(n_sweeps),
+                        "esa_energy_step": esa_steps,
+                    },
+                ),
+            }
+        )
+
+    def test_sums_specified_esa_steps(self):
+        """Test that counts are summed across specified ESA steps."""
+        ds = self._create_per_sweep_dataset()
+        per_sweep_datasets = {0: ds}
+
+        # Sum ESA steps 7, 8, 9
+        summed = _sum_esa_counts(per_sweep_datasets, [7, 8, 9])
+
+        assert 0 in summed
+        # ESA 7=70, ESA 8=80, ESA 9=90 -> sum = 240
+        expected_sum = 70 + 80 + 90
+        np.testing.assert_array_equal(
+            summed[0]["qualified_count"].values.flatten(),
+            [expected_sum, expected_sum],  # 2 sweeps
+        )
+
+    def test_creates_pseudo_esa_dimension(self):
+        """Test that summed dataset has pseudo-ESA dimension with value -1."""
+        ds = self._create_per_sweep_dataset()
+        per_sweep_datasets = {0: ds}
+
+        summed = _sum_esa_counts(per_sweep_datasets, [7, 8, 9])
+
+        # Should have esa_energy_step dimension with single value -1
+        assert "esa_energy_step" in summed[0].dims
+        assert summed[0].coords["esa_energy_step"].values.tolist() == [-1]
+
+    def test_ccsds_met_has_pseudo_esa_dimension(self):
+        """Test that ccsds_met has pseudo-ESA dimension for structural consistency."""
+        ds = self._create_per_sweep_dataset()
+        per_sweep_datasets = {0: ds}
+
+        summed = _sum_esa_counts(per_sweep_datasets, [7, 8, 9])
+
+        # ccsds_met should have same dimensions as qualified_count
+        assert "ccsds_met" in summed[0].data_vars
+        assert summed[0]["ccsds_met"].dims == summed[0]["qualified_count"].dims
+        assert "esa_energy_step" in summed[0]["ccsds_met"].dims
+        assert summed[0]["ccsds_met"].coords["esa_energy_step"].values.tolist() == [-1]
+
+    def test_preserves_sweep_dimension(self):
+        """Test that sweep dimension is preserved."""
+        ds = self._create_per_sweep_dataset(n_sweeps=5)
+        per_sweep_datasets = {0: ds}
+
+        summed = _sum_esa_counts(per_sweep_datasets, [7, 8, 9])
+
+        assert "esa_sweep" in summed[0].dims
+        assert len(summed[0].coords["esa_sweep"]) == 5
+
+    def test_handles_missing_esa_steps(self):
+        """Test that missing ESA steps are handled gracefully."""
+        # Create dataset with only ESA steps 1-5 (no 7, 8, 9)
+        ds = self._create_per_sweep_dataset(esa_steps=[1, 2, 3, 4, 5])
+        per_sweep_datasets = {0: ds}
+
+        summed = _sum_esa_counts(per_sweep_datasets, [7, 8, 9])
+
+        # Should have zero counts since none of the requested ESAs exist
+        assert np.all(summed[0]["qualified_count"].values == 0)
+
+    def test_handles_partial_esa_steps(self):
+        """Test with only some of the requested ESA steps present."""
+        # Create dataset with ESA steps 1-8 (missing 9)
+        ds = self._create_per_sweep_dataset(esa_steps=list(range(1, 9)))
+        per_sweep_datasets = {0: ds}
+
+        summed = _sum_esa_counts(per_sweep_datasets, [7, 8, 9])
+
+        # Should sum only ESA 7 and 8 (70 + 80 = 150)
+        expected_sum = 70 + 80
+        np.testing.assert_array_equal(
+            summed[0]["qualified_count"].values.flatten(),
+            [expected_sum, expected_sum],
+        )
+
+    def test_multiple_datasets(self):
+        """Test with multiple pointing datasets."""
+        ds1 = self._create_per_sweep_dataset()
+        ds2 = self._create_per_sweep_dataset()
+        per_sweep_datasets = {0: ds1, 1: ds2}
+
+        summed = _sum_esa_counts(per_sweep_datasets, [7, 8, 9])
+
+        assert 0 in summed
+        assert 1 in summed
+        # Both should have same sum
+        expected_sum = 70 + 80 + 90
+        np.testing.assert_array_equal(
+            summed[0]["qualified_count"].values.flatten(),
+            [expected_sum, expected_sum],
+        )
+        np.testing.assert_array_equal(
+            summed[1]["qualified_count"].values.flatten(),
+            [expected_sum, expected_sum],
+        )
 
 
 class TestComputeMedianAndSigmaPerEsa:
@@ -3163,6 +3375,203 @@ class TestStatisticalFilter1:
                 goodtimes_for_filter1,
                 l1b_de_datasets,
                 current_index=10,
+            )
+
+    def test_prefilter_marks_all_specified_esas(self, goodtimes_for_filter1):
+        """Test that pre-filter marks bad times for all ESAs 7, 8, 9."""
+        # Create datasets with extreme counts in ESA 7, 8, 9 for pre-filter detection
+        l1b_de_datasets = []
+        for i in range(5):
+            base_met = i * 1500.0
+            if i == 2:
+                # Current pointing starts at MET 1000 to match goodtimes
+                base_met = 1000.0
+            ds = self._create_l1b_de_dataset(events_per_packet=10, base_met=base_met)
+            l1b_de_datasets.append(ds)
+
+        # Make current pointing have extreme total counts for ESAs 7, 8, 9 combined
+        # This should trigger the pre-filter
+        current_ds = l1b_de_datasets[2]
+        extra_events = 200  # Add many events to trigger 5-sigma for summed ESAs
+
+        # Add extra events to packets with ESA steps 7, 8, 9
+        # ESA step pattern: [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9]
+        # Packets 12-17 are ESA steps 7, 8, 9
+        new_coincidence = np.concatenate(
+            [
+                current_ds["coincidence_type"].values,
+                np.full(extra_events, 12, dtype=np.uint8),
+            ]
+        )
+        # Distribute events across packets 12, 14, 16 (ESA 7, 8, 9)
+        extra_indices = np.array([12, 14, 16] * (extra_events // 3 + 1))[:extra_events]
+        new_ccsds_index = np.concatenate(
+            [
+                current_ds["ccsds_index"].values,
+                extra_indices.astype(np.uint16),
+            ]
+        )
+
+        l1b_de_datasets[2] = xr.Dataset(
+            data_vars={
+                "coincidence_type": (["event_met"], new_coincidence),
+                "ccsds_index": (["event_met"], new_ccsds_index),
+                "ccsds_met": current_ds["ccsds_met"],
+                "esa_step": current_ds["esa_step"],
+                "esa_energy_step": current_ds["esa_energy_step"],
+            },
+            coords={
+                "event_met": np.arange(len(new_coincidence)),
+                "epoch": current_ds["epoch"],
+            },
+        )
+
+        # Add qualified masks directly to datasets
+        for ds in l1b_de_datasets:
+            ds["qualified_mask"] = xr.DataArray(
+                np.isin(ds["coincidence_type"].values, [12]),
+                dims=["event_met"],
+            )
+
+        mark_statistical_filter_1(
+            goodtimes_for_filter1,
+            l1b_de_datasets,
+            current_index=2,
+            prefilter_esa_steps=[7, 8, 9],
+        )
+
+        # Check that ESA steps 7, 8, 9 are marked as bad
+        # goodtimes_for_filter1 has esa_step values:
+        # [1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9]
+        esa_steps = goodtimes_for_filter1["esa_step"].values
+        cull_flags = goodtimes_for_filter1["cull_flags"].values
+
+        # Find indices where esa_step is 7, 8, or 9
+        prefilter_indices = np.where(np.isin(esa_steps, [7, 8, 9]))[0]
+
+        # At least some of the pre-filter ESAs should be marked
+        marked_prefilter = np.any(
+            cull_flags[prefilter_indices] != CullCode.GOOD, axis=1
+        )
+        assert np.any(marked_prefilter), "Pre-filter should mark some ESAs 7, 8, 9"
+
+    def test_prefilter_disabled_with_empty_list(self, goodtimes_for_filter1):
+        """Test that pre-filter is disabled when prefilter_esa_steps is empty."""
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=0.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=500.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=1000.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=2500.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=3500.0),
+        ]
+
+        # Add qualified masks directly to datasets
+        for ds in l1b_de_datasets:
+            ds["qualified_mask"] = xr.DataArray(
+                np.isin(ds["coincidence_type"].values, [12]),
+                dims=["event_met"],
+            )
+
+        # Should run without error with empty prefilter list
+        mark_statistical_filter_1(
+            goodtimes_for_filter1,
+            l1b_de_datasets,
+            current_index=2,
+            prefilter_esa_steps=[],
+        )
+
+        # All times should still be good (normal data, no pre-filter)
+        assert np.all(goodtimes_for_filter1["cull_flags"].values == CullCode.GOOD)
+
+    def test_prefilter_mask_broadcast_and_combination(self, goodtimes_for_filter1):
+        """Test that prefilter mask is correctly broadcast and combined.
+
+        This test mocks _identify_cull_pattern to return specific masks:
+        - Pre-filter (summed): marks sweep 0 as bad
+        - Per-ESA: marks sweep 1, ESA 5 as bad
+
+        Expected result:
+        - Sweep 0, ESAs 7,8,9 should be marked (from pre-filter broadcast)
+        - Sweep 1, ESA 5 should be marked (from per-ESA filter)
+        - Other positions should NOT be marked
+        """
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=0.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=500.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=1000.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=2500.0),
+            self._create_l1b_de_dataset(events_per_packet=10, base_met=3500.0),
+        ]
+
+        for ds in l1b_de_datasets:
+            ds["qualified_mask"] = xr.DataArray(
+                np.isin(ds["coincidence_type"].values, [12]),
+                dims=["event_met"],
+            )
+
+        # Track call count to return different masks for pre-filter vs per-ESA
+        call_count = [0]
+
+        def mock_identify_cull_pattern(current_counts, median, sigma, **kwargs):
+            """Return specific masks based on call order."""
+            call_count[0] += 1
+            esa_coords = current_counts.coords["esa_energy_step"].values
+            sweep_coords = current_counts.coords["esa_sweep"].values
+
+            # Create mask matching input dimensions exactly
+            mask = xr.zeros_like(current_counts, dtype=bool)
+
+            if call_count[0] == 1:
+                # First call: pre-filter (summed ESAs) - mark sweep 0
+                # Summed data has single pseudo-ESA (-1)
+                mask.loc[{"esa_sweep": 0}] = True
+            # Second call: per-ESA filter - mark sweep 1, ESA 5
+            elif 5 in esa_coords and 1 in sweep_coords:
+                mask.loc[{"esa_sweep": 1, "esa_energy_step": 5}] = True
+
+            return mask
+
+        with patch(
+            "imap_processing.hi.hi_goodtimes._identify_cull_pattern",
+            side_effect=mock_identify_cull_pattern,
+        ):
+            mark_statistical_filter_1(
+                goodtimes_for_filter1,
+                l1b_de_datasets,
+                current_index=2,
+                prefilter_esa_steps=[7, 8, 9],
+            )
+
+        # Verify the masks were combined correctly
+        esa_steps = goodtimes_for_filter1["esa_step"].values
+        cull_flags = goodtimes_for_filter1["cull_flags"].values
+
+        # goodtimes has 18 METs with ESA steps [1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9]
+        # Sweep 0 = first 9 METs (indices 0-8), Sweep 1 = next 9 METs (indices 9-17)
+
+        # Check sweep 0, ESAs 7,8,9 are marked (from pre-filter broadcast)
+        # ESA 7 is at index 6, ESA 8 at index 7, ESA 9 at index 8 (in sweep 0)
+        for idx in [6, 7, 8]:  # ESAs 7, 8, 9 in sweep 0
+            assert np.any(cull_flags[idx] != CullCode.GOOD), (
+                f"Sweep 0, ESA {esa_steps[idx]} should be marked by pre-filter"
+            )
+
+        # Check sweep 0, ESAs 1-6 are NOT marked (pre-filter only applies to 7,8,9)
+        for idx in [0, 1, 2, 3, 4, 5]:  # ESAs 1-6 in sweep 0
+            assert np.all(cull_flags[idx] == CullCode.GOOD), (
+                f"Sweep 0, ESA {esa_steps[idx]} should NOT be marked"
+            )
+
+        # Check sweep 1, ESA 5 is marked (from per-ESA filter)
+        # Sweep 1 starts at index 9, ESA 5 is at index 9+4=13
+        assert np.any(cull_flags[13] != CullCode.GOOD), (
+            "Sweep 1, ESA 5 should be marked by per-ESA filter"
+        )
+
+        # Check sweep 1, ESAs 7,8,9 are NOT marked (pre-filter only marked sweep 0)
+        for idx in [15, 16, 17]:  # ESAs 7, 8, 9 in sweep 1
+            assert np.all(cull_flags[idx] == CullCode.GOOD), (
+                f"Sweep 1, ESA {esa_steps[idx]} should NOT be marked"
             )
 
 
@@ -3980,7 +4389,7 @@ class TestHiGoodtimes:
             "cull_code_counts": {},
         }
         mock_goodtimes.goodtimes.finalize_dataset.return_value = MagicMock()
-        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_datasets = [MagicMock() for _ in range(9)]
         mock_hk = MagicMock()
 
         with (
@@ -4053,7 +4462,7 @@ class TestHiGoodtimes:
             mock_goodtimes.__getitem__.assert_called_with("cull_flags")
 
     def test_calls_apply_filters_when_full_de_set(self, tmp_path):
-        """Test that _apply_goodtimes_filters is called with 7 DE datasets."""
+        """Test that _apply_goodtimes_filters is called with 9 DE datasets."""
         mock_repoint_df = pd.DataFrame({"repoint_id": list(range(1, 10))})
         mock_goodtimes = MagicMock()
         mock_goodtimes.attrs = {"sensor": "45sensor"}
@@ -4066,7 +4475,7 @@ class TestHiGoodtimes:
             "cull_code_counts": {},
         }
         mock_goodtimes.goodtimes.finalize_dataset.return_value = MagicMock()
-        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_datasets = [MagicMock() for _ in range(9)]
         mock_hk = MagicMock()
 
         with (
@@ -4111,7 +4520,7 @@ class TestHiGoodtimes:
         }
         mock_finalized = MagicMock()
         mock_goodtimes.goodtimes.finalize_dataset.return_value = mock_finalized
-        mock_datasets = [MagicMock() for _ in range(7)]
+        mock_datasets = [MagicMock() for _ in range(9)]
         mock_hk = MagicMock()
 
         with (

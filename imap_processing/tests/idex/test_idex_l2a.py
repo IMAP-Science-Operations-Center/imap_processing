@@ -2,14 +2,13 @@
 
 from unittest import mock
 
-import cdflib
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 from scipy.stats import exponnorm
 
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import (
@@ -53,7 +52,7 @@ def l2a_dataset(
         "imap_processing.idex.idex_l1b.get_spice_data",
         return_value={"spin_phase": spin_phase_angles},
     ):
-        dataset = idex_l2a(idex_l1b(decom_test_data_sci, "sci-1week"), ancillary_files)
+        dataset = idex_l2a(idex_l1b(decom_test_data_sci, "sci-10days"), ancillary_files)
     return dataset
 
 
@@ -87,17 +86,17 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     l2a_dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    expected_src = "imap_idex_l2a_sci-1week"
+    expected_src = "imap_idex_l2a_sci-10days"
     assert l2a_dataset.attrs["Logical_source"] == expected_src
     # Verify the CDF file can be created with no errors.
     l2a_dataset.attrs["Data_version"] = "999"
     file_name = write_cdf(l2a_dataset)
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"
-    cdf_file = cdflib.CDF(file_name)
-    spin_phase_info = cdf_file.varinq("spin_phase")
-    spin_phase_attrs = cdf_file.varattsget("spin_phase")
-    assert spin_phase_info.Data_Type_Description == "CDF_DOUBLE"
+    assert file_name.name == "imap_idex_l2a_sci-10days_20231218_v999.cdf"
+    ds = load_cdf(file_name)
+    spin_phase = ds["spin_phase"].values
+    spin_phase_attrs = ds["spin_phase"].attrs
+    assert spin_phase.dtype == np.float64
     assert np.isclose(spin_phase_attrs["FILLVAL"], np.float64(-1.0e31))
 
     expected_vars = [

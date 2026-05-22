@@ -107,10 +107,21 @@ pivot_angle:
   <<: *default
   CATDESC: Pivot angle for pointing
   FIELDNAM: Pivot angle
-  FORMAT: I12
+  FORMAT: F8.3
   LABLAXIS: pivot angle
-  UNITS: degrees
-  VALIDMAX: 360
+  UNITS: deg
+  VALIDMAX: 180.0
+  VALIDMIN: 0.0
+
+pivot_angle_de:
+  <<: *default
+  CATDESC: Pivot angle derived from direct event data
+  FIELDNAM: Pivot Angle (DE)
+  FORMAT: F8.3
+  LABLAXIS: Pivot Angle DE
+  UNITS: deg
+  VALIDMAX: 180.0
+  VALIDMIN: 0.0
 
 esa_mode:
   <<: *default

@@ -1,7 +1,9 @@
 """Tests the L1 processing for decommutated IDEX data"""
 
+from copy import deepcopy
 from pathlib import Path
 from unittest import mock
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -12,12 +14,34 @@ from cdflib.xarray.xarray_to_cdf import ISTPError
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.decode import _decode_sub_frame, read_bits, rice_decode
-from imap_processing.idex.idex_l1a import PacketParser
+from imap_processing.idex.idex_l1a import (
+    PacketParser,
+    idex_l1a,
+)
+from imap_processing.idex.idex_utils import get_10_day_window_end_date
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.tests.idex.conftest import TEST_L0_FILE_SCI
 from imap_processing.utils import packet_generator
 
 TEST_DATA_DIR = f"{imap_module_directory}/tests/idex/test_data"
+
+
+def _science_dataset(parser: PacketParser) -> xr.Dataset:
+    """Return the parsed L1A science dataset regardless of container layout."""
+    data = parser.data
+    if isinstance(data, xr.Dataset):
+        return data
+    if isinstance(data, dict):
+        if "l1a_sci-10days" in data:
+            return data["l1a_sci-10days"]
+        for dataset in data.values():
+            if isinstance(dataset, xr.Dataset) and "TOF_High" in dataset:
+                return dataset
+    if isinstance(data, (list, tuple)):
+        for dataset in data:
+            if isinstance(dataset, xr.Dataset) and "TOF_High" in dataset:
+                return dataset
+    raise AssertionError("Unable to locate science dataset in PacketParser output")
 
 
 def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
@@ -31,7 +55,7 @@ def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
     file_name = write_cdf(decom_test_data_sci)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1a_sci-1week_20231218_v999.cdf"
+    assert file_name.name == "imap_idex_l1a_sci-10days_20231218_v999.cdf"
 
 
 def test_bad_cdf_attributes(decom_test_data_sci: xr.Dataset):
@@ -89,6 +113,41 @@ def test_bad_cdf_file_data(decom_test_data_sci: xr.Dataset):
     del decom_test_data_sci["Bad_data"]
 
 
+def test_idex_l1a_decom():
+    """Verify idex_l1a function returns the correct datasets."""
+    with mock.patch(
+        "imap_processing.idex.idex_l1a.get_10_day_window_end_date"
+    ) as mock_get_window_end_date:
+        mock_get_window_end_date.return_value = "20231228"
+        datasets = idex_l1a([TEST_L0_FILE_SCI, TEST_L0_FILE_SCI], "20231218")
+
+    assert len(datasets) == 2
+    # We should have 14 science events
+    # The duplicates will be dropped.
+    assert len(datasets[0].epoch) == 14
+
+
+def test_idex_l1a_decom_no_data(caplog):
+    """Verify idex_l1a function returns None if there is no data for the window."""
+    datasets = idex_l1a([TEST_L0_FILE_SCI], "20260101")
+    # If there is no data in the window we expect an empty list
+    assert datasets == []
+    # We also expect a warning to be logged that no data was found for the window
+    message = (
+        "No data found for dates 820497669184000000 - 821275269184000000 for"
+        " l1a_msg-10days"
+    )
+    assert message in caplog.text
+
+
+def test_idex_l1a_invalid_window_start():
+    """Verify that the idex_l1a function raises an error with an invalid start date."""
+    with pytest.raises(
+        ValueError, match="Start date 20231218 is not an IDEX defined start date"
+    ):
+        idex_l1a([TEST_L0_FILE_SCI], "20231218")
+
+
 def test_incomplete_event(caplog):
     """Verify that a CDF is still produced if a packet is dropped.
 
@@ -107,10 +166,130 @@ def test_incomplete_event(caplog):
         "imap_processing.idex.idex_l1a.decom_packets",
         return_value=(packets, xr.Dataset(), xr.Dataset()),
     ):
-        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data[0]
+        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data["l1a_sci-10days"]
     # Assert that all the events are present except for one.
     assert len(l1a_dataset["epoch"]) == 13
     assert "Missing packet for event number 1" in caplog.text
+
+
+def test_duplicate_science_fragment_is_dropped(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify exact duplicate science fragments are ignored."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    duplicate_packet = deepcopy(packets[1])
+    packets = [*packets[:2], duplicate_packet, *packets[2:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
+
+    xr.testing.assert_equal(deduped, decom_test_data_sci)
+    assert "Skipping duplicate copy" in caplog.text
+
+
+def test_duplicate_header_packet_is_dropped(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify exact duplicate header packets are ignored."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    duplicate_header = deepcopy(packets[0])
+    packets = [packets[0], duplicate_header, *packets[1:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
+
+    xr.testing.assert_equal(deduped, decom_test_data_sci)
+    assert "Duplicate header packet for event" in caplog.text
+
+
+def test_shorter_duplicate_science_fragment_is_replaced(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify a longer retransmitted fragment replaces a shorter copy."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    shorter_packet = deepcopy(packets[1])
+    shorter_packet["IDX__SCI0RAW"] = bytes(shorter_packet["IDX__SCI0RAW"])[:-10]
+    packets = [*packets[:1], shorter_packet, *packets[1:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
+
+    xr.testing.assert_equal(deduped, decom_test_data_sci)
+    assert "Replacing shorter science fragment" in caplog.text
+
+
+def test_shorter_duplicate_science_fragment_is_ignored(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify a shorter retransmitted fragment is ignored."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    shorter_packet = deepcopy(packets[1])
+    shorter_packet["IDX__SCI0RAW"] = bytes(shorter_packet["IDX__SCI0RAW"])[:-10]
+    packets = [*packets[:2], shorter_packet, *packets[2:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
+
+    xr.testing.assert_equal(deduped, decom_test_data_sci)
+    assert "Ignoring shorter duplicate science fragment" in caplog.text
+
+
+def test_conflicting_duplicate_science_fragment_skips_event(
+    decom_test_data_sci: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
+    """Verify conflicting duplicate fragments cause the event to be skipped."""
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    packets = list(packet_generator(TEST_L0_FILE_SCI, xml))
+    conflicting_packet = deepcopy(packets[1])
+    raw = bytearray(bytes(conflicting_packet["IDX__SCI0RAW"]))
+    raw[-1] ^= 0x01
+    conflicting_packet["IDX__SCI0RAW"] = bytes(raw)
+    packets = [*packets[:2], conflicting_packet, *packets[2:]]
+
+    with caplog.at_level("WARNING"):
+        with mock.patch(
+            "imap_processing.idex.idex_l1a.decom_packets",
+            return_value=(packets, xr.Dataset(), xr.Dataset()),
+        ):
+            deduped = _science_dataset(PacketParser(TEST_L0_FILE_SCI))
+
+    assert len(deduped["epoch"]) == len(decom_test_data_sci["epoch"]) - 1
+    assert "Conflicting duplicate packet for event number" in caplog.text
 
 
 def test_idex_tof_high_data_from_cdf(decom_test_data_sci: xr.Dataset):
@@ -198,8 +377,8 @@ def test_compressed_packet():
     compressed = Path(f"{TEST_DATA_DIR}/compressed_2023_102_14_24_55.pkts")
     non_compressed = Path(f"{TEST_DATA_DIR}/non_compressed_2023_102_14_22_26.pkts")
 
-    decompressed = PacketParser(compressed).data[0]
-    expected = PacketParser(non_compressed).data[0]
+    decompressed = PacketParser(compressed).data["l1a_sci-10days"]
+    expected = PacketParser(non_compressed).data["l1a_sci-10days"]
 
     waveforms = [
         "TOF_High",
@@ -348,10 +527,10 @@ def test_catlst_dataset(decom_test_data_catlst: list[xr.Dataset]):
         np.testing.assert_array_equal(ds.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
     filename_l1a = write_cdf(decom_test_data_catlst[0])
-    assert filename_l1a.name == "imap_idex_l1a_catlst_20241206_v999.cdf"
+    assert filename_l1a.name == "imap_idex_l1a_catlst-10days_20241206_v999.cdf"
 
     filename_l1b = write_cdf(decom_test_data_catlst[1])
-    assert filename_l1b.name == "imap_idex_l1b_catlst_20241206_v999.cdf"
+    assert filename_l1b.name == "imap_idex_l1b_catlst-10days_20241206_v999.cdf"
 
 
 def test_msg_dataset(decom_test_data_msg: xr.Dataset):
@@ -372,7 +551,7 @@ def test_msg_dataset(decom_test_data_msg: xr.Dataset):
     np.testing.assert_array_equal(decom_test_data_msg.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
     filename_l1a = write_cdf(decom_test_data_msg)
-    assert filename_l1a.name == "imap_idex_l1a_msg_20100101_v999.cdf"
+    assert filename_l1a.name == "imap_idex_l1a_msg-10days_20100101_v999.cdf"
 
     # Validate the messages with the IDEX team example data
     example_data = pd.read_csv(
@@ -381,3 +560,31 @@ def test_msg_dataset(decom_test_data_msg: xr.Dataset):
 
     messages = example_data.iloc[:, 1].tolist()
     np.testing.assert_array_equal(decom_test_data_msg["messages"].data, messages)
+
+
+def test_get_window_end_date():
+    """Verify that the end date is returned for a 10-day window."""
+    assert get_10_day_window_end_date("20260101") == "20260110"
+    assert get_10_day_window_end_date("20261226") == "20270101"
+
+    with pytest.raises(
+        ValueError,
+        match="Start date 20260102 is not an IDEX defined "
+        "start date for a 10-day window.",
+    ):
+        # This invalid start date should raise an error.
+        get_10_day_window_end_date("20260102")
+
+
+def test_get_window_invalid_lookup():
+    """Verify that an invalid lookup table raises an error."""
+    with patch(
+        "imap_processing.idex.idex_utils.IDEX_10_DAY_RANGES_PATH",
+        "imap_processing/tests/idex/test_data/test_idex_10_day_window.csv",
+    ):
+        message = (
+            "There should only be one row where start_date is equal to 20250101. "
+            "Please check lookup table"
+        )
+        with pytest.raises(ValueError, match=message):
+            get_10_day_window_end_date("20250101")

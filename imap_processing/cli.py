@@ -60,7 +60,7 @@ from imap_processing.hi import hi_goodtimes, hi_l1a, hi_l1b, hi_l1c, hi_l2
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.hit.l2.hit_l2 import hit_l2
-from imap_processing.idex.idex_l1a import PacketParser
+from imap_processing.idex.idex_l1a import idex_l1a
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
@@ -423,12 +423,12 @@ class ProcessInstrument(ABC):
                     logger.info(f"Uploading file: {filename}")
                     imap_data_access.upload(filename)
                 except IMAPDataAccessError as e:
-                    msg = str(e)
-                    if "FileAlreadyExists" in msg and "409" in msg:
+                    message = str(e)
+                    if "FileAlreadyExists" in message and "409" in message:
                         logger.warning("Skipping upload of existing file, %s", filename)
                         continue
                     else:
-                        logger.error(f"Upload failed with error: {msg}")
+                        logger.error(f"Upload failed with error: {message}")
                 except Exception as e:
                     logger.error(f"Upload failed unknown error: {e}")
 
@@ -1078,11 +1078,11 @@ class Idex(ProcessInstrument):
                     f"Unexpected dependencies found for IDEX L1A:"
                     f"{dependency_list}. Expected only two dependency."
                 )
-            # get l0 file
+            # get l0 files
             science_files = dependencies.get_file_paths(source="idex")
-            datasets = PacketParser(science_files[0]).data
+            datasets = idex_l1a(science_files, self.start_date)
         elif self.data_level == "l1b":
-            n_expected_deps = 3 if self.descriptor == "sci-1week" else 1
+            n_expected_deps = 3 if self.descriptor == "sci-10days" else 1
             if len(dependency_list) != n_expected_deps:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L1B {self.descriptor}:"
@@ -1126,12 +1126,14 @@ class Idex(ProcessInstrument):
                     f"{dependency_list}. Expected three or four dependencies."
                 )
             sci_files = dependencies.get_file_paths(
-                source="idex", descriptor="sci-1week"
+                source="idex", descriptor="sci-10days"
             )
             sci_dependencies = [load_cdf(f) for f in sci_files]
             # sort science files by the first epoch value
             sci_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
-            hk_files = dependencies.get_file_paths(source="idex", descriptor="msg")
+            hk_files = dependencies.get_file_paths(
+                source="idex", descriptor="msg-10days"
+            )
             # Remove duplicate housekeeping files
             hk_dependencies = [load_cdf(dep) for dep in list(set(hk_files))]
             # sort housekeeping files by the first epoch value
