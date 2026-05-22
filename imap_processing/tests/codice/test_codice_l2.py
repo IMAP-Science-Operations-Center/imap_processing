@@ -36,6 +36,9 @@ from imap_processing.tests.codice.conftest import (
 
 pytestmark = pytest.mark.external_test_data
 
+# epoch_delta = num_spins * spin_period / 2, with spin_period VALIDMAX = 16 s
+# and num_spins max = 16 in the current CoDICE timing model. That yields a
+# worst-case delta of 128 s = 128000000000 ns.
 EXPECTED_EPOCH_DELTA_VALIDMAX = 128000000000
 
 
