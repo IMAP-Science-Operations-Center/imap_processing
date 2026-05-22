@@ -43,8 +43,9 @@ def test_dataset():
             "Logical_file_id": "imap_swe_l1a_sci_20100101_v001",
         },
     )
-    dataset["epoch"].attrs = swe_attrs.get_variable_attributes("epoch")
-    dataset["epoch"].attrs["DEPEND_0"] = "epoch"
+    dataset["epoch"].attrs = swe_attrs.get_variable_attributes(
+        "epoch", check_schema=False
+    )
 
     return dataset
 

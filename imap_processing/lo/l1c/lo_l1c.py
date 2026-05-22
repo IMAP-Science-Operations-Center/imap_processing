@@ -918,7 +918,7 @@ def create_datasets(
         data=epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("epoch"),
+        attrs=attr_mgr.get_variable_attributes("epoch", check_schema=False),
     )
 
     if logical_source == "imap_lo_l1c_pset":

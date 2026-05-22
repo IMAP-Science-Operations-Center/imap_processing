@@ -117,7 +117,7 @@ def de_dataset():
         np.arange(20),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
     within_the_second = xr.DataArray(

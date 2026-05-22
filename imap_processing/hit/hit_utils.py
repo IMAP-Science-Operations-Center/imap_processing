@@ -212,7 +212,7 @@ def process_housekeeping_data(
         dataset[field].attrs = attr_mgr.get_variable_attributes(field)
         dataset[field].assign_coords(dims)
 
-    dataset.epoch.attrs = attr_mgr.get_variable_attributes("epoch")
+    dataset.epoch.attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
 
     return dataset
 
