@@ -1600,9 +1600,10 @@ def test_combine_maps_handles_nan_uncertainties(mock_sky_map_for_combine):
 def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
     """Test that combine_maps handles NaN values in ena_intensity_sys_err correctly.
 
-    When one map has NaN values in ena_intensity_sys_err and the other has valid
-    data, the combined result should use only the valid data (via fillna(0))
-    rather than propagating NaN.
+    NaN values in sys_err should only occur where exposure_factor is zero
+    (no valid data at that pixel). When one map has NaN sys_err (with zero
+    exposure) and the other has valid data, the combined result should use
+    only the valid data from the map with non-zero exposure.
     """
     ram_map = mock_sky_map_for_combine()
     anti_map = mock_sky_map_for_combine()
@@ -1621,24 +1622,34 @@ def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
         anti_map.data_1d["exposure_factor"], 20.0
     )
 
-    # Set NaN in ram's sys_err at specific positions
+    # Set NaN in ram's sys_err at specific positions where exposure_factor is 0
+    # This mirrors the real failure mode: NaN sys_err occurs only at pixels
+    # with zero exposure
     ram_sys_err = ram_map.data_1d["ena_intensity_sys_err"].values.copy()
-    ram_sys_err[0, 0, 0, 0] = np.nan  # Set first position to NaN
-    ram_sys_err[0, 1, 2, 1] = np.nan  # Set another position to NaN
+    ram_sys_err[0, 0, 0, 0] = np.nan
+    ram_sys_err[0, 1, 2, 1] = np.nan
     ram_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
         ram_sys_err, dims=ram_map.data_1d["ena_intensity_sys_err"].dims
+    )
+
+    ram_exposure = ram_map.data_1d["exposure_factor"].values.copy()
+    ram_exposure[0, 0, 0, 0] = 0.0
+    ram_exposure[0, 1, 2, 1] = 0.0
+    ram_map.data_1d["exposure_factor"] = xr.DataArray(
+        ram_exposure, dims=ram_map.data_1d["exposure_factor"].dims
     )
 
     sky_maps = {"ram": ram_map, "anti": anti_map}
     result = combine_maps(sky_maps)
 
-    # At positions where ram had NaN sys_err, result should still be finite
-    # because ram's NaN is replaced with 0 via fillna(0)
+    # At positions where ram had NaN sys_err (and zero exposure), result should
+    # be finite and equal to anti-map's value since only anti contributes
     assert np.isfinite(result.data_1d["ena_intensity_sys_err"].values[0, 0, 0, 0])
     assert np.isfinite(result.data_1d["ena_intensity_sys_err"].values[0, 1, 2, 1])
 
-    # Expected value at NaN positions: (0 * 10 + 6 * 20) / (10 + 20) = 120 / 30 = 4.0
-    expected_sys_err_nan_pos = (0 * 10 + 6 * 20) / (10 + 20)
+    # Expected value at NaN positions: (0 * 0 + 6 * 20) / (0 + 20) = 6.0
+    # Only anti-map contributes since ram has zero exposure
+    expected_sys_err_nan_pos = 6.0
     np.testing.assert_almost_equal(
         result.data_1d["ena_intensity_sys_err"].values[0, 0, 0, 0],
         expected_sys_err_nan_pos,
