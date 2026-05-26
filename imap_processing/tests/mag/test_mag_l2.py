@@ -102,6 +102,7 @@ def test_mag_l2_attributes(
         assert "DICT_KEY" in vectors_attrs
 
         assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
+        assert vectors_attrs["UNITS"] == "nT"
 
         assert "magnitude" in dataset.data_vars
         assert "range" in dataset.data_vars
@@ -150,6 +151,7 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
         vector_attrs = cdf_file.varattsget(expected_frames[i].var_name)
         assert vector_info.Data_Type_Description == "CDF_FLOAT"
         assert np.isclose(vector_attrs["FILLVAL"], np.float32(-1.0e31))
+        assert vector_attrs["UNITS"] == "nT"
 
 
 def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):

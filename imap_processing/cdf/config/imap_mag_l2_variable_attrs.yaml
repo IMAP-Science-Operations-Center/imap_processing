@@ -52,6 +52,7 @@ vector_attrs: &vectors_default
     FILLVAL: -1.0e31
     FORMAT: F12.5
     LABL_PTR_1: direction_label
+    UNITS: nT
 
 # Frame-specific vector attributes
 vector_attrs_srf:
