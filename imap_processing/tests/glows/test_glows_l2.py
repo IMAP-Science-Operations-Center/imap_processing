@@ -258,6 +258,7 @@ def test_glows_l2_cdf_metadata(
 
         assert bad_time_info.Data_Type_Description == "CDF_UINT2"
         assert bad_time_attrs["FORMAT"] == "I5"
+        assert bad_time_attrs["VAR_TYPE"] == "data"
         for attr_name in (
             "TIME_BASE",
             "TIME_SCALE",
@@ -323,6 +324,7 @@ def test_glows_l2_cdf_fillvals(
 
         assert histogram_flag_info.Data_Type_Description == "CDF_UINT1"
         assert histogram_flag_attrs["FILLVAL"] == np.uint8(255)
+        assert histogram_flag_attrs["VAR_TYPE"] == "data"
         assert number_of_bins_info.Data_Type_Description == "CDF_UINT2"
         assert number_of_bins_attrs["FILLVAL"] == np.uint16(65535)
         assert photon_flux_info.Data_Type_Description == "CDF_DOUBLE"

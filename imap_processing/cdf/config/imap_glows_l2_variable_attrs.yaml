@@ -409,6 +409,7 @@ bad_time_flag_occurrences:
   LABL_PTR_1: flags_label # MS: I do not understand this
   VALIDMAX: 65535
   VALIDMIN: 0
+  VAR_TYPE: data
 
 spin_angle:
   <<: *lightcurve_defaults
@@ -491,7 +492,7 @@ histogram_flag_array:
   UNITS: ' '
   VALIDMAX: 15 # only 4 bits currently used
   VALIDMIN: 0
-  VAR_TYPE: support_data
+  VAR_TYPE: data
 
 ecliptic_lon:
   <<: *lightcurve_defaults
