@@ -26,6 +26,7 @@ epoch:
 
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
+  DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta minus
   FILLVAL: *min_int
@@ -39,6 +40,7 @@ epoch_delta_minus:
 
 epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
+  DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta plus
   FILLVAL: *min_int
