@@ -70,6 +70,7 @@ def test_l2b_logical_source_and_cdf(l2b_and_l2c_datasets: list[xr.Dataset]):
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2b_sci-1mo_20251017_v999.cdf"
     with cdflib.CDF(file_name) as cdf_file:
+        assert cdf_file.varattsget("impact_charge")["LABL_PTR_1"] == "charge_labels"
         for variable_name in ("counts_by_charge", "counts_by_mass"):
             var_info = cdf_file.varinq(variable_name)
             var_attrs = cdf_file.varattsget(variable_name)
@@ -115,6 +116,7 @@ def test_l2c_attrs_and_vars(
     assert rect_file_name.exists()
     assert rect_file_name.name == "imap_idex_l2c_rectangular-map-1mo_20251017_v999.cdf"
     with cdflib.CDF(rect_file_name) as cdf_file:
+        assert cdf_file.varattsget("impact_charge")["LABL_PTR_1"] == "charge_labels"
         for variable_name in ("counts_by_charge_map", "counts_by_mass_map"):
             var_info = cdf_file.varinq(variable_name)
             var_attrs = cdf_file.varattsget(variable_name)
