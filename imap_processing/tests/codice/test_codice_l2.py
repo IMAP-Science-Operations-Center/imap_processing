@@ -667,3 +667,25 @@ def test_codice_l2_direct_events_display_type_cdf_metadata(
             attrs = cdf_file.varattsget("energy_per_nuc")
             assert attrs["DEPEND_1"] == "priority"
             assert attrs["LABL_PTR_1"] == "priority_label"
+
+        type_attrs = cdf_file.varattsget("type")
+        assert type_attrs["FIELDNAM"] == "PHA Type Code"
+        assert type_attrs["VALIDMAX"] == 2
+        if descriptor == "hi-direct-events":
+            assert type_attrs["CATDESC"] == "PHA type code: 0=TCR, 1=DCR, 2=SSD-only"
+            assert (
+                type_attrs["VAR_NOTES"].strip()
+                == "PHA type code for CoDICE-Hi direct events. 0 = TCR "
+                "(Triple Coincidence Rate; ST+SP+APD), 1 = DCR "
+                "(Double Coincidence Rate; ST+SP), 2 = SSD-only energy event "
+                "(SSD only or ST+SSD only)."
+            )
+        else:
+            assert type_attrs["CATDESC"] == "PHA type code: 0=TCR, 1=DCR, 2=APD-only"
+            assert (
+                type_attrs["VAR_NOTES"].strip()
+                == "PHA type code for CoDICE-Lo direct events. 0 = TCR "
+                "(Triple Coincidence Rate; STA+STB+SP+APD), 1 = DCR "
+                "(Double Coincidence Rate; STA+STB+SP), 2 = APD-only energy "
+                "event (APD with only one or two of STA, STB, and SP)."
+            )

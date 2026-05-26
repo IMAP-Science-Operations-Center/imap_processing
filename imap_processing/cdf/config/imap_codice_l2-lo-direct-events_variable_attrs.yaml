@@ -223,21 +223,25 @@ multi_flag:
   VAR_TYPE: data
 
 type:
-  CATDESC: Event Type
+  CATDESC: "PHA type code: 0=TCR, 1=DCR, 2=APD-only"
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   DISPLAY_TYPE: no_plot
-  FIELDNAM: Type
+  FIELDNAM: PHA Type Code
   FILLVAL: *uint8_fillval
   FORMAT: I1
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
   UNITS: " "
-  VALIDMAX: 4
+  VALIDMAX: 2
   VALIDMIN: 0
+  VAR_NOTES: >
+    PHA type code for CoDICE-Lo direct events. 0 = TCR (Triple Coincidence
+    Rate; STA+STB+SP+APD), 1 = DCR (Double Coincidence Rate; STA+STB+SP), 2 =
+    APD-only energy event (APD with only one or two of STA, STB, and SP).
   VAR_TYPE: data
 
 tof:

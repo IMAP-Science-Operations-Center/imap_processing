@@ -171,21 +171,25 @@ multi_flag:
   VAR_TYPE: data
 
 type:
-  CATDESC: Event Type
+  CATDESC: "PHA type code: 0=TCR, 1=DCR, 2=SSD-only"
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   DISPLAY_TYPE: no_plot
-  FIELDNAM: Type
+  FIELDNAM: PHA Type Code
   FILLVAL: *uint8_fillval
   FORMAT: I1
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
   UNITS: " "
-  VALIDMAX: 4
+  VALIDMAX: 2
   VALIDMIN: 0
+  VAR_NOTES: >
+    PHA type code for CoDICE-Hi direct events. 0 = TCR (Triple Coincidence
+    Rate; ST+SP+APD), 1 = DCR (Double Coincidence Rate; ST+SP), 2 = SSD-only
+    energy event (SSD only or ST+SSD only).
   VAR_TYPE: data
 
 tof:
