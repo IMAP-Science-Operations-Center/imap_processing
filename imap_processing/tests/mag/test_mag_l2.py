@@ -596,3 +596,8 @@ def test_qf(norm_dataset):
     assert (
         output["quality_flags"].attrs["CATDESC"] == "Data quality flag (0=good, 1=bad)"
     )
+    assert output["quality_bitmask"].attrs["FIELDNAM"] == "Data Quality Bitmask"
+    assert (
+        "does not decode individual bit meanings"
+        in output["quality_bitmask"].attrs["VAR_NOTES"]
+    )

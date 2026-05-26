@@ -131,14 +131,18 @@ pri_sens:
 
 qf_bitmask:
   <<: *support_default
-  CATDESC: Eight-bit Data quality bitmask
+  CATDESC: Eight-bit data quality bitmask copied from the MAG offset input
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
-  FIELDNAM: Quality Flag
+  FIELDNAM: Data Quality Bitmask
   FILLVAL: 255
   FORMAT: I3
   LABLAXIS: QF
   VALIDMAX: 255
   VALIDMIN: 0
+  VAR_NOTES: >
+    Bitwise quality flag copied from the MAG offset input. The current MAG pipeline
+    preserves this 8-bit value in the output CDF but does not decode individual bit
+    meanings.
 
 qf:
   <<: *support_default
