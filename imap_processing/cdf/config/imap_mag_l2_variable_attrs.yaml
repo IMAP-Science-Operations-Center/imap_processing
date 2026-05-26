@@ -102,6 +102,7 @@ magnitude:
   UNITS: nT
   VALIDMAX: 1.0e+5
   VALIDMIN: 0
+  VAR_TYPE: data
 
 range:
   <<: *support_default

@@ -106,6 +106,7 @@ def test_mag_l2_attributes(
         assert "magnitude" in dataset.data_vars
         assert "range" in dataset.data_vars
         assert dataset["magnitude"].attrs["UNITS"] == "nT"
+        assert dataset["magnitude"].attrs["VAR_TYPE"] == "data"
         assert dataset["range"].attrs["DICT_KEY"] == (
             "SPASE>Support>SupportQuantity:InstrumentMode"
         )
