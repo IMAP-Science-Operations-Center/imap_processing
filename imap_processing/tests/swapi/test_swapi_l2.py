@@ -159,6 +159,17 @@ def test_swapi_l2_cdf(
         variable_attrs = cdf_file.varattsget(variable)
         assert np.isclose(variable_attrs["VALIDMAX"], SWAPI_RATE_VALIDMAX)
 
+    pcem_rate_attrs = cdf_file.varattsget("swp_pcem_rate")
+    pcem_uncert_plus_attrs = cdf_file.varattsget("swp_pcem_rate_stat_uncert_plus")
+    pcem_uncert_minus_attrs = cdf_file.varattsget("swp_pcem_rate_stat_uncert_minus")
+    assert pcem_rate_attrs["DELTA_PLUS_VAR"] == "swp_pcem_rate_stat_uncert_plus"
+    assert pcem_rate_attrs["DELTA_MINUS_VAR"] == "swp_pcem_rate_stat_uncert_minus"
+    assert pcem_uncert_plus_attrs["VAR_TYPE"] == "support_data"
+    assert pcem_uncert_minus_attrs["VAR_TYPE"] == "support_data"
+    assert pcem_uncert_plus_attrs["FIELDNAM"] != pcem_uncert_minus_attrs["FIELDNAM"]
+    assert pcem_uncert_plus_attrs["LABLAXIS"] != pcem_uncert_minus_attrs["LABLAXIS"]
+    assert pcem_uncert_plus_attrs["CATDESC"] != pcem_uncert_minus_attrs["CATDESC"]
+
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(
         l2_dataset["swp_pcem_rate_stat_uncert_plus"],

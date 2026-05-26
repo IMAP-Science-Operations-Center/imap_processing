@@ -83,10 +83,10 @@ rate_uncertainty_default: &rate_uncertainty_default
   FORMAT: E19.5
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
-  UNITS: counts
+  UNITS: counts/s
   VALIDMAX: 4.519655172413793E+05 # 65535 counts / 0.145 s livetime
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 rate_default: &rate_default
   DEPEND_0: epoch
@@ -197,39 +197,63 @@ coin_counts_uncertainty:
   FIELDNAM: Coincidence Counts Uncertainty
   LABLAXIS: coin_cnts_stat_unc
 
-pcem_rate_uncertainty:
+swp_pcem_rate_stat_uncert_plus:
   <<: *rate_uncertainty_default
-  CATDESC: Primary Channel Electron Multiplier (CEM) rate uncertainty
-  FIELDNAM: Primary CEM Rate Uncertainty
-  LABLAXIS: pcem_rate_stat_unc
+  CATDESC: Upper statistical uncertainty in primary Channel Electron Multiplier (CEM) rate
+  FIELDNAM: Primary CEM Rate Uncertainty Plus
+  LABLAXIS: pcem_rate_stat_unc_plus
 
-scem_rate_uncertainty:
+swp_pcem_rate_stat_uncert_minus:
   <<: *rate_uncertainty_default
-  CATDESC: Secondary Channel Electron Multiplier (CEM) rate uncertainty
-  FIELDNAM: Secondary CEM Rate Uncertainty
-  LABLAXIS: scem_rate_stat_unc
+  CATDESC: Lower statistical uncertainty in primary Channel Electron Multiplier (CEM) rate
+  FIELDNAM: Primary CEM Rate Uncertainty Minus
+  LABLAXIS: pcem_rate_stat_unc_minus
 
-coin_rate_uncertainty:
+swp_scem_rate_stat_uncert_plus:
   <<: *rate_uncertainty_default
-  CATDESC: Coincidence rate uncertainty
-  FIELDNAM: Coincidence Rate Uncertainty
-  LABLAXIS: coin_rate_stat_unc
+  CATDESC: Upper statistical uncertainty in secondary Channel Electron Multiplier (CEM) rate
+  FIELDNAM: Secondary CEM Rate Uncertainty Plus
+  LABLAXIS: scem_rate_stat_unc_plus
+
+swp_scem_rate_stat_uncert_minus:
+  <<: *rate_uncertainty_default
+  CATDESC: Lower statistical uncertainty in secondary Channel Electron Multiplier (CEM) rate
+  FIELDNAM: Secondary CEM Rate Uncertainty Minus
+  LABLAXIS: scem_rate_stat_unc_minus
+
+swp_coin_rate_stat_uncert_plus:
+  <<: *rate_uncertainty_default
+  CATDESC: Upper statistical uncertainty in coincidence rate
+  FIELDNAM: Coincidence Rate Uncertainty Plus
+  LABLAXIS: coin_rate_stat_unc_plus
+
+swp_coin_rate_stat_uncert_minus:
+  <<: *rate_uncertainty_default
+  CATDESC: Lower statistical uncertainty in coincidence rate
+  FIELDNAM: Coincidence Rate Uncertainty Minus
+  LABLAXIS: coin_rate_stat_unc_minus
 
 pcem_rate:
   <<: *rate_default
   CATDESC: Primary Channel Electron Multiplier (CEM) Rates
+  DELTA_MINUS_VAR: swp_pcem_rate_stat_uncert_minus
+  DELTA_PLUS_VAR: swp_pcem_rate_stat_uncert_plus
   FIELDNAM: Primary CEM Rates
   LABLAXIS: pcem_rate
 
 scem_rate:
   <<: *rate_default
   CATDESC: Secondary Channel Electron Multiplier (CEM) Rates
+  DELTA_MINUS_VAR: swp_scem_rate_stat_uncert_minus
+  DELTA_PLUS_VAR: swp_scem_rate_stat_uncert_plus
   FIELDNAM: Secondary CEM Rates
   LABLAXIS: scem_rate
 
 coin_rate:
   <<: *rate_default
   CATDESC: Coincidence Rates
+  DELTA_MINUS_VAR: swp_coin_rate_stat_uncert_minus
+  DELTA_PLUS_VAR: swp_coin_rate_stat_uncert_plus
   FIELDNAM: Coincidence Rates
   LABLAXIS: coin_rate
 
