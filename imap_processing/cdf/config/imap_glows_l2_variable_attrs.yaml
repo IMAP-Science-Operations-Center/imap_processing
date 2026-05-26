@@ -21,10 +21,6 @@ default_attrs: &default_attrs
   # TODO: Remove unneeded attributes once SAMMI is fixed
   DISPLAY_TYPE: no_plot
   FILLVAL: *int_fillval
-  REFERENCE_POSITION: Rotating Earth Geoid
-  RESOLUTION: ' '
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
   UNITS: ' '
   VALIDMIN: *min_epoch
 
@@ -33,7 +29,6 @@ support_data_defaults: &support_data_defaults
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FORMAT: I10
-  RESOLUTION: ISO8601
   VALIDMAX: 1
   VALIDMIN: 0
   VAR_TYPE: support_data
@@ -44,6 +39,10 @@ time_data_defaults: &time_data_defaults
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   FILLVAL: ' '
   FORMAT: A30
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ISO8601
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
   UNITS: N/A
   VALIDMAX: ' '
   VALIDMIN: ' '

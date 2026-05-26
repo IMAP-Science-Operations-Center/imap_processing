@@ -235,6 +235,9 @@ def test_glows_l2_cdf_metadata(
         flags_label_values = cdf_file.varget("flags_label")
         bad_time_info = cdf_file.varinq("bad_time_flag_occurrences")
         bad_time_attrs = cdf_file.varattsget("bad_time_flag_occurrences")
+        photon_flux_attrs = cdf_file.varattsget("photon_flux")
+        start_time_attrs = cdf_file.varattsget("start_time")
+        end_time_attrs = cdf_file.varattsget("end_time")
         global_attrs = cdf_file.globalattsget()
 
         assert bins_label_info.Data_Type_Description == "CDF_CHAR"
@@ -253,6 +256,20 @@ def test_glows_l2_cdf_metadata(
 
         assert bad_time_info.Data_Type_Description == "CDF_UINT2"
         assert bad_time_attrs["FORMAT"] == "I5"
+        for attr_name in (
+            "TIME_BASE",
+            "TIME_SCALE",
+            "REFERENCE_POSITION",
+            "RESOLUTION",
+        ):
+            assert attr_name not in photon_flux_attrs
+
+        for time_attrs in (start_time_attrs, end_time_attrs):
+            assert time_attrs["TIME_BASE"] == "J2000"
+            assert time_attrs["TIME_SCALE"] == "Terrestrial Time"
+            assert time_attrs["REFERENCE_POSITION"] == "Rotating Earth Geoid"
+            assert time_attrs["RESOLUTION"] == "ISO8601"
+
         assert global_attrs["flight_software_version"] == ["131329"]
 
 
