@@ -1595,3 +1595,61 @@ def test_combine_maps_handles_nan_uncertainties(mock_sky_map_for_combine):
 
     # Combined stat_uncert should also be finite (from anti's value)
     assert np.isfinite(result.data_1d["ena_intensity_stat_uncert"].values[0, 0, 0, 0])
+
+
+def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
+    """Test that combine_maps handles NaN values in ena_intensity_sys_err correctly.
+
+    When one map has NaN values in ena_intensity_sys_err and the other has valid
+    data, the combined result should use only the valid data (via fillna(0))
+    rather than propagating NaN.
+    """
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine()
+
+    # Set specific sys_err and exposure values for predictable results
+    ram_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
+        ram_map.data_1d["ena_intensity_sys_err"], 3.0
+    )
+    ram_map.data_1d["exposure_factor"] = xr.full_like(
+        ram_map.data_1d["exposure_factor"], 10.0
+    )
+    anti_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
+        anti_map.data_1d["ena_intensity_sys_err"], 6.0
+    )
+    anti_map.data_1d["exposure_factor"] = xr.full_like(
+        anti_map.data_1d["exposure_factor"], 20.0
+    )
+
+    # Set NaN in ram's sys_err at specific positions
+    ram_sys_err = ram_map.data_1d["ena_intensity_sys_err"].values.copy()
+    ram_sys_err[0, 0, 0, 0] = np.nan  # Set first position to NaN
+    ram_sys_err[0, 1, 2, 1] = np.nan  # Set another position to NaN
+    ram_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
+        ram_sys_err, dims=ram_map.data_1d["ena_intensity_sys_err"].dims
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    # At positions where ram had NaN sys_err, result should still be finite
+    # because ram's NaN is replaced with 0 via fillna(0)
+    assert np.isfinite(result.data_1d["ena_intensity_sys_err"].values[0, 0, 0, 0])
+    assert np.isfinite(result.data_1d["ena_intensity_sys_err"].values[0, 1, 2, 1])
+
+    # Expected value at NaN positions: (0 * 10 + 6 * 20) / (10 + 20) = 120 / 30 = 4.0
+    expected_sys_err_nan_pos = (0 * 10 + 6 * 20) / (10 + 20)
+    np.testing.assert_almost_equal(
+        result.data_1d["ena_intensity_sys_err"].values[0, 0, 0, 0],
+        expected_sys_err_nan_pos,
+        decimal=10,
+    )
+
+    # At positions where both maps have valid data, result should be normal
+    # exposure-weighted average: (3 * 10 + 6 * 20) / (10 + 20) = 150 / 30 = 5.0
+    expected_sys_err_valid = (3 * 10 + 6 * 20) / (10 + 20)
+    np.testing.assert_almost_equal(
+        result.data_1d["ena_intensity_sys_err"].values[0, 0, 1, 0],
+        expected_sys_err_valid,
+        decimal=10,
+    )
