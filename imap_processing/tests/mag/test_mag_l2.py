@@ -108,6 +108,10 @@ def test_mag_l2_attributes(
         assert "range" in dataset.data_vars
         assert dataset["magnitude"].attrs["UNITS"] == "nT"
         assert dataset["magnitude"].attrs["VAR_TYPE"] == "data"
+        np.testing.assert_array_equal(
+            dataset["direction_label"].data,
+            np.array(["Bx", "By", "Bz"]),
+        )
         assert dataset["range"].attrs["DICT_KEY"] == (
             "SPASE>Support>SupportQuantity:InstrumentMode"
         )
@@ -152,6 +156,10 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
         assert vector_info.Data_Type_Description == "CDF_FLOAT"
         assert np.isclose(vector_attrs["FILLVAL"], np.float32(-1.0e31))
         assert vector_attrs["UNITS"] == "nT"
+        np.testing.assert_array_equal(
+            cdf_file.varget("direction_label"),
+            np.array(["Bx", "By", "Bz"]),
+        )
 
 
 def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):

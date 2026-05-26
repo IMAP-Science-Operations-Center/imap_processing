@@ -212,7 +212,7 @@ class MagL2L1dBase:
         )
 
         direction_label = xr.DataArray(
-            direction.values.astype(str),
+            np.array(["Bx", "By", "Bz"]),
             name="direction_label",
             dims=["direction_label"],
             attrs=attribute_manager.get_variable_attributes(
