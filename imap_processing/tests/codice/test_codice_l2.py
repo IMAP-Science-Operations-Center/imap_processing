@@ -473,13 +473,16 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
     with cdflib.CDF(cdf_path) as cdf_file:
         hplus_attrs = cdf_file.varattsget("hplus")
         assert (
-            hplus_attrs["CATDESC"] == "Differential intensity for sunward solar-wind H+"
+            hplus_attrs["CATDESC"]
+            == "Differential intensity from sunward-looking detectors measuring "
+            "solar-wind H+"
         )
         assert hplus_attrs["FIELDNAM"] == "Sunward Differential Intensity - H+"
         unc_hplus_attrs = cdf_file.varattsget("unc_hplus")
         assert (
             unc_hplus_attrs["CATDESC"]
-            == "Uncertainty in differential intensity for sunward solar-wind H+"
+            == "Uncertainty in differential intensity from sunward-looking "
+            "detectors measuring solar-wind H+"
         )
         assert unc_hplus_attrs["FIELDNAM"] == "Sunward Uncertainty - H+"
         for var in ["nso_esa_step", "nso_spin_sector"]:

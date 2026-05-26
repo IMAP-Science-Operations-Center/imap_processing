@@ -98,7 +98,7 @@ lo-pui-species-attrs:
     VAR_TYPE: data
 
 lo-sw-species-attrs:
-  CATDESC: "Differential intensity for sunward solar-wind {species_display}"
+  CATDESC: "Differential intensity from sunward-looking detectors measuring solar-wind {species_display}"
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
@@ -152,7 +152,7 @@ lo-pui-species-unc-attrs:
     VAR_TYPE: data
 
 lo-sw-species-unc-attrs:
-    CATDESC: "Uncertainty in differential intensity for sunward solar-wind {species_display}"
+    CATDESC: "Uncertainty in differential intensity from sunward-looking detectors measuring solar-wind {species_display}"
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
