@@ -133,7 +133,7 @@ mass_index:
   LABLAXIS: Mass Index
   LABL_PTR_1: mass_labels
   SCALETYP: linear
-  UNITS: Kg
+  UNITS: " "
   VALIDMAX: 500
   VALIDMIN: 0
   VAR_TYPE: support_data

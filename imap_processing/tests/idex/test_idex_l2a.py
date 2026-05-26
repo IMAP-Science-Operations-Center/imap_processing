@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -94,6 +95,8 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2a_sci-10days_20231218_v999.cdf"
     ds = load_cdf(file_name)
+    with cdflib.CDF(file_name) as cdf_file:
+        assert cdf_file.varattsget("mass_index")["UNITS"] == " "
     spin_phase = ds["spin_phase"].values
     spin_phase_attrs = ds["spin_phase"].attrs
     assert spin_phase.dtype == np.float64
