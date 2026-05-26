@@ -591,3 +591,8 @@ def test_qf(norm_dataset):
     assert "quality_bitmask" in output.data_vars
     assert np.array_equal(output["quality_flags"].data, qf)
     assert np.array_equal(output["quality_bitmask"].data, qf_bitmask)
+    assert output["quality_flags"].attrs["VAR_TYPE"] == "data"
+    assert output["quality_flags"].attrs["UNITS"] == "0=good"
+    assert (
+        output["quality_flags"].attrs["CATDESC"] == "Data quality flag (0=good, 1=bad)"
+    )

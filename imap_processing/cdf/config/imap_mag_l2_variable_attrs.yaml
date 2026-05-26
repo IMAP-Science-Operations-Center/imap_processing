@@ -142,11 +142,15 @@ qf_bitmask:
 
 qf:
   <<: *support_default
-  CATDESC: Data quality flag
+  CATDESC: Data quality flag (0=good, 1=bad)
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
-  FIELDNAM: Quality Flag
+  FIELDNAM: Data Quality Flag
   FILLVAL: 255
   FORMAT: I1
   LABLAXIS: QF
+  UNITS: 0=good
   VALIDMAX: 1
   VALIDMIN: 0
+  VAR_NOTES: >
+    Binary data quality flag. 0 indicates good data. 1 indicates bad data.
+  VAR_TYPE: data
