@@ -612,3 +612,41 @@ def test_qf(norm_dataset):
         "does not decode individual bit meanings"
         in output["quality_bitmask"].attrs["VAR_NOTES"]
     )
+
+
+def test_mag_l2_burst_inherits_shared_metadata(norm_dataset, mag_test_l2_data):
+    """Test that burst output inherits the shared MAG L2 metadata cleanup."""
+    calibration_dataset = mag_test_l2_data[0]
+    offset_dataset = mag_test_l2_data[1]
+
+    test_dataset = norm_dataset.copy()
+    test_dataset.attrs["Logical_source"] = "imap_mag_l1c_burst-mago"
+
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        side_effect=lambda *args, **kwargs: args[1],
+    ):
+        burst_datasets = mag_l2(
+            calibration_dataset,
+            offset_dataset,
+            test_dataset,
+            np.datetime64("2025-10-17"),
+            mode=DataMode.BURST,
+            frames=[ValidFrames.SRF],
+        )
+
+    assert len(burst_datasets) == 1
+    burst_dataset = burst_datasets[0]
+
+    assert burst_dataset["quality_flags"].attrs["VAR_TYPE"] == "data"
+    assert burst_dataset["quality_flags"].attrs["UNITS"] == "0=good"
+    assert burst_dataset["magnitude"].attrs["VAR_TYPE"] == "data"
+    assert burst_dataset["b_srf"].attrs["UNITS"] == "nT"
+    np.testing.assert_array_equal(
+        burst_dataset["direction_label"].data,
+        np.array(["Bx", "By", "Bz"]),
+    )
+    assert (
+        "does not decode individual bit meanings"
+        in burst_dataset["quality_bitmask"].attrs["VAR_NOTES"]
+    )
