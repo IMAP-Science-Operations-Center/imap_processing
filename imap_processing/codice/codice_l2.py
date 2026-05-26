@@ -50,7 +50,7 @@ HI_SPECIES_DISPLAY_NAMES = {
     "o": "O",
     "fe": "Fe",
     "ne_mg_si": "Ne+Mg+Si",
-    "uh": "UH",
+    "uh": "Ultra-Heavy",
     "junk": "Junk",
 }
 
