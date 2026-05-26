@@ -667,6 +667,28 @@ def test_codice_l2_direct_events_display_type_cdf_metadata(
             attrs = cdf_file.varattsget("energy_per_nuc")
             assert attrs["DEPEND_1"] == "priority"
             assert attrs["LABL_PTR_1"] == "priority_label"
+            priority_attrs = cdf_file.varattsget("priority")
+            assert (
+                priority_attrs["CATDESC"]
+                == "Direct-event telemetry priority level (0-5)"
+            )
+            assert (
+                priority_attrs["VAR_NOTES"].strip()
+                == "Hi direct-event telemetry priority level. 0 = unused, 1 = "
+                "DCR, 2 = SSD-only, 3 = Protons, 4 = Helium, 5 = Heavies."
+            )
+        else:
+            priority_attrs = cdf_file.varattsget("priority")
+            assert (
+                priority_attrs["CATDESC"]
+                == "Direct-event telemetry priority level (0-7)"
+            )
+            assert (
+                priority_attrs["VAR_NOTES"].strip()
+                == "Lo direct-event telemetry priority level. 0 = SW TCR PUIs, "
+                "1 = SW H+, 2 = SW He++, 3 = SW Heavies, 4 = SW DCR PUIs, 5 = "
+                "NSW Heavies, 6 = NSW H+ and He++, 7 = reserved/unused."
+            )
 
         type_attrs = cdf_file.varattsget("type")
         assert type_attrs["FIELDNAM"] == "PHA Type Code"

@@ -10,16 +10,19 @@ epoch:
   DELTA_PLUS_VAR: epoch_delta_plus
 
 priority:
-  CATDESC: Priority Level
+  CATDESC: Direct-event telemetry priority level (0-5)
   DICT_KEY: SPASE>Support>SupportQuantity:Other
-  FIELDNAM: Priority Level
+  FIELDNAM: Event Priority Level
   FILLVAL: *uint8_fillval
   FORMAT: I1
   LABLAXIS: Priority
   SCALETYP: linear
   UNITS: " "
-  VALIDMAX: 7
+  VALIDMAX: 5
   VALIDMIN: 0
+  VAR_NOTES: >
+    Hi direct-event telemetry priority level. 0 = unused, 1 = DCR, 2 =
+    SSD-only, 3 = Protons, 4 = Helium, 5 = Heavies.
   VAR_TYPE: support_data
 
 event_num:

@@ -10,9 +10,9 @@ epoch:
   DELTA_PLUS_VAR: epoch_delta_plus
 
 priority:
-  CATDESC: Priority Level
+  CATDESC: Direct-event telemetry priority level (0-7)
   DICT_KEY: SPASE>Support>SupportQuantity:Other
-  FIELDNAM: Priority Level
+  FIELDNAM: Event Priority Level
   FILLVAL: *uint8_fillval
   FORMAT: I1
   LABLAXIS: Priority
@@ -20,6 +20,10 @@ priority:
   UNITS: " "
   VALIDMAX: 7
   VALIDMIN: 0
+  VAR_NOTES: >
+    Lo direct-event telemetry priority level. 0 = SW TCR PUIs, 1 = SW H+, 2 =
+    SW He++, 3 = SW Heavies, 4 = SW DCR PUIs, 5 = NSW Heavies, 6 = NSW H+ and
+    He++, 7 = reserved/unused.
   VAR_TYPE: support_data
 
 event_num:
