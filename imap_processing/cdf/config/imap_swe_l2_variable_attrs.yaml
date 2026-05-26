@@ -146,6 +146,8 @@ inst_az_spin_sector:
 
 phase_space_density_spin_sector:
   CATDESC: Phase space density organized by ESA step and spin sector and CEM
+  DELTA_MINUS_VAR: psd_stat_uncert
+  DELTA_PLUS_VAR: psd_stat_uncert
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
@@ -185,6 +187,8 @@ phase_space_density:
 
 flux_spin_sector:
   CATDESC: Number flux organized by ESA step and spin sector and CEM
+  DELTA_MINUS_VAR: flux_stat_uncert
+  DELTA_PLUS_VAR: flux_stat_uncert
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
@@ -227,7 +231,7 @@ psd_stat_uncert:
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Uncertainty
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Phase Space Density Stats Uncertainty
   FILLVAL: -1.0000000E+31
@@ -236,10 +240,10 @@ psd_stat_uncert:
   LABL_PTR_2: spin_sector_label
   LABL_PTR_3: cem_id_label
   SCALETYP: linear
-  UNITS: counts
+  UNITS: s^3 / cm^6
   VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 flux_stat_uncert:
   CATDESC: Flux statistical uncertainty
@@ -247,7 +251,7 @@ flux_stat_uncert:
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Flux Stats Uncertainty
   FILLVAL: -1.0000000E+31
@@ -256,10 +260,10 @@ flux_stat_uncert:
   LABL_PTR_2: spin_sector_label
   LABL_PTR_3: cem_id_label
   SCALETYP: linear
-  UNITS: counts
+  UNITS: 1 / (2 * eV * cm^2 * s * ster)
   VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 acquisition_time:
   CATDESC: Acquisition time organized by ESA step and spin sector
