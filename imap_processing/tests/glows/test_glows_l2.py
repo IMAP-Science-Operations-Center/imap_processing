@@ -230,6 +230,7 @@ def test_glows_l2_cdf_metadata(
         bins_label_info = cdf_file.varinq("bins_label")
         bins_label_attrs = cdf_file.varattsget("bins_label")
         bins_label_values = cdf_file.varget("bins_label")
+        flags_values = cdf_file.varget("flags")
         flags_label_info = cdf_file.varinq("flags_label")
         flags_label_attrs = cdf_file.varattsget("flags_label")
         flags_label_values = cdf_file.varget("flags_label")
@@ -244,6 +245,7 @@ def test_glows_l2_cdf_metadata(
         assert bins_label_attrs["FORMAT"] == "A4"
         assert list(bins_label_values[:5]) == ["0", "1", "2", "3", "4"]
 
+        np.testing.assert_array_equal(flags_values, np.arange(len(BAD_TIME_FLAG_NAMES)))
         assert flags_label_info.Data_Type_Description == "CDF_CHAR"
         assert flags_label_attrs["FORMAT"] == "A42"
         assert list(flags_label_values) == list(BAD_TIME_FLAG_NAMES)
