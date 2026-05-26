@@ -283,6 +283,9 @@ def test_l2_hi_sectored(mock_get_file_paths):
     with cdflib.CDF(sectored_cdf_file) as cdf_file:
         data_quality_attrs = cdf_file.varattsget("data_quality")
         assert data_quality_attrs["VAR_TYPE"] == "data"
+        assert data_quality_attrs["FORMAT"] == "I3"
+        spin_sector_attrs = cdf_file.varattsget("spin_sector")
+        assert spin_sector_attrs["FORMAT"] == "I2"
         assert cdf_file.varattsget("energy_h")["FORMAT"] == "F12.6"
         assert cdf_file.varattsget("energy_h_minus")["FORMAT"] == "F12.6"
         assert cdf_file.varattsget("energy_h_plus")["FORMAT"] == "F12.6"
