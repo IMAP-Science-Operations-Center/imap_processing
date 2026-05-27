@@ -1198,7 +1198,9 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         (l2_dataset["spin_sector"] + 12) % 24,
         l2_dataset["spin_sector"],
     )
-    l2_dataset["spin_angle"] = l2_dataset["spin_sector"].astype(np.float32) * 15.0 + 7.5
+    l2_dataset["spin_angle"] = (
+        l2_dataset["spin_sector"].astype(np.float32) * 15.0 + 277.5
+    ) % 360.0
 
     # Preserve spin_sector as an integer index while marking invalid sectors.
     invalid_spin_sector = ~np.isfinite(original_spin_sector) | (
