@@ -8,7 +8,6 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.lo.constants import LoConstants
 from imap_processing.ena_maps.utils.corrections import (
     add_spacecraft_position_and_velocity_to_pset,
 )
@@ -164,7 +163,6 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         pset["exposure_time"] = calculate_exposure_times(
             sci_dependencies["imap_lo_l1b_histrates"],
             sci_dependencies["imap_lo_l1b_goodtimes"],
-            sci_dependencies.get("imap_lo_l1b_bgrates"),
         )
 
         # Set backgrounds
@@ -489,21 +487,17 @@ def create_pset_counts(
 
 
 def calculate_exposure_times(
-    histrates_ds: xr.Dataset,
-    goodtimes_ds: xr.Dataset,
-    bgrates_ds: xr.Dataset | None = None,
+    histrates_ds: xr.Dataset, goodtimes_ds: xr.Dataset
 ) -> xr.DataArray:
     """
     Calculate exposure times from L1B histrates summed over good-time epochs.
 
-    Mirrors the alternate quicklook pipeline (3S2_l1b_quickmaps/l1b_to_spin.py):
-    sums exposure_time_6deg from the L1B histrates dataset over epochs that fall
+    Sum exposure_time_6deg from the L1B histrates dataset over epochs that fall
     within good-time windows, then expands to the full PSET grid.
 
-    The 60-bin (6°) spin dimension is expanded to 3600 bins (0.1°) by dividing
+    The 60-bin (6 deg) spin dimension is expanded to 3600 bins (0.1 deg) by dividing
     each value by 60 and repeating, preserving per-bin exposure. The off_angle
-    dimension is filled uniformly (no boresight-sampling weighting) by dividing
-    by N_OFF_ANGLE_BINS and broadcasting.
+    dimension is filled uniformly by dividing by N_OFF_ANGLE_BINS and broadcasting.
 
     Parameters
     ----------
@@ -512,16 +506,12 @@ def calculate_exposure_times(
         shape (n_epochs, esa_step, spin_bin_6).
     goodtimes_ds : xr.Dataset
         L1B goodtimes dataset containing gt_start_met and gt_end_met.
-    bgrates_ds : xr.Dataset, optional
-        L1B bgrates dataset. If provided, h_synthetic_floor is used as a
-        cross-check against the histrates-derived total exposure.
 
     Returns
     -------
     exposure_time : xr.DataArray
         Shape (1, N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS).
     """
-    # Filter histrates epochs to good-time windows (same logic as filter_goodtimes)
     epochs = histrates_ds["epoch"].values
     gt_starts = met_to_ttj2000ns(goodtimes_ds["gt_start_met"].values)
     gt_ends = met_to_ttj2000ns(goodtimes_ds["gt_end_met"].values)
@@ -538,40 +528,9 @@ def calculate_exposure_times(
         )
         return xr.DataArray(data=np.zeros(PSET_SHAPE, dtype=np.float32), dims=PSET_DIMS)
 
-    # Sum exposure_time_6deg over good-time epochs → shape (7, 60)
+    # Sum exposure_time_6deg over good-time epochs; shape (7, 60)
     exposure_6deg = histrates_ds["exposure_time_6deg"].values[in_goodtime]
     exposure_sum = exposure_6deg.sum(axis=0)  # (7, 60)
-
-    # Cross-check: total exposure from histrates vs h_synthetic_floor / BG_RATES["H"]
-    if bgrates_ds is not None and "h_synthetic_floor" in bgrates_ds:
-        h_bg_rate = LoConstants.BG_RATES["H"]
-        # h_synthetic_floor accumulates BG_RATES["H"] * HISTOGRAM_CYCLE_EPOCHS
-        # * N_CYCLE_AVE * EXPOSURE_FACTOR per good-time step, so dividing by
-        # BG_RATES["H"] alone gives N_CYCLE_AVE * EXPOSURE_FACTOR times the
-        # per-cycle physical exposure.  Divide out that factor to get a quantity
-        # comparable to histrates_total (which sums actual spin-duration-based
-        # exposure without any averaging-window or EXPOSURE_FACTOR scaling).
-        floor_exposure = (
-            float(bgrates_ds["h_synthetic_floor"].values[0])
-            / h_bg_rate
-            / (LoConstants.N_CYCLE_AVE * LoConstants.EXPOSURE_FACTOR)
-        )
-        histrates_total = float(exposure_sum.sum())
-        ratio = histrates_total / floor_exposure if floor_exposure > 0 else float("nan")
-        if abs(ratio - 1.0) > 0.02:
-            logging.warning(
-                f"Exposure cross-check mismatch: histrates total={histrates_total:.1f}s, "
-                f"synthetic_floor-derived={floor_exposure:.1f}s (ratio={ratio:.3f}). "
-                "Values should agree within ~2%."
-            )
-        else:
-            logging.debug(
-                f"Exposure cross-check OK: histrates total={histrates_total:.1f}s, "
-                f"synthetic_floor-derived={floor_exposure:.1f}s (ratio={ratio:.3f})"
-            )
-
-    # Expand 60 spin bins → 3600 by dividing by 60 and repeating
-    # (each 6° bin maps to sixty 0.1° bins, preserving per-bin exposure)
     exposure_3600 = np.repeat(exposure_sum / 60.0, 60, axis=1)  # (7, 3600)
 
     # Distribute uniformly across 40 off-angle bins
