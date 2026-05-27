@@ -173,9 +173,67 @@ class MapDescriptor:
             ]
         )
 
-    def to_catdesc(self) -> str:
+    def to_primary_data_catdesc(self) -> str:
+        """
+        Convert the MapDescriptor instance to the primary data CATDESC string.
+
+        Returns
+        -------
+        str
+            Information in descriptor converted to SPDF CATDESC attribute. This
+            is normally used for plot titles and should be under about 80 characters.
+        """
+        m = re.match(
+            r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
+        )
+
+        quantity = {
+            "drt": "Rate",
+            "ena": "Inten",
+            "int": "Inten",
+            "isn": "Rate",
+            "spx": "Spectral",
+        }[m.group(1)]
+
+        return self.build_catdesc(quantity_text=quantity)
+
+    def try_to_build_support_data_catdesc(self, support_var_name: str) -> str | None:
+        """
+        Generate a CATDESC string for a support data variable based on MapDescriptor.
+
+        Parameters
+        ----------
+        support_var_name : str
+            The name of the support map data var to generate a CATDESC for.
+
+        Returns
+        -------
+        str
+            Information in descriptor converted to SPDF CATDESC attribute. This
+            is normally used for plot titles and should be under about 80 characters.
+        """
+        known_support_data_and_descriptions = {
+            "ena_spectral_index_stat_uncert": "Spectral Stat. Unc.",
+            "ena_spectral_scalar": "Spectral Scalar",
+            "ena_spectral_scalar_stat_uncert": "Spectral Scalar Stat. Unc.",
+            "ena_spectral_index_chisq": "Spectral Index Chisq",
+        }
+
+        if support_var_name in known_support_data_and_descriptions:
+            return self.build_catdesc(
+                known_support_data_and_descriptions[support_var_name]
+            )
+        else:
+            return None
+
+    def build_catdesc(self, quantity_text: str) -> str:
         """
         Convert the MapDescriptor instance to a human-readable CATDESC string.
+
+        Parameters
+        ----------
+        quantity_text : str
+            Text describing the variable that will be formatted into the CATDESC.
 
         Returns
         -------
@@ -191,13 +249,6 @@ class MapDescriptor:
         m = re.match(
             r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
         )
-        quantity = {
-            "drt": "Rate",
-            "ena": "Inten",
-            "int": "Inten",
-            "isn": "Rate",
-            "spx": "Spectral",
-        }[m.group(1)]
         if m.group(1) == "isn":
             species = "ISN " + species
         extras = m.group(2)
@@ -221,7 +272,7 @@ class MapDescriptor:
             if duration.endswith("Mo"):
                 duration += "n"
         catdesc = (
-            f"IMAP {instrument}{sensor} {species} {quantity}, {coord} "
+            f"IMAP {instrument}{sensor} {species} {quantity_text}, {coord} "
             f"{frame} Frame, {survival}, {spin_phase}, {resolution}, {duration}"
         )
         possible_extras = [

@@ -374,10 +374,46 @@ class TestMapDescriptor:
             ),
         ],
     )
-    def test_to_catdesc(self, descriptor_str, expected_catdesc):
+    def test_primary_data_catdesc(self, descriptor_str, expected_catdesc):
         # Use case is primarily from descriptor str to CATDESC
         md = MapDescriptor.from_string(descriptor_str)
-        actual_catdesc = md.to_catdesc()
+        actual_catdesc = md.to_primary_data_catdesc()
+        assert actual_catdesc == expected_catdesc
+
+    @pytest.mark.parametrize(
+        "descriptor_str, var_name, expected_catdesc",
+        [
+            (
+                "hic-spx-h-hf-sp-ram-hae-4deg-3mo",
+                "ena_spectral_index_stat_uncert",
+                "IMAP Hi Combined H Spectral Stat. Unc., "
+                "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "hic-spx-h-hf-sp-ram-hae-4deg-3mo",
+                "ena_spectral_scalar",
+                "IMAP Hi Combined H Spectral Scalar, "
+                "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "hic-spx-h-hf-sp-ram-hae-4deg-3mo",
+                "ena_spectral_scalar_stat_uncert",
+                "IMAP Hi Combined H Spectral Scalar Stat. Unc., "
+                "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "hic-spx-h-hf-sp-ram-hae-4deg-3mo",
+                "ena_spectral_index_chisq",
+                "IMAP Hi Combined H Spectral Index Chisq, "
+                "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+        ],
+    )
+    def test_try_to_build_support_data_catdesc(
+        self, descriptor_str, var_name, expected_catdesc
+    ):
+        md = MapDescriptor.from_string(descriptor_str)
+        actual_catdesc = md.try_to_build_support_data_catdesc(var_name)
         assert actual_catdesc == expected_catdesc
 
     @pytest.mark.parametrize(
