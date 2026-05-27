@@ -426,6 +426,10 @@ def test_swe_l2_15sec(
             "and spin sector"
         )
         assert "Los Alamos National Laboratory" in global_attrs["TEXT"][0]
+        assert (
+            "https://imap.princeton.edu/spacecraft/instruments/"
+            "solar-wind-electron-swe" in global_attrs["TEXT"][0]
+        )
 
     # --------- sector validation--------
     sector_psd_data = l2_dataset["phase_space_density_spin_sector"].data

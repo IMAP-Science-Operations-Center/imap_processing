@@ -9,8 +9,8 @@ TEXT: &txt >
   neutral atom (ENA) imagers mounted at fixed angles of 90 and 45 degrees
   relative to the spacecraft spin axis. These imagers measure neutral atoms
   entering our solar system from the outer edge of the heliosphere as they
-  move towards the Sun. See https://imap.princeton.edu/instruments/imap-hi for
-  more details.
+  move towards the Sun. See https://imap.princeton.edu/spacecraft/instruments/imap-hi
+  for more details.
 Instrument_type: Particles (space)
 
 # -------------- Product specific global attributes defined below --------------

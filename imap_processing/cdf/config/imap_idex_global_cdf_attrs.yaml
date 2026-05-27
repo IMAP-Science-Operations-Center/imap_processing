@@ -7,7 +7,8 @@ instrument_base: &instrument_base
     provides the elemental composition, speed, and mass distributions
     of interstellar dust and interplanetary dust particles. Each record
     contains the data from a single dust impact. See
-    https://imap.princeton.edu/instruments/idex for more details.
+    https://imap.princeton.edu/spacecraft/instruments/interstellar-dust-experiment-idex
+    for more details.
 
 imap_idex_l1a_sci:
   <<: *instrument_base
