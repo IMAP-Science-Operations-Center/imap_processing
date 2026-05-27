@@ -172,9 +172,11 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
         assert expected_frames[i].name in dataset.attrs["Data_type"]
         dataset.attrs["Data_version"] = "001"
         cdf_filepath = write_cdf(dataset)
-        cdf_file = cdflib.CDF(cdf_filepath)
-        vector_info = cdf_file.varinq(expected_frames[i].var_name)
-        vector_attrs = cdf_file.varattsget(expected_frames[i].var_name)
+        with cdflib.CDF(cdf_filepath) as cdf_file:
+            vector_info = cdf_file.varinq(expected_frames[i].var_name)
+            vector_attrs = cdf_file.varattsget(expected_frames[i].var_name)
+            direction_label = cdf_file.varget("direction_label")
+
         assert vector_info.Data_Type_Description == "CDF_FLOAT"
         assert np.isclose(vector_attrs["FILLVAL"], np.float32(-1.0e31))
         assert vector_attrs["FORMAT"] == "F13.5"
@@ -182,7 +184,7 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
         assert np.isclose(vector_attrs["VALIDMAX"], np.float32(1.0e5))
         assert vector_attrs["UNITS"] == "nT"
         np.testing.assert_array_equal(
-            cdf_file.varget("direction_label"),
+            direction_label,
             np.array(["Bx", "By", "Bz"]),
         )
 
@@ -652,6 +654,17 @@ def test_qf(norm_dataset):
         "Bits 4-7: Reserved for in flight calibration"
         in output["quality_bitmask"].attrs["VAR_NOTES"]
     )
+
+    output.attrs["Data_version"] = "001"
+    cdf_filepath = write_cdf(output)
+    with cdflib.CDF(cdf_filepath) as cdf_file:
+        qf_attrs = cdf_file.varattsget("quality_flags")
+        qf_bitmask_attrs = cdf_file.varattsget("quality_bitmask")
+
+    assert qf_attrs["FORMAT"] == "I1"
+    assert int(qf_attrs["VALIDMAX"]) == 1
+    assert qf_bitmask_attrs["FORMAT"] == "I3"
+    assert int(qf_bitmask_attrs["VALIDMAX"]) == 255
 
 
 def test_mag_l2_burst_inherits_shared_metadata(norm_dataset, mag_test_l2_data):
