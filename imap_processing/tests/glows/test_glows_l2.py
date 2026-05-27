@@ -231,6 +231,7 @@ def test_glows_l2_cdf_metadata(
         bins_label_attrs = cdf_file.varattsget("bins_label")
         bins_label_values = cdf_file.varget("bins_label")
         flags_values = cdf_file.varget("flags")
+        identifier_attrs = cdf_file.varattsget("identifier")
         flags_label_info = cdf_file.varinq("flags_label")
         flags_label_attrs = cdf_file.varattsget("flags_label")
         flags_label_values = cdf_file.varget("flags_label")
@@ -259,6 +260,11 @@ def test_glows_l2_cdf_metadata(
         assert bad_time_info.Data_Type_Description == "CDF_UINT2"
         assert bad_time_attrs["FORMAT"] == "I5"
         assert bad_time_attrs["VAR_TYPE"] == "data"
+        assert (
+            identifier_attrs["CATDESC"]
+            == "Spin-axis pointing number to identify observational day"
+        )
+        assert identifier_attrs["FIELDNAM"] == "Spin-axis pointing number"
         for attr_name in (
             "TIME_BASE",
             "TIME_SCALE",
@@ -274,6 +280,10 @@ def test_glows_l2_cdf_metadata(
             assert time_attrs["RESOLUTION"] == "ISO8601"
 
         assert global_attrs["flight_software_version"] == ["131329"]
+        assert (
+            "https://imap.princeton.edu/spacecraft/instruments/"
+            "global-solar-wind-structure-glows" in global_attrs["TEXT"][0]
+        )
 
 
 @patch.object(HistogramL2, "compute_position_angle", return_value=42.0)

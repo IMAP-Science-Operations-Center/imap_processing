@@ -10,7 +10,9 @@ instrument_base: &instrument_base
     of the modulation of heliospheric backscatter glow of ISN H (the helioglow)
     along a scanning circle in the sky.
     GLOWS design and assembly is led by the Space Research Center, Warsaw, Poland
-    (CBK PAN). See https://imap.princeton.edu/instruments/glows for more details.
+    (CBK PAN). See
+    https://imap.princeton.edu/spacecraft/instruments/global-solar-wind-structure-glows
+    for more details.
 
 imap_glows_l1a_hist:
   <<: *instrument_base
