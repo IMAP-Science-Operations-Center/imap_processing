@@ -407,13 +407,64 @@ class TestMapDescriptor:
                 "IMAP Hi Combined H Spectral Index Chisq, "
                 "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
             ),
+            (
+                "hic-ena-h-hf-sp-ram-hae-4deg-3mo",
+                "ena_intensity_stat_unc",
+                "IMAP Hi Combined H Inten Stat. Unc., "
+                "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "hic-ena-h-hf-sp-ram-hae-4deg-3mo",
+                "ena_intensity_sys_err",
+                "IMAP Hi Combined H Inten Sys. Err., "
+                "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+            ),
+            (
+                "l075-enanbs-h-sf-nsp-anti-hae-6deg-6mo",
+                "bg_intensity",
+                "IMAP Lo75 H Background Inten, "
+                "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
+            ),
+            (
+                "l075-enanbs-h-sf-nsp-anti-hae-6deg-6mo",
+                "bg_intensity_stat_unc",
+                "IMAP Lo75 H Background Inten Stat. Unc., "
+                "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
+            ),
+            (
+                "l075-enanbs-h-sf-nsp-anti-hae-6deg-6mo",
+                "bg_intensity_sys_err",
+                "IMAP Lo75 H Background Inten Sys. Err., "
+                "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
+            ),
+            (
+                "l075-enanbs-h-sf-nsp-anti-hae-6deg-6mo",
+                "bg_rate",
+                "IMAP Lo75 H Background Count Rate, "
+                "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
+            ),
+            (
+                "l075-enanbs-h-sf-nsp-anti-hae-6deg-6mo",
+                "ena_count_rate",
+                "IMAP Lo75 H ENA Count Rate, "
+                "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
+            ),
+            (
+                "u45-ena-h-hf-nsp-full-hae-4deg-6mo",
+                "counts",
+                "IMAP Ultra45 H Counts, "
+                "HAE Helio Frame, No Surv Corr, Full Spin, 4 deg, 6 Mon",
+            ),
+            (
+                "u45-ena-h-hf-nsp-full-hae-4deg-6mo",
+                "aliens",
+                None,
+            ),
         ],
     )
-    def test_try_to_build_support_data_catdesc(
-        self, descriptor_str, var_name, expected_catdesc
-    ):
+    def test_build_map_var_catdesc(self, descriptor_str, var_name, expected_catdesc):
         md = MapDescriptor.from_string(descriptor_str)
-        actual_catdesc = md.try_to_build_support_data_catdesc(var_name)
+        actual_catdesc = md.build_map_var_catdesc(var_name)
         assert actual_catdesc == expected_catdesc
 
     @pytest.mark.parametrize(

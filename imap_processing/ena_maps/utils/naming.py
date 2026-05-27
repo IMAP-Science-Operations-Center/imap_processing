@@ -197,7 +197,7 @@ class MapDescriptor:
 
         return self.build_catdesc(quantity_text=quantity)
 
-    def try_to_build_support_data_catdesc(self, support_var_name: str) -> str | None:
+    def build_map_var_catdesc(self, support_var_name: str) -> str | None:
         """
         Generate a CATDESC string for a support data variable based on MapDescriptor.
 
@@ -208,20 +208,29 @@ class MapDescriptor:
 
         Returns
         -------
-        str
+        str | None
             Information in descriptor converted to SPDF CATDESC attribute. This
             is normally used for plot titles and should be under about 80 characters.
+            Returns None if the variable is not a known map variable.
         """
-        known_support_data_and_descriptions = {
+        known_map_data_vars_and_descriptions = {
             "ena_spectral_index_stat_uncert": "Spectral Stat. Unc.",
             "ena_spectral_scalar": "Spectral Scalar",
             "ena_spectral_scalar_stat_uncert": "Spectral Scalar Stat. Unc.",
             "ena_spectral_index_chisq": "Spectral Index Chisq",
+            "ena_intensity_stat_unc": "Inten Stat. Unc.",
+            "ena_intensity_sys_err": "Inten Sys. Err.",
+            "bg_intensity": "Background Inten",
+            "bg_intensity_stat_unc": "Background Inten Stat. Unc.",
+            "bg_intensity_sys_err": "Background Inten Sys. Err.",
+            "bg_rate": "Background Count Rate",
+            "ena_count_rate": "ENA Count Rate",
+            "counts": "Counts",
         }
 
-        if support_var_name in known_support_data_and_descriptions:
+        if support_var_name in known_map_data_vars_and_descriptions:
             return self.build_catdesc(
-                known_support_data_and_descriptions[support_var_name]
+                known_map_data_vars_and_descriptions[support_var_name]
             )
         else:
             return None
