@@ -624,8 +624,8 @@ def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
             # validation CDF with the corrected SSD_ID_TO_SPIN_ANGLE values.
             # See issue #3242. Until then, verify structure and basic numeric
             # sanity to guard against regressions in the spin angle computation.
-            assert processed_l2_ds[variable].dims == l2_val_data[variable].dims, (
-                f"Dimension mismatch in variable '{variable}'"
+            assert processed_l2_ds[variable].shape == l2_val_data[variable].shape, (
+                f"Shape mismatch in variable '{variable}'"
             )
             spin_vals = processed_l2_ds[variable].values
             finite_vals = spin_vals[np.isfinite(spin_vals)]
