@@ -1247,6 +1247,9 @@ class Lo(ProcessInstrument):
             science_files += dependencies.get_file_paths(
                 source="lo", data_type="l1b", descriptor="bgrates"
             )
+            science_files += dependencies.get_file_paths(
+                source="lo", data_type="l1b", descriptor="histrates"
+            )
             for file in science_files:
                 dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
