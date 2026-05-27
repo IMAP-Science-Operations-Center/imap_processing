@@ -473,13 +473,16 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
     with cdflib.CDF(cdf_path) as cdf_file:
         hplus_attrs = cdf_file.varattsget("hplus")
         assert (
-            hplus_attrs["CATDESC"] == "Differential intensity for sunward solar-wind H+"
+            hplus_attrs["CATDESC"]
+            == "Differential intensity from sunward-looking detectors measuring "
+            "solar-wind H+"
         )
         assert hplus_attrs["FIELDNAM"] == "Sunward Differential Intensity - H+"
         unc_hplus_attrs = cdf_file.varattsget("unc_hplus")
         assert (
             unc_hplus_attrs["CATDESC"]
-            == "Uncertainty in differential intensity for sunward solar-wind H+"
+            == "Uncertainty in differential intensity from sunward-looking "
+            "detectors measuring solar-wind H+"
         )
         assert unc_hplus_attrs["FIELDNAM"] == "Sunward Uncertainty - H+"
         for var in ["nso_esa_step", "nso_spin_sector"]:
@@ -667,3 +670,47 @@ def test_codice_l2_direct_events_display_type_cdf_metadata(
             attrs = cdf_file.varattsget("energy_per_nuc")
             assert attrs["DEPEND_1"] == "priority"
             assert attrs["LABL_PTR_1"] == "priority_label"
+            priority_attrs = cdf_file.varattsget("priority")
+            assert (
+                priority_attrs["CATDESC"]
+                == "Direct-event telemetry priority level (0-5)"
+            )
+            assert (
+                priority_attrs["VAR_NOTES"].strip()
+                == "Hi direct-event telemetry priority level. 0 = unused, 1 = "
+                "DCR, 2 = SSD-only, 3 = Protons, 4 = Helium, 5 = Heavies."
+            )
+        else:
+            priority_attrs = cdf_file.varattsget("priority")
+            assert (
+                priority_attrs["CATDESC"]
+                == "Direct-event telemetry priority level (0-7)"
+            )
+            assert (
+                priority_attrs["VAR_NOTES"].strip()
+                == "Lo direct-event telemetry priority level. 0 = SW TCR PUIs, "
+                "1 = SW H+, 2 = SW He++, 3 = SW Heavies, 4 = SW DCR PUIs, 5 = "
+                "NSW Heavies, 6 = NSW H+ and He++, 7 = reserved/unused."
+            )
+
+        type_attrs = cdf_file.varattsget("type")
+        assert type_attrs["FIELDNAM"] == "PHA Type Code"
+        assert type_attrs["VALIDMAX"] == 2
+        if descriptor == "hi-direct-events":
+            assert type_attrs["CATDESC"] == "PHA type code: 0=TCR, 1=DCR, 2=SSD-only"
+            assert (
+                type_attrs["VAR_NOTES"].strip()
+                == "PHA type code for CoDICE-Hi direct events. 0 = TCR "
+                "(Triple Coincidence Rate; ST+SP+APD), 1 = DCR "
+                "(Double Coincidence Rate; ST+SP), 2 = SSD-only energy event "
+                "(SSD only or ST+SSD only)."
+            )
+        else:
+            assert type_attrs["CATDESC"] == "PHA type code: 0=TCR, 1=DCR, 2=APD-only"
+            assert (
+                type_attrs["VAR_NOTES"].strip()
+                == "PHA type code for CoDICE-Lo direct events. 0 = TCR "
+                "(Triple Coincidence Rate; STA+STB+SP+APD), 1 = DCR "
+                "(Double Coincidence Rate; STA+STB+SP), 2 = APD-only energy "
+                "event (APD with only one or two of STA, STB, and SP)."
+            )

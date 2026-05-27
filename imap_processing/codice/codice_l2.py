@@ -50,7 +50,7 @@ HI_SPECIES_DISPLAY_NAMES = {
     "o": "O",
     "fe": "Fe",
     "ne_mg_si": "Ne+Mg+Si",
-    "uh": "UH",
+    "uh": "Ultra-Heavy",
     "junk": "Junk",
 }
 
@@ -909,7 +909,13 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # Overwrite L1B variable attributes with L2 variable attributes
     l2_dataset = xr.Dataset(
         coords={
-            "spin_sector": l1b_dataset["spin_sector"],
+            "spin_sector": xr.DataArray(
+                l1b_dataset["spin_sector"].values,
+                dims=("spin_sector",),
+                attrs=cdf_attrs.get_variable_attributes(
+                    "spin_sector", check_schema=False
+                ),
+            ),
             "spin_sector_label": xr.DataArray(
                 l1b_dataset["spin_sector"].values.astype(str),
                 dims=("spin_sector",),

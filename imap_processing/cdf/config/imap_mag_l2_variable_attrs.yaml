@@ -50,34 +50,42 @@ vector_attrs: &vectors_default
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
     FIELDNAM: Magnetic Field Vector
     FILLVAL: -1.0e31
-    FORMAT: F12.5
+    FORMAT: F13.5
     LABL_PTR_1: direction_label
+    UNITS: nT
+    VALIDMAX: 1.0e+5
+    VALIDMIN: -1.0e+5
 
 # Frame-specific vector attributes
 vector_attrs_srf:
     <<: *vectors_default
-    CATDESC: Magnetic field vectors with x y z varying by time in Spacecraft Reference Frame
+    CATDESC: Magnetic field in the Spacecraft Reference Frame (SRF)
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:SRF,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field SRF
 
 vector_attrs_dsrf:
     <<: *vectors_default
-    CATDESC: Magnetic field vectors with x y z varying by time in Despun Spacecraft Reference Frame
+    CATDESC: Magnetic field in the Despun Spacecraft Reference Frame (DSRF)
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field DSRF
 
 vector_attrs_gse:
     <<: *vectors_default
-    CATDESC: Magnetic field vectors with x y z varying by time in Geocentric Solar Ecliptic Reference Frame
+    CATDESC: Magnetic field in GSE coordinates
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:GSE,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field GSE
 
 vector_attrs_gsm:
     <<: *vectors_default
-    CATDESC: Magnetic field vectors with x y z varying by time in Geocentric Solar Magnetospheric Reference Frame
+    CATDESC: Magnetic field in GSM coordinates
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:GSM,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field GSM
 
 vector_attrs_rtn:
     <<: *vectors_default
-    CATDESC: Magnetic field vectors with r t n varying by time in Radial-Tangential-Normal Reference Frame
+    CATDESC: Magnetic field in RTN coordinates
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:RTN,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field RTN
 
 direction_attrs:
     <<: *default_coords
@@ -92,7 +100,7 @@ direction_attrs:
 
 magnitude:
   <<: *support_default
-  CATDESC: Magnitude of the magnetic field vector
+  CATDESC: Magnitude of the magnetic field
   CDF_DATA_TYPE: CDF_FLOAT
   DICT_KEY: SPASE>Field>FieldQuantity:Magnetic,Qualifier:Scalar
   FIELDNAM: Magnetic Field Magnitude
@@ -102,10 +110,11 @@ magnitude:
   UNITS: nT
   VALIDMAX: 1.0e+5
   VALIDMIN: 0
+  VAR_TYPE: data
 
 range:
   <<: *support_default
-  CATDESC: Sensor range setting
+  CATDESC: Range of the magnetometer sensor
   CDF_DATA_TYPE: CDF_UINT1
   DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
   FIELDNAM: Sensor Range
@@ -131,22 +140,37 @@ pri_sens:
 
 qf_bitmask:
   <<: *support_default
-  CATDESC: Eight-bit Data quality bitmask
+  CATDESC: Bitmask indicating when spacecraft related activities influenced the measurement.
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
-  FIELDNAM: Quality Flag
+  FIELDNAM: Quality Bitmask
   FILLVAL: 255
   FORMAT: I3
-  LABLAXIS: QF
+  LABLAXIS: QB
   VALIDMAX: 255
   VALIDMIN: 0
+  VAR_NOTES: |
+    The bitmask is an 8-bit integer where each bit represents a different quality flag.
+    The bits are defined as follows:
+    - Bit 0: Data is sourced from secondary sensor
+    - Bit 1: Thruster firing signals have been removed
+    - Bit 2: Spacecraft interference impacts this data
+    - Bit 3: Instrument signals have been removed
+    - Bits 4-7: Reserved for in flight calibration
 
 qf:
   <<: *support_default
-  CATDESC: Data quality flag
+  CATDESC: "Data quality flag. 0: Good data, 1: Bad data."
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Quality Flag
   FILLVAL: 255
   FORMAT: I1
   LABLAXIS: QF
+  UNITS: 0=good
   VALIDMAX: 1
   VALIDMIN: 0
+  VAR_NOTES: |
+    The quality flag indicates the overall quality of the data at each timestamp.
+    More detail on the data quality can be found in the quality bitmask.
+    - 0: Good data
+    - 1: Bad quality data not suitable for science
+  VAR_TYPE: data
