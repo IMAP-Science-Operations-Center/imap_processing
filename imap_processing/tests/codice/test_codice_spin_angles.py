@@ -84,9 +84,7 @@ def test_hi_ialirt_spin_angle_first_column_matches_reference():
     (mod 360) to each reference angle. Bin 0 must reproduce the reference
     exactly; any drift indicates a derivation bug.
     """
-    np.testing.assert_array_equal(
-        HI_IALIRT_SPIN_ANGLE[:, 0], HI_IALIRT_REF_SPIN_ANGLE
-    )
+    np.testing.assert_array_equal(HI_IALIRT_SPIN_ANGLE[:, 0], HI_IALIRT_REF_SPIN_ANGLE)
 
 
 def test_lo_direct_events_spin_angle_formula():
