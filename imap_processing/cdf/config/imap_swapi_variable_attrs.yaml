@@ -35,7 +35,7 @@ counts_default: &counts_default
   VAR_TYPE: data
 
 flags_default:
-  CATDESC: Bitwise flag. There are 13 flags. See VAR_NOTES for more details.
+  CATDESC: Bitwise science and housekeeping quality flags. See VAR_NOTES for bit definitions.
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DICT_KEY: SPASE>Support>SupportQuantity:EncodedParameter
@@ -47,16 +47,17 @@ flags_default:
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
   UNITS: ' '
-  VALIDMAX: 8191
+  VALIDMAX: 32767
   VALIDMIN: 0
   VAR_NOTES: >
-    There are 13 flags in total, first three flags are from science packets
-    and remaining 10 flags are from housekeeping packets. Flags are stored
-    as bitwise flag. 32767 is the value when all 15-bits are 1s. Eg.
-    int('0111111111111111', 2). First two bits from right are saved to save defaults.
-    Then, the remaining 13 bits from right are used for 13 flags. The flags are
-    as follows, "OVR_T_ST", "UND_T_ST", "PCEM_CNT_ST", "SCEM_CNT_ST","PCEM_V_ST",
-    "PCEM_I_ST", "PCEM_INT_ST", "SCEM_V_ST", "SCEM_I_ST", "SCEM_INT_ST".
+    Flags are stored as a 15-bit bitmask with VALIDMAX=32767 when bits 0-14 are all
+    set. The implemented flags are: bit 0 (value 1) INF, bit 1 (value 2) NEG,
+    bit 2 (value 4) SWP_PCEM_COMP, bit 3 (value 8) SWP_SCEM_COMP, bit 4 (value 16)
+    SWP_COIN_COMP, bit 5 (value 32) OVR_T_ST, bit 6 (value 64) UND_T_ST,
+    bit 7 (value 128) PCEM_CNT_ST, bit 8 (value 256) SCEM_CNT_ST,
+    bit 9 (value 512) PCEM_V_ST, bit 10 (value 1024) PCEM_I_ST,
+    bit 11 (value 2048) PCEM_INT_ST, bit 12 (value 4096) SCEM_V_ST,
+    bit 13 (value 8192) SCEM_I_ST, and bit 14 (value 16384) SCEM_INT_ST.
   VAR_TYPE: data
 
 counts_uncertainty_default: &counts_uncertainty_default

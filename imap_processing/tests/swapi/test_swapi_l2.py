@@ -132,6 +132,7 @@ def test_swapi_l2_cdf(
     esa_energy_info = cdf_file.varinq("esa_energy")
     esa_energy_attrs = cdf_file.varattsget("esa_energy")
     sci_start_time_attrs = cdf_file.varattsget("sci_start_time")
+    swp_l1a_flags_attrs = cdf_file.varattsget("swp_l1a_flags")
     assert esa_energy_info.Data_Type_Description == "CDF_DOUBLE"
     assert np.isclose(esa_energy_attrs["FILLVAL"], np.float64(-1.0e31))
     assert esa_energy_attrs["VALIDMAX"] == np.float64(21000.0)
@@ -139,6 +140,9 @@ def test_swapi_l2_cdf(
     assert esa_energy_attrs["VAR_TYPE"] == "data"
     assert esa_energy_attrs["DEPEND_1"] == "esa_step"
     assert sci_start_time_attrs["FORMAT"] == "A23"
+    assert swp_l1a_flags_attrs["VALIDMAX"] == np.uint16(32767)
+    assert "SWP_PCEM_COMP" in swp_l1a_flags_attrs["VAR_NOTES"]
+    assert "SCEM_INT_ST" in swp_l1a_flags_attrs["VAR_NOTES"]
 
     rate_variables = [
         "swp_pcem_rate",
