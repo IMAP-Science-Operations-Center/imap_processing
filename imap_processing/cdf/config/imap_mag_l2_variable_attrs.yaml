@@ -60,32 +60,32 @@ vector_attrs: &vectors_default
 vector_attrs_srf:
     <<: *vectors_default
     CATDESC: Magnetic field in the Spacecraft Reference Frame (SRF)
-    FIELDNAM: Magnetic Field SRF
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:SRF,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field SRF
 
 vector_attrs_dsrf:
     <<: *vectors_default
     CATDESC: Magnetic field in the Despun Spacecraft Reference Frame (DSRF)
-    FIELDNAM: Magnetic Field DSRF
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field DSRF
 
 vector_attrs_gse:
     <<: *vectors_default
     CATDESC: Magnetic field in GSE coordinates
-    FIELDNAM: Magnetic Field GSE
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:GSE,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field GSE
 
 vector_attrs_gsm:
     <<: *vectors_default
     CATDESC: Magnetic field in GSM coordinates
-    FIELDNAM: Magnetic Field GSM
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:GSM,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field GSM
 
 vector_attrs_rtn:
     <<: *vectors_default
     CATDESC: Magnetic field in RTN coordinates
-    FIELDNAM: Magnetic Field RTN
     DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:RTN,CoordinateRepresentation:Cartesian"
+    FIELDNAM: Magnetic Field RTN
 
 direction_attrs:
     <<: *default_coords
