@@ -50,6 +50,7 @@ def _write_calibration_csv(path, values):
     path.write_text(header + row)
 
 
+@pytest.mark.external_test_data
 def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset, l1b_dataset: xr.Dataset):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected logical source.
@@ -442,6 +443,7 @@ def test_calculate_velocity_and_mass_at_10_km_s():
     assert mass_estimate == pytest.approx(expected_mass_kg, rel=1e-12)
 
 
+@pytest.mark.external_test_data
 def test_velocity_and_mass_estimate(ancillary_files):
     """Tests that the velocity and mass estimate function."""
     # Load calibration coefficients from ancillary files

@@ -51,6 +51,7 @@ def l2b_and_l2c_datasets(l2a_dataset: xr.Dataset, test_l1b_msg) -> list[xr.Datas
     return datasets
 
 
+@pytest.mark.external_test_data
 def test_l2b_logical_source_and_cdf(l2b_and_l2c_datasets: list[xr.Dataset]):
     """Tests that the ``idex_l2b`` function generates datasets
     with the expected logical source.
@@ -78,6 +79,7 @@ def test_l2b_logical_source_and_cdf(l2b_and_l2c_datasets: list[xr.Dataset]):
             assert int(var_attrs["FILLVAL"]) == INT_FILLVAL
 
 
+@pytest.mark.external_test_data
 def test_l2c_attrs_and_vars(
     l2b_and_l2c_datasets: list[xr.Dataset], l2a_dataset: xr.Dataset
 ):
@@ -149,6 +151,7 @@ def test_l2c_attrs_and_vars(
         )
 
 
+@pytest.mark.external_test_data
 def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected variables.
