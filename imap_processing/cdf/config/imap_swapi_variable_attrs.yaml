@@ -1,6 +1,6 @@
 # <=== Coordinates ===>
 esa_step:
-  CATDESC: Energy step id in lookup table
+  CATDESC: Energy step id in lookup table; corresponding energy in eV/q is provided by esa_energy
   DICT_KEY: "SPASE>Support>SupportQuantity:Other"
   FIELDNAM: Energy Step
   FILLVAL: 255
@@ -14,7 +14,7 @@ esa_step:
 
 # <=== LABL_PTR_i Attributes ===>
 esa_step_label:
-  CATDESC: Energy step id in lookup table
+  CATDESC: Energy step id in lookup table; corresponding energy in eV/q is provided by esa_energy
   FIELDNAM: Energy Step
   FORMAT: A2
   VAR_TYPE: metadata
@@ -103,7 +103,7 @@ rate_default: &rate_default
   VAR_TYPE: data
 
 esa_energy:
-  CATDESC: ESA energy per charge for each sweep and energy step
+  CATDESC: ESA energy in eV/q corresponding to each step id for each sweep
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
@@ -111,7 +111,7 @@ esa_energy:
   FIELDNAM: ESA Energy
   FILLVAL: -1.0000000E+31
   FORMAT: F8.1
-  LABLAXIS: Energy(eV)
+  LABLAXIS: Energy (eV/q)
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
   UNITS: eV / q

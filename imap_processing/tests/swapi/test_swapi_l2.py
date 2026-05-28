@@ -131,18 +131,41 @@ def test_swapi_l2_cdf(
     cdf_file = cdflib.CDF(l2_cdf)
     esa_energy_info = cdf_file.varinq("esa_energy")
     esa_energy_attrs = cdf_file.varattsget("esa_energy")
+    esa_step_attrs = cdf_file.varattsget("esa_step")
     sci_start_time_attrs = cdf_file.varattsget("sci_start_time")
     swp_l1a_flags_attrs = cdf_file.varattsget("swp_l1a_flags")
+    global_attrs = cdf_file.globalattsget()
     assert esa_energy_info.Data_Type_Description == "CDF_DOUBLE"
     assert np.isclose(esa_energy_attrs["FILLVAL"], np.float64(-1.0e31))
     assert esa_energy_attrs["VALIDMAX"] == np.float64(21000.0)
     assert esa_energy_attrs["VALIDMIN"] == np.float64(0.0)
     assert esa_energy_attrs["VAR_TYPE"] == "data"
     assert esa_energy_attrs["DEPEND_1"] == "esa_step"
+    assert esa_energy_attrs["CATDESC"] == (
+        "ESA energy in eV/q corresponding to each step id for each sweep"
+    )
+    assert esa_energy_attrs["LABLAXIS"] == "Energy (eV/q)"
+    assert (
+        "corresponding energy in eV/q is provided by esa_energy"
+        in esa_step_attrs["CATDESC"]
+    )
     assert sci_start_time_attrs["FORMAT"] == "A23"
     assert swp_l1a_flags_attrs["VALIDMAX"] == np.uint16(32767)
     assert "SWP_PCEM_COMP" in swp_l1a_flags_attrs["VAR_NOTES"]
     assert "SCEM_INT_ST" in swp_l1a_flags_attrs["VAR_NOTES"]
+    assert (
+        "top-hat electrostatic analyzer designed to measure energy-per-charge "
+        "distributions" in global_attrs["TEXT"][0]
+    )
+    assert (
+        "https://imap.princeton.edu/spacecraft/instruments/"
+        "solar-wind-and-pickup-ions-swapi" in global_attrs["TEXT"][0]
+    )
+    assert "constant livetime of 145ms" in global_attrs["TEXT"][0]
+    assert (
+        "includes the ESA energy associated with each voltage step"
+        in (global_attrs["TEXT"][0])
+    )
 
     rate_variables = [
         "swp_pcem_rate",
