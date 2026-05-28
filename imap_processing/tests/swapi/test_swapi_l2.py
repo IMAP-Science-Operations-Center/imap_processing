@@ -131,11 +131,14 @@ def test_swapi_l2_cdf(
     cdf_file = cdflib.CDF(l2_cdf)
     esa_energy_info = cdf_file.varinq("esa_energy")
     esa_energy_attrs = cdf_file.varattsget("esa_energy")
+    esa_step_attrs = cdf_file.varattsget("esa_step")
     sci_start_time_attrs = cdf_file.varattsget("sci_start_time")
     assert esa_energy_info.Data_Type_Description == "CDF_DOUBLE"
     assert np.isclose(esa_energy_attrs["FILLVAL"], np.float64(-1.0e31))
     assert esa_energy_attrs["VALIDMAX"] == np.float64(21000.0)
     assert esa_energy_attrs["VALIDMIN"] == np.float64(0.0)
+    assert esa_step_attrs["SCALETYP"] == "linear"
+    assert "SCALE_TYP" not in esa_step_attrs
     assert sci_start_time_attrs["FORMAT"] == "A23"
 
     rate_variables = [
