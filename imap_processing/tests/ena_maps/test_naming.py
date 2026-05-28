@@ -431,7 +431,7 @@ class TestMapDescriptor:
             ),
             (
                 "l075-enanbs-h-sf-nsp-anti-hae-6deg-6mo",
-                "bg_intensity_stat_unc",
+                "bg_intensity_stat_uncert",
                 "IMAP Lo75 H Background Inten Stat. Unc., "
                 "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
             ),
