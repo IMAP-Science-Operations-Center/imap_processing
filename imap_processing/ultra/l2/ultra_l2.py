@@ -932,8 +932,7 @@ def ultra_l2(
     # Adjust CATDESC per descriptor
     if descriptor is not None:
         md = MapDescriptor.from_string(descriptor)
-        principal_data = md.principal_data_var
-        if principal_data in map_dataset:
-            map_dataset[principal_data].attrs["CATDESC"] = md.to_catdesc()
-
+        for data_var in map_dataset.data_vars.keys():
+            if map_var_catdesc := md.build_map_var_catdesc(data_var):
+                map_dataset[data_var].attrs["CATDESC"] = map_var_catdesc
     return [map_dataset]

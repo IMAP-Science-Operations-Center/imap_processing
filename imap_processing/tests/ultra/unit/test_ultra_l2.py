@@ -817,6 +817,11 @@ class TestUltraL2:
             == "IMAP Ultra90 H Inten, HAE Helio Frame, No Surv Corr, Full Spin,"
             " 6 deg, 6 Mon"
         )
+        assert (
+            output_map["counts"].attrs["CATDESC"]
+            == "IMAP Ultra90 H Counts, HAE Helio Frame, No Surv Corr, Full Spin,"
+            " 6 deg, 6 Mon"
+        )
         write_cdf(output_map)
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
