@@ -149,23 +149,24 @@ tof_snr:
   FILLVAL: *double_fillval
   FORMAT: F20.3
   LABLAXIS: TOF High SNR
-  UNITS: pC
+  UNITS: " "
   VALIDMAX: *int_maxval
   VALIDMIN: 0.0
   VAR_TYPE: data
 
 tof_peak_kappa:
-  CATDESC: TOF High spectrum with x-axis converted from time to mass.
+  CATDESC: Mass-scale alignment metric for the TOF peak solution.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: time_series
-  FIELDNAM: Mass Scale
+  FIELDNAM: TOF Peak Kappa
   FILLVAL: *double_fillval
   FORMAT: F10.3
   LABLAXIS: TOF High Kappa
-  UNITS: Kg
+  UNITS: " "
   VALIDMAX: 1.0
   VALIDMIN: 0.0
+  VAR_NOTES: Kappa measures how closely detected TOF peaks align with integer mass positions on the preliminary mass scale.
   VAR_TYPE: data
 
 tof_peak_fit_parameters:
@@ -229,7 +230,7 @@ mass_scale:
   FORMAT: F20.6
   LABLAXIS: Mass Scale
   LABL_PTR_1: time_high_sample_rate_label
-  UNITS: Kg
+  UNITS: amu
   VALIDMAX: *int_maxval
   VALIDMIN: 0.0
   VAR_TYPE: data
@@ -308,7 +309,7 @@ target_high_chi_squared:
 
 target_high_reduced_chi_squared:
   <<: *chi_square_base
-  CATDESC: Reduced chi squared value for the Target Low signal fit.
+  CATDESC: Reduced chi squared value for the Target High signal fit.
   FIELDNAM: Reduced Chi Square (Target High)
   LABLAXIS: TH Red Chi Square
 
