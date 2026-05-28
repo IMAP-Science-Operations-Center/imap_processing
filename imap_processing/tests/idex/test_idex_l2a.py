@@ -88,21 +88,45 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset, l1b_dataset: xr.Dat
         )
 
     with cdflib.CDF(file_name) as cdf_file:
+        assert cdf_file.varattsget("mass_index")["CATDESC"] == (
+            "Index variable for mass-resolved TOF peak-fit products."
+        )
         assert cdf_file.varattsget("mass_index")["UNITS"] == " "
+        assert cdf_file.varattsget("mass_index")["VAR_NOTES"] == (
+            "Associated labels: mass_labels."
+        )
         assert cdf_file.varattsget("tof_peak_kappa")["CATDESC"] == (
             "Mass-scale alignment metric for the TOF peak solution."
         )
         assert cdf_file.varattsget("tof_peak_kappa")["FIELDNAM"] == "TOF Peak Kappa"
         assert cdf_file.varattsget("tof_peak_kappa")["UNITS"] == " "
+        assert cdf_file.varattsget("tof_snr")["CATDESC"] == (
+            "Signal-to-noise ratio of the TOF High waveform."
+        )
         assert cdf_file.varattsget("tof_snr")["UNITS"] == " "
+        assert cdf_file.varattsget("tof_snr")["VAR_NOTES"] == (
+            "Computed relative to a pre-impact baseline window."
+        )
+        assert cdf_file.varattsget("mass_scale")["CATDESC"] == (
+            "Preliminary time-to-mass scale for the TOF waveform."
+        )
         assert cdf_file.varattsget("mass_scale")["UNITS"] == "amu"
         assert cdf_file.varattsget("mass")["VAR_TYPE"] == "support_data"
         assert cdf_file.varattsget("mass")["DISPLAY_TYPE"] == "no_plot"
+        assert cdf_file.varattsget("mass")["CATDESC"] == (
+            "Mass-scale output retained for compatibility with the L2A product "
+            "structure."
+        )
         assert cdf_file.varattsget("mass")["FIELDNAM"] == "Mass Scale Alias"
         assert cdf_file.varattsget("mass")["UNITS"] == "amu"
+        assert cdf_file.varattsget("mass")["VAR_NOTES"] == (
+            "Mass-scale output retained for compatibility with the current L2A "
+            "product structure. This variable is not intended to be the primary "
+            "science-facing mass-scale output."
+        )
         assert (
             cdf_file.varattsget("target_high_reduced_chi_squared")["CATDESC"]
-            == "Reduced chi squared value for the Target High signal fit."
+            == "Reduced chi-square value for the Target High waveform fit."
         )
         for variable_name in copied_context_vars:
             assert variable_name in cdf_file.cdf_info().zVariables
