@@ -470,7 +470,7 @@ hi_pset_esa_energy_step:
   <<: *default_esa_energy_step
   LABLAXIS: Energy Step
   MONOTON: INCREASE
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 12
   VALIDMIN: 0
@@ -484,7 +484,7 @@ hi_pset_calibration_prod:
   FORMAT: I1
   LABLAXIS: Calibration Prod
   MONOTON: INCREASE
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 9
   VALIDMIN: 0
@@ -498,7 +498,7 @@ hi_pset_spin_angle_bin:
   FORMAT: I3
   LABLAXIS: Bin Index
   MONOTON: INCREASE
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 3599
   VALIDMIN: 0
@@ -694,4 +694,3 @@ hi_goodtimes_spin_bin_label:
   FIELDNAM: Spin Bin Label
   FORMAT: A3
   VAR_TYPE: metadata
-

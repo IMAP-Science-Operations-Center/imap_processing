@@ -6,7 +6,7 @@ spin_sector:
   FILLVAL: -9223370000000000000
   FORMAT: I3
   LABLAXIS: Angle
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 179
   VALIDMIN: 0
@@ -20,7 +20,7 @@ cem_id:
   FILLVAL: -9223370000000000000
   FORMAT: I1
   LABLAXIS: Angle
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 6
   VALIDMIN: 0

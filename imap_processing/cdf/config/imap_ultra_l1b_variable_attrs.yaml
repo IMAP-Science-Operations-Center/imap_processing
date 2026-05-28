@@ -353,7 +353,7 @@ de_event_met:
   DISPLAY_TYPE: no_plot
   FIELDNAM: Mission Elapsed Time
   LABLAXIS: DE MET
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: ns
   VAR_TYPE: support_data
 

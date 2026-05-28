@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import yaml
@@ -23,4 +24,19 @@ def test_cdf_attribute_yaml_keys_are_sorted():
     assert not unsorted_blocks, (
         "CDF metadata attribute keys must be in alphabetical order:\n"
         + "\n".join(unsorted_blocks)
+    )
+
+
+def test_cdf_attribute_yaml_uses_scaletyp_key():
+    """Verify ISTP metadata uses SCALETYP, not the legacy SCALE_TYP typo."""
+    invalid_lines = []
+
+    for path in sorted(CONFIG_DIR.glob("*_attrs.yaml")):
+        for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+            if re.search(r"\bSCALE_TYP\b", line):
+                invalid_lines.append(f"{path.name}:{line_number}: {line.strip()}")
+
+    assert not invalid_lines, (
+        "CDF metadata must use 'SCALETYP' instead of 'SCALE_TYP':\n"
+        + "\n".join(invalid_lines)
     )
