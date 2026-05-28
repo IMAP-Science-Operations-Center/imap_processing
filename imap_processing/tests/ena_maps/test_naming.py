@@ -311,11 +311,13 @@ class TestMapDescriptor:
         [
             (
                 "h45-spx-h-hf-sp-ram-hae-4deg-3mo",
-                "IMAP Hi45 H Spectral, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+                "IMAP Hi45 H Spectral Index, "
+                "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
             ),
             (
                 "h45-spx0305-h-hf-sp-ram-hae-4deg-3mo",
-                "IMAP Hi45 H Spectral, HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
+                "IMAP Hi45 H Spectral Index, "
+                "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
             ),
             (
                 "hic-ena-h-hf-sp-ram-hae-4deg-3mo",
@@ -374,10 +376,12 @@ class TestMapDescriptor:
             ),
         ],
     )
-    def test_primary_data_catdesc(self, descriptor_str, expected_catdesc):
+    def test_build_map_var_catdesc_with_primary_vars(
+        self, descriptor_str, expected_catdesc
+    ):
         # Use case is primarily from descriptor str to CATDESC
         md = MapDescriptor.from_string(descriptor_str)
-        actual_catdesc = md.to_primary_data_catdesc()
+        actual_catdesc = md.build_map_var_catdesc(md.principal_data_var)
         assert actual_catdesc == expected_catdesc
 
     @pytest.mark.parametrize(
@@ -409,7 +413,7 @@ class TestMapDescriptor:
             ),
             (
                 "hic-ena-h-hf-sp-ram-hae-4deg-3mo",
-                "ena_intensity_stat_unc",
+                "ena_intensity_stat_uncert",
                 "IMAP Hi Combined H Inten Stat. Unc., "
                 "HAE Helio Frame, Surv Corr, Ram, 4 deg, 3 Mon",
             ),
@@ -462,7 +466,9 @@ class TestMapDescriptor:
             ),
         ],
     )
-    def test_build_map_var_catdesc(self, descriptor_str, var_name, expected_catdesc):
+    def test_build_map_var_catdesc_more_vars(
+        self, descriptor_str, var_name, expected_catdesc
+    ):
         md = MapDescriptor.from_string(descriptor_str)
         actual_catdesc = md.build_map_var_catdesc(var_name)
         assert actual_catdesc == expected_catdesc

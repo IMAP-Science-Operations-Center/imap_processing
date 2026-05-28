@@ -948,6 +948,11 @@ class TestRectangularSkyMap:
             name="ena_intesity",
             dims=[k for k in coord_sizes.keys()][:-1],
         )
+        mock_dataset["ena_intensity_stat_uncert"] = xr.DataArray(
+            np.ones(tuple(s for s in coord_sizes.values())[:-1]),
+            name="counts",
+            dims=[k for k in coord_sizes.keys()][:-1],
+        )
         # Add one variable that is expected to get removed because it has a
         # dimension that is not in the list of `coord_names`
         mock_dataset["extra_dimension_var"] = xr.DataArray(
@@ -1043,6 +1048,11 @@ class TestRectangularSkyMap:
         assert (
             cdf_dataset["ena_intensity"].attrs["CATDESC"]
             == "IMAP Hi45 H Inten, HAE SC Frame, No Surv Corr, Ram, 6 deg, 6 Mon"
+        )
+        assert (
+            cdf_dataset["ena_intensity_stat_uncert"].attrs["CATDESC"]
+            == "IMAP Hi45 H Inten Stat. Unc."
+            ", HAE SC Frame, No Surv Corr, Ram, 6 deg, 6 Mon"
         )
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
