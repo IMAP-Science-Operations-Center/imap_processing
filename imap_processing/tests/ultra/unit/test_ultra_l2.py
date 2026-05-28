@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from astropy_healpix.healpy import nside2pixarea
@@ -19,6 +20,7 @@ from imap_processing.ultra.l2 import ultra_l2
 from imap_processing.ultra.l2.ultra_l2 import (
     VARIABLES_TO_AVERAGE_OVER_COARSE_ENERGY_BINS,
     build_default_coarse_bin_edges,
+    calculate_systematic_uncertainty,
 )
 
 ENERGY_BIN_EDGES_PATH = (
@@ -538,10 +540,29 @@ class TestUltraL2:
             map_dataset["ena_intensity_sys_err"].shape
             == map_dataset["ena_intensity"].shape
         )
-        # TODO: Put in actual value for sys_err once implemented in ultra_l2 code.
+        expected_unc = np.broadcast_to(
+            np.array(
+                [
+                    0.330108892,
+                    0.297241,
+                    0.258871,
+                    0.232249,
+                    0.26833,
+                    0.297576,
+                    0.330108892,
+                    0.330108892,
+                    0.330108892,
+                    0.330108892,
+                    0.330108892,
+                    0.330108892,
+                ]
+            )[np.newaxis, :, np.newaxis],
+            map_dataset["ena_intensity_stat_uncert"].shape,
+        )
+
         np.testing.assert_allclose(
             map_dataset["ena_intensity_sys_err"],
-            0,
+            expected_unc,
             rtol=0,
             atol=1e-12,
         )
@@ -1057,3 +1078,31 @@ class TestUltraL2:
         np.testing.assert_array_equal(
             binned_pset["sensitivity"].values, np.ones_like(binned_pset["sensitivity"])
         )
+
+
+def test_calculate_systematic_uncertainty():
+    """Test that the systematic uncertainty is calculated correctly."""
+    sys_uncert_df = pd.read_csv(
+        f"{imap_module_directory}/ultra/l2/ultra_l2_systematic_uncertainties.csv"
+    )
+    df = sys_uncert_df[sys_uncert_df["fm"] == 45]
+    output_shape = (1, 12, 360)
+    unc_array = calculate_systematic_uncertainty(45, output_shape, df["energy"].values)
+
+    assert unc_array.shape == output_shape
+    np.testing.assert_array_equal(
+        np.ones(output_shape)
+        * df["systematic_uncertainty"].values[np.newaxis, :, np.newaxis],
+        unc_array,
+    )
+
+
+def test_calculate_systematic_uncertainty_wrong_energies():
+    """Test that a value error is raised if the energies are unexpected"""
+    output_shape = (1, 12, 360)
+    with pytest.raises(
+        ValueError,
+        match="The energy values from the systematic uncertainty csv do not match the"
+        " energy values of the map",
+    ):
+        calculate_systematic_uncertainty(90, output_shape, np.arange(12))
