@@ -86,9 +86,7 @@ def l1a_example_data(_download_test_data):
 
 
 @pytest.fixture
-def l2a_dataset(
-    l1b_dataset: xr.Dataset, ancillary_files: dict, _download_test_data
-) -> xr.Dataset:
+def l2a_dataset(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
