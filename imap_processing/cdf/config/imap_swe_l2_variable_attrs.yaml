@@ -36,7 +36,7 @@ spin_sector:
   VAR_TYPE: support_data
 
 inst_az:
-  CATDESC: Spin angle in instrument frame. Angle resolution is 12 degree nominally
+  CATDESC: Spin angle in despun spacecraft coordinates. Angle resolution is 12 degree, with bin centers 6 - 354 degree (30 bins)
   FIELDNAM: Spin Angle
   FILLVAL: -9223370000000000000
   FORMAT: E10.4
@@ -46,9 +46,7 @@ inst_az:
   VALIDMAX: 359.999
   VALIDMIN: 0.00
   VAR_NOTES: >
-    Bin CENTERS  - Assuming 0.5 sec measurements and a spin starting
-    at Angle=0, these are the angles at the middle of each measurement
-    bin.
+    Spin angle bin centers in despun spacecraft coordinates.
   VAR_TYPE: support_data
 
 cem_id:
@@ -64,7 +62,7 @@ cem_id:
   VAR_TYPE: support_data
 
 inst_el:
-  CATDESC: Angle of each CEM detector
+  CATDESC: Polar angle of each CEM detector relative to spin axis. Angle resolution is 21 degree, with bin centers -63 - 63 degree (7 bins)
   FIELDNAM: Polar Angle
   FILLVAL: -9223370000000000000
   FORMAT: I4
@@ -114,13 +112,13 @@ energy_label:
   VAR_TYPE: metadata
 
 inst_az_label:
-  CATDESC: Spin angle bins in instrument frame. Angle resolution is 12 degree nominally
+  CATDESC: Spin angle bins in despun spacecraft coordinates
   FIELDNAM: Spin Angle
   FORMAT: A3
   VAR_TYPE: metadata
 
 inst_el_label:
-  CATDESC: Angle of each CEM detector
+  CATDESC: Polar angle of each CEM detector relative to spin axis
   FIELDNAM: CEM Angle
   FORMAT: A3
   VAR_TYPE: metadata
@@ -128,13 +126,13 @@ inst_el_label:
 # <=== Data Variables ===>
 
 inst_az_spin_sector:
-  CATDESC: Spin angle organized by ESA step and spin sector
+  CATDESC: Spin angle in despun spacecraft coordinates organized by ESA step and spin sector
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array,CoordinateSystemName:SC,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Spin Angle
+  FIELDNAM: Spin Angle Spin Sector
   FILLVAL: -1.0E+31
   FORMAT: E10.5
   LABL_PTR_1: esa_step_label
@@ -146,13 +144,15 @@ inst_az_spin_sector:
 
 phase_space_density_spin_sector:
   CATDESC: Phase space density organized by ESA step and spin sector and CEM
+  DELTA_MINUS_VAR: psd_stat_uncert
+  DELTA_PLUS_VAR: psd_stat_uncert
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
   DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Phase Space Density
+  FIELDNAM: Phase Space Density Spin Sector
   FILLVAL: -1.0E+31
   FORMAT: E14.7
   LABL_PTR_1: esa_step_label
@@ -185,19 +185,21 @@ phase_space_density:
 
 flux_spin_sector:
   CATDESC: Number flux organized by ESA step and spin sector and CEM
+  DELTA_MINUS_VAR: flux_stat_uncert
+  DELTA_PLUS_VAR: flux_stat_uncert
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
   DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Flux
+  FIELDNAM: Flux Spin Sector
   FILLVAL: -1.0E+31
   FORMAT: E14.7
   LABL_PTR_1: esa_step_label
   LABL_PTR_2: spin_sector_label
   LABL_PTR_3: cem_id_label
-  UNITS: 1 / (2 * eV * cm^2 * s * ster)
+  UNITS: 1 / (eV * cm^2 * s * ster)
   VALIDMAX: 1.0E+9
   VALIDMIN: 0.0
   VAR_TYPE: data
@@ -216,7 +218,7 @@ flux:
   LABL_PTR_1: energy_label
   LABL_PTR_2: inst_az_label
   LABL_PTR_3: inst_el_label
-  UNITS: 1 / (2 * eV * cm^2 * s * ster)
+  UNITS: 1 / (eV * cm^2 * s * ster)
   VALIDMAX: 1.0E+9
   VALIDMIN: 0.0
   VAR_TYPE: data
@@ -227,7 +229,7 @@ psd_stat_uncert:
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Uncertainty
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Phase Space Density Stats Uncertainty
   FILLVAL: -1.0000000E+31
@@ -236,10 +238,10 @@ psd_stat_uncert:
   LABL_PTR_2: spin_sector_label
   LABL_PTR_3: cem_id_label
   SCALETYP: linear
-  UNITS: counts
+  UNITS: s^3 / cm^6
   VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 flux_stat_uncert:
   CATDESC: Flux statistical uncertainty
@@ -247,7 +249,7 @@ flux_stat_uncert:
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
   DEPEND_3: cem_id
-  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Flux Stats Uncertainty
   FILLVAL: -1.0000000E+31
@@ -256,10 +258,10 @@ flux_stat_uncert:
   LABL_PTR_2: spin_sector_label
   LABL_PTR_3: cem_id_label
   SCALETYP: linear
-  UNITS: counts
+  UNITS: 1 / (eV * cm^2 * s * ster)
   VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 acquisition_time:
   CATDESC: Acquisition time organized by ESA step and spin sector

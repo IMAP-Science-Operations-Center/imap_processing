@@ -5,8 +5,9 @@ instrument_base: &instrument_base
     The IMAP Solar Wind Electron (SWE) instrument measures the solar wind electrons
     in the heliosphere. SWE will contribute to our understanding of the acceleration
     and transport of charged particles in the heliosphere.
-    SWE design and assembly is led by the Princeton Plasma Physics Laboratory. See
-    https://imap.princeton.edu/instruments/swe for more details.
+    SWE design and assembly is led by Los Alamos National Laboratory. See
+    https://imap.princeton.edu/spacecraft/instruments/solar-wind-electron-swe
+    for more details.
 
 imap_swe_l1a_sci:
   <<: *instrument_base

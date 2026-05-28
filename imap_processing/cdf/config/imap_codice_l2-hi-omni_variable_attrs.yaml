@@ -28,6 +28,7 @@ epoch:
 
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
+  DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta minus
   FILLVAL: *min_int
@@ -41,6 +42,7 @@ epoch_delta_minus:
 
 epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
+  DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
   FIELDNAM: epoch delta plus
   FILLVAL: *min_int
@@ -124,10 +126,10 @@ energy_o:
 
 energy_uh:
   <<: *energy_default
-  CATDESC: Geometric mean energy per nucleon for UH
+  CATDESC: Geometric mean energy per nucleon for Ultra-Heavy ions
   DELTA_MINUS_VAR: energy_uh_minus
   DELTA_PLUS_VAR: energy_uh_plus
-  FIELDNAM: UH Energy
+  FIELDNAM: Ultra-Heavy Energy
 
 # ------------------------------- Label vars --------------------------------
 epoch_delta_minus_label:
@@ -204,26 +206,29 @@ energy_o_label:
   VAR_TYPE: metadata
 
 energy_uh_label:
-  CATDESC: Energy-channel labels for UH differential intensity
-  FIELDNAM: UH Energy Channel Labels
+  CATDESC: Energy-channel labels for Ultra-Heavy differential intensity
+  FIELDNAM: Ultra-Heavy Energy Channel Labels
   FORMAT: A32
   VAR_TYPE: metadata
 
 # --------------------------- Dataset variable attrs ------------------------
 # The following are set in multiple data products
 data_quality:
-  CATDESC: Indicates whether data quality is suspect (1).
+  CATDESC: Data Quality (0=good, 1=suspect)
   DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: time_series
   FIELDNAM: Data Quality
   FILLVAL: *uint8_fillval
-  FORMAT: '%d'
+  FORMAT: I3
   LABLAXIS: Data Quality
   SCALETYP: linear
-  UNITS: ' '
+  UNITS: 0=good
   VALIDMAX: 1
   VALIDMIN: 0
+  VAR_NOTES: >
+    Quality flag propagated from the packet-level suspect bit. 0 = good data.
+    1 = suspect data. 255 = fill when no data are present.
   VAR_TYPE: data
 
 # ----- hi-omni Attributes -----
@@ -441,7 +446,7 @@ unc_he4:
   VAR_TYPE: support_data
 
 unc_junk:
-  CATDESC: Uncertainty in differential intensity for Junk at root-2-spaced energy-per-nucleon channels
+  CATDESC: Uncertainty in differential intensity for Junk (unclassified counts) at root-2-spaced energy-per-nucleon channels
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_junk
@@ -455,6 +460,9 @@ unc_junk:
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 4096.0
   VALIDMIN: 0.0
+  VAR_NOTES: >
+    Catch-all uncertainty bin for counts that do not fall into any CoDICE Hi
+    species classification bin.
   VAR_TYPE: support_data
 
 unc_ne_mg_si:
@@ -492,12 +500,12 @@ unc_o:
   VAR_TYPE: support_data
 
 unc_uh:
-  CATDESC: Uncertainty in differential intensity for UH at root-2-spaced energy-per-nucleon channels
+  CATDESC: Uncertainty in differential intensity for Ultra-Heavy ions at root-2-spaced energy-per-nucleon channels
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_uh
   DISPLAY_TYPE: time_series
-  FIELDNAM: Uncertainty - UH
+  FIELDNAM: Uncertainty - Ultra-Heavy
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_uh_label
@@ -598,7 +606,7 @@ he4:
   VAR_TYPE: data
 
 junk:
-  CATDESC: Differential intensity for Junk at root-2-spaced energy-per-nucleon channels
+  CATDESC: Differential intensity for Junk (unclassified counts) at root-2-spaced energy-per-nucleon channels
   DELTA_MINUS_VAR: unc_junk
   DELTA_PLUS_VAR: unc_junk
   DEPEND_0: epoch
@@ -613,6 +621,9 @@ junk:
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0.0
+  VAR_NOTES: >
+    Catch-all bin for counts that do not fall into any CoDICE Hi species
+    classification bin.
   VAR_TYPE: data
 
 ne_mg_si:
@@ -652,14 +663,14 @@ o:
   VAR_TYPE: data
 
 uh:
-  CATDESC: Differential intensity for UH at root-2-spaced energy-per-nucleon channels
+  CATDESC: Differential intensity for Ultra-Heavy ions at root-2-spaced energy-per-nucleon channels
   DELTA_MINUS_VAR: unc_uh
   DELTA_PLUS_VAR: unc_uh
   DEPEND_0: epoch
   DEPEND_1: energy_uh
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: time_series
-  FIELDNAM: Differential Intensity - UH
+  FIELDNAM: Differential Intensity - Ultra-Heavy
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_uh_label

@@ -10,9 +10,9 @@ epoch:
   DELTA_PLUS_VAR: epoch_delta_plus
 
 priority:
-  CATDESC: Priority Level
+  CATDESC: Direct-event telemetry priority level (0-7)
   DICT_KEY: SPASE>Support>SupportQuantity:Other
-  FIELDNAM: Priority Level
+  FIELDNAM: Event Priority Level
   FILLVAL: *uint8_fillval
   FORMAT: I1
   LABLAXIS: Priority
@@ -20,6 +20,10 @@ priority:
   UNITS: " "
   VALIDMAX: 7
   VALIDMIN: 0
+  VAR_NOTES: >
+    Lo direct-event telemetry priority level. 0 = SW TCR PUIs, 1 = SW H+, 2 =
+    SW He++, 3 = SW Heavies, 4 = SW DCR PUIs, 5 = NSW Heavies, 6 = NSW H+ and
+    He++, 7 = reserved/unused.
   VAR_TYPE: support_data
 
 event_num:
@@ -81,19 +85,24 @@ num_events:
   VAR_TYPE: data
 
 data_quality:
-  CATDESC: Data Quality Flag per Priority
+  CATDESC: Data Quality Flag per Priority (0=good, 1=suspect)
   DEPEND_0: epoch
   DEPEND_1: priority
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: no_plot
-  FIELDNAM: Data Quality
+  FIELDNAM: Data Quality Flag
   FILLVAL: *uint16_fillval
-  FORMAT: I3
+  FORMAT: I5
   LABL_PTR_1: priority_label
   SCALETYP: linear
-  UNITS: " "
+  UNITS: 0=good
   VALIDMAX: 255
   VALIDMIN: 0
+  VAR_NOTES: >
+    Quality flag propagated from the packet-level suspect bit for each
+    direct-event priority bin. 0 = good packet group. 1 = suspect packet
+    group. 65535 = fill when no direct-event data are present for the priority
+    bin.
   VAR_TYPE: data
 
 energy_step:
@@ -223,21 +232,25 @@ multi_flag:
   VAR_TYPE: data
 
 type:
-  CATDESC: Event Type
+  CATDESC: "PHA type code: 0=TCR, 1=DCR, 2=APD-only"
   DEPEND_0: epoch
   DEPEND_1: priority
   DEPEND_2: event_num
   DICT_KEY: SPASE>Support>SupportQuantity:Other
   DISPLAY_TYPE: no_plot
-  FIELDNAM: Type
+  FIELDNAM: PHA Type Code
   FILLVAL: *uint8_fillval
   FORMAT: I1
   LABL_PTR_1: priority_label
   LABL_PTR_2: event_num_label
   SCALETYP: linear
   UNITS: " "
-  VALIDMAX: 4
+  VALIDMAX: 2
   VALIDMIN: 0
+  VAR_NOTES: >
+    PHA type code for CoDICE-Lo direct events. 0 = TCR (Triple Coincidence
+    Rate; STA+STB+SP+APD), 1 = DCR (Double Coincidence Rate; STA+STB+SP), 2 =
+    APD-only energy event (APD with only one or two of STA, STB, and SP).
   VAR_TYPE: data
 
 tof:

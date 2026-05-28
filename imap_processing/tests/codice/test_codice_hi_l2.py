@@ -136,6 +136,12 @@ def test_l2_hi_omni(mock_get_file_paths):
         energy_h_attrs = cdf_file.varattsget("energy_h")
         assert energy_h_attrs["CATDESC"] == "Geometric mean energy per nucleon for H"
         assert energy_h_attrs["FIELDNAM"] == "H Energy"
+        energy_junk_label_attrs = cdf_file.varattsget("energy_junk_label")
+        assert (
+            energy_junk_label_attrs["CATDESC"]
+            == "Energy-channel labels for Junk differential intensity"
+        )
+        assert energy_junk_label_attrs["FIELDNAM"] == "Junk Energy Channel Labels"
         h_attrs = cdf_file.varattsget("h")
         assert h_attrs["CATDESC"] == (
             "Differential intensity for H at root-2-spaced energy-per-nucleon channels"
@@ -149,6 +155,31 @@ def test_l2_hi_omni(mock_get_file_paths):
             "energy-per-nucleon channels"
         )
         assert unc_h_attrs["FIELDNAM"] == "Uncertainty - H"
+        junk_attrs = cdf_file.varattsget("junk")
+        assert junk_attrs["CATDESC"] == (
+            "Differential intensity for Junk (unclassified counts) at root-2-spaced "
+            "energy-per-nucleon channels"
+        )
+        assert junk_attrs["FIELDNAM"] == "Differential Intensity - Junk"
+        assert junk_attrs["VAR_NOTES"].strip() == (
+            "Catch-all bin for counts that do not fall into any CoDICE Hi "
+            "species classification bin."
+        )
+        unc_junk_attrs = cdf_file.varattsget("unc_junk")
+        assert unc_junk_attrs["CATDESC"] == (
+            "Uncertainty in differential intensity for Junk (unclassified counts) "
+            "at root-2-spaced energy-per-nucleon channels"
+        )
+        assert unc_junk_attrs["VAR_NOTES"].strip() == (
+            "Catch-all uncertainty bin for counts that do not fall into any "
+            "CoDICE Hi species classification bin."
+        )
+        uh_attrs = cdf_file.varattsget("uh")
+        assert uh_attrs["CATDESC"] == (
+            "Differential intensity for Ultra-Heavy ions at root-2-spaced "
+            "energy-per-nucleon channels"
+        )
+        assert uh_attrs["FIELDNAM"] == "Differential Intensity - Ultra-Heavy"
         np.testing.assert_array_equal(
             cdf_file.varget("energy_h_label"),
             _expected_hi_energy_labels("h", processed_l2["energy_h"].values),
@@ -252,6 +283,9 @@ def test_l2_hi_sectored(mock_get_file_paths):
     with cdflib.CDF(sectored_cdf_file) as cdf_file:
         data_quality_attrs = cdf_file.varattsget("data_quality")
         assert data_quality_attrs["VAR_TYPE"] == "data"
+        assert data_quality_attrs["FORMAT"] == "I3"
+        spin_sector_attrs = cdf_file.varattsget("spin_sector")
+        assert spin_sector_attrs["FORMAT"] == "I2"
         assert cdf_file.varattsget("energy_h")["FORMAT"] == "F12.6"
         assert cdf_file.varattsget("energy_h_minus")["FORMAT"] == "F12.6"
         assert cdf_file.varattsget("energy_h_plus")["FORMAT"] == "F12.6"

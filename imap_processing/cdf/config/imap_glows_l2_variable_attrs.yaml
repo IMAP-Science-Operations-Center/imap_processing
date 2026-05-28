@@ -21,10 +21,6 @@ default_attrs: &default_attrs
   # TODO: Remove unneeded attributes once SAMMI is fixed
   DISPLAY_TYPE: no_plot
   FILLVAL: *int_fillval
-  REFERENCE_POSITION: Rotating Earth Geoid
-  RESOLUTION: ' '
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
   UNITS: ' '
   VALIDMIN: *min_epoch
 
@@ -33,7 +29,6 @@ support_data_defaults: &support_data_defaults
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FORMAT: I10
-  RESOLUTION: ISO8601
   VALIDMAX: 1
   VALIDMIN: 0
   VAR_TYPE: support_data
@@ -44,6 +39,10 @@ time_data_defaults: &time_data_defaults
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   FILLVAL: ' '
   FORMAT: A30
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ISO8601
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
   UNITS: N/A
   VALIDMAX: ' '
   VALIDMIN: ' '
@@ -122,9 +121,9 @@ total_l1b_inputs:
 
 identifier:
   <<: *support_data_defaults
-  CATDESC: Spin pointing number to identify observational day
+  CATDESC: Spin-axis pointing number to identify observational day
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
-  FIELDNAM: Spin pointing number
+  FIELDNAM: Spin-axis pointing number
   FILLVAL: -9223372036854775808
   FORMAT: I5
   LABLAXIS: Pointing no.
@@ -410,6 +409,7 @@ bad_time_flag_occurrences:
   LABL_PTR_1: flags_label # MS: I do not understand this
   VALIDMAX: 65535
   VALIDMIN: 0
+  VAR_TYPE: data
 
 spin_angle:
   <<: *lightcurve_defaults
@@ -492,7 +492,7 @@ histogram_flag_array:
   UNITS: ' '
   VALIDMAX: 15 # only 4 bits currently used
   VALIDMIN: 0
-  VAR_TYPE: support_data
+  VAR_TYPE: data
 
 ecliptic_lon:
   <<: *lightcurve_defaults

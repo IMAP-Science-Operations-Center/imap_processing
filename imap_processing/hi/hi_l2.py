@@ -634,11 +634,15 @@ def combine_maps(sky_maps: dict[str, RectangularSkyMap]) -> RectangularSkyMap:
         combined["ena_intensity_stat_uncert"] = np.sqrt(1 / total_weight)
 
     # Exposure-weighted average for systematic error
-    total_exp = combined["exposure_factor"]
-    combined["ena_intensity_sys_err"] = (
-        ram_ds["ena_intensity_sys_err"] * ram_ds["exposure_factor"]
-        + anti_ds["ena_intensity_sys_err"] * anti_ds["exposure_factor"]
-    ) / total_exp
+    # NaNs in the systematic error should occur only where the exposure_factor
+    # is zero. This means the correct NaN handling is to just replace NaNs in
+    # the systematic error with zeros so that the sum is not affected.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        total_exp = combined["exposure_factor"]
+        combined["ena_intensity_sys_err"] = (
+            ram_ds["ena_intensity_sys_err"].fillna(0) * ram_ds["exposure_factor"]
+            + anti_ds["ena_intensity_sys_err"].fillna(0) * anti_ds["exposure_factor"]
+        ) / total_exp
 
     # Exposure-weighted average for obs_date
     with np.errstate(divide="ignore", invalid="ignore"):
