@@ -235,6 +235,23 @@ mass_scale:
   VALIDMIN: 0.0
   VAR_TYPE: data
 
+mass:
+  CATDESC: Compatibility alias of mass_scale retained for the current L2A product structure.
+  DEPEND_0: epoch
+  DEPEND_1: time_high_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Mass Scale Alias
+  FILLVAL: *double_fillval
+  FORMAT: F20.6
+  LABLAXIS: Mass Scale Alias
+  LABL_PTR_1: time_high_sample_rate_label
+  UNITS: amu
+  VALIDMAX: *int_maxval
+  VALIDMIN: 0.0
+  VAR_NOTES: This variable duplicates mass_scale for backward compatibility and is not intended to be the primary science-facing mass-scale output.
+  VAR_TYPE: support_data
+
 target_low_fit_parameters:
   <<: *fit_parameter_base
   CATDESC: Fitted parameters for Target Low impact signal.
