@@ -6,7 +6,7 @@ esa_step:
   FILLVAL: 255
   FORMAT: I2
   LABLAXIS: Energy Step
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 71
   VALIDMIN: 0

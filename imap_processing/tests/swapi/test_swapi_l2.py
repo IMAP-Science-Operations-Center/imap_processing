@@ -141,6 +141,8 @@ def test_swapi_l2_cdf(
     assert esa_energy_attrs["VALIDMIN"] == np.float64(0.0)
     assert esa_energy_attrs["VAR_TYPE"] == "data"
     assert esa_energy_attrs["DEPEND_1"] == "esa_step"
+    assert esa_step_attrs["SCALETYP"] == "linear"
+    assert "SCALE_TYP" not in esa_step_attrs
     assert esa_energy_attrs["CATDESC"] == (
         "ESA energy in eV/q corresponding to each step id for each sweep"
     )
