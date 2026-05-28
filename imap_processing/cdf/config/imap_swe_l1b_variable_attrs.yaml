@@ -5,7 +5,7 @@ esa_step:
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Energy Step
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 23
   VALIDMIN: 0
@@ -17,7 +17,7 @@ spin_sector:
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Spin Sector
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 29
   VALIDMIN: 0
@@ -29,7 +29,7 @@ cem_id:
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: CEM Number
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 6
   VALIDMIN: 0
@@ -41,7 +41,7 @@ cycle:
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Cycle
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 3
   VALIDMIN: 0

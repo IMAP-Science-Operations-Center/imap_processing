@@ -5,7 +5,7 @@ esa_step:
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Energy Step
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 23
   VALIDMIN: 0
@@ -17,7 +17,7 @@ energy:
   FILLVAL: -9223370000000000000
   FORMAT: E10.4
   LABLAXIS: Energy
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: eV
   VALIDMAX: 6000.0
   VALIDMIN: 0.0
@@ -29,7 +29,7 @@ spin_sector:
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Spin Sector
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 29
   VALIDMIN: 0
@@ -41,7 +41,7 @@ inst_az:
   FILLVAL: -9223370000000000000
   FORMAT: E10.4
   LABLAXIS: Degree
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: Degree
   VALIDMAX: 359.999
   VALIDMIN: 0.00
@@ -55,7 +55,7 @@ cem_id:
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: CEM Number
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 6
   VALIDMIN: 0
@@ -67,7 +67,7 @@ inst_el:
   FILLVAL: -9223370000000000000
   FORMAT: I4
   LABLAXIS: Degree
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: Degree
   VALIDMAX: 65
   VALIDMIN: -65
@@ -79,7 +79,7 @@ cycle:
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Cycle
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 3
   VALIDMIN: 0

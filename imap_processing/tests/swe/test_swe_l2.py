@@ -365,6 +365,17 @@ def test_swe_l2_15sec(
         swe_constants.N_ESA_STEPS,
         swe_constants.N_ANGLE_SECTORS,
     )
+    for coord_name in [
+        "esa_step",
+        "energy",
+        "spin_sector",
+        "inst_az",
+        "cem_id",
+        "inst_el",
+    ]:
+        coord_attrs = l2_dataset[coord_name].attrs
+        assert coord_attrs["SCALETYP"] == "linear"
+        assert "SCALE_TYP" not in coord_attrs
 
     rate = l1b_dataset.science_data.to_numpy()
     psd = l2_dataset.phase_space_density_spin_sector.to_numpy()
