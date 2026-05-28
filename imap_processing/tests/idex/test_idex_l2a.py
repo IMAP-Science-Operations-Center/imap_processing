@@ -124,6 +124,7 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset, l1b_dataset: xr.Dat
             "product structure. This variable is not intended to be the primary "
             "science-facing mass-scale output."
         )
+        assert cdf_file.varattsget("ephemeris_position_x")["FORMAT"] == "F16.6"
         assert (
             cdf_file.varattsget("target_high_reduced_chi_squared")["CATDESC"]
             == "Reduced chi-square value for the Target High waveform fit."
