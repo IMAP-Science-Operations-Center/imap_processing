@@ -139,7 +139,9 @@ def mag_l1b_processing(
     epoch_time = shift_time(input_dataset["epoch"], time_shift)
 
     # Update attributes and assemble dataset
-    epoch_time.attrs = mag_attributes.get_variable_attributes("epoch")
+    epoch_time.attrs = mag_attributes.get_variable_attributes(
+        "epoch", check_schema=False
+    )
 
     direction = xr.DataArray(
         np.arange(4),
