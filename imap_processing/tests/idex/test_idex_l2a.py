@@ -21,7 +21,6 @@ from imap_processing.idex.idex_l2a import (
     chi_square,
     estimate_dust_mass,
     fit_impact,
-    idex_l2a,
     invert_rise_time_to_velocity,
     load_calibration_files,
     log_smooth_powerlaw,
@@ -29,19 +28,6 @@ from imap_processing.idex.idex_l2a import (
     sine_fit,
     time_to_mass,
 )
-
-
-@pytest.fixture
-def l2a_dataset(
-    l1b_dataset: xr.Dataset, ancillary_files, _download_test_data
-) -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-    Returns
-    -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-    return idex_l2a(l1b_dataset.copy(deep=True), ancillary_files)
 
 
 def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
