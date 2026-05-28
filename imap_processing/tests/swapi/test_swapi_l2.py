@@ -136,6 +136,8 @@ def test_swapi_l2_cdf(
     assert np.isclose(esa_energy_attrs["FILLVAL"], np.float64(-1.0e31))
     assert esa_energy_attrs["VALIDMAX"] == np.float64(21000.0)
     assert esa_energy_attrs["VALIDMIN"] == np.float64(0.0)
+    assert esa_energy_attrs["VAR_TYPE"] == "data"
+    assert esa_energy_attrs["DEPEND_1"] == "esa_step"
     assert sci_start_time_attrs["FORMAT"] == "A23"
 
     rate_variables = [

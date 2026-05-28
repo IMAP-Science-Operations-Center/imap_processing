@@ -102,10 +102,11 @@ rate_default: &rate_default
   VAR_TYPE: data
 
 esa_energy:
-  CATDESC: ESA Energy.
+  CATDESC: ESA energy per charge for each sweep and energy step
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: ESA Energy
   FILLVAL: -1.0000000E+31
   FORMAT: F8.1
@@ -115,7 +116,7 @@ esa_energy:
   UNITS: eV / q
   VALIDMAX: 21000.0
   VALIDMIN: 0.0
-  VAR_TYPE: support_data
+  VAR_TYPE: data
 
 metadata_default: &metadata_default
   DEPEND_0: epoch
