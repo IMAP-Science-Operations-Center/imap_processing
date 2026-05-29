@@ -562,7 +562,7 @@ class TestUltraL2:
 
         np.testing.assert_allclose(
             map_dataset["ena_intensity_sys_err"],
-            expected_unc,
+            expected_unc * map_dataset["ena_intensity"],
             rtol=0,
             atol=1e-12,
         )
@@ -1086,23 +1086,20 @@ def test_calculate_systematic_uncertainty():
         f"{imap_module_directory}/ultra/l2/ultra_l2_systematic_uncertainties.csv"
     )
     df = sys_uncert_df[sys_uncert_df["fm"] == 45]
-    output_shape = (1, 12, 360)
-    unc_array = calculate_systematic_uncertainty(45, output_shape, df["energy"].values)
+    unc_array = calculate_systematic_uncertainty(45, df["energy"].values)
 
-    assert unc_array.shape == output_shape
+    assert unc_array.dims == ("energy",)
     np.testing.assert_array_equal(
-        np.ones(output_shape)
-        * df["systematic_uncertainty"].values[np.newaxis, :, np.newaxis],
+        df["systematic_uncertainty"].values,
         unc_array,
     )
 
 
 def test_calculate_systematic_uncertainty_wrong_energies():
     """Test that a value error is raised if the energies are unexpected"""
-    output_shape = (1, 12, 360)
     with pytest.raises(
         ValueError,
         match="The energy values from the systematic uncertainty csv do not match the"
         " energy values of the map",
     ):
-        calculate_systematic_uncertainty(90, output_shape, np.arange(12))
+        calculate_systematic_uncertainty(90, np.arange(12))
