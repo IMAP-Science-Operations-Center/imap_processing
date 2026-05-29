@@ -222,7 +222,8 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
         "of ion measurements, such as observing shock-accelerated ions, "
         "determining the origin of the solar energetic particles (SEPs) "
         "spectra, and resolving particle transport in the heliosphere. "
-        "See https://imap.princeton.edu/instruments/hit for more details.\n",
+        "See https://imap.princeton.edu/spacecraft/instruments/"
+        "high-energy-ion-telescope-hit for more details.\n",
     }
 
     # Define the coordinates and dimensions. Both have equivalent values

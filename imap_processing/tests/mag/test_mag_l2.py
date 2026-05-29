@@ -102,10 +102,38 @@ def test_mag_l2_attributes(
         assert "DICT_KEY" in vectors_attrs
 
         assert f"CoordinateSystemName:{frame}" in vectors_attrs["DICT_KEY"]
+        assert vectors_attrs["UNITS"] == "nT"
+        assert vectors_attrs["FORMAT"] == "F13.5"
+        assert np.isclose(vectors_attrs["VALIDMIN"], -1.0e5)
+        assert np.isclose(vectors_attrs["VALIDMAX"], 1.0e5)
+        expected_vector_text = {
+            "SRF": (
+                "Magnetic field in the Spacecraft Reference Frame (SRF)",
+                "Magnetic Field SRF",
+            ),
+            "GSE": ("Magnetic field in GSE coordinates", "Magnetic Field GSE"),
+            "GSM": ("Magnetic field in GSM coordinates", "Magnetic Field GSM"),
+            "RTN": ("Magnetic field in RTN coordinates", "Magnetic Field RTN"),
+            "DSRF": (
+                "Magnetic field in the Despun Spacecraft Reference Frame (DSRF)",
+                "Magnetic Field DSRF",
+            ),
+        }
+        assert vectors_attrs["CATDESC"] == expected_vector_text[frame][0]
+        assert vectors_attrs["FIELDNAM"] == expected_vector_text[frame][1]
 
         assert "magnitude" in dataset.data_vars
         assert "range" in dataset.data_vars
         assert dataset["magnitude"].attrs["UNITS"] == "nT"
+        assert dataset["magnitude"].attrs["VAR_TYPE"] == "data"
+        assert (
+            dataset["magnitude"].attrs["CATDESC"] == "Magnitude of the magnetic field"
+        )
+        assert dataset["range"].attrs["CATDESC"] == "Range of the magnetometer sensor"
+        np.testing.assert_array_equal(
+            dataset["direction_label"].data,
+            np.array(["Bx", "By", "Bz"]),
+        )
         assert dataset["range"].attrs["DICT_KEY"] == (
             "SPASE>Support>SupportQuantity:InstrumentMode"
         )
@@ -144,11 +172,21 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
         assert expected_frames[i].name in dataset.attrs["Data_type"]
         dataset.attrs["Data_version"] = "001"
         cdf_filepath = write_cdf(dataset)
-        cdf_file = cdflib.CDF(cdf_filepath)
-        vector_info = cdf_file.varinq(expected_frames[i].var_name)
-        vector_attrs = cdf_file.varattsget(expected_frames[i].var_name)
+        with cdflib.CDF(cdf_filepath) as cdf_file:
+            vector_info = cdf_file.varinq(expected_frames[i].var_name)
+            vector_attrs = cdf_file.varattsget(expected_frames[i].var_name)
+            direction_label = cdf_file.varget("direction_label")
+
         assert vector_info.Data_Type_Description == "CDF_FLOAT"
         assert np.isclose(vector_attrs["FILLVAL"], np.float32(-1.0e31))
+        assert vector_attrs["FORMAT"] == "F13.5"
+        assert np.isclose(vector_attrs["VALIDMIN"], np.float32(-1.0e5))
+        assert np.isclose(vector_attrs["VALIDMAX"], np.float32(1.0e5))
+        assert vector_attrs["UNITS"] == "nT"
+        np.testing.assert_array_equal(
+            direction_label,
+            np.array(["Bx", "By", "Bz"]),
+        )
 
 
 def test_mag_l2_some_epochs_not_in_spice(norm_dataset, mag_test_l2_data):
@@ -591,3 +629,85 @@ def test_qf(norm_dataset):
     assert "quality_bitmask" in output.data_vars
     assert np.array_equal(output["quality_flags"].data, qf)
     assert np.array_equal(output["quality_bitmask"].data, qf_bitmask)
+    assert output["quality_flags"].attrs["VAR_TYPE"] == "data"
+    assert output["quality_flags"].attrs["UNITS"] == "0=good"
+    assert (
+        output["quality_flags"].attrs["CATDESC"]
+        == "Data quality flag. 0: Good data, 1: Bad data."
+    )
+    assert output["quality_flags"].attrs["FIELDNAM"] == "Quality Flag"
+    assert (
+        "More detail on the data quality can be found in the quality bitmask."
+        in output["quality_flags"].attrs["VAR_NOTES"]
+    )
+    assert output["quality_bitmask"].attrs["FIELDNAM"] == "Quality Bitmask"
+    assert output["quality_bitmask"].attrs["LABLAXIS"] == "QB"
+    assert output["quality_bitmask"].attrs["CATDESC"] == (
+        "Bitmask indicating when spacecraft related activities influenced "
+        "the measurement."
+    )
+    assert (
+        "Bit 0: Data is sourced from secondary sensor"
+        in output["quality_bitmask"].attrs["VAR_NOTES"]
+    )
+    assert (
+        "Bits 4-7: Reserved for in flight calibration"
+        in output["quality_bitmask"].attrs["VAR_NOTES"]
+    )
+
+    output.attrs["Data_version"] = "001"
+    cdf_filepath = write_cdf(output)
+    with cdflib.CDF(cdf_filepath) as cdf_file:
+        qf_attrs = cdf_file.varattsget("quality_flags")
+        qf_bitmask_attrs = cdf_file.varattsget("quality_bitmask")
+
+    assert qf_attrs["FORMAT"] == "I1"
+    assert int(qf_attrs["VALIDMAX"]) == 1
+    assert qf_bitmask_attrs["FORMAT"] == "I3"
+    assert int(qf_bitmask_attrs["VALIDMAX"]) == 255
+
+
+def test_mag_l2_burst_inherits_shared_metadata(norm_dataset, mag_test_l2_data):
+    """Test that burst output inherits the shared MAG L2 metadata cleanup."""
+    calibration_dataset = mag_test_l2_data[0]
+    offset_dataset = mag_test_l2_data[1]
+
+    test_dataset = norm_dataset.copy()
+    test_dataset.attrs["Logical_source"] = "imap_mag_l1c_burst-mago"
+
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        side_effect=lambda *args, **kwargs: args[1],
+    ):
+        burst_datasets = mag_l2(
+            calibration_dataset,
+            offset_dataset,
+            test_dataset,
+            np.datetime64("2025-10-17"),
+            mode=DataMode.BURST,
+            frames=[ValidFrames.SRF],
+        )
+
+    assert len(burst_datasets) == 1
+    burst_dataset = burst_datasets[0]
+
+    assert burst_dataset["quality_flags"].attrs["VAR_TYPE"] == "data"
+    assert burst_dataset["quality_flags"].attrs["UNITS"] == "0=good"
+    assert burst_dataset["magnitude"].attrs["VAR_TYPE"] == "data"
+    assert (
+        burst_dataset["magnitude"].attrs["CATDESC"] == "Magnitude of the magnetic field"
+    )
+    assert burst_dataset["b_srf"].attrs["UNITS"] == "nT"
+    assert (
+        burst_dataset["b_srf"].attrs["CATDESC"]
+        == "Magnetic field in the Spacecraft Reference Frame (SRF)"
+    )
+    assert burst_dataset["b_srf"].attrs["FIELDNAM"] == "Magnetic Field SRF"
+    np.testing.assert_array_equal(
+        burst_dataset["direction_label"].data,
+        np.array(["Bx", "By", "Bz"]),
+    )
+    assert (
+        "Bit 0: Data is sourced from secondary sensor"
+        in burst_dataset["quality_bitmask"].attrs["VAR_NOTES"]
+    )

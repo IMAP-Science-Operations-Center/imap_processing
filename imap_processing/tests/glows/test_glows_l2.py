@@ -230,17 +230,23 @@ def test_glows_l2_cdf_metadata(
         bins_label_info = cdf_file.varinq("bins_label")
         bins_label_attrs = cdf_file.varattsget("bins_label")
         bins_label_values = cdf_file.varget("bins_label")
+        flags_values = cdf_file.varget("flags")
+        identifier_attrs = cdf_file.varattsget("identifier")
         flags_label_info = cdf_file.varinq("flags_label")
         flags_label_attrs = cdf_file.varattsget("flags_label")
         flags_label_values = cdf_file.varget("flags_label")
         bad_time_info = cdf_file.varinq("bad_time_flag_occurrences")
         bad_time_attrs = cdf_file.varattsget("bad_time_flag_occurrences")
+        photon_flux_attrs = cdf_file.varattsget("photon_flux")
+        start_time_attrs = cdf_file.varattsget("start_time")
+        end_time_attrs = cdf_file.varattsget("end_time")
         global_attrs = cdf_file.globalattsget()
 
         assert bins_label_info.Data_Type_Description == "CDF_CHAR"
         assert bins_label_attrs["FORMAT"] == "A4"
         assert list(bins_label_values[:5]) == ["0", "1", "2", "3", "4"]
 
+        np.testing.assert_array_equal(flags_values, np.arange(len(BAD_TIME_FLAG_NAMES)))
         assert flags_label_info.Data_Type_Description == "CDF_CHAR"
         assert flags_label_attrs["FORMAT"] == "A42"
         assert list(flags_label_values) == list(BAD_TIME_FLAG_NAMES)
@@ -253,7 +259,31 @@ def test_glows_l2_cdf_metadata(
 
         assert bad_time_info.Data_Type_Description == "CDF_UINT2"
         assert bad_time_attrs["FORMAT"] == "I5"
+        assert bad_time_attrs["VAR_TYPE"] == "data"
+        assert (
+            identifier_attrs["CATDESC"]
+            == "Spin-axis pointing number to identify observational day"
+        )
+        assert identifier_attrs["FIELDNAM"] == "Spin-axis pointing number"
+        for attr_name in (
+            "TIME_BASE",
+            "TIME_SCALE",
+            "REFERENCE_POSITION",
+            "RESOLUTION",
+        ):
+            assert attr_name not in photon_flux_attrs
+
+        for time_attrs in (start_time_attrs, end_time_attrs):
+            assert time_attrs["TIME_BASE"] == "J2000"
+            assert time_attrs["TIME_SCALE"] == "Terrestrial Time"
+            assert time_attrs["REFERENCE_POSITION"] == "Rotating Earth Geoid"
+            assert time_attrs["RESOLUTION"] == "ISO8601"
+
         assert global_attrs["flight_software_version"] == ["131329"]
+        assert (
+            "https://imap.princeton.edu/spacecraft/instruments/"
+            "global-solar-wind-structure-glows" in global_attrs["TEXT"][0]
+        )
 
 
 @patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
@@ -304,6 +334,7 @@ def test_glows_l2_cdf_fillvals(
 
         assert histogram_flag_info.Data_Type_Description == "CDF_UINT1"
         assert histogram_flag_attrs["FILLVAL"] == np.uint8(255)
+        assert histogram_flag_attrs["VAR_TYPE"] == "data"
         assert number_of_bins_info.Data_Type_Description == "CDF_UINT2"
         assert number_of_bins_attrs["FILLVAL"] == np.uint16(65535)
         assert photon_flux_info.Data_Type_Description == "CDF_DOUBLE"

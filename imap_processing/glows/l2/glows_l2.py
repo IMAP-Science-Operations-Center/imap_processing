@@ -183,7 +183,7 @@ def create_l2_dataset(
     )
 
     flags = xr.DataArray(
-        np.ones(FLAG_LENGTH, dtype=np.uint8),
+        np.arange(FLAG_LENGTH, dtype=np.uint8),
         dims=["flags"],
         attrs=attrs.get_variable_attributes("flags_dim", check_schema=False),
     )

@@ -8,7 +8,8 @@ instrument_base: &instrument_base
     coverage from a wide instrument field-of-view (FOV) to enable a high resolution of ion
     measurements, such as observing shock-accelerated ions, determining the origin of the
     solar energetic particles (SEPs) spectra, and resolving particle transport in the
-    heliosphere. See https://imap.princeton.edu/instruments/hit for more details.
+    heliosphere. See https://imap.princeton.edu/spacecraft/instruments/high-energy-ion-telescope-hit
+    for more details.
 
   # L1a
 imap_hit_l1a_hk:
@@ -79,4 +80,3 @@ imap_hit_l2_macropixel-intensity:
     Data_type: L2_macropixel-intensity>Level-2 Macro Pixel Intensity
     Logical_source: imap_hit_l2_macropixel-intensity
     Logical_source_description: IMAP Mission HIT Instrument Level-2 Macro Pixel Intensity Data.
-

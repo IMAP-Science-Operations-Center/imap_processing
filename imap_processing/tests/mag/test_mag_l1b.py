@@ -89,6 +89,20 @@ def test_cdf_output(mag_l1b_cal_dataset):
     )
     l1b_dataset = mag_l1b(l1a_cdf, np.datetime64("2024-03-01"), mag_l1b_cal_dataset)
 
+    # Regression guard: sammi's get_variable_attributes with the default
+    # check_schema=True injects empty-string placeholders for required schema
+    # attributes that are missing on a variable (e.g. DEPEND_0/DISPLAY_TYPE on
+    # epoch). Newer cdflib versions reject those at CDF write time with
+    # "DEPEND_0 for variable epoch must be a non-empty string". Assert that no
+    # coord or variable carries an empty DEPEND_*/DISPLAY_TYPE attribute.
+    for name, var in {**l1b_dataset.coords, **l1b_dataset.data_vars}.items():
+        for attr_name, attr_value in var.attrs.items():
+            if attr_name.startswith("DEPEND_") or attr_name == "DISPLAY_TYPE":
+                assert attr_value != "", (
+                    f"Variable {name!r} has empty {attr_name} attribute, "
+                    f"which will fail cdflib DEPEND validation."
+                )
+
     output_path = write_cdf(l1b_dataset)
 
     assert Path.exists(output_path)

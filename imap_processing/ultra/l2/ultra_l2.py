@@ -7,9 +7,11 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps import ena_maps
@@ -624,6 +626,49 @@ def generate_ultra_skymap(
     return skymap, np.array(all_pset_epochs)
 
 
+def calculate_systematic_uncertainty(
+    instrument_id: int, energies: np.ndarray
+) -> xr.DataArray:
+    """
+    Read in the systematic uncertainty from a file and add it to the map dataset.
+
+    This is a placeholder function for now, as the method of calculating the systematic
+    uncertainty has not been defined yet.
+
+    Parameters
+    ----------
+    instrument_id : int
+        The instrument id (45 or 90). This is used to look up the correct systematic
+        uncertainty values from the file.
+    energies : np.ndarray
+        The energy values corresponding to the energy dimension of the map. This is
+        used to check the coarse energies from the provided csv match the energies
+        calculated.
+
+    Returns
+    -------
+    xarray.DataArray
+        An array of the systematic uncertainty values for the instrument.
+    """
+    # Load the systematic uncertainty csv provided by the ULTRA team.
+    sys_uncert_df = pd.read_csv(
+        f"{imap_module_directory}/ultra/l2/ultra_l2_systematic_uncertainties.csv"
+    )
+    # Filter to the correct sensor (45 or 90)
+    sensor_df = sys_uncert_df[sys_uncert_df["fm"] == instrument_id]
+    # check that energies from the csv match the calculated energies.
+    # Use rtol= 1e-2 because the csv rounds the energy values.
+    if not np.allclose(sensor_df["energy"].values, energies, rtol=1e-2):
+        raise ValueError(
+            f"The energy values from the systematic uncertainty csv do not"
+            f" match the energy values of the map. CSV energies:"
+            f" {sensor_df['energy'].values}, Map energies:"
+            f" {energies}"
+        )
+    # Extract the systematic uncertainty values ordered by coarse energy bins
+    return xr.DataArray(sensor_df["systematic_uncertainty"].values, dims=("energy",))
+
+
 def ultra_l2(
     data_dict: dict[str, xr.Dataset | str | Path],
     output_map_structure: (
@@ -867,12 +912,16 @@ def ultra_l2(
                 ],
                 name=f"{coord_var}_label",
             )
-
-    # Add systematic error as all zeros with shape matching statistical unc
-    # TODO: update once we have information from the instrument team
-    map_dataset["ena_intensity_sys_err"] = xr.zeros_like(
-        map_dataset["ena_intensity_stat_uncert"],
+    # Get systematic uncertainty
+    systematic_uncertainty = calculate_systematic_uncertainty(
+        ultra_sensor_number,
+        map_dataset["energy"].data,
     )
+    # Get systematic uncertainty as an intensity by multiplying by ena_intensity
+    # Make sure the result has the same dimension order as ena_intensity
+    map_dataset["ena_intensity_sys_err"] = (
+        systematic_uncertainty * map_dataset["ena_intensity"]
+    ).transpose(*map_dataset["ena_intensity"].dims)
 
     # Add epoch_delta_minus
     map_dataset.coords["epoch_delta_minus"] = xr.DataArray(
