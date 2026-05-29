@@ -1,7 +1,12 @@
 # Reference for sections: https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html
 # Reference from IBEX: https://spdf.gsfc.nasa.gov/pub/software/cdawlib/0SKELTABLES/ibex_h3_ena_lo_r08_omni_f3-gdf-maps_5yr_00000000_v01.skt
 Acknowledgement: >
-  Please acknowledge the IMAP Mission Principal Investigator, Prof. David J. McComas of Princeton University.
+  Users should acknowledge the sources of data used in all publications,
+  presentations, and reports using an appropriate DOI. Appropriate
+  acknowledgement to institutions, personnel, and funding agencies should be
+  given, including acknowledging the IMAP Mission Principal Investigator,
+  Prof. David J. McComas of Princeton University (Contract #80GSFC19C0027).
+  IMAP Rules-of-the-Road for data usage can be found in the IMAP CMAD.
 Discipline: Solar Physics>Heliospheric Physics
 File_naming_convention: source_descriptor_datatype_yyyyMMdd_vNNN
 HTTP_LINK: https://imap.princeton.edu/
