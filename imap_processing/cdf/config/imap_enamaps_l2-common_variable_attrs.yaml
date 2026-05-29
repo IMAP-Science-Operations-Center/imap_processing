@@ -133,7 +133,6 @@ latitude:
 # Those are defined in the tiling specific YAML files.
 ena_intensity:
   <<: *default_float32
-  CATDESC: Mono-energetic ENA intensity.
   DELTA_MINUS_VAR: ena_intensity_stat_uncert
   DELTA_PLUS_VAR: ena_intensity_stat_uncert
   DEPEND_0: epoch
@@ -146,7 +145,6 @@ ena_intensity:
 
 ena_intensity_stat_uncert:
   <<: *default_float32
-  CATDESC: ENA intensity statistical uncertainty.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -157,7 +155,6 @@ ena_intensity_stat_uncert:
 
 ena_intensity_sys_err:
   <<: *default_float32
-  CATDESC: ENA intensity non-statistical error.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -168,7 +165,6 @@ ena_intensity_sys_err:
 
 ena_count_rate:
   <<: *default_float32
-  CATDESC: Mono-energetic ENA Rate.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -179,7 +175,6 @@ ena_count_rate:
 
 ena_count_rate_stat_uncert:
   <<: *default_float32
-  CATDESC: ENA Rate statistical uncertainty.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -190,7 +185,6 @@ ena_count_rate_stat_uncert:
 
 bg_rate:
   <<: *default_float32
-  CATDESC: Total background count rate from non-ENA (non-heliospheric) sources, as calculated by ground processing; makes sense only for "uncombined" calibration products.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -198,11 +192,11 @@ bg_rate:
   FORMAT: F6.3
   LABLAXIS: Rate
   UNITS: count s-1
+  VAR_NOTES: Total background count rate from non-ENA (non-heliospheric) sources, as calculated by ground processing; makes sense only for "uncombined" calibration products.
   VAR_TYPE: data
 
 bg_rate_stat_uncert:
   <<: *default_float32
-  CATDESC: Statistical uncertainty in the background count rate from non-ENA (non-heliospheric) sources.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -210,11 +204,11 @@ bg_rate_stat_uncert:
   FORMAT: F6.3
   LABLAXIS: Rate Uncertainty
   UNITS: count s-1
+  VAR_NOTES: Statistical uncertainty in the background count rate from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 bg_rate_sys_err:
   <<: *default_float32
-  CATDESC: Systematic error in the background count rate from non-ENA (non-heliospheric) sources.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -222,11 +216,11 @@ bg_rate_sys_err:
   FORMAT: F6.3
   LABLAXIS: Rate Error
   UNITS: count s-1
+  VAR_NOTES: Systematic error in the background count rate from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 bg_intensity:
   <<: *default_float32
-  CATDESC: Total background intensity from non-ENA (non-heliospheric) sources
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -234,11 +228,11 @@ bg_intensity:
   FORMAT: F8.3
   LABLAXIS: Intensity
   UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_NOTES: Total background intensity from non-ENA (non-heliospheric) sources
   VAR_TYPE: data
 
 bg_intensity_stat_uncert:
   <<: *default_float32
-  CATDESC: Uncertainty in the background intensity from non-ENA (non-heliospheric) sources.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -246,11 +240,11 @@ bg_intensity_stat_uncert:
   FORMAT: F8.3
   LABLAXIS: Intensity Uncertainty
   UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_NOTES: Uncertainty in the background intensity from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 bg_intensity_sys_err:
   <<: *default_float32
-  CATDESC: Non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -258,11 +252,11 @@ bg_intensity_sys_err:
   FORMAT: F8.3
   LABLAXIS: Intensity Non-statistical Error
   UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_NOTES: Non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 ena_count:
   <<: *default_float32
-  CATDESC: Mono-energetic ENA Count.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -283,7 +277,6 @@ sensitivity:
 
 exposure_factor: &exposure_factor
   <<: *default_float32
-  CATDESC: Exact or approximate time over which counts are accumulated.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   DISPLAY_TYPE: no_plot
@@ -336,7 +329,6 @@ positional_uncert_phi:
 
 obs_date: &obs_date
   <<: *default_int64
-  CATDESC: Mean collection date of data in a pixel
   DEPEND_0: epoch
   DICT_KEY: SPASE>TemporalDescription:TimeSpan,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: no_plot
@@ -348,7 +340,6 @@ obs_date: &obs_date
 
 obs_date_range:
   <<: *default_int64
-  CATDESC: Standard deviation of the observation date.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   DISPLAY_TYPE: no_plot

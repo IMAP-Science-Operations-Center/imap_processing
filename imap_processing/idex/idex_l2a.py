@@ -236,6 +236,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             l2a_dataset[name].attrs = idex_attrs.get_variable_attributes(name)
 
     l2a_dataset["mass"] = mass_scales_da
+    l2a_dataset["mass"].attrs = idex_attrs.get_variable_attributes("mass")
 
     l2a_dataset["tof_peak_kappa"] = xr.DataArray(
         kappa,

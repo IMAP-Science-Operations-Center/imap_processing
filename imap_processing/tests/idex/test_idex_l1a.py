@@ -56,6 +56,11 @@ def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
 
     assert file_name.exists()
     assert file_name.name == "imap_idex_l1a_sci-10days_20231218_v999.cdf"
+    written_dataset = load_cdf(file_name)
+    assert written_dataset["time_low_sample_rate"].attrs["VAR_NOTES"] == (
+        "The low sample rate is 4.0625 MHz, so adjacent samples are separated "
+        "by approximately 1/4.0625 microseconds."
+    )
 
 
 def test_bad_cdf_attributes(decom_test_data_sci: xr.Dataset):

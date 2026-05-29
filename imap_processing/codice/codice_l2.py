@@ -1105,8 +1105,8 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     spin_angle = (base_angles + elevation_offsets) % 360.0
     # We need to transpose spin_angle to put spin_angle data into correct
     # dimensions. Eg.
-    #   spin_angle[0,0] - 285
-    #   spin_angle[1,0] - 315
+    #   spin_angle[0,0] - 195
+    #   spin_angle[1,0] - 225
     #   ....
     # This is expected behavior per CoDICE because the spin angle should increments
     # at 30 degree spin angle per elevation angle. Due to that, in the example, the
@@ -1198,7 +1198,9 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
         (l2_dataset["spin_sector"] + 12) % 24,
         l2_dataset["spin_sector"],
     )
-    l2_dataset["spin_angle"] = l2_dataset["spin_sector"].astype(np.float32) * 15.0 + 7.5
+    l2_dataset["spin_angle"] = (
+        l2_dataset["spin_sector"].astype(np.float32) * 15.0 + 277.5
+    ) % 360.0
 
     # Preserve spin_sector as an integer index while marking invalid sectors.
     invalid_spin_sector = ~np.isfinite(original_spin_sector) | (

@@ -2,13 +2,16 @@ instrument_base: &instrument_base
   Descriptor: SWAPI>Solar Wind and Pickup Ion
   Instrument_type: Particles (space)
   TEXT: >
-    The Solar Wind and Pickup Ion (SWAPI) instrument measures several different
-    elements of the solar wind, including hydrogen (H) and helium (He) ions,
-    and, on occasion, heavy ions produced by large events from the Sun. See
+    The Solar Wind and Pickup Ion (SWAPI) instrument onboard Interstellar Mapping
+    and Acceleration Probe (IMAP) is a top-hat electrostatic analyzer designed to
+    measure energy-per-charge distributions of solar wind protons (H+), alpha
+    particles (He++), and interstellar He+ pickup ions (PUIs), across a range of
+    0.1 to 20 keV/q. See
     https://imap.princeton.edu/spacecraft/instruments/solar-wind-and-pickup-ions-swapi
-    for more details. SWAPI level-1 data contains primary, secondary, coincidence
-    counts per ESA voltage step and time. Level-2 data contains the same data as
-    level-1 but counts are converted to rates by dividing counts by time.
+    for more details. SWAPI's Level 1 data contains primary, secondary, and
+    coincidence counts per ESA voltage step and time. Level 2 data converts these
+    counts into count rates using a constant livetime of 145ms and includes the
+    ESA energy associated with each voltage step.
 
 imap_swapi_l1_sci:
   <<: *instrument_base

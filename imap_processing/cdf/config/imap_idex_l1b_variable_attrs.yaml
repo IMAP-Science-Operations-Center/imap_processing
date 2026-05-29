@@ -50,6 +50,7 @@ trigger_base: &trigger_base
 spice_base: &spice_base
   <<: *l1b_data_base
   DISPLAY_TYPE: time_series
+  FORMAT: F16.6
   VALIDMAX: *spice_data_max
   VALIDMIN: *spice_data_min
   VAR_TYPE: data

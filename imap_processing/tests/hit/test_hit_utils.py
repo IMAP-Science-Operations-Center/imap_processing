@@ -191,9 +191,13 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
 
     # Define the dataset attributes
     dataset_attrs = {
-        "Acknowledgement": "Please acknowledge the IMAP Mission Principal "
-        "Investigator, Prof. David J. McComas of Princeton "
-        "University.\n",
+        "Acknowledgement": "Users should acknowledge the sources of data used "
+        "in all publications, presentations, and reports using an "
+        "appropriate DOI. Appropriate acknowledgement to institutions, "
+        "personnel, and funding agencies should be given, including "
+        "acknowledging the IMAP Mission Principal Investigator, Prof. David "
+        "J. McComas of Princeton University (Contract #80GSFC19C0027). IMAP "
+        "Rules-of-the-Road for data usage can be found in the IMAP CMAD.\n",
         "Data_type": "L1A_HK>Level-1A Housekeeping",
         "Data_version": None,
         "Descriptor": "HIT>IMAP High-energy Ion Telescope",

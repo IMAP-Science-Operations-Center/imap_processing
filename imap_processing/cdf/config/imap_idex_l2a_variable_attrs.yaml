@@ -125,7 +125,7 @@ target_fit_parameter_index:
   VAR_TYPE: support_data
 
 mass_index:
-  CATDESC: Mass index values from 1 to 500
+  CATDESC: Index variable for mass-resolved TOF peak-fit products.
   DICT_KEY: SPASE>Support>SupportQuantity:Other # TODO what to do for indices?
   FIELDNAM: Mass Index
   FILLVAL: *int_fillval
@@ -133,15 +133,16 @@ mass_index:
   LABLAXIS: Mass Index
   LABL_PTR_1: mass_labels
   SCALETYP: linear
-  UNITS: Kg
+  UNITS: " "
   VALIDMAX: 500
   VALIDMIN: 0
+  VAR_NOTES: "Associated labels: mass_labels."
   VAR_TYPE: support_data
 
 # <=== Data Attributes ===>
 
 tof_snr:
-  CATDESC: TOF High signal to noise ratio.
+  CATDESC: Signal-to-noise ratio of the TOF High waveform.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: time_series
@@ -149,23 +150,25 @@ tof_snr:
   FILLVAL: *double_fillval
   FORMAT: F20.3
   LABLAXIS: TOF High SNR
-  UNITS: pC
+  UNITS: " "
   VALIDMAX: *int_maxval
   VALIDMIN: 0.0
+  VAR_NOTES: Computed relative to a pre-impact baseline window.
   VAR_TYPE: data
 
 tof_peak_kappa:
-  CATDESC: TOF High spectrum with x-axis converted from time to mass.
+  CATDESC: Mass-scale alignment metric for the TOF peak solution.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   DISPLAY_TYPE: time_series
-  FIELDNAM: Mass Scale
+  FIELDNAM: TOF Peak Kappa
   FILLVAL: *double_fillval
   FORMAT: F10.3
   LABLAXIS: TOF High Kappa
-  UNITS: Kg
+  UNITS: " "
   VALIDMAX: 1.0
   VALIDMIN: 0.0
+  VAR_NOTES: Kappa measures how closely detected TOF peaks align with integer mass positions on the preliminary mass scale.
   VAR_TYPE: data
 
 tof_peak_fit_parameters:
@@ -219,7 +222,7 @@ tof_peak_reduced_chi_squared:
   LABLAXIS: Red Chi Square (TOF)
 
 mass_scale:
-  CATDESC: TOF High spectrum with x-axis converted from time to mass.
+  CATDESC: Preliminary time-to-mass scale for the TOF waveform.
   DEPEND_0: epoch
   DEPEND_1: time_high_sample_rate_index
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
@@ -229,10 +232,27 @@ mass_scale:
   FORMAT: F20.6
   LABLAXIS: Mass Scale
   LABL_PTR_1: time_high_sample_rate_label
-  UNITS: Kg
+  UNITS: amu
   VALIDMAX: *int_maxval
   VALIDMIN: 0.0
   VAR_TYPE: data
+
+mass:
+  CATDESC: Mass-scale output retained for compatibility with the L2A product structure.
+  DEPEND_0: epoch
+  DEPEND_1: time_high_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Mass Scale Alias
+  FILLVAL: *double_fillval
+  FORMAT: F20.6
+  LABLAXIS: Mass Scale Alias
+  LABL_PTR_1: time_high_sample_rate_label
+  UNITS: amu
+  VALIDMAX: *int_maxval
+  VALIDMIN: 0.0
+  VAR_NOTES: Mass-scale output retained for compatibility with the current L2A product structure. This variable is not intended to be the primary science-facing mass-scale output.
+  VAR_TYPE: support_data
 
 target_low_fit_parameters:
   <<: *fit_parameter_base
@@ -308,7 +328,7 @@ target_high_chi_squared:
 
 target_high_reduced_chi_squared:
   <<: *chi_square_base
-  CATDESC: Reduced chi squared value for the Target Low signal fit.
+  CATDESC: Reduced chi-square value for the Target High waveform fit.
   FIELDNAM: Reduced Chi Square (Target High)
   LABLAXIS: TH Red Chi Square
 

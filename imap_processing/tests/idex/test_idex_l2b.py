@@ -51,6 +51,7 @@ def l2b_and_l2c_datasets(l2a_dataset: xr.Dataset, test_l1b_msg) -> list[xr.Datas
     return datasets
 
 
+@pytest.mark.external_test_data
 def test_l2b_logical_source_and_cdf(l2b_and_l2c_datasets: list[xr.Dataset]):
     """Tests that the ``idex_l2b`` function generates datasets
     with the expected logical source.
@@ -68,8 +69,9 @@ def test_l2b_logical_source_and_cdf(l2b_and_l2c_datasets: list[xr.Dataset]):
     file_name = write_cdf(l2b_dataset)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l2b_sci-1mo_20251017_v999.cdf"
+    assert file_name.name == "imap_idex_l2b_sci-1mo_20231218_v999.cdf"
     with cdflib.CDF(file_name) as cdf_file:
+        assert cdf_file.varattsget("impact_charge")["LABL_PTR_1"] == "charge_labels"
         for variable_name in ("counts_by_charge", "counts_by_mass"):
             var_info = cdf_file.varinq(variable_name)
             var_attrs = cdf_file.varattsget(variable_name)
@@ -77,6 +79,7 @@ def test_l2b_logical_source_and_cdf(l2b_and_l2c_datasets: list[xr.Dataset]):
             assert int(var_attrs["FILLVAL"]) == INT_FILLVAL
 
 
+@pytest.mark.external_test_data
 def test_l2c_attrs_and_vars(
     l2b_and_l2c_datasets: list[xr.Dataset], l2a_dataset: xr.Dataset
 ):
@@ -113,8 +116,9 @@ def test_l2c_attrs_and_vars(
     # Check the attributes of the dataset by writing to a CDF file
     rect_file_name = write_cdf(l2c_dataset)
     assert rect_file_name.exists()
-    assert rect_file_name.name == "imap_idex_l2c_rectangular-map-1mo_20251017_v999.cdf"
+    assert rect_file_name.name == "imap_idex_l2c_rectangular-map-1mo_20231218_v999.cdf"
     with cdflib.CDF(rect_file_name) as cdf_file:
+        assert cdf_file.varattsget("impact_charge")["LABL_PTR_1"] == "charge_labels"
         for variable_name in ("counts_by_charge_map", "counts_by_mass_map"):
             var_info = cdf_file.varinq(variable_name)
             var_attrs = cdf_file.varattsget(variable_name)
@@ -147,6 +151,7 @@ def test_l2c_attrs_and_vars(
         )
 
 
+@pytest.mark.external_test_data
 def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected variables.

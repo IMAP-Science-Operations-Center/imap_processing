@@ -1,6 +1,6 @@
 # <=== Coordinates ===>
 esa_step:
-  CATDESC: Energy step id in lookup table
+  CATDESC: Energy step id in lookup table; corresponding energy in eV/q is provided by esa_energy
   DICT_KEY: "SPASE>Support>SupportQuantity:Other"
   FIELDNAM: Energy Step
   FILLVAL: 255
@@ -14,7 +14,7 @@ esa_step:
 
 # <=== LABL_PTR_i Attributes ===>
 esa_step_label:
-  CATDESC: Energy step id in lookup table
+  CATDESC: Energy step id in lookup table; corresponding energy in eV/q is provided by esa_energy
   FIELDNAM: Energy Step
   FORMAT: A2
   VAR_TYPE: metadata
@@ -35,7 +35,7 @@ counts_default: &counts_default
   VAR_TYPE: data
 
 flags_default:
-  CATDESC: Bitwise flag. There are 13 flags. See VAR_NOTES for more details.
+  CATDESC: Bitwise science and housekeeping quality flags. See VAR_NOTES for bit definitions.
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DICT_KEY: SPASE>Support>SupportQuantity:EncodedParameter
@@ -47,16 +47,17 @@ flags_default:
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
   UNITS: ' '
-  VALIDMAX: 8191
+  VALIDMAX: 32767
   VALIDMIN: 0
   VAR_NOTES: >
-    There are 13 flags in total, first three flags are from science packets
-    and remaining 10 flags are from housekeeping packets. Flags are stored
-    as bitwise flag. 32767 is the value when all 15-bits are 1s. Eg.
-    int('0111111111111111', 2). First two bits from right are saved to save defaults.
-    Then, the remaining 13 bits from right are used for 13 flags. The flags are
-    as follows, "OVR_T_ST", "UND_T_ST", "PCEM_CNT_ST", "SCEM_CNT_ST","PCEM_V_ST",
-    "PCEM_I_ST", "PCEM_INT_ST", "SCEM_V_ST", "SCEM_I_ST", "SCEM_INT_ST".
+    Flags are stored as a 15-bit bitmask with VALIDMAX=32767 when bits 0-14 are all
+    set. The implemented flags are: bit 0 (value 1) INF, bit 1 (value 2) NEG,
+    bit 2 (value 4) SWP_PCEM_COMP, bit 3 (value 8) SWP_SCEM_COMP, bit 4 (value 16)
+    SWP_COIN_COMP, bit 5 (value 32) OVR_T_ST, bit 6 (value 64) UND_T_ST,
+    bit 7 (value 128) PCEM_CNT_ST, bit 8 (value 256) SCEM_CNT_ST,
+    bit 9 (value 512) PCEM_V_ST, bit 10 (value 1024) PCEM_I_ST,
+    bit 11 (value 2048) PCEM_INT_ST, bit 12 (value 4096) SCEM_V_ST,
+    bit 13 (value 8192) SCEM_I_ST, and bit 14 (value 16384) SCEM_INT_ST.
   VAR_TYPE: data
 
 counts_uncertainty_default: &counts_uncertainty_default
@@ -82,10 +83,10 @@ rate_uncertainty_default: &rate_uncertainty_default
   FORMAT: E19.5
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
-  UNITS: counts
+  UNITS: counts/s
   VALIDMAX: 4.519655172413793E+05 # 65535 counts / 0.145 s livetime
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 rate_default: &rate_default
   DEPEND_0: epoch
@@ -102,20 +103,21 @@ rate_default: &rate_default
   VAR_TYPE: data
 
 esa_energy:
-  CATDESC: ESA Energy.
+  CATDESC: ESA energy in eV/q corresponding to each step id for each sweep
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: ESA Energy
   FILLVAL: -1.0000000E+31
   FORMAT: F8.1
-  LABLAXIS: Energy(eV)
+  LABLAXIS: Energy (eV/q)
   LABL_PTR_1: esa_step_label
   SCALETYP: linear
   UNITS: eV / q
   VALIDMAX: 21000.0
   VALIDMIN: 0.0
-  VAR_TYPE: support_data
+  VAR_TYPE: data
 
 metadata_default: &metadata_default
   DEPEND_0: epoch
@@ -195,39 +197,63 @@ coin_counts_uncertainty:
   FIELDNAM: Coincidence Counts Uncertainty
   LABLAXIS: coin_cnts_stat_unc
 
-pcem_rate_uncertainty:
+swp_pcem_rate_stat_uncert_plus:
   <<: *rate_uncertainty_default
-  CATDESC: Primary Channel Electron Multiplier (CEM) rate uncertainty
-  FIELDNAM: Primary CEM Rate Uncertainty
-  LABLAXIS: pcem_rate_stat_unc
+  CATDESC: Upper statistical uncertainty in primary Channel Electron Multiplier (CEM) rate
+  FIELDNAM: Primary CEM Rate Uncertainty Plus
+  LABLAXIS: pcem_rate_stat_unc_plus
 
-scem_rate_uncertainty:
+swp_pcem_rate_stat_uncert_minus:
   <<: *rate_uncertainty_default
-  CATDESC: Secondary Channel Electron Multiplier (CEM) rate uncertainty
-  FIELDNAM: Secondary CEM Rate Uncertainty
-  LABLAXIS: scem_rate_stat_unc
+  CATDESC: Lower statistical uncertainty in primary Channel Electron Multiplier (CEM) rate
+  FIELDNAM: Primary CEM Rate Uncertainty Minus
+  LABLAXIS: pcem_rate_stat_unc_minus
 
-coin_rate_uncertainty:
+swp_scem_rate_stat_uncert_plus:
   <<: *rate_uncertainty_default
-  CATDESC: Coincidence rate uncertainty
-  FIELDNAM: Coincidence Rate Uncertainty
-  LABLAXIS: coin_rate_stat_unc
+  CATDESC: Upper statistical uncertainty in secondary Channel Electron Multiplier (CEM) rate
+  FIELDNAM: Secondary CEM Rate Uncertainty Plus
+  LABLAXIS: scem_rate_stat_unc_plus
+
+swp_scem_rate_stat_uncert_minus:
+  <<: *rate_uncertainty_default
+  CATDESC: Lower statistical uncertainty in secondary Channel Electron Multiplier (CEM) rate
+  FIELDNAM: Secondary CEM Rate Uncertainty Minus
+  LABLAXIS: scem_rate_stat_unc_minus
+
+swp_coin_rate_stat_uncert_plus:
+  <<: *rate_uncertainty_default
+  CATDESC: Upper statistical uncertainty in coincidence rate
+  FIELDNAM: Coincidence Rate Uncertainty Plus
+  LABLAXIS: coin_rate_stat_unc_plus
+
+swp_coin_rate_stat_uncert_minus:
+  <<: *rate_uncertainty_default
+  CATDESC: Lower statistical uncertainty in coincidence rate
+  FIELDNAM: Coincidence Rate Uncertainty Minus
+  LABLAXIS: coin_rate_stat_unc_minus
 
 pcem_rate:
   <<: *rate_default
   CATDESC: Primary Channel Electron Multiplier (CEM) Rates
+  DELTA_MINUS_VAR: swp_pcem_rate_stat_uncert_minus
+  DELTA_PLUS_VAR: swp_pcem_rate_stat_uncert_plus
   FIELDNAM: Primary CEM Rates
   LABLAXIS: pcem_rate
 
 scem_rate:
   <<: *rate_default
   CATDESC: Secondary Channel Electron Multiplier (CEM) Rates
+  DELTA_MINUS_VAR: swp_scem_rate_stat_uncert_minus
+  DELTA_PLUS_VAR: swp_scem_rate_stat_uncert_plus
   FIELDNAM: Secondary CEM Rates
   LABLAXIS: scem_rate
 
 coin_rate:
   <<: *rate_default
   CATDESC: Coincidence Rates
+  DELTA_MINUS_VAR: swp_coin_rate_stat_uncert_minus
+  DELTA_PLUS_VAR: swp_coin_rate_stat_uncert_plus
   FIELDNAM: Coincidence Rates
   LABLAXIS: coin_rate
 

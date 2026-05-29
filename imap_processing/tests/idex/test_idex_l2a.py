@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
@@ -10,7 +11,6 @@ from scipy.stats import exponnorm
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex import idex_constants
-from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import (
     BaselineNoiseTime,
     analyze_peaks,
@@ -21,7 +21,6 @@ from imap_processing.idex.idex_l2a import (
     chi_square,
     estimate_dust_mass,
     fit_impact,
-    idex_l2a,
     invert_rise_time_to_velocity,
     load_calibration_files,
     log_smooth_powerlaw,
@@ -29,31 +28,6 @@ from imap_processing.idex.idex_l2a import (
     sine_fit,
     time_to_mass,
 )
-from imap_processing.idex.idex_utils import get_idex_attrs
-
-
-@pytest.fixture
-def l2a_dataset(
-    l1b_dataset: xr.Dataset, decom_test_data_sci, ancillary_files, _download_test_data
-) -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-    Returns
-    -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-    idex_attrs = get_idex_attrs("l1b")
-    spin_phase_angles = xr.DataArray(
-        np.random.uniform(0.0, 360.0, len(l1b_dataset.epoch)),
-        dims="epoch",
-        attrs=idex_attrs.get_variable_attributes("spin_phase"),
-    )
-    with mock.patch(
-        "imap_processing.idex.idex_l1b.get_spice_data",
-        return_value={"spin_phase": spin_phase_angles},
-    ):
-        dataset = idex_l2a(idex_l1b(decom_test_data_sci, "sci-10days"), ancillary_files)
-    return dataset
 
 
 def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
@@ -77,7 +51,7 @@ def _write_calibration_csv(path, values):
 
 
 @pytest.mark.external_test_data
-def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
+def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset, l1b_dataset: xr.Dataset):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected logical source.
 
@@ -94,6 +68,70 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2a_sci-10days_20231218_v999.cdf"
     ds = load_cdf(file_name)
+    copied_context_vars = [
+        "ephemeris_position_x",
+        "ephemeris_position_y",
+        "ephemeris_position_z",
+        "ephemeris_velocity_x",
+        "ephemeris_velocity_y",
+        "ephemeris_velocity_z",
+        "longitude",
+        "latitude",
+        "solar_longitude",
+        "spin_phase",
+    ]
+    for variable_name in copied_context_vars:
+        assert variable_name in l2a_dataset.variables
+        np.testing.assert_array_equal(
+            l2a_dataset[variable_name].values,
+            l1b_dataset[variable_name].values,
+        )
+
+    with cdflib.CDF(file_name) as cdf_file:
+        assert cdf_file.varattsget("mass_index")["CATDESC"] == (
+            "Index variable for mass-resolved TOF peak-fit products."
+        )
+        assert cdf_file.varattsget("mass_index")["UNITS"] == " "
+        assert cdf_file.varattsget("mass_index")["VAR_NOTES"] == (
+            "Associated labels: mass_labels."
+        )
+        assert cdf_file.varattsget("tof_peak_kappa")["CATDESC"] == (
+            "Mass-scale alignment metric for the TOF peak solution."
+        )
+        assert cdf_file.varattsget("tof_peak_kappa")["FIELDNAM"] == "TOF Peak Kappa"
+        assert cdf_file.varattsget("tof_peak_kappa")["UNITS"] == " "
+        assert cdf_file.varattsget("tof_snr")["CATDESC"] == (
+            "Signal-to-noise ratio of the TOF High waveform."
+        )
+        assert cdf_file.varattsget("tof_snr")["UNITS"] == " "
+        assert cdf_file.varattsget("tof_snr")["VAR_NOTES"] == (
+            "Computed relative to a pre-impact baseline window."
+        )
+        assert cdf_file.varattsget("mass_scale")["CATDESC"] == (
+            "Preliminary time-to-mass scale for the TOF waveform."
+        )
+        assert cdf_file.varattsget("mass_scale")["UNITS"] == "amu"
+        assert cdf_file.varattsget("mass")["VAR_TYPE"] == "support_data"
+        assert cdf_file.varattsget("mass")["DISPLAY_TYPE"] == "no_plot"
+        assert cdf_file.varattsget("mass")["CATDESC"] == (
+            "Mass-scale output retained for compatibility with the L2A product "
+            "structure."
+        )
+        assert cdf_file.varattsget("mass")["FIELDNAM"] == "Mass Scale Alias"
+        assert cdf_file.varattsget("mass")["UNITS"] == "amu"
+        assert cdf_file.varattsget("mass")["VAR_NOTES"] == (
+            "Mass-scale output retained for compatibility with the current L2A "
+            "product structure. This variable is not intended to be the primary "
+            "science-facing mass-scale output."
+        )
+        assert cdf_file.varattsget("ephemeris_position_x")["FORMAT"] == "F16.6"
+        assert (
+            cdf_file.varattsget("target_high_reduced_chi_squared")["CATDESC"]
+            == "Reduced chi-square value for the Target High waveform fit."
+        )
+        for variable_name in copied_context_vars:
+            assert variable_name in cdf_file.cdf_info().zVariables
+
     spin_phase = ds["spin_phase"].values
     spin_phase_attrs = ds["spin_phase"].attrs
     assert spin_phase.dtype == np.float64

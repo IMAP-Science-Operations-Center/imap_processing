@@ -36,6 +36,46 @@ from imap_processing.hit.l2.hit_l2 import (
     reshape_for_sectored,
 )
 
+EXPECTED_STANDARD_LABLAXIS = {
+    "h_standard_intensity": "H Intensity Std",
+    "he3_standard_intensity": "He3 Intensity Std",
+    "he4_standard_intensity": "He4 Intensity Std",
+    "he_standard_intensity": "He Intensity Std",
+    "c_standard_intensity": "C Intensity Std",
+    "o_standard_intensity": "O Intensity Std",
+    "n_standard_intensity": "N Intensity Std",
+    "ne_standard_intensity": "Ne Intensity Std",
+    "na_standard_intensity": "Na Intensity Std",
+    "mg_standard_intensity": "Mg Intensity Std",
+    "al_standard_intensity": "Al Intensity Std",
+    "si_standard_intensity": "Si Intensity Std",
+    "s_standard_intensity": "S Intensity Std",
+    "ar_standard_intensity": "Ar Intensity Std",
+    "ca_standard_intensity": "Ca Intensity Std",
+    "fe_standard_intensity": "Fe Intensity Std",
+    "ni_standard_intensity": "Ni Intensity Std",
+}
+
+EXPECTED_SUMMED_LABLAXIS = {
+    "h_summed_intensity": "H intensity summed",
+    "he3_summed_intensity": "He3 intensity summed",
+    "he4_summed_intensity": "He4 intensity summed",
+    "he_summed_intensity": "He intensity summed",
+    "c_summed_intensity": "C intensity summed",
+    "o_summed_intensity": "O intensity summed",
+    "n_summed_intensity": "N intensity summed",
+    "ne_summed_intensity": "Ne intensity summed",
+    "na_summed_intensity": "Na intensity summed",
+    "mg_summed_intensity": "Mg intensity summed",
+    "al_summed_intensity": "Al intensity summed",
+    "si_summed_intensity": "Si intensity summed",
+    "s_summed_intensity": "S intensity summed",
+    "ar_summed_intensity": "Ar intensity summed",
+    "ca_summed_intensity": "Ca intensity summed",
+    "fe_summed_intensity": "Fe intensity summed",
+    "ni_summed_intensity": "Ni intensity summed",
+}
+
 
 @pytest.fixture(scope="module")
 def sci_packet_filepath():
@@ -889,8 +929,21 @@ def test_hit_l2(
     assert l2_dataset.attrs["Logical_source"] == expected_logical_source
     l2_dataset.attrs["Data_version"] = "001"
     l2_cdf_filepath = write_cdf(l2_dataset)
-    cdf_file = cdflib.CDF(l2_cdf_filepath)
-    dynamic_threshold_info = cdf_file.varinq("dynamic_threshold_state")
-    dynamic_threshold_attrs = cdf_file.varattsget("dynamic_threshold_state")
-    assert dynamic_threshold_info.Data_Type_Description == "CDF_UINT1"
-    assert dynamic_threshold_attrs["FILLVAL"] == np.uint8(255)
+    expected_lablaxis = (
+        EXPECTED_STANDARD_LABLAXIS
+        if "standard-intensity" in expected_logical_source
+        else EXPECTED_SUMMED_LABLAXIS
+    )
+    with cdflib.CDF(l2_cdf_filepath) as cdf_file:
+        dynamic_threshold_info = cdf_file.varinq("dynamic_threshold_state")
+        dynamic_threshold_attrs = cdf_file.varattsget("dynamic_threshold_state")
+        assert dynamic_threshold_info.Data_Type_Description == "CDF_UINT1"
+        assert dynamic_threshold_attrs["FILLVAL"] == np.uint8(255)
+
+        for variable_name, label_axis in expected_lablaxis.items():
+            variable_attrs = cdf_file.varattsget(variable_name)
+            species = variable_name.split("_")[0]
+            assert variable_attrs["LABL_PTR_1"] == f"{species}_energy_mean_label"
+            assert variable_attrs["LABLAXIS"] == label_axis
+            assert not variable_attrs["LABLAXIS"].endswith("_label")
+            assert len(variable_attrs["LABLAXIS"]) <= 20

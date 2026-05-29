@@ -5,10 +5,10 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.idex.idex_constants import SPICE_ARRAYS
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
+from imap_processing.idex.idex_l2a import idex_l2a
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
@@ -18,8 +18,6 @@ TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 
 
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
 L1B_EXAMPLE_FILE = TEST_DATA_PATH / "imap_idex_l1b_sci_20231218_v004.h5"
-
-L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
 L1B_MSG_CDF = TEST_DATA_PATH / "imap_idex_l1b_msg-10days_20250108_v001.cdf"
 
 pytestmark = pytest.mark.external_test_data
@@ -88,7 +86,7 @@ def l1a_example_data(_download_test_data):
 
 
 @pytest.fixture
-def l2a_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
+def l2a_dataset(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -96,8 +94,7 @@ def l2a_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    l2a_dataset = load_cdf(L2A_CDF)
-    return l2a_dataset
+    return idex_l2a(l1b_dataset.copy(deep=True), ancillary_files)
 
 
 @pytest.fixture

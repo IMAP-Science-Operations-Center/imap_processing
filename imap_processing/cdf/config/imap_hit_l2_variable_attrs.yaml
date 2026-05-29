@@ -350,7 +350,8 @@ h_standard_intensity:
   DELTA_PLUS_VAR: h_total_uncert_plus
   DEPEND_1: h_energy_mean
   FIELDNAM: H Intensity Standard
-  LABLAXIS: h_energy_mean_label
+  LABLAXIS: H Intensity Std
+  LABL_PTR_1: h_energy_mean_label
 
 he3_standard_intensity:
   <<: *default_particle
@@ -359,7 +360,8 @@ he3_standard_intensity:
   DELTA_PLUS_VAR: he3_total_uncert_plus
   DEPEND_1: he3_energy_mean
   FIELDNAM: He3 Intensity Standard
-  LABLAXIS: he3_energy_mean_label
+  LABLAXIS: He3 Intensity Std
+  LABL_PTR_1: he3_energy_mean_label
 
 he4_standard_intensity:
   <<: *default_particle
@@ -368,7 +370,8 @@ he4_standard_intensity:
   DELTA_PLUS_VAR: he4_total_uncert_plus
   DEPEND_1: he4_energy_mean
   FIELDNAM: He4 Intensity Standard
-  LABLAXIS: he4_energy_mean_label
+  LABLAXIS: He4 Intensity Std
+  LABL_PTR_1: he4_energy_mean_label
 
 he_standard_intensity:
   <<: *default_particle
@@ -377,7 +380,8 @@ he_standard_intensity:
   DELTA_PLUS_VAR: he_total_uncert_plus
   DEPEND_1: he_energy_mean
   FIELDNAM: He Intensity Standard
-  LABLAXIS: he_energy_mean_label
+  LABLAXIS: He Intensity Std
+  LABL_PTR_1: he_energy_mean_label
 
 c_standard_intensity:
   <<: *default_particle
@@ -386,7 +390,8 @@ c_standard_intensity:
   DELTA_PLUS_VAR: c_total_uncert_plus
   DEPEND_1: c_energy_mean
   FIELDNAM: C Intensity Standard
-  LABLAXIS: c_energy_mean_label
+  LABLAXIS: C Intensity Std
+  LABL_PTR_1: c_energy_mean_label
 
 o_standard_intensity:
   <<: *default_particle
@@ -395,7 +400,8 @@ o_standard_intensity:
   DELTA_PLUS_VAR: o_total_uncert_plus
   DEPEND_1: o_energy_mean
   FIELDNAM: O Intensity Standard
-  LABLAXIS: o_energy_mean_label
+  LABLAXIS: O Intensity Std
+  LABL_PTR_1: o_energy_mean_label
 
 n_standard_intensity:
   <<: *default_particle
@@ -404,7 +410,8 @@ n_standard_intensity:
   DELTA_PLUS_VAR: n_total_uncert_plus
   DEPEND_1: n_energy_mean
   FIELDNAM: N Intensity Standard
-  LABLAXIS: n_energy_mean_label
+  LABLAXIS: N Intensity Std
+  LABL_PTR_1: n_energy_mean_label
 
 ne_standard_intensity:
   <<: *default_particle
@@ -413,7 +420,8 @@ ne_standard_intensity:
   DELTA_PLUS_VAR: ne_total_uncert_plus
   DEPEND_1: ne_energy_mean
   FIELDNAM: Ne Intensity Standard
-  LABLAXIS: ne_energy_mean_label
+  LABLAXIS: Ne Intensity Std
+  LABL_PTR_1: ne_energy_mean_label
 
 na_standard_intensity:
   <<: *default_particle
@@ -422,7 +430,8 @@ na_standard_intensity:
   DELTA_PLUS_VAR: na_total_uncert_plus
   DEPEND_1: na_energy_mean
   FIELDNAM: Na Intensity Standard
-  LABLAXIS: na_energy_mean_label
+  LABLAXIS: Na Intensity Std
+  LABL_PTR_1: na_energy_mean_label
 
 mg_standard_intensity:
   <<: *default_particle
@@ -431,7 +440,8 @@ mg_standard_intensity:
   DELTA_PLUS_VAR: mg_total_uncert_plus
   DEPEND_1: mg_energy_mean
   FIELDNAM: Mg Intensity Standard
-  LABLAXIS: mg_energy_mean_label
+  LABLAXIS: Mg Intensity Std
+  LABL_PTR_1: mg_energy_mean_label
 
 al_standard_intensity:
   <<: *default_particle
@@ -440,7 +450,8 @@ al_standard_intensity:
   DELTA_PLUS_VAR: al_total_uncert_plus
   DEPEND_1: al_energy_mean
   FIELDNAM: Al Intensity Standard
-  LABLAXIS: al_energy_mean_label
+  LABLAXIS: Al Intensity Std
+  LABL_PTR_1: al_energy_mean_label
 
 si_standard_intensity:
   <<: *default_particle
@@ -449,7 +460,8 @@ si_standard_intensity:
   DELTA_PLUS_VAR: si_total_uncert_plus
   DEPEND_1: si_energy_mean
   FIELDNAM: Si Intensity Standard
-  LABLAXIS: si_energy_mean_label
+  LABLAXIS: Si Intensity Std
+  LABL_PTR_1: si_energy_mean_label
 
 s_standard_intensity:
   <<: *default_particle
@@ -458,7 +470,8 @@ s_standard_intensity:
   DELTA_PLUS_VAR: s_total_uncert_plus
   DEPEND_1: s_energy_mean
   FIELDNAM: S Intensity Standard
-  LABLAXIS: s_energy_mean_label
+  LABLAXIS: S Intensity Std
+  LABL_PTR_1: s_energy_mean_label
 
 ar_standard_intensity:
   <<: *default_particle
@@ -467,7 +480,8 @@ ar_standard_intensity:
   DELTA_PLUS_VAR: ar_total_uncert_plus
   DEPEND_1: ar_energy_mean
   FIELDNAM: Ar Intensity Standard
-  LABLAXIS: ar_energy_mean_label
+  LABLAXIS: Ar Intensity Std
+  LABL_PTR_1: ar_energy_mean_label
 
 ca_standard_intensity:
   <<: *default_particle
@@ -476,7 +490,8 @@ ca_standard_intensity:
   DELTA_PLUS_VAR: ca_total_uncert_plus
   DEPEND_1: ca_energy_mean
   FIELDNAM: Ca Intensity Standard
-  LABLAXIS: ca_energy_mean_label
+  LABLAXIS: Ca Intensity Std
+  LABL_PTR_1: ca_energy_mean_label
 
 fe_standard_intensity:
   <<: *default_particle
@@ -485,7 +500,8 @@ fe_standard_intensity:
   DELTA_PLUS_VAR: fe_total_uncert_plus
   DEPEND_1: fe_energy_mean
   FIELDNAM: Fe Intensity Standard
-  LABLAXIS: fe_energy_mean_label
+  LABLAXIS: Fe Intensity Std
+  LABL_PTR_1: fe_energy_mean_label
 
 ni_standard_intensity:
   <<: *default_particle
@@ -494,7 +510,8 @@ ni_standard_intensity:
   DELTA_PLUS_VAR: ni_total_uncert_plus
   DEPEND_1: ni_energy_mean
   FIELDNAM: Ni Intensity Standard
-  LABLAXIS: ni_energy_mean_label
+  LABLAXIS: Ni Intensity Std
+  LABL_PTR_1: ni_energy_mean_label
 
 # Summed Intensity Variables
 h_summed_intensity:
@@ -504,7 +521,8 @@ h_summed_intensity:
   DELTA_PLUS_VAR: h_total_uncert_plus
   DEPEND_1: h_energy_mean
   FIELDNAM: H intensity summed
-  LABLAXIS: h_energy_mean_label
+  LABLAXIS: H intensity summed
+  LABL_PTR_1: h_energy_mean_label
 
 he3_summed_intensity:
   <<: *default_particle
@@ -513,7 +531,8 @@ he3_summed_intensity:
   DELTA_PLUS_VAR: he3_total_uncert_plus
   DEPEND_1: he3_energy_mean
   FIELDNAM: He3 intensity summed
-  LABLAXIS: he3_energy_mean_label
+  LABLAXIS: He3 intensity summed
+  LABL_PTR_1: he3_energy_mean_label
 
 he4_summed_intensity:
   <<: *default_particle
@@ -522,7 +541,8 @@ he4_summed_intensity:
   DELTA_PLUS_VAR: he4_total_uncert_plus
   DEPEND_1: he4_energy_mean
   FIELDNAM: He4 intensity summed
-  LABLAXIS: he4_energy_mean_label
+  LABLAXIS: He4 intensity summed
+  LABL_PTR_1: he4_energy_mean_label
 
 he_summed_intensity:
   <<: *default_particle
@@ -531,7 +551,8 @@ he_summed_intensity:
   DELTA_PLUS_VAR: he_total_uncert_plus
   DEPEND_1: he_energy_mean
   FIELDNAM: He intensity summed
-  LABLAXIS: he_energy_mean_label
+  LABLAXIS: He intensity summed
+  LABL_PTR_1: he_energy_mean_label
 
 c_summed_intensity:
   <<: *default_particle
@@ -540,7 +561,8 @@ c_summed_intensity:
   DELTA_PLUS_VAR: c_total_uncert_plus
   DEPEND_1: c_energy_mean
   FIELDNAM: C intensity summed
-  LABLAXIS: c_energy_mean_label
+  LABLAXIS: C intensity summed
+  LABL_PTR_1: c_energy_mean_label
 
 o_summed_intensity:
   <<: *default_particle
@@ -549,7 +571,8 @@ o_summed_intensity:
   DELTA_PLUS_VAR: o_total_uncert_plus
   DEPEND_1: o_energy_mean
   FIELDNAM: O intensity summed
-  LABLAXIS: o_energy_mean_label
+  LABLAXIS: O intensity summed
+  LABL_PTR_1: o_energy_mean_label
 
 n_summed_intensity:
   <<: *default_particle
@@ -558,7 +581,8 @@ n_summed_intensity:
   DELTA_PLUS_VAR: n_total_uncert_plus
   DEPEND_1: n_energy_mean
   FIELDNAM: N intensity summed
-  LABLAXIS: n_energy_mean_label
+  LABLAXIS: N intensity summed
+  LABL_PTR_1: n_energy_mean_label
 
 ne_summed_intensity:
   <<: *default_particle
@@ -567,7 +591,8 @@ ne_summed_intensity:
   DELTA_PLUS_VAR: ne_total_uncert_plus
   DEPEND_1: ne_energy_mean
   FIELDNAM: Ne intensity summed
-  LABLAXIS: ne_energy_mean_label
+  LABLAXIS: Ne intensity summed
+  LABL_PTR_1: ne_energy_mean_label
 
 na_summed_intensity:
   <<: *default_particle
@@ -576,7 +601,8 @@ na_summed_intensity:
   DELTA_PLUS_VAR: na_total_uncert_plus
   DEPEND_1: na_energy_mean
   FIELDNAM: Na intensity summed
-  LABLAXIS: na_energy_mean_label
+  LABLAXIS: Na intensity summed
+  LABL_PTR_1: na_energy_mean_label
 
 mg_summed_intensity:
   <<: *default_particle
@@ -585,7 +611,8 @@ mg_summed_intensity:
   DELTA_PLUS_VAR: mg_total_uncert_plus
   DEPEND_1: mg_energy_mean
   FIELDNAM: Mg intensity summed
-  LABLAXIS: mg_energy_mean_label
+  LABLAXIS: Mg intensity summed
+  LABL_PTR_1: mg_energy_mean_label
 
 al_summed_intensity:
   <<: *default_particle
@@ -594,7 +621,8 @@ al_summed_intensity:
   DELTA_PLUS_VAR: al_total_uncert_plus
   DEPEND_1: al_energy_mean
   FIELDNAM: Al intensity summed
-  LABLAXIS: al_energy_mean_label
+  LABLAXIS: Al intensity summed
+  LABL_PTR_1: al_energy_mean_label
 
 si_summed_intensity:
   <<: *default_particle
@@ -603,7 +631,8 @@ si_summed_intensity:
   DELTA_PLUS_VAR: si_total_uncert_plus
   DEPEND_1: si_energy_mean
   FIELDNAM: Si intensity summed
-  LABLAXIS: si_energy_mean_label
+  LABLAXIS: Si intensity summed
+  LABL_PTR_1: si_energy_mean_label
 
 s_summed_intensity:
   <<: *default_particle
@@ -612,7 +641,8 @@ s_summed_intensity:
   DELTA_PLUS_VAR: s_total_uncert_plus
   DEPEND_1: s_energy_mean
   FIELDNAM: S intensity summed
-  LABLAXIS: s_energy_mean_label
+  LABLAXIS: S intensity summed
+  LABL_PTR_1: s_energy_mean_label
 
 ar_summed_intensity:
   <<: *default_particle
@@ -621,7 +651,8 @@ ar_summed_intensity:
   DELTA_PLUS_VAR: ar_total_uncert_plus
   DEPEND_1: ar_energy_mean
   FIELDNAM: Ar intensity summed
-  LABLAXIS: ar_energy_mean_label
+  LABLAXIS: Ar intensity summed
+  LABL_PTR_1: ar_energy_mean_label
 
 ca_summed_intensity:
   <<: *default_particle
@@ -630,7 +661,8 @@ ca_summed_intensity:
   DELTA_PLUS_VAR: ca_total_uncert_plus
   DEPEND_1: ca_energy_mean
   FIELDNAM: Ca intensity summed
-  LABLAXIS: ca_energy_mean_label
+  LABLAXIS: Ca intensity summed
+  LABL_PTR_1: ca_energy_mean_label
 
 fe_summed_intensity:
   <<: *default_particle
@@ -639,7 +671,8 @@ fe_summed_intensity:
   DELTA_PLUS_VAR: fe_total_uncert_plus
   DEPEND_1: fe_energy_mean
   FIELDNAM: Fe intensity summed
-  LABLAXIS: fe_energy_mean_label
+  LABLAXIS: Fe intensity summed
+  LABL_PTR_1: fe_energy_mean_label
 
 ni_summed_intensity:
   <<: *default_particle
@@ -648,7 +681,8 @@ ni_summed_intensity:
   DELTA_PLUS_VAR: ni_total_uncert_plus
   DEPEND_1: ni_energy_mean
   FIELDNAM: Ni intensity summed
-  LABLAXIS: ni_energy_mean_label
+  LABLAXIS: Ni intensity summed
+  LABL_PTR_1: ni_energy_mean_label
 
 # Energy Delta Variables
 h_energy_delta_plus:
@@ -1994,6 +2028,3 @@ fe_total_uncert_minus_macropixel:
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
-
-
-

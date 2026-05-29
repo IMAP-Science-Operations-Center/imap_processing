@@ -619,6 +619,22 @@ def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
     )
     l2_val_data = load_cdf(l2_val_data)
     for variable in l2_val_data.data_vars:
+        if variable == "spin_angle":
+            # TODO remove this block once someone regenerates the external
+            # validation CDF with the corrected SSD_ID_TO_SPIN_ANGLE values.
+            # See issue #3242. Until then, verify structure and basic numeric
+            # sanity to guard against regressions in the spin angle computation.
+            assert processed_l2_ds[variable].shape == l2_val_data[variable].shape, (
+                f"Shape mismatch in variable '{variable}'"
+            )
+            spin_vals = processed_l2_ds[variable].values
+            finite_vals = spin_vals[np.isfinite(spin_vals)]
+            assert finite_vals.size > 0, "spin_angle has no finite values"
+            assert np.min(finite_vals) >= 0.0, "spin_angle has values below 0 degrees"
+            assert np.max(finite_vals) <= 360.0, (
+                "spin_angle has values above 360 degrees"
+            )
+            continue
         if "label" in variable:
             np.testing.assert_array_equal(
                 processed_l2_ds[variable].values,

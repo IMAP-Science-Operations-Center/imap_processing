@@ -100,7 +100,7 @@ def mag_l1c(
         completed_timeline[:, 0],
         name="epoch",
         dims=["epoch"],
-        attrs=attribute_manager.get_variable_attributes("epoch"),
+        attrs=attribute_manager.get_variable_attributes("epoch", check_schema=False),
     )
 
     direction_label = xr.DataArray(

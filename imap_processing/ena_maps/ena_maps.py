@@ -1540,12 +1540,11 @@ class RectangularSkyMap(AbstractSkyMap):
             {"DELTA_PLUS_VAR": "epoch_delta", "BIN_LOCATION": 0}
         )
 
-        # And CATDESC for principal data
+        # Generate CATDESC for all map variables data
         md = naming.MapDescriptor.from_string(descriptor)
-        principal_data = md.principal_data_var
-        if principal_data in cdf_ds:
-            cdf_ds[principal_data].attrs["CATDESC"] = md.to_catdesc()
-
+        for data_var in cdf_ds.data_vars.keys():
+            if map_var_catdesc := md.build_map_var_catdesc(data_var):
+                cdf_ds[data_var].attrs["CATDESC"] = map_var_catdesc
         return cdf_ds
 
     def to_properties_dict(self) -> dict:

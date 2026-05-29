@@ -97,9 +97,8 @@ low_sample_rate_attrs:
   DEPEND_1: time_low_sample_rate_index
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   FIELDNAM: Low Sample Rate Time
-  VAR_NOTES: The low sample rate in microseconds. Steps are approximately 1/4.025
-             microseconds in duration. Used by the Ion_Grid, Target_Low, and
-             Target_High variables.
+  VAR_NOTES: The low sample rate is 4.0625 MHz, so adjacent samples are separated
+             by approximately 1/4.0625 microseconds.
 
 high_sample_rate_attrs:
   <<:  *sample_rate_base
