@@ -185,7 +185,6 @@ ena_count_rate_stat_uncert:
 
 bg_rate:
   <<: *default_float32
-  VAR_NOTES: Total background count rate from non-ENA (non-heliospheric) sources, as calculated by ground processing; makes sense only for "uncombined" calibration products.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -193,11 +192,11 @@ bg_rate:
   FORMAT: F6.3
   LABLAXIS: Rate
   UNITS: count s-1
+  VAR_NOTES: Total background count rate from non-ENA (non-heliospheric) sources, as calculated by ground processing; makes sense only for "uncombined" calibration products.
   VAR_TYPE: data
 
 bg_rate_stat_uncert:
   <<: *default_float32
-  VAR_NOTES: Statistical uncertainty in the background count rate from non-ENA (non-heliospheric) sources.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -205,11 +204,11 @@ bg_rate_stat_uncert:
   FORMAT: F6.3
   LABLAXIS: Rate Uncertainty
   UNITS: count s-1
+  VAR_NOTES: Statistical uncertainty in the background count rate from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 bg_rate_sys_err:
   <<: *default_float32
-  VAR_NOTES: Systematic error in the background count rate from non-ENA (non-heliospheric) sources.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -217,11 +216,11 @@ bg_rate_sys_err:
   FORMAT: F6.3
   LABLAXIS: Rate Error
   UNITS: count s-1
+  VAR_NOTES: Systematic error in the background count rate from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 bg_intensity:
   <<: *default_float32
-  VAR_NOTES: Total background intensity from non-ENA (non-heliospheric) sources
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -229,11 +228,11 @@ bg_intensity:
   FORMAT: F8.3
   LABLAXIS: Intensity
   UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_NOTES: Total background intensity from non-ENA (non-heliospheric) sources
   VAR_TYPE: data
 
 bg_intensity_stat_uncert:
   <<: *default_float32
-  VAR_NOTES: Uncertainty in the background intensity from non-ENA (non-heliospheric) sources.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -241,11 +240,11 @@ bg_intensity_stat_uncert:
   FORMAT: F8.3
   LABLAXIS: Intensity Uncertainty
   UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_NOTES: Uncertainty in the background intensity from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 bg_intensity_sys_err:
   <<: *default_float32
-  VAR_NOTES: Non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
   DISPLAY_TYPE: map_image
@@ -253,6 +252,7 @@ bg_intensity_sys_err:
   FORMAT: F8.3
   LABLAXIS: Intensity Non-statistical Error
   UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_NOTES: Non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 ena_count:
