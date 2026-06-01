@@ -647,9 +647,12 @@ def check_epochs_within_day_offsets(
     )
     for dataset in datasets:
         epoch_ns = dataset["epoch"].values
-        if np.any(epoch_ns < lower) or np.any(epoch_ns >= upper):
-            dataset_logical_id = dataset.attrs.get("Logical_source", "unknown dataset")
-            raise ValueError(
-                f"Data in {dataset_logical_id} contains epochs more than"
-                f" 24 hours outside the expected processing day {day}."
-            )
+        if np.issubdtype(dataset["epoch"].dtype, np.number):
+            if np.any(epoch_ns < lower) or np.any(epoch_ns >= upper):
+                dataset_logical_id = dataset.attrs.get(
+                    "Logical_source", "unknown dataset"
+                )
+                raise ValueError(
+                    f"Data in {dataset_logical_id} contains epochs more than"
+                    f" 24 hours outside the expected processing day {day}."
+                )
