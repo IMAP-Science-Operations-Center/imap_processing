@@ -241,6 +241,13 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
     # Check that the dataset has the correct attributes, coordinates, and dimensions
     assert processed_hskp_dataset.attrs == dataset_attrs
     assert processed_hskp_dataset.coords.keys() == dataset_coords_dims
+    # Check that sc_tick has DEPEND_0 == "epoch". This is needed since the
+    # hit l1a counts product contains a coordinate named sc_tick with no DEPEND_0
+    # and hit l1a housekeeping shares a CDF config yaml
+    assert processed_hskp_dataset["sc_tick"].attrs["DEPEND_0"] == "epoch"
+    # Check that housekeeping coordinates don't have DEPEND_0
+    for coord in processed_hskp_dataset.coords.values():
+        assert "DEPEND_0" not in coord.attrs
 
 
 def test_add_energy_variables():

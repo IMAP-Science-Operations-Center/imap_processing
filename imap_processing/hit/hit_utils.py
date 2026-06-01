@@ -177,7 +177,7 @@ def process_housekeeping_data(
         np.arange(64, dtype=np.uint8),
         name="adc_channels",
         dims=["adc_channels"],
-        attrs=attr_mgr.get_variable_attributes("adc_channels"),
+        attrs=attr_mgr.get_variable_attributes("adc_channels", check_schema=False),
     )
 
     # NOTE: LABL_PTR_1 should be CDF_CHAR.
@@ -185,7 +185,9 @@ def process_housekeeping_data(
         adc_channels.values.astype(str),
         name="adc_channels_label",
         dims=["adc_channels_label"],
-        attrs=attr_mgr.get_variable_attributes("adc_channels_label"),
+        attrs=attr_mgr.get_variable_attributes(
+            "adc_channels_label", check_schema=False
+        ),
     )
 
     # Update dataset coordinates and attributes
@@ -210,6 +212,11 @@ def process_housekeeping_data(
             if "DEPEND" in key
         }
         dataset[field].attrs = attr_mgr.get_variable_attributes(field)
+        # sc_tick is a coordinate in the HIT counts product, so no DEPEND_0
+        # is specified in the CDF attribute yaml. Manually set it here since in
+        # housekeeping sc_tick depends on epoch
+        if field == "sc_tick":
+            dataset[field].attrs["DEPEND_0"] = "epoch"
         dataset[field].assign_coords(dims)
 
     dataset.epoch.attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
