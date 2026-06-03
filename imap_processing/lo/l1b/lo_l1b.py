@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import Field
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -39,8 +39,8 @@ from imap_processing.spice.spin import (
 from imap_processing.spice.time import (
     epoch_to_fractional_doy,
     et_to_utc,
-    met_to_datetime64,
     met_to_ttj2000ns,
+    met_to_utc,
     ttj2000ns_to_et,
     ttj2000ns_to_met,
 )
@@ -473,7 +473,8 @@ def set_esa_mode(
 
     # The ESA mode is fixed for a given pointing date. Convert the pointing start
     # time to a date and select the sweep table rows for that date.
-    pointing_date = met_to_datetime64(pointing_start_met).astype("datetime64[D]")
+    pointing_date_str = met_to_utc(pointing_start_met).split("T")[0]
+    pointing_date = datetime.strptime(pointing_date_str, "%Y-%m-%d")
     pointing_sweep_df = sweep_df[sweep_df["Date"] == pointing_date]
 
     if pointing_sweep_df.empty:
