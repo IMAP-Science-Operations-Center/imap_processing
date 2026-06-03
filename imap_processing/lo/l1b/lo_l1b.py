@@ -39,6 +39,7 @@ from imap_processing.spice.spin import (
 from imap_processing.spice.time import (
     epoch_to_fractional_doy,
     et_to_utc,
+    met_to_datetime64,
     met_to_ttj2000ns,
     ttj2000ns_to_et,
     ttj2000ns_to_met,
@@ -288,9 +289,7 @@ def l1b_de(
     pivot_angle = get_pivot_angle_from_nhk(l1b_nhk)
     l1b_de["pivot_angle"] = xr.DataArray([pivot_angle], dims=["pivot_angle"])
 
-    pointing_start_met, pointing_end_met = get_pointing_times(
-        l1a_de["met"].values[0].item()
-    )
+    pointing_start_met, _ = get_pointing_times(l1a_de["met"].values[0].item())
 
     # Get the average spin durations for each epoch
     avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(spin_data)
@@ -302,9 +301,7 @@ def l1b_de(
     # set the epoch for each event
     l1b_de = set_each_event_epoch(l1b_de)
     # Set the ESA mode for each direct event
-    l1b_de = set_esa_mode(
-        pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
-    )
+    l1b_de = set_esa_mode(pointing_start_met, anc_dependencies, l1b_de)
     # Set the average spin duration for each direct event
     l1b_de = set_avg_spin_durations_per_event(
         l1a_de, l1b_de, avg_spin_durations_per_cycle
@@ -356,12 +353,10 @@ def l1b_allrates(
     # set spin cycle and remove invalid spin ASCs
     l1b_all_rates = set_spin_cycle_from_spin_data(l1a_hist, l1b_all_rates, spin_data)
 
-    pointing_start_met, pointing_end_met = get_pointing_times(
+    pointing_start_met, _ = get_pointing_times(
         ttj2000ns_to_met(l1a_hist["epoch"].values[0].item())
     )
-    l1b_all_rates = set_esa_mode(
-        pointing_start_met, pointing_end_met, anc_dependencies, l1b_all_rates
-    )
+    l1b_all_rates = set_esa_mode(pointing_start_met, anc_dependencies, l1b_all_rates)
     # resweep the histogram data
     l1b_all_rates, exposure_factor = resweep_histogram_data(
         l1b_all_rates, anc_dependencies
@@ -448,21 +443,19 @@ def initialize_l1b_de(
 
 def set_esa_mode(
     pointing_start_met: float,
-    pointing_end_met: float,
     anc_dependencies: list,
     l1b_science: xr.Dataset,
 ) -> xr.Dataset:
     """
     Set the ESA mode for each direct event or histogram.
 
-    The ESA mode is determined from the sweep table for the time period of the pointing.
+    The ESA mode is fixed for a given pointing date and is determined from the
+    sweep table rows whose date (YYYYDDD) matches the pointing date.
 
     Parameters
     ----------
     pointing_start_met : float
         Start time for the pointing in MET seconds.
-    pointing_end_met : float
-        End time for the pointing in MET seconds.
     anc_dependencies : list
         List of ancillary file paths.
     l1b_science : xarray.Dataset
@@ -478,18 +471,20 @@ def set_esa_mode(
         next(str(s) for s in anc_dependencies if "sweep-table" in str(s))
     )
 
-    # Get the sweep table rows that correspond to the time period of the pointing
-    pointing_sweep_df = sweep_df[
-        (sweep_df["GoodTime_start"] >= pointing_start_met)
-        & (sweep_df["GoodTime_end"] <= pointing_end_met)
-    ]
+    # The ESA mode is fixed for a given pointing date. Convert the pointing start
+    # time to a date and select the sweep table rows for that date.
+    pointing_date = met_to_datetime64(pointing_start_met).astype("datetime64[D]")
+    pointing_sweep_df = sweep_df[sweep_df["Date"] == pointing_date]
+
+    if pointing_sweep_df.empty:
+        raise ValueError(
+            f"No ESA mode found in sweep table for pointing date {pointing_date}."
+        )
 
     # Check that there is only one ESA mode in the sweep table for the pointing
     if len(pointing_sweep_df["ESA_Mode"].unique()) == 1:
         # Update the ESA mode strings to be 0 for HiRes and 1 for HiThr
-        sweep_df["esa_mode"] = sweep_df["ESA_Mode"].map({"HiRes": 0, "HiThr": 1})
-        # Get the ESA mode for the pointing
-        esa_mode = sweep_df["esa_mode"].values[0]
+        esa_mode = pointing_sweep_df["ESA_Mode"].map({"HiRes": 0, "HiThr": 1}).values[0]
         # Repeat the ESA mode for each direct event in the pointing
         esa_mode_array: np.ndarray = np.repeat(esa_mode, len(l1b_science["epoch"]))
     else:
@@ -1832,10 +1827,10 @@ def calculate_de_rates(
 
     ds["pivot_angle"] = l1b_de["pivot_angle"]
 
-    pointing_start_met, pointing_end_met = get_pointing_times(
+    pointing_start_met, _ = get_pointing_times(
         ttj2000ns_to_met(ds["epoch"].values[0].item())
     )
-    ds = set_esa_mode(pointing_start_met, pointing_end_met, anc_dependencies, ds)
+    ds = set_esa_mode(pointing_start_met, anc_dependencies, ds)
 
     ds.attrs = attr_mgr_l1b.get_global_attributes("imap_lo_l1b_derates")
     ds["epoch"].attrs = attr_mgr_l1b.get_variable_attributes(

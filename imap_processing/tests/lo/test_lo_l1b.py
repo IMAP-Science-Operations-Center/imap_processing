@@ -393,14 +393,11 @@ def test_set_esa_mode(anc_dependencies, attr_mgr_l1b):
         coords={"epoch": [0, 1, 2, 3, 4]},
     )
     pointing_start_met = 473389199
-    pointing_end_met = 473472001
 
     expected_esa_mode = np.array([0, 0, 0, 0, 0])
 
     # Act
-    l1b_de = set_esa_mode(
-        pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
-    )
+    l1b_de = set_esa_mode(pointing_start_met, anc_dependencies, l1b_de)
 
     # Assert
     np.testing.assert_array_equal(l1b_de["esa_mode"].values, expected_esa_mode)
@@ -412,16 +409,13 @@ def test_set_esa_mode_error(anc_dependencies, attr_mgr_l1b):
         {},
         coords={"epoch": [0, 1, 2, 3, 4]},
     )
-    pointing_start_met = 473389199
-    pointing_end_met = 509369021
+    pointing_start_met = 473475600
 
     # Act / Assert
     with pytest.raises(
         ValueError, match="Multiple ESA modes found in sweep table for pointing."
     ):
-        l1b_de = set_esa_mode(
-            pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
-        )
+        l1b_de = set_esa_mode(pointing_start_met, anc_dependencies, l1b_de)
 
 
 def test_convert_start_end_acq_times():
