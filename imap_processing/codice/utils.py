@@ -246,7 +246,17 @@ def process_by_table_id(
     ]
     if len(processed) == 1:
         return processed[0]
-    return xr.concat(processed, dim="epoch").sortby("epoch")
+    # Keep non-epoch support variables as it is, 1-D arrays,
+    # instead of expanding them along the epoch dimension.
+    # Eg. voltage_table and k_factor are 1-D arrays that apply to all
+    # epochs in the same way.
+    return xr.concat(
+        processed,
+        dim="epoch",
+        data_vars="minimal",
+        coords="minimal",
+        compat="equals",
+    ).sortby("epoch")
 
 
 def get_collapse_pattern_shape(
