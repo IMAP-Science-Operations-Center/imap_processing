@@ -38,7 +38,8 @@ A) DEV Migration + Testing (Steps 1–6)
 
    .. code-block:: bash
 
-       export DATABASE_URL=dev_database_url
+       export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
+
        alembic revision --autogenerate -m "description"
 
    This generates a new file in ``alembic/versions/``. **Always review the file before applying** — Alembic cannot
@@ -51,14 +52,16 @@ A) DEV Migration + Testing (Steps 1–6)
 
    .. code-block:: bash
 
-       export DATABASE_URL=dev_database_url
+       export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
+
        alembic upgrade head --sql
 
 4. **Apply migration to DEV**
 
    .. code-block:: bash
 
-       export DATABASE_URL=dev_database_url
+       export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
+
        alembic current
        alembic upgrade head
 
@@ -71,7 +74,8 @@ A) DEV Migration + Testing (Steps 1–6)
 
    .. code-block:: bash
 
-       export DATABASE_URL=dev_database_url
+       export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
+
        alembic downgrade -1
 
    Make sure the downgrade works as expected.
@@ -87,7 +91,8 @@ B) PROD Verification + Deployment (Steps 7–10)
 
    .. code-block:: bash
 
-       export DATABASE_URL=dev_database_url
+       export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
+
        alembic current
        alembic upgrade head
 
