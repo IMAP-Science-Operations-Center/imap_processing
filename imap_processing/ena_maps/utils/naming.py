@@ -215,6 +215,7 @@ class MapDescriptor:
             "dust_rate": "Rate",
             "isn_rate_bg_subtracted": "Rate",
             "isn_rate": "Rate",
+            "survival_probability": "Survival Probability"
         }
 
         if support_var_name in known_map_data_vars_and_descriptions:

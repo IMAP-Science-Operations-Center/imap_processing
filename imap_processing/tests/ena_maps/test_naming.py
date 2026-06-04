@@ -464,6 +464,12 @@ class TestMapDescriptor:
                 "aliens",
                 None,
             ),
+            (
+                "u45-ena-h-hf-nsp-full-hae-4deg-6mo",
+                "survival_probability",
+                "IMAP Ultra45 H Survival Probability, "
+                "HAE Helio Frame, No Surv Corr, Full Spin, 4 deg, 6 Mon",
+            ),
         ],
     )
     def test_build_map_var_catdesc_more_vars(
