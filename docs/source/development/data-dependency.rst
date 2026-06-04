@@ -50,15 +50,15 @@ the IMAP SDC, in less technical terms.
 
 Each science file that arrives is treated the same, regardless of level or instrument. When a file
 is placed in the file storage system, it triggers a step to index the file ("indexer lambda").
-This step adds the file to the database and triggers the next step in processing ("batch starter lambda").
+This step adds the file to the database and triggers the next step in processing ("IMAP SDC job handler system").
 
-After indexing, the batch starter lambda is triggered in order to determine what jobs may be ready for processing.
+After indexing, the job handler is triggered in order to determine what jobs may be ready for processing.
 For each file that arrives, the system checks to see what job may need to be run by looking
 at the downstream dependencies are.For example, if a MAG L1A file arrived, this step would
 determine that the MAG L1B ``mago`` and ``magi`` files are dependent on
 the L1A file, and therefore MAG L1B may be ready to begin processing.
 
-Then, for each possible job, the batch starter process checks to see if all the upstream
+Then, for each possible job, the job handler process checks to see if all the upstream
 dependencies are met. Although we know we have one of the upstream dependencies for an
 expected job, it's possible that there are other required dependencies that have not yet
 arrived. If we are missing any required dependencies, then the system does not kick off the
@@ -79,10 +79,10 @@ For example, SWAPI L3 requires both SWAPI L2 files and MAG L1D (previously calle
 files. The SWAPI L2 job and the MAG L1D job are run independently, so there is no guarantee
 that they will finish at the same time. Let's assume that the MAG L1D job finishes first,
 since it is the lower level. When that file arrives, one of the downstream dependencies is
-going to be the SWAPI L3 processing. However, when batch starter checks the upstream
+going to be the SWAPI L3 processing. However, when job handler checks the upstream
 dependencies for SWAPI L3, it will find that SWAPI L2 is missing. Therefore, processing
-won't start. Once the SWAPI L2 processing finishes, and the SWAPI L2 file arrives, the batch
-starter is triggered with that file. Once again, SWAPI L3 is a downstream dependency, but
+won't start. Once the SWAPI L2 processing finishes, and the SWAPI L2 file arrives, the job
+handler is triggered with that file. Once again, SWAPI L3 is a downstream dependency, but
 this time, both upstream dependencies for SWAPI L2 are present. Therefore, processing for
 SWAPI L3 can begin.
 
@@ -232,8 +232,8 @@ File content structure
 The YAML config has the following structure:
 
 .. code-block:: yaml
-
   (level, descriptor):
+    partition: daily | repoint | etc
     - inputs
       - source,
         data_type,
