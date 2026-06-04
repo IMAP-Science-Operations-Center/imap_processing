@@ -8,10 +8,9 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
-from imap_processing.codice.constants import HALF_SPIN_FILLVAL
+from imap_processing.codice.constants import CODICEAPID, HALF_SPIN_FILLVAL
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
-    CODICEAPID,
     CoDICECompression,
     calculate_acq_time_per_step,
     get_codice_epoch_time,

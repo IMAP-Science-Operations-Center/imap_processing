@@ -27,10 +27,8 @@ from imap_processing.codice.codice_l1a_lo_counters_singles import (
 )
 from imap_processing.codice.codice_l1a_lo_priority import l1a_lo_priority
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
-from imap_processing.codice.utils import (
-    CODICEAPID,
-    process_by_table_id,
-)
+from imap_processing.codice.constants import CODICEAPID
+from imap_processing.codice.utils import process_by_table_id
 from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
