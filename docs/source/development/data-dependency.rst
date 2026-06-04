@@ -232,30 +232,31 @@ File content structure
 The YAML config has the following structure:
 
 .. code-block:: yaml
-  (level, descriptor):
-    partition: daily | repoint | etc
-    - inputs
-      - source,
-        data_type,
-        descriptor,
-        required(bool),
-        trigger_job(bool),
-        [past_days, future_days]
-      - source,
-        data_type,
-        descriptor,
-        required(bool),
-        trigger_job(bool),
-        [past_days, future_days]
-      ....
-    - outputs
-      - source,
-        data_type,
-        descriptor
-      - source,
-        data_type,
-        descriptor
-      ....
+
+   (level, descriptor):
+     partition: daily
+     inputs:
+       - source,
+         data_type,
+         descriptor,
+         required(bool),
+         trigger_job(bool),
+         [past_days, future_days]
+       - source,
+         data_type,
+         descriptor,
+         required(bool),
+         trigger_job(bool),
+         [past_days, future_days]
+       ....
+     outputs:
+       - source,
+         data_type,
+         descriptor
+       - source,
+         data_type,
+         descriptor
+       ....
 
 File content Example
 ~~~~~~~~~~~~~~~~~~~~~~
