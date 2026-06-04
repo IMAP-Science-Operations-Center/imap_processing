@@ -97,11 +97,18 @@ How does the SDC track which files are dependent on others? In order to decide w
 downstream or upstream dependencies of a file are, and what the nature of those dependencies
 are, we need some way to request the upstream or downstream dependencies of a given file.
 The current dependencies between instruments are recorded in `sds-data-manager Repo
-<https://github.com/IMAP-Science-Operations-Center/sds-data-manager/blob/dev/sds_data_manager/lambda_code/SDSCode/pipeline_lambdas/dependency_config.csv>`_.
+<https://github.com/IMAP-Science-Operations-Center/sds-data-manager/tree/dagster/sds_data_manager/orchestration/dependencies>`_.
 
 We handle and track dependencies using a YAML config file that acts like a database. This YAML
 config file expects a specific format, and is used to determine the upstream and downstream
 dependencies of each product.
+
+Each product has entry for inputs, outputs and partition. The inputs are list of inputs needed to start
+processing the product, and outputs are the products that will be produced after processing. Partition
+specifies the partitioning scheme for the product, which is used to determine the date range of
+the data of the file produced from the processing job. For example, if the partition is daily,
+then the file produced from the processing job will have a date range of 1 day. If the partition
+is repoint, then the file produced from the processing job will have a date range of 1 pointing.
 
 Filename convention
 ~~~~~~~~~~~~~~~~~~~~
@@ -123,16 +130,16 @@ A downstream dependency is a product whose processing depends on the current fil
 Downstream dependencies are determined at runtime by querying which products list the current
 file as an upstream dependency.
 
-Valid Fields for Dependency Config
+Valid Fields for Dependency
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _imap-data-init: https://github.com/IMAP-Science-Operations-Center/imap-data-access/blob/main/imap_data_access/__init__.py
 .. _imap-data-validation: https://github.com/IMAP-Science-Operations-Center/imap-data-access/blob/main/imap_data_access/file_validation.py
 
-Upstream Source
+Source
 ^^^^^^^^^^^^^^^
 
-Upstream source can be one of the following:
+Source can be one of the following:
 
 - IMAP instrument name listed in the ``VALID_INSTRUMENTS`` dictionary in this file:
   `imap-data-access Repo <imap-data-init_>`_
@@ -141,10 +148,10 @@ Upstream source can be one of the following:
   `imap-data-access validation file <imap-data-validation_>`_
 
 
-Upstream Data Type
+Data Type
 ^^^^^^^^^^^^^^^^^^
 
-Upstream data type can be one of the following:
+Data type can be one of the following:
 
 - IMAP data level listed in the ``VALID_DATALEVELS`` dictionary in this file:
   `imap-data-access Repo <imap-data-init_>`_
@@ -158,10 +165,10 @@ Upstream data type can be one of the following:
 - ``ancillary``
 
 
-Upstream Descriptor
+Descriptor
 ^^^^^^^^^^^^^^^^^^^^^
 
-Upstream descriptor can be one of the following:
+Descriptor can be one of the following:
 
 - For science or ancillary data, the descriptors are defined by the instrument and SDC.
 
@@ -186,13 +193,15 @@ Trigger_job (Optional)
 **Default:** ``true``
 
 Whether the arrival of this upstream dependency should trigger a processing job.
-There are cases where we do not want to start a job when certain upstream data arrives.
+For most cases, this is true, meaning that when this file arrives, it will trigger job.
+
+At the same time, there are cases where we do not want to start a job when certain upstream data arrives.
 For example, upstream inputs such as spacecraft clock or leapseconds data should not change
-frequently, and processing jobs should not be triggered every time these files are updated.
+frequently, and processing jobs should not be triggered when these files are updated.
 Setting this to false allows for more controlled processing and may require additional
 review before updating these types of dependencies.
 
-(Past_days, Future_days) (Optional)
+[Past_days, Future_days] (Optional)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Default:**
@@ -217,8 +226,6 @@ Supported values for past_days and future_days fields:
 Days can be used to support longer durations and different cadences. For example, weekly
 processing can use 7 days, and yearly processing can use 365 days.
 
-``last_processed`` - retrieves the last x processed science data files to use to query for files needed for the current processing job.
-For example, IDEX science job requires all housekeeping data since the start date of the last processed science file.
 
 File content structure
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -226,25 +233,29 @@ The YAML config has the following structure:
 
 .. code-block:: yaml
 
-  (level, product_name):
-    - (
-      upstream_source,
-      upstream_data_type,
-      upstream_product_name,
-      required(bool),
-      kickoff_job(bool),
-      (past_days, future_days)
-    )
-    - (
-      upstream_source,
-      upstream_data_type,
-      upstream_product_name,
-      required(bool),
-      kickoff_job(bool),
-      (past_days, future_days)
-    )
-    ....
-
+  (level, descriptor):
+    - inputs
+      - source,
+        data_type,
+        descriptor,
+        required(bool),
+        trigger_job(bool),
+        [past_days, future_days]
+      - source,
+        data_type,
+        descriptor,
+        required(bool),
+        trigger_job(bool),
+        [past_days, future_days]
+      ....
+    - outputs
+      - source,
+        data_type,
+        descriptor
+      - source,
+        data_type,
+        descriptor
+      ....
 
 File content Example
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -254,58 +265,82 @@ File content Example
 .. code-block:: yaml
 
   spice_basics: &spice_basics
-    - upstream_source: leapseconds
-      upstream_data_type: spice
-      upstream_descriptor: historical
-      kickoff_job: false
-    - upstream_source: spacecraft_clock
-      upstream_data_type: spice
-      upstream_descriptor: historical
-      kickoff_job: false
+    - source: leapseconds
+      data_type: spice
+      descriptor: historical
+      trigger_job: false
+    - source: spacecraft_clock
+      data_type: spice
+      descriptor: historical
+      trigger_job: false
 
   l0_data: &l0_data
-    - upstream_source: hit
-      upstream_data_type: l0
-      upstream_descriptor: raw
+    - source: hit
+      data_type: l0
+      descriptor: raw
 
   (l1a, all):
-    - *spice_basics
-    - *l0_data
+    partition: daily
+    inputs:
+      - *spice_basics
+      - *l0_data
+    outputs:
+      - source: hit
+        data_type: l1a
+        descriptor: counts-standard
+      - source: hit
+        data_type: l1a
+        descriptor: counts-sectored
+      - source: hit
+        data_type: l1a
+        descriptor: direct-events
 
   (l1b, hk):
-    - *spice_basics
-    - *l0_data
+    partition: daily
+    inputs:
+      - *spice_basics
+      - *l0_data
+    outputs:
+      - source: hit
+        data_type: l1b
+        descriptor: hk
 
 **imap_hi_dependencies.yaml**
 
 .. code-block:: yaml
 
   spice_basic: &spice_basic
-    - upstream_source: leapseconds
-      upstream_data_type: spice
-      upstream_descriptor: historical
-      kickoff_job: false
-    - upstream_source: spacecraft_clock
-      upstream_data_type: spice
-      upstream_descriptor: historical
-      kickoff_job: false
+    - source: leapseconds
+      data_type: spice
+      descriptor: historical
+      trigger_job: false
+    - source: spacecraft_clock
+      data_type: spice
+      descriptor: historical
+      trigger_job: false
 
   (l1b, 45sensor-goodtimes):
-    - *spice_basic
-    - upstream_source: repoint
-      upstream_data_type: repoint
-      upstream_descriptor: historical
-      kickoff_job: false
-    - upstream_source: hi
-      upstream_data_type: ancillary
-      upstream_descriptor: 45sensor-cal-prod
-    - upstream_source: hi
-      upstream_data_type: l1a
-      upstream_descriptor: 45sensor-diagfee
-    - upstream_source: hi
-      upstream_data_type: l1b
-      upstream_descriptor: 45sensor-de
-      date_range: ["6np",]
-    - upstream_source: hi
-      upstream_data_type: l1b
-      upstream_descriptor: 45sensor-hk
+    partition: repoint
+    inputs:
+      - *spice_basic
+      - source: repoint
+        data_type: repoint
+        descriptor: historical
+        trigger_job: false
+      - source: hi
+        data_type: ancillary
+        descriptor: 45sensor-cal-prod
+      - source: hi
+        data_type: l1a
+        descriptor: 45sensor-diagfee
+      - source: hi
+        data_type: l1b
+        descriptor: 45sensor-de
+        date_range: ["8np",]
+      - source: hi
+        data_type: l1b
+        descriptor: 45sensor-hk
+    outputs:
+      - source: hi
+        data_type: l1b
+        descriptor: 45sensor-goodtimes
