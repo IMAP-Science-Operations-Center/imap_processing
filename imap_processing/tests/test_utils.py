@@ -1,5 +1,6 @@
 """Tests coverage for imap_processing/utils.py"""
 
+from pathlib import Path
 from unittest import mock
 
 import numpy as np
@@ -460,3 +461,38 @@ def test_check_epochs_within_day(epoch_ns, raises):
                 check_epochs_within_day_offsets([ds], day)
         else:
             check_epochs_within_day_offsets([ds], day)
+
+
+def test_retrieve_mag_l1_inputs_from_l2_offsets():
+    """Parents are downloaded in order; single-string and missing handled."""
+    parents = [
+        "imap_mag_l1c_norm-mago_20250928_v008.cdf",
+        "imap_mag_l1b_burst-mago_20250928_v004.cdf",
+    ]
+
+    # Multiple parents: each is downloaded, paths returned in listed order.
+    ds = xr.Dataset()
+    ds.attrs["Parents"] = parents
+    with mock.patch(
+        "imap_processing.utils.download",
+        side_effect=lambda name: Path("/data") / name,
+    ) as mock_download:
+        result = utils.retrieve_mag_l1_inputs_from_l2_offsets(ds)
+    assert result == [Path("/data") / p for p in parents]
+    assert [call.args[0] for call in mock_download.call_args_list] == parents
+
+    # load_cdf collapses a single-element attribute to a scalar string.
+    single = xr.Dataset()
+    single.attrs["Parents"] = parents[0]
+    with mock.patch(
+        "imap_processing.utils.download",
+        side_effect=lambda name: Path("/data") / name,
+    ):
+        result = utils.retrieve_mag_l1_inputs_from_l2_offsets(single)
+    assert result == [Path("/data") / parents[0]]
+
+    # No Parents attribute -> empty list, no downloads attempted.
+    with mock.patch("imap_processing.utils.download") as mock_download:
+        result = utils.retrieve_mag_l1_inputs_from_l2_offsets(xr.Dataset())
+    assert result == []
+    mock_download.assert_not_called()

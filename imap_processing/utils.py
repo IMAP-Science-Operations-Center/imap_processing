@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import space_packet_parser as spp
 import xarray as xr
+from imap_data_access.io import download
 from space_packet_parser.exceptions import UnrecognizedPacketTypeError
 from space_packet_parser.generators.ccsds import SequenceFlags
 from space_packet_parser.xtce import definitions, encodings, parameter_types
@@ -656,3 +657,38 @@ def check_epochs_within_day_offsets(
                     f"Data in {dataset_logical_id} contains epochs more than"
                     f" 24 hours outside the expected processing day {day}."
                 )
+
+
+def retrieve_mag_l1_inputs_from_l2_offsets(
+    l2_offsets_ds: xr.Dataset,
+) -> list[Path]:
+    """
+    Download the L1B/L1C parent files referenced by an L2 offsets file.
+
+    MAG ``l2-{norm,burst}-offsets`` ancillary files carry a ``Parents``
+    global attribute listing the exact L1B/L1C science files the offsets
+    were generated against. This reads that attribute, downloads each
+    referenced file from the SDC (skipped if already present locally), and
+    returns the local paths so L2 can use the matching science inputs rather
+    than any passed-in dependencies.
+
+    Parameters
+    ----------
+    l2_offsets_ds : xr.Dataset
+        The loaded ``l2-{norm,burst}-offsets`` ancillary dataset.
+
+    Returns
+    -------
+    list[pathlib.Path]
+        Local paths to the downloaded parent files, in the order listed in
+        the ``Parents`` attribute. Empty if the dataset has no ``Parents``
+        attribute.
+    """
+    parent_files = l2_offsets_ds.attrs.get("Parents", None)
+    if parent_files is None:
+        return []
+    # load_cdf collapses a single-element attribute to a scalar string.
+    if isinstance(parent_files, str):
+        parent_files = [parent_files]
+
+    return [download(parent) for parent in parent_files]
