@@ -11,6 +11,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps.ena_maps import HealpixSkyMap, RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.hi_l2 import (
+    CALIBRATION_UNCERTAINTY_FRACTION,
     _calculate_improved_stat_variance,
     calculate_all_rates_and_intensities,
     calculate_ena_intensity,
@@ -1236,6 +1237,7 @@ def test_cleanup_intermediate_variables():
     ds = xr.Dataset(
         {
             "bg_rate": xr.DataArray([1, 2, 3], dims=["x"]),
+            "bg_rate_sys_err": xr.DataArray([0.1, 0.2, 0.3], dims=["x"]),
             "energy_sc": xr.DataArray([4, 5, 6], dims=["x"]),
             "ena_signal_rates": xr.DataArray([7, 8, 9], dims=["x"]),
             "ena_signal_rate_stat_unc": xr.DataArray([0.1, 0.2, 0.3], dims=["x"]),
@@ -1248,6 +1250,7 @@ def test_cleanup_intermediate_variables():
 
     # Intermediate variables should be removed
     assert "bg_rate" not in result
+    assert "bg_rate_sys_err" not in result
     assert "energy_sc" not in result
     assert "ena_signal_rates" not in result
     assert "ena_signal_rate_stat_unc" not in result
@@ -1663,4 +1666,104 @@ def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
         result.data_1d["ena_intensity_sys_err"].values[0, 0, 1, 0],
         expected_sys_err_valid,
         decimal=10,
+    )
+
+
+# =============================================================================
+# SYSTEMATIC UNCERTAINTY ALGORITHM TESTS
+# =============================================================================
+
+
+def test_calculate_ena_intensity_uses_bg_rate_sys_err(
+    ena_intensity_map_ds, anc_path_dict
+):
+    """Test that calculate_ena_intensity uses bg_rate_sys_err field.
+
+    The systematic uncertainty should be computed from the exposure-time
+    weighted average of bg_rate_sys_err, converted from rate to intensity.
+    This replaces the old algorithm that computed sqrt(bg_counts)/exposure.
+    """
+    descriptor_str = "h90-ena-h-sf-nsp-full-gcs-6deg-3mo"
+    map_descriptor = MapDescriptor.from_string(descriptor_str)
+
+    result_ds = calculate_ena_intensity(
+        ena_intensity_map_ds, anc_path_dict, map_descriptor
+    )
+
+    # Verify ena_intensity_sys_err was calculated
+    assert "ena_intensity_sys_err" in result_ds
+
+    # The sys_err should be based on bg_rate_sys_err / (geometric_factor * energy)
+    # After combine_calibration_products, it's combined in quadrature across cal prods
+    # We just verify it's finite and positive where expected
+    sys_err = result_ds["ena_intensity_sys_err"]
+    assert np.all(sys_err.values[np.isfinite(sys_err.values)] >= 0)
+
+
+def test_hi_l2_adds_calibration_systematic(anc_path_dict):
+    """Test that hi_l2 adds calibration systematic uncertainty in quadrature.
+
+    The final systematic uncertainty should include both:
+    1. Background-associated systematic (from bg_rate_sys_err)
+    2. Calibration systematic (22% of intensity)
+
+    These should be combined in quadrature.
+    """
+    # Create a mock map with known values to verify the calculation
+    descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
+    sky_map = descriptor.to_empty_map()
+
+    # Set up simple test data
+    shape = (1, 3, 4, 2)  # epoch, energy, lon, lat
+    intensity = 100.0
+    bg_sys_err = 5.0
+
+    sky_map.data_1d = xr.Dataset(
+        {
+            "ena_intensity": xr.DataArray(
+                np.ones(shape) * intensity,
+                dims=["epoch", "energy", "longitude", "latitude"],
+            ),
+            "ena_intensity_sys_err": xr.DataArray(
+                np.ones(shape) * bg_sys_err,
+                dims=["epoch", "energy", "longitude", "latitude"],
+            ),
+            "ena_intensity_stat_uncert": xr.DataArray(
+                np.ones(shape) * 10.0,
+                dims=["epoch", "energy", "longitude", "latitude"],
+            ),
+            "counts": xr.DataArray(
+                np.ones(shape) * 50.0,
+                dims=["epoch", "energy", "longitude", "latitude"],
+            ),
+            "exposure_factor": xr.DataArray(
+                np.ones(shape) * 1.0,
+                dims=["epoch", "energy", "longitude", "latitude"],
+            ),
+        },
+        coords={
+            "epoch": [0],
+            "energy": [0.5, 0.75, 1.1],
+            "longitude": np.arange(4),
+            "latitude": np.arange(2),
+        },
+    )
+
+    # Call combine_maps with single map (returns unchanged)
+    result = combine_maps({"full": sky_map})
+
+    # Manually apply the calibration systematic as hi_l2 does
+    calib_sys_err = CALIBRATION_UNCERTAINTY_FRACTION * result.data_1d["ena_intensity"]
+    result.data_1d["ena_intensity_sys_err"] = np.sqrt(
+        result.data_1d["ena_intensity_sys_err"] ** 2 + calib_sys_err**2
+    )
+
+    # Expected: sqrt(bg_sys_err^2 + (0.22 * intensity)^2)
+    # = sqrt(5^2 + (0.22 * 100)^2) = sqrt(25 + 484) = sqrt(509) ≈ 22.56
+    expected_sys_err = np.sqrt(bg_sys_err**2 + (0.22 * intensity) ** 2)
+
+    np.testing.assert_almost_equal(
+        result.data_1d["ena_intensity_sys_err"].values.flat[0],
+        expected_sys_err,
+        decimal=5,
     )

@@ -29,11 +29,16 @@ SC_FRAME_VARS_TO_PROJECT = {
     "counts",
     "exposure_factor",
     "bg_rate",
+    "bg_rate_sys_err",
     "obs_date",
 }
 HELIO_FRAME_VARS_TO_PROJECT = SC_FRAME_VARS_TO_PROJECT | {"energy_sc"}
 # TODO: is an exposure time weighted average for obs_date appropriate?
-FULL_EXPOSURE_TIME_AVERAGE_SET = {"bg_rate", "obs_date", "energy_sc"}
+FULL_EXPOSURE_TIME_AVERAGE_SET = {"bg_rate", "bg_rate_sys_err", "obs_date", "energy_sc"}
+
+# Calibration systematic uncertainty as a fraction of intensity.
+# This represents the current calibration uncertainty (22%).
+CALIBRATION_UNCERTAINTY_FRACTION = 0.22
 
 
 # =============================================================================
@@ -105,6 +110,18 @@ def hi_l2(
 
     logger.info("Step 3: Combining maps (if needed)")
     final_map = combine_maps(sky_maps)
+
+    # Add calibration systematic uncertainty (percentage of intensity) in quadrature
+    # with the background-associated systematic. This is applied after combining maps
+    # because the calibration uncertainty applies to the final combined intensity.
+    logger.info("Step 3b: Adding calibration systematic uncertainty")
+    bg_sys_err = final_map.data_1d["ena_intensity_sys_err"]
+    calib_sys_err = (
+        CALIBRATION_UNCERTAINTY_FRACTION * final_map.data_1d["ena_intensity"]
+    )
+    final_map.data_1d["ena_intensity_sys_err"] = np.sqrt(
+        bg_sys_err**2 + calib_sys_err**2
+    )
 
     logger.info("Step 4: Finalizing dataset with attributes")
     l2_ds = final_map.build_cdf_dataset(
@@ -464,14 +481,11 @@ def calculate_ena_intensity(
         map_ds["ena_signal_rate_stat_unc"] / flux_conversion_divisor
     )
 
-    # Ignore numpy divide by zero and zero/zero warnings. Setting pixels with
-    # zero exposure time to NaN is the correct behavior.
-    with np.errstate(divide="ignore", invalid="ignore"):
-        map_ds["ena_intensity_sys_err"] = (
-            np.sqrt(map_ds["bg_rate"] * map_ds["exposure_factor"])
-            / map_ds["exposure_factor"]
-            / flux_conversion_divisor
-        )
+    # Convert the exposure-time weighted average of background rate systematic
+    # uncertainty from rate to intensity units.
+    map_ds["ena_intensity_sys_err"] = (
+        map_ds["bg_rate_sys_err"] / flux_conversion_divisor
+    )
 
     # Combine calibration products using proper weighted averaging
     # as described in Hi Algorithm Document Section 3.1.2
@@ -775,6 +789,7 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
     # Remove the intermediate variables from the map
     potential_vars = [
         "bg_rate",
+        "bg_rate_sys_err",
         "energy_sc",
         "ena_signal_rates",
         "ena_signal_rate_stat_unc",
