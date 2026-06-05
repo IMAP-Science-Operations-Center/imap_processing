@@ -760,6 +760,8 @@ def test_identify_species(attr_mgr_l1b):
     "imap_processing.lo.l1b.lo_l1b.lo_instrument_pointing",
     return_value=np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]),
 )
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
 def test_set_direction(mock_lo_instrument_pointing, imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
