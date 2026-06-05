@@ -681,10 +681,15 @@ def pset_backgrounds(
     # UPPER_ESA_EXTRA_BACKGROUND_UNC is defined as a xr.DataArray with the correct
     # esa_energy_step coordinate such that it broadcasts appropriately across each
     # calibration product.
+    # Fill zeros for any esa_energy_steps not in the extra background DataArray
+    upper_esa_unc = HiConstants.UPPER_ESA_EXTRA_BACKGROUND_UNC.reindex(
+        esa_energy_step=pset_coords["esa_energy_step"].values,
+        fill_value=0.0,
+    )
     total_unc = np.sqrt(
         total_unc**2
         + HiConstants.EXCESS_BACKGROUND_COUNT_RATE_UNC**2
-        + HiConstants.UPPER_ESA_EXTRA_BACKGROUND_UNC**2
+        + upper_esa_unc**2
     )
 
     # Broadcast to output variable dimensions (e.g., epoch, esa_energy_step,
