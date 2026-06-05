@@ -582,7 +582,11 @@ class ProcessInstrument(ABC):
                 if self.repointing is not None:
                     ds.attrs["Repointing"] = self.repointing
                 ds.attrs["Start_date"] = self.start_date
-                ds.attrs["Parents"] = parent_files
+                # Don't overwrite Parents if processing already set it (e.g.
+                # MAG L2 records the L1 file actually used, not the passed-in
+                # dependency).
+                if "Parents" not in ds.attrs:
+                    ds.attrs["Parents"] = parent_files
                 products.append(write_cdf(ds))
             else:
                 # A path to a product that was already written out
@@ -1420,7 +1424,8 @@ class Mag(ProcessInstrument):
                     "to passed-in L1B/L1C dependencies for MAG L2 input.",
                     offsets[0].imap_file_paths[0].construct_path().name,
                 )
-                input_data = load_cdf(science_files[0])
+                input_files = [science_files[0]]
+                input_data = load_cdf(input_files[0])
 
             datasets = mag_l2(
                 combined_calibration.combined_dataset,
@@ -1429,6 +1434,19 @@ class Mag(ProcessInstrument):
                 current_day,
                 mode=DataMode(descriptor_no_frame.upper()),
             )
+
+            # Record the L1 file actually used (from the offsets file's
+            # Parents) in place of the passed-in L1B/L1C dependencies, so the
+            # product provenance matches the data that went into it.
+            # post_processing leaves an existing Parents attribute untouched.
+            l2_parents = [
+                file_path.name
+                for file_path in dependencies.get_file_paths()
+                if not file_path.name.startswith(("imap_mag_l1b_", "imap_mag_l1c_"))
+            ]
+            l2_parents.append(input_files[0].name)
+            for dataset in datasets:
+                dataset.attrs["Parents"] = l2_parents
 
         for ds in datasets:
             if "raw" not in ds.attrs["Logical_source"] and not np.all(
