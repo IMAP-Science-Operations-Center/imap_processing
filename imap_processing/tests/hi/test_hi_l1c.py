@@ -1066,6 +1066,240 @@ def test_pset_backgrounds_offset_does_not_go_negative(mock_compute_background_co
     )
 
 
+@mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
+def test_pset_backgrounds_uncertainty_includes_constant_terms(
+    mock_compute_background_counts,
+):
+    """Test that background uncertainty includes EXCESS_BACKGROUND_COUNT_RATE_UNC.
+
+    The function should add EXCESS_BACKGROUND_COUNT_RATE_UNC (0.001/s) in
+    quadrature to the background rate uncertainty.
+    """
+    # Create minimal pset_coords with ESAs 1 and 2 (which do NOT get the extra
+    # UPPER_ESA_EXTRA_BACKGROUND_UNC)
+    n_epoch = 1
+    n_energy = 2
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "esa_energy_step": xr.DataArray(np.array([1, 2]), dims=["esa_energy_step"]),
+        "calibration_prod": xr.DataArray(
+            np.array([0], dtype=np.int64),
+            dims=["calibration_prod"],
+        ),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
+    }
+
+    # Create background config with scaling_factor=1 and uncertainty=0 for simplicity
+    background_config_data = {
+        "coincidence_type_list": [("ABC1C2",), ("ABC1C2",)],
+        "coincidence_type_values": [(15,), (15,)],
+        "tof_ab_low": [0, 0],
+        "tof_ab_high": [100, 100],
+        "tof_ac1_low": [0, 0],
+        "tof_ac1_high": [100, 100],
+        "tof_bc1_low": [0, 0],
+        "tof_bc1_high": [100, 100],
+        "tof_c1c2_low": [0, 0],
+        "tof_c1c2_high": [100, 100],
+        "scaling_factor": [1.0, 1.0],
+        "uncertainty": [0.0, 0.0],
+    }
+    cal_prods = [0, 0]
+    background_indices = [0, 0]
+    esa_steps = [1, 2]
+    multi_index = pd.MultiIndex.from_arrays(
+        [cal_prods, background_indices, esa_steps],
+        names=["calibration_prod", "background_index", "esa_energy_step"],
+    )
+    background_df = pd.DataFrame(background_config_data, index=multi_index)
+
+    # Create exposure times that sum to 1.0 second for easy rate calculation
+    exposure_times = xr.DataArray(
+        np.full((n_epoch, n_energy, n_spin_bins), 1.0 / (n_energy * n_spin_bins)),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+
+    # Mock _compute_background_counts to return 100 counts
+    # With 100 counts and total_exposure_time=1.0s, Poisson uncertainty
+    # = sqrt(100)/1 = 10
+    mock_background_counts = xr.DataArray(
+        np.array([[[100]]]),
+        dims=["epoch", "calibration_prod", "background_index"],
+        coords={
+            "epoch": pset_coords["epoch"],
+            "calibration_prod": [0],
+            "background_index": [0],
+        },
+    )
+    mock_compute_background_counts.return_value = mock_background_counts
+
+    l1b_de_dataset = xr.Dataset()
+    goodtimes_ds = xr.Dataset()
+
+    result = hi_l1c.pset_backgrounds(
+        pset_coords,
+        background_df,
+        l1b_de_dataset,
+        goodtimes_ds,
+        exposure_times,
+    )
+
+    # Expected uncertainty calculation:
+    # Poisson = sqrt(100)/1 * 1 = 10
+    # Scaling = 100 * 0 = 0
+    # Combined = sqrt(10^2 + 0) = 10
+    # After adding constant terms: sqrt(10^2 + 0.001^2 + 0^2) for ESAs 1,2
+    # (UPPER_ESA_EXTRA_BACKGROUND_UNC is 0 for ESAs 1-6)
+    expected_unc = np.sqrt(
+        10.0**2
+        + HiConstants.EXCESS_BACKGROUND_COUNT_RATE_UNC**2
+        + 0**2  # UPPER_ESA_EXTRA_BACKGROUND_UNC=0 for ESAs 1,2
+    )
+    np.testing.assert_allclose(
+        result["background_rates_uncertainty"].values,
+        expected_unc,
+        rtol=1e-6,
+        err_msg="Bg rate uncertainty should include EXCESS_BACKGROUND_COUNT_RATE_UNC",
+    )
+
+
+@mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
+def test_pset_backgrounds_esa_7_8_9_extra_uncertainty(mock_compute_background_counts):
+    """Test that ESAs 7, 8, 9 get extra uncertainty (UPPER_ESA_EXTRA_BACKGROUND_UNC).
+
+    The function should add 0.0025/s extra uncertainty in quadrature ONLY for
+    ESAs 7, 8, and 9 to account for possible unidentified additional background
+    in these ESA steps.
+    """
+    # Create pset_coords with ESAs 1, 7, and 9 to compare low vs high ESAs
+    n_epoch = 1
+    n_energy = 3
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "esa_energy_step": xr.DataArray(np.array([1, 7, 9]), dims=["esa_energy_step"]),
+        "calibration_prod": xr.DataArray(
+            np.array([0], dtype=np.int64),
+            dims=["calibration_prod"],
+        ),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
+    }
+
+    # Create background config with scaling_factor=1 and uncertainty=0
+    background_config_data = {
+        "coincidence_type_list": [("ABC1C2",), ("ABC1C2",), ("ABC1C2",)],
+        "coincidence_type_values": [(15,), (15,), (15,)],
+        "tof_ab_low": [0, 0, 0],
+        "tof_ab_high": [100, 100, 100],
+        "tof_ac1_low": [0, 0, 0],
+        "tof_ac1_high": [100, 100, 100],
+        "tof_bc1_low": [0, 0, 0],
+        "tof_bc1_high": [100, 100, 100],
+        "tof_c1c2_low": [0, 0, 0],
+        "tof_c1c2_high": [100, 100, 100],
+        "scaling_factor": [1.0, 1.0, 1.0],
+        "uncertainty": [0.0, 0.0, 0.0],
+    }
+    cal_prods = [0, 0, 0]
+    background_indices = [0, 0, 0]
+    esa_steps = [1, 7, 9]
+    multi_index = pd.MultiIndex.from_arrays(
+        [cal_prods, background_indices, esa_steps],
+        names=["calibration_prod", "background_index", "esa_energy_step"],
+    )
+    background_df = pd.DataFrame(background_config_data, index=multi_index)
+
+    # Create exposure times that sum to 1.0 second
+    exposure_times = xr.DataArray(
+        np.full((n_epoch, n_energy, n_spin_bins), 1.0 / (n_energy * n_spin_bins)),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+
+    # Mock _compute_background_counts to return 0 counts so that the only
+    # uncertainty is from the constant terms (making the test sensitive to
+    # the ESA-dependent uncertainty difference)
+    mock_background_counts = xr.DataArray(
+        np.array([[[0.0]]]),
+        dims=["epoch", "calibration_prod", "background_index"],
+        coords={
+            "epoch": pset_coords["epoch"],
+            "calibration_prod": [0],
+            "background_index": [0],
+        },
+    )
+    mock_compute_background_counts.return_value = mock_background_counts
+
+    l1b_de_dataset = xr.Dataset()
+    goodtimes_ds = xr.Dataset()
+
+    result = hi_l1c.pset_backgrounds(
+        pset_coords,
+        background_df,
+        l1b_de_dataset,
+        goodtimes_ds,
+        exposure_times,
+    )
+
+    # Get uncertainties for each ESA step from the result
+    # Shape is (epoch, esa_energy_step, calibration_prod, spin_angle_bin)
+    # Use isel for positional indexing since the output doesn't have labeled coords
+    unc_result = result["background_rates_uncertainty"]
+
+    # With 0 counts, Poisson uncertainty is 0, so the only uncertainties are:
+    # - EXCESS_BACKGROUND_COUNT_RATE_UNC = 0.001 (for all ESAs)
+    # - UPPER_ESA_EXTRA_BACKGROUND_UNC = 0.0025 (for ESAs 7,8,9 only)
+
+    # Expected uncertainty for ESA 1 (low ESA, no extra uncertainty):
+    # sqrt(0 + 0.001^2 + 0) = 0.001
+    expected_unc_esa1 = np.sqrt(
+        0**2 + HiConstants.EXCESS_BACKGROUND_COUNT_RATE_UNC**2 + 0**2
+    )
+
+    # Expected uncertainty for ESAs 7 and 9 (high ESAs, with extra uncertainty):
+    # sqrt(0 + 0.001^2 + 0.0025^2) = sqrt(0.000001 + 0.00000625) ≈ 0.002693
+    expected_unc_esa7_9 = np.sqrt(
+        0**2
+        + HiConstants.EXCESS_BACKGROUND_COUNT_RATE_UNC**2
+        + 0.0025**2  # UPPER_ESA_EXTRA_BACKGROUND_UNC
+    )
+
+    # ESA 1 is at index 0, ESA 7 at index 1, ESA 9 at index 2 in the output
+    # Use isel to select by position
+    unc_esa1 = unc_result.isel(esa_energy_step=0).values
+    np.testing.assert_allclose(
+        unc_esa1,
+        expected_unc_esa1,
+        rtol=1e-6,
+        err_msg="ESA 1 uncertainty should NOT include UPPER_ESA_EXTRA_BACKGROUND_UNC",
+    )
+
+    # ESAs 7 and 9 should have larger uncertainty (with extra term)
+    unc_esa7 = unc_result.isel(esa_energy_step=1).values
+    np.testing.assert_allclose(
+        unc_esa7,
+        expected_unc_esa7_9,
+        rtol=1e-6,
+        err_msg="ESA 7 uncertainty should include UPPER_ESA_EXTRA_BACKGROUND_UNC",
+    )
+
+    unc_esa9 = unc_result.isel(esa_energy_step=2).values
+    np.testing.assert_allclose(
+        unc_esa9,
+        expected_unc_esa7_9,
+        rtol=1e-6,
+        err_msg="ESA 9 uncertainty should include UPPER_ESA_EXTRA_BACKGROUND_UNC",
+    )
+
+    # Verify that ESAs 7,9 have higher uncertainty than ESA 1
+    assert np.all(unc_esa7 > unc_esa1), (
+        "ESA 7 should have higher uncertainty than ESA 1 due to extra term"
+    )
+    assert np.all(unc_esa9 > unc_esa1), (
+        "ESA 9 should have higher uncertainty than ESA 1 due to extra term"
+    )
+
+
 @mock.patch("imap_processing.hi.hi_l1c.good_time_and_phase_mask")
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
 @mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)
