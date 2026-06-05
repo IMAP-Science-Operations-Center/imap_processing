@@ -185,26 +185,40 @@ def test_hi_l2(
     write_cdf(l2_dataset, istp=True)
 
 
-@pytest.mark.external_test_data
 @patch(
     "imap_processing.ena_maps.ena_maps.RectangularSkyMap.build_cdf_dataset",
     autospec=True,
 )
+@patch("imap_processing.hi.hi_l2.combine_maps")
 @patch("imap_processing.hi.hi_l2.calculate_all_rates_and_intensities")
 @patch("imap_processing.hi.hi_l2.create_sky_map_from_psets")
 def test_hi_l2_uses_descriptor_to_setup_map(
     mock_create_sky_map_from_psets,
     mock_calculate_all_rates_and_intensities,
+    mock_combine_maps,
     mock_map_build_cdf_dataset,
-    hi_l1_test_data_path,
 ):
-    pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
+    """Test that hi_l2 uses the descriptor to set up the map correctly."""
+    pset_path = "fake_pset.cdf"  # Not used due to mocking
     descriptor_str = "h90-ena-h-sf-nsp-full-hnu-2deg-3mo"
     rect_map = MapDescriptor.from_string(descriptor_str).to_empty_map()
+
+    # Add required fields for the calibration systematic calculation
+    # The empty map has a 'pixel' coordinate, so use that shape
+    n_pixels = rect_map.data_1d.sizes["pixel"]
+    rect_map.data_1d["ena_intensity"] = xr.DataArray(
+        np.ones(n_pixels) * 100.0, dims=["pixel"]
+    )
+    rect_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
+        np.ones(n_pixels) * 5.0, dims=["pixel"]
+    )
+
     # create_sky_map_from_psets returns a dict with spin_phase key
     mock_create_sky_map_from_psets.return_value = {"full": rect_map}
     # calculate_all_rates_and_intensities modifies and returns the map data
     mock_calculate_all_rates_and_intensities.side_effect = lambda ds, *args: ds
+    # combine_maps returns the single map unchanged
+    mock_combine_maps.return_value = rect_map
     mock_map_build_cdf_dataset.return_value = xr.Dataset()
 
     _ = hi_l2([pset_path], None, descriptor_str)[0]
