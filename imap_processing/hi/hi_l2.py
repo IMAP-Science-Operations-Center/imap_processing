@@ -111,18 +111,6 @@ def hi_l2(
     logger.info("Step 3: Combining maps (if needed)")
     final_map = combine_maps(sky_maps)
 
-    # Add calibration systematic uncertainty (percentage of intensity) in quadrature
-    # with the background-associated systematic. This is applied after combining maps
-    # because the calibration uncertainty applies to the final combined intensity.
-    logger.info("Step 3b: Adding calibration systematic uncertainty")
-    bg_sys_err = final_map.data_1d["ena_intensity_sys_err"]
-    calib_sys_err = (
-        CALIBRATION_UNCERTAINTY_FRACTION * final_map.data_1d["ena_intensity"]
-    )
-    final_map.data_1d["ena_intensity_sys_err"] = np.sqrt(
-        bg_sys_err**2 + calib_sys_err**2
-    )
-
     logger.info("Step 4: Finalizing dataset with attributes")
     l2_ds = final_map.build_cdf_dataset(
         "hi",
@@ -390,7 +378,14 @@ def calculate_all_rates_and_intensities(
         # Drop any esa_energy_step_label that may have been re-added
         map_ds = map_ds.drop_vars(["esa_energy_step_label"], errors="ignore")
 
-    # Step 6: Clean up intermediate variables
+    # Step 6: Add calibration systematic uncertainty in quadrature with the
+    # background-associated systematic. This is a percentage of the intensity.
+    logger.debug("Adding calibration systematic uncertainty")
+    bg_sys_err = map_ds["ena_intensity_sys_err"]
+    calib_sys_err = CALIBRATION_UNCERTAINTY_FRACTION * map_ds["ena_intensity"]
+    map_ds["ena_intensity_sys_err"] = np.sqrt(bg_sys_err**2 + calib_sys_err**2)
+
+    # Step 7: Clean up intermediate variables
     map_ds = cleanup_intermediate_variables(map_ds)
 
     return map_ds

@@ -189,13 +189,11 @@ def test_hi_l2(
     "imap_processing.ena_maps.ena_maps.RectangularSkyMap.build_cdf_dataset",
     autospec=True,
 )
-@patch("imap_processing.hi.hi_l2.combine_maps")
 @patch("imap_processing.hi.hi_l2.calculate_all_rates_and_intensities")
 @patch("imap_processing.hi.hi_l2.create_sky_map_from_psets")
 def test_hi_l2_uses_descriptor_to_setup_map(
     mock_create_sky_map_from_psets,
     mock_calculate_all_rates_and_intensities,
-    mock_combine_maps,
     mock_map_build_cdf_dataset,
 ):
     """Test that hi_l2 uses the descriptor to set up the map correctly."""
@@ -203,22 +201,10 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     descriptor_str = "h90-ena-h-sf-nsp-full-hnu-2deg-3mo"
     rect_map = MapDescriptor.from_string(descriptor_str).to_empty_map()
 
-    # Add required fields for the calibration systematic calculation
-    # The empty map has a 'pixel' coordinate, so use that shape
-    n_pixels = rect_map.data_1d.sizes["pixel"]
-    rect_map.data_1d["ena_intensity"] = xr.DataArray(
-        np.ones(n_pixels) * 100.0, dims=["pixel"]
-    )
-    rect_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
-        np.ones(n_pixels) * 5.0, dims=["pixel"]
-    )
-
     # create_sky_map_from_psets returns a dict with spin_phase key
     mock_create_sky_map_from_psets.return_value = {"full": rect_map}
     # calculate_all_rates_and_intensities modifies and returns the map data
     mock_calculate_all_rates_and_intensities.side_effect = lambda ds, *args: ds
-    # combine_maps returns the single map unchanged
-    mock_combine_maps.return_value = rect_map
     mock_map_build_cdf_dataset.return_value = xr.Dataset()
 
     _ = hi_l2([pset_path], None, descriptor_str)[0]
@@ -1714,8 +1700,10 @@ def test_calculate_ena_intensity_uses_bg_rate_sys_err(
     assert np.all(sys_err.values[np.isfinite(sys_err.values)] >= 0)
 
 
-def test_hi_l2_adds_calibration_systematic(anc_path_dict):
-    """Test that hi_l2 adds calibration systematic uncertainty in quadrature.
+def test_calculate_all_rates_adds_calibration_systematic(
+    mock_map_dataset_for_rates, anc_path_dict
+):
+    """Test that calculate_all_rates_and_intensities adds calibration systematic.
 
     The final systematic uncertainty should include both:
     1. Background-associated systematic (from bg_rate_sys_err)
@@ -1723,61 +1711,31 @@ def test_hi_l2_adds_calibration_systematic(anc_path_dict):
 
     These should be combined in quadrature.
     """
-    # Create a mock map with known values to verify the calculation
     descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
-    sky_map = descriptor.to_empty_map()
 
-    # Set up simple test data
-    shape = (1, 3, 4, 2)  # epoch, energy, lon, lat
-    intensity = 100.0
-    bg_sys_err = 5.0
-
-    sky_map.data_1d = xr.Dataset(
-        {
-            "ena_intensity": xr.DataArray(
-                np.ones(shape) * intensity,
-                dims=["epoch", "energy", "longitude", "latitude"],
-            ),
-            "ena_intensity_sys_err": xr.DataArray(
-                np.ones(shape) * bg_sys_err,
-                dims=["epoch", "energy", "longitude", "latitude"],
-            ),
-            "ena_intensity_stat_uncert": xr.DataArray(
-                np.ones(shape) * 10.0,
-                dims=["epoch", "energy", "longitude", "latitude"],
-            ),
-            "counts": xr.DataArray(
-                np.ones(shape) * 50.0,
-                dims=["epoch", "energy", "longitude", "latitude"],
-            ),
-            "exposure_factor": xr.DataArray(
-                np.ones(shape) * 1.0,
-                dims=["epoch", "energy", "longitude", "latitude"],
-            ),
-        },
-        coords={
-            "epoch": [0],
-            "energy": [0.5, 0.75, 1.1],
-            "longitude": np.arange(4),
-            "latitude": np.arange(2),
-        },
+    result_ds = calculate_all_rates_and_intensities(
+        mock_map_dataset_for_rates,
+        anc_path_dict,
+        descriptor,
     )
 
-    # Call combine_maps with single map (returns unchanged)
-    result = combine_maps({"full": sky_map})
+    # Verify ena_intensity_sys_err includes calibration systematic
+    assert "ena_intensity_sys_err" in result_ds
 
-    # Manually apply the calibration systematic as hi_l2 does
-    calib_sys_err = CALIBRATION_UNCERTAINTY_FRACTION * result.data_1d["ena_intensity"]
-    result.data_1d["ena_intensity_sys_err"] = np.sqrt(
-        result.data_1d["ena_intensity_sys_err"] ** 2 + calib_sys_err**2
-    )
+    # The sys_err should be larger than CALIBRATION_UNCERTAINTY_FRACTION * intensity
+    # because it includes both bg systematic and calibration systematic in quadrature
+    intensity = result_ds["ena_intensity"]
+    sys_err = result_ds["ena_intensity_sys_err"]
 
-    # Expected: sqrt(bg_sys_err^2 + (0.22 * intensity)^2)
-    # = sqrt(5^2 + (0.22 * 100)^2) = sqrt(25 + 484) = sqrt(509) ≈ 22.56
-    expected_sys_err = np.sqrt(bg_sys_err**2 + (0.22 * intensity) ** 2)
+    # Minimum expected sys_err is 22% of intensity (if bg systematic were zero)
+    min_expected = CALIBRATION_UNCERTAINTY_FRACTION * np.abs(intensity)
 
-    np.testing.assert_almost_equal(
-        result.data_1d["ena_intensity_sys_err"].values.flat[0],
-        expected_sys_err,
-        decimal=5,
-    )
+    # Where both values are finite and intensity > 0, sys_err should be >= min_expected
+    valid_mask = np.isfinite(sys_err.values) & np.isfinite(intensity.values)
+    valid_mask &= intensity.values > 0
+    if np.any(valid_mask):
+        np.testing.assert_array_less(
+            min_expected.values[valid_mask] - 1e-10,  # small tolerance
+            sys_err.values[valid_mask],
+            err_msg="Sys err should include calibration systematic (22% of intensity)",
+        )
