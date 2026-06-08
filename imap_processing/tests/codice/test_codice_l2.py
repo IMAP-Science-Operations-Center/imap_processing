@@ -107,6 +107,11 @@ DIRECT_EVENT_DISPLAY_TYPES = {
         "ssd_id": "no_plot",
     },
 }
+LO_DIRECT_EVENT_SUPPORT_VARIABLES = [
+    "nso_half_spin",
+    "nso_spin_sector",
+    "nso_esa_step",
+]
 
 
 @pytest.fixture
@@ -730,3 +735,18 @@ def test_codice_l2_direct_events_display_type_cdf_metadata(
                 "(Double Coincidence Rate; STA+STB+SP), 2 = APD-only energy "
                 "event (APD with only one or two of STA, STB, and SP)."
             )
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_codice_l2_lo_direct_events_support_var_type_cdf_metadata(
+    mock_get_file_paths, codice_lut_path
+):
+    file = _generate_direct_events_l2_file(
+        mock_get_file_paths, codice_lut_path, "lo-direct-events"
+    )
+    with cdflib.CDF(str(file)) as cdf_file:
+        written_variables = set(cdf_file.cdf_info().zVariables)
+        assert set(LO_DIRECT_EVENT_SUPPORT_VARIABLES) <= written_variables
+        for variable in LO_DIRECT_EVENT_SUPPORT_VARIABLES:
+            attrs = cdf_file.varattsget(variable)
+            assert attrs["VAR_TYPE"] == "support_data"

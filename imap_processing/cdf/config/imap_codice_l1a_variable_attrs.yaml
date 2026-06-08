@@ -264,7 +264,7 @@ nso_half_spin:
     VALIDMAX: 255
     VALIDMIN: 0
     VAR_NOTES: Indicates the half spin when No Scan Operation (NSO) was activated. In NSO, the ESA voltage is set to the first step in the scan and remains fixed until the next cycle boundary.
-    VAR_TYPE: data
+    VAR_TYPE: support_data
 
 nso_spin_sector:
     CATDESC: Spin Sector When No Scan Operation (NSO) was activated
@@ -279,7 +279,7 @@ nso_spin_sector:
     VALIDMAX: 255
     VALIDMIN: 0
     VAR_NOTES: Indicates the spin sector when No Scan Operation (NSO) was activated. In NSO, the ESA voltage is set to the first step in the scan and remains fixed until the next cycle boundary.
-    VAR_TYPE: data
+    VAR_TYPE: support_data
 
 nso_esa_step:
     CATDESC: Energy Step When No Scan Operation (NSO) was activated
@@ -294,7 +294,7 @@ nso_esa_step:
     VALIDMAX: 255
     VALIDMIN: 0
     VAR_NOTES: Indicates the energy step when No Scan Operation (NSO) was activated. In NSO, the ESA voltage is set to the first step in the scan and remains fixed until the next cycle boundary.
-    VAR_TYPE: data
+    VAR_TYPE: support_data
 
 rgfo_half_spin:
     CATDESC: Half Spin When Reduced Gain Factor Operation (RGFO) was activated
@@ -309,7 +309,7 @@ rgfo_half_spin:
     VALIDMAX: 255
     VALIDMIN: 0
     VAR_NOTES: Indicates the half spin when Reduced Gain Factor Operation (RGFO) was activated. In RGFO, the Entrance ESA voltage is reduced in order to limit the number of ions that reach the detectors.
-    VAR_TYPE: data
+    VAR_TYPE: support_data
 
 rgfo_spin_sector:
     CATDESC: Spin Sector When Reduced Gain Factor Operation (RGFO) was activated
@@ -324,7 +324,7 @@ rgfo_spin_sector:
     VALIDMAX: 255
     VALIDMIN: 0
     VAR_NOTES: Indicates the spin sector when Reduced Gain Factor Operation (RGFO) was activated. In RGFO, the Entrance ESA voltage is reduced in order to limit the number of ions that reach the detectors.
-    VAR_TYPE: data
+    VAR_TYPE: support_data
 
 rgfo_esa_step:
     CATDESC: Energy Step When Reduced Gain Factor Operation (RGFO) was activated
@@ -339,7 +339,7 @@ rgfo_esa_step:
     VALIDMAX: 255
     VALIDMIN: 0
     VAR_NOTES: Indicates the energy step when Reduced Gain Factor Operation (RGFO) was activated. In RGFO, the Entrance ESA voltage is reduced in order to limit the number of ions that reach the detectors.
-    VAR_TYPE: data
+    VAR_TYPE: support_data
 
 spin_period:
     CATDESC: The spin period as reported by the spacecraft.

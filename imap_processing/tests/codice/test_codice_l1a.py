@@ -34,6 +34,14 @@ pytestmark = pytest.mark.external_test_data
 # and num_spins max = 16 in the current CoDICE timing model. That yields a
 # worst-case delta of 128 s = 128000000000 ns.
 EXPECTED_EPOCH_DELTA_VALIDMAX = 128000000000
+LO_MODE_SUPPORT_VARIABLES = [
+    "rgfo_half_spin",
+    "rgfo_spin_sector",
+    "rgfo_esa_step",
+    "nso_half_spin",
+    "nso_spin_sector",
+    "nso_esa_step",
+]
 
 
 def assert_epoch_delta_cdf_metadata(cdf_file):
@@ -606,6 +614,10 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-direct-events_{VALIDATION_FILE_DATE}_v002.cdf"
     )
+    with cdflib.CDF(cdf_file) as cdf:
+        for variable in LO_MODE_SUPPORT_VARIABLES:
+            attrs = cdf.varattsget(variable)
+            assert attrs["VAR_TYPE"] == "support_data"
 
 
 def test_direct_events_incomplete_groups(codice_lut_path, caplog):
