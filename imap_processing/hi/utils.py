@@ -136,7 +136,7 @@ class HiConstants:
     # Background rate correction
     # Constant offset to subtract from combined background rates to correct
     # for excess counts from the outer ESA during background testing.
-    EXCESS_BACKGROUND_COUNT_RATE = 0.003  # per second
+    EXCESS_BACKGROUND_COUNT_RATE = 0.002  # per second
     EXCESS_BACKGROUND_COUNT_RATE_UNC = 0.001
     # ESAs 7, 8, 9 get an extra 0.0025/s uncertainty to account for possible
     # unidentified additional background in these ESA steps.
