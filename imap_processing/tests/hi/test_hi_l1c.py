@@ -1248,7 +1248,8 @@ def test_pset_backgrounds_esa_7_8_9_extra_uncertainty(mock_compute_background_co
 
     # With 0 counts, Poisson uncertainty is 0, so the only uncertainties are:
     # - EXCESS_BACKGROUND_COUNT_RATE_UNC = 0.001 (for all ESAs)
-    # - UPPER_ESA_EXTRA_BACKGROUND_UNC = 0.0025 (for ESAs 7,8,9 only)
+    # - UPPER_ESA_EXTRA_BACKGROUND_UNC = 0.0025 for ESAs 7 and 8, 0.0055 for
+    #   ESA 9
 
     # Expected uncertainty for ESA 1 (low ESA, no extra uncertainty):
     # sqrt(0 + 0.001^2 + 0) = 0.001
@@ -1256,12 +1257,19 @@ def test_pset_backgrounds_esa_7_8_9_extra_uncertainty(mock_compute_background_co
         0**2 + HiConstants.EXCESS_BACKGROUND_COUNT_RATE_UNC**2 + 0**2
     )
 
-    # Expected uncertainty for ESAs 7 and 9 (high ESAs, with extra uncertainty):
+    # Expected uncertainty for ESAs 7 and 8 (high ESAs, with extra uncertainty):
     # sqrt(0 + 0.001^2 + 0.0025^2) = sqrt(0.000001 + 0.00000625) ≈ 0.002693
-    expected_unc_esa7_9 = np.sqrt(
+    expected_unc_esa7 = np.sqrt(
         0**2
         + HiConstants.EXCESS_BACKGROUND_COUNT_RATE_UNC**2
         + 0.0025**2  # UPPER_ESA_EXTRA_BACKGROUND_UNC
+    )
+    # Expected uncertainty for ESA 9:
+    # sqrt(0 + 0.001^2 + 0.0055^2) = sqrt(0.000001 + 0.00000625) ≈ 0.002693
+    expected_unc_esa9 = np.sqrt(
+        0**2
+        + HiConstants.EXCESS_BACKGROUND_COUNT_RATE_UNC**2
+        + 0.0055**2  # UPPER_ESA_EXTRA_BACKGROUND_UNC
     )
 
     # ESA 1 is at index 0, ESA 7 at index 1, ESA 9 at index 2 in the output
@@ -1278,7 +1286,7 @@ def test_pset_backgrounds_esa_7_8_9_extra_uncertainty(mock_compute_background_co
     unc_esa7 = unc_result.isel(esa_energy_step=1).values
     np.testing.assert_allclose(
         unc_esa7,
-        expected_unc_esa7_9,
+        expected_unc_esa7,
         rtol=1e-6,
         err_msg="ESA 7 uncertainty should include UPPER_ESA_EXTRA_BACKGROUND_UNC",
     )
@@ -1286,7 +1294,7 @@ def test_pset_backgrounds_esa_7_8_9_extra_uncertainty(mock_compute_background_co
     unc_esa9 = unc_result.isel(esa_energy_step=2).values
     np.testing.assert_allclose(
         unc_esa9,
-        expected_unc_esa7_9,
+        expected_unc_esa9,
         rtol=1e-6,
         err_msg="ESA 9 uncertainty should include UPPER_ESA_EXTRA_BACKGROUND_UNC",
     )
