@@ -2120,6 +2120,11 @@ def get_star_bin_offset(l1b_nhk: xr.Dataset, reference_epoch: int) -> float:
     bin_offset : float
         Fractional bin-index offset to use when computing sample spin-angle
         centers.
+
+    Raises
+    ------
+    KeyError
+        If ``ifb_ctrl_star_sync`` is not present in ``l1b_nhk``.
     """
     if "ifb_ctrl_star_sync" not in l1b_nhk:
         raise KeyError(
@@ -2130,9 +2135,9 @@ def get_star_bin_offset(l1b_nhk: xr.Dataset, reference_epoch: int) -> float:
     nhk_epoch = l1b_nhk["epoch"].values
     sync_state = l1b_nhk["ifb_ctrl_star_sync"].values
 
-    # Use the housekeeping record in effect at the star data end time (the last
-    # NHK sample at or before it), clamping to the first sample if star data
-    # ends before NHK coverage.
+    # Use the housekeeping record in effect at the reference epoch (the last
+    # NHK sample at or before it), clamping to the first sample if the reference
+    # epoch falls before NHK coverage.
     idx = max(int(np.searchsorted(nhk_epoch, reference_epoch, side="right")) - 1, 0)
     state = str(sync_state[idx])
 
@@ -2336,10 +2341,14 @@ def l1b_star(
     end_bins_to_exclude = c.STAR_END_BINS_TO_EXCLUDE
     min_count_threshold = c.STAR_MIN_COUNT_THRESHOLD
 
+    # Global epoch times from L1A data (used for start_doy/end_doy below).
+    global_start_epoch = l1a_star["epoch"].values[0]
+    global_end_epoch = l1a_star["epoch"].values[-1]
+
     # Select the star-sensor binning convention from the IFB star-sync state in
-    # housekeeping. Evaluate at the latest star record's epoch so a pointing that
-    # spans the `EN` event uses the value corresponding to `EN`.
-    bin_offset = get_star_bin_offset(l1b_nhk, int(l1a_star["epoch"].values.max()))
+    # housekeeping. Evaluate at the earliest star record's epoch so a pointing that
+    # spans the `EN` event uses the value corresponding to the state at its start.
+    bin_offset = get_star_bin_offset(l1b_nhk, int(global_start_epoch))
 
     # Calculate profiles for each 64-spin group
     (
@@ -2357,10 +2366,6 @@ def l1b_star(
         min_count_threshold=min_count_threshold,
         bin_offset=bin_offset,
     )
-
-    # Get global epoch times from L1A data for start_doy and end_doy
-    global_start_epoch = l1a_star["epoch"].values[0]
-    global_end_epoch = l1a_star["epoch"].values[-1]
 
     # Create dataset with spin_angle as coordinate and multiple epochs
     group_epochs = met_to_ttj2000ns(group_mets)

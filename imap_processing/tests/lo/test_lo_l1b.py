@@ -1856,8 +1856,8 @@ class TestStarBinOffset:
         star_end = int(nhk["epoch"].values[1])
         assert get_star_bin_offset(nhk, star_end) == expected
 
-    def test_uses_state_at_or_before_star_end(self):
-        """Offset reflects the NHK record in effect at the star end time."""
+    def test_uses_state_at_or_before_reference(self):
+        """Offset reflects the NHK record in effect at the reference epoch."""
         # Sync flips DS->EN at index 2.
         nhk = self._nhk(["DS", "DS", "EN", "EN"])
         before = int(nhk["epoch"].values[1])
@@ -1865,13 +1865,13 @@ class TestStarBinOffset:
         assert get_star_bin_offset(nhk, before) == 0.5
         assert get_star_bin_offset(nhk, at) == 0.0
 
-    def test_straddling_pointing_uses_en(self):
-        """A pointing whose data ends after the enable event uses EN (left edge)."""
-        # Star data starts under DS but ends under EN: evaluating at the end
-        # (as l1b_star does) yields EN.
+    def test_straddling_pointing_uses_start_state(self):
+        """A pointing that begins before the enable event uses DS (bin center)."""
+        # Star data starts under DS but ends under EN: evaluating at the start
+        # (as l1b_star does) yields DS.
         nhk = self._nhk(["DS", "DS", "EN", "EN"])
-        star_end = int(nhk["epoch"].values[-1])
-        assert get_star_bin_offset(nhk, star_end) == 0.0
+        star_start = int(nhk["epoch"].values[0])
+        assert get_star_bin_offset(nhk, star_start) == 0.5
 
     def test_missing_field_raises(self):
         """A clear error is raised if the star-sync field is absent."""
