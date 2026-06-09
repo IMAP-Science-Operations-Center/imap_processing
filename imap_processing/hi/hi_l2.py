@@ -37,8 +37,8 @@ HELIO_FRAME_VARS_TO_PROJECT = SC_FRAME_VARS_TO_PROJECT | {"energy_sc"}
 FULL_EXPOSURE_TIME_AVERAGE_SET = {"bg_rate", "bg_rate_sys_err", "obs_date", "energy_sc"}
 
 # Calibration systematic uncertainty as a fraction of intensity.
-# This represents the current calibration uncertainty (22%).
-CALIBRATION_UNCERTAINTY_FRACTION = 0.22
+# This represents the current calibration uncertainty (40%).
+CALIBRATION_UNCERTAINTY_FRACTION = 0.40
 
 
 # =============================================================================

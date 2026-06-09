@@ -141,7 +141,7 @@ class HiConstants:
     # ESAs 7, 8, 9 get an extra 0.0025/s uncertainty to account for possible
     # unidentified additional background in these ESA steps.
     UPPER_ESA_EXTRA_BACKGROUND_UNC = xr.DataArray(
-        np.array([0.0025, 0.0025, 0.0025]),
+        np.array([0.0025, 0.0025, 0.0055]),
         dims=["esa_energy_step"],
         coords={"esa_energy_step": np.array([7, 8, 9], dtype=int)},
     )
