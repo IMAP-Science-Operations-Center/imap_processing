@@ -163,6 +163,26 @@ ena_intensity_sys_err:
   UNITS: cm -2 s -1 sr -1 keV -1
   VAR_TYPE: support_data
 
+ena_intensity_sys_err_minus:
+  <<: *default_float32
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Intensity non-stat error lower
+  LABLAXIS: Non-statistical Error Lower
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: support_data
+
+ena_intensity_sys_err_plus:
+  <<: *default_float32
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Intensity non-stat error upper
+  LABLAXIS: Non-statistical Error Upper
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: support_data
+
 ena_count_rate:
   <<: *default_float32
   DEPEND_0: epoch
