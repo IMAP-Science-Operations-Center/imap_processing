@@ -454,6 +454,18 @@ class TestMapDescriptor:
                 "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
             ),
             (
+                "l075-enanbs-h-sf-nsp-anti-hae-6deg-6mo",
+                "ena_intensity_sys_err_minus",
+                "IMAP Lo75 H Inten Sys. Err. Lower, "
+                "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
+            ),
+            (
+                "l075-enanbs-h-sf-nsp-anti-hae-6deg-6mo",
+                "ena_intensity_sys_err_plus",
+                "IMAP Lo75 H Inten Sys. Err. Upper, "
+                "HAE SC Frame, No Surv Corr, Anti, 6 deg, 6 Mon, No sputter/bootstrap",
+            ),
+            (
                 "u45-ena-h-hf-nsp-full-hae-4deg-6mo",
                 "counts",
                 "IMAP Ultra45 H Counts, "
