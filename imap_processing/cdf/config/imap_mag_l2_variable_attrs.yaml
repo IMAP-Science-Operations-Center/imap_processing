@@ -141,9 +141,10 @@ pri_sens:
 qf_bitmask:
   <<: *support_default
   CATDESC: Bitmask indicating when spacecraft related activities influenced the measurement.
+  CDF_DATA_TYPE: CDF_UINT2
   DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
   FIELDNAM: Quality Bitmask
-  FILLVAL: 255
+  FILLVAL: 65535
   FORMAT: I3
   LABLAXIS: QB
   VALIDMAX: 255

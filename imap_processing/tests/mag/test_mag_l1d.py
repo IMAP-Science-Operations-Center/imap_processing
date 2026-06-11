@@ -1,6 +1,7 @@
 import logging
 from unittest.mock import patch
 
+import cdflib
 import numpy as np
 import pytest
 import xarray as xr
@@ -546,6 +547,30 @@ def test_mago_magi_no_swap_functionality(mag_l1d_test_class):
 
     assert np.array_equal(result[mag_l1d_test_class.frame.var_name].data, mago_vectors)
     assert np.array_equal(result["epoch"].data, mago_epoch)
+
+
+def test_mag_l1d_rtn_direction_label_written_cdf(mag_l1d_test_class):
+    """Test that shared MAG L1D metadata writes RTN component labels."""
+    mag_l1d_test_class.frame = ValidFrames.RTN
+
+    with patch(
+        "imap_processing.mag.l1d.mag_l1d_data.MagL2L1dBase.truncate_to_24h",
+        return_value=None,
+    ):
+        attributes = ImapCdfAttributes()
+        attributes.add_instrument_global_attrs("mag")
+        attributes.add_instrument_variable_attrs("mag", "l2")
+
+        result = mag_l1d_test_class.generate_dataset(
+            attributes, np.datetime64("2000-01-01")
+        )
+
+    result.attrs["Data_version"] = "001"
+    cdf_filepath = write_cdf(result)
+    with cdflib.CDF(cdf_filepath) as cdf_file:
+        direction_label = cdf_file.varget("direction_label")
+
+    np.testing.assert_array_equal(direction_label, np.array(["B_R", "B_T", "B_N"]))
 
 
 def test_enhanced_gradiometry_with_quality_flags_detailed():

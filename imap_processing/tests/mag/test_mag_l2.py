@@ -130,9 +130,14 @@ def test_mag_l2_attributes(
             dataset["magnitude"].attrs["CATDESC"] == "Magnitude of the magnetic field"
         )
         assert dataset["range"].attrs["CATDESC"] == "Range of the magnetometer sensor"
+        expected_direction_label = (
+            np.array(["B_R", "B_T", "B_N"])
+            if frame == "RTN"
+            else np.array(["Bx", "By", "Bz"])
+        )
         np.testing.assert_array_equal(
             dataset["direction_label"].data,
-            np.array(["Bx", "By", "Bz"]),
+            expected_direction_label,
         )
         assert dataset["range"].attrs["DICT_KEY"] == (
             "SPASE>Support>SupportQuantity:InstrumentMode"
@@ -183,9 +188,14 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
         assert np.isclose(vector_attrs["VALIDMIN"], np.float32(-1.0e5))
         assert np.isclose(vector_attrs["VALIDMAX"], np.float32(1.0e5))
         assert vector_attrs["UNITS"] == "nT"
+        expected_direction_label = (
+            np.array(["B_R", "B_T", "B_N"])
+            if expected_frames[i] == ValidFrames.RTN
+            else np.array(["Bx", "By", "Bz"])
+        )
         np.testing.assert_array_equal(
             direction_label,
-            np.array(["Bx", "By", "Bz"]),
+            expected_direction_label,
         )
 
 
@@ -642,6 +652,7 @@ def test_qf(norm_dataset):
     )
     assert output["quality_bitmask"].attrs["FIELDNAM"] == "Quality Bitmask"
     assert output["quality_bitmask"].attrs["LABLAXIS"] == "QB"
+    assert output["quality_bitmask"].dtype == np.uint16
     assert output["quality_bitmask"].attrs["CATDESC"] == (
         "Bitmask indicating when spacecraft related activities influenced "
         "the measurement."
@@ -660,10 +671,14 @@ def test_qf(norm_dataset):
     with cdflib.CDF(cdf_filepath) as cdf_file:
         qf_attrs = cdf_file.varattsget("quality_flags")
         qf_bitmask_attrs = cdf_file.varattsget("quality_bitmask")
+        qf_bitmask_info = cdf_file.varinq("quality_bitmask")
 
     assert qf_attrs["FORMAT"] == "I1"
     assert int(qf_attrs["VALIDMAX"]) == 1
+    assert qf_bitmask_info.Data_Type_Description == "CDF_UINT2"
     assert qf_bitmask_attrs["FORMAT"] == "I3"
+    assert int(qf_bitmask_attrs["FILLVAL"]) == 65535
+    assert int(qf_bitmask_attrs["VALIDMIN"]) == 0
     assert int(qf_bitmask_attrs["VALIDMAX"]) == 255
 
 

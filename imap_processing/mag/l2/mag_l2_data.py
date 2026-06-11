@@ -212,7 +212,11 @@ class MagL2L1dBase:
         )
 
         direction_label = xr.DataArray(
-            np.array(["Bx", "By", "Bz"]),
+            np.array(
+                ["B_R", "B_T", "B_N"]
+                if self.frame == ValidFrames.RTN
+                else ["Bx", "By", "Bz"]
+            ),
             name="direction_label",
             dims=["direction_label"],
             attrs=attribute_manager.get_variable_attributes(
@@ -246,7 +250,7 @@ class MagL2L1dBase:
         )
 
         quality_bitmask = xr.DataArray(
-            self.quality_bitmask,
+            self.quality_bitmask.astype(np.uint16),
             name="quality_bitmask",
             dims=["epoch"],
             attrs=attribute_manager.get_variable_attributes("qf_bitmask"),
