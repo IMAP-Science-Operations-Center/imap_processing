@@ -68,7 +68,7 @@ spin_sector:
   CATDESC: Spin Sector Index
   FIELDNAM: Spin Sector Index
   FILLVAL: *uint8_fillval
-  FORMAT: I2
+  FORMAT: I3
   LABLAXIS: " "
   SCALETYP: linear
   UNITS: " "
@@ -424,9 +424,11 @@ energy_he3he4_plus:
 # spin angles:
 spin_angle:
   CATDESC: Spin Angle
+  DEPEND_0: epoch
   DEPEND_1: spin_sector
   DEPEND_2: elevation_angle
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifier:DirectionAngle.AzimuthAngle
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Spin Angle
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -436,4 +438,4 @@ spin_angle:
   UNITS: degrees
   VALIDMAX: 360.0
   VALIDMIN: 0.0
-  VAR_TYPE: support_data
+  VAR_TYPE: data

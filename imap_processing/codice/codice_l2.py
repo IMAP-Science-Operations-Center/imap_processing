@@ -1113,8 +1113,20 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
     # column remained same but spin angle incremented by 30 degrees for each
     # elevation angle.
     spin_angle = spin_angle.T
-    # Add spin angle variable using the new elevation_angle dimension
-    l2_dataset["spin_angle"] = (("spin_sector", "elevation_angle"), spin_angle)
+    # Broadcast the static spin-angle grid across epoch so the variable can be
+    # written as a visible ISTP data variable with DEPEND_0/1/2.
+    spin_angle = np.broadcast_to(
+        spin_angle[np.newaxis, :, :],
+        (
+            l2_dataset.sizes["epoch"],
+            l2_dataset.sizes["spin_sector"],
+            l2_dataset.sizes["elevation_angle"],
+        ),
+    )
+    l2_dataset["spin_angle"] = (
+        ("epoch", "spin_sector", "elevation_angle"),
+        spin_angle,
+    )
     l2_dataset["spin_angle"].attrs = cdf_attrs.get_variable_attributes(
         "spin_angle", check_schema=False
     )
