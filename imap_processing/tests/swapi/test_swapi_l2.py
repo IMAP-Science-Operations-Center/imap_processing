@@ -141,6 +141,12 @@ def test_swapi_l2_cdf(
     assert esa_energy_attrs["VALIDMIN"] == np.float64(0.0)
     assert esa_energy_attrs["VAR_TYPE"] == "data"
     assert esa_energy_attrs["DEPEND_1"] == "esa_step"
+    assert cdf_file.varattsget("swp_l1a_flags")["DEPEND_1"] == "esa_energy"
+    assert cdf_file.varattsget("swp_pcem_rate")["DEPEND_1"] == "esa_energy"
+    assert (
+        cdf_file.varattsget("swp_pcem_rate_stat_uncert_plus")["DEPEND_1"]
+        == "esa_energy"
+    )
     assert esa_step_attrs["SCALETYP"] == "linear"
     assert "SCALE_TYP" not in esa_step_attrs
     assert esa_energy_attrs["CATDESC"] == (
