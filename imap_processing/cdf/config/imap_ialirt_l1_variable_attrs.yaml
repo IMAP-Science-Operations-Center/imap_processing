@@ -242,17 +242,17 @@ codice_hi_spin_sector:
 
 codice_hi_spin_angle:
   CATDESC: CoDICE-Hi spin angle for each spin sector and polar angle pair
-  FIELDNAM: CoDICE-Hi spin angle
-  FORMAT: F12.6
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  UNITS: degrees
-  VALIDMIN: 0.0
-  VALIDMAX: 360.0
-  FILLVAL: -1.0e31
-  dtype: float32
   DEPEND_1: codice_hi_spin_sector
   DEPEND_2: codice_hi_polar
+  FIELDNAM: CoDICE-Hi spin angle
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMAX: 360.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
+  dtype: float32
 
 codice_hi_spin_sector_labels:
   CATDESC: CoDICE-Hi spin sector labels
