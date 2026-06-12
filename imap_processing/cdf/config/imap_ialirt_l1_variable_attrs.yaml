@@ -279,7 +279,8 @@ codice_hi_h:
   CATDESC: Proton flux from CoDICE-Hi in 15 energy bins between 0.02 to 3.62 MeV over 4 spin angles and 4 polar angles
   DEPEND_0: codice_hi_epoch
   DEPEND_1: codice_hi_energy_center
-  DEPEND_2: codice_hi_spin_angle
+  DEPEND_2: codice_hi_spin_sector
+  DEPEND_3: codice_hi_polar
   DISPLAY_TYPE: no_plot
   FIELDNAM: H+ intensity
   FORMAT: F11.1
