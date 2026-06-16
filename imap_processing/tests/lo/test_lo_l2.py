@@ -278,7 +278,8 @@ def sample_geometric_factor_data():
                 "Cntr_E": 0.01 * (i + 1),  # Simple energy values
                 "Cntr_E_unc": 0.001 * (i + 1),
                 "GF_Trpl_H": 1e-4 * (i + 1),
-                "GF_Trpl_H_unc": 1e-5 * (i + 1),
+                "GF_Trpl_H_unc_minus": 1e-5 * (i + 1),
+                "GF_Trpl_H_unc_plus": 2e-5 * (i + 1),
                 "GF_Dbl_all": 2e-4 * (i + 1),
                 "GF_Dbl_all_unc": 2e-5 * (i + 1),
                 "GF_Trpl_all": 3e-4 * (i + 1),
@@ -294,7 +295,8 @@ def sample_geometric_factor_data():
                 "Cntr_E": 0.015 * (i + 1),  # Slightly different for oxygen
                 "Cntr_E_unc": 0.0015 * (i + 1),
                 "GF_Trpl_O": 1.5e-4 * (i + 1),
-                "GF_Trpl_O_unc": 1.5e-5 * (i + 1),
+                "GF_Trpl_O_unc_minus": 1.5e-5 * (i + 1),
+                "GF_Trpl_O_unc_plus": 3e-5 * (i + 1),
             }
         )
 
@@ -358,7 +360,8 @@ def sample_dataset_with_geometric_factors():
     dataset["exposure_factor"] = (("epoch", "energy"), np.ones((1, 7)) * 1.0)
     dataset["geometric_factor"] = (("energy",), np.ones(7) * 1e-4)
     dataset["energy"] = (("energy",), np.ones(7) * 0.1)  # Energy values
-    dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(7) * 1e-5)
+    dataset["geometric_factor_stat_uncert_minus"] = (("energy",), np.ones(7) * 1e-5)
+    dataset["geometric_factor_stat_uncert_plus"] = (("energy",), np.ones(7) * 3e-5)
 
     return dataset
 
@@ -393,7 +396,14 @@ def sample_dataset_with_background_intermediates():
 
     # Add geometric factors for systematic uncertainty calculation
     dataset["geometric_factor"] = (("energy",), np.ones(n_energy) * 1e-4)
-    dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(n_energy) * 1e-5)
+    dataset["geometric_factor_stat_uncert_minus"] = (
+        ("energy",),
+        np.ones(n_energy) * 1e-5,
+    )
+    dataset["geometric_factor_stat_uncert_plus"] = (
+        ("energy",),
+        np.ones(n_energy) * 3e-5,
+    )
 
     return dataset
 
@@ -705,7 +715,8 @@ class TestReduceGeometricFactor:
         # Check that hydrogen-specific columns are present
         assert "Cntr_E" in result.data_vars
         assert "GF_Trpl_H" in result.data_vars
-        assert "GF_Trpl_H_unc" in result.data_vars
+        assert "GF_Trpl_H_unc_minus" in result.data_vars
+        assert "GF_Trpl_H_unc_plus" in result.data_vars
 
         # Verify energy values match expected for hydrogen
         expected_energies = [0.01 * (i + 1) for i in range(7)]
@@ -724,7 +735,8 @@ class TestReduceGeometricFactor:
         # Check that oxygen-specific columns are present
         assert "Cntr_E" in result.data_vars
         assert "GF_Trpl_O" in result.data_vars
-        assert "GF_Trpl_O_unc" in result.data_vars
+        assert "GF_Trpl_O_unc_minus" in result.data_vars
+        assert "GF_Trpl_O_unc_plus" in result.data_vars
 
         # Verify energy values match expected for oxygen
         expected_energies = [0.015 * (i + 1) for i in range(7)]
@@ -854,9 +866,9 @@ class TestNormalizePsetCoordinates:
         # Check that energy coordinate is present
         assert "energy" in result.coords
         expected_energies = (
-            np.array([0.01633, 0.03047, 0.05576, 0.1063, 0.2, 0.405, 0.7873])
+            np.array([0.01633, 0.03047, 0.05576, 0.10626, 0.20004, 0.40496, 0.78729])
             if species == "h"
-            else np.array([0.016, 0.032, 0.065, 0.135, 0.279, 0.601, 1.206])
+            else np.array([0.01919, 0.03675, 0.07121, 0.14141, 0.274, 0.58503, 1.13506])
         )
         np.testing.assert_array_equal(result.coords["energy"], expected_energies)
 
@@ -1122,10 +1134,15 @@ class TestCalculateIntensities:
             result["ena_intensity_stat_uncert"], expected_stat_uncert
         )
 
-        # Check systematic uncertainty calculation
+        # Check systematic uncertainty calculation. The single `_sys_err` is the
+        # mean of the asymmetric minus/plus bounds.
+        mean_gf_stat_uncert = 0.5 * (
+            sample_dataset_with_geometric_factors["geometric_factor_stat_uncert_minus"]
+            + sample_dataset_with_geometric_factors["geometric_factor_stat_uncert_plus"]
+        )
         expected_sys_err = (
             result["ena_intensity"]
-            * sample_dataset_with_geometric_factors["geometric_factor_stat_uncert"]
+            * mean_gf_stat_uncert
             / sample_dataset_with_geometric_factors["geometric_factor"]
         )
         xr.testing.assert_allclose(result["ena_intensity_sys_err"], expected_sys_err)
@@ -1180,11 +1197,13 @@ class TestCalculateBackgrounds:
         xr.testing.assert_allclose(result["bg_rate_stat_uncert"], expected_stat_uncert)
 
         # Check systematic uncertainty calculation
-        # (geometric_factor_stat_uncert / geometric_factor) * bg_rate
+        # (mean(geometric_factor_stat_uncert bounds) / geometric_factor) * bg_rate
+        mean_gf_stat_uncert = 0.5 * (
+            dataset["geometric_factor_stat_uncert_minus"]
+            + dataset["geometric_factor_stat_uncert_plus"]
+        )
         expected_sys_err = (
-            result["bg_rate"]
-            * dataset["geometric_factor_stat_uncert"]
-            / dataset["geometric_factor"]
+            result["bg_rate"] * mean_gf_stat_uncert / dataset["geometric_factor"]
         )
         xr.testing.assert_allclose(result["bg_rate_sys_err"], expected_sys_err)
 
@@ -1202,7 +1221,8 @@ class TestCalculateBackgrounds:
                 ),
                 "exposure_factor": (("epoch", "energy"), np.zeros((1, 7))),
                 "geometric_factor": (("energy",), np.ones(7) * 1e-4),
-                "geometric_factor_stat_uncert": (("energy",), np.ones(7) * 1e-5),
+                "geometric_factor_stat_uncert_minus": (("energy",), np.ones(7) * 1e-5),
+                "geometric_factor_stat_uncert_plus": (("energy",), np.ones(7) * 3e-5),
             },
             coords={"epoch": [8.1794907049e17], "energy": list(range(7))},
         )
@@ -1733,7 +1753,8 @@ class TestInitializeGeometricFactorVariables:
             "energy_delta_minus",
             "energy_delta_plus",
             "geometric_factor",
-            "geometric_factor_stat_uncert",
+            "geometric_factor_stat_uncert_minus",
+            "geometric_factor_stat_uncert_plus",
         ]
 
         for var in expected_vars:
@@ -1773,14 +1794,20 @@ class TestPopulateGeometricFactors:
                 # Check hydrogen values
                 assert result["energy"].values[i] == 0.01 * (i + 1)
                 assert result["geometric_factor"].values[i] == 1e-4 * (i + 1)
-                assert result["geometric_factor_stat_uncert"].values[i] == (
+                assert result["geometric_factor_stat_uncert_minus"].values[i] == (
                     1e-5 * (i + 1)
+                )
+                assert result["geometric_factor_stat_uncert_plus"].values[i] == (
+                    2e-5 * (i + 1)
                 )
             else:  # oxygen
                 assert result["energy"].values[i] == 0.015 * (i + 1)
                 assert result["geometric_factor"].values[i] == 1.5e-4 * (i + 1)
-                assert result["geometric_factor_stat_uncert"].values[i] == (
+                assert result["geometric_factor_stat_uncert_minus"].values[i] == (
                     1.5e-5 * (i + 1)
+                )
+                assert result["geometric_factor_stat_uncert_plus"].values[i] == (
+                    3e-5 * (i + 1)
                 )
         # Ensure that energy_deltas are in units of keV
         assert np.all(result["energy_delta_plus"].values < 1)
@@ -2292,7 +2319,8 @@ class TestCalculateAllRatesAndIntensities:
                 "exposure_factor": (("energy",), np.ones(7) * 1.0),
                 "geometric_factor": (("energy",), np.ones(7) * 1e-4),
                 "energy": (("energy",), np.ones(7) * 0.1),
-                "geometric_factor_stat_uncert": (("energy",), np.ones(7) * 1e-5),
+                "geometric_factor_stat_uncert_minus": (("energy",), np.ones(7) * 1e-5),
+                "geometric_factor_stat_uncert_plus": (("energy",), np.ones(7) * 3e-5),
                 # Background intermediate data
                 "bg_rate_exposure_factor": (("energy",), np.ones(7) * 0.3),
                 "bg_rate_stat_uncert_exposure_factor2": (
@@ -2335,7 +2363,8 @@ class TestCalculateAllRatesAndIntensities:
         dataset["counts_over_eff_squared"] = (("epoch", "energy"), np.ones((1, 7)) * 12)
         dataset["exposure_factor"] = (("epoch", "energy"), np.ones((1, 7)) * 1.0)
         dataset["geometric_factor"] = (("energy",), np.ones(7) * 1e-4)
-        dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(7) * 1e-5)
+        dataset["geometric_factor_stat_uncert_minus"] = (("energy",), np.ones(7) * 1e-5)
+        dataset["geometric_factor_stat_uncert_plus"] = (("energy",), np.ones(7) * 3e-5)
         dataset["bg_rate_exposure_factor"] = (
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.3,
@@ -2386,7 +2415,8 @@ class TestCalculateAllRatesAndIntensities:
         dataset["counts_over_eff_squared"] = (("epoch", "energy"), np.ones((1, 7)) * 12)
         dataset["exposure_factor"] = (("epoch", "energy"), np.ones((1, 7)) * 1.0)
         dataset["geometric_factor"] = (("energy",), np.ones(7) * 1e-4)
-        dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(7) * 1e-5)
+        dataset["geometric_factor_stat_uncert_minus"] = (("energy",), np.ones(7) * 1e-5)
+        dataset["geometric_factor_stat_uncert_plus"] = (("energy",), np.ones(7) * 3e-5)
         dataset["bg_rate_exposure_factor"] = (
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.3,

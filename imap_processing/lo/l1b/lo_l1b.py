@@ -2181,7 +2181,7 @@ def calculate_star_sensor_profiles_by_group(
     bin_offset : float
         Fractional offset applied to bin indices when computing sample
         spin-angle centers (default: 0.5). Use 0.5 to bin to the bin center
-        (pre-FSW 4.8) and 0.0 to bin to the left edge (FSW 4.8 and later).
+        and 0.0 to bin to the left edge.
 
     Returns
     -------
