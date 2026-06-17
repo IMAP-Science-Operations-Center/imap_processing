@@ -83,7 +83,6 @@ class LoConstants:
     STAR_BIN_OFFSET_BY_SYNC: ClassVar[dict[str | None, float]] = {
         "DS": 0.5,  # star sync disabled (pre FSW 4.8)
         "EN": 0.0,  # star sync enabled (FSW 4.8+)
-        None: 0.5,  # default value
     }
 
     # Number of ending bins to exclude from each star-sensor profile average.

@@ -1,6 +1,7 @@
 """Ancillary file reading for IMAP-Lo processing."""
 
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -37,7 +38,7 @@ def read_ancillary_file(ancillary_file: str | Path) -> pd.DataFrame:
         DataFrame containing the ancillary data.
     """
     legacy_format = False
-    read_csv_kwargs = {}
+    read_csv_kwargs: dict[str, Any] = {}
     if "esa-mode-lut" in str(ancillary_file):
         # skip the first row which is a comment
         read_csv_kwargs["skiprows"] = [0]
@@ -54,7 +55,8 @@ def read_ancillary_file(ancillary_file: str | Path) -> pd.DataFrame:
     if "geometric-factor" in str(ancillary_file):
         if legacy_format and "esa_mode" not in df.columns:
             # Add an ESA mode column based on the known structure of the file.
-            # The first 36 rows are ESA mode 0 (HiRes), the second 36 are ESA mode 1 (HiThr)
+            # The first 36 rows are ESA mode 0 (HiRes), the second 36 are ESA mode 1
+            # (HiThr)
             df["esa_mode"] = 0
             df.loc[36:, "esa_mode"] = 1
 

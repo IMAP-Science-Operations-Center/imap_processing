@@ -2141,7 +2141,7 @@ def get_star_bin_offset(l1b_nhk: xr.Dataset, reference_epoch: int) -> float:
     idx = max(int(np.searchsorted(nhk_epoch, reference_epoch, side="right")) - 1, 0)
     state = str(sync_state[idx])
 
-    offset = c.STAR_BIN_OFFSET_BY_SYNC.get(state, c.STAR_BIN_OFFSET_BY_SYNC[None])
+    offset = c.STAR_BIN_OFFSET_BY_SYNC[state]
     logger.info(f"Star sync state '{state}' -> bin offset {offset}")
     return offset
 
