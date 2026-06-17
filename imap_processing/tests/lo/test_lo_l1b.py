@@ -1882,10 +1882,11 @@ class TestStarBinOffset:
         with pytest.raises(KeyError, match="ifb_ctrl_star_sync"):
             get_star_bin_offset(nhk, int(nhk["epoch"].values[0]))
 
-    def test_unexpected_state_defaults(self):
-        """An unrecognized star-sync state falls back to the default offset (0.5)."""
+    def test_unexpected_state(self):
+        """An unrecognized star-sync state raises a KeyError."""
         nhk = self._nhk(["??"])
-        assert get_star_bin_offset(nhk, int(nhk["epoch"].values[0])) == 0.5
+        with pytest.raises(KeyError):
+            assert get_star_bin_offset(nhk, int(nhk["epoch"].values[0])) == 0.5
 
 
 class TestL1bStar:
