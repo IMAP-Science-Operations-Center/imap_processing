@@ -365,7 +365,7 @@ unc_c:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_c
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - C
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -382,7 +382,7 @@ unc_fe:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_fe
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - Fe
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -399,7 +399,7 @@ unc_h:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_h
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - H
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -416,7 +416,7 @@ unc_he3:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_he3
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - He3
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -433,7 +433,7 @@ unc_he4:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_he4
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - He4
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -450,7 +450,7 @@ unc_junk:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_junk
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - Junk
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -470,7 +470,7 @@ unc_ne_mg_si:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_ne_mg_si
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - Ne+Mg+Si
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -487,7 +487,7 @@ unc_o:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_o
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - O
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -504,7 +504,7 @@ unc_uh:
   COORDINATE_SYSTEM: instrument frame
   DEPEND_0: epoch
   DEPEND_1: energy_uh
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Uncertainty - Ultra-Heavy
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -522,7 +522,7 @@ c:
   DEPEND_0: epoch
   DEPEND_1: energy_c
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - C
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -540,7 +540,7 @@ fe:
   DEPEND_0: epoch
   DEPEND_1: energy_fe
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - Fe
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -558,7 +558,7 @@ h:
   DEPEND_0: epoch
   DEPEND_1: energy_h
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - H
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -576,7 +576,7 @@ he3:
   DEPEND_0: epoch
   DEPEND_1: energy_he3
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - He3
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -594,7 +594,7 @@ he4:
   DEPEND_0: epoch
   DEPEND_1: energy_he4
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - He4
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -612,7 +612,7 @@ junk:
   DEPEND_0: epoch
   DEPEND_1: energy_junk
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - Junk
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -633,7 +633,7 @@ ne_mg_si:
   DEPEND_0: epoch
   DEPEND_1: energy_ne_mg_si
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - Ne+Mg+Si
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -651,7 +651,7 @@ o:
   DEPEND_0: epoch
   DEPEND_1: energy_o
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - O
   FILLVAL: *real_fillval
   FORMAT: F32.1
@@ -669,7 +669,7 @@ uh:
   DEPEND_0: epoch
   DEPEND_1: energy_uh
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - Ultra-Heavy
   FILLVAL: *real_fillval
   FORMAT: F32.1

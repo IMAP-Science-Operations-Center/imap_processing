@@ -73,7 +73,7 @@ num_events:
   DEPEND_0: epoch
   DEPEND_1: priority
   DICT_KEY: SPASE>Support>SupportQuantity:Other
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FIELDNAM: Number of Events
   FILLVAL: *uint16_fillval
   FORMAT: I5

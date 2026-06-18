@@ -52,12 +52,14 @@ elevation_angle_label:
 # lo-angular attribute templates (combined versions of the previous entries)
 lo-angular-attrs:
     CATDESC: "{species} {direction} species"
+    DELTA_MINUS_VAR: unc_{species}
+    DELTA_PLUS_VAR: unc_{species}
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
     DEPEND_3: elevation_angle
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
-    DISPLAY_TYPE: time_series
+    DISPLAY_TYPE: spectrogram
     FIELDNAM: "{direction} - {species}"
     FILLVAL: *real_fillval
     FORMAT: F13.4
@@ -76,7 +78,7 @@ lo-angular-unc-attrs:
     DEPEND_2: spin_sector
     DEPEND_3: elevation_angle
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
-    DISPLAY_TYPE: time_series
+    DISPLAY_TYPE: spectrogram
     FIELDNAM: "{direction} - {species}"
     FILLVAL: *real_fillval
     FORMAT: F13.4
@@ -86,4 +88,4 @@ lo-angular-unc-attrs:
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMAX: 16777216.0
     VALIDMIN: 0.0
-    VAR_TYPE: data
+    VAR_TYPE: support_data

@@ -193,6 +193,8 @@ species_dim_attrs: &species_dim_attrs
 cno:
   <<: *species_dim_attrs
   CATDESC: Differential intensity for CNO by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_cno
+  DELTA_PLUS_VAR: unc_cno
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - CNO
@@ -207,6 +209,8 @@ cno:
 fe:
   <<: *species_dim_attrs
   CATDESC: Differential intensity for Fe by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_fe
+  DELTA_PLUS_VAR: unc_fe
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - Fe
@@ -221,6 +225,8 @@ fe:
 h:
   <<: *species_dim_attrs
   CATDESC: Differential intensity for H by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_h
+  DELTA_PLUS_VAR: unc_h
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - H
@@ -235,6 +241,8 @@ h:
 he3he4:
   <<: *species_dim_attrs
   CATDESC: Differential intensity for He3+He4 by energy, spin sector, and elevation at x2-spaced energy-per-nucleon channels
+  DELTA_MINUS_VAR: unc_he3he4
+  DELTA_PLUS_VAR: unc_he3he4
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Differential Intensity - He3+He4
@@ -260,7 +268,7 @@ unc_cno:
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 4096.0
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 unc_fe:
   <<: *species_dim_attrs
@@ -275,7 +283,7 @@ unc_fe:
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 4096.0
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 unc_h:
   <<: *species_dim_attrs
@@ -291,7 +299,7 @@ unc_h:
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 4096.0
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 unc_he3he4:
   <<: *species_dim_attrs
@@ -306,7 +314,7 @@ unc_he3he4:
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 4096.0
   VALIDMIN: 0.0
-  VAR_TYPE: data
+  VAR_TYPE: support_data
 
 # energy deltas:
 energy_cno_minus:

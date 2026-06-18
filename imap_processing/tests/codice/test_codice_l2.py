@@ -79,7 +79,7 @@ DIRECT_EVENT_LUTS = {
 
 DIRECT_EVENT_DISPLAY_TYPES = {
     "lo-direct-events": {
-        "num_events": "time_series",
+        "num_events": "spectrogram",
         "data_quality": "no_plot",
         "gain": "no_plot",
         "multi_flag": "no_plot",
@@ -94,7 +94,7 @@ DIRECT_EVENT_DISPLAY_TYPES = {
         "position": "no_plot",
     },
     "hi-direct-events": {
-        "num_events": "time_series",
+        "num_events": "spectrogram",
         "data_quality": "no_plot",
         "gain": "no_plot",
         "multi_flag": "no_plot",

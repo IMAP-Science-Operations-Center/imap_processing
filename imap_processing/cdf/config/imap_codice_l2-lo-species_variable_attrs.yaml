@@ -63,6 +63,8 @@ data_quality:
 # lo species attrs
 lo-species-attrs:
     CATDESC: "{species} Non-sunward Species"
+    DELTA_MINUS_VAR: unc_{species}
+    DELTA_PLUS_VAR: unc_{species}
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
@@ -81,6 +83,8 @@ lo-species-attrs:
 
 lo-pui-species-attrs:
     CATDESC: "{species} Pickup Ion Sunward Species"
+    DELTA_MINUS_VAR: unc_{species}
+    DELTA_PLUS_VAR: unc_{species}
     DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
@@ -99,6 +103,8 @@ lo-pui-species-attrs:
 
 lo-sw-species-attrs:
   CATDESC: "Differential intensity from sunward-looking detectors measuring solar-wind {species_display}"
+  DELTA_MINUS_VAR: unc_{species}
+  DELTA_PLUS_VAR: unc_{species}
   DEPEND_0: epoch
   DEPEND_1: esa_step
   DEPEND_2: spin_sector
@@ -131,7 +137,7 @@ lo-species-unc-attrs:
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMAX: *species_valid_max
     VALIDMIN: 0.0
-    VAR_TYPE: data
+    VAR_TYPE: support_data
 
 lo-pui-species-unc-attrs:
     CATDESC: "{species} Pickup Ion Sunward Species uncertainty"
@@ -149,7 +155,7 @@ lo-pui-species-unc-attrs:
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMAX: *species_valid_max
     VALIDMIN: 0.0
-    VAR_TYPE: data
+    VAR_TYPE: support_data
 
 lo-sw-species-unc-attrs:
     CATDESC: "Uncertainty in differential intensity from sunward-looking detectors measuring solar-wind {species_display}"
@@ -167,4 +173,4 @@ lo-sw-species-unc-attrs:
     UNITS: "#/(cm^2-s-sr-keV/q)"
     VALIDMAX: *species_valid_max
     VALIDMIN: 0.0
-    VAR_TYPE: data
+    VAR_TYPE: support_data
