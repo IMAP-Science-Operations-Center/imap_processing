@@ -239,6 +239,30 @@ bg_rate_sys_err:
   VAR_NOTES: Systematic error in the background count rate from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
+bg_rate_sys_err_minus:
+  <<: *default_float32
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Rate Sys Error Lower
+  FORMAT: F6.3
+  LABLAXIS: Rate Error Lower
+  UNITS: count s-1
+  VAR_NOTES: Lower bound of the systematic error in the background count rate from non-ENA (non-heliospheric) sources.
+  VAR_TYPE: support_data
+
+bg_rate_sys_err_plus:
+  <<: *default_float32
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Rate Sys Error Upper
+  FORMAT: F6.3
+  LABLAXIS: Rate Error Upper
+  UNITS: count s-1
+  VAR_NOTES: Upper bound of the systematic error in the background count rate from non-ENA (non-heliospheric) sources.
+  VAR_TYPE: support_data
+
 bg_intensity:
   <<: *default_float32
   DEPEND_0: epoch
@@ -273,6 +297,30 @@ bg_intensity_sys_err:
   LABLAXIS: Intensity Non-statistical Error
   UNITS: cm -2 s -1 sr -1 keV -1
   VAR_NOTES: Non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
+  VAR_TYPE: support_data
+
+bg_intensity_sys_err_minus:
+  <<: *default_float32
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Intensity Non-statistical Error Lower
+  FORMAT: F8.3
+  LABLAXIS: Intensity Non-statistical Error Lower
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_NOTES: Lower bound of the non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
+  VAR_TYPE: support_data
+
+bg_intensity_sys_err_plus:
+  <<: *default_float32
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Background Intensity Non-statistical Error Upper
+  FORMAT: F8.3
+  LABLAXIS: Intensity Non-statistical Error Upper
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_NOTES: Upper bound of the non-statistical error in the background intensity from non-ENA (non-heliospheric) sources.
   VAR_TYPE: support_data
 
 ena_count:

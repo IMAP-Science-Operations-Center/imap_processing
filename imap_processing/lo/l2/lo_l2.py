@@ -710,9 +710,9 @@ def load_geometric_factor_data(species: str) -> pd.DataFrame:
     anc_path = Path(__file__).parent.parent / "ancillary_data"
 
     if species == "h":
-        gf_file = anc_path / "imap_lo_hydrogen-geometric-factor_v001.csv"
+        gf_file = sorted(anc_path.glob("*hydrogen-geometric-factor*"))[-1]
     else:  # species == "o"
-        gf_file = anc_path / "imap_lo_oxygen-geometric-factor_v001.csv"
+        gf_file = sorted(anc_path.glob("*oxygen-geometric-factor*"))[-1]
 
     return lo_ancillary.read_ancillary_file(gf_file)
 
@@ -776,7 +776,8 @@ def initialize_geometric_factor_variables(
         "energy_delta_minus",
         "energy_delta_plus",
         "geometric_factor",
-        "geometric_factor_stat_uncert",
+        "geometric_factor_stat_uncert_minus",
+        "geometric_factor_stat_uncert_plus",
     ]
 
     # Initialize variables with proper dimensions (energy only)
@@ -817,7 +818,8 @@ def populate_geometric_factors(
     gf_coords = {"energy": "Cntr_E"}
     gf_vars = {
         "geometric_factor": f"GF_Trpl_{species.upper()}",
-        "geometric_factor_stat_uncert": f"GF_Trpl_{species.upper()}_unc",
+        "geometric_factor_stat_uncert_minus": f"GF_Trpl_{species.upper()}_unc_minus",
+        "geometric_factor_stat_uncert_plus": f"GF_Trpl_{species.upper()}_unc_plus",
     }
     if species == "h":
         # NOTE: From an e-mail from Nathan on 2025-09-11 (values converted to keV)
@@ -1007,11 +1009,16 @@ def calculate_intensities(dataset: xr.Dataset) -> xr.Dataset:
         dataset["counts_over_eff_squared"]
     ) / (dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"])
 
-    # Equation 5 from mapping document (systematic uncertainty)
-    dataset["ena_intensity_sys_err"] = (
-        dataset["ena_intensity"]
-        * dataset["geometric_factor_stat_uncert"]
-        / dataset["geometric_factor"]
+    for suffix in ("minus", "plus"):
+        dataset[f"ena_intensity_sys_err_{suffix}"] = (
+            dataset["ena_intensity"]
+            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
+            / dataset["geometric_factor"]
+        )
+
+    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
+    dataset["ena_intensity_sys_err"] = 0.5 * (
+        dataset["ena_intensity_sys_err_minus"] + dataset["ena_intensity_sys_err_plus"]
     )
 
     return dataset
@@ -1040,11 +1047,17 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
         dataset["bg_rate_stat_uncert_exposure_factor2"]
         / dataset["exposure_factor"] ** 2
     )
-    # Equation 8 from mapping document (background systematic uncertainty)
-    dataset["bg_rate_sys_err"] = (
-        dataset["bg_rate"]
-        * dataset["geometric_factor_stat_uncert"]
-        / dataset["geometric_factor"]
+
+    for suffix in ("minus", "plus"):
+        dataset[f"bg_rate_sys_err_{suffix}"] = (
+            dataset["bg_rate"]
+            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
+            / dataset["geometric_factor"]
+        )
+
+    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
+    dataset["bg_rate_sys_err"] = 0.5 * (
+        dataset["bg_rate_sys_err_minus"] + dataset["bg_rate_sys_err_plus"]
     )
 
     # Background intensity
@@ -1054,10 +1067,17 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
     dataset["bg_intensity_stat_uncert"] = dataset["bg_rate_stat_uncert"] / (
         dataset["geometric_factor"] * dataset["energy"]
     )
-    dataset["bg_intensity_sys_err"] = (
-        dataset["bg_intensity"]
-        * dataset["geometric_factor_stat_uncert"]
-        / dataset["geometric_factor"]
+
+    for suffix in ("minus", "plus"):
+        dataset[f"bg_intensity_sys_err_{suffix}"] = (
+            dataset["bg_intensity"]
+            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
+            / dataset["geometric_factor"]
+        )
+
+    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
+    dataset["bg_intensity_sys_err"] = 0.5 * (
+        dataset["bg_intensity_sys_err_minus"] + dataset["bg_intensity_sys_err_plus"]
     )
 
     return dataset
@@ -1401,6 +1421,8 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
     potential_vars = [
         "geometric_factor",
         "geometric_factor_stat_uncert",
+        "geometric_factor_stat_uncert_minus",
+        "geometric_factor_stat_uncert_plus",
         "counts_over_eff",
         "counts_over_eff_squared",
         "bg_rate_exposure_factor",

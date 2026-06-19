@@ -58,9 +58,9 @@ class LoConstants:
     # The first matching open interval (low < pivot < high) is used; if none matches,
     # THRESHOLD_BG_RATE_RAM_DEFAULT / THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT apply.
     PIVOT_ANGLE_THRESHOLDS: ClassVar[dict[tuple[float, float], tuple[float, float]]] = {
-        (88.0, 92.0): (0.014, 0.007),
-        (73.0, 77.0): (0.0175, 0.00875),
-        (103.0, 107.0): (0.0112, 0.0056),
+        (88.0, 92.0): (0.028, 0.014),
+        (73.0, 77.0): (0.035, 0.0175),
+        (103.0, 107.0): (0.0224, 0.0112),
     }
 
     # Default background-rate thresholds [counts/s] when no pivot range matches.
@@ -75,3 +75,17 @@ class LoConstants:
     # Padding [s] added to begin/end of each goodtime interval to ensure complete
     # cycles are covered at interval edges.
     GOODTIME_PADDING: float = 2.0
+
+    # Star-sensor spin-angle binning offset (fractional bin-index shift used when
+    # computing sample centers), keyed by the IFB star-sync housekeeping state
+    # (ifb_ctrl_star_sync). Flight software 4.8 enabled star sync ("EN"),
+    # switching from binning to the bin center (+0.5) to the left edge (+0.0).
+    STAR_BIN_OFFSET_BY_SYNC: ClassVar[dict[str | None, float]] = {
+        "DS": 0.5,  # star sync disabled (pre FSW 4.8)
+        "EN": 0.0,  # star sync enabled (FSW 4.8+)
+    }
+
+    # Number of ending bins to exclude from each star-sensor profile average.
+    STAR_END_BINS_TO_EXCLUDE: int = 2
+    # Minimum COUNT value for a star-sensor record to be considered valid.
+    STAR_MIN_COUNT_THRESHOLD: int = 700

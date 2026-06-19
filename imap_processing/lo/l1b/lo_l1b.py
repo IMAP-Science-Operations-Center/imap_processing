@@ -1986,7 +1986,7 @@ def split_rate_dataset(
 
 def filter_valid_star_records(
     l1a_star: xr.Dataset,
-    min_count: int = 700,
+    min_count: int = c.STAR_MIN_COUNT_THRESHOLD,
     time_window_offset: float = 0.0,
     time_window_duration: float | None = None,
 ) -> np.ndarray:
@@ -2014,7 +2014,7 @@ def filter_valid_star_records(
     valid_mask : np.ndarray
         Boolean array indicating valid records.
     """
-    # Section 5: Acceptance Criteria - COUNT >= 700
+    # Section 5: Acceptance Criteria - COUNT >= min_count
     count_mask = l1a_star["count"].values >= min_count
 
     # shcoarse is already in MET seconds
@@ -2049,7 +2049,7 @@ def filter_valid_star_records(
 def calculate_star_sensor_profile_for_group(
     data: np.ndarray,
     counts: np.ndarray,
-    end_bins_to_exclude: int = 2,
+    end_bins_to_exclude: int = c.STAR_END_BINS_TO_EXCLUDE,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate averaged star sensor amplitude profile for a group of records.
@@ -2098,14 +2098,63 @@ def calculate_star_sensor_profile_for_group(
     return avg_amplitude, count_array
 
 
+def get_star_bin_offset(l1b_nhk: xr.Dataset, reference_epoch: int) -> float:
+    """
+    Determine the star-sensor binning offset from the IFB star-sync state.
+
+    Reads ``ifb_ctrl_star_sync`` from the NHK housekeeping at the record nearest
+    on or before ``reference_epoch`` and maps it to a binning offset via
+    ``LoConstants.STAR_BIN_OFFSET_BY_SYNC``.
+
+    Parameters
+    ----------
+    l1b_nhk : xr.Dataset
+        L1B NHK dataset containing ``ifb_ctrl_star_sync`` and an ``epoch``
+        coordinate (TT2000 nanoseconds since J2000).
+    reference_epoch : int
+        Epoch at which to evaluate the sync state, in TT2000 nanoseconds since
+        J2000. The NHK record in effect at or before this time is used.
+
+    Returns
+    -------
+    bin_offset : float
+        Fractional bin-index offset to use when computing sample spin-angle
+        centers.
+
+    Raises
+    ------
+    KeyError
+        If ``ifb_ctrl_star_sync`` is not present in ``l1b_nhk``.
+    """
+    if "ifb_ctrl_star_sync" not in l1b_nhk:
+        raise KeyError(
+            "ifb_ctrl_star_sync field not found in L1B NHK dataset. "
+            "Cannot determine star-sensor binning offset."
+        )
+
+    nhk_epoch = l1b_nhk["epoch"].values
+    sync_state = l1b_nhk["ifb_ctrl_star_sync"].values
+
+    # Use the housekeeping record in effect at the reference epoch (the last
+    # NHK sample at or before it), clamping to the first sample if the reference
+    # epoch falls before NHK coverage.
+    idx = max(int(np.searchsorted(nhk_epoch, reference_epoch, side="right")) - 1, 0)
+    state = str(sync_state[idx])
+
+    offset = c.STAR_BIN_OFFSET_BY_SYNC[state]
+    logger.info(f"Star sync state '{state}' -> bin offset {offset}")
+    return offset
+
+
 def calculate_star_sensor_profiles_by_group(
     l1a_star: xr.Dataset,
     sampling_cadence: float,
     spin_period: float,
     group_size: int = 64,
     start_angle_offset: float = 62.0,
-    end_bins_to_exclude: int = 2,
-    min_count_threshold: int = 700,
+    end_bins_to_exclude: int = c.STAR_END_BINS_TO_EXCLUDE,
+    min_count_threshold: int = c.STAR_MIN_COUNT_THRESHOLD,
+    bin_offset: float = 0.5,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculate averaged star sensor amplitude profiles for groups of records.
@@ -2129,6 +2178,10 @@ def calculate_star_sensor_profiles_by_group(
         Number of ending bins to exclude from each average (default: 2).
     min_count_threshold : int
         Minimum COUNT value for valid record (default: 700).
+    bin_offset : float
+        Fractional offset applied to bin indices when computing sample
+        spin-angle centers (default: 0.5). Use 0.5 to bin to the bin center
+        and 0.0 to bin to the left edge.
 
     Returns
     -------
@@ -2152,7 +2205,7 @@ def calculate_star_sensor_profiles_by_group(
     # Calculate spin angles (same for all groups)
     deg_per_bin = 360.0 * (sampling_cadence / 1000.0) / spin_period
     bin_indices = np.arange(720)
-    sample_centers = (bin_indices + 0.5) * deg_per_bin
+    sample_centers = (bin_indices + bin_offset) * deg_per_bin
     spin_angle = (start_angle_offset + sample_centers) % 360.0
 
     if n_valid == 0:
@@ -2282,13 +2335,20 @@ def l1b_star(
     logger.info(f"Using spin duration from spin data: {spin_duration:.6f} s")
 
     # TODO: Read from ancillary config file when available
-    lo_angle_offset = 2.0
-    sc_to_inst_angle_offset = (
-        360 * get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO)
-        + lo_angle_offset
+    sc_to_inst_angle_offset = 360 * get_spacecraft_to_instrument_spin_phase_offset(
+        SpiceFrame.IMAP_LO
     )
-    end_bins_to_exclude = 2
-    min_count_threshold = 700
+    end_bins_to_exclude = c.STAR_END_BINS_TO_EXCLUDE
+    min_count_threshold = c.STAR_MIN_COUNT_THRESHOLD
+
+    # Global epoch times from L1A data (used for start_doy/end_doy below).
+    global_start_epoch = l1a_star["epoch"].values[0]
+    global_end_epoch = l1a_star["epoch"].values[-1]
+
+    # Select the star-sensor binning convention from the IFB star-sync state in
+    # housekeeping. Evaluate at the earliest star record's epoch so a pointing that
+    # spans the `EN` event uses the value corresponding to the state at its start.
+    bin_offset = get_star_bin_offset(l1b_nhk, int(global_start_epoch))
 
     # Calculate profiles for each 64-spin group
     (
@@ -2304,11 +2364,8 @@ def l1b_star(
         start_angle_offset=sc_to_inst_angle_offset,
         end_bins_to_exclude=end_bins_to_exclude,
         min_count_threshold=min_count_threshold,
+        bin_offset=bin_offset,
     )
-
-    # Get global epoch times from L1A data for start_doy and end_doy
-    global_start_epoch = l1a_star["epoch"].values[0]
-    global_end_epoch = l1a_star["epoch"].values[-1]
 
     # Create dataset with spin_angle as coordinate and multiple epochs
     group_epochs = met_to_ttj2000ns(group_mets)
@@ -2375,7 +2432,6 @@ def l1b_star(
     l1b_star_ds.attrs["pointing_mid_met"] = pointing_mid_met
     l1b_star_ds.attrs["sampling_cadence_ms"] = sampling_cadence
     l1b_star_ds.attrs["spin_duration_sec"] = spin_duration
-    l1b_star_ds.attrs["lo_angle_offset_deg"] = lo_angle_offset
     l1b_star_ds.attrs["end_bins_excluded"] = end_bins_to_exclude
     l1b_star_ds.attrs["min_count_threshold"] = min_count_threshold
     l1b_star_ds.attrs["group_size"] = group_size

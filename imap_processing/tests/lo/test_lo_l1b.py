@@ -27,6 +27,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     get_pivot_angle_from_nhk,
     get_sampling_cadence_from_nhk,
     get_spin_start_times,
+    get_star_bin_offset,
     identify_species,
     initialize_l1b_de,
     l1b_bgrates_and_goodtimes,
@@ -1836,6 +1837,58 @@ class TestCalculateStarSensorProfile:
         assert np.any(spin_angle < 100)  # Some angles wrapped to lower range
 
 
+class TestStarBinOffset:
+    """Tests for the star-sensor binning offset derived from HK star-sync state."""
+
+    @staticmethod
+    def _nhk(states):
+        """Build a minimal NHK dataset with ifb_ctrl_star_sync at 1 Hz."""
+        n = len(states)
+        return xr.Dataset(
+            {"ifb_ctrl_star_sync": ("epoch", list(states))},
+            coords={"epoch": met_to_ttj2000ns(np.arange(n, dtype=np.float64))},
+        )
+
+    @pytest.mark.parametrize("state, expected", [("DS", 0.5), ("EN", 0.0)])
+    def test_offset_maps_sync_state(self, state, expected):
+        """DS (sync disabled) -> 0.5; EN (sync enabled) -> 0.0."""
+        nhk = self._nhk([state] * 3)
+        star_end = int(nhk["epoch"].values[1])
+        assert get_star_bin_offset(nhk, star_end) == expected
+
+    def test_uses_state_at_or_before_reference(self):
+        """Offset reflects the NHK record in effect at the reference epoch."""
+        # Sync flips DS->EN at index 2.
+        nhk = self._nhk(["DS", "DS", "EN", "EN"])
+        before = int(nhk["epoch"].values[1])
+        at = int(nhk["epoch"].values[2])
+        assert get_star_bin_offset(nhk, before) == 0.5
+        assert get_star_bin_offset(nhk, at) == 0.0
+
+    def test_straddling_pointing_uses_start_state(self):
+        """A pointing that begins before the enable event uses DS (bin center)."""
+        # Star data starts under DS but ends under EN: evaluating at the start
+        # (as l1b_star does) yields DS.
+        nhk = self._nhk(["DS", "DS", "EN", "EN"])
+        star_start = int(nhk["epoch"].values[0])
+        assert get_star_bin_offset(nhk, star_start) == 0.5
+
+    def test_missing_field_raises(self):
+        """A clear error is raised if the star-sync field is absent."""
+        nhk = xr.Dataset(
+            {"ifb_data_interval": ("epoch", [21.0])},
+            coords={"epoch": met_to_ttj2000ns([0.0])},
+        )
+        with pytest.raises(KeyError, match="ifb_ctrl_star_sync"):
+            get_star_bin_offset(nhk, int(nhk["epoch"].values[0]))
+
+    def test_unexpected_state(self):
+        """An unrecognized star-sync state raises a KeyError."""
+        nhk = self._nhk(["??"])
+        with pytest.raises(KeyError):
+            assert get_star_bin_offset(nhk, int(nhk["epoch"].values[0])) == 0.5
+
+
 class TestL1bStar:
     """Tests for l1b_star function."""
 
@@ -1873,6 +1926,7 @@ class TestL1bStar:
         l1b_nhk = xr.Dataset(
             {
                 "ifb_data_interval": ("epoch", [21.0] * n_records),
+                "ifb_ctrl_star_sync": ("epoch", ["DS"] * n_records),
             },
             coords={"epoch": list(range(n_records))},
         )
@@ -1953,6 +2007,7 @@ class TestL1bStar:
         l1b_nhk = xr.Dataset(
             {
                 "ifb_data_interval": ("epoch", [21.0]),
+                "ifb_ctrl_star_sync": ("epoch", ["DS"]),
             },
             coords={"epoch": [0]},
         )
@@ -1998,10 +2053,8 @@ class TestL1bStar:
         assert l1b_star_ds["count_per_bin"].attrs["VALIDMAX"] == 100000
 
         # Assert - Check processing parameter attributes
-        assert "lo_angle_offset_deg" in l1b_star_ds.attrs
         assert "end_bins_excluded" in l1b_star_ds.attrs
         assert "min_count_threshold" in l1b_star_ds.attrs
-        assert l1b_star_ds.attrs["lo_angle_offset_deg"] == 2.0
         assert l1b_star_ds.attrs["end_bins_excluded"] == 2
         assert l1b_star_ds.attrs["min_count_threshold"] == 700
 
@@ -2035,6 +2088,7 @@ class TestL1bStar:
         l1b_nhk = xr.Dataset(
             {
                 "ifb_data_interval": ("epoch", [21.0, 21.0, 21.0]),
+                "ifb_ctrl_star_sync": ("epoch", ["DS", "DS", "DS"]),
             },
             coords={"epoch": [0, 1, 2]},
         )
@@ -2103,6 +2157,7 @@ class TestL1bStar:
         l1b_nhk = xr.Dataset(
             {
                 "ifb_data_interval": ("epoch", [21.0] * n_records),
+                "ifb_ctrl_star_sync": ("epoch", ["DS"] * n_records),
             },
             coords={"epoch": list(range(n_records))},
         )

@@ -1,6 +1,7 @@
 """Ancillary file reading for IMAP-Lo processing."""
 
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -36,20 +37,27 @@ def read_ancillary_file(ancillary_file: str | Path) -> pd.DataFrame:
     pd.DataFrame
         DataFrame containing the ancillary data.
     """
-    skiprows = None
+    legacy_format = False
+    read_csv_kwargs: dict[str, Any] = {}
     if "esa-mode-lut" in str(ancillary_file):
         # skip the first row which is a comment
-        skiprows = [0]
+        read_csv_kwargs["skiprows"] = [0]
     elif "geometric-factor" in str(ancillary_file):
-        # skip the rows with comment headers indicating Hi_Res and Hi_Thr
-        skiprows = [1, 38]
-    df = pd.read_csv(ancillary_file, converters=_CONVERTERS, skiprows=skiprows)
+        # legacy format - rows with comment headers indicating Hi_Res and Hi_Thr
+        legacy_format = "Hi_Thr,,," in Path(ancillary_file).read_text()
+        if legacy_format:
+            read_csv_kwargs["skiprows"] = [1, 38]
+        else:
+            read_csv_kwargs["comment"] = "#"
+    df = pd.read_csv(ancillary_file, converters=_CONVERTERS, **read_csv_kwargs)
     df = df.rename(columns=_RENAME_COLUMNS)
 
     if "geometric-factor" in str(ancillary_file):
-        # Add an ESA mode column based on the known structure of the file.
-        # The first 36 rows are ESA mode 0 (HiRes), the second 36 are ESA mode 1 (HiThr)
-        df["esa_mode"] = 0
-        df.loc[36:, "esa_mode"] = 1
+        if legacy_format and "esa_mode" not in df.columns:
+            # Add an ESA mode column based on the known structure of the file.
+            # The first 36 rows are ESA mode 0 (HiRes), the second 36 are ESA mode 1
+            # (HiThr)
+            df["esa_mode"] = 0
+            df.loc[36:, "esa_mode"] = 1
 
     return df
