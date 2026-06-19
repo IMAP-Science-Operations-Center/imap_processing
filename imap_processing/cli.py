@@ -256,7 +256,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--version",
         type=str,
-        required=True,
+        required=False,
+        default=None,
         help="Version of the data. Format: vXXX",
     )
     parser.add_argument(
