@@ -8,7 +8,7 @@ Acknowledgement: >
   Prof. David J. McComas of Princeton University (Contract #80GSFC19C0027).
   IMAP Rules-of-the-Road for data usage can be found in the IMAP CMAD.
 Discipline: Solar Physics>Heliospheric Physics
-File_naming_convention: source_descriptor_datatype_yyyyMMdd_vNNN
+File_naming_convention: source_descriptor_datatype_yyyyMMdd_vMMM.mmmm
 HTTP_LINK: https://imap.princeton.edu/
 LINK_TITLE: IMAP The Interstellar Mapping and Acceleration Probe
 Mission_group: IMAP
