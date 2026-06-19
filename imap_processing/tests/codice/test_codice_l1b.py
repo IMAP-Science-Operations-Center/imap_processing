@@ -113,7 +113,7 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
 
     cdf_file = write_cdf(processed_data)
     assert (
-        cdf_file.name == f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_v999.9999.cdf"
+        cdf_file.name == f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_v001.0001.cdf"
     )
 
 
@@ -174,7 +174,7 @@ def test_l1b_hi_priorities(mock_get_file_paths, codice_lut_path):
     cdf_file = write_cdf(processed_data)
     assert (
         cdf_file.name
-        == f"imap_codice_l1b_hi-priority_{VALIDATION_FILE_DATE}_v999.9999.cdf"
+        == f"imap_codice_l1b_hi-priority_{VALIDATION_FILE_DATE}_v001.0001.cdf"
     )
 
 
@@ -205,7 +205,7 @@ def test_l1b_nsw_lo_priorities(mock_get_file_paths, codice_lut_path):
     cdf_file = write_cdf(processed_data)
     assert (
         cdf_file.name
-        == f"imap_codice_l1b_lo-nsw-priority_{VALIDATION_FILE_DATE}_v999.9999.cdf"
+        == f"imap_codice_l1b_lo-nsw-priority_{VALIDATION_FILE_DATE}_v001.0001.cdf"
     )
 
 
@@ -236,7 +236,7 @@ def test_l1b_sw_lo_priorities(mock_get_file_paths, codice_lut_path):
     cdf_file = write_cdf(processed_data)
     assert (
         cdf_file.name
-        == f"imap_codice_l1b_lo-sw-priority_{VALIDATION_FILE_DATE}_v999.9999.cdf"
+        == f"imap_codice_l1b_lo-sw-priority_{VALIDATION_FILE_DATE}_v001.0001.cdf"
     )
 
 
