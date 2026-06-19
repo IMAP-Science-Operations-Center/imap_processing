@@ -202,7 +202,7 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
         "Data_version": None,
         "Descriptor": "HIT>IMAP High-energy Ion Telescope",
         "Discipline": "Solar Physics>Heliospheric Physics",
-        "File_naming_convention": "source_descriptor_datatype_yyyyMMdd_vNNN",
+        "File_naming_convention": "source_descriptor_datatype_yyyyMMdd_vMMM.mmmm",
         "HTTP_LINK": "https://imap.princeton.edu/",
         "Instrument_type": "Particles (space)",
         "LINK_TITLE": "IMAP The Interstellar Mapping and Acceleration Probe",
