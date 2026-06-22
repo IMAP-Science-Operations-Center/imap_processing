@@ -1009,16 +1009,24 @@ def calculate_intensities(dataset: xr.Dataset) -> xr.Dataset:
         dataset["counts_over_eff_squared"]
     ) / (dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"])
 
-    for suffix in ("minus", "plus"):
-        dataset[f"ena_intensity_sys_err_{suffix}"] = (
-            dataset["ena_intensity"]
-            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
-            / dataset["geometric_factor"]
-        )
+    plus_multiplier = dataset["geometric_factor"] / (
+        dataset["geometric_factor"] - dataset["geometric_factor_stat_uncert_minus"]
+    )
+    minus_multiplier = dataset["geometric_factor"] / (
+        dataset["geometric_factor"] + dataset["geometric_factor_stat_uncert_plus"]
+    )
 
-    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
-    dataset["ena_intensity_sys_err"] = 0.5 * (
-        dataset["ena_intensity_sys_err_minus"] + dataset["ena_intensity_sys_err_plus"]
+    dataset["ena_intensity_sys_err_plus"] = (
+        dataset["ena_intensity"] * plus_multiplier
+    ) - dataset["ena_intensity"]
+
+    dataset["ena_intensity_sys_err_minus"] = dataset["ena_intensity"] - (
+        dataset["ena_intensity"] * minus_multiplier
+    )
+
+    # Symmetric systematic error
+    dataset["ena_intensity_sys_err"] = np.sqrt(
+        dataset["ena_intensity_sys_err_minus"] * dataset["ena_intensity_sys_err_plus"]
     )
 
     return dataset
@@ -1048,16 +1056,24 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
         / dataset["exposure_factor"] ** 2
     )
 
-    for suffix in ("minus", "plus"):
-        dataset[f"bg_rate_sys_err_{suffix}"] = (
-            dataset["bg_rate"]
-            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
-            / dataset["geometric_factor"]
-        )
+    plus_multiplier = dataset["geometric_factor"] / (
+        dataset["geometric_factor"] - dataset["geometric_factor_stat_uncert_minus"]
+    )
+    minus_multiplier = dataset["geometric_factor"] / (
+        dataset["geometric_factor"] + dataset["geometric_factor_stat_uncert_plus"]
+    )
 
-    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
-    dataset["bg_rate_sys_err"] = 0.5 * (
-        dataset["bg_rate_sys_err_minus"] + dataset["bg_rate_sys_err_plus"]
+    dataset["bg_rate_sys_err_plus"] = (dataset["bg_rate"] * plus_multiplier) - dataset[
+        "bg_rate"
+    ]
+
+    dataset["bg_rate_sys_err_minus"] = dataset["bg_rate"] - (
+        dataset["bg_rate"] * minus_multiplier
+    )
+
+    # Symmetric systematic error
+    dataset["bg_rate_sys_err"] = np.sqrt(
+        dataset["bg_rate_sys_err_minus"] * dataset["bg_rate_sys_err_plus"]
     )
 
     # Background intensity
@@ -1068,16 +1084,17 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
         dataset["geometric_factor"] * dataset["energy"]
     )
 
-    for suffix in ("minus", "plus"):
-        dataset[f"bg_intensity_sys_err_{suffix}"] = (
-            dataset["bg_intensity"]
-            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
-            / dataset["geometric_factor"]
-        )
+    dataset["bg_intensity_sys_err_plus"] = (
+        dataset["bg_intensity"] * plus_multiplier
+    ) - dataset["bg_intensity"]
 
-    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
-    dataset["bg_intensity_sys_err"] = 0.5 * (
-        dataset["bg_intensity_sys_err_minus"] + dataset["bg_intensity_sys_err_plus"]
+    dataset["bg_intensity_sys_err_minus"] = dataset["bg_intensity"] - (
+        dataset["bg_intensity"] * minus_multiplier
+    )
+
+    # Symmetric systematic error
+    dataset["bg_intensity_sys_err"] = np.sqrt(
+        dataset["bg_intensity_sys_err_minus"] * dataset["bg_intensity_sys_err_plus"]
     )
 
     return dataset

@@ -1134,17 +1134,17 @@ class TestCalculateIntensities:
             result["ena_intensity_stat_uncert"], expected_stat_uncert
         )
 
-        # Check systematic uncertainty calculation. The single `_sys_err` is the
-        # mean of the asymmetric minus/plus bounds.
-        mean_gf_stat_uncert = 0.5 * (
-            sample_dataset_with_geometric_factors["geometric_factor_stat_uncert_minus"]
-            + sample_dataset_with_geometric_factors["geometric_factor_stat_uncert_plus"]
-        )
-        expected_sys_err = (
-            result["ena_intensity"]
-            * mean_gf_stat_uncert
-            / sample_dataset_with_geometric_factors["geometric_factor"]
-        )
+        # Check systematic uncertainty calculation
+        gf = sample_dataset_with_geometric_factors["geometric_factor"]
+        dg_minus = sample_dataset_with_geometric_factors[
+            "geometric_factor_stat_uncert_minus"
+        ]
+        dg_plus = sample_dataset_with_geometric_factors[
+            "geometric_factor_stat_uncert_plus"
+        ]
+        expected_sys_err_plus = result["ena_intensity"] * dg_minus / (gf - dg_minus)
+        expected_sys_err_minus = result["ena_intensity"] * dg_plus / (gf + dg_plus)
+        expected_sys_err = np.sqrt(expected_sys_err_minus * expected_sys_err_plus)
         xr.testing.assert_allclose(result["ena_intensity_sys_err"], expected_sys_err)
 
     def test_calculate_intensities_missing_variables(self):
@@ -1197,14 +1197,12 @@ class TestCalculateBackgrounds:
         xr.testing.assert_allclose(result["bg_rate_stat_uncert"], expected_stat_uncert)
 
         # Check systematic uncertainty calculation
-        # (mean(geometric_factor_stat_uncert bounds) / geometric_factor) * bg_rate
-        mean_gf_stat_uncert = 0.5 * (
-            dataset["geometric_factor_stat_uncert_minus"]
-            + dataset["geometric_factor_stat_uncert_plus"]
-        )
-        expected_sys_err = (
-            result["bg_rate"] * mean_gf_stat_uncert / dataset["geometric_factor"]
-        )
+        gf = dataset["geometric_factor"]
+        dg_minus = dataset["geometric_factor_stat_uncert_minus"]
+        dg_plus = dataset["geometric_factor_stat_uncert_plus"]
+        expected_sys_err_plus = result["bg_rate"] * dg_minus / (gf - dg_minus)
+        expected_sys_err_minus = result["bg_rate"] * dg_plus / (gf + dg_plus)
+        expected_sys_err = np.sqrt(expected_sys_err_minus * expected_sys_err_plus)
         xr.testing.assert_allclose(result["bg_rate_sys_err"], expected_sys_err)
 
     def test_calculate_backgrounds_zero_exposure(self):
