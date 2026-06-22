@@ -638,7 +638,8 @@ class ProcessInstrument(ABC):
                     logger.warning("No descriptor found in dataset.")
                 version = self._resolve_version(descriptor)
                 logger.info(f"Product {descriptor} version: {version}")
-                ds.attrs["Data_version"] = str(version)
+                # `Data_version` is stored without the leading `v`.
+                ds.attrs["Data_version"] = str(version).lstrip("v")
                 if self.repointing is not None:
                     ds.attrs["Repointing"] = self.repointing
                 ds.attrs["Start_date"] = self.start_date

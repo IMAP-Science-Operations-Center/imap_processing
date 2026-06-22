@@ -122,10 +122,10 @@ def write_cdf(
     version = dataset.attrs.get("Data_version", None)
     if version is None:
         warnings.warn(
-            "No Data_version attribute found in dataset. Using default v001.0001",
+            "No Data_version attribute found in dataset. Using default 001.0001",
             stacklevel=2,
         )
-        version = "v001.0001"
+        version = "001.0001"
         dataset.attrs["Data_version"] = version
 
     # Data_version may be stored without the leading 'v'; add it before validating.
