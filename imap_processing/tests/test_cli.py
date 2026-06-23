@@ -89,12 +89,12 @@ def test_main(mock_instrument):
                     {
                         "type": "science",
                         "files": [
-                            "imap_mag_l0_raw_20240430_v001.cdf",
+                            "imap_mag_l0_raw_20240430_v001.0001.cdf",
                         ],
                     },
                 ],
                 "version": {
-                    "all": {"major_version": 1, "minor_version": 1},
+                    "sci": {"major_version": 1, "minor_version": 1},
                 },
             }
         ),
@@ -128,13 +128,13 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
             {
                 "type": "science",
                 "files": [
-                    "imap_idex_l2_sci_20240312_v000.cdf",
-                    "imap_idex_l2_sci_20240312_v001.cdf",
+                    "imap_idex_l2_sci_20240312_v001.0000.cdf",
+                    "imap_idex_l2_sci_20240312_v001.0001.cdf",
                 ],
             },
         ],
         "version": {
-            "all": {"major_version": 1, "minor_version": 1},
+            "sci": {"major_version": 1, "minor_version": 1},
         },
     }
     test_json_filename = "imap_ultra_l2_test-dependency-json_20250520_v999.json"

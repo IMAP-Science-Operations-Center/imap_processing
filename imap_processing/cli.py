@@ -117,13 +117,13 @@ def _parse_args() -> argparse.Namespace:
                 {
                     "type": "science",
                     "files": [
-                        "imap_idex_l2_sci_20240312_v000.cdf",
-                        "imap_idex_l2_sci_20240312_v001.cdf"
+                        "imap_idex_l2_sci_20240312_v001.0000.cdf",
+                        "imap_idex_l2_sci_20240312_v001.0001.cdf"
                     ]
                 }
             ],
             "version": {
-                "<descriptor>": {"major_version": 2, "minor_version": 1}
+                "sci": {"major_version": 2, "minor_version": 1}
             }
         }'
     --upload-to-sdc
@@ -153,13 +153,13 @@ def _parse_args() -> argparse.Namespace:
         "        {"
         '            "type": "science",'
         '            "files": ['
-        '                "imap_idex_l2_sci_20240312_v000.cdf",'
-        '                "imap_idex_l2_sci_20240312_v001.cdf"'
+        '                "imap_idex_l2_sci_20240312_v001.0000.cdf",'
+        '                "imap_idex_l2_sci_20240312_v001.0001.cdf"'
         "            ]"
         "        }"
         "    ],"
         '    "version": {'
-        '        "<descriptor>": {"major_version": 2, "minor_version": 1}'
+        '        "sci": {"major_version": 2, "minor_version": 1}'
         "    }"
         "}"
         ' --upload-to-sdc"'
@@ -197,7 +197,7 @@ def _parse_args() -> argparse.Namespace:
         "            ]"
         "        }"
         "    ],"
-        '    "version": {"<descriptor>": '
+        '    "version": {"sci": '
         '{"major_version": 2, "minor_version": 1}}'
         "}'"
         "    A path to a JSON file containing this same information may also be"
@@ -386,7 +386,7 @@ class ProcessInstrument(ABC):
                 }
             ],
             "version": {
-                "<descriptor>": {"major_version": 2, "minor_version": 1},
+                "sci": {"major_version": 2, "minor_version": 1},
                 ...
             }
         }'
@@ -460,7 +460,7 @@ class ProcessInstrument(ABC):
             The Version to use for the product.
         """
         if descriptor not in self.version_map:
-            msg = f"No version provided for descriptor: {descriptor}"
+            msg = f"No version provided for descriptor: '{descriptor}'"
             logger.warning(msg)
         return self.version_map.get(descriptor, self._fallback_version)
 
@@ -635,7 +635,7 @@ class ProcessInstrument(ABC):
                 # final field of Logical_source).
                 descriptor = ds.attrs.get("Logical_source", "").split("_")[-1]
                 if descriptor == "":
-                    logger.warning("No descriptor found in dataset.")
+                    logger.error("No descriptor found in dataset.")
                 version = self._resolve_version(descriptor)
                 logger.info(f"Product {descriptor} version: {version}")
                 # `Data_version` is stored without the leading `v`.
