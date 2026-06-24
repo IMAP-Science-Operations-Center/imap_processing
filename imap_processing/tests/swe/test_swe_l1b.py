@@ -289,7 +289,7 @@ def test_swe_l1b(mock_get_file_paths, l1b_validation_df):
     hk_datasets = swe_l1b(input_collection)
     # Looks like HK data has some science data. That's why we use index 1.
     l1b_hk_filepath = write_cdf(hk_datasets[1])
-    assert l1b_hk_filepath.name == "imap_swe_l1b_hk_20240510_v999.cdf"
+    assert l1b_hk_filepath.name == "imap_swe_l1b_hk_20240510_v001.0001.cdf"
 
 
 def test_count_rate():

@@ -86,7 +86,7 @@ def test_swapi_l2_cdf(
     )
     # Create HK CDF File
     processed_hk_data = swapi_l1(collection_obj, descriptor="hk")
-    hk_cdf_filename = "imap_swapi_l1a_hk_20240924_v999.cdf"
+    hk_cdf_filename = "imap_swapi_l1a_hk_20240924_v001.0001.cdf"
     hk_cdf_path = write_cdf(processed_hk_data[0])
     assert hk_cdf_path.name == hk_cdf_filename
 
@@ -110,7 +110,7 @@ def test_swapi_l2_cdf(
     )
     # Create L1 CDF File
     processed_sci_data = swapi_l1(collection_obj, descriptor="sci")
-    cdf_filename = "imap_swapi_l1_sci_20240924_v999.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v001.0001.cdf"
     cdf_path = write_cdf(processed_sci_data[0])
     assert cdf_path.name == cdf_filename
 
@@ -127,7 +127,7 @@ def test_swapi_l2_cdf(
         lut_notes_df=lut_notes_table,
     )
     l2_cdf = write_cdf(l2_dataset)
-    assert l2_cdf.name == "imap_swapi_l2_sci_20240924_v999.cdf"
+    assert l2_cdf.name == "imap_swapi_l2_sci_20240924_v001.0001.cdf"
     cdf_file = cdflib.CDF(l2_cdf)
     esa_energy_info = cdf_file.varinq("esa_energy")
     esa_energy_attrs = cdf_file.varattsget("esa_energy")

@@ -55,7 +55,7 @@ def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
     file_name = write_cdf(decom_test_data_sci)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1a_sci-10days_20231218_v999.cdf"
+    assert file_name.name == "imap_idex_l1a_sci-10days_20231218_v001.0001.cdf"
     written_dataset = load_cdf(file_name)
     assert written_dataset["time_low_sample_rate"].attrs["VAR_NOTES"] == (
         "The low sample rate is 4.0625 MHz, so adjacent samples are separated "
@@ -532,10 +532,10 @@ def test_catlst_dataset(decom_test_data_catlst: list[xr.Dataset]):
         np.testing.assert_array_equal(ds.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
     filename_l1a = write_cdf(decom_test_data_catlst[0])
-    assert filename_l1a.name == "imap_idex_l1a_catlst-10days_20241206_v999.cdf"
+    assert filename_l1a.name == "imap_idex_l1a_catlst-10days_20241206_v001.0001.cdf"
 
     filename_l1b = write_cdf(decom_test_data_catlst[1])
-    assert filename_l1b.name == "imap_idex_l1b_catlst-10days_20241206_v999.cdf"
+    assert filename_l1b.name == "imap_idex_l1b_catlst-10days_20241206_v001.0001.cdf"
 
 
 def test_msg_dataset(decom_test_data_msg: xr.Dataset):
@@ -556,7 +556,7 @@ def test_msg_dataset(decom_test_data_msg: xr.Dataset):
     np.testing.assert_array_equal(decom_test_data_msg.epoch, expected_epoch)
     # Assert that the dataset can be written to a CDF file
     filename_l1a = write_cdf(decom_test_data_msg)
-    assert filename_l1a.name == "imap_idex_l1a_msg-10days_20100101_v999.cdf"
+    assert filename_l1a.name == "imap_idex_l1a_msg-10days_20100101_v001.0001.cdf"
 
     # Validate the messages with the IDEX team example data
     example_data = pd.read_csv(

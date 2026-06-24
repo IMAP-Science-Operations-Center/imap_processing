@@ -14,6 +14,7 @@ import xarray as xr
 from cdflib.logging import logger as cdflib_logger
 from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
 from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
+from imap_data_access.file_validation import Version
 
 import imap_processing
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
@@ -121,14 +122,18 @@ def write_cdf(
     version = dataset.attrs.get("Data_version", None)
     if version is None:
         warnings.warn(
-            "No Data_version attribute found in dataset. Using default v999.",
+            "No Data_version attribute found in dataset. Using default 001.0001",
             stacklevel=2,
         )
-        version = "999"
+        version = "001.0001"
         dataset.attrs["Data_version"] = version
-    elif not re.match(r"\d{3}", version):
+
+    # Data_version may be stored without the leading 'v'; add it before validating.
+    version_string = version if str(version).startswith("v") else f"v{version}"
+    if not Version.is_valid_version(version_string):
         raise ValueError(
-            f"The Data_version attribute {version} does not match expected format XXX."
+            rf"The Data_version attribute {version} does not match the expected "
+            "regex {Version.version_regex()}"
         )
 
     repointing = dataset.attrs.get("Repointing", None)
@@ -139,7 +144,7 @@ def write_cdf(
         data_level=data_level,
         descriptor=descriptor,
         start_time=start_date,
-        version=f"v{version}",  # Ensure version is prefixed with 'v'
+        version=version_string,
         repointing=repointing_int,
     )
     file_path = Path(science_file.construct_path())
@@ -218,7 +223,7 @@ def parse_filename_like(filename_like: str) -> re.Match:
         r"(?P<descriptor>[^_]+)"  # Required descriptor
         r"(_(?P<start_date>\d{8}))?"  # Optional start date
         r"(-repoint(?P<repointing>\d{5}))?"  # Optional repointing field
-        r"(?:_(?P<version>v\d{3}))?"  # Optional version
+        rf"(?:_(?P<version>{Version.version_regex()}))?"  # Optional version
         r"(?:\.(?P<extension>cdf|pkts))?$"  # Optional extension
     )
     match = re.match(regex_str, filename_like)

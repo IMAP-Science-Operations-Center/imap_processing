@@ -1,3 +1,4 @@
+import json
 import logging
 from unittest.mock import patch
 
@@ -206,11 +207,21 @@ def test_mag_l1d_attributes(
         # Verify xarray_to_cdf was called for each dataset
         assert mock_xarray_to_cdf.call_count == len(l1d_datasets)
 
-    # Test that Mag.post_processing can be called on the datasets
+    # Test that Mag.post_processing can be called on the datasets.
+    dependency_str = json.dumps(
+        {
+            "dependency": [],
+            "version": {
+                "spin-offsets": {"major_version": 1, "minor_version": 1},
+                "gradiometry-offsets-norm": {"major_version": 1, "minor_version": 1},
+                "gradiometry-offsets-burst": {"major_version": 1, "minor_version": 1},
+            },
+        }
+    )
     mag_processor = Mag(
         data_level="l1d",
         data_descriptor="all",
-        dependency_str="[]",
+        dependency_str=dependency_str,
         start_date="20000101",
         repointing=None,
         version="v001",

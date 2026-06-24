@@ -9,7 +9,7 @@ def test_cdf_creation():
 
     cem_raw_cdf_filepath = write_cdf(processed_data[0])
 
-    assert cem_raw_cdf_filepath.name == "imap_swe_l1a_sci_20240510_v999.cdf"
+    assert cem_raw_cdf_filepath.name == "imap_swe_l1a_sci_20240510_v001.0001.cdf"
 
 
 def test_cdf_creation_hk():
@@ -18,7 +18,7 @@ def test_cdf_creation_hk():
 
     hk_cdf_filepath = write_cdf(processed_data[0])
 
-    assert hk_cdf_filepath.name == "imap_swe_l1a_hk_20240510_v999.cdf"
+    assert hk_cdf_filepath.name == "imap_swe_l1a_hk_20240510_v001.0001.cdf"
 
 
 def test_cdf_creation_cem_raw():
@@ -27,4 +27,4 @@ def test_cdf_creation_cem_raw():
 
     cem_raw_cdf_filepath = write_cdf(processed_data[0])
 
-    assert cem_raw_cdf_filepath.name == "imap_swe_l1a_cem-raw_20240510_v999.cdf"
+    assert cem_raw_cdf_filepath.name == "imap_swe_l1a_cem-raw_20240510_v001.0001.cdf"

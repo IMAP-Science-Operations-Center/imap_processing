@@ -15,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import re
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -27,6 +26,7 @@ import spiceypy
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 from cdflib.xarray.xarray_to_cdf import ISTPError
+from imap_data_access.file_validation import Version
 from imap_data_access.io import IMAPDataAccessError, download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
@@ -105,23 +105,27 @@ def _parse_args() -> argparse.Namespace:
     --data-level "l1a"
     --descriptor "all"
     --start-date "20231212"
-    --version "v001"
-    --dependency '[
-            {
-                "type": "ancillary",
-                "files": [
-                    "imap_mag_l1b-cal_20250101_v001.cdf",
-                    "imap_mag_l1b-cal_20250103_20250104_v002.cdf"
-                ]
-            },
-            {
-                "type": "science",
-                "files": [
-                    "imap_idex_l2_sci_20240312_v000.cdf",
-                    "imap_idex_l2_sci_20240312_v001.cdf"
-                ]
+    --dependency '{
+            "dependency": [
+                {
+                    "type": "ancillary",
+                    "files": [
+                        "imap_mag_l1b-cal_20250101_v001.cdf",
+                        "imap_mag_l1b-cal_20250103_20250104_v002.cdf"
+                    ]
+                },
+                {
+                    "type": "science",
+                    "files": [
+                        "imap_idex_l2_sci_20240312_v001.0000.cdf",
+                        "imap_idex_l2_sci_20240312_v001.0001.cdf"
+                    ]
+                }
+            ],
+            "version": {
+                "sci": {"major_version": 2, "minor_version": 1}
             }
-        ]'
+        }'
     --upload-to-sdc
 
     Returns
@@ -137,23 +141,27 @@ def _parse_args() -> argparse.Namespace:
         '--descriptor "all" '
         ' --start-date "20231212" '
         '--repointing "repoint12345" '
-        '--version "v001" '
-        '--dependency "['
-        "    {"
-        '        "type": "ancillary",'
-        '        "files": ['
-        '            "imap_mag_l1b-cal_20250101_v001.cdf",'
-        '            "imap_mag_l1b-cal_20250103_20250104_v002.cdf"'
-        "        ]"
-        "    },"
-        "    {"
-        '        "type": "science",'
-        '        "files": ['
-        '            "imap_idex_l2_sci_20240312_v000.cdf",'
-        '            "imap_idex_l2_sci_20240312_v001.cdf"'
-        "        ]"
+        '--dependency "{'
+        '    "dependency": ['
+        "        {"
+        '            "type": "ancillary",'
+        '            "files": ['
+        '                "imap_mag_l1b-cal_20250101_v001.cdf",'
+        '                "imap_mag_l1b-cal_20250103_20250104_v002.cdf"'
+        "            ]"
+        "        },"
+        "        {"
+        '            "type": "science",'
+        '            "files": ['
+        '                "imap_idex_l2_sci_20240312_v001.0000.cdf",'
+        '                "imap_idex_l2_sci_20240312_v001.0001.cdf"'
+        "            ]"
+        "        }"
+        "    ],"
+        '    "version": {'
+        '        "sci": {"major_version": 2, "minor_version": 1}'
         "    }"
-        "]"
+        "}"
         ' --upload-to-sdc"'
     )
     instrument_help = (
@@ -169,24 +177,29 @@ def _parse_args() -> argparse.Namespace:
         "descriptor like 'sci-1min'. Default is 'all'."
     )
     dependency_help = (
-        "Dependency information in str format."
+        "Dependency information in str format. This is an object that wraps the"
+        " dependency list together with the per-descriptor output versions."
         "Example:"
-        "'["
-        "    {"
-        '        "type": "ancillary",'
-        '        "files": ['
-        '            "imap_mag_l1b-cal_20250101_v001.cdf",'
-        '            "imap_mag_l1b-cal_20250103_20250104_v002.cdf"'
-        "        ]"
-        "    },"
-        "    {"
-        '        "type": "science",'
-        '        "files": ['
-        '            "imap_idex_l2_sci_20240312_v000.cdf",'
-        '            "imap_idex_l2_sci_20240312_v001.cdf"'
-        "        ]"
-        "    }"
-        "]'"
+        "'{"
+        '    "dependency": ['
+        "        {"
+        '            "type": "ancillary",'
+        '            "files": ['
+        '                "imap_mag_l1b-cal_20250101_v001.cdf",'
+        '                "imap_mag_l1b-cal_20250103_20250104_v002.cdf"'
+        "            ]"
+        "        },"
+        "        {"
+        '            "type": "science",'
+        '            "files": ['
+        '                "imap_idex_l2_sci_20240312_v000.cdf",'
+        '                "imap_idex_l2_sci_20240312_v001.cdf"'
+        "            ]"
+        "        }"
+        "    ],"
+        '    "version": {"sci": '
+        '{"major_version": 2, "minor_version": 1}}'
+        "}'"
         "    A path to a JSON file containing this same information may also be"
         "passed in. If dependency is a string ending in '.json', it will be interpreted"
         " as such a file path."
@@ -239,10 +252,12 @@ def _parse_args() -> argparse.Namespace:
         "provided. Format: repoint#####",
     )
 
+    # TODO - Remove support for this eventually
     parser.add_argument(
         "--version",
         type=str,
-        required=True,
+        required=False,
+        default=None,
         help="Version of the data. Format: vXXX",
     )
     parser.add_argument(
@@ -337,44 +352,52 @@ class ProcessInstrument(ABC):
     data_descriptor : str
         The descriptor of the data to process (e.g. ``sci``).
     dependency_str : str
-        A string representation of the dependencies for the instrument in the
-        format:
-        '[
-            {
-                "type": "ancillary",
-                "files": [
-                    "imap_mag_l1b-cal_20250101_v001.cdf",
-                    "imap_mag_l1b-cal_20250103_20250104_v002.cdf"
-                ]
-            },
-            {
-                "type": "ancillary",
-                "files": [
-                    "imap_mag_l1b-lut_20250101_v001.cdf",
-                ]
-            },
-            {
-                "type": "science",
-                "files": [
-                    "imap_mag_l1a_norm-magi_20240312_v000.cdf",
-                    "imap_mag_l1a_norm-magi_20240312_v001.cdf"
-                ]
-            },
-            {
-                "type": "science",
-                "files": [
-                    "imap_idex_l2_sci_20240312_v000.cdf",
-                    "imap_idex_l2_sci_20240312_v001.cdf"
-                ]
+        A string representation of an object that wraps the dependency list
+        produced by ProcessingInputCollection.serialize() together with the
+        per-descriptor output versions produced by the job:
+        '{
+            "dependency": [
+                {
+                    "type": "ancillary",
+                    "files": [
+                        "imap_mag_l1b-cal_20250101_v001.cdf",
+                        "imap_mag_l1b-cal_20250103_20250104_v002.cdf"
+                    ]
+                },
+                {
+                    "type": "ancillary",
+                    "files": [
+                        "imap_mag_l1b-lut_20250101_v001.cdf",
+                    ]
+                },
+                {
+                    "type": "science",
+                    "files": [
+                        "imap_mag_l1a_norm-magi_20240312_v000.cdf",
+                        "imap_mag_l1a_norm-magi_20240312_v001.cdf"
+                    ]
+                },
+                {
+                    "type": "science",
+                    "files": [
+                        "imap_idex_l2_sci_20240312_v000.cdf",
+                        "imap_idex_l2_sci_20240312_v001.cdf"
+                    ]
+                }
+            ],
+            "version": {
+                "sci": {"major_version": 2, "minor_version": 1},
+                ...
             }
-        ]'
-        This is what ProcessingInputCollection.serialize() outputs.
+        }'
+        The version block determines the version of each produced product
+        (matched by descriptor).
     start_date : str
         The start date for the output data in YYYYMMDD format.
     repointing : str
         The repointing for the output data in the format 'repoint#####'.
     version : str
-        The version of the data in vXXX format.
+        Fallback version string.
     upload_to_sdc : bool
         A flag indicating whether to upload the output file to the SDC.
     """
@@ -391,19 +414,55 @@ class ProcessInstrument(ABC):
         dependency_str: str,
         start_date: str,
         repointing: str | None,
-        version: str,
+        version: str,  # TODO - remove this argument eventually
         upload_to_sdc: bool,
     ) -> None:
         self.data_level = data_level
         self.descriptor = data_descriptor
 
-        self.dependency_str = dependency_str
-
         self.start_date = start_date
         self.repointing = repointing
-
-        self.version = version
         self.upload_to_sdc = upload_to_sdc
+
+        # The dependency argument is an object of the form
+        # {"dependency": [...], "version": {<descriptor>: {...}}}. The
+        # per-descriptor product versions are extracted here and the dependency
+        # list is preserved as `self.dependency_str` so that
+        # ProcessingInputCollection.deserialize continues to work unchanged.
+        parsed_dependency = json.loads(dependency_str) if dependency_str else {}
+        # Tolerate the old format where the dependency argument is a bare list
+        # of dependency objects (no wrapping object and no version block).
+        if isinstance(parsed_dependency, list):
+            logger.warning("Old dependency format detected, converting to new format.")
+            parsed_dependency = {"dependency": parsed_dependency}
+        version_block = parsed_dependency.get("version", {})
+        self.dependency_str = json.dumps(parsed_dependency.get("dependency", []))
+        self._fallback_version = version
+
+        # Map each produced descriptor to a Version built from major/minor
+        self.version_map: dict[str, Version] = {
+            descriptor: Version(info["major_version"], info["minor_version"])
+            for descriptor, info in version_block.items()
+        }
+
+    def _resolve_version(self, descriptor: str) -> Version:
+        """
+        Return the Version to use for a product with the given descriptor.
+
+        Parameters
+        ----------
+        descriptor : str
+            The product descriptor (the final field of ``Logical_source``).
+
+        Returns
+        -------
+        Version
+            The Version to use for the product.
+        """
+        if descriptor not in self.version_map:
+            msg = f"No version provided for descriptor: '{descriptor}'"
+            logger.warning(msg)
+        return self.version_map.get(descriptor, self._fallback_version)
 
     def upload_products(self, products: list[Path]) -> None:
         """
@@ -560,16 +619,10 @@ class ProcessInstrument(ABC):
 
         logger.info("Writing products to local storage")
 
-        logger.info("Dataset version: %s", self.version)
         # Parent files used to create these datasets
         # https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html.
         parent_files = [p.name for p in dependencies.get_file_paths()]
         logger.info("Parent files: %s", parent_files)
-        # Format version to vXXX if not already in that format. Eg.
-        # If version is passed in as 1 or 001, it will be converted to v001.
-        r = re.compile(r"v\d{3}")
-        if not isinstance(self.version, str) or r.match(self.version) is None:
-            self.version = f"v{int(self.version):03d}"  # vXXX
 
         # Start date is either the start date or the repointing.
         # if it is the repointing, default to using the first epoch in the file as
@@ -578,7 +631,15 @@ class ProcessInstrument(ABC):
 
         for ds in processed_data:
             if isinstance(ds, xr.Dataset):
-                ds.attrs["Data_version"] = self.version[1:]  # Strip 'v' from version
+                # Look up the version for this product by its descriptor (the
+                # final field of Logical_source).
+                descriptor = ds.attrs.get("Logical_source", "").split("_")[-1]
+                if descriptor == "":
+                    logger.error("No descriptor found in dataset.")
+                version = self._resolve_version(descriptor)
+                logger.info(f"Product {descriptor} version: {version}")
+                # `Data_version` is stored without the leading `v`.
+                ds.attrs["Data_version"] = str(version).lstrip("v")
                 if self.repointing is not None:
                     ds.attrs["Repointing"] = self.repointing
                 ds.attrs["Start_date"] = self.start_date
@@ -1503,7 +1564,10 @@ class Mag(ProcessInstrument):
                         "Logical_source"
                     ].split("_")[1:]
                     start_date = self.start_date
-                    version = self.version
+                    # Ancillary filenames only support the minor-only (vXXX)
+                    # version format, so render the resolved version that way.
+                    resolved_version = self._resolve_version(descriptor)
+                    version = str(Version(None, resolved_version.minor))
 
                     output_filepath = (
                         imap_data_access.AncillaryFilePath.generate_from_inputs(

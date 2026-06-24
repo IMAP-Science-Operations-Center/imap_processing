@@ -70,7 +70,7 @@ def test_idex_cdf_file(l1b_dataset: xr.Dataset):
 
     file_name = write_cdf(l1b_dataset)
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1b_sci-10days_20231218_v999.cdf"
+    assert file_name.name == "imap_idex_l1b_sci-10days_20231218_v001.0001.cdf"
 
 
 def test_idex_waveform_units(l1b_dataset: xr.Dataset):

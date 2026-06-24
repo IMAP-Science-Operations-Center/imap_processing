@@ -76,22 +76,27 @@ def test_main(mock_instrument):
         "--instrument",
         "mag",
         "--dependency",
-        (
-            "["
-            "{"
-            '"type": "ancillary",'
-            '"files": ['
-            '"imap_mag_l1b-cal_20250101_v001.cdf",'
-            '"imap_mag_l1b-cal_20250103-20250104_v002.cdf"'
-            "]"
-            "},"
-            "{"
-            '"type": "science",'
-            '"files": ['
-            '"imap_mag_l0_raw_20240430_v001.cdf",'
-            "]"
-            "}"
-            "]"
+        json.dumps(
+            {
+                "dependency": [
+                    {
+                        "type": "ancillary",
+                        "files": [
+                            "imap_mag_l1b-cal_20250101_v001.cdf",
+                            "imap_mag_l1b-cal_20250103-20250104_v002.cdf",
+                        ],
+                    },
+                    {
+                        "type": "science",
+                        "files": [
+                            "imap_mag_l0_raw_20240430_v001.0001.cdf",
+                        ],
+                    },
+                ],
+                "version": {
+                    "sci": {"major_version": 1, "minor_version": 1},
+                },
+            }
         ),
         "--data-level",
         "l1a",
@@ -99,8 +104,6 @@ def test_main(mock_instrument):
         "20240430",
         "--repointing",
         "repoint12345",
-        "--version",
-        "v001",
         "--upload-to-sdc",
     ]
     with mock.patch.object(sys, "argv", test_args):
@@ -113,22 +116,27 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
     # Set caplog to capture all log levels
     caplog.set_level(logging.DEBUG)
     """Test imap_processing.cli.main() with --dependency as a JSON file path."""
-    test_json_content = [
-        {
-            "type": "ancillary",
-            "files": [
-                "imap_mag_l1b-cal_20250101_v001.cdf",
-                "imap_mag_l1b-cal_20250103_20250104_v002.cdf",
-            ],
+    test_json_content = {
+        "dependency": [
+            {
+                "type": "ancillary",
+                "files": [
+                    "imap_mag_l1b-cal_20250101_v001.cdf",
+                    "imap_mag_l1b-cal_20250103_20250104_v002.cdf",
+                ],
+            },
+            {
+                "type": "science",
+                "files": [
+                    "imap_idex_l2_sci_20240312_v001.0000.cdf",
+                    "imap_idex_l2_sci_20240312_v001.0001.cdf",
+                ],
+            },
+        ],
+        "version": {
+            "sci": {"major_version": 1, "minor_version": 1},
         },
-        {
-            "type": "science",
-            "files": [
-                "imap_idex_l2_sci_20240312_v000.cdf",
-                "imap_idex_l2_sci_20240312_v001.cdf",
-            ],
-        },
-    ]
+    }
     test_json_filename = "imap_ultra_l2_test-dependency-json_20250520_v999.json"
     test_json_dir = tmp_path / "imap/dependency/ultra/l2/2025/05/"
     test_json_dir.mkdir(parents=True, exist_ok=True)
@@ -149,8 +157,6 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         "20240430",
         "--repointing",
         "repoint12345",
-        "--version",
-        "v001",
         "--upload-to-sdc",
     ]
     with mock.patch.object(sys, "argv", test_args):
