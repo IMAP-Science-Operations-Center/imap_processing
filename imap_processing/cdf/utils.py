@@ -134,7 +134,9 @@ def write_cdf(
         version_obj = Version.from_version(version_string)
     except ValueError as e:
         raise ValueError(
-            f"The Data_version attribute {version} is not a valid version string."
+            f"The Data_version attribute {version} is not a valid version string. "
+            f"Please use the format matching the pattern "
+            f"'{Version.science_version_pattern}' instead."
         ) from e
     repointing = dataset.attrs.get("Repointing", None)
 
