@@ -130,12 +130,12 @@ def write_cdf(
 
     # Data_version may be stored without the leading 'v'; add it before validating.
     version_string = version if str(version).startswith("v") else f"v{version}"
-    if not Version.is_valid_version(version_string):
+    try:
+        version_obj = Version.from_version(version_string)
+    except ValueError as e:
         raise ValueError(
-            rf"The Data_version attribute {version} does not match the expected "
-            "regex {Version.version_regex()}"
-        )
-
+            f"The Data_version attribute {version} is not a valid version string."
+        ) from e
     repointing = dataset.attrs.get("Repointing", None)
 
     repointing_int = int(repointing[-5:]) if repointing else None
@@ -144,7 +144,8 @@ def write_cdf(
         data_level=data_level,
         descriptor=descriptor,
         start_time=start_date,
-        version=version_string,
+        major_version=version_obj.major_version,
+        minor_version=version_obj.minor_version,
         repointing=repointing_int,
     )
     file_path = Path(science_file.construct_path())

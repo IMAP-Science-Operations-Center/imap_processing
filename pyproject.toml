@@ -8,7 +8,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 [project]
 name = "imap-processing"
 # Version is set dynamically by poetry-dynamic-versioning
-dynamic = ["version"]
+dynamic = ["version","version"]
 description = "IMAP Science Operations Center Processing"
 authors = [{name = "IMAP SDC Developers", email = "imap-sdc@lists.lasp.colorado.edu"}]
 readme = "README.md"
