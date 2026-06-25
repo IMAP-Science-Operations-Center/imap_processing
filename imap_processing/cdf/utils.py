@@ -144,8 +144,8 @@ def write_cdf(
         data_level=data_level,
         descriptor=descriptor,
         start_time=start_date,
-        major_version=version_obj.major_version,
-        minor_version=version_obj.minor_version,
+        major_version=version_obj.major,
+        minor_version=version_obj.minor,
         repointing=repointing_int,
     )
     file_path = Path(science_file.construct_path())
