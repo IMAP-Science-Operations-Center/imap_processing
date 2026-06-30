@@ -1147,3 +1147,126 @@ def test_cic_filter_delay_compensation():
         f"{len(input_filtered_case2)} elements, vectors_filtered has "
         f"{len(vectors_filtered_case2)} elements"
     )
+
+
+def _build_cross_day_l1b(
+    day1: np.datetime64, day2: np.datetime64
+) -> tuple[xr.Dataset, xr.Dataset, xr.Dataset, dict]:
+    """Build a previous-day (day1) and current-day (day2) L1B scenario.
+
+    Day 1 ends at 4 vec/s on a grid carrying a sub-cadence phase offset, so its
+    final NM grid does not line up with day 2's own 2 vec/s grid (requirement 1).
+    Day 2's NM data does not begin until 10 minutes into the day window, leaving a
+    gap at the start of the day (requirement 2). Day 2 burst covers that leading
+    gap so the simulated NM timestamps can be filled.
+
+    Returns norm_day1, norm_day2, burst_day2, and a dict of the key constants the
+    continuity assertions are written against.
+    """
+    cadence_day1 = 250_000_000  # 4 vec/s
+    cadence_day2 = 500_000_000  # 2 vec/s
+    phase_ns = 73_000_000  # sub-cadence offset, < cadence_day1
+
+    day2_start_ns, _ = _ttj2000_day_bounds(day2)
+
+    # Day 1 NM ends just before day 2's window, on a 4 vec/s grid offset by phase.
+    day1_last = day2_start_ns - cadence_day1 + phase_ns
+    day1_epochs = day1_last - np.arange(9, -1, -1) * cadence_day1
+    norm_day1 = _build_mag_l1b(
+        day1_epochs.astype(np.int64), "imap_mag_l1b_norm-mago", "0:4;"
+    )
+
+    # Day 2 NM starts 10 minutes into the window at 2 vec/s (phase 0 vs boundary).
+    day2_nm_start = day2_start_ns + 600 * 1_000_000_000
+    day2_nm_epochs = np.arange(
+        day2_nm_start,
+        day2_nm_start + 120 * 1_000_000_000 + 1,
+        cadence_day2,
+        dtype=np.int64,
+    )
+    norm_day2 = _build_mag_l1b(day2_nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
+
+    # Day 2 burst covers the leading gap (and a little past NM start) at 8 vec/s.
+    burst_day2_epochs = np.arange(
+        day2_start_ns,
+        day2_nm_start + 30 * 1_000_000_000,
+        125_000_000,
+        dtype=np.int64,
+    )
+    burst_day2 = _build_mag_l1b(burst_day2_epochs, "imap_mag_l1b_burst-mago", "0:8")
+
+    meta = {
+        "day2_start_ns": day2_start_ns,
+        "day1_last": int(day1_last),
+        "cadence_day1": cadence_day1,
+        "cadence_day2": cadence_day2,
+        "phase_ns": phase_ns,
+        "day2_nm_start": int(day2_nm_start),
+        "day2_nm_epochs": day2_nm_epochs,
+    }
+    return norm_day1, norm_day2, burst_day2, meta
+
+
+@pytest.mark.xfail(reason="Not implemented")
+def test_process_mag_l1c_continues_previous_day_grid():
+    """Leading-gap timestamps must continue the previous day's NM grid.
+
+    When day 2 opens with a gap, the simulated
+    NM timeline that fills it should adopt the *previous day's* ending rate and
+    phase (algorithm doc 7.3.4 step 3, "regular and consistent, across boundaries
+    between days"), not day 2's own boundary-anchored grid.
+    """
+    day1 = np.datetime64("2025-01-01")
+    day2 = np.datetime64("2025-01-02")
+    norm_day1, norm_day2, burst_day2, meta = _build_cross_day_l1b(day1, day2)
+
+    result = process_mag_l1c(
+        norm_day2,
+        burst_day2,
+        InterpolationFunction.linear,
+        day2,
+        previous_day_dataset=norm_day1,
+    )
+    epochs_out = result[:, 0]
+
+    # epochs in the first 10 minute gap are filled
+    leading = epochs_out[epochs_out < meta["day2_nm_start"]]
+    assert leading.size > 0
+
+    # Starting point lines up with day 1's ending point + one day-1 cadence.
+    assert leading[0] == meta["day1_last"] + meta["cadence_day1"]
+    # Rate lines up with day 1's ending rate (4 vec/s), not day 2's 2 vec/s.
+    assert np.all(np.diff(leading) == meta["cadence_day1"])
+    # Zero jitter: every leading sample sits exactly on day 1's grid.
+    assert np.all((leading - meta["day1_last"]) % meta["cadence_day1"] == 0)
+    # Day 2's real NM samples are still used where they exist
+    assert np.all(np.isin(meta["day2_nm_epochs"], epochs_out))
+
+
+@pytest.mark.xfail(reason="Not implemented")
+def test_mag_l1c_continues_previous_day_grid():
+    """mag_l1c() must thread the previous day's NM grid into the output.
+
+    End-to-end companion to test_process_mag_l1c_continues_previous_day_grid: the
+    public entry point should accept previous_day_dataset and produce an L1C epoch
+    axis whose start-of-day gap fill continues day 1's rate and phase, while still
+    using day 2's own NM samples where they exist.
+    """
+    day1 = np.datetime64("2025-01-01")
+    day2 = np.datetime64("2025-01-02")
+    norm_day1, norm_day2, burst_day2, meta = _build_cross_day_l1b(day1, day2)
+
+    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=norm_day1)
+    epochs_out = output["epoch"].data
+
+    leading = epochs_out[epochs_out < meta["day2_nm_start"]]
+    assert leading.size > 0
+
+    # Starting point and rate continue day 1's ending grid with zero jitter.
+    assert leading[0] == meta["day1_last"] + meta["cadence_day1"]
+    assert np.all(np.diff(leading) == meta["cadence_day1"])
+    assert np.all(
+        (leading - meta["day2_start_ns"]) % meta["cadence_day1"] == meta["phase_ns"]
+    )
+    # Day 2's real NM samples are still used where they exist
+    assert np.all(np.isin(meta["day2_nm_epochs"], epochs_out))
