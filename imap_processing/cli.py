@@ -18,6 +18,7 @@ import logging
 import re
 import sys
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import final
 
@@ -1345,16 +1346,47 @@ class Mag(ProcessInstrument):
             ]
 
         if self.data_level == "l1c":
-            science_files = dependencies.get_file_paths(source="mag", data_type="l1b")
+            start_datetime = datetime.strptime(self.start_date, "%Y%m%d")
+            science_files = dependencies.get_valid_inputs_for_start_date(
+                start_datetime
+            ).get_file_paths(source="mag", data_type="l1b")
             input_data = [load_cdf(dep) for dep in science_files]
+
+            # The previous day's norm L1B may arrive as an extra dependency (via the
+            # date_range entry in imap_mag_dependencies.yaml) so the L1C timeline can
+            # continue the previous day's cadence and phase across the day boundary.
+            previous_day_files = [
+                path
+                for path in dependencies.get_valid_inputs_for_start_date(
+                    start_datetime - timedelta(days=1)
+                ).get_file_paths(source="mag", data_type="l1b")
+                if "norm" in path.name
+            ]
+            previous_day_dataset = (
+                load_cdf(previous_day_files[0]) if previous_day_files else None
+            )
+
             # Input datasets can be in any order, and are validated within mag_l1c
             if len(input_data) == 1:
-                datasets = [mag_l1c(input_data[0], current_day)]
+                datasets = [
+                    mag_l1c(
+                        input_data[0],
+                        current_day,
+                        previous_day_dataset=previous_day_dataset,
+                    )
+                ]
             elif len(input_data) == 2:
-                datasets = [mag_l1c(input_data[0], current_day, input_data[1])]
+                datasets = [
+                    mag_l1c(
+                        input_data[0],
+                        current_day,
+                        input_data[1],
+                        previous_day_dataset=previous_day_dataset,
+                    )
+                ]
             else:
                 raise ValueError(
-                    f"Invalid dependencies found for MAG L1C:"
+                    f"Invalid current-day dependencies found for MAG L1C:"
                     f"{dependencies}. Expected one or two dependencies."
                 )
         if self.data_level == "l1d":

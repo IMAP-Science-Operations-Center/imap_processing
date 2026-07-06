@@ -10,6 +10,7 @@ from imap_processing.mag.l1c.interpolation_methods import (
     estimate_rate,
 )
 from imap_processing.mag.l1c.mag_l1c import (
+    _expected_day_ns,
     fill_normal_data,
     find_all_gaps,
     find_gaps,
@@ -20,7 +21,6 @@ from imap_processing.mag.l1c.mag_l1c import (
     process_mag_l1c,
     vectors_per_second_from_string,
 )
-from imap_processing.spice.time import et_to_ttj2000ns, str_to_et
 from imap_processing.tests.mag.conftest import (
     generate_test_epoch,
     mag_l1a_dataset_generator,
@@ -271,17 +271,6 @@ def test_mag_attributes():
         assert attr in output.attrs
 
 
-def _ttj2000_day_bounds(day: np.datetime64) -> tuple[int, int]:
-    day_start = day.astype("datetime64[s]") - np.timedelta64(30, "m")
-    day_end = (
-        day.astype("datetime64[s]") + np.timedelta64(1, "D") + np.timedelta64(30, "m")
-    )
-    return (
-        int(et_to_ttj2000ns(str_to_et(str(day_start)))),
-        int(et_to_ttj2000ns(str_to_et(str(day_end)))),
-    )
-
-
 def _build_mag_l1b(
     epochs: np.ndarray, logical_source: str, vps_attr: str
 ) -> xr.Dataset:
@@ -299,7 +288,7 @@ def _build_mag_l1b(
 
 
 def _build_day_aligned_mixed_l1b(day: np.datetime64) -> tuple[xr.Dataset, xr.Dataset]:
-    day_start_ns, _ = _ttj2000_day_bounds(day)
+    day_start_ns, _ = _expected_day_ns(day)
 
     nm_start = day_start_ns + 300 * 1_000_000_000
     nm_end = nm_start + 120 * 1_000_000_000
@@ -326,7 +315,7 @@ def test_process_mag_l1c_leading_burst_only_coverage():
     silently dropped.
     """
     day = np.datetime64("2025-01-01")
-    day_start_ns, _ = _ttj2000_day_bounds(day)
+    day_start_ns, _ = _expected_day_ns(day)
 
     # NM starts 5 minutes into the day window and lasts 2 minutes at 2 vec/s.
     nm_start = day_start_ns + 300 * 1_000_000_000
@@ -371,7 +360,7 @@ def test_process_mag_l1c_leading_burst_only_coverage():
 def test_process_mag_l1c_trailing_burst_only_coverage():
     """Burst coverage after the NM window must be interpolated as BURST."""
     day = np.datetime64("2025-01-01")
-    day_start_ns, day_end_ns = _ttj2000_day_bounds(day)
+    day_start_ns, day_end_ns = _expected_day_ns(day)
 
     # NM sits mid-day, spanning 2 minutes at 2 vec/s.
     nm_center = (day_start_ns + day_end_ns) // 2
@@ -410,7 +399,7 @@ def test_mag_l1c_mixed_input_uses_day_to_process():
     mag_l1c() against re-introduction of the old short-circuit to None.
     """
     day = np.datetime64("2025-01-01")
-    day_start_ns, _ = _ttj2000_day_bounds(day)
+    day_start_ns, _ = _expected_day_ns(day)
 
     nm_start = day_start_ns + 600 * 1_000_000_000
     nm_end = nm_start + 60 * 1_000_000_000
@@ -437,7 +426,7 @@ def test_mag_l1c_mixed_input_uses_day_to_process():
 def test_mag_l1c_burst_only_generates_l1c_output():
     """Burst-only L1C generation still fills the day window from BM data."""
     day = np.datetime64("2025-01-01")
-    day_start_ns, _ = _ttj2000_day_bounds(day)
+    day_start_ns, _ = _expected_day_ns(day)
 
     # Burst covers the first 2 minutes of the day window at 8 vec/s.
     burst_epochs = np.arange(
@@ -1165,9 +1154,14 @@ def _build_cross_day_l1b(
     """
     cadence_day1 = 250_000_000  # 4 vec/s
     cadence_day2 = 500_000_000  # 2 vec/s
-    phase_ns = 73_000_000  # sub-cadence offset, < cadence_day1
+    # Sub-cadence offset, < cadence_day1. Must be a multiple of 128 ns: the pipeline
+    # carries epochs in float64 columns, whose spacing at 2025-era TTJ2000
+    # nanoseconds is 128 ns. A non-multiple offset makes every grid point a rounding
+    # tie, so the stored timestamps jitter +/- 64 ns and exact-equality assertions
+    # cannot hold for any implementation.
+    phase_ns = 73_000_064
 
-    day2_start_ns, _ = _ttj2000_day_bounds(day2)
+    day2_start_ns, _ = _expected_day_ns(day2)
 
     # Day 1 NM ends just before day 2's window, on a 4 vec/s grid offset by phase.
     day1_last = day2_start_ns - cadence_day1 + phase_ns
@@ -1207,7 +1201,6 @@ def _build_cross_day_l1b(
     return norm_day1, norm_day2, burst_day2, meta
 
 
-@pytest.mark.xfail(reason="Not implemented")
 def test_process_mag_l1c_continues_previous_day_grid():
     """Leading-gap timestamps must continue the previous day's NM grid.
 
@@ -1243,7 +1236,6 @@ def test_process_mag_l1c_continues_previous_day_grid():
     assert np.all(np.isin(meta["day2_nm_epochs"], epochs_out))
 
 
-@pytest.mark.xfail(reason="Not implemented")
 def test_mag_l1c_continues_previous_day_grid():
     """mag_l1c() must thread the previous day's NM grid into the output.
 
@@ -1270,3 +1262,118 @@ def test_mag_l1c_continues_previous_day_grid():
     )
     # Day 2's real NM samples are still used where they exist
     assert np.all(np.isin(meta["day2_nm_epochs"], epochs_out))
+
+
+@pytest.mark.parametrize(
+    "logical_source",
+    [
+        "imap_mag_l1b_burst-mago",  # not normal mode
+        "imap_mag_l1b_norm-magi",  # wrong sensor
+        "imap_mag_l1c_norm-mago",  # not L1B
+    ],
+)
+def test_mag_l1c_ignores_unusable_previous_day(logical_source):
+    """An unusable previous day dataset is ignored, not raised."""
+    day1 = np.datetime64("2025-01-01")
+    day2 = np.datetime64("2025-01-02")
+    norm_day1, norm_day2, burst_day2, _ = _build_cross_day_l1b(day1, day2)
+    norm_day1.attrs["Logical_source"] = logical_source
+
+    baseline = mag_l1c(norm_day2, day2, burst_day2)
+    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=norm_day1)
+
+    assert np.array_equal(output["epoch"].data, baseline["epoch"].data)
+    assert np.array_equal(output["vectors"].data, baseline["vectors"].data)
+
+
+def test_mag_l1c_ignores_previous_day_with_unknown_cadence():
+    """A previous day whose final spacing matches no MAG rate is ignored."""
+    day1 = np.datetime64("2025-01-01")
+    day2 = np.datetime64("2025-01-02")
+    norm_day1, norm_day2, burst_day2, meta = _build_cross_day_l1b(day1, day2)
+    # Rebuild day 1 with an irregular 0.7 s spacing, matching no known rate.
+    day1_epochs = meta["day1_last"] - np.arange(9, -1, -1) * 700_000_000
+    norm_day1 = _build_mag_l1b(
+        day1_epochs.astype(np.int64), "imap_mag_l1b_norm-mago", "0:2"
+    )
+
+    baseline = mag_l1c(norm_day2, day2, burst_day2)
+    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=norm_day1)
+
+    assert np.array_equal(output["epoch"].data, baseline["epoch"].data)
+
+
+def test_mag_l1c_no_norm_inherits_previous_day_grid():
+    """With no NM data at all, the whole timeline continues the previous day's grid."""
+    day1 = np.datetime64("2025-01-01")
+    day2 = np.datetime64("2025-01-02")
+    norm_day1, _, burst_day2, meta = _build_cross_day_l1b(day1, day2)
+
+    output = mag_l1c(burst_day2, day2, previous_day_dataset=norm_day1)
+    epochs_out = output["epoch"].data
+
+    assert epochs_out.size > 0
+    # Every output timestamp rides day 1's ending grid, starting one cadence after
+    # its last sample - not the day-aligned burst-only fallback grid.
+    assert epochs_out[0] == meta["day1_last"] + meta["cadence_day1"]
+    assert np.all((epochs_out - meta["day1_last"]) % meta["cadence_day1"] == 0)
+
+
+def test_process_mag_l1c_previous_day_anchor_ignores_buffer_samples():
+    """The inherited grid anchors on the last sample within the previous 24-hour day.
+
+    Samples in the previous day's trailing buffer (at or past the current day's
+    midnight) are on a shifted grid here; if the anchor used them, the leading fill
+    would carry their phase instead of the pre-midnight phase.
+    """
+    day2 = np.datetime64("2025-01-02")
+    window_start_ns, _ = _expected_day_ns(day2)
+    midnight_ns = window_start_ns + 1800 * 1_000_000_000
+    cadence = 500_000_000
+
+    # Pre-midnight samples on a grid offset by 128 ns; buffer samples past midnight
+    # shifted by an extra quarter second.
+    pre_midnight = np.arange(
+        midnight_ns - 20 * 1_000_000_000 + 128, midnight_ns, cadence, dtype=np.int64
+    )
+    buffer_samples = np.arange(
+        midnight_ns + 128 + 250_000_000,
+        midnight_ns + 10 * 1_000_000_000,
+        cadence,
+        dtype=np.int64,
+    )
+    previous_day = _build_mag_l1b(
+        np.concatenate([pre_midnight, buffer_samples]),
+        "imap_mag_l1b_norm-mago",
+        "0:2",
+    )
+    anchor = int(pre_midnight[-1])
+
+    nm_epochs = np.arange(
+        midnight_ns + 60 * 1_000_000_000,
+        midnight_ns + 120 * 1_000_000_000,
+        cadence,
+        dtype=np.int64,
+    )
+    norm_day2 = _build_mag_l1b(nm_epochs, "imap_mag_l1b_norm-mago", "0:2")
+    burst_day2 = _build_mag_l1b(
+        np.arange(
+            midnight_ns, midnight_ns + 30 * 1_000_000_000, 125_000_000, dtype=np.int64
+        ),
+        "imap_mag_l1b_burst-mago",
+        "0:8",
+    )
+
+    result = process_mag_l1c(
+        norm_day2,
+        burst_day2,
+        InterpolationFunction.linear,
+        day2,
+        previous_day_dataset=previous_day,
+    )
+    epochs_out = result[:, 0]
+    leading = epochs_out[epochs_out < nm_epochs[0]]
+
+    assert leading.size > 0
+    assert leading[0] == anchor + cadence
+    assert np.all((leading - anchor) % cadence == 0)

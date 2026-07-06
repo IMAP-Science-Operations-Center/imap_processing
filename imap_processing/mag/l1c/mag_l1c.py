@@ -22,6 +22,7 @@ def mag_l1c(
     first_input_dataset: xr.Dataset,
     day_to_process: np.datetime64,
     second_input_dataset: xr.Dataset = None,
+    previous_day_dataset: xr.Dataset = None,
 ) -> xr.Dataset:
     """
     Will process MAG L1C data from L1A data.
@@ -40,6 +41,12 @@ def mag_l1c(
         The second input dataset to process. This should be burst if first_input_dataset
         was norm, or norm if first_input_dataset was burst. It should match the
         instrument - both inputs should be mago or magi.
+    previous_day_dataset : xr.Dataset, optional
+        The previous day's normal mode L1B dataset for the same sensor. When the
+        current day opens with a gap, timestamps generated for that gap continue the
+        previous day's cadence and phase so the L1C timeline stays regular across the
+        day boundary. If not provided (or not usable), gaps at the start of the day
+        are filled on the current day's own grid, exactly as before.
 
     Returns
     -------
@@ -49,8 +56,6 @@ def mag_l1c(
     # TODO:
     # find missing sequences and output them
     # Missing burst file - just pass through norm file
-    # Missing norm file - go back to previous L1C file to find timestamps, then
-    # interpolate the entire day from burst
 
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
     if isinstance(first_input_dataset.attrs["Logical_source"], list):
@@ -63,10 +68,17 @@ def mag_l1c(
         first_input_dataset, second_input_dataset
     )
 
+    if previous_day_dataset is not None:
+        previous_day_dataset = _validated_previous_day(previous_day_dataset, sensor)
+
     interp_function = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
     if burst_mode_dataset is not None:
         full_interpolated_timeline: np.ndarray = process_mag_l1c(
-            normal_mode_dataset, burst_mode_dataset, interp_function, day_to_process
+            normal_mode_dataset,
+            burst_mode_dataset,
+            interp_function,
+            day_to_process,
+            previous_day_dataset=previous_day_dataset,
         )
     elif normal_mode_dataset is not None:
         full_interpolated_timeline = fill_normal_data(normal_mode_dataset)
@@ -272,11 +284,150 @@ def select_datasets(
     return normal_mode_dataset, burst_mode_dataset
 
 
+def _validated_previous_day(
+    previous_day_dataset: xr.Dataset, sensor: str
+) -> xr.Dataset | None:
+    """
+    Validate the previous day's dataset, returning None if it is not usable.
+
+    The previous day's dataset must be a normal mode L1B dataset for the same sensor
+    as the current day's inputs, with at least one epoch. An unusable dataset is
+    ignored with a warning rather than raised, so processing still succeeds with only
+    one day of data.
+
+    Parameters
+    ----------
+    previous_day_dataset : xr.Dataset
+        The candidate previous day dataset.
+    sensor : str
+        The sensor of the current day's inputs, "o" (mago) or "i" (magi).
+
+    Returns
+    -------
+    xr.Dataset or None
+        The validated dataset, or None if it should be ignored.
+    """
+    logical_source = previous_day_dataset.attrs.get("Logical_source", "")
+    if isinstance(logical_source, list):
+        logical_source = logical_source[0]
+
+    if (
+        "l1b" not in logical_source
+        or "norm" not in logical_source
+        or logical_source[-1:] != sensor
+    ):
+        logger.warning(
+            f"Ignoring previous day dataset with logical source {logical_source}; "
+            f"expected normal mode L1B data for sensor mag{sensor}."
+        )
+        return None
+    if previous_day_dataset["epoch"].data.size == 0:
+        logger.warning("Ignoring previous day dataset with no epochs.")
+        return None
+    return previous_day_dataset
+
+
+def _expected_day_ns(day_to_process: np.datetime64) -> tuple[int, int]:
+    """
+    Return the expected L1C processing window in TTJ2000 nanoseconds.
+
+    The window is the 24-hour day extended by 30 minutes on each side.
+
+    Parameters
+    ----------
+    day_to_process : np.datetime64
+        The day to process, in np.datetime64[D] format.
+
+    Returns
+    -------
+    tuple[int, int]
+        The (start, end) of the processing window in TTJ2000 nanoseconds.
+    """
+    day_start = day_to_process.astype("datetime64[s]") - np.timedelta64(30, "m")
+    day_end = (
+        day_to_process.astype("datetime64[s]")
+        + np.timedelta64(1, "D")
+        + np.timedelta64(30, "m")
+    )
+    return (
+        int(et_to_ttj2000ns(str_to_et(str(day_start)))),
+        int(et_to_ttj2000ns(str_to_et(str(day_end)))),
+    )
+
+
+def _previous_day_grid(
+    previous_day_dataset: xr.Dataset, midnight_ns: int, day_start_ns: int
+) -> tuple[int, int] | None:
+    """
+    Derive the timeline grid that continues the previous day's normal mode data.
+
+    The grid is anchored at the previous day's last normal mode timestamp within its
+    own 24-hour day - samples in the file's trailing buffer, at or past the current
+    day's midnight, are not used as the anchor. The cadence is the sample spacing at
+    the anchor, matched against the known MAG rates. Grid points are
+    ``anchor + k * period``, continuing the previous day's rate and phase.
+
+    Parameters
+    ----------
+    previous_day_dataset : xr.Dataset
+        The previous day's normal mode L1B dataset.
+    midnight_ns : int
+        Start of the current 24-hour day in TTJ2000 nanoseconds. The anchor is the
+        last previous-day timestamp before this time.
+    day_start_ns : int
+        Start of the current processing window (midnight minus the 30 minute buffer)
+        in TTJ2000 nanoseconds.
+
+    Returns
+    -------
+    tuple[int, int] or None
+        ``(gap_start_ns, rate)``, where ``gap_start_ns`` is the grid point one cadence
+        period before the first grid point at or after ``day_start_ns`` (so a gap
+        starting there generates the whole in-window grid), and ``rate`` is the
+        inherited vectors-per-second rate. None when the previous day has fewer than
+        two samples before midnight, or its final spacing matches no known MAG rate.
+    """
+    previous_epochs = previous_day_dataset["epoch"].data
+    anchor_index = int(np.searchsorted(previous_epochs, midnight_ns, side="left")) - 1
+    if anchor_index < 1:
+        logger.info(
+            "Previous day dataset has fewer than two samples before the current day; "
+            "not inheriting its timeline."
+        )
+        return None
+
+    anchor_ns = int(previous_epochs[anchor_index])
+    anchor_spacing = float(
+        previous_epochs[anchor_index] - previous_epochs[anchor_index - 1]
+    )
+
+    rate = None
+    for vecsec in VecSec:
+        if _is_expected_rate(anchor_spacing, vecsec.value):
+            rate = vecsec.value
+            break
+    if rate is None:
+        logger.info(
+            f"Previous day dataset ends with sample spacing {anchor_spacing} ns, "
+            f"which matches no known MAG rate; not inheriting its timeline."
+        )
+        return None
+
+    period_ns = int(1e9 // rate)
+    # Smallest number of whole periods stepping the anchor to (or past) the window
+    # start; at least one so the anchor itself is never a grid point in the output.
+    steps_to_window = max(1, -((anchor_ns - day_start_ns) // period_ns))
+    grid_start_ns = anchor_ns + steps_to_window * period_ns
+
+    return grid_start_ns - period_ns, rate
+
+
 def process_mag_l1c(
     normal_mode_dataset: xr.Dataset | None,
     burst_mode_dataset: xr.Dataset,
     interpolation_function: InterpolationFunction,
     day_to_process: np.datetime64 | None = None,
+    previous_day_dataset: xr.Dataset | None = None,
 ) -> np.ndarray:
     """
     Create MAG L1C data from L1B datasets.
@@ -307,6 +458,11 @@ def process_mag_l1c(
         The day to process, in np.datetime64[D] format. This is used to fill
         gaps at the beginning or end of the day if needed. If not included, these
         gaps will not be filled.
+    previous_day_dataset : xr.Dataset, optional
+        The previous day's normal mode L1B dataset. When the current day opens with a
+        gap, the timestamps generated for that gap continue the previous day's cadence
+        and phase instead of the current day's own grid, so the timeline stays regular
+        across the day boundary. Requires day_to_process; ignored without it.
 
     Returns
     -------
@@ -315,20 +471,22 @@ def process_mag_l1c(
     """
     day_start_ns = None
     day_end_ns = None
+    inherited_grid = None
 
     if day_to_process is not None:
-        day_start = day_to_process.astype("datetime64[s]") - np.timedelta64(30, "m")
+        day_start_ns, day_end_ns = _expected_day_ns(day_to_process)
 
-        # get the end of the day plus 30 minutes
-        day_end = (
-            day_to_process.astype("datetime64[s]")
-            + np.timedelta64(1, "D")
-            + np.timedelta64(30, "m")
-        )
+        if previous_day_dataset is not None:
+            # The previous day's 24-hour day ends at the current day's midnight,
+            # which is the window start without its 30 minute buffer.
+            midnight_ns = int(
+                et_to_ttj2000ns(str_to_et(str(day_to_process.astype("datetime64[s]"))))
+            )
+            inherited_grid = _previous_day_grid(
+                previous_day_dataset, midnight_ns, day_start_ns
+            )
 
-        day_start_ns = et_to_ttj2000ns(str_to_et(str(day_start)))
-        day_end_ns = et_to_ttj2000ns(str_to_et(str(day_end)))
-
+    inherited_gap_start_ns = None
     if normal_mode_dataset:
         norm_epoch = normal_mode_dataset["epoch"].data
         if "vectors_per_second" in normal_mode_dataset.attrs:
@@ -339,6 +497,37 @@ def process_mag_l1c(
             normal_vecsec_dict = None
 
         gaps = find_all_gaps(norm_epoch, normal_vecsec_dict, day_start_ns, day_end_ns)
+        if (
+            inherited_grid is not None
+            and gaps.shape[0] > 0
+            and gaps[0][0] == day_start_ns
+        ):
+            # A gap at the beginning of the day: continue the previous day's grid up
+            # to the first real sample instead of the current day's own grid.
+            inherited_gap_start_ns, inherited_rate = inherited_grid
+            logger.info(
+                f"MAG L1C filling the gap at the start of the day on the previous "
+                f"day's timeline (rate {inherited_rate} vectors per second)."
+            )
+            gaps[0] = [inherited_gap_start_ns, gaps[0][1], inherited_rate]
+    elif inherited_grid is not None:
+        # No normal mode data at all: the whole window is a gap at the beginning of
+        # the day, generated on the previous day's grid.
+        inherited_gap_start_ns, inherited_rate = inherited_grid
+        logger.info(
+            f"MAG L1C has no normal mode data; generating the full timeline on the "
+            f"previous day's timeline (rate {inherited_rate} vectors per second)."
+        )
+        norm_epoch = [inherited_gap_start_ns, day_end_ns]
+        gaps = np.array(
+            [
+                [
+                    inherited_gap_start_ns,
+                    day_end_ns,
+                    inherited_rate,
+                ]
+            ]
+        )
     else:
         norm_epoch = [day_start_ns, day_end_ns]
         gaps = np.array(
@@ -352,6 +541,12 @@ def process_mag_l1c(
         )
 
     new_timeline = generate_timeline(norm_epoch, gaps)
+
+    if inherited_gap_start_ns is not None:
+        # The inherited gap starts one period before the first in-window grid point,
+        # because interpolate_gaps only fills points strictly inside a gap. That extra
+        # leading point must not appear in the output timeline.
+        new_timeline = new_timeline[new_timeline != inherited_gap_start_ns]
 
     if normal_mode_dataset:
         norm_filled: np.ndarray = fill_normal_data(normal_mode_dataset, new_timeline)
@@ -763,9 +958,16 @@ def generate_missing_timestamps(gap: np.ndarray) -> np.ndarray:
     # and newer (start, end, rate) gaps, which use the declared cadence.
     if len(gap) > 2:
         difference_ns = int(1e9 / int(gap[2]))
+    gap_start = gap[0]
+    gap_end = gap[1]
+    if not np.issubdtype(np.asarray(gap).dtype, np.integer):
+        # Only round non-integer bounds: np.rint returns float64, which cannot
+        # represent integer TTJ2000 nanoseconds exactly.
+        gap_start = np.rint(gap_start)
+        gap_end = np.rint(gap_end)
     output: np.ndarray = np.arange(
-        int(np.rint(gap[0])),
-        int(np.rint(gap[1])),
+        int(gap_start),
+        int(gap_end),
         difference_ns,
         dtype=np.int64,
     )

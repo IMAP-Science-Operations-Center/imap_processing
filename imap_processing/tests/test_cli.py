@@ -28,6 +28,7 @@ from imap_processing.cli import (
     Hit,
     Idex,
     Lo,
+    Mag,
     Spacecraft,
     Swe,
     Ultra,
@@ -902,3 +903,80 @@ def test_post_processing(
         "naif0012.tls",
         "imap_sclk_0001.tsc",
     ]
+
+
+@mock.patch("imap_processing.cli.check_epochs_within_day_offsets")
+@mock.patch("imap_processing.cli.mag_l1c")
+def test_mag_l1c_previous_day_routing(
+    mock_mag_l1c, mock_check_epochs, mock_instrument_dependencies
+):
+    """A previous-day norm L1B dependency routes to mag_l1c's previous_day_dataset."""
+    mocks = mock_instrument_dependencies
+
+    norm_file = "imap_mag_l1b_norm-mago_20251215_v001.cdf"
+    burst_file = "imap_mag_l1b_burst-mago_20251215_v001.cdf"
+    previous_file = "imap_mag_l1b_norm-mago_20251214_v001.cdf"
+    input_collection = ProcessingInputCollection(
+        ScienceInput(norm_file), ScienceInput(burst_file), ScienceInput(previous_file)
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    datasets_by_name = {
+        norm_file: xr.Dataset({}, attrs={"cdf_filename": norm_file}),
+        burst_file: xr.Dataset({}, attrs={"cdf_filename": burst_file}),
+        previous_file: xr.Dataset({}, attrs={"cdf_filename": previous_file}),
+    }
+    mocks["mock_load_cdf"].side_effect = lambda path: datasets_by_name[Path(path).name]
+    mock_mag_l1c.return_value = xr.Dataset(
+        {"epoch": ("epoch", np.array([0, 1], dtype=np.int64))},
+        attrs={"cdf_filename": "l1c_out", "Logical_source": "imap_mag_l1c_norm-mago"},
+    )
+    mocks["mock_write_cdf"].side_effect = ["/path/to/l1c_out"]
+
+    dependency_str = json.dumps(
+        [{"type": "science", "files": [norm_file, burst_file, previous_file]}]
+    )
+    instrument = Mag(
+        "l1c", "norm-mago", dependency_str, "20251215", None, "v001", False
+    )
+    instrument.process()
+
+    assert mock_mag_l1c.call_count == 1
+    call_args, call_kwargs = mock_mag_l1c.call_args
+    # Current-day files are the positional inputs; the previous day's norm file is
+    # passed separately and never treated as a current-day input.
+    assert call_args[0] is datasets_by_name[norm_file]
+    assert call_args[2] is datasets_by_name[burst_file]
+    assert call_kwargs["previous_day_dataset"] is datasets_by_name[previous_file]
+
+
+@mock.patch("imap_processing.cli.check_epochs_within_day_offsets")
+@mock.patch("imap_processing.cli.mag_l1c")
+def test_mag_l1c_without_previous_day(
+    mock_mag_l1c, mock_check_epochs, mock_instrument_dependencies
+):
+    """With only current-day dependencies, previous_day_dataset is None."""
+    mocks = mock_instrument_dependencies
+
+    norm_file = "imap_mag_l1b_norm-mago_20251215_v001.cdf"
+    input_collection = ProcessingInputCollection(ScienceInput(norm_file))
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    norm_dataset = xr.Dataset({}, attrs={"cdf_filename": norm_file})
+    mocks["mock_load_cdf"].side_effect = lambda path: norm_dataset
+    mock_mag_l1c.return_value = xr.Dataset(
+        {"epoch": ("epoch", np.array([0, 1], dtype=np.int64))},
+        attrs={"cdf_filename": "l1c_out", "Logical_source": "imap_mag_l1c_norm-mago"},
+    )
+    mocks["mock_write_cdf"].side_effect = ["/path/to/l1c_out"]
+
+    dependency_str = json.dumps([{"type": "science", "files": [norm_file]}])
+    instrument = Mag(
+        "l1c", "norm-mago", dependency_str, "20251215", None, "v001", False
+    )
+    instrument.process()
+
+    assert mock_mag_l1c.call_count == 1
+    call_args, call_kwargs = mock_mag_l1c.call_args
+    assert call_args[0] is norm_dataset
+    assert call_kwargs["previous_day_dataset"] is None
