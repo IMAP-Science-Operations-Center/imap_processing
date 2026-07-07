@@ -1377,3 +1377,16 @@ def test_process_mag_l1c_previous_day_anchor_ignores_buffer_samples():
     assert leading.size > 0
     assert leading[0] == anchor + cadence
     assert np.all((leading - anchor) % cadence == 0)
+
+
+def test_mag_l1c_ignores_previous_day_without_epochs():
+    """A previous day dataset with no epoch variable is ignored, not raised."""
+    day1 = np.datetime64("2025-01-01")
+    day2 = np.datetime64("2025-01-02")
+    _, norm_day2, burst_day2, _ = _build_cross_day_l1b(day1, day2)
+    no_epochs = xr.Dataset(attrs={"Logical_source": "imap_mag_l1b_norm-mago"})
+
+    baseline = mag_l1c(norm_day2, day2, burst_day2)
+    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=no_epochs)
+
+    assert np.array_equal(output["epoch"].data, baseline["epoch"].data)

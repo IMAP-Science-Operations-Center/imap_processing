@@ -46,7 +46,7 @@ def mag_l1c(
         current day opens with a gap, timestamps generated for that gap continue the
         previous day's cadence and phase so the L1C timeline stays regular across the
         day boundary. If not provided (or not usable), gaps at the start of the day
-        are filled on the current day's own grid, exactly as before.
+        are filled on the current day's own grid.
 
     Returns
     -------
@@ -321,7 +321,10 @@ def _validated_previous_day(
             f"expected normal mode L1B data for sensor mag{sensor}."
         )
         return None
-    if previous_day_dataset["epoch"].data.size == 0:
+    if (
+        "epoch" not in previous_day_dataset
+        or previous_day_dataset["epoch"].data.size == 0
+    ):
         logger.warning("Ignoring previous day dataset with no epochs.")
         return None
     return previous_day_dataset
@@ -390,7 +393,7 @@ def _previous_day_grid(
     previous_epochs = previous_day_dataset["epoch"].data
     anchor_index = int(np.searchsorted(previous_epochs, midnight_ns, side="left")) - 1
     if anchor_index < 1:
-        logger.info(
+        logger.warning(
             "Previous day dataset has fewer than two samples before the current day; "
             "not inheriting its timeline."
         )
@@ -407,7 +410,7 @@ def _previous_day_grid(
             rate = vecsec.value
             break
     if rate is None:
-        logger.info(
+        logger.warning(
             f"Previous day dataset ends with sample spacing {anchor_spacing} ns, "
             f"which matches no known MAG rate; not inheriting its timeline."
         )

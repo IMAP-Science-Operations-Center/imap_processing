@@ -1360,7 +1360,7 @@ class Mag(ProcessInstrument):
                 for path in dependencies.get_valid_inputs_for_start_date(
                     start_datetime - timedelta(days=1)
                 ).get_file_paths(source="mag", data_type="l1b")
-                if "norm" in path.name
+                if self.descriptor in path.name
             ]
             previous_day_dataset = (
                 load_cdf(previous_day_files[0]) if previous_day_files else None
