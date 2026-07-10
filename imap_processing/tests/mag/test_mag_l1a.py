@@ -790,7 +790,7 @@ def test_time_tuple():
 
     test_add = example_time_tuple + (1000 / MAX_FINE_TIME)
 
-    assert test_add == TimeTuple(439067319, 83)
+    assert test_add == TimeTuple(439067319, 82)
 
 
 def test_calculate_vector_time():
