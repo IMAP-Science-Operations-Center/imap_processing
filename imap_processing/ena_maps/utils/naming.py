@@ -231,7 +231,6 @@ class MapDescriptor:
         else:
             return None
 
-
     def _get_instrument_str(self, full: bool = False) -> str:
         """
         Get formatted instrument name string.
@@ -308,6 +307,9 @@ class MapDescriptor:
         -------
         tuple[str, str]
             A tuple of (data_type, extras) parsed from principal_data.
+            data_type is one of ["drt", "ena", "int", "isn", "spx"],
+            extras is any extension on the principal data portion of the descriptor
+            string. For example, "isnnbkgnd" would return ("isn", "nbkgnd").
         """
         m = re.match(
             r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
@@ -448,7 +450,6 @@ class MapDescriptor:
         duration = f"{num} {m.group(2).title()}"
         return duration + "n" if duration.endswith("Mo") else duration
 
-
     def build_catdesc(self, quantity_text: str) -> str:
         """
         Convert the MapDescriptor instance to a human-readable CATDESC string.
@@ -471,15 +472,6 @@ class MapDescriptor:
         species = "UV" if self.species == "uv" else self.species.title()
 
         data_type, extras = self._parse_principal_data()
-
-        # Quantity (e.g., "Inten", "Rate", "Spectral")
-        quantity = {
-            "drt": "Rate",
-            "ena": "Inten",
-            "int": "Inten",
-            "isn": "Rate",
-            "spx": "Spectral",
-        }[data_type]
 
         if data_type == "isn":
             species = "ISN " + species
@@ -520,7 +512,7 @@ class MapDescriptor:
         # Instrument name (e.g., "IMAP-Hi", "IMAP-Ultra", "IMAP-GLOWS")
         instrument_base = self.instrument.name.split("_")[0]
         instrument = (
-            f"IMAP-{instrument_base}"
+            f"{instrument_base}"
             if instrument_base in ("IDEX", "GLOWS")
             else f"IMAP-{instrument_base.title()}"
         )
@@ -697,7 +689,6 @@ class MapDescriptor:
         if instrument_descriptor.endswith("c"):
             sensor = "combined"
             instrument_short_name = instrument_descriptor[:-2]
-            instrument = MappableInstrumentShortName(instrument_short_name)
         else:
             # Do regex to get the instrument and sensor:
             # The first 1 or 3 characters are the instrument short name
@@ -714,7 +705,6 @@ class MapDescriptor:
                 # If sensor is 3 digits, convert to int
                 elif sensor_match and len(sensor_match) == 3:
                     sensor = int(sensor_match)
-                instrument = MappableInstrumentShortName(instrument_short_name)
         instrument = MappableInstrumentShortName(instrument_short_name)
         return instrument, sensor
 

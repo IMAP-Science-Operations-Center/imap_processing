@@ -539,14 +539,14 @@ class TestMapDescriptor:
             ),
             (
                 "glx-int-uv-hf-nsp-full-hae-2deg-6mo",
-                "IMAP-GLOWS Instrument Level-2 map of UV Intensity "
+                "GLOWS Instrument Level-2 map of UV Intensity "
                 "in the heliospheric frame with no survival correction "
                 "in the full spin direction in HAE coordinates on rectangular "
                 "2 degree tiling over 6 months.",
             ),
             (
                 "idx-drt-dust-hf-nsp-full-hae-nside32-1yr",
-                "IMAP-IDEX Instrument Level-2 map of Dust Rate "
+                "IDEX Instrument Level-2 map of Dust Rate "
                 "in the heliospheric frame with no survival correction "
                 "in the full spin direction in HAE coordinates on HEALPix "
                 "nside 32 tiling over 1 year.",
