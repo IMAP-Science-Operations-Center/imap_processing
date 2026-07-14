@@ -499,6 +499,7 @@ def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
         f"{species}_counts": "counts",
         f"{species}_background_rates": "bg_rate",
         f"{species}_background_rates_stat_uncert": "bg_rate_stat_uncert",
+        f"{species}_background_rates_sys_err": "bg_rate_sys_err",
     }
     pset_renamed = pset_renamed.rename_vars(rename_map)
 
@@ -590,6 +591,10 @@ def calculate_efficiency_corrected_quantities(
     pset["bg_rate_stat_uncert_exposure_factor2"] = (
         pset["bg_rate_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
     )
+    # background systematic * exposure_factor for weighted average.
+    pset["bg_rate_sys_err_exposure_factor"] = (
+        pset["bg_rate_sys_err"] * pset["exposure_factor"]
+    )
 
     return pset
 
@@ -629,8 +634,10 @@ def project_pset_to_map(
         "counts_over_eff_squared",
         "bg_rate",
         "bg_rate_stat_uncert",
+        "bg_rate_sys_err",
         "bg_rate_exposure_factor",
         "bg_rate_stat_uncert_exposure_factor2",
+        "bg_rate_sys_err_exposure_factor",
     ]
     if cg_correct:
         value_keys.append("energy_sc_exposure_factor")
@@ -1047,33 +1054,27 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
         Dataset with calculated background rates and intensities for the
         specified species.
     """
-    # Equation 6 from mapping document (background rate)
+    # Equation 62 from mapping document (background rate)
     # exposure time weighted average of the background rates
     dataset["bg_rate"] = dataset["bg_rate_exposure_factor"] / dataset["exposure_factor"]
-    # Equation 7 from mapping document (background statistical uncertainty)
+    # Equation 63 from mapping document (background statistical uncertainty)
     dataset["bg_rate_stat_uncert"] = np.sqrt(
         dataset["bg_rate_stat_uncert_exposure_factor2"]
         / dataset["exposure_factor"] ** 2
     )
+    # Equation 64 from mapping document (background systematic error).
+    dataset["bg_rate_sys_err"] = (
+        dataset["bg_rate_sys_err_exposure_factor"] / dataset["exposure_factor"]
+    )
+    # The background rate systematic is a single symmetric value.
+    dataset["bg_rate_sys_err_plus"] = dataset["bg_rate_sys_err"].copy()
+    dataset["bg_rate_sys_err_minus"] = dataset["bg_rate_sys_err"].copy()
 
     plus_multiplier = dataset["geometric_factor"] / (
         dataset["geometric_factor"] - dataset["geometric_factor_stat_uncert_minus"]
     )
     minus_multiplier = dataset["geometric_factor"] / (
         dataset["geometric_factor"] + dataset["geometric_factor_stat_uncert_plus"]
-    )
-
-    dataset["bg_rate_sys_err_plus"] = (dataset["bg_rate"] * plus_multiplier) - dataset[
-        "bg_rate"
-    ]
-
-    dataset["bg_rate_sys_err_minus"] = dataset["bg_rate"] - (
-        dataset["bg_rate"] * minus_multiplier
-    )
-
-    # Symmetric systematic error
-    dataset["bg_rate_sys_err"] = np.sqrt(
-        dataset["bg_rate_sys_err_minus"] * dataset["bg_rate_sys_err_plus"]
     )
 
     # Background intensity
@@ -1444,6 +1445,7 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
         "counts_over_eff_squared",
         "bg_rate_exposure_factor",
         "bg_rate_stat_uncert_exposure_factor2",
+        "bg_rate_sys_err_exposure_factor",
     ]
 
     for potential_var in potential_vars:

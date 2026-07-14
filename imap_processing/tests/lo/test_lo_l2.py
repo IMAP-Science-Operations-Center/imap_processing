@@ -390,6 +390,13 @@ def sample_dataset_with_background_intermediates():
         bg_rate_stat_uncert_exposure_factor2,
     )
 
+    # Background systematic error times exposure time
+    bg_rate_sys_err_exposure_factor = np.ones((1, n_energy)) * 0.05
+    dataset["bg_rate_sys_err_exposure_factor"] = (
+        ("epoch", "energy"),
+        bg_rate_sys_err_exposure_factor,
+    )
+
     # Add exposure time (using current naming convention)
     exposure = np.ones((1, n_energy)) * 1.0  # 1 second
     dataset["exposure_factor"] = (("epoch", "energy"), exposure)
@@ -848,6 +855,10 @@ class TestNormalizePsetCoordinates:
                     PSET_DIMS,
                     np.ones(PSET_SHAPE) * 0.01,
                 ),
+                f"{species}_background_rates_sys_err": (
+                    PSET_DIMS,
+                    np.ones(PSET_SHAPE) * 0.02,
+                ),
             },
             coords={
                 "epoch": [8.1794907049e17],
@@ -880,6 +891,7 @@ class TestNormalizePsetCoordinates:
         assert "exposure_factor" in result.data_vars
         assert "bg_rate" in result.data_vars
         assert "bg_rate_stat_uncert" in result.data_vars
+        assert "bg_rate_sys_err" in result.data_vars
 
         # Check that old variable names are gone
         assert f"{species}_counts" not in result.data_vars
@@ -918,6 +930,10 @@ class TestNormalizePsetCoordinates:
                 f"{species}_background_rates_stat_uncert": (
                     PSET_DIMS,
                     np.ones(PSET_SHAPE) * 0.01,
+                ),
+                f"{species}_background_rates_sys_err": (
+                    PSET_DIMS,
+                    np.ones(PSET_SHAPE) * 0.02,
                 ),
                 "esa_energy_step_var": xr.DataArray([1, 2, 3, 4, 5, 6, 7]),  # Variable
             },
@@ -1010,6 +1026,7 @@ class TestCalculateEfficiencyCorrectedQuantities:
                 "exposure_factor": (("energy",), np.ones(7) * 1.0),  # 1 second
                 "bg_rate": (("energy",), np.ones(7) * 0.1),  # 0.1 counts/s
                 "bg_rate_stat_uncert": (("energy",), np.ones(7) * 0.01),  # uncertainty
+                "bg_rate_sys_err": (("energy",), np.ones(7) * 0.02),  # systematic
                 "efficiency": (
                     ("energy",),
                     np.array([0.8, 0.85, 0.9, 0.95, 0.88, 0.92, 0.87]),
@@ -1025,6 +1042,7 @@ class TestCalculateEfficiencyCorrectedQuantities:
         assert "counts_over_eff_squared" in result.data_vars
         assert "bg_rate_exposure_factor" in result.data_vars
         assert "bg_rate_stat_uncert_exposure_factor2" in result.data_vars
+        assert "bg_rate_sys_err_exposure_factor" in result.data_vars
 
         # Check dimensions
         assert result["counts_over_eff"].dims == pset["counts"].dims
@@ -1050,6 +1068,11 @@ class TestCalculateEfficiencyCorrectedQuantities:
         )
         xr.testing.assert_allclose(
             result["bg_rate_stat_uncert_exposure_factor2"], expected_bg_uncert_exposure
+        )
+
+        expected_bg_sys_err_exposure = pset["bg_rate_sys_err"] * pset["exposure_factor"]
+        xr.testing.assert_allclose(
+            result["bg_rate_sys_err_exposure_factor"], expected_bg_sys_err_exposure
         )
 
 
@@ -1196,13 +1219,10 @@ class TestCalculateBackgrounds:
         )
         xr.testing.assert_allclose(result["bg_rate_stat_uncert"], expected_stat_uncert)
 
-        # Check systematic uncertainty calculation
-        gf = dataset["geometric_factor"]
-        dg_minus = dataset["geometric_factor_stat_uncert_minus"]
-        dg_plus = dataset["geometric_factor_stat_uncert_plus"]
-        expected_sys_err_plus = result["bg_rate"] * dg_minus / (gf - dg_minus)
-        expected_sys_err_minus = result["bg_rate"] * dg_plus / (gf + dg_plus)
-        expected_sys_err = np.sqrt(expected_sys_err_minus * expected_sys_err_plus)
+        # Check systematic error calculation
+        expected_sys_err = (
+            dataset["bg_rate_sys_err_exposure_factor"] / dataset["exposure_factor"]
+        )
         xr.testing.assert_allclose(result["bg_rate_sys_err"], expected_sys_err)
 
     def test_calculate_backgrounds_zero_exposure(self):
@@ -1216,6 +1236,10 @@ class TestCalculateBackgrounds:
                 "bg_rate_stat_uncert_exposure_factor2": (
                     ("epoch", "energy"),
                     np.ones((1, 7)) * 0.004,
+                ),
+                "bg_rate_sys_err_exposure_factor": (
+                    ("epoch", "energy"),
+                    np.ones((1, 7)) * 0.05,
                 ),
                 "exposure_factor": (("epoch", "energy"), np.zeros((1, 7))),
                 "geometric_factor": (("energy",), np.ones(7) * 1e-4),
@@ -1837,6 +1861,7 @@ class TestCleanupIntermediateVariables:
                 "counts_over_eff_squared": (("energy",), np.ones(7)),
                 "bg_rate_exposure_factor": (("energy",), np.ones(7)),
                 "bg_rate_stat_uncert_exposure_factor2": (("energy",), np.ones(7)),
+                "bg_rate_sys_err_exposure_factor": (("energy",), np.ones(7)),
                 "ena_intensity": (("energy",), np.ones(7)),  # Should be kept
                 "exposure_factor": (("energy",), np.ones(7)),  # Should be kept
             }
@@ -1854,6 +1879,7 @@ class TestCleanupIntermediateVariables:
         assert "counts_over_eff_squared" not in result.data_vars
         assert "bg_rate_exposure_factor" not in result.data_vars
         assert "bg_rate_stat_uncert_exposure_factor2" not in result.data_vars
+        assert "bg_rate_sys_err_exposure_factor" not in result.data_vars
 
     def test_cleanup_partial_variables(self):
         """Test cleanup when only some intermediate variables exist."""
@@ -2325,6 +2351,10 @@ class TestCalculateAllRatesAndIntensities:
                     ("energy",),
                     np.ones(7) * 0.009,
                 ),
+                "bg_rate_sys_err_exposure_factor": (
+                    ("energy",),
+                    np.ones(7) * 0.06,
+                ),
             }
         )
 
@@ -2370,6 +2400,10 @@ class TestCalculateAllRatesAndIntensities:
         dataset["bg_rate_stat_uncert_exposure_factor2"] = (
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.009,
+        )
+        dataset["bg_rate_sys_err_exposure_factor"] = (
+            ("epoch", "energy"),
+            np.ones((1, 7)) * 0.06,
         )
         dataset["energy_sc_exposure_factor"] = xr.ones_like(dataset["ena_intensity"])
 
@@ -2422,6 +2456,10 @@ class TestCalculateAllRatesAndIntensities:
         dataset["bg_rate_stat_uncert_exposure_factor2"] = (
             ("epoch", "energy"),
             np.ones((1, 7)) * 0.009,
+        )
+        dataset["bg_rate_sys_err_exposure_factor"] = (
+            ("epoch", "energy"),
+            np.ones((1, 7)) * 0.06,
         )
         dataset["energy_sc_exposure_factor"] = xr.ones_like(dataset["ena_intensity"])
 
@@ -2867,8 +2905,10 @@ class TestProjectPsetToMap:
             "counts_over_eff_squared",
             "bg_rate",
             "bg_rate_stat_uncert",
+            "bg_rate_sys_err",
             "bg_rate_exposure_factor",
             "bg_rate_stat_uncert_exposure_factor2",
+            "bg_rate_sys_err_exposure_factor",
         ]
 
         for key in expected_keys:
