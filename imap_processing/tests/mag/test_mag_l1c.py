@@ -188,10 +188,12 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
 
 def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
     # np.array([0, 0.5, 1, 1.5, 2, 4, 4.25, 5.5, 5.75, 6]) * 1e9
-    gaps = np.array([[2 * 1e9, 4 * 1e9, 2], [4.25 * 1e9, 5.5 * 1e9, 2]])
+    gaps = np.array(
+        [[2_000_000_000, 4_000_000_000, 2], [4_250_000_000, 5_500_000_000, 2]]
+    )
     generated_timeline = generate_timeline(norm_dataset["epoch"].data, gaps)
     norm_timeline: np.ndarray = fill_normal_data(norm_dataset, generated_timeline)
-    gaps = np.array([[2 * 1e9, 4 * 1e9, 2]])
+    gaps = np.array([[2_000_000_000, 4_000_000_000, 2]])
     output = interpolate_gaps(
         mag_l1b_dataset, gaps, norm_timeline, InterpolationFunction.linear
     )
@@ -676,7 +678,7 @@ def test_generate_timeline():
         3, [VecSec.FOUR_VECS_PER_S], gaps=[[0.5, 1], [2, 3]]
     )
 
-    gaps = np.array([[0.5, 1], [2, 3]]) * 1e9
+    gaps = np.array([[500_000_000, 1_000_000_000], [2_000_000_000, 3_000_000_000]])
     expected_output = np.array([0, 0.25, 0.5, 1, 1.25, 1.5, 1.75, 2, 2.5, 3]) * 1e9
     output = generate_timeline(epoch_test, gaps)
     assert np.array_equal(output, expected_output)
@@ -690,7 +692,7 @@ def test_generate_timeline():
     epoch_test = generate_test_epoch(
         5, [VecSec.TWO_VECS_PER_S], starting_point=1, gaps=[[3, 5]]
     )
-    gaps = np.array([[3, 5]]) * 1e9
+    gaps = np.array([[3_000_000_000, 5_000_000_000]])
 
     expected_output = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]) * 1e9
     output = generate_timeline(epoch_test, gaps)
@@ -700,7 +702,7 @@ def test_generate_timeline():
     # Timeline starts at 2s but day should start at 0s
     epoch_beginning_gap = np.array([2, 2.5, 3, 3.5, 4]) * 1e9
     # Gap from 0s to 2s (beginning of day gap)
-    gaps_beginning = np.array([[0, 2 * 1e9, 2]])
+    gaps_beginning = np.array([[0, 2_000_000_000, 2]])
 
     output_beginning = generate_timeline(epoch_beginning_gap, gaps_beginning)
     expected_beginning = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]) * 1e9
@@ -710,7 +712,7 @@ def test_generate_timeline():
     # Timeline ends at 3s but day should end at 5s
     epoch_end_gap = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3]) * 1e9
     # Gap from 3s to 5s (end of day gap)
-    gaps_end = np.array([[3 * 1e9, 5 * 1e9, 2]])
+    gaps_end = np.array([[3_000_000_000, 5_000_000_000, 2]])
 
     output_end = generate_timeline(epoch_end_gap, gaps_end)
     # Expected: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
@@ -720,7 +722,9 @@ def test_generate_timeline():
     # Test Case: Both beginning and end of day gaps
     epoch_middle_only = np.array([2, 2.5, 3]) * 1e9
     # Gaps at beginning (0-2s) and end (3-5s)
-    gaps_both_ends = np.array([[0, 2 * 1e9, 2], [3 * 1e9, 5 * 1e9, 2]])
+    gaps_both_ends = np.array(
+        [[0, 2_000_000_000, 2], [3_000_000_000, 5_000_000_000, 2]]
+    )
 
     output_both = generate_timeline(epoch_middle_only, gaps_both_ends)
     # Expected: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
@@ -730,7 +734,9 @@ def test_generate_timeline():
     # Test Case: Adjacent gaps that cause sorting issues (reproduces validation bug)
     epoch_edge = np.array([0, 0.5, 1, 2, 3, 3.5, 4]) * 1e9
     gaps = find_all_gaps(epoch_edge, vectors_per_second_from_string("0:2"))
-    gaps_edge = np.array([[1 * 1e9, 2 * 1e9, 2], [2 * 1e9, 3 * 1e9, 2]])  # Adjacent
+    gaps_edge = np.array(
+        [[1_000_000_000, 2_000_000_000, 2], [2_000_000_000, 3_000_000_000, 2]]
+    )  # Adjacent
 
     # This test case reproduces the sorting bug from the validation test
     # The function should work but currently fails due to sorting issue
@@ -777,7 +783,9 @@ def test_generate_timeline():
     # np.arange() is end-exclusive for each generated segment, and the
     # epoch-copy/final-append logic preserves the real boundary sample once.
     epoch_adj = np.array([0, 0.5, 1, 2, 3, 3.5, 4]) * 1e9
-    gaps_adj = np.array([[1e9, 2e9, 2], [2e9, 3e9, 4]])
+    gaps_adj = np.array(
+        [[1_000_000_000, 2_000_000_000, 2], [2_000_000_000, 3_000_000_000, 4]]
+    )
     output_adj = generate_timeline(epoch_adj, gaps_adj)
     expected_adj = np.array([0, 0.5, 1, 1.5, 2, 2.25, 2.5, 2.75, 3, 3.5, 4]) * 1e9
     assert np.array_equal(output_adj, expected_adj)
@@ -1143,8 +1151,8 @@ def _build_cross_day_l1b(
 ) -> tuple[xr.Dataset, xr.Dataset, xr.Dataset, dict]:
     """Build a previous-day (day1) and current-day (day2) L1B scenario.
 
-    Day 1 ends at 4 vec/s on a grid carrying a sub-cadence phase offset, so its
-    final NM grid does not line up with day 2's own 2 vec/s grid (requirement 1).
+    Day 1 ends at 4 vec/s on a timeline carrying a sub-cadence phase offset, so it
+    does not line up with day 2's own 2 vec/s timeline (requirement 1).
     Day 2's NM data does not begin until 10 minutes into the day window, leaving a
     gap at the start of the day (requirement 2). Day 2 burst covers that leading
     gap so the simulated NM timestamps can be filled.
@@ -1158,7 +1166,7 @@ def _build_cross_day_l1b(
 
     day2_start_ns, _ = _expected_day_ns(day2)
 
-    # Day 1 NM ends just before day 2's window, on a 4 vec/s grid offset by phase.
+    # Day 1 NM ends just before day 2's window, at 4 vec/s offset by phase.
     day1_last = day2_start_ns - cadence_day1 + phase_ns
     day1_epochs = day1_last - np.arange(9, -1, -1) * cadence_day1
     norm_day1 = _build_mag_l1b(
@@ -1196,13 +1204,13 @@ def _build_cross_day_l1b(
     return norm_day1, norm_day2, burst_day2, meta
 
 
-def test_process_mag_l1c_continues_previous_day_grid():
-    """Leading-gap timestamps must continue the previous day's NM grid.
+def test_process_mag_l1c_continues_previous_day_timeline():
+    """Leading-gap timestamps must continue the previous day's NM timeline.
 
     When day 2 opens with a gap, the simulated
     NM timeline that fills it should adopt the *previous day's* ending rate and
     phase (algorithm doc 7.3.4 step 3, "regular and consistent, across boundaries
-    between days"), not day 2's own boundary-anchored grid.
+    between days"), not a fresh timeline anchored at day 2's window boundary.
     """
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
@@ -1233,10 +1241,10 @@ def test_process_mag_l1c_continues_previous_day_grid():
     assert np.all(np.isin(meta["day2_nm_epochs"], epochs_out))
 
 
-def test_mag_l1c_continues_previous_day_grid():
-    """mag_l1c() must thread the previous day's NM grid into the output.
+def test_mag_l1c_continues_previous_day_timeline():
+    """mag_l1c() must thread the previous day's NM timeline into the output.
 
-    End-to-end companion to test_process_mag_l1c_continues_previous_day_grid: the
+    End-to-end companion to test_process_mag_l1c_continues_previous_day_timeline: the
     public entry point should accept previous_day_dataset and produce an L1C epoch
     axis whose start-of-day gap fill continues day 1's rate and phase, while still
     using day 2's own NM samples where they exist.
@@ -1251,7 +1259,7 @@ def test_mag_l1c_continues_previous_day_grid():
     leading = epochs_out[epochs_out < meta["day2_nm_start"]]
     assert leading.size > 0
 
-    # The gap fill continues day 1's ending grid - rate and phase - starting one
+    # The gap fill continues day 1's ending timeline - rate and phase - starting one
     # day-1 cadence after its last sample. Compared at the ~1 us precision used
     # across the MAG validation tests.
     expected_leading = meta["day1_last"] + (
@@ -1301,8 +1309,8 @@ def test_mag_l1c_ignores_previous_day_with_unknown_cadence():
     assert np.array_equal(output["epoch"].data, baseline["epoch"].data)
 
 
-def test_mag_l1c_no_norm_inherits_previous_day_grid():
-    """With no NM data at all, the whole timeline continues the previous day's grid."""
+def test_mag_l1c_no_norm_continues_previous_day_timeline():
+    """With no NM data, the whole output continues the previous day's timeline."""
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
     norm_day1, _, burst_day2, meta = _build_cross_day_l1b(day1, day2)
@@ -1311,20 +1319,20 @@ def test_mag_l1c_no_norm_inherits_previous_day_grid():
     epochs_out = output["epoch"].data
 
     assert epochs_out.size > 0
-    # Every output timestamp rides day 1's ending grid, starting one cadence after
-    # its last sample - not the day-aligned burst-only fallback grid. Compared at
+    # Every output timestamp continues day 1's ending timeline, one cadence after
+    # its last sample - not the day-aligned burst-only fallback timeline. Compared at
     # the ~1 us precision used across the MAG validation tests.
     assert abs(epochs_out[0] - (meta["day1_last"] + meta["cadence_day1"])) <= 1e3
     residual = (epochs_out - meta["day1_last"]) % meta["cadence_day1"]
-    grid_distance = np.minimum(residual, meta["cadence_day1"] - residual)
-    assert np.all(grid_distance <= 1e3)
+    timeline_distance = np.minimum(residual, meta["cadence_day1"] - residual)
+    assert np.all(timeline_distance <= 1e3)
 
 
 def test_process_mag_l1c_previous_day_anchor_ignores_buffer_samples():
-    """The inherited grid anchors on the last sample within the previous 24-hour day.
+    """The continued timeline anchors on the last sample in the previous 24-hour day.
 
     Samples in the previous day's trailing buffer (at or past the current day's
-    midnight) are on a shifted grid here; if the anchor used them, the leading fill
+    midnight) are on a shifted timeline here; if the anchor used them, the leading fill
     would carry their phase instead of the pre-midnight phase.
     """
     day2 = np.datetime64("2025-01-02")
@@ -1332,7 +1340,7 @@ def test_process_mag_l1c_previous_day_anchor_ignores_buffer_samples():
     midnight_ns = window_start_ns + 1800 * 1_000_000_000
     cadence = 500_000_000
 
-    # Pre-midnight samples on a grid offset by 128 ns; buffer samples past midnight
+    # Pre-midnight samples on a timeline offset by 128 ns; buffer samples past midnight
     # shifted by an extra quarter second.
     pre_midnight = np.arange(
         midnight_ns - 20 * 1_000_000_000 + 128, midnight_ns, cadence, dtype=np.int64

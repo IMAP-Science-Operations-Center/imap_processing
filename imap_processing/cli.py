@@ -1366,7 +1366,8 @@ class Mag(ProcessInstrument):
                 load_cdf(previous_day_files[0]) if previous_day_files else None
             )
 
-            # Input datasets can be in any order, and are validated within mag_l1c
+            # input_data is the burst mode L1B file, normal mode L1B file, or both,
+            # and appears in any order
             if len(input_data) == 1:
                 datasets = [
                     mag_l1c(
