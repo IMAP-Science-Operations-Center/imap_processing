@@ -1146,18 +1146,18 @@ def test_cic_filter_delay_compensation():
     )
 
 
-def _build_cross_day_l1b(
+def _build_cross_day_datasets(
     day1: np.datetime64, day2: np.datetime64
 ) -> tuple[xr.Dataset, xr.Dataset, xr.Dataset, dict]:
-    """Build a previous-day (day1) and current-day (day2) L1B scenario.
+    """Build a previous-day L1C (day1) and current-day L1B (day2) scenario.
 
-    Day 1 ends at 4 vec/s on a timeline carrying a sub-cadence phase offset, so it
+    Day 1's L1C timeline ends at 4 vec/s carrying a sub-cadence phase offset, so it
     does not line up with day 2's own 2 vec/s timeline (requirement 1).
     Day 2's NM data does not begin until 10 minutes into the day window, leaving a
     gap at the start of the day (requirement 2). Day 2 burst covers that leading
     gap so the simulated NM timestamps can be filled.
 
-    Returns norm_day1, norm_day2, burst_day2, and a dict of the key constants the
+    Returns l1c_day1, norm_day2, burst_day2, and a dict of the key constants the
     continuity assertions are written against.
     """
     cadence_day1 = 250_000_000  # 4 vec/s
@@ -1166,11 +1166,11 @@ def _build_cross_day_l1b(
 
     day2_start_ns, _ = _expected_day_ns(day2)
 
-    # Day 1 NM ends just before day 2's window, at 4 vec/s offset by phase.
+    # Day 1's L1C ends just before day 2's window, at 4 vec/s offset by phase.
     day1_last = day2_start_ns - cadence_day1 + phase_ns
     day1_epochs = day1_last - np.arange(9, -1, -1) * cadence_day1
-    norm_day1 = _build_mag_l1b(
-        day1_epochs.astype(np.int64), "imap_mag_l1b_norm-mago", "0:4;"
+    l1c_day1 = _build_mag_l1b(
+        day1_epochs.astype(np.int64), "imap_mag_l1c_norm-mago", ""
     )
 
     # Day 2 NM starts 10 minutes into the window at 2 vec/s (phase 0 vs boundary).
@@ -1201,11 +1201,11 @@ def _build_cross_day_l1b(
         "day2_nm_start": int(day2_nm_start),
         "day2_nm_epochs": day2_nm_epochs,
     }
-    return norm_day1, norm_day2, burst_day2, meta
+    return l1c_day1, norm_day2, burst_day2, meta
 
 
 def test_process_mag_l1c_continues_previous_day_timeline():
-    """Leading-gap timestamps must continue the previous day's NM timeline.
+    """Leading-gap timestamps must continue the previous day's L1C timeline.
 
     When day 2 opens with a gap, the simulated
     NM timeline that fills it should adopt the *previous day's* ending rate and
@@ -1214,14 +1214,14 @@ def test_process_mag_l1c_continues_previous_day_timeline():
     """
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
-    norm_day1, norm_day2, burst_day2, meta = _build_cross_day_l1b(day1, day2)
+    l1c_day1, norm_day2, burst_day2, meta = _build_cross_day_datasets(day1, day2)
 
     result = process_mag_l1c(
         norm_day2,
         burst_day2,
         InterpolationFunction.linear,
         day2,
-        previous_day_dataset=norm_day1,
+        previous_day_dataset=l1c_day1,
     )
     epochs_out = result[:, 0]
 
@@ -1242,7 +1242,7 @@ def test_process_mag_l1c_continues_previous_day_timeline():
 
 
 def test_mag_l1c_continues_previous_day_timeline():
-    """mag_l1c() must thread the previous day's NM timeline into the output.
+    """mag_l1c() must thread the previous day's L1C timeline into the output.
 
     End-to-end companion to test_process_mag_l1c_continues_previous_day_timeline: the
     public entry point should accept previous_day_dataset and produce an L1C epoch
@@ -1251,9 +1251,9 @@ def test_mag_l1c_continues_previous_day_timeline():
     """
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
-    norm_day1, norm_day2, burst_day2, meta = _build_cross_day_l1b(day1, day2)
+    l1c_day1, norm_day2, burst_day2, meta = _build_cross_day_datasets(day1, day2)
 
-    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=norm_day1)
+    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=l1c_day1)
     epochs_out = output["epoch"].data
 
     leading = epochs_out[epochs_out < meta["day2_nm_start"]]
@@ -1273,20 +1273,20 @@ def test_mag_l1c_continues_previous_day_timeline():
 @pytest.mark.parametrize(
     "logical_source",
     [
-        "imap_mag_l1b_burst-mago",  # not normal mode
-        "imap_mag_l1b_norm-magi",  # wrong sensor
-        "imap_mag_l1c_norm-mago",  # not L1B
+        "imap_mag_l1b_norm-mago",  # L1B, not L1C
+        "imap_mag_l1c_norm-magi",  # wrong sensor
+        "imap_mag_l1b_burst-mago",  # burst L1B
     ],
 )
 def test_mag_l1c_ignores_unusable_previous_day(logical_source):
     """An unusable previous day dataset is ignored, not raised."""
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
-    norm_day1, norm_day2, burst_day2, _ = _build_cross_day_l1b(day1, day2)
-    norm_day1.attrs["Logical_source"] = logical_source
+    l1c_day1, norm_day2, burst_day2, _ = _build_cross_day_datasets(day1, day2)
+    l1c_day1.attrs["Logical_source"] = logical_source
 
     baseline = mag_l1c(norm_day2, day2, burst_day2)
-    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=norm_day1)
+    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=l1c_day1)
 
     assert np.array_equal(output["epoch"].data, baseline["epoch"].data)
     assert np.array_equal(output["vectors"].data, baseline["vectors"].data)
@@ -1296,15 +1296,15 @@ def test_mag_l1c_ignores_previous_day_with_unknown_cadence():
     """A previous day whose final spacing matches no MAG rate is ignored."""
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
-    norm_day1, norm_day2, burst_day2, meta = _build_cross_day_l1b(day1, day2)
+    l1c_day1, norm_day2, burst_day2, meta = _build_cross_day_datasets(day1, day2)
     # Rebuild day 1 with an irregular 0.7 s spacing, matching no known rate.
     day1_epochs = meta["day1_last"] - np.arange(9, -1, -1) * 700_000_000
-    norm_day1 = _build_mag_l1b(
-        day1_epochs.astype(np.int64), "imap_mag_l1b_norm-mago", "0:2"
+    l1c_day1 = _build_mag_l1b(
+        day1_epochs.astype(np.int64), "imap_mag_l1c_norm-mago", ""
     )
 
     baseline = mag_l1c(norm_day2, day2, burst_day2)
-    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=norm_day1)
+    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=l1c_day1)
 
     assert np.array_equal(output["epoch"].data, baseline["epoch"].data)
 
@@ -1313,9 +1313,9 @@ def test_mag_l1c_no_norm_continues_previous_day_timeline():
     """With no NM data, the whole output continues the previous day's timeline."""
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
-    norm_day1, _, burst_day2, meta = _build_cross_day_l1b(day1, day2)
+    l1c_day1, _, burst_day2, meta = _build_cross_day_datasets(day1, day2)
 
-    output = mag_l1c(burst_day2, day2, previous_day_dataset=norm_day1)
+    output = mag_l1c(burst_day2, day2, previous_day_dataset=l1c_day1)
     epochs_out = output["epoch"].data
 
     assert epochs_out.size > 0
@@ -1353,8 +1353,8 @@ def test_process_mag_l1c_previous_day_anchor_ignores_buffer_samples():
     )
     previous_day = _build_mag_l1b(
         np.concatenate([pre_midnight, buffer_samples]),
-        "imap_mag_l1b_norm-mago",
-        "0:2",
+        "imap_mag_l1c_norm-mago",
+        "",
     )
     anchor = int(pre_midnight[-1])
 
@@ -1392,8 +1392,8 @@ def test_mag_l1c_ignores_previous_day_without_epochs():
     """A previous day dataset with no epoch variable is ignored, not raised."""
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
-    _, norm_day2, burst_day2, _ = _build_cross_day_l1b(day1, day2)
-    no_epochs = xr.Dataset(attrs={"Logical_source": "imap_mag_l1b_norm-mago"})
+    _, norm_day2, burst_day2, _ = _build_cross_day_datasets(day1, day2)
+    no_epochs = xr.Dataset(attrs={"Logical_source": "imap_mag_l1c_norm-mago"})
 
     baseline = mag_l1c(norm_day2, day2, burst_day2)
     output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=no_epochs)

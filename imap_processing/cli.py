@@ -1352,14 +1352,14 @@ class Mag(ProcessInstrument):
             ).get_file_paths(source="mag", data_type="l1b")
             input_data = [load_cdf(dep) for dep in science_files]
 
-            # The previous day's norm L1B may arrive as an extra dependency (via the
-            # date_range entry in imap_mag_dependencies.yaml) so the L1C timeline can
-            # continue the previous day's cadence and phase across the day boundary.
+            # The previous day's L1C may arrive as an extra dependency (delivered by
+            # sds-data-manager orchestration) so today's L1C timeline can continue
+            # the previous day's cadence and phase across the day boundary.
             previous_day_files = [
                 path
                 for path in dependencies.get_valid_inputs_for_start_date(
                     start_datetime - timedelta(days=1)
-                ).get_file_paths(source="mag", data_type="l1b")
+                ).get_file_paths(source="mag", data_type="l1c")
                 if self.descriptor in path.name
             ]
             previous_day_dataset = (

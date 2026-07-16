@@ -910,12 +910,12 @@ def test_post_processing(
 def test_mag_l1c_previous_day_routing(
     mock_mag_l1c, mock_check_epochs, mock_instrument_dependencies
 ):
-    """A previous-day norm L1B dependency routes to mag_l1c's previous_day_dataset."""
+    """A previous-day L1C dependency routes to mag_l1c's previous_day_dataset."""
     mocks = mock_instrument_dependencies
 
     norm_file = "imap_mag_l1b_norm-mago_20251215_v001.cdf"
     burst_file = "imap_mag_l1b_burst-mago_20251215_v001.cdf"
-    previous_file = "imap_mag_l1b_norm-mago_20251214_v001.cdf"
+    previous_file = "imap_mag_l1c_norm-mago_20251214_v001.cdf"
     input_collection = ProcessingInputCollection(
         ScienceInput(norm_file), ScienceInput(burst_file), ScienceInput(previous_file)
     )

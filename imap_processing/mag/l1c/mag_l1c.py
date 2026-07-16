@@ -42,8 +42,8 @@ def mag_l1c(
         was norm, or norm if first_input_dataset was burst. It should match the
         instrument - both inputs should be mago or magi.
     previous_day_dataset : xr.Dataset, optional
-        The previous day's normal mode L1B dataset for the same sensor. When the
-        current day opens with a gap, timestamps generated for that gap continue the
+        The previous day's L1C dataset for the same sensor. When the current day
+        opens with a gap, timestamps generated for that gap continue the
         previous day's cadence and phase so the L1C timeline stays continuous across
         the day boundary. If not provided (or not usable), gaps at the start of the
         day are filled with timestamps counted from the window boundary, as before.
@@ -290,8 +290,8 @@ def _validated_previous_day(
     """
     Validate the previous day's dataset, returning None if it is not usable.
 
-    The previous day's dataset must be a normal mode L1B dataset for the same sensor
-    as the current day's inputs, with at least one epoch. An unusable dataset is
+    The previous day's dataset must be a MAG L1C dataset for the same sensor as the
+    current day's inputs, with at least one epoch. An unusable dataset is
     ignored with a warning rather than raised, so processing still succeeds with only
     one day of data.
 
@@ -311,14 +311,10 @@ def _validated_previous_day(
     if isinstance(logical_source, list):
         logical_source = logical_source[0]
 
-    if (
-        "l1b" not in logical_source
-        or "norm" not in logical_source
-        or logical_source[-1] != sensor
-    ):
+    if "l1c" not in logical_source or logical_source[-1] != sensor:
         logger.warning(
             f"Ignoring previous day dataset with logical source {logical_source}; "
-            f"expected normal mode L1B data for sensor mag{sensor}."
+            f"expected L1C data for sensor mag{sensor}."
         )
         return None
     if (
@@ -371,7 +367,7 @@ def _get_last_timestamp_and_rate_from_previous_day_in_ns(
     Parameters
     ----------
     previous_day_dataset : xr.Dataset
-        The previous day's normal mode L1B dataset.
+        The previous day's L1C dataset.
     midnight_ns : int
         Start of the current 24-hour day in TTJ2000 nanoseconds.
 
@@ -441,8 +437,8 @@ def process_mag_l1c(
         gaps at the beginning or end of the day if needed. If not included, these
         gaps will not be filled.
     previous_day_dataset : xr.Dataset, optional
-        The previous day's normal mode L1B dataset. When the current day opens with a
-        gap, the timestamps generated for that gap continue the previous day's cadence
+        The previous day's L1C dataset. When the current day opens with a gap, the
+        timestamps generated for that gap continue the previous day's cadence
         and phase instead of counting from the window boundary, keeping the timeline
         continuous across the day boundary. Requires day_to_process; ignored without
         it.
