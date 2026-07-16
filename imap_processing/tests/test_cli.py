@@ -943,7 +943,7 @@ def test_mag_l1c_previous_day_routing(
 
     assert mock_mag_l1c.call_count == 1
     call_args, call_kwargs = mock_mag_l1c.call_args
-    # Current-day files are the positional inputs; the previous day's norm file is
+    # Current-day files are the positional inputs; the previous day's L1C file is
     # passed separately and never treated as a current-day input.
     assert call_args[0] is datasets_by_name[norm_file]
     assert call_args[2] is datasets_by_name[burst_file]
