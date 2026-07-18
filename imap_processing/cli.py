@@ -1300,23 +1300,49 @@ class Lo(ProcessInstrument):
 
         elif self.data_level == "l1c":
             data_dict = {}
-            anc_dependencies: list = dependencies.get_file_paths(
-                source="lo", data_type="ancillary"
-            )
-            science_files = dependencies.get_file_paths(source="lo", descriptor="de")
-            science_files += dependencies.get_file_paths(
-                source="lo", data_type="l1b", descriptor="goodtimes"
-            )
-            science_files += dependencies.get_file_paths(
-                source="lo", data_type="l1b", descriptor="bgrates"
-            )
-            science_files += dependencies.get_file_paths(
-                source="lo", data_type="l1b", descriptor="histrates"
-            )
-            for file in science_files:
-                dataset = load_cdf(file)
-                data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = lo_l1c.lo_l1c(data_dict, anc_dependencies)
+            if self.descriptor == "pset":
+                anc_dependencies: list = dependencies.get_file_paths(
+                    source="lo", data_type="ancillary"
+                )
+                science_files = dependencies.get_file_paths(
+                    source="lo", descriptor="de"
+                )
+                science_files += dependencies.get_file_paths(
+                    source="lo", data_type="l1b", descriptor="goodtimes"
+                )
+                science_files += dependencies.get_file_paths(
+                    source="lo", data_type="l1b", descriptor="bgrates"
+                )
+                science_files += dependencies.get_file_paths(
+                    source="lo", data_type="l1b", descriptor="histrates"
+                )
+                for file in science_files:
+                    dataset = load_cdf(file)
+                    data_dict[dataset.attrs["Logical_source"]] = dataset
+                datasets = lo_l1c.lo_l1c(data_dict, anc_dependencies)
+
+            elif self.descriptor == "quickmap":
+                science_files = (
+                    dependencies.get_file_paths(source="lo", descriptor="de")
+                    + dependencies.get_file_paths(source="lo", descriptor="nhk")
+                    + dependencies.get_file_paths(source="lo", descriptor="histrates")
+                    + dependencies.get_file_paths(source="lo", descriptor="goodtimes")
+                    + dependencies.get_file_paths(source="lo", descriptor="bgrates")
+                )
+
+                for file in science_files:
+                    dataset = load_cdf(file)
+                    data_dict[dataset.attrs["Logical_source"]] = dataset
+
+                quaternion_files = dependencies.get_file_paths(
+                    source="spacecraft", descriptor="quaternions", data_type="l1a"
+                )
+                quaternion_dependencies = [
+                    load_cdf(dep) for dep in list(set(quaternion_files))
+                ]
+                quaternion_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
+
+                datasets = lo_l1c.lo_l1c_quickmap(data_dict, quaternion_dependencies)
 
         elif self.data_level == "l2":
             data_dict = {}

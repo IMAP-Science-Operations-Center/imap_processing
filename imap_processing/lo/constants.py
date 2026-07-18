@@ -76,6 +76,40 @@ class LoConstants:
     # cycles are covered at interval edges.
     GOODTIME_PADDING: float = 2.0
 
+    N_COLAT_BINS: int = 30
+
+    # The following are indexed by ESA level (0-indexed, ESA level = index + 1)
+    ESA_ENERGY: ClassVar[list[float]] = [
+        0.016,
+        0.030,
+        0.056,
+        0.106,
+        0.200,
+        0.405,
+        0.787,
+        1.821,
+    ]
+    GEO_FACTOR: ClassVar[list[float]] = [
+        7.0e-5,
+        7.9e-5,
+        9.7e-5,
+        11.2e-5,
+        14.0e-5,
+        17.7e-5,
+        22.5e-5,
+        6.721e-5,
+    ]
+    GEO_FACTOR_ERR: ClassVar[list[float]] = [
+        4.9e-5,
+        5.5e-5,
+        6.8e-5,
+        3.0e-5,
+        4.5e-5,
+        2.0e-5,
+        1.4e-5,
+        6.721e-5,
+    ]
+
     # Star-sensor spin-angle binning offset (fractional bin-index shift used when
     # computing sample centers), keyed by the IFB star-sync housekeeping state
     # (ifb_ctrl_star_sync). Flight software 4.8 enabled star sync ("EN"),

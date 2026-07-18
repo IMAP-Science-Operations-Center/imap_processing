@@ -5,21 +5,29 @@ from dataclasses import Field
 from enum import Enum
 
 import numpy as np
+import pandas as pd
 import xarray as xr
+from scipy.spatial.transform import Rotation
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps.utils.corrections import (
     add_spacecraft_position_and_velocity_to_pset,
 )
+from imap_processing.lo.constants import LoConstants as c  # noqa: N813
+from imap_processing.spacecraft.quaternions import assemble_quaternions
 from imap_processing.spice.geometry import (
     SpiceFrame,
+    cartesian_to_spherical,
     frame_transform_az_el,
+    get_spacecraft_to_instrument_spin_phase_offset,
+    spherical_to_cartesian,
 )
 from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import (
     met_to_ttj2000ns,
     ttj2000ns_to_et,
+    ttj2000ns_to_met,
 )
 
 N_ESA_ENERGY_STEPS = 7
@@ -832,3 +840,302 @@ def set_pointing_directions(
         dims=["epoch", "spin_angle", "off_angle"],
         attrs=attr_mgr.get_variable_attributes("hae_latitude"),
     )
+
+
+def create_ra_dec(
+    spin_ecl_lon: float, spin_ecl_lat: float, pivot_angle: float
+) -> tuple[list[float], list[float], list[float]]:
+    """
+    Compute the ecliptic sky pointing for each of 60 spin-angle bins (6° each).
+
+    All geometry is performed in ECLIPJ2000.  For a spacecraft spin axis defined
+    by (spin_ecl_lon, spin_ecl_lat) and a pivot half-angle offset from that axis,
+    sweeps 360° in 60 equal steps and converts each pointing direction to ecliptic
+    longitude/latitude via ``cartesian_to_spherical``.  The perpendicular plane is
+    oriented using the North Ecliptic Pole (= [0, 0, 1] in ECLIPJ2000) as a
+    reference, giving a frame with axes toward the NEP and toward the ram direction.
+
+    Parameters
+    ----------
+    spin_ecl_lon : float
+        Spin axis ecliptic longitude in degrees (ECLIPJ2000).
+    spin_ecl_lat : float
+        Spin axis ecliptic latitude in degrees (ECLIPJ2000).
+    pivot_angle : float
+        Half-angle offset from the spin axis in degrees.
+
+    Returns
+    -------
+    bin_centers : list of float
+        Spin angle bin centers (degrees) for each of the 60 bin centers.
+    ecl_lons : list of float
+        Ecliptic longitude (degrees, 0–360) for each of the 60 bin centers.
+    ecl_lats : list of float
+        Ecliptic latitude (degrees) for each of the 60 bin centers.
+    """
+    pivot_angle_rad = np.radians(pivot_angle)
+
+    # In ECLIPJ2000 the NEP is [0, 0, 1].
+    nep_unit = np.array([0.0, 0.0, 1.0])
+    spin_axis_unit = spherical_to_cartesian(
+        np.array([[1.0, spin_ecl_lon, spin_ecl_lat]])
+    )[0]
+    spin_axis_unit /= np.linalg.norm(spin_axis_unit)
+
+    # Build a right-handed frame in the plane perpendicular to the spin axis,
+    # anchored to the NEP so that spin-angle 0° points toward the pole.
+    spin_perp_toward_nep = nep_unit - np.dot(nep_unit, spin_axis_unit) * spin_axis_unit
+    spin_perp_toward_nep /= np.linalg.norm(spin_perp_toward_nep)
+
+    spin_perp_toward_ram = np.cross(spin_axis_unit, spin_perp_toward_nep)
+    spin_perp_toward_ram /= np.linalg.norm(spin_perp_toward_ram)
+
+    # Step through 60 spin-angle bin centers (3, 9, .., 357) and compute
+    # the 3D pointing direction for each bin using the pivot-angle cone equation,
+    # then read off ecliptic lon/lat via cartesian_to_spherical (ECLIPJ2000).
+    bin_centers: list[float] = np.arange(3.0, 360.0, 6.0).tolist()  # type: ignore
+
+    ecl_lons: list[float] = []
+    ecl_lats: list[float] = []
+    for spin_angle_deg in bin_centers:
+        pointing = (
+            np.cos(pivot_angle_rad) * spin_axis_unit
+            + np.sin(pivot_angle_rad)
+            * np.cos(np.radians(spin_angle_deg))
+            * spin_perp_toward_nep
+            + np.sin(pivot_angle_rad)
+            * np.sin(np.radians(spin_angle_deg))
+            * spin_perp_toward_ram
+        )
+        _, ecl_lon, ecl_lat = cartesian_to_spherical(pointing[None])[0]
+        ecl_lons.append(ecl_lon)
+        ecl_lats.append(ecl_lat)
+
+    return bin_centers, ecl_lons, ecl_lats
+
+
+def lo_l1c_quickmap(
+    sci_dependencies: dict,
+    quaternion_datasets: list[xr.Dataset],
+) -> list[xr.Dataset]:
+    """
+    Build Lo L1C quickmap datasets from L1B science dependencies and quaternions.
+
+    Computes the mean spin-axis direction from quaternion data, determines the
+    ecliptic sky pointing for each spin-angle bin, accumulates histogram counts
+    and exposure times within good-time intervals, projects them onto an ecliptic
+    sky grid, and derives flux and signal-to-noise maps for each ESA energy level.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        Dictionary of pre-computed L1B datasets keyed by product name.  Must
+        contain ``"imap_lo_l1b_goodtimes"``, ``"imap_lo_l1b_bgrates"``, and
+        ``"imap_lo_l1b_histrates"``.
+    quaternion_datasets : list[xr.Dataset]
+        List of spacecraft attitude quaternion datasets to be concatenated and
+        used for spin-axis estimation.
+
+    Returns
+    -------
+    list[xr.Dataset]
+        List of xarray Datasets, one per ESA energy level, each containing the
+        sky-map variables (counts, exposure, rates, flux, signal-to-noise, etc.)
+        on the ecliptic grid.
+    """
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="lo")
+    attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1c")
+
+    # Extract good-times and background rates from pre-computed dependencies
+    goodtimes_ds = sci_dependencies["imap_lo_l1b_goodtimes"]
+    bgrates_ds = sci_dependencies["imap_lo_l1b_bgrates"]
+
+    pivot_angle = goodtimes_ds["pivot"].item()
+    h_bgrate = float(bgrates_ds["h_background_rates"].values[0])
+    gt_begin = goodtimes_ds["gt_start_met"].values
+    gt_end = goodtimes_ds["gt_end_met"].values
+
+    # Compute mean spin-axis direction in ECLIPJ2000 from quaternion data
+    quaternion_ds = xr.concat(quaternion_datasets, dim="epoch")
+    attitude_ds = assemble_quaternions(quaternion_ds)
+
+    attitude_met = attitude_ds["epoch"].values
+    attitude_mask = np.any(
+        (attitude_met[:, None] >= gt_begin) & (attitude_met[:, None] <= gt_end), axis=1
+    )
+    attitude_ds = attitude_ds.isel(epoch=attitude_mask)
+
+    quaternion_array = np.column_stack(
+        [
+            attitude_ds["quat_x"],
+            attitude_ds["quat_y"],
+            attitude_ds["quat_z"],
+            attitude_ds["quat_s"],
+        ]
+    )
+    mean_spin_axis = (
+        Rotation.from_quat(quaternion_array).apply([0.0, 0.0, 1.0]).mean(axis=0)
+    )
+    mean_spin_axis /= np.linalg.norm(mean_spin_axis)
+    spin_ecl_lon, spin_ecl_lat = cartesian_to_spherical(mean_spin_axis[None])[0, 1:]
+    spin_ecl_lon = float(spin_ecl_lon)
+    spin_ecl_lat = float(spin_ecl_lat)
+
+    # Compute ecliptic sky pointing for each of 60 spin-angle bins
+    bins, ecl_lons, ecl_lats = create_ra_dec(spin_ecl_lon, spin_ecl_lat, pivot_angle)
+    pivot_df = pd.DataFrame(
+        {"bins": bins, "bin_ecl_lon": ecl_lons, "bin_ecl_lat": ecl_lats}
+    )
+
+    # Filter histogram records to good-time intervals and accumulate per spin-angle bin
+    hist_ds = sci_dependencies["imap_lo_l1b_histrates"]
+    hist_met = ttj2000ns_to_met(hist_ds["epoch"].values)
+    mask = np.any(
+        (hist_met[:, None] >= gt_begin) & (hist_met[:, None] <= gt_end), axis=1
+    )
+
+    nep_roll = round(
+        get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO)
+        * c.N_SPIN_ANGLE_BINS
+    )
+
+    map_dataframes = []
+    for esa_level in range(c.N_ESA_LEVELS):
+        hist_counts = np.sum(hist_ds["h_counts"].values[mask, esa_level, :].T, axis=1)
+        exposure = np.sum(
+            hist_ds["exposure_time_6deg"].values[mask, esa_level, :].T, axis=1
+        )
+        nep_counts = np.roll(hist_counts, nep_roll)
+        nep_exposure = np.roll(exposure, nep_roll)
+
+        esa_df = pd.DataFrame(
+            {"bins": bins, "counts": nep_counts, "expo": nep_exposure}
+        )
+        df = pivot_df.merge(esa_df, on="bins")
+        df.insert(0, "esa_level", esa_level + 1)
+        df["spin_ecl_lon"] = spin_ecl_lon
+        df["spin_ecl_lat"] = spin_ecl_lat
+        map_dataframes.append(df)
+
+    map_df = pd.concat(map_dataframes, ignore_index=True)
+
+    # Project onto N_COLAT_BINS x N_SPIN_ANGLE_BINS ecliptic sky grid and
+    # apply flux calibration
+    shape = (c.N_ESA_LEVELS, c.N_COLAT_BINS, c.N_SPIN_ANGLE_BINS)
+    (
+        h_cnts_map,
+        exposure_map,
+        h_rate_map,
+        h_rate_var,
+        h_flux_map,
+        h_fvar_map,
+        h_fser_map,
+        h_fvto_map,
+        back_rate_map,
+        back_rate_var,
+        back_flux_map,
+        back_flux_var,
+        stonoise_map,
+        stonoise_var_map,
+    ) = [np.zeros(shape) for _ in range(14)]
+
+    for esa in range(c.N_ESA_LEVELS):
+        df = map_df[map_df["esa_level"] == esa + 1]
+        ps_ra = df["bin_ecl_lon"].values
+        ps_dec = df["bin_ecl_lat"].values
+        counts = df["counts"].values
+        expo_vals = df["expo"].values
+
+        for ia in range(c.N_SPIN_ANGLE_BINS):
+            imap = int(ps_ra[ia] * c.N_SPIN_ANGLE_BINS / 360.0)
+            if imap == c.N_SPIN_ANGLE_BINS:
+                imap = 0
+            jmap = int((90.0 + ps_dec[ia]) * c.N_COLAT_BINS / 180.0)
+            if jmap == c.N_COLAT_BINS:
+                jmap = 0
+            h_cnts_map[esa, jmap, imap] += counts[ia]
+            exposure_map[esa, jmap, imap] += expo_vals[ia]
+
+        for imap in range(c.N_SPIN_ANGLE_BINS):
+            for jmap in range(c.N_COLAT_BINS):
+                expo = exposure_map[esa, jmap, imap]
+                if expo > 0:
+                    energy = c.ESA_ENERGY[esa]
+                    geo = c.GEO_FACTOR[esa]
+                    dge = c.GEO_FACTOR_ERR[esa]
+
+                    back_rate_map[esa, jmap, imap] = h_bgrate
+                    back_rate_var[esa, jmap, imap] = h_bgrate / expo
+                    h_rate_map[esa, jmap, imap] = h_cnts_map[esa, jmap, imap] / expo
+                    h_flux_map[esa, jmap, imap] = h_rate_map[esa, jmap, imap] / (
+                        geo * energy
+                    )
+                    h_fser_map[esa, jmap, imap] = (
+                        h_rate_map[esa, jmap, imap] * dge / (geo**2 * energy)
+                    )
+                    back_flux_map[esa, jmap, imap] = h_bgrate / (geo * energy)
+                    back_flux_var[esa, jmap, imap] = (
+                        back_rate_var[esa, jmap, imap] / (geo * energy) ** 2
+                    )
+                    h_rate_var[esa, jmap, imap] = h_rate_map[esa, jmap, imap] / expo
+
+                    if h_bgrate > 0.0:
+                        stonoise_map[esa, jmap, imap] = (
+                            h_rate_map[esa, jmap, imap] / h_bgrate
+                        )
+                        if (
+                            back_rate_map[esa, jmap, imap] > 0.0
+                            and h_rate_map[esa, jmap, imap] > 0.0
+                        ):
+                            stonoise_var_map[esa, jmap, imap] = (
+                                h_rate_var[esa, jmap, imap]
+                                / back_rate_map[esa, jmap, imap] ** 2
+                                + back_rate_var[esa, jmap, imap]
+                                / h_rate_map[esa, jmap, imap] ** 2
+                            )
+
+                    if h_cnts_map[esa, jmap, imap] > 0.0:
+                        h_fvar_map[esa, jmap, imap] = (
+                            h_flux_map[esa, jmap, imap] ** 2
+                            / h_cnts_map[esa, jmap, imap]
+                        )
+                        h_fvto_map[esa, jmap, imap] = (
+                            h_fvar_map[esa, jmap, imap]
+                            + h_fser_map[esa, jmap, imap] ** 2
+                        )
+                    else:
+                        h_fvto_map[esa, jmap, imap] = h_fser_map[esa, jmap, imap] ** 2
+
+    step_lon = 360.0 / c.N_SPIN_ANGLE_BINS
+    step_lat = 180.0 / c.N_COLAT_BINS
+    longitude_centers = np.arange(step_lon / 2, 360.0, step_lon)
+    ecl_lat_centers = np.arange(-90.0 + step_lat / 2, 90.0, step_lat)
+
+    dims = ["esa_level", "ecl_lat", "ecl_lon"]
+    return [
+        xr.Dataset(
+            {
+                "counts": xr.DataArray(h_cnts_map, dims=dims),
+                "exposure": xr.DataArray(exposure_map, dims=dims),
+                "rate": xr.DataArray(h_rate_map, dims=dims),
+                "rate_var": xr.DataArray(h_rate_var, dims=dims),
+                "flux": xr.DataArray(h_flux_map, dims=dims),
+                "flux_var": xr.DataArray(h_fvar_map, dims=dims),
+                "flux_sys_err": xr.DataArray(h_fser_map, dims=dims),
+                "flux_var_total": xr.DataArray(h_fvto_map, dims=dims),
+                "background_rate": xr.DataArray(back_rate_map, dims=dims),
+                "background_rate_var": xr.DataArray(back_rate_var, dims=dims),
+                "background_flux": xr.DataArray(back_flux_map, dims=dims),
+                "background_flux_var": xr.DataArray(back_flux_var, dims=dims),
+                "signal_to_noise": xr.DataArray(stonoise_map, dims=dims),
+                "signal_to_noise_var": xr.DataArray(stonoise_var_map, dims=dims),
+            },
+            coords={
+                "esa_level": np.arange(1, c.N_ESA_LEVELS + 1),
+                "ecl_lat": ecl_lat_centers,
+                "ecl_lon": longitude_centers,
+            },
+            attrs=attr_mgr.get_global_attributes("imap_lo_l1c_quickmap"),
+        )
+    ]

@@ -125,6 +125,12 @@ imap_lo_l1c_pset:
   Logical_source: imap_lo_l1c_pset
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1C Data
 
+imap_lo_l1c_quickmap:
+  <<: *instrument_base
+  Data_type: L1C_quickmap>Level-1C QuickMap (Histogram Sky Map)
+  Logical_source: imap_lo_l1c_quickmap
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1C Sky Map
+
 # Global attributes for different sensors and sky tiling types and durations
 imap_lo_l2_enamap:
     <<: *instrument_base
