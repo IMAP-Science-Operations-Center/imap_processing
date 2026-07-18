@@ -40,7 +40,10 @@ dependencies = [
     "spiceypy>=6.0.0",
     "xarray>=2024.10.0,<2026",
     "numpy>=2,<3",
-    "sammi-cdf>=1.0,<2",
+    # Pinned exactly: 1.0.2 and 1.1.0 both regressed CDF ISTP-schema handling
+    # for spectrogram variables (missing LABLAXIS, spurious LABL_PTR_i),
+    # which fails codice L2 CDF validation. Bump once fixed upstream.
+    "sammi-cdf==1.0.0",
     "scipy>=1.13,<2"
 ]
 
