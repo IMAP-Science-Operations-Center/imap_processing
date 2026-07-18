@@ -5,6 +5,7 @@ on:
     branches:
       - dev
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -19,13 +20,13 @@ jobs:
 
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # We need the full history to generate the proper version number
           fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - uses: Gr1N/setup-poetry@v9
@@ -40,7 +41,7 @@ jobs:
           poetry install --extras "test"
 
       - name: Cache data directories
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         # We only download data on this runner, so only cache data from this run
         # so we don't get an empty cache on other runners overriding that data
         if: ${{ contains(matrix.os, 'ubuntu') && matrix.python-version == '3.10' }}
