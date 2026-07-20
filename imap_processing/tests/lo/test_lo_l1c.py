@@ -828,11 +828,17 @@ def quickmap_result(quickmap_inputs):
 
     ``frame_transform_az_el`` is mocked with an identity DPS->ecliptic transform
     (spin angle -> longitude, off angle -> latitude) so the pointing is
-    deterministic without a CK/attitude kernel.
+    deterministic without a CK/attitude kernel. Like the real function, the mock
+    squeezes the singleton off-angle dimension (returns ``(n_spin, 2)``), so the
+    (n_spin, n_off, 2) reshape in compute_pointing_directions is exercised.
     """
+
+    def _identity_squeezed(et, az_el, *args, **kwargs):
+        return np.asarray(az_el)[:, 0, :]
+
     with patch(
         "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
-        side_effect=lambda et, az_el, *args, **kwargs: az_el,
+        side_effect=_identity_squeezed,
     ):
         datasets = lo_l1c_quickmap(quickmap_inputs["sci_dependencies"])
     assert len(datasets) == 1
