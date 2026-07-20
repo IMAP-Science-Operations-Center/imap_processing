@@ -1334,15 +1334,7 @@ class Lo(ProcessInstrument):
                     dataset = load_cdf(file)
                     data_dict[dataset.attrs["Logical_source"]] = dataset
 
-                quaternion_files = dependencies.get_file_paths(
-                    source="spacecraft", descriptor="quaternions", data_type="l1a"
-                )
-                quaternion_dependencies = [
-                    load_cdf(dep) for dep in list(set(quaternion_files))
-                ]
-                quaternion_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
-
-                datasets = lo_l1c.lo_l1c_quickmap(data_dict, quaternion_dependencies)
+                datasets = lo_l1c.lo_l1c_quickmap(data_dict)
 
         elif self.data_level == "l2":
             data_dict = {}

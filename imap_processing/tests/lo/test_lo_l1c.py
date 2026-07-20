@@ -740,9 +740,10 @@ def test_set_pointing_directions_pivot_angle(attr_mgr, pivot_angle):
 # Integration test for the IMAP-Lo quickmap product (lo_l1c_quickmap).
 #
 # This exercises the whole quickmap path end-to-end on small synthetic L1B
-# dependencies + quaternions and asserts the structural and physical invariants
-# the product must preserve. It is intended as a behaviour lock-in *before*
-# refactoring lo_l1c_quickmap: a correct refactor must keep all of these true.
+# dependencies (good-times, bgrates, histrates) and asserts the structural and
+# physical invariants the product must preserve. The sky pointing is obtained
+# from SPICE (frame_transform_az_el), which is mocked here since a CK/attitude
+# kernel is not available in the test environment.
 # ---------------------------------------------------------------------------
 
 # Good-time window (MET seconds) that all "in-window" inputs fall inside.
@@ -756,29 +757,9 @@ _QM_IN_METS = [511_000_150.0, 511_000_200.0, 511_000_250.0]
 _QM_OUT_METS = [510_990_000.0, 511_010_000.0]
 
 
-def _make_quaternion_ds():
-    """Build a raw 10 Hz quaternion dataset as assemble_quaternions expects.
-
-    Every 10 Hz sample carries the same fixed quaternion (a 45-degree rotation
-    about x), so the mean spin axis is well defined and not aligned with the
-    ecliptic pole (which would make create_ra_dec degenerate). The packet times
-    are inside the good-time window so the attitude mask is non-empty.
-    """
-    times = np.arange(511_000_100.0, 511_000_120.0, 1.0)  # 20 packets, in-window
-    quat = [np.sin(np.radians(22.5)), 0.0, 0.0, np.cos(np.radians(22.5))]
-    data_vars = {"sciencedata1hz_quat_10_hz_time": ("epoch", times)}
-    for quat_i, comp in enumerate(quat):
-        for i in range(10):
-            data_vars[f"fsw_acs_quat_10_hz_buffered_{i + quat_i * 10}"] = (
-                "epoch",
-                np.full(times.size, comp),
-            )
-    return xr.Dataset(data_vars, coords={"epoch": times})
-
-
 @pytest.fixture
 def quickmap_inputs():
-    """Small synthetic sci_dependencies + quaternions for lo_l1c_quickmap."""
+    """Small synthetic sci_dependencies for lo_l1c_quickmap."""
     n_esa = LoConstants.N_ESA_LEVELS  # 7
     n_spin = 60  # L1B histogram spin bins (6 deg)
 
@@ -828,14 +809,13 @@ def quickmap_inputs():
         "imap_lo_l1b_bgrates": bgrates,
     }
 
-    # Expected per-esa totals from the in-window epochs only (roll + projection
-    # both conserve the per-esa sum).
+    # Expected per-esa totals from the in-window epochs only (the sky projection
+    # conserves the per-esa sum).
     expected_counts = h_counts[in_idx].sum(axis=(0, 2))
     expected_exposure = exposure[in_idx].sum(axis=(0, 2))
 
     return {
         "sci_dependencies": sci_dependencies,
-        "quaternions": [_make_quaternion_ds()],
         "h_bgrate": h_bgrate,
         "expected_counts": expected_counts,
         "expected_exposure": expected_exposure,
@@ -844,10 +824,17 @@ def quickmap_inputs():
 
 @pytest.fixture
 def quickmap_result(quickmap_inputs):
-    """Run lo_l1c_quickmap once and share the result across assertions."""
-    datasets = lo_l1c_quickmap(
-        quickmap_inputs["sci_dependencies"], quickmap_inputs["quaternions"]
-    )
+    """Run lo_l1c_quickmap once and share the result across assertions.
+
+    ``frame_transform_az_el`` is mocked with an identity DPS->ecliptic transform
+    (spin angle -> longitude, off angle -> latitude) so the pointing is
+    deterministic without a CK/attitude kernel.
+    """
+    with patch(
+        "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+        side_effect=lambda et, az_el, *args, **kwargs: az_el,
+    ):
+        datasets = lo_l1c_quickmap(quickmap_inputs["sci_dependencies"])
     assert len(datasets) == 1
     return datasets[0], quickmap_inputs
 
