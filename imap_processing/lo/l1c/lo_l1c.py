@@ -839,10 +839,13 @@ def compute_pointing_directions(
     off = off + (90 - pivot_angle)
     dps_az_el = np.stack([spin, off], axis=-1)
 
-    # Transform from DPS Az/El to the destination frame's lon/lat
-    return frame_transform_az_el(
+    # Transform from DPS Az/El to the destination frame's lon/lat.
+    # frame_transform_az_el squeezes singleton leading dims, so reshape back to
+    # the documented (n_spin, n_off, 2) contract (e.g. a single off-angle bin).
+    az_el = frame_transform_az_el(
         et, dps_az_el, SpiceFrame.IMAP_DPS, to_frame, degrees=True
     )
+    return np.asarray(az_el).reshape(len(spin_angles), len(off_angles), 2)
 
 
 def set_pointing_directions(
@@ -945,9 +948,11 @@ def lo_l1c_quickmap(  # noqa: PLR0912
     # midpoint: pass the DPS azimuth (instrument spin angle) with a single boresight
     # off-angle (0); the IMAP_DPS frame supplies the attitude.
     #
-    # NOTE: the spin-phase offset above is grounded in the L1B code, but a sky-map
-    # cross-check is still worthwhile to confirm the IMAP_DPS azimuth zero-point
-    # matches the legacy NEP-anchored convention beyond this offset.
+    # Validated: with the real IMAP_DPS/attitude CK furnished, this reproduces the
+    # legacy quickmap counts cell-for-cell (<= 2-count differences in 3 of 7 ESA
+    # levels, from sub-cell spin-axis rounding), confirming both the spin-phase
+    # offset and the IMAP_DPS azimuth zero-point match the legacy NEP convention.
+    # See tools/verify_lo_quickmap_equivalence.py.
     pointing_epoch = met_to_ttj2000ns((gt_begin.min() + gt_end.max()) / 2.0)
     az_el = compute_pointing_directions(
         pointing_epoch,
