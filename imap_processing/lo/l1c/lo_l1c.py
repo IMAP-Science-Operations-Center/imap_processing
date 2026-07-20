@@ -952,7 +952,6 @@ def lo_l1c_quickmap(
     bgrates_ds = sci_dependencies["imap_lo_l1b_bgrates"]
 
     pivot_angle = goodtimes_ds["pivot"].item()
-    h_bgrate = float(bgrates_ds["h_background_rates"].values[0])
     gt_begin = goodtimes_ds["gt_start_met"].values
     gt_end = goodtimes_ds["gt_end_met"].values
 
@@ -1064,6 +1063,9 @@ def lo_l1c_quickmap(
                     energy = c.ESA_ENERGY[esa]
                     geo = c.GEO_FACTOR[esa]
                     dge = c.GEO_FACTOR_ERR[esa]
+                    h_bgrate = float(
+                        bgrates_ds["h_background_rates"].sel(esa_step=esa + 1)
+                    )
 
                     back_rate_map[esa, jmap, imap] = h_bgrate
                     back_rate_var[esa, jmap, imap] = h_bgrate / expo

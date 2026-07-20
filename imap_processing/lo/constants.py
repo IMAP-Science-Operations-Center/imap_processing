@@ -64,8 +64,8 @@ class LoConstants:
     }
 
     # Default background-rate thresholds [counts/s] when no pivot range matches.
-    THRESHOLD_BG_RATE_RAM_DEFAULT: float = 0.0175
-    THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT: float = 0.00875
+    THRESHOLD_BG_RATE_RAM_DEFAULT: float = 0.028
+    THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT: float = 0.014
 
     # Maximum time gap [s] between consecutive histogram epochs before treating them as
     # separate intervals.
