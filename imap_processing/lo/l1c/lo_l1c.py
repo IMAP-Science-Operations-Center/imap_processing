@@ -780,6 +780,63 @@ def set_background_rates(
     return bg_rates_data, bg_stat_uncert_data, bg_sys_err_data
 
 
+def compute_pointing_directions(
+    epoch: float,
+    pivot_angle: float,
+    spin_angles: np.ndarray | None = None,
+    off_angles: np.ndarray | None = None,
+    to_frame: SpiceFrame = SpiceFrame.IMAP_HAE,
+) -> np.ndarray:
+    """
+    Transform a DPS spin/off-angle grid to sky longitude/latitude at an epoch.
+
+    For the given ``epoch`` the instrument despun (IMAP_DPS) spin-angle / off-angle
+    grid is transformed into ``to_frame`` longitude/latitude using SPICE. Off-angles
+    are measured relative to ``pivot_angle`` (elevation = 90 - pivot_angle + off).
+
+    This is the reusable geometry core shared by pointing-direction products: pass
+    the desired spin/off-angle bin centers and destination frame.
+
+    Parameters
+    ----------
+    epoch : float
+        The epoch time in TTJ2000ns.
+    pivot_angle : float
+        The pivot angle in degrees.
+        Off-angles are adjusted relative to this pivot angle before transformation.
+    spin_angles : numpy.ndarray, optional
+        Spin-angle bin centers in degrees. Defaults to ``SPIN_ANGLE_BIN_CENTERS``
+        (the 3600-bin PSET grid).
+    off_angles : numpy.ndarray, optional
+        Off-angle bin centers in degrees. Defaults to ``OFF_ANGLE_BIN_CENTERS``
+        (the 40-bin PSET grid).
+    to_frame : SpiceFrame, optional
+        Destination reference frame. Defaults to ``SpiceFrame.IMAP_HAE``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n_spin, n_off, 2)`` where ``[..., 0]`` is longitude and
+        ``[..., 1]`` is latitude, both in degrees in ``to_frame``.
+    """
+    if spin_angles is None:
+        spin_angles = SPIN_ANGLE_BIN_CENTERS
+    if off_angles is None:
+        off_angles = OFF_ANGLE_BIN_CENTERS
+
+    et = ttj2000ns_to_et(epoch)
+    # create a meshgrid of spin and off angles using the bin centers
+    spin, off = np.meshgrid(spin_angles, off_angles, indexing="ij")
+    # off_angles need to account for the pivot_angle
+    off = off + (90 - pivot_angle)
+    dps_az_el = np.stack([spin, off], axis=-1)
+
+    # Transform from DPS Az/El to the destination frame's lon/lat
+    return frame_transform_az_el(
+        et, dps_az_el, SpiceFrame.IMAP_DPS, to_frame, degrees=True
+    )
+
+
 def set_pointing_directions(
     epoch: float,
     attr_mgr: ImapCdfAttributes,
@@ -809,19 +866,7 @@ def set_pointing_directions(
     hae_latitude : xr.DataArray
         The HAE latitude for each spin and off angle bin.
     """
-    et = ttj2000ns_to_et(epoch)
-    # create a meshgrid of spin and off angles using the bin centers
-    spin, off = np.meshgrid(
-        SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
-    )
-    # off_angles need to account for the pivot_angle
-    off += 90 - pivot_angle
-    dps_az_el = np.stack([spin, off], axis=-1)
-
-    # Transform from DPS Az/El to HAE lon/lat
-    hae_az_el = frame_transform_az_el(
-        et, dps_az_el, SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_HAE, degrees=True
-    )
+    hae_az_el = compute_pointing_directions(epoch, pivot_angle)
 
     return xr.DataArray(
         data=hae_az_el[np.newaxis, :, :, 0].astype(np.float64),
