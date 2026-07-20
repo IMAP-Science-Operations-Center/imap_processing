@@ -6,17 +6,20 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1c.lo_l1c import (
     N_ESA_ENERGY_STEPS,
     N_OFF_ANGLE_BINS,
     N_SPIN_ANGLE_BINS,
     OFF_ANGLE_BIN_CENTERS,
     PSET_SHAPE,
+    QUICKMAP_FLOAT_FILLVAL,
     FilterType,
     calculate_exposure_times,
     create_pset_counts,
     filter_goodtimes,
     lo_l1c,
+    lo_l1c_quickmap,
     set_background_rates,
     set_pointing_directions,
 )
@@ -729,3 +732,239 @@ def test_set_pointing_directions_pivot_angle(attr_mgr, pivot_angle):
         # dps_az_el[:, :, 1] should have the adjusted off angles repeated across spin
         actual_off_angles = dps_az_el[0, :, 1]  # Take first spin angle
         np.testing.assert_allclose(actual_off_angles, expected_off_angles, rtol=1e-10)
+
+
+# ---------------------------------------------------------------------------
+# Integration test for the IMAP-Lo quickmap product (lo_l1c_quickmap).
+#
+# This exercises the whole quickmap path end-to-end on small synthetic L1B
+# dependencies + quaternions and asserts the structural and physical invariants
+# the product must preserve. It is intended as a behaviour lock-in *before*
+# refactoring lo_l1c_quickmap: a correct refactor must keep all of these true.
+# ---------------------------------------------------------------------------
+
+# Good-time window (MET seconds) that all "in-window" inputs fall inside.
+_QM_GT_START = 511_000_000.0
+_QM_GT_END = 511_000_600.0
+_QM_PIVOT = 90.0
+# histrates epochs: first three MET values are inside the good-time window,
+# the last two are outside it (and carry large counts/exposure that must be
+# excluded by good-time filtering).
+_QM_IN_METS = [511_000_150.0, 511_000_200.0, 511_000_250.0]
+_QM_OUT_METS = [510_990_000.0, 511_010_000.0]
+
+
+def _make_quaternion_ds():
+    """Build a raw 10 Hz quaternion dataset as assemble_quaternions expects.
+
+    Every 10 Hz sample carries the same fixed quaternion (a 45-degree rotation
+    about x), so the mean spin axis is well defined and not aligned with the
+    ecliptic pole (which would make create_ra_dec degenerate). The packet times
+    are inside the good-time window so the attitude mask is non-empty.
+    """
+    times = np.arange(511_000_100.0, 511_000_120.0, 1.0)  # 20 packets, in-window
+    quat = [np.sin(np.radians(22.5)), 0.0, 0.0, np.cos(np.radians(22.5))]
+    data_vars = {"sciencedata1hz_quat_10_hz_time": ("epoch", times)}
+    for quat_i, comp in enumerate(quat):
+        for i in range(10):
+            data_vars[f"fsw_acs_quat_10_hz_buffered_{i + quat_i * 10}"] = (
+                "epoch",
+                np.full(times.size, comp),
+            )
+    return xr.Dataset(data_vars, coords={"epoch": times})
+
+
+@pytest.fixture
+def quickmap_inputs():
+    """Small synthetic sci_dependencies + quaternions for lo_l1c_quickmap."""
+    n_esa = LoConstants.N_ESA_LEVELS  # 7
+    n_spin = 60  # L1B histogram spin bins (6 deg)
+
+    mets = np.array(_QM_IN_METS + _QM_OUT_METS)
+    in_idx = np.array([0, 1, 2])
+    out_idx = np.array([3, 4])
+
+    # h_counts / exposure: shape (n_epoch, n_esa, n_spin).
+    # In-window epochs get modest, per-esa, per-bin values so many sky cells end
+    # up populated; out-of-window epochs get large values that must be excluded.
+    rng = np.random.default_rng(42)
+    h_counts = np.zeros((mets.size, n_esa, n_spin))
+    exposure = np.zeros((mets.size, n_esa, n_spin))
+    for i in in_idx:
+        h_counts[i] = rng.integers(0, 4, size=(n_esa, n_spin)).astype(float)
+        exposure[i] = 10.0 * (np.arange(n_esa)[:, None] + 1)  # positive everywhere
+    for i in out_idx:
+        h_counts[i] = 999.0
+        exposure[i] = 999.0
+
+    histrates = xr.Dataset(
+        {
+            "h_counts": (["epoch", "esa_step", "spin_bin"], h_counts),
+            "exposure_time_6deg": (["epoch", "esa_step", "spin_bin"], exposure),
+        },
+        coords={"epoch": met_to_ttj2000ns(mets)},
+    )
+
+    goodtimes = xr.Dataset(
+        {
+            "pivot": ("epoch", [_QM_PIVOT]),
+            "gt_start_met": ("epoch", [_QM_GT_START]),
+            "gt_end_met": ("epoch", [_QM_GT_END]),
+        },
+        coords={"epoch": [0]},
+    )
+
+    h_bgrate = np.array([0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07], dtype=np.float64)
+    bgrates = xr.Dataset(
+        {"h_background_rates": (["epoch", "esa_step"], h_bgrate[np.newaxis, :])},
+        coords={"epoch": [0], "esa_step": np.arange(1, n_esa + 1)},
+    )
+
+    sci_dependencies = {
+        "imap_lo_l1b_histrates": histrates,
+        "imap_lo_l1b_goodtimes": goodtimes,
+        "imap_lo_l1b_bgrates": bgrates,
+    }
+
+    # Expected per-esa totals from the in-window epochs only (roll + projection
+    # both conserve the per-esa sum).
+    expected_counts = h_counts[in_idx].sum(axis=(0, 2))
+    expected_exposure = exposure[in_idx].sum(axis=(0, 2))
+
+    return {
+        "sci_dependencies": sci_dependencies,
+        "quaternions": [_make_quaternion_ds()],
+        "h_bgrate": h_bgrate,
+        "expected_counts": expected_counts,
+        "expected_exposure": expected_exposure,
+    }
+
+
+@pytest.fixture
+def quickmap_result(quickmap_inputs):
+    """Run lo_l1c_quickmap once and share the result across assertions."""
+    datasets = lo_l1c_quickmap(
+        quickmap_inputs["sci_dependencies"], quickmap_inputs["quaternions"]
+    )
+    assert len(datasets) == 1
+    return datasets[0], quickmap_inputs
+
+
+_QM_MAP_VARS = [
+    "counts",
+    "exposure",
+    "rate",
+    "rate_var",
+    "flux",
+    "flux_var",
+    "flux_sys_err",
+    "flux_sys_err_upper",
+    "flux_sys_err_lower",
+    "flux_var_total",
+    "background_rate",
+    "background_rate_var",
+    "background_flux",
+    "background_flux_var",
+    "signal_to_noise",
+    "signal_to_noise_var",
+    "cosalpha",
+]
+
+
+def test_quickmap_structure(quickmap_result):
+    """The quickmap dataset has the expected dims, coords, vars, and source."""
+    ds, _ = quickmap_result
+    n_esa = LoConstants.N_ESA_LEVELS
+    n_colat = LoConstants.N_COLAT_BINS
+    n_lon = LoConstants.N_SPIN_ANGLE_BINS
+
+    assert ds.sizes == {"esa_level": n_esa, "ecl_lat": n_colat, "ecl_lon": n_lon}
+    assert ds.attrs["Logical_source"] == "imap_lo_l1c_quickmap"
+
+    np.testing.assert_array_equal(ds["esa_level"].values, np.arange(1, n_esa + 1))
+    assert ds["ecl_lat"].size == n_colat
+    assert ds["ecl_lon"].size == n_lon
+
+    for var in _QM_MAP_VARS:
+        assert var in ds.data_vars, f"missing quickmap variable {var}"
+        assert ds[var].dims == ("esa_level", "ecl_lat", "ecl_lon")
+
+
+def test_quickmap_count_conservation(quickmap_result):
+    """Total counts per ESA equal the summed in-window histrates counts."""
+    ds, inp = quickmap_result
+    per_esa_total = ds["counts"].values.sum(axis=(1, 2))
+    np.testing.assert_allclose(per_esa_total, inp["expected_counts"])
+
+
+def test_quickmap_exposure_conservation(quickmap_result):
+    """Total exposure per ESA equals the summed in-window histrates exposure."""
+    ds, inp = quickmap_result
+    per_esa_total = ds["exposure"].values.sum(axis=(1, 2))
+    np.testing.assert_allclose(per_esa_total, inp["expected_exposure"], rtol=1e-6)
+
+
+def test_quickmap_goodtime_filtering(quickmap_result):
+    """Out-of-window epochs (counts=999/bin) are excluded by good-time filtering."""
+    ds, inp = quickmap_result
+    # If the out-of-window epochs had leaked in, per-esa totals would be far
+    # larger than the in-window expectation (999 * 60 bins * 2 epochs).
+    per_esa_total = ds["counts"].values.sum(axis=(1, 2))
+    np.testing.assert_allclose(per_esa_total, inp["expected_counts"])
+    assert per_esa_total.max() < 999.0 * 60
+
+
+def test_quickmap_rate_and_flux_relationships(quickmap_result):
+    """Where exposed, rate = counts/exposure and flux = rate/(geo*energy)."""
+    ds, _ = quickmap_result
+    scale = LoConstants.GEO_FACTOR_SCALE
+    for e in range(LoConstants.N_ESA_LEVELS):
+        cnts = ds["counts"].values[e]
+        expo = ds["exposure"].values[e]
+        rate = ds["rate"].values[e]
+        flux = ds["flux"].values[e]
+        pos = expo > 0
+        assert pos.any(), f"esa {e + 1} produced no exposed cells"
+
+        np.testing.assert_allclose(rate[pos], cnts[pos] / expo[pos], rtol=1e-6)
+        assert np.all(rate[~pos] == 0.0)
+
+        geo = LoConstants.GEO_FACTOR[e] * scale
+        energy = LoConstants.ESA_ENERGY[e]
+        np.testing.assert_allclose(flux[pos], rate[pos] / (geo * energy), rtol=1e-6)
+
+
+def test_quickmap_background_rate(quickmap_result):
+    """Background rate map equals the input bgrate where exposed, else zero."""
+    ds, inp = quickmap_result
+    for e in range(LoConstants.N_ESA_LEVELS):
+        expo = ds["exposure"].values[e]
+        brate = ds["background_rate"].values[e]
+        pos = expo > 0
+        np.testing.assert_allclose(brate[pos], inp["h_bgrate"][e], rtol=1e-6)
+        assert np.all(brate[~pos] == 0.0)
+
+
+def test_quickmap_systematic_error_fill(quickmap_result):
+    """Systematic-error fill follows the per-ESA G-factor validity condition.
+
+    For each ESA the systematic flux error is only defined when the recalibrated
+    G-factor exceeds its lower error bound; otherwise the pipeline writes FILLVAL.
+    """
+    ds, _ = quickmap_result
+    scale = LoConstants.GEO_FACTOR_SCALE
+    scale_lower = LoConstants.GEO_FACTOR_SCALE_LOWER
+    for e in range(LoConstants.N_ESA_LEVELS):
+        geo = LoConstants.GEO_FACTOR[e] * scale
+        dg = LoConstants.GEO_FACTOR_ERR[e] * scale
+        geo_err_lower = float(np.hypot(geo * (1.0 - scale_lower), dg))
+        sys_err_valid = geo > geo_err_lower
+
+        expo = ds["exposure"].values[e]
+        sys_err = ds["flux_sys_err"].values[e]
+        pos = expo > 0
+        if sys_err_valid:
+            assert np.all(np.isfinite(sys_err[pos]))
+            assert np.all(sys_err[pos] != QUICKMAP_FLOAT_FILLVAL)
+        else:
+            assert np.all(sys_err[pos] == QUICKMAP_FLOAT_FILLVAL)
