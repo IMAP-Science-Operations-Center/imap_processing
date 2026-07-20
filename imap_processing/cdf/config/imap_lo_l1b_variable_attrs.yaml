@@ -131,7 +131,7 @@ met:
 spin_angle:
   CATDESC: Spin angle in degrees
   FIELDNAM: Spin Angle
-  FILLVAL: -1.0e31
+  FILLVAL: -1.0e+31
   FORMAT: F8.3
   UNITS: deg
   VALIDMAX: 360.0

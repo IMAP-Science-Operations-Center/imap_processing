@@ -11,7 +11,7 @@ default_attrs: &default
 
 default_float32_attrs: &default_float32
   <<: *default
-  FILLVAL: -1.0e31
+  FILLVAL: -1.0e+31
   FORMAT: F12.6
   VALIDMAX: 3.4028235e+38
   VALIDMIN: -3.4028235e+38
@@ -318,3 +318,210 @@ label_vector_HAE:
   FIELDNAM: Cartesian components
   FORMAT: A5
   VAR_TYPE: metadata
+
+# ---------------------------------------------------------------------------
+# imap_lo_l1c_quickmap sky-map variables (dims: esa_level, ecl_lat, ecl_lon).
+# NaN in the systematic-error maps is written as the default_float32 FILLVAL
+# (-1.0e31); readers should treat that value as fill.
+# ---------------------------------------------------------------------------
+flux_sys_err:
+  <<: *default_float32
+  CATDESC: Hydrogen flux systematic error from asymmetric G-factor bounds (geometric mean)
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen flux systematic error
+  LABLAXIS: flux sys err
+  UNITS: "1/(cm^2 s sr keV)"
+
+flux_sys_err_upper:
+  <<: *default_float32
+  CATDESC: Upper Hydrogen flux systematic error from the lower G-factor bound
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen flux systematic error upper
+  LABLAXIS: flux sys err hi
+  UNITS: "1/(cm^2 s sr keV)"
+
+flux_sys_err_lower:
+  <<: *default_float32
+  CATDESC: Lower Hydrogen flux systematic error from the upper G-factor bound
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen flux systematic error lower
+  LABLAXIS: flux sys err lo
+  UNITS: "1/(cm^2 s sr keV)"
+
+flux_var_total:
+  <<: *default_float32
+  CATDESC: Total Hydrogen flux variance (statistical plus systematic)
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen total flux variance
+  LABLAXIS: flux var total
+  UNITS: "1/(cm^2 s sr keV)^2"
+
+cosalpha:
+  <<: *default_float32
+  CATDESC: RAM-direction projection factor sin(pivot) * sin(spin-angle)
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: RAM projection factor cos alpha
+  LABLAXIS: cos alpha
+  UNITS: " "
+
+# imap_lo_l1c_quickmap coordinates
+esa_level:
+  CATDESC: ESA energy level
+  FIELDNAM: ESA level
+  FORMAT: I1
+  LABLAXIS: ESA level
+  UNITS: " "
+  VALIDMIN: 1
+  VALIDMAX: 7
+  VAR_TYPE: support_data
+
+ecl_lat:
+  CATDESC: Ecliptic latitude bin center (ECLIPJ2000)
+  FIELDNAM: Ecliptic latitude
+  FORMAT: F8.3
+  LABLAXIS: ecl lat
+  UNITS: "degrees"
+  VALIDMIN: -90.0
+  VALIDMAX: 90.0
+  VAR_TYPE: support_data
+
+ecl_lon:
+  CATDESC: Ecliptic longitude bin center (ECLIPJ2000)
+  FIELDNAM: Ecliptic longitude
+  FORMAT: F8.3
+  LABLAXIS: ecl lon
+  UNITS: "degrees"
+  VALIDMIN: 0.0
+  VALIDMAX: 360.0
+  VAR_TYPE: support_data
+
+# imap_lo_l1c_quickmap sky-map data variables
+counts:
+  <<: *default_float32
+  CATDESC: Hydrogen counts accumulated per sky-map bin
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen counts
+  LABLAXIS: counts
+  UNITS: " "
+
+exposure:
+  <<: *default_float32
+  CATDESC: Exposure time accumulated per sky-map bin
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Exposure time
+  LABLAXIS: exposure
+  UNITS: "s"
+
+rate:
+  <<: *default_float32
+  CATDESC: Hydrogen count rate (counts / exposure)
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen rate
+  LABLAXIS: rate
+  UNITS: "1/s"
+
+rate_var:
+  <<: *default_float32
+  CATDESC: Hydrogen count rate variance
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen rate variance
+  LABLAXIS: rate var
+  UNITS: "1/s^2"
+
+flux:
+  <<: *default_float32
+  CATDESC: Hydrogen flux (rate / (G-factor * energy))
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen flux
+  LABLAXIS: flux
+  UNITS: "1/(cm^2 s sr keV)"
+
+flux_var:
+  <<: *default_float32
+  CATDESC: Hydrogen flux statistical variance
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen flux variance
+  LABLAXIS: flux var
+  UNITS: "1/(cm^2 s sr keV)^2"
+
+background_rate:
+  <<: *default_float32
+  CATDESC: Hydrogen background rate
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen background rate
+  LABLAXIS: bg rate
+  UNITS: "1/s"
+
+background_rate_var:
+  <<: *default_float32
+  CATDESC: Hydrogen background rate variance
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen background rate variance
+  LABLAXIS: bg rate var
+  UNITS: "1/s^2"
+
+background_flux:
+  <<: *default_float32
+  CATDESC: Hydrogen background flux
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen background flux
+  LABLAXIS: bg flux
+  UNITS: "1/(cm^2 s sr keV)"
+
+background_flux_var:
+  <<: *default_float32
+  CATDESC: Hydrogen background flux variance
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Hydrogen background flux variance
+  LABLAXIS: bg flux var
+  UNITS: "1/(cm^2 s sr keV)^2"
+
+signal_to_noise:
+  <<: *default_float32
+  CATDESC: Signal-to-noise ratio (Hydrogen rate / background rate)
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Signal to noise
+  LABLAXIS: S/N
+  UNITS: " "
+
+signal_to_noise_var:
+  <<: *default_float32
+  CATDESC: Signal-to-noise ratio variance
+  DEPEND_0: esa_level
+  DEPEND_1: ecl_lat
+  DEPEND_2: ecl_lon
+  FIELDNAM: Signal to noise variance
+  LABLAXIS: S/N var
+  UNITS: " "

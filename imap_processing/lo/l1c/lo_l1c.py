@@ -44,6 +44,10 @@ SPIN_ANGLE_BIN_CENTERS = (SPIN_ANGLE_BIN_EDGES[:-1] + SPIN_ANGLE_BIN_EDGES[1:]) 
 OFF_ANGLE_BIN_EDGES = np.linspace(-2, 2, N_OFF_ANGLE_BINS + 1)
 OFF_ANGLE_BIN_CENTERS = (OFF_ANGLE_BIN_EDGES[:-1] + OFF_ANGLE_BIN_EDGES[1:]) / 2
 
+# Fill value written in place of NaN for quickmap float maps. Matches the
+# default_float32 FILLVAL in imap_lo_l1c_variable_attrs.yaml.
+QUICKMAP_FLOAT_FILLVAL = -1.0e31
+
 
 class FilterType(str, Enum):
     """
@@ -914,7 +918,7 @@ def create_ra_dec(
     return bin_centers, ecl_lons, ecl_lats
 
 
-def lo_l1c_quickmap(
+def lo_l1c_quickmap(  # noqa: PLR0912
     sci_dependencies: dict,
     quaternion_datasets: list[xr.Dataset],
 ) -> list[xr.Dataset]:
@@ -1019,6 +1023,24 @@ def lo_l1c_quickmap(
 
     map_df = pd.concat(map_dataframes, ignore_index=True)
 
+    # June 6, 2026 geometric-factor recalibration (see map_SCFrame_V2). The raw
+    # G-factors are rescaled, and asymmetric upper/lower G-factor errors are formed
+    # by combining the multiplicative-bound offset with the raw per-step error in
+    # quadrature.
+    geo_scaled = [g * c.GEO_FACTOR_SCALE for g in c.GEO_FACTOR]
+    dg_scaled = [d * c.GEO_FACTOR_SCALE for d in c.GEO_FACTOR_ERR]
+    geo_err_upper = [
+        float(np.hypot(g * (c.GEO_FACTOR_SCALE_UPPER - 1.0), d))
+        for g, d in zip(geo_scaled, dg_scaled, strict=True)
+    ]
+    geo_err_lower = [
+        float(np.hypot(g * (1.0 - c.GEO_FACTOR_SCALE_LOWER), d))
+        for g, d in zip(geo_scaled, dg_scaled, strict=True)
+    ]
+
+    # cosalpha uses the measured pivot with the +4 deg empirical offset (map_SCFrame_V2)
+    pivot_rad = np.radians(pivot_angle + 4.0)
+
     # Project onto N_COLAT_BINS x N_SPIN_ANGLE_BINS ecliptic sky grid and
     # apply flux calibration
     shape = (c.N_ESA_LEVELS, c.N_COLAT_BINS, c.N_SPIN_ANGLE_BINS)
@@ -1030,6 +1052,8 @@ def lo_l1c_quickmap(
         h_flux_map,
         h_fvar_map,
         h_fser_map,
+        h_fseu_map,
+        h_fsel_map,
         h_fvto_map,
         back_rate_map,
         back_rate_var,
@@ -1037,7 +1061,8 @@ def lo_l1c_quickmap(
         back_flux_var,
         stonoise_map,
         stonoise_var_map,
-    ) = [np.zeros(shape) for _ in range(14)]
+        cosalpha_map,
+    ) = [np.zeros(shape) for _ in range(17)]
 
     for esa in range(c.N_ESA_LEVELS):
         df = map_df[map_df["esa_level"] == esa + 1]
@@ -1045,6 +1070,20 @@ def lo_l1c_quickmap(
         ps_dec = df["bin_ecl_lat"].values
         counts = df["counts"].values
         expo_vals = df["expo"].values
+
+        # Per-ESA calibration constants
+        energy = c.ESA_ENERGY[esa]
+        geo = geo_scaled[esa]
+        dgeu = geo_err_upper[esa]
+        dgel = geo_err_lower[esa]
+        # bgrates is shaped (epoch, esa_step); select the ESA step and take the
+        # single epoch to get a scalar (matches the pset path's `.values[0]`).
+        h_bgrate = float(
+            bgrates_ds["h_background_rates"].sel(esa_step=esa + 1).values[0]
+        )
+        # The systematic flux error requires a positive lower G-factor bound
+        # (geo - dgel); otherwise it is undefined and written as FILLVAL.
+        sys_err_valid = geo > dgel
 
         for ia in range(c.N_SPIN_ANGLE_BINS):
             imap = int(ps_ra[ia] * c.N_SPIN_ANGLE_BINS / 360.0)
@@ -1056,26 +1095,41 @@ def lo_l1c_quickmap(
             h_cnts_map[esa, jmap, imap] += counts[ia]
             exposure_map[esa, jmap, imap] += expo_vals[ia]
 
+            # RAM-direction projection factor sin(pivot) * sin(spin-angle), where
+            # the spin-angle is the NEP-frame bin center already carried in "bins".
+            alpha = np.radians(df["bins"].values[ia])
+            cosalpha_map[esa, jmap, imap] = np.sin(pivot_rad) * np.sin(alpha)
+
         for imap in range(c.N_SPIN_ANGLE_BINS):
             for jmap in range(c.N_COLAT_BINS):
                 expo = exposure_map[esa, jmap, imap]
                 if expo > 0:
-                    energy = c.ESA_ENERGY[esa]
-                    geo = c.GEO_FACTOR[esa]
-                    dge = c.GEO_FACTOR_ERR[esa]
-                    h_bgrate = float(
-                        bgrates_ds["h_background_rates"].sel(esa_step=esa + 1)
-                    )
-
                     back_rate_map[esa, jmap, imap] = h_bgrate
                     back_rate_var[esa, jmap, imap] = h_bgrate / expo
                     h_rate_map[esa, jmap, imap] = h_cnts_map[esa, jmap, imap] / expo
                     h_flux_map[esa, jmap, imap] = h_rate_map[esa, jmap, imap] / (
                         geo * energy
                     )
-                    h_fser_map[esa, jmap, imap] = (
-                        h_rate_map[esa, jmap, imap] * dge / (geo**2 * energy)
-                    )
+
+                    # Asymmetric systematic flux error from the recalibrated
+                    # G-factor bounds. The upper/lower flux excursions come from the
+                    # lower/upper G-factor bounds respectively; h_fser is their
+                    # geometric mean. Written as FILLVAL when the lower bound would
+                    # drive the G-factor non-positive (systematic error undefined).
+                    h_mid = h_flux_map[esa, jmap, imap]
+                    if sys_err_valid:
+                        h_hi = h_mid * geo / (geo - dgel)
+                        h_lo = h_mid * geo / (geo + dgeu)
+                        dh_hi = h_hi - h_mid
+                        dh_lo = h_mid - h_lo
+                        h_fser_map[esa, jmap, imap] = np.sqrt(dh_hi * dh_lo)
+                        h_fseu_map[esa, jmap, imap] = dh_hi
+                        h_fsel_map[esa, jmap, imap] = dh_lo
+                    else:
+                        h_fser_map[esa, jmap, imap] = QUICKMAP_FLOAT_FILLVAL
+                        h_fseu_map[esa, jmap, imap] = QUICKMAP_FLOAT_FILLVAL
+                        h_fsel_map[esa, jmap, imap] = QUICKMAP_FLOAT_FILLVAL
+
                     back_flux_map[esa, jmap, imap] = h_bgrate / (geo * energy)
                     back_flux_var[esa, jmap, imap] = (
                         back_rate_var[esa, jmap, imap] / (geo * energy) ** 2
@@ -1102,6 +1156,12 @@ def lo_l1c_quickmap(
                             h_flux_map[esa, jmap, imap] ** 2
                             / h_cnts_map[esa, jmap, imap]
                         )
+
+                    # Total flux variance depends on the systematic error, so it is
+                    # FILLVAL wherever the systematic error is undefined.
+                    if not sys_err_valid:
+                        h_fvto_map[esa, jmap, imap] = QUICKMAP_FLOAT_FILLVAL
+                    elif h_cnts_map[esa, jmap, imap] > 0.0:
                         h_fvto_map[esa, jmap, imap] = (
                             h_fvar_map[esa, jmap, imap]
                             + h_fser_map[esa, jmap, imap] ** 2
@@ -1115,29 +1175,56 @@ def lo_l1c_quickmap(
     ecl_lat_centers = np.arange(-90.0 + step_lat / 2, 90.0, step_lat)
 
     dims = ["esa_level", "ecl_lat", "ecl_lon"]
+    map_variables = {
+        "counts": h_cnts_map,
+        "exposure": exposure_map,
+        "rate": h_rate_map,
+        "rate_var": h_rate_var,
+        "flux": h_flux_map,
+        "flux_var": h_fvar_map,
+        "flux_sys_err": h_fser_map,
+        "flux_sys_err_upper": h_fseu_map,
+        "flux_sys_err_lower": h_fsel_map,
+        "flux_var_total": h_fvto_map,
+        "background_rate": back_rate_map,
+        "background_rate_var": back_rate_var,
+        "background_flux": back_flux_map,
+        "background_flux_var": back_flux_var,
+        "signal_to_noise": stonoise_map,
+        "signal_to_noise_var": stonoise_var_map,
+        "cosalpha": cosalpha_map,
+    }
+    data_vars = {
+        name: xr.DataArray(
+            data,
+            dims=dims,
+            attrs=attr_mgr.get_variable_attributes(name, check_schema=False),
+        )
+        for name, data in map_variables.items()
+    }
+
+    coords = {
+        "esa_level": xr.DataArray(
+            np.arange(1, c.N_ESA_LEVELS + 1),
+            dims=["esa_level"],
+            attrs=attr_mgr.get_variable_attributes("esa_level", check_schema=False),
+        ),
+        "ecl_lat": xr.DataArray(
+            ecl_lat_centers,
+            dims=["ecl_lat"],
+            attrs=attr_mgr.get_variable_attributes("ecl_lat", check_schema=False),
+        ),
+        "ecl_lon": xr.DataArray(
+            longitude_centers,
+            dims=["ecl_lon"],
+            attrs=attr_mgr.get_variable_attributes("ecl_lon", check_schema=False),
+        ),
+    }
+
     return [
         xr.Dataset(
-            {
-                "counts": xr.DataArray(h_cnts_map, dims=dims),
-                "exposure": xr.DataArray(exposure_map, dims=dims),
-                "rate": xr.DataArray(h_rate_map, dims=dims),
-                "rate_var": xr.DataArray(h_rate_var, dims=dims),
-                "flux": xr.DataArray(h_flux_map, dims=dims),
-                "flux_var": xr.DataArray(h_fvar_map, dims=dims),
-                "flux_sys_err": xr.DataArray(h_fser_map, dims=dims),
-                "flux_var_total": xr.DataArray(h_fvto_map, dims=dims),
-                "background_rate": xr.DataArray(back_rate_map, dims=dims),
-                "background_rate_var": xr.DataArray(back_rate_var, dims=dims),
-                "background_flux": xr.DataArray(back_flux_map, dims=dims),
-                "background_flux_var": xr.DataArray(back_flux_var, dims=dims),
-                "signal_to_noise": xr.DataArray(stonoise_map, dims=dims),
-                "signal_to_noise_var": xr.DataArray(stonoise_var_map, dims=dims),
-            },
-            coords={
-                "esa_level": np.arange(1, c.N_ESA_LEVELS + 1),
-                "ecl_lat": ecl_lat_centers,
-                "ecl_lon": longitude_centers,
-            },
+            data_vars,
+            coords=coords,
             attrs=attr_mgr.get_global_attributes("imap_lo_l1c_quickmap"),
         )
     ]

@@ -110,6 +110,13 @@ class LoConstants:
         6.721e-5,
     ]
 
+    # GEO_FACTOR/GEO_FACTOR_ERR above are the raw, pre-recalibration
+    # values; the quickmap product multiplies them by GEO_FACTOR_SCALE, and derives the
+    # asymmetric upper/lower G-factor bounds using the two scale factors below.
+    GEO_FACTOR_SCALE: float = 0.63529412
+    GEO_FACTOR_SCALE_UPPER: float = 1.57407407
+    GEO_FACTOR_SCALE_LOWER: float = 0.36728395
+
     # Star-sensor spin-angle binning offset (fractional bin-index shift used when
     # computing sample centers), keyed by the IFB star-sync housekeeping state
     # (ifb_ctrl_star_sync). Flight software 4.8 enabled star sync ("EN"),
