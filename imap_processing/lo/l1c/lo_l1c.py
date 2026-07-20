@@ -925,34 +925,34 @@ def lo_l1c_quickmap(  # noqa: PLR0912
     gt_begin = goodtimes_ds["gt_start_met"].values
     gt_end = goodtimes_ds["gt_end_met"].values
 
-    # Histogram spin-bin centers (spacecraft/instrument spin phase, degrees).
+    # L1B histogram spin bins (spin_bin_6 <- L1A azimuth_6, which is just the
+    # onboard bin indices 0..59) are hardware spin-phase bins referenced to the
+    # spacecraft spin pulse -- NOT the instrument/DPS spin angle. Convert a bin
+    # center to the IMAP_DPS azimuth by ADDING the spacecraft->instrument spin-phase
+    # offset, exactly as the L1B star-sensor product does
+    # (calculate_star_sensor_profiles_by_group:
+    # ``spin_angle = start_angle_offset + sample_centers``). The L1B DE product
+    # needs no such offset because its spin_bin comes from a SPICE HAE->IMAP_DPS
+    # transform of the actual look direction, already in the instrument frame.
     bin_width_deg = 360.0 / c.N_SPIN_ANGLE_BINS
     sc_bin_centers = (np.arange(c.N_SPIN_ANGLE_BINS) + 0.5) * bin_width_deg
-
-    # NEP-anchored spin angle, used only by the cosalpha (RAM projection) factor
-    # below. The spacecraft->instrument offset is ADDED (positive) to the spin-bin
-    # angle; sign convention comes from get_spacecraft_to_instrument_spin_phase_offset
-    # (angle measured positively from the S/C +x-axis, per the imap_130 frames kernel).
-    nep_offset_deg = (
+    dps_offset_deg = (
         get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO) * 360.0
     )
-    nep_bin_angles = np.mod(sc_bin_centers + nep_offset_deg, 360.0)
+    dps_bin_angles = np.mod(sc_bin_centers + dps_offset_deg, 360.0)
 
     # Ecliptic sky pointing for each spin-angle bin, from SPICE at the good-time
-    # midpoint. The instrument despun (IMAP_DPS) frame carries the spacecraft->
-    # instrument mounting and attitude, so the raw spin-bin centers are passed as
-    # the DPS azimuth (spin angle) with a single boresight off-angle (0).
+    # midpoint: pass the DPS azimuth (instrument spin angle) with a single boresight
+    # off-angle (0); the IMAP_DPS frame supplies the attitude.
     #
-    # NOTE (unvalidated): this assumes the L1B histogram spin-bin index is the
-    # IMAP_DPS spin angle (mounting handled by the frame kernel). It has not been
-    # checked against a known-good sky map -- if the histogram convention is raw
-    # spacecraft spin phase instead, the resulting map would be rotated by
-    # nep_offset_deg.
+    # NOTE: the spin-phase offset above is grounded in the L1B code, but a sky-map
+    # cross-check is still worthwhile to confirm the IMAP_DPS azimuth zero-point
+    # matches the legacy NEP-anchored convention beyond this offset.
     pointing_epoch = met_to_ttj2000ns((gt_begin.min() + gt_end.max()) / 2.0)
     az_el = compute_pointing_directions(
         pointing_epoch,
         pivot_angle,
-        spin_angles=sc_bin_centers,
+        spin_angles=dps_bin_angles,
         off_angles=np.array([0.0]),
         to_frame=SpiceFrame.ECLIPJ2000,
     )
@@ -962,7 +962,7 @@ def lo_l1c_quickmap(  # noqa: PLR0912
     pivot_df = pd.DataFrame(
         {
             "bin_index": np.arange(c.N_SPIN_ANGLE_BINS),
-            "bins": nep_bin_angles,
+            "bins": dps_bin_angles,
             "bin_ecl_lon": ecl_lons,
             "bin_ecl_lat": ecl_lats,
         }
@@ -1065,7 +1065,7 @@ def lo_l1c_quickmap(  # noqa: PLR0912
             exposure_map[esa, jmap, imap] += expo_vals[ia]
 
             # RAM-direction projection factor sin(pivot) * sin(spin-angle), where
-            # the spin-angle is the NEP-frame bin center already carried in "bins".
+            # the spin-angle is the instrument (DPS) bin angle carried in "bins".
             alpha = np.radians(df["bins"].values[ia])
             cosalpha_map[esa, jmap, imap] = np.sin(pivot_rad) * np.sin(alpha)
 
