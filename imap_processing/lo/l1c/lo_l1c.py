@@ -847,14 +847,17 @@ def set_pointing_directions(
 
 
 def create_ra_dec(
-    spin_ecl_lon: float, spin_ecl_lat: float, pivot_angle: float
+    spin_ecl_lon: float,
+    spin_ecl_lat: float,
+    pivot_angle: float,
+    spin_angles: np.ndarray | None = None,
 ) -> tuple[list[float], list[float], list[float]]:
     """
-    Compute the ecliptic sky pointing for each of 60 spin-angle bins (6° each).
+    Compute the ecliptic sky pointing for a set of spin-angle bins.
 
     All geometry is performed in ECLIPJ2000.  For a spacecraft spin axis defined
     by (spin_ecl_lon, spin_ecl_lat) and a pivot half-angle offset from that axis,
-    sweeps 360° in 60 equal steps and converts each pointing direction to ecliptic
+    each spin-angle is converted to a pointing direction and then to ecliptic
     longitude/latitude via ``cartesian_to_spherical``.  The perpendicular plane is
     oriented using the North Ecliptic Pole (= [0, 0, 1] in ECLIPJ2000) as a
     reference, giving a frame with axes toward the NEP and toward the ram direction.
@@ -867,15 +870,18 @@ def create_ra_dec(
         Spin axis ecliptic latitude in degrees (ECLIPJ2000).
     pivot_angle : float
         Half-angle offset from the spin axis in degrees.
+    spin_angles : numpy.ndarray, optional
+        Spin-angle bin centers (degrees) in the NEP-anchored frame to evaluate.
+        Defaults to the 60 centers of the 6° histogram bins (3, 9, .., 357).
 
     Returns
     -------
     bin_centers : list of float
-        Spin angle bin centers (degrees) for each of the 60 bin centers.
+        The spin-angle bin centers (degrees) that were evaluated.
     ecl_lons : list of float
-        Ecliptic longitude (degrees, 0–360) for each of the 60 bin centers.
+        Ecliptic longitude (degrees, 0–360) for each bin center.
     ecl_lats : list of float
-        Ecliptic latitude (degrees) for each of the 60 bin centers.
+        Ecliptic latitude (degrees) for each bin center.
     """
     pivot_angle_rad = np.radians(pivot_angle)
 
@@ -894,10 +900,12 @@ def create_ra_dec(
     spin_perp_toward_ram = np.cross(spin_axis_unit, spin_perp_toward_nep)
     spin_perp_toward_ram /= np.linalg.norm(spin_perp_toward_ram)
 
-    # Step through 60 spin-angle bin centers (3, 9, .., 357) and compute
-    # the 3D pointing direction for each bin using the pivot-angle cone equation,
-    # then read off ecliptic lon/lat via cartesian_to_spherical (ECLIPJ2000).
-    bin_centers: list[float] = np.arange(3.0, 360.0, 6.0).tolist()  # type: ignore
+    # For each spin-angle bin center compute the 3D pointing direction using the
+    # pivot-angle cone equation, then read off ecliptic lon/lat via
+    # cartesian_to_spherical (ECLIPJ2000).
+    if spin_angles is None:
+        spin_angles = np.arange(3.0, 360.0, 6.0)
+    bin_centers: list[float] = np.asarray(spin_angles, dtype=float).tolist()
 
     ecl_lons: list[float] = []
     ecl_lats: list[float] = []
@@ -911,7 +919,7 @@ def create_ra_dec(
             * np.sin(np.radians(spin_angle_deg))
             * spin_perp_toward_ram
         )
-        _, ecl_lon, ecl_lat = cartesian_to_spherical(pointing[None])[0]
+        _, ecl_lon, ecl_lat = cartesian_to_spherical(pointing[np.newaxis])[0]
         ecl_lons.append(ecl_lon)
         ecl_lats.append(ecl_lat)
 
@@ -965,7 +973,9 @@ def lo_l1c_quickmap(  # noqa: PLR0912
 
     attitude_met = attitude_ds["epoch"].values
     attitude_mask = np.any(
-        (attitude_met[:, None] >= gt_begin) & (attitude_met[:, None] <= gt_end), axis=1
+        (attitude_met[:, np.newaxis] >= gt_begin)
+        & (attitude_met[:, np.newaxis] <= gt_end),
+        axis=1,
     )
     attitude_ds = attitude_ds.isel(epoch=attitude_mask)
 
@@ -981,26 +991,46 @@ def lo_l1c_quickmap(  # noqa: PLR0912
         Rotation.from_quat(quaternion_array).apply([0.0, 0.0, 1.0]).mean(axis=0)
     )
     mean_spin_axis /= np.linalg.norm(mean_spin_axis)
-    spin_ecl_lon, spin_ecl_lat = cartesian_to_spherical(mean_spin_axis[None])[0, 1:]
+    spin_ecl_lon, spin_ecl_lat = cartesian_to_spherical(mean_spin_axis[np.newaxis])[
+        0, 1:
+    ]
     spin_ecl_lon = float(spin_ecl_lon)
     spin_ecl_lat = float(spin_ecl_lat)
 
-    # Compute ecliptic sky pointing for each of 60 spin-angle bins
-    bins, ecl_lons, ecl_lats = create_ra_dec(spin_ecl_lon, spin_ecl_lat, pivot_angle)
+    # Rotate the spacecraft-frame histogram spin-bin centers into the NEP-anchored
+    # frame that `create_ra_dec` expects. The spacecraft->instrument spin-phase
+    # offset is applied continuously as an angle.
+    bin_width_deg = 360.0 / c.N_SPIN_ANGLE_BINS
+    sc_bin_centers = (np.arange(c.N_SPIN_ANGLE_BINS) + 0.5) * bin_width_deg
+    nep_offset_deg = (
+        get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO) * 360.0
+    )
+    # The offset is ADDED (positive) to the spacecraft spin-bin angle to get the
+    # NEP-frame angle. Sign convention comes from
+    # get_spacecraft_to_instrument_spin_phase_offset (angle measured positively from
+    # the S/C +x-axis, per the imap_130 frames kernel) combined with the right-handed
+    # NEP->RAM sweep in create_ra_dec.
+    nep_bin_angles = np.mod(sc_bin_centers + nep_offset_deg, 360.0)
+
+    # Compute ecliptic sky pointing for each spin-angle bin at its NEP-frame angle
+    bins, ecl_lons, ecl_lats = create_ra_dec(
+        spin_ecl_lon, spin_ecl_lat, pivot_angle, spin_angles=nep_bin_angles
+    )
     pivot_df = pd.DataFrame(
-        {"bins": bins, "bin_ecl_lon": ecl_lons, "bin_ecl_lat": ecl_lats}
+        {
+            "bin_index": np.arange(c.N_SPIN_ANGLE_BINS),
+            "bins": bins,
+            "bin_ecl_lon": ecl_lons,
+            "bin_ecl_lat": ecl_lats,
+        }
     )
 
     # Filter histogram records to good-time intervals and accumulate per spin-angle bin
     hist_ds = sci_dependencies["imap_lo_l1b_histrates"]
     hist_met = ttj2000ns_to_met(hist_ds["epoch"].values)
     mask = np.any(
-        (hist_met[:, None] >= gt_begin) & (hist_met[:, None] <= gt_end), axis=1
-    )
-
-    nep_roll = round(
-        get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO)
-        * c.N_SPIN_ANGLE_BINS
+        (hist_met[:, np.newaxis] >= gt_begin) & (hist_met[:, np.newaxis] <= gt_end),
+        axis=1,
     )
 
     map_dataframes = []
@@ -1009,13 +1039,15 @@ def lo_l1c_quickmap(  # noqa: PLR0912
         exposure = np.sum(
             hist_ds["exposure_time_6deg"].values[mask, esa_level, :].T, axis=1
         )
-        nep_counts = np.roll(hist_counts, nep_roll)
-        nep_exposure = np.roll(exposure, nep_roll)
 
         esa_df = pd.DataFrame(
-            {"bins": bins, "counts": nep_counts, "expo": nep_exposure}
+            {
+                "bin_index": np.arange(c.N_SPIN_ANGLE_BINS),
+                "counts": hist_counts,
+                "expo": exposure,
+            }
         )
-        df = pivot_df.merge(esa_df, on="bins")
+        df = pivot_df.merge(esa_df, on="bin_index")
         df.insert(0, "esa_level", esa_level + 1)
         df["spin_ecl_lon"] = spin_ecl_lon
         df["spin_ecl_lat"] = spin_ecl_lat
@@ -1023,10 +1055,6 @@ def lo_l1c_quickmap(  # noqa: PLR0912
 
     map_df = pd.concat(map_dataframes, ignore_index=True)
 
-    # June 6, 2026 geometric-factor recalibration (see map_SCFrame_V2). The raw
-    # G-factors are rescaled, and asymmetric upper/lower G-factor errors are formed
-    # by combining the multiplicative-bound offset with the raw per-step error in
-    # quadrature.
     geo_scaled = [g * c.GEO_FACTOR_SCALE for g in c.GEO_FACTOR]
     dg_scaled = [d * c.GEO_FACTOR_SCALE for d in c.GEO_FACTOR_ERR]
     geo_err_upper = [
@@ -1038,7 +1066,7 @@ def lo_l1c_quickmap(  # noqa: PLR0912
         for g, d in zip(geo_scaled, dg_scaled, strict=True)
     ]
 
-    # cosalpha uses the measured pivot with the +4 deg empirical offset (map_SCFrame_V2)
+    # cosalpha uses the measured pivot with the +4 deg empirical offset
     pivot_rad = np.radians(pivot_angle + 4.0)
 
     # Project onto N_COLAT_BINS x N_SPIN_ANGLE_BINS ecliptic sky grid and
