@@ -288,7 +288,10 @@ def _parse_args() -> argparse.Namespace:
         logger.info(
             f"Interpreting dependency argument as a JSON file: {args.dependency}"
         )
-        dependency_filepath = download(args.dependency)
+        if not Path(args.dependency).exists():
+            dependency_filepath = download(args.dependency)
+        else:
+            dependency_filepath = args.dependency
         with open(dependency_filepath) as f:
             args.dependency = f.read()
 

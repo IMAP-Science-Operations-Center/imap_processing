@@ -167,6 +167,35 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         )
 
 
+def test_parse_args_dependency_local_json_not_downloaded(tmp_path):
+    """A --dependency JSON that exists locally is read without downloading."""
+    test_json_content = {"dependency": [], "version": {}}
+    test_json_dst = tmp_path / "imap_ultra_l2_local-dependency_20250520_v001.0001.json"
+    with open(test_json_dst, "w") as f:
+        f.write(json.dumps(test_json_content))
+
+    test_args = [
+        "imap_cli",
+        "--instrument",
+        "mag",
+        "--dependency",
+        str(test_json_dst),
+        "--data-level",
+        "l1a",
+        "--start-date",
+        "20240430",
+    ]
+    with (
+        mock.patch.object(sys, "argv", test_args),
+        mock.patch("imap_processing.cli.download") as mock_download,
+    ):
+        args = _parse_args()
+
+    # Local file exists, so download must not be called and its content is read.
+    mock_download.assert_not_called()
+    assert json.loads(args.dependency) == test_json_content
+
+
 @pytest.mark.parametrize(
     "instrument, data_level, start_date, repointing, raises_value_error",
     [
