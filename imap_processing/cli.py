@@ -201,8 +201,9 @@ def _parse_args() -> argparse.Namespace:
         '{"major_version": 2, "minor_version": 1}}'
         "}'"
         "    A path to a JSON file containing this same information may also be"
-        "passed in. If dependency is a string ending in '.json', it will be interpreted"
-        " as such a file path."
+        " passed in. If dependency is a string ending in '.json', it will be"
+        " interpreted as such a file path: an existing local file is used as-is,"
+        " otherwise the file is downloaded from the IMAP SDC."
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
