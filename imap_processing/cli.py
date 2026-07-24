@@ -489,6 +489,7 @@ class ProcessInstrument(ABC):
                         continue
                     else:
                         logger.error(f"Upload failed with error: {message}")
+                        raise
                 except Exception as e:
                     logger.error(f"Upload failed unknown error: {e}")
 
