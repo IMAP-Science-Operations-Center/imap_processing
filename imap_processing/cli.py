@@ -201,8 +201,9 @@ def _parse_args() -> argparse.Namespace:
         '{"major_version": 2, "minor_version": 1}}'
         "}'"
         "    A path to a JSON file containing this same information may also be"
-        "passed in. If dependency is a string ending in '.json', it will be interpreted"
-        " as such a file path."
+        " passed in. If dependency is a string ending in '.json', it will be"
+        " interpreted as such a file path: an existing local file is used as-is,"
+        " otherwise the file is downloaded from the IMAP SDC."
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
@@ -288,7 +289,10 @@ def _parse_args() -> argparse.Namespace:
         logger.info(
             f"Interpreting dependency argument as a JSON file: {args.dependency}"
         )
-        dependency_filepath = download(args.dependency)
+        if not Path(args.dependency).exists():
+            dependency_filepath = download(args.dependency)
+        else:
+            dependency_filepath = args.dependency
         with open(dependency_filepath) as f:
             args.dependency = f.read()
 

@@ -14,12 +14,14 @@ from imap_processing.lo.l1c.lo_l1c import (
     PSET_SHAPE,
     FilterType,
     calculate_exposure_times,
+    compute_pointing_directions,
     create_pset_counts,
     filter_goodtimes,
     lo_l1c,
     set_background_rates,
     set_pointing_directions,
 )
+from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
@@ -729,3 +731,80 @@ def test_set_pointing_directions_pivot_angle(attr_mgr, pivot_angle):
         # dps_az_el[:, :, 1] should have the adjusted off angles repeated across spin
         actual_off_angles = dps_az_el[0, :, 1]  # Take first spin angle
         np.testing.assert_allclose(actual_off_angles, expected_off_angles, rtol=1e-10)
+
+
+def test_compute_pointing_directions_defaults():
+    """Default grid/frame reproduce the PSET (3600 x 40) IMAP_DPS->IMAP_HAE case."""
+    mock_et = 123456789.0
+    mock_az_el = np.stack(
+        np.meshgrid(np.arange(3600), np.arange(40), indexing="ij"), axis=-1
+    )
+    with (
+        patch("imap_processing.lo.l1c.lo_l1c.ttj2000ns_to_et") as mock_ttj2000ns_to_et,
+        patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el"
+        ) as mock_frame_transform,
+    ):
+        mock_ttj2000ns_to_et.return_value = mock_et
+        mock_frame_transform.return_value = mock_az_el
+
+        result = compute_pointing_directions(1000000000.0, 90)
+
+        # Returns the raw (n_spin, n_off, 2) array, not a DataArray.
+        assert result.shape == (3600, 40, 2)
+        call_args = mock_frame_transform.call_args
+        assert call_args[0][1].shape == (3600, 40, 2)  # dps_az_el grid
+        assert call_args[0][2] == SpiceFrame.IMAP_DPS  # from_frame
+        assert call_args[0][3] == SpiceFrame.IMAP_HAE  # default to_frame
+
+
+def test_compute_pointing_directions_custom_grid_and_frame():
+    """Custom spin/off angles and destination frame are honored."""
+    spin_angles = np.arange(3.0, 360.0, 6.0)  # 60 bins
+    off_angles = np.array([0.0])  # single pivot-cone off-angle
+    pivot_angle = 75.0
+    with (
+        patch("imap_processing.lo.l1c.lo_l1c.ttj2000ns_to_et") as mock_ttj2000ns_to_et,
+        patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el"
+        ) as mock_frame_transform,
+    ):
+        mock_ttj2000ns_to_et.return_value = 123456789.0
+        mock_frame_transform.side_effect = lambda et, az_el, *a, **k: az_el
+
+        result = compute_pointing_directions(
+            1000000000.0,
+            pivot_angle,
+            spin_angles=spin_angles,
+            off_angles=off_angles,
+            to_frame=SpiceFrame.ECLIPJ2000,
+        )
+
+        assert result.shape == (60, 1, 2)
+        # Spin component matches the requested spin angles.
+        np.testing.assert_allclose(result[:, 0, 0], spin_angles)
+        # Off component is the single off-angle offset by (90 - pivot_angle).
+        np.testing.assert_allclose(result[:, 0, 1], 90 - pivot_angle)
+        # Destination frame is forwarded.
+        assert mock_frame_transform.call_args[0][3] == SpiceFrame.ECLIPJ2000
+
+
+def test_set_pointing_directions_delegates(attr_mgr):
+    """set_pointing_directions wraps compute_pointing_directions output unchanged."""
+    mock_az_el = np.stack(
+        np.meshgrid(np.arange(3600), np.arange(40), indexing="ij"), axis=-1
+    ).astype(float)
+    with patch(
+        "imap_processing.lo.l1c.lo_l1c.compute_pointing_directions"
+    ) as mock_compute:
+        mock_compute.return_value = mock_az_el
+
+        hae_longitude, hae_latitude = set_pointing_directions(
+            1000000000.0, attr_mgr, 90
+        )
+
+        mock_compute.assert_called_once_with(1000000000.0, 90)
+        assert hae_longitude.dims == ("epoch", "spin_angle", "off_angle")
+        assert hae_longitude.shape == (1, 3600, 40)
+        np.testing.assert_array_equal(hae_longitude.values[0], mock_az_el[:, :, 0])
+        np.testing.assert_array_equal(hae_latitude.values[0], mock_az_el[:, :, 1])
