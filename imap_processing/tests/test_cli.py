@@ -984,7 +984,7 @@ def test_post_processing_upload_503_error(
         with pytest.raises(imap_data_access.io.IMAPDataAccessError):
             instrument.process()
 
-        # Check the upload failure was logged
+        # Checks the upload failure was logged
         assert any(
             "Upload failed with error" in str(call)
             for call in mock_error.call_args_list
