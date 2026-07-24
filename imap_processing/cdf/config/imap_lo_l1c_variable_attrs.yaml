@@ -381,8 +381,8 @@ esa_level:
   FORMAT: I1
   LABLAXIS: ESA level
   UNITS: " "
-  VALIDMIN: 1
   VALIDMAX: 7
+  VALIDMIN: 1
   VAR_TYPE: support_data
 
 ecl_lat:
@@ -391,8 +391,8 @@ ecl_lat:
   FORMAT: F8.3
   LABLAXIS: ecl lat
   UNITS: "degrees"
-  VALIDMIN: -90.0
   VALIDMAX: 90.0
+  VALIDMIN: -90.0
   VAR_TYPE: support_data
 
 ecl_lon:
@@ -401,8 +401,8 @@ ecl_lon:
   FORMAT: F8.3
   LABLAXIS: ecl lon
   UNITS: "degrees"
-  VALIDMIN: 0.0
   VALIDMAX: 360.0
+  VALIDMIN: 0.0
   VAR_TYPE: support_data
 
 # imap_lo_l1c_quickmap sky-map data variables
