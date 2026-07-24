@@ -839,9 +839,7 @@ def compute_pointing_directions(
     off = off + (90 - pivot_angle)
     dps_az_el = np.stack([spin, off], axis=-1)
 
-    # Transform from DPS Az/El to the destination frame's lon/lat.
-    # frame_transform_az_el squeezes singleton leading dims, so reshape back to
-    # the documented (n_spin, n_off, 2) contract (e.g. a single off-angle bin).
+    # Transform from DPS Az/El to the destination frame's lon/lat
     az_el = frame_transform_az_el(
         et, dps_az_el, SpiceFrame.IMAP_DPS, to_frame, degrees=True
     )
