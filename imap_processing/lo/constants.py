@@ -8,11 +8,9 @@ from typing import ClassVar
 class LoConstants:
     """Constants for Lo which can be used across different levels."""
 
-    # Expected pivot angle [degrees] for pointing sets for generating map products.
-    PSET_PIVOT_ANGLE: float = 90.0
-    # Absolute tolerance [degrees] for accepting a pset's pivot angle
-    # as sufficiently close to the required value.
-    PSET_PIVOT_ANGLE_TOLERANCE: float = 45.0
+    # Absolute tolerance [degrees] for accepting a pset's pivot angle as
+    # sufficiently close to the pivot angle of the map being made.
+    PSET_PIVOT_ANGLE_TOLERANCE: float = 5.0
 
     # Ion species tracked. "H" is mandatory (and should be the first element);
     # any others for which we have histrates may be added here.

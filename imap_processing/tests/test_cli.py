@@ -6,7 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 from unittest import mock
-from unittest.mock import Mock, sentinel
+from unittest.mock import Mock
 
 import imap_data_access.io
 import numpy as np
@@ -472,17 +472,24 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
 
     descriptor = "some-ena-map-descriptor"
 
-    mock_loaded_pset_1 = Mock(attrs={"Logical_source": "some_pset_logical_source"})
-    pset_file_paths = [
+    mock_loaded_pset_1 = Mock(attrs={"Logical_source": "imap_lo_l1c_pset"})
+    mock_loaded_pset_2 = Mock(attrs={"Logical_source": "imap_lo_l1c_pset"})
+    mock_loaded_de = Mock(attrs={"Logical_source": "imap_lo_l1b_de"})
+    science_file_paths = [
         "imap_lo_l1c_pset_20250415_v001.cdf",
         "imap_lo_l1c_pset_20250416_v001.cdf",
+        "imap_lo_l1b_de_20250415_v001.cdf",
     ]
 
     processing_input = ProcessingInputCollection(
-        *[ScienceInput(file_path) for file_path in pset_file_paths],
+        *[ScienceInput(file_path) for file_path in science_file_paths],
     )
 
-    mocks["mock_load_cdf"].side_effect = [mock_loaded_pset_1, sentinel.loaded_pset_2]
+    mocks["mock_load_cdf"].side_effect = [
+        mock_loaded_pset_1,
+        mock_loaded_pset_2,
+        mock_loaded_de,
+    ]
     mock_lo_pre_processing.return_value = processing_input
 
     output_l2_dataset = xr.Dataset()
@@ -500,47 +507,15 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
     instrument.process()
 
     mock_lo_l2.assert_called_once_with(
-        {"some_pset_logical_source": [mock_loaded_pset_1, sentinel.loaded_pset_2]},
+        {
+            "imap_lo_l1c_pset": [mock_loaded_pset_1, mock_loaded_pset_2],
+            "imap_lo_l1b_de": [mock_loaded_de],
+        },
         [],
         descriptor,
+        "20250415",
     )
     mocks["mock_write_cdf"].assert_called_once_with(output_l2_dataset)
-
-
-@mock.patch("imap_processing.cli.load_cdf")
-@mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
-def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_load_cdf):
-    valid_pset = "imap_lo_l1c_pset_20250415_v001.cdf"
-    invalid_pset = "imap_lo_l1c_pset_20250416_v001.cdf"
-    non_pset = "imap_lo_l1a_de_20260415-repoint00217_v001.cdf"
-
-    base_collection = ProcessingInputCollection(
-        ScienceInput(valid_pset, invalid_pset),
-        ScienceInput(non_pset),
-    )
-    mock_super_pre_processing.return_value = base_collection
-    mock_load_cdf.side_effect = [
-        xr.Dataset({"pivot_angle": xr.DataArray(90.1)}),
-        xr.Dataset({"pivot_angle": xr.DataArray(30.0)}),
-    ]
-
-    instrument = Lo(
-        "l2",
-        "some-descriptor",
-        base_collection.serialize(),
-        "20250415",
-        "20250416",
-        "v001",
-        False,
-    )
-    result = instrument.pre_processing()
-
-    result_inputs = list(result.get_processing_inputs())
-    assert len(result_inputs) == 2
-
-    pset_input, non_pset_input = result_inputs
-    assert [str(fp.filename) for fp in pset_input.imap_file_paths] == [valid_pset]
-    assert [str(fp.filename) for fp in non_pset_input.imap_file_paths] == [non_pset]
 
 
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)

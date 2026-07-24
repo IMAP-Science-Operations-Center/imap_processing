@@ -18,9 +18,14 @@ from imap_processing.ena_maps.utils.corrections import (
     get_pset_directional_mask,
     interpolate_map_flux_to_helio_frame,
 )
-from imap_processing.ena_maps.utils.naming import MapDescriptor
+from imap_processing.ena_maps.utils.naming import DAYS_IN_MONTH, MapDescriptor
 from imap_processing.lo import lo_ancillary
-from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
+from imap_processing.lo.constants import LoConstants
+from imap_processing.spice.time import (
+    et_to_datetime64,
+    str_yyyymmdd_to_ttj2000ns,
+    ttj2000ns_to_et,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +35,10 @@ logger = logging.getLogger(__name__)
 
 
 def lo_l2(
-    sci_dependencies: dict, anc_dependencies: list, descriptor: str
+    sci_dependencies: dict,
+    anc_dependencies: list,
+    descriptor: str,
+    start_date: str | None = None,
 ) -> list[xr.Dataset]:
     """
     Process IMAP-Lo L1C data into L2 CDF data products.
@@ -38,39 +46,55 @@ def lo_l2(
     This is the main entry point for L2 processing. It orchestrates the entire
     processing pipeline from L1C pointing sets to L2 sky maps with intensities.
 
+    Only the pointing sets taken at the pivot angle of the map being made are
+    projected onto it, see ``_inputs_at_map_pivot_angle``. When none of the
+    psets match (or no psets were passed-in to begin with), a quickmap is
+    produced instead.
+
     Parameters
     ----------
     sci_dependencies : dict
         Dictionary of datasets needed for L2 data product creation in xarray Datasets.
-        Must contain "imap_lo_l1c_pset" key with list of pointing set datasets.
+        Should contain "imap_lo_l1c_pset" key with list of pointing set datasets,
+        at any pivot angle.
     anc_dependencies : list
         List of ancillary file paths needed for L2 data product creation.
         Should include efficiency factor files.
     descriptor : str
         The map descriptor to be produced
         (e.g., "ilo90-ena-h-sf-nsp-full-hae-6deg-3mo").
+    start_date : str, optional
+        The start of the map window in YYYYMMDD format. Only required for
+        quickmaps, which have no pointing sets to get their time coverage from.
 
     Returns
     -------
     list[xr.Dataset]
         List containing the processed L2 dataset with rates, intensities,
-        and uncertainties.
+        and uncertainties, or the quickmap if there were no pointing sets at
+        the pivot angle of the map.
 
     Raises
     ------
     ValueError
-        If no pointing set data found in science dependencies.
+        If a quickmap is required but no start_date was given.
     NotImplementedError
         If HEALPix map output is requested (only rectangular maps supported).
     """
     logger.info("Starting IMAP-Lo L2 processing pipeline")
-    if "imap_lo_l1c_pset" not in sci_dependencies:
-        raise ValueError("No pointing set data found in science dependencies")
-    psets = sci_dependencies["imap_lo_l1c_pset"]
 
     # Parse the map descriptor to get species and other attributes
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
+
+    psets = _inputs_at_map_pivot_angle(
+        sci_dependencies.get("imap_lo_l1c_pset", []), map_descriptor
+    )
+    if not psets:
+        logger.info("No psets - trying to create a quickmap.")
+        if start_date is None:
+            raise ValueError(f"A start_date is required to create the map {descriptor}")
+        return _lo_l2_quickmap(sci_dependencies, descriptor, start_date)
 
     # Determine if corrections are needed and prepare oxygen data if required
     (
@@ -114,6 +138,161 @@ def lo_l2(
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
     return [dataset]
+
+
+def _inputs_at_map_pivot_angle(
+    datasets: list[xr.Dataset], map_descriptor: MapDescriptor
+) -> list[xr.Dataset]:
+    """
+    Keep only the inputs taken at the pivot angle the map is for.
+
+    Every input we have for the map window is passed in, whatever pivot
+    angle it was taken at. A map is made from one pivot angle only, which is
+    the sensor field of its descriptor ("l090" is the 90 degree pivot angle).
+    Inputs within ``LoConstants.PSET_PIVOT_ANGLE_TOLERANCE`` of that angle are
+    kept, and inputs with no pivot angle at all are dropped.
+
+    Parameters
+    ----------
+    datasets : list[xr.Dataset]
+        The input products available for the map window. Every Lo product
+        records the pivot angle it was taken at.
+    map_descriptor : MapDescriptor
+        The parsed descriptor of the map being made.
+
+    Returns
+    -------
+    list[xr.Dataset]
+        The inputs that belong on this map.
+    """
+    if not isinstance(map_descriptor.sensor, int):
+        # No pivot angle in the descriptor to select inputs with
+        return datasets
+
+    kept = []
+    for dataset in datasets:
+        if "pivot_angle" not in dataset:
+            logger.info("Dropping input with no pivot angle.")
+            continue
+        pivot_angle = dataset["pivot_angle"].item()
+        if (
+            abs(pivot_angle - map_descriptor.sensor)
+            < LoConstants.PSET_PIVOT_ANGLE_TOLERANCE
+        ):
+            kept.append(dataset)
+        else:
+            logger.info(f"Dropping input with pivot angle {pivot_angle}")
+
+    return kept
+
+
+def _lo_l2_quickmap(
+    sci_dependencies: dict, descriptor: str, start_date: str
+) -> list[xr.Dataset]:
+    """
+    Create a correctly shaped, zero-filled L2 quickmap.
+
+    Parameters
+    ----------
+    sci_dependencies : dict
+        Dictionary of the input datasets, keyed by logical source, at any
+        pivot angle.
+    descriptor : str
+        The map descriptor to be produced
+        (e.g., "l090-enansnbs-h-sf-nsp-ram-hae-6deg-6mo").
+    start_date : str
+        The start of the map window in YYYYMMDD format.
+
+    Returns
+    -------
+    list[xr.Dataset]
+        List containing the single quickmap dataset.
+
+    Raises
+    ------
+    NotImplementedError
+        If a HEALPix map is requested (only rectangular maps supported for Lo),
+        or if the map is of a quantity whose variables are not defined yet.
+    """
+    logger.info(f"Creating IMAP-Lo L2 quickmap for descriptor: {descriptor}")
+    map_descriptor = MapDescriptor.from_string(descriptor)
+
+    sky_map = map_descriptor.to_empty_map()
+    if not isinstance(sky_map, RectangularSkyMap):
+        raise NotImplementedError("HEALPix map output not supported for Lo")
+
+    # TODO: No CDF variable attributes are defined for the variables of the
+    # quantities in non-ENA maps, e.g. isn_rate for an ISN map.
+    if not map_descriptor.principal_data.startswith("ena"):
+        raise NotImplementedError(
+            f"Cannot make a quickmap of {map_descriptor.principal_data} for "
+            f"{descriptor}. No CDF variable attributes are defined for "
+            f"{map_descriptor.principal_data_var} in the imap_enamaps_l2 "
+            f"variable attribute files."
+        )
+
+    for logical_source, datasets in sci_dependencies.items():
+        selected = _inputs_at_map_pivot_angle(datasets, map_descriptor)
+        logger.info(
+            f"{len(selected)} of {len(datasets)} {logical_source} inputs are at "
+            f"the pivot angle of {descriptor}"
+        )
+
+    # No pointing sets available, so the epoch bounds are set using `start_date`.
+    duration = cast(str, map_descriptor.duration)
+    if duration.endswith("yr"):
+        duration_months = int(duration.removesuffix("yr")) * 12
+    else:
+        duration_months = int(duration.removesuffix("mo"))
+    sky_map.min_epoch = int(str_yyyymmdd_to_ttj2000ns(start_date))
+    sky_map.max_epoch = sky_map.min_epoch + int(
+        np.timedelta64(duration_months * DAYS_IN_MONTH, "D") / np.timedelta64(1, "ns")
+    )
+
+    # TODO: Figure out how to handle esa_mode properly
+    energies = reduce_geometric_factor_dataset(map_descriptor.species, esa_mode=0)[
+        "Cntr_E"
+    ].values
+
+    # The variables an ENA map has, all with dims (epoch, energy, pixel).
+    float_variables = (
+        "ena_intensity",
+        "ena_intensity_stat_uncert",
+        "ena_intensity_sys_err",
+        "ena_count_rate",
+        "ena_count_rate_stat_uncert",
+        "ena_count",
+        "bg_rate",
+        "bg_rate_stat_uncert",
+        "bg_rate_sys_err",
+        "bg_intensity",
+        "bg_intensity_stat_uncert",
+        "bg_intensity_sys_err",
+        "exposure_factor",
+    )
+    int_variables = ("obs_date", "obs_date_range")
+    variable_dtypes = dict.fromkeys(float_variables, np.float32) | dict.fromkeys(
+        int_variables, np.int64
+    )
+
+    for variable, dtype in variable_dtypes.items():
+        sky_map.data_1d[variable] = xr.DataArray(
+            np.zeros((1, energies.size, sky_map.num_points), dtype=dtype),
+            dims=["epoch", "energy", "pixel"],
+            coords={"energy": energies},
+        )
+
+    dataset = add_geometric_factors(sky_map.to_dataset(), map_descriptor.species)
+    dataset = cleanup_intermediate_variables(dataset)
+
+    return [
+        sky_map.build_cdf_dataset(
+            instrument="lo",
+            level="l2",
+            descriptor=descriptor,
+            external_map_dataset=dataset,
+        )
+    ]
 
 
 def _prepare_corrections(

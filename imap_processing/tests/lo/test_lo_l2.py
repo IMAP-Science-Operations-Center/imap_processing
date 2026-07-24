@@ -1,5 +1,6 @@
 """Comprehensive test suite for IMAP-Lo L2 data processing."""
 
+import logging
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -8,7 +9,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.ena_maps.utils.corrections import (
     add_spacecraft_position_and_velocity_to_pset,
@@ -24,6 +25,8 @@ from imap_processing.lo.l1c.lo_l1c import (
     SPIN_ANGLE_BIN_CENTERS,
 )
 from imap_processing.lo.l2.lo_l2 import (
+    _inputs_at_map_pivot_angle,
+    _lo_l2_quickmap,
     _prepare_corrections,
     add_efficiency_factors_to_pset,
     calculate_all_rates_and_intensities,
@@ -90,6 +93,7 @@ def sample_pset():
             ),
             "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
             "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
+            "pivot_angle": ("epoch", [90.0]),
         },
         coords={
             "epoch": [8.1794907049e17],
@@ -132,6 +136,7 @@ def sample_pset_for_species(species_name):
         "exposure_factor": (PSET_DIMS, exposure_factor),
         "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
         "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
+        "pivot_angle": ("epoch", [90.0]),
     }
 
     # Add background rates only for h and o
@@ -186,6 +191,7 @@ def minimal_pset():
             ),
             "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
             "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
+            "pivot_angle": ("epoch", [90.0]),
         },
         coords={
             "epoch": [8.1794907049e17],
@@ -227,6 +233,7 @@ def minimal_pset_for_species(species_name):
         "exposure_factor": (PSET_DIMS, exposure_factor),
         "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
         "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
+        "pivot_angle": ("epoch", [90.0]),
     }
 
     # Add background rates for all species
@@ -2582,14 +2589,19 @@ class TestIntegration:
 class TestErrorHandling:
     """Tests for error handling in various functions."""
 
-    def test_lo_l2_no_pset_data(self):
-        """Test error when no pointing set data is provided."""
+    def test_lo_l2_no_pset_data(self, caplog):
+        """Test that a quickmap is made when no pointing set data is provided."""
         sci_dependencies = {}  # Missing imap_lo_l1c_pset
         anc_dependencies = []
         descriptor = "l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
 
-        with pytest.raises(ValueError, match="No pointing set data found"):
-            lo_l2(sci_dependencies, anc_dependencies, descriptor)
+        with caplog.at_level(logging.INFO):
+            (dataset,) = lo_l2(
+                sci_dependencies, anc_dependencies, descriptor, "20260101"
+            )
+
+        assert "No psets" in caplog.text
+        assert dataset.attrs["Logical_source"] == f"imap_lo_l2_{descriptor}"
 
     def test_create_sky_map_healpix_not_supported(self, minimal_pset_for_species):
         """Test error when HEALPix map is requested."""
@@ -2913,3 +2925,103 @@ class TestProjectPsetToMap:
 
         for key in expected_keys:
             assert key in value_keys, f"Expected key '{key}' not in value_keys"
+
+
+class TestPsetsAtMapPivotAngle:
+    """Tests for selecting the psets that belong on a map."""
+
+    def test_psets_are_selected_by_map_pivot_angle(self):
+        """Test that only psets near the descriptor pivot angle are kept."""
+        map_descriptor = MapDescriptor.from_string("l090-ena-h-sf-nsp-ram-hae-6deg-1yr")
+        in_range = xr.Dataset({"pivot_angle": xr.DataArray(90.1)})
+        psets = [
+            in_range,
+            # The neighbouring pivot angles belong on their own maps
+            xr.Dataset({"pivot_angle": xr.DataArray(75.0)}),
+            xr.Dataset({"pivot_angle": xr.DataArray(105.0)}),
+            xr.Dataset({"pivot_angle": xr.DataArray(30.0)}),
+            xr.Dataset(),  # No pivot angle at all
+        ]
+
+        assert _inputs_at_map_pivot_angle(psets, map_descriptor) == [in_range]
+
+
+class TestLoL2Quickmap:
+    """Tests quickmap when there are no pointing sets."""
+
+    descriptor = "l090-enansnbs-h-sf-nsp-ram-hae-6deg-6mo"
+    expected_variables = (
+        "ena_intensity",
+        "ena_intensity_stat_uncert",
+        "ena_intensity_sys_err",
+        "ena_count_rate",
+        "ena_count_rate_stat_uncert",
+        "ena_count",
+        "bg_rate",
+        "bg_rate_stat_uncert",
+        "bg_rate_sys_err",
+        "bg_intensity",
+        "bg_intensity_stat_uncert",
+        "bg_intensity_sys_err",
+        "exposure_factor",
+        "obs_date",
+        "obs_date_range",
+    )
+
+    def test_lo_l2_makes_quickmap_without_psets(self):
+        """Test that lo_l2 makes a quickmap when there are no pointing sets."""
+        (dataset,) = lo_l2({}, [], self.descriptor, start_date="20260101")
+
+        assert dataset.attrs["Logical_source"] == f"imap_lo_l2_{self.descriptor}"
+
+    def test_lo_l2_quickmap_requires_start_date(self):
+        """Test error when a quickmap is required but no start date is given."""
+        with pytest.raises(ValueError, match="start_date is required"):
+            lo_l2({}, [], self.descriptor)
+
+    def test_quickmap_selects_inputs_by_pivot_angle(self, caplog):
+        """Test that the quickmap reports the inputs belonging on the map."""
+        sci_dependencies = {
+            "imap_lo_l1b_de": [
+                xr.Dataset({"pivot_angle": xr.DataArray(90.0)}),
+                xr.Dataset({"pivot_angle": xr.DataArray(75.0)}),
+            ]
+        }
+
+        with caplog.at_level(logging.INFO):
+            _lo_l2_quickmap(sci_dependencies, self.descriptor, "20260101")
+
+        assert "1 of 2 imap_lo_l1b_de inputs" in caplog.text
+
+    def test_quickmap_shape(self):
+        """Test that the quickmap has the shape of a real 6deg map."""
+        (dataset,) = _lo_l2_quickmap({}, self.descriptor, "20260101")
+
+        assert dict(dataset.sizes) == {
+            "epoch": 1,
+            "energy": 7,
+            "longitude": 60,
+            "latitude": 30,
+        }
+        for variable in self.expected_variables:
+            assert dataset[variable].dims == (
+                "epoch",
+                "energy",
+                "longitude",
+                "latitude",
+            )
+
+        # Intermediate variables should not make it into the output
+        assert "geometric_factor" not in dataset.data_vars
+
+    def test_quickmap_writes_to_cdf(self):
+        """Test that the quickmap can be written out as a valid CDF."""
+        (dataset,) = _lo_l2_quickmap({}, self.descriptor, "20260101")
+        dataset.attrs["Data_version"] = "001.0001"
+        dataset.attrs["Start_date"] = "20260101"
+
+        cdf_path = write_cdf(dataset)
+
+        assert cdf_path.exists()
+        assert cdf_path.name == (f"imap_lo_l2_{self.descriptor}_20260101_v001.0001.cdf")
+        assert dict(load_cdf(cdf_path).sizes) == dict(dataset.sizes)
