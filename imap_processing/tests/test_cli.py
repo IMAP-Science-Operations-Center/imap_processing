@@ -938,9 +938,9 @@ def test_post_processing(
         "imap_sclk_0001.tsc",
     ]
 
+
 @mock.patch("imap_processing.cli.filter_day_boundary_data")
 @mock.patch("imap_processing.cli.swe_l1a")
-
 def test_post_processing_upload_503_error(
     mock_swe_l1a,
     mock_filter,
@@ -958,7 +958,7 @@ def test_post_processing_upload_503_error(
     ].return_value = "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
     mocks["mock_query"].return_value = []
 
-    #Mocks a 503 error received from the upload API
+    # Mocks a 503 error received from the upload API
     mocks["mock_upload"].side_effect = imap_data_access.io.IMAPDataAccessError(
         '503 Service Unavailable: {"error": "ServiceUnavailable", '
         '"message": "The API is too busy."}'
@@ -985,4 +985,7 @@ def test_post_processing_upload_503_error(
             instrument.process()
 
         # Check the upload failure was logged
-        assert any( "Upload failed with error" in str(call) for call in mock_error.call_args_list)
+        assert any(
+            "Upload failed with error" in str(call)
+            for call in mock_error.call_args_list
+        )
