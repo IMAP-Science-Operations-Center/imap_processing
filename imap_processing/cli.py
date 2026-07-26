@@ -53,6 +53,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 # In code:
 #   call cdf.utils.write_cdf
 from imap_processing.codice import codice_l1a, codice_l1b, codice_l2
+from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l2.glows_l2 import glows_l2
@@ -64,6 +65,7 @@ from imap_processing.idex.idex_l1a import idex_l1a
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
+from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -1210,6 +1212,93 @@ class Idex(ProcessInstrument):
 
 class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
+
+    @staticmethod
+    def _input_at_pivot_angle(
+        imap_file_path: imap_data_access.ImapFilePath, map_pivot_angle: int
+    ) -> bool:
+        """
+        Check whether a Lo input file was taken at the pivot angle of a map.
+
+        Every Lo science product records the pivot angle it was taken at. Files
+        without a pivot angle can't be placed on a map and so are rejected.
+
+        Parameters
+        ----------
+        imap_file_path : imap_data_access.ImapFilePath
+            The Lo input file to check.
+        map_pivot_angle : int
+            The pivot angle [degrees] of the map being made.
+
+        Returns
+        -------
+        bool
+            Whether the file belongs on the map.
+        """
+        dataset = load_cdf(imap_file_path.construct_path())
+        if "pivot_angle" not in dataset:
+            logger.info(f"Dropping {imap_file_path.filename} - no pivot angle.")
+            return False
+
+        pivot_angle = dataset["pivot_angle"].item()
+        if abs(pivot_angle - map_pivot_angle) >= LoConstants.PSET_PIVOT_ANGLE_TOLERANCE:
+            logger.info(
+                f"Dropping {imap_file_path.filename}, its pivot angle {pivot_angle} "
+                f"is not the {map_pivot_angle} degree pivot angle of the map."
+            )
+            return False
+
+        return True
+
+    def pre_processing(self) -> ProcessingInputCollection:
+        """
+        Complete pre-processing.
+
+        Extends the base pre-processing by dropping, for map products, the Lo
+        science inputs that were not taken at the pivot angle of the map being
+        made.
+
+        Returns
+        -------
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+        """
+        dependencies = super().pre_processing()
+        if self.data_level != "l2":
+            return dependencies
+
+        try:
+            map_pivot_angle = MapDescriptor.from_string(self.descriptor).sensor
+        except ValueError:
+            # Not a map product, so there is no pivot angle to select inputs with
+            logger.info(
+                f"Not filtering inputs by pivot angle, {self.descriptor} is not a "
+                f"map descriptor."
+            )
+            return dependencies
+
+        if not isinstance(map_pivot_angle, int):
+            # A map of no particular pivot angle, e.g. "ilo-ena-h-sf-nsp-ram-..."
+            return dependencies
+
+        filtered_dependencies = ProcessingInputCollection()
+        for processing_input in dependencies.get_processing_inputs():
+            if (
+                processing_input.input_type != ProcessingInputType.SCIENCE_FILE
+                or processing_input.source != "lo"
+            ):
+                filtered_dependencies.add(processing_input)
+                continue
+
+            kept_filenames = [
+                str(imap_file_path.filename)
+                for imap_file_path in processing_input.imap_file_paths
+                if self._input_at_pivot_angle(imap_file_path, map_pivot_angle)
+            ]
+            if kept_filenames:
+                filtered_dependencies.add(type(processing_input)(*kept_filenames))
+
+        return filtered_dependencies
 
     def do_processing(
         self, dependencies: ProcessingInputCollection

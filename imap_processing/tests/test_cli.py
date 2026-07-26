@@ -518,6 +518,51 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
     mocks["mock_write_cdf"].assert_called_once_with(output_l2_dataset)
 
 
+@mock.patch("imap_processing.cli.load_cdf")
+@mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
+def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_load_cdf):
+    """Test that only inputs at the pivot angle of the map are kept."""
+    valid_pset = "imap_lo_l1c_pset_20250415_v001.cdf"
+    invalid_pset = "imap_lo_l1c_pset_20250416_v001.cdf"
+    valid_de = "imap_lo_l1b_de_20250415-repoint00217_v001.cdf"
+    no_pivot_angle = "imap_lo_l1b_goodtimes_20250415-repoint00217_v001.cdf"
+    ancillary = "imap_lo_efficiency-factors_20250415_v001.csv"
+
+    base_collection = ProcessingInputCollection(
+        ScienceInput(valid_pset, invalid_pset),
+        ScienceInput(valid_de),
+        ScienceInput(no_pivot_angle),
+        AncillaryInput(ancillary),
+    )
+    mock_super_pre_processing.return_value = base_collection
+    mock_load_cdf.side_effect = [
+        xr.Dataset({"pivot_angle": xr.DataArray(90.1)}),
+        # A neighbouring pivot angle, which belongs on its own map
+        xr.Dataset({"pivot_angle": xr.DataArray(75.0)}),
+        xr.Dataset({"pivot_angle": xr.DataArray(90.0)}),
+        xr.Dataset(),  # No pivot angle at all
+    ]
+
+    instrument = Lo(
+        "l2",
+        "l090-ena-h-sf-nsp-ram-hae-6deg-3mo",
+        base_collection.serialize(),
+        "20250415",
+        "20250715",
+        "v001",
+        False,
+    )
+    result = instrument.pre_processing()
+
+    # The goodtimes input had no pivot angle, so it drops out entirely
+    assert [
+        [str(file_path.filename) for file_path in processing_input.imap_file_paths]
+        for processing_input in result.get_processing_inputs()
+    ] == [[valid_pset], [valid_de], [ancillary]]
+    # Ancillary files are not loaded to be checked for a pivot angle
+    assert mock_load_cdf.call_count == 4
+
+
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)
 def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Spacecraft class"""

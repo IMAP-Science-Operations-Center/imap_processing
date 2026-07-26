@@ -20,7 +20,6 @@ from imap_processing.ena_maps.utils.corrections import (
 )
 from imap_processing.ena_maps.utils.naming import DAYS_IN_MONTH, MapDescriptor
 from imap_processing.lo import lo_ancillary
-from imap_processing.lo.constants import LoConstants
 from imap_processing.spice.time import (
     et_to_datetime64,
     str_yyyymmdd_to_ttj2000ns,
@@ -46,17 +45,18 @@ def lo_l2(
     This is the main entry point for L2 processing. It orchestrates the entire
     processing pipeline from L1C pointing sets to L2 sky maps with intensities.
 
-    Only the pointing sets taken at the pivot angle of the map being made are
-    projected onto it, see ``_inputs_at_map_pivot_angle``. When none of the
-    psets match (or no psets were passed-in to begin with), a quickmap is
+    The inputs are expected to have already been filtered down to the pivot
+    angle of the map being made, which is done in pre-processing (see
+    ``cli.Lo.pre_processing``) so that the map records only the files it was
+    made from as its parents. When no pointing sets are left, a quickmap is
     produced instead.
 
     Parameters
     ----------
     sci_dependencies : dict
         Dictionary of datasets needed for L2 data product creation in xarray Datasets.
-        Should contain "imap_lo_l1c_pset" key with list of pointing set datasets,
-        at any pivot angle.
+        Should contain "imap_lo_l1c_pset" key with list of pointing set datasets
+        taken at the pivot angle of the map.
     anc_dependencies : list
         List of ancillary file paths needed for L2 data product creation.
         Should include efficiency factor files.
@@ -71,8 +71,7 @@ def lo_l2(
     -------
     list[xr.Dataset]
         List containing the processed L2 dataset with rates, intensities,
-        and uncertainties, or the quickmap if there were no pointing sets at
-        the pivot angle of the map.
+        and uncertainties, or the quickmap if there were no pointing sets.
 
     Raises
     ------
@@ -87,9 +86,7 @@ def lo_l2(
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
 
-    psets = _inputs_at_map_pivot_angle(
-        sci_dependencies.get("imap_lo_l1c_pset", []), map_descriptor
-    )
+    psets = sci_dependencies.get("imap_lo_l1c_pset", [])
     if not psets:
         logger.info("No psets - trying to create a quickmap.")
         if start_date is None:
@@ -140,52 +137,6 @@ def lo_l2(
     return [dataset]
 
 
-def _inputs_at_map_pivot_angle(
-    datasets: list[xr.Dataset], map_descriptor: MapDescriptor
-) -> list[xr.Dataset]:
-    """
-    Keep only the inputs taken at the pivot angle the map is for.
-
-    Every input we have for the map window is passed in, whatever pivot
-    angle it was taken at. A map is made from one pivot angle only, which is
-    the sensor field of its descriptor ("l090" is the 90 degree pivot angle).
-    Inputs within ``LoConstants.PSET_PIVOT_ANGLE_TOLERANCE`` of that angle are
-    kept, and inputs with no pivot angle at all are dropped.
-
-    Parameters
-    ----------
-    datasets : list[xr.Dataset]
-        The input products available for the map window. Every Lo product
-        records the pivot angle it was taken at.
-    map_descriptor : MapDescriptor
-        The parsed descriptor of the map being made.
-
-    Returns
-    -------
-    list[xr.Dataset]
-        The inputs that belong on this map.
-    """
-    if not isinstance(map_descriptor.sensor, int):
-        # No pivot angle in the descriptor to select inputs with
-        return datasets
-
-    kept = []
-    for dataset in datasets:
-        if "pivot_angle" not in dataset:
-            logger.info("Dropping input with no pivot angle.")
-            continue
-        pivot_angle = dataset["pivot_angle"].item()
-        if (
-            abs(pivot_angle - map_descriptor.sensor)
-            < LoConstants.PSET_PIVOT_ANGLE_TOLERANCE
-        ):
-            kept.append(dataset)
-        else:
-            logger.info(f"Dropping input with pivot angle {pivot_angle}")
-
-    return kept
-
-
 def _lo_l2_quickmap(
     sci_dependencies: dict, descriptor: str, start_date: str
 ) -> list[xr.Dataset]:
@@ -195,8 +146,8 @@ def _lo_l2_quickmap(
     Parameters
     ----------
     sci_dependencies : dict
-        Dictionary of the input datasets, keyed by logical source, at any
-        pivot angle.
+        Dictionary of the input datasets, keyed by logical source, taken at the
+        pivot angle of the map.
     descriptor : str
         The map descriptor to be produced
         (e.g., "l090-enansnbs-h-sf-nsp-ram-hae-6deg-6mo").
@@ -232,10 +183,9 @@ def _lo_l2_quickmap(
         )
 
     for logical_source, datasets in sci_dependencies.items():
-        selected = _inputs_at_map_pivot_angle(datasets, map_descriptor)
         logger.info(
-            f"{len(selected)} of {len(datasets)} {logical_source} inputs are at "
-            f"the pivot angle of {descriptor}"
+            f"{len(datasets)} {logical_source} inputs are available at the pivot "
+            f"angle of {descriptor}"
         )
 
     # No pointing sets available, so the epoch bounds are set using `start_date`.

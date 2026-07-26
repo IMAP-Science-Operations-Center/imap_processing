@@ -25,7 +25,6 @@ from imap_processing.lo.l1c.lo_l1c import (
     SPIN_ANGLE_BIN_CENTERS,
 )
 from imap_processing.lo.l2.lo_l2 import (
-    _inputs_at_map_pivot_angle,
     _lo_l2_quickmap,
     _prepare_corrections,
     add_efficiency_factors_to_pset,
@@ -2927,25 +2926,6 @@ class TestProjectPsetToMap:
             assert key in value_keys, f"Expected key '{key}' not in value_keys"
 
 
-class TestPsetsAtMapPivotAngle:
-    """Tests for selecting the psets that belong on a map."""
-
-    def test_psets_are_selected_by_map_pivot_angle(self):
-        """Test that only psets near the descriptor pivot angle are kept."""
-        map_descriptor = MapDescriptor.from_string("l090-ena-h-sf-nsp-ram-hae-6deg-1yr")
-        in_range = xr.Dataset({"pivot_angle": xr.DataArray(90.1)})
-        psets = [
-            in_range,
-            # The neighbouring pivot angles belong on their own maps
-            xr.Dataset({"pivot_angle": xr.DataArray(75.0)}),
-            xr.Dataset({"pivot_angle": xr.DataArray(105.0)}),
-            xr.Dataset({"pivot_angle": xr.DataArray(30.0)}),
-            xr.Dataset(),  # No pivot angle at all
-        ]
-
-        assert _inputs_at_map_pivot_angle(psets, map_descriptor) == [in_range]
-
-
 class TestLoL2Quickmap:
     """Tests quickmap when there are no pointing sets."""
 
@@ -2979,19 +2959,19 @@ class TestLoL2Quickmap:
         with pytest.raises(ValueError, match="start_date is required"):
             lo_l2({}, [], self.descriptor)
 
-    def test_quickmap_selects_inputs_by_pivot_angle(self, caplog):
+    def test_quickmap_reports_its_inputs(self, caplog):
         """Test that the quickmap reports the inputs belonging on the map."""
         sci_dependencies = {
             "imap_lo_l1b_de": [
                 xr.Dataset({"pivot_angle": xr.DataArray(90.0)}),
-                xr.Dataset({"pivot_angle": xr.DataArray(75.0)}),
+                xr.Dataset({"pivot_angle": xr.DataArray(90.1)}),
             ]
         }
 
         with caplog.at_level(logging.INFO):
             _lo_l2_quickmap(sci_dependencies, self.descriptor, "20260101")
 
-        assert "1 of 2 imap_lo_l1b_de inputs" in caplog.text
+        assert "2 imap_lo_l1b_de inputs" in caplog.text
 
     def test_quickmap_shape(self):
         """Test that the quickmap has the shape of a real 6deg map."""
