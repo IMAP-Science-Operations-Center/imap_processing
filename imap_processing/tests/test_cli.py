@@ -513,7 +513,6 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
         },
         [],
         descriptor,
-        "20250415",
     )
     mocks["mock_write_cdf"].assert_called_once_with(output_l2_dataset)
 

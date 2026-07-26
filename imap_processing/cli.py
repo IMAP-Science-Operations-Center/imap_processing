@@ -1376,9 +1376,7 @@ class Lo(ProcessInstrument):
                     dataset
                 )
 
-            datasets = lo_l2.lo_l2(
-                sci_dependencies, anc_dependencies, self.descriptor, self.start_date
-            )
+            datasets = lo_l2.lo_l2(sci_dependencies, anc_dependencies, self.descriptor)
         return datasets
 
 
