@@ -1214,49 +1214,64 @@ class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
 
     @staticmethod
-    def _input_at_pivot_angle(
-        imap_file_path: imap_data_access.ImapFilePath, map_pivot_angle: int
-    ) -> bool:
+    def _pointings_at_pivot_angle(
+        dependencies: ProcessingInputCollection, map_pivot_angle: int
+    ) -> set[int]:
         """
-        Check whether a Lo input file was taken at the pivot angle of a map.
+        Find the pointings that were taken at the pivot angle of a map.
 
-        Every Lo science product records the pivot angle it was taken at. Files
-        without a pivot angle can't be placed on a map and so are rejected.
+        A pointing's pivot angle is recorded in its goodtimes product, which is
+        also the product the other inputs of that pointing are selected by.
 
         Parameters
         ----------
-        imap_file_path : imap_data_access.ImapFilePath
-            The Lo input file to check.
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
         map_pivot_angle : int
             The pivot angle [degrees] of the map being made.
 
         Returns
         -------
-        bool
-            Whether the file belongs on the map.
+        set[int]
+            The repointings whose pivot angle is that of the map.
         """
-        dataset = load_cdf(imap_file_path.construct_path())
-        if "pivot_angle" not in dataset:
-            logger.info(f"Dropping {imap_file_path.filename} - no pivot angle.")
-            return False
+        at_pivot_angle = set()
+        for goodtimes_path in dependencies.get_file_paths(
+            source="lo", descriptor="goodtimes"
+        ):
+            goodtimes = load_cdf(goodtimes_path)
+            repointing = imap_data_access.ScienceFilePath(
+                goodtimes_path.name
+            ).repointing
+            if "pivot" not in goodtimes:
+                logger.info(f"Dropping {goodtimes_path.name} - no pivot angle.")
+                continue
 
-        pivot_angle = dataset["pivot_angle"].item()
-        if abs(pivot_angle - map_pivot_angle) >= LoConstants.PSET_PIVOT_ANGLE_TOLERANCE:
-            logger.info(
-                f"Dropping {imap_file_path.filename}, its pivot angle {pivot_angle} "
-                f"is not the {map_pivot_angle} degree pivot angle of the map."
-            )
-            return False
+            pivot_angle = np.atleast_1d(goodtimes["pivot"].values)[0]
+            if (
+                abs(pivot_angle - map_pivot_angle)
+                < LoConstants.PSET_PIVOT_ANGLE_TOLERANCE
+            ):
+                at_pivot_angle.add(repointing)
+            else:
+                logger.info(
+                    f"Dropping repoint{repointing}, its pivot angle {pivot_angle} "
+                    f"is not the {map_pivot_angle} degree pivot angle of the map."
+                )
 
-        return True
+        return at_pivot_angle
 
     def pre_processing(self) -> ProcessingInputCollection:
         """
         Complete pre-processing.
 
         Extends the base pre-processing by dropping, for map products, the Lo
-        science inputs that were not taken at the pivot angle of the map being
-        made.
+        science inputs of the pointings that were not taken at the pivot angle
+        of the map being made. A pointing is dropped whole: its goodtimes give
+        the pivot angle, and its other inputs go with them.
+
+        Filtering here, rather than during processing, keeps the `Parents`
+        attribute of the produced map limited to the files it was made from.
 
         Returns
         -------
@@ -1281,6 +1296,8 @@ class Lo(ProcessInstrument):
             # A map of no particular pivot angle, e.g. "ilo-ena-h-sf-nsp-ram-..."
             return dependencies
 
+        at_pivot_angle = self._pointings_at_pivot_angle(dependencies, map_pivot_angle)
+
         filtered_dependencies = ProcessingInputCollection()
         for processing_input in dependencies.get_processing_inputs():
             if (
@@ -1293,7 +1310,7 @@ class Lo(ProcessInstrument):
             kept_filenames = [
                 str(imap_file_path.filename)
                 for imap_file_path in processing_input.imap_file_paths
-                if self._input_at_pivot_angle(imap_file_path, map_pivot_angle)
+                if imap_file_path.repointing in at_pivot_angle
             ]
             if kept_filenames:
                 filtered_dependencies.add(type(processing_input)(*kept_filenames))
@@ -1364,17 +1381,22 @@ class Lo(ProcessInstrument):
             datasets = lo_l1c.lo_l1c(data_dict, anc_dependencies)
 
         elif self.data_level == "l2":
-            sci_dependencies: dict[str, list[xr.Dataset]] = {}
-            science_files = dependencies.get_file_paths(source="lo", descriptor="pset")
-            science_files += dependencies.get_file_paths(source="lo", data_type="l1b")
+            sci_dependencies: dict[str, list[xr.Dataset]] = {
+                lo_l2.GOODTIMES: [],
+                lo_l2.BGRATES: [],
+                lo_l2.HISTRATES: [],
+            }
+            science_files = []
+            for descriptor in ("goodtimes", "bgrates", "histrates"):
+                science_files += dependencies.get_file_paths(
+                    source="lo", data_type="l1b", descriptor=descriptor
+                )
             anc_dependencies = dependencies.get_file_paths(data_type="ancillary")
 
-            # Load every input, at every pivot angle, grouped by product.
+            # Load every pointing of the map window, grouped by product.
             for file in science_files:
                 dataset = load_cdf(file)
-                sci_dependencies.setdefault(dataset.attrs["Logical_source"], []).append(
-                    dataset
-                )
+                sci_dependencies[dataset.attrs["Logical_source"]].append(dataset)
 
             datasets = lo_l2.lo_l2(sci_dependencies, anc_dependencies, self.descriptor)
         return datasets

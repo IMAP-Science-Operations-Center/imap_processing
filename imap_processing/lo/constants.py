@@ -8,9 +8,13 @@ from typing import ClassVar
 class LoConstants:
     """Constants for Lo which can be used across different levels."""
 
-    # Absolute tolerance [degrees] for accepting a pset's pivot angle as
+    # Absolute tolerance [degrees] for accepting an input's pivot angle as
     # sufficiently close to the pivot angle of the map being made.
     PSET_PIVOT_ANGLE_TOLERANCE: float = 5.0
+
+    # Empirical offset [degrees] added to the measured pivot angle when
+    # projecting a look direction onto the RAM direction.
+    PIVOT_RAM_OFFSET: float = 4.0
 
     # Ion species tracked. "H" is mandatory (and should be the first element);
     # any others for which we have histrates may be added here.
@@ -42,6 +46,55 @@ class LoConstants:
     # directions
     RAM_HISTOGRAM_BINS: tuple[slice, ...] = (slice(0, 20), slice(50, 60))
     ANTI_RAM_HISTOGRAM_BINS: tuple[slice, ...] = (slice(20, 50),)
+
+    # The following are indexed by ESA level (0-indexed, ESA level = index + 1).
+    # The 8th entry is the virtual E8 channel, unused by the map.
+    ESA_ENERGY: ClassVar[list[float]] = [
+        0.016,
+        0.030,
+        0.056,
+        0.106,
+        0.200,
+        0.405,
+        0.787,
+        1.821,
+    ]
+    GEO_FACTOR: ClassVar[list[float]] = [
+        7.0e-5,
+        7.9e-5,
+        9.7e-5,
+        11.2e-5,
+        14.0e-5,
+        17.7e-5,
+        22.5e-5,
+        6.721e-5,
+    ]
+    GEO_FACTOR_ERR: ClassVar[list[float]] = [
+        4.9e-5,
+        5.5e-5,
+        6.8e-5,
+        3.0e-5,
+        4.5e-5,
+        2.0e-5,
+        1.4e-5,
+        6.721e-5,
+    ]
+
+    # GEO_FACTOR/GEO_FACTOR_ERR above are the raw, pre-recalibration values; the
+    # map multiplies them by GEO_FACTOR_SCALE, and derives the asymmetric
+    # upper/lower G-factor bounds using the two scale factors below.
+    GEO_FACTOR_SCALE: float = 0.63529412
+    GEO_FACTOR_SCALE_UPPER: float = 1.57407407
+    GEO_FACTOR_SCALE_LOWER: float = 0.36728395
+
+    # Half-widths [keV] of the ESA energy passbands, by ESA level, for the two
+    # ESA modes. NOTE: From an e-mail from Nathan on 2025-09-11 (converted to keV).
+    ESA_ENERGY_DELTA: ClassVar[dict[int, list[float]]] = {
+        # esa_mode 0, HiRes
+        0: [0.00543, 0.01002, 0.01861, 0.03331, 0.06498, 0.13164, 0.26235],
+        # esa_mode 1, HiThr
+        1: [0.00881, 0.01604, 0.02850, 0.05313, 0.10560, 0.21967, 0.41360],
+    }
 
     # Nominal background rates [counts/s] for each species
     BG_RATES: ClassVar[dict[str, float]] = {"H": 0.0014925, "O": 0.000136635}

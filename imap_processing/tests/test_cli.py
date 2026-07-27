@@ -472,23 +472,27 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
 
     descriptor = "some-ena-map-descriptor"
 
-    mock_loaded_pset_1 = Mock(attrs={"Logical_source": "imap_lo_l1c_pset"})
-    mock_loaded_pset_2 = Mock(attrs={"Logical_source": "imap_lo_l1c_pset"})
-    mock_loaded_de = Mock(attrs={"Logical_source": "imap_lo_l1b_de"})
+    mock_goodtimes = Mock(attrs={"Logical_source": "imap_lo_l1b_goodtimes"})
+    mock_bgrates = Mock(attrs={"Logical_source": "imap_lo_l1b_bgrates"})
+    mock_histrates_1 = Mock(attrs={"Logical_source": "imap_lo_l1b_histrates"})
+    mock_histrates_2 = Mock(attrs={"Logical_source": "imap_lo_l1b_histrates"})
     science_file_paths = [
-        "imap_lo_l1c_pset_20250415_v001.cdf",
-        "imap_lo_l1c_pset_20250416_v001.cdf",
-        "imap_lo_l1b_de_20250415_v001.cdf",
+        "imap_lo_l1b_goodtimes_20250415-repoint00217_v001.cdf",
+        "imap_lo_l1b_bgrates_20250415-repoint00217_v001.cdf",
+        "imap_lo_l1b_histrates_20250415-repoint00217_v001.cdf",
+        "imap_lo_l1b_histrates_20250416-repoint00218_v001.cdf",
     ]
 
     processing_input = ProcessingInputCollection(
         *[ScienceInput(file_path) for file_path in science_file_paths],
     )
 
+    # Loaded in descriptor order: goodtimes, then bgrates, then histrates
     mocks["mock_load_cdf"].side_effect = [
-        mock_loaded_pset_1,
-        mock_loaded_pset_2,
-        mock_loaded_de,
+        mock_goodtimes,
+        mock_bgrates,
+        mock_histrates_1,
+        mock_histrates_2,
     ]
     mock_lo_pre_processing.return_value = processing_input
 
@@ -508,8 +512,9 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
 
     mock_lo_l2.assert_called_once_with(
         {
-            "imap_lo_l1c_pset": [mock_loaded_pset_1, mock_loaded_pset_2],
-            "imap_lo_l1b_de": [mock_loaded_de],
+            "imap_lo_l1b_goodtimes": [mock_goodtimes],
+            "imap_lo_l1b_bgrates": [mock_bgrates],
+            "imap_lo_l1b_histrates": [mock_histrates_1, mock_histrates_2],
         },
         [],
         descriptor,
@@ -520,26 +525,31 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
 @mock.patch("imap_processing.cli.load_cdf")
 @mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
 def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_load_cdf):
-    """Test that only inputs at the pivot angle of the map are kept."""
-    valid_pset = "imap_lo_l1c_pset_20250415_v001.cdf"
-    invalid_pset = "imap_lo_l1c_pset_20250416_v001.cdf"
-    valid_de = "imap_lo_l1b_de_20250415-repoint00217_v001.cdf"
-    no_pivot_angle = "imap_lo_l1b_goodtimes_20250415-repoint00217_v001.cdf"
+    """Test that only the pointings at the pivot angle of the map are kept."""
+    kept = "-repoint00217_v001.cdf"
+    dropped = "-repoint00218_v001.cdf"
+    goodtimes = [
+        f"imap_lo_l1b_goodtimes_20250415{kept}",
+        f"imap_lo_l1b_goodtimes_20250416{dropped}",
+    ]
+    histrates = [
+        f"imap_lo_l1b_histrates_20250415{kept}",
+        f"imap_lo_l1b_histrates_20250416{dropped}",
+    ]
+    bgrates = [f"imap_lo_l1b_bgrates_20250415{kept}"]
     ancillary = "imap_lo_efficiency-factors_20250415_v001.csv"
 
     base_collection = ProcessingInputCollection(
-        ScienceInput(valid_pset, invalid_pset),
-        ScienceInput(valid_de),
-        ScienceInput(no_pivot_angle),
+        ScienceInput(*goodtimes),
+        ScienceInput(*histrates),
+        ScienceInput(*bgrates),
         AncillaryInput(ancillary),
     )
     mock_super_pre_processing.return_value = base_collection
     mock_load_cdf.side_effect = [
-        xr.Dataset({"pivot_angle": xr.DataArray(90.1)}),
+        xr.Dataset({"pivot": ("epoch", [90.1])}),
         # A neighbouring pivot angle, which belongs on its own map
-        xr.Dataset({"pivot_angle": xr.DataArray(75.0)}),
-        xr.Dataset({"pivot_angle": xr.DataArray(90.0)}),
-        xr.Dataset(),  # No pivot angle at all
+        xr.Dataset({"pivot": ("epoch", [75.0])}),
     ]
 
     instrument = Lo(
@@ -553,13 +563,43 @@ def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_lo
     )
     result = instrument.pre_processing()
 
-    # The goodtimes input had no pivot angle, so it drops out entirely
+    # Only repoint00217 is at the map's pivot angle, so repoint00218 drops out
+    # of every product it appears in.
     assert [
         [str(file_path.filename) for file_path in processing_input.imap_file_paths]
         for processing_input in result.get_processing_inputs()
-    ] == [[valid_pset], [valid_de], [ancillary]]
-    # Ancillary files are not loaded to be checked for a pivot angle
-    assert mock_load_cdf.call_count == 4
+    ] == [[goodtimes[0]], [histrates[0]], [bgrates[0]], [ancillary]]
+    # Only the goodtimes files are loaded, to read their pivot angle
+    assert mock_load_cdf.call_count == 2
+
+
+@mock.patch("imap_processing.cli.load_cdf")
+@mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
+def test_lo_pre_processing_drops_goodtimes_without_pivot(
+    mock_super_pre_processing, mock_load_cdf
+):
+    """Test that a pointing whose goodtimes has no pivot angle is dropped."""
+    goodtimes = "imap_lo_l1b_goodtimes_20250415-repoint00217_v001.cdf"
+    histrates = "imap_lo_l1b_histrates_20250415-repoint00217_v001.cdf"
+
+    base_collection = ProcessingInputCollection(
+        ScienceInput(goodtimes), ScienceInput(histrates)
+    )
+    mock_super_pre_processing.return_value = base_collection
+    mock_load_cdf.side_effect = [xr.Dataset()]  # No pivot angle at all
+
+    instrument = Lo(
+        "l2",
+        "l090-ena-h-sf-nsp-ram-hae-6deg-3mo",
+        base_collection.serialize(),
+        "20250415",
+        "20250715",
+        "v001",
+        False,
+    )
+    result = instrument.pre_processing()
+
+    assert list(result.get_processing_inputs()) == []
 
 
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)
