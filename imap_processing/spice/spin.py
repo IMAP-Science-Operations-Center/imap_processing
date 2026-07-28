@@ -348,3 +348,41 @@ def get_instrument_spin_phase(
         instrument
     )
     return (spacecraft_spin_phase + instrument_spin_phase_offset) % 1
+
+
+def get_instrument_spin_angle_bins(
+    instrument: SpiceFrame,
+    n_bins: int,
+    deg_per_bin: float | None = None,
+    bin_offset: float = 0.5,
+) -> npt.NDArray:
+    """
+    Get the instrument spin angle of each hardware spin-angle bin.
+
+    Instruments accumulate data into bins referenced to the spacecraft spin
+    pulse. A bin is converted to the instrument spin angle by adding the
+    spacecraft to instrument spin phase offset.
+
+    Parameters
+    ----------
+    instrument : SpiceFrame
+        Instrument frame the bins are wanted in.
+    n_bins : int
+        Number of spin-angle bins.
+    deg_per_bin : float, optional
+        Width [degrees] of a bin. Defaults to ``360 / n_bins``, i.e. bins that
+        evenly divide a spin. Bins sampled at a fixed cadence do not evenly
+        divide a spin and must pass their own width.
+    bin_offset : float
+        Fractional position within a bin the angle is reported at. Default is
+        0.5 for the bin center; use 0.0 for the leading edge.
+
+    Returns
+    -------
+    spin_angle : np.ndarray
+        The instrument spin angle [degrees, 0-360) of each bin.
+    """
+    if deg_per_bin is None:
+        deg_per_bin = 360.0 / n_bins
+    start_angle = 360.0 * get_spacecraft_to_instrument_spin_phase_offset(instrument)
+    return np.mod(start_angle + (np.arange(n_bins) + bin_offset) * deg_per_bin, 360.0)

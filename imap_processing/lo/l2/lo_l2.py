@@ -10,10 +10,8 @@ from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.constants import LoConstants as c  # noqa: N813
 from imap_processing.lo.l1c.lo_l1c import compute_pointing_directions
-from imap_processing.spice.geometry import (
-    SpiceFrame,
-    get_spacecraft_to_instrument_spin_phase_offset,
-)
+from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.spin import get_instrument_spin_angle_bins
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_met
 
 logger = logging.getLogger(__name__)
@@ -253,7 +251,12 @@ def _accumulate_pointing(
     pointing_exposure = histrates["exposure_time_6deg"].values[in_goodtime].sum(axis=0)
     background_rates = np.atleast_2d(bgrates[f"{species}_background_rates"].values)[0]
 
-    spin_angles = _dps_spin_angles()
+    # The L1B histogram spin bins are hardware spin-phase bins referenced to
+    # the spacecraft spin pulse, so they are rotated onto the instrument (DPS)
+    # spin angle, exactly as the L1B star-sensor product does.
+    spin_angles = get_instrument_spin_angle_bins(
+        SpiceFrame.IMAP_LO, c.N_SPIN_ANGLE_BINS
+    )
     # The whole pointing is projected from the middle of its good times, which
     # is where the despun frame is sampled.
     epoch = met_to_ttj2000ns((gt_start.min() + gt_end.max()) / 2.0)
@@ -285,26 +288,6 @@ def _accumulate_pointing(
 
     sky_map.min_epoch = min(sky_map.min_epoch, int(met_to_ttj2000ns(gt_start.min())))
     sky_map.max_epoch = max(sky_map.max_epoch, int(met_to_ttj2000ns(gt_end.max())))
-
-
-def _dps_spin_angles() -> np.ndarray:
-    """
-    Get the despun-frame azimuth of each histogram spin-angle bin center.
-
-    The L1B histogram spin bins are hardware spin-phase bins referenced to the
-    spacecraft spin pulse, NOT the instrument (DPS) spin angle. A bin center is
-    converted to the IMAP_DPS azimuth by adding the spacecraft to instrument
-    spin-phase offset, exactly as the L1B star-sensor product does.
-
-    Returns
-    -------
-    np.ndarray
-        The IMAP_DPS azimuth [degrees] of each of the histogram spin bins.
-    """
-    bin_width = 360.0 / c.N_SPIN_ANGLE_BINS
-    bin_centers = (np.arange(c.N_SPIN_ANGLE_BINS) + 0.5) * bin_width
-    offset = get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO) * 360.0
-    return np.mod(bin_centers + offset, 360.0)
 
 
 def _pixel_indices(

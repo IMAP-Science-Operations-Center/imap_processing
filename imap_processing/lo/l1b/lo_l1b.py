@@ -22,7 +22,6 @@ from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_latitudinal,
     frame_transform,
-    get_spacecraft_to_instrument_spin_phase_offset,
     lo_instrument_pointing,
 )
 from imap_processing.spice.repoint import (
@@ -32,6 +31,7 @@ from imap_processing.spice.repoint import (
     interpolate_repoint_data,
 )
 from imap_processing.spice.spin import (
+    get_instrument_spin_angle_bins,
     get_spin_data,
     get_spin_number,
     interpolate_spin_data,
@@ -2151,7 +2151,6 @@ def calculate_star_sensor_profiles_by_group(
     sampling_cadence: float,
     spin_period: float,
     group_size: int = 64,
-    start_angle_offset: float = 62.0,
     end_bins_to_exclude: int = c.STAR_END_BINS_TO_EXCLUDE,
     min_count_threshold: int = c.STAR_MIN_COUNT_THRESHOLD,
     bin_offset: float = 0.5,
@@ -2172,8 +2171,6 @@ def calculate_star_sensor_profiles_by_group(
         Spin period in seconds.
     group_size : int
         Number of records per group (default: 64).
-    start_angle_offset : float
-        Starting angle offset in degrees (default: 62.0 = 90° - 28°).
     end_bins_to_exclude : int
         Number of ending bins to exclude from each average (default: 2).
     min_count_threshold : int
@@ -2202,11 +2199,12 @@ def calculate_star_sensor_profiles_by_group(
     valid_indices = np.where(valid_mask)[0]
     n_valid = len(valid_indices)
 
-    # Calculate spin angles (same for all groups)
+    # Calculate spin angles (same for all groups). The samples are taken at a
+    # fixed cadence, so they do not evenly divide a spin.
     deg_per_bin = 360.0 * (sampling_cadence / 1000.0) / spin_period
-    bin_indices = np.arange(720)
-    sample_centers = (bin_indices + bin_offset) * deg_per_bin
-    spin_angle = (start_angle_offset + sample_centers) % 360.0
+    spin_angle = get_instrument_spin_angle_bins(
+        SpiceFrame.IMAP_LO, 720, deg_per_bin=deg_per_bin, bin_offset=bin_offset
+    )
 
     if n_valid == 0:
         logger.warning(
@@ -2335,9 +2333,6 @@ def l1b_star(
     logger.info(f"Using spin duration from spin data: {spin_duration:.6f} s")
 
     # TODO: Read from ancillary config file when available
-    sc_to_inst_angle_offset = 360 * get_spacecraft_to_instrument_spin_phase_offset(
-        SpiceFrame.IMAP_LO
-    )
     end_bins_to_exclude = c.STAR_END_BINS_TO_EXCLUDE
     min_count_threshold = c.STAR_MIN_COUNT_THRESHOLD
 
@@ -2361,7 +2356,6 @@ def l1b_star(
         sampling_cadence,
         spin_duration,
         group_size=group_size,
-        start_angle_offset=sc_to_inst_angle_offset,
         end_bins_to_exclude=end_bins_to_exclude,
         min_count_threshold=min_count_threshold,
         bin_offset=bin_offset,
@@ -2521,10 +2515,12 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     # Choose background rate thresholds based on pivot orientation.
     bg_rate_ram_nominal = c.THRESHOLD_BG_RATE_RAM_DEFAULT
     bg_rate_anti_ram_nominal = c.THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT
-    for (low, high), (ram_thresh, anti_ram_thresh) in c.PIVOT_ANGLE_THRESHOLDS.items():
-        if low < pivot < high:
-            bg_rate_ram_nominal = ram_thresh
-            bg_rate_anti_ram_nominal = anti_ram_thresh
+    for pivot_spec in c.PIVOT_ANGLES.values():
+        if pivot_spec.min <= pivot <= pivot_spec.max:
+            if pivot_spec.bg_rate_ram is not None:
+                bg_rate_ram_nominal = pivot_spec.bg_rate_ram
+            if pivot_spec.bg_rate_anti_ram is not None:
+                bg_rate_anti_ram_nominal = pivot_spec.bg_rate_anti_ram
             break
 
     # Manual overrides of the anti-RAM threshold for anomalous days.

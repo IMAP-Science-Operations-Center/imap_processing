@@ -1,7 +1,39 @@
 """Constants for IMAP-Lo."""
 
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, NamedTuple
+
+
+class PivotAngleSpec(NamedTuple):
+    """
+    Pivot angle [degrees] and associated settings for a nominal pivot index.
+
+    Attributes
+    ----------
+    pointing_index : int
+        The unique pointing "index" (matching technical documentation for Imap-Lo)
+    nominal : float
+        Nominal pivot angle.
+    min : float
+        Lower bound of the acceptable pivot angle range.
+    max : float
+        Upper bound of the acceptable pivot angle range.
+    bg_rate_ram : float, optional
+        RAM background-rate threshold [counts/s] for this pivot angle. ``None``
+        if no pivot-specific value is known, in which case
+        ``LoConstants.THRESHOLD_BG_RATE_RAM_DEFAULT`` applies.
+    bg_rate_anti_ram : float, optional
+        Anti-RAM background-rate threshold [counts/s] for this pivot angle.
+        ``None`` if no pivot-specific value is known, in which case
+        ``LoConstants.THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT`` applies.
+    """
+
+    pointing_index: int
+    nominal: float
+    min: float
+    max: float
+    bg_rate_ram: float | None = None
+    bg_rate_anti_ram: float | None = None
 
 
 @dataclass(frozen=True)
@@ -104,19 +136,25 @@ class LoConstants:
     # Minimum non-zero background rate floor = nominal / divisor
     BG_RATE_FLOOR_DIVISOR: ClassVar[dict[str, float]] = {"H": 50.0, "O": 150.0}
 
-    # Background-rate thresholds [counts/s] by pivot-angle range (low, high) [deg].
-    # Each value is (ram_threshold, anti_ram_threshold).
-    # The first matching open interval (low < pivot < high) is used; if none matches,
-    # THRESHOLD_BG_RATE_RAM_DEFAULT / THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT apply.
-    PIVOT_ANGLE_THRESHOLDS: ClassVar[dict[tuple[float, float], tuple[float, float]]] = {
-        (88.0, 92.0): (0.028, 0.014),
-        (73.0, 77.0): (0.035, 0.0175),
-        (103.0, 107.0): (0.0224, 0.0112),
+    # Pivot angle specs keyed by nominal pivot angle. A measured pivot angle is
+    # assigned to the first spec whose [min, max] range contains it; the ranges are
+    # disjoint, so the ordering here does not matter.
+    PIVOT_ANGLES: ClassVar[dict[int, PivotAngleSpec]] = {
+        60: PivotAngleSpec(1, 60.0, 55.0, 65.0, None, None),
+        75: PivotAngleSpec(2, 75.0, 70.0, 80.0, 0.035, 0.0175),
+        90: PivotAngleSpec(3, 90.0, 85.0, 95.0, 0.028, 0.014),
+        105: PivotAngleSpec(4, 105.0, 100.0, 110.0, 0.0224, 0.0112),
+        120: PivotAngleSpec(5, 120.0, 115.0, 125.0, None, None),
+        135: PivotAngleSpec(6, 135.0, 130.0, 140.0, None, None),
+        148: PivotAngleSpec(7, 148.0, 143.0, 153.0, None, None),
+        160: PivotAngleSpec(8, 160.0, 155.0, 165.0, None, None),
     }
 
-    # Default background-rate thresholds [counts/s] when no pivot range matches.
-    THRESHOLD_BG_RATE_RAM_DEFAULT: float = 0.0175
-    THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT: float = 0.00875
+    # Default background-rate thresholds [counts/s] when the pivot angle matches no
+    # spec in PIVOT_ANGLES, or the matching spec has no pivot-specific value.
+    # Currently set to nominal values for the 90-deg pivot angle.
+    THRESHOLD_BG_RATE_RAM_DEFAULT: float = 0.028
+    THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT: float = 0.014
 
     # Maximum time gap [s] between consecutive histogram epochs before treating them as
     # separate intervals.

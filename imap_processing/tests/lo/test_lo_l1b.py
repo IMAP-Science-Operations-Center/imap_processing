@@ -1802,8 +1802,12 @@ class TestCalculateStarSensorProfile:
         assert len(group_epochs) == 0  # No valid records
         assert avg_amplitudes.shape == (0, 720)
 
+    @patch(
+        "imap_processing.spice.spin.get_spacecraft_to_instrument_spin_phase_offset",
+        return_value=350.0 / 360.0,
+    )
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
-    def test_profiles_by_group_angle_wrapping(self, mock_repoint):
+    def test_profiles_by_group_angle_wrapping(self, mock_repoint, mock_offset):
         """Test that spin angles wrap correctly to [0, 360) range."""
         # Arrange
         mock_repoint.return_value = pd.DataFrame({"repoint_in_progress": [False]})
@@ -1824,7 +1828,6 @@ class TestCalculateStarSensorProfile:
             l1a_star,
             sampling_cadence=21.0,
             spin_period=15.0,
-            start_angle_offset=350.0,  # Large offset to test wrapping
         )
 
         # Assert
@@ -3023,7 +3026,7 @@ def test_l1b_bgrates_sigma_when_anti_ram_nominal_is_zero(
             "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
             return_value=(met_start, met_start + 1),
         ),
-        patch.object(LoConstants, "PIVOT_ANGLE_THRESHOLDS", {}),
+        patch.object(LoConstants, "PIVOT_ANGLES", {}),
         patch.object(LoConstants, "THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT", 0.0),
     ):
         bgrates_ds, _ = l1b_bgrates_and_goodtimes(
