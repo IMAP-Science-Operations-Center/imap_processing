@@ -330,7 +330,10 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
                 "imap_hi_l1a_90sensor-de_20241105_v001.cdf",
                 "imap_hi_l1b_90sensor-hk_20241105_v001.cdf",
             ],
-            ["imap_hi_90sensor-esa-energies_20240101_v001.csv"],
+            [
+                "imap_hi_90sensor-esa-energies_20240101_v001.csv",
+                "imap_hi_90sensor-gain-configuration_20240101_v001.csv",
+            ],
             1,
         ),
         ("l1b", "sci", "housekeeping", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
