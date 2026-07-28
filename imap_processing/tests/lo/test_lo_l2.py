@@ -7,12 +7,13 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.ena_maps.ena_maps import match_coords_to_indices
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l2.lo_l2 import (
+    LoSpinAnglePointingSet,
     _complete_pointings,
     _dps_spin_angles,
-    _pixel_indices,
     _spin_phase_mask,
     lo_l2,
 )
@@ -117,6 +118,25 @@ def identity_pointing(et, az_el, *args, **kwargs):
     is squeezed out.
     """
     return np.asarray(az_el)[:, 0, :]
+
+
+def make_pointing_set(sky_map, spin_angles, pivot=PIVOT):
+    """Build the in-memory pointing set of one pointing, sky pointing mocked."""
+    values = {
+        name: np.ones((N_ESA, spin_angles.size))
+        for name in ("ena_count", "exposure_factor", "bg_rate_exposure")
+    }
+    with patch(
+        "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+        side_effect=identity_pointing,
+    ):
+        return LoSpinAnglePointingSet(
+            met_to_ttj2000ns(GT_START),
+            pivot,
+            spin_angles,
+            values,
+            sky_map.spice_reference_frame,
+        )
 
 
 @pytest.fixture
@@ -351,23 +371,30 @@ class TestGeometry:
         np.testing.assert_allclose(angles[0], 63.0)
         np.testing.assert_allclose(np.diff(np.sort(angles)), 6.0)
 
-    def test_pixel_indices_match_the_map_grid(self):
-        """Directions are placed in the pixel whose center they are nearest."""
+    def test_bins_land_in_the_pixel_they_are_nearest(self):
+        """Each spin-angle bin is projected into the pixel it points into."""
         sky_map = MapDescriptor.from_string(FULL_DESCRIPTOR).to_empty_map()
-        centers = sky_map.az_el_points.values
+        spin_angles = _dps_spin_angles()
+        pointing_set = make_pointing_set(sky_map, spin_angles)
 
-        pixels = _pixel_indices(sky_map, centers[:, 0], centers[:, 1])
+        pixels = match_coords_to_indices(pointing_set, sky_map).values
 
-        np.testing.assert_array_equal(pixels, np.arange(sky_map.num_points))
+        # A direction never lands further than half a pixel from its pixel's
+        # center, in either axis.
+        centers = sky_map.az_el_points.values[pixels]
+        directions = pointing_set.az_el_points.values
+        half_pixel = sky_map.spacing_deg / 2
+        assert np.all(np.abs(centers[:, 0] - directions[:, 0]) <= half_pixel)
+        assert np.all(np.abs(centers[:, 1] - directions[:, 1]) <= half_pixel)
 
-    def test_pixel_indices_wrap_longitude(self):
-        """Longitudes outside 0-360 wrap onto the map."""
+    def test_bins_of_a_spin_land_in_distinct_pixels(self):
+        """The 60 six-degree spin bins fill a row of the six-degree map."""
         sky_map = MapDescriptor.from_string(FULL_DESCRIPTOR).to_empty_map()
+        pointing_set = make_pointing_set(sky_map, _dps_spin_angles())
 
-        wrapped = _pixel_indices(sky_map, np.array([-357.0]), np.array([0.0]))
-        direct = _pixel_indices(sky_map, np.array([3.0]), np.array([0.0]))
+        pixels = match_coords_to_indices(pointing_set, sky_map).values
 
-        np.testing.assert_array_equal(wrapped, direct)
+        assert len(np.unique(pixels)) == N_SPIN_BINS
 
     @pytest.mark.parametrize(
         "spin_phase, expected",

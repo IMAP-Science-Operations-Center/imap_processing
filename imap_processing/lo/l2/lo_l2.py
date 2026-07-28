@@ -1,12 +1,16 @@
 """IMAP-Lo L2 data processing."""
 
 import logging
-from typing import cast
 
 import numpy as np
 import xarray as xr
 
-from imap_processing.ena_maps.ena_maps import RectangularSkyMap
+from imap_processing.ena_maps.ena_maps import (
+    PointingSet,
+    RectangularSkyMap,
+    SkyTilingType,
+)
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.constants import LoConstants as c  # noqa: N813
 from imap_processing.lo.l1c.lo_l1c import compute_pointing_directions
@@ -14,12 +18,20 @@ from imap_processing.spice.geometry import (
     SpiceFrame,
     get_spacecraft_to_instrument_spin_phase_offset,
 )
-from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_met
+from imap_processing.spice.time import (
+    met_to_ttj2000ns,
+    ttj2000ns_to_et,
+    ttj2000ns_to_met,
+)
 
 logger = logging.getLogger(__name__)
 
 # The descriptors of the L1B products a map is built from, one set per pointing.
 REQUIRED_PRODUCTS = ("goodtimes", "bgrates", "histrates")
+
+# The map variables accumulated directly from the pointings, before any rates
+# or intensities are derived from them.
+ACCUMULATED_VARIABLES = ("ena_count", "exposure_factor", "bg_rate_exposure")
 
 # =============================================================================
 # MAIN ENTRY POINT
@@ -86,31 +98,15 @@ def lo_l2(
     pointings = _complete_pointings(sci_dependencies)
     logger.info(f"Building {descriptor} from {len(pointings)} pointings")
 
-    shape = (c.N_ESA_LEVELS, sky_map.num_points)
-    counts = np.zeros(shape)
-    exposure = np.zeros(shape)
-    # Background is a rate per ESA level per pointing, so it is accumulated
-    # weighted by exposure and divided by the total exposure at the end.
-    bg_rate_exposure = np.zeros(shape)
+    _initialize_accumulators(sky_map)
     esa_mode = 0
 
     for repointing, (goodtimes, bgrates, histrates) in sorted(pointings.items()):
         logger.debug(f"Accumulating repoint{repointing:05d}")
         esa_mode = _get_esa_mode(histrates)
-        _accumulate_pointing(
-            goodtimes,
-            bgrates,
-            histrates,
-            sky_map,
-            map_descriptor,
-            counts,
-            exposure,
-            bg_rate_exposure,
-        )
+        _accumulate_pointing(goodtimes, bgrates, histrates, sky_map, map_descriptor)
 
-    variables = _calculate_rates_and_intensities(
-        counts, exposure, bg_rate_exposure, esa_mode
-    )
+    variables = _calculate_rates_and_intensities(sky_map, esa_mode)
     dataset = _build_map_dataset(sky_map, variables, esa_mode)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
@@ -170,6 +166,18 @@ def _complete_pointings(
     return pointings
 
 
+def _esa_energy() -> np.ndarray:
+    """
+    Get the energy of each ESA level the map is binned in.
+
+    Returns
+    -------
+    np.ndarray
+        The energy [keV] of each ESA level.
+    """
+    return np.array(c.ESA_ENERGY[: c.N_ESA_LEVELS])
+
+
 def _get_esa_mode(histrates: xr.Dataset) -> int:
     """
     Read the ESA mode of a pointing, defaulting to HiRes.
@@ -194,18 +202,117 @@ def _get_esa_mode(histrates: xr.Dataset) -> int:
 # =============================================================================
 
 
+class LoSpinAnglePointingSet(PointingSet):  # type: ignore[misc]
+    """
+    The spin-angle bins of one pointing, as an in-memory pointing set.
+
+    Lo builds its maps straight from the L1B products of a pointing rather than
+    from a written L1C pointing set, so the sky direction of each spin-angle
+    bin and the values looking in it are assembled here.
+
+    Parameters
+    ----------
+    epoch : int
+        The time [TTJ2000 ns] the pointing is projected from.
+    pivot_angle : float
+        The pivot angle [degrees] of the pointing.
+    spin_angles : np.ndarray
+        The IMAP_DPS azimuth [degrees] of each spin-angle bin.
+    values : dict[str, np.ndarray]
+        The values of the pointing, each of shape (esa level, spin angle).
+    frame : SpiceFrame
+        The frame to compute the sky directions in, i.e. the map's frame.
+    """
+
+    tiling_type: SkyTilingType = SkyTilingType.RECTANGULAR
+
+    def __init__(
+        self,
+        epoch: int,
+        pivot_angle: float,
+        spin_angles: np.ndarray,
+        values: dict[str, np.ndarray],
+        frame: SpiceFrame,
+    ):
+        dims = [CoordNames.TIME.value, CoordNames.ENERGY_L2.value, "spin_angle"]
+        super().__init__(
+            xr.Dataset(
+                {
+                    name: (dims, value[np.newaxis, ...])  # add epoch axis
+                    for name, value in values.items()
+                },
+                coords={
+                    CoordNames.TIME.value: [epoch],
+                    CoordNames.ENERGY_L2.value: _esa_energy(),
+                },
+            ),
+            spice_reference_frame=frame,
+        )
+        self.spatial_coords = ("spin_angle",)
+
+        az_el = compute_pointing_directions(
+            epoch,
+            pivot_angle,
+            spin_angles=spin_angles,
+            off_angles=np.array([0.0]),
+            to_frame=frame,
+        )
+        self.az_el_points = xr.DataArray(
+            np.asarray(az_el),
+            dims=[CoordNames.GENERIC_PIXEL.value, CoordNames.AZ_EL_VECTOR.value],
+        )
+
+    @property
+    def midpoint_j2000_et(self) -> float:
+        """
+        The time the pointing is projected from.
+
+        The base class derives this from an ``epoch_delta``; a pointing built
+        here is handed the single epoch it is projected from directly.
+
+        Returns
+        -------
+        float
+            The epoch of the pointing set [J2000 ET].
+        """
+        return float(ttj2000ns_to_et(self.epoch))
+
+
+def _initialize_accumulators(sky_map: RectangularSkyMap) -> None:
+    """
+    Seed the map with the empty accumulators each pointing is added into.
+
+    ``project_pset_values_to_map`` creates a map variable the first time it
+    projects one, so seeding them is what lets the rest of the pipeline read
+    the accumulators unconditionally, however many pointings turn out to be
+    usable.
+
+    Parameters
+    ----------
+    sky_map : RectangularSkyMap
+        The map being built, modified in place.
+    """
+    for name in ACCUMULATED_VARIABLES:
+        sky_map.data_1d[name] = xr.DataArray(
+            np.zeros((1, c.N_ESA_LEVELS, sky_map.num_points)),
+            dims=[
+                CoordNames.TIME.value,
+                CoordNames.ENERGY_L2.value,
+                CoordNames.GENERIC_PIXEL.value,
+            ],
+            coords={CoordNames.ENERGY_L2.value: _esa_energy()},
+        )
+
+
 def _accumulate_pointing(
     goodtimes: xr.Dataset,
     bgrates: xr.Dataset,
     histrates: xr.Dataset,
     sky_map: RectangularSkyMap,
     map_descriptor: MapDescriptor,
-    counts: np.ndarray,
-    exposure: np.ndarray,
-    bg_rate_exposure: np.ndarray,
 ) -> None:
     """
-    Add one pointing's counts and exposure to the map accumulators.
+    Add one pointing's counts and exposure to the map.
 
     Parameters
     ----------
@@ -218,15 +325,9 @@ def _accumulate_pointing(
         The L1B histogram rates of the pointing, giving the counts and exposure
         of each spin-angle bin.
     sky_map : RectangularSkyMap
-        The map being built, used for its pixel grid.
+        The map being built, modified in place.
     map_descriptor : MapDescriptor
         The parsed descriptor of the map being made.
-    counts : np.ndarray
-        Accumulator of shape (esa level, pixel), modified in place.
-    exposure : np.ndarray
-        Accumulator of shape (esa level, pixel), modified in place.
-    bg_rate_exposure : np.ndarray
-        Accumulator of shape (esa level, pixel), modified in place.
     """
     species = map_descriptor.species
     pivot_angle = float(np.atleast_1d(goodtimes["pivot"].values)[0])
@@ -243,38 +344,38 @@ def _accumulate_pointing(
         logger.warning("No histogram epochs fall within the good-time windows.")
         return
 
-    pointing_counts = histrates[f"{species}_counts"].values[in_goodtime].sum(axis=0)
-    pointing_exposure = histrates["exposure_time_6deg"].values[in_goodtime].sum(axis=0)
-    background_rates = np.atleast_2d(bgrates[f"{species}_background_rates"].values)[0]
-
     spin_angles = _dps_spin_angles()
-    # The whole pointing is projected from the middle of its good times, which
-    # is where the despun frame is sampled.
-    epoch = met_to_ttj2000ns((gt_start.min() + gt_end.max()) / 2.0)
-    az_el = compute_pointing_directions(
-        epoch,
-        pivot_angle,
-        spin_angles=spin_angles,
-        off_angles=np.array([0.0]),
-        to_frame=map_descriptor.map_spice_coord_frame,
-    )
-    # The single boresight off-angle is squeezed out of the frame transform, so
-    # the directions come back as (spin angle, lon/lat).
-    az_el = np.asarray(az_el).reshape(spin_angles.size, 2)
-    pixels = _pixel_indices(sky_map, az_el[:, 0], az_el[:, 1])
-
     keep = _spin_phase_mask(spin_angles, pivot_angle, map_descriptor.spin_phase)
     if not keep.any():
         return
 
-    # np.add.at accumulates repeated pixels, which is what happens whenever
-    # several spin-angle bins land in the same map pixel.
-    np.add.at(counts, (slice(None), pixels[keep]), pointing_counts[:, keep])
-    np.add.at(exposure, (slice(None), pixels[keep]), pointing_exposure[:, keep])
-    np.add.at(
-        bg_rate_exposure,
-        (slice(None), pixels[keep]),
-        background_rates[:, np.newaxis] * pointing_exposure[:, keep],
+    pointing_counts = histrates[f"{species}_counts"].values[in_goodtime].sum(axis=0)
+    pointing_exposure = histrates["exposure_time_6deg"].values[in_goodtime].sum(axis=0)
+    background_rates = np.atleast_2d(bgrates[f"{species}_background_rates"].values)[0]
+
+    # The whole pointing is projected from the middle of its good times, which
+    # is where the despun frame is sampled.
+    epoch = met_to_ttj2000ns((gt_start.min() + gt_end.max()) / 2.0)
+    pointing_set = LoSpinAnglePointingSet(
+        epoch,
+        pivot_angle,
+        spin_angles,
+        {
+            "ena_count": pointing_counts,
+            "exposure_factor": pointing_exposure,
+            # Background is a rate per ESA level per pointing, so it is
+            # accumulated weighted by exposure and divided by the total
+            # exposure at the end.
+            "bg_rate_exposure": background_rates[:, np.newaxis] * pointing_exposure,
+        },
+        sky_map.spice_reference_frame,
+    )
+    # The projection sums the spin-angle bins that land in the same map pixel,
+    # and adds this pointing on top of what the earlier pointings left there.
+    sky_map.project_pset_values_to_map(
+        pointing_set,
+        value_keys=list(ACCUMULATED_VARIABLES),
+        pset_valid_mask=keep,
     )
 
     sky_map.min_epoch = min(sky_map.min_epoch, int(met_to_ttj2000ns(gt_start.min())))
@@ -299,43 +400,6 @@ def _dps_spin_angles() -> np.ndarray:
     bin_centers = (np.arange(c.N_SPIN_ANGLE_BINS) + 0.5) * bin_width
     offset = get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO) * 360.0
     return np.mod(bin_centers + offset, 360.0)
-
-
-def _pixel_indices(
-    sky_map: RectangularSkyMap, longitude: np.ndarray, latitude: np.ndarray
-) -> np.ndarray:
-    """
-    Get the map pixel each sky direction falls in.
-
-    A rectangular map stores its pixels as a 1D array raveled from the
-    (azimuth, elevation) grid, elevation varying fastest.
-
-    Parameters
-    ----------
-    sky_map : RectangularSkyMap
-        The map being built.
-    longitude : np.ndarray
-        Longitudes [degrees] in the map's frame.
-    latitude : np.ndarray
-        Latitudes [degrees] in the map's frame.
-
-    Returns
-    -------
-    np.ndarray
-        The pixel index of each direction.
-    """
-    spacing = sky_map.spacing_deg
-    # binning_grid_shape is annotated as a 1-tuple in the base class, but a
-    # rectangular map always returns (num azimuth bins, num elevation bins).
-    num_azimuth, num_elevation = cast(tuple[int, int], sky_map.binning_grid_shape)
-
-    azimuth_index = np.clip(
-        (np.mod(longitude, 360.0) // spacing).astype(int), 0, num_azimuth - 1
-    )
-    elevation_index = np.clip(
-        ((latitude + 90.0) // spacing).astype(int), 0, num_elevation - 1
-    )
-    return azimuth_index * num_elevation + elevation_index
 
 
 def _spin_phase_mask(
@@ -411,11 +475,8 @@ def _geometric_factors(esa_mode: int) -> tuple[np.ndarray, np.ndarray, np.ndarra
 
 
 def _calculate_rates_and_intensities(
-    counts: np.ndarray,
-    exposure: np.ndarray,
-    bg_rate_exposure: np.ndarray,
-    esa_mode: int,
-) -> xr.Dataset:
+    sky_map: RectangularSkyMap, esa_mode: int
+) -> dict[str, np.ndarray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
 
@@ -423,21 +484,21 @@ def _calculate_rates_and_intensities(
 
     Parameters
     ----------
-    counts : np.ndarray
-        Accumulated counts of shape (esa level, pixel).
-    exposure : np.ndarray
-        Accumulated exposure time [s] of shape (esa level, pixel).
-    bg_rate_exposure : np.ndarray
-        Accumulated exposure-weighted background rate, same shape.
+    sky_map : RectangularSkyMap
+        The map the pointings were projected onto, read for its accumulators.
     esa_mode : int
         The ESA mode, 0 for HiRes and 1 for HiThr.
 
     Returns
     -------
     dict[str, np.ndarray]
-        The map variables, each of shape (esa level, pixel).
+        The map variables, each of shape (epoch, esa level, pixel).
     """
-    energy = np.array(c.ESA_ENERGY[: c.N_ESA_LEVELS])[:, np.newaxis]
+    counts = sky_map.data_1d["ena_count"].values
+    exposure = sky_map.data_1d["exposure_factor"].values
+    bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"].values
+
+    energy = _esa_energy()[:, np.newaxis]
     geometric_factor, error_upper, error_lower = _geometric_factors(esa_mode)
     geometric_factor = geometric_factor[:, np.newaxis]
     error_upper = error_upper[:, np.newaxis]
@@ -535,7 +596,7 @@ def _build_map_dataset(
     sky_map : RectangularSkyMap
         The map being built.
     variables : dict[str, np.ndarray]
-        The map variables, each of shape (esa level, pixel).
+        The map variables, each of shape (epoch, esa level, pixel).
     esa_mode : int
         The ESA mode, 0 for HiRes and 1 for HiThr, which sets the widths of the
         ESA energy passbands.
@@ -546,13 +607,11 @@ def _build_map_dataset(
         The map variables on the (epoch, energy, longitude, latitude) grid,
         with the energy coordinate and its widths.
     """
-    energy = np.array(c.ESA_ENERGY[: c.N_ESA_LEVELS])
+    dims = sky_map.data_1d["ena_count"].dims
     for name, values in variables.items():
-        sky_map.data_1d[name] = xr.DataArray(
-            values[np.newaxis, ...].astype(np.float32),
-            dims=["epoch", "energy", "pixel"],
-            coords={"energy": energy},
-        )
+        sky_map.data_1d[name] = xr.DataArray(values.astype(np.float32), dims=dims)
+    # `bg_rate_exposure` is an accumulator, not a map variable.
+    sky_map.data_1d = sky_map.data_1d.drop_vars("bg_rate_exposure")
 
     dataset = sky_map.to_dataset()
 
