@@ -18,6 +18,7 @@ import logging
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
+from time import sleep
 from typing import final
 
 import imap_data_access
@@ -472,6 +473,8 @@ class ProcessInstrument(ABC):
         """
         Upload data products to the IMAP SDC.
 
+        If a 503 SlowDown error is reported from the Upload API, a retry will be made
+
         Parameters
         ----------
         products : list[Path]
@@ -483,19 +486,36 @@ class ProcessInstrument(ABC):
                 return
 
             for filename in products:
-                try:
-                    logger.info(f"Uploading file: {filename}")
-                    imap_data_access.upload(filename)
-                except IMAPDataAccessError as e:
-                    message = str(e)
-                    if "FileAlreadyExists" in message and "409" in message:
-                        logger.warning("Skipping upload of existing file, %s", filename)
-                        continue
-                    else:
+                max_retries = 3
+
+                for attempt in range(max_retries):
+                    try:
+                        logger.info(f"Uploading file: {filename}")
+                        imap_data_access.upload(filename)
+                        break
+
+                    except IMAPDataAccessError as e:
+                        message = str(e)
+
+                        if "FileAlreadyExists" in message and "409" in message:
+                            logger.warning(
+                                "Skipping upload of existing file, %s", filename
+                            )
+                            break
+                        elif "503" in message and "SlowDown" in message:
+                            if attempt < max_retries - 1:
+                                logger.warning(
+                                    "Upload busy. Waiting 5 seconds before retrying..."
+                                )
+                                sleep(5)
+                                continue
+
                         logger.error(f"Upload failed with error: {message}")
                         raise
-                except Exception as e:
-                    logger.error(f"Upload failed unknown error: {e}")
+
+                    except Exception as e:
+                        logger.error(f"Upload failed unknown error: {e}")
+                        raise
 
     @final
     def process(self) -> None:

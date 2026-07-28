@@ -939,11 +939,13 @@ def test_post_processing(
     ]
 
 
+@mock.patch("imap_processing.cli.sleep")
 @mock.patch("imap_processing.cli.filter_day_boundary_data")
 @mock.patch("imap_processing.cli.swe_l1a")
 def test_post_processing_upload_503_error(
     mock_swe_l1a,
     mock_filter,
+    mock_sleep,
     mock_instrument_dependencies,
 ):
     """Test coverage for post processing when the upload fails with 503 error"""
@@ -960,8 +962,10 @@ def test_post_processing_upload_503_error(
 
     # Mocks a 503 error received from the upload API
     mocks["mock_upload"].side_effect = imap_data_access.io.IMAPDataAccessError(
-        '503 Service Unavailable: {"error": "ServiceUnavailable", '
-        '"message": "The API is too busy."}'
+        "503 Service Unavailable: "
+        "<title>503 Slow Down</title>"
+        "Code: SlowDown"
+        "Message: Please reduce your request rate."
     )
 
     test_ds = xr.Dataset()
@@ -984,8 +988,13 @@ def test_post_processing_upload_503_error(
         with pytest.raises(imap_data_access.io.IMAPDataAccessError):
             instrument.process()
 
-        # Checks the upload failure was logged
-        assert any(
-            "Upload failed with error" in str(call)
-            for call in mock_error.call_args_list
-        )
+    # Upload should attempt 3 times
+    assert mocks["mock_upload"].call_count == 3
+
+    # Sleep should be called 2 times after first two failures
+    assert mock_sleep.call_count == 2
+
+    # Checks the upload failure was logged
+    assert any(
+        "Upload failed with error" in str(call) for call in mock_error.call_args_list
+    )
