@@ -256,7 +256,7 @@ def _accumulate_pointing(
         pivot_angle,
         spin_angles=spin_angles,
         off_angles=np.array([0.0]),
-        to_frame=cast(SpiceFrame, map_descriptor.map_spice_coord_frame),
+        to_frame=map_descriptor.map_spice_coord_frame,
     )
     # The single boresight off-angle is squeezed out of the frame transform, so
     # the directions come back as (spin angle, lon/lat).
@@ -325,7 +325,9 @@ def _pixel_indices(
         The pixel index of each direction.
     """
     spacing = sky_map.spacing_deg
-    num_azimuth, num_elevation = sky_map.binning_grid_shape
+    # binning_grid_shape is annotated as a 1-tuple in the base class, but a
+    # rectangular map always returns (num azimuth bins, num elevation bins).
+    num_azimuth, num_elevation = cast(tuple[int, int], sky_map.binning_grid_shape)
 
     azimuth_index = np.clip(
         (np.mod(longitude, 360.0) // spacing).astype(int), 0, num_azimuth - 1
