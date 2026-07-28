@@ -16,10 +16,8 @@ from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_met
 
 logger = logging.getLogger(__name__)
 
-# The L1B products a map is built from, one set per pointing.
-GOODTIMES = "imap_lo_l1b_goodtimes"
-BGRATES = "imap_lo_l1b_bgrates"
-HISTRATES = "imap_lo_l1b_histrates"
+# The descriptors of the L1B products a map is built from, one set per pointing.
+REQUIRED_PRODUCTS = ("goodtimes", "bgrates", "histrates")
 
 # =============================================================================
 # MAIN ENTRY POINT
@@ -27,7 +25,9 @@ HISTRATES = "imap_lo_l1b_histrates"
 
 
 def lo_l2(
-    sci_dependencies: dict, anc_dependencies: list, descriptor: str
+    sci_dependencies: dict[int, dict[str, xr.Dataset]],
+    anc_dependencies: list,
+    descriptor: str,
 ) -> list[xr.Dataset]:
     """
     Process IMAP-Lo L1B data into an L2 sky map.
@@ -44,11 +44,9 @@ def lo_l2(
 
     Parameters
     ----------
-    sci_dependencies : dict
-        Dictionary of the input datasets, keyed by logical source, each a list
-        of datasets covering the pointings of the map window. Must contain
-        ``"imap_lo_l1b_goodtimes"``, ``"imap_lo_l1b_bgrates"`` and
-        ``"imap_lo_l1b_histrates"``.
+    sci_dependencies : dict[int, dict[str, xr.Dataset]]
+        The input datasets covering the pointings of the map window, keyed by
+        repointing and then by product descriptor.
     anc_dependencies : list
         List of ancillary file paths. Unused, the calibration constants of the
         map live in ``LoConstants``.
@@ -83,7 +81,7 @@ def lo_l2(
     if not isinstance(sky_map, RectangularSkyMap):
         raise NotImplementedError("HEALPix map output not supported for Lo")
 
-    pointings = _group_inputs_by_pointing(sci_dependencies)
+    pointings = _complete_pointings(sci_dependencies)
     logger.info(f"Building {descriptor} from {len(pointings)} pointings")
 
     shape = (c.N_ESA_LEVELS, sky_map.num_points)
@@ -95,7 +93,7 @@ def lo_l2(
     esa_mode = 0
 
     for repointing, (goodtimes, bgrates, histrates) in sorted(pointings.items()):
-        logger.debug(f"Accumulating {repointing}")
+        logger.debug(f"Accumulating repoint{repointing:05d}")
         esa_mode = _get_esa_mode(histrates)
         _accumulate_pointing(
             goodtimes,
@@ -129,47 +127,43 @@ def lo_l2(
 # =============================================================================
 
 
-def _group_inputs_by_pointing(sci_dependencies: dict) -> dict[str, tuple]:
+def _complete_pointings(
+    sci_dependencies: dict[int, dict[str, xr.Dataset]],
+) -> dict[int, tuple]:
     """
-    Group the L1B inputs into the (goodtimes, bgrates, histrates) of a pointing.
-
-    Each input product records the pointing it covers in its ``Repointing``
-    global attribute. Pointings missing any of the three products cannot be
-    mapped and are dropped.
+    Reduce the grouped inputs to the pointings that can be mapped.
 
     Parameters
     ----------
-    sci_dependencies : dict
-        Dictionary of the input datasets, keyed by logical source.
+    sci_dependencies : dict[int, dict[str, xr.Dataset]]
+        The input datasets of each pointing, keyed by repointing and then by
+        product descriptor.
 
     Returns
     -------
-    dict[str, tuple]
-        The (goodtimes, bgrates, histrates) datasets of each pointing, keyed by
-        repointing.
+    dict[int, tuple]
+        The (goodtimes, bgrates, histrates) datasets of each mappable pointing,
+        keyed by repointing.
 
     Raises
     ------
     KeyError
         If any of the three required products is missing entirely.
     """
-    by_pointing: dict[str, dict[str, xr.Dataset]] = {}
-    for logical_source in (GOODTIMES, BGRATES, HISTRATES):
-        for dataset in sci_dependencies[logical_source]:
-            repointing = dataset.attrs.get("Repointing", "")
-            by_pointing.setdefault(repointing, {})[logical_source] = dataset
+    found = {product for products in sci_dependencies.values() for product in products}
+    missing_products = set(REQUIRED_PRODUCTS) - found
+    if missing_products:
+        raise KeyError(f"No input files for {sorted(missing_products)}")
 
     pointings = {}
-    for repointing, products in by_pointing.items():
-        missing = {GOODTIMES, BGRATES, HISTRATES} - set(products)
+    for repointing, products in sci_dependencies.items():
+        missing = set(REQUIRED_PRODUCTS) - set(products)
         if missing:
-            logger.warning(f"Dropping {repointing}, it has no {sorted(missing)}")
+            logger.warning(
+                f"Dropping repoint{repointing:05d}, it has no {sorted(missing)}"
+            )
             continue
-        pointings[repointing] = (
-            products[GOODTIMES],
-            products[BGRATES],
-            products[HISTRATES],
-        )
+        pointings[repointing] = tuple(products[p] for p in REQUIRED_PRODUCTS)
 
     return pointings
 

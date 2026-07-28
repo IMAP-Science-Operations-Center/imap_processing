@@ -1381,22 +1381,24 @@ class Lo(ProcessInstrument):
             datasets = lo_l1c.lo_l1c(data_dict, anc_dependencies)
 
         elif self.data_level == "l2":
-            sci_dependencies: dict[str, list[xr.Dataset]] = {
-                lo_l2.GOODTIMES: [],
-                lo_l2.BGRATES: [],
-                lo_l2.HISTRATES: [],
-            }
-            science_files = []
-            for descriptor in ("goodtimes", "bgrates", "histrates"):
-                science_files += dependencies.get_file_paths(
-                    source="lo", data_type="l1b", descriptor=descriptor
-                )
             anc_dependencies = dependencies.get_file_paths(data_type="ancillary")
 
-            # Load every pointing of the map window, grouped by product.
-            for file in science_files:
-                dataset = load_cdf(file)
-                sci_dependencies[dataset.attrs["Logical_source"]].append(dataset)
+            # Load every pointing of the map window, grouped into the products
+            # of each pointing.
+            sci_dependencies: dict[int, dict[str, xr.Dataset]] = {}
+            for descriptor in lo_l2.REQUIRED_PRODUCTS:
+                for file in dependencies.get_file_paths(
+                    source="lo", data_type="l1b", descriptor=descriptor
+                ):
+                    repointing = imap_data_access.ScienceFilePath(file.name).repointing
+                    if repointing is None:
+                        logger.warning(
+                            f"Dropping {file.name}, it covers no single pointing."
+                        )
+                        continue
+                    sci_dependencies.setdefault(repointing, {})[descriptor] = load_cdf(
+                        file
+                    )
 
             datasets = lo_l2.lo_l2(sci_dependencies, anc_dependencies, self.descriptor)
         return datasets

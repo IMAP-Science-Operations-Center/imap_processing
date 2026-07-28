@@ -10,10 +10,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l2.lo_l2 import (
-    BGRATES,
-    GOODTIMES,
-    HISTRATES,
-    _group_inputs_by_pointing,
+    _complete_pointings,
     _pixel_indices,
     _spin_phase_mask,
     lo_l2,
@@ -40,7 +37,16 @@ IN_METS = [511_000_150.0, 511_000_200.0, 511_000_250.0]
 OUT_METS = [510_990_000.0, 511_010_000.0]
 
 
-def make_pointing(repointing="repoint00100", pivot=PIVOT, seed=42):
+def product_attrs(repointing, product):
+    """The global attributes an L1B input of a pointing is written with."""
+
+    return {
+        "Repointing": f"repoint{repointing:05d}",
+        "Logical_source": f"imap_lo_l1b_{product}",
+    }
+
+
+def make_pointing(repointing=100, pivot=PIVOT, seed=42):
     """Build the three synthetic L1B inputs of one pointing.
 
     The in-window epochs carry modest counts and exposure; the out-of-window
@@ -67,7 +73,7 @@ def make_pointing(repointing="repoint00100", pivot=PIVOT, seed=42):
             "esa_mode": ("epoch", np.zeros(mets.size, dtype=int)),
         },
         coords={"epoch": met_to_ttj2000ns(mets)},
-        attrs={"Repointing": repointing, "Logical_source": HISTRATES},
+        attrs=product_attrs(repointing, "histrates"),
     )
     goodtimes = xr.Dataset(
         {
@@ -76,30 +82,35 @@ def make_pointing(repointing="repoint00100", pivot=PIVOT, seed=42):
             "gt_end_met": ("epoch", [GT_END]),
         },
         coords={"epoch": [0]},
-        attrs={"Repointing": repointing, "Logical_source": GOODTIMES},
+        attrs=product_attrs(repointing, "goodtimes"),
     )
     background = np.array([0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07])
     bgrates = xr.Dataset(
         {"h_background_rates": (["epoch", "esa_step"], background[np.newaxis, :])},
         coords={"epoch": [0], "esa_step": np.arange(1, N_ESA + 1)},
-        attrs={"Repointing": repointing, "Logical_source": BGRATES},
+        attrs=product_attrs(repointing, "bgrates"),
     )
 
     return {
-        GOODTIMES: goodtimes,
-        BGRATES: bgrates,
-        HISTRATES: histrates,
+        "repointing": repointing,
+        "goodtimes": goodtimes,
+        "bgrates": bgrates,
+        "histrates": histrates,
         "expected_counts": counts[in_idx].sum(axis=(0, 2)),
         "expected_exposure": exposure[in_idx].sum(axis=(0, 2)),
         "background": background,
     }
 
 
-def as_dependencies(*pointings):
-    """Turn pointings into the sci_dependencies lo_l2 takes."""
+def as_dependencies(*pointings, products=("goodtimes", "bgrates", "histrates")):
+    """Turn pointings into the sci_dependencies lo_l2 takes.
+
+    The CLI keys the inputs by repointing and then by product descriptor, see
+    ``cli.Lo.do_processing``.
+    """
     return {
-        source: [pointing[source] for pointing in pointings]
-        for source in (GOODTIMES, BGRATES, HISTRATES)
+        pointing["repointing"]: {product: pointing[product] for product in products}
+        for pointing in pointings
     }
 
 
@@ -224,7 +235,7 @@ class TestAccumulation:
 
     def test_pointings_accumulate(self, one_pointing):
         """Two pointings contribute twice the counts of one."""
-        other = make_pointing(repointing="repoint00101", seed=7)
+        other = make_pointing(repointing=101, seed=7)
 
         with patch(
             "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
@@ -376,36 +387,41 @@ class TestGeometry:
             _spin_phase_mask(SPIN_ANGLES, PIVOT, "sideways")
 
 
-class TestInputGrouping:
-    """Sorting the input products into pointings."""
+class TestPointingSelection:
+    """Reducing the grouped inputs to the pointings that can be mapped."""
 
-    def test_inputs_are_grouped_by_repointing(self, one_pointing):
-        """Each pointing's three products are grouped together."""
-        other = make_pointing(repointing="repoint00101")
+    def test_complete_pointings_are_kept_in_product_order(self, one_pointing):
+        """Each pointing's products are ordered goodtimes, bgrates, histrates."""
+        other = make_pointing(repointing=101)
 
-        pointings = _group_inputs_by_pointing(as_dependencies(one_pointing, other))
+        pointings = _complete_pointings(as_dependencies(one_pointing, other))
 
-        assert set(pointings) == {"repoint00100", "repoint00101"}
-        assert pointings["repoint00100"][0] is one_pointing[GOODTIMES]
-        assert pointings["repoint00100"][2] is one_pointing[HISTRATES]
+        assert set(pointings) == {100, 101}
+        assert pointings[100] == (
+            one_pointing["goodtimes"],
+            one_pointing["bgrates"],
+            one_pointing["histrates"],
+        )
 
     def test_incomplete_pointings_are_dropped(self, one_pointing, caplog):
         """A pointing missing one of the three products cannot be mapped."""
-        dependencies = as_dependencies(one_pointing)
-        dependencies[BGRATES] = []
+        incomplete = make_pointing(repointing=101)
+        dependencies = as_dependencies(one_pointing) | as_dependencies(
+            incomplete, products=("goodtimes", "histrates")
+        )
 
-        pointings = _group_inputs_by_pointing(dependencies)
+        pointings = _complete_pointings(dependencies)
 
-        assert pointings == {}
-        assert "imap_lo_l1b_bgrates" in caplog.text
+        assert set(pointings) == {100}
+        assert "repoint00101" in caplog.text
+        assert "bgrates" in caplog.text
 
     def test_missing_product_raises(self, one_pointing):
         """A map cannot be made without all three products."""
-        dependencies = as_dependencies(one_pointing)
-        del dependencies[HISTRATES]
+        dependencies = as_dependencies(one_pointing, products=("goodtimes", "bgrates"))
 
-        with pytest.raises(KeyError, match=HISTRATES):
-            _group_inputs_by_pointing(dependencies)
+        with pytest.raises(KeyError, match="histrates"):
+            _complete_pointings(dependencies)
 
 
 class TestUnsupported:

@@ -510,11 +510,15 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
     )
     instrument.process()
 
+    # Grouped by the repointing in the filename and the descriptor queried by.
     mock_lo_l2.assert_called_once_with(
         {
-            "imap_lo_l1b_goodtimes": [mock_goodtimes],
-            "imap_lo_l1b_bgrates": [mock_bgrates],
-            "imap_lo_l1b_histrates": [mock_histrates_1, mock_histrates_2],
+            217: {
+                "goodtimes": mock_goodtimes,
+                "bgrates": mock_bgrates,
+                "histrates": mock_histrates_1,
+            },
+            218: {"histrates": mock_histrates_2},
         },
         [],
         descriptor,
