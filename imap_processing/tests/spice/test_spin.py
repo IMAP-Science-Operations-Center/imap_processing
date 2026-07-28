@@ -312,29 +312,3 @@ def test_get_spin_start_met(fake_spin_data):
     # when we have a linear ramp of data points between spins
     start_mets = spin.interpolate_spin_data(np.linspace(32, 37, 3))["spin_start_met"]
     np.testing.assert_array_equal(start_mets, [30, 30, 30])
-
-
-def test_get_instrument_spin_angle_bins():
-    """Bins that evenly divide a spin are reported at their centers."""
-    spin_angles = spin.get_instrument_spin_angle_bins(SpiceFrame.IMAP_LO, 60)
-
-    assert spin_angles.shape == (60,)
-    # IMAP-Lo sits 60 degrees from the spacecraft spin pulse, so the center of
-    # bin 0 (3 degrees) is at 63 degrees in the instrument frame.
-    np.testing.assert_allclose(spin_angles[0], 63.0)
-    np.testing.assert_allclose(np.diff(np.sort(spin_angles)), 6.0)
-
-
-def test_get_instrument_spin_angle_bins_uneven_bins():
-    """Bins sampled at a fixed cadence wrap around the spin."""
-    # 720 samples of 21 ms each cover more than one 15 second spin.
-    deg_per_bin = 360.0 * 0.021 / 15.0
-    spin_angles = spin.get_instrument_spin_angle_bins(
-        SpiceFrame.IMAP_LO, 720, deg_per_bin=deg_per_bin, bin_offset=0.0
-    )
-
-    assert np.all((spin_angles >= 0) & (spin_angles < 360))
-    # The first sample sits at the instrument offset, and the bins wrap past it.
-    np.testing.assert_allclose(spin_angles[0], 60.0)
-    np.testing.assert_allclose(spin_angles[1], 60.0 + deg_per_bin)
-    assert np.any(spin_angles < 60.0)

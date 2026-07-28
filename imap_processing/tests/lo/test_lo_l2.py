@@ -11,12 +11,11 @@ from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l2.lo_l2 import (
     _complete_pointings,
+    _dps_spin_angles,
     _pixel_indices,
     _spin_phase_mask,
     lo_l2,
 )
-from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.spin import get_instrument_spin_angle_bins
 from imap_processing.spice.time import met_to_ttj2000ns
 
 # A full-spin map, so that every spin-angle bin lands on it.
@@ -26,9 +25,6 @@ RAM_DESCRIPTOR = "l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
 N_ESA = LoConstants.N_ESA_LEVELS
 N_SPIN_BINS = LoConstants.N_SPIN_ANGLE_BINS
 PIVOT = 90.0
-
-# The instrument spin angle of each histogram spin bin, as L2 computes it.
-SPIN_ANGLES = get_instrument_spin_angle_bins(SpiceFrame.IMAP_LO, N_SPIN_BINS)
 
 # Good-time window [MET seconds] that the "in-window" histogram epochs fall in.
 GT_START = 511_000_000.0
@@ -345,13 +341,15 @@ class TestRatesAndIntensities:
 class TestGeometry:
     """The spin-angle to sky-pixel geometry."""
 
-    def test_spin_angles_carry_the_offset(self):
+    def test_dps_spin_angles_carry_the_offset(self):
         """The hardware spin bins are rotated onto the instrument frame."""
-        assert SPIN_ANGLES.size == N_SPIN_BINS
+        angles = _dps_spin_angles()
+
+        assert angles.size == N_SPIN_BINS
         # IMAP-Lo sits 60 degrees from the spacecraft spin pulse, so bin 0's
         # center (3 degrees) becomes 63 degrees in the despun frame.
-        np.testing.assert_allclose(SPIN_ANGLES[0], 63.0)
-        np.testing.assert_allclose(np.diff(np.sort(SPIN_ANGLES)), 6.0)
+        np.testing.assert_allclose(angles[0], 63.0)
+        np.testing.assert_allclose(np.diff(np.sort(angles)), 6.0)
 
     def test_pixel_indices_match_the_map_grid(self):
         """Directions are placed in the pixel whose center they are nearest."""
@@ -377,14 +375,16 @@ class TestGeometry:
     )
     def test_spin_phase_mask(self, spin_phase, expected):
         """Ram and anti-ram split the spin; a full map keeps all of it."""
-        mask = _spin_phase_mask(SPIN_ANGLES, PIVOT, spin_phase)
+        angles = _dps_spin_angles()
+
+        mask = _spin_phase_mask(angles, PIVOT, spin_phase)
 
         assert mask.sum() == expected
 
     def test_spin_phase_mask_rejects_unknown(self):
         """An unknown spin phase is an error, not a silently empty map."""
         with pytest.raises(ValueError, match="Invalid spin phase"):
-            _spin_phase_mask(SPIN_ANGLES, PIVOT, "sideways")
+            _spin_phase_mask(_dps_spin_angles(), PIVOT, "sideways")
 
 
 class TestPointingSelection:
