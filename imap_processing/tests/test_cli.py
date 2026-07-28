@@ -1044,6 +1044,5 @@ def test_post_processing_upload_unknown_error(
 
     # Checks the upload failure was logged
     assert any(
-        "Upload failed unknown error" in str(call)
-        for call in mock_error.call_args_list
+        "Upload failed unknown error" in str(call) for call in mock_error.call_args_list
     )
