@@ -998,3 +998,52 @@ def test_post_processing_upload_503_error(
     assert any(
         "Upload failed with error" in str(call) for call in mock_error.call_args_list
     )
+
+
+@mock.patch("imap_processing.cli.filter_day_boundary_data")
+@mock.patch("imap_processing.cli.swe_l1a")
+def test_post_processing_upload_unknown_error(
+    mock_swe_l1a,
+    mock_filter,
+    mock_instrument_dependencies,
+):
+    """Test coverage for post processing when the upload fails with unknown error"""
+
+    mocks = mock_instrument_dependencies
+    mocks["mock_download"].return_value = "dependency0"
+    mocks["mock_write_cdf"].side_effect = [
+        "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
+    ]
+    mocks[
+        "mock_write_cdf"
+    ].return_value = "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
+    mocks["mock_query"].return_value = []
+
+    # Mocks an unknown error received from the upload API
+    mocks["mock_upload"].side_effect = RuntimeError("Unexpected failure")
+
+    test_ds = xr.Dataset()
+    mock_swe_l1a.return_value = [test_ds]
+    mock_filter.side_effect = lambda ds, _: ds
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_swe_l0_raw_20100105_v001.pkts"),
+        SPICEInput("naif0012.tls", "imap_sclk_0001.tsc"),
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    dependency_str = (
+        '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}, '
+        '{"type": "spice", "files": ["naif0012.tls", "imap_sclk_0001.tsc"]}]'
+    )
+    instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
+
+    # Checks that the upload failed and logs an error and raises an exception
+    with mock.patch("logging.Logger.error") as mock_error:
+        with pytest.raises(RuntimeError):
+            instrument.process()
+
+    # Checks the upload failure was logged
+    assert any(
+        "Upload failed unknown error" in str(call)
+        for call in mock_error.call_args_list
+    )
