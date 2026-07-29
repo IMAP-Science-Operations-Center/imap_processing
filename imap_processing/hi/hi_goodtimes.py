@@ -53,7 +53,7 @@ class CullCode(IntEnum):
     STAT_FILTER_0 = 1 << 4  # 16
     STAT_FILTER_1 = 1 << 5  # 32
     STAT_FILTER_2 = 1 << 6  # 64
-    BAD_ESA_VOLTAGE = 1 << 7  # 128
+    BAD_HV_VALUE = 1 << 7  # 128
 
 
 def hi_goodtimes(
@@ -69,7 +69,8 @@ def hi_goodtimes(
     This is the top-level function that orchestrates all goodtimes culling
     operations for a single pointing. It applies the following filters in order:
 
-    0. mark_bad_esa_voltage - Remove times with invalid ESA voltage configuration
+    0. mark_bad_voltage - Remove times with invalid ESA or detector HV
+       configuration (e.g. gain test intervals)
     1. mark_incomplete_spin_sets - Remove incomplete 8-spin histogram periods
     2. mark_drf_times - Remove times during spacecraft drift restabilization
     3. mark_bad_tdc_cal - Remove times with failed TDC calibration
@@ -276,9 +277,9 @@ def _apply_goodtimes_filters(
 
     # === Apply culling filters ===
 
-    # 0. Mark bad ESA voltage times
-    logger.info("Applying filter: mark_bad_esa_voltage")
-    mark_bad_esa_voltage(goodtimes_ds, current_l1b_de)
+    # 0. Mark bad ESA/detector HV voltage times
+    logger.info("Applying filter: mark_bad_voltage")
+    mark_bad_voltage(goodtimes_ds, current_l1b_de)
 
     # 1. Mark incomplete spin sets
     logger.info("Applying filter: mark_incomplete_spin_sets")
@@ -953,22 +954,28 @@ class GoodtimesAccessor:
 # ==============================================================================
 
 
-def mark_bad_esa_voltage(
+def mark_bad_voltage(
     goodtimes_ds: xr.Dataset,
     l1b_de: xr.Dataset,
-    cull_code: int = CullCode.BAD_ESA_VOLTAGE,
+    cull_code: int = CullCode.BAD_HV_VALUE,
 ) -> None:
     """
-    Mark times when ESA voltages don't match expected values.
+    Mark times when ESA or detector high voltages don't match expected values.
 
     Filters out 8-spin periods where the ESA energy step is invalid, indicating
-    either calibration mode (esa_energy_step=0) or an ESA voltage mismatch
+    either calibration mode (esa_energy_step=0) or a voltage mismatch
     (esa_energy_step=FILLVAL). The voltage validation is performed during L1B
-    processing by matching measured inner/outer ESA voltages against the ESA
-    energies lookup table.
+    processing (see hi_l1b.get_esa_to_esa_energy_step_lut()) by matching
+    measured inner/outer ESA voltages against the ESA energies lookup table,
+    and matching measured detector high voltages (CEM/MCP/U-Can/deflector)
+    against the pointing's classified gain configuration. Both checks set
+    esa_energy_step=FILLVAL on mismatch; see the L1B DE ccsds_qf quality flag
+    (ImapHiL1bDeFlags.BAD_ESA_VOLTAGE / BAD_DETECTOR_VOLTAGE) to distinguish
+    which check failed.
 
     Algorithm Document Reference:
-        Section 2.3.2: Good times selection requiring valid ESA configuration
+        Section 2.2.4/2.3.2: Good times selection requiring valid ESA and
+        detector high voltage configuration.
 
     Parameters
     ----------
@@ -977,7 +984,7 @@ def mark_bad_esa_voltage(
     l1b_de : xarray.Dataset
         L1B Direct Event data containing esa_energy_step field.
     cull_code : int, optional
-        Cull code to use for marking bad times (default: CullCode.BAD_ESA_VOLTAGE).
+        Cull code to use for marking bad times (default: CullCode.BAD_HV_VALUE).
 
     Notes
     -----
@@ -986,10 +993,11 @@ def mark_bad_esa_voltage(
 
     Invalid ESA energy steps:
     - esa_energy_step = 0: Calibration mode (ESA stepping but not science data)
-    - esa_energy_step = FILLVAL (255): ESA voltage mismatch - measured voltages
-      didn't match any known energy step in the lookup table
+    - esa_energy_step = FILLVAL (255): ESA or detector voltage mismatch -
+      measured voltages didn't match any known energy step / gain
+      configuration
     """
-    logger.info("Running mark_bad_esa_voltage culling")
+    logger.info("Running mark_bad_voltage culling")
 
     # Get FILLVAL from attributes (should be 255 for uint8)
     fillval = l1b_de["esa_energy_step"].attrs.get("FILLVAL", 255)

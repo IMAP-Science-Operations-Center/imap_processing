@@ -24,8 +24,8 @@ from imap_processing.hi.hi_goodtimes import (
     _sum_esa_counts,
     create_goodtimes_dataset,
     hi_goodtimes,
-    mark_bad_esa_voltage,
     mark_bad_tdc_cal,
+    mark_bad_voltage,
     mark_drf_times,
     mark_incomplete_spin_sets,
     mark_overflow_packets,
@@ -88,7 +88,7 @@ class TestCullCode:
         assert CullCode.STAT_FILTER_0 == 16
         assert CullCode.STAT_FILTER_1 == 32
         assert CullCode.STAT_FILTER_2 == 64
-        assert CullCode.BAD_ESA_VOLTAGE == 128
+        assert CullCode.BAD_HV_VALUE == 128
 
     def test_cull_code_is_int(self):
         """Test that CullCode values are integers."""
@@ -4199,7 +4199,7 @@ class TestApplyGoodtimesFilters:
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv"
             ) as mock_cal_load,
-            patch("imap_processing.hi.hi_goodtimes.mark_bad_esa_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
@@ -4237,7 +4237,7 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
-            patch("imap_processing.hi.hi_goodtimes.mark_bad_esa_voltage") as mock_f0,
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage") as mock_f0,
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"
             ) as mock_f1,
@@ -4288,7 +4288,7 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
-            patch("imap_processing.hi.hi_goodtimes.mark_bad_esa_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
@@ -4324,7 +4324,7 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
-            patch("imap_processing.hi.hi_goodtimes.mark_bad_esa_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
@@ -4550,8 +4550,8 @@ class TestHiGoodtimes:
             assert result == [mock_finalized]
 
 
-class TestMarkBadEsaVoltage:
-    """Tests for mark_bad_esa_voltage culling function."""
+class TestMarkBadVoltage:
+    """Tests for mark_bad_voltage culling function."""
 
     @pytest.fixture
     def goodtimes_for_esa(self):
@@ -4609,41 +4609,41 @@ class TestMarkBadEsaVoltage:
         ds["esa_energy_step"].attrs["FILLVAL"] = 255
         return ds
 
-    def test_mark_bad_esa_voltage_all_valid(self, goodtimes_for_esa, l1b_de_all_valid):
+    def test_mark_bad_voltage_all_valid(self, goodtimes_for_esa, l1b_de_all_valid):
         """Test that no times are marked when all ESA energy steps are valid."""
-        mark_bad_esa_voltage(goodtimes_for_esa, l1b_de_all_valid)
+        mark_bad_voltage(goodtimes_for_esa, l1b_de_all_valid)
         assert np.all(goodtimes_for_esa["cull_flags"].values == CullCode.GOOD)
 
-    def test_mark_bad_esa_voltage_with_zero(self, goodtimes_for_esa, l1b_de_with_zero):
+    def test_mark_bad_voltage_with_zero(self, goodtimes_for_esa, l1b_de_with_zero):
         """Test that times are marked when esa_energy_step=0 (calibration)."""
-        mark_bad_esa_voltage(goodtimes_for_esa, l1b_de_with_zero)
+        mark_bad_voltage(goodtimes_for_esa, l1b_de_with_zero)
 
         # MET 1050 (index 1) should be culled
         assert np.all(
-            goodtimes_for_esa["cull_flags"].values[1, :] == CullCode.BAD_ESA_VOLTAGE
+            goodtimes_for_esa["cull_flags"].values[1, :] == CullCode.BAD_HV_VALUE
         )
         # Other times should remain good
         assert np.all(goodtimes_for_esa["cull_flags"].values[0, :] == CullCode.GOOD)
         assert np.all(goodtimes_for_esa["cull_flags"].values[2, :] == CullCode.GOOD)
 
-    def test_mark_bad_esa_voltage_with_fillval(
+    def test_mark_bad_voltage_with_fillval(
         self, goodtimes_for_esa, l1b_de_with_fillval
     ):
         """Test that times are marked when esa_energy_step=FILLVAL."""
-        mark_bad_esa_voltage(goodtimes_for_esa, l1b_de_with_fillval)
+        mark_bad_voltage(goodtimes_for_esa, l1b_de_with_fillval)
 
         # MET 1100 (index 2) should be culled
         assert np.all(
-            goodtimes_for_esa["cull_flags"].values[2, :] == CullCode.BAD_ESA_VOLTAGE
+            goodtimes_for_esa["cull_flags"].values[2, :] == CullCode.BAD_HV_VALUE
         )
         # Other times should remain good
         assert np.all(goodtimes_for_esa["cull_flags"].values[0, :] == CullCode.GOOD)
         assert np.all(goodtimes_for_esa["cull_flags"].values[1, :] == CullCode.GOOD)
 
-    def test_mark_bad_esa_voltage_custom_cull_code(
+    def test_mark_bad_voltage_custom_cull_code(
         self, goodtimes_for_esa, l1b_de_with_zero
     ):
         """Test using a custom cull code."""
         custom_code = 200
-        mark_bad_esa_voltage(goodtimes_for_esa, l1b_de_with_zero, cull_code=custom_code)
+        mark_bad_voltage(goodtimes_for_esa, l1b_de_with_zero, cull_code=custom_code)
         assert np.all(goodtimes_for_esa["cull_flags"].values[1, :] == custom_code)
