@@ -15,6 +15,7 @@ from imap_processing.hi.utils import (
     CalibrationProductConfig,
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
+    HiConstants,
     compute_qualified_event_mask,
     create_dataset_variables,
     filter_events_by_coincidence,
@@ -23,8 +24,51 @@ from imap_processing.hi.utils import (
     get_tof_window_mask,
     iter_background_events_by_config,
     iter_qualified_events_by_config,
+    load_gain_configuration,
     parse_sensor_number,
 )
+
+# Nominal HV mean/tolerance values matching the real gain-configuration
+# ancillary file, for building minimal test CSVs.
+_GAIN_CONFIG_HV_MEAN = {
+    "pos_defl": 6300.0,
+    "neg_defl": -6300.0,
+    "tof": -8000.0,
+    "mcp_f": -3000.0,
+    "mcp_b": -2125.0,
+    "cem_f": -4500.0,
+    "cem_bk_a": -2350.0,
+    "cem_bk_b": -2350.0,
+}
+_GAIN_CONFIG_HV_DELTA = dict.fromkeys(HiConstants.GAIN_CONFIG_HV_FIELDS, 50.0)
+
+
+def _gain_config_csv_rows(second_row_overrides=None):
+    """Build (header, first_row, second_row) CSV lines for config_id=0.
+
+    first_row (esa_energy_step=1) specifies all {field}_v/{field}_delta_v
+    values. second_row (esa_energy_step=2) leaves them blank (to be
+    forward-filled), unless overridden via second_row_overrides (column name
+    -> value string).
+    """
+    hv_columns = [
+        f"{field}{suffix}"
+        for field in HiConstants.GAIN_CONFIG_HV_FIELDS
+        for suffix in ("_v", "_delta_v")
+    ]
+    header = "config_id,esa_energy_step,geometric_factor," + ",".join(hv_columns)
+
+    first_values = {
+        **{f"{f}_v": str(v) for f, v in _GAIN_CONFIG_HV_MEAN.items()},
+        **{f"{f}_delta_v": str(v) for f, v in _GAIN_CONFIG_HV_DELTA.items()},
+    }
+    first_row = "0,1,0.00055," + ",".join(first_values[col] for col in hv_columns)
+
+    overrides = second_row_overrides or {}
+    second_values = {col: overrides.get(col, "") for col in hv_columns}
+    second_row = "0,2,0.00085," + ",".join(second_values[col] for col in hv_columns)
+
+    return header, first_row, second_row
 
 
 def test_hiapid():
@@ -420,6 +464,66 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
         # Should return sorted unique calibration product numbers
         np.testing.assert_array_equal(cal_prod_numbers, np.array([5, 10, 100]))
         assert isinstance(cal_prod_numbers, np.ndarray)
+
+
+class TestLoadGainConfiguration:
+    """Test coverage for load_gain_configuration function."""
+
+    def test_from_csv(self, hi_test_gain_configuration_path):
+        """Test coverage for load_gain_configuration reading the ancillary CSV."""
+        gain_config_df = load_gain_configuration(hi_test_gain_configuration_path)
+
+        assert gain_config_df.index.names == ["config_id", "esa_energy_step"]
+        assert len(gain_config_df) == 18  # 2 configs x 9 esa_energy_steps
+        assert gain_config_df.loc[(0, 1), "geometric_factor"] == 0.00055
+        assert gain_config_df.loc[(0, 5), "geometric_factor"] == 0.00340
+        assert gain_config_df.loc[(1, 9), "geometric_factor"] == 0.01922
+        # {field}_v/{field}_delta_v should be forward-filled to every
+        # esa_energy_step
+        for esa_energy_step in range(1, 10):
+            assert gain_config_df.loc[(0, esa_energy_step), "pos_defl_v"] == 6300.0
+            assert gain_config_df.loc[(0, esa_energy_step), "pos_defl_delta_v"] == 700.0
+            assert gain_config_df.loc[(0, esa_energy_step), "tof_v"] == -8000.0
+            assert gain_config_df.loc[(0, esa_energy_step), "cem_f_v"] == -4500.0
+            assert gain_config_df.loc[(1, esa_energy_step), "cem_f_v"] == -4200.0
+
+    def test_from_csv_string_io(self):
+        """Test coverage for load_gain_configuration with a file-like object."""
+        header, first_row, second_row = _gain_config_csv_rows()
+        csv_content = (
+            f"# comment line should be ignored\n{header}\n{first_row}\n{second_row}\n"
+        )
+        gain_config_df = load_gain_configuration(io.StringIO(csv_content))
+        assert gain_config_df.loc[(0, 1), "geometric_factor"] == 0.00055
+        assert gain_config_df.loc[(0, 2), "geometric_factor"] == 0.00085
+        # Forward-filled from the first row
+        assert gain_config_df.loc[(0, 2), "pos_defl_v"] == 6300.0
+        assert gain_config_df.loc[(0, 2), "pos_defl_delta_v"] == 50.0
+
+    def test_missing_geometric_factor_raises(self):
+        """Test that a null geometric_factor raises ValueError."""
+        header, first_row, _ = _gain_config_csv_rows()
+        second_row = "0,2,,,,,,,,,,,,,,,,,"
+        csv_content = f"{header}\n{first_row}\n{second_row}\n"
+        with pytest.raises(ValueError, match="Null geometric_factor"):
+            load_gain_configuration(io.StringIO(csv_content))
+
+    def test_missing_first_row_hv_values_raises(self):
+        """Test that missing {field}_v/{field}_delta_v on the first row raises."""
+        header, _, second_row = _gain_config_csv_rows()
+        first_row = "0,1,0.00055,,,,,,,,,,,,,,,,"
+        csv_content = f"{header}\n{first_row}\n{second_row}\n"
+        with pytest.raises(ValueError, match="Missing pos_defl_v"):
+            load_gain_configuration(io.StringIO(csv_content))
+
+    def test_inconsistent_hv_values_raises(self):
+        """Test inconsistent {field}_v/{field}_delta_v within a config_id raises."""
+        header, first_row, second_row = _gain_config_csv_rows(
+            second_row_overrides={"pos_defl_v": "6301.0"}
+        )
+        csv_content = f"{header}\n{first_row}\n{second_row}\n"
+        with pytest.raises(ValueError, match="Inconsistent pos_defl_v"):
+            load_gain_configuration(io.StringIO(csv_content))
 
 
 class TestBackgroundConfig:

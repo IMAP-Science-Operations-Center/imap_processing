@@ -170,4 +170,8 @@ class ImapHiL1bDeFlags(FlagNameMixin):
 
     NONE = CommonFlags.NONE
     PACKET_FULL = 2**0  # bit 0, packet contained 664 events (max capacity)
+    BAD_ESA_VOLTAGE = 2**1  # bit 1, ESA voltage didn't match any esa_energy_step
     BADSPIN = ENAFlags.BADSPIN  # bit 2, packet contained events from an invalid spin
+    BAD_DETECTOR_VOLTAGE = (
+        2**3
+    )  # bit 3, detector HV didn't match the pointing's gain configuration
