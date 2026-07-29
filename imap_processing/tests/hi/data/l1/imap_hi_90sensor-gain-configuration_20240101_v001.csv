@@ -1,0 +1,40 @@
+# Gain Configuration table
+# Valid start date: 2024-01-01 (from filename)
+# This file will be used in processing until a new calibration file is uploaded
+# to the SDC with either a higher version number or new date in the filename.
+# For details on how the SDC selects ancillary files for processing, see:
+# https://imap-processing.readthedocs.io/en/latest/data-access/calibration-files.html
+#
+# Each row describes one (config_id, esa_energy_step) combination. IMAP-Hi is
+# expected to alternate whole pointings between config_id=0 (the current/
+# nominal configuration) and config_id=1 (a new configuration reflecting a
+# deliberate gain change), starting August 2026.
+#
+# {field}_v/{field}_delta_v give the nominal value and tolerance (in volts)
+# for each detector high voltage monitor used to classify which configuration
+# a pointing is running (see IMAP-Hi Algorithm Document Section 2.2.4 and
+# culling_v2.c drop_bad_voltages() for config_id=0's reference values). Note
+# "tof" is the raw CCSDS mnemonic name for the U-Can voltage monitor (see
+# Section 8, Level 0 Packet Definitions). These values are constant across
+# esa_energy_step, so they only need to be specified on the first
+# esa_energy_step row of each config_id group; subsequent rows are
+# forward-filled. geometric_factor must be specified for every row.
+config_id,esa_energy_step,geometric_factor,pos_defl_v,pos_defl_delta_v,neg_defl_v,neg_defl_delta_v,tof_v,tof_delta_v,mcp_f_v,mcp_f_delta_v,mcp_b_v,mcp_b_delta_v,cem_f_v,cem_f_delta_v,cem_bk_a_v,cem_bk_a_delta_v,cem_bk_b_v,cem_bk_b_delta_v
+0,1,0.00055,6300.0,700.0,-6300.0,700.0,-8000.0,50.0,-3000.0,25.0,-2125.0,50.0,-4500.0,50.0,-2350.0,100.0,-2350.0,100.0
+0,2,0.00085,,,,,,,,,,,,,,,,
+0,3,0.00126,,,,,,,,,,,,,,,,
+0,4,0.00170,,,,,,,,,,,,,,,,
+0,5,0.00340,,,,,,,,,,,,,,,,
+0,6,0.00523,,,,,,,,,,,,,,,,
+0,7,0.00659,,,,,,,,,,,,,,,,
+0,8,0.01301,,,,,,,,,,,,,,,,
+0,9,0.01830,,,,,,,,,,,,,,,,
+1,1,0.00058,6300.0,700.0,-6300.0,700.0,-8000.0,50.0,-3000.0,25.0,-2125.0,50.0,-4200.0,50.0,-2500.0,100.0,-2500.0,100.0
+1,2,0.00089,,,,,,,,,,,,,,,,
+1,3,0.00132,,,,,,,,,,,,,,,,
+1,4,0.00179,,,,,,,,,,,,,,,,
+1,5,0.00357,,,,,,,,,,,,,,,,
+1,6,0.00549,,,,,,,,,,,,,,,,
+1,7,0.00692,,,,,,,,,,,,,,,,
+1,8,0.01366,,,,,,,,,,,,,,,,
+1,9,0.01922,,,,,,,,,,,,,,,,
