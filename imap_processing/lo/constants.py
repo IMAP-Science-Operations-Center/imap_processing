@@ -81,16 +81,6 @@ class LoConstants:
 
     # The following are indexed by ESA level (0-indexed, ESA level = index + 1).
     # The 8th entry is the virtual E8 channel, unused by the map.
-    ESA_ENERGY: ClassVar[list[float]] = [
-        0.016,
-        0.030,
-        0.056,
-        0.106,
-        0.200,
-        0.405,
-        0.787,
-        1.821,
-    ]
     GEO_FACTOR: ClassVar[list[float]] = [
         7.0e-5,
         7.9e-5,

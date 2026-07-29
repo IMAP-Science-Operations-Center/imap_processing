@@ -1,10 +1,13 @@
 """IMAP-Lo L2 data processing."""
 
 import logging
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps.ena_maps import (
     PointingSet,
     RectangularSkyMap,
@@ -12,6 +15,7 @@ from imap_processing.ena_maps.ena_maps import (
 )
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.naming import MapDescriptor
+from imap_processing.lo import lo_ancillary
 from imap_processing.lo.constants import LoConstants as c  # noqa: N813
 from imap_processing.lo.l1c.lo_l1c import compute_pointing_directions
 from imap_processing.spice.geometry import (
@@ -32,6 +36,9 @@ REQUIRED_PRODUCTS = ("goodtimes", "bgrates", "histrates")
 # The map variables accumulated directly from the pointings, before any rates
 # or intensities are derived from them.
 ACCUMULATED_VARIABLES = ("ena_count", "exposure_factor", "bg_rate_exposure")
+
+# The calibration ancillaries shipped with the package.
+ANCILLARY_DATA_DIR = Path(__file__).parent.parent / "ancillary_data"
 
 # =============================================================================
 # MAIN ENTRY POINT
@@ -84,6 +91,21 @@ def lo_l2(
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
 
+    # Determine if corrections are needed and prepare oxygen data if required
+    (
+        _sputtering_correction,
+        _bootstrap_correction,
+        _flux_correction,
+        _o_map_dataset,
+        _flux_factors,
+        _cg_correction,
+    ) = _prepare_corrections(
+        map_descriptor, descriptor, sci_dependencies, anc_dependencies
+    )
+
+    logger.info("Step 1: Loading ancillary data")
+    _efficiency_data = load_efficiency_data(anc_dependencies)
+
     # The geometric factors in LoConstants are hydrogen only.
     if map_descriptor.species != "h":
         raise NotImplementedError(
@@ -98,15 +120,20 @@ def lo_l2(
     pointings = _complete_pointings(sci_dependencies)
     logger.info(f"Building {descriptor} from {len(pointings)} pointings")
 
-    _initialize_accumulators(sky_map)
-    esa_mode = 0
+    # Every pointing of a map is taken in the same ESA mode, so the last one
+    # sets the energies and passband widths the whole map is binned in.
+    esa_mode = _get_esa_mode(pointings[max(pointings)][2]) if pointings else 0
+    energy = _esa_energy(map_descriptor.species, esa_mode)
+
+    _initialize_accumulators(sky_map, energy)
 
     for repointing, (goodtimes, bgrates, histrates) in sorted(pointings.items()):
         logger.debug(f"Accumulating repoint{repointing:05d}")
-        esa_mode = _get_esa_mode(histrates)
-        _accumulate_pointing(goodtimes, bgrates, histrates, sky_map, map_descriptor)
+        _accumulate_pointing(
+            goodtimes, bgrates, histrates, sky_map, map_descriptor, energy
+        )
 
-    variables = _calculate_rates_and_intensities(sky_map, esa_mode)
+    variables = _calculate_rates_and_intensities(sky_map, esa_mode, energy)
     dataset = _build_map_dataset(sky_map, variables, esa_mode)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
@@ -118,6 +145,224 @@ def lo_l2(
             external_map_dataset=dataset,
         )
     ]
+
+
+def _prepare_corrections(
+    map_descriptor: MapDescriptor,
+    descriptor: str,
+    sci_dependencies: dict,
+    anc_dependencies: list,
+) -> tuple[bool, bool, bool, xr.Dataset | None, Path | None, bool]:
+    """
+    Determine what corrections are needed and prepare oxygen dataset if required.
+
+    This helper function encapsulates the logic for determining when sputtering
+    and bootstrap corrections should be applied, and handles the creation of
+    the oxygen dataset needed for sputtering corrections.
+
+    Parameters
+    ----------
+    map_descriptor : MapDescriptor
+        The parsed map descriptor containing species and data type information.
+    descriptor : str
+        The original descriptor string for creating the oxygen variant.
+    sci_dependencies : dict
+        Dictionary of datasets needed for L2 data product creation.
+    anc_dependencies : list
+        List of ancillary file paths.
+
+    Returns
+    -------
+    tuple[bool, bool, bool, xr.Dataset | None, Path | None, bool]
+        A tuple containing:
+        - sputtering_correction: Whether to apply sputtering corrections
+        - bootstrap_correction: Whether to apply bootstrap corrections
+        - flux_correction: Whether to apply flux corrections
+        - o_map_dataset: Oxygen dataset if needed, None otherwise
+        - flux_factors: Path to flux factors ancillary file if needed,
+         None otherwise
+        - cg_correction: Whether to apply CG correction to the dataset.
+    """
+    # Default values - no corrections needed
+    sputtering_correction = False
+    bootstrap_correction = False
+    flux_correction = False
+    o_map_dataset = None
+    flux_factors: None | Path = None
+
+    # Sputtering and bootstrap corrections are only applied to hydrogen ENA data
+    # Guard against recursion: don't process oxygen for oxygen maps
+    if (
+        map_descriptor.species == "h"
+        and map_descriptor.principal_data == "ena"
+        and "-o-" not in descriptor
+    ):  # Safety check to prevent infinite recursion
+        logger.info("Creating map for oxygen for sputtering corrections")
+        o_descriptor = descriptor.replace("-h-", "-o-")
+        o_map_dataset = lo_l2(sci_dependencies, anc_dependencies, o_descriptor)[0]
+        sputtering_correction = True
+        bootstrap_correction = True
+
+    if "raw" not in map_descriptor.principal_data:
+        flux_correction = True
+        try:
+            flux_factors = next(
+                x for x in anc_dependencies if "esa-eta-fit-factors" in str(x)
+            )
+        except StopIteration:
+            raise ValueError(
+                "No flux correction factor file found in ancillary dependencies"
+            ) from None
+
+    cg_correction = True if map_descriptor.frame_descriptor == "hf" else False
+
+    return (
+        sputtering_correction,
+        bootstrap_correction,
+        flux_correction,
+        o_map_dataset,
+        flux_factors,
+        cg_correction,
+    )
+
+
+# =============================================================================
+# SETUP AND INITIALIZATION HELPERS
+# =============================================================================
+
+
+def load_efficiency_data(anc_dependencies: list) -> pd.DataFrame:
+    """
+    Load efficiency factor data from ancillary files.
+
+    Parameters
+    ----------
+    anc_dependencies : list
+        List of ancillary file paths to search for efficiency factor files.
+
+    Returns
+    -------
+    pd.DataFrame
+        Concatenated efficiency factor data from all matching files.
+        Returns empty DataFrame if no efficiency files found.
+    """
+    efficiency_files = [
+        anc_file
+        for anc_file in anc_dependencies
+        if "efficiency-factor" in str(anc_file)
+    ]
+
+    if not efficiency_files:
+        logger.warning("No efficiency factor files found in ancillary dependencies")
+        return pd.DataFrame()
+
+    logger.debug(f"Loading {len(efficiency_files)} efficiency factor files")
+    return pd.concat(
+        [lo_ancillary.read_ancillary_file(anc_file) for anc_file in efficiency_files],
+        ignore_index=True,
+    )
+
+
+def load_sputter_correction_data(
+    source_species: str, target_species: str
+) -> pd.DataFrame:
+    """
+    Load sputter correction factors from an ancillary file.
+
+    Parameters
+    ----------
+    source_species : str
+        The species doing the sputtering (e.g. "o" for oxygen).
+    target_species : str
+        The species being corrected (e.g. "h" for hydrogen).
+
+    Returns
+    -------
+    pd.DataFrame
+        Rows matching the given species pair, sorted ascending by esa_step,
+        with columns: source_species, target_species, esa_step,
+        sputter_factor, sputter_factor_uncertainty.
+    """
+    sputter_files = sorted(ANCILLARY_DATA_DIR.glob("*sputter-correction-factors*"))
+
+    if not sputter_files:
+        raise ValueError("No sputter correction files found")
+
+    df = pd.concat(
+        [lo_ancillary.read_ancillary_file(f) for f in sputter_files],
+        ignore_index=True,
+    )
+    mask = (df["source_species"] == source_species) & (
+        df["target_species"] == target_species
+    )
+    result = df[mask].sort_values("esa_step").reset_index(drop=True)
+    return result
+
+
+def load_bootstrap_correction_data() -> pd.DataFrame:
+    """
+    Load bootstrap correction factors from an ancillary file.
+
+    Returns
+    -------
+    pd.DataFrame
+        Bootstrap correction factors with columns: esa_step_i, esa_step_k,
+        bootstrap_factor. Indices are 1-based ESA step numbers where esa_step_k=8
+        refers to the virtual E8 channel.
+    """
+    bootstrap_files = sorted(ANCILLARY_DATA_DIR.glob("*bootstrap-correction-factors*"))
+
+    if not bootstrap_files:
+        raise ValueError("No bootstrap correction factor files found")
+
+    return pd.concat(
+        [lo_ancillary.read_ancillary_file(f) for f in bootstrap_files],
+        ignore_index=True,
+    )
+
+
+def finalize_dataset(dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
+    """
+    Add attributes and perform final dataset preparation.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to finalize with attributes.
+    descriptor : str
+        The descriptor for this map dataset.
+
+    Returns
+    -------
+    xr.Dataset
+        The finalized dataset with all attributes added.
+    """
+    # Initialize the attribute manager
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="lo")
+    attr_mgr.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")
+    attr_mgr.add_instrument_variable_attrs(instrument="enamaps", level="l2-rectangular")
+
+    # Add global and variable attributes
+    dataset.attrs.update(attr_mgr.get_global_attributes("imap_lo_l2_enamap"))
+
+    # Our global attributes have placeholders for descriptor
+    # so iterate through here and fill that in with the map-specific descriptor
+    for key in ["Data_type", "Logical_source", "Logical_source_description"]:
+        dataset.attrs[key] = dataset.attrs[key].format(descriptor=descriptor)
+    for var in dataset.data_vars:
+        try:
+            dataset[var].attrs = attr_mgr.get_variable_attributes(var)
+        except KeyError:
+            # If no attributes found, try without schema validation
+            try:
+                dataset[var].attrs = attr_mgr.get_variable_attributes(
+                    var, check_schema=False
+                )
+            except KeyError:
+                logger.warning(f"No attributes found for variable {var}")
+
+    return dataset
 
 
 # =============================================================================
@@ -166,18 +411,6 @@ def _complete_pointings(
     return pointings
 
 
-def _esa_energy() -> np.ndarray:
-    """
-    Get the energy of each ESA level the map is binned in.
-
-    Returns
-    -------
-    np.ndarray
-        The energy [keV] of each ESA level.
-    """
-    return np.array(c.ESA_ENERGY[: c.N_ESA_LEVELS])
-
-
 def _get_esa_mode(histrates: xr.Dataset) -> int:
     """
     Read the ESA mode of a pointing, defaulting to HiRes.
@@ -222,6 +455,8 @@ class LoSpinAnglePointingSet(PointingSet):
         The values of the pointing, each of shape (esa level, spin angle).
     frame : SpiceFrame
         The frame to compute the sky directions in, i.e. the map's frame.
+    energy : np.ndarray
+        The energy [keV] of each ESA level.
     """
 
     tiling_type: SkyTilingType = SkyTilingType.RECTANGULAR
@@ -233,6 +468,7 @@ class LoSpinAnglePointingSet(PointingSet):
         spin_angles: np.ndarray,
         values: dict[str, np.ndarray],
         frame: SpiceFrame,
+        energy: np.ndarray,
     ):
         dims = [CoordNames.TIME.value, CoordNames.ENERGY_L2.value, "spin_angle"]
         super().__init__(
@@ -243,7 +479,7 @@ class LoSpinAnglePointingSet(PointingSet):
                 },
                 coords={
                     CoordNames.TIME.value: [epoch],
-                    CoordNames.ENERGY_L2.value: _esa_energy(),
+                    CoordNames.ENERGY_L2.value: energy,
                 },
             ),
             spice_reference_frame=frame,
@@ -278,7 +514,7 @@ class LoSpinAnglePointingSet(PointingSet):
         return float(ttj2000ns_to_et(self.epoch))
 
 
-def _initialize_accumulators(sky_map: RectangularSkyMap) -> None:
+def _initialize_accumulators(sky_map: RectangularSkyMap, energy: np.ndarray) -> None:
     """
     Seed the map with the empty accumulators each pointing is added into.
 
@@ -291,6 +527,8 @@ def _initialize_accumulators(sky_map: RectangularSkyMap) -> None:
     ----------
     sky_map : RectangularSkyMap
         The map being built, modified in place.
+    energy : np.ndarray
+        The energy [keV] of each ESA level.
     """
     for name in ACCUMULATED_VARIABLES:
         sky_map.data_1d[name] = xr.DataArray(
@@ -300,7 +538,7 @@ def _initialize_accumulators(sky_map: RectangularSkyMap) -> None:
                 CoordNames.ENERGY_L2.value,
                 CoordNames.GENERIC_PIXEL.value,
             ],
-            coords={CoordNames.ENERGY_L2.value: _esa_energy()},
+            coords={CoordNames.ENERGY_L2.value: energy},
         )
 
 
@@ -310,6 +548,7 @@ def _accumulate_pointing(
     histrates: xr.Dataset,
     sky_map: RectangularSkyMap,
     map_descriptor: MapDescriptor,
+    energy: np.ndarray,
 ) -> None:
     """
     Add one pointing's counts and exposure to the map.
@@ -328,6 +567,8 @@ def _accumulate_pointing(
         The map being built, modified in place.
     map_descriptor : MapDescriptor
         The parsed descriptor of the map being made.
+    energy : np.ndarray
+        The energy [keV] of each ESA level.
     """
     species = map_descriptor.species
     pivot_angle = float(np.atleast_1d(goodtimes["pivot"].values)[0])
@@ -369,6 +610,7 @@ def _accumulate_pointing(
             "bg_rate_exposure": background_rates[:, np.newaxis] * pointing_exposure,
         },
         sky_map.spice_reference_frame,
+        energy,
     )
     # The projection sums the spin-angle bins that land in the same map pixel,
     # and adds this pointing on top of what the earlier pointings left there.
@@ -444,7 +686,105 @@ def _spin_phase_mask(
 
 
 # =============================================================================
-# RATES AND INTENSITIES
+# GEOMETRIC FACTORS
+# =============================================================================
+
+
+def load_geometric_factor_data(species: str) -> pd.DataFrame:
+    """
+    Load geometric factor data for the specified species.
+
+    Parameters
+    ----------
+    species : str
+        The species to load geometric factors for ("h" or "o").
+
+    Returns
+    -------
+    pd.DataFrame
+        Geometric factor dataframe for the specified species.
+
+    Raises
+    ------
+    ValueError
+        If species is not "h" or "o".
+    """
+    if species not in ["h", "o"]:
+        raise ValueError(
+            f"Geometric factors only available for 'h' and 'o', got '{species}'"
+        )
+
+    if species == "h":
+        gf_file = sorted(ANCILLARY_DATA_DIR.glob("*hydrogen-geometric-factor*"))[-1]
+    else:  # species == "o"
+        gf_file = sorted(ANCILLARY_DATA_DIR.glob("*oxygen-geometric-factor*"))[-1]
+
+    return lo_ancillary.read_ancillary_file(gf_file)
+
+
+def reduce_geometric_factor_data(species: str, esa_mode: int) -> pd.DataFrame:
+    """
+    Get geometric factor data for a specific species and ESA mode.
+
+    This helper function loads geometric factor data, filters by ESA mode, and
+    selects the row of each of the 7 energy steps, in ascending step order.
+
+    Parameters
+    ----------
+    species : str
+        The species to load geometric factors for ("h" or "o").
+    esa_mode : int
+        ESA mode (0 for HiRes, 1 for HiThr).
+
+    Returns
+    -------
+    pd.DataFrame
+        Geometric factor data indexed by Observed_E-Step (1-7), containing all
+        columns from the geometric factor CSV file.
+    """
+    # Load geometric factor data for this species
+    gf_data = load_geometric_factor_data(species)
+
+    # Filter for the specific ESA mode
+    if "esa_mode" in gf_data.columns:
+        gf_data = gf_data[gf_data["esa_mode"] == esa_mode]
+
+    # Lo Instrument team: Use only geometric factors where
+    # incident_E-Step == Observed_E-Step
+    diagonal = gf_data["incident_E-Step"] == gf_data["Observed_E-Step"]
+    gf_data = gf_data[diagonal].set_index("Observed_E-Step")
+
+    # Select the energy steps, in order. Raises if the file is missing one.
+    return gf_data.loc[list(range(1, c.N_ESA_LEVELS + 1))]
+
+
+def _esa_energy(species: str, esa_mode: int) -> np.ndarray:
+    """
+    Get the energy of each ESA level the map is binned in.
+
+    The energies are the passband centers the geometric factors were measured
+    at, so they are read from the same ancillary file, for the same species and
+    ESA mode.
+
+    Parameters
+    ----------
+    species : str
+        The species of the map ("h" or "o").
+    esa_mode : int
+        The ESA mode, 0 for HiRes and 1 for HiThr.
+
+    Returns
+    -------
+    np.ndarray
+        The energy [keV] of each ESA level.
+    """
+    return reduce_geometric_factor_data(species, esa_mode)["Cntr_E"].to_numpy(
+        dtype=float
+    )
+
+
+# =============================================================================
+# RATES AND INTENSITIES CALCULATIONS
 # =============================================================================
 
 
@@ -475,7 +815,7 @@ def _geometric_factors(esa_mode: int) -> tuple[np.ndarray, np.ndarray, np.ndarra
 
 
 def _calculate_rates_and_intensities(
-    sky_map: RectangularSkyMap, esa_mode: int
+    sky_map: RectangularSkyMap, esa_mode: int, energy: np.ndarray
 ) -> dict[str, np.ndarray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
@@ -488,6 +828,8 @@ def _calculate_rates_and_intensities(
         The map the pointings were projected onto, read for its accumulators.
     esa_mode : int
         The ESA mode, 0 for HiRes and 1 for HiThr.
+    energy : np.ndarray
+        The energy [keV] of each ESA level.
 
     Returns
     -------
@@ -498,7 +840,7 @@ def _calculate_rates_and_intensities(
     exposure = sky_map.data_1d["exposure_factor"].values
     bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"].values
 
-    energy = _esa_energy()[:, np.newaxis]
+    energy = energy[:, np.newaxis]
     geometric_factor, error_upper, error_lower = _geometric_factors(esa_mode)
     geometric_factor = geometric_factor[:, np.newaxis]
     error_upper = error_upper[:, np.newaxis]
