@@ -637,11 +637,17 @@ class GainConfigLookupTable:
         query_mets = np.atleast_1d(query_met)
         results = np.full(query_mets.shape, self.NO_MATCH, dtype=np.int64)
 
-        for i, qm in enumerate(query_mets):
-            mask = (self.df["start_met"] <= qm) & (self.df["end_met"] >= qm)
-            matches = self.df[mask]
-            if not matches.empty:
-                results[i] = matches["config_id"].iloc[0]
+        if not self.df.empty:
+            starts = self.df["start_met"].to_numpy()
+            ends = self.df["end_met"].to_numpy()
+            config_ids = self.df["config_id"].to_numpy()
+            for start, end, cfg in zip(starts, ends, config_ids, strict=False):
+                mask = (
+                    (results == self.NO_MATCH)
+                    & (query_mets >= start)
+                    & (query_mets <= end)
+                )
+                results[mask] = cfg
 
         return int(results[0]) if is_scalar_met else results
 
