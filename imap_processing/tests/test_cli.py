@@ -348,6 +348,7 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
             [
                 "imap_hi_45sensor-cal-prod_20240101_v001.csv",
                 "imap_hi_45sensor-backgrounds_20240101_v001.csv",
+                "imap_hi_45sensor-gain-configuration_20240101_v001.csv",
             ],
             1,
         ),
