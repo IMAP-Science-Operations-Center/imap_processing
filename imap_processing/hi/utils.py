@@ -206,8 +206,9 @@ def load_gain_configuration(path: str | Path | IO[str]) -> pd.DataFrame:
 
     Parameters
     ----------
-    path : str or pathlib.Path or file-like object
-        Location of the gain configuration ancillary CSV file.
+    path : str or pathlib.Path
+        Location of the gain configuration ancillary CSV file. Anything
+        accepted by ``pandas.read_csv`` (e.g. a file-like object) also works.
 
     Returns
     -------

@@ -494,11 +494,7 @@ hi_pset_geometric_factor:
   VALIDMIN: 0.0
   VAR_NOTES: >
     Geometric factor per esa_energy_step, looked up from the gain-configuration
-    ancillary file using the pointing's classified gain configuration (see the
-    L1B DE product's gain_configuration_id global attribute). FILLVAL where the
-    gain configuration could not be classified. Not yet consumed by L2
-    processing (deferred to a follow-on ticket that handles combining PSETs
-    from different gain configurations into a single map).
+    ancillary file using the l1b_de's classified gain configuration.
   VAR_TYPE: support_data
 
 hi_pset_calibration_prod:
