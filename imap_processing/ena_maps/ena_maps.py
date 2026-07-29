@@ -1804,8 +1804,10 @@ class HealpixSkyMap(AbstractSkyMap):
             )
         # Log the mean pixel value and the number of subdivisions for debugging
         logger.debug(
-            f"    Mean pixel value at Number of subdivisions: {num_subdivisions}: "
-            f"array of shape {mean_pixel_value.shape}: {mean_pixel_value}"
+            "    Mean pixel value at Number of subdivisions: %s: array of shape %s: %s",
+            num_subdivisions,
+            mean_pixel_value.shape,
+            mean_pixel_value,
         )
         return mean_pixel_value
 
