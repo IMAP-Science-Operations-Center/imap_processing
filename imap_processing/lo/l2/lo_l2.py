@@ -106,11 +106,11 @@ def lo_l2(
     logger.info("Step 1: Loading ancillary data")
     _efficiency_data = load_efficiency_data(anc_dependencies)
 
-    # The geometric factors in LoConstants are hydrogen only.
+    # Only hydrogen maps are supported end to end for now.
     if map_descriptor.species != "h":
         raise NotImplementedError(
             f"Cannot make a map of species {map_descriptor.species} for "
-            f"{descriptor}. Only hydrogen geometric factors are defined."
+            f"{descriptor}. Only hydrogen maps are supported."
         )
 
     sky_map = map_descriptor.to_empty_map()
@@ -133,7 +133,9 @@ def lo_l2(
             goodtimes, bgrates, histrates, sky_map, map_descriptor, energy
         )
 
-    variables = _calculate_rates_and_intensities(sky_map, esa_mode, energy)
+    variables = _calculate_rates_and_intensities(
+        sky_map, map_descriptor.species, esa_mode, energy
+    )
     dataset = _build_map_dataset(sky_map, variables, esa_mode)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
@@ -788,34 +790,47 @@ def _esa_energy(species: str, esa_mode: int) -> np.ndarray:
 # =============================================================================
 
 
-def _geometric_factors(esa_mode: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _geometric_factors(
+    species: str, esa_mode: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Get the recalibrated geometric factors and their asymmetric bounds.
 
+    The ancillary names its two uncertainty columns for the direction the
+    intensity derived from the factor moves in, which is the opposite of the
+    direction the factor itself moves in: intensity goes as 1/G, so a smaller
+    factor gives a larger intensity. Its ``_unc_plus`` is therefore the
+    downward excursion of the factor, and its ``_unc_minus`` the upward one.
+
     Parameters
     ----------
+    species : str
+        The species of the map ("h" or "o").
     esa_mode : int
-        The ESA mode, 0 for HiRes and 1 for HiThr. Unused for now, the
-        geometric factors are not yet split by ESA mode.
+        The ESA mode, 0 for HiRes and 1 for HiThr.
 
     Returns
     -------
     tuple[np.ndarray, np.ndarray, np.ndarray]
-        The geometric factor of each ESA level, and its upper and lower error
-        bounds.
+        The geometric factor of each ESA level, and its lower and upper
+        calibration bounds.
     """
-    levels = slice(0, c.N_ESA_LEVELS)
-    geometric_factor = np.array(c.GEO_FACTOR[levels]) * c.GEO_FACTOR_SCALE
-    error = np.array(c.GEO_FACTOR_ERR[levels]) * c.GEO_FACTOR_SCALE
+    gf_data = reduce_geometric_factor_data(species, esa_mode)
+    column = f"GF_Trpl_{species.upper()}"
 
-    error_upper = np.hypot(geometric_factor * (c.GEO_FACTOR_SCALE_UPPER - 1.0), error)
-    error_lower = np.hypot(geometric_factor * (1.0 - c.GEO_FACTOR_SCALE_LOWER), error)
+    geometric_factor = gf_data[column].to_numpy(dtype=float)
+    excursion_down = gf_data[f"{column}_unc_plus"].to_numpy(dtype=float)
+    excursion_up = gf_data[f"{column}_unc_minus"].to_numpy(dtype=float)
 
-    return geometric_factor, error_upper, error_lower
+    return (
+        geometric_factor,
+        geometric_factor - excursion_down,
+        geometric_factor + excursion_up,
+    )
 
 
 def _calculate_rates_and_intensities(
-    sky_map: RectangularSkyMap, esa_mode: int, energy: np.ndarray
+    sky_map: RectangularSkyMap, species: str, esa_mode: int, energy: np.ndarray
 ) -> dict[str, np.ndarray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
@@ -826,6 +841,8 @@ def _calculate_rates_and_intensities(
     ----------
     sky_map : RectangularSkyMap
         The map the pointings were projected onto, read for its accumulators.
+    species : str
+        The species of the map ("h" or "o"), which sets the geometric factors.
     esa_mode : int
         The ESA mode, 0 for HiRes and 1 for HiThr.
     energy : np.ndarray
@@ -841,10 +858,10 @@ def _calculate_rates_and_intensities(
     bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"].values
 
     energy = energy[:, np.newaxis]
-    geometric_factor, error_upper, error_lower = _geometric_factors(esa_mode)
+    geometric_factor, gf_low, gf_high = _geometric_factors(species, esa_mode)
     geometric_factor = geometric_factor[:, np.newaxis]
-    error_upper = error_upper[:, np.newaxis]
-    error_lower = error_lower[:, np.newaxis]
+    gf_low = gf_low[:, np.newaxis]
+    gf_high = gf_high[:, np.newaxis]
 
     exposed = exposure > 0
 
@@ -878,27 +895,21 @@ def _calculate_rates_and_intensities(
     intensity = _divide(count_rate, geometric_factor * energy)
     intensity_stat_uncert = _divide(count_rate_stat_uncert, geometric_factor * energy)
 
-    # The systematic error is the flux excursion from the recalibrated G-factor
-    # bounds: the upper/lower excursions come from the lower/upper G-factor
-    # bounds respectively, and the symmetric error is their geometric mean. It
-    # is undefined where the lower bound would drive the G-factor non-positive.
-    valid = geometric_factor > error_lower
+    # The systematic error is the intensity excursion from the recalibrated
+    # G-factor bounds, and the symmetric error is the geometric mean of the two.
+    # Intensity goes as 1/G, so the lower G-factor bound gives the upper
+    # intensity. It is undefined where that bound is not positive.
+    valid = gf_low > 0
     if not valid.all():
         logger.warning(
             "The geometric factor of ESA levels "
             f"{(np.flatnonzero(~valid[:, 0]) + 1).tolist()} is below its lower "
             f"error bound; their systematic errors are left at zero."
         )
-    intensity_sys_err_plus = np.where(
-        valid,
-        intensity * geometric_factor / (geometric_factor - error_lower) - intensity,
-        0.0,
-    )
-    intensity_sys_err_minus = np.where(
-        valid,
-        intensity - intensity * geometric_factor / (geometric_factor + error_upper),
-        0.0,
-    )
+    intensity_upper = _divide(count_rate, np.where(valid, gf_low, 1.0) * energy)
+    intensity_lower = _divide(count_rate, gf_high * energy)
+    intensity_sys_err_plus = np.where(valid, intensity_upper - intensity, 0.0)
+    intensity_sys_err_minus = np.where(valid, intensity - intensity_lower, 0.0)
 
     bg_rate = _divide(bg_rate_exposure, exposure)
     bg_rate_stat_uncert = np.sqrt(_divide(bg_rate, exposure))

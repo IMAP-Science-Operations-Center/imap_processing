@@ -79,36 +79,6 @@ class LoConstants:
     RAM_HISTOGRAM_BINS: tuple[slice, ...] = (slice(0, 20), slice(50, 60))
     ANTI_RAM_HISTOGRAM_BINS: tuple[slice, ...] = (slice(20, 50),)
 
-    # The following are indexed by ESA level (0-indexed, ESA level = index + 1).
-    # The 8th entry is the virtual E8 channel, unused by the map.
-    GEO_FACTOR: ClassVar[list[float]] = [
-        7.0e-5,
-        7.9e-5,
-        9.7e-5,
-        11.2e-5,
-        14.0e-5,
-        17.7e-5,
-        22.5e-5,
-        6.721e-5,
-    ]
-    GEO_FACTOR_ERR: ClassVar[list[float]] = [
-        4.9e-5,
-        5.5e-5,
-        6.8e-5,
-        3.0e-5,
-        4.5e-5,
-        2.0e-5,
-        1.4e-5,
-        6.721e-5,
-    ]
-
-    # GEO_FACTOR/GEO_FACTOR_ERR above are the raw, pre-recalibration values; the
-    # map multiplies them by GEO_FACTOR_SCALE, and derives the asymmetric
-    # upper/lower G-factor bounds using the two scale factors below.
-    GEO_FACTOR_SCALE: float = 0.63529412
-    GEO_FACTOR_SCALE_UPPER: float = 1.57407407
-    GEO_FACTOR_SCALE_LOWER: float = 0.36728395
-
     # Half-widths [keV] of the ESA energy passbands, by ESA level, for the two
     # ESA modes. NOTE: From an e-mail from Nathan on 2025-09-11 (converted to keV).
     ESA_ENERGY_DELTA: ClassVar[dict[int, list[float]]] = {

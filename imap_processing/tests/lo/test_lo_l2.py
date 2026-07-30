@@ -43,6 +43,12 @@ ESA_ENERGIES = {
     1: np.array([0.011, 0.022, 0.044, 0.088, 0.176, 0.352, 0.704]),
 }
 
+# The hydrogen geometric factors of the same file, by ESA mode.
+GEO_FACTORS = {
+    0: np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]) * 1e-5,
+    1: np.array([1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7]) * 1e-5,
+}
+
 
 @pytest.fixture(autouse=True)
 def use_test_geometric_factors():
@@ -343,9 +349,7 @@ class TestRatesAndIntensities:
         )
         assert np.all(dataset["ena_count_rate"].values[~exposed] == 0)
 
-        geometric_factor = (
-            np.array(LoConstants.GEO_FACTOR[:N_ESA]) * LoConstants.GEO_FACTOR_SCALE
-        )
+        geometric_factor = GEO_FACTORS[0]
         energy = ESA_ENERGIES[0]
         expected = dataset["ena_count_rate"] / xr.DataArray(
             geometric_factor * energy, dims=["energy"]
