@@ -622,11 +622,12 @@ def classify_gain_configuration(
     """
     Classify which gain configuration (config_id) a pointing is running.
 
-    Uses the median detector high voltages (see HiConstants.GAIN_CONFIG_HV_
-    FIELDS) of the first contiguous HVSCI segment in the pointing, matched
-    against the gain-configuration ancillary table. This assumes that when a
-    gain test is run during a pointing, the first HVSCI segment of that
-    pointing is run at the pointing's real (non-gain-test) configuration.
+    Uses the median detector high voltages (see
+    HiConstants.GAIN_CONFIG_HV_FIELDS) of the first contiguous HVSCI segment
+    in the pointing, matched against the gain-configuration ancillary table.
+    This assumes that when a gain test is run during a pointing, the first
+    HVSCI segment of that pointing is run at the pointing's real
+    (non-gain-test) configuration.
 
     Parameters
     ----------
