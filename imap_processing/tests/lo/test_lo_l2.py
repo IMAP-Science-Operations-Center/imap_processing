@@ -49,6 +49,9 @@ GEO_FACTORS = {
     1: np.array([1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7]) * 1e-5,
 }
 
+# The ESA passband half-widths of the same file, a tenth of each center energy.
+ESA_ENERGY_DELTAS = {mode: energies / 10 for mode, energies in ESA_ENERGIES.items()}
+
 
 @pytest.fixture(autouse=True)
 def use_test_geometric_factors():
@@ -244,14 +247,16 @@ class TestMapStructure:
             )
 
     def test_energy_coordinate(self, full_map):
-        """The energy coordinate comes from the ancillary, its widths from the
-        ESA constants."""
+        """The energy coordinate and its widths both come from the ancillary."""
         dataset, _ = full_map
 
         # The pointings are all in ESA mode 0.
         np.testing.assert_allclose(dataset["energy"].values, ESA_ENERGIES[0])
         np.testing.assert_allclose(
-            dataset["energy_delta_plus"].values, LoConstants.ESA_ENERGY_DELTA[0]
+            dataset["energy_delta_minus"].values, ESA_ENERGY_DELTAS[0]
+        )
+        np.testing.assert_allclose(
+            dataset["energy_delta_plus"].values, ESA_ENERGY_DELTAS[0]
         )
 
     def test_map_writes_to_cdf(self, full_map):

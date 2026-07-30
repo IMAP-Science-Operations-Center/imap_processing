@@ -16,6 +16,7 @@ from imap_processing.ena_maps.ena_maps import (
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo import lo_ancillary
+from imap_processing.lo.constants import EsaCalibration
 from imap_processing.lo.constants import LoConstants as c  # noqa: N813
 from imap_processing.lo.l1c.lo_l1c import compute_pointing_directions
 from imap_processing.spice.geometry import (
@@ -39,6 +40,7 @@ ACCUMULATED_VARIABLES = ("ena_count", "exposure_factor", "bg_rate_exposure")
 
 # The calibration ancillaries shipped with the package.
 ANCILLARY_DATA_DIR = Path(__file__).parent.parent / "ancillary_data"
+
 
 # =============================================================================
 # MAIN ENTRY POINT
@@ -69,8 +71,9 @@ def lo_l2(
         The input datasets covering the pointings of the map window, keyed by
         repointing and then by product descriptor.
     anc_dependencies : list
-        List of ancillary file paths. Unused, the calibration constants of the
-        map live in ``LoConstants``.
+        List of ancillary file paths, read for the efficiency and correction
+        factors. The geometric factors and ESA level energies come from the
+        ancillaries shipped with the package, in ``ANCILLARY_DATA_DIR``.
     descriptor : str
         The map descriptor to be produced
         (e.g., "l090-ena-h-sf-nsp-ram-hae-6deg-3mo").
@@ -121,22 +124,20 @@ def lo_l2(
     logger.info(f"Building {descriptor} from {len(pointings)} pointings")
 
     # Every pointing of a map is taken in the same ESA mode, so the last one
-    # sets the energies and passband widths the whole map is binned in.
+    # sets the energy response the whole map is binned in.
     esa_mode = _get_esa_mode(pointings[max(pointings)][2]) if pointings else 0
-    energy = _esa_energy(map_descriptor.species, esa_mode)
+    calibration = _esa_calibration(map_descriptor.species, esa_mode)
 
-    _initialize_accumulators(sky_map, energy)
+    _initialize_accumulators(sky_map, calibration.energy)
 
     for repointing, (goodtimes, bgrates, histrates) in sorted(pointings.items()):
         logger.debug(f"Accumulating repoint{repointing:05d}")
         _accumulate_pointing(
-            goodtimes, bgrates, histrates, sky_map, map_descriptor, energy
+            goodtimes, bgrates, histrates, sky_map, map_descriptor, calibration.energy
         )
 
-    variables = _calculate_rates_and_intensities(
-        sky_map, map_descriptor.species, esa_mode, energy
-    )
-    dataset = _build_map_dataset(sky_map, variables, esa_mode)
+    variables = _calculate_rates_and_intensities(sky_map, calibration)
+    dataset = _build_map_dataset(sky_map, variables, calibration)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
     return [
@@ -760,13 +761,16 @@ def reduce_geometric_factor_data(species: str, esa_mode: int) -> pd.DataFrame:
     return gf_data.loc[list(range(1, c.N_ESA_LEVELS + 1))]
 
 
-def _esa_energy(species: str, esa_mode: int) -> np.ndarray:
+def _esa_calibration(species: str, esa_mode: int) -> EsaCalibration:
     """
-    Get the energy of each ESA level the map is binned in.
+    Get the ESA level calibration one map is built from.
 
-    The energies are the passband centers the geometric factors were measured
-    at, so they are read from the same ancillary file, for the same species and
-    ESA mode.
+    The ancillary names its two geometric factor uncertainty columns for the
+    direction the intensity derived from the factor moves in, which is the
+    opposite of the direction the factor itself moves in: intensity goes as
+    1/G, so a smaller factor gives a larger intensity. Its ``_unc_plus`` is
+    therefore the downward excursion of the factor, and its ``_unc_minus`` the
+    upward one.
 
     Parameters
     ----------
@@ -777,11 +781,24 @@ def _esa_energy(species: str, esa_mode: int) -> np.ndarray:
 
     Returns
     -------
-    np.ndarray
-        The energy [keV] of each ESA level.
+    EsaCalibration
+        The energies, passband half-widths and geometric factors of every ESA
+        level, in ascending level order.
     """
-    return reduce_geometric_factor_data(species, esa_mode)["Cntr_E"].to_numpy(
-        dtype=float
+    gf_data = reduce_geometric_factor_data(species, esa_mode).astype(float)
+
+    factor = f"GF_Trpl_{species.upper()}"
+    geometric_factor = gf_data[factor].to_numpy()
+
+    return EsaCalibration(
+        energy=gf_data["Cntr_E"].to_numpy(),
+        energy_delta_minus=gf_data["Cntr_E_delta_minus"].to_numpy(),
+        energy_delta_plus=gf_data["Cntr_E_delta_plus"].to_numpy(),
+        geometric_factor=geometric_factor,
+        geometric_factor_low=geometric_factor
+        - gf_data[f"{factor}_unc_plus"].to_numpy(),
+        geometric_factor_high=geometric_factor
+        + gf_data[f"{factor}_unc_minus"].to_numpy(),
     )
 
 
@@ -790,47 +807,8 @@ def _esa_energy(species: str, esa_mode: int) -> np.ndarray:
 # =============================================================================
 
 
-def _geometric_factors(
-    species: str, esa_mode: int
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Get the recalibrated geometric factors and their asymmetric bounds.
-
-    The ancillary names its two uncertainty columns for the direction the
-    intensity derived from the factor moves in, which is the opposite of the
-    direction the factor itself moves in: intensity goes as 1/G, so a smaller
-    factor gives a larger intensity. Its ``_unc_plus`` is therefore the
-    downward excursion of the factor, and its ``_unc_minus`` the upward one.
-
-    Parameters
-    ----------
-    species : str
-        The species of the map ("h" or "o").
-    esa_mode : int
-        The ESA mode, 0 for HiRes and 1 for HiThr.
-
-    Returns
-    -------
-    tuple[np.ndarray, np.ndarray, np.ndarray]
-        The geometric factor of each ESA level, and its lower and upper
-        calibration bounds.
-    """
-    gf_data = reduce_geometric_factor_data(species, esa_mode)
-    column = f"GF_Trpl_{species.upper()}"
-
-    geometric_factor = gf_data[column].to_numpy(dtype=float)
-    excursion_down = gf_data[f"{column}_unc_plus"].to_numpy(dtype=float)
-    excursion_up = gf_data[f"{column}_unc_minus"].to_numpy(dtype=float)
-
-    return (
-        geometric_factor,
-        geometric_factor - excursion_down,
-        geometric_factor + excursion_up,
-    )
-
-
 def _calculate_rates_and_intensities(
-    sky_map: RectangularSkyMap, species: str, esa_mode: int, energy: np.ndarray
+    sky_map: RectangularSkyMap, calibration: EsaCalibration
 ) -> dict[str, np.ndarray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
@@ -841,12 +819,9 @@ def _calculate_rates_and_intensities(
     ----------
     sky_map : RectangularSkyMap
         The map the pointings were projected onto, read for its accumulators.
-    species : str
-        The species of the map ("h" or "o"), which sets the geometric factors.
-    esa_mode : int
-        The ESA mode, 0 for HiRes and 1 for HiThr.
-    energy : np.ndarray
-        The energy [keV] of each ESA level.
+    calibration : EsaCalibration
+        The energy response the map is binned in, read for the energies and
+        geometric factors the intensities are derived with.
 
     Returns
     -------
@@ -857,11 +832,11 @@ def _calculate_rates_and_intensities(
     exposure = sky_map.data_1d["exposure_factor"].values
     bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"].values
 
-    energy = energy[:, np.newaxis]
-    geometric_factor, gf_low, gf_high = _geometric_factors(species, esa_mode)
-    geometric_factor = geometric_factor[:, np.newaxis]
-    gf_low = gf_low[:, np.newaxis]
-    gf_high = gf_high[:, np.newaxis]
+    # Every ESA level quantity gets a pixel axis to broadcast over the map.
+    energy = calibration.energy[:, np.newaxis]
+    geometric_factor = calibration.geometric_factor[:, np.newaxis]
+    gf_low = calibration.geometric_factor_low[:, np.newaxis]
+    gf_high = calibration.geometric_factor_high[:, np.newaxis]
 
     exposed = exposure > 0
 
@@ -936,7 +911,9 @@ def _calculate_rates_and_intensities(
 
 
 def _build_map_dataset(
-    sky_map: RectangularSkyMap, variables: dict[str, np.ndarray], esa_mode: int
+    sky_map: RectangularSkyMap,
+    variables: dict[str, np.ndarray],
+    calibration: EsaCalibration,
 ) -> xr.Dataset:
     """
     Lay the map variables out on the map's sky grid.
@@ -950,8 +927,8 @@ def _build_map_dataset(
         The map being built.
     variables : dict[str, np.ndarray]
         The map variables, each of shape (epoch, esa level, pixel).
-    esa_mode : int
-        The ESA mode, 0 for HiRes and 1 for HiThr, which sets the widths of the
+    calibration : EsaCalibration
+        The energy response the map is binned in, read for the widths of the
         ESA energy passbands.
 
     Returns
@@ -968,8 +945,11 @@ def _build_map_dataset(
 
     dataset = sky_map.to_dataset()
 
-    energy_delta = np.array(c.ESA_ENERGY_DELTA[esa_mode])
-    dataset["energy_delta_minus"] = xr.DataArray(energy_delta, dims=["energy"])
-    dataset["energy_delta_plus"] = xr.DataArray(energy_delta, dims=["energy"])
+    dataset["energy_delta_minus"] = xr.DataArray(
+        calibration.energy_delta_minus, dims=["energy"]
+    )
+    dataset["energy_delta_plus"] = xr.DataArray(
+        calibration.energy_delta_plus, dims=["energy"]
+    )
 
     return dataset

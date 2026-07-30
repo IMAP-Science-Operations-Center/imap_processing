@@ -3,6 +3,40 @@
 from dataclasses import dataclass
 from typing import ClassVar, NamedTuple
 
+import numpy as np
+
+
+class EsaCalibration(NamedTuple):
+    """
+    The instrument's calibration settings for each ESA level.
+
+    Every field holds one value per ESA level, in ascending level order, read
+    from the ancillary of one species and ESA mode.
+
+    Attributes
+    ----------
+    energy : np.ndarray
+        The energy [keV] of each level, the passband center its geometric
+        factor was measured at.
+    energy_delta_minus : np.ndarray
+        The half-width [keV] of each passband below its center.
+    energy_delta_plus : np.ndarray
+        The half-width [keV] of each passband above its center.
+    geometric_factor : np.ndarray
+        The recalibrated geometric factor [cm^2 sr keV/keV] of each level.
+    geometric_factor_low : np.ndarray
+        The lower calibration bound of each geometric factor.
+    geometric_factor_high : np.ndarray
+        The upper calibration bound of each geometric factor.
+    """
+
+    energy: np.ndarray
+    energy_delta_minus: np.ndarray
+    energy_delta_plus: np.ndarray
+    geometric_factor: np.ndarray
+    geometric_factor_low: np.ndarray
+    geometric_factor_high: np.ndarray
+
 
 class PivotAngleSpec(NamedTuple):
     """
@@ -78,15 +112,6 @@ class LoConstants:
     # directions
     RAM_HISTOGRAM_BINS: tuple[slice, ...] = (slice(0, 20), slice(50, 60))
     ANTI_RAM_HISTOGRAM_BINS: tuple[slice, ...] = (slice(20, 50),)
-
-    # Half-widths [keV] of the ESA energy passbands, by ESA level, for the two
-    # ESA modes. NOTE: From an e-mail from Nathan on 2025-09-11 (converted to keV).
-    ESA_ENERGY_DELTA: ClassVar[dict[int, list[float]]] = {
-        # esa_mode 0, HiRes
-        0: [0.00543, 0.01002, 0.01861, 0.03331, 0.06498, 0.13164, 0.26235],
-        # esa_mode 1, HiThr
-        1: [0.00881, 0.01604, 0.02850, 0.05313, 0.10560, 0.21967, 0.41360],
-    }
 
     # Nominal background rates [counts/s] for each species
     BG_RATES: ClassVar[dict[str, float]] = {"H": 0.0014925, "O": 0.000136635}
