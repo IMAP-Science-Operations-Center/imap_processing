@@ -806,7 +806,6 @@ def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
-@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 @mock.patch("imap_processing.cli.hit_l1a")
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hit class with l1a data level"""

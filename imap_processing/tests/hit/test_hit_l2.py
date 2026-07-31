@@ -37,23 +37,23 @@ from imap_processing.hit.l2.hit_l2 import (
 )
 
 EXPECTED_STANDARD_LABLAXIS = {
-    "h_standard_intensity": "H Intensity Std",
-    "he3_standard_intensity": "He3 Intensity Std",
-    "he4_standard_intensity": "He4 Intensity Std",
-    "he_standard_intensity": "He Intensity Std",
-    "c_standard_intensity": "C Intensity Std",
-    "o_standard_intensity": "O Intensity Std",
-    "n_standard_intensity": "N Intensity Std",
-    "ne_standard_intensity": "Ne Intensity Std",
-    "na_standard_intensity": "Na Intensity Std",
-    "mg_standard_intensity": "Mg Intensity Std",
-    "al_standard_intensity": "Al Intensity Std",
-    "si_standard_intensity": "Si Intensity Std",
-    "s_standard_intensity": "S Intensity Std",
-    "ar_standard_intensity": "Ar Intensity Std",
-    "ca_standard_intensity": "Ca Intensity Std",
-    "fe_standard_intensity": "Fe Intensity Std",
-    "ni_standard_intensity": "Ni Intensity Std",
+    "h_standard_intensity": "H Intensity Standard",
+    "he3_standard_intensity": "He3 Intensity Standard",
+    "he4_standard_intensity": "He4 Intensity Standard",
+    "he_standard_intensity": "He Intensity Standard",
+    "c_standard_intensity": "C Intensity Standard",
+    "o_standard_intensity": "O Intensity Standard",
+    "n_standard_intensity": "N Intensity Standard",
+    "ne_standard_intensity": "Ne Intensity Standard",
+    "na_standard_intensity": "Na Intensity Standard",
+    "mg_standard_intensity": "Mg Intensity Standard",
+    "al_standard_intensity": "Al Intensity Standard",
+    "si_standard_intensity": "Si Intensity Standard",
+    "s_standard_intensity": "S Intensity Standard",
+    "ar_standard_intensity": "Ar Intensity Standard",
+    "ca_standard_intensity": "Ca Intensity Standard",
+    "fe_standard_intensity": "Fe Intensity Standard",
+    "ni_standard_intensity": "Ni Intensity Standard",
 }
 
 EXPECTED_SUMMED_LABLAXIS = {
@@ -74,6 +74,14 @@ EXPECTED_SUMMED_LABLAXIS = {
     "ca_summed_intensity": "Ca intensity summed",
     "fe_summed_intensity": "Fe intensity summed",
     "ni_summed_intensity": "Ni intensity summed",
+}
+
+EXPECTED_MACROPIXEL_LABLAXIS = {
+    "h_macropixel_intensity": "H Intensity Macropixel",
+    "he4_macropixel_intensity": "He4 Intensity Macropixel",
+    "cno_macropixel_intensity": "CNO Intensity Macropixel",
+    "nemgsi_macropixel_intensity": "NeMgSi Intensity Macropixel",
+    "fe_macropixel_intensity": "Fe Intensity Macropixel",
 }
 
 
@@ -729,7 +737,6 @@ def test_add_total_uncertainties():
     )
 
 
-@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 def test_process_macropixel_intensity(
     l1b_sectored_rates_dataset, ancillary_dependencies
 ):
@@ -895,11 +902,10 @@ def test_process_standard_intensity(l1b_standard_rates_dataset, ancillary_depend
     [
         ("imap_hit_l1b_summed-rates", "summed", "imap_hit_l2_summed-intensity"),
         ("imap_hit_l1b_standard-rates", "standard", "imap_hit_l2_standard-intensity"),
-        pytest.param(
+        (
             "imap_hit_l1b_sectored-rates",
             "macropixel",
             "imap_hit_l2_macropixel-intensity",
-            marks=pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False),
         ),
     ],
 )
@@ -929,21 +935,20 @@ def test_hit_l2(
     assert l2_dataset.attrs["Logical_source"] == expected_logical_source
     l2_dataset.attrs["Data_version"] = "001"
     l2_cdf_filepath = write_cdf(l2_dataset)
-    expected_lablaxis = (
-        EXPECTED_STANDARD_LABLAXIS
-        if "standard-intensity" in expected_logical_source
-        else EXPECTED_SUMMED_LABLAXIS
-    )
+    if "standard-intensity" in expected_logical_source:
+        expected_lablaxis = EXPECTED_STANDARD_LABLAXIS
+    elif "macropixel-intensity" in expected_logical_source:
+        expected_lablaxis = EXPECTED_MACROPIXEL_LABLAXIS
+    else:
+        expected_lablaxis = EXPECTED_SUMMED_LABLAXIS
     with cdflib.CDF(l2_cdf_filepath) as cdf_file:
         dynamic_threshold_info = cdf_file.varinq("dynamic_threshold_state")
         dynamic_threshold_attrs = cdf_file.varattsget("dynamic_threshold_state")
         assert dynamic_threshold_info.Data_Type_Description == "CDF_UINT1"
         assert dynamic_threshold_attrs["FILLVAL"] == np.uint8(255)
 
-        for variable_name, label_axis in expected_lablaxis.items():
+        for variable_name, field_name_content in expected_lablaxis.items():
             variable_attrs = cdf_file.varattsget(variable_name)
             species = variable_name.split("_")[0]
             assert variable_attrs["LABL_PTR_1"] == f"{species}_energy_mean_label"
-            assert variable_attrs["LABLAXIS"] == label_axis
-            assert not variable_attrs["LABLAXIS"].endswith("_label")
-            assert len(variable_attrs["LABLAXIS"]) <= 20
+            assert variable_attrs["FIELDNAM"] == field_name_content
