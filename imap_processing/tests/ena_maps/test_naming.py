@@ -505,3 +505,45 @@ class TestMapDescriptor:
     def test_principal_data_var(self, descriptor_str, expected_principal_data_var):
         md = MapDescriptor.from_string(descriptor_str)
         assert md.principal_data_var == expected_principal_data_var
+
+    @pytest.mark.parametrize(
+        "principal_data, expected_extras",
+        [
+            ("ena", ""),
+            ("enas", "s"),
+            ("enans", "ns"),
+            ("enanbs", "nbs"),
+            ("enansnbs", "nsnbs"),
+            ("isnnbkgnd", "nbkgnd"),
+            # The digits of a spx stem belong to the stem, not the modifiers
+            ("spx0305", ""),
+        ],
+    )
+    def test_principal_data_extras(self, principal_data, expected_extras):
+        md = MapDescriptor.from_string(
+            f"l090-{principal_data}-h-sf-nsp-ram-hae-6deg-1yr"
+        )
+        assert md.principal_data_extras == expected_extras
+
+    @pytest.mark.parametrize(
+        "principal_data, expected",
+        [
+            # "s" and "ns" after the stem say whether the correction was made
+            ("enas", True),
+            ("enans", False),
+            # The codes mark the exceptions, so an unmarked ENA map is corrected
+            ("ena", True),
+            # "nbs" (no sputter/bootstrap) suppresses it as well
+            ("enanbs", False),
+            ("enansnbs", False),
+            # Only ENA maps are sputter corrected
+            ("spx0305", False),
+            ("isn", False),
+            ("drt", False),
+        ],
+    )
+    def test_sputter_corrected(self, principal_data, expected):
+        md = MapDescriptor.from_string(
+            f"l090-{principal_data}-h-sf-nsp-ram-hae-6deg-1yr"
+        )
+        assert md.sputter_corrected is expected

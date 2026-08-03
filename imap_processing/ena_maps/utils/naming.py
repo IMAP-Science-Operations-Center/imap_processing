@@ -42,6 +42,12 @@ INERTIAL_FRAME_LONG_NAMES = {
     "hk": "heliocentric kinetic",
 }
 
+# The principal data part of a descriptor is a stem naming the quantity mapped,
+# optionally followed by modifier codes saying which corrections were made.
+PRINCIPAL_DATA_PATTERN = re.compile(
+    r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$"
+)
+
 
 @dataclass
 class MapDescriptor:
@@ -251,9 +257,7 @@ class MapDescriptor:
             instrument = instrument.title()
         sensor = " Combined" if self.sensor == "combined" else self.sensor
         species = "UV" if self.species == "uv" else self.species.title()
-        m = re.match(
-            r"^(drt|ena|int|isn|spx)(?:(?<=spx)\d+)?([^-_\s]*)$", self.principal_data
-        )
+        m = PRINCIPAL_DATA_PATTERN.match(self.principal_data)
         if m.group(1) == "isn":
             species = "ISN " + species
         extras = m.group(2)
@@ -309,6 +313,40 @@ class MapDescriptor:
             "isn": "isn_rate_bg_subtracted",
             "spx": "ena_spectral_index",
         }[self.principal_data[:3]]
+
+    @property
+    def principal_data_extras(self) -> str:
+        """
+        The modifier codes following the principal data stem.
+
+        These say which corrections a map was made with, e.g. the "nbs" of
+        "enanbs". Empty if the principal data is a bare stem, or if it does not
+        parse as a stem followed by modifiers at all.
+
+        Returns
+        -------
+        principal_data_extras : str
+            The modifier codes, run together in the order they appear.
+        """
+        m = PRINCIPAL_DATA_PATTERN.match(self.principal_data)
+        return m.group(2) if m else ""
+
+    @property
+    def sputter_corrected(self) -> bool:
+        """
+        Whether the map has the counts sputtered in from a heavier species removed.
+
+        Returns
+        -------
+        sputter_corrected : bool
+            True if this map is sputter corrected.
+        """
+        if not self.principal_data.startswith("ena"):
+            return False
+        extras = self.principal_data_extras
+        # "ns" is the code for a map made with no sputter correction, "nbs" the
+        # older code for one made with neither sputter nor bootstrap correction.
+        return not extras.startswith(("ns", "nbs"))
 
     # Methods for parsing and building parts of the map descriptor string
     @staticmethod

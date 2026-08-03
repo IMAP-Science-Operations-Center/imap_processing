@@ -1,0 +1,9 @@
+source_species,target_species,target_esa,source_esa,sputter_factor
+o,h,1,4,0.236
+o,h,2,4,0.372
+o,h,3,4,0.898
+o,h,4,4,0.891
+o,h,5,4,0.037
+o,h,5,6,0.32
+o,h,6,6,0.32
+o,h,7,6,0.22

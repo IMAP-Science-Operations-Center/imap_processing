@@ -22,9 +22,17 @@ from imap_processing.spice.time import met_to_ttj2000ns
 
 ANCILLARY_DIR = imap_module_directory / "tests/lo/test_anc"
 
-# A full-spin map, so that every spin-angle bin lands on it.
+# A full-spin map, so that every spin-angle bin lands on it. The "ns" after
+# "ena" asks for no sputter correction, so these are the uncorrected maps.
 FULL_DESCRIPTOR = "l090-enansnbs-h-sf-nsp-full-hae-6deg-3mo"
 RAM_DESCRIPTOR = "l090-enansnbs-h-sf-nsp-ram-hae-6deg-3mo"
+
+# The same full-spin map, sputter corrected.
+SPUTTER_DESCRIPTOR = "l090-enas-h-sf-nsp-full-hae-6deg-3mo"
+
+# The contents of imap_lo_sputter-correction-factors-small, as
+# {target ESA step: {source ESA step: factor}}, 1-based as in the ancillary.
+SPUTTER_FACTORS = {2: {3: 0.5}, 5: {3: 0.25, 6: 0.1}}
 
 N_ESA = LoConstants.N_ESA_LEVELS
 N_SPIN_BINS = LoConstants.N_SPIN_ANGLE_BINS
@@ -98,6 +106,10 @@ def make_pointing(repointing=100, pivot=PIVOT, seed=42):
     histrates = xr.Dataset(
         {
             "h_counts": (["epoch", "esa_step", "spin_bin_6"], counts),
+            # The sputter correction reads the oxygen counts of the same
+            # pointing. Making them the hydrogen counts lets a test predict the
+            # correction from the hydrogen counts the uncorrected map reports.
+            "o_counts": (["epoch", "esa_step", "spin_bin_6"], counts),
             "exposure_time_6deg": (["epoch", "esa_step", "spin_bin_6"], exposure),
             "esa_mode": ("epoch", np.zeros(mets.size, dtype=int)),
         },
@@ -200,6 +212,24 @@ def full_map(one_pointing, anc_dependencies):
             as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR
         )
     return dataset, one_pointing
+
+
+@pytest.fixture
+def sputter_maps(one_pointing, anc_dependencies):
+    """The sputter corrected and uncorrected maps of the same pointing.
+
+    The two differ only in whether the correction was applied, so the
+    uncorrected map supplies the counts the correction is predicted from.
+    """
+    with patch(
+        "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+        side_effect=identity_pointing,
+    ):
+        (corrected,) = lo_l2(
+            as_dependencies(one_pointing), anc_dependencies, SPUTTER_DESCRIPTOR
+        )
+        (raw,) = lo_l2(as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR)
+    return corrected, raw
 
 
 class TestMapStructure:
@@ -410,6 +440,114 @@ class TestRatesAndIntensities:
         )
         # The lower G-factor bound gives the bigger flux excursion
         assert np.all(plus[lit] >= minus[lit])
+
+
+class TestSputterCorrection:
+    """Removing the counts oxygen sputters into the hydrogen channels."""
+
+    @staticmethod
+    def sputtered(counts, target_esa, power=1):
+        """The counts sputtered into a target ESA step, from the source steps.
+
+        ``power`` is 1 for the counts themselves and 2 for their variance,
+        which each source term contributes to scaled by the square of its
+        factor.
+        """
+        return sum(
+            factor**power * counts[:, source - 1]
+            for source, factor in SPUTTER_FACTORS.get(target_esa, {}).items()
+        )
+
+    def test_correction_removes_the_sputtered_counts(self, sputter_maps):
+        """The rate is the counts less the sputtered ones, over the exposure."""
+        corrected, raw = sputter_maps
+
+        counts = raw["ena_count"].values
+        exposure = raw["exposure_factor"].values
+
+        for target_esa in range(1, N_ESA + 1):
+            exposed = exposure[:, target_esa - 1] > 0
+            expected = np.maximum(
+                counts[:, target_esa - 1] - self.sputtered(counts, target_esa), 0.0
+            )
+            np.testing.assert_allclose(
+                corrected["ena_count_rate"].values[:, target_esa - 1][exposed],
+                expected[exposed] / exposure[:, target_esa - 1][exposed],
+                rtol=1e-5,
+            )
+
+    def test_uncorrected_steps_are_untouched(self, sputter_maps):
+        """A step that nothing sputters into keeps the rate it already had."""
+        corrected, raw = sputter_maps
+
+        untouched = [esa for esa in range(1, N_ESA + 1) if esa not in SPUTTER_FACTORS]
+        assert untouched, "the test factors must leave some steps uncorrected"
+
+        for target_esa in untouched:
+            np.testing.assert_allclose(
+                corrected["ena_count_rate"].values[:, target_esa - 1],
+                raw["ena_count_rate"].values[:, target_esa - 1],
+                rtol=1e-6,
+            )
+
+    def test_corrected_steps_lose_intensity(self, sputter_maps):
+        """The corrected steps come out below the uncorrected ones somewhere."""
+        corrected, raw = sputter_maps
+
+        for target_esa in SPUTTER_FACTORS:
+            correction = (
+                raw["ena_intensity"].values[:, target_esa - 1]
+                - corrected["ena_intensity"].values[:, target_esa - 1]
+            )
+            assert np.all(correction >= 0)
+            assert np.any(correction > 0), f"ESA {target_esa} was not corrected"
+
+    def test_uncertainty_gains_the_source_counts(self, sputter_maps):
+        """Subtracting a measured quantity can only add to the variance."""
+        corrected, raw = sputter_maps
+
+        counts = raw["ena_count"].values
+        exposure = raw["exposure_factor"].values
+
+        for target_esa in range(1, N_ESA + 1):
+            exposed = exposure[:, target_esa - 1] > 0
+            variance = counts[:, target_esa - 1] + self.sputtered(
+                counts, target_esa, power=2
+            )
+            np.testing.assert_allclose(
+                corrected["ena_count_rate_stat_uncert"].values[:, target_esa - 1][
+                    exposed
+                ],
+                np.sqrt(variance[exposed]) / exposure[:, target_esa - 1][exposed],
+                rtol=1e-5,
+            )
+
+    def test_rate_is_never_negative(self, sputter_maps):
+        """Over-subtracting a low-count pixel floors it rather than going below 0."""
+        corrected, raw = sputter_maps
+
+        counts = raw["ena_count"].values
+        # The test pointing is sparse enough that some pixel is over-subtracted,
+        # which is the case this floor exists for.
+        over_subtracted = [
+            counts[:, esa - 1] - self.sputtered(counts, esa) < 0
+            for esa in SPUTTER_FACTORS
+        ]
+        assert np.any(over_subtracted), "no pixel exercised the floor"
+
+        assert np.all(corrected["ena_count_rate"].values >= 0)
+        assert np.all(corrected["ena_intensity"].values >= 0)
+
+    def test_counts_stay_as_observed(self, sputter_maps):
+        """The correction applies from the rate onward, not to the raw counts."""
+        corrected, raw = sputter_maps
+
+        np.testing.assert_array_equal(
+            corrected["ena_count"].values, raw["ena_count"].values
+        )
+        np.testing.assert_array_equal(
+            corrected["exposure_factor"].values, raw["exposure_factor"].values
+        )
 
 
 class TestGeometry:

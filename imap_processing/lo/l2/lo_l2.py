@@ -94,17 +94,13 @@ def lo_l2(
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
 
-    # Determine if corrections are needed and prepare oxygen data if required
+    # Determine which of the corrections the descriptor asks for are needed
     (
-        _sputtering_correction,
-        _bootstrap_correction,
         _flux_correction,
-        _o_map_dataset,
         _flux_factors,
+        sputter_correction,
         _cg_correction,
-    ) = _prepare_corrections(
-        map_descriptor, descriptor, sci_dependencies, anc_dependencies
-    )
+    ) = _prepare_corrections(map_descriptor, anc_dependencies)
 
     logger.info("Step 1: Loading ancillary data")
     _efficiency_data = load_efficiency_data(anc_dependencies)
@@ -128,15 +124,33 @@ def lo_l2(
     esa_mode = _get_esa_mode(pointings[max(pointings)][2]) if pointings else 0
     calibration = _esa_calibration(map_descriptor.species, esa_mode)
 
-    _initialize_accumulators(sky_map, calibration.energy)
+    # The species sputtering into this map, if it is to be sputter corrected,
+    # and the ESA levels it sputters into. Its counts are accumulated on the
+    # same grid, alongside the map's own.
+    sputter_source, sputter_matrix = (
+        _sputter_correction(map_descriptor.species)
+        if sputter_correction
+        else (None, None)
+    )
+    accumulators = ACCUMULATED_VARIABLES + (
+        ("sputter_source_count",) if sputter_source else ()
+    )
+
+    _initialize_accumulators(sky_map, calibration.energy, accumulators)
 
     for repointing, (goodtimes, bgrates, histrates) in sorted(pointings.items()):
         logger.debug(f"Accumulating repoint{repointing:05d}")
         _accumulate_pointing(
-            goodtimes, bgrates, histrates, sky_map, map_descriptor, calibration.energy
+            goodtimes,
+            bgrates,
+            histrates,
+            sky_map,
+            map_descriptor,
+            calibration.energy,
+            sputter_source,
         )
 
-    variables = _calculate_rates_and_intensities(sky_map, calibration)
+    variables = _calculate_rates_and_intensities(sky_map, calibration, sputter_matrix)
     dataset = _build_map_dataset(sky_map, variables, calibration)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
@@ -152,59 +166,32 @@ def lo_l2(
 
 def _prepare_corrections(
     map_descriptor: MapDescriptor,
-    descriptor: str,
-    sci_dependencies: dict,
     anc_dependencies: list,
-) -> tuple[bool, bool, bool, xr.Dataset | None, Path | None, bool]:
+) -> tuple[bool, Path | None, bool, bool]:
     """
-    Determine what corrections are needed and prepare oxygen dataset if required.
-
-    This helper function encapsulates the logic for determining when sputtering
-    and bootstrap corrections should be applied, and handles the creation of
-    the oxygen dataset needed for sputtering corrections.
+    Determine which of the corrections the map descriptor asks for are needed.
 
     Parameters
     ----------
     map_descriptor : MapDescriptor
         The parsed map descriptor containing species and data type information.
-    descriptor : str
-        The original descriptor string for creating the oxygen variant.
-    sci_dependencies : dict
-        Dictionary of datasets needed for L2 data product creation.
     anc_dependencies : list
         List of ancillary file paths.
 
     Returns
     -------
-    tuple[bool, bool, bool, xr.Dataset | None, Path | None, bool]
+    tuple[bool, Path | None, bool, bool]
         A tuple containing:
-        - sputtering_correction: Whether to apply sputtering corrections
-        - bootstrap_correction: Whether to apply bootstrap corrections
         - flux_correction: Whether to apply flux corrections
-        - o_map_dataset: Oxygen dataset if needed, None otherwise
         - flux_factors: Path to flux factors ancillary file if needed,
          None otherwise
+        - sputter_correction: Whether to remove the counts sputtered into the
+          mapped species from a heavier one.
         - cg_correction: Whether to apply CG correction to the dataset.
     """
     # Default values - no corrections needed
-    sputtering_correction = False
-    bootstrap_correction = False
     flux_correction = False
-    o_map_dataset = None
     flux_factors: None | Path = None
-
-    # Sputtering and bootstrap corrections are only applied to hydrogen ENA data
-    # Guard against recursion: don't process oxygen for oxygen maps
-    if (
-        map_descriptor.species == "h"
-        and map_descriptor.principal_data == "ena"
-        and "-o-" not in descriptor
-    ):  # Safety check to prevent infinite recursion
-        logger.info("Creating map for oxygen for sputtering corrections")
-        o_descriptor = descriptor.replace("-h-", "-o-")
-        o_map_dataset = lo_l2(sci_dependencies, anc_dependencies, o_descriptor)[0]
-        sputtering_correction = True
-        bootstrap_correction = True
 
     if "raw" not in map_descriptor.principal_data:
         flux_correction = True
@@ -217,14 +204,13 @@ def _prepare_corrections(
                 "No flux correction factor file found in ancillary dependencies"
             ) from None
 
+    sputter_correction = map_descriptor.sputter_corrected
     cg_correction = True if map_descriptor.frame_descriptor == "hf" else False
 
     return (
-        sputtering_correction,
-        bootstrap_correction,
         flux_correction,
-        o_map_dataset,
         flux_factors,
+        sputter_correction,
         cg_correction,
     )
 
@@ -266,40 +252,72 @@ def load_efficiency_data(anc_dependencies: list) -> pd.DataFrame:
     )
 
 
-def load_sputter_correction_data(
-    source_species: str, target_species: str
-) -> pd.DataFrame:
+def load_sputter_correction_data() -> pd.DataFrame:
     """
-    Load sputter correction factors from an ancillary file.
-
-    Parameters
-    ----------
-    source_species : str
-        The species doing the sputtering (e.g. "o" for oxygen).
-    target_species : str
-        The species being corrected (e.g. "h" for hydrogen).
+    Load the sputter correction factors shipped with the package.
 
     Returns
     -------
     pd.DataFrame
-        Rows matching the given species pair, sorted ascending by esa_step,
-        with columns: source_species, target_species, esa_step,
-        sputter_factor, sputter_factor_uncertainty.
+        The ancillary data, with columns: source_species, target_species,
+        target_esa, source_esa, sputter_factor.
+
+    Raises
+    ------
+    ValueError
+        If no sputter correction ancillary is shipped with the package.
     """
     sputter_files = sorted(ANCILLARY_DATA_DIR.glob("*sputter-correction-factors*"))
 
     if not sputter_files:
         raise ValueError("No sputter correction files found")
 
-    df = pd.concat(
-        [lo_ancillary.read_ancillary_file(f) for f in sputter_files],
-        ignore_index=True,
-    )
-    mask = (df["source_species"] == source_species) & (
-        df["target_species"] == target_species
-    )
-    result = df[mask].sort_values("esa_step").reset_index(drop=True)
-    return result
+    return lo_ancillary.read_ancillary_file(sputter_files[-1])
+
+
+def _sputter_correction(species: str) -> tuple[str, np.ndarray]:
+    """
+    Load the sputter correction of a species from the ancillary.
+
+    Parameters
+    ----------
+    species : str
+        The species being mapped, whose counts are to be corrected.
+
+    Returns
+    -------
+    tuple[str, np.ndarray]
+        The species sputtering into the mapped species, and the (target level,
+        source level) fraction of its counts to remove from the mapped
+        species' counts, zero where a source level does not sputter into a
+        target level.
+
+    Raises
+    ------
+    ValueError
+        If the ancillary has nothing sputtering into the mapped species, or
+        names more than one species doing it, which the correction cannot
+        choose between.
+    """
+    factors = load_sputter_correction_data()
+    factors = factors[factors["target_species"] == species]
+    sources = factors["source_species"].unique()
+
+    if len(sources) == 0:
+        raise ValueError(
+            f"The map asks for a sputter correction, but the ancillary has no "
+            f"factors for {species}"
+        )
+    if len(sources) > 1:
+        raise ValueError(
+            f"More than one species sputters into {species}: {sorted(sources)}"
+        )
+
+    matrix = np.zeros((c.N_ESA_LEVELS, c.N_ESA_LEVELS))
+    matrix[
+        factors["target_esa"].to_numpy() - 1, factors["source_esa"].to_numpy() - 1
+    ] = factors["sputter_factor"].to_numpy()
+    return str(sources[0]), matrix
 
 
 def load_bootstrap_correction_data() -> pd.DataFrame:
@@ -517,7 +535,9 @@ class LoSpinAnglePointingSet(PointingSet):
         return float(ttj2000ns_to_et(self.epoch))
 
 
-def _initialize_accumulators(sky_map: RectangularSkyMap, energy: np.ndarray) -> None:
+def _initialize_accumulators(
+    sky_map: RectangularSkyMap, energy: np.ndarray, names: tuple[str, ...]
+) -> None:
     """
     Seed the map with the empty accumulators each pointing is added into.
 
@@ -532,8 +552,10 @@ def _initialize_accumulators(sky_map: RectangularSkyMap, energy: np.ndarray) -> 
         The map being built, modified in place.
     energy : np.ndarray
         The energy [keV] of each ESA level.
+    names : tuple[str, ...]
+        The accumulators to seed.
     """
-    for name in ACCUMULATED_VARIABLES:
+    for name in names:
         sky_map.data_1d[name] = xr.DataArray(
             np.zeros((1, c.N_ESA_LEVELS, sky_map.num_points)),
             dims=[
@@ -552,6 +574,7 @@ def _accumulate_pointing(
     sky_map: RectangularSkyMap,
     map_descriptor: MapDescriptor,
     energy: np.ndarray,
+    sputter_source: str | None = None,
 ) -> None:
     """
     Add one pointing's counts and exposure to the map.
@@ -572,6 +595,9 @@ def _accumulate_pointing(
         The parsed descriptor of the map being made.
     energy : np.ndarray
         The energy [keV] of each ESA level.
+    sputter_source : str | None
+        The species sputtering into the mapped species, whose counts are
+        accumulated alongside. None if this map is not sputter corrected.
     """
     species = map_descriptor.species
     pivot_angle = float(np.atleast_1d(goodtimes["pivot"].values)[0])
@@ -600,18 +626,24 @@ def _accumulate_pointing(
     # The whole pointing is projected from the middle of its good times, which
     # is where the despun frame is sampled.
     epoch = met_to_ttj2000ns((gt_start.min() + gt_end.max()) / 2.0)
+    values = {
+        "ena_count": pointing_counts,
+        "exposure_factor": pointing_exposure,
+        # Background is a rate per ESA level per pointing, so it is
+        # accumulated weighted by exposure and divided by the total
+        # exposure at the end.
+        "bg_rate_exposure": background_rates[:, np.newaxis] * pointing_exposure,
+    }
+    if sputter_source:
+        values["sputter_source_count"] = (
+            histrates[f"{sputter_source}_counts"].values[in_goodtime].sum(axis=0)
+        )
+
     pointing_set = LoSpinAnglePointingSet(
         epoch,
         pivot_angle,
         spin_angles,
-        {
-            "ena_count": pointing_counts,
-            "exposure_factor": pointing_exposure,
-            # Background is a rate per ESA level per pointing, so it is
-            # accumulated weighted by exposure and divided by the total
-            # exposure at the end.
-            "bg_rate_exposure": background_rates[:, np.newaxis] * pointing_exposure,
-        },
+        values,
         sky_map.spice_reference_frame,
         energy,
     )
@@ -619,7 +651,7 @@ def _accumulate_pointing(
     # and adds this pointing on top of what the earlier pointings left there.
     sky_map.project_pset_values_to_map(
         pointing_set,
-        value_keys=list(ACCUMULATED_VARIABLES),
+        value_keys=list(values),
         pset_valid_mask=keep,
     )
 
@@ -807,8 +839,40 @@ def _esa_calibration(species: str, esa_mode: int) -> EsaCalibration:
 # =============================================================================
 
 
+def _sputter_correct_counts(
+    counts: np.ndarray, source_counts: np.ndarray, sputter_matrix: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Remove the counts sputtered into the mapped species from another species.
+
+    Parameters
+    ----------
+    counts : np.ndarray
+        The accumulated counts of the mapped species, of shape
+        (epoch, esa level, pixel).
+    source_counts : np.ndarray
+        The accumulated counts of the sputtering species, same shape and grid.
+    sputter_matrix : np.ndarray
+        The (target level, source level) fraction of the source counts to
+        remove from the target counts.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        The corrected counts and their variance. Counting in both species is
+        Poisson, so each source term contributes its counts scaled by the
+        square of its factor, and the variance only ever grows.
+    """
+    logger.info("Applying the sputter correction to the accumulated counts")
+    corrected = counts - np.einsum("ts,esp->etp", sputter_matrix, source_counts)
+    variance = counts + np.einsum("ts,esp->etp", sputter_matrix**2, source_counts)
+    return corrected, variance
+
+
 def _calculate_rates_and_intensities(
-    sky_map: RectangularSkyMap, calibration: EsaCalibration
+    sky_map: RectangularSkyMap,
+    calibration: EsaCalibration,
+    sputter_matrix: np.ndarray | None = None,
 ) -> dict[str, np.ndarray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
@@ -822,6 +886,10 @@ def _calculate_rates_and_intensities(
     calibration : EsaCalibration
         The energy response the map is binned in, read for the energies and
         geometric factors the intensities are derived with.
+    sputter_matrix : np.ndarray | None
+        The (target level, source level) sputter correction factors, applied
+        to the counts before the rate is taken. None leaves the counts as
+        they were observed.
 
     Returns
     -------
@@ -831,6 +899,13 @@ def _calculate_rates_and_intensities(
     counts = sky_map.data_1d["ena_count"].values
     exposure = sky_map.data_1d["exposure_factor"].values
     bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"].values
+
+    if sputter_matrix is None:
+        rate_counts, rate_counts_var = counts, counts
+    else:
+        rate_counts, rate_counts_var = _sputter_correct_counts(
+            counts, sky_map.data_1d["sputter_source_count"].values, sputter_matrix
+        )
 
     # Every ESA level quantity gets a pixel axis to broadcast over the map.
     energy = calibration.energy[:, np.newaxis]
@@ -863,9 +938,11 @@ def _calculate_rates_and_intensities(
             where=exposed,
         )
 
-    count_rate = _divide(counts, exposure)
+    # Removing the sputtered counts can take a low-count pixel below zero,
+    # which is not a rate the instrument can have observed.
+    count_rate = np.maximum(_divide(rate_counts, exposure), 0.0)
     # Poisson uncertainty on the counts, propagated to the rate
-    count_rate_stat_uncert = _divide(np.sqrt(counts), exposure)
+    count_rate_stat_uncert = _divide(np.sqrt(rate_counts_var), exposure)
 
     intensity = _divide(count_rate, geometric_factor * energy)
     intensity_stat_uncert = _divide(count_rate_stat_uncert, geometric_factor * energy)
@@ -940,8 +1017,10 @@ def _build_map_dataset(
     dims = sky_map.data_1d["ena_count"].dims
     for name, values in variables.items():
         sky_map.data_1d[name] = xr.DataArray(values.astype(np.float32), dims=dims)
-    # `bg_rate_exposure` is an accumulator, not a map variable.
-    sky_map.data_1d = sky_map.data_1d.drop_vars("bg_rate_exposure")
+    # These are accumulators, not map variables.
+    sky_map.data_1d = sky_map.data_1d.drop_vars(
+        ["bg_rate_exposure", "sputter_source_count"], errors="ignore"
+    )
 
     dataset = sky_map.to_dataset()
 
