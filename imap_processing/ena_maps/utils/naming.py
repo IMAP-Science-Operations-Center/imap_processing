@@ -332,6 +332,18 @@ class MapDescriptor:
         return m.group(2) if m else ""
 
     @property
+    def raw(self) -> bool:
+        """
+        Whether the map is of the raw data, made with none of the corrections.
+
+        Returns
+        -------
+        raw : bool
+            True if this map asks for no corrections at all.
+        """
+        return "raw" in self.principal_data
+
+    @property
     def sputter_corrected(self) -> bool:
         """
         Whether the map has the counts sputtered in from a heavier species removed.
@@ -341,12 +353,26 @@ class MapDescriptor:
         sputter_corrected : bool
             True if this map is sputter corrected.
         """
-        if not self.principal_data.startswith("ena"):
+        if not self.principal_data.startswith("ena") or self.raw:
             return False
-        extras = self.principal_data_extras
-        # "ns" is the code for a map made with no sputter correction, "nbs" the
-        # older code for one made with neither sputter nor bootstrap correction.
-        return not extras.startswith(("ns", "nbs"))
+        # The stem is followed by the correction codes, in order: "s" or "ns"
+        # for the sputter correction, then "bs" or "nbs" for the bootstrap one.
+        return self.principal_data_extras.startswith("s")
+
+    @property
+    def bootstrap_corrected(self) -> bool:
+        """
+        Whether the map has the intensity bled in from higher ESA levels removed.
+
+        Returns
+        -------
+        bootstrap_corrected : bool
+            True if this map is bootstrap corrected.
+        """
+        if not self.principal_data.startswith("ena") or self.raw:
+            return False
+        # The bootstrap code follows the sputter one, see sputter_corrected.
+        return re.match(r"(?:n?s)?bs", self.principal_data_extras) is not None
 
     # Methods for parsing and building parts of the map descriptor string
     @staticmethod

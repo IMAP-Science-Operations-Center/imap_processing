@@ -528,14 +528,14 @@ class TestMapDescriptor:
     @pytest.mark.parametrize(
         "principal_data, expected",
         [
-            # "s" and "ns" after the stem say whether the correction was made
-            ("enas", True),
-            ("enans", False),
-            # The codes mark the exceptions, so an unmarked ENA map is corrected
-            ("ena", True),
-            # "nbs" (no sputter/bootstrap) suppresses it as well
-            ("enanbs", False),
+            # "s" and "ns" after the stem say whether the correction was made,
+            # ahead of the "bs" or "nbs" of the bootstrap correction
+            ("enasbs", True),
+            ("enasnbs", True),
+            ("enansbs", False),
             ("enansnbs", False),
+            # A raw map asks for none of the corrections
+            ("enaraw", False),
             # Only ENA maps are sputter corrected
             ("spx0305", False),
             ("isn", False),
@@ -547,3 +547,26 @@ class TestMapDescriptor:
             f"l090-{principal_data}-h-sf-nsp-ram-hae-6deg-1yr"
         )
         assert md.sputter_corrected is expected
+
+    @pytest.mark.parametrize(
+        "principal_data, expected",
+        [
+            # "bs" and "nbs" say whether the correction was made, following the
+            # "s" or "ns" of the sputter correction
+            ("enasbs", True),
+            ("enasnbs", False),
+            ("enansbs", True),
+            ("enansnbs", False),
+            # A raw map asks for none of the corrections
+            ("enaraw", False),
+            # Only ENA maps are bootstrap corrected
+            ("spx0305", False),
+            ("isn", False),
+            ("drt", False),
+        ],
+    )
+    def test_bootstrap_corrected(self, principal_data, expected):
+        md = MapDescriptor.from_string(
+            f"l090-{principal_data}-h-sf-nsp-ram-hae-6deg-1yr"
+        )
+        assert md.bootstrap_corrected is expected

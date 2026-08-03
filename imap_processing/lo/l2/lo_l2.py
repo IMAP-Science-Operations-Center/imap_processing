@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
+from scipy.ndimage import generic_filter
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps.ena_maps import (
@@ -99,6 +100,7 @@ def lo_l2(
         _flux_correction,
         _flux_factors,
         sputter_correction,
+        bootstrap_correction,
         _cg_correction,
     ) = _prepare_corrections(map_descriptor, anc_dependencies)
 
@@ -150,7 +152,11 @@ def lo_l2(
             sputter_source,
         )
 
-    variables = _calculate_rates_and_intensities(sky_map, calibration, sputter_matrix)
+    bootstrap_matrix = _bootstrap_correction() if bootstrap_correction else None
+
+    variables = _calculate_rates_and_intensities(
+        sky_map, calibration, sputter_matrix, bootstrap_matrix
+    )
     dataset = _build_map_dataset(sky_map, variables, calibration)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
@@ -167,7 +173,7 @@ def lo_l2(
 def _prepare_corrections(
     map_descriptor: MapDescriptor,
     anc_dependencies: list,
-) -> tuple[bool, Path | None, bool, bool]:
+) -> tuple[bool, Path | None, bool, bool, bool]:
     """
     Determine which of the corrections the map descriptor asks for are needed.
 
@@ -180,20 +186,22 @@ def _prepare_corrections(
 
     Returns
     -------
-    tuple[bool, Path | None, bool, bool]
+    tuple[bool, Path | None, bool, bool, bool]
         A tuple containing:
         - flux_correction: Whether to apply flux corrections
         - flux_factors: Path to flux factors ancillary file if needed,
          None otherwise
         - sputter_correction: Whether to remove the counts sputtered into the
           mapped species from a heavier one.
+        - bootstrap_correction: Whether to remove the intensity that bled into
+          each ESA level from the levels above it.
         - cg_correction: Whether to apply CG correction to the dataset.
     """
     # Default values - no corrections needed
     flux_correction = False
     flux_factors: None | Path = None
 
-    if "raw" not in map_descriptor.principal_data:
+    if not map_descriptor.raw:
         flux_correction = True
         try:
             flux_factors = next(
@@ -205,12 +213,14 @@ def _prepare_corrections(
             ) from None
 
     sputter_correction = map_descriptor.sputter_corrected
+    bootstrap_correction = map_descriptor.bootstrap_corrected
     cg_correction = True if map_descriptor.frame_descriptor == "hf" else False
 
     return (
         flux_correction,
         flux_factors,
         sputter_correction,
+        bootstrap_correction,
         cg_correction,
     )
 
@@ -330,16 +340,41 @@ def load_bootstrap_correction_data() -> pd.DataFrame:
         Bootstrap correction factors with columns: esa_step_i, esa_step_k,
         bootstrap_factor. Indices are 1-based ESA step numbers where esa_step_k=8
         refers to the virtual E8 channel.
+
+    Raises
+    ------
+    ValueError
+        If no bootstrap correction ancillary is shipped with the package.
     """
     bootstrap_files = sorted(ANCILLARY_DATA_DIR.glob("*bootstrap-correction-factors*"))
 
     if not bootstrap_files:
         raise ValueError("No bootstrap correction factor files found")
 
-    return pd.concat(
-        [lo_ancillary.read_ancillary_file(f) for f in bootstrap_files],
-        ignore_index=True,
-    )
+    return lo_ancillary.read_ancillary_file(bootstrap_files[-1])
+
+
+def _bootstrap_correction() -> np.ndarray:
+    """
+    Load the bootstrap coefficients from the ancillary.
+
+    Returns
+    -------
+    np.ndarray
+        The (target level, source level) fraction of a source level's intensity
+        to remove from a target level below it, zero where a source level does
+        not bleed into a target level. The source axis carries one level more
+        than the target axis, for the virtual ESA level above the top of the
+        map. These are the nominal coefficients; the correction scales them
+        itself, once for the correction and once for each of its bounds.
+    """
+    factors = load_bootstrap_correction_data()
+
+    matrix = np.zeros((c.N_ESA_LEVELS, c.N_ESA_LEVELS + 1))
+    matrix[
+        factors["esa_step_i"].to_numpy() - 1, factors["esa_step_k"].to_numpy() - 1
+    ] = factors["bootstrap_factor"].to_numpy()
+    return matrix
 
 
 def finalize_dataset(dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
@@ -869,10 +904,222 @@ def _sputter_correct_counts(
     return corrected, variance
 
 
+def _local_median_spectral_index(
+    spectral_index: np.ndarray, grid_shape: tuple[int, ...]
+) -> np.ndarray:
+    """
+    Fill in the spectral index of a pixel from the pixels around it.
+
+    Parameters
+    ----------
+    spectral_index : np.ndarray
+        The measured spectral index of every pixel, of shape (epoch, pixel),
+        NaN where the pixel has none.
+    grid_shape : tuple[int, ...]
+        The (azimuth, elevation) shape the pixel axis unwraps to, which is what
+        makes two pixels neighbors.
+
+    Returns
+    -------
+    np.ndarray
+        The median of the measured indices in each pixel's neighborhood, of the
+        same shape, NaN where the whole neighborhood is unmeasured. The map
+        does not wrap around in azimuth, so the pixels at its edges take the
+        median of the neighbors they have.
+    """
+
+    def median_of_measured(neighborhood: np.ndarray) -> float:
+        """
+        Take the median of the pixels of a neighborhood that have an index.
+
+        Parameters
+        ----------
+        neighborhood : np.ndarray
+            The spectral indices of the pixels around (and including) one
+            pixel, NaN where a pixel has none.
+
+        Returns
+        -------
+        float
+            The median, or NaN if no pixel of the neighborhood has an index.
+        """
+        measured = neighborhood[~np.isnan(neighborhood)]
+        return float(np.median(measured)) if measured.size else float(np.nan)
+
+    return np.stack(
+        [
+            generic_filter(
+                epoch_index.reshape(grid_shape),
+                median_of_measured,
+                size=c.BOOTSTRAP_SPECTRAL_INDEX_FILTER_SIZE,
+                mode="constant",
+                cval=np.nan,
+            ).ravel()
+            for epoch_index in spectral_index
+        ]
+    )
+
+
+def _extrapolate_top_intensity(
+    intensity: np.ndarray, energy: np.ndarray, grid_shape: tuple[int, ...]
+) -> np.ndarray:
+    """
+    Extrapolate the intensity of the virtual ESA level above the top of the map.
+
+    The top ESA levels have nothing above them in the map to be bootstrap
+    corrected against, so a virtual level is extrapolated from the top two
+    levels of each pixel, taking the spectrum between them as a power law.
+
+    Parameters
+    ----------
+    intensity : np.ndarray
+        The intensity of every ESA level, of shape (epoch, esa level, pixel).
+    energy : np.ndarray
+        The energy [keV] of each ESA level.
+    grid_shape : tuple[int, ...]
+        The (azimuth, elevation) shape the pixel axis unwraps to.
+
+    Returns
+    -------
+    np.ndarray
+        The intensity of the virtual level, of shape (epoch, pixel), zero in
+        the pixels the top level saw nothing in.
+    """
+    second, top = energy[-2], energy[-1]
+    virtual = top * c.ESA_8_ENERGY_RATIO
+    second_intensity, top_intensity = intensity[:, -2], intensity[:, -1]
+
+    # The spectral index the two levels of a pixel imply, where it has both.
+    measured = (second_intensity > 0) & (top_intensity > 0)
+    spectral_index = np.zeros_like(top_intensity)
+    spectral_index[measured] = -np.log(
+        top_intensity[measured] / second_intensity[measured]
+    ) / np.log(top / second)
+
+    extrapolated = np.zeros_like(top_intensity)
+    extrapolated[measured] = top_intensity[measured] * (virtual / top) ** (
+        -spectral_index[measured]
+    )
+
+    # A pixel the second level saw nothing in has no spectrum of its own to
+    # extrapolate along, so it borrows one from its neighbors, falling back to
+    # the whole map and then to a nominal index.
+    borrowing = (top_intensity > 0) & ~measured
+    if borrowing.any():
+        local = _local_median_spectral_index(
+            np.where(measured, spectral_index, np.nan), grid_shape
+        )
+        global_index = (
+            float(np.median(spectral_index[measured]))
+            if measured.any()
+            else c.BOOTSTRAP_DEFAULT_SPECTRAL_INDEX
+        )
+        borrowed = np.where(np.isfinite(local), local, global_index)
+        extrapolated[borrowing] = top_intensity[borrowing] * (virtual / top) ** (
+            -borrowed[borrowing]
+        )
+
+    return extrapolated
+
+
+def _bootstrap_correct_intensity(
+    intensity: np.ndarray,
+    variance: np.ndarray,
+    calibration: EsaCalibration,
+    bootstrap_matrix: np.ndarray,
+    grid_shape: tuple[int, ...],
+    valid_gf_bounds: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Remove the intensity that bled into each ESA level from the levels above it.
+
+    Every level is corrected against the intensities as they were measured, so
+    the correction of one level does not feed the correction of the next.
+
+    Parameters
+    ----------
+    intensity : np.ndarray
+        The intensity of every ESA level, of shape (epoch, esa level, pixel).
+    variance : np.ndarray
+        The statistical variance of those intensities, same shape.
+    calibration : EsaCalibration
+        The energy response the map is binned in, read for the energies the
+        virtual level is extrapolated along and the geometric factor bounds the
+        systematic error is taken from.
+    bootstrap_matrix : np.ndarray
+        The (target level, source level) nominal bootstrap coefficients.
+    grid_shape : tuple[int, ...]
+        The (azimuth, elevation) shape the pixel axis unwraps to.
+    valid_gf_bounds : np.ndarray
+        Whether the lower geometric factor bound of each ESA level is usable,
+        of shape (esa level, 1). The systematic error is zero where it is not.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+        The corrected intensity, its statistical uncertainty, and the upward
+        and downward systematic excursions of the correction.
+    """
+    logger.info("Applying the bootstrap correction to the intensities")
+
+    # The correction subtracts the level above the top of the map as well, so
+    # the intensities are extended by the virtual level it is extrapolated to.
+    # Its variance is approximated by that of the level it was extrapolated
+    # from, which contributes little to the levels it is subtracted from.
+    top_intensity = _extrapolate_top_intensity(
+        intensity, calibration.energy, grid_shape
+    )
+    extended = np.concatenate([intensity, top_intensity[:, np.newaxis]], axis=1)
+    extended_variance = np.concatenate([variance, variance[:, -1:]], axis=1)
+
+    def subtract(scale: float) -> np.ndarray:
+        """
+        Subtract the bled intensity, at one scaling of the coefficients.
+
+        Parameters
+        ----------
+        scale : float
+            The scaling of the nominal coefficients.
+
+        Returns
+        -------
+        np.ndarray
+            The corrected intensity, which the subtraction can take below zero
+            in a faint pixel, floored there.
+        """
+        return np.maximum(
+            intensity - np.einsum("ik,ekp->eip", scale * bootstrap_matrix, extended),
+            0.0,
+        )
+
+    corrected = subtract(c.BOOTSTRAP_SCALE)
+    corrected_variance = variance + np.einsum(
+        "ik,ekp->eip", (c.BOOTSTRAP_SCALE * bootstrap_matrix) ** 2, extended_variance
+    )
+
+    # The systematic error spans the two scalings the correction is bracketed
+    # by, each moved on by the geometric factor bound of the same direction.
+    geometric_factor = calibration.geometric_factor[:, np.newaxis]
+    gf_high = calibration.geometric_factor_high[:, np.newaxis]
+    gf_low = np.where(
+        valid_gf_bounds, calibration.geometric_factor_low[:, np.newaxis], 1.0
+    )
+    lower = subtract(c.BOOTSTRAP_SCALE_INTENSITY_LOW) * geometric_factor / gf_high
+    upper = subtract(c.BOOTSTRAP_SCALE_INTENSITY_HIGH) * geometric_factor / gf_low
+
+    return (
+        corrected,
+        np.sqrt(corrected_variance),
+        np.where(valid_gf_bounds, upper - corrected, 0.0),
+        np.where(valid_gf_bounds, corrected - lower, 0.0),
+    )
+
+
 def _calculate_rates_and_intensities(
     sky_map: RectangularSkyMap,
     calibration: EsaCalibration,
     sputter_matrix: np.ndarray | None = None,
+    bootstrap_matrix: np.ndarray | None = None,
 ) -> dict[str, np.ndarray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
@@ -890,6 +1137,10 @@ def _calculate_rates_and_intensities(
         The (target level, source level) sputter correction factors, applied
         to the counts before the rate is taken. None leaves the counts as
         they were observed.
+    bootstrap_matrix : np.ndarray | None
+        The (target level, source level) bootstrap correction coefficients,
+        applied to the intensities once they are derived. None leaves the
+        intensities as the counts gave them.
 
     Returns
     -------
@@ -962,6 +1213,21 @@ def _calculate_rates_and_intensities(
     intensity_lower = _divide(count_rate, gf_high * energy)
     intensity_sys_err_plus = np.where(valid, intensity_upper - intensity, 0.0)
     intensity_sys_err_minus = np.where(valid, intensity - intensity_lower, 0.0)
+
+    if bootstrap_matrix is not None:
+        (
+            intensity,
+            intensity_stat_uncert,
+            intensity_sys_err_plus,
+            intensity_sys_err_minus,
+        ) = _bootstrap_correct_intensity(
+            intensity,
+            intensity_stat_uncert**2,
+            calibration,
+            bootstrap_matrix,
+            sky_map.binning_grid_shape,
+            valid,
+        )
 
     bg_rate = _divide(bg_rate_exposure, exposure)
     bg_rate_stat_uncert = np.sqrt(_divide(bg_rate, exposure))

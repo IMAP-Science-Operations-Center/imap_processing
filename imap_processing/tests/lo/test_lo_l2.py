@@ -13,8 +13,11 @@ from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l2.lo_l2 import (
     LoSpinAnglePointingSet,
+    _bootstrap_correct_intensity,
     _complete_pointings,
     _dps_spin_angles,
+    _esa_calibration,
+    _extrapolate_top_intensity,
     _spin_phase_mask,
     lo_l2,
 )
@@ -22,17 +25,26 @@ from imap_processing.spice.time import met_to_ttj2000ns
 
 ANCILLARY_DIR = imap_module_directory / "tests/lo/test_anc"
 
-# A full-spin map, so that every spin-angle bin lands on it. The "ns" after
-# "ena" asks for no sputter correction, so these are the uncorrected maps.
+# A full-spin map, so that every spin-angle bin lands on it. The "ns" and
+# "nbs" after "ena" ask for neither the sputter nor the bootstrap correction,
+# so these are the uncorrected maps.
 FULL_DESCRIPTOR = "l090-enansnbs-h-sf-nsp-full-hae-6deg-3mo"
 RAM_DESCRIPTOR = "l090-enansnbs-h-sf-nsp-ram-hae-6deg-3mo"
 
-# The same full-spin map, sputter corrected.
-SPUTTER_DESCRIPTOR = "l090-enas-h-sf-nsp-full-hae-6deg-3mo"
+# The same full-spin map, sputter corrected only.
+SPUTTER_DESCRIPTOR = "l090-enasnbs-h-sf-nsp-full-hae-6deg-3mo"
+
+# The same full-spin map, bootstrap corrected only.
+BOOTSTRAP_DESCRIPTOR = "l090-enansbs-h-sf-nsp-full-hae-6deg-3mo"
 
 # The contents of imap_lo_sputter-correction-factors-small, as
 # {target ESA step: {source ESA step: factor}}, 1-based as in the ancillary.
 SPUTTER_FACTORS = {2: {3: 0.5}, 5: {3: 0.25, 6: 0.1}}
+
+# The contents of imap_lo_bootstrap-correction-factors-small, as
+# {target ESA step: {source ESA step: coefficient}}, 1-based as in the
+# ancillary. Step 8 is the virtual ESA step above the top of the map.
+BOOTSTRAP_FACTORS = {2: {3: 0.4, 5: 0.2}, 6: {7: 0.5}, 7: {8: 0.6}}
 
 N_ESA = LoConstants.N_ESA_LEVELS
 N_SPIN_BINS = LoConstants.N_SPIN_ANGLE_BINS
@@ -227,6 +239,24 @@ def sputter_maps(one_pointing, anc_dependencies):
     ):
         (corrected,) = lo_l2(
             as_dependencies(one_pointing), anc_dependencies, SPUTTER_DESCRIPTOR
+        )
+        (raw,) = lo_l2(as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR)
+    return corrected, raw
+
+
+@pytest.fixture
+def bootstrap_maps(one_pointing, anc_dependencies):
+    """The bootstrap corrected and uncorrected maps of the same pointing.
+
+    The two differ only in whether the correction was applied, so the
+    uncorrected map supplies the intensities the correction is predicted from.
+    """
+    with patch(
+        "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+        side_effect=identity_pointing,
+    ):
+        (corrected,) = lo_l2(
+            as_dependencies(one_pointing), anc_dependencies, BOOTSTRAP_DESCRIPTOR
         )
         (raw,) = lo_l2(as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR)
     return corrected, raw
@@ -547,6 +577,211 @@ class TestSputterCorrection:
         )
         np.testing.assert_array_equal(
             corrected["exposure_factor"].values, raw["exposure_factor"].values
+        )
+
+
+class TestBootstrapCorrection:
+    """Removing the intensity that bled down from the higher ESA steps."""
+
+    # The ESA steps the test ancillary corrects from steps of the map itself,
+    # rather than from the virtual step above the top of it.
+    MAPPED_SOURCE_STEPS = (2, 6)
+
+    @staticmethod
+    def bled(intensity, target_esa, power=1):
+        """The intensity bled into a target ESA step, from the source steps.
+
+        ``power`` is 1 for the intensity itself and 2 for its variance, which
+        each source term contributes to scaled by the square of its
+        coefficient.
+        """
+        return sum(
+            (LoConstants.BOOTSTRAP_SCALE * coefficient) ** power
+            * intensity[:, source - 1]
+            for source, coefficient in BOOTSTRAP_FACTORS.get(target_esa, {}).items()
+        )
+
+    def test_correction_removes_the_bled_intensity(self, bootstrap_maps):
+        """A corrected step loses the scaled intensity of the steps above it."""
+        corrected, raw = bootstrap_maps
+
+        intensity = raw["ena_intensity"].values
+        for target_esa in self.MAPPED_SOURCE_STEPS:
+            expected = np.maximum(
+                intensity[:, target_esa - 1] - self.bled(intensity, target_esa), 0.0
+            )
+            np.testing.assert_allclose(
+                corrected["ena_intensity"].values[:, target_esa - 1],
+                expected,
+                rtol=1e-4,
+            )
+
+    def test_uncorrected_steps_are_untouched(self, bootstrap_maps):
+        """A step that nothing bleeds into keeps the intensity it already had."""
+        corrected, raw = bootstrap_maps
+
+        untouched = [esa for esa in range(1, N_ESA + 1) if esa not in BOOTSTRAP_FACTORS]
+        assert untouched, "the test coefficients must leave some steps uncorrected"
+
+        for target_esa in untouched:
+            np.testing.assert_allclose(
+                corrected["ena_intensity"].values[:, target_esa - 1],
+                raw["ena_intensity"].values[:, target_esa - 1],
+                rtol=1e-6,
+            )
+
+    def test_top_step_is_corrected_against_the_virtual_step(self, bootstrap_maps):
+        """The top step has only the extrapolated step above it to lose to."""
+        corrected, raw = bootstrap_maps
+
+        top = N_ESA
+        assert set(BOOTSTRAP_FACTORS[top]) == {N_ESA + 1}, (
+            "the top step must be fed by the virtual step alone"
+        )
+
+        correction = (
+            raw["ena_intensity"].values[:, top - 1]
+            - corrected["ena_intensity"].values[:, top - 1]
+        )
+        assert np.all(correction >= 0)
+        assert np.any(correction > 0), "the virtual step corrected nothing"
+
+    def test_uncertainty_gains_the_source_intensities(self, bootstrap_maps):
+        """Subtracting a measured quantity can only add to the variance."""
+        corrected, raw = bootstrap_maps
+
+        variance = raw["ena_intensity_stat_uncert"].values ** 2
+        for target_esa in self.MAPPED_SOURCE_STEPS:
+            expected = variance[:, target_esa - 1] + self.bled(
+                variance, target_esa, power=2
+            )
+            np.testing.assert_allclose(
+                corrected["ena_intensity_stat_uncert"].values[:, target_esa - 1],
+                np.sqrt(expected),
+                rtol=1e-4,
+            )
+
+    def test_intensity_is_never_negative(self, bootstrap_maps):
+        """The corrected map holds no negative intensity."""
+        corrected, _ = bootstrap_maps
+
+        assert np.all(corrected["ena_intensity"].values >= 0)
+
+    def test_over_subtraction_is_floored_at_zero(self):
+        """Over-subtracting a pixel floors it rather than going below zero."""
+        calibration = _esa_calibration("h", 0)
+        intensity = np.ones((1, N_ESA, 4))
+        # Every step loses twice its own intensity to the step above it.
+        coefficients = np.zeros((N_ESA, N_ESA + 1))
+        coefficients[np.arange(N_ESA), np.arange(1, N_ESA + 1)] = (
+            2.0 / LoConstants.BOOTSTRAP_SCALE
+        )
+
+        corrected, _, plus, minus = _bootstrap_correct_intensity(
+            intensity,
+            np.ones_like(intensity),
+            calibration,
+            coefficients,
+            (2, 2),
+            calibration.geometric_factor_low[:, np.newaxis] > 0,
+        )
+
+        np.testing.assert_array_equal(corrected, np.zeros_like(corrected))
+        assert np.all(plus >= 0)
+        assert np.all(minus >= 0)
+
+    def test_systematic_error_brackets_the_correction(self, bootstrap_maps):
+        """The corrected steps keep a two-sided systematic error."""
+        corrected, _ = bootstrap_maps
+
+        plus = corrected["ena_intensity_sys_err_plus"].values
+        minus = corrected["ena_intensity_sys_err_minus"].values
+        symmetric = corrected["ena_intensity_sys_err"].values
+        lit = corrected["ena_intensity"].values > 0
+
+        assert np.all(plus >= 0)
+        assert np.all(minus >= 0)
+        assert np.all(plus[lit] > 0)
+        np.testing.assert_allclose(
+            symmetric[lit], np.sqrt(plus[lit] * minus[lit]), rtol=1e-4
+        )
+        # The correction is bracketed by a smaller and a larger subtraction, so
+        # its systematic error is wider than the G-factor one it starts from.
+        for target_esa in self.MAPPED_SOURCE_STEPS:
+            assert np.any(plus[:, target_esa - 1] > minus[:, target_esa - 1])
+
+    def test_counts_and_rates_stay_as_observed(self, bootstrap_maps):
+        """The correction applies to the intensities alone."""
+        corrected, raw = bootstrap_maps
+
+        for variable in ("ena_count", "exposure_factor", "ena_count_rate"):
+            np.testing.assert_array_equal(
+                corrected[variable].values, raw[variable].values
+            )
+
+
+class TestVirtualStepExtrapolation:
+    """Extrapolating the ESA step above the top of the map."""
+
+    energy = np.array([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
+    grid_shape = (4, 3)
+
+    def intensity(self, second, top):
+        """A map of the two top ESA steps, one epoch, on a 4x3 sky grid."""
+        values = np.zeros((1, N_ESA, np.prod(self.grid_shape)))
+        values[0, -2] = np.asarray(second, dtype=float).ravel()
+        values[0, -1] = np.asarray(top, dtype=float).ravel()
+        return values
+
+    def test_power_law_between_the_top_two_steps(self):
+        """A pixel with both steps lit extrapolates along its own spectrum."""
+        gamma = 1.4
+        top = np.full(np.prod(self.grid_shape), 3.0)
+        second = top * (self.energy[-1] / self.energy[-2]) ** gamma
+
+        extrapolated = _extrapolate_top_intensity(
+            self.intensity(second, top), self.energy, self.grid_shape
+        )
+
+        np.testing.assert_allclose(
+            extrapolated[0],
+            top * LoConstants.ESA_8_ENERGY_RATIO**-gamma,
+            rtol=1e-6,
+        )
+
+    def test_missing_spectrum_borrows_from_the_neighborhood(self):
+        """A pixel with no spectrum of its own uses its neighbors' median."""
+        gamma = 1.4
+        top = np.full(np.prod(self.grid_shape), 3.0)
+        second = top * (self.energy[-1] / self.energy[-2]) ** gamma
+        # One pixel is dark in the second step, so it has no spectrum, but its
+        # neighbors all share the same one.
+        second[0] = 0.0
+
+        extrapolated = _extrapolate_top_intensity(
+            self.intensity(second, top), self.energy, self.grid_shape
+        )
+
+        np.testing.assert_allclose(
+            extrapolated[0],
+            top * LoConstants.ESA_8_ENERGY_RATIO**-gamma,
+            rtol=1e-6,
+        )
+
+    def test_map_with_no_spectrum_falls_back_to_the_nominal_index(self):
+        """With no pixel to learn a spectrum from, a nominal one stands in."""
+        top = np.full(np.prod(self.grid_shape), 3.0)
+
+        extrapolated = _extrapolate_top_intensity(
+            self.intensity(np.zeros_like(top), top), self.energy, self.grid_shape
+        )
+
+        np.testing.assert_allclose(
+            extrapolated[0],
+            top
+            * LoConstants.ESA_8_ENERGY_RATIO
+            ** -LoConstants.BOOTSTRAP_DEFAULT_SPECTRAL_INDEX,
+            rtol=1e-6,
         )
 
 

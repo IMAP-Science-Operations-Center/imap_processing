@@ -96,6 +96,25 @@ class LoConstants:
     N_SPINS_PER_ESA_LEVEL: int = 4  # Spins per ESA step within one histogram cycle
     N_SPIN_ANGLE_BINS: int = 60  # Number of angular bins within a spin
 
+    # Bootstrap correction settings. The nominal coefficients of the ancillary
+    # are scaled by BOOTSTRAP_SCALE before they are applied; the low and high
+    # scalings bracket that choice and become the systematic error on the
+    # corrected intensity.
+    BOOTSTRAP_SCALE: float = 0.5
+    BOOTSTRAP_SCALE_INTENSITY_HIGH: float = 0.25
+    BOOTSTRAP_SCALE_INTENSITY_LOW: float = 1.0
+
+    # The bootstrap correction of the highest ESA levels needs an ESA level
+    # above them to subtract. That virtual "ESA 8" channel has no geometric
+    # factor of its own; its intensity is extrapolated from the top two levels
+    # with a power law, at this multiple of the top level's center energy.
+    ESA_8_ENERGY_RATIO: float = 2.1
+    # Width [pixels] of the neighborhood the spectral index of a pixel that has
+    # no measurable one is taken from.
+    BOOTSTRAP_SPECTRAL_INDEX_FILTER_SIZE: int = 3
+    # The spectral index to extrapolate with when the map has none to offer.
+    BOOTSTRAP_DEFAULT_SPECTRAL_INDEX: float = 1.6
+
     # Nominal spin period [s]. True spin duration is NOT 15 seconds.
     NOMINAL_SPIN_PERIOD_SEC: float = 15.0
 
