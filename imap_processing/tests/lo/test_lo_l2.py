@@ -9,15 +9,18 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps.ena_maps import match_coords_to_indices
+from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 from imap_processing.ena_maps.utils.naming import MapDescriptor
-from imap_processing.lo.constants import LoConstants
+from imap_processing.lo.constants import EsaCalibration, LoConstants
 from imap_processing.lo.l2.lo_l2 import (
     LoSpinAnglePointingSet,
     _bootstrap_correct_intensity,
     _complete_pointings,
+    _compton_getting_correct_intensity,
     _dps_spin_angles,
     _esa_calibration,
     _extrapolate_top_intensity,
+    _spacecraft_frame_energy,
     _spin_phase_mask,
     lo_l2,
 )
@@ -36,6 +39,10 @@ SPUTTER_DESCRIPTOR = "l090-enasnbs-h-sf-nsp-full-hae-6deg-3mo"
 
 # The same full-spin map, bootstrap corrected only.
 BOOTSTRAP_DESCRIPTOR = "l090-enansbs-h-sf-nsp-full-hae-6deg-3mo"
+
+# The same map in the heliospheric frame, which is what asks for the
+# Compton-Getting correction. Neither of the other corrections is made.
+CG_DESCRIPTOR = "l090-enansnbs-h-hf-nsp-full-hae-6deg-3mo"
 
 # The contents of imap_lo_sputter-correction-factors-small, as
 # {target ESA step: {source ESA step: factor}}, 1-based as in the ancillary.
@@ -257,6 +264,25 @@ def bootstrap_maps(one_pointing, anc_dependencies):
     ):
         (corrected,) = lo_l2(
             as_dependencies(one_pointing), anc_dependencies, BOOTSTRAP_DESCRIPTOR
+        )
+        (raw,) = lo_l2(as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR)
+    return corrected, raw
+
+
+@pytest.fixture
+def cg_maps(one_pointing, anc_dependencies):
+    """The Compton-Getting corrected and uncorrected maps of one pointing.
+
+    The two differ only in the frame they are made in, which is what asks for
+    the correction, so the spacecraft frame map supplies the intensities the
+    correction is predicted from.
+    """
+    with patch(
+        "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+        side_effect=identity_pointing,
+    ):
+        (corrected,) = lo_l2(
+            as_dependencies(one_pointing), anc_dependencies, CG_DESCRIPTOR
         )
         (raw,) = lo_l2(as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR)
     return corrected, raw
@@ -783,6 +809,228 @@ class TestVirtualStepExtrapolation:
             ** -LoConstants.BOOTSTRAP_DEFAULT_SPECTRAL_INDEX,
             rtol=1e-6,
         )
+
+
+class TestComptonGettingCorrection:
+    """Moving the intensities into the frame the heliosphere sees them in."""
+
+    def test_counts_and_rates_stay_as_observed(self, cg_maps):
+        """The correction applies to the intensities alone."""
+        corrected, raw = cg_maps
+
+        for variable in ("ena_count", "exposure_factor", "ena_count_rate"):
+            np.testing.assert_array_equal(
+                corrected[variable].values, raw[variable].values
+            )
+
+    def test_intensities_are_corrected(self, cg_maps):
+        """The intensities and the background come out shifted."""
+        corrected, raw = cg_maps
+
+        for variable in ("ena_intensity", "bg_intensity"):
+            lit = raw[variable].values > 0
+            assert lit.any()
+            assert np.any(
+                ~np.isclose(corrected[variable].values[lit], raw[variable].values[lit])
+            ), f"{variable} was not corrected"
+
+    def test_map_holds_no_fill_values(self, cg_maps):
+        """A pixel the correction says nothing about comes out at zero."""
+        corrected, _ = cg_maps
+
+        for variable in (
+            "ena_intensity",
+            "ena_intensity_stat_uncert",
+            "ena_intensity_sys_err_plus",
+            "ena_intensity_sys_err_minus",
+            "bg_intensity",
+            "bg_intensity_stat_uncert",
+        ):
+            values = corrected[variable].values
+            assert np.isfinite(values).all(), f"{variable} holds NaN or inf"
+            assert np.all(values >= 0), f"{variable} went negative"
+
+    def test_dark_pixels_stay_dark(self, cg_maps):
+        """A pixel that saw nothing has no spectrum to correct."""
+        corrected, raw = cg_maps
+
+        dark = raw["ena_intensity"].values <= 0
+        assert dark.any()
+        assert np.all(corrected["ena_intensity"].values[dark] == 0)
+
+    def test_accumulator_is_not_written_out(self, cg_maps):
+        """The projected cos(alpha) is an accumulator, not a map variable."""
+        corrected, _ = cg_maps
+
+        assert "cos_alpha_exposure" not in corrected.data_vars
+
+
+class TestSpacecraftFrameEnergy:
+    """The kinematics of an ENA seen from a moving spacecraft."""
+
+    # The energy [eV] an ENA of the top ESA level has in the helio frame.
+    energy = np.array([16.0, 30.0, 56.0, 106.0, 200.0, 404.0, 787.0])
+
+    def spacecraft_energy(self, cos_alpha):
+        """The spacecraft frame energies of one pixel at every ESA level."""
+        alpha = np.full((1, N_ESA, 1), float(cos_alpha))
+        return _spacecraft_frame_energy(alpha, self.energy)[0, :, 0]
+
+    def test_head_on_ena_gains_the_spacecraft_speed(self):
+        """Looking into the ram direction, the speeds add."""
+        energy_u = LoConstants.CG_ENA_ENERGY_AT_SPACECRAFT_SPEED_EV
+
+        np.testing.assert_allclose(
+            self.spacecraft_energy(1.0),
+            (np.sqrt(self.energy) + np.sqrt(energy_u)) ** 2,
+            rtol=1e-12,
+        )
+
+    def test_overtaken_ena_loses_the_spacecraft_speed(self):
+        """Looking away from the ram direction, the speeds subtract."""
+        energy_u = LoConstants.CG_ENA_ENERGY_AT_SPACECRAFT_SPEED_EV
+
+        np.testing.assert_allclose(
+            self.spacecraft_energy(-1.0),
+            (np.sqrt(self.energy) - np.sqrt(energy_u)) ** 2,
+            rtol=1e-12,
+        )
+
+    def test_side_on_ena_loses_the_spacecraft_energy(self):
+        """Looking across the ram direction, the energies subtract."""
+        energy_u = LoConstants.CG_ENA_ENERGY_AT_SPACECRAFT_SPEED_EV
+
+        np.testing.assert_allclose(
+            self.spacecraft_energy(0.0), self.energy - energy_u, rtol=1e-12
+        )
+
+    def test_ram_side_is_the_energetic_one(self):
+        """The shift grows monotonically towards the ram direction."""
+        cosines = np.linspace(-1.0, 1.0, 21)
+        energies = np.array([self.spacecraft_energy(c) for c in cosines])
+
+        assert np.all(np.diff(energies, axis=0) > 0)
+
+
+class TestComptonGettingMaths:
+    """The correction applied to a spectrum whose answer is known."""
+
+    energy_kev = np.array([0.016, 0.030, 0.056, 0.106, 0.200, 0.404, 0.787])
+    spectral_index = -1.8
+
+    @pytest.fixture
+    def calibration(self):
+        """A calibration carrying only the energies the correction reads."""
+        ones = np.ones(N_ESA)
+        return EsaCalibration(
+            energy=self.energy_kev,
+            energy_delta_minus=np.zeros(N_ESA),
+            energy_delta_plus=np.zeros(N_ESA),
+            geometric_factor=ones,
+            geometric_factor_low=ones,
+            geometric_factor_high=ones,
+        )
+
+    @pytest.fixture
+    def flux_corrector(self):
+        """The ESA transmission factors of the test eta fit ancillary."""
+        return PowerLawFluxCorrector(
+            ANCILLARY_DIR / "imap_lo_esa-eta-fit-factors_20240101_v001.csv"
+        )
+
+    @pytest.fixture
+    def transparent_corrector(self, tmp_path):
+        """A corrector whose every ESA level transmits perfectly.
+
+        With no transmission to undo, the source spectrum is the observed one
+        and the correction is the energy shift alone, which is what makes the
+        expected values here analytic.
+        """
+        coefficients = tmp_path / "imap_lo_esa-eta-fit-factors_20240101_v999.csv"
+        rows = "\n".join(f"{step},1,0,0,0,0,0" for step in range(1, N_ESA + 1))
+        coefficients.write_text(f"esa_step,M0,M1,M2,M3,M4,M5\n{rows}\n")
+        return PowerLawFluxCorrector(coefficients)
+
+    def power_law(self, n_pixels):
+        """A spectrum of exactly the test spectral index, at every pixel."""
+        spectrum = 1e5 * (self.energy_kev / self.energy_kev[0]) ** self.spectral_index
+        return np.tile(spectrum[np.newaxis, :, np.newaxis], (1, 1, n_pixels))
+
+    def test_correction_follows_the_source_power_law(
+        self, calibration, transparent_corrector
+    ):
+        """A power-law spectrum is scaled by the shift along its own slope."""
+        cos_alpha = np.linspace(-1.0, 1.0, 12)[np.newaxis, np.newaxis, :]
+        cos_alpha = np.tile(cos_alpha, (1, N_ESA, 1))
+        intensity = self.power_law(cos_alpha.shape[-1])
+
+        corrected, _ = _compton_getting_correct_intensity(
+            intensity, (), cos_alpha, calibration, transparent_corrector
+        )
+
+        # The index of a pure power law is recovered exactly, and a perfectly
+        # transmitting ESA leaves the source intensity as the observed one.
+        energy_ev = self.energy_kev * 1e3
+        energy_sc = _spacecraft_frame_energy(cos_alpha, energy_ev)
+        expected = intensity * (energy_sc / energy_ev[:, np.newaxis]) ** (
+            self.spectral_index + 1.0
+        )
+
+        np.testing.assert_allclose(corrected, expected, rtol=1e-10)
+
+    def test_transmission_is_divided_out(
+        self, calibration, flux_corrector, transparent_corrector
+    ):
+        """An ESA that over-transmits has to be corrected back down."""
+        cos_alpha = np.full((1, N_ESA, 4), 0.5)
+        intensity = self.power_law(4)
+
+        corrected, _ = _compton_getting_correct_intensity(
+            intensity, (), cos_alpha, calibration, flux_corrector
+        )
+        transparent, _ = _compton_getting_correct_intensity(
+            intensity, (), cos_alpha, calibration, transparent_corrector
+        )
+
+        # The transmission of a falling spectrum is above one at every level,
+        # so dividing it out leaves less intensity than a perfect ESA would.
+        index = np.full((N_ESA, 1), self.spectral_index)
+        assert np.all(flux_corrector.eta_esa(np.arange(N_ESA) + 1, index) > 1.0)
+        assert np.all(corrected < transparent)
+
+    def test_uncertainties_keep_their_fraction(self, calibration, flux_corrector):
+        """Every uncertainty moves by the same factor as its intensity."""
+        cos_alpha = np.tile(
+            np.linspace(-1.0, 1.0, 12)[np.newaxis, np.newaxis, :], (1, N_ESA, 1)
+        )
+        intensity = self.power_law(cos_alpha.shape[-1])
+        stat_uncert = 0.1 * intensity
+        sys_err = 0.05 * intensity
+
+        corrected, (corrected_stat, corrected_sys) = _compton_getting_correct_intensity(
+            intensity,
+            (stat_uncert, sys_err),
+            cos_alpha,
+            calibration,
+            flux_corrector,
+        )
+
+        np.testing.assert_allclose(corrected_stat, 0.1 * corrected, rtol=1e-10)
+        np.testing.assert_allclose(corrected_sys, 0.05 * corrected, rtol=1e-10)
+
+    def test_unlit_levels_are_left_at_zero(self, calibration, flux_corrector):
+        """A level with no intensity has no spectrum, and stays empty."""
+        cos_alpha = np.full((1, N_ESA, 4), 0.5)
+        intensity = self.power_law(4)
+        intensity[0, :, 2] = 0.0
+
+        corrected, (corrected_stat,) = _compton_getting_correct_intensity(
+            intensity, (intensity,), cos_alpha, calibration, flux_corrector
+        )
+
+        np.testing.assert_array_equal(corrected[0, :, 2], np.zeros(N_ESA))
+        np.testing.assert_array_equal(corrected_stat[0, :, 2], np.zeros(N_ESA))
+        assert np.all(corrected[0, :, [0, 1, 3]] > 0)
 
 
 class TestGeometry:

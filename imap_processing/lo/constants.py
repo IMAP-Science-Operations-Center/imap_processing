@@ -115,6 +115,17 @@ class LoConstants:
     # The spectral index to extrapolate with when the map has none to offer.
     BOOTSTRAP_DEFAULT_SPECTRAL_INDEX: float = 1.6
 
+    # Compton-Getting correction settings. The energy [eV] a hydrogen ENA has
+    # in the spacecraft frame purely from the spacecraft's own motion, i.e.
+    # 1/2 m_H U^2 at the nominal spacecraft speed of ~30 km/s. The kinematics
+    # of the correction are scaled by it.
+    CG_ENA_ENERGY_AT_SPACECRAFT_SPEED_EV: float = 4.661
+    # The predictor-corrector that estimates the source spectrum behind the
+    # observed one runs until the RMS change in the intensities falls below the
+    # tolerance, or the iterations run out.
+    CG_MAX_ITERATIONS: int = 20
+    CG_CONVERGENCE_TOLERANCE: float = 0.005
+
     # Nominal spin period [s]. True spin duration is NOT 15 seconds.
     NOMINAL_SPIN_PERIOD_SEC: float = 15.0
 

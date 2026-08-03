@@ -15,6 +15,7 @@ from imap_processing.ena_maps.ena_maps import (
     SkyTilingType,
 )
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo import lo_ancillary
 from imap_processing.lo.constants import EsaCalibration
@@ -89,6 +90,9 @@ def lo_l2(
     NotImplementedError
         If a HEALPix map is requested (only rectangular maps supported for Lo),
         or if the map is of a species other than hydrogen.
+    ValueError
+        If the map is to be Compton-Getting corrected but the ancillary
+        dependencies hold no ESA eta fit factors to correct it with.
     """
     logger.info("Starting IMAP-Lo L2 processing pipeline")
 
@@ -98,10 +102,10 @@ def lo_l2(
     # Determine which of the corrections the descriptor asks for are needed
     (
         _flux_correction,
-        _flux_factors,
+        flux_factors,
         sputter_correction,
         bootstrap_correction,
-        _cg_correction,
+        cg_correction,
     ) = _prepare_corrections(map_descriptor, anc_dependencies)
 
     logger.info("Step 1: Loading ancillary data")
@@ -134,8 +138,10 @@ def lo_l2(
         if sputter_correction
         else (None, None)
     )
-    accumulators = ACCUMULATED_VARIABLES + (
-        ("sputter_source_count",) if sputter_source else ()
+    accumulators = (
+        ACCUMULATED_VARIABLES
+        + (("sputter_source_count",) if sputter_source else ())
+        + (("cos_alpha_exposure",) if cg_correction else ())
     )
 
     _initialize_accumulators(sky_map, calibration.energy, accumulators)
@@ -150,12 +156,25 @@ def lo_l2(
             map_descriptor,
             calibration.energy,
             sputter_source,
+            cg_correction,
         )
 
     bootstrap_matrix = _bootstrap_correction() if bootstrap_correction else None
 
+    # The Compton-Getting correction reads the source spectrum of each pixel
+    # through the ESA transmission factors of the eta fit ancillary.
+    flux_corrector = None
+    if cg_correction:
+        if flux_factors is None:
+            raise ValueError(
+                "A heliospheric frame map needs the ESA eta fit factors to be "
+                "Compton-Getting corrected, and none were found in the "
+                "ancillary dependencies"
+            )
+        flux_corrector = PowerLawFluxCorrector(flux_factors)
+
     variables = _calculate_rates_and_intensities(
-        sky_map, calibration, sputter_matrix, bootstrap_matrix
+        sky_map, calibration, sputter_matrix, bootstrap_matrix, flux_corrector
     )
     dataset = _build_map_dataset(sky_map, variables, calibration)
 
@@ -610,6 +629,7 @@ def _accumulate_pointing(
     map_descriptor: MapDescriptor,
     energy: np.ndarray,
     sputter_source: str | None = None,
+    accumulate_cos_alpha: bool = False,
 ) -> None:
     """
     Add one pointing's counts and exposure to the map.
@@ -633,6 +653,10 @@ def _accumulate_pointing(
     sputter_source : str | None
         The species sputtering into the mapped species, whose counts are
         accumulated alongside. None if this map is not sputter corrected.
+    accumulate_cos_alpha : bool
+        Whether to accumulate the RAM projection of each spin-angle bin, which
+        the Compton-Getting correction needs. False if this map is not CG
+        corrected.
     """
     species = map_descriptor.species
     pivot_angle = float(np.atleast_1d(goodtimes["pivot"].values)[0])
@@ -672,6 +696,13 @@ def _accumulate_pointing(
     if sputter_source:
         values["sputter_source_count"] = (
             histrates[f"{sputter_source}_counts"].values[in_goodtime].sum(axis=0)
+        )
+    if accumulate_cos_alpha:
+        # The RAM projection is a property of the bin, not of the counts in it,
+        # so like the background it is accumulated weighted by exposure and
+        # divided by the total exposure at the end.
+        values["cos_alpha_exposure"] = (
+            _ram_projection(spin_angles, pivot_angle) * pointing_exposure
         )
 
     pointing_set = LoSpinAnglePointingSet(
@@ -749,10 +780,35 @@ def _spin_phase_mask(
             f"Invalid spin phase: {spin_phase}. Must be 'ram', 'anti' or 'full'."
         )
 
-    ram_projection = np.sin(np.radians(pivot_angle + c.PIVOT_RAM_OFFSET)) * np.sin(
+    ram_projection = _ram_projection(spin_angles, pivot_angle)
+    return ram_projection > 0 if spin_phase == "ram" else ram_projection < 0
+
+
+def _ram_projection(spin_angles: np.ndarray, pivot_angle: float) -> np.ndarray:
+    """
+    Project the look direction of each spin-angle bin onto the RAM direction.
+
+    The projection is the cosine of the angle between the bin's look direction
+    and the spacecraft's velocity, which is what tells the RAM half of the spin
+    from the anti-RAM half, and what the Compton-Getting correction is a
+    function of.
+
+    Parameters
+    ----------
+    spin_angles : np.ndarray
+        The IMAP_DPS azimuth [degrees] of each spin-angle bin.
+    pivot_angle : float
+        The pivot angle [degrees] of the pointing.
+
+    Returns
+    -------
+    np.ndarray
+        The projection factor of each bin, positive looking into the RAM
+        direction and negative looking away from it.
+    """
+    return np.sin(np.radians(pivot_angle + c.PIVOT_RAM_OFFSET)) * np.sin(
         np.radians(spin_angles)
     )
-    return ram_projection > 0 if spin_phase == "ram" else ram_projection < 0
 
 
 # =============================================================================
@@ -1115,11 +1171,211 @@ def _bootstrap_correct_intensity(
     )
 
 
+def _power_law_slopes(intensity: np.ndarray, energy: np.ndarray) -> np.ndarray:
+    """
+    Estimate the spectral index of every ESA level of every pixel.
+
+    Parameters
+    ----------
+    intensity : np.ndarray
+        The intensity of each ESA level, of shape (epoch, esa level, pixel),
+        NaN where a pixel saw nothing at a level.
+    energy : np.ndarray
+        The energy of each ESA level, in any unit.
+
+    Returns
+    -------
+    np.ndarray
+        The index of the power law through each level and the one above it, of
+        the same shape, NaN where either level is unmeasured. The top level has
+        no level above it, so it keeps the index of the one below it.
+    """
+    with np.errstate(divide="ignore", invalid="ignore"):
+        slopes = (
+            np.log(intensity[:, 1:] / intensity[:, :-1])
+            / np.log(energy[1:] / energy[:-1])[:, np.newaxis]
+        )
+    return np.concatenate([slopes, slopes[:, -1:]], axis=1)
+
+
+def _source_intensity(
+    intensity: np.ndarray,
+    energy: np.ndarray,
+    flux_corrector: PowerLawFluxCorrector,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Undo the ESA transmission bias in the observed intensities.
+
+    An ESA level integrates over a passband rather than sampling a single
+    energy, so what it observes depends on the spectrum falling through it. The
+    transmission factor that relates the two is itself a function of the
+    spectral index, so the source spectrum is recovered by iterating: estimate
+    the index, undo the transmission, re-estimate the index, until the
+    intensities settle.
+
+    Parameters
+    ----------
+    intensity : np.ndarray
+        The observed intensity of each ESA level, of shape
+        (epoch, esa level, pixel).
+    energy : np.ndarray
+        The energy of each ESA level, in any unit.
+    flux_corrector : PowerLawFluxCorrector
+        The ESA transmission factors, read from the eta fit ancillary.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        The source intensity and its spectral index, both NaN in the pixels
+        that saw nothing.
+    """
+    levels: np.ndarray = np.arange(c.N_ESA_LEVELS) + 1
+
+    def transmission(spectral_index: np.ndarray) -> np.ndarray:
+        """
+        Get the ESA transmission factor of each level of each pixel.
+
+        Parameters
+        ----------
+        spectral_index : np.ndarray
+            The index of the power law through each ESA level of each pixel.
+
+        Returns
+        -------
+        np.ndarray
+            The transmission factor, of the same shape.
+        """
+        # The shared corrector takes the ESA level on the leading axis.
+        return np.moveaxis(
+            flux_corrector.eta_esa(levels, np.moveaxis(spectral_index, 1, 0)), 0, 1
+        )
+
+    # A pixel that saw nothing at a level has no spectrum through it; the NaN
+    # carries through the iteration and out to the corrected map.
+    observed = np.where(intensity > 0, intensity, np.nan)
+
+    index = _power_law_slopes(observed, energy)
+    source = observed / transmission(index)
+
+    for iteration in range(c.CG_MAX_ITERATIONS):
+        predicted = 0.5 * (index + _power_law_slopes(source, energy))
+        corrected = 0.5 * (
+            index + _power_law_slopes(observed / transmission(predicted), energy)
+        )
+
+        previous, source = source, observed / transmission(corrected)
+        index = corrected
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            change = np.sqrt(np.nanmean((source / previous) ** 2)) - 1.0
+        if np.isfinite(change) and abs(change) < c.CG_CONVERGENCE_TOLERANCE:
+            logger.debug(f"Source spectrum converged after {iteration + 1} iterations")
+            break
+    else:
+        logger.warning(
+            f"Source spectrum did not converge in {c.CG_MAX_ITERATIONS} iterations"
+        )
+
+    return source, index
+
+
+def _spacecraft_frame_energy(cos_alpha: np.ndarray, energy: np.ndarray) -> np.ndarray:
+    """
+    Get the energy an ENA of a given heliospheric energy arrives with.
+
+    An ENA arriving at the spacecraft is seen at a different energy than it has
+    in the heliosphere, by the spacecraft's own motion through it: the same ENA
+    is faster in the spacecraft frame when the spacecraft is moving into it and
+    slower when it is moving away.
+
+    Parameters
+    ----------
+    cos_alpha : np.ndarray
+        The cosine of the angle between the look direction of each pixel and
+        the spacecraft's velocity, of shape (epoch, esa level, pixel).
+    energy : np.ndarray
+        The heliospheric-frame energy [eV] of each ESA level.
+
+    Returns
+    -------
+    np.ndarray
+        The spacecraft-frame energy [eV] of each ESA level of each pixel, of
+        the shape of ``cos_alpha``.
+    """
+    energy_u = c.CG_ENA_ENERGY_AT_SPACECRAFT_SPEED_EV
+    cos_alpha = np.clip(cos_alpha, -1.0, 1.0)
+
+    # The speed of the ENA in the spacecraft frame, in units of the
+    # spacecraft's own speed: x = cos(a) + sqrt(y^2 - sin^2(a)), y^2 = E / E_u.
+    ratio = (energy / energy_u)[:, np.newaxis]
+    speed = cos_alpha + np.sqrt(np.maximum(ratio + cos_alpha**2 - 1.0, 0.0))
+    return speed**2 * energy_u
+
+
+def _compton_getting_correct_intensity(
+    intensity: np.ndarray,
+    uncertainties: tuple[np.ndarray, ...],
+    cos_alpha: np.ndarray,
+    calibration: EsaCalibration,
+    flux_corrector: PowerLawFluxCorrector,
+) -> tuple[np.ndarray, tuple[np.ndarray, ...]]:
+    """
+    Move the intensities from the spacecraft frame into the heliospheric one.
+
+    The intensity a pixel reports is of ENAs at their spacecraft-frame energy,
+    which the spacecraft's motion has shifted away from the heliospheric-frame
+    energy the map is binned in. The correction reads the source spectrum of
+    the pixel off its own power law at the shifted energy, and scales the
+    intensity back onto the map's energy.
+
+    Parameters
+    ----------
+    intensity : np.ndarray
+        The intensity of every ESA level, of shape (epoch, esa level, pixel).
+    uncertainties : tuple[np.ndarray, ...]
+        The uncertainties on that intensity, each of the same shape. They are
+        scaled by the same factor as the intensity they belong to.
+    cos_alpha : np.ndarray
+        The cosine of the angle between the look direction of each pixel and
+        the spacecraft's velocity, same shape.
+    calibration : EsaCalibration
+        The energy response the map is binned in, read for the energies the
+        correction shifts between.
+    flux_corrector : PowerLawFluxCorrector
+        The ESA transmission factors, read from the eta fit ancillary.
+
+    Returns
+    -------
+    tuple[np.ndarray, tuple[np.ndarray, ...]]
+        The corrected intensity and its correspondingly scaled uncertainties,
+        zero in the pixels the correction has nothing to say about.
+    """
+    # The kinematics are in eV; the map is binned in keV.
+    energy = calibration.energy * 1e3
+
+    source, spectral_index = _source_intensity(intensity, energy, flux_corrector)
+    energy_sc = _spacecraft_frame_energy(cos_alpha, energy)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        corrected = source * (energy_sc / energy[:, np.newaxis]) ** (
+            spectral_index + 1.0
+        )
+        # The uncertainties are fractionally unchanged, so they move with the
+        # intensity. This folds in the transmission factor as well, which the
+        # source intensity was already divided by.
+        scaling = np.where(intensity > 0, corrected / intensity, np.nan)
+
+    return np.nan_to_num(corrected), tuple(
+        np.nan_to_num(uncertainty * scaling) for uncertainty in uncertainties
+    )
+
+
 def _calculate_rates_and_intensities(
     sky_map: RectangularSkyMap,
     calibration: EsaCalibration,
     sputter_matrix: np.ndarray | None = None,
     bootstrap_matrix: np.ndarray | None = None,
+    flux_corrector: PowerLawFluxCorrector | None = None,
 ) -> dict[str, np.ndarray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
@@ -1141,6 +1397,10 @@ def _calculate_rates_and_intensities(
         The (target level, source level) bootstrap correction coefficients,
         applied to the intensities once they are derived. None leaves the
         intensities as the counts gave them.
+    flux_corrector : PowerLawFluxCorrector | None
+        The ESA transmission factors the Compton-Getting correction recovers
+        the source spectrum with. None leaves the intensities in the
+        spacecraft frame.
 
     Returns
     -------
@@ -1234,6 +1494,39 @@ def _calculate_rates_and_intensities(
     bg_intensity = _divide(bg_rate, geometric_factor * energy)
     bg_intensity_stat_uncert = _divide(bg_rate_stat_uncert, geometric_factor * energy)
 
+    # The Compton-Getting correction comes last, moving the intensities out of
+    # the frame the instrument observed them in. The background is a spectrum
+    # of its own, so it is corrected on its own terms rather than with the
+    # map's.
+    if flux_corrector is not None:
+        cos_alpha = _divide(sky_map.data_1d["cos_alpha_exposure"].values, exposure)
+        logger.info("Applying the Compton-Getting correction to the intensities")
+        (
+            intensity,
+            (
+                intensity_stat_uncert,
+                intensity_sys_err_plus,
+                intensity_sys_err_minus,
+            ),
+        ) = _compton_getting_correct_intensity(
+            intensity,
+            (
+                intensity_stat_uncert,
+                intensity_sys_err_plus,
+                intensity_sys_err_minus,
+            ),
+            cos_alpha,
+            calibration,
+            flux_corrector,
+        )
+        bg_intensity, (bg_intensity_stat_uncert,) = _compton_getting_correct_intensity(
+            bg_intensity,
+            (bg_intensity_stat_uncert,),
+            cos_alpha,
+            calibration,
+            flux_corrector,
+        )
+
     return {
         "ena_count": counts,
         "exposure_factor": exposure,
@@ -1285,7 +1578,8 @@ def _build_map_dataset(
         sky_map.data_1d[name] = xr.DataArray(values.astype(np.float32), dims=dims)
     # These are accumulators, not map variables.
     sky_map.data_1d = sky_map.data_1d.drop_vars(
-        ["bg_rate_exposure", "sputter_source_count"], errors="ignore"
+        ["bg_rate_exposure", "sputter_source_count", "cos_alpha_exposure"],
+        errors="ignore",
     )
 
     dataset = sky_map.to_dataset()
