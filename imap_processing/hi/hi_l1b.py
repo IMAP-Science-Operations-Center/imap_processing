@@ -510,6 +510,10 @@ def de_gain_configuration(
     """
     # Check for no valid direct events.
     if not any_good_direct_events(l1b_de_ds):
+        logger.critical(
+            "No good direct events in dataset; skipping gain configuration "
+            "classification and setting gain_configuration_id to NO_MATCH."
+        )
         l1b_de_ds.attrs["gain_configuration_id"] = GainConfigLookupTable.NO_MATCH
         return l1b_de_ds
 
@@ -519,6 +523,15 @@ def de_gain_configuration(
     ccsds_met = l1b_de_ds["ccsds_met"].data
     packet_config_ids = gain_config_lut.query(ccsds_met)
     detector_voltage_bad_mask = packet_config_ids == GainConfigLookupTable.NO_MATCH
+
+    n_bad = int(np.sum(detector_voltage_bad_mask))
+    if n_bad > 0:
+        logger.info(
+            f"Flagging {n_bad} of {detector_voltage_bad_mask.size} direct "
+            f"events as BAD_DETECTOR_VOLTAGE (likely during a gain test or "
+            f"unclassified gain configuration); their esa_energy_step is "
+            f"forced to FILLVAL."
+        )
 
     esa_energy_step = l1b_de_ds["esa_energy_step"]
     esa_energy_step.values = np.where(
@@ -532,6 +545,10 @@ def de_gain_configuration(
 
     l1b_de_ds.attrs["gain_configuration_id"] = (
         config_id if config_id is not None else GainConfigLookupTable.NO_MATCH
+    )
+    logger.info(
+        f"Pointing gain_configuration_id attribute set to "
+        f"{l1b_de_ds.attrs['gain_configuration_id']}."
     )
     return l1b_de_ds
 
@@ -722,16 +739,38 @@ def get_gain_configuration_lut(
     gain_config_lut = GainConfigLookupTable()
     config_id = classify_gain_configuration(l1b_hk_ds, gain_config_df)
 
-    if config_id is not None:
-        gain_config_row = _get_config_hv_row(gain_config_df, config_id)
-        for i_start, i_end in _get_hvsci_segments(l1b_hk_ds):
-            segment_ds = l1b_hk_ds.isel(epoch=slice(i_start, i_end))
-            if _detector_voltage_matches_config(segment_ds, gain_config_row):
-                gain_config_lut.add_entry(
-                    segment_ds["shcoarse"].data[0],
-                    segment_ds["shcoarse"].data[-1],
-                    config_id,
-                )
+    if config_id is None:
+        logger.critical(
+            "Pointing gain configuration could not be classified; every "
+            "HVSCI segment will be excluded from the gain-configuration LUT "
+            "and all direct events will be flagged as BAD_DETECTOR_VOLTAGE."
+        )
+        return gain_config_lut, config_id
+
+    logger.info(f"Pointing classified as gain configuration config_id={config_id}.")
+    gain_config_row = _get_config_hv_row(gain_config_df, config_id)
+    segments = _get_hvsci_segments(l1b_hk_ds)
+    n_excluded = 0
+    for i_start, i_end in segments:
+        segment_ds = l1b_hk_ds.isel(epoch=slice(i_start, i_end))
+        segment_start = segment_ds["shcoarse"].data[0]
+        segment_end = segment_ds["shcoarse"].data[-1]
+        if _detector_voltage_matches_config(segment_ds, gain_config_row):
+            gain_config_lut.add_entry(segment_start, segment_end, config_id)
+        else:
+            n_excluded += 1
+            interval = met_to_utc(np.array([segment_start, segment_end]))
+            logger.info(
+                f"HVSCI segment during interval ({interval}) does not match "
+                f"config_id={config_id} and is likely a gain test; excluding "
+                f"it from the gain-configuration LUT. Direct events in this "
+                f"segment will be flagged as BAD_DETECTOR_VOLTAGE."
+            )
+    logger.info(
+        f"Gain-configuration LUT built with {len(segments) - n_excluded} of "
+        f"{len(segments)} HVSCI segments matching config_id={config_id} "
+        f"({n_excluded} segment(s) excluded as likely gain tests)."
+    )
 
     return gain_config_lut, config_id
 

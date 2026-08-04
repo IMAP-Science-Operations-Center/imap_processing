@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
@@ -16,6 +17,8 @@ from numpy import typing as npt
 from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+
+logger = logging.getLogger(__name__)
 
 
 class HIAPID(IntEnum):
@@ -637,7 +640,14 @@ class GainConfigLookupTable:
         query_mets = np.atleast_1d(query_met)
         results = np.full(query_mets.shape, self.NO_MATCH, dtype=np.int64)
 
-        if not self.df.empty:
+        if self.df.empty:
+            logger.debug(
+                "GainConfigLookupTable is empty (no matching gain "
+                "configuration segments); all %d queried MET value(s) "
+                "return NO_MATCH.",
+                query_mets.size,
+            )
+        else:
             starts = self.df["start_met"].to_numpy()
             ends = self.df["end_met"].to_numpy()
             config_ids = self.df["config_id"].to_numpy()
@@ -648,6 +658,16 @@ class GainConfigLookupTable:
                     & (query_mets <= end)
                 )
                 results[mask] = cfg
+
+            n_no_match = int(np.sum(results == self.NO_MATCH))
+            if n_no_match > 0:
+                logger.debug(
+                    "%d of %d queried MET value(s) fell outside all gain "
+                    "configuration segments and returned NO_MATCH (likely "
+                    "gain test intervals or time outside HVSCI segments).",
+                    n_no_match,
+                    query_mets.size,
+                )
 
         return int(results[0]) if is_scalar_met else results
 
