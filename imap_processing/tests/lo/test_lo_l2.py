@@ -16,6 +16,7 @@ from imap_processing.lo.l2.lo_l2 import (
     ANCILLARY_DATA_DIR as PACKAGE_ANCILLARY_DIR,
 )
 from imap_processing.lo.l2.lo_l2 import (
+    ISN_MASKED_VARIABLES,
     LoSpinAnglePointingSet,
     _bootstrap_correct_intensity,
     _complete_pointings,
@@ -28,6 +29,7 @@ from imap_processing.lo.l2.lo_l2 import (
     finalize_dataset,
     lo_l2,
     load_bootstrap_correction_data,
+    load_isn_mask_parameters,
     load_sputter_correction_data,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -49,6 +51,22 @@ BOOTSTRAP_DESCRIPTOR = "l090-enansbs-h-sf-nsp-full-hae-6deg-3mo"
 # The same map in the heliospheric frame, which is what asks for the
 # Compton-Getting correction. Neither of the other corrections is made.
 CG_DESCRIPTOR = "l090-enansnbs-h-hf-nsp-full-hae-6deg-3mo"
+
+# The same uncorrected full-spin map, with the ISN band masked out. The "msk"
+# follows the bootstrap code. The mask is tuned per pivot angle, which is the
+# sensor of the descriptor, so each pivot gets its own descriptor: 90 masks the
+# bright pixels, 75 has too narrow a band to mask any, and 105 masks the top
+# half of each ESA level. See imap_lo_isn-mask-parameters-small_v001.csv.
+MASK_DESCRIPTOR = "l090-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
+NARROW_MASK_DESCRIPTOR = "l075-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
+OUTLIER_MASK_DESCRIPTOR = "l105-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
+
+# A pivot angle the mask ancillary carries no tuning for.
+UNTUNED_MASK_DESCRIPTOR = "l060-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
+
+# The fraction of an ESA level's peak intensity that the pivot 90 tuning masks
+# from, and the variables it blanks out.
+MASK_THRESHOLD_FRACTION = 0.5
 
 # The contents of imap_lo_sputter-correction-factors-small, as
 # {target ESA step: {source ESA step: factor}}, 1-based as in the ancillary.
@@ -220,8 +238,8 @@ def one_pointing():
 def anc_dependencies():
     """The ancillary files a map takes as a dependency.
 
-    Every map but a raw one is flux corrected, so the ESA eta fit factors are
-    required; without them the map cannot be made.
+    A heliospheric frame map is Compton-Getting corrected, which is the only
+    thing the ESA eta fit factors are read for.
     """
     return [ANCILLARY_DIR / "imap_lo_esa-eta-fit-factors_20240101_v001.csv"]
 
@@ -303,6 +321,24 @@ def cg_maps(one_pointing, anc_dependencies):
         )
         (raw,) = lo_l2(as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR)
     return corrected, raw
+
+
+@pytest.fixture
+def masked_maps(one_pointing, anc_dependencies):
+    """The ISN masked and unmasked maps of the same pointing.
+
+    The two differ only in whether the band was masked out, so the unmasked map
+    supplies the intensities the mask is predicted from.
+    """
+    with patch(
+        "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+        side_effect=identity_pointing,
+    ):
+        (masked,) = lo_l2(
+            as_dependencies(one_pointing), anc_dependencies, MASK_DESCRIPTOR
+        )
+        (raw,) = lo_l2(as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR)
+    return masked, raw
 
 
 class TestMapStructure:
@@ -831,6 +867,21 @@ class TestVirtualStepExtrapolation:
 class TestComptonGettingCorrection:
     """Moving the intensities into the frame the heliosphere sees them in."""
 
+    def test_the_eta_fit_factors_are_required(self, one_pointing):
+        """A heliospheric frame map cannot be made without the transmission factors."""
+        with pytest.raises(ValueError, match="ESA eta fit factors"):
+            lo_l2(as_dependencies(one_pointing), [], CG_DESCRIPTOR)
+
+    def test_a_spacecraft_frame_map_needs_no_eta_fit_factors(self, one_pointing):
+        """The factors are read for the correction alone, so an sf map goes without."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (dataset,) = lo_l2(as_dependencies(one_pointing), [], FULL_DESCRIPTOR)
+
+        assert (dataset["ena_intensity"].values > 0).any()
+
     def test_counts_and_rates_stay_as_observed(self, cg_maps):
         """The correction applies to the intensities alone."""
         corrected, raw = cg_maps
@@ -1150,14 +1201,14 @@ class TestCorrectionFactors:
         self, shipped_ancillaries, tmp_path
     ):
         """Only the rows of the requested pair come back, in ESA step order."""
-        factors = load_sputter_correction_data("o", "h")
+        factors = load_sputter_correction_data()
 
         assert list(factors.columns) == [
             "source_species",
             "target_species",
-            "esa_step",
+            "target_esa",
+            "source_esa",
             "sputter_factor",
-            "sputter_factor_uncertainty",
         ]
         assert not factors.empty
         assert (factors["source_species"] == "o").all()
@@ -1165,7 +1216,7 @@ class TestCorrectionFactors:
 
         with patch("imap_processing.lo.l2.lo_l2.ANCILLARY_DATA_DIR", tmp_path):
             with pytest.raises(ValueError, match="No sputter correction files"):
-                load_sputter_correction_data("o", "h")
+                load_sputter_correction_data()
 
     def test_bootstrap_factors_relate_lower_steps_to_higher(
         self, shipped_ancillaries, tmp_path
@@ -1188,6 +1239,146 @@ class TestCorrectionFactors:
         with patch("imap_processing.lo.l2.lo_l2.ANCILLARY_DATA_DIR", tmp_path):
             with pytest.raises(ValueError, match="No bootstrap correction factor"):
                 load_bootstrap_correction_data()
+
+
+class TestIsnMask:
+    """Blanking out the pixels the interstellar neutral flow dominates."""
+
+    def test_the_bright_pixels_of_every_level_are_masked(self, masked_maps):
+        """A pixel above the level's threshold comes back undefined."""
+        masked, raw = masked_maps
+
+        intensity = raw["ena_intensity"].values
+        peak = np.nanmax(intensity, axis=(-2, -1), keepdims=True)
+        expected = intensity >= MASK_THRESHOLD_FRACTION * peak
+        assert expected.any(), "the tuning must mask something"
+        assert not expected.all(), "the tuning must leave something unmasked"
+
+        np.testing.assert_array_equal(
+            np.isnan(masked["ena_intensity"].values), expected
+        )
+
+    def test_the_unmasked_pixels_keep_their_values(self, masked_maps):
+        """Masking changes nothing about the pixels it does not blank out."""
+        masked, raw = masked_maps
+
+        keep = ~np.isnan(masked["ena_intensity"].values)
+        np.testing.assert_allclose(
+            masked["ena_intensity"].values[keep],
+            raw["ena_intensity"].values[keep],
+            rtol=1e-6,
+        )
+
+    def test_every_species_variable_is_masked_together(self, masked_maps):
+        """The counts, rates and uncertainties are blanked with the intensity."""
+        masked, _ = masked_maps
+
+        expected = np.isnan(masked["ena_intensity"].values)
+        for name in ISN_MASKED_VARIABLES:
+            np.testing.assert_array_equal(
+                np.isnan(masked[name].values), expected, err_msg=name
+            )
+
+    def test_the_exposure_and_background_are_left_alone(self, masked_maps):
+        """The mask says nothing about what the map was pointed at."""
+        masked, raw = masked_maps
+
+        for name in (
+            "exposure_factor",
+            "bg_rate",
+            "bg_rate_stat_uncert",
+            "bg_intensity",
+            "bg_intensity_stat_uncert",
+        ):
+            np.testing.assert_allclose(
+                masked[name].values, raw[name].values, rtol=1e-6, err_msg=name
+            )
+
+    def test_an_unmasked_map_is_left_whole(self, full_map):
+        """A descriptor without the mask code blanks nothing out."""
+        dataset, _ = full_map
+
+        for name in ISN_MASKED_VARIABLES:
+            assert not np.isnan(dataset[name].values).any(), name
+
+    def test_a_narrow_band_masks_nothing_off_the_ecliptic(
+        self, one_pointing, anc_dependencies
+    ):
+        """A pixel outside the angular width of the band survives its brightness."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (masked,) = lo_l2(
+                as_dependencies(one_pointing),
+                anc_dependencies,
+                NARROW_MASK_DESCRIPTOR,
+            )
+
+        # The mocked sky pointing puts every pixel of the test map on the
+        # ecliptic, which the pivot 75 tuning is too narrow to reach.
+        assert not np.isnan(masked["ena_intensity"].values).any()
+
+    def test_the_outlier_tail_of_a_level_is_masked(
+        self, one_pointing, anc_dependencies
+    ):
+        """The pixels above the level's percentile are masked wherever they are."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (masked,) = lo_l2(
+                as_dependencies(one_pointing),
+                anc_dependencies,
+                OUTLIER_MASK_DESCRIPTOR,
+            )
+            (raw,) = lo_l2(
+                as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR
+            )
+
+        # The pivot 105 tuning cannot mask a band, so only the top half of each
+        # level's own intensity distribution is masked.
+        intensity = raw["ena_intensity"].values
+        median = np.nanpercentile(intensity, 50, axis=(-2, -1), keepdims=True)
+        expected = intensity > median
+        assert expected.any(), "the tuning must mask something"
+
+        np.testing.assert_array_equal(
+            np.isnan(masked["ena_intensity"].values), expected
+        )
+
+    def test_an_untuned_pivot_angle_is_refused(self, one_pointing, anc_dependencies):
+        """A map cannot be masked at a pivot the ancillary says nothing about."""
+        with pytest.raises(ValueError, match="no mask tuning for the 60 degree"):
+            lo_l2(
+                as_dependencies(one_pointing),
+                anc_dependencies,
+                UNTUNED_MASK_DESCRIPTOR,
+            )
+
+    def test_mask_parameters_cover_every_level_of_every_tuned_pivot(
+        self, shipped_ancillaries, tmp_path
+    ):
+        """The shipped ancillary tunes all 7 levels of each pivot it carries."""
+        parameters = load_isn_mask_parameters()
+
+        assert list(parameters.columns) == [
+            "pivot_angle",
+            "esa_step",
+            "intensity_threshold_fraction",
+            "angular_width_deg",
+            "outlier_percentile",
+        ]
+        assert not parameters.empty
+        for pivot, tuning in parameters.groupby("pivot_angle"):
+            assert sorted(tuning["esa_step"]) == list(range(1, N_ESA + 1)), pivot
+        assert (parameters["intensity_threshold_fraction"] > 0).all()
+        assert (parameters["angular_width_deg"] > 0).all()
+        assert parameters["outlier_percentile"].between(0, 100).all()
+
+        with patch("imap_processing.lo.l2.lo_l2.ANCILLARY_DATA_DIR", tmp_path):
+            with pytest.raises(ValueError, match="No ISN mask parameter files"):
+                load_isn_mask_parameters()
 
 
 class TestFinalizeDataset:

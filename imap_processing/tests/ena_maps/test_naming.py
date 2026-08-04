@@ -570,3 +570,49 @@ class TestMapDescriptor:
             f"l090-{principal_data}-h-sf-nsp-ram-hae-6deg-1yr"
         )
         assert md.bootstrap_corrected is expected
+
+    @pytest.mark.parametrize(
+        "frame, expected",
+        [
+            # The heliospheric frame is the one the correction moves a map into
+            ("hf", True),
+            # A map left in the frame it was observed in is not corrected
+            ("sf", False),
+            ("hk", False),
+        ],
+    )
+    def test_cg_corrected(self, frame, expected):
+        md = MapDescriptor.from_string(f"l090-enasbs-h-{frame}-nsp-ram-hae-6deg-1yr")
+        assert md.cg_corrected is expected
+
+    @pytest.mark.parametrize(
+        "principal_data, expected",
+        [
+            # "msk" follows the "bs" or "nbs" of the bootstrap correction,
+            # whichever of the two the map asks for
+            ("enasbsmsk", True),
+            ("enasnbsmsk", True),
+            ("enansbsmsk", True),
+            ("enansnbsmsk", True),
+            ("enabsmsk", True),
+            # The SOC writes the code capitalized; both spellings are accepted
+            ("enasbsMsk", True),
+            # Without the code the ISN band is left in the map
+            ("enasbs", False),
+            ("enansnbs", False),
+            # The code has to follow the bootstrap one to be a mask code
+            ("enamsk", False),
+            ("enamsksbs", False),
+            # A raw map asks for none of the corrections
+            ("enaraw", False),
+            # Only ENA maps are ISN masked
+            ("spx0305", False),
+            ("isn", False),
+            ("drt", False),
+        ],
+    )
+    def test_isn_masked(self, principal_data, expected):
+        md = MapDescriptor.from_string(
+            f"l090-{principal_data}-h-sf-nsp-ram-hae-6deg-1yr"
+        )
+        assert md.isn_masked is expected

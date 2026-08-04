@@ -40,6 +40,19 @@ REQUIRED_PRODUCTS = ("goodtimes", "bgrates", "histrates")
 # or intensities are derived from them.
 ACCUMULATED_VARIABLES = ("ena_count", "exposure_factor", "bg_rate_exposure")
 
+# The map variables the ISN mask blanks out: everything derived from the counts
+# of the mapped species.
+ISN_MASKED_VARIABLES = (
+    "ena_count",
+    "ena_count_rate",
+    "ena_count_rate_stat_uncert",
+    "ena_intensity",
+    "ena_intensity_stat_uncert",
+    "ena_intensity_sys_err",
+    "ena_intensity_sys_err_plus",
+    "ena_intensity_sys_err_minus",
+)
+
 # The calibration ancillaries shipped with the package.
 ANCILLARY_DATA_DIR = Path(__file__).parent.parent / "ancillary_data"
 
@@ -92,21 +105,25 @@ def lo_l2(
         or if the map is of a species other than hydrogen.
     ValueError
         If the map is to be Compton-Getting corrected but the ancillary
-        dependencies hold no ESA eta fit factors to correct it with.
+        dependencies hold no ESA eta fit factors to correct it with, or if it
+        is to be ISN masked at a pivot angle the mask has no tuning for.
     """
     logger.info("Starting IMAP-Lo L2 processing pipeline")
 
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
 
-    # Determine which of the corrections the descriptor asks for are needed
-    (
-        _flux_correction,
-        flux_factors,
-        sputter_correction,
-        bootstrap_correction,
-        cg_correction,
-    ) = _prepare_corrections(map_descriptor, anc_dependencies)
+    # Read the ancillaries the corrections asked for by the descriptor need up
+    # front, so that a map missing one fails before any of its pointings are
+    # accumulated.
+    flux_corrector = (
+        _flux_corrector(anc_dependencies) if map_descriptor.cg_corrected else None
+    )
+    isn_mask_parameters = (
+        _isn_mask_parameters(int(map_descriptor.sensor))
+        if map_descriptor.isn_masked
+        else None
+    )
 
     logger.info("Step 1: Loading ancillary data")
     _efficiency_data = load_efficiency_data(anc_dependencies)
@@ -135,13 +152,13 @@ def lo_l2(
     # same grid, alongside the map's own.
     sputter_source, sputter_matrix = (
         _sputter_correction(map_descriptor.species)
-        if sputter_correction
+        if map_descriptor.sputter_corrected
         else (None, None)
     )
     accumulators = (
         ACCUMULATED_VARIABLES
         + (("sputter_source_count",) if sputter_source else ())
-        + (("cos_alpha_exposure",) if cg_correction else ())
+        + (("cos_alpha_exposure",) if map_descriptor.cg_corrected else ())
     )
 
     _initialize_accumulators(sky_map, calibration.energy, accumulators)
@@ -156,25 +173,19 @@ def lo_l2(
             map_descriptor,
             calibration.energy,
             sputter_source,
-            cg_correction,
         )
 
-    bootstrap_matrix = _bootstrap_correction() if bootstrap_correction else None
-
-    # The Compton-Getting correction reads the source spectrum of each pixel
-    # through the ESA transmission factors of the eta fit ancillary.
-    flux_corrector = None
-    if cg_correction:
-        if flux_factors is None:
-            raise ValueError(
-                "A heliospheric frame map needs the ESA eta fit factors to be "
-                "Compton-Getting corrected, and none were found in the "
-                "ancillary dependencies"
-            )
-        flux_corrector = PowerLawFluxCorrector(flux_factors)
+    bootstrap_matrix = (
+        _bootstrap_correction() if map_descriptor.bootstrap_corrected else None
+    )
 
     variables = _calculate_rates_and_intensities(
-        sky_map, calibration, sputter_matrix, bootstrap_matrix, flux_corrector
+        sky_map,
+        calibration,
+        sputter_matrix,
+        bootstrap_matrix,
+        flux_corrector,
+        isn_mask_parameters,
     )
     dataset = _build_map_dataset(sky_map, variables, calibration)
 
@@ -187,61 +198,6 @@ def lo_l2(
             external_map_dataset=dataset,
         )
     ]
-
-
-def _prepare_corrections(
-    map_descriptor: MapDescriptor,
-    anc_dependencies: list,
-) -> tuple[bool, Path | None, bool, bool, bool]:
-    """
-    Determine which of the corrections the map descriptor asks for are needed.
-
-    Parameters
-    ----------
-    map_descriptor : MapDescriptor
-        The parsed map descriptor containing species and data type information.
-    anc_dependencies : list
-        List of ancillary file paths.
-
-    Returns
-    -------
-    tuple[bool, Path | None, bool, bool, bool]
-        A tuple containing:
-        - flux_correction: Whether to apply flux corrections
-        - flux_factors: Path to flux factors ancillary file if needed,
-         None otherwise
-        - sputter_correction: Whether to remove the counts sputtered into the
-          mapped species from a heavier one.
-        - bootstrap_correction: Whether to remove the intensity that bled into
-          each ESA level from the levels above it.
-        - cg_correction: Whether to apply CG correction to the dataset.
-    """
-    # Default values - no corrections needed
-    flux_correction = False
-    flux_factors: None | Path = None
-
-    if not map_descriptor.raw:
-        flux_correction = True
-        try:
-            flux_factors = next(
-                x for x in anc_dependencies if "esa-eta-fit-factors" in str(x)
-            )
-        except StopIteration:
-            raise ValueError(
-                "No flux correction factor file found in ancillary dependencies"
-            ) from None
-
-    sputter_correction = map_descriptor.sputter_corrected
-    bootstrap_correction = map_descriptor.bootstrap_corrected
-    cg_correction = True if map_descriptor.frame_descriptor == "hf" else False
-
-    return (
-        flux_correction,
-        flux_factors,
-        sputter_correction,
-        bootstrap_correction,
-        cg_correction,
-    )
 
 
 # =============================================================================
@@ -394,6 +350,147 @@ def _bootstrap_correction() -> np.ndarray:
         factors["esa_step_i"].to_numpy() - 1, factors["esa_step_k"].to_numpy() - 1
     ] = factors["bootstrap_factor"].to_numpy()
     return matrix
+
+
+def _flux_corrector(anc_dependencies: list) -> PowerLawFluxCorrector:
+    """
+    Load the ESA transmission factors the Compton-Getting correction reads.
+
+    Parameters
+    ----------
+    anc_dependencies : list
+        List of ancillary file paths, searched for the ESA eta fit factors.
+
+    Returns
+    -------
+    PowerLawFluxCorrector
+        The transmission factors, which the correction recovers the source
+        spectrum of a pixel through.
+
+    Raises
+    ------
+    ValueError
+        If the ancillary dependencies hold no ESA eta fit factors.
+    """
+    try:
+        flux_factors = next(
+            x for x in anc_dependencies if "esa-eta-fit-factors" in str(x)
+        )
+    except StopIteration:
+        raise ValueError(
+            "A heliospheric frame map needs the ESA eta fit factors to be "
+            "Compton-Getting corrected, and none were found in the ancillary "
+            "dependencies"
+        ) from None
+
+    return PowerLawFluxCorrector(flux_factors)
+
+
+def load_isn_mask_parameters() -> pd.DataFrame:
+    """
+    Load the ISN mask tuning parameters shipped with the package.
+
+    Returns
+    -------
+    pd.DataFrame
+        The ancillary data, with columns: pivot_angle, esa_step,
+        intensity_threshold_fraction, angular_width_deg, outlier_percentile.
+
+    Raises
+    ------
+    ValueError
+        If no ISN mask parameter ancillary is shipped with the package.
+    """
+    mask_files = sorted(ANCILLARY_DATA_DIR.glob("*isn-mask-parameters*"))
+
+    if not mask_files:
+        raise ValueError("No ISN mask parameter files found")
+
+    return lo_ancillary.read_ancillary_file(mask_files[-1])
+
+
+def _isn_mask_parameters(pivot_angle: int) -> pd.DataFrame:
+    """
+    Get the ISN mask tuning of one pivot angle, in ascending ESA level order.
+
+    Parameters
+    ----------
+    pivot_angle : int
+        The nominal pivot angle [degrees] of the map being made.
+
+    Returns
+    -------
+    pd.DataFrame
+        The tuning of each ESA level, indexed by 1-based ESA step.
+
+    Raises
+    ------
+    ValueError
+        If the ancillary has no tuning for the pivot angle, which is not a
+        pivot the mask has been tuned for.
+    """
+    parameters = load_isn_mask_parameters()
+    parameters = parameters[parameters["pivot_angle"] == pivot_angle]
+
+    if parameters.empty:
+        raise ValueError(
+            f"The map asks for the ISN band to be masked out, but the ancillary "
+            f"has no mask tuning for the {pivot_angle} degree pivot angle"
+        )
+
+    # Select the ESA levels, in order. Raises if the ancillary is missing one.
+    return parameters.set_index("esa_step").loc[list(range(1, c.N_ESA_LEVELS + 1))]
+
+
+def _isn_mask(
+    intensity: np.ndarray, elevation: np.ndarray, parameters: pd.DataFrame
+) -> np.ndarray:
+    """
+    Find the pixels the interstellar neutral flow dominates the map in.
+
+    The ISN hydrogen the instrument sees is not the heliospheric ENA signal the
+    map is of, and it is bright enough to swamp it. It arrives as a band along
+    the ecliptic plane, so the mask is the pixels of a level that are both
+    bright and close enough to the plane, plus the brightest few pixels of the
+    level wherever they are.
+
+    Parameters
+    ----------
+    intensity : np.ndarray
+        The uncorrected intensity of every ESA level, of shape
+        (epoch, esa level, pixel).
+    elevation : np.ndarray
+        The ecliptic latitude [degrees] of each pixel, of shape (pixel,). The
+        ISN band lies along zero elevation.
+    parameters : pd.DataFrame
+        The mask tuning of each ESA level, in ascending level order.
+
+    Returns
+    -------
+    np.ndarray
+        Whether each pixel of each level is masked, of the shape of
+        ``intensity``.
+    """
+    threshold = parameters["intensity_threshold_fraction"].to_numpy()[:, np.newaxis]
+    angular_width = parameters["angular_width_deg"].to_numpy()[:, np.newaxis]
+    percentile = parameters["outlier_percentile"].to_numpy()
+
+    # The band: the bright pixels of a level, near enough to the ecliptic. A
+    # level that saw nothing has no brightest pixel to take a fraction of.
+    peak = np.nanmax(intensity, axis=-1, keepdims=True)
+    bright = np.where(peak > 0, intensity >= threshold * peak, False)
+    mask = bright & (np.abs(elevation) <= angular_width)
+
+    # The outliers: the top tail of a level's own intensity distribution, which
+    # catches the ISN pixels that sit off the plane.
+    cutoff = np.stack(
+        [
+            np.nanpercentile(intensity[:, level], level_percentile, axis=-1)
+            for level, level_percentile in enumerate(percentile)
+        ],
+        axis=1,
+    )
+    return mask | (intensity > cutoff[..., np.newaxis])
 
 
 def finalize_dataset(dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
@@ -629,7 +726,6 @@ def _accumulate_pointing(
     map_descriptor: MapDescriptor,
     energy: np.ndarray,
     sputter_source: str | None = None,
-    accumulate_cos_alpha: bool = False,
 ) -> None:
     """
     Add one pointing's counts and exposure to the map.
@@ -653,10 +749,6 @@ def _accumulate_pointing(
     sputter_source : str | None
         The species sputtering into the mapped species, whose counts are
         accumulated alongside. None if this map is not sputter corrected.
-    accumulate_cos_alpha : bool
-        Whether to accumulate the RAM projection of each spin-angle bin, which
-        the Compton-Getting correction needs. False if this map is not CG
-        corrected.
     """
     species = map_descriptor.species
     pivot_angle = float(np.atleast_1d(goodtimes["pivot"].values)[0])
@@ -697,7 +789,7 @@ def _accumulate_pointing(
         values["sputter_source_count"] = (
             histrates[f"{sputter_source}_counts"].values[in_goodtime].sum(axis=0)
         )
-    if accumulate_cos_alpha:
+    if map_descriptor.cg_corrected:
         # The RAM projection is a property of the bin, not of the counts in it,
         # so like the background it is accumulated weighted by exposure and
         # divided by the total exposure at the end.
@@ -1399,6 +1491,7 @@ def _calculate_rates_and_intensities(
     sputter_matrix: np.ndarray | None = None,
     bootstrap_matrix: np.ndarray | None = None,
     flux_corrector: PowerLawFluxCorrector | None = None,
+    isn_mask_parameters: pd.DataFrame | None = None,
 ) -> dict[str, np.ndarray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
@@ -1424,6 +1517,10 @@ def _calculate_rates_and_intensities(
         The ESA transmission factors the Compton-Getting correction recovers
         the source spectrum with. None leaves the intensities in the
         spacecraft frame.
+    isn_mask_parameters : pd.DataFrame | None
+        The tuning of the ISN mask, which blanks out the pixels the
+        interstellar neutral flow dominates once every correction has been
+        made. None leaves the whole map in place.
 
     Returns
     -------
@@ -1480,6 +1577,18 @@ def _calculate_rates_and_intensities(
 
     intensity = _divide(count_rate, geometric_factor * energy)
     intensity_stat_uncert = _divide(count_rate_stat_uncert, geometric_factor * energy)
+
+    # The ISN mask reads the intensity as the instrument observed it, with none
+    # of the corrections below made, so that a map is masked the same way
+    # regardless of the map descriptor.
+    isn_mask = None
+    if isn_mask_parameters is not None:
+        logger.info("Masking the ISN band out of the map")
+        isn_mask = _isn_mask(
+            _divide(_divide(counts, exposure), geometric_factor * energy),
+            sky_map.az_el_points.values[:, 1],
+            isn_mask_parameters,
+        )
 
     # The systematic error is the intensity excursion from the recalibrated
     # G-factor bounds, and the symmetric error is the geometric mean of the two.
@@ -1550,7 +1659,7 @@ def _calculate_rates_and_intensities(
             flux_corrector,
         )
 
-    return {
+    variables = {
         "ena_count": counts,
         "exposure_factor": exposure,
         "ena_count_rate": count_rate,
@@ -1567,6 +1676,13 @@ def _calculate_rates_and_intensities(
         "bg_intensity": bg_intensity,
         "bg_intensity_stat_uncert": bg_intensity_stat_uncert,
     }
+
+    # A masked pixel has no ENA measurement to report.
+    if isn_mask is not None:
+        for name in ISN_MASKED_VARIABLES:
+            variables[name] = np.where(isn_mask, np.nan, variables[name])
+
+    return variables
 
 
 def _build_map_dataset(

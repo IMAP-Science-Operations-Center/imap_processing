@@ -374,6 +374,36 @@ class MapDescriptor:
         # The bootstrap code follows the sputter one, see sputter_corrected.
         return re.match(r"(?:n?s)?bs", self.principal_data_extras) is not None
 
+    @property
+    def cg_corrected(self) -> bool:
+        """
+        Whether the map's intensities were moved into the heliospheric frame.
+
+        Returns
+        -------
+        cg_corrected : bool
+            True if this map is Compton-Getting corrected.
+        """
+        return self.frame_descriptor == "hf"
+
+    @property
+    def isn_masked(self) -> bool:
+        """
+        Whether the map has the interstellar neutral band masked out.
+
+        Returns
+        -------
+        isn_masked : bool
+            True if this map is ISN masked.
+        """
+        if not self.principal_data.startswith("ena") or self.raw:
+            return False
+        # The mask code follows the bootstrap one, see bootstrap_corrected.
+        return (
+            re.match(r"(?:n?s)?n?bsmsk", self.principal_data_extras, re.IGNORECASE)
+            is not None
+        )
+
     # Methods for parsing and building parts of the map descriptor string
     @staticmethod
     def get_instrument_descriptor(
