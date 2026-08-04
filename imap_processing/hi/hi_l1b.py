@@ -16,8 +16,10 @@ from imap_processing.hi.utils import (
     HIAPID,
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
+    GainConfigLookupTable,
     HiConstants,
     create_dataset_variables,
+    load_gain_configuration,
     parse_sensor_number,
 )
 from imap_processing.quality_flags import ImapHiL1bDeFlags
@@ -96,7 +98,10 @@ def housekeeping(packet_file_path: str | Path) -> list[xr.Dataset]:
 
 
 def annotate_direct_events(
-    l1a_de_dataset: xr.Dataset, l1b_hk_dataset: xr.Dataset, esa_energies_anc: Path
+    l1a_de_dataset: xr.Dataset,
+    l1b_hk_dataset: xr.Dataset,
+    esa_energies_anc: Path,
+    gain_config_anc: Path,
 ) -> list[xr.Dataset]:
     """
     Perform Hi L1B processing on direct event data.
@@ -109,11 +114,16 @@ def annotate_direct_events(
         L1B housekeeping data coincident with the L1A DE data.
     esa_energies_anc : pathlib.Path
         Location of the esa-energies ancillary csv file.
+    gain_config_anc : pathlib.Path
+        Location of the gain-configuration ancillary csv file.
 
     Returns
     -------
     l1b_datasets : list[xarray.Dataset]
-        List containing exactly one L1B direct event dataset.
+        List containing exactly one L1B direct event dataset. Its
+        "gain_configuration_id" global attribute records the pointing's
+        classified gain configuration (see `de_gain_configuration`); this is
+        `GainConfigLookupTable.NO_MATCH` if it could not be classified.
     """
     logger.info(
         f"Running Hi L1B processing on dataset: "
@@ -121,8 +131,16 @@ def annotate_direct_events(
     )
 
     l1b_de_dataset = l1a_de_dataset.copy()
+    # Creates the baseline "ccsds_qf" (PACKET_FULL/BADSPIN bits) that
+    # de_esa_energy_step() and de_gain_configuration() build on.
+    l1b_de_dataset.update(de_ccsds_qf(l1b_de_dataset))
     l1b_de_dataset.update(
         de_esa_energy_step(l1b_de_dataset, l1b_hk_dataset, esa_energies_anc)
+    )
+    # Modifies "esa_energy_step" and "ccsds_qf" in place, and sets the
+    # "gain_configuration_id" global attribute.
+    l1b_de_dataset = de_gain_configuration(
+        l1b_de_dataset, l1b_hk_dataset, gain_config_anc
     )
     l1b_de_dataset.update(compute_coincidence_type_and_tofs(l1b_de_dataset))
     l1b_de_dataset.update(de_nominal_bin_and_spin_phase(l1b_de_dataset))
@@ -135,7 +153,6 @@ def annotate_direct_events(
         )
     )
     l1b_de_dataset.update(de_esa_step_met(l1b_de_dataset))
-    l1b_de_dataset.update(de_ccsds_qf(l1b_de_dataset))
     l1b_de_dataset = l1b_de_dataset.drop_vars(
         [
             "src_seq_ctr",
@@ -398,15 +415,23 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
 
 
 def de_esa_energy_step(
-    l1b_de_ds: xr.Dataset, l1b_hk_ds: xr.Dataset, esa_energies_anc: Path
+    l1b_de_ds: xr.Dataset,
+    l1b_hk_ds: xr.Dataset,
+    esa_energies_anc: Path,
 ) -> dict[str, xr.DataArray]:
     """
-    Compute esa_energy_step for each direct event.
+    Compute esa_energy_step for each direct event from ESA voltage measurements.
+
+    Must be called after de_ccsds_qf(), which creates the "ccsds_qf" variable
+    this function modifies in place.
 
     Parameters
     ----------
     l1b_de_ds : xarray.Dataset
-        The partial L1B dataset.
+        The partial L1B dataset. Must already contain "ccsds_qf" (see
+        de_ccsds_qf()). Modified in place: ImapHiL1bDeFlags.BAD_ESA_VOLTAGE is
+        set in "ccsds_qf" for packets whose measured ESA voltage didn't match
+        any esa_energy_step.
     l1b_hk_ds : xarray.Dataset
         L1B housekeeping data coincident with the L1A DE data.
     esa_energies_anc : pathlib.Path
@@ -415,7 +440,11 @@ def de_esa_energy_step(
     Returns
     -------
     new_vars : dict[str, xarray.DataArray]
-        Keys are variable names and values are `xarray.DataArray`.
+        Dictionary with the new "esa_energy_step" DataArray.
+        de_gain_configuration() must be called after this function to force
+        FILLVAL into "esa_energy_step" and set its own "ccsds_qf" bit for
+        events whose detector voltages don't match the pointing's gain
+        configuration.
     """
     new_vars = create_dataset_variables(
         ["esa_energy_step"],
@@ -426,7 +455,6 @@ def de_esa_energy_step(
     if not any_good_direct_events(l1b_de_ds):
         return new_vars
 
-    # Get the LUT object using the HK data and esa-energies ancillary csv
     esa_energies_lut = pd.read_csv(esa_energies_anc, comment="#")
     esa_to_esa_energy_step_lut = get_esa_to_esa_energy_step_lut(
         l1b_hk_ds, esa_energies_lut
@@ -434,12 +462,322 @@ def de_esa_energy_step(
     new_vars["esa_energy_step"].values = esa_to_esa_energy_step_lut.query(
         l1b_de_ds["ccsds_met"].data, l1b_de_ds["esa_step"].data
     )
+    # Set the ccsds_qf quality flag bit for packets whose measured ESA voltage
+    # didn't match any esa_energy_step.
+    esa_energy_step_fillval = new_vars["esa_energy_step"].attrs["FILLVAL"]
+    l1b_de_ds["ccsds_qf"].values[
+        new_vars["esa_energy_step"].values == esa_energy_step_fillval
+    ] |= np.uint8(ImapHiL1bDeFlags.BAD_ESA_VOLTAGE)
 
     return new_vars
 
 
+def de_gain_configuration(
+    l1b_de_ds: xr.Dataset,
+    l1b_hk_ds: xr.Dataset,
+    gain_config_anc: Path,
+) -> xr.Dataset:
+    """
+    Classify gain configuration and force FILLVAL for non-matching events.
+
+    Must be called after de_esa_energy_step(), which sets the "esa_energy_step"
+    and "ccsds_qf" variables this function modifies in place.
+
+    Parameters
+    ----------
+    l1b_de_ds : xarray.Dataset
+        The partial L1B dataset. Must already contain "esa_energy_step" and
+        "ccsds_qf" (see de_esa_energy_step()). Modified in place: FILLVAL is
+        forced into "esa_energy_step" for events whose detector voltages
+        didn't match the pointing's classified gain configuration,
+        ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE is set in "ccsds_qf" for the
+        same events, and the "gain_configuration_id" global attribute is set
+        to the pointing's classified gain configuration id (or
+        GainConfigLookupTable.NO_MATCH if it could not be classified). The
+        geometric factor itself is not computed here -- it is constant for
+        the whole pointing, so downstream processing (L1C) looks up the
+        geometric factor per esa_energy_step from the gain-configuration
+        ancillary file using the recorded "gain_configuration_id".
+    l1b_hk_ds : xarray.Dataset
+        L1B housekeeping data coincident with the L1A DE data.
+    gain_config_anc : pathlib.Path
+        Location of the gain-configuration ancillary csv file.
+
+    Returns
+    -------
+    l1b_de_ds : xarray.Dataset
+        The same dataset passed in, modified in place as described above.
+    """
+    # Check for no valid direct events.
+    if not any_good_direct_events(l1b_de_ds):
+        logger.critical(
+            "No good direct events in dataset; skipping gain configuration "
+            "classification and setting gain_configuration_id to NO_MATCH."
+        )
+        l1b_de_ds.attrs["gain_configuration_id"] = GainConfigLookupTable.NO_MATCH
+        return l1b_de_ds
+
+    gain_config_df = load_gain_configuration(gain_config_anc)
+    gain_config_lut, config_id = get_gain_configuration_lut(l1b_hk_ds, gain_config_df)
+
+    ccsds_met = l1b_de_ds["ccsds_met"].data
+    packet_config_ids = gain_config_lut.query(ccsds_met)
+    detector_voltage_bad_mask = packet_config_ids == GainConfigLookupTable.NO_MATCH
+
+    n_bad = int(np.sum(detector_voltage_bad_mask))
+    if n_bad > 0:
+        logger.info(
+            f"Flagging {n_bad} of {detector_voltage_bad_mask.size} direct "
+            f"events as BAD_DETECTOR_VOLTAGE (likely during a gain test or "
+            f"unclassified gain configuration); their esa_energy_step is "
+            f"forced to FILLVAL."
+        )
+
+    esa_energy_step = l1b_de_ds["esa_energy_step"]
+    esa_energy_step.values = np.where(
+        detector_voltage_bad_mask,
+        esa_energy_step.attrs["FILLVAL"],
+        esa_energy_step.values,
+    )
+    l1b_de_ds["ccsds_qf"].values[detector_voltage_bad_mask] |= np.uint8(
+        ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE
+    )
+
+    l1b_de_ds.attrs["gain_configuration_id"] = (
+        config_id if config_id is not None else GainConfigLookupTable.NO_MATCH
+    )
+    logger.info(
+        f"Pointing gain_configuration_id attribute set to "
+        f"{l1b_de_ds.attrs['gain_configuration_id']}."
+    )
+    return l1b_de_ds
+
+
+def _get_hvsci_segments(l1b_hk_ds: xr.Dataset) -> list[tuple[int, int]]:
+    """
+    Find contiguous segments where op_mode == "HVSCI" in housekeeping data.
+
+    Parameters
+    ----------
+    l1b_hk_ds : xarray.Dataset
+        L1B housekeeping dataset.
+
+    Returns
+    -------
+    segments : list[tuple[int, int]]
+        List of (start_index, end_index) tuples. `end_index` is exclusive,
+        suitable for use with `Dataset.isel(epoch=slice(start, end))`.
+    """
+    # Pad the boolean array `op_mode == HVSCI` with False values on each end.
+    # This treats starting or ending in HVSCI mode as a transition in the next
+    # step where np.diff is used to find op_mode transitions into and out of
+    # HVSCI
+    padded_mask = np.pad(
+        l1b_hk_ds["op_mode"].data == "HVSCI", (1, 1), constant_values=False
+    )
+    mode_changes = np.diff(padded_mask.astype(int))
+    starts = np.nonzero(mode_changes == 1)[0]
+    ends = np.nonzero(mode_changes == -1)[0]
+    return list(zip(starts, ends, strict=False))
+
+
+def _get_config_hv_row(gain_config_df: pd.DataFrame, config_id: int) -> pd.Series:
+    """
+    Get a representative row of HV voltage/tolerance values for a config_id.
+
+    The {field}_v/{field}_delta_v columns are constant across esa_energy_step
+    within a config_id (see utils.load_gain_configuration()), so any row for
+    that config_id can be used.
+
+    Parameters
+    ----------
+    gain_config_df : pandas.DataFrame
+        Gain configuration lookup table indexed by (config_id, esa_energy_step).
+    config_id : int
+        Configuration id to look up.
+
+    Returns
+    -------
+    pandas.Series
+        A single row of {field}_v/{field}_delta_v values for the given config_id.
+    """
+    return gain_config_df.loc[config_id].iloc[0]
+
+
+def _detector_voltage_matches_config(
+    segment_ds: xr.Dataset, gain_config_row: pd.Series
+) -> bool:
+    """
+    Check whether a segment's median detector voltages match a gain config.
+
+    Parameters
+    ----------
+    segment_ds : xarray.Dataset
+        A contiguous HVSCI segment of L1B housekeeping data.
+    gain_config_row : pandas.Series
+        A single row (config_id) of the gain-configuration ancillary table.
+
+    Returns
+    -------
+    bool
+        True if the median of every field in HiConstants.GAIN_CONFIG_HV_FIELDS
+        falls within that field's nominal +/- tolerance for this config.
+    """
+    for field in HiConstants.GAIN_CONFIG_HV_FIELDS:
+        median_value = np.median(segment_ds[field].data)
+        if (
+            abs(median_value - gain_config_row[f"{field}_v"])
+            > gain_config_row[f"{field}_delta_v"]
+        ):
+            return False
+    return True
+
+
+def classify_gain_configuration(
+    l1b_hk_ds: xr.Dataset, gain_config_df: pd.DataFrame
+) -> int | None:
+    """
+    Classify which gain configuration (config_id) a pointing is running.
+
+    Uses the median detector high voltages (see
+    HiConstants.GAIN_CONFIG_HV_FIELDS) of the first contiguous HVSCI segment
+    in the pointing, matched against the gain-configuration ancillary table.
+    This assumes that when a gain test is run during a pointing, the first
+    HVSCI segment of that pointing is run at the pointing's real
+    (non-gain-test) configuration.
+
+    Parameters
+    ----------
+    l1b_hk_ds : xarray.Dataset
+        L1B housekeeping dataset.
+    gain_config_df : pandas.DataFrame
+        Gain configuration lookup table derived from ancillary file. See
+        utils.load_gain_configuration().
+
+    Returns
+    -------
+    config_id : int or None
+        The classified gain configuration id, or None if the first HVSCI
+        segment's voltages matched zero or multiple configurations.
+    """
+    segments = _get_hvsci_segments(l1b_hk_ds)
+    if not segments:
+        logger.critical("No HVSCI segments found; cannot classify gain configuration.")
+        return None
+
+    i_start, i_end = segments[0]
+    first_segment_ds = l1b_hk_ds.isel(epoch=slice(i_start, i_end))
+    config_ids = gain_config_df.index.get_level_values("config_id").unique()
+    matches = [
+        config_id
+        for config_id in config_ids
+        if _detector_voltage_matches_config(
+            first_segment_ds, _get_config_hv_row(gain_config_df, config_id)
+        )
+    ]
+    if len(matches) != 1:
+        interval = met_to_utc(first_segment_ds["shcoarse"].data[[0, -1]])
+        medians = {
+            field: float(np.median(first_segment_ds[field].data))
+            for field in HiConstants.GAIN_CONFIG_HV_FIELDS
+        }
+        if len(matches) == 0:
+            logger.critical(
+                f"No gain configuration matches found for first HVSCI segment "
+                f"during interval: ({interval}) with median detector "
+                f"voltages: {medians}."
+            )
+        else:
+            logger.critical(
+                f"Multiple gain configuration matches found ({matches}) for "
+                f"first HVSCI segment during interval: ({interval}) with "
+                f"median detector voltages: {medians}."
+            )
+        return None
+    return int(matches[0])
+
+
+def get_gain_configuration_lut(
+    l1b_hk_ds: xr.Dataset,
+    gain_config_df: pd.DataFrame,
+) -> tuple[GainConfigLookupTable, int | None]:
+    """
+    Generate a lookup table that associates MET ranges with a gain config_id.
+
+    Classifies the pointing's overall gain configuration from its first
+    HVSCI segment (see classify_gain_configuration()), then walks every
+    contiguous HVSCI segment, recording the pointing's config_id for segments
+    whose detector voltages still match that configuration. Segments that
+    don't match (e.g. a mid-pointing gain test), or every segment if the
+    pointing's configuration could not be classified, are left out of the
+    LUT entirely and so return GainConfigLookupTable.NO_MATCH when queried.
+
+    Parameters
+    ----------
+    l1b_hk_ds : xarray.Dataset
+        L1B housekeeping dataset.
+    gain_config_df : pandas.DataFrame
+        Gain configuration lookup table derived from ancillary file. See
+        utils.load_gain_configuration().
+
+    Returns
+    -------
+    gain_config_lut : GainConfigLookupTable
+        A lookup table object that can be used to query by MET time for the
+        pointing's config_id, or GainConfigLookupTable.NO_MATCH.
+    config_id : int or None
+        The gain configuration classified for this pointing, or None if it
+        could not be classified.
+
+    Notes
+    -----
+    This is unrelated to ESA energy step assignment (see
+    get_esa_to_esa_energy_step_lut()) other than both being evaluated per
+    contiguous HVSCI segment; the two are intentionally independent so that
+    they can be understood, tested, and evolved separately.
+    """
+    gain_config_lut = GainConfigLookupTable()
+    config_id = classify_gain_configuration(l1b_hk_ds, gain_config_df)
+
+    if config_id is None:
+        logger.critical(
+            "Pointing gain configuration could not be classified; every "
+            "HVSCI segment will be excluded from the gain-configuration LUT "
+            "and all direct events will be flagged as BAD_DETECTOR_VOLTAGE."
+        )
+        return gain_config_lut, config_id
+
+    logger.info(f"Pointing classified as gain configuration config_id={config_id}.")
+    gain_config_row = _get_config_hv_row(gain_config_df, config_id)
+    segments = _get_hvsci_segments(l1b_hk_ds)
+    n_excluded = 0
+    for i_start, i_end in segments:
+        segment_ds = l1b_hk_ds.isel(epoch=slice(i_start, i_end))
+        segment_start = segment_ds["shcoarse"].data[0]
+        segment_end = segment_ds["shcoarse"].data[-1]
+        if _detector_voltage_matches_config(segment_ds, gain_config_row):
+            gain_config_lut.add_entry(segment_start, segment_end, config_id)
+        else:
+            n_excluded += 1
+            interval = met_to_utc(np.array([segment_start, segment_end]))
+            logger.info(
+                f"HVSCI segment during interval ({interval}) does not match "
+                f"config_id={config_id} and is likely a gain test; excluding "
+                f"it from the gain-configuration LUT. Direct events in this "
+                f"segment will be flagged as BAD_DETECTOR_VOLTAGE."
+            )
+    logger.info(
+        f"Gain-configuration LUT built with {len(segments) - n_excluded} of "
+        f"{len(segments)} HVSCI segments matching config_id={config_id} "
+        f"({n_excluded} segment(s) excluded as likely gain tests)."
+    )
+
+    return gain_config_lut, config_id
+
+
 def get_esa_to_esa_energy_step_lut(
-    l1b_hk_ds: xr.Dataset, esa_energies_lut: pd.DataFrame
+    l1b_hk_ds: xr.Dataset,
+    esa_energies_lut: pd.DataFrame,
 ) -> EsaEnergyStepLookupTable:
     """
     Generate a lookup table that associates an esa_step to an esa_energy_step.
@@ -454,8 +792,10 @@ def get_esa_to_esa_energy_step_lut(
     Returns
     -------
     esa_energy_step_lut : EsaEnergyStepLookupTable
-        A lookup table object that can be used to query by MET time and esa_step
-        for the associated esa_energy_step values.
+        A lookup table object that can be used to query by MET time and
+        esa_step for the associated esa_energy_step values. Segments/esa_steps
+        where the measured ESA voltage did not match any esa_energy_step are
+        left out of the LUT entirely, so querying them returns FILLVAL.
 
     Notes
     -----
@@ -465,19 +805,12 @@ def get_esa_to_esa_energy_step_lut(
     esa_energy_step_lut = EsaEnergyStepLookupTable()
     # Get the set of esa_steps visited
     esa_steps = list(sorted(set(l1b_hk_ds["sci_esa_step"].data)))
-    # Break into contiguous segments where op_mode == "HVSCI"
-    # Pad the boolean array `op_mode == HVSCI` with False values on each end.
-    # This treats starting or ending in HVSCI mode as a transition in the next
-    # step where np.diff is used to find op_mode transitions into and out of
-    # HVSCI
-    padded_mask = np.pad(
-        l1b_hk_ds["op_mode"].data == "HVSCI", (1, 1), constant_values=False
-    )
-    mode_changes = np.diff(padded_mask.astype(int))
-    hsvsci_starts = np.nonzero(mode_changes == 1)[0]
-    hsvsci_ends = np.nonzero(mode_changes == -1)[0]
-    for i_start, i_end in zip(hsvsci_starts, hsvsci_ends, strict=False):
+
+    for i_start, i_end in _get_hvsci_segments(l1b_hk_ds):
         contiguous_hvsci_ds = l1b_hk_ds.isel(dict(epoch=slice(i_start, i_end)))
+        segment_start = contiguous_hvsci_ds["shcoarse"].data[0]
+        segment_end = contiguous_hvsci_ds["shcoarse"].data[-1]
+
         # Find median inner and outer ESA voltages for each ESA step
         for esa_step in esa_steps:
             single_esa_ds = contiguous_hvsci_ds.where(
@@ -529,8 +862,8 @@ def get_esa_to_esa_energy_step_lut(
                 continue
             # Set LUT to matching esa_energy_step for time range
             esa_energy_step_lut.add_entry(
-                contiguous_hvsci_ds["shcoarse"].data[0],
-                contiguous_hvsci_ds["shcoarse"].data[-1],
+                segment_start,
+                segment_end,
                 esa_step,
                 matching_esa_energy["esa_energy_step"].values[0],
             )
@@ -571,19 +904,23 @@ def de_esa_step_met(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
 
 def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     """
-    Compute ccsds_qf quality flag for each CCSDS packet.
+    Compute the baseline ccsds_qf quality flag for each CCSDS packet.
 
-    The ccsds_qf is a quality flag bitmask indicating packet characteristics.
+    Sets the PACKET_FULL and BADSPIN bits. Must be called first, before
+    de_esa_energy_step() and de_gain_configuration(), which add their own
+    bits (BAD_ESA_VOLTAGE, BAD_DETECTOR_VOLTAGE) to this same "ccsds_qf"
+    variable.
 
     Parameters
     ----------
     dataset : xarray.Dataset
-        The L1A/B dataset containing ccsds_index for mapping events to packets.
+        The L1A/B dataset containing "ccsds_index" and "spin_invalids" for
+        mapping events to packets.
 
     Returns
     -------
     new_vars : dict[str, xarray.DataArray]
-        Dictionary with "ccsds_qf" key and uint8 DataArray value.
+        Dictionary with the new "ccsds_qf" DataArray.
     """
     max_events_per_packet = 664
 

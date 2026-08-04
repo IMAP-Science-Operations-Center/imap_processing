@@ -963,9 +963,17 @@ class Hi(ProcessInstrument):
                 l1b_hk_file = dependencies.get_file_paths(
                     source="hi", data_type="l1b", descriptor="hk"
                 )[0]
-                esa_energies_csv = dependencies.get_file_paths(data_type="ancillary")[0]
+                esa_energies_csv = dependencies.get_file_paths(
+                    data_type="ancillary", descriptor="esa-energies"
+                )[0]
+                gain_config_csv = dependencies.get_file_paths(
+                    data_type="ancillary", descriptor="gain-configuration"
+                )[0]
                 datasets = hi_l1b.annotate_direct_events(
-                    load_cdf(l1a_de_file), load_cdf(l1b_hk_file), esa_energies_csv
+                    load_cdf(l1a_de_file),
+                    load_cdf(l1b_hk_file),
+                    esa_energies_csv,
+                    gain_config_csv,
                 )
         elif self.data_level == "l1c":
             if "pset" in self.descriptor:
@@ -983,10 +991,10 @@ class Hi(ProcessInstrument):
                 anc_dependencies = dependencies.get_processing_inputs(
                     data_type="ancillary"
                 )
-                if len(anc_dependencies) != 2:
+                if len(anc_dependencies) != 3:
                     raise ValueError(
-                        f"Expected two ancillary dependencies (cal-prod and "
-                        f"backgrounds). Got "
+                        f"Expected three ancillary dependencies (cal-prod, "
+                        f"backgrounds, and gain-configuration). Got "
                         f"{[anc_dep.descriptor for anc_dep in anc_dependencies]}"
                     )
 
@@ -998,14 +1006,16 @@ class Hi(ProcessInstrument):
                     for dep in anc_dependencies
                 }
 
-                # Verify we have both required ancillary files
+                # Verify we have all required ancillary files
                 if (
                     "cal-prod" not in anc_path_dict
                     or "backgrounds" not in anc_path_dict
+                    or "gain-configuration" not in anc_path_dict
                 ):
                     raise ValueError(
-                        f"Missing required ancillary files. Expected 'cal-prod' and "
-                        f"'backgrounds', got {list(anc_path_dict.keys())}"
+                        f"Missing required ancillary files. Expected 'cal-prod', "
+                        f"'backgrounds', and 'gain-configuration', got "
+                        f"{list(anc_path_dict.keys())}"
                     )
 
                 # Load goodtimes dependency
@@ -1023,6 +1033,7 @@ class Hi(ProcessInstrument):
                     anc_path_dict["cal-prod"],
                     load_cdf(goodtimes_paths[0]),
                     anc_path_dict["backgrounds"],
+                    anc_path_dict["gain-configuration"],
                 )
         elif self.data_level == "l2":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
@@ -16,6 +17,8 @@ from numpy import typing as npt
 from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+
+logger = logging.getLogger(__name__)
 
 
 class HIAPID(IntEnum):
@@ -95,6 +98,9 @@ class HiConstants:
         in Filter 2.
     STAT_FILTER_2_BIN_PADDING : int
         Number of bins to add on each side of pulse angle range in Filter 2.
+    GAIN_CONFIG_HV_FIELDS : tuple[str, ...]
+        Detector high voltage monitor field names used to classify which gain
+        configuration a pointing is running.
     EXCESS_BACKGROUND_COUNT_RATE : float
         Constant rate offset (per second) to subtract from combined background
         rates. Corrects for excess counts from the outer ESA during background
@@ -132,6 +138,22 @@ class HiConstants:
     STAT_FILTER_2_MIN_EVENTS = 6
     STAT_FILTER_2_MAX_TIME_DELTA = 5000 * DE_CLOCK_TICK_S
     STAT_FILTER_2_BIN_PADDING = 1
+
+    # Detector high voltage monitors used to classify which gain configuration
+    # a pointing is running. See the gain-configuration ancillary file
+    # (utils.load_gain_configuration()) and hi_l1b.classify_gain_configuration().
+    # Note "tof" is the raw CCSDS mnemonic name for the U-Can voltage monitor
+    # (see IMAP-Hi Algorithm Document Section 8, Level 0 Packet Definitions).
+    GAIN_CONFIG_HV_FIELDS = (
+        "pos_defl",
+        "neg_defl",
+        "tof",  # aka U-Can
+        "mcp_f",
+        "mcp_b",
+        "cem_f",
+        "cem_bk_a",
+        "cem_bk_b",
+    )
 
     # Background rate correction
     # Constant offset to subtract from combined background rates to correct
@@ -171,6 +193,74 @@ def parse_sensor_number(full_string: str) -> int:
             f"String 'sensor(45|90)' not found in input string: '{full_string}'"
         )
     return int(match["sensor_num"])
+
+
+def load_gain_configuration(path: str | Path | IO[str]) -> pd.DataFrame:
+    """
+    Load the detector gain configuration ancillary CSV file.
+
+    Each row corresponds to one (config_id, esa_energy_step) combination and
+    gives that step's geometric factor. The detector high voltage nominal/
+    tolerance ("{field}_v"/"{field}_delta_v") columns are constant across
+    esa_energy_step within a config_id (see HiConstants.GAIN_CONFIG_HV_FIELDS
+    for the monitored fields), so they only need to be specified on the first
+    esa_energy_step row of each config_id group -- subsequent rows are
+    forward-filled.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Location of the gain configuration ancillary CSV file. Anything
+        accepted by ``pandas.read_csv`` (e.g. a file-like object) also works.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame indexed by (config_id, esa_energy_step), with columns
+        "geometric_factor" and "{field}_v"/"{field}_delta_v" for each field
+        in HiConstants.GAIN_CONFIG_HV_FIELDS.
+
+    Raises
+    ------
+    ValueError
+        If geometric_factor is null for any row, if {field}_v/{field}_delta_v
+        values are missing for a config_id's first esa_energy_step row, or if
+        they are inconsistent across esa_energy_step within a config_id.
+    """
+    df = pd.read_csv(path, index_col=["config_id", "esa_energy_step"], comment="#")
+
+    hv_columns = [
+        f"{field}{suffix}"
+        for field in HiConstants.GAIN_CONFIG_HV_FIELDS
+        for suffix in ("_v", "_delta_v")
+    ]
+    df[hv_columns] = df.groupby(level="config_id")[hv_columns].ffill()
+
+    if df["geometric_factor"].isna().any():
+        null_rows = df.index[df["geometric_factor"].isna()].tolist()
+        raise ValueError(f"Null geometric_factor value(s) found for rows: {null_rows}.")
+
+    # Validate {field}_v/{field}_delta_v columns are non-null and consistent
+    # across esa_energy_step for each config_id. This catches a missing first
+    # row (forward-fill leaves NaN) or an authoring mistake (inconsistent
+    # values).
+    for config_id, group in df.groupby(level="config_id"):
+        for col in hv_columns:
+            if group[col].isna().any():
+                raise ValueError(
+                    f"Missing {col} value(s) for config_id={config_id}. The "
+                    f"first esa_energy_step row for each config_id must "
+                    f"specify voltage and tolerance values for every field."
+                )
+            if group[col].nunique() > 1:
+                raise ValueError(
+                    f"Inconsistent {col} values across esa_energy_step for "
+                    f"config_id={config_id}: {group[col].unique().tolist()}. "
+                    f"Voltage and tolerance values must be identical across "
+                    f"all esa_energy_step rows for a config_id."
+                )
+
+    return df
 
 
 def full_dataarray(
@@ -471,6 +561,115 @@ class EsaEnergyStepLookupTable:
             return results.astype(self._esa_energy_step_dtype)[0]
         else:
             return results.astype(self._esa_energy_step_dtype)
+
+
+class GainConfigLookupTable:
+    """Class for holding a MET range to gain configuration (config_id) LUT."""
+
+    # Sentinel returned for MET values that don't fall within any segment
+    # matching the pointing's classified gain configuration (e.g. the
+    # configuration could not be classified for the pointing, or this
+    # particular segment doesn't match it -- such as during a mid-pointing
+    # gain test). This is purely an internal L1B processing detail, not tied
+    # to any CDF variable's FILLVAL.
+    NO_MATCH = -1
+
+    def __init__(self) -> None:
+        self.df = pd.DataFrame(
+            {
+                "start_met": pd.Series(dtype="float64"),
+                "end_met": pd.Series(dtype="float64"),
+                "config_id": pd.Series(dtype="int64"),
+            }
+        )
+        self._indexed = False
+
+    def add_entry(self, start_met: float, end_met: float, config_id: int) -> None:
+        """
+        Add a single entry to the lookup table.
+
+        Parameters
+        ----------
+        start_met : float
+            Start mission elapsed time of the time range.
+        end_met : float
+            End mission elapsed time of the time range.
+        config_id : int
+            Gain configuration id that applies over this time range.
+        """
+        new_row = pd.DataFrame(
+            {
+                "start_met": [start_met],
+                "end_met": [end_met],
+                "config_id": [config_id],
+            }
+        )
+        self.df = pd.concat([self.df, new_row], ignore_index=True)
+        self._indexed = False
+
+    def _ensure_indexed(self) -> None:
+        """Sort the internal DataFrame by start_met for faster queries."""
+        if not self._indexed:
+            self.df = self.df.sort_values("start_met").reset_index(drop=True)
+            self._indexed = True
+
+    def query(self, query_met: float | Iterable[float]) -> int | np.ndarray:
+        """
+        Query MET(s) to retrieve the matching gain configuration id(s).
+
+        Parameters
+        ----------
+        query_met : float or array_like
+            Mission elapsed time value(s) to query.
+
+        Returns
+        -------
+        int or numpy.ndarray
+            - If input is scalar: returns int (config_id or NO_MATCH).
+            - If input is array-like: returns numpy array of config_ids with
+              the same length as the input, containing NO_MATCH for queries
+              with no matching entry.
+
+        Notes
+        -----
+        If multiple entries match a query, returns the first match found.
+        """
+        self._ensure_indexed()
+
+        is_scalar_met = np.isscalar(query_met)
+        query_mets = np.atleast_1d(query_met)
+        results = np.full(query_mets.shape, self.NO_MATCH, dtype=np.int64)
+
+        if self.df.empty:
+            logger.debug(
+                "GainConfigLookupTable is empty (no matching gain "
+                "configuration segments); all %d queried MET value(s) "
+                "return NO_MATCH.",
+                query_mets.size,
+            )
+        else:
+            starts = self.df["start_met"].to_numpy()
+            ends = self.df["end_met"].to_numpy()
+            config_ids = self.df["config_id"].to_numpy()
+            for start, end, cfg in zip(starts, ends, config_ids, strict=False):
+                mask = (
+                    (results == self.NO_MATCH)
+                    & (query_mets >= start)
+                    & (query_mets <= end)
+                )
+                results[mask] = cfg
+
+            n_no_match = int(np.sum(results == self.NO_MATCH))
+            if n_no_match > 0:
+                logger.debug(
+                    "%d of %d queried MET value(s) fell outside all gain "
+                    "configuration segments and returned NO_MATCH (likely "
+                    "gain test intervals or time outside HVSCI segments).",
+                    n_no_match,
+                    query_mets.size,
+                )
+
+        return int(results[0]) if is_scalar_met else results
 
 
 class _BaseConfigAccessor:

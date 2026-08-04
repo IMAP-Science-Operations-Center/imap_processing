@@ -330,7 +330,10 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
                 "imap_hi_l1a_90sensor-de_20241105_v001.cdf",
                 "imap_hi_l1b_90sensor-hk_20241105_v001.cdf",
             ],
-            ["imap_hi_90sensor-esa-energies_20240101_v001.csv"],
+            [
+                "imap_hi_90sensor-esa-energies_20240101_v001.csv",
+                "imap_hi_90sensor-gain-configuration_20240101_v001.csv",
+            ],
             1,
         ),
         ("l1b", "sci", "housekeeping", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
@@ -345,6 +348,7 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
             [
                 "imap_hi_45sensor-cal-prod_20240101_v001.csv",
                 "imap_hi_45sensor-backgrounds_20240101_v001.csv",
+                "imap_hi_45sensor-gain-configuration_20240101_v001.csv",
             ],
             1,
         ),
@@ -806,7 +810,6 @@ def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
-@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 @mock.patch("imap_processing.cli.hit_l1a")
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hit class with l1a data level"""
