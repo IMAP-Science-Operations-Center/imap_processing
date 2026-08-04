@@ -353,9 +353,9 @@ def calculate_all_rates_and_intensities(
     # ena_intensity_sys_err to already exist (even though it deliberately
     # leaves it unmodified -- see update_sys_err=False).
     logger.debug("Adding calibration systematic uncertainty")
-    bg_sys_err = map_ds["ena_intensity_background_systematic_err"]
+    bg_sys_err = map_ds["bg_intensity_sys_err"]
     calib_sys_err = CALIBRATION_UNCERTAINTY_FRACTION * map_ds["ena_intensity"]
-    map_ds["ena_intensity_calibration_systematic_err"] = calib_sys_err
+    map_ds["ena_intensity_calibration_sys_err"] = calib_sys_err
     map_ds["ena_intensity_sys_err"] = np.sqrt(bg_sys_err**2 + calib_sys_err**2)
 
     # Step 4: Handle obs_date variable type conversion
@@ -461,7 +461,7 @@ def calculate_ena_intensity(
     -------
     map_ds : xarray.Dataset
         Map dataset with new variables: ena_intensity, ena_intensity_stat_uncert,
-        ena_intensity_background_systematic_err.
+        bg_intensity_sys_err.
     """
     # read calibration product configuration file
     cal_prod_df = CalibrationProductConfig.from_csv(l2_ancillary_path_dict["cal-prod"])
@@ -485,9 +485,7 @@ def calculate_ena_intensity(
 
     # Convert the exposure-time weighted average of background rate systematic
     # uncertainty from rate to intensity units.
-    map_ds["ena_intensity_background_systematic_err"] = (
-        map_ds["bg_rate_sys_err"] / flux_conversion_divisor
-    )
+    map_ds["bg_intensity_sys_err"] = map_ds["bg_rate_sys_err"] / flux_conversion_divisor
 
     # Combine calibration products using proper weighted averaging
     # as described in Hi Algorithm Document Section 3.1.2
@@ -513,8 +511,8 @@ def calculate_ena_intensity(
         # ratio that was just applied to ena_intensity.
         with np.errstate(divide="ignore", invalid="ignore"):
             flux_correction_ratio = map_ds["ena_intensity"] / pre_correction_intensity
-        map_ds["ena_intensity_background_systematic_err"] = (
-            map_ds["ena_intensity_background_systematic_err"] * flux_correction_ratio
+        map_ds["bg_intensity_sys_err"] = (
+            map_ds["bg_intensity_sys_err"] * flux_correction_ratio
         )
 
     return map_ds
@@ -545,12 +543,12 @@ def combine_calibration_products(
     -------
     map_ds : xarray.Dataset
         Map dataset with updated variables: ena_intensity, ena_intensity_stat_uncert,
-        ena_intensity_background_systematic_err, ena_count, bg_rate,
+        bg_intensity_sys_err, ena_count, bg_rate,
         bg_rate_sys_err now combined across calibration products at each
         energy level.
     """
     ena_flux = map_ds["ena_intensity"]
-    sys_err = map_ds["ena_intensity_background_systematic_err"]
+    sys_err = map_ds["bg_intensity_sys_err"]
 
     # Calculate improved statistical variance estimates using geometric factor
     # ratios to reduce bias from Poisson uncertainty estimation
@@ -576,7 +574,7 @@ def combine_calibration_products(
     )
     # For systematic error, just do quadrature sum over the systematic error for
     # each calibration product.
-    map_ds["ena_intensity_background_systematic_err"] = np.sqrt(
+    map_ds["bg_intensity_sys_err"] = np.sqrt(
         (sys_err**2).sum(dim="calibration_prod", skipna=True, min_count=1)
     )
 
@@ -593,12 +591,18 @@ def combine_calibration_products(
             1.0 / (map_ds["bg_rate_sys_err"] ** 2),
             0.0,
         )
-        weight_sum = bg_rate_weights.sum(dim="calibration_prod", skipna=True, min_count=1)
+        weight_sum = bg_rate_weights.sum(
+            dim="calibration_prod", skipna=True, min_count=1
+        )
         weighted_bg_sum = (map_ds["bg_rate"] * bg_rate_weights).sum(
             dim="calibration_prod", skipna=True, min_count=1
         )
-        map_ds["bg_rate"] = xr.where(weight_sum > 0, weighted_bg_sum / weight_sum, np.nan)
-        map_ds["bg_rate_sys_err"] = xr.where(weight_sum > 0, np.sqrt(1 / weight_sum), np.nan)
+        map_ds["bg_rate"] = xr.where(
+            weight_sum > 0, weighted_bg_sum / weight_sum, np.nan
+        )
+        map_ds["bg_rate_sys_err"] = xr.where(
+            weight_sum > 0, np.sqrt(1 / weight_sum), np.nan
+        )
 
     return map_ds
 
@@ -689,8 +693,8 @@ def combine_maps(sky_maps: dict[str, RectangularSkyMap]) -> RectangularSkyMap:
             "ena_intensity_sys_err",
             "bg_rate",
             "bg_rate_sys_err",
-            "ena_intensity_background_systematic_err",
-            "ena_intensity_calibration_systematic_err",
+            "bg_intensity_sys_err",
+            "ena_intensity_calibration_sys_err",
         ):
             combined[var] = (
                 ram_ds[var].fillna(0) * ram_ds["exposure_factor"]

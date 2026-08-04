@@ -128,7 +128,7 @@ def sample_map_dataset():
             "ena_intensity_stat_uncert": xr.DataArray(
                 np.random.rand(*shape) * 10 + 5, dims=list(coords.keys())
             ),
-            "ena_intensity_background_systematic_err": xr.DataArray(
+            "bg_intensity_sys_err": xr.DataArray(
                 np.random.rand(*shape) * 5 + 1, dims=list(coords.keys())
             ),
             "bg_rate": xr.DataArray(
@@ -192,8 +192,8 @@ def test_hi_l2(
         "ena_count",
         "bg_rate",
         "bg_rate_sys_err",
-        "ena_intensity_background_systematic_err",
-        "ena_intensity_calibration_systematic_err",
+        "bg_intensity_sys_err",
+        "ena_intensity_calibration_sys_err",
     ]:
         assert var_name in l2_dataset.data_vars
     assert "counts" not in l2_dataset.data_vars
@@ -439,7 +439,7 @@ def test_calculate_ena_intensity(ena_intensity_map_ds, anc_path_dict):
     for var_name in [
         "ena_intensity",
         "ena_intensity_stat_uncert",
-        "ena_intensity_background_systematic_err",
+        "bg_intensity_sys_err",
     ]:
         assert var_name in result_ds
         # Check that calibration_prod dimension has been removed
@@ -483,7 +483,7 @@ def test_calculate_ena_intensity_flux_correction_logic(
 def test_calculate_ena_intensity_scales_background_systematic_by_flux_ratio(
     mock_flux_corrector_class, ena_intensity_map_ds, anc_path_dict
 ):
-    """Test that ena_intensity_background_systematic_err is flux-corrected.
+    """Test that bg_intensity_sys_err is flux-corrected.
 
     The background-derived systematic error is computed before the flux
     correction is applied to ena_intensity, so it must be rescaled by the same
@@ -498,14 +498,14 @@ def test_calculate_ena_intensity_scales_background_systematic_by_flux_ratio(
     )
 
     # "raw" descriptor skips flux correction entirely, giving the uncorrected
-    # baseline value of ena_intensity_background_systematic_err to compare against.
+    # baseline value of bg_intensity_sys_err to compare against.
     raw_descriptor = MapDescriptor.from_string("h90-enaraw-h-sf-nsp-full-gcs-6deg-3mo")
     uncorrected_ds = ena_intensity_map_ds.copy(deep=True)
     uncorrected_result = calculate_ena_intensity(
         uncorrected_ds, anc_path_dict, raw_descriptor
     )
     expected_uncorrected_bg_sys_err = uncorrected_result[
-        "ena_intensity_background_systematic_err"
+        "bg_intensity_sys_err"
     ].values.copy()
 
     map_descriptor = MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-6deg-3mo")
@@ -515,7 +515,7 @@ def test_calculate_ena_intensity_scales_background_systematic_by_flux_ratio(
     )
 
     np.testing.assert_allclose(
-        corrected_result["ena_intensity_background_systematic_err"].values,
+        corrected_result["bg_intensity_sys_err"].values,
         expected_uncorrected_bg_sys_err * 2.0,
     )
 
@@ -535,7 +535,7 @@ def test_combine_calibration_products(sample_map_dataset):
     expected_vars = [
         "ena_intensity",
         "ena_intensity_stat_uncert",
-        "ena_intensity_background_systematic_err",
+        "bg_intensity_sys_err",
     ]
     for var_name in expected_vars:
         assert var_name in result_ds
@@ -560,9 +560,9 @@ def test_combine_calibration_products(sample_map_dataset):
     )
 
     # Check systematic error combination (root sum of squares)
-    input_sys_err = test_ds["ena_intensity_background_systematic_err"]
+    input_sys_err = test_ds["bg_intensity_sys_err"]
     expected_sys_err = np.sqrt((input_sys_err**2).sum(dim="calibration_prod"))
-    combined_sys_err = result_ds["ena_intensity_background_systematic_err"]
+    combined_sys_err = result_ds["bg_intensity_sys_err"]
 
     np.testing.assert_array_almost_equal(
         combined_sys_err.values, expected_sys_err.values, decimal=10
@@ -655,7 +655,7 @@ def test_weighted_average_mathematical_correctness():
             "ena_intensity_stat_uncert": xr.DataArray(
                 stat_unc_values, dims=list(coords.keys())
             ),
-            "ena_intensity_background_systematic_err": xr.DataArray(
+            "bg_intensity_sys_err": xr.DataArray(
                 sys_err_values, dims=list(coords.keys())
             ),
             "ena_signal_rates": xr.DataArray(
@@ -690,12 +690,12 @@ def test_weighted_average_mathematical_correctness():
     # Check that results are finite and reasonable
     assert np.isfinite(result_ds["ena_intensity"].values[0, 0, 0, 0])
     assert result_ds["ena_intensity_stat_uncert"].values[0, 0, 0, 0] > 0
-    assert result_ds["ena_intensity_background_systematic_err"].values[0, 0, 0, 0] > 0
+    assert result_ds["bg_intensity_sys_err"].values[0, 0, 0, 0] > 0
 
     # Systematic error should be root sum of squares
     expected_sys_err = np.sqrt(5.0**2 + 10.0**2)
     np.testing.assert_almost_equal(
-        result_ds["ena_intensity_background_systematic_err"].values[0, 0, 0, 0],
+        result_ds["bg_intensity_sys_err"].values[0, 0, 0, 0],
         expected_sys_err,
         decimal=10,
     )
@@ -722,7 +722,7 @@ def test_statistical_uncertainty_combination_correctness():
             "ena_intensity_stat_uncert": xr.DataArray(
                 stat_unc_values, dims=list(coords.keys())
             ),
-            "ena_intensity_background_systematic_err": xr.DataArray(
+            "bg_intensity_sys_err": xr.DataArray(
                 sys_err_values, dims=list(coords.keys())
             ),
             "ena_signal_rates": xr.DataArray(flux_values, dims=list(coords.keys())),
@@ -786,7 +786,7 @@ def test_combine_calibration_products_edge_cases():
             "ena_intensity_stat_uncert": xr.DataArray(
                 np.array([10.0]).reshape(1, 1, 1, 1, 1), dims=list(coords.keys())
             ),
-            "ena_intensity_background_systematic_err": xr.DataArray(
+            "bg_intensity_sys_err": xr.DataArray(
                 np.array([5.0]).reshape(1, 1, 1, 1, 1), dims=list(coords.keys())
             ),
             "bg_rate": xr.DataArray(
@@ -817,7 +817,7 @@ def test_combine_calibration_products_edge_cases():
     for var in [
         "ena_intensity",
         "ena_intensity_stat_uncert",
-        "ena_intensity_background_systematic_err",
+        "bg_intensity_sys_err",
         "bg_rate",
         "bg_rate_sys_err",
         "ena_count",
@@ -875,9 +875,7 @@ def test_combine_calibration_products_nan_handling():
         {
             "ena_intensity": xr.DataArray(intensity, dims=dim_names),
             "ena_intensity_stat_uncert": xr.DataArray(stat_uncert, dims=dim_names),
-            "ena_intensity_background_systematic_err": xr.DataArray(
-                sys_err, dims=dim_names
-            ),
+            "bg_intensity_sys_err": xr.DataArray(sys_err, dims=dim_names),
             "ena_signal_rates": xr.DataArray(signal_rates, dims=dim_names),
             "bg_rate": xr.DataArray(bg_rate, dims=dim_names),
             "bg_rate_sys_err": xr.DataArray(bg_rate_sys_err, dims=dim_names),
@@ -903,14 +901,10 @@ def test_combine_calibration_products_nan_handling():
     assert np.isnan(result_ds["ena_intensity_stat_uncert"].values[0, 1, 0, 0])
 
     # Test 3: When one product has NaN sys_err, result should be finite
-    assert np.isfinite(
-        result_ds["ena_intensity_background_systematic_err"].values[0, 0, 1, 0]
-    )
+    assert np.isfinite(result_ds["bg_intensity_sys_err"].values[0, 0, 1, 0])
 
     # Test 4: When ALL products have NaN sys_err, result should be NaN
-    assert np.isnan(
-        result_ds["ena_intensity_background_systematic_err"].values[0, 1, 1, 0]
-    )
+    assert np.isnan(result_ds["bg_intensity_sys_err"].values[0, 1, 1, 0])
 
 
 # =============================================================================
@@ -1433,11 +1427,11 @@ def mock_sky_map_for_combine():
                     np.ones(shape) * (0.5 + 0.01 * intensity_offset),
                     dims=["epoch", "energy", "longitude", "latitude"],
                 ),
-                "ena_intensity_background_systematic_err": xr.DataArray(
+                "bg_intensity_sys_err": xr.DataArray(
                     np.ones(shape) * (1.5 + 0.05 * intensity_offset),
                     dims=["epoch", "energy", "longitude", "latitude"],
                 ),
-                "ena_intensity_calibration_systematic_err": xr.DataArray(
+                "ena_intensity_calibration_sys_err": xr.DataArray(
                     np.ones(shape) * (1.0 + 0.02 * intensity_offset),
                     dims=["epoch", "energy", "longitude", "latitude"],
                 ),
@@ -1808,13 +1802,13 @@ def test_calculate_ena_intensity_uses_bg_rate_sys_err(
         ena_intensity_map_ds, anc_path_dict, map_descriptor
     )
 
-    # Verify ena_intensity_background_systematic_err was calculated
-    assert "ena_intensity_background_systematic_err" in result_ds
+    # Verify bg_intensity_sys_err was calculated
+    assert "bg_intensity_sys_err" in result_ds
 
     # The sys_err should be based on bg_rate_sys_err / (geometric_factor * energy)
     # After combine_calibration_products, it's combined in quadrature across cal prods
     # We just verify it's finite and positive where expected
-    sys_err = result_ds["ena_intensity_background_systematic_err"]
+    sys_err = result_ds["bg_intensity_sys_err"]
     assert np.all(sys_err.values[np.isfinite(sys_err.values)] >= 0)
 
 
@@ -1839,15 +1833,15 @@ def test_calculate_all_rates_adds_calibration_systematic(
 
     # Verify ena_intensity_sys_err includes calibration systematic
     assert "ena_intensity_sys_err" in result_ds
-    assert "ena_intensity_background_systematic_err" in result_ds
-    assert "ena_intensity_calibration_systematic_err" in result_ds
+    assert "bg_intensity_sys_err" in result_ds
+    assert "ena_intensity_calibration_sys_err" in result_ds
 
     # The sys_err should be larger than CALIBRATION_UNCERTAINTY_FRACTION * intensity
     # because it includes both bg systematic and calibration systematic in quadrature
     intensity = result_ds["ena_intensity"]
     sys_err = result_ds["ena_intensity_sys_err"]
-    bg_sys_err = result_ds["ena_intensity_background_systematic_err"]
-    calib_sys_err = result_ds["ena_intensity_calibration_systematic_err"]
+    bg_sys_err = result_ds["bg_intensity_sys_err"]
+    calib_sys_err = result_ds["ena_intensity_calibration_sys_err"]
 
     # calib_sys_err should be exactly CALIBRATION_UNCERTAINTY_FRACTION of intensity
     np.testing.assert_allclose(
