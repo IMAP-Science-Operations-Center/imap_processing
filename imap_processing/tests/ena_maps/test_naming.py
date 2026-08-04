@@ -558,9 +558,55 @@ class TestMapDescriptor:
                 "probability correction in the anti-ram direction in HAE "
                 "coordinates on rectangular 4 degree tiling over 2 months.",
             ),
+            (
+                # A non-45/90/combined sensor (e.g. Lo's numeric sensor) exercises
+                # the generic "sensor {sensor}" branch.
+                "l075-ena-h-sf-nsp-ram-hae-6deg-3mo",
+                "IMAP-Lo Instrument Level-2 sensor 75 map of Hydrogen "
+                "ENA Intensity in the spacecraft frame with no survival "
+                "correction in the ram direction in HAE coordinates on "
+                "rectangular 6 degree tiling over 3 months.",
+            ),
         ],
     )
     def test_to_logical_source_description(self, descriptor_str, expected_description):
         md = MapDescriptor.from_string(descriptor_str)
         actual_description = md.to_logical_source_description()
         assert actual_description == expected_description
+
+    def test_build_map_var_catdesc_invalid_principal_data(self):
+        """Invalid principal_data should raise via _parse_principal_data()."""
+        md = MapDescriptor.from_string("h45-badprincipal-h-sf-nsp-ram-hae-6deg-6mo")
+        with pytest.raises(ValueError, match="Invalid principal_data format"):
+            md.build_map_var_catdesc("ena_intensity")
+
+    def test_build_map_var_catdesc_invalid_resolution_str(self):
+        """Invalid resolution_str should raise via _get_resolution_str()."""
+        md = MapDescriptor.from_string("h45-ena-h-sf-nsp-ram-hae-badres-6mo")
+        with pytest.raises(ValueError, match="Invalid resolution_str format"):
+            md.build_map_var_catdesc("ena_intensity")
+
+    def test_get_duration_str_int_duration(self):
+        # __post_init__ normalizes an int duration into a "{n}mo" string, so
+        # the int branch of _get_duration_str is only reachable if
+        # `duration` is set directly, bypassing that normalization.
+        md = MapDescriptor(
+            instrument=MappableInstrumentShortName.HI,
+            frame_descriptor="sf",
+            resolution_str="2deg",
+            duration="3mo",
+        )
+        md.duration = 45
+        assert md._get_duration_str(full=False) == "45 Day"
+        assert md._get_duration_str(full=True) == "45 days"
+
+    def test_get_duration_str_generic_unit_full(self):
+        # A unit other than "yr" or "mo" exercises the fallback return in
+        # the full=True branch.
+        md = MapDescriptor(
+            instrument=MappableInstrumentShortName.HI,
+            frame_descriptor="sf",
+            resolution_str="2deg",
+            duration="5day",
+        )
+        assert md._get_duration_str(full=True) == "5 day"

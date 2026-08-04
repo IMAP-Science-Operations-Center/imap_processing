@@ -1116,6 +1116,26 @@ class TestRectangularSkyMap:
             )
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
+    def test_build_cdf_dataset_invalid_descriptor(
+        self, mock_to_dataset, mock_data_for_build_cdf_dataset
+    ):
+        """Test build_cdf_dataset with a descriptor that MapDescriptor can't parse.
+
+        Logical_source_description falls back to the old format-string
+        behavior (rather than crashing) when the descriptor isn't a valid
+        MapDescriptor string, but the later CATDESC generation step still
+        re-parses the descriptor and so still raises the original ValueError.
+        """
+        mock_to_dataset.return_value = mock_data_for_build_cdf_dataset
+
+        skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
+        skymap.min_epoch = 10
+        skymap.max_epoch = 15
+
+        with pytest.raises(ValueError, match="Invalid map_descriptor format"):
+            skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
+
+    @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
     def test_keep_vars_with_no_attributes(
         self, mock_to_dataset, mock_data_for_build_cdf_dataset
     ):
