@@ -1040,6 +1040,29 @@ def _extrapolate_top_intensity(
     np.ndarray
         The intensity of the virtual level, of shape (epoch, pixel), zero in
         the pixels the top level saw nothing in.
+
+    Notes
+    -----
+    The spectrum is taken as a power law in energy, ``I(E) = A * E ** -gamma``,
+    where ``gamma`` is the spectral index. The normalization ``A`` never has to
+    be evaluated: writing the law at the top two levels and dividing one by the
+    other cancels it, leaving::
+
+        I_top / I_second = (E_top / E_second) ** -gamma
+
+    Taking logs of both sides gives the index the code solves for::
+
+        log(I_top / I_second) = -gamma * log(E_top / E_second)
+        gamma = -log(I_top / I_second) / log(E_top / E_second)
+
+    The virtual level is then read off the same law anchored on the top level,
+    which keeps ``A`` cancelled, so a pixel needs only a spectral index and one
+    measured point to be extrapolated::
+
+        I_virtual = I_top * (E_virtual / E_top) ** -gamma
+
+    That is what lets a pixel with no spectrum of its own borrow an index from
+    its neighbors and still use its own top level as the anchor.
     """
     second, top = energy[-2], energy[-1]
     virtual = top * c.ESA_8_ENERGY_RATIO
