@@ -64,6 +64,15 @@ OUTLIER_MASK_DESCRIPTOR = "l105-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
 # A pivot angle the mask ancillary carries no tuning for.
 UNTUNED_MASK_DESCRIPTOR = "l060-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
 
+# The combined maps, written "ilo" rather than with a pivot angle of their own.
+# These select no pivot angle, so every pointing given to them is accumulated.
+COMBINED_DESCRIPTOR = "ilo-enansnbs-h-sf-nsp-full-hae-6deg-3mo"
+COMBINED_RAM_DESCRIPTOR = "ilo-enansnbs-h-sf-nsp-ram-hae-6deg-3mo"
+COMBINED_MASK_DESCRIPTOR = "ilo-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
+
+# The pivot angles a combined map is built from in these tests.
+COMBINED_PIVOTS = (75.0, 90.0, 105.0)
+
 # The fraction of an ESA level's peak intensity that the pivot 90 tuning masks
 # from, and the variables it blanks out.
 MASK_THRESHOLD_FRACTION = 0.5
@@ -339,6 +348,216 @@ def masked_maps(one_pointing, anc_dependencies):
         )
         (raw,) = lo_l2(as_dependencies(one_pointing), anc_dependencies, FULL_DESCRIPTOR)
     return masked, raw
+
+
+@pytest.fixture
+def pointings_at_every_pivot():
+    """One synthetic pointing at each of the pivot angles a map combines."""
+    return [
+        make_pointing(repointing=100 + i, pivot=pivot, seed=i + 1)
+        for i, pivot in enumerate(COMBINED_PIVOTS)
+    ]
+
+
+class TestCombinedMap:
+    """A map that selects no pivot angle and takes every pointing it is given."""
+
+    def test_every_pivot_angle_is_accumulated(
+        self, pointings_at_every_pivot, anc_dependencies
+    ):
+        """The counts of all three pointings land on the one combined map."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (combined,) = lo_l2(
+                as_dependencies(*pointings_at_every_pivot),
+                anc_dependencies,
+                COMBINED_DESCRIPTOR,
+            )
+
+        expected = sum(
+            pointing["expected_counts"].sum() for pointing in pointings_at_every_pivot
+        )
+        assert combined["ena_count"].values.sum() == pytest.approx(expected)
+
+    def test_the_combined_map_is_the_sum_of_its_pointings(
+        self, pointings_at_every_pivot, anc_dependencies
+    ):
+        """Accumulating together matches accumulating each pointing alone."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (combined,) = lo_l2(
+                as_dependencies(*pointings_at_every_pivot),
+                anc_dependencies,
+                COMBINED_DESCRIPTOR,
+            )
+            singly = [
+                lo_l2(as_dependencies(pointing), anc_dependencies, COMBINED_DESCRIPTOR)[
+                    0
+                ]
+                for pointing in pointings_at_every_pivot
+            ]
+
+        for variable in ("ena_count", "exposure_factor"):
+            np.testing.assert_allclose(
+                combined[variable].values,
+                sum(single[variable].values for single in singly),
+                rtol=1e-5,
+                err_msg=variable,
+            )
+
+    def test_a_pointing_is_projected_from_its_own_pivot_angle(
+        self, pointings_at_every_pivot, anc_dependencies
+    ):
+        """The pivot angles of a combined map need not agree with each other.
+
+        A RAM map keeps the spin-angle bins looking into the RAM direction,
+        which is a function of the pointing's own pivot angle, so the three
+        pointings would not all survive one shared pivot angle.
+        """
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (combined,) = lo_l2(
+                as_dependencies(*pointings_at_every_pivot),
+                anc_dependencies,
+                COMBINED_RAM_DESCRIPTOR,
+            )
+            singly = [
+                lo_l2(
+                    as_dependencies(pointing),
+                    anc_dependencies,
+                    COMBINED_RAM_DESCRIPTOR,
+                )[0]
+                for pointing in pointings_at_every_pivot
+            ]
+
+        # Each pointing keeps its own RAM half of the spin, and the combined
+        # map is exactly those three halves added together.
+        assert (combined["ena_count"].values > 0).any()
+        np.testing.assert_allclose(
+            combined["ena_count"].values,
+            sum(single["ena_count"].values for single in singly),
+            rtol=1e-5,
+        )
+
+    def test_a_pivot_angle_map_of_the_same_pointings_is_no_larger(
+        self, pointings_at_every_pivot, anc_dependencies
+    ):
+        """The combined map holds at least what any single-pivot map holds.
+
+        ``lo_l2`` itself does no pivot filtering, so a single-pivot descriptor
+        given these same pointings accumulates them all too; the point here is
+        that the combined descriptor loses nothing by naming no pivot angle.
+        """
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (combined,) = lo_l2(
+                as_dependencies(*pointings_at_every_pivot),
+                anc_dependencies,
+                COMBINED_DESCRIPTOR,
+            )
+            (single_pivot,) = lo_l2(
+                as_dependencies(*pointings_at_every_pivot),
+                anc_dependencies,
+                FULL_DESCRIPTOR,
+            )
+
+        np.testing.assert_allclose(
+            combined["ena_count"].values, single_pivot["ena_count"].values, rtol=1e-5
+        )
+
+    def test_the_isn_mask_reads_the_pivot_angles_off_the_pointings(
+        self, pointings_at_every_pivot, anc_dependencies
+    ):
+        """A combined map is masked with the union of its pivots' tunings.
+
+        The pivot 105 tuning of the test ancillary masks the top half of each
+        ESA level and the pivot 90 one the bright pixels, so a map holding both
+        is masked at least everywhere either of them would mask.
+        """
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (combined,) = lo_l2(
+                as_dependencies(*pointings_at_every_pivot),
+                anc_dependencies,
+                COMBINED_MASK_DESCRIPTOR,
+            )
+            (unmasked,) = lo_l2(
+                as_dependencies(*pointings_at_every_pivot),
+                anc_dependencies,
+                COMBINED_DESCRIPTOR,
+            )
+
+        masked = np.isnan(combined["ena_intensity"].values)
+        intensity = unmasked["ena_intensity"].values
+
+        # The union of the three tunings: the widest band (pivot 75's 1 degree
+        # loses to the 90 degrees of the others), the faintest brightness taken
+        # as bright, and the shortest outlier tail.
+        peak = np.nanmax(intensity, axis=(-2, -1), keepdims=True)
+        median = np.nanpercentile(intensity, 50, axis=(-2, -1), keepdims=True)
+        expected = (intensity >= MASK_THRESHOLD_FRACTION * peak) | (intensity > median)
+
+        assert expected.any(), "the tuning must mask something"
+        np.testing.assert_array_equal(masked, expected)
+
+    def test_a_combined_map_of_one_pivot_angle_uses_that_pivots_tuning(
+        self, one_pointing, anc_dependencies
+    ):
+        """With a single pivot angle in the data the union is that pivot's row."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            # The pointing is at pivot 90, so this must match the map made with
+            # the pivot 90 descriptor.
+            (combined,) = lo_l2(
+                as_dependencies(one_pointing),
+                anc_dependencies,
+                COMBINED_MASK_DESCRIPTOR,
+            )
+            (by_descriptor,) = lo_l2(
+                as_dependencies(one_pointing), anc_dependencies, MASK_DESCRIPTOR
+            )
+
+        assert np.isnan(combined["ena_intensity"].values).any()
+        np.testing.assert_array_equal(
+            np.isnan(combined["ena_intensity"].values),
+            np.isnan(by_descriptor["ena_intensity"].values),
+        )
+
+    def test_an_unrecognisable_pivot_angle_cannot_tune_the_mask(
+        self, anc_dependencies, caplog
+    ):
+        """A pivot angle matching no nominal one is dropped, and none is left."""
+        off_nominal = make_pointing(repointing=100, pivot=42.0)
+
+        with pytest.raises(ValueError, match="reports a nominal pivot angle"):
+            lo_l2(
+                as_dependencies(off_nominal),
+                anc_dependencies,
+                COMBINED_MASK_DESCRIPTOR,
+            )
+        assert "match none of the nominal pivot angles" in caplog.text
+
+    def test_a_pivot_angle_the_mask_has_no_tuning_for_is_refused(
+        self, anc_dependencies
+    ):
+        """A combined map holding an untuned pivot angle cannot be masked."""
+        # 60 is a nominal pivot angle, but the mask ancillary has no row for it.
+        untuned = make_pointing(repointing=100, pivot=60.0)
+
+        with pytest.raises(ValueError, match=r"no mask tuning for the \[60\]"):
+            lo_l2(as_dependencies(untuned), anc_dependencies, COMBINED_MASK_DESCRIPTOR)
 
 
 class TestMapStructure:
@@ -1349,7 +1568,7 @@ class TestIsnMask:
 
     def test_an_untuned_pivot_angle_is_refused(self, one_pointing, anc_dependencies):
         """A map cannot be masked at a pivot the ancillary says nothing about."""
-        with pytest.raises(ValueError, match="no mask tuning for the 60 degree"):
+        with pytest.raises(ValueError, match=r"no mask tuning for the \[60\] degree"):
             lo_l2(
                 as_dependencies(one_pointing),
                 anc_dependencies,

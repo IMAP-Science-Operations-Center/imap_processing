@@ -583,6 +583,54 @@ def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_lo
 
 @mock.patch("imap_processing.cli.load_cdf")
 @mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
+def test_lo_pre_processing_combined_map_keeps_every_pivot_angle(
+    mock_super_pre_processing, mock_load_cdf
+):
+    """Test that a combined map takes the pointings of every pivot angle."""
+    first = "-repoint00217_v001.cdf"
+    second = "-repoint00218_v001.cdf"
+    goodtimes = [
+        f"imap_lo_l1b_goodtimes_20250415{first}",
+        f"imap_lo_l1b_goodtimes_20250416{second}",
+    ]
+    histrates = [
+        f"imap_lo_l1b_histrates_20250415{first}",
+        f"imap_lo_l1b_histrates_20250416{second}",
+    ]
+    bgrates = [f"imap_lo_l1b_bgrates_20250415{first}"]
+    ancillary = "imap_lo_efficiency-factors_20250415_v001.csv"
+
+    base_collection = ProcessingInputCollection(
+        ScienceInput(*goodtimes),
+        ScienceInput(*histrates),
+        ScienceInput(*bgrates),
+        AncillaryInput(ancillary),
+    )
+    mock_super_pre_processing.return_value = base_collection
+
+    instrument = Lo(
+        "l2",
+        # "ilo" rather than "l090": a map of no particular pivot angle
+        "ilo-ena-h-sf-nsp-ram-hae-6deg-3mo",
+        base_collection.serialize(),
+        "20250415",
+        "20250715",
+        "v001",
+        False,
+    )
+    result = instrument.pre_processing()
+
+    # The two pointings are at different pivot angles, and both are kept.
+    assert [
+        [str(file_path.filename) for file_path in processing_input.imap_file_paths]
+        for processing_input in result.get_processing_inputs()
+    ] == [goodtimes, histrates, bgrates, [ancillary]]
+    # No goodtimes are read, there being no pivot angle to select them by
+    assert mock_load_cdf.call_count == 0
+
+
+@mock.patch("imap_processing.cli.load_cdf")
+@mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
 def test_lo_pre_processing_drops_goodtimes_without_pivot(
     mock_super_pre_processing, mock_load_cdf
 ):

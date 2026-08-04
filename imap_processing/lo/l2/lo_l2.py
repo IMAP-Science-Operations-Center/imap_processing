@@ -78,7 +78,10 @@ def lo_l2(
     The inputs are expected to have already been filtered down to the pivot
     angle of the map being made, which is done in pre-processing (see
     ``cli.Lo.pre_processing``) so that the map records only the files it was
-    made from as its parents.
+    made from as its parents. A combined map, written "ilo" rather than with a
+    pivot angle of its own, is filtered by nothing and accumulates every
+    pointing it is given. Each pointing is projected from the pivot angle its
+    own goodtimes report.
 
     Parameters
     ----------
@@ -113,16 +116,11 @@ def lo_l2(
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
 
-    # Read the ancillaries the corrections asked for by the descriptor need up
-    # front, so that a map missing one fails before any of its pointings are
-    # accumulated.
+    # The Compton-Getting correction reads the source spectrum of each pixel
+    # through the ESA transmission factors of the eta fit ancillary. Read up
+    # front, so that a map missing it fails before anything is accumulated.
     flux_corrector = (
         _flux_corrector(anc_dependencies) if map_descriptor.cg_corrected else None
-    )
-    isn_mask_parameters = (
-        _isn_mask_parameters(int(map_descriptor.sensor))
-        if map_descriptor.isn_masked
-        else None
     )
 
     logger.info("Step 1: Loading ancillary data")
@@ -141,6 +139,15 @@ def lo_l2(
 
     pointings = _complete_pointings(sci_dependencies)
     logger.info(f"Building {descriptor} from {len(pointings)} pointings")
+
+    # The mask is tuned per pivot angle, which a combined map takes from the
+    # pointings themselves. Resolved before anything is accumulated, so that a
+    # map the mask cannot be tuned for fails before the work is done.
+    isn_mask_parameters = (
+        _isn_mask_parameters(_map_pivot_angles(map_descriptor, pointings))
+        if map_descriptor.isn_masked
+        else None
+    )
 
     # Every pointing of a map is taken in the same ESA mode, so the last one
     # sets the energy response the whole map is binned in.
@@ -409,14 +416,20 @@ def load_isn_mask_parameters() -> pd.DataFrame:
     return lo_ancillary.read_ancillary_file(mask_files[-1])
 
 
-def _isn_mask_parameters(pivot_angle: int) -> pd.DataFrame:
+def _isn_mask_parameters(pivot_angles: list[int]) -> pd.DataFrame:
     """
-    Get the ISN mask tuning of one pivot angle, in ascending ESA level order.
+    Get the ISN mask tuning of a map, in ascending ESA level order.
+
+    A map made at one pivot angle is masked with that pivot's tuning. A map
+    combining several is masked with the most permissive tuning of the pivots
+    that went into it: a pixel of the combined map holds the interstellar
+    neutrals seen at every one of them, so it is masked if any of those pivots
+    would have masked it.
 
     Parameters
     ----------
-    pivot_angle : int
-        The nominal pivot angle [degrees] of the map being made.
+    pivot_angles : list[int]
+        The nominal pivot angles [degrees] the map was built from.
 
     Returns
     -------
@@ -426,20 +439,30 @@ def _isn_mask_parameters(pivot_angle: int) -> pd.DataFrame:
     Raises
     ------
     ValueError
-        If the ancillary has no tuning for the pivot angle, which is not a
-        pivot the mask has been tuned for.
+        If the ancillary has no tuning for one of the pivot angles.
     """
     parameters = load_isn_mask_parameters()
-    parameters = parameters[parameters["pivot_angle"] == pivot_angle]
 
-    if parameters.empty:
+    untuned = sorted(set(pivot_angles) - set(parameters["pivot_angle"]))
+    if untuned:
         raise ValueError(
             f"The map asks for the ISN band to be masked out, but the ancillary "
-            f"has no mask tuning for the {pivot_angle} degree pivot angle"
+            f"has no mask tuning for the {untuned} degree pivot angle(s) it was "
+            f"built from"
         )
 
+    parameters = parameters[parameters["pivot_angle"].isin(pivot_angles)]
+
+    # The widest band, the faintest pixel taken as bright, and the shortest
+    # outlier tail, i.e. the union of what each contributing pivot would mask.
+    tuning = parameters.groupby("esa_step").agg(
+        intensity_threshold_fraction=("intensity_threshold_fraction", "min"),
+        angular_width_deg=("angular_width_deg", "max"),
+        outlier_percentile=("outlier_percentile", "min"),
+    )
+
     # Select the ESA levels, in order. Raises if the ancillary is missing one.
-    return parameters.set_index("esa_step").loc[list(range(1, c.N_ESA_LEVELS + 1))]
+    return tuning.loc[list(range(1, c.N_ESA_LEVELS + 1))]
 
 
 def _isn_mask(
@@ -540,6 +563,87 @@ def finalize_dataset(dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
 # =============================================================================
 # INPUT HANDLING
 # =============================================================================
+
+
+def _nominal_pivot_angle(pivot_angle: float) -> int | None:
+    """
+    Snap a measured pivot angle onto the nominal pivot angle it was flown at.
+
+    Parameters
+    ----------
+    pivot_angle : float
+        The pivot angle [degrees] a pointing's goodtimes report.
+
+    Returns
+    -------
+    int | None
+        The nominal pivot angle [degrees] whose range contains it, or None if
+        it falls in none of them.
+    """
+    for nominal, spec in c.PIVOT_ANGLES.items():
+        if spec.min <= pivot_angle <= spec.max:
+            return nominal
+    return None
+
+
+def _map_pivot_angles(
+    map_descriptor: MapDescriptor, pointings: dict[int, tuple]
+) -> list[int]:
+    """
+    Get the nominal pivot angles a map is built from.
+
+    A Lo map carries its pivot angle as its sensor, e.g. the 90 of "l090", and
+    its inputs were filtered down to that pivot in pre-processing. A map that
+    combines every pivot angle instead of selecting one is written without a
+    sensor, as "ilo", so the pivot angles it holds are the ones its pointings
+    were actually flown at, which their goodtimes report.
+
+    Parameters
+    ----------
+    map_descriptor : MapDescriptor
+        The parsed descriptor of the map being made.
+    pointings : dict[int, tuple]
+        The (goodtimes, bgrates, histrates) datasets of each mappable pointing.
+
+    Returns
+    -------
+    list[int]
+        The nominal pivot angles [degrees] of the map, in ascending order.
+
+    Raises
+    ------
+    ValueError
+        If the map combines pivot angles but none of its pointings reports one
+        that is recognisably nominal, leaving nothing to identify it by.
+    """
+    if isinstance(map_descriptor.sensor, int):
+        return [map_descriptor.sensor]
+
+    measured = {
+        float(np.atleast_1d(goodtimes["pivot"].values)[0])
+        for goodtimes, _, _ in pointings.values()
+    }
+    nominal = {_nominal_pivot_angle(pivot) for pivot in measured}
+
+    unrecognised = sorted(
+        pivot for pivot in measured if _nominal_pivot_angle(pivot) is None
+    )
+    if unrecognised:
+        logger.warning(
+            f"Ignoring the pivot angles {unrecognised} of "
+            f"{map_descriptor.instrument_descriptor}, they match none of the "
+            f"nominal pivot angles."
+        )
+
+    pivot_angles = sorted(pivot for pivot in nominal if pivot is not None)
+    if not pivot_angles:
+        raise ValueError(
+            f"The map asks for the ISN band to be masked out, but none of the "
+            f"pointings of {map_descriptor.instrument_descriptor} reports a "
+            f"nominal pivot angle to look the mask tuning up by"
+        )
+
+    return pivot_angles
 
 
 def _complete_pointings(

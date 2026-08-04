@@ -80,6 +80,16 @@ class TestNaming:
             MappableInstrumentShortName.ULTRA,
             "combined",
         )
+        # A Lo map of no particular pivot angle carries no sensor, which is
+        # what tells it apart from the "l090" of a single pivot angle
+        assert MapDescriptor.parse_instrument_descriptor("ilo") == (
+            MappableInstrumentShortName.LO,
+            "",
+        )
+        assert MapDescriptor.parse_instrument_descriptor("l090") == (
+            MappableInstrumentShortName.LO_HI_RES,
+            90,
+        )
         with pytest.raises(
             ValueError, match="'abc' is not a valid MappableInstrumentShortName"
         ):
