@@ -588,13 +588,17 @@ def combine_calibration_products(
     # inverse-variance weighted using each calibration product's own
     # bg_rate_sys_err as its uncertainty.
     with np.errstate(divide="ignore", invalid="ignore"):
-        bg_rate_weights = 1.0 / (map_ds["bg_rate_sys_err"] ** 2)
-        map_ds["bg_rate"] = (map_ds["bg_rate"] * bg_rate_weights).sum(
-            dim="calibration_prod"
-        ) / bg_rate_weights.sum(dim="calibration_prod")
-        map_ds["bg_rate_sys_err"] = np.sqrt(
-            1 / bg_rate_weights.sum(dim="calibration_prod")
+        bg_rate_weights = xr.where(
+            map_ds["bg_rate_sys_err"] > 0,
+            1.0 / (map_ds["bg_rate_sys_err"] ** 2),
+            0.0,
         )
+        weight_sum = bg_rate_weights.sum(dim="calibration_prod", skipna=True, min_count=1)
+        weighted_bg_sum = (map_ds["bg_rate"] * bg_rate_weights).sum(
+            dim="calibration_prod", skipna=True, min_count=1
+        )
+        map_ds["bg_rate"] = xr.where(weight_sum > 0, weighted_bg_sum / weight_sum, np.nan)
+        map_ds["bg_rate_sys_err"] = xr.where(weight_sum > 0, np.sqrt(1 / weight_sum), np.nan)
 
     return map_ds
 

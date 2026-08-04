@@ -1426,19 +1426,19 @@ def mock_sky_map_for_combine():
                     dims=["epoch", "energy", "longitude", "latitude"],
                 ),
                 "bg_rate": xr.DataArray(
-                    np.ones(shape) * 3.0,
+                    np.ones(shape) * (3.0 + 0.1 * intensity_offset),
                     dims=["epoch", "energy", "longitude", "latitude"],
                 ),
                 "bg_rate_sys_err": xr.DataArray(
-                    np.ones(shape) * 0.5,
+                    np.ones(shape) * (0.5 + 0.01 * intensity_offset),
                     dims=["epoch", "energy", "longitude", "latitude"],
                 ),
                 "ena_intensity_background_systematic_err": xr.DataArray(
-                    np.ones(shape) * 1.5,
+                    np.ones(shape) * (1.5 + 0.05 * intensity_offset),
                     dims=["epoch", "energy", "longitude", "latitude"],
                 ),
                 "ena_intensity_calibration_systematic_err": xr.DataArray(
-                    np.ones(shape) * 1.0,
+                    np.ones(shape) * (1.0 + 0.02 * intensity_offset),
                     dims=["epoch", "energy", "longitude", "latitude"],
                 ),
             },
