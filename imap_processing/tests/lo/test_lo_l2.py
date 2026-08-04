@@ -13,6 +13,9 @@ from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo.constants import EsaCalibration, LoConstants
 from imap_processing.lo.l2.lo_l2 import (
+    ANCILLARY_DATA_DIR as PACKAGE_ANCILLARY_DIR,
+)
+from imap_processing.lo.l2.lo_l2 import (
     LoSpinAnglePointingSet,
     _bootstrap_correct_intensity,
     _complete_pointings,
@@ -22,7 +25,10 @@ from imap_processing.lo.l2.lo_l2 import (
     _extrapolate_top_intensity,
     _spacecraft_frame_energy,
     _spin_phase_mask,
+    finalize_dataset,
     lo_l2,
+    load_bootstrap_correction_data,
+    load_sputter_correction_data,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 
@@ -218,6 +224,17 @@ def anc_dependencies():
     required; without them the map cannot be made.
     """
     return [ANCILLARY_DIR / "imap_lo_esa-eta-fit-factors_20240101_v001.csv"]
+
+
+@pytest.fixture
+def shipped_ancillaries():
+    """Read the calibration ancillaries shipped with the package.
+
+    Undoes the autouse ``use_test_geometric_factors`` patch (a more common use-case)
+        for tests that need the shipped ancillaries.
+    """
+    with patch("imap_processing.lo.l2.lo_l2.ANCILLARY_DATA_DIR", PACKAGE_ANCILLARY_DIR):
+        yield
 
 
 @pytest.fixture
@@ -1124,6 +1141,83 @@ class TestPointingSelection:
 
         with pytest.raises(KeyError, match="histrates"):
             _complete_pointings(dependencies)
+
+
+class TestCorrectionFactors:
+    """Reading the sputter and bootstrap correction ancillaries."""
+
+    def test_sputter_factors_are_selected_by_species_pair(
+        self, shipped_ancillaries, tmp_path
+    ):
+        """Only the rows of the requested pair come back, in ESA step order."""
+        factors = load_sputter_correction_data("o", "h")
+
+        assert list(factors.columns) == [
+            "source_species",
+            "target_species",
+            "esa_step",
+            "sputter_factor",
+            "sputter_factor_uncertainty",
+        ]
+        assert not factors.empty
+        assert (factors["source_species"] == "o").all()
+        assert (factors["target_species"] == "h").all()
+
+        with patch("imap_processing.lo.l2.lo_l2.ANCILLARY_DATA_DIR", tmp_path):
+            with pytest.raises(ValueError, match="No sputter correction files"):
+                load_sputter_correction_data("o", "h")
+
+    def test_bootstrap_factors_relate_lower_steps_to_higher(
+        self, shipped_ancillaries, tmp_path
+    ):
+        """Each factor carries a step pair, the source below the target."""
+        factors = load_bootstrap_correction_data()
+
+        assert list(factors.columns) == [
+            "esa_step_i",
+            "esa_step_k",
+            "bootstrap_factor",
+        ]
+        assert not factors.empty
+        assert (factors["esa_step_i"] < factors["esa_step_k"]).all()
+        # Steps are 1-based, and step 8 is the virtual E8 channel.
+        assert factors["esa_step_i"].min() >= 1
+        assert factors["esa_step_k"].max() <= N_ESA + 1
+        assert (factors["bootstrap_factor"] > 0).all()
+
+        with patch("imap_processing.lo.l2.lo_l2.ANCILLARY_DATA_DIR", tmp_path):
+            with pytest.raises(ValueError, match="No bootstrap correction factor"):
+                load_bootstrap_correction_data()
+
+
+class TestFinalizeDataset:
+    """Attaching the CDF attributes to a finished map."""
+
+    def test_attributes_are_filled_in_from_the_descriptor(self):
+        """The map is labelled with its descriptor and its variables described."""
+        dataset = xr.Dataset(
+            {
+                "ena_intensity": (
+                    ["epoch", "energy"],
+                    np.zeros((1, N_ESA)),
+                ),
+                "not_a_map_variable": ("epoch", np.zeros(1)),
+            },
+            coords={"epoch": [0], "energy": ESA_ENERGIES[0]},
+        )
+
+        finalized = finalize_dataset(dataset, FULL_DESCRIPTOR)
+
+        assert finalized.attrs["Logical_source"] == f"imap_lo_l2_{FULL_DESCRIPTOR}"
+        assert FULL_DESCRIPTOR in finalized.attrs["Data_type"]
+
+        # A known map variable picks up its attributes from the enamaps config.
+        assert finalized["ena_intensity"].attrs["FIELDNAM"] == "Intensity"
+        assert finalized["ena_intensity"].attrs["UNITS"] == "cm -2 s -1 sr -1 keV -1"
+
+        # A variable the config says nothing about is left without attributes,
+        # rather than failing the map.
+        assert finalized["not_a_map_variable"].attrs == {}
 
 
 class TestUnsupported:
