@@ -53,6 +53,25 @@ ISN_MASKED_VARIABLES = (
     "ena_intensity_sys_err_minus",
 )
 
+# The fill value of every floating point map variable for the L2 map.
+# A pixel holding this is one the map has no measurement for.
+FILLVAL_FLOAT = -1.0e31
+
+# The map variables that are filled with FILLVAL_FLOAT where the map was never exposed.
+FILLED_VARIABLES = (
+    "ena_count_rate",
+    "ena_count_rate_stat_uncert",
+    "ena_intensity",
+    "ena_intensity_stat_uncert",
+    "ena_intensity_sys_err",
+    "ena_intensity_sys_err_plus",
+    "ena_intensity_sys_err_minus",
+    "bg_rate",
+    "bg_rate_stat_uncert",
+    "bg_intensity",
+    "bg_intensity_stat_uncert",
+)
+
 # The calibration ancillaries shipped with the package.
 ANCILLARY_DATA_DIR = Path(__file__).parent.parent / "ancillary_data"
 
@@ -1600,7 +1619,8 @@ def _calculate_rates_and_intensities(
     """
     Turn the accumulated counts and exposure into rates and intensities.
 
-    Every quantity is zero in the pixels that were never exposed.
+    Every derived quantity is filled in with a fill value in the pixels
+    that were never exposed.
 
     Parameters
     ----------
@@ -1784,7 +1804,10 @@ def _calculate_rates_and_intensities(
     # A masked pixel has no ENA measurement to report.
     if isn_mask is not None:
         for name in ISN_MASKED_VARIABLES:
-            variables[name] = np.where(isn_mask, np.nan, variables[name])
+            variables[name] = np.where(isn_mask, FILLVAL_FLOAT, variables[name])
+
+    for name in FILLED_VARIABLES:
+        variables[name] = np.where(exposed, variables[name], FILLVAL_FLOAT)
 
     return variables
 

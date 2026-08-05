@@ -16,6 +16,8 @@ from imap_processing.lo.l2.lo_l2 import (
     ANCILLARY_DATA_DIR as PACKAGE_ANCILLARY_DIR,
 )
 from imap_processing.lo.l2.lo_l2 import (
+    FILLED_VARIABLES,
+    FILLVAL_FLOAT,
     ISN_MASKED_VARIABLES,
     LoSpinAnglePointingSet,
     _bootstrap_correct_intensity,
@@ -111,6 +113,20 @@ GEO_FACTORS = {
 
 # The ESA passband half-widths of the same file, a tenth of each center energy.
 ESA_ENERGY_DELTAS = {mode: energies / 10 for mode, energies in ESA_ENERGIES.items()}
+
+# The fill value as it lands in the map, which writes its variables as float32.
+FILL = np.float32(FILLVAL_FLOAT)
+
+
+def is_fill(values):
+    """Whether each element of a map variable holds the fill value."""
+    return np.asarray(values) == FILL
+
+
+def measured(values):
+    """The elements of a map variable that are not filled."""
+    values = np.asarray(values)
+    return values[~is_fill(values)]
 
 
 @pytest.fixture(autouse=True)
@@ -497,15 +513,21 @@ class TestCombinedMap:
                 COMBINED_DESCRIPTOR,
             )
 
-        masked = np.isnan(combined["ena_intensity"].values)
+        masked = is_fill(combined["ena_intensity"].values)
         intensity = unmasked["ena_intensity"].values
+        unexposed = is_fill(intensity)
 
         # The union of the three tunings: the widest band (pivot 75's 1 degree
         # loses to the 90 degrees of the others), the faintest brightness taken
         # as bright, and the shortest outlier tail.
-        peak = np.nanmax(intensity, axis=(-2, -1), keepdims=True)
-        median = np.nanpercentile(intensity, 50, axis=(-2, -1), keepdims=True)
-        expected = (intensity >= MASK_THRESHOLD_FRACTION * peak) | (intensity > median)
+        as_masked = np.where(unexposed, 0.0, intensity)
+        peak = np.max(as_masked, axis=(-2, -1), keepdims=True)
+        median = np.percentile(as_masked, 50, axis=(-2, -1), keepdims=True)
+        expected = (
+            (as_masked >= MASK_THRESHOLD_FRACTION * peak)
+            | (as_masked > median)
+            | unexposed
+        )
 
         assert expected.any(), "the tuning must mask something"
         np.testing.assert_array_equal(masked, expected)
@@ -529,10 +551,10 @@ class TestCombinedMap:
                 as_dependencies(one_pointing), anc_dependencies, MASK_DESCRIPTOR
             )
 
-        assert np.isnan(combined["ena_intensity"].values).any()
+        assert is_fill(combined["ena_intensity"].values).any()
         np.testing.assert_array_equal(
-            np.isnan(combined["ena_intensity"].values),
-            np.isnan(by_descriptor["ena_intensity"].values),
+            is_fill(combined["ena_intensity"].values),
+            is_fill(by_descriptor["ena_intensity"].values),
         )
 
     def test_an_unrecognisable_pivot_angle_cannot_tune_the_mask(
@@ -710,7 +732,7 @@ class TestRatesAndIntensities:
             counts[exposed] / exposure[exposed],
             rtol=1e-5,
         )
-        assert np.all(dataset["ena_count_rate"].values[~exposed] == 0)
+        assert np.all(is_fill(dataset["ena_count_rate"].values[~exposed]))
 
         geometric_factor = GEO_FACTORS[0]
         energy = ESA_ENERGIES[0]
@@ -748,7 +770,7 @@ class TestRatesAndIntensities:
             np.testing.assert_allclose(
                 bg_rate[exposed], pointing["background"][energy_index], rtol=1e-5
             )
-            assert np.all(bg_rate[~exposed] == 0)
+            assert np.all(is_fill(bg_rate[~exposed]))
 
     def test_systematic_error_bounds(self, full_map):
         """The systematic error is bracketed by the G-factor excursions."""
@@ -863,8 +885,8 @@ class TestSputterCorrection:
         ]
         assert np.any(over_subtracted), "no pixel exercised the floor"
 
-        assert np.all(corrected["ena_count_rate"].values >= 0)
-        assert np.all(corrected["ena_intensity"].values >= 0)
+        assert np.all(measured(corrected["ena_count_rate"].values) >= 0)
+        assert np.all(measured(corrected["ena_intensity"].values) >= 0)
 
     def test_counts_stay_as_observed(self, sputter_maps):
         """The correction applies from the rate onward, not to the raw counts."""
@@ -903,16 +925,19 @@ class TestBootstrapCorrection:
         """A corrected step loses the scaled intensity of the steps above it."""
         corrected, raw = bootstrap_maps
 
-        intensity = raw["ena_intensity"].values
+        # The correction runs before the unexposed pixels are filled, so it saw
+        # the zero they were divided down to.
+        intensity = np.where(
+            is_fill(raw["ena_intensity"].values), 0.0, raw["ena_intensity"].values
+        )
         for target_esa in self.MAPPED_SOURCE_STEPS:
             expected = np.maximum(
                 intensity[:, target_esa - 1] - self.bled(intensity, target_esa), 0.0
             )
-            np.testing.assert_allclose(
-                corrected["ena_intensity"].values[:, target_esa - 1],
-                expected,
-                rtol=1e-4,
-            )
+            step = corrected["ena_intensity"].values[:, target_esa - 1]
+            keep = ~is_fill(step)
+            assert keep.any()
+            np.testing.assert_allclose(step[keep], expected[keep], rtol=1e-4)
 
     def test_uncorrected_steps_are_untouched(self, bootstrap_maps):
         """A step that nothing bleeds into keeps the intensity it already had."""
@@ -948,22 +973,22 @@ class TestBootstrapCorrection:
         """Subtracting a measured quantity can only add to the variance."""
         corrected, raw = bootstrap_maps
 
-        variance = raw["ena_intensity_stat_uncert"].values ** 2
+        uncert = raw["ena_intensity_stat_uncert"].values
+        variance = np.where(is_fill(uncert), 0.0, uncert) ** 2
         for target_esa in self.MAPPED_SOURCE_STEPS:
             expected = variance[:, target_esa - 1] + self.bled(
                 variance, target_esa, power=2
             )
-            np.testing.assert_allclose(
-                corrected["ena_intensity_stat_uncert"].values[:, target_esa - 1],
-                np.sqrt(expected),
-                rtol=1e-4,
-            )
+            step = corrected["ena_intensity_stat_uncert"].values[:, target_esa - 1]
+            keep = ~is_fill(step)
+            assert keep.any()
+            np.testing.assert_allclose(step[keep], np.sqrt(expected[keep]), rtol=1e-4)
 
     def test_intensity_is_never_negative(self, bootstrap_maps):
         """The corrected map holds no negative intensity."""
         corrected, _ = bootstrap_maps
 
-        assert np.all(corrected["ena_intensity"].values >= 0)
+        assert np.all(measured(corrected["ena_intensity"].values) >= 0)
 
     def test_over_subtraction_is_floored_at_zero(self):
         """Over-subtracting a pixel floors it rather than going below zero."""
@@ -997,8 +1022,8 @@ class TestBootstrapCorrection:
         symmetric = corrected["ena_intensity_sys_err"].values
         lit = corrected["ena_intensity"].values > 0
 
-        assert np.all(plus >= 0)
-        assert np.all(minus >= 0)
+        assert np.all(measured(plus) >= 0)
+        assert np.all(measured(minus) >= 0)
         assert np.all(plus[lit] > 0)
         np.testing.assert_allclose(
             symmetric[lit], np.sqrt(plus[lit] * minus[lit]), rtol=1e-4
@@ -1121,8 +1146,8 @@ class TestComptonGettingCorrection:
                 ~np.isclose(corrected[variable].values[lit], raw[variable].values[lit])
             ), f"{variable} was not corrected"
 
-    def test_map_holds_no_fill_values(self, cg_maps):
-        """A pixel the correction says nothing about comes out at zero."""
+    def test_the_correction_leaks_no_nan(self, cg_maps):
+        """A pixel the correction says nothing about comes out at zero, not NaN."""
         corrected, _ = cg_maps
 
         for variable in (
@@ -1135,13 +1160,14 @@ class TestComptonGettingCorrection:
         ):
             values = corrected[variable].values
             assert np.isfinite(values).all(), f"{variable} holds NaN or inf"
-            assert np.all(values >= 0), f"{variable} went negative"
+            assert np.all(measured(values) >= 0), f"{variable} went negative"
 
     def test_dark_pixels_stay_dark(self, cg_maps):
         """A pixel that saw nothing has no spectrum to correct."""
         corrected, raw = cg_maps
 
-        dark = raw["ena_intensity"].values <= 0
+        intensity = raw["ena_intensity"].values
+        dark = (intensity <= 0) & ~is_fill(intensity)
         assert dark.any()
         assert np.all(corrected["ena_intensity"].values[dark] == 0)
 
@@ -1468,20 +1494,21 @@ class TestIsnMask:
         masked, raw = masked_maps
 
         intensity = raw["ena_intensity"].values
-        peak = np.nanmax(intensity, axis=(-2, -1), keepdims=True)
-        expected = intensity >= MASK_THRESHOLD_FRACTION * peak
+        # The unexposed pixels are filled in both maps, mask or no mask.
+        unexposed = is_fill(intensity)
+        as_masked = np.where(unexposed, 0.0, intensity)
+        peak = np.max(as_masked, axis=(-2, -1), keepdims=True)
+        expected = (as_masked >= MASK_THRESHOLD_FRACTION * peak) | unexposed
         assert expected.any(), "the tuning must mask something"
         assert not expected.all(), "the tuning must leave something unmasked"
 
-        np.testing.assert_array_equal(
-            np.isnan(masked["ena_intensity"].values), expected
-        )
+        np.testing.assert_array_equal(is_fill(masked["ena_intensity"].values), expected)
 
     def test_the_unmasked_pixels_keep_their_values(self, masked_maps):
         """Masking changes nothing about the pixels it does not blank out."""
         masked, raw = masked_maps
 
-        keep = ~np.isnan(masked["ena_intensity"].values)
+        keep = ~is_fill(masked["ena_intensity"].values)
         np.testing.assert_allclose(
             masked["ena_intensity"].values[keep],
             raw["ena_intensity"].values[keep],
@@ -1490,13 +1517,17 @@ class TestIsnMask:
 
     def test_every_species_variable_is_masked_together(self, masked_maps):
         """The counts, rates and uncertainties are blanked with the intensity."""
-        masked, _ = masked_maps
+        masked, raw = masked_maps
 
-        expected = np.isnan(masked["ena_intensity"].values)
+        # What the mask blanked, as opposed to what the unexposed pixels of the
+        # unmasked map are already filled with.
+        expected = is_fill(masked["ena_intensity"].values) & ~is_fill(
+            raw["ena_intensity"].values
+        )
+        assert expected.any(), "the tuning must mask something"
         for name in ISN_MASKED_VARIABLES:
-            np.testing.assert_array_equal(
-                np.isnan(masked[name].values), expected, err_msg=name
-            )
+            blanked = is_fill(masked[name].values) & ~is_fill(raw[name].values)
+            np.testing.assert_array_equal(blanked, expected, err_msg=name)
 
     def test_the_exposure_and_background_are_left_alone(self, masked_maps):
         """The mask says nothing about what the map was pointed at."""
@@ -1517,8 +1548,15 @@ class TestIsnMask:
         """A descriptor without the mask code blanks nothing out."""
         dataset, _ = full_map
 
+        # Only the pixels the map was never exposed in are filled, and the raw
+        # accumulators keep even those.
+        unexposed = dataset["exposure_factor"].values == 0
         for name in ISN_MASKED_VARIABLES:
-            assert not np.isnan(dataset[name].values).any(), name
+            filled = name in FILLED_VARIABLES
+            expected = unexposed if filled else np.zeros_like(unexposed)
+            np.testing.assert_array_equal(
+                is_fill(dataset[name].values), expected, err_msg=name
+            )
 
     def test_a_narrow_band_masks_nothing_off_the_ecliptic(
         self, one_pointing, anc_dependencies
@@ -1535,8 +1573,9 @@ class TestIsnMask:
             )
 
         # The mocked sky pointing puts every pixel of the test map on the
-        # ecliptic, which the pivot 75 tuning is too narrow to reach.
-        assert not np.isnan(masked["ena_intensity"].values).any()
+        # ecliptic, which the pivot 75 tuning is too narrow to reach. The counts
+        # are blanked by the mask alone, never by the exposure.
+        assert not is_fill(masked["ena_count"].values).any()
 
     def test_the_outlier_tail_of_a_level_is_masked(
         self, one_pointing, anc_dependencies
@@ -1556,15 +1595,16 @@ class TestIsnMask:
             )
 
         # The pivot 105 tuning cannot mask a band, so only the top half of each
-        # level's own intensity distribution is masked.
+        # level's own intensity distribution is masked. The unexposed pixels are
+        # filled either way.
         intensity = raw["ena_intensity"].values
-        median = np.nanpercentile(intensity, 50, axis=(-2, -1), keepdims=True)
-        expected = intensity > median
+        unexposed = is_fill(intensity)
+        as_masked = np.where(unexposed, 0.0, intensity)
+        median = np.percentile(as_masked, 50, axis=(-2, -1), keepdims=True)
+        expected = (as_masked > median) | unexposed
         assert expected.any(), "the tuning must mask something"
 
-        np.testing.assert_array_equal(
-            np.isnan(masked["ena_intensity"].values), expected
-        )
+        np.testing.assert_array_equal(is_fill(masked["ena_intensity"].values), expected)
 
     def test_an_untuned_pivot_angle_is_refused(self, one_pointing, anc_dependencies):
         """A map cannot be masked at a pivot the ancillary says nothing about."""
