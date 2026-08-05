@@ -28,6 +28,10 @@ def test_packets_created():
             ],
             "rate_kbps": [2.0, 2.0],
         },
+        "Mopra": {
+            "last_data_received": [],
+            "rate_kbps": [],
+        },
         "UKSA": {
             "last_data_received": [],
             "rate_kbps": [],

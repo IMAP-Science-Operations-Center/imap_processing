@@ -1097,10 +1097,11 @@ def test_post_processing_upload_503_error(
     )
     instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
 
-    # Checks that the upload failed and logs an error and raises an exception
+    # Checks that the upload failed, logs an error, and exits with the retry exit code
     with mock.patch("logging.Logger.error") as mock_error:
-        with pytest.raises(imap_data_access.io.IMAPDataAccessError):
+        with pytest.raises(SystemExit) as exc_info:
             instrument.process()
+    assert exc_info.value.code == 75  # The code should be the retry exit code
 
     # Upload should attempt 3 times
     assert mocks["mock_upload"].call_count == 3
@@ -1110,7 +1111,8 @@ def test_post_processing_upload_503_error(
 
     # Checks the upload failure was logged
     assert any(
-        "Upload failed with error" in str(call) for call in mock_error.call_args_list
+        "Upload failed after 3 attempts" in str(call)
+        for call in mock_error.call_args_list
     )
 
 
