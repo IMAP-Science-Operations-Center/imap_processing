@@ -438,7 +438,7 @@ def _get_esa_mode(histrates: xr.Dataset) -> int:
 # =============================================================================
 
 
-class LoSpinAnglePointingSet(PointingSet):  # type: ignore[misc]
+class LoSpinAnglePointingSet(PointingSet):
     """
     The spin-angle bins of one pointing, as an in-memory pointing set.
 
