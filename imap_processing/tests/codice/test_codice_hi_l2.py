@@ -207,8 +207,6 @@ def test_l2_hi_sectored(mock_get_file_paths):
     )
 
     val_data = load_cdf(val_data)
-    # TODO fix validation data to have correct array name. Spin_angles -> spin_angle
-    val_data = val_data.rename({"spin_angles": "spin_angle"})
     # Check data variables
     for variable in val_data.data_vars:
         # Spin angle bug is fixed but the old validation data is outdated.

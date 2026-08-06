@@ -38,8 +38,8 @@ from imap_processing.ialirt.l0.process_codice import (
 )
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.tests.codice.conftest import (
-    VALIDATION_FILE_DATE,
-    VALIDATION_FILE_VERSION,
+    IALIRT_VALIDATION_FILE_DATE,
+    IALIRT_VALIDATION_FILE_VERSION,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -93,7 +93,7 @@ def cod_lo_test_file():
         / "codice"
         / "data"
         / "l1a_input"
-        / f"imap_codice_l0_lo-ialirt_{VALIDATION_FILE_DATE}_v001.pkts"
+        / f"imap_codice_l0_lo-ialirt_{IALIRT_VALIDATION_FILE_DATE}_v001.pkts"
     )
 
 
@@ -120,8 +120,8 @@ def cod_lo_l1a_test_data():
         / "data"
         / "l1a_validation"
         / (
-            f"imap_codice_l1a_lo-ialirt_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
+            f"imap_codice_l1a_lo-ialirt_{IALIRT_VALIDATION_FILE_DATE}"
+            f"_{IALIRT_VALIDATION_FILE_VERSION}.cdf"
         )
     )
 
@@ -138,7 +138,7 @@ def cod_hi_test_file():
         / "codice"
         / "data"
         / "l1a_input"
-        / f"imap_codice_l0_hi-ialirt_{VALIDATION_FILE_DATE}_v001.pkts"
+        / f"imap_codice_l0_hi-ialirt_{IALIRT_VALIDATION_FILE_DATE}_v001.pkts"
     )
 
 
@@ -240,8 +240,8 @@ def cod_lo_l1b_test_data():
         / "data"
         / "l1b_validation"
         / (
-            f"imap_codice_l1b_lo-ialirt_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
+            f"imap_codice_l1b_lo-ialirt_{IALIRT_VALIDATION_FILE_DATE}"
+            f"_{IALIRT_VALIDATION_FILE_VERSION}.cdf"
         )
     )
 
@@ -320,8 +320,8 @@ def cod_hi_l1a_test_data():
         / "data"
         / "l1a_validation"
         / (
-            f"imap_codice_l1a_hi-ialirt_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
+            f"imap_codice_l1a_hi-ialirt_{IALIRT_VALIDATION_FILE_DATE}"
+            f"_{IALIRT_VALIDATION_FILE_VERSION}.cdf"
         )
     )
 
@@ -340,8 +340,8 @@ def cod_hi_l1b_test_data():
         / "data"
         / "l1b_validation"
         / (
-            f"imap_codice_l1b_hi-ialirt_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
+            f"imap_codice_l1b_hi-ialirt_{IALIRT_VALIDATION_FILE_DATE}"
+            f"_{IALIRT_VALIDATION_FILE_VERSION}.cdf"
         )
     )
 
@@ -360,8 +360,8 @@ def cod_lo_l2_test_data():
         / "data"
         / "l2_validation"
         / (
-            f"imap_codice_l2_lo-ialirt_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
+            f"imap_codice_l2_lo-ialirt_{IALIRT_VALIDATION_FILE_DATE}"
+            f"_{IALIRT_VALIDATION_FILE_VERSION}.cdf"
         )
     )
     # TODO: fix error in cdf file and change to:
@@ -381,8 +381,8 @@ def cod_hi_l2_test_data():
         / "data"
         / "l2_validation"
         / (
-            f"imap_codice_l2_hi-ialirt_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
+            f"imap_codice_l2_hi-ialirt_{IALIRT_VALIDATION_FILE_DATE}"
+            f"_{IALIRT_VALIDATION_FILE_VERSION}.cdf"
         )
     )
     # TODO: fix error in cdf file and change to:

@@ -8,8 +8,11 @@ TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
 TEST_DATA_L0_PATH = TEST_DATA_PATH / "l0_data"
 TEST_L0_FILE = TEST_DATA_L0_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
-VALIDATION_FILE_DATE = "20250814"
-VALIDATION_FILE_VERSION = "v015"
+VALIDATION_FILE_DATE = "20260204"
+VALIDATION_FILE_VERSION = "v016"
+
+IALIRT_VALIDATION_FILE_DATE = "20250814"
+IALIRT_VALIDATION_FILE_VERSION = "v015"
 
 
 @pytest.fixture(scope="session")
@@ -107,7 +110,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_hi-counters-singles_20250814_v001.pkts"
+                / "imap_codice_l0_hi-counters-singles_20260204_v001.pkts"
             ]
         elif descriptor == "hi-counters-aggregated" and data_type == "l0":
             return [
@@ -116,7 +119,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_hi-counters-aggregated_20250814_v001.pkts"
+                / "imap_codice_l0_hi-counters-aggregated_20260204_v001.pkts"
             ]
         elif descriptor == "lo-counters-singles" and data_type == "l0":
             return [
@@ -125,7 +128,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_lo-counters-singles_20250814_v001.pkts"
+                / "imap_codice_l0_lo-counters-singles_20260204_v001.pkts"
             ]
         elif descriptor == "lo-counters-aggregated" and data_type == "l0":
             return [
@@ -134,7 +137,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_lo-counters-aggregated_20250814_v001.pkts"
+                / "imap_codice_l0_lo-counters-aggregated_20260204_v001.pkts"
             ]
         elif descriptor == "hskp" and data_type == "l0":
             return [
@@ -143,7 +146,7 @@ def codice_lut_path():
                 / "codice"
                 / "data"
                 / "l1a_input"
-                / "imap_codice_l0_hskp_20250814_v001.pkts"
+                / "imap_codice_l0_hskp_20260204_v001.pkts"
             ]
         elif descriptor == "lo-sw-species" and data_type == "l1b":
             return [
@@ -179,8 +182,14 @@ def codice_lut_path():
             return [
                 TEST_DATA_PATH
                 / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20251007_v005.json"
+                / "imap_codice_l1a-sci-lut_20260403_v003.json"
             ]
+        # elif descriptor == "l1a-sci-lut-oct":
+        #     return [
+        #         TEST_DATA_PATH
+        #         / "l1a_lut"
+        #         / "imap_codice_l1a-sci-lut_20251007_v005.json"
+        #     ]
         elif descriptor == "l1a-sci-lut-jan":
             return [
                 TEST_DATA_PATH
@@ -235,3 +244,30 @@ def codice_lut_path():
             raise ValueError(f"Unknown descriptor: {descriptor}")
 
     return _side_effect
+
+
+#
+# # TODO: DIAGNOSTIC ONLY - undo this before pushing. Confirms that the L1A/L1B/L2
+# # epoch-count mismatches against the v016 validation CDFs are explained by day
+# # boundary data that production applies via cli.py's filter_day_boundary_data()
+# # but that these unit tests never apply since they call process_l1a() directly.
+# @pytest.fixture(autouse=True)
+# def _debug_filter_day_boundary(monkeypatch):
+#     from imap_processing.utils import filter_day_boundary_data
+#
+#     def _wrap(module_path, start_date):
+#         module = __import__(module_path, fromlist=["process_l1a"])
+#         original = module.process_l1a
+#
+#         def _filtered_process_l1a(*args, **kwargs):
+#             datasets = original(*args, **kwargs)
+#             return [filter_day_boundary_data(ds, start_date) for ds in datasets]
+#
+#         monkeypatch.setattr(module, "process_l1a", _filtered_process_l1a)
+#
+#     for module_path in (
+#         "imap_processing.tests.codice.test_codice_l1a",
+#         "imap_processing.tests.codice.test_codice_l1b",
+#         "imap_processing.tests.codice.test_codice_l2",
+#     ):
+#         _wrap(module_path, VALIDATION_FILE_DATE)
