@@ -438,7 +438,7 @@ def _get_esa_mode(histrates: xr.Dataset) -> int:
 # =============================================================================
 
 
-class LoSpinAnglePointingSet(PointingSet):
+class LoSpinAnglePointingSet(PointingSet):  # type: ignore[misc]
     """
     The spin-angle bins of one pointing, as an in-memory pointing set.
 
@@ -809,7 +809,7 @@ def _esa_calibration(species: str, esa_mode: int) -> EsaCalibration:
 
 def _calculate_rates_and_intensities(
     sky_map: RectangularSkyMap, calibration: EsaCalibration
-) -> dict[str, np.ndarray]:
+) -> dict[str, xr.DataArray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
 
@@ -825,43 +825,40 @@ def _calculate_rates_and_intensities(
 
     Returns
     -------
-    dict[str, np.ndarray]
+    dict[str, xr.DataArray]
         The map variables, each of shape (epoch, esa level, pixel).
     """
-    counts = sky_map.data_1d["ena_count"].values
-    exposure = sky_map.data_1d["exposure_factor"].values
-    bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"].values
+    counts = sky_map.data_1d["ena_count"]
+    exposure = sky_map.data_1d["exposure_factor"]
+    bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"]
 
-    # Every ESA level quantity gets a pixel axis to broadcast over the map.
-    energy = calibration.energy[:, np.newaxis]
-    geometric_factor = calibration.geometric_factor[:, np.newaxis]
-    gf_low = calibration.geometric_factor_low[:, np.newaxis]
-    gf_high = calibration.geometric_factor_high[:, np.newaxis]
+    # Naming the energy dimension lets xarray broadcast during division
+    # without the need to introduce new dimensions
+    energy_dim = CoordNames.ENERGY_L2.value
+    energy = xr.DataArray(calibration.energy, dims=[energy_dim])
+    geometric_factor = xr.DataArray(calibration.geometric_factor, dims=[energy_dim])
+    gf_low = xr.DataArray(calibration.geometric_factor_low, dims=[energy_dim])
+    gf_high = xr.DataArray(calibration.geometric_factor_high, dims=[energy_dim])
 
     exposed = exposure > 0
 
-    def _divide(numerator: np.ndarray, denominator: np.ndarray) -> np.ndarray:
+    def _divide(numerator: xr.DataArray, denominator: xr.DataArray) -> xr.DataArray:
         """
         Divide only where the map was exposed, zero elsewhere.
 
         Parameters
         ----------
-        numerator : np.ndarray
+        numerator : xr.DataArray
             The array being divided.
-        denominator : np.ndarray
+        denominator : xr.DataArray
             The array to divide it by.
 
         Returns
         -------
-        np.ndarray
+        xr.DataArray
             The quotient, zero in the pixels that were never exposed.
         """
-        return np.divide(
-            numerator,
-            denominator,
-            out=np.zeros_like(exposure),
-            where=exposed,
-        )
+        return (numerator / denominator.where(exposed)).where(exposed, 0)
 
     count_rate = _divide(counts, exposure)
     # Poisson uncertainty on the counts, propagated to the rate
@@ -878,13 +875,13 @@ def _calculate_rates_and_intensities(
     if not valid.all():
         logger.warning(
             "The geometric factor of ESA levels "
-            f"{(np.flatnonzero(~valid[:, 0]) + 1).tolist()} is below its lower "
+            f"{(np.flatnonzero(~valid.values) + 1).tolist()} is below its lower "
             f"error bound; their systematic errors are left at zero."
         )
-    intensity_upper = _divide(count_rate, np.where(valid, gf_low, 1.0) * energy)
+    intensity_upper = _divide(count_rate, gf_low.where(valid, 1.0) * energy)
     intensity_lower = _divide(count_rate, gf_high * energy)
-    intensity_sys_err_plus = np.where(valid, intensity_upper - intensity, 0.0)
-    intensity_sys_err_minus = np.where(valid, intensity - intensity_lower, 0.0)
+    intensity_sys_err_plus = (intensity_upper - intensity).where(valid, 0.0)
+    intensity_sys_err_minus = (intensity - intensity_lower).where(valid, 0.0)
 
     bg_rate = _divide(bg_rate_exposure, exposure)
     bg_rate_stat_uncert = np.sqrt(_divide(bg_rate, exposure))
@@ -912,7 +909,7 @@ def _calculate_rates_and_intensities(
 
 def _build_map_dataset(
     sky_map: RectangularSkyMap,
-    variables: dict[str, np.ndarray],
+    variables: dict[str, xr.DataArray],
     calibration: EsaCalibration,
 ) -> xr.Dataset:
     """
@@ -925,7 +922,7 @@ def _build_map_dataset(
     ----------
     sky_map : RectangularSkyMap
         The map being built.
-    variables : dict[str, np.ndarray]
+    variables : dict[str, xr.DataArray]
         The map variables, each of shape (epoch, esa level, pixel).
     calibration : EsaCalibration
         The energy response the map is binned in, read for the widths of the
@@ -937,9 +934,8 @@ def _build_map_dataset(
         The map variables on the (epoch, energy, longitude, latitude) grid,
         with the energy coordinate and its widths.
     """
-    dims = sky_map.data_1d["ena_count"].dims
     for name, values in variables.items():
-        sky_map.data_1d[name] = xr.DataArray(values.astype(np.float32), dims=dims)
+        sky_map.data_1d[name] = values.astype(np.float32)
     # `bg_rate_exposure` is an accumulator, not a map variable.
     sky_map.data_1d = sky_map.data_1d.drop_vars("bg_rate_exposure")
 
