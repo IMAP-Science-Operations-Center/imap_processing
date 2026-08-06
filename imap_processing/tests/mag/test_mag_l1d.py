@@ -230,7 +230,7 @@ def test_mag_l1d_attributes(
 
     mock_dependencies = ProcessingInputCollection()
 
-    with patch("imap_processing.cdf.utils.xarray_to_cdf"):
+    with patch("imap_processing.cli.xarray_to_cdf"):
         mag_processor.post_processing(l1d_datasets, mock_dependencies)
 
 
