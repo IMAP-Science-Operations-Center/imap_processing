@@ -858,7 +858,7 @@ def _calculate_rates_and_intensities(
         xr.DataArray
             The quotient, zero in the pixels that were never exposed.
         """
-        return (numerator / denominator.where(exposed)).where(exposed, 0)
+        return (numerator / denominator).where(exposed, 0)
 
     count_rate = _divide(counts, exposure)
     # Poisson uncertainty on the counts, propagated to the rate
