@@ -1615,7 +1615,7 @@ def _calculate_rates_and_intensities(
     bootstrap_matrix: np.ndarray | None = None,
     flux_corrector: PowerLawFluxCorrector | None = None,
     isn_mask_parameters: pd.DataFrame | None = None,
-) -> dict[str, np.ndarray]:
+) -> dict[str, xr.DataArray]:
     """
     Turn the accumulated counts and exposure into rates and intensities.
 
@@ -1648,50 +1648,51 @@ def _calculate_rates_and_intensities(
 
     Returns
     -------
-    dict[str, np.ndarray]
+    dict[str, xr.DataArray]
         The map variables, each of shape (epoch, esa level, pixel).
     """
-    counts = sky_map.data_1d["ena_count"].values
-    exposure = sky_map.data_1d["exposure_factor"].values
-    bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"].values
+    counts = sky_map.data_1d["ena_count"]
+    exposure = sky_map.data_1d["exposure_factor"]
+    bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"]
 
     if sputter_matrix is None:
         rate_counts, rate_counts_var = counts, counts
     else:
-        rate_counts, rate_counts_var = _sputter_correct_counts(
-            counts, sky_map.data_1d["sputter_source_count"].values, sputter_matrix
+        corrected_counts, corrected_variance = _sputter_correct_counts(
+            counts.values,
+            sky_map.data_1d["sputter_source_count"].values,
+            sputter_matrix,
         )
+        rate_counts = counts.copy(data=corrected_counts)
+        rate_counts_var = counts.copy(data=corrected_variance)
 
-    # Every ESA level quantity gets a pixel axis to broadcast over the map.
-    energy = calibration.energy[:, np.newaxis]
-    geometric_factor = calibration.geometric_factor[:, np.newaxis]
-    gf_low = calibration.geometric_factor_low[:, np.newaxis]
-    gf_high = calibration.geometric_factor_high[:, np.newaxis]
+    # Naming the energy dimension lets xarray broadcast during division
+    # without the need to introduce new dimensions
+    energy_dim = CoordNames.ENERGY_L2.value
+    energy = xr.DataArray(calibration.energy, dims=[energy_dim])
+    geometric_factor = xr.DataArray(calibration.geometric_factor, dims=[energy_dim])
+    gf_low = xr.DataArray(calibration.geometric_factor_low, dims=[energy_dim])
+    gf_high = xr.DataArray(calibration.geometric_factor_high, dims=[energy_dim])
 
     exposed = exposure > 0
 
-    def _divide(numerator: np.ndarray, denominator: np.ndarray) -> np.ndarray:
+    def _divide(numerator: xr.DataArray, denominator: xr.DataArray) -> xr.DataArray:
         """
         Divide only where the map was exposed, zero elsewhere.
 
         Parameters
         ----------
-        numerator : np.ndarray
+        numerator : xr.DataArray
             The array being divided.
-        denominator : np.ndarray
+        denominator : xr.DataArray
             The array to divide it by.
 
         Returns
         -------
-        np.ndarray
+        xr.DataArray
             The quotient, zero in the pixels that were never exposed.
         """
-        return np.divide(
-            numerator,
-            denominator,
-            out=np.zeros_like(exposure),
-            where=exposed,
-        )
+        return (numerator / denominator).where(exposed, 0)
 
     # Removing the sputtered counts can take a low-count pixel below zero,
     # which is not a rate the instrument can have observed.
@@ -1708,10 +1709,15 @@ def _calculate_rates_and_intensities(
     isn_mask = None
     if isn_mask_parameters is not None:
         logger.info("Masking the ISN band out of the map")
-        isn_mask = _isn_mask(
-            _divide(_divide(counts, exposure), geometric_factor * energy),
-            sky_map.az_el_points.values[:, 1],
-            isn_mask_parameters,
+        uncorrected_intensity = _divide(
+            _divide(counts, exposure), geometric_factor * energy
+        )
+        isn_mask = counts.copy(
+            data=_isn_mask(
+                uncorrected_intensity.values,
+                sky_map.az_el_points.values[:, 1],
+                isn_mask_parameters,
+            )
         )
 
     # The systematic error is the intensity excursion from the recalibrated
@@ -1722,27 +1728,35 @@ def _calculate_rates_and_intensities(
     if not valid.all():
         logger.warning(
             "The geometric factor of ESA levels "
-            f"{(np.flatnonzero(~valid[:, 0]) + 1).tolist()} is below its lower "
+            f"{(np.flatnonzero(~valid.values) + 1).tolist()} is below its lower "
             f"error bound; their systematic errors are left at zero."
         )
-    intensity_upper = _divide(count_rate, np.where(valid, gf_low, 1.0) * energy)
+    intensity_upper = _divide(count_rate, gf_low.where(valid, 1.0) * energy)
     intensity_lower = _divide(count_rate, gf_high * energy)
-    intensity_sys_err_plus = np.where(valid, intensity_upper - intensity, 0.0)
-    intensity_sys_err_minus = np.where(valid, intensity - intensity_lower, 0.0)
+    intensity_sys_err_plus = (intensity_upper - intensity).where(valid, 0.0)
+    intensity_sys_err_minus = (intensity - intensity_lower).where(valid, 0.0)
 
     if bootstrap_matrix is not None:
         (
-            intensity,
-            intensity_stat_uncert,
-            intensity_sys_err_plus,
-            intensity_sys_err_minus,
+            corrected,
+            corrected_stat_uncert,
+            corrected_sys_err_plus,
+            corrected_sys_err_minus,
         ) = _bootstrap_correct_intensity(
-            intensity,
-            intensity_stat_uncert**2,
+            intensity.values,
+            intensity_stat_uncert.values**2,
             calibration,
             bootstrap_matrix,
             sky_map.binning_grid_shape,
-            valid,
+            valid.values[:, np.newaxis],
+        )
+        intensity = intensity.copy(data=corrected)
+        intensity_stat_uncert = intensity_stat_uncert.copy(data=corrected_stat_uncert)
+        intensity_sys_err_plus = intensity_sys_err_plus.copy(
+            data=corrected_sys_err_plus
+        )
+        intensity_sys_err_minus = intensity_sys_err_minus.copy(
+            data=corrected_sys_err_minus
         )
 
     bg_rate = _divide(bg_rate_exposure, exposure)
@@ -1755,32 +1769,45 @@ def _calculate_rates_and_intensities(
     # of its own, so it is corrected on its own terms rather than with the
     # map's.
     if flux_corrector is not None:
-        cos_alpha = _divide(sky_map.data_1d["cos_alpha_exposure"].values, exposure)
+        cos_alpha = _divide(sky_map.data_1d["cos_alpha_exposure"], exposure)
         logger.info("Applying the Compton-Getting correction to the intensities")
         (
-            intensity,
+            corrected,
             (
-                intensity_stat_uncert,
-                intensity_sys_err_plus,
-                intensity_sys_err_minus,
+                corrected_stat_uncert,
+                corrected_sys_err_plus,
+                corrected_sys_err_minus,
             ),
         ) = _compton_getting_correct_intensity(
-            intensity,
+            intensity.values,
             (
-                intensity_stat_uncert,
-                intensity_sys_err_plus,
-                intensity_sys_err_minus,
+                intensity_stat_uncert.values,
+                intensity_sys_err_plus.values,
+                intensity_sys_err_minus.values,
             ),
-            cos_alpha,
+            cos_alpha.values,
             calibration,
             flux_corrector,
         )
-        bg_intensity, (bg_intensity_stat_uncert,) = _compton_getting_correct_intensity(
-            bg_intensity,
-            (bg_intensity_stat_uncert,),
-            cos_alpha,
+        intensity = intensity.copy(data=corrected)
+        intensity_stat_uncert = intensity_stat_uncert.copy(data=corrected_stat_uncert)
+        intensity_sys_err_plus = intensity_sys_err_plus.copy(
+            data=corrected_sys_err_plus
+        )
+        intensity_sys_err_minus = intensity_sys_err_minus.copy(
+            data=corrected_sys_err_minus
+        )
+
+        bg_corrected, (bg_corrected_stat_uncert,) = _compton_getting_correct_intensity(
+            bg_intensity.values,
+            (bg_intensity_stat_uncert.values,),
+            cos_alpha.values,
             calibration,
             flux_corrector,
+        )
+        bg_intensity = bg_intensity.copy(data=bg_corrected)
+        bg_intensity_stat_uncert = bg_intensity_stat_uncert.copy(
+            data=bg_corrected_stat_uncert
         )
 
     variables = {
@@ -1804,17 +1831,17 @@ def _calculate_rates_and_intensities(
     # A masked pixel has no ENA measurement to report.
     if isn_mask is not None:
         for name in ISN_MASKED_VARIABLES:
-            variables[name] = np.where(isn_mask, FILLVAL_FLOAT, variables[name])
+            variables[name] = variables[name].where(~isn_mask, FILLVAL_FLOAT)
 
     for name in FILLED_VARIABLES:
-        variables[name] = np.where(exposed, variables[name], FILLVAL_FLOAT)
+        variables[name] = variables[name].where(exposed, FILLVAL_FLOAT)
 
     return variables
 
 
 def _build_map_dataset(
     sky_map: RectangularSkyMap,
-    variables: dict[str, np.ndarray],
+    variables: dict[str, xr.DataArray],
     calibration: EsaCalibration,
 ) -> xr.Dataset:
     """
@@ -1827,7 +1854,7 @@ def _build_map_dataset(
     ----------
     sky_map : RectangularSkyMap
         The map being built.
-    variables : dict[str, np.ndarray]
+    variables : dict[str, xr.DataArray]
         The map variables, each of shape (epoch, esa level, pixel).
     calibration : EsaCalibration
         The energy response the map is binned in, read for the widths of the
@@ -1839,9 +1866,8 @@ def _build_map_dataset(
         The map variables on the (epoch, energy, longitude, latitude) grid,
         with the energy coordinate and its widths.
     """
-    dims = sky_map.data_1d["ena_count"].dims
     for name, values in variables.items():
-        sky_map.data_1d[name] = xr.DataArray(values.astype(np.float32), dims=dims)
+        sky_map.data_1d[name] = values.astype(np.float32)
     # These are accumulators, not map variables.
     sky_map.data_1d = sky_map.data_1d.drop_vars(
         ["bg_rate_exposure", "sputter_source_count", "cos_alpha_exposure"],
