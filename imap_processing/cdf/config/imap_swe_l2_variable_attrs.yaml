@@ -166,6 +166,8 @@ phase_space_density_spin_sector:
 
 phase_space_density:
   CATDESC: Phase space density organized by energy (eV), spin angle, CEM angle
+  DELTA_MINUS_VAR: psd_stat_uncert
+  DELTA_PLUS_VAR: psd_stat_uncert
   DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: inst_az
@@ -206,6 +208,8 @@ flux_spin_sector:
 
 flux:
   CATDESC: Number flux organized by energy (eV), spin angle, CEM angle
+  DELTA_MINUS_VAR: flux_stat_uncert
+  DELTA_PLUS_VAR: flux_stat_uncert
   DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: inst_az
