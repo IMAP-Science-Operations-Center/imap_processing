@@ -1170,7 +1170,13 @@ def _sputter_correct_counts(
         square of its factor, and the variance only ever grows.
     """
     logger.info("Applying the sputter correction to the accumulated counts")
+    # The einsum contracts the source level s away: target level t of the
+    # output is the sum over s of sputter_matrix[t, s] * source_counts[e, s, p],
+    # for every epoch e and pixel p.
     corrected = counts - np.einsum("ts,esp->etp", sputter_matrix, source_counts)
+
+    # The same contraction against the squared matrix, which is how the
+    # variances of the scaled source terms add.
     variance = counts + np.einsum("ts,esp->etp", sputter_matrix**2, source_counts)
     return corrected, variance
 
