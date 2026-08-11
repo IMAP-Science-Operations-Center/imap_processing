@@ -224,7 +224,7 @@ def test_optimize_parameters():
             f"{imap_module_directory}/tests/ialirt/data/l0/"
             f"{test_data[test_set]['file_name']}",
         )
-        count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+        count_rates = energy_data["Count Rates [Hz]"].to_numpy(copy=True)
         count_rates[0] = 0.0
         count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
 
@@ -264,7 +264,7 @@ def test_optimize_parameters_exception_handling():
     energy_data = pd.read_csv(
         f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}"
     )
-    count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+    count_rates = energy_data["Count Rates [Hz]"].to_numpy(copy=True)
     count_rates[0] = 0.0
     count_rates = np.tile(count_rates, (2, 1))
     count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
@@ -306,7 +306,7 @@ def test_optimize_parameters_bad_fit_handling():
     energy_data = pd.read_csv(
         f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}"
     )
-    count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+    count_rates = energy_data["Count Rates [Hz]"].to_numpy(copy=True)
     count_rates[0] = 0.0
     count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
 
@@ -343,9 +343,9 @@ def test_optimize_parameters_bad_covariance_handling():
     energy_data = pd.read_csv(
         f"{imap_module_directory}/tests/ialirt/data/l0/{file_name}"
     )
-    count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+    count_rates = energy_data["Count Rates [Hz]"].to_numpy(copy=True)
     count_rates[0] = 0.0
-    count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
+    count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy(copy=True)
 
     # setting errors to 0 results in infinite covariance
     count_rates_errors *= 0
