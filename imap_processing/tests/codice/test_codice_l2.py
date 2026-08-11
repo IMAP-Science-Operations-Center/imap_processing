@@ -33,6 +33,7 @@ from imap_processing.tests.codice.conftest import (
     VALIDATION_FILE_DATE,
     VALIDATION_FILE_VERSION,
 )
+from imap_processing.utils import filter_day_boundary_data
 
 pytestmark = pytest.mark.external_test_data
 
@@ -440,7 +441,10 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="lo-sw-species", data_type="l0"),
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
-    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
+    l1a_ds = filter_day_boundary_data(
+        process_l1a(ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
+    processed_l1a_file = write_cdf(l1a_ds)
     processed_l1b_file = write_cdf(process_codice_l1b(processed_l1a_file))
     # Mock get_files for l2
     mock_get_file_paths.side_effect = [
@@ -461,12 +465,10 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         )
     )
     l2_val_data = load_cdf(l2_val_data)
+
     for variable in l2_val_data.data_vars:
-        processed_val = processed_2_ds[variable].values
-        # NOTE: Replace nan with 0 for comparison as the validation data uses 0
-        processed_val[np.isnan(processed_val)] = 0.0
         np.testing.assert_allclose(
-            processed_val,
+            processed_2_ds[variable].values,
             l2_val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
@@ -502,7 +504,9 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
         codice_lut_path(descriptor="lo-direct-events", data_type="l0")
     ]
-    l1a_cdf = process_l1a(ProcessingInputCollection())[0]
+    l1a_cdf = filter_day_boundary_data(
+        process_l1a(ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
 
     processed_l1a_file = write_cdf(l1a_cdf)
     file_path = processed_l1a_file.as_posix()
@@ -603,7 +607,9 @@ def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
         codice_lut_path(descriptor="hi-direct-events", data_type="l0")
     ]
-    l1a_cdf = process_l1a(ProcessingInputCollection())[0]
+    l1a_cdf = filter_day_boundary_data(
+        process_l1a(ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
 
     processed_l1a_file = write_cdf(l1a_cdf)
     file_path = processed_l1a_file.as_posix()

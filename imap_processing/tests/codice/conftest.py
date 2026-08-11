@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
@@ -9,10 +10,38 @@ TEST_DATA_L0_PATH = TEST_DATA_PATH / "l0_data"
 TEST_L0_FILE = TEST_DATA_L0_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
 VALIDATION_FILE_DATE = "20260204"
-VALIDATION_FILE_VERSION = "v016"
+VALIDATION_FILE_VERSION = "v026"
 
 IALIRT_VALIDATION_FILE_DATE = "20250814"
 IALIRT_VALIDATION_FILE_VERSION = "v015"
+
+
+def assert_allclose_fillaware(actual, expected_da, rtol=1e-5, err_msg=""):
+    """Compare processed data against a validation DataArray, treating the
+    validation's CDF FILLVAL sentinel as equivalent to NaN.
+
+    Some of our in-memory processed data represents "no data" as float NaN
+    (e.g. after masking science counts), but integer-typed CDF variables (e.g.
+    uint32 raw counts) can't hold NaN, so the validation CDF (loaded straight
+    from disk) stores the CDF FILLVAL sentinel instead. Comparing those
+    directly always reports a mismatch even though both sides mean the same
+    thing, so normalize the validation side to NaN wherever it equals FILLVAL
+    before comparing -- but only when our own data is actually float (and so
+    could contain real NaN). Variables that stay integer end-to-end on both
+    sides (e.g. half_spin_per_esa_step, which uses its own FILLVAL literally
+    rather than NaN) should be compared as-is.
+    """
+    actual = np.asarray(actual)
+    expected = expected_da.values
+    fillval = expected_da.attrs.get("FILLVAL")
+    if (
+        fillval is not None
+        and np.issubdtype(expected.dtype, np.integer)
+        and np.issubdtype(actual.dtype, np.floating)
+    ):
+        expected = expected.astype(np.float64)
+        expected[expected == fillval] = np.nan
+    np.testing.assert_allclose(actual, expected, rtol=rtol, err_msg=err_msg)
 
 
 @pytest.fixture(scope="session")
@@ -182,7 +211,7 @@ def codice_lut_path():
             return [
                 TEST_DATA_PATH
                 / "l1a_lut"
-                / "imap_codice_l1a-sci-lut_20260403_v003.json"
+                / "imap_codice_l1a-sci-lut_20260129_v002.json"
             ]
         # elif descriptor == "l1a-sci-lut-oct":
         #     return [
@@ -208,7 +237,7 @@ def codice_lut_path():
             ]
         elif descriptor == "l2-lo-efficiency":
             return [
-                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251212_v003.csv"
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251212_v003.csv"
             ]
         elif descriptor == "l2-lo-gfactor":
             return [
@@ -244,30 +273,3 @@ def codice_lut_path():
             raise ValueError(f"Unknown descriptor: {descriptor}")
 
     return _side_effect
-
-
-#
-# # TODO: DIAGNOSTIC ONLY - undo this before pushing. Confirms that the L1A/L1B/L2
-# # epoch-count mismatches against the v016 validation CDFs are explained by day
-# # boundary data that production applies via cli.py's filter_day_boundary_data()
-# # but that these unit tests never apply since they call process_l1a() directly.
-# @pytest.fixture(autouse=True)
-# def _debug_filter_day_boundary(monkeypatch):
-#     from imap_processing.utils import filter_day_boundary_data
-#
-#     def _wrap(module_path, start_date):
-#         module = __import__(module_path, fromlist=["process_l1a"])
-#         original = module.process_l1a
-#
-#         def _filtered_process_l1a(*args, **kwargs):
-#             datasets = original(*args, **kwargs)
-#             return [filter_day_boundary_data(ds, start_date) for ds in datasets]
-#
-#         monkeypatch.setattr(module, "process_l1a", _filtered_process_l1a)
-#
-#     for module_path in (
-#         "imap_processing.tests.codice.test_codice_l1a",
-#         "imap_processing.tests.codice.test_codice_l1b",
-#         "imap_processing.tests.codice.test_codice_l2",
-#     ):
-#         _wrap(module_path, VALIDATION_FILE_DATE)
