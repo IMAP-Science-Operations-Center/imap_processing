@@ -22,20 +22,20 @@ epoch:
   VAR_TYPE: support_data
 
 epoch_delta:
-  NAME: epoch_delta
-  DATA_TYPE: CDF_INT8
   CATDESC: Epoch delta
-  VAR_TYPE: support_data
-  RECORD_VARYING: RV
+  DATA_TYPE: CDF_INT8
   DEPEND_0: epoch
   FIELDNAM: Epoch Delta
+  FILLVAL: -9223372036854775808
   FORMAT: I19
   LABLAXIS: Epoch delta
-  UNITS: ns
-  VALIDMIN: 0
-  VALIDMAX: 86000000000000
-  FILLVAL: -9223372036854775808
+  NAME: epoch_delta
+  RECORD_VARYING: RV
   SCALETYP: linear
+  UNITS: ns
+  VALIDMAX: 86000000000000
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 # <=== Data Variables ===>
 # Default Attrs for all metadata variables unless overridden
