@@ -143,6 +143,10 @@ def add_cdf_attributes(
             )
             dataset.coords[f"{dim}_label"] = label_array
 
+    if "macropixel" in logical_source and "epoch" in dataset.coords:
+        dataset["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta"
+        dataset["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta"
+
     return dataset
 
 
@@ -782,4 +786,66 @@ def process_macropixel_intensity(
                 {var: f"{var}_macropixel_intensity"}
             )
 
-    return macropixel_intensity_dataset
+    return transform_to_10_minute_chunks(macropixel_intensity_dataset)
+
+
+def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
+    """Transform macropixel records into 10-minute integration chunks.
+
+    Parameters
+    ----------
+    macropixel_dataset : xarray.Dataset
+        Macropixel data containing one species and energy combination per
+        one-minute epoch.
+
+    Returns
+    -------
+    xarray.Dataset
+        Macropixel data combined into one record per 10-minute integration.
+    """
+    species_energy = [
+        ("h", 3),
+        ("he4", 2),
+        ("cno", 2),
+        ("nemgsi", 2),
+        ("fe", 1),
+    ]
+
+    # Note(Leo): need to check if doing in-place is acceptable
+    transformed_dataset = macropixel_dataset.isel(
+        epoch=slice(None, None, 10),
+    ).copy(deep=True)
+
+    species_i = 0
+    for species, num_energy_levels in species_energy:
+        energy_dim = f"{species}_energy_mean"
+        species_variables = [
+            var
+            for var in macropixel_dataset.data_vars
+            if macropixel_dataset[var].dims[:2] == ("epoch", energy_dim)
+        ]
+
+        for energy_i in range(num_energy_levels):
+            for var in species_variables:
+                _data = macropixel_dataset[var].values[species_i::10, energy_i]
+                transformed_dataset[var].values[:, energy_i] = _data
+            species_i += 1
+
+    minute_cadence_epochs = macropixel_dataset["epoch"].values
+    ten_minute_cadence_epochs = minute_cadence_epochs.reshape(-1, 10)
+    new_epochs = []
+    nanoseconds_per_10_min = SECONDS_PER_10_MIN * 1_000_000_000
+    nanoseconds_per_5_min = nanoseconds_per_10_min // 2
+    for chunk in ten_minute_cadence_epochs:
+        start_time = chunk[0]
+        end_time = chunk[-1]
+        new_epoch = start_time + (end_time - start_time) // 2 - nanoseconds_per_10_min
+        new_epochs.append(new_epoch)
+
+    transformed_dataset = transformed_dataset.assign_coords(epoch=np.array(new_epochs))
+    transformed_dataset["epoch_delta"] = xr.DataArray(
+        np.full(len(new_epochs), nanoseconds_per_5_min, dtype=np.int64),
+        dims=["epoch"],
+    )
+
+    return transformed_dataset
