@@ -38,7 +38,7 @@ dependencies = [
     "spiceypy>=6.0.0",
     "xarray>=2024.10.0,<2026",
     "numpy>=2,<3",
-    "sammi-cdf>=1.0,<2",
+    "sammi-cdf>=1.0.2,<2",
     "scipy>=1.13,<2"
 ]
 

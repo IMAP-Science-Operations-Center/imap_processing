@@ -77,7 +77,7 @@ num_events:
   FIELDNAM: Number of Events
   FILLVAL: *uint16_fillval
   FORMAT: I5
-  LABL_PTR_1: priority_label
+  LABLAXIS: Number of Events
   SCALETYP: linear
   UNITS: " "
   VALIDMAX: 10000
