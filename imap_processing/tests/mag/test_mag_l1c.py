@@ -1278,18 +1278,15 @@ def test_mag_l1c_continues_previous_day_timeline():
         "imap_mag_l1b_burst-mago",  # burst L1B
     ],
 )
-def test_mag_l1c_ignores_unusable_previous_day(logical_source):
-    """An unusable previous day dataset is ignored, not raised."""
+def test_mag_l1c_raises_on_wrong_previous_day_file(logical_source):
+    """A previous day file of the wrong level or sensor means an upstream bug."""
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
     l1c_day1, norm_day2, burst_day2, _ = _build_cross_day_datasets(day1, day2)
     l1c_day1.attrs["Logical_source"] = logical_source
 
-    baseline = mag_l1c(norm_day2, day2, burst_day2)
-    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=l1c_day1)
-
-    assert np.array_equal(output["epoch"].data, baseline["epoch"].data)
-    assert np.array_equal(output["vectors"].data, baseline["vectors"].data)
+    with pytest.raises(ValueError, match="expected L1C data for sensor mago"):
+        mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=l1c_day1)
 
 
 def test_mag_l1c_ignores_previous_day_with_unknown_cadence():
@@ -1388,14 +1385,12 @@ def test_process_mag_l1c_previous_day_anchor_ignores_buffer_samples():
     assert np.all((leading - anchor) % cadence == 0)
 
 
-def test_mag_l1c_ignores_previous_day_without_epochs():
-    """A previous day dataset with no epoch variable is ignored, not raised."""
+def test_mag_l1c_raises_on_previous_day_without_epochs():
+    """A previous day L1C with no epochs is a malformed upstream file."""
     day1 = np.datetime64("2025-01-01")
     day2 = np.datetime64("2025-01-02")
     _, norm_day2, burst_day2, _ = _build_cross_day_datasets(day1, day2)
     no_epochs = xr.Dataset(attrs={"Logical_source": "imap_mag_l1c_norm-mago"})
 
-    baseline = mag_l1c(norm_day2, day2, burst_day2)
-    output = mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=no_epochs)
-
-    assert np.array_equal(output["epoch"].data, baseline["epoch"].data)
+    with pytest.raises(ValueError, match="no epochs"):
+        mag_l1c(norm_day2, day2, burst_day2, previous_day_dataset=no_epochs)

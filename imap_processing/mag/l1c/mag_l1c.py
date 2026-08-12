@@ -45,8 +45,9 @@ def mag_l1c(
         The previous day's L1C dataset for the same sensor. When the current day
         opens with a gap, timestamps generated for that gap continue the
         previous day's cadence and phase so the L1C timeline stays continuous across
-        the day boundary. If not provided (or not usable), gaps at the start of the
-        day are filled with timestamps counted from the window boundary, as before.
+        the day boundary. If not provided, or if a usable anchor cannot be taken
+        from it, gaps at the start of the day are filled with timestamps counted
+        from the window boundary, as before.
 
     Returns
     -------
@@ -286,14 +287,15 @@ def select_datasets(
 
 def _validated_previous_day(
     previous_day_dataset: xr.Dataset, sensor: str
-) -> xr.Dataset | None:
+) -> xr.Dataset:
     """
-    Validate the previous day's dataset, returning None if it is not usable.
+    Validate the previous day's dataset, raising if it is not usable.
 
-    The previous day's dataset must be a MAG L1C dataset for the same sensor as the
-    current day's inputs, with at least one epoch. An unusable dataset is
-    ignored with a warning rather than raised, so processing still succeeds with only
-    one day of data.
+    The previous day's dataset is delivered by sds-data-manager orchestration
+    and must be a MAG L1C dataset for the same sensor as the current day's
+    inputs, with at least one epoch. Anything else means the wrong file was
+    delivered or produced upstream, so it fails the run rather than silently
+    processing the day alone.
 
     Parameters
     ----------
@@ -304,25 +306,32 @@ def _validated_previous_day(
 
     Returns
     -------
-    xr.Dataset or None
-        The validated dataset, or None if it should be ignored.
+    xr.Dataset
+        The validated dataset.
+
+    Raises
+    ------
+    ValueError
+        If the dataset is not L1C data for this sensor, or has no epochs.
     """
     logical_source = previous_day_dataset.attrs["Logical_source"]
     if isinstance(logical_source, list):
         logical_source = logical_source[0]
 
     if "l1c" not in logical_source or logical_source[-1] != sensor:
-        logger.warning(
-            f"Ignoring previous day dataset with logical source {logical_source}; "
-            f"expected L1C data for sensor mag{sensor}."
+        raise ValueError(
+            f"Previous day dataset has logical source {logical_source}; "
+            f"expected L1C data for sensor mag{sensor}. The wrong file was "
+            f"delivered as the previous-day input."
         )
-        return None
     if (
         "epoch" not in previous_day_dataset
         or previous_day_dataset["epoch"].data.size == 0
     ):
-        logger.warning("Ignoring previous day dataset with no epochs.")
-        return None
+        raise ValueError(
+            "Previous day L1C dataset has no epochs; a MAG L1C file always "
+            "carries a full-day timeline, so this file is malformed."
+        )
     return previous_day_dataset
 
 
