@@ -3,40 +3,6 @@
 from dataclasses import dataclass
 from typing import ClassVar, NamedTuple
 
-import numpy as np
-
-
-class EsaCalibration(NamedTuple):
-    """
-    The instrument's calibration settings for each ESA level.
-
-    Every field holds one value per ESA level, in ascending level order, read
-    from the ancillary of one species and ESA mode.
-
-    Attributes
-    ----------
-    energy : np.ndarray
-        The energy [keV] of each level, the passband center its geometric
-        factor was measured at.
-    energy_delta_minus : np.ndarray
-        The half-width [keV] of each passband below its center.
-    energy_delta_plus : np.ndarray
-        The half-width [keV] of each passband above its center.
-    geometric_factor : np.ndarray
-        The recalibrated geometric factor [cm^2 sr keV/keV] of each level.
-    geometric_factor_low : np.ndarray
-        The lower calibration bound of each geometric factor.
-    geometric_factor_high : np.ndarray
-        The upper calibration bound of each geometric factor.
-    """
-
-    energy: np.ndarray
-    energy_delta_minus: np.ndarray
-    energy_delta_plus: np.ndarray
-    geometric_factor: np.ndarray
-    geometric_factor_low: np.ndarray
-    geometric_factor_high: np.ndarray
-
 
 class PivotAngleSpec(NamedTuple):
     """
