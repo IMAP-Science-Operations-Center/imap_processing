@@ -127,7 +127,7 @@ def lo_l2(
     esa_mode = _get_esa_mode(pointings[max(pointings)][2]) if pointings else 0
     calibration = _esa_calibration(map_descriptor.species, esa_mode)
 
-    _initialize_accumulators(sky_map, calibration.energy.as_numpy())
+    _initialize_accumulators(sky_map, calibration.energy)
 
     for repointing, (goodtimes, bgrates, histrates) in sorted(pointings.items()):
         logger.debug(f"Accumulating repoint{repointing:05d}")
@@ -137,7 +137,7 @@ def lo_l2(
             histrates,
             sky_map,
             map_descriptor,
-            calibration.energy.as_numpy(),
+            calibration.energy,
         )
 
     variables = _calculate_rates_and_intensities(sky_map, calibration)
@@ -521,7 +521,7 @@ class LoSpinAnglePointingSet(PointingSet):
         return float(ttj2000ns_to_et(self.epoch))
 
 
-def _initialize_accumulators(sky_map: RectangularSkyMap, energy: np.ndarray) -> None:
+def _initialize_accumulators(sky_map: RectangularSkyMap, energy: xr.DataArray) -> None:
     """
     Seed the map with the empty accumulators each pointing is added into.
 
@@ -534,7 +534,7 @@ def _initialize_accumulators(sky_map: RectangularSkyMap, energy: np.ndarray) -> 
     ----------
     sky_map : RectangularSkyMap
         The map being built, modified in place.
-    energy : np.ndarray
+    energy : xr.DataArray
         The energy [keV] of each ESA level.
     """
     for name in ACCUMULATED_VARIABLES:
@@ -555,7 +555,7 @@ def _accumulate_pointing(
     histrates: xr.Dataset,
     sky_map: RectangularSkyMap,
     map_descriptor: MapDescriptor,
-    energy: np.ndarray,
+    energy: xr.DataArray,
 ) -> None:
     """
     Add one pointing's counts and exposure to the map.
@@ -574,7 +574,7 @@ def _accumulate_pointing(
         The map being built, modified in place.
     map_descriptor : MapDescriptor
         The parsed descriptor of the map being made.
-    energy : np.ndarray
+    energy : xr.DataArray
         The energy [keV] of each ESA level.
     """
     species = map_descriptor.species
