@@ -12,6 +12,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a_ialirt_hi import l1a_ialirt_hi
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
@@ -439,6 +440,11 @@ def process_codice(
     codice_lo_data: list[dict[str, Any]] = []
     codice_hi_data: list[dict[str, Any]] = []
 
+    # Get the L1b CDF attributes
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
+
     # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
     # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
     met = calculate_time(dataset["sc_sclk_sec"], dataset["sc_sclk_sub_sec"], 256)
@@ -477,10 +483,7 @@ def process_codice(
             l1a_lo = process_by_table_id(cod_lo_dataset, l1a_lut_path, l1a_lo_species)
             l1b_lo = cast(
                 xr.Dataset,
-                convert_to_rates(
-                    l1a_lo,
-                    "lo-ialirt",
-                ),
+                convert_to_rates(l1a_lo, "lo-ialirt", cdf_attrs),
             )
             mid_measurement = int((l1b_lo["epoch"][0] + l1b_lo["epoch"][-1]) // 2)
             yyyymmdd = datetime.datetime.strptime(
