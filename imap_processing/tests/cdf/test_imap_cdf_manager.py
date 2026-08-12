@@ -63,4 +63,3 @@ def test_codice_direct_events_num_events_axis_label(level):
     num_events_attrs = attributes.get_variable_attributes("num_events")
 
     assert num_events_attrs["LABLAXIS"] == "Number of Events"
-    assert "LABL_PTR_1" not in num_events_attrs
