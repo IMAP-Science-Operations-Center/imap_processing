@@ -149,9 +149,9 @@ def get_energy_norm(
     norm_composite_energy : np.ndarray
         Normalized composite energy.
     """
-    row_number = ssd * 4096 + composite_energy
+    row_number = (ssd * 4096 + composite_energy).astype(np.intp)
     norm_lookup = pd.read_csv(ancillary_files["l1b-egynorm-lookup"])
-    return norm_lookup["NormEnergy"].iloc[row_number]
+    return norm_lookup["NormEnergy"].to_numpy(copy=True)[row_number]
 
 
 def get_image_params(image: str, sensor: str, ancillary_files: dict) -> np.float64:

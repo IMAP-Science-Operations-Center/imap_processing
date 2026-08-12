@@ -10,6 +10,7 @@ from pathlib import Path
 
 import imap_data_access
 import numpy as np
+import pandas as pd
 import xarray as xr
 from cdflib.logging import logger as cdflib_logger
 from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
@@ -21,6 +22,43 @@ from imap_processing._version import __version__, __version_tuple__  # noqa: F40
 from imap_processing.spice.time import TTJ2000_EPOCH
 
 logger = logging.getLogger(__name__)
+
+
+def _cdf_compatible_dataset(dataset: xr.Dataset) -> xr.Dataset:
+    """Return a shallow copy whose extension arrays are NumPy-backed.
+
+    ``cdflib`` expects array-valued variables to be backed by NumPy arrays.  In
+    particular, it cannot serialize the string extension arrays that pandas 3
+    uses by default.  Converting at the CDF boundary keeps the in-memory dataset
+    unchanged and also supports explicitly created extension arrays on pandas 2.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset to prepare for serialization by ``cdflib``.
+
+    Returns
+    -------
+    xarray.Dataset
+        Shallow copy with extension-array variables converted to NumPy arrays.
+    """
+    converted = dataset.copy(deep=False)
+    for name, variable in dataset.variables.items():
+        if not isinstance(variable.data, pd.api.extensions.ExtensionArray):
+            continue
+
+        numpy_variable = xr.Variable(
+            variable.dims,
+            variable.data.to_numpy(copy=True),
+            attrs=variable.attrs,
+        )
+        numpy_variable.encoding = variable.encoding.copy()
+        if name in dataset.coords:
+            converted = converted.assign_coords({name: numpy_variable})
+        else:
+            converted[name] = numpy_variable
+
+    return converted
 
 
 def load_cdf(
@@ -185,7 +223,11 @@ def write_cdf(
             # strict ISTP compliance
             logger.info("Disabling cdflib ISTP logging for level 1 data products")
             cdflib_logger.setLevel(logging.ERROR)
-        xarray_to_cdf(dataset, str(file_path), **extra_cdf_kwargs)
+        xarray_to_cdf(
+            _cdf_compatible_dataset(dataset),
+            str(file_path),
+            **extra_cdf_kwargs,
+        )
     finally:
         # Set back to the previous logging level
         cdflib_logger.setLevel(prev_cdflib_level)

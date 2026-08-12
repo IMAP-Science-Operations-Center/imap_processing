@@ -443,6 +443,13 @@ def get_trigger_mode_and_level(
             vectorize=True,
             output_dtypes=[object, float],
         )
+        # Allocate the object array explicitly.  Otherwise pandas 3 string
+        # inference converts the no-trigger None values to NaN.
+        mode_values = np.asarray(mode_array.data, dtype=object)
+        mode_values[pd.isna(mode_values)] = None
+        object_mode_array = xr.full_like(modes, None, dtype=object)
+        object_mode_array.data[:] = mode_values
+        mode_array = object_mode_array
         # There should be an array of modes and threshold levels for each channel.
         # write each of them out as separate variables because there may be
         # multiple channels that can trigger an event. The trigger origin variable

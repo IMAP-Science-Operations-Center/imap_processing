@@ -39,9 +39,8 @@ def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
         else:
             logger.info(f"src_seq_ctr_diff != 1 for group {group}.")
 
-    filtered_data = grouped_data.where(
-        xr.DataArray(np.isin(grouped_data["group"], valid_groups), dims="epoch"),
-        drop=True,
+    filtered_data = grouped_data.isel(
+        epoch=np.isin(grouped_data["group"], valid_groups)
     )
 
     return filtered_data
@@ -105,9 +104,11 @@ def find_groups(
 
     # Filter data before the sequence_range=0
     # and after the last value of sequence_range.
-    grouped_data = sorted_data.where(
-        (sorted_data[time_name] >= start_time) & (sorted_data[time_name] <= end_time),
-        drop=True,
+    grouped_data = sorted_data.isel(
+        epoch=(
+            (sorted_data[time_name] >= start_time)
+            & (sorted_data[time_name] <= end_time)
+        ).values
     )
 
     # Assign labels based on the start_times.

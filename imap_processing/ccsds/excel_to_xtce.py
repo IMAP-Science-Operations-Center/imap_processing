@@ -457,7 +457,7 @@ class XTCEGenerator:
             enumeration.attrib["value"] = str(valid_state["value"]).strip()
             enumeration.attrib["label"] = str(valid_state["state"]).strip()
 
-    def _ensure_state_value_is_int(self, state: dict) -> dict:
+    def _ensure_state_value_is_int(self, input_state: pd.Series | dict) -> dict:
         """
         Ensure the telemetry state value is an integer.
 
@@ -468,14 +468,18 @@ class XTCEGenerator:
 
         Parameters
         ----------
-        state : dict
-            Dictionary with telemetry state and value.
+        input_state : pandas.Series or dict
+            Telemetry state and value.
 
         Returns
         -------
         dict
             The dictionary for the state.
         """
+        # Excel rows are homogeneous pandas Series.  Convert to a plain mapping
+        # before replacing a hexadecimal string with an integer so the operation
+        # does not depend on the Series' inferred dtype.
+        state = dict(input_state)
         value = state["value"]
         # return if already an int
         if isinstance(value, int):

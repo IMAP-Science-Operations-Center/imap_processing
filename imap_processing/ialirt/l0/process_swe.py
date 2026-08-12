@@ -474,9 +474,8 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
     accumulated_data["met"] = met
 
     # Drop any off-nominal SWE groups
-    nominal_data = accumulated_data.where(
-        accumulated_data["swe_nom_flag"] != 0,
-        drop=True,
+    nominal_data = accumulated_data.isel(
+        epoch=(accumulated_data["swe_nom_flag"] != 0).values
     )
 
     # Get total full cycle data available for processing.
@@ -502,8 +501,8 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         grouped = grouped_data.sel(epoch=group_mask)
 
         # Split into Q1 & Q2 (swe_seq 0-29) and Q3 & Q4 (swe_seq 30-59)
-        first_half = grouped.where(grouped["swe_seq"] < 30, drop=True)
-        second_half = grouped.where(grouped["swe_seq"] >= 30, drop=True)
+        first_half = grouped.isel(epoch=(grouped["swe_seq"] < 30).values)
+        second_half = grouped.isel(epoch=(grouped["swe_seq"] >= 30).values)
 
         # Prepare raw counts separately for both halves
         raw_counts_first_half = prepare_raw_counts(first_half)

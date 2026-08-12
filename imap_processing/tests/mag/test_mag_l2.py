@@ -270,7 +270,7 @@ def test_offset_application(norm_dataset, mag_test_l2_data):
     new_timeshift[1] = -0.00001
     new_timeshift[2] = 1e-9
 
-    expected_timeshift = norm_dataset["epoch"].data
+    expected_timeshift = norm_dataset["epoch"].data.copy()
     # Timeshift is provided in seconds, epoch is in nanoseconds
     expected_timeshift[0] = expected_timeshift[0] + 10000
     expected_timeshift[1] = expected_timeshift[1] - 10000
