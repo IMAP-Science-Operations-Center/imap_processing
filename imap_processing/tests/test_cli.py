@@ -1118,7 +1118,7 @@ def test_post_processing_upload_unknown_error(
 
 
 @mock.patch("imap_processing.cli.check_epochs_within_day_offsets")
-@mock.patch("imap_processing.cli.mag_l1c")
+@mock.patch("imap_processing.cli.mag_l1c", autospec=True)
 def test_mag_l1c_previous_day_routing(
     mock_mag_l1c, mock_check_epochs, mock_instrument_dependencies
 ):
