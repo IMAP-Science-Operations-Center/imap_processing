@@ -861,7 +861,7 @@ def ultra_l2(
     # Get the global attributes, and then fill the sensor, tiling, etc. in the
     # format-able strings.
     map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap"))
-    for key in ["Data_type", "Logical_source", "Logical_source_description"]:
+    for key in ["Data_type", "Logical_source"]:
         map_attrs[key] = map_attrs[key].format(
             sensor=ultra_sensor_number,
             tiling=output_map_structure.tiling_type.value.lower(),
@@ -875,6 +875,28 @@ def ultra_l2(
                 else f"nside{output_map_structure.nside}"
             ),
             inertial_frame_short_name=inertial_frame,
+        )
+    # Use the previously parsed MapDescriptor to generate the
+    # Logical_source_description
+    if descriptor is not None:
+        map_attrs["Logical_source_description"] = (
+            map_descriptor.to_logical_source_description()
+        )
+    else:
+        map_attrs["Logical_source_description"] = map_attrs[
+            "Logical_source_description"
+        ].format(
+            sensor=ultra_sensor_number,
+            tiling=output_map_structure.tiling_type.value.lower(),
+            duration=map_duration,
+            resolution_string=(
+                f"{output_map_structure.spacing_deg:.0f}deg"
+                if (
+                    output_map_structure.tiling_type
+                    is ena_maps.SkyTilingType.RECTANGULAR
+                )
+                else f"nside{output_map_structure.nside}"
+            ),
             inertial_frame_long_name=inertial_frame_long_name,
         )
 

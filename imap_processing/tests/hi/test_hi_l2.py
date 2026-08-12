@@ -175,7 +175,9 @@ def test_hi_l2(
     # Check some global attributes
     assert l2_dataset.attrs["Data_type"].startswith(f"L2_{descriptor_str}")
     assert l2_dataset.attrs["Logical_source"] == f"imap_hi_l2_{descriptor_str}"
-    assert "Hi90" in l2_dataset.attrs["Logical_source_description"]
+    assert l2_dataset.attrs["Logical_source_description"].startswith(
+        "IMAP-Hi Instrument Level-2"
+    )
 
     assert len(l2_dataset.data_vars) == 16
     np.testing.assert_array_equal(

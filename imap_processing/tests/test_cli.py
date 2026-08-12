@@ -6,7 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 from unittest import mock
-from unittest.mock import Mock, sentinel
+from unittest.mock import Mock
 
 import imap_data_access.io
 import numpy as np
@@ -77,22 +77,27 @@ def test_main(mock_instrument):
         "--instrument",
         "mag",
         "--dependency",
-        (
-            "["
-            "{"
-            '"type": "ancillary",'
-            '"files": ['
-            '"imap_mag_l1b-cal_20250101_v001.cdf",'
-            '"imap_mag_l1b-cal_20250103-20250104_v002.cdf"'
-            "]"
-            "},"
-            "{"
-            '"type": "science",'
-            '"files": ['
-            '"imap_mag_l0_raw_20240430_v001.cdf",'
-            "]"
-            "}"
-            "]"
+        json.dumps(
+            {
+                "dependency": [
+                    {
+                        "type": "ancillary",
+                        "files": [
+                            "imap_mag_l1b-cal_20250101_v001.cdf",
+                            "imap_mag_l1b-cal_20250103-20250104_v002.cdf",
+                        ],
+                    },
+                    {
+                        "type": "science",
+                        "files": [
+                            "imap_mag_l0_raw_20240430_v001.0001.cdf",
+                        ],
+                    },
+                ],
+                "version": {
+                    "sci": {"major_version": 1, "minor_version": 1},
+                },
+            }
         ),
         "--data-level",
         "l1a",
@@ -100,8 +105,6 @@ def test_main(mock_instrument):
         "20240430",
         "--repointing",
         "repoint12345",
-        "--version",
-        "v001",
         "--upload-to-sdc",
     ]
     with mock.patch.object(sys, "argv", test_args):
@@ -114,22 +117,27 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
     # Set caplog to capture all log levels
     caplog.set_level(logging.DEBUG)
     """Test imap_processing.cli.main() with --dependency as a JSON file path."""
-    test_json_content = [
-        {
-            "type": "ancillary",
-            "files": [
-                "imap_mag_l1b-cal_20250101_v001.cdf",
-                "imap_mag_l1b-cal_20250103_20250104_v002.cdf",
-            ],
+    test_json_content = {
+        "dependency": [
+            {
+                "type": "ancillary",
+                "files": [
+                    "imap_mag_l1b-cal_20250101_v001.cdf",
+                    "imap_mag_l1b-cal_20250103_20250104_v002.cdf",
+                ],
+            },
+            {
+                "type": "science",
+                "files": [
+                    "imap_idex_l2_sci_20240312_v001.0000.cdf",
+                    "imap_idex_l2_sci_20240312_v001.0001.cdf",
+                ],
+            },
+        ],
+        "version": {
+            "sci": {"major_version": 1, "minor_version": 1},
         },
-        {
-            "type": "science",
-            "files": [
-                "imap_idex_l2_sci_20240312_v000.cdf",
-                "imap_idex_l2_sci_20240312_v001.cdf",
-            ],
-        },
-    ]
+    }
     test_json_filename = "imap_ultra_l2_test-dependency-json_20250520_v999.json"
     test_json_dir = tmp_path / "imap/dependency/ultra/l2/2025/05/"
     test_json_dir.mkdir(parents=True, exist_ok=True)
@@ -150,8 +158,6 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         "20240430",
         "--repointing",
         "repoint12345",
-        "--version",
-        "v001",
         "--upload-to-sdc",
     ]
     with mock.patch.object(sys, "argv", test_args):
@@ -160,6 +166,35 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         assert "Interpreting dependency argument as a JSON file" in caplog.text, (
             "Dependency JSON file was not read correctly"
         )
+
+
+def test_parse_args_dependency_local_json_not_downloaded(tmp_path):
+    """A --dependency JSON that exists locally is read without downloading."""
+    test_json_content = {"dependency": [], "version": {}}
+    test_json_dst = tmp_path / "imap_ultra_l2_local-dependency_20250520_v001.0001.json"
+    with open(test_json_dst, "w") as f:
+        f.write(json.dumps(test_json_content))
+
+    test_args = [
+        "imap_cli",
+        "--instrument",
+        "mag",
+        "--dependency",
+        str(test_json_dst),
+        "--data-level",
+        "l1a",
+        "--start-date",
+        "20240430",
+    ]
+    with (
+        mock.patch.object(sys, "argv", test_args),
+        mock.patch("imap_processing.cli.download") as mock_download,
+    ):
+        args = _parse_args()
+
+    # Local file exists, so download must not be called and its content is read.
+    mock_download.assert_not_called()
+    assert json.loads(args.dependency) == test_json_content
 
 
 @pytest.mark.parametrize(
@@ -296,7 +331,10 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
                 "imap_hi_l1a_90sensor-de_20241105_v001.cdf",
                 "imap_hi_l1b_90sensor-hk_20241105_v001.cdf",
             ],
-            ["imap_hi_90sensor-esa-energies_20240101_v001.csv"],
+            [
+                "imap_hi_90sensor-esa-energies_20240101_v001.csv",
+                "imap_hi_90sensor-gain-configuration_20240101_v001.csv",
+            ],
             1,
         ),
         ("l1b", "sci", "housekeeping", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
@@ -311,6 +349,7 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
             [
                 "imap_hi_45sensor-cal-prod_20240101_v001.csv",
                 "imap_hi_45sensor-backgrounds_20240101_v001.csv",
+                "imap_hi_45sensor-gain-configuration_20240101_v001.csv",
             ],
             1,
         ),
@@ -438,17 +477,28 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
 
     descriptor = "some-ena-map-descriptor"
 
-    mock_loaded_pset_1 = Mock(attrs={"Logical_source": "some_pset_logical_source"})
-    pset_file_paths = [
-        "imap_lo_l1c_pset_20250415_v001.cdf",
-        "imap_lo_l1c_pset_20250416_v001.cdf",
+    mock_goodtimes = Mock(attrs={"Logical_source": "imap_lo_l1b_goodtimes"})
+    mock_bgrates = Mock(attrs={"Logical_source": "imap_lo_l1b_bgrates"})
+    mock_histrates_1 = Mock(attrs={"Logical_source": "imap_lo_l1b_histrates"})
+    mock_histrates_2 = Mock(attrs={"Logical_source": "imap_lo_l1b_histrates"})
+    science_file_paths = [
+        "imap_lo_l1b_goodtimes_20250415-repoint00217_v001.cdf",
+        "imap_lo_l1b_bgrates_20250415-repoint00217_v001.cdf",
+        "imap_lo_l1b_histrates_20250415-repoint00217_v001.cdf",
+        "imap_lo_l1b_histrates_20250416-repoint00218_v001.cdf",
     ]
 
     processing_input = ProcessingInputCollection(
-        *[ScienceInput(file_path) for file_path in pset_file_paths],
+        *[ScienceInput(file_path) for file_path in science_file_paths],
     )
 
-    mocks["mock_load_cdf"].side_effect = [mock_loaded_pset_1, sentinel.loaded_pset_2]
+    # Loaded in descriptor order: goodtimes, then bgrates, then histrates
+    mocks["mock_load_cdf"].side_effect = [
+        mock_goodtimes,
+        mock_bgrates,
+        mock_histrates_1,
+        mock_histrates_2,
+    ]
     mock_lo_pre_processing.return_value = processing_input
 
     output_l2_dataset = xr.Dataset()
@@ -465,8 +515,16 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
     )
     instrument.process()
 
+    # Grouped by the repointing in the filename and the descriptor queried by.
     mock_lo_l2.assert_called_once_with(
-        {"some_pset_logical_source": [mock_loaded_pset_1, sentinel.loaded_pset_2]},
+        {
+            217: {
+                "goodtimes": mock_goodtimes,
+                "bgrates": mock_bgrates,
+                "histrates": mock_histrates_1,
+            },
+            218: {"histrates": mock_histrates_2},
+        },
         [],
         descriptor,
     )
@@ -476,37 +534,81 @@ def test_lo_l2(mock_lo_pre_processing, mock_lo_l2, mock_instrument_dependencies)
 @mock.patch("imap_processing.cli.load_cdf")
 @mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
 def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_load_cdf):
-    valid_pset = "imap_lo_l1c_pset_20250415_v001.cdf"
-    invalid_pset = "imap_lo_l1c_pset_20250416_v001.cdf"
-    non_pset = "imap_lo_l1a_de_20260415-repoint00217_v001.cdf"
+    """Test that only the pointings at the pivot angle of the map are kept."""
+    kept = "-repoint00217_v001.cdf"
+    dropped = "-repoint00218_v001.cdf"
+    goodtimes = [
+        f"imap_lo_l1b_goodtimes_20250415{kept}",
+        f"imap_lo_l1b_goodtimes_20250416{dropped}",
+    ]
+    histrates = [
+        f"imap_lo_l1b_histrates_20250415{kept}",
+        f"imap_lo_l1b_histrates_20250416{dropped}",
+    ]
+    bgrates = [f"imap_lo_l1b_bgrates_20250415{kept}"]
+    ancillary = "imap_lo_efficiency-factors_20250415_v001.csv"
 
     base_collection = ProcessingInputCollection(
-        ScienceInput(valid_pset, invalid_pset),
-        ScienceInput(non_pset),
+        ScienceInput(*goodtimes),
+        ScienceInput(*histrates),
+        ScienceInput(*bgrates),
+        AncillaryInput(ancillary),
     )
     mock_super_pre_processing.return_value = base_collection
     mock_load_cdf.side_effect = [
-        xr.Dataset({"pivot_angle": xr.DataArray(90.1)}),
-        xr.Dataset({"pivot_angle": xr.DataArray(30.0)}),
+        xr.Dataset({"pivot": ("epoch", [90.1])}),
+        # A neighbouring pivot angle, which belongs on its own map
+        xr.Dataset({"pivot": ("epoch", [75.0])}),
     ]
 
     instrument = Lo(
         "l2",
-        "some-descriptor",
+        "l090-ena-h-sf-nsp-ram-hae-6deg-3mo",
         base_collection.serialize(),
         "20250415",
-        "20250416",
+        "20250715",
         "v001",
         False,
     )
     result = instrument.pre_processing()
 
-    result_inputs = list(result.get_processing_inputs())
-    assert len(result_inputs) == 2
+    # Only repoint00217 is at the map's pivot angle, so repoint00218 drops out
+    # of every product it appears in.
+    assert [
+        [str(file_path.filename) for file_path in processing_input.imap_file_paths]
+        for processing_input in result.get_processing_inputs()
+    ] == [[goodtimes[0]], [histrates[0]], [bgrates[0]], [ancillary]]
+    # Only the goodtimes files are loaded, to read their pivot angle
+    assert mock_load_cdf.call_count == 2
 
-    pset_input, non_pset_input = result_inputs
-    assert [str(fp.filename) for fp in pset_input.imap_file_paths] == [valid_pset]
-    assert [str(fp.filename) for fp in non_pset_input.imap_file_paths] == [non_pset]
+
+@mock.patch("imap_processing.cli.load_cdf")
+@mock.patch("imap_processing.cli.ProcessInstrument.pre_processing")
+def test_lo_pre_processing_drops_goodtimes_without_pivot(
+    mock_super_pre_processing, mock_load_cdf
+):
+    """Test that a pointing whose goodtimes has no pivot angle is dropped."""
+    goodtimes = "imap_lo_l1b_goodtimes_20250415-repoint00217_v001.cdf"
+    histrates = "imap_lo_l1b_histrates_20250415-repoint00217_v001.cdf"
+
+    base_collection = ProcessingInputCollection(
+        ScienceInput(goodtimes), ScienceInput(histrates)
+    )
+    mock_super_pre_processing.return_value = base_collection
+    mock_load_cdf.side_effect = [xr.Dataset()]  # No pivot angle at all
+
+    instrument = Lo(
+        "l2",
+        "l090-ena-h-sf-nsp-ram-hae-6deg-3mo",
+        base_collection.serialize(),
+        "20250415",
+        "20250715",
+        "v001",
+        False,
+    )
+    result = instrument.pre_processing()
+
+    assert list(result.get_processing_inputs()) == []
 
 
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)
@@ -709,7 +811,6 @@ def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
-@pytest.mark.xfail(reason="To be fixed in ticket #3215", strict=False)
 @mock.patch("imap_processing.cli.hit_l1a")
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hit class with l1a data level"""
@@ -903,6 +1004,117 @@ def test_post_processing(
         "naif0012.tls",
         "imap_sclk_0001.tsc",
     ]
+
+
+@mock.patch("imap_processing.cli.sleep")
+@mock.patch("imap_processing.cli.filter_day_boundary_data")
+@mock.patch("imap_processing.cli.swe_l1a")
+def test_post_processing_upload_503_error(
+    mock_swe_l1a,
+    mock_filter,
+    mock_sleep,
+    mock_instrument_dependencies,
+):
+    """Test coverage for post processing when the upload fails with 503 error"""
+
+    mocks = mock_instrument_dependencies
+    mocks["mock_download"].return_value = "dependency0"
+    mocks["mock_write_cdf"].side_effect = [
+        "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
+    ]
+    mocks[
+        "mock_write_cdf"
+    ].return_value = "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
+    mocks["mock_query"].return_value = []
+
+    # Mocks a 503 error received from the upload API
+    mocks["mock_upload"].side_effect = imap_data_access.io.IMAPDataAccessError(
+        "503 Service Unavailable: "
+        "<title>503 Slow Down</title>"
+        "Code: SlowDown"
+        "Message: Please reduce your request rate."
+    )
+
+    test_ds = xr.Dataset()
+    mock_swe_l1a.return_value = [test_ds]
+    mock_filter.side_effect = lambda ds, _: ds
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_swe_l0_raw_20100105_v001.pkts"),
+        SPICEInput("naif0012.tls", "imap_sclk_0001.tsc"),
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    dependency_str = (
+        '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}, '
+        '{"type": "spice", "files": ["naif0012.tls", "imap_sclk_0001.tsc"]}]'
+    )
+    instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
+
+    # Checks that the upload failed, logs an error, and exits with the retry exit code
+    with mock.patch("logging.Logger.error") as mock_error:
+        with pytest.raises(SystemExit) as exc_info:
+            instrument.process()
+    assert exc_info.value.code == 75  # The code should be the retry exit code
+
+    # Upload should attempt 3 times
+    assert mocks["mock_upload"].call_count == 3
+
+    # Sleep should be called 2 times after first two failures
+    assert mock_sleep.call_count == 2
+
+    # Checks the upload failure was logged
+    assert any(
+        "Upload failed after 3 attempts" in str(call)
+        for call in mock_error.call_args_list
+    )
+
+
+@mock.patch("imap_processing.cli.filter_day_boundary_data")
+@mock.patch("imap_processing.cli.swe_l1a")
+def test_post_processing_upload_unknown_error(
+    mock_swe_l1a,
+    mock_filter,
+    mock_instrument_dependencies,
+):
+    """Test coverage for post processing when the upload fails with unknown error"""
+
+    mocks = mock_instrument_dependencies
+    mocks["mock_download"].return_value = "dependency0"
+    mocks["mock_write_cdf"].side_effect = [
+        "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
+    ]
+    mocks[
+        "mock_write_cdf"
+    ].return_value = "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
+    mocks["mock_query"].return_value = []
+
+    # Mocks an unknown error received from the upload API
+    mocks["mock_upload"].side_effect = RuntimeError("Unexpected failure")
+
+    test_ds = xr.Dataset()
+    mock_swe_l1a.return_value = [test_ds]
+    mock_filter.side_effect = lambda ds, _: ds
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_swe_l0_raw_20100105_v001.pkts"),
+        SPICEInput("naif0012.tls", "imap_sclk_0001.tsc"),
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    dependency_str = (
+        '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}, '
+        '{"type": "spice", "files": ["naif0012.tls", "imap_sclk_0001.tsc"]}]'
+    )
+    instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
+
+    # Checks that the upload failed and logs an error and raises an exception
+    with mock.patch("logging.Logger.error") as mock_error:
+        with pytest.raises(RuntimeError):
+            instrument.process()
+
+    # Checks the upload failure was logged
+    assert any(
+        "Upload failed unknown error" in str(call) for call in mock_error.call_args_list
+    )
 
 
 @mock.patch("imap_processing.cli.check_epochs_within_day_offsets")

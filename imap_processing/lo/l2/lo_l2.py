@@ -2,27 +2,45 @@
 
 import logging
 from pathlib import Path
-from typing import cast
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.ena_maps import ena_maps
-from imap_processing.ena_maps.ena_maps import AbstractSkyMap, RectangularSkyMap
-from imap_processing.ena_maps.utils.corrections import (
-    PowerLawFluxCorrector,
-    apply_compton_getting_correction,
-    calculate_ram_mask,
-    get_pset_directional_mask,
-    interpolate_map_flux_to_helio_frame,
+from imap_processing.ena_maps.ena_maps import (
+    PointingSet,
+    RectangularSkyMap,
+    SkyTilingType,
 )
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo import lo_ancillary
-from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
+from imap_processing.lo.constants import EsaCalibration
+from imap_processing.lo.constants import LoConstants as c  # noqa: N813
+from imap_processing.lo.l1c.lo_l1c import compute_pointing_directions
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    get_spacecraft_to_instrument_spin_phase_offset,
+)
+from imap_processing.spice.time import (
+    met_to_ttj2000ns,
+    ttj2000ns_to_et,
+    ttj2000ns_to_met,
+)
 
 logger = logging.getLogger(__name__)
+
+# The descriptors of the L1B products a map is built from, one set per pointing.
+REQUIRED_PRODUCTS = ("goodtimes", "bgrates", "histrates")
+
+# The map variables accumulated directly from the pointings, before any rates
+# or intensities are derived from them.
+ACCUMULATED_VARIABLES = ("ena_count", "exposure_factor", "bg_rate_exposure")
+
+# The calibration ancillaries shipped with the package.
+ANCILLARY_DATA_DIR = Path(__file__).parent.parent / "ancillary_data"
+
 
 # =============================================================================
 # MAIN ENTRY POINT
@@ -30,90 +48,106 @@ logger = logging.getLogger(__name__)
 
 
 def lo_l2(
-    sci_dependencies: dict, anc_dependencies: list, descriptor: str
+    sci_dependencies: dict[int, dict[str, xr.Dataset]],
+    anc_dependencies: list,
+    descriptor: str,
 ) -> list[xr.Dataset]:
     """
-    Process IMAP-Lo L1C data into L2 CDF data products.
+    Process IMAP-Lo L1B data into an L2 sky map.
 
-    This is the main entry point for L2 processing. It orchestrates the entire
-    processing pipeline from L1C pointing sets to L2 sky maps with intensities.
+    A map accumulates the histogram counts and exposure of every pointing in
+    its window, binned by the sky direction each spin-angle bin was looking in,
+    and converts the accumulated counts into an intensity with the instrument's
+    geometric factors.
+
+    The inputs are expected to have already been filtered down to the pivot
+    angle of the map being made, which is done in pre-processing (see
+    ``cli.Lo.pre_processing``) so that the map records only the files it was
+    made from as its parents.
 
     Parameters
     ----------
-    sci_dependencies : dict
-        Dictionary of datasets needed for L2 data product creation in xarray Datasets.
-        Must contain "imap_lo_l1c_pset" key with list of pointing set datasets.
+    sci_dependencies : dict[int, dict[str, xr.Dataset]]
+        The input datasets covering the pointings of the map window, keyed by
+        repointing and then by product descriptor.
     anc_dependencies : list
-        List of ancillary file paths needed for L2 data product creation.
-        Should include efficiency factor files.
+        List of ancillary file paths, read for the efficiency and correction
+        factors. The geometric factors and ESA level energies come from the
+        ancillaries shipped with the package, in ``ANCILLARY_DATA_DIR``.
     descriptor : str
         The map descriptor to be produced
-        (e.g., "ilo90-ena-h-sf-nsp-full-hae-6deg-3mo").
+        (e.g., "l090-ena-h-sf-nsp-ram-hae-6deg-3mo").
 
     Returns
     -------
     list[xr.Dataset]
-        List containing the processed L2 dataset with rates, intensities,
-        and uncertainties.
+        List containing the processed L2 map.
 
     Raises
     ------
-    ValueError
-        If no pointing set data found in science dependencies.
     NotImplementedError
-        If HEALPix map output is requested (only rectangular maps supported).
+        If a HEALPix map is requested (only rectangular maps supported for Lo),
+        or if the map is of a species other than hydrogen.
     """
     logger.info("Starting IMAP-Lo L2 processing pipeline")
-    if "imap_lo_l1c_pset" not in sci_dependencies:
-        raise ValueError("No pointing set data found in science dependencies")
-    psets = sci_dependencies["imap_lo_l1c_pset"]
 
-    # Parse the map descriptor to get species and other attributes
     map_descriptor = MapDescriptor.from_string(descriptor)
     logger.info(f"Processing map for species: {map_descriptor.species}")
 
     # Determine if corrections are needed and prepare oxygen data if required
     (
-        sputtering_correction,
-        bootstrap_correction,
-        flux_correction,
-        o_map_dataset,
-        flux_factors,
-        cg_correction,
+        _sputtering_correction,
+        _bootstrap_correction,
+        _flux_correction,
+        _o_map_dataset,
+        _flux_factors,
+        _cg_correction,
     ) = _prepare_corrections(
         map_descriptor, descriptor, sci_dependencies, anc_dependencies
     )
 
     logger.info("Step 1: Loading ancillary data")
-    efficiency_data = load_efficiency_data(anc_dependencies)
+    _efficiency_data = load_efficiency_data(anc_dependencies)
 
-    logger.info(f"Step 2: Creating sky map from {len(psets)} pointing sets")
-    sky_map = create_sky_map_from_psets(
-        psets, map_descriptor, efficiency_data, cg_correction
-    )
+    # Only hydrogen maps are supported end to end for now.
+    if map_descriptor.species != "h":
+        raise NotImplementedError(
+            f"Cannot make a map of species {map_descriptor.species} for "
+            f"{descriptor}. Only hydrogen maps are supported."
+        )
 
-    logger.info("Step 3: Converting to dataset and adding geometric factors")
-    dataset = sky_map.to_dataset()
-    dataset = add_geometric_factors(dataset, map_descriptor.species)
+    sky_map = map_descriptor.to_empty_map()
+    if not isinstance(sky_map, RectangularSkyMap):
+        raise NotImplementedError("HEALPix map output not supported for Lo")
 
-    logger.info("Step 4: Calculating rates and intensities")
-    dataset = calculate_all_rates_and_intensities(
-        dataset,
-        sputtering_correction=sputtering_correction,
-        bootstrap_correction=bootstrap_correction,
-        flux_correction=flux_correction,
-        o_map_dataset=o_map_dataset,
-        flux_factors=flux_factors,
-        cg_correction=cg_correction,
-    )
+    pointings = _complete_pointings(sci_dependencies)
+    logger.info(f"Building {descriptor} from {len(pointings)} pointings")
 
-    logger.info("Step 5: Finalizing dataset with attributes")
-    dataset = cast(RectangularSkyMap, sky_map).build_cdf_dataset(
-        instrument="lo", level="l2", descriptor=descriptor, external_map_dataset=dataset
-    )
+    # Every pointing of a map is taken in the same ESA mode, so the last one
+    # sets the energy response the whole map is binned in.
+    esa_mode = _get_esa_mode(pointings[max(pointings)][2]) if pointings else 0
+    calibration = _esa_calibration(map_descriptor.species, esa_mode)
+
+    _initialize_accumulators(sky_map, calibration.energy)
+
+    for repointing, (goodtimes, bgrates, histrates) in sorted(pointings.items()):
+        logger.debug(f"Accumulating repoint{repointing:05d}")
+        _accumulate_pointing(
+            goodtimes, bgrates, histrates, sky_map, map_descriptor, calibration.energy
+        )
+
+    variables = _calculate_rates_and_intensities(sky_map, calibration)
+    dataset = _build_map_dataset(sky_map, variables, calibration)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
-    return [dataset]
+    return [
+        sky_map.build_cdf_dataset(
+            instrument="lo",
+            level="l2",
+            descriptor=descriptor,
+            external_map_dataset=dataset,
+        )
+    ]
 
 
 def _prepare_corrections(
@@ -252,8 +286,7 @@ def load_sputter_correction_data(
         with columns: source_species, target_species, esa_step,
         sputter_factor, sputter_factor_uncertainty.
     """
-    anc_path = Path(__file__).parent.parent / "ancillary_data"
-    sputter_files = sorted(anc_path.glob("*sputter-correction-factors*"))
+    sputter_files = sorted(ANCILLARY_DATA_DIR.glob("*sputter-correction-factors*"))
 
     if not sputter_files:
         raise ValueError("No sputter correction files found")
@@ -280,8 +313,7 @@ def load_bootstrap_correction_data() -> pd.DataFrame:
         bootstrap_factor. Indices are 1-based ESA step numbers where esa_step_k=8
         refers to the virtual E8 channel.
     """
-    anc_path = Path(__file__).parent.parent / "ancillary_data"
-    bootstrap_files = sorted(anc_path.glob("*bootstrap-correction-factors*"))
+    bootstrap_files = sorted(ANCILLARY_DATA_DIR.glob("*bootstrap-correction-factors*"))
 
     if not bootstrap_files:
         raise ValueError("No bootstrap correction factor files found")
@@ -337,350 +369,328 @@ def finalize_dataset(dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
 
 
 # =============================================================================
-# SKY MAP CREATION PIPELINE
+# INPUT HANDLING
 # =============================================================================
 
 
-def create_sky_map_from_psets(
-    psets: list[xr.Dataset],
-    map_descriptor: MapDescriptor,
-    efficiency_data: pd.DataFrame,
-    cg_correct: bool,
-) -> AbstractSkyMap:
+def _complete_pointings(
+    sci_dependencies: dict[int, dict[str, xr.Dataset]],
+) -> dict[int, tuple]:
     """
-    Create a sky map by processing all pointing sets.
+    Reduce the grouped inputs to the pointings that can be mapped.
 
     Parameters
     ----------
-    psets : list[xr.Dataset]
-        List of pointing set datasets to process.
-    map_descriptor : MapDescriptor
-        Map descriptor object defining the projection and binning.
-    efficiency_data : pd.DataFrame
-        Efficiency factor data for correcting counts.
-    cg_correct : bool
-        Whether to apply the CG correction to each PSET.
+    sci_dependencies : dict[int, dict[str, xr.Dataset]]
+        The input datasets of each pointing, keyed by repointing and then by
+        product descriptor.
 
     Returns
     -------
-    AbstractSkyMap
-        The populated sky map with projected data from all pointing sets.
+    dict[int, tuple]
+        The (goodtimes, bgrates, histrates) datasets of each mappable pointing,
+        keyed by repointing.
 
     Raises
     ------
-    NotImplementedError
-        If HEALPix map output is requested (only rectangular maps supported).
+    KeyError
+        If any of the three required products is missing entirely.
     """
-    # Initialize the output map
-    output_map = map_descriptor.to_empty_map()
+    found = {product for products in sci_dependencies.values() for product in products}
+    missing_products = set(REQUIRED_PRODUCTS) - found
+    if missing_products:
+        raise KeyError(f"No input files for {sorted(missing_products)}")
 
-    if not isinstance(output_map, RectangularSkyMap):
-        raise NotImplementedError("HEALPix map output not supported for Lo")
+    pointings = {}
+    for repointing, products in sci_dependencies.items():
+        missing = set(REQUIRED_PRODUCTS) - set(products)
+        if missing:
+            logger.warning(
+                f"Dropping repoint{repointing:05d}, it has no {sorted(missing)}"
+            )
+            continue
+        pointings[repointing] = tuple(products[p] for p in REQUIRED_PRODUCTS)
 
-    logger.debug(f"Processing {len(psets)} pointing sets")
-    # Process each pointing set
-    for i, pset in enumerate(psets):
-        logger.debug(f"Processing pointing set {i + 1}/{len(psets)}")
-        processed_pset = process_single_pset(
-            pset,
-            efficiency_data,
-            map_descriptor.species,
-            cg_correct,
-        )
-        directional_mask = get_pset_directional_mask(
-            processed_pset, map_descriptor.spin_phase
-        )
-        project_pset_to_map(processed_pset, output_map, directional_mask, cg_correct)
-
-    return output_map
+    return pointings
 
 
-def process_single_pset(
-    pset: xr.Dataset,
-    efficiency_data: pd.DataFrame,
-    species: str,
-    cg_correct: bool = False,
-) -> xr.Dataset:
+def _get_esa_mode(histrates: xr.Dataset) -> int:
     """
-    Process a single pointing set for projection to the sky map.
+    Read the ESA mode of a pointing, defaulting to HiRes.
 
     Parameters
     ----------
-    pset : xr.Dataset
-        Single pointing set dataset to process.
-    efficiency_data : pd.DataFrame
-        Efficiency factor data for correcting counts.
-    species : str
-        The species to process (e.g., "h", "o").
-    cg_correct : bool
-        Whether to apply the CG correction to each PSET. A value of True will
-        cause the pre-projection Compton Getting Correction to be applied to
-        the PSET data.
+    histrates : xr.Dataset
+        The L1B histogram rates of the pointing.
 
     Returns
     -------
-    xr.Dataset
-        Processed pointing set ready for projection with efficiency corrections applied.
+    int
+        The ESA mode, 0 for HiRes and 1 for HiThr.
     """
-    # Step 1: Normalize coordinate system
-    pset_processed = normalize_pset_coordinates(pset, species)
-
-    # Step 2: Add efficiency factors
-    pset_processed = add_efficiency_factors_to_pset(pset_processed, efficiency_data)
-
-    # Step 3: Calculate efficiency-corrected quantities
-    pset_processed = calculate_efficiency_corrected_quantities(pset_processed)
-
-    # Step 4: Optionally apply CG correction and calculate ram-mask
-    if cg_correct:
-        # NOTE: Heliospheric frame energy selection for CG correction
-        # The heliospheric (HF) energies passed to the CG correction algorithm
-        # could in principle be completely different from the ESA central energies.
-        # However, for Lo, the instrument team has chosen to use the same HF
-        # energies as the ESA central energies (from the geometric factor files).
-        # This decision aligns the energy grid between the spacecraft frame and
-        # heliospheric frame representations.
-
-        # Convert energy coordinate from keV to eV for CG correction
-        # (energy coordinate was set in normalize_pset_coordinates in keV)
-        energy_values_ev: xr.DataArray = pset_processed["energy"] * 1000.0
-        pset_processed = apply_compton_getting_correction(
-            pset_processed, energy_values_ev
-        )
-        # Prepare energy_sc for exposure time weighted projection
-        pset_processed["energy_sc_exposure_factor"] = (
-            pset_processed["energy_sc"] * pset_processed["exposure_factor"]
-        )
-
-    # Always calculate ram-mask to identify ram/anti-ram bins
-    pset_processed = calculate_ram_mask(pset_processed)
-
-    return pset_processed
+    if "esa_mode" not in histrates:
+        return 0
+    return int(np.atleast_1d(histrates["esa_mode"].values)[0])
 
 
-def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
+# =============================================================================
+# SKY MAP ACCUMULATION
+# =============================================================================
+
+
+class LoSpinAnglePointingSet(PointingSet):
     """
-    Normalize pointing set coordinates to match the output map.
+    The spin-angle bins of one pointing, as an in-memory pointing set.
+
+    Lo builds its maps straight from the L1B products of a pointing rather than
+    from a written L1C pointing set, so the sky direction of each spin-angle
+    bin and the values looking in it are assembled here.
 
     Parameters
     ----------
-    pset : xr.Dataset
-        Input pointing set dataset with potentially mismatched coordinates.
-    species : str
-        The species to process (e.g., "h", "o").
-
-    Returns
-    -------
-    xr.Dataset
-        Pointing set with normalized energy coordinates and dimension names.
+    epoch : int
+        The time [TTJ2000 ns] the pointing is projected from.
+    pivot_angle : float
+        The pivot angle [degrees] of the pointing.
+    spin_angles : np.ndarray
+        The IMAP_DPS azimuth [degrees] of each spin-angle bin.
+    values : dict[str, np.ndarray]
+        The values of the pointing, each of shape (esa level, spin angle).
+    frame : SpiceFrame
+        The frame to compute the sky directions in, i.e. the map's frame.
+    energy : np.ndarray
+        The energy [keV] of each ESA level.
     """
-    # Load true energy values for this species (in keV, matching map convention)
-    # TODO: Figure out how to handle esa_mode properly
-    if "esa_mode" in pset:
-        esa_mode = pset["esa_mode"].values[0]
-    else:
-        # Default to mode 0 if not available (HiRes mode)
-        esa_mode = 0
-    gf_dataset = reduce_geometric_factor_dataset(species, esa_mode=esa_mode)
 
-    # Ensure consistent energy coordinates (maps want energy not esa_energy_step)
-    pset_renamed = pset.rename_dims({"esa_energy_step": "energy"})
+    tiling_type: SkyTilingType = SkyTilingType.RECTANGULAR
 
-    # Drop the esa_energy_step coordinate first to avoid conflicts
-    pset_renamed = pset_renamed.drop_vars("esa_energy_step")
+    def __init__(
+        self,
+        epoch: int,
+        pivot_angle: float,
+        spin_angles: np.ndarray,
+        values: dict[str, np.ndarray],
+        frame: SpiceFrame,
+        energy: np.ndarray,
+    ):
+        dims = [CoordNames.TIME.value, CoordNames.ENERGY_L2.value, "spin_angle"]
+        super().__init__(
+            xr.Dataset(
+                {
+                    name: (dims, value[np.newaxis, ...])  # add epoch axis
+                    for name, value in values.items()
+                },
+                coords={
+                    CoordNames.TIME.value: [epoch],
+                    CoordNames.ENERGY_L2.value: energy,
+                },
+            ),
+            spice_reference_frame=frame,
+        )
+        self.spatial_coords = ("spin_angle",)
 
-    # Assign TRUE energy values as coordinates (in keV, matching map convention)
-    pset_renamed = pset_renamed.assign_coords(energy=gf_dataset["Cntr_E"].values)
+        az_el = compute_pointing_directions(
+            epoch,
+            pivot_angle,
+            spin_angles=spin_angles,
+            off_angles=np.array([0.0]),
+            to_frame=frame,
+        )
+        self.az_el_points = xr.DataArray(
+            np.asarray(az_el),
+            dims=[CoordNames.GENERIC_PIXEL.value, CoordNames.AZ_EL_VECTOR.value],
+        )
 
-    # Rename the variables in the pset for projection to the map
-    # L2 wants different variable names than l1c
-    rename_map = {
-        "exposure_time": "exposure_factor",
-        f"{species}_counts": "counts",
-        f"{species}_background_rates": "bg_rate",
-        f"{species}_background_rates_stat_uncert": "bg_rate_stat_uncert",
-    }
-    pset_renamed = pset_renamed.rename_vars(rename_map)
+    @property
+    def midpoint_j2000_et(self) -> float:
+        """
+        The time the pointing is projected from.
 
-    return pset_renamed
+        The base class derives this from an ``epoch_delta``; a pointing built
+        here is handed the single epoch it is projected from directly.
+
+        Returns
+        -------
+        float
+            The epoch of the pointing set [J2000 ET].
+        """
+        return float(ttj2000ns_to_et(self.epoch))
 
 
-def add_efficiency_factors_to_pset(
-    pset: xr.Dataset, efficiency_data: pd.DataFrame
-) -> xr.Dataset:
+def _initialize_accumulators(sky_map: RectangularSkyMap, energy: np.ndarray) -> None:
     """
-    Add efficiency factors to the pointing set based on observation date.
+    Seed the map with the empty accumulators each pointing is added into.
+
+    ``project_pset_values_to_map`` creates a map variable the first time it
+    projects one, so seeding them is what lets the rest of the pipeline read
+    the accumulators unconditionally, however many pointings turn out to be
+    usable.
 
     Parameters
     ----------
-    pset : xr.Dataset
-        Pointing set dataset to add efficiency factors to.
-    efficiency_data : pd.DataFrame
-        Efficiency factor data containing date-indexed efficiency values.
+    sky_map : RectangularSkyMap
+        The map being built, modified in place.
+    energy : np.ndarray
+        The energy [keV] of each ESA level.
+    """
+    for name in ACCUMULATED_VARIABLES:
+        sky_map.data_1d[name] = xr.DataArray(
+            np.zeros((1, c.N_ESA_LEVELS, sky_map.num_points)),
+            dims=[
+                CoordNames.TIME.value,
+                CoordNames.ENERGY_L2.value,
+                CoordNames.GENERIC_PIXEL.value,
+            ],
+            coords={CoordNames.ENERGY_L2.value: energy},
+        )
+
+
+def _accumulate_pointing(
+    goodtimes: xr.Dataset,
+    bgrates: xr.Dataset,
+    histrates: xr.Dataset,
+    sky_map: RectangularSkyMap,
+    map_descriptor: MapDescriptor,
+    energy: np.ndarray,
+) -> None:
+    """
+    Add one pointing's counts and exposure to the map.
+
+    Parameters
+    ----------
+    goodtimes : xr.Dataset
+        The L1B goodtimes of the pointing, giving its pivot angle and the
+        good-time windows its histograms are accepted within.
+    bgrates : xr.Dataset
+        The L1B background rates of the pointing, one rate per ESA level.
+    histrates : xr.Dataset
+        The L1B histogram rates of the pointing, giving the counts and exposure
+        of each spin-angle bin.
+    sky_map : RectangularSkyMap
+        The map being built, modified in place.
+    map_descriptor : MapDescriptor
+        The parsed descriptor of the map being made.
+    energy : np.ndarray
+        The energy [keV] of each ESA level.
+    """
+    species = map_descriptor.species
+    pivot_angle = float(np.atleast_1d(goodtimes["pivot"].values)[0])
+    gt_start = np.atleast_1d(goodtimes["gt_start_met"].values)
+    gt_end = np.atleast_1d(goodtimes["gt_end_met"].values)
+
+    histogram_met = ttj2000ns_to_met(histrates["epoch"].values)
+    in_goodtime = np.any(
+        (histogram_met[:, np.newaxis] >= gt_start)
+        & (histogram_met[:, np.newaxis] <= gt_end),
+        axis=1,
+    )
+    if not in_goodtime.any():
+        logger.warning("No histogram epochs fall within the good-time windows.")
+        return
+
+    spin_angles = _dps_spin_angles()
+    keep = _spin_phase_mask(spin_angles, pivot_angle, map_descriptor.spin_phase)
+    if not keep.any():
+        return
+
+    pointing_counts = histrates[f"{species}_counts"].values[in_goodtime].sum(axis=0)
+    pointing_exposure = histrates["exposure_time_6deg"].values[in_goodtime].sum(axis=0)
+    background_rates = np.atleast_2d(bgrates[f"{species}_background_rates"].values)[0]
+
+    # The whole pointing is projected from the middle of its good times, which
+    # is where the despun frame is sampled.
+    epoch = met_to_ttj2000ns((gt_start.min() + gt_end.max()) / 2.0)
+    pointing_set = LoSpinAnglePointingSet(
+        epoch,
+        pivot_angle,
+        spin_angles,
+        {
+            "ena_count": pointing_counts,
+            "exposure_factor": pointing_exposure,
+            # Background is a rate per ESA level per pointing, so it is
+            # accumulated weighted by exposure and divided by the total
+            # exposure at the end.
+            "bg_rate_exposure": background_rates[:, np.newaxis] * pointing_exposure,
+        },
+        sky_map.spice_reference_frame,
+        energy,
+    )
+    # The projection sums the spin-angle bins that land in the same map pixel,
+    # and adds this pointing on top of what the earlier pointings left there.
+    sky_map.project_pset_values_to_map(
+        pointing_set,
+        value_keys=list(ACCUMULATED_VARIABLES),
+        pset_valid_mask=keep,
+    )
+
+    sky_map.min_epoch = min(sky_map.min_epoch, int(met_to_ttj2000ns(gt_start.min())))
+    sky_map.max_epoch = max(sky_map.max_epoch, int(met_to_ttj2000ns(gt_end.max())))
+
+
+def _dps_spin_angles() -> np.ndarray:
+    """
+    Get the despun-frame azimuth of each histogram spin-angle bin center.
+
+    The L1B histogram spin bins are hardware spin-phase bins referenced to the
+    spacecraft spin pulse, NOT the instrument (DPS) spin angle. A bin center is
+    converted to the IMAP_DPS azimuth by adding the spacecraft to instrument
+    spin-phase offset, exactly as the L1B star-sensor product does.
 
     Returns
     -------
-    xr.Dataset
-        Pointing set with efficiency factors added as new data variable.
+    np.ndarray
+        The IMAP_DPS azimuth [degrees] of each of the histogram spin bins.
+    """
+    bin_width = 360.0 / c.N_SPIN_ANGLE_BINS
+    bin_centers = (np.arange(c.N_SPIN_ANGLE_BINS) + 0.5) * bin_width
+    offset = get_spacecraft_to_instrument_spin_phase_offset(SpiceFrame.IMAP_LO) * 360.0
+    return np.mod(bin_centers + offset, 360.0)
+
+
+def _spin_phase_mask(
+    spin_angles: np.ndarray, pivot_angle: float, spin_phase: str
+) -> np.ndarray:
+    """
+    Get the spin-angle bins belonging on a map of the given spin phase.
+
+    A bin's RAM projection factor is ``sin(pivot) * sin(spin angle)``, positive
+    looking into the RAM direction and negative looking away from it.
+
+    Parameters
+    ----------
+    spin_angles : np.ndarray
+        The IMAP_DPS azimuth [degrees] of each spin-angle bin.
+    pivot_angle : float
+        The pivot angle [degrees] of the pointing.
+    spin_phase : str
+        The spin phase of the map, "ram", "anti" or "full".
+
+    Returns
+    -------
+    np.ndarray
+        Boolean mask of the bins to keep.
 
     Raises
     ------
     ValueError
-        If no efficiency factor found for the pointing set observation date.
+        If the spin phase is not one of "ram", "anti" or "full".
     """
-    if efficiency_data.empty:
-        # If no efficiency data, create unity efficiency
-        logger.warning("No efficiency data available, using unity efficiency")
-        pset["efficiency"] = xr.DataArray(np.ones(7), dims=["energy"])
-        return pset
+    if spin_phase == "full":
+        return np.ones(spin_angles.size, dtype=bool)
+    if spin_phase not in ("ram", "anti"):
+        raise ValueError(
+            f"Invalid spin phase: {spin_phase}. Must be 'ram', 'anti' or 'full'."
+        )
 
-    # Convert the epoch to datetime64
-    date = et_to_datetime64(ttj2000ns_to_et(pset["epoch"].values[0]))
-    # The efficiency file only has date as YYYYDDD, so drop the time for this
-    date = date.astype("M8[D]")  # Convert to date only (no time)
-
-    ef_df = efficiency_data[efficiency_data["Date"] == date]
-    if ef_df.empty:
-        raise ValueError(f"No efficiency factor found for pset date {date}")
-
-    efficiency_values = ef_df[
-        [
-            "E-Step1_eff",
-            "E-Step2_eff",
-            "E-Step3_eff",
-            "E-Step4_eff",
-            "E-Step5_eff",
-            "E-Step6_eff",
-            "E-Step7_eff",
-        ]
-    ].values[0]
-
-    pset["efficiency"] = xr.DataArray(
-        efficiency_values,
-        dims=["energy"],
+    ram_projection = np.sin(np.radians(pivot_angle + c.PIVOT_RAM_OFFSET)) * np.sin(
+        np.radians(spin_angles)
     )
-    logger.debug(f"Applied efficiency factors for date {date}")
-    return pset
-
-
-def calculate_efficiency_corrected_quantities(
-    pset: xr.Dataset,
-) -> xr.Dataset:
-    """
-    Calculate efficiency-corrected quantities for each particle type.
-
-    Parameters
-    ----------
-    pset : xr.Dataset
-        Pointing set with efficiency factors applied.
-
-    Returns
-    -------
-    xr.Dataset
-        Pointing set with efficiency-corrected count variables added.
-    """
-    # counts / efficiency
-    pset["counts_over_eff"] = pset["counts"] / pset["efficiency"]
-    # counts / efficiency**2 (for variance propagation)
-    pset["counts_over_eff_squared"] = pset["counts"] / (pset["efficiency"] ** 2)
-
-    # background * exposure_factor for weighted average
-    pset["bg_rate_exposure_factor"] = pset["bg_rate"] * pset["exposure_factor"]
-    # background_uncertainty ** 2 * exposure_factor ** 2
-    pset["bg_rate_stat_uncert_exposure_factor2"] = (
-        pset["bg_rate_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
-    )
-
-    return pset
-
-
-def project_pset_to_map(
-    pset: xr.Dataset,
-    output_map: AbstractSkyMap,
-    directional_mask: xr.DataArray,
-    cg_correct: bool = False,
-) -> None:
-    """
-    Project pointing set data to the output map.
-
-    Parameters
-    ----------
-    pset : xr.Dataset
-        Processed pointing set ready for projection.
-    output_map : AbstractSkyMap
-        Target sky map to receive the projected data.
-    directional_mask : xr.DataArray
-        Boolean mask indicating which PSET bins to use for projection. This is
-        how ram/anti-ram bins are removed depending on the descriptor spin phase.
-    cg_correct : bool
-        Whether the CG correction is being applied. If set to True, "energy_sc"
-        is added to the list of variables to be projected.
-
-    Returns
-    -------
-    None
-        Function modifies output_map in place.
-    """
-    # Define base quantities to project
-    value_keys = [
-        "exposure_factor",
-        "counts",
-        "counts_over_eff",
-        "counts_over_eff_squared",
-        "bg_rate",
-        "bg_rate_stat_uncert",
-        "bg_rate_exposure_factor",
-        "bg_rate_stat_uncert_exposure_factor2",
-    ]
-    if cg_correct:
-        value_keys.append("energy_sc_exposure_factor")
-
-    # Create LoPointingSet and project to map
-    lo_pset = ena_maps.LoPointingSet(pset)
-    output_map.project_pset_values_to_map(
-        pointing_set=lo_pset,
-        value_keys=value_keys,
-        index_match_method=ena_maps.IndexMatchMethod.PUSH,
-        pset_valid_mask=directional_mask,
-    )
-    logger.debug(f"Projected {len(value_keys)} quantities to sky map")
+    return ram_projection > 0 if spin_phase == "ram" else ram_projection < 0
 
 
 # =============================================================================
 # GEOMETRIC FACTORS
 # =============================================================================
-
-
-def add_geometric_factors(dataset: xr.Dataset, species: str) -> xr.Dataset:
-    """
-    Add geometric factors to the sky map after projection.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Sky map dataset to add geometric factors to.
-    species : str
-        The species to process (only "h" and "o" have geometric factors).
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with geometric factor variables added for the specified species.
-    """
-    # Only add geometric factors for hydrogen and oxygen
-    if species not in ["h", "o"]:
-        logger.warning(f"No geometric factors to add for species: {species}")
-        return dataset
-
-    logger.info(f"Loading and applying geometric factors for species: {species}")
-
-    # Initialize geometric factor variables
-    dataset = initialize_geometric_factor_variables(dataset)
-
-    # Populate geometric factors for each energy step
-    dataset = populate_geometric_factors(dataset, species)
-
-    return dataset
 
 
 def load_geometric_factor_data(species: str) -> pd.DataFrame:
@@ -707,22 +717,20 @@ def load_geometric_factor_data(species: str) -> pd.DataFrame:
             f"Geometric factors only available for 'h' and 'o', got '{species}'"
         )
 
-    anc_path = Path(__file__).parent.parent / "ancillary_data"
-
     if species == "h":
-        gf_file = sorted(anc_path.glob("*hydrogen-geometric-factor*"))[-1]
+        gf_file = sorted(ANCILLARY_DATA_DIR.glob("*hydrogen-geometric-factor*"))[-1]
     else:  # species == "o"
-        gf_file = sorted(anc_path.glob("*oxygen-geometric-factor*"))[-1]
+        gf_file = sorted(ANCILLARY_DATA_DIR.glob("*oxygen-geometric-factor*"))[-1]
 
     return lo_ancillary.read_ancillary_file(gf_file)
 
 
-def reduce_geometric_factor_dataset(species: str, esa_mode: int) -> xr.Dataset:
+def reduce_geometric_factor_data(species: str, esa_mode: int) -> pd.DataFrame:
     """
-    Get geometric factor data as xarray Dataset for a specific species and ESA mode.
+    Get geometric factor data for a specific species and ESA mode.
 
-    This helper function loads geometric factor data, filters by ESA mode, converts
-    to xarray, and selects all 7 energy steps for vectorized operations.
+    This helper function loads geometric factor data, filters by ESA mode, and
+    selects the row of each of the 7 energy steps, in ascending step order.
 
     Parameters
     ----------
@@ -733,7 +741,7 @@ def reduce_geometric_factor_dataset(species: str, esa_mode: int) -> xr.Dataset:
 
     Returns
     -------
-    xarray.Dataset
+    pd.DataFrame
         Geometric factor data indexed by Observed_E-Step (1-7), containing all
         columns from the geometric factor CSV file.
     """
@@ -742,127 +750,56 @@ def reduce_geometric_factor_dataset(species: str, esa_mode: int) -> xr.Dataset:
 
     # Filter for the specific ESA mode
     if "esa_mode" in gf_data.columns:
-        gf_data = gf_data[gf_data["esa_mode"] == esa_mode].copy()
-
-    # Convert to xarray Dataset indexed by energy step for vectorized selection
-    gf_ds = gf_data.set_index("Observed_E-Step").to_xarray()
+        gf_data = gf_data[gf_data["esa_mode"] == esa_mode]
 
     # Lo Instrument team: Use only geometric factors where
     # incident_E-Step == Observed_E-Step
-    gf_ds = gf_ds.where(gf_ds["incident_E-Step"] == gf_ds["Observed_E-Step"], drop=True)
+    diagonal = gf_data["incident_E-Step"] == gf_data["Observed_E-Step"]
+    gf_data = gf_data[diagonal].set_index("Observed_E-Step")
 
-    # Select energy steps 1-7 and return
-    return gf_ds.sel({"Observed_E-Step": range(1, 8)})
+    # Select the energy steps, in order. Raises if the file is missing one.
+    return gf_data.loc[list(range(1, c.N_ESA_LEVELS + 1))]
 
 
-def initialize_geometric_factor_variables(
-    dataset: xr.Dataset,
-) -> xr.Dataset:
+def _esa_calibration(species: str, esa_mode: int) -> EsaCalibration:
     """
-    Initialize geometric factor variables for the specified species.
+    Get the ESA level calibration one map is built from.
+
+    The ancillary names its two geometric factor uncertainty columns for the
+    direction the intensity derived from the factor moves in, which is the
+    opposite of the direction the factor itself moves in: intensity goes as
+    1/G, so a smaller factor gives a larger intensity. Its ``_unc_plus`` is
+    therefore the downward excursion of the factor, and its ``_unc_minus`` the
+    upward one.
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        Input dataset to add geometric factor variables to.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with initialized geometric factor variables for the specified species.
-    """
-    gf_vars = [
-        "energy",
-        "energy_delta_minus",
-        "energy_delta_plus",
-        "geometric_factor",
-        "geometric_factor_stat_uncert_minus",
-        "geometric_factor_stat_uncert_plus",
-    ]
-
-    # Initialize variables with proper dimensions (energy only)
-    for var in gf_vars:
-        dataset[var] = xr.DataArray(
-            np.zeros(7),
-            dims=["energy"],
-        )
-
-    return dataset
-
-
-def populate_geometric_factors(
-    dataset: xr.Dataset,
-    species: str,
-) -> xr.Dataset:
-    """
-    Populate geometric factor values for each energy step.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Dataset with initialized geometric factor variables.
     species : str
-        The species to process (only "h" and "o" have geometric factors).
+        The species of the map ("h" or "o").
+    esa_mode : int
+        The ESA mode, 0 for HiRes and 1 for HiThr.
 
     Returns
     -------
-    xr.Dataset
-        Dataset with populated geometric factor values for the specified species.
+    EsaCalibration
+        The energies, passband half-widths and geometric factors of every ESA
+        level, in ascending level order.
     """
-    # Only populate if the species has geometric factors
-    if species not in ["h", "o"]:
-        logger.debug(f"No geometric factors to populate for species: {species}")
-        return dataset
+    gf_data = reduce_geometric_factor_data(species, esa_mode).astype(float)
 
-    # Mapping of dataset variables to dataframe columns for this species
-    gf_coords = {"energy": "Cntr_E"}
-    gf_vars = {
-        "geometric_factor": f"GF_Trpl_{species.upper()}",
-        "geometric_factor_stat_uncert_minus": f"GF_Trpl_{species.upper()}_unc_minus",
-        "geometric_factor_stat_uncert_plus": f"GF_Trpl_{species.upper()}_unc_plus",
-    }
-    if species == "h":
-        # NOTE: From an e-mail from Nathan on 2025-09-11 (values converted to keV)
-        energy_delta_hires_values = (
-            np.array([5.43, 10.02, 18.61, 33.31, 64.98, 131.64, 262.35]) * 1e-3
-        )
-        energy_delta_hithr_values = (
-            np.array([8.81, 16.04, 28.50, 53.13, 105.60, 219.67, 413.60]) * 1e-3
-        )
-    else:  # species == "o"
-        energy_delta_hires_values = (
-            np.array([5.82, 11.10, 21.78, 41.47, 85.61, 180.67, 361.93]) * 1e-3
-        )
-        energy_delta_hithr_values = (
-            np.array([9.45, 17.84, 33.51, 66.61, 139.95, 302.24, 569.48]) * 1e-3
-        )
+    factor = f"GF_Trpl_{species.upper()}"
+    geometric_factor = gf_data[factor].to_numpy()
 
-    # Get ESA mode from the map (assuming it's constant or we take the first)
-    # TODO: Figure out how to handle esa_mode properly
-    if "esa_mode" in dataset:
-        esa_mode = dataset["esa_mode"].values[0]
-    else:
-        # Default to mode 0 if not available (HiRes mode)
-        esa_mode = 0
-
-    # Filter for the specific ESA mode
-    gf_dataset = reduce_geometric_factor_dataset(species, esa_mode)
-
-    # Populate geometric factors in dataset
-    dataset = dataset.assign_coords(energy=gf_dataset[gf_coords["energy"]].values)
-    for var, col in gf_vars.items():
-        dataset[var].values = gf_dataset[col].values
-
-    # Update delta_minus and delta_plus based on ESA mode
-    # converting eV to keV
-    if esa_mode == 0:  # HiRes
-        dataset["energy_delta_minus"].values = energy_delta_hires_values
-        dataset["energy_delta_plus"].values = energy_delta_hires_values
-    else:  # HiThr
-        dataset["energy_delta_minus"].values = energy_delta_hithr_values
-        dataset["energy_delta_plus"].values = energy_delta_hithr_values
-
-    return dataset
+    return EsaCalibration(
+        energy=gf_data["Cntr_E"].to_numpy(),
+        energy_delta_minus=gf_data["Cntr_E_delta_minus"].to_numpy(),
+        energy_delta_plus=gf_data["Cntr_E_delta_plus"].to_numpy(),
+        geometric_factor=geometric_factor,
+        geometric_factor_low=geometric_factor
+        - gf_data[f"{factor}_unc_plus"].to_numpy(),
+        geometric_factor_high=geometric_factor
+        + gf_data[f"{factor}_unc_minus"].to_numpy(),
+    )
 
 
 # =============================================================================
@@ -870,567 +807,145 @@ def populate_geometric_factors(
 # =============================================================================
 
 
-def calculate_all_rates_and_intensities(
-    dataset: xr.Dataset,
-    sputtering_correction: bool = False,
-    bootstrap_correction: bool = False,
-    flux_correction: bool = False,
-    o_map_dataset: xr.Dataset | None = None,
-    flux_factors: Path | None = None,
-    cg_correction: bool = False,
-) -> xr.Dataset:
+def _calculate_rates_and_intensities(
+    sky_map: RectangularSkyMap, calibration: EsaCalibration
+) -> dict[str, xr.DataArray]:
     """
-    Calculate rates and intensities with proper error propagation.
+    Turn the accumulated counts and exposure into rates and intensities.
+
+    Every quantity is zero in the pixels that were never exposed.
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        Sky map dataset with count data and geometric factors.
-    sputtering_correction : bool, optional
-        Whether to apply sputtering corrections to oxygen intensities.
-        Default is False.
-    bootstrap_correction : bool, optional
-        Whether to apply bootstrap corrections to intensities.
-        Default is False.
-    flux_correction : bool, optional
-        Whether to apply flux corrections to intensities.
-        Default is False.
-    o_map_dataset : xr.Dataset, optional
-        Dataset specifically for oxygen, needed for sputtering corrections.
-    flux_factors : Path, optional
-        Path to flux factor file for flux corrections.
-    cg_correction : bool, optional
-        Whether to apply CG correction to intensities.
+    sky_map : RectangularSkyMap
+        The map the pointings were projected onto, read for its accumulators.
+    calibration : EsaCalibration
+        The energy response the map is binned in, read for the energies and
+        geometric factors the intensities are derived with.
 
     Returns
     -------
-    xr.Dataset
-        Dataset with calculated rates, intensities, and uncertainties for the
-        specified species.
+    dict[str, xr.DataArray]
+        The map variables, each of shape (epoch, esa level, pixel).
     """
-    # Step 1: Calculate rates for the specified species
-    dataset = calculate_rates(dataset)
+    counts = sky_map.data_1d["ena_count"]
+    exposure = sky_map.data_1d["exposure_factor"]
+    bg_rate_exposure = sky_map.data_1d["bg_rate_exposure"]
 
-    # Step 2: Calculate intensities
-    dataset = calculate_intensities(dataset)
+    # Naming the energy dimension lets xarray broadcast during division
+    # without the need to introduce new dimensions
+    energy_dim = CoordNames.ENERGY_L2.value
+    energy = xr.DataArray(calibration.energy, dims=[energy_dim])
+    geometric_factor = xr.DataArray(calibration.geometric_factor, dims=[energy_dim])
+    gf_low = xr.DataArray(calibration.geometric_factor_low, dims=[energy_dim])
+    gf_high = xr.DataArray(calibration.geometric_factor_high, dims=[energy_dim])
 
-    # Step 3: Calculate background rates and intensities
-    dataset = calculate_backgrounds(dataset)
+    exposed = exposure > 0
 
-    # Optional Step 4: Calculate sputtering corrections
-    if sputtering_correction:
-        logger.info("Calculating sputtering corrections")
-        dataset = calculate_sputtering_corrections(dataset, o_map_dataset)
+    def _divide(numerator: xr.DataArray, denominator: xr.DataArray) -> xr.DataArray:
+        """
+        Divide only where the map was exposed, zero elsewhere.
 
-    # Optional Step 5: Calculate bootstrap corrections
-    if bootstrap_correction:
-        logger.info("Calculating bootstrap corrections")
-        dataset = calculate_bootstrap_corrections(dataset)
+        Parameters
+        ----------
+        numerator : xr.DataArray
+            The array being divided.
+        denominator : xr.DataArray
+            The array to divide it by.
 
-    # Optional Step 6: Calculate flux corrections
-    if flux_correction:
-        if flux_factors is None:
-            raise ValueError("Flux factors file must be provided for flux corrections")
-        dataset = calculate_flux_corrections(dataset, flux_factors)
+        Returns
+        -------
+        xr.DataArray
+            The quotient, zero in the pixels that were never exposed.
+        """
+        return (numerator / denominator).where(exposed, 0)
 
-    # Optional Step 7: Finish CG correction
-    if cg_correction:
-        logger.info("Interpolating map intensities to helio-frame energies")
-        # Finish calculation of the exposure factor weighted projection of energy_sc
-        # and convert to units of keV
-        dataset["energy_sc"] = (
-            dataset["energy_sc_exposure_factor"] / dataset["exposure_factor"] / 1e3
+    count_rate = _divide(counts, exposure)
+    # Poisson uncertainty on the counts, propagated to the rate
+    count_rate_stat_uncert = _divide(np.sqrt(counts), exposure)
+
+    intensity = _divide(count_rate, geometric_factor * energy)
+    intensity_stat_uncert = _divide(count_rate_stat_uncert, geometric_factor * energy)
+
+    # The systematic error is the intensity excursion from the recalibrated
+    # G-factor bounds, and the symmetric error is the geometric mean of the two.
+    # Intensity goes as 1/G, so the lower G-factor bound gives the upper
+    # intensity. It is undefined where that bound is not positive.
+    valid = gf_low > 0
+    if not valid.all():
+        logger.warning(
+            "The geometric factor of ESA levels "
+            f"{(np.flatnonzero(~valid.values) + 1).tolist()} is below its lower "
+            f"error bound; their systematic errors are left at zero."
         )
-        dataset = interpolate_map_flux_to_helio_frame(
-            dataset,
-            dataset["energy"],
-            dataset["energy"],
-            ["ena_intensity", "bg_intensity"],
-        )
-
-    # Step 7: Clean up intermediate variables
-    dataset = cleanup_intermediate_variables(dataset)
-
-    return dataset
-
-
-def calculate_rates(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Calculate count rates and their statistical uncertainties.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Dataset with count data and exposure times.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with calculated count rates and statistical uncertainties
-        for the specified species.
-    """
-    # Rate = counts / exposure_factor
-    # TODO: Account for ena / isn naming differences
-    dataset["ena_count_rate"] = dataset["counts"] / dataset["exposure_factor"]
-
-    # Poisson uncertainty on the counts propagated to the rate
-    # TODO: Is there uncertainty in the exposure time too?
-    dataset["ena_count_rate_stat_uncert"] = (
-        np.sqrt(dataset["counts"]) / dataset["exposure_factor"]
-    )
-
-    return dataset
-
-
-def calculate_intensities(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Calculate particle intensities and uncertainties for the specified species.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Dataset with count rates, geometric factors, and center energies.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with calculated particle intensities and their statistical
-        and systematic uncertainties for the specified species.
-    """
-    # Equation 3 from mapping document (average intensity)
-    dataset["ena_intensity"] = dataset["counts_over_eff"] / (
-        dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"]
-    )
-
-    # Equation 4 from mapping document (statistical uncertainty)
-    # Note that we need to take the square root to get the uncertainty as
-    # the equation is for the variance
-    dataset["ena_intensity_stat_uncert"] = np.sqrt(
-        dataset["counts_over_eff_squared"]
-    ) / (dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"])
-
-    for suffix in ("minus", "plus"):
-        dataset[f"ena_intensity_sys_err_{suffix}"] = (
-            dataset["ena_intensity"]
-            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
-            / dataset["geometric_factor"]
-        )
-
-    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
-    dataset["ena_intensity_sys_err"] = 0.5 * (
-        dataset["ena_intensity_sys_err_minus"] + dataset["ena_intensity_sys_err_plus"]
-    )
-
-    return dataset
-
-
-def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Calculate background rates and intensities for the specified species.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Dataset with count rates, geometric factors, and center energies.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with calculated background rates and intensities for the
-        specified species.
-    """
-    # Equation 6 from mapping document (background rate)
-    # exposure time weighted average of the background rates
-    dataset["bg_rate"] = dataset["bg_rate_exposure_factor"] / dataset["exposure_factor"]
-    # Equation 7 from mapping document (background statistical uncertainty)
-    dataset["bg_rate_stat_uncert"] = np.sqrt(
-        dataset["bg_rate_stat_uncert_exposure_factor2"]
-        / dataset["exposure_factor"] ** 2
-    )
-
-    for suffix in ("minus", "plus"):
-        dataset[f"bg_rate_sys_err_{suffix}"] = (
-            dataset["bg_rate"]
-            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
-            / dataset["geometric_factor"]
-        )
-
-    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
-    dataset["bg_rate_sys_err"] = 0.5 * (
-        dataset["bg_rate_sys_err_minus"] + dataset["bg_rate_sys_err_plus"]
-    )
-
-    # Background intensity
-    dataset["bg_intensity"] = dataset["bg_rate"] / (
-        dataset["geometric_factor"] * dataset["energy"]
-    )
-    dataset["bg_intensity_stat_uncert"] = dataset["bg_rate_stat_uncert"] / (
-        dataset["geometric_factor"] * dataset["energy"]
-    )
-
-    for suffix in ("minus", "plus"):
-        dataset[f"bg_intensity_sys_err_{suffix}"] = (
-            dataset["bg_intensity"]
-            * dataset[f"geometric_factor_stat_uncert_{suffix}"]
-            / dataset["geometric_factor"]
-        )
-
-    # Symmetric systematic error (mean of the asymmetric minus/plus bounds)
-    dataset["bg_intensity_sys_err"] = 0.5 * (
-        dataset["bg_intensity_sys_err_minus"] + dataset["bg_intensity_sys_err_plus"]
-    )
-
-    return dataset
-
-
-def calculate_sputtering_corrections(
-    dataset: xr.Dataset, o_dataset: xr.Dataset
-) -> xr.Dataset:
-    """
-    Calculate sputtering corrections from oxygen intensities.
-
-    Correction factors are read from imap_lo_sputter-correction-factors_v001.csv.
-    Only for Oxygen sputtering and correction only at ESA levels 5 and 6
-    for 90 degree maps. If off-angle maps are made, we may have to extend
-    this to levels 3 and 4 as well.
-
-    Follows equations 9-13 from the mapping document.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Dataset with count rates, geometric factors, and center energies.
-        This is an H dataset that we are applying the corrections to.
-    o_dataset : xr.Dataset
-        Dataset specifically for oxygen, needed to access oxygen intensities
-        and uncertainties.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with calculated sputtering-corrected intensities and their
-        uncertainties.
-    """
-    logger.info("Applying sputtering corrections to hydrogen intensities")
-    sputter_df = load_sputter_correction_data("o", "h")
-    energy_indices = (sputter_df["esa_step"].values - 1).tolist()
-
-    small_dataset = dataset.isel(epoch=0, energy=energy_indices)
-    o_small_dataset = o_dataset.isel(epoch=0, energy=energy_indices)
-
-    # We need to align the energy dimensions from the oxygen dataset to the
-    # Hydrogen dataset so the calculations below get aligned by xarray correctly.
-    o_small_dataset["energy"] = small_dataset["energy"]
-
-    # Equation 9
-    j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset["bg_intensity"]
-    j_o_prime.values[j_o_prime.values < 0] = 0  # No negative intensities
-    j_o_prime_valid = np.isfinite(j_o_prime) & (j_o_prime > 0)
-
-    # Equation 10
-    j_o_prime_var = (
-        o_small_dataset["ena_intensity_stat_uncert"] ** 2
-        + o_small_dataset["bg_intensity_stat_uncert"] ** 2
-    )
-
-    sputter_correction_factor = xr.DataArray(
-        sputter_df["sputter_factor"].values,
-        dims=["energy"],
-        coords={"energy": small_dataset["energy"]},
-    )
-    # Equation 11
-    # Remove the sputtered oxygen intensity to correct the original H intensity
-    sputter_corrected_intensity = xr.where(
-        j_o_prime_valid,
-        small_dataset["ena_intensity"] - sputter_correction_factor * j_o_prime,
-        small_dataset["ena_intensity"],
-    )
-
-    # Equation 12
-    sputter_corrected_intensity_var = xr.where(
-        j_o_prime_valid,
-        small_dataset["ena_intensity_stat_uncert"] ** 2
-        + (sputter_correction_factor**2) * j_o_prime_var,
-        small_dataset["ena_intensity_stat_uncert"] ** 2,
-    )
-
-    # Equation 13
-    sputter_corrected_intensity_sys_err = xr.where(
-        j_o_prime_valid,
-        sputter_corrected_intensity
-        / small_dataset["ena_intensity"]
-        * small_dataset["ena_intensity_sys_err"],
-        small_dataset["ena_intensity_sys_err"],
-    )
-
-    # Now put the corrected values into the original dataset
-    dataset["ena_intensity"].values[0, energy_indices, ...] = (
-        sputter_corrected_intensity.values
-    )
-    dataset["ena_intensity_stat_uncert"].values[0, energy_indices, ...] = np.sqrt(
-        sputter_corrected_intensity_var.values
-    )
-    dataset["ena_intensity_sys_err"].values[0, energy_indices, ...] = (
-        sputter_corrected_intensity_sys_err.values
-    )
-
-    return dataset
-
-
-def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Calculate bootstrap corrections for hydrogen and oxygen intensities.
-
-    Follows equations 14-35 from the mapping document.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Dataset with count rates, geometric factors, and center energies.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with calculated bootstrap-corrected intensities and their
-        uncertainties for hydrogen.
-    """
-    logger.info("Applying bootstrap corrections")
-
-    # Table 3 bootstrap terms h_i,k - load from an ancillary file
-    bootstrap_df = load_bootstrap_correction_data()
-
-    # Create xarray DataArray with named dimensions for proper broadcasting
-    bootstrap_factor = (
-        bootstrap_df.set_index(["esa_step_i", "esa_step_k"])["bootstrap_factor"]
-        .to_xarray()
-        .fillna(0)
-        .reindex(esa_step_i=range(1, 8), esa_step_k=range(1, 9), fill_value=0)
-        .rename({"esa_step_i": "energy_i", "esa_step_k": "energy_k"})
-        .assign_coords(
-            energy_i=dataset["energy"].values,
-            # Add an extra coordinate for the virtual E8 channel, unused
-            # in the broadcasting calculations
-            energy_k=np.concatenate([dataset["energy"].values, [np.nan]]),
-        )
-    )
-
-    # Equation 14
-    j_c_prime = dataset["ena_intensity"] - dataset["bg_intensity"]
-    j_c_prime.values[j_c_prime.values < 0] = 0
-
-    # Equation 15
-    j_c_prime_var = dataset["ena_intensity_stat_uncert"] ** 2
-
-    # Equation 16 - systematic error propagation
-    # Handle division by zero: only compute where ena_intensity > 0
-    j_c_prime_err = xr.where(
-        dataset["ena_intensity"] > 0,
-        j_c_prime / dataset["ena_intensity"] * dataset["ena_intensity_sys_err"],
-        0,
-    )
-
-    # NOTE: E8 virtual channel calculation is from the text. This is to
-    # start the calculations off from the higher energies and avoid
-    # reliance on IMAP Hi energy channels.
-    # E8 is a virtual energy channel at 2.1 * E7
-    e8 = 2.1 * dataset["energy"].values[-1]
-
-    j_c_6 = j_c_prime.isel(energy=5)
-    j_c_7 = j_c_prime.isel(energy=6)
-    e_6 = dataset["energy"].isel(energy=5)
-    e_7 = dataset["energy"].isel(energy=6)
-
-    # Calculate gamma, ignoring any invalid values
-    # Fill in the invalid values with zeros after the fact
-    with np.errstate(divide="ignore", invalid="ignore"):
-        gamma = np.log(j_c_6 / j_c_7) / np.log(e_6 / e_7)
-        j_8_b = j_c_7 * (e8 / e_7) ** gamma
-
-    # Set j_8_b to zero where the calculation was invalid
-    j_8_b = j_8_b.where(np.isfinite(j_8_b) & (j_8_b > 0), 0)
-
-    # Initialize bootstrap intensity and uncertainty arrays
-    dataset["bootstrap_intensity"] = xr.zeros_like(dataset["ena_intensity"])
-    dataset["bootstrap_intensity_var"] = xr.zeros_like(dataset["ena_intensity"])
-    dataset["bootstrap_intensity_sys_err"] = xr.zeros_like(dataset["ena_intensity"])
-
-    for i in range(6, -1, -1):
-        # Create views for the current energy channel to avoid repeated indexing
-        bootstrap_intensity_i = dataset["bootstrap_intensity"][0, i, ...]
-        bootstrap_intensity_var_i = dataset["bootstrap_intensity_var"][0, i, ...]
-        j_c_prime_i = j_c_prime[0, i, ...]
-        j_c_prime_var_i = j_c_prime_var[0, i, ...]
-
-        # Initialize the variable with the non-summation term and virtual
-        # channel energy subtraction first, then iterate through the other
-        # channels which can be looked up via indexing
-        # i.e. the summation is always k=i+1 to 7, because we've already
-        # included the k=8 term here.
-        # NOTE: The paper uses 1-based indexing and we use 0-based indexing
-        #       so there is an off-by-one difference in the indices.
-        bootstrap_intensity_i[:] = (
-            j_c_prime_i - bootstrap_factor.isel(energy_i=i, energy_k=7) * j_8_b[0, ...]
-        )
-        # NOTE: We will square root at the end to get the uncertainty, but
-        #       all equations are with variances
-        bootstrap_intensity_var_i[:] = j_c_prime_var_i
-
-        # Vectorized summation using xarray's built-in broadcasting
-        # Select the relevant k indices for summation (k = i+1 to 6)
-        k_indices = list(range(i + 1, 7))
-
-        # Get bootstrap factors for this i and the relevant k values
-        # Rename energy_k dimension to energy for alignment with intensity
-        bootstrap_factors_k = bootstrap_factor.isel(
-            energy_i=i, energy_k=k_indices
-        ).rename({"energy_k": "energy"})
-
-        # Get intensity slices - these will have an 'energy' dimension still
-        intensity_k = dataset["bootstrap_intensity"][0, k_indices, ...]
-        intensity_var_k = dataset["bootstrap_intensity_var"][0, k_indices, ...]
-
-        # Subtraction terms from equations 18-23 (xarray vectorized)
-        bootstrap_intensity_i -= (bootstrap_factors_k * intensity_k).sum(dim="energy")
-
-        # Summation terms from equations 25-30 (xarray vectorized)
-        bootstrap_intensity_var_i += (bootstrap_factors_k**2 * intensity_var_k).sum(
-            dim="energy"
-        )
-
-        # Again zero any bootstrap fluxes that are negative
-        bootstrap_intensity_i.values[bootstrap_intensity_i < 0] = 0.0
-
-    # Equation 31 - systematic error propagation for bootstrap intensity
-    # Handle division by zero: only compute where j_c_prime > 0
-    dataset["bootstrap_intensity_sys_err"] = xr.where(
-        j_c_prime > 0, dataset["bootstrap_intensity"] / j_c_prime * j_c_prime_err, 0
-    )
-
-    valid_bootstrap = (dataset["bootstrap_intensity"] > 0) & np.isfinite(
-        dataset["bootstrap_intensity"]
-    )
-    # Update the original intensity values
-    # Equation 32 / 33
-    # ena_intensity = ena_intensity (J_c) - (j_c_prime - J_b)
-    dataset["ena_intensity"] = xr.where(
-        valid_bootstrap,
-        dataset["ena_intensity"] - j_c_prime + dataset["bootstrap_intensity"],
-        dataset["ena_intensity"],
-    )
-
-    # Ensure corrected intensities are non-negative
-    dataset["ena_intensity"] = xr.where(
-        dataset["ena_intensity"] < 0, 0, dataset["ena_intensity"]
-    )
-
-    # Equation 34 - statistical uncertainty
-    # Take the square root, since we were in variances up to this point
-    dataset["ena_intensity_stat_uncert"] = xr.where(
-        valid_bootstrap,
-        np.sqrt(dataset["bootstrap_intensity_var"]),
-        dataset["ena_intensity_stat_uncert"],
-    )
-
-    # Equation 35 - systematic error for corrected intensity
-    # Handle division by zero and ensure reasonable values
-    dataset["ena_intensity_sys_err"] = xr.zeros_like(dataset["ena_intensity"])
-
-    # Only compute where bootstrap intensity is valid
-    dataset["ena_intensity_sys_err"] = xr.where(
-        valid_bootstrap,
-        (
-            dataset["ena_intensity"]
-            / dataset["bootstrap_intensity"]
-            * dataset["bootstrap_intensity_sys_err"]
+    intensity_upper = _divide(count_rate, gf_low.where(valid, 1.0) * energy)
+    intensity_lower = _divide(count_rate, gf_high * energy)
+    intensity_sys_err_plus = (intensity_upper - intensity).where(valid, 0.0)
+    intensity_sys_err_minus = (intensity - intensity_lower).where(valid, 0.0)
+
+    bg_rate = _divide(bg_rate_exposure, exposure)
+    bg_rate_stat_uncert = np.sqrt(_divide(bg_rate, exposure))
+    bg_intensity = _divide(bg_rate, geometric_factor * energy)
+    bg_intensity_stat_uncert = _divide(bg_rate_stat_uncert, geometric_factor * energy)
+
+    return {
+        "ena_count": counts,
+        "exposure_factor": exposure,
+        "ena_count_rate": count_rate,
+        "ena_count_rate_stat_uncert": count_rate_stat_uncert,
+        "ena_intensity": intensity,
+        "ena_intensity_stat_uncert": intensity_stat_uncert,
+        "ena_intensity_sys_err": np.sqrt(
+            intensity_sys_err_plus * intensity_sys_err_minus
         ),
-        0,
-    )
-
-    # Drop the intermediate bootstrap variables
-    dataset = dataset.drop_vars(
-        [
-            "bootstrap_intensity",
-            "bootstrap_intensity_var",
-            "bootstrap_intensity_sys_err",
-        ]
-    )
-
-    return dataset
+        "ena_intensity_sys_err_plus": intensity_sys_err_plus,
+        "ena_intensity_sys_err_minus": intensity_sys_err_minus,
+        "bg_rate": bg_rate,
+        "bg_rate_stat_uncert": bg_rate_stat_uncert,
+        "bg_intensity": bg_intensity,
+        "bg_intensity_stat_uncert": bg_intensity_stat_uncert,
+    }
 
 
-def calculate_flux_corrections(dataset: xr.Dataset, flux_factors: Path) -> xr.Dataset:
+def _build_map_dataset(
+    sky_map: RectangularSkyMap,
+    variables: dict[str, xr.DataArray],
+    calibration: EsaCalibration,
+) -> xr.Dataset:
     """
-    Calculate flux corrections for intensities.
+    Lay the map variables out on the map's sky grid.
 
-    Uses the shared ena maps ``PowerLawFluxCorrector`` class to do the
-    correction calculations.
+    The variables are handed to the map as 1D pixel arrays, which the map
+    rewraps onto its longitude/latitude grid and adds its solid angles to.
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        Dataset with count rates, geometric factors, and center energies.
-    flux_factors : Path
-        Path to the eta flux factor file to use for corrections. Read in as
-        an ancillary file in the preprocessing step.
+    sky_map : RectangularSkyMap
+        The map being built.
+    variables : dict[str, xr.DataArray]
+        The map variables, each of shape (epoch, esa level, pixel).
+    calibration : EsaCalibration
+        The energy response the map is binned in, read for the widths of the
+        ESA energy passbands.
 
     Returns
     -------
     xr.Dataset
-        Dataset with calculated flux-corrected intensities and their
-        uncertainties for the specified species.
+        The map variables on the (epoch, energy, longitude, latitude) grid,
+        with the energy coordinate and its widths.
     """
-    logger.info("Applying flux corrections")
+    for name, values in variables.items():
+        sky_map.data_1d[name] = values.astype(np.float32)
+    # `bg_rate_exposure` is an accumulator, not a map variable.
+    sky_map.data_1d = sky_map.data_1d.drop_vars("bg_rate_exposure")
 
-    # Flux correction
-    corrector = PowerLawFluxCorrector(flux_factors)
+    dataset = sky_map.to_dataset()
 
-    # NOTE: We need to apply this to both total flux and background flux
-    for var in ["ena", "bg"]:
-        # Apply flux correction with xarray inputs
-        dataset[f"{var}_intensity"], dataset[f"{var}_intensity_stat_uncert"] = (
-            corrector.apply_flux_correction(
-                dataset[f"{var}_intensity"],
-                dataset[f"{var}_intensity_stat_uncert"],
-                dataset["energy"],
-            )
-        )
+    dataset["energy_delta_minus"] = xr.DataArray(
+        calibration.energy_delta_minus, dims=["energy"]
+    )
+    dataset["energy_delta_plus"] = xr.DataArray(
+        calibration.energy_delta_plus, dims=["energy"]
+    )
 
     return dataset
-
-
-def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Remove intermediate variables that were only needed for calculations.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Dataset containing intermediate calculation variables.
-
-    Returns
-    -------
-    xr.Dataset
-        Cleaned dataset with intermediate variables removed.
-    """
-    # Remove the intermediate variables from the map
-    # i.e. the ones that were projected from the pset only for the purposes
-    # of math and not desired in the output.
-    vars_to_remove = []
-
-    # Only remove variables that exist in the dataset for the specific species
-    potential_vars = [
-        "geometric_factor",
-        "geometric_factor_stat_uncert",
-        "geometric_factor_stat_uncert_minus",
-        "geometric_factor_stat_uncert_plus",
-        "counts_over_eff",
-        "counts_over_eff_squared",
-        "bg_rate_exposure_factor",
-        "bg_rate_stat_uncert_exposure_factor2",
-    ]
-
-    for potential_var in potential_vars:
-        if potential_var in dataset.data_vars:
-            vars_to_remove.append(potential_var)
-
-    return dataset.drop_vars(vars_to_remove)

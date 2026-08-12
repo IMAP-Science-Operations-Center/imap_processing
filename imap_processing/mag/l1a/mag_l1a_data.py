@@ -60,7 +60,7 @@ class TimeTuple:
         """
         # Add whole seconds to coarse time
         coarse = self.coarse_time + floor(seconds)
-        # fine time is 1/65535th of a second
+        # fine time is 1/65536th of a second
         fine = self.fine_time + round((seconds % 1) * MAX_FINE_TIME)
 
         # If fine is larger than the max, move the excess into coarse time.
@@ -90,9 +90,7 @@ class TimeTuple:
         j2000ns : numpy.int64
             Time in nanoseconds since J2000 epoch.
         """
-        coarse_j2000ns = np.int64(met_to_ttj2000ns(self.coarse_time))
-        fine_ns = np.int64(self.fine_time / MAX_FINE_TIME * 1e9)
-        return coarse_j2000ns + fine_ns
+        return np.int64(met_to_ttj2000ns(self.to_seconds()))
 
 
 @dataclass

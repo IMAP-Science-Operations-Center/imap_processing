@@ -12,7 +12,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi import hi_l1c, utils
-from imap_processing.hi.utils import HIAPID, HiConstants
+from imap_processing.hi.utils import HIAPID, GainConfigLookupTable, HiConstants
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 
@@ -37,6 +37,7 @@ def test_hi_l1c(
     mock_generate_pset_dataset,
     hi_test_cal_prod_config_path,
     hi_test_background_config_path,
+    hi_test_gain_configuration_path,
 ):
     """Test coverage for hi_l1c function"""
     mock_generate_pset_dataset.return_value = xr.Dataset()
@@ -45,6 +46,7 @@ def test_hi_l1c(
         hi_test_cal_prod_config_path,
         xr.Dataset(),
         hi_test_background_config_path,
+        hi_test_gain_configuration_path,
     )[0]
     # Empty attributes, global values get added in post-processing
     assert pset.attrs == {}
@@ -57,13 +59,18 @@ def test_generate_pset_dataset(
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
     hi_test_background_config_path,
+    hi_test_gain_configuration_path,
     use_fake_spin_data_for_time,
     use_fake_repoint_data_for_time,
     imap_ena_sim_metakernel,
 ):
     """Test coverage for generate_pset_dataset function"""
     use_fake_spin_data_for_time(482372987.999)
-    l1b_dataset = hi_l1b_de_dataset
+    l1b_dataset = hi_l1b_de_dataset.copy()
+    # The real fixture CDF predates the gain_configuration_id L1B global
+    # attribute; add a placeholder so pset_geometric_factor() has something
+    # to look up.
+    l1b_dataset.attrs["gain_configuration_id"] = 0
     l1b_met = l1b_dataset["ccsds_met"].values[0]
     # Set repoint start and end times.
     seconds_per_day = 24 * 60 * 60
@@ -78,6 +85,7 @@ def test_generate_pset_dataset(
         hi_test_cal_prod_config_path,
         goodtimes,
         hi_test_background_config_path,
+        hi_test_gain_configuration_path,
     )
 
     assert l1c_dataset.epoch.data[0] == l1b_dataset.epoch.data[0].astype(np.int64)
@@ -111,6 +119,7 @@ def test_generate_pset_dataset_uses_midpoint_time(
     mock_pset_backgrounds,
     hi_test_cal_prod_config_path,
     hi_test_background_config_path,
+    hi_test_gain_configuration_path,
 ):
     """Test that generate_pset_dataset uses midpoint ET for pset_geometry."""
     # Create a mock L1B dataset
@@ -132,6 +141,7 @@ def test_generate_pset_dataset_uses_midpoint_time(
         attrs={
             "Logical_file_id": "imap_hi_l1b_45sensor-de_20250415_v999",
             "Logical_source": "imap_hi_l1b_45sensor-de",
+            "gain_configuration_id": 0,
         },
     )
 
@@ -157,6 +167,7 @@ def test_generate_pset_dataset_uses_midpoint_time(
         hi_test_cal_prod_config_path,
         xr.Dataset(),
         hi_test_background_config_path,
+        hi_test_gain_configuration_path,
     )
 
     # Calculate expected midpoint ET
@@ -177,6 +188,53 @@ def test_generate_pset_dataset_uses_midpoint_time(
     # Use approximate comparison for the ET time (floating point)
     np.testing.assert_allclose(actual_et_arg, expected_midpoint_et, rtol=1e-10)
     assert actual_sensor_arg == "45sensor"
+
+
+@mock.patch("imap_processing.hi.hi_l1c.load_gain_configuration")
+def test_pset_geometric_factor_looks_up_by_config_id(mock_load_gain_config):
+    """Test coverage for pset_geometric_factor when the pointing was classified."""
+    gain_config_df = pd.DataFrame(
+        {"geometric_factor": [0.001, 0.002, 0.003]},
+        index=pd.MultiIndex.from_tuples(
+            [(0, 1), (0, 2), (0, 3)], names=["config_id", "esa_energy_step"]
+        ),
+    )
+    mock_load_gain_config.return_value = gain_config_df
+
+    pset_coords = {
+        "epoch": xr.DataArray([0], dims=["epoch"]),
+        "esa_energy_step": xr.DataArray([1, 2, 3], dims=["esa_energy_step"]),
+    }
+    l1b_de_dataset = xr.Dataset(attrs={"gain_configuration_id": 0})
+
+    result = hi_l1c.pset_geometric_factor(
+        pset_coords, l1b_de_dataset, "Fake gain config path"
+    )
+
+    np.testing.assert_allclose(
+        result["geometric_factor"].values[0], [0.001, 0.002, 0.003], rtol=1e-6
+    )
+    mock_load_gain_config.assert_called_once_with("Fake gain config path")
+
+
+def test_pset_geometric_factor_no_match_returns_fillval():
+    """Test coverage for pset_geometric_factor when the pointing was not classified."""
+    pset_coords = {
+        "epoch": xr.DataArray([0], dims=["epoch"]),
+        "esa_energy_step": xr.DataArray([1, 2, 3], dims=["esa_energy_step"]),
+    }
+    l1b_de_dataset = xr.Dataset(
+        attrs={"gain_configuration_id": GainConfigLookupTable.NO_MATCH}
+    )
+
+    result = hi_l1c.pset_geometric_factor(
+        pset_coords, l1b_de_dataset, "Fake gain config path"
+    )
+
+    fillval = np.float32(result["geometric_factor"].attrs["FILLVAL"])
+    np.testing.assert_array_equal(
+        result["geometric_factor"].values[0], [fillval, fillval, fillval]
+    )
 
 
 def test_empty_pset_dataset(use_fake_repoint_data_for_time):

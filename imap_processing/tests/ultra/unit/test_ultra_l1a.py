@@ -190,7 +190,7 @@ def test_cdf_energy_rates(ccsds_path_functional):
     assert test_data_path.exists()
     assert (
         test_data_path.name
-        == "imap_ultra_l1a_45sensor-energy-rates_20240122-repoint99999_v999.cdf"
+        == "imap_ultra_l1a_45sensor-energy-rates_20240122-repoint99999_v001.0001.cdf"
     )
 
     # L1b dataset
@@ -201,7 +201,7 @@ def test_cdf_energy_rates(ccsds_path_functional):
     assert test_data_path.exists()
     assert (
         test_data_path.name
-        == "imap_ultra_l1b_45sensor-energy-rates_20240122-repoint99999_v999.cdf"
+        == "imap_ultra_l1b_45sensor-energy-rates_20240122-repoint99999_v001.0001.cdf"
     )
 
 

@@ -11,22 +11,83 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.hi_l1b import (
     annotate_direct_events,
     any_good_direct_events,
+    classify_gain_configuration,
     compute_coincidence_type_and_tofs,
     compute_hae_coordinates,
     de_ccsds_qf,
     de_esa_energy_step,
     de_esa_step_met,
+    de_gain_configuration,
     de_nominal_bin_and_spin_phase,
     get_esa_to_esa_energy_step_lut,
+    get_gain_configuration_lut,
     housekeeping,
 )
 from imap_processing.hi.utils import (
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
+    GainConfigLookupTable,
     HiConstants,
 )
 from imap_processing.quality_flags import ImapHiL1bDeFlags
 from imap_processing.spice.geometry import SpiceFrame
+
+# Nominal detector voltage config (config_id=0) matching the real
+# gain-configuration ancillary file, for use as a permissive default in tests
+# that don't care about gain-configuration classification.
+NOMINAL_HV_VALUES = {
+    "pos_defl": 6300.0,
+    "neg_defl": -6300.0,
+    "tof": -8000.0,
+    "mcp_f": -3000.0,
+    "mcp_b": -2125.0,
+    "cem_f": -4500.0,
+    "cem_bk_a": -2350.0,
+    "cem_bk_b": -2350.0,
+}
+# Tolerances matching the real gain-configuration ancillary file
+NOMINAL_HV_TOLERANCES = {
+    "pos_defl": 700.0,
+    "neg_defl": 700.0,
+    "tof": 50.0,
+    "mcp_f": 25.0,
+    "mcp_b": 50.0,
+    "cem_f": 50.0,
+    "cem_bk_a": 100.0,
+    "cem_bk_b": 100.0,
+}
+
+
+def _make_gain_config_df(hv_tolerance=None, n_esa_energy_steps=9, config_id=0):
+    """Build a gain configuration DataFrame for a single config_id.
+
+    Indexed by (config_id, esa_energy_step), matching the real
+    gain-configuration ancillary file's long format -- one row per
+    esa_energy_step, with {field}_v/{field}_delta_v repeated across every row
+    for the config_id.
+
+    If hv_tolerance is None, realistic per-field tolerances are used
+    (matching the real ancillary file). Otherwise, hv_tolerance is applied
+    as a flat tolerance for every field (useful for permissive matching).
+    """
+    if hv_tolerance is None:
+        tolerances = NOMINAL_HV_TOLERANCES
+    else:
+        tolerances = dict.fromkeys(NOMINAL_HV_VALUES, hv_tolerance)
+
+    hv_row = {}
+    for field, mean_value in NOMINAL_HV_VALUES.items():
+        hv_row[f"{field}_v"] = mean_value
+        hv_row[f"{field}_delta_v"] = tolerances[field]
+    rows = [
+        {"geometric_factor": 0.001 * step, **hv_row}
+        for step in range(1, n_esa_energy_steps + 1)
+    ]
+    index = pd.MultiIndex.from_product(
+        [[config_id], range(1, n_esa_energy_steps + 1)],
+        names=["config_id", "esa_energy_step"],
+    )
+    return pd.DataFrame(rows, index=index)
 
 
 def test_hi_l1b_hk(hi_l0_test_data_path):
@@ -41,9 +102,11 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
 
 @pytest.mark.external_kernel
 @pytest.mark.external_test_data
+@mock.patch("imap_processing.hi.hi_l1b.get_gain_configuration_lut")
 @mock.patch("imap_processing.hi.hi_l1b.get_esa_to_esa_energy_step_lut")
 def test_hi_annotate_direct_events(
     mock_get_esa_lut,
+    mock_get_gain_config_lut,
     hi_l1_test_data_path,
     use_fake_spin_data_for_time,
     imap_ena_sim_metakernel,
@@ -55,6 +118,14 @@ def test_hi_annotate_direct_events(
     mock_esa_lut.query.side_effect = lambda a, b: b
     mock_get_esa_lut.return_value = mock_esa_lut
 
+    # Mock the gain config LUT to always classify config_id=0 with no bad
+    # detector voltage segments.
+    mock_gain_lut = mock.MagicMock(spec=GainConfigLookupTable())
+    mock_gain_lut.query.side_effect = lambda mets: np.zeros(
+        len(np.atleast_1d(mets)), dtype=np.int64
+    )
+    mock_get_gain_config_lut.return_value = (mock_gain_lut, 0)
+
     # Start MET time of spin for simulated input data is 482372988
     use_fake_spin_data_for_time(482372987.999)
     l1a_test_file_path = (
@@ -63,12 +134,18 @@ def test_hi_annotate_direct_events(
     esa_energies_csv = (
         hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
     )
+    gain_config_csv = (
+        hi_l1_test_data_path / "imap_hi_90sensor-gain-configuration_20240101_v001.csv"
+    )
     # Process using test data
     l1a_dataset = load_cdf(l1a_test_file_path)
 
-    l1b_datasets = annotate_direct_events(l1a_dataset, xr.Dataset(), esa_energies_csv)
+    l1b_datasets = annotate_direct_events(
+        l1a_dataset, xr.Dataset(), esa_energies_csv, gain_config_csv
+    )
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
+    assert l1b_datasets[0].attrs["gain_configuration_id"] == 0
     assert len(l1b_datasets[0].data_vars) == 18
 
 
@@ -117,6 +194,9 @@ def test_annotate_direct_events_with_hk(
     esa_energies_csv = (
         hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
     )
+    gain_config_csv = (
+        hi_l1_test_data_path / "imap_hi_90sensor-gain-configuration_20240101_v001.csv"
+    )
     # Process using test data
     l1a_dataset = load_cdf(l1a_de_file_path)
     hk_dataset = load_cdf(l1b_hk_file_path)
@@ -128,7 +208,9 @@ def test_annotate_direct_events_with_hk(
     )
     use_fake_spin_data_for_time(spin_start_met)
 
-    l1b_datasets = annotate_direct_events(l1a_dataset, hk_dataset, esa_energies_csv)
+    l1b_datasets = annotate_direct_events(
+        l1a_dataset, hk_dataset, esa_energies_csv, gain_config_csv
+    )
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_90sensor-de"
     assert len(l1b_datasets[0].data_vars) == 18
@@ -340,8 +422,12 @@ def test_compute_hae_coordinates(
 @mock.patch("imap_processing.hi.hi_l1b.get_esa_to_esa_energy_step_lut")
 def test_de_esa_energy_step(mock_get_esa_lut, mock_read_csv, mock_any_good_de):
     """Test coverage for de_esa_energy_step function."""
+    esa_energy_step_fillval = 255
+    # Packet at index 5 fails to find a matching esa_energy_step (FILLVAL).
     mock_esa_lut = mock.MagicMock(spec=EsaEnergyStepLookupTable())
-    mock_esa_lut.query.side_effect = lambda a, b: np.arange(len(a))[::-1] % 9
+    mock_esa_lut.query.side_effect = lambda a, b: np.where(
+        np.arange(len(a)) == 5, esa_energy_step_fillval, np.arange(len(a))[::-1] % 9
+    )
     mock_get_esa_lut.return_value = mock_esa_lut
 
     n_epoch = 20
@@ -352,13 +438,80 @@ def test_de_esa_energy_step(mock_get_esa_lut, mock_read_csv, mock_any_good_de):
         data_vars={
             "ccsds_met": xr.DataArray(np.arange(n_epoch) % 9, dims=["epoch"]),
             "esa_step": xr.DataArray(np.arange(n_epoch), dims=["epoch"]),
+            # Pre-existing "ccsds_qf", as created by de_ccsds_qf().
+            "ccsds_qf": xr.DataArray(np.zeros(n_epoch, dtype=np.uint8), dims=["epoch"]),
         },
     )
-    esa_energy_step_var = de_esa_energy_step(fake_dataset, xr.Dataset(), "Fake path")
+    new_vars = de_esa_energy_step(fake_dataset, xr.Dataset(), "Fake path")
 
+    expected_esa_energy_step = np.arange(n_epoch)[::-1] % 9
+    expected_esa_energy_step[5] = esa_energy_step_fillval
     np.testing.assert_array_equal(
-        esa_energy_step_var["esa_energy_step"].values, np.arange(n_epoch)[::-1] % 9
+        new_vars["esa_energy_step"].values, expected_esa_energy_step
     )
+    # de_esa_energy_step modifies "ccsds_qf" on fake_dataset in place.
+    expected_qf_bits = np.zeros(n_epoch, dtype=np.uint8)
+    expected_qf_bits[5] = ImapHiL1bDeFlags.BAD_ESA_VOLTAGE
+    np.testing.assert_array_equal(fake_dataset["ccsds_qf"].values, expected_qf_bits)
+
+
+@mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
+@mock.patch("imap_processing.hi.hi_l1b.load_gain_configuration")
+@mock.patch("imap_processing.hi.hi_l1b.get_gain_configuration_lut")
+def test_de_gain_configuration(
+    mock_get_gain_config_lut, mock_load_gain_config, mock_any_good_de
+):
+    """Test coverage for de_gain_configuration function."""
+    # Mock the gain config LUT to classify config_id=0, with the packet at
+    # ccsds_met == 5 failing to match (bad detector voltage).
+    mock_gain_lut = mock.MagicMock(spec=GainConfigLookupTable())
+    mock_gain_lut.query.side_effect = lambda mets: np.where(
+        np.atleast_1d(mets) == 5, GainConfigLookupTable.NO_MATCH, 0
+    )
+    mock_get_gain_config_lut.return_value = (mock_gain_lut, 0)
+    mock_load_gain_config.return_value = _make_gain_config_df()
+
+    n_epoch = 10
+    esa_energy_step_fillval = 255
+    fake_dataset = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(np.arange(n_epoch), name="epoch", dims=["epoch"])
+        },
+        data_vars={
+            "ccsds_met": xr.DataArray(np.arange(n_epoch), dims=["epoch"]),
+            "esa_energy_step": xr.DataArray(
+                np.full(n_epoch, 3, dtype=np.uint8),
+                dims=["epoch"],
+                attrs={"FILLVAL": esa_energy_step_fillval},
+            ),
+            "ccsds_qf": xr.DataArray(np.zeros(n_epoch, dtype=np.uint8), dims=["epoch"]),
+        },
+    )
+
+    result = de_gain_configuration(fake_dataset, xr.Dataset(), "Fake gain config path")
+
+    # de_gain_configuration modifies fake_dataset in place and returns it.
+    assert result is fake_dataset
+    assert result.attrs["gain_configuration_id"] == 0
+    expected_esa_energy_step = np.full(n_epoch, 3)
+    expected_esa_energy_step[5] = esa_energy_step_fillval
+    np.testing.assert_array_equal(
+        result["esa_energy_step"].values, expected_esa_energy_step
+    )
+    expected_qf_bits = np.zeros(n_epoch, dtype=np.uint8)
+    expected_qf_bits[5] = ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE
+    np.testing.assert_array_equal(result["ccsds_qf"].values, expected_qf_bits)
+
+
+@mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=False)
+def test_de_gain_configuration_no_good_events(mock_any_good_de):
+    """Test that gain_configuration_id is NO_MATCH when there are no good DEs."""
+    fake_dataset = xr.Dataset(attrs={})
+
+    result = de_gain_configuration(fake_dataset, xr.Dataset(), "Fake gain config path")
+
+    assert result is fake_dataset
+    assert result.attrs["gain_configuration_id"] == GainConfigLookupTable.NO_MATCH
 
 
 class TestGetEsaToEsaEnergyStepLut:
@@ -389,19 +542,24 @@ class TestGetEsaToEsaEnergyStepLut:
         inner_esa_lo,
         outer_esa_values,
         shcoarse_values,
+        **hv_overrides,
     ):
         """Helper method to create mock L1B housekeeping dataset."""
-        return xr.Dataset(
-            {
-                "op_mode": (["epoch"], op_modes),
-                "sci_esa_step": (["epoch"], esa_steps),
-                "inner_esa_state": (["epoch"], inner_esa_state),
-                "inner_esa_hi": (["epoch"], inner_esa_hi),
-                "inner_esa_lo": (["epoch"], inner_esa_lo),
-                "outer_esa": (["epoch"], outer_esa_values),
-                "shcoarse": (["epoch"], shcoarse_values),
-            }
-        )
+        n = len(op_modes)
+        hv_values = dict(NOMINAL_HV_VALUES)
+        hv_values.update(hv_overrides)
+        data_vars = {
+            "op_mode": (["epoch"], op_modes),
+            "sci_esa_step": (["epoch"], esa_steps),
+            "inner_esa_state": (["epoch"], inner_esa_state),
+            "inner_esa_hi": (["epoch"], inner_esa_hi),
+            "inner_esa_lo": (["epoch"], inner_esa_lo),
+            "outer_esa": (["epoch"], outer_esa_values),
+            "shcoarse": (["epoch"], shcoarse_values),
+        }
+        for field, value in hv_values.items():
+            data_vars[field] = (["epoch"], np.full(n, value))
+        return xr.Dataset(data_vars)
 
     @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
     def test_basic_functionality_single_hvsci_segment(self, mock_lut_class):
@@ -424,7 +582,7 @@ class TestGetEsaToEsaEnergyStepLut:
             shcoarse_values=[1000, 1001, 1002, 1003],
         )
 
-        result = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
+        lut = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
 
         # Verify LUT was instantiated
         mock_lut_class.assert_called_once()
@@ -446,7 +604,7 @@ class TestGetEsaToEsaEnergyStepLut:
         # Second call should be for esa_step 2
         assert calls[1][0] == (1000, 1003, 2, 2)
 
-        assert result == self.mock_lut
+        assert lut == self.mock_lut
 
     @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
     def test_multiple_hvsci_segments(self, mock_lut_class):
@@ -489,11 +647,11 @@ class TestGetEsaToEsaEnergyStepLut:
             shcoarse_values=[1000, 1001, 1002],
         )
 
-        result = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
+        lut = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
 
         # No add_entry calls should be made
         self.mock_lut.add_entry.assert_not_called()
-        assert result == self.mock_lut
+        assert lut == self.mock_lut
 
     @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
     @mock.patch("imap_processing.hi.hi_l1b.logger")
@@ -646,6 +804,133 @@ class TestGetEsaToEsaEnergyStepLut:
         # Check the generated lookup table
         # We expect 1 dataframe entry per esa step in the range [1, 9]
         np.testing.assert_array_equal(lut.df["esa_step"].values, np.arange(9) + 1)
+
+
+class TestGetGainConfigurationLut:
+    """Test suite for get_gain_configuration_lut function."""
+
+    def _make_hk_ds(self, op_modes, shcoarse_values=None, **hv_overrides):
+        n = len(op_modes)
+        hv_values = dict(NOMINAL_HV_VALUES)
+        hv_values.update(hv_overrides)
+        if shcoarse_values is None:
+            shcoarse_values = np.arange(n, dtype=float) + 1000.0
+        data_vars = {
+            "op_mode": (["epoch"], op_modes),
+            "shcoarse": (["epoch"], np.asarray(shcoarse_values, dtype=float)),
+        }
+        for field, value in hv_values.items():
+            data_vars[field] = (["epoch"], np.full(n, value))
+        return xr.Dataset(data_vars)
+
+    def test_matching_segment_is_added_to_lut(self):
+        """Test that a segment matching the classified config gets a LUT entry."""
+        gain_config_df = _make_gain_config_df()
+        hk_ds = self._make_hk_ds(["HVSCI", "HVSCI", "HVSCI"])
+
+        lut, config_id = get_gain_configuration_lut(hk_ds, gain_config_df)
+
+        assert config_id == 0
+        assert lut.query(1000.0) == 0
+        assert lut.query(1002.0) == 0
+        assert lut.query(999.0) == GainConfigLookupTable.NO_MATCH
+
+    def test_mismatched_segment_excluded_from_lut(self):
+        """Test that a segment not matching the classified config is excluded."""
+        gain_config_df = _make_gain_config_df()
+        hk_ds = self._make_hk_ds(
+            ["HVSCI", "HVSCI", "OTHER", "HVSCI", "HVSCI"],
+            shcoarse_values=[1000, 1001, 1002, 1003, 1004],
+        )
+        # Second HVSCI segment (indices 3-4) has a mismatched CEM front voltage,
+        # simulating a mid-pointing gain test excursion.
+        hk_ds["cem_f"].values[3:] = -4200.0
+
+        lut, config_id = get_gain_configuration_lut(hk_ds, gain_config_df)
+
+        # First segment classifies the pointing's gain configuration (config 0)
+        assert config_id == 0
+        # Only the first (matching) segment should have a LUT entry
+        assert lut.query(1000.0) == 0
+        assert lut.query(1001.0) == 0
+        assert lut.query(1003.0) == GainConfigLookupTable.NO_MATCH
+        assert lut.query(1004.0) == GainConfigLookupTable.NO_MATCH
+
+    def test_no_hvsci_segments_returns_no_match_everywhere(self):
+        """Test that no HVSCI segments results in an empty LUT and config_id=None."""
+        gain_config_df = _make_gain_config_df()
+        hk_ds = self._make_hk_ds(["OTHER", "LVSCI"])
+
+        lut, config_id = get_gain_configuration_lut(hk_ds, gain_config_df)
+
+        assert config_id is None
+        assert lut.query(1000.0) == GainConfigLookupTable.NO_MATCH
+
+    def test_classification_failure_returns_no_match_everywhere(self):
+        """Test that an unclassifiable pointing produces an empty LUT."""
+        gain_config_df = _make_gain_config_df()
+        hk_ds = self._make_hk_ds(["HVSCI", "HVSCI"], cem_f=0.0)
+
+        lut, config_id = get_gain_configuration_lut(hk_ds, gain_config_df)
+
+        assert config_id is None
+        assert lut.query(1000.0) == GainConfigLookupTable.NO_MATCH
+
+
+class TestClassifyGainConfiguration:
+    """Test suite for classify_gain_configuration function."""
+
+    def _make_hk_ds(self, op_modes, **hv_overrides):
+        n = len(op_modes)
+        hv_values = dict(NOMINAL_HV_VALUES)
+        hv_values.update(hv_overrides)
+        data_vars = {
+            "op_mode": (["epoch"], op_modes),
+            "shcoarse": (["epoch"], np.arange(n, dtype=float) + 1000.0),
+        }
+        for field, value in hv_values.items():
+            data_vars[field] = (["epoch"], np.full(n, value))
+        return xr.Dataset(data_vars)
+
+    def test_classifies_nominal_config(self):
+        """Test that nominal voltages classify as config_id 0."""
+        gain_config_df = _make_gain_config_df()
+        hk_ds = self._make_hk_ds(["HVSCI", "HVSCI", "HVSCI"])
+        assert classify_gain_configuration(hk_ds, gain_config_df) == 0
+
+    def test_classifies_second_config(self):
+        """Test that a second configuration's voltages are classified correctly."""
+        gain_config_df = pd.concat(
+            [_make_gain_config_df(config_id=0), _make_gain_config_df(config_id=1)]
+        )
+        # Give config 1 a distinctly different CEM front voltage
+        gain_config_df.loc[1, "cem_f_v"] = -4200.0
+        gain_config_df.loc[1, "cem_f_delta_v"] = 25.0
+
+        hk_ds = self._make_hk_ds(["HVSCI", "HVSCI"], cem_f=-4200.0)
+        assert classify_gain_configuration(hk_ds, gain_config_df) == 1
+
+    def test_no_hvsci_segments_returns_none(self):
+        """Test that no HVSCI segments results in None."""
+        gain_config_df = _make_gain_config_df()
+        hk_ds = self._make_hk_ds(["OTHER", "LVSCI"])
+        assert classify_gain_configuration(hk_ds, gain_config_df) is None
+
+    def test_no_match_returns_none(self):
+        """Test that voltages matching no configuration return None."""
+        gain_config_df = _make_gain_config_df()
+        hk_ds = self._make_hk_ds(["HVSCI", "HVSCI"], cem_f=0.0)
+        assert classify_gain_configuration(hk_ds, gain_config_df) is None
+
+    def test_only_uses_first_hvsci_segment(self):
+        """Test that only the first HVSCI segment is used for classification."""
+        gain_config_df = _make_gain_config_df()
+        # First segment matches config 0; a later segment (e.g. a mid-pointing
+        # gain test) does not match anything -- this should not affect the
+        # classification result, which is based only on the first segment.
+        hk_ds = self._make_hk_ds(["HVSCI", "HVSCI", "OTHER", "HVSCI", "HVSCI"])
+        hk_ds["cem_f"].values[3:] = 0.0
+        assert classify_gain_configuration(hk_ds, gain_config_df) == 0
 
 
 class TestDeEsaStepMet:

@@ -33,7 +33,7 @@ def test_sci_de_decom(hi_l0_test_data_path):
     # TODO: Verify correct unpacking of sample data. Issue: #1186
 
     # Write to CDF
-    cdf_filename = "imap_hi_l1a_90sensor-de_20241105_v999.cdf"
+    cdf_filename = "imap_hi_l1a_90sensor-de_20241105_v001.0001.cdf"
     cdf_filepath = write_cdf(processed_data[0])
     assert cdf_filepath.name == cdf_filename
 
@@ -72,7 +72,7 @@ def test_diag_fee_decom(hi_l0_test_data_path):
     processed_data = hi_l1a(packet_file_path=bin_data_path)
     dataset = processed_data[0]
     cdf_filepath = write_cdf(processed_data[0], istp=False)
-    assert cdf_filepath.name == "imap_hi_l1a_45sensor-diagfee_20250208_v999.cdf"
+    assert cdf_filepath.name == "imap_hi_l1a_45sensor-diagfee_20250208_v001.0001.cdf"
 
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_DIAG_FEE.value
 
@@ -99,7 +99,7 @@ def test_app_nhk_decom(hi_l0_test_data_path):
 
     # Write CDF
     cem_raw_cdf_filepath = write_cdf(processed_data[0], istp=False)
-    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_90sensor-hk_20241105_v999.cdf"
+    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_90sensor-hk_20241105_v001.0001.cdf"
 
     validation_df = pd.read_csv(hi_l0_test_data_path / "H90_NHK_20241104_verify.csv")
     for col_name, series in validation_df.items():

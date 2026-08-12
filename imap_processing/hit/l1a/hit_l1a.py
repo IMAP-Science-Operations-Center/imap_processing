@@ -612,10 +612,10 @@ def process_science(
     sci_dataset = decom_hit(dataset)
 
     # Create dataset for sectored data organized by species type
-    # sectored_dataset = subcom_sectorates(sci_dataset)
+    sectored_dataset = subcom_sectorates(sci_dataset)
 
     # Subset sectored data for complete sets (10 min intervals covering all species)
-    # sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
+    sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
 
     # TODO:
     #  - headers are values per packet rather than per frame. Do these need to align
@@ -637,11 +637,11 @@ def process_science(
 
     # Calculate uncertainties for count rates
     count_rates_dataset = calculate_uncertainties(count_rates_dataset)
-    # sectored_count_rates_dataset = calculate_uncertainties(sectored_dataset)
+    sectored_count_rates_dataset = calculate_uncertainties(sectored_dataset)
 
     l1a_datasets: dict = {
         "imap_hit_l1a_counts-standard": count_rates_dataset,
-        # "imap_hit_l1a_counts-sectored": sectored_count_rates_dataset,
+        "imap_hit_l1a_counts-sectored": sectored_count_rates_dataset,
         "imap_hit_l1a_direct-events": pha_raw_dataset,
     }
 

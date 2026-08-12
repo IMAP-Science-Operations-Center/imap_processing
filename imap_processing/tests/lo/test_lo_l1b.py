@@ -3023,7 +3023,7 @@ def test_l1b_bgrates_sigma_when_anti_ram_nominal_is_zero(
             "imap_processing.lo.l1b.lo_l1b.get_pointing_times_from_id",
             return_value=(met_start, met_start + 1),
         ),
-        patch.object(LoConstants, "PIVOT_ANGLE_THRESHOLDS", {}),
+        patch.object(LoConstants, "PIVOT_ANGLES", {}),
         patch.object(LoConstants, "THRESHOLD_BG_RATE_ANTI_RAM_DEFAULT", 0.0),
     ):
         bgrates_ds, _ = l1b_bgrates_and_goodtimes(

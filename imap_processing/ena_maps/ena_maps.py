@@ -1498,11 +1498,25 @@ class RectangularSkyMap(AbstractSkyMap):
         # Now set global attributes
         map_attrs = cdf_attrs.get_global_attributes(f"imap_{instrument}_{level}_enamap")
         map_attrs["Spacing_degrees"] = str(self.spacing_deg)
-        for key in ["Data_type", "Logical_source", "Logical_source_description"]:
+        for key in ["Data_type", "Logical_source"]:
             map_attrs[key] = map_attrs[key].format(
                 descriptor=descriptor,
                 sensor=sensor,
             )
+        # Use the MapDescriptor to generate the Logical_source_description
+        # when possible, but preserve previous behavior for non-descriptor
+        # strings so later validation still raises the intended errors.
+        try:
+            md = naming.MapDescriptor.from_string(descriptor)
+        except ValueError:
+            map_attrs["Logical_source_description"] = map_attrs[
+                "Logical_source_description"
+            ].format(
+                descriptor=descriptor,
+                sensor=sensor,
+            )
+        else:
+            map_attrs["Logical_source_description"] = md.to_logical_source_description()
         # Always add the following attributes to the map
         map_attrs.update(
             {
@@ -1804,8 +1818,10 @@ class HealpixSkyMap(AbstractSkyMap):
             )
         # Log the mean pixel value and the number of subdivisions for debugging
         logger.debug(
-            f"    Mean pixel value at Number of subdivisions: {num_subdivisions}: "
-            f"array of shape {mean_pixel_value.shape}: {mean_pixel_value}"
+            "    Mean pixel value at Number of subdivisions: %s: array of shape %s: %s",
+            num_subdivisions,
+            mean_pixel_value.shape,
+            mean_pixel_value,
         )
         return mean_pixel_value
 
