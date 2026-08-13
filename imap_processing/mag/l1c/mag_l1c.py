@@ -300,7 +300,7 @@ def _validated_previous_day(
     Parameters
     ----------
     previous_day_dataset : xr.Dataset
-        The candidate previous day dataset.
+        The previous day dataset to validate.
     sensor : str
         The sensor of the current day's inputs, "o" (mago) or "i" (magi).
 

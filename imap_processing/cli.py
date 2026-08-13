@@ -1527,13 +1527,9 @@ class Mag(ProcessInstrument):
             # The previous day's L1C may arrive as an extra dependency (delivered by
             # sds-data-manager orchestration) so today's L1C timeline can continue
             # the previous day's cadence and phase across the day boundary.
-            previous_day_files = [
-                path
-                for path in dependencies.get_valid_inputs_for_start_date(
-                    start_datetime - timedelta(days=1)
-                ).get_file_paths(source="mag", data_type="l1c")
-                if self.descriptor in path.name
-            ]
+            previous_day_files = dependencies.get_valid_inputs_for_start_date(
+                start_datetime - timedelta(days=1)
+            ).get_file_paths(source="mag", data_type="l1c")
             previous_day_dataset = (
                 load_cdf(previous_day_files[0]) if previous_day_files else None
             )
