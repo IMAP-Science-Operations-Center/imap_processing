@@ -836,11 +836,9 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
     new_epochs = []
     nanoseconds_per_10_min = SECONDS_PER_10_MIN * 1_000_000_000
     nanoseconds_per_5_min = nanoseconds_per_10_min // 2
-    for chunk in ten_minute_cadence_epochs:
-        start_time = chunk[0]
-        end_time = chunk[-1]
-        new_epoch = start_time + (end_time - start_time) // 2 - nanoseconds_per_10_min
-        new_epochs.append(new_epoch)
+    start_times = ten_minute_cadence_epochs[:, 0]                                                                                                                                                                                                                 
+    end_times = ten_minute_cadence_epochs[:, -1]                                                                                                                                                                                                                  
+    new_epochs = start_times + (end_times - start_times) // 2 - nanoseconds_per_10_min
 
     transformed_dataset = transformed_dataset.assign_coords(epoch=np.array(new_epochs))
     transformed_dataset["epoch_delta"] = xr.DataArray(
