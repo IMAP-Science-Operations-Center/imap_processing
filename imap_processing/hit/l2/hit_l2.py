@@ -811,14 +811,18 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
         ("fe", 1),
     ]
 
-    # Note(Leo): need to check if doing in-place is acceptable
+    # Use the first record in each 10-record group as the output template.
     transformed_dataset = macropixel_dataset.isel(
         epoch=slice(None, None, 10),
     ).copy(deep=True)
 
+    # Each minute in a 10-record group contains one species/energy combination,
+    # ordered as described by species_energy. Track that minute's packet offset.
     species_i = 0
     for species, num_energy_levels in species_energy:
         energy_dim = f"{species}_energy_mean"
+        # Gather the intensity and uncertainty variables that share this
+        # species' energy dimension.
         species_variables = [
             var
             for var in macropixel_dataset.data_vars
@@ -827,17 +831,18 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
 
         for energy_i in range(num_energy_levels):
             for var in species_variables:
-                _data = macropixel_dataset[var].values[species_i::10, energy_i]
-                transformed_dataset[var].values[:, energy_i] = _data
+                # Select this species/energy packet from every 10-record group
+                # and place it in the corresponding output energy plane.
+                data_i = macropixel_dataset[var].values[species_i::10, energy_i]
+                transformed_dataset[var].values[:, energy_i] = data_i
             species_i += 1
 
     minute_cadence_epochs = macropixel_dataset["epoch"].values
     ten_minute_cadence_epochs = minute_cadence_epochs.reshape(-1, 10)
-    new_epochs = []
     nanoseconds_per_10_min = SECONDS_PER_10_MIN * 1_000_000_000
     nanoseconds_per_5_min = nanoseconds_per_10_min // 2
-    start_times = ten_minute_cadence_epochs[:, 0]                                                                                                                                                                                                                 
-    end_times = ten_minute_cadence_epochs[:, -1]                                                                                                                                                                                                                  
+    start_times = ten_minute_cadence_epochs[:, 0]
+    end_times = ten_minute_cadence_epochs[:, -1]
     new_epochs = start_times + (end_times - start_times) // 2 - nanoseconds_per_10_min
 
     transformed_dataset = transformed_dataset.assign_coords(epoch=np.array(new_epochs))
