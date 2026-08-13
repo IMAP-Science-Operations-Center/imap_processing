@@ -39,7 +39,7 @@ def convert_to_rates(
         The L1b dataset containing the data to convert.
     descriptor : str
         The descriptor of the data product of interest.
-    cdf_attrs : ImapCdfAttributes, optional
+    cdf_attrs : ImapCdfAttributes
         The CDF attributes manager, with L1b variable attributes loaded.
         Callers that only need the intermediate values (e.g. I-ALiRT, which
         discards them after computing ratios) can omit this.
