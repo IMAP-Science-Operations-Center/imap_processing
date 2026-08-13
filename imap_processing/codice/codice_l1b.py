@@ -23,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 
 def convert_to_rates(
-    dataset: xr.Dataset, descriptor: str, cdf_attrs: ImapCdfAttributes
+    dataset: xr.Dataset,
+    descriptor: str,
+    cdf_attrs: ImapCdfAttributes | None = None,
 ) -> np.ndarray:
     """
     Apply a conversion from counts to rates.
@@ -37,8 +39,10 @@ def convert_to_rates(
         The L1b dataset containing the data to convert.
     descriptor : str
         The descriptor of the data product of interest.
-    cdf_attrs : ImapCdfAttributes
+    cdf_attrs : ImapCdfAttributes, optional
         The CDF attributes manager, with L1b variable attributes loaded.
+        Callers that only need the intermediate values (e.g. I-ALiRT, which
+        discards them after computing ratios) can omit this.
 
     Returns
     -------
@@ -64,7 +68,9 @@ def convert_to_rates(
             ],
             attrs=cdf_attrs.get_variable_attributes(
                 "energy_per_charge", check_schema=False
-            ),
+            )
+            if cdf_attrs is not None
+            else {},
         )
         dataset["energy_per_charge_label"] = xr.DataArray(
             np.array([f"{value:.3f}" for value in energy_per_charge]),
@@ -73,7 +79,9 @@ def convert_to_rates(
             ],
             attrs=cdf_attrs.get_variable_attributes(
                 "energy_per_charge_label", check_schema=False
-            ),
+            )
+            if cdf_attrs is not None
+            else {},
         )
 
     if descriptor in [
