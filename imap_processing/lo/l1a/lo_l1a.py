@@ -90,8 +90,15 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         ds = combine_segmented_packets(ds)
 
         ds = parse_events(ds, attr_mgr)
-        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
-        datasets_to_return.append(ds)
+        if ds["de_count"].sum() == 0:
+            # No direct events were reported in any of the ASC groups. The
+            # per-event variables would all be zero length, which cannot be
+            # written to a CDF, so skip the product entirely. This matches the
+            # behavior for a file with no ILO_SCI_DE packets at all.
+            logger.info("No direct events found. Skipping the DE data product.")
+        else:
+            ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+            datasets_to_return.append(ds)
     if LoAPID.ILO_STAR in datasets_by_apid:
         logger.info(
             f"\nProcessing {LoAPID(LoAPID.ILO_STAR).name} "
