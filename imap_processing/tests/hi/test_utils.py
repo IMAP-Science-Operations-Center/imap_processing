@@ -27,6 +27,81 @@ from imap_processing.hi.utils import (
     parse_sensor_number,
 )
 
+# Nominal gain-match values matching the real cal-prod-config ancillary
+# file's gain_config_id=0 row, for building minimal test CSVs.
+GAIN_MATCH_0 = {
+    "mcp_delta_v": 875.0,
+    "mcp_delta_v_tol": 75.0,
+    "cem_a_delta_v": 2150.0,
+    "cem_a_delta_v_tol": 150.0,
+    "cem_b_delta_v": 2150.0,
+    "cem_b_delta_v_tol": 150.0,
+    "tof_v": -8000.0,
+    "tof_v_tol": 50.0,
+}
+# A second, well-separated gain configuration used to test matching/ambiguity.
+GAIN_MATCH_1 = {
+    "mcp_delta_v": 500.0,
+    "mcp_delta_v_tol": 50.0,
+    "cem_a_delta_v": 1000.0,
+    "cem_a_delta_v_tol": 50.0,
+    "cem_b_delta_v": 1000.0,
+    "cem_b_delta_v_tol": 50.0,
+    "tof_v": -5000.0,
+    "tof_v_tol": 50.0,
+}
+
+_CAL_PROD_CSV_HEADER = (
+    "gain_config_id,calibration_prod,esa_energy_step,geometric_factor,"
+    "coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,"
+    "tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,"
+    "mcp_delta_v,mcp_delta_v_tol,cem_a_delta_v,cem_a_delta_v_tol,"
+    "cem_b_delta_v,cem_b_delta_v_tol,tof_v,tof_v_tol"
+)
+
+_GAIN_MATCH_COLUMNS = (
+    "mcp_delta_v",
+    "mcp_delta_v_tol",
+    "cem_a_delta_v",
+    "cem_a_delta_v_tol",
+    "cem_b_delta_v",
+    "cem_b_delta_v_tol",
+    "tof_v",
+    "tof_v_tol",
+)
+
+
+def _cal_prod_csv_row(
+    gain_config_id,
+    calibration_prod,
+    esa_energy_step,
+    geometric_factor=0.00055,
+    coincidence_type_list="ABC1C2",
+    tof_windows=(15, 55, 0, 70, -50, 10, 5, 25),
+    gain_match_values=None,
+):
+    """Build a single calibration product config CSV data row (as a string).
+
+    Parameters
+    ----------
+    gain_match_values : dict or None
+        Optional overrides/values for the gain match columns
+        (mcp_delta_v, mcp_delta_v_tol, cem_a_delta_v, cem_a_delta_v_tol,
+        cem_b_delta_v, cem_b_delta_v_tol, tof_v, tof_v_tol). Any column not
+        present in this dict is left blank in the row (useful for testing
+        forward-fill and missing-value validation).
+    """
+    gain_match_values = gain_match_values or {}
+    gain_match_str = ",".join(
+        str(gain_match_values[col]) if col in gain_match_values else ""
+        for col in _GAIN_MATCH_COLUMNS
+    )
+    tof_str = ",".join(str(v) for v in tof_windows)
+    return (
+        f"{gain_config_id},{calibration_prod},{esa_energy_step},"
+        f"{geometric_factor},{coincidence_type_list},{tof_str},{gain_match_str}"
+    )
+
 
 def test_hiapid():
     """Test coverage for HIAPID class"""
@@ -358,8 +433,8 @@ class TestCalibrationProductConfig:
             df = pd.DataFrame(
                 {col: [1, 2, 3] for col in include_columns},
                 index=pd.MultiIndex.from_tuples(
-                    [(0, 0), (0, 1), (1, 0)],
-                    names=["calibration_prod", "esa_energy_step"],
+                    [(0, 0, 0), (0, 0, 1), (0, 1, 0)],
+                    names=["gain_config_id", "calibration_prod", "esa_energy_step"],
                 ),
             )
             with pytest.raises(AttributeError, match="Required column.*"):
@@ -370,7 +445,7 @@ class TestCalibrationProductConfig:
         df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
             hi_test_cal_prod_config_path
         )
-        assert isinstance(df["coincidence_type_list"][0, 1], tuple)
+        assert isinstance(df["coincidence_type_list"][0, 0, 1], tuple)
 
     def test_added_coincidence_type_values_column(self, hi_test_cal_prod_config_path):
         df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
@@ -405,15 +480,27 @@ class TestCalibrationProductConfig:
     def test_calibration_product_numbers_arbitrary_values(self):
         """Test calibration_product_numbers with arbitrary non-sequential values."""
         # Create a temporary CSV with non-sequential calibration product numbers
-        csv_content = """\
-calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
-10,1,0.00055,BC1C2,15,55,0,70,-50,10,5,25
-10,2,0.00085,BC1C2,15,55,0,70,-50,10,5,25
-5,1,0.00055,ABC1C2,15,55,0,70,-50,10,5,25
-5,2,0.00085,ABC1C2,15,55,0,70,-50,10,5,25
-100,1,0.00055,AC1,15,55,0,70,-50,10,5,25
-100,2,0.00085,AC1,15,55,0,70,-50,10,5,25
-        """
+        rows = [
+            _cal_prod_csv_row(
+                0, 10, 1, coincidence_type_list="BC1C2", gain_match_values=GAIN_MATCH_0
+            ),
+            _cal_prod_csv_row(
+                0,
+                10,
+                2,
+                geometric_factor=0.00085,
+                coincidence_type_list="BC1C2",
+            ),
+            _cal_prod_csv_row(0, 5, 1, coincidence_type_list="ABC1C2"),
+            _cal_prod_csv_row(
+                0, 5, 2, geometric_factor=0.00085, coincidence_type_list="ABC1C2"
+            ),
+            _cal_prod_csv_row(0, 100, 1, coincidence_type_list="AC1"),
+            _cal_prod_csv_row(
+                0, 100, 2, geometric_factor=0.00085, coincidence_type_list="AC1"
+            ),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
 
         df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
         cal_prod_numbers = df.cal_prod_config.calibration_product_numbers
@@ -421,6 +508,104 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
         # Should return sorted unique calibration product numbers
         np.testing.assert_array_equal(cal_prod_numbers, np.array([5, 10, 100]))
         assert isinstance(cal_prod_numbers, np.ndarray)
+
+    def test_from_csv_forward_fills_gain_match_columns(self):
+        """Test that gain match columns are forward-filled within a gain group."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(0, 0, 2, geometric_factor=0.00085),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+        for col, val in GAIN_MATCH_0.items():
+            assert df.loc[(0, 0, 2), col] == val
+
+    def test_from_csv_missing_first_row_gain_match_raises(self):
+        """Test that missing gain match values on the first row raises."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1),
+            _cal_prod_csv_row(0, 0, 2, geometric_factor=0.00085),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+
+        with pytest.raises(ValueError, match="Missing mcp_delta_v"):
+            CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+    def test_from_csv_inconsistent_gain_match_raises(self):
+        """Test inconsistent gain match values within a gain_config_id raises."""
+        overridden = dict(GAIN_MATCH_0, mcp_delta_v=-900.0)
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(
+                0, 0, 2, geometric_factor=0.00085, gain_match_values=overridden
+            ),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+
+        with pytest.raises(ValueError, match="Inconsistent mcp_delta_v"):
+            CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+    def test_match_gain_config_id_exact_match(self):
+        """Test that a pointing's HV deltas match the correct gain_config_id."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(0, 0, 2, geometric_factor=0.00085),
+            _cal_prod_csv_row(1, 0, 1, gain_match_values=GAIN_MATCH_1),
+            _cal_prod_csv_row(1, 0, 2, geometric_factor=0.00085),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+        hv_deltas = {
+            "mcp_delta_v": 880.0,
+            "cem_a_delta_v": 2140.0,
+            "cem_b_delta_v": 2160.0,
+            "tof_v": -7990.0,
+        }
+        assert df.cal_prod_config.match_gain_config_id(hv_deltas) == 0
+
+        hv_deltas = {
+            "mcp_delta_v": 510.0,
+            "cem_a_delta_v": 990.0,
+            "cem_b_delta_v": 1010.0,
+            "tof_v": -4990.0,
+        }
+        assert df.cal_prod_config.match_gain_config_id(hv_deltas) == 1
+
+    def test_match_gain_config_id_no_match(self):
+        """Test that HV deltas matching no gain_config_id return None."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(1, 0, 1, gain_match_values=GAIN_MATCH_1),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+        hv_deltas = {
+            "mcp_delta_v": 0.0,
+            "cem_a_delta_v": 0.0,
+            "cem_b_delta_v": 0.0,
+            "tof_v": 0.0,
+        }
+        assert df.cal_prod_config.match_gain_config_id(hv_deltas) is None
+
+    def test_match_gain_config_id_ambiguous_returns_none(self):
+        """Test that HV deltas matching multiple gain_config_ids return None."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(1, 0, 1, gain_match_values=GAIN_MATCH_0),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+        hv_deltas = {
+            "mcp_delta_v": 875.0,
+            "cem_a_delta_v": 2150.0,
+            "cem_b_delta_v": 2150.0,
+            "tof_v": -8000.0,
+        }
+        assert df.cal_prod_config.match_gain_config_id(hv_deltas) is None
 
 
 class TestGoodMetRangeLookupTable:
@@ -997,10 +1182,11 @@ class TestComputeQualifiedEventMask:
             "tof_bc1_high": [50, 50, 50, 50],
             "tof_c1c2_low": [20, 20, 20, 20],
             "tof_c1c2_high": [120, 120, 120, 120],
+            **{col: [val] * 4 for col, val in GAIN_MATCH_0.items()},
         }
         index = pd.MultiIndex.from_tuples(
-            [(1, 1), (1, 2), (2, 1), (2, 2)],
-            names=["calibration_prod", "esa_energy_step"],
+            [(0, 1, 1), (0, 1, 2), (0, 2, 1), (0, 2, 2)],
+            names=["gain_config_id", "calibration_prod", "esa_energy_step"],
         )
         df = pd.DataFrame(data, index=index)
         # Trigger the accessor to add coincidence_type_values column
@@ -1196,10 +1382,11 @@ class TestIterQualifiedEventsByConfig:
             "tof_bc1_high": [50, 50, 50, 50],
             "tof_c1c2_low": [20, 20, 20, 20],
             "tof_c1c2_high": [120, 120, 120, 120],
+            **{col: [val] * 4 for col, val in GAIN_MATCH_0.items()},
         }
         index = pd.MultiIndex.from_tuples(
-            [(1, 1), (1, 2), (2, 1), (2, 2)],
-            names=["calibration_prod", "esa_energy_step"],
+            [(0, 1, 1), (0, 1, 2), (0, 2, 1), (0, 2, 2)],
+            names=["gain_config_id", "calibration_prod", "esa_energy_step"],
         )
         df = pd.DataFrame(data, index=index)
         # Trigger the accessor to add coincidence_type_values column
@@ -1313,7 +1500,7 @@ class TestIterQualifiedEventsByConfig:
         for esa_energy, config_row, mask in iter_qualified_events_by_config(
             mock_de_dataset, mock_cal_product_config, esa_energy_steps
         ):
-            if esa_energy == 1 and config_row.Index[0] == 1:
+            if esa_energy == 1 and config_row.Index[1] == 1:
                 # Events with coincidence 15 or 14: indices 0, 1, 4, 5, 8
                 # But event 4 has bad TOF (200), so should fail
                 # Events 3, 7 have wrong coincidence (8)
@@ -1334,7 +1521,7 @@ class TestIterQualifiedEventsByConfig:
             mock_de_dataset, mock_cal_product_config, esa_energy_steps
         ):
             if esa_energy == 1:  # Only look at ESA 1
-                cal_prod = config_row.Index[0]
+                cal_prod = config_row.Index[1]
                 masks_by_cal_prod[cal_prod] = mask
 
         # Cal prod 1 accepts ABC1C2 and ABC1
@@ -1404,7 +1591,7 @@ class TestIterQualifiedEventsByConfig:
         for esa_energy, config_row, mask in iter_qualified_events_by_config(
             mock_de_dataset, mock_cal_product_config, esa_energy_steps
         ):
-            if esa_energy == 1 and config_row.Index[0] == 1:
+            if esa_energy == 1 and config_row.Index[1] == 1:
                 # Event 4 should now pass (has coincidence 15 and fill value TOF)
                 assert mask[4]
                 break

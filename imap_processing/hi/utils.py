@@ -660,8 +660,27 @@ class CalibrationProductConfig(_BaseConfigAccessor):
     """Register custom accessor for calibration product configuration DataFrames."""
 
     index_columns = (
+        "gain_config_id",
         "calibration_prod",
         "esa_energy_step",
+    )
+    # Detector voltage difference (and U-Can voltage) fields used to match a
+    # pointing's gain state to a gain_config_id row. See
+    # hi_l1b.compute_gain_match_values() for how a pointing's own values are
+    # derived, and match_gain_config_id() below for the matching logic.
+    GAIN_MATCH_FIELDS = (
+        "mcp_delta_v",
+        "cem_a_delta_v",
+        "cem_b_delta_v",
+        "tof_v",
+    )
+    # Columns holding the nominal value and tolerance for each gain match
+    # field. These are constant across (calibration_prod, esa_energy_step)
+    # within a gain_config_id, so the CSV only needs to specify them once per
+    # gain_config_id group -- placed as the final columns of the file, after
+    # the full calibration product definition.
+    gain_match_columns = tuple(
+        f"{field}{suffix}" for field in GAIN_MATCH_FIELDS for suffix in ("", "_tol")
     )
     required_columns = (
         "coincidence_type_list",
@@ -670,7 +689,49 @@ class CalibrationProductConfig(_BaseConfigAccessor):
             for det_pair in _BaseConfigAccessor.tof_detector_pairs
             for limit in ["low", "high"]
         ],
+        *gain_match_columns,
     )
+
+    def _validate(self, df: pd.DataFrame) -> None:
+        """
+        Validate the calibration product configuration.
+
+        Extends base validation to verify the gain match columns are
+        non-null and consistent across (calibration_prod, esa_energy_step)
+        for each gain_config_id.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame to validate.
+
+        Raises
+        ------
+        AttributeError
+            If required columns or index levels are missing.
+        ValueError
+            If gain match values are missing or inconsistent within a
+            gain_config_id group.
+        """
+        super()._validate(df)
+
+        for gain_config_id, group in df.groupby(level="gain_config_id"):
+            for col in self.gain_match_columns:
+                if group[col].isna().any():
+                    raise ValueError(
+                        f"Missing {col} value(s) for gain_config_id="
+                        f"{gain_config_id}. The first row for each "
+                        f"gain_config_id must specify a value for every "
+                        f"gain match field."
+                    )
+                if group[col].nunique() > 1:
+                    raise ValueError(
+                        f"Inconsistent {col} values across rows for "
+                        f"gain_config_id={gain_config_id}: "
+                        f"{group[col].unique().tolist()}. Gain match values "
+                        f"must be identical across all calibration_prod/"
+                        f"esa_energy_step rows for a gain_config_id."
+                    )
 
     @classmethod
     def from_csv(cls, path: str | Path | IO[str]) -> pd.DataFrame:
@@ -694,6 +755,11 @@ class CalibrationProductConfig(_BaseConfigAccessor):
             converters={"coincidence_type_list": lambda s: tuple(s.split("|"))},
             comment="#",
         )
+        # Forward-fill gain match columns within each gain_config_id group.
+        # This allows the CSV to specify these values only on the group's
+        # first row.
+        gain_cols = list(cls.gain_match_columns)
+        df[gain_cols] = df.groupby(level="gain_config_id")[gain_cols].ffill()
         # Trigger the accessor to run validation and add coincidence_type_values
         _ = df.cal_prod_config.number_of_products
         return df
@@ -710,6 +776,35 @@ class CalibrationProductConfig(_BaseConfigAccessor):
             calibration product definitions.
         """
         return len(self._obj.index.unique(level="calibration_prod"))
+
+    def match_gain_config_id(self, hv_deltas: dict[str, float]) -> int | None:
+        """
+        Find the gain_config_id whose reference values match the given deltas.
+
+        Parameters
+        ----------
+        hv_deltas : dict[str, float]
+            Mapping of CalibrationProductConfig.GAIN_MATCH_FIELDS field names
+            to a pointing's derived values (see hi_l1b.compute_gain_match_values()).
+
+        Returns
+        -------
+        int or None
+            The matching gain_config_id, or None if zero or multiple
+            gain_config_id rows match.
+        """
+        gain_config_ids = self._obj.index.get_level_values("gain_config_id").unique()
+        matches = []
+        for gain_config_id in gain_config_ids:
+            row = self._obj.loc[gain_config_id].iloc[0]
+            if all(
+                abs(hv_deltas[field] - row[field]) <= row[f"{field}_tol"]
+                for field in self.GAIN_MATCH_FIELDS
+            ):
+                matches.append(int(gain_config_id))
+        if len(matches) != 1:
+            return None
+        return matches[0]
 
 
 @pd.api.extensions.register_dataframe_accessor("background_config")

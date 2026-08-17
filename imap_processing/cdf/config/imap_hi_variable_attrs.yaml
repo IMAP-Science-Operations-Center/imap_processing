@@ -482,20 +482,23 @@ hi_pset_esa_energy_step:
 
 hi_pset_geometric_factor:
   <<: *default_float32
-  CATDESC: Geometric factor for the detector gain configuration active during this pointing
+  CATDESC: Geometric factor per calibration product and esa_energy_step for the detector gain configuration active during this pointing
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
+  DEPEND_2: calibration_prod
   DISPLAY_TYPE: no_plot
   FIELDNAM: Geometric factor
   FORMAT: E12.5
   LABLAXIS: Geometric Factor
   LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: calibration_prod_label
   UNITS: cm^2 sr
   VALIDMAX: 1.0
   VALIDMIN: 0.0
   VAR_NOTES: >
-    Geometric factor per esa_energy_step, looked up from the gain-configuration
-    ancillary file using the l1b_de's classified gain configuration.
+    Geometric factor per esa_energy_step and calibration_prod, looked up from
+    the cal-prod ancillary file's gain_config_id row matching the l1b_de's
+    reference detector gain state.
   VAR_TYPE: support_data
 
 hi_pset_calibration_prod:

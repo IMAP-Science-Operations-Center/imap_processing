@@ -458,6 +458,11 @@ def calculate_ena_intensity(
     """
     # read calibration product configuration file
     cal_prod_df = CalibrationProductConfig.from_csv(l2_ancillary_path_dict["cal-prod"])
+    # L2 does not yet combine PSETs from different gain states into a single
+    # map (see hi_l1c.pset_geometric_factor()'s docstring), so use the first
+    # (and, today, only) gain_config_id present in the ancillary file.
+    gain_config_id = cal_prod_df.index.get_level_values("gain_config_id")[0]
+    cal_prod_df = cal_prod_df.loc[gain_config_id]
     # reindex_like removes esa_energy_steps and calibration products not in the
     # map_ds esa_energy_step and calibration_product coordinates
     geometric_factor = cal_prod_df.to_xarray().reindex_like(map_ds)["geometric_factor"]

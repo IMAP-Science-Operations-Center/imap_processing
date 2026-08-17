@@ -126,8 +126,13 @@ def generate_pset_dataset(
         pset_dataset.epoch.data[0] + pset_dataset.epoch_delta.data[0] / 2
     )
     pset_dataset.update(pset_geometry(pset_midpoint_et, logical_source_parts["sensor"]))
-    # Look up the per-esa_energy_step geometric factor for this pointing.
-    pset_dataset.update(pset_geometric_factor(pset_dataset.coords))
+    # Look up the per-esa_energy_step geometric factor for this pointing's
+    # gain state, matched from the L1B DE product's gain_match_{field}
+    # global attributes against the cal-prod ancillary file's gain_config_id
+    # rows.
+    pset_dataset.update(
+        pset_geometric_factor(pset_dataset.coords, de_dataset, config_df)
+    )
     # Bin the counts into the spin-bins
     pset_dataset.update(
         pset_counts(pset_dataset.coords, config_df, de_dataset, goodtimes_ds)
@@ -350,34 +355,66 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
 
 def pset_geometric_factor(
     pset_coords: dict[str, xr.DataArray],
+    l1b_de_dataset: xr.Dataset,
+    config_df: pd.DataFrame,
 ) -> dict[str, xr.DataArray]:
     """
-    Return a placeholder per-esa_energy_step geometric factor for this pointing.
-
-    The previous gain-configuration ancillary file and config_id
-    classification mechanism has been retired (see #3391 / #3394) in favor
-    of gain-test filtering based on a pointing's own reference detector
-    voltages (see `hi_l1b.de_gain_test_filter`). A replacement geometric
-    factor lookup -- keyed on the pointing's detector gain state via an
-    extended cal-prod ancillary file -- is implemented in a follow-up (see
-    #3395). Until then, "geometric_factor" is left at FILLVAL.
+    Look up the geometric factor per esa_energy_step and calibration_prod.
 
     Parameters
     ----------
     pset_coords : dict[str, xarray.DataArray]
         The PSET coordinates from the xarray.Dataset.
+    l1b_de_dataset : xarray.Dataset
+        The L1B dataset for the pointing being processed. Must have
+        "gain_match_{field}" global attributes (see
+        CalibrationProductConfig.GAIN_MATCH_FIELDS) recording the pointing's
+        reference detector voltage deltas (see hi_l1b.de_gain_test_filter()).
+    config_df : pandas.DataFrame
+        Calibration product configuration DataFrame (see
+        CalibrationProductConfig.from_csv()), indexed by (gain_config_id,
+        calibration_prod, esa_energy_step).
 
     Returns
     -------
     dict[str, xarray.DataArray]
-        Dictionary containing the "geometric_factor" DataArray (all
-        FILLVAL), dims (epoch, esa_energy_step).
+        Dictionary containing the "geometric_factor" DataArray, dims
+        (epoch, esa_energy_step, calibration_prod).
+
+    Notes
+    -----
+    A pointing's gain state is constant for the whole pointing (see
+    `hi_l1b.de_gain_test_filter`), so the L1B DE product only records the
+    pointing's reference detector voltage deltas as global attributes rather
+    than duplicating the geometric factor across every direct event. This
+    matches those deltas against the cal-prod ancillary file's gain_config_id
+    rows, then records the geometric_factor value for each
+    (esa_energy_step, calibration_prod) pair directly from the matched
+    gain_config_id's rows. Not yet consumed by L2 processing (deferred to a
+    follow-on ticket that handles combining PSETs from different gain states
+    into a single map).
     """
-    return create_dataset_variables(
+    geometric_factor_var = create_dataset_variables(
         ["geometric_factor"],
         coords=pset_coords,
         att_manager_lookup_str="hi_pset_{0}",
     )
+    hv_deltas = {
+        field: l1b_de_dataset.attrs[f"gain_match_{field}"]
+        for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
+    }
+    if not any(np.isnan(value) for value in hv_deltas.values()):
+        gain_config_id = config_df.cal_prod_config.match_gain_config_id(hv_deltas)
+        if gain_config_id is not None:
+            gain_config_df = config_df.loc[gain_config_id]
+            for i, step in enumerate(pset_coords["esa_energy_step"].data):
+                for j, cal_prod in enumerate(pset_coords["calibration_prod"].data):
+                    geometric_factor_var["geometric_factor"].values[0, i, j] = (
+                        gain_config_df.loc[
+                            (int(cal_prod), int(step)), "geometric_factor"
+                        ]
+                    )
+    return geometric_factor_var
 
 
 def pset_counts(
@@ -457,10 +494,12 @@ def pset_counts(
         # truncating to an integer gives the correct bin index
         spin_bin_indices = (filtered_de_ds["spin_phase"].data * N_SPIN_BINS).astype(int)
         # When iterating over rows of a dataframe, the names of the multi-index
-        # are not preserved. Below, `config_row.Index[0]` gets the
-        # calibration_prod value from the namedtuple representing the
-        # dataframe row. We map this to the array index using cal_prod_to_index.
-        i_cal_prod = cal_prod_to_index[config_row.Index[0]]
+        # are not preserved. Below, `config_row.Index[1]` gets the
+        # calibration_prod value (index level 1 of the (gain_config_id,
+        # calibration_prod, esa_energy_step) MultiIndex) from the namedtuple
+        # representing the dataframe row. We map this to the array index
+        # using cal_prod_to_index.
+        i_cal_prod = cal_prod_to_index[config_row.Index[1]]
         np.add.at(
             counts_var["counts"].data[0, i_esa, i_cal_prod],
             spin_bin_indices,
