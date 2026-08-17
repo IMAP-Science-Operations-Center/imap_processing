@@ -15,7 +15,7 @@ from imap_processing.hi.utils import (
     CalibrationProductConfig,
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
-    HiConstants,
+    GoodMetRangeLookupTable,
     compute_qualified_event_mask,
     create_dataset_variables,
     filter_events_by_coincidence,
@@ -24,51 +24,8 @@ from imap_processing.hi.utils import (
     get_tof_window_mask,
     iter_background_events_by_config,
     iter_qualified_events_by_config,
-    load_gain_configuration,
     parse_sensor_number,
 )
-
-# Nominal HV mean/tolerance values matching the real gain-configuration
-# ancillary file, for building minimal test CSVs.
-_GAIN_CONFIG_HV_MEAN = {
-    "pos_defl": 6300.0,
-    "neg_defl": -6300.0,
-    "tof": -8000.0,
-    "mcp_f": -3000.0,
-    "mcp_b": -2125.0,
-    "cem_f": -4500.0,
-    "cem_bk_a": -2350.0,
-    "cem_bk_b": -2350.0,
-}
-_GAIN_CONFIG_HV_DELTA = dict.fromkeys(HiConstants.GAIN_CONFIG_HV_FIELDS, 50.0)
-
-
-def _gain_config_csv_rows(second_row_overrides=None):
-    """Build (header, first_row, second_row) CSV lines for config_id=0.
-
-    first_row (esa_energy_step=1) specifies all {field}_v/{field}_delta_v
-    values. second_row (esa_energy_step=2) leaves them blank (to be
-    forward-filled), unless overridden via second_row_overrides (column name
-    -> value string).
-    """
-    hv_columns = [
-        f"{field}{suffix}"
-        for field in HiConstants.GAIN_CONFIG_HV_FIELDS
-        for suffix in ("_v", "_delta_v")
-    ]
-    header = "config_id,esa_energy_step,geometric_factor," + ",".join(hv_columns)
-
-    first_values = {
-        **{f"{f}_v": str(v) for f, v in _GAIN_CONFIG_HV_MEAN.items()},
-        **{f"{f}_delta_v": str(v) for f, v in _GAIN_CONFIG_HV_DELTA.items()},
-    }
-    first_row = "0,1,0.00055," + ",".join(first_values[col] for col in hv_columns)
-
-    overrides = second_row_overrides or {}
-    second_values = {col: overrides.get(col, "") for col in hv_columns}
-    second_row = "0,2,0.00085," + ",".join(second_values[col] for col in hv_columns)
-
-    return header, first_row, second_row
 
 
 def test_hiapid():
@@ -466,64 +423,83 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
         assert isinstance(cal_prod_numbers, np.ndarray)
 
 
-class TestLoadGainConfiguration:
-    """Test coverage for load_gain_configuration function."""
+class TestGoodMetRangeLookupTable:
+    """Test suite for GoodMetRangeLookupTable class."""
 
-    def test_from_csv(self, hi_test_gain_configuration_path):
-        """Test coverage for load_gain_configuration reading the ancillary CSV."""
-        gain_config_df = load_gain_configuration(hi_test_gain_configuration_path)
+    @pytest.fixture
+    def empty_lookup(self):
+        """Create an empty lookup table for testing."""
+        return GoodMetRangeLookupTable()
 
-        assert gain_config_df.index.names == ["config_id", "esa_energy_step"]
-        assert len(gain_config_df) == 18  # 2 configs x 9 esa_energy_steps
-        assert gain_config_df.loc[(0, 1), "geometric_factor"] == 0.00055
-        assert gain_config_df.loc[(0, 5), "geometric_factor"] == 0.00340
-        assert gain_config_df.loc[(1, 9), "geometric_factor"] == 0.01922
-        # {field}_v/{field}_delta_v should be forward-filled to every
-        # esa_energy_step
-        for esa_energy_step in range(1, 10):
-            assert gain_config_df.loc[(0, esa_energy_step), "pos_defl_v"] == 6300.0
-            assert gain_config_df.loc[(0, esa_energy_step), "pos_defl_delta_v"] == 700.0
-            assert gain_config_df.loc[(0, esa_energy_step), "tof_v"] == -8000.0
-            assert gain_config_df.loc[(0, esa_energy_step), "cem_f_v"] == -4500.0
-            assert gain_config_df.loc[(1, esa_energy_step), "cem_f_v"] == -4200.0
+    @pytest.fixture
+    def populated_lookup(self):
+        """Create a lookup table with two disjoint good MET ranges."""
+        lookup = GoodMetRangeLookupTable()
+        lookup.add_entry(0.0, 10.0)
+        lookup.add_entry(20.0, 30.0)
+        return lookup
 
-    def test_from_csv_string_io(self):
-        """Test coverage for load_gain_configuration with a file-like object."""
-        header, first_row, second_row = _gain_config_csv_rows()
-        csv_content = (
-            f"# comment line should be ignored\n{header}\n{first_row}\n{second_row}\n"
-        )
-        gain_config_df = load_gain_configuration(io.StringIO(csv_content))
-        assert gain_config_df.loc[(0, 1), "geometric_factor"] == 0.00055
-        assert gain_config_df.loc[(0, 2), "geometric_factor"] == 0.00085
-        # Forward-filled from the first row
-        assert gain_config_df.loc[(0, 2), "pos_defl_v"] == 6300.0
-        assert gain_config_df.loc[(0, 2), "pos_defl_delta_v"] == 50.0
+    def test_init(self, empty_lookup):
+        """Test initialization of lookup table."""
+        assert len(empty_lookup.df) == 0
+        assert list(empty_lookup.df.columns) == ["start_met", "end_met"]
+        assert empty_lookup._indexed is False
 
-    def test_missing_geometric_factor_raises(self):
-        """Test that a null geometric_factor raises ValueError."""
-        header, first_row, _ = _gain_config_csv_rows()
-        second_row = "0,2,,,,,,,,,,,,,,,,,"
-        csv_content = f"{header}\n{first_row}\n{second_row}\n"
-        with pytest.raises(ValueError, match="Null geometric_factor"):
-            load_gain_configuration(io.StringIO(csv_content))
+    def test_add_entry(self, empty_lookup):
+        """Test adding a single entry."""
+        empty_lookup.add_entry(0.0, 10.0)
+        assert len(empty_lookup.df) == 1
+        assert empty_lookup.df.iloc[0]["start_met"] == 0.0
+        assert empty_lookup.df.iloc[0]["end_met"] == 10.0
+        assert empty_lookup._indexed is False
 
-    def test_missing_first_row_hv_values_raises(self):
-        """Test that missing {field}_v/{field}_delta_v on the first row raises."""
-        header, _, second_row = _gain_config_csv_rows()
-        first_row = "0,1,0.00055,,,,,,,,,,,,,,,,"
-        csv_content = f"{header}\n{first_row}\n{second_row}\n"
-        with pytest.raises(ValueError, match="Missing pos_defl_v"):
-            load_gain_configuration(io.StringIO(csv_content))
+    def test_add_entry_resets_indexed_flag(self, populated_lookup):
+        """Test that adding an entry resets the indexed flag."""
+        populated_lookup._ensure_indexed()
+        assert populated_lookup._indexed is True
+        populated_lookup.add_entry(40.0, 50.0)
+        assert populated_lookup._indexed is False
 
-    def test_inconsistent_hv_values_raises(self):
-        """Test inconsistent {field}_v/{field}_delta_v within a config_id raises."""
-        header, first_row, second_row = _gain_config_csv_rows(
-            second_row_overrides={"pos_defl_v": "6301.0"}
-        )
-        csv_content = f"{header}\n{first_row}\n{second_row}\n"
-        with pytest.raises(ValueError, match="Inconsistent pos_defl_v"):
-            load_gain_configuration(io.StringIO(csv_content))
+    def test_query_empty_table_scalar(self, empty_lookup):
+        """Test that an empty table returns False for a scalar query."""
+        result = empty_lookup.query(5.0)
+        assert result is False
+
+    def test_query_empty_table_array(self, empty_lookup):
+        """Test that an empty table returns all-False for an array query."""
+        result = empty_lookup.query([1.0, 2.0, 3.0])
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, [False, False, False])
+
+    def test_query_scalar_in_range(self, populated_lookup):
+        """Test scalar queries that fall within a good MET range."""
+        assert populated_lookup.query(5.0) is True
+        assert populated_lookup.query(25.0) is True
+
+    def test_query_scalar_out_of_range(self, populated_lookup):
+        """Test scalar queries that fall outside every good MET range."""
+        assert populated_lookup.query(15.0) is False
+        assert populated_lookup.query(-5.0) is False
+        assert populated_lookup.query(100.0) is False
+
+    def test_query_boundary_values_inclusive(self, populated_lookup):
+        """Test that range boundaries are treated as inclusive."""
+        assert populated_lookup.query(0.0) is True
+        assert populated_lookup.query(10.0) is True
+        assert populated_lookup.query(20.0) is True
+        assert populated_lookup.query(30.0) is True
+
+    def test_query_array(self, populated_lookup):
+        """Test array queries spanning both in-range and out-of-range values."""
+        result = populated_lookup.query([5.0, 15.0, 25.0, 35.0])
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, [True, False, True, False])
+
+    def test_query_numpy_array(self, populated_lookup):
+        """Test query with a numpy array as input."""
+        result = populated_lookup.query(np.array([5.0, 15.0]))
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, [True, False])
 
 
 class TestBackgroundConfig:
