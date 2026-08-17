@@ -85,7 +85,7 @@ def convert_to_rates(
             if cdf_attrs is not None
             else {},  # the codice ialirt pipeline calls this function but
             # energy_per_charge_label is an intermediate variable so
-            # it doesn't need attributes
+            # it does not need attributes
         )
 
     if descriptor in [
