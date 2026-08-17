@@ -48,6 +48,10 @@ default_angle_attrs: &default_angle
   VAR_TYPE: support_data
 
 # <=== Coordinates ===>
+epoch_macropixel:
+  DELTA_MINUS_VAR: epoch_delta
+  DELTA_PLUS_VAR: epoch_delta
+
 zenith:
   <<: *default_angle
   CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins

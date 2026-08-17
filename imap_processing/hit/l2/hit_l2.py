@@ -142,10 +142,10 @@ def add_cdf_attributes(
                 ),
             )
             dataset.coords[f"{dim}_label"] = label_array
-
-    if "macropixel" in logical_source and "epoch" in dataset.coords:
-        dataset["epoch"].attrs["DELTA_MINUS_VAR"] = "epoch_delta"
-        dataset["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta"
+        elif "macropixel" in logical_source:
+            dataset["epoch"].attrs.update(
+                attr_mgr.get_variable_attributes("epoch_macropixel", check_schema=False)
+            )
 
     return dataset
 
