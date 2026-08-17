@@ -70,7 +70,9 @@ def convert_to_rates(
                 "energy_per_charge", check_schema=False
             )
             if cdf_attrs is not None
-            else {},
+            else {},  # the codice ialirt pipeline calls this function but
+            # energy_per_charge is an intermediate variable so
+            # it doesn't need attributes
         )
         dataset["energy_per_charge_label"] = xr.DataArray(
             np.array([f"{value:.3f}" for value in energy_per_charge]),
@@ -81,7 +83,9 @@ def convert_to_rates(
                 "energy_per_charge_label", check_schema=False
             )
             if cdf_attrs is not None
-            else {},
+            else {},  # the codice ialirt pipeline calls this function but
+            # energy_per_charge_label is an intermediate variable so
+            # it doesn't need attributes
         )
 
     if descriptor in [
