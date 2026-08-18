@@ -134,6 +134,12 @@ def annotate_direct_events(
     l1b_de_dataset.update(
         de_esa_energy_step(l1b_de_dataset, l1b_hk_dataset, esa_energies_anc)
     )
+    # esa_step_met (the MET when the ESA was stepped -- i.e. when data
+    # collection for this packet's ESA step actually began) is needed by
+    # de_gain_test_filter() below, since "ccsds_met" (packet creation time)
+    # lags real data collection by tens to over a hundred seconds on real
+    # flight data and can spill a packet across a good/bad segment boundary.
+    l1b_de_dataset.update(de_esa_step_met(l1b_de_dataset))
     # Modifies "esa_energy_step" and "ccsds_qf" in place, and sets the
     # "gain_match_{field}" global attributes.
     l1b_de_dataset = de_gain_test_filter(l1b_de_dataset, l1b_hk_dataset)
@@ -147,7 +153,6 @@ def annotate_direct_events(
             att_manager_lookup_str="hi_de_{0}",
         )
     )
-    l1b_de_dataset.update(de_esa_step_met(l1b_de_dataset))
     l1b_de_dataset = l1b_de_dataset.drop_vars(
         [
             "src_seq_ctr",
@@ -533,8 +538,10 @@ def de_gain_test_filter(
     """
     Exclude gain test intervals and force FILLVAL for non-matching events.
 
-    Must be called after de_esa_energy_step(), which sets the "esa_energy_step"
-    and "ccsds_qf" variables this function modifies in place.
+    Must be called after de_esa_energy_step() (which sets the "esa_energy_step"
+    and "ccsds_qf" variables this function modifies in place) and
+    de_esa_step_met() (which sets the "esa_step_met" variable this function
+    reads).
 
     A pointing's own first HVSCI segment (its first ~3 housekeeping packets)
     defines that pointing's reference detector voltages. Every contiguous
@@ -549,8 +556,9 @@ def de_gain_test_filter(
     ----------
     l1b_de_ds : xarray.Dataset
         The partial L1B dataset. Must already contain "esa_energy_step" and
-        "ccsds_qf" (see de_esa_energy_step()). Modified in place: FILLVAL is
-        forced into "esa_energy_step" for events falling outside a matching
+        "ccsds_qf" (see de_esa_energy_step()) and "esa_step_met" (see
+        de_esa_step_met()). Modified in place: FILLVAL is forced into
+        "esa_energy_step" for events falling outside a matching
         HVSCI segment, ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE is set in
         "ccsds_qf" for the same events, and new "gain_match_{field}" global
         attributes (one per CalibrationProductConfig.GAIN_MATCH_FIELDS) are
@@ -635,8 +643,14 @@ def de_gain_test_filter(
         f"voltages ({n_excluded} segment(s) excluded as likely gain tests)."
     )
 
-    ccsds_met = l1b_de_ds["ccsds_met"].data
-    detector_voltage_bad_mask = ~good_met_ranges.query(ccsds_met)
+    # Use esa_step_met (the MET when the ESA was stepped, i.e. the start of
+    # this packet's 8-spin data collection) rather than ccsds_met (packet
+    # creation time, logged by flight software only after the data was
+    # collected) so that a packet is attributed to the segment its data was
+    # actually collected in, not the segment active when the packet happened
+    # to be created.
+    esa_step_met = l1b_de_ds["esa_step_met"].data
+    detector_voltage_bad_mask = ~good_met_ranges.query(esa_step_met)
 
     n_bad = int(np.sum(detector_voltage_bad_mask))
     if n_bad > 0:

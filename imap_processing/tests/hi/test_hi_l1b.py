@@ -428,9 +428,21 @@ class TestDeGainTestFilter:
         return xr.Dataset(data_vars)
 
     @staticmethod
-    def _make_de_ds(ccsds_met_values, esa_energy_step_fillval=255):
-        """Build a fake partial L1B direct event dataset."""
+    def _make_de_ds(
+        ccsds_met_values, esa_energy_step_fillval=255, esa_step_met_values=None
+    ):
+        """Build a fake partial L1B direct event dataset.
+
+        Parameters
+        ----------
+        esa_step_met_values : array_like or None
+            Values for "esa_step_met" (the time used for gain-test good/bad
+            classification). Defaults to `ccsds_met_values` for tests that
+            don't care about the distinction between the two.
+        """
         n_epoch = len(ccsds_met_values)
+        if esa_step_met_values is None:
+            esa_step_met_values = ccsds_met_values
         return xr.Dataset(
             coords={
                 "epoch": xr.DataArray(np.arange(n_epoch), name="epoch", dims=["epoch"])
@@ -438,6 +450,9 @@ class TestDeGainTestFilter:
             data_vars={
                 "ccsds_met": xr.DataArray(
                     np.asarray(ccsds_met_values, dtype=float), dims=["epoch"]
+                ),
+                "esa_step_met": xr.DataArray(
+                    np.asarray(esa_step_met_values, dtype=float), dims=["epoch"]
                 ),
                 "esa_energy_step": xr.DataArray(
                     (np.arange(n_epoch) % 9 + 1).astype(np.uint8),
@@ -563,6 +578,37 @@ class TestDeGainTestFilter:
             assert result.attrs[f"gain_match_{field}"] == pytest.approx(
                 expected_gain_match[field]
             )
+
+    @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
+    def test_uses_esa_step_met_not_ccsds_met(self, mock_any_good_de):
+        """Classification uses esa_step_met, not the delayed ccsds_met.
+
+        On real flight data, a packet's ccsds_met (creation time) can lag its
+        esa_step_met (when the ESA was actually stepped, i.e. when data
+        collection began) by tens to over a hundred seconds -- enough to
+        spill a packet's ccsds_met across a good/bad segment boundary. Using
+        ccsds_met for classification would wrongly flag this event bad.
+        """
+        hk_ds = self._make_hk_ds(
+            ["HVSCI", "HVSCI", "HVSCI"],
+            [1000, 1001, 1002],
+        )
+        # ccsds_met is far outside the only HVSCI segment (which ends at
+        # MET 1002), simulating flight-software packet-creation delay, but
+        # esa_step_met correctly falls within it.
+        de_ds = self._make_de_ds([1090], esa_step_met_values=[1001])
+
+        result = de_gain_test_filter(de_ds, hk_ds)
+
+        assert result is de_ds
+        assert (
+            result["esa_energy_step"].values[0]
+            != (de_ds["esa_energy_step"].attrs["FILLVAL"])
+        )
+        assert (
+            result["ccsds_qf"].values[0]
+            & np.uint8(ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE)
+        ) == 0
 
 
 class TestComputeReferenceHvValues:
