@@ -352,6 +352,9 @@ def calculate_all_rates_and_intensities(
     # This must happen before the CG interpolation step below, which requires
     # ena_intensity_sys_err to already exist (even though it deliberately
     # leaves it unmodified -- see update_sys_err=False).
+    # For full-spin (ram+anti) maps, these per-map values are provisional:
+    # combine_maps() recalculates both from the combined ena_intensity and
+    # bg_intensity_sys_err rather than exposure-weight-averaging these.
     logger.debug("Adding calibration systematic uncertainty")
     bg_sys_err = map_ds["bg_intensity_sys_err"]
     calib_sys_err = CALIBRATION_UNCERTAINTY_FRACTION * map_ds["ena_intensity"]
@@ -682,24 +685,36 @@ def combine_maps(sky_maps: dict[str, RectangularSkyMap]) -> RectangularSkyMap:
         # ena_intensity_stat_uncertainty is combined using inverse quadrature sum
         combined["ena_intensity_stat_uncert"] = np.sqrt(1 / total_weight)
 
-    # Exposure-weighted average for systematic error and background/calibration
-    # rate and systematic error variables.
+    # Exposure-weighted average for background rate and systematic error
+    # variables.
     # NaNs in these variables should occur only where the exposure_factor
     # is zero. This means the correct NaN handling is to just replace NaNs in
     # these variables with zeros so that the sum is not affected.
     with np.errstate(divide="ignore", invalid="ignore"):
         total_exp = combined["exposure_factor"]
         for var in (
-            "ena_intensity_sys_err",
             "bg_rate",
             "bg_rate_sys_err",
             "bg_intensity_sys_err",
-            "ena_intensity_calibration_sys_err",
         ):
             combined[var] = (
                 ram_ds[var].fillna(0) * ram_ds["exposure_factor"]
                 + anti_ds[var].fillna(0) * anti_ds["exposure_factor"]
             ) / total_exp
+
+    # ena_intensity_calibration_sys_err and ena_intensity_sys_err are
+    # recalculated from the combined map's own values rather than
+    # exposure-weight-averaged from the ram/anti maps' pre-combination values.
+    # ena_intensity_calibration_sys_err is a fixed percentage of the combined
+    # ena_intensity, and ena_intensity_sys_err is the quadrature sum of that
+    # and the (now combined) background intensity systematic error.
+    combined["ena_intensity_calibration_sys_err"] = (
+        CALIBRATION_UNCERTAINTY_FRACTION * combined["ena_intensity"]
+    )
+    combined["ena_intensity_sys_err"] = np.sqrt(
+        combined["bg_intensity_sys_err"] ** 2
+        + combined["ena_intensity_calibration_sys_err"] ** 2
+    )
 
     # Exposure-weighted average for obs_date
     with np.errstate(divide="ignore", invalid="ignore"):

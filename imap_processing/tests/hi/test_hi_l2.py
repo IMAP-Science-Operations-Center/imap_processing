@@ -1508,20 +1508,20 @@ def test_combine_maps_intensity_weighting(mock_sky_map_for_combine):
     )
 
 
-def test_combine_maps_sys_err_exposure_weighted(mock_sky_map_for_combine):
-    """Test that systematic errors are combined with exposure weighting."""
+def test_combine_maps_bg_intensity_sys_err_exposure_weighted(mock_sky_map_for_combine):
+    """Test that bg_intensity_sys_err is combined with exposure weighting."""
     ram_map = mock_sky_map_for_combine()
     anti_map = mock_sky_map_for_combine()
 
     # Set specific sys_err and exposure_factor values
-    ram_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
-        ram_map.data_1d["ena_intensity_sys_err"], 5.0
+    ram_map.data_1d["bg_intensity_sys_err"] = xr.full_like(
+        ram_map.data_1d["bg_intensity_sys_err"], 5.0
     )
     ram_map.data_1d["exposure_factor"] = xr.full_like(
         ram_map.data_1d["exposure_factor"], 1.0
     )
-    anti_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
-        anti_map.data_1d["ena_intensity_sys_err"], 5.0
+    anti_map.data_1d["bg_intensity_sys_err"] = xr.full_like(
+        anti_map.data_1d["bg_intensity_sys_err"], 5.0
     )
     anti_map.data_1d["exposure_factor"] = xr.full_like(
         anti_map.data_1d["exposure_factor"], 4.0
@@ -1533,9 +1533,77 @@ def test_combine_maps_sys_err_exposure_weighted(mock_sky_map_for_combine):
     # Exposure weighted sum: (5 * 1 + 5 * 4) / (1 + 4)
     expected_sys_err = 5.0
     np.testing.assert_array_almost_equal(
-        result.data_1d["ena_intensity_sys_err"].values.flat[0],
+        result.data_1d["bg_intensity_sys_err"].values.flat[0],
         expected_sys_err,
         decimal=10,
+    )
+
+
+def test_combine_maps_calibration_sys_err_recomputed(mock_sky_map_for_combine):
+    """Test ena_intensity_calibration_sys_err is recomputed from combined intensity.
+
+    Rather than being exposure-weight-averaged from the ram/anti maps'
+    pre-combination values, ena_intensity_calibration_sys_err should be a
+    fixed percentage (CALIBRATION_UNCERTAINTY_FRACTION) of the *combined*
+    ena_intensity.
+    """
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine(intensity_offset=20)
+
+    # Pre-combination calibration_sys_err values should have no bearing on
+    # the result -- set them to something that would give a different answer
+    # if (incorrectly) exposure-weight-averaged.
+    ram_map.data_1d["ena_intensity_calibration_sys_err"] = xr.full_like(
+        ram_map.data_1d["ena_intensity_calibration_sys_err"], 999.0
+    )
+    anti_map.data_1d["ena_intensity_calibration_sys_err"] = xr.full_like(
+        anti_map.data_1d["ena_intensity_calibration_sys_err"], 999.0
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    expected_calib_sys_err = (
+        CALIBRATION_UNCERTAINTY_FRACTION * result.data_1d["ena_intensity"]
+    )
+    np.testing.assert_allclose(
+        result.data_1d["ena_intensity_calibration_sys_err"].values,
+        expected_calib_sys_err.values,
+    )
+
+
+def test_combine_maps_sys_err_recomputed_from_combined_values(
+    mock_sky_map_for_combine,
+):
+    """Test ena_intensity_sys_err is recomputed after combining.
+
+    ena_intensity_sys_err should be the quadrature sum of the *combined*
+    bg_intensity_sys_err and the *combined* (recomputed)
+    ena_intensity_calibration_sys_err, not an exposure-weighted average of
+    the ram/anti maps' pre-combination sys_err values.
+    """
+    ram_map = mock_sky_map_for_combine()
+    anti_map = mock_sky_map_for_combine(intensity_offset=20)
+
+    # Pre-combination ena_intensity_sys_err values should have no bearing on
+    # the result.
+    ram_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
+        ram_map.data_1d["ena_intensity_sys_err"], 999.0
+    )
+    anti_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
+        anti_map.data_1d["ena_intensity_sys_err"], 999.0
+    )
+
+    sky_maps = {"ram": ram_map, "anti": anti_map}
+    result = combine_maps(sky_maps)
+
+    expected_sys_err = np.sqrt(
+        result.data_1d["bg_intensity_sys_err"] ** 2
+        + result.data_1d["ena_intensity_calibration_sys_err"] ** 2
+    )
+    np.testing.assert_allclose(
+        result.data_1d["ena_intensity_sys_err"].values,
+        expected_sys_err.values,
     )
 
 
@@ -1713,7 +1781,7 @@ def test_combine_maps_handles_nan_uncertainties(mock_sky_map_for_combine):
 
 
 def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
-    """Test that combine_maps handles NaN values in ena_intensity_sys_err correctly.
+    """Test that combine_maps handles NaN values in bg_intensity_sys_err.
 
     NaN values in sys_err should only occur where exposure_factor is zero
     (no valid data at that pixel). When one map has NaN sys_err (with zero
@@ -1724,14 +1792,14 @@ def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
     anti_map = mock_sky_map_for_combine()
 
     # Set specific sys_err and exposure values for predictable results
-    ram_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
-        ram_map.data_1d["ena_intensity_sys_err"], 3.0
+    ram_map.data_1d["bg_intensity_sys_err"] = xr.full_like(
+        ram_map.data_1d["bg_intensity_sys_err"], 3.0
     )
     ram_map.data_1d["exposure_factor"] = xr.full_like(
         ram_map.data_1d["exposure_factor"], 10.0
     )
-    anti_map.data_1d["ena_intensity_sys_err"] = xr.full_like(
-        anti_map.data_1d["ena_intensity_sys_err"], 6.0
+    anti_map.data_1d["bg_intensity_sys_err"] = xr.full_like(
+        anti_map.data_1d["bg_intensity_sys_err"], 6.0
     )
     anti_map.data_1d["exposure_factor"] = xr.full_like(
         anti_map.data_1d["exposure_factor"], 20.0
@@ -1740,11 +1808,11 @@ def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
     # Set NaN in ram's sys_err at specific positions where exposure_factor is 0
     # This mirrors the real failure mode: NaN sys_err occurs only at pixels
     # with zero exposure
-    ram_sys_err = ram_map.data_1d["ena_intensity_sys_err"].values.copy()
+    ram_sys_err = ram_map.data_1d["bg_intensity_sys_err"].values.copy()
     ram_sys_err[0, 0, 0, 0] = np.nan
     ram_sys_err[0, 1, 2, 1] = np.nan
-    ram_map.data_1d["ena_intensity_sys_err"] = xr.DataArray(
-        ram_sys_err, dims=ram_map.data_1d["ena_intensity_sys_err"].dims
+    ram_map.data_1d["bg_intensity_sys_err"] = xr.DataArray(
+        ram_sys_err, dims=ram_map.data_1d["bg_intensity_sys_err"].dims
     )
 
     ram_exposure = ram_map.data_1d["exposure_factor"].values.copy()
@@ -1759,14 +1827,14 @@ def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
 
     # At positions where ram had NaN sys_err (and zero exposure), result should
     # be finite and equal to anti-map's value since only anti contributes
-    assert np.isfinite(result.data_1d["ena_intensity_sys_err"].values[0, 0, 0, 0])
-    assert np.isfinite(result.data_1d["ena_intensity_sys_err"].values[0, 1, 2, 1])
+    assert np.isfinite(result.data_1d["bg_intensity_sys_err"].values[0, 0, 0, 0])
+    assert np.isfinite(result.data_1d["bg_intensity_sys_err"].values[0, 1, 2, 1])
 
     # Expected value at NaN positions: (0 * 0 + 6 * 20) / (0 + 20) = 6.0
     # Only anti-map contributes since ram has zero exposure
     expected_sys_err_nan_pos = 6.0
     np.testing.assert_almost_equal(
-        result.data_1d["ena_intensity_sys_err"].values[0, 0, 0, 0],
+        result.data_1d["bg_intensity_sys_err"].values[0, 0, 0, 0],
         expected_sys_err_nan_pos,
         decimal=10,
     )
@@ -1775,7 +1843,7 @@ def test_combine_maps_handles_nan_sys_err(mock_sky_map_for_combine):
     # exposure-weighted average: (3 * 10 + 6 * 20) / (10 + 20) = 150 / 30 = 5.0
     expected_sys_err_valid = (3 * 10 + 6 * 20) / (10 + 20)
     np.testing.assert_almost_equal(
-        result.data_1d["ena_intensity_sys_err"].values[0, 0, 1, 0],
+        result.data_1d["bg_intensity_sys_err"].values[0, 0, 1, 0],
         expected_sys_err_valid,
         decimal=10,
     )
