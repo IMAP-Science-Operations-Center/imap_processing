@@ -441,7 +441,7 @@ def de_esa_energy_step(
     -------
     new_vars : dict[str, xarray.DataArray]
         Dictionary with the new "esa_energy_step" DataArray.
-        de_gain_configuration() must be called after this function to force
+        de_gain_test_filter() must be called after this function to force
         FILLVAL into "esa_energy_step" and set its own "ccsds_qf" bit for
         events whose detector voltages don't match the pointing's gain
         configuration.
@@ -838,7 +838,7 @@ def de_ccsds_qf(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     Compute the baseline ccsds_qf quality flag for each CCSDS packet.
 
     Sets the PACKET_FULL and BADSPIN bits. Must be called first, before
-    de_esa_energy_step() and de_gain_configuration(), which add their own
+    de_esa_energy_step() and de_gain_test_filter(), which add their own
     bits (BAD_ESA_VOLTAGE, BAD_DETECTOR_VOLTAGE) to this same "ccsds_qf"
     variable.
 
