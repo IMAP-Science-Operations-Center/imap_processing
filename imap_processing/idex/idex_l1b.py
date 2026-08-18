@@ -30,6 +30,7 @@ from imap_processing.idex.idex_constants import (
     IDEX_EVENT_REFERENCE_FRAME,
     ConversionFactors,
 )
+from imap_processing.idex.idex_event_flags import EVENT_FLAG_NAMES
 from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 from imap_processing.spice.geometry import (
     SpiceBody,
@@ -258,6 +259,13 @@ def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
     trigger_origin = get_trigger_origin(
         l1a_dataset["idx__txhdrtrigid"].data, idex_attrs
     )
+    event_flags = {
+        name: l1a_dataset[name].copy()
+        for name in EVENT_FLAG_NAMES
+        if name in l1a_dataset
+    }
+    for name, data_array in event_flags.items():
+        data_array.attrs = idex_attrs.get_variable_attributes(name)
     # Create l1b Dataset
     prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample", "aid"]
     data_vars = (
@@ -267,6 +275,7 @@ def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
         | trigger_settings
         | spice_data
         | trigger_origin
+        | event_flags
     )
     l1b_dataset = setup_dataset(l1a_dataset, prefixes, idex_attrs, data_vars)
     l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_sci")

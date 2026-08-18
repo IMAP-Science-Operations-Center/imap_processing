@@ -73,6 +73,14 @@ trigger_base: &trigger_base
   VALIDMIN: 0
   VAR_TYPE: support_data
 
+event_flag_base: &event_flag_base
+  <<: *trigger_base
+  CATDESC: "Boolean event classification flag."
+  FILLVAL: 0
+  FORMAT: I1
+  VALIDMAX: 1
+  VALIDMIN: 0
+
 # <=== LABL_PTR_i Attributes ===>
 time_high_sample_rate_label:
   CATDESC: High sample rate time steps for a dust event.
@@ -91,6 +99,30 @@ time_low_sample_rate_label:
   VAR_TYPE: metadata
 
 # <=== Instrument Setting Attributes ===>
+science_event_flag:
+  <<: *event_flag_base
+  CATDESC: Science event classification flag.
+  FIELDNAM: Science Event Flag
+  LABLAXIS: Science Event
+
+noise_capture_flag:
+  <<: *event_flag_base
+  CATDESC: Noise capture event classification flag.
+  FIELDNAM: Noise Capture Flag
+  LABLAXIS: Noise Capture
+
+pulser_flag:
+  <<: *event_flag_base
+  CATDESC: Pulser event classification flag.
+  FIELDNAM: Pulser Flag
+  LABLAXIS: Pulser
+
+dust_hit_flag:
+  <<: *event_flag_base
+  CATDESC: Dust Hit waveform classification flag.
+  FIELDNAM: Dust Hit Flag
+  LABLAXIS: Dust Hit
+
 low_sample_rate_attrs:
   <<:  *sample_rate_base
   CATDESC: Low sample rate time steps for a dust event.

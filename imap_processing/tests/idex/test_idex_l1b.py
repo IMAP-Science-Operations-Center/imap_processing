@@ -11,6 +11,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_constants import DT_BLOCK
+from imap_processing.idex.idex_event_flags import EVENT_FLAG_NAMES
 from imap_processing.idex.idex_l1b import (
     TRIGGER_LABELS,
     EventMessage,
@@ -57,6 +58,16 @@ def test_l1b_logical_source(l1b_dataset: xr.Dataset):
     """
     expected_src = "imap_idex_l1b_sci-10days"
     assert l1b_dataset.attrs["Logical_source"] == expected_src
+
+
+def test_event_flags_are_carried_to_l1b(l1b_dataset: xr.Dataset):
+    """Verify event flags are present and core flags remain exclusive."""
+    for flag_name in EVENT_FLAG_NAMES:
+        assert flag_name in l1b_dataset
+        assert set(np.unique(l1b_dataset[flag_name])) <= {0, 1}
+
+    core_flags = sum(l1b_dataset[flag_name] for flag_name in EVENT_FLAG_NAMES[:3])
+    np.testing.assert_array_equal(core_flags, np.ones_like(core_flags))
 
 
 def test_idex_cdf_file(l1b_dataset: xr.Dataset):

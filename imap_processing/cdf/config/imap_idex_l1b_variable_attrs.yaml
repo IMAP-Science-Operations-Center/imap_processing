@@ -47,6 +47,14 @@ trigger_base: &trigger_base
   DISPLAY_TYPE: no_plot
   UNITS: " "
 
+event_flag_base: &event_flag_base
+  <<: *trigger_base
+  CATDESC: "Boolean event classification flag."
+  FILLVAL: 0
+  FORMAT: I1
+  VALIDMAX: 1
+  VALIDMIN: 0
+
 spice_base: &spice_base
   <<: *l1b_data_base
   DISPLAY_TYPE: time_series
@@ -56,6 +64,30 @@ spice_base: &spice_base
   VAR_TYPE: data
 
 # <=== Instrument Setting Attributes ===>
+science_event_flag:
+  <<: *event_flag_base
+  CATDESC: Science event classification flag.
+  FIELDNAM: Science Event Flag
+  LABLAXIS: Science Event
+
+noise_capture_flag:
+  <<: *event_flag_base
+  CATDESC: Noise capture event classification flag.
+  FIELDNAM: Noise Capture Flag
+  LABLAXIS: Noise Capture
+
+pulser_flag:
+  <<: *event_flag_base
+  CATDESC: Pulser event classification flag.
+  FIELDNAM: Pulser Flag
+  LABLAXIS: Pulser
+
+dust_hit_flag:
+  <<: *event_flag_base
+  CATDESC: Dust Hit waveform classification flag.
+  FIELDNAM: Dust Hit Flag
+  LABLAXIS: Dust Hit
+
 trigger_mode_lg:
   <<: *string_base
   CATDESC: Low Gain Trigger Mode.
