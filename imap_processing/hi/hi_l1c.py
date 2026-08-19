@@ -130,9 +130,7 @@ def generate_pset_dataset(
     # gain state, matched from the L1B DE product's gain_match_{field}
     # global attributes against the cal-prod ancillary file's gain_config_id
     # rows.
-    pset_dataset.update(
-        pset_geometric_factor(pset_dataset.coords, de_dataset, config_df)
-    )
+    pset_dataset = add_pset_geometric_factor(pset_dataset, de_dataset, config_df)
     # Bin the counts into the spin-bins
     pset_dataset.update(
         pset_counts(pset_dataset.coords, config_df, de_dataset, goodtimes_ds)
@@ -353,18 +351,19 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     return geometry_vars
 
 
-def pset_geometric_factor(
-    pset_coords: dict[str, xr.DataArray],
+def add_pset_geometric_factor(
+    pset_ds: xr.Dataset,
     l1b_de_dataset: xr.Dataset,
     config_df: pd.DataFrame,
-) -> dict[str, xr.DataArray]:
+) -> xr.Dataset:
     """
-    Look up the geometric factor per esa_energy_step and calibration_prod.
+    Add the geometric_factor variable to a pset dataset in place.
 
     Parameters
     ----------
-    pset_coords : dict[str, xarray.DataArray]
-        The PSET coordinates from the xarray.Dataset.
+    pset_ds : xarray.Dataset
+        The PSET dataset being built. Must have "esa_energy_step" and
+        "calibration_prod" coordinates.
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed. Must have
         "gain_match_{field}" global attributes (see
@@ -377,9 +376,9 @@ def pset_geometric_factor(
 
     Returns
     -------
-    dict[str, xarray.DataArray]
-        Dictionary containing the "geometric_factor" DataArray, dims
-        (epoch, esa_energy_step, calibration_prod).
+    xarray.Dataset
+        The input pset_ds, updated in place with a "geometric_factor"
+        variable, dims (epoch, esa_energy_step, calibration_prod).
 
     Notes
     -----
@@ -396,25 +395,28 @@ def pset_geometric_factor(
     """
     geometric_factor_var = create_dataset_variables(
         ["geometric_factor"],
-        coords=pset_coords,
+        coords=pset_ds.coords,
         att_manager_lookup_str="hi_pset_{0}",
     )
     hv_deltas = {
         field: l1b_de_dataset.attrs[f"gain_match_{field}"]
         for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
     }
-    if not any(np.isnan(value) for value in hv_deltas.values()):
-        gain_config_id = config_df.cal_prod_config.match_gain_config_id(hv_deltas)
-        if gain_config_id is not None:
-            gain_config_df = config_df.loc[gain_config_id]
-            for i, step in enumerate(pset_coords["esa_energy_step"].data):
-                for j, cal_prod in enumerate(pset_coords["calibration_prod"].data):
-                    geometric_factor_var["geometric_factor"].values[0, i, j] = (
-                        gain_config_df.loc[
-                            (int(cal_prod), int(step)), "geometric_factor"
-                        ]
-                    )
-    return geometric_factor_var
+    gain_config_id = config_df.cal_prod_config.match_gain_config_id(hv_deltas)
+    if gain_config_id is not None:
+        # config_df.loc[gain_config_id] is indexed by (calibration_prod,
+        # esa_energy_step). Convert to xarray and reindex onto the pset's
+        # own coordinate values so it broadcasts directly into the output
+        # array (which only has dims, not coordinate labels, to reindex_like).
+        gain_factor_da = config_df.loc[gain_config_id, "geometric_factor"].to_xarray()
+        gain_factor_da = gain_factor_da.reindex(
+            esa_energy_step=pset_ds["esa_energy_step"].data,
+            calibration_prod=pset_ds["calibration_prod"].data,
+        )
+        geometric_factor_var["geometric_factor"].values[0] = gain_factor_da.transpose(
+            "esa_energy_step", "calibration_prod"
+        ).values
+    return pset_ds.update(geometric_factor_var)
 
 
 def pset_counts(

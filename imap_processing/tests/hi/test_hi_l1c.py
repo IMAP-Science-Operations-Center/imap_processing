@@ -66,7 +66,7 @@ def test_generate_pset_dataset(
     l1b_dataset = hi_l1b_de_dataset.copy()
     # The real fixture CDF predates the gain_match_{field} L1B global
     # attributes; add placeholders matching the test cal-prod config's
-    # gain_config_id=0 reference values so pset_geometric_factor() has
+    # gain_config_id=0 reference values so add_pset_geometric_factor() has
     # something to look up.
     l1b_dataset.attrs["gain_match_mcp_delta_v"] = 875.0
     l1b_dataset.attrs["gain_match_cem_a_delta_v"] = 2150.0
@@ -191,17 +191,33 @@ def test_generate_pset_dataset_uses_midpoint_time(
     assert actual_sensor_arg == "45sensor"
 
 
-def test_pset_geometric_factor_matching_gain_state(hi_test_cal_prod_config_path):
-    """Test pset_geometric_factor for a pointing whose gain-match values match
-    the test cal-prod config's gain_config_id=0 reference values (within
-    tolerance). The resulting geometric_factor should record the unique
-    geometric_factor per esa_energy_step and calibration_prod."""
+def _make_pset_ds_for_geometric_factor(esa_energy_steps, calibration_prods):
+    """Build a minimal pset dataset with a spin_angle_bin coordinate.
+
+    The spin_angle_bin coordinate is included (unused by geometric_factor)
+    to guard against it leaking into the geometric_factor variable's shape.
+    """
+    return xr.Dataset(
+        coords={
+            "epoch": xr.DataArray([0], dims=["epoch"]),
+            "esa_energy_step": xr.DataArray(esa_energy_steps, dims=["esa_energy_step"]),
+            "calibration_prod": xr.DataArray(
+                calibration_prods, dims=["calibration_prod"]
+            ),
+            "spin_angle_bin": xr.DataArray(np.arange(5), dims=["spin_angle_bin"]),
+        }
+    )
+
+
+def test_add_pset_geometric_factor_matching_gain_state(hi_test_cal_prod_config_path):
+    """Test add_pset_geometric_factor for a pointing whose gain-match values
+    match the test cal-prod config's gain_config_id=0 reference values
+    (within tolerance). The resulting geometric_factor should record the
+    unique geometric_factor per esa_energy_step and calibration_prod, and
+    should not gain a spin_angle_bin dimension from the pset dataset's other
+    coordinates."""
     config_df = utils.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
-    pset_coords = {
-        "epoch": xr.DataArray([0], dims=["epoch"]),
-        "esa_energy_step": xr.DataArray(np.arange(1, 10), dims=["esa_energy_step"]),
-        "calibration_prod": xr.DataArray([0, 1], dims=["calibration_prod"]),
-    }
+    pset_ds = _make_pset_ds_for_geometric_factor(np.arange(1, 10), [0, 1])
     l1b_de_dataset = xr.Dataset(
         attrs={
             "gain_match_mcp_delta_v": 875.0,
@@ -211,7 +227,14 @@ def test_pset_geometric_factor_matching_gain_state(hi_test_cal_prod_config_path)
         }
     )
 
-    result = hi_l1c.pset_geometric_factor(pset_coords, l1b_de_dataset, config_df)
+    result = hi_l1c.add_pset_geometric_factor(pset_ds, l1b_de_dataset, config_df)
+
+    assert result is pset_ds
+    assert result["geometric_factor"].dims == (
+        "epoch",
+        "esa_energy_step",
+        "calibration_prod",
+    )
 
     # geometric_factor per esa_energy_step (1-9) and calibration_prod (0, 1)
     # for gain_config_id=0. calibration_prod 0 and 1 share identical
@@ -236,17 +259,13 @@ def test_pset_geometric_factor_matching_gain_state(hi_test_cal_prod_config_path)
     )
 
 
-def test_pset_geometric_factor_nan_gain_match_returns_fillval(
+def test_add_pset_geometric_factor_nan_gain_match_returns_fillval(
     hi_test_cal_prod_config_path,
 ):
     """If L1B could not determine reference detector voltages for the
     pointing (nan gain_match_{field} attrs), geometric_factor stays FILLVAL."""
     config_df = utils.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
-    pset_coords = {
-        "epoch": xr.DataArray([0], dims=["epoch"]),
-        "esa_energy_step": xr.DataArray([1, 2, 3], dims=["esa_energy_step"]),
-        "calibration_prod": xr.DataArray([0, 1], dims=["calibration_prod"]),
-    }
+    pset_ds = _make_pset_ds_for_geometric_factor([1, 2, 3], [0, 1])
     l1b_de_dataset = xr.Dataset(
         attrs={
             "gain_match_mcp_delta_v": float("nan"),
@@ -256,7 +275,7 @@ def test_pset_geometric_factor_nan_gain_match_returns_fillval(
         }
     )
 
-    result = hi_l1c.pset_geometric_factor(pset_coords, l1b_de_dataset, config_df)
+    result = hi_l1c.add_pset_geometric_factor(pset_ds, l1b_de_dataset, config_df)
 
     fillval = np.float32(result["geometric_factor"].attrs["FILLVAL"])
     np.testing.assert_array_equal(
@@ -265,15 +284,13 @@ def test_pset_geometric_factor_nan_gain_match_returns_fillval(
     )
 
 
-def test_pset_geometric_factor_no_match_returns_fillval(hi_test_cal_prod_config_path):
+def test_add_pset_geometric_factor_no_match_returns_fillval(
+    hi_test_cal_prod_config_path,
+):
     """If the pointing's gain-match values don't fall within tolerance of any
     gain_config_id in the cal-prod config, geometric_factor stays FILLVAL."""
     config_df = utils.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
-    pset_coords = {
-        "epoch": xr.DataArray([0], dims=["epoch"]),
-        "esa_energy_step": xr.DataArray([1, 2, 3], dims=["esa_energy_step"]),
-        "calibration_prod": xr.DataArray([0, 1], dims=["calibration_prod"]),
-    }
+    pset_ds = _make_pset_ds_for_geometric_factor([1, 2, 3], [0, 1])
     l1b_de_dataset = xr.Dataset(
         attrs={
             "gain_match_mcp_delta_v": 0.0,
@@ -283,7 +300,7 @@ def test_pset_geometric_factor_no_match_returns_fillval(hi_test_cal_prod_config_
         }
     )
 
-    result = hi_l1c.pset_geometric_factor(pset_coords, l1b_de_dataset, config_df)
+    result = hi_l1c.add_pset_geometric_factor(pset_ds, l1b_de_dataset, config_df)
 
     fillval = np.float32(result["geometric_factor"].attrs["FILLVAL"])
     np.testing.assert_array_equal(
