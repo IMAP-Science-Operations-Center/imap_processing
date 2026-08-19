@@ -111,6 +111,12 @@ def generate_pset_dataset(
     logical_source_parts = parse_filename_like(de_dataset.attrs["Logical_source"])
     # read calibration product configuration file
     config_df = CalibrationProductConfig.from_csv(calibration_prod_config_path)
+    # Select this pointing's matched gain state up front
+    hv_deltas = {
+        field: de_dataset.attrs[field]
+        for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
+    }
+    gain_config_df = config_df.cal_prod_config.select_gain_config(hv_deltas)
     # read background configuration file
     background_df = BackgroundConfig.from_csv(background_config_path)
 
@@ -127,12 +133,11 @@ def generate_pset_dataset(
     )
     pset_dataset.update(pset_geometry(pset_midpoint_et, logical_source_parts["sensor"]))
     # Look up the per-esa_energy_step geometric factor for this pointing's
-    # gain state, matched from the L1B DE product's HV delta global
-    # attributes against the cal-prod ancillary file's gain_config_id rows.
-    pset_dataset = add_pset_geometric_factor(pset_dataset, de_dataset, config_df)
+    # gain state.
+    pset_dataset = add_pset_geometric_factor(pset_dataset, gain_config_df)
     # Bin the counts into the spin-bins
     pset_dataset.update(
-        pset_counts(pset_dataset.coords, config_df, de_dataset, goodtimes_ds)
+        pset_counts(pset_dataset.coords, gain_config_df, de_dataset, goodtimes_ds)
     )
     # Calculate and add the exposure time to the pset_dataset
     pset_dataset.update(pset_exposure(pset_dataset.coords, de_dataset, goodtimes_ds))
@@ -352,8 +357,7 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
 
 def add_pset_geometric_factor(
     pset_ds: xr.Dataset,
-    l1b_de_dataset: xr.Dataset,
-    config_df: pd.DataFrame,
+    gain_config_df: pd.DataFrame | None,
 ) -> xr.Dataset:
     """
     Add the geometric_factor variable to a pset dataset in place.
@@ -363,15 +367,11 @@ def add_pset_geometric_factor(
     pset_ds : xarray.Dataset
         The PSET dataset being built. Must have "esa_energy_step" and
         "calibration_prod" coordinates.
-    l1b_de_dataset : xarray.Dataset
-        The L1B dataset for the pointing being processed. Must have global
-        attributes set (one per CalibrationProductConfig.GAIN_MATCH_FIELDS,
-        named directly by field) recording the pointing's reference
-        detector voltage deltas (see hi_l1b.de_gain_test_filter()).
-    config_df : pandas.DataFrame
-        Calibration product configuration DataFrame (see
-        CalibrationProductConfig.from_csv()), indexed by (gain_config_id,
-        calibration_prod, esa_energy_step).
+    gain_config_df : pandas.DataFrame or None
+        This pointing's matched gain state configuration (see
+        CalibrationProductConfig.select_gain_config()), indexed by
+        (calibration_prod, esa_energy_step), or None if the pointing's HV
+        deltas didn't match exactly one gain_config_id.
 
     Returns
     -------
@@ -384,30 +384,23 @@ def add_pset_geometric_factor(
     A pointing's gain state is constant for the whole pointing (see
     `hi_l1b.de_gain_test_filter`), so the L1B DE product only records the
     pointing's reference detector voltage deltas as global attributes rather
-    than duplicating the geometric factor across every direct event. This
-    matches those deltas against the cal-prod ancillary file's gain_config_id
-    rows, then records the geometric_factor value for each
-    (esa_energy_step, calibration_prod) pair directly from the matched
-    gain_config_id's rows. Not yet consumed by L2 processing (deferred to a
-    follow-on ticket that handles combining PSETs from different gain states
-    into a single map).
+    than duplicating the geometric factor across every direct event. Records
+    the geometric_factor value for each (esa_energy_step, calibration_prod)
+    pair directly from gain_config_df's rows. Not yet consumed by L2 processing
+    (deferred to a follow-on ticket that handles combining PSETs from different
+    gain states into a single map).
     """
     geometric_factor_var = create_dataset_variables(
         ["geometric_factor"],
         coords=pset_ds.coords,
         att_manager_lookup_str="hi_pset_{0}",
     )
-    hv_deltas = {
-        field: l1b_de_dataset.attrs[field]
-        for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
-    }
-    gain_config_id = config_df.cal_prod_config.match_gain_config_id(hv_deltas)
-    if gain_config_id is not None:
-        # config_df.loc[gain_config_id] is indexed by (calibration_prod,
-        # esa_energy_step). Convert to xarray and reindex onto the pset's
-        # own coordinate values so it broadcasts directly into the output
-        # array (which only has dims, not coordinate labels, to reindex_like).
-        gain_factor_da = config_df.loc[gain_config_id, "geometric_factor"].to_xarray()
+    if gain_config_df is not None:
+        # gain_config_df is indexed by (calibration_prod, esa_energy_step).
+        # Convert to xarray and reindex onto the pset's own coordinate
+        # values so it broadcasts directly into the output array (which
+        # only has dims, not coordinate labels, to reindex_like).
+        gain_factor_da = gain_config_df["geometric_factor"].to_xarray()
         gain_factor_da = gain_factor_da.reindex(
             esa_energy_step=pset_ds["esa_energy_step"].data,
             calibration_prod=pset_ds["calibration_prod"].data,
@@ -420,7 +413,7 @@ def add_pset_geometric_factor(
 
 def pset_counts(
     pset_coords: dict[str, xr.DataArray],
-    config_df: pd.DataFrame,
+    gain_config_df: pd.DataFrame | None,
     l1b_de_dataset: xr.Dataset,
     goodtimes_ds: xr.Dataset,
 ) -> dict[str, xr.DataArray]:
@@ -431,8 +424,10 @@ def pset_counts(
     ----------
     pset_coords : dict[str, xarray.DataArray]
         The PSET coordinates from the xarray.Dataset.
-    config_df : pandas.DataFrame
-        The calibration product configuration dataframe.
+    gain_config_df : pandas.DataFrame or None
+        This pointing's matched gain state configuration indexed by
+        (calibration_prod, esa_energy_step), or None if the pointing's HV
+        deltas didn't match exactly one gain_config_id.
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
     goodtimes_ds : xarray.Dataset
@@ -441,7 +436,8 @@ def pset_counts(
     Returns
     -------
     dict[str, xarray.DataArray]
-        Dictionary containing counts DataArray.
+        Dictionary containing counts DataArray. All zero if gain_config_df
+        is None.
     """
     # Generate counts variable filled with zeros
     counts_var = create_dataset_variables(
@@ -450,6 +446,8 @@ def pset_counts(
         att_manager_lookup_str="hi_pset_{0}",
         fill_value=0,
     )
+    if gain_config_df is None:
+        return counts_var
 
     # Create mapping from calibration product numbers to array indices
     cal_prod_to_index = {
@@ -484,7 +482,7 @@ def pset_counts(
     # esa energy step combination. Use the shared generator to iterate over all
     # config combinations and get qualified event masks.
     for esa_energy, config_row, qualified_mask in iter_qualified_events_by_config(
-        de_ds, config_df, esa_energy_steps
+        de_ds, gain_config_df, esa_energy_steps
     ):
         # Filter events using the qualified mask
         filtered_de_ds = de_ds.isel(event_met=qualified_mask)
@@ -495,12 +493,13 @@ def pset_counts(
         # truncating to an integer gives the correct bin index
         spin_bin_indices = (filtered_de_ds["spin_phase"].data * N_SPIN_BINS).astype(int)
         # When iterating over rows of a dataframe, the names of the multi-index
-        # are not preserved. Below, `config_row.Index[1]` gets the
-        # calibration_prod value (index level 1 of the (gain_config_id,
-        # calibration_prod, esa_energy_step) MultiIndex) from the namedtuple
+        # are not preserved. Below, `config_row.Index[0]` gets the
+        # calibration_prod value (index level 0 of gain_config_df's
+        # (calibration_prod, esa_energy_step) MultiIndex, already sliced to
+        # this pointing's single gain_config_id above) from the namedtuple
         # representing the dataframe row. We map this to the array index
         # using cal_prod_to_index.
-        i_cal_prod = cal_prod_to_index[config_row.Index[1]]
+        i_cal_prod = cal_prod_to_index[config_row.Index[0]]
         np.add.at(
             counts_var["counts"].data[0, i_esa, i_cal_prod],
             spin_bin_indices,

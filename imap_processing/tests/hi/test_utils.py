@@ -618,6 +618,46 @@ class TestCalibrationProductConfig:
         hv_deltas = dict(GAIN_MATCH_0, mcp_delta_v=np.nan)
         assert df.cal_prod_config.match_gain_config_id(hv_deltas) is None
 
+    def test_select_gain_config_matching(self):
+        """Test that select_gain_config returns the matched gain_config_id's
+        rows, indexed by (calibration_prod, esa_energy_step)."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(0, 0, 2, geometric_factor=0.00085),
+            _cal_prod_csv_row(1, 0, 1, gain_match_values=GAIN_MATCH_1),
+            _cal_prod_csv_row(1, 0, 2, geometric_factor=0.00085),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+        gain_config_df = df.cal_prod_config.select_gain_config(GAIN_MATCH_1)
+
+        assert gain_config_df is not None
+        assert gain_config_df.index.names == ["calibration_prod", "esa_energy_step"]
+        np.testing.assert_array_equal(
+            gain_config_df.index.get_level_values("esa_energy_step"), [1, 2]
+        )
+        # Confirm it's gain_config_id=1's rows, not gain_config_id=0's, by
+        # checking a gain-match column value only set for gain_config_id=1.
+        assert gain_config_df.loc[(0, 1), "mcp_delta_v"] == GAIN_MATCH_1["mcp_delta_v"]
+
+    def test_select_gain_config_no_match_returns_none(self):
+        """Test that select_gain_config returns None when no gain_config_id
+        matches (mirrors match_gain_config_id's no-match behavior)."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+        hv_deltas = {
+            "mcp_delta_v": 0.0,
+            "cem_a_delta_v": 0.0,
+            "cem_b_delta_v": 0.0,
+            "tof_v": 0.0,
+        }
+        assert df.cal_prod_config.select_gain_config(hv_deltas) is None
+
     def test_compute_gain_match_values(self):
         """Test that back/front voltage deltas are computed correctly."""
         raw_hv_values = {

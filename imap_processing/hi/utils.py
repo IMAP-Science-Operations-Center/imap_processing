@@ -846,6 +846,34 @@ class CalibrationProductConfig(_BaseConfigAccessor):
             return None
         return matches[0]
 
+    def select_gain_config(self, hv_deltas: dict[str, float]) -> pd.DataFrame | None:
+        """
+        Select this configuration's rows for a pointing's matched gain state.
+
+        A pointing's gain state is constant for the whole pointing (see
+        hi_l1b.de_gain_test_filter()), so this only needs to be done once
+        per pointing and the result shared by every consumer of the
+        calibration product configuration (geometric factor lookup, counts
+        binning, etc.) rather than each matching hv_deltas independently.
+
+        Parameters
+        ----------
+        hv_deltas : dict[str, float]
+            Mapping of CalibrationProductConfig.GAIN_MATCH_FIELDS field names
+            to a pointing's derived values (see compute_gain_match_values()).
+
+        Returns
+        -------
+        pandas.DataFrame or None
+            The subset of rows for the matched gain_config_id, indexed by
+            (calibration_prod, esa_energy_step), or None if hv_deltas don't
+            match exactly one gain_config_id (see match_gain_config_id()).
+        """
+        gain_config_id = self.match_gain_config_id(hv_deltas)
+        if gain_config_id is None:
+            return None
+        return self._obj.loc[gain_config_id]
+
 
 @pd.api.extensions.register_dataframe_accessor("background_config")
 class BackgroundConfig(_BaseConfigAccessor):
