@@ -12,10 +12,10 @@ mass_labels:
   VAR_TYPE: metadata
 
 charge_labels:
-  CATDESC: Labels for Impact Charge (fC)
+  CATDESC: Labels for Impact Charge (pC)
   DEPEND_1: impact_charge
   DICT_KEY: SPASE>Support>SupportQuantity:Other
-  FIELDNAM: Impact Charge (fC)
+  FIELDNAM: Impact Charge (pC)
   FORMAT: A8
   VAR_TYPE: metadata
 
@@ -66,7 +66,7 @@ impact_charge:
     LABLAXIS: Impact Charge
     LABL_PTR_1: charge_labels
     SCALETYP: log
-    UNITS: fC
+    UNITS: pC
     VALIDMAX: 1.00e04
     VALIDMIN: 0.0
     VAR_TYPE: support_data
