@@ -30,7 +30,7 @@ from imap_processing.idex.idex_constants import (
     IDEX_EVENT_REFERENCE_FRAME,
     ConversionFactors,
 )
-from imap_processing.idex.idex_event_flags import EVENT_FLAG_NAMES
+from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES
 from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 from imap_processing.spice.geometry import (
     SpiceBody,
@@ -260,9 +260,7 @@ def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
         l1a_dataset["idx__txhdrtrigid"].data, idex_attrs
     )
     event_flags = {
-        name: l1a_dataset[name].copy()
-        for name in EVENT_FLAG_NAMES
-        if name in l1a_dataset
+        name: l1a_dataset[name].copy() for name in ALL_FLAG_NAMES if name in l1a_dataset
     }
     for name, data_array in event_flags.items():
         data_array.attrs = idex_attrs.get_variable_attributes(name)

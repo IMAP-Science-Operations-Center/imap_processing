@@ -4,7 +4,9 @@ import numpy as np
 
 from imap_processing.idex.idex_event_flags import (
     EVENT_FLAG_NAMES,
+    SATURATION_FLAG_NAMES,
     classify_event_flags,
+    classify_saturation_flags,
 )
 
 
@@ -67,6 +69,29 @@ def test_event_type_classification() -> None:
 
     science = classify_event_flags(_telemetry(trigger_id=1 | 4, hg_mode=1), *waveforms)
     assert science["science_event_flag"] == 1
+
+
+def test_saturation_flags_use_channel_bit_depth_and_95_percent_limit() -> None:
+    """TOF uses 10-bit DN while low-rate channels use 12-bit DN."""
+    tof = np.array([0.0, 1023.0 * 0.95])
+    low_rate = np.array([0.0, 4095.0 * 0.95])
+    flags = classify_saturation_flags(tof, tof, tof, low_rate, low_rate, low_rate)
+
+    assert set(flags) == set(SATURATION_FLAG_NAMES)
+    assert all(value == 1 for value in flags.values())
+
+    flags = classify_saturation_flags(
+        np.array([1023.0 * 0.95 - 1.0]),
+        np.array([0.0]),
+        np.array([0.0]),
+        np.array([4095.0 * 0.95 - 1.0]),
+        None,
+        None,
+    )
+    assert flags["tof_high_saturation_flag"] == 0
+    assert flags["target_high_saturation_flag"] == 0
+    assert flags["target_low_saturation_flag"] == 0
+    assert flags["ion_grid_saturation_flag"] == 0
 
 
 def test_dust_hit_requires_two_seven_sigma_peaks_and_is_saturation_aware() -> None:

@@ -14,7 +14,19 @@ EVENT_FLAG_NAMES = (
     "dust_hit_flag",
 )
 
+SATURATION_FLAG_NAMES = (
+    "tof_high_saturation_flag",
+    "tof_mid_saturation_flag",
+    "tof_low_saturation_flag",
+    "target_high_saturation_flag",
+    "target_low_saturation_flag",
+    "ion_grid_saturation_flag",
+)
+
+ALL_FLAG_NAMES = EVENT_FLAG_NAMES + SATURATION_FLAG_NAMES
+
 _TOF_MAX_DN = 1023.0
+_LOW_RATE_MAX_DN = 4095.0
 _SATURATION_FRACTION = 0.95
 _PULSER_THRESHOLD_DN = 1000
 _BASELINE_WINDOW_US = 3.0
@@ -37,6 +49,9 @@ def classify_event_flags(
     tof_mid: np.ndarray,
     tof_low: np.ndarray,
     time_high_sample_rate: np.ndarray,
+    target_high: np.ndarray | None = None,
+    target_low: np.ndarray | None = None,
+    ion_grid: np.ndarray | None = None,
 ) -> dict[str, int]:
     """Return mutually exclusive event-type flags and the Dust Hit flag.
 
@@ -52,6 +67,8 @@ def classify_event_flags(
         Raw TOF waveforms in high, medium, and low gain.
     time_high_sample_rate : numpy.ndarray
         High-rate waveform times in microseconds.
+    target_high, target_low, ion_grid : numpy.ndarray or None
+        Raw low-rate waveforms used to calculate saturation flags.
 
     Returns
     -------
@@ -83,13 +100,80 @@ def classify_event_flags(
     else:
         event_type = "science_event_flag"
 
-    flags = {name: 0 for name in EVENT_FLAG_NAMES}
+    flags = {name: 0 for name in ALL_FLAG_NAMES}
     flags[event_type] = 1
     if event_type == "science_event_flag" and _has_dust_hit(
         tof_high, tof_mid, tof_low, time_high_sample_rate
     ):
         flags["dust_hit_flag"] = 1
+    flags.update(
+        classify_saturation_flags(
+            tof_high, tof_mid, tof_low, target_high, target_low, ion_grid
+        )
+    )
     return flags
+
+
+def classify_saturation_flags(
+    tof_high: np.ndarray,
+    tof_mid: np.ndarray,
+    tof_low: np.ndarray,
+    target_high: np.ndarray | None,
+    target_low: np.ndarray | None,
+    ion_grid: np.ndarray | None,
+) -> dict[str, int]:
+    """Return saturation flags for the six raw waveform channels.
+
+    The low-rate channels are optional to keep the event-classification API
+    compatible with callers that only have the TOF waveforms.
+
+    Parameters
+    ----------
+    tof_high, tof_mid, tof_low : numpy.ndarray
+        Raw 10-bit TOF waveforms.
+    target_high, target_low, ion_grid : numpy.ndarray or None
+        Raw 12-bit low-rate waveforms.
+
+    Returns
+    -------
+    dict[str, int]
+        One zero-or-one saturation flag for each waveform channel.
+    """
+    waveforms = {
+        "tof_high_saturation_flag": (tof_high, _TOF_MAX_DN),
+        "tof_mid_saturation_flag": (tof_mid, _TOF_MAX_DN),
+        "tof_low_saturation_flag": (tof_low, _TOF_MAX_DN),
+        "target_high_saturation_flag": (target_high, _LOW_RATE_MAX_DN),
+        "target_low_saturation_flag": (target_low, _LOW_RATE_MAX_DN),
+        "ion_grid_saturation_flag": (ion_grid, _LOW_RATE_MAX_DN),
+    }
+    return {
+        name: int(values is not None and _waveform_is_saturated(values, maximum))
+        for name, (values, maximum) in waveforms.items()
+    }
+
+
+def _waveform_is_saturated(values: np.ndarray, maximum_dn: float) -> bool:
+    """Return whether any finite waveform sample reaches the 95% limit.
+
+    Parameters
+    ----------
+    values : numpy.ndarray
+        Waveform samples in DN.
+    maximum_dn : float
+        Maximum representable DN for the channel.
+
+    Returns
+    -------
+    bool
+        Whether any finite sample reaches the saturation threshold.
+    """
+    values_array = np.asarray(values, dtype=float)
+    finite_values = values_array[np.isfinite(values_array)]
+    return bool(
+        finite_values.size
+        and np.any(finite_values >= _SATURATION_FRACTION * maximum_dn)
+    )
 
 
 def _has_dust_hit(
@@ -267,7 +351,7 @@ def _is_saturated(value: float) -> bool:
     bool
         Whether the sample is saturated.
     """
-    return bool(value > _SATURATION_FRACTION * _TOF_MAX_DN)
+    return bool(value >= _SATURATION_FRACTION * _TOF_MAX_DN)
 
 
 def _fwhm(corrected: np.ndarray, times: np.ndarray, peak_index: int) -> float:
