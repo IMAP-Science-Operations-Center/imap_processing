@@ -210,8 +210,6 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset, l1b_dataset: xr.Dat
 
     # TODO: remove this NAN block when fitting logic is applied
     expected_nan_vars = [
-        "ion_grid_dust_mass_estimate",
-        "ion_grid_velocity_estimate",
         "tof_peak_area_under_fit",
         "tof_peak_chi_square",
         "tof_peak_fit_parameters",
