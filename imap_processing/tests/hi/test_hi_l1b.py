@@ -12,7 +12,6 @@ from imap_processing.hi.hi_l1b import (
     annotate_direct_events,
     any_good_direct_events,
     compute_coincidence_type_and_tofs,
-    compute_gain_match_values,
     compute_hae_coordinates,
     compute_reference_hv_values,
     de_ccsds_qf,
@@ -24,6 +23,7 @@ from imap_processing.hi.hi_l1b import (
     housekeeping,
 )
 from imap_processing.hi.utils import (
+    CalibrationProductConfig,
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
     HiConstants,
@@ -79,7 +79,9 @@ def test_hi_annotate_direct_events(
         l1b_de_ds.attrs.update(
             {
                 f"gain_match_{field}": value
-                for field, value in compute_gain_match_values(NOMINAL_HV_VALUES).items()
+                for field, value in CalibrationProductConfig.compute_gain_match_values(
+                    NOMINAL_HV_VALUES
+                ).items()
             }
         )
         return l1b_de_ds
@@ -101,7 +103,9 @@ def test_hi_annotate_direct_events(
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
     assert l1b_datasets[0].attrs["gain_match_mcp_delta_v"] == pytest.approx(
-        compute_gain_match_values(NOMINAL_HV_VALUES)["mcp_delta_v"]
+        CalibrationProductConfig.compute_gain_match_values(NOMINAL_HV_VALUES)[
+            "mcp_delta_v"
+        ]
     )
     assert len(l1b_datasets[0].data_vars) == 18
 
@@ -518,7 +522,9 @@ class TestDeGainTestFilter:
             result["ccsds_qf"].values & np.uint8(ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE)
             == 0
         )
-        expected_gain_match = compute_gain_match_values(NOMINAL_HV_VALUES)
+        expected_gain_match = CalibrationProductConfig.compute_gain_match_values(
+            NOMINAL_HV_VALUES
+        )
         for field in GAIN_MATCH_FIELDS:
             assert result.attrs[f"gain_match_{field}"] == pytest.approx(
                 expected_gain_match[field]
@@ -573,7 +579,9 @@ class TestDeGainTestFilter:
 
         # gain_match_* attrs reflect the pointing's reference (first segment),
         # which is unaffected by the excluded mid-pointing gain test segment.
-        expected_gain_match = compute_gain_match_values(NOMINAL_HV_VALUES)
+        expected_gain_match = CalibrationProductConfig.compute_gain_match_values(
+            NOMINAL_HV_VALUES
+        )
         for field in GAIN_MATCH_FIELDS:
             assert result.attrs[f"gain_match_{field}"] == pytest.approx(
                 expected_gain_match[field]
@@ -631,21 +639,6 @@ class TestComputeReferenceHvValues:
             expected_median = float(np.median(np.arange(n) + i * 100))
             assert result[field] == expected_median
             assert isinstance(result[field], float)
-
-
-class TestComputeGainMatchValues:
-    """Test suite for compute_gain_match_values function."""
-
-    def test_compute_gain_match_values(self):
-        """Test that back/front voltage deltas are computed correctly."""
-        result = compute_gain_match_values(NOMINAL_HV_VALUES)
-
-        assert result == {
-            "mcp_delta_v": 875.0,
-            "cem_a_delta_v": 2150.0,
-            "cem_b_delta_v": 2150.0,
-            "tof_v": -8000.0,
-        }
 
 
 class TestGetEsaToEsaEnergyStepLut:

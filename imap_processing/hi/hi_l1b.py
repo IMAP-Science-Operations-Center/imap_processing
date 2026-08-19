@@ -14,6 +14,7 @@ from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.hi_l1a import MILLISECOND_TO_S
 from imap_processing.hi.utils import (
     HIAPID,
+    CalibrationProductConfig,
     CoincidenceBitmap,
     EsaEnergyStepLookupTable,
     GoodMetRangeLookupTable,
@@ -500,37 +501,6 @@ def compute_reference_hv_values(hk_segment_ds: xr.Dataset) -> dict[str, float]:
     }
 
 
-def compute_gain_match_values(raw_hv_values: dict[str, float]) -> dict[str, float]:
-    """
-    Derive the back/front voltage differences used for geometric factor lookup.
-
-    Computed as back minus front (rather than front minus back) so that the
-    resulting deltas are positive, consistent with real flight detector
-    voltages (front voltages are more negative than back voltages -- see
-    imap_processing/hi/gain_test_analysis.ipynb).
-
-    Parameters
-    ----------
-    raw_hv_values : dict[str, float]
-        Raw detector high voltage values keyed by field name, e.g. as
-        returned by compute_reference_hv_values() (must contain "mcp_f",
-        "mcp_b", "cem_f", "cem_bk_a", "cem_bk_b", and "tof").
-
-    Returns
-    -------
-    dict[str, float]
-        Dictionary with keys "mcp_delta_v", "cem_a_delta_v", "cem_b_delta_v",
-        and "tof_v", matching CalibrationProductConfig.GAIN_MATCH_FIELDS, for
-        use with CalibrationProductConfig.match_gain_config_id().
-    """
-    return {
-        "mcp_delta_v": raw_hv_values["mcp_b"] - raw_hv_values["mcp_f"],
-        "cem_a_delta_v": raw_hv_values["cem_bk_a"] - raw_hv_values["cem_f"],
-        "cem_b_delta_v": raw_hv_values["cem_bk_b"] - raw_hv_values["cem_f"],
-        "tof_v": raw_hv_values["tof"],
-    }
-
-
 def de_gain_test_filter(
     l1b_de_ds: xr.Dataset,
     l1b_hk_ds: xr.Dataset,
@@ -567,7 +537,7 @@ def de_gain_test_filter(
         here -- downstream processing (L1C) looks up the geometric factor
         per esa_energy_step from the cal-prod ancillary file's matching
         gain_config_id, using these recorded "gain_match_{field}" attributes
-        (see hi_l1c.pset_geometric_factor()).
+        (see hi_l1c.add_pset_geometric_factor()).
     l1b_hk_ds : xarray.Dataset
         L1B housekeeping data coincident with the L1A DE data.
 
@@ -578,7 +548,7 @@ def de_gain_test_filter(
     """
     nan_gain_match_attrs = {
         f"gain_match_{field}": value
-        for field, value in compute_gain_match_values(
+        for field, value in CalibrationProductConfig.compute_gain_match_values(
             {field: np.nan for field in HiConstants.GAIN_TEST_HV_DELTA_V}
         ).items()
     }
@@ -670,7 +640,7 @@ def de_gain_test_filter(
         ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE
     )
 
-    gain_match_values = compute_gain_match_values(reference_hv)
+    gain_match_values = CalibrationProductConfig.compute_gain_match_values(reference_hv)
     l1b_de_ds.attrs.update(
         {f"gain_match_{field}": value for field, value in gain_match_values.items()}
     )

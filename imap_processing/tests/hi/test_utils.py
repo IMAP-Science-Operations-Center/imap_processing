@@ -607,6 +607,38 @@ class TestCalibrationProductConfig:
         }
         assert df.cal_prod_config.match_gain_config_id(hv_deltas) is None
 
+    def test_match_gain_config_id_nan_returns_none(self):
+        """Test that a NaN input value returns None without raising."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+        hv_deltas = dict(GAIN_MATCH_0, mcp_delta_v=np.nan)
+        assert df.cal_prod_config.match_gain_config_id(hv_deltas) is None
+
+    def test_compute_gain_match_values(self):
+        """Test that back/front voltage deltas are computed correctly."""
+        raw_hv_values = {
+            "mcp_f": -3000.0,
+            "mcp_b": -2125.0,
+            "cem_f": -4500.0,
+            "cem_bk_a": -2350.0,
+            "cem_bk_b": -2350.0,
+            "tof": -8000.0,
+        }
+
+        result = CalibrationProductConfig.compute_gain_match_values(raw_hv_values)
+
+        assert result == {
+            "mcp_delta_v": 875.0,
+            "cem_a_delta_v": 2150.0,
+            "cem_b_delta_v": 2150.0,
+            "tof_v": -8000.0,
+        }
+        assert tuple(result.keys()) == CalibrationProductConfig.GAIN_MATCH_FIELDS
+
 
 class TestGoodMetRangeLookupTable:
     """Test suite for GoodMetRangeLookupTable class."""

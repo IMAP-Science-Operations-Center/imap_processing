@@ -666,7 +666,7 @@ class CalibrationProductConfig(_BaseConfigAccessor):
     )
     # Detector voltage difference (and U-Can voltage) fields used to match a
     # pointing's gain state to a gain_config_id row. See
-    # hi_l1b.compute_gain_match_values() for how a pointing's own values are
+    # compute_gain_match_values() for how a pointing's own values are
     # derived, and match_gain_config_id() below for the matching logic.
     GAIN_MATCH_FIELDS = (
         "mcp_delta_v",
@@ -777,6 +777,39 @@ class CalibrationProductConfig(_BaseConfigAccessor):
         """
         return len(self._obj.index.unique(level="calibration_prod"))
 
+    @classmethod
+    def compute_gain_match_values(
+        cls, raw_hv_values: dict[str, float]
+    ) -> dict[str, float]:
+        """
+        Derive the back/front voltage differences used for geometric factor lookup.
+
+        Computed as back minus front (rather than front minus back) so that
+        the resulting deltas are positive, consistent with real flight
+        detector voltages (front voltages are more negative than back
+        voltages -- see imap_processing/hi/gain_test_analysis.ipynb).
+
+        Parameters
+        ----------
+        raw_hv_values : dict[str, float]
+            Raw detector high voltage values keyed by field name, e.g. as
+            returned by hi_l1b.compute_reference_hv_values() (must contain
+            "mcp_f", "mcp_b", "cem_f", "cem_bk_a", "cem_bk_b", and "tof").
+
+        Returns
+        -------
+        dict[str, float]
+            Dictionary with keys matching GAIN_MATCH_FIELDS, for use with
+            match_gain_config_id().
+        """
+        delta_formulas = {
+            "mcp_delta_v": raw_hv_values["mcp_b"] - raw_hv_values["mcp_f"],
+            "cem_a_delta_v": raw_hv_values["cem_bk_a"] - raw_hv_values["cem_f"],
+            "cem_b_delta_v": raw_hv_values["cem_bk_b"] - raw_hv_values["cem_f"],
+            "tof_v": raw_hv_values["tof"],
+        }
+        return {field: delta_formulas[field] for field in cls.GAIN_MATCH_FIELDS}
+
     def match_gain_config_id(self, hv_deltas: dict[str, float]) -> int | None:
         """
         Find the gain_config_id whose reference values match the given deltas.
@@ -785,14 +818,18 @@ class CalibrationProductConfig(_BaseConfigAccessor):
         ----------
         hv_deltas : dict[str, float]
             Mapping of CalibrationProductConfig.GAIN_MATCH_FIELDS field names
-            to a pointing's derived values (see hi_l1b.compute_gain_match_values()).
+            to a pointing's derived values (see compute_gain_match_values()).
 
         Returns
         -------
         int or None
-            The matching gain_config_id, or None if zero or multiple
-            gain_config_id rows match.
+            The matching gain_config_id, or None if any input value is NaN
+            (e.g. because a pointing's reference detector voltages could
+            not be determined) or if zero or multiple gain_config_id rows
+            match.
         """
+        if any(np.isnan(value) for value in hv_deltas.values()):
+            return None
         gain_config_ids = self._obj.index.get_level_values("gain_config_id").unique()
         matches = []
         for gain_config_id in gain_config_ids:
