@@ -482,7 +482,9 @@ hi_pset_esa_energy_step:
 
 hi_pset_geometric_factor:
   <<: *default_float32
-  CATDESC: Geometric factor per calibration product and esa_energy_step for the detector gain configuration active during this pointing
+  CATDESC: >
+    Geometric factor per calibration product and esa_energy_step for the detector
+    gain configuration active during this pointing
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
   DEPEND_2: calibration_prod

@@ -152,8 +152,8 @@ class HiConstants:
     # mnemonic name for the U-Can voltage monitor (see IMAP-Hi Algorithm
     # Document Section 8, Level 0 Packet Definitions).
     GAIN_TEST_HV_DELTA_V: ClassVar[dict[str, float]] = {
-        "pos_defl": 50.0,
-        "neg_defl": 50.0,
+        "pos_defl": 1500.0,
+        "neg_defl": 1500.0,
         "tof": 50.0,
         "mcp_f": 10.0,
         "mcp_b": 50.0,
@@ -668,6 +668,9 @@ class CalibrationProductConfig(_BaseConfigAccessor):
     # pointing's gain state to a gain_config_id row. See
     # compute_gain_match_values() for how a pointing's own values are
     # derived, and match_gain_config_id() below for the matching logic.
+    # hi_l1b.de_gain_test_filter() sets these directly as L1B DE global
+    # attributes and hi_l1c.add_pset_geometric_factor() reads them back
+    # the same way.
     GAIN_MATCH_FIELDS = (
         "mcp_delta_v",
         "cem_a_delta_v",

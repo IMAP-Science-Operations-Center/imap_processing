@@ -64,14 +64,18 @@ def test_generate_pset_dataset(
     """Test coverage for generate_pset_dataset function"""
     use_fake_spin_data_for_time(482372987.999)
     l1b_dataset = hi_l1b_de_dataset.copy()
-    # The real fixture CDF predates the gain_match_{field} L1B global
-    # attributes; add placeholders matching the test cal-prod config's
-    # gain_config_id=0 reference values so add_pset_geometric_factor() has
-    # something to look up.
-    l1b_dataset.attrs["gain_match_mcp_delta_v"] = 875.0
-    l1b_dataset.attrs["gain_match_cem_a_delta_v"] = 2150.0
-    l1b_dataset.attrs["gain_match_cem_b_delta_v"] = 2150.0
-    l1b_dataset.attrs["gain_match_tof_v"] = -8000.0
+    # The real fixture CDF predates the HV delta L1B global attributes; add
+    # placeholders matching the test cal-prod config's gain_config_id=0
+    # reference values so add_pset_geometric_factor() has something to
+    # look up.
+    l1b_dataset.attrs.update(
+        {
+            "mcp_delta_v": 875.0,
+            "cem_a_delta_v": 2150.0,
+            "cem_b_delta_v": 2150.0,
+            "tof_v": -8000.0,
+        }
+    )
     l1b_met = l1b_dataset["ccsds_met"].values[0]
     # Set repoint start and end times.
     seconds_per_day = 24 * 60 * 60
@@ -140,10 +144,10 @@ def test_generate_pset_dataset_uses_midpoint_time(
         attrs={
             "Logical_file_id": "imap_hi_l1b_45sensor-de_20250415_v999",
             "Logical_source": "imap_hi_l1b_45sensor-de",
-            "gain_match_mcp_delta_v": 875.0,
-            "gain_match_cem_a_delta_v": 2150.0,
-            "gain_match_cem_b_delta_v": 2150.0,
-            "gain_match_tof_v": -8000.0,
+            "mcp_delta_v": 875.0,
+            "cem_a_delta_v": 2150.0,
+            "cem_b_delta_v": 2150.0,
+            "tof_v": -8000.0,
         },
     )
 
@@ -220,10 +224,10 @@ def test_add_pset_geometric_factor_matching_gain_state(hi_test_cal_prod_config_p
     pset_ds = _make_pset_ds_for_geometric_factor(np.arange(1, 10), [0, 1])
     l1b_de_dataset = xr.Dataset(
         attrs={
-            "gain_match_mcp_delta_v": 875.0,
-            "gain_match_cem_a_delta_v": 2150.0,
-            "gain_match_cem_b_delta_v": 2150.0,
-            "gain_match_tof_v": -8000.0,
+            "mcp_delta_v": 875.0,
+            "cem_a_delta_v": 2150.0,
+            "cem_b_delta_v": 2150.0,
+            "tof_v": -8000.0,
         }
     )
 
@@ -263,15 +267,15 @@ def test_add_pset_geometric_factor_nan_gain_match_returns_fillval(
     hi_test_cal_prod_config_path,
 ):
     """If L1B could not determine reference detector voltages for the
-    pointing (nan gain_match_{field} attrs), geometric_factor stays FILLVAL."""
+    pointing (nan HV delta attrs), geometric_factor stays FILLVAL."""
     config_df = utils.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
     pset_ds = _make_pset_ds_for_geometric_factor([1, 2, 3], [0, 1])
     l1b_de_dataset = xr.Dataset(
         attrs={
-            "gain_match_mcp_delta_v": float("nan"),
-            "gain_match_cem_a_delta_v": 2150.0,
-            "gain_match_cem_b_delta_v": 2150.0,
-            "gain_match_tof_v": -8000.0,
+            "mcp_delta_v": float("nan"),
+            "cem_a_delta_v": 2150.0,
+            "cem_b_delta_v": 2150.0,
+            "tof_v": -8000.0,
         }
     )
 
@@ -293,10 +297,10 @@ def test_add_pset_geometric_factor_no_match_returns_fillval(
     pset_ds = _make_pset_ds_for_geometric_factor([1, 2, 3], [0, 1])
     l1b_de_dataset = xr.Dataset(
         attrs={
-            "gain_match_mcp_delta_v": 0.0,
-            "gain_match_cem_a_delta_v": 0.0,
-            "gain_match_cem_b_delta_v": 0.0,
-            "gain_match_tof_v": 0.0,
+            "mcp_delta_v": 0.0,
+            "cem_a_delta_v": 0.0,
+            "cem_b_delta_v": 0.0,
+            "tof_v": 0.0,
         }
     )
 

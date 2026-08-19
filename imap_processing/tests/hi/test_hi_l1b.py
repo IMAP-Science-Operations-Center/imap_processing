@@ -74,15 +74,10 @@ def test_hi_annotate_direct_events(
     mock_get_esa_lut.return_value = mock_esa_lut
 
     # Mock de_gain_test_filter to pass the dataset through unmodified, with
-    # nominal gain_match_* attrs set (as it would for a matching pointing).
+    # nominal HV delta attrs set (as it would for a matching pointing).
     def gain_test_filter_side_effect(l1b_de_ds, l1b_hk_ds):
         l1b_de_ds.attrs.update(
-            {
-                f"gain_match_{field}": value
-                for field, value in CalibrationProductConfig.compute_gain_match_values(
-                    NOMINAL_HV_VALUES
-                ).items()
-            }
+            CalibrationProductConfig.compute_gain_match_values(NOMINAL_HV_VALUES)
         )
         return l1b_de_ds
 
@@ -102,10 +97,11 @@ def test_hi_annotate_direct_events(
     l1b_datasets = annotate_direct_events(l1a_dataset, xr.Dataset(), esa_energies_csv)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
-    assert l1b_datasets[0].attrs["gain_match_mcp_delta_v"] == pytest.approx(
-        CalibrationProductConfig.compute_gain_match_values(NOMINAL_HV_VALUES)[
-            "mcp_delta_v"
-        ]
+    expected_hv_deltas = CalibrationProductConfig.compute_gain_match_values(
+        NOMINAL_HV_VALUES
+    )
+    assert l1b_datasets[0].attrs["mcp_delta_v"] == pytest.approx(
+        expected_hv_deltas["mcp_delta_v"]
     )
     assert len(l1b_datasets[0].data_vars) == 18
 
@@ -411,9 +407,6 @@ def test_de_esa_energy_step(mock_get_esa_lut, mock_read_csv, mock_any_good_de):
     np.testing.assert_array_equal(fake_dataset["ccsds_qf"].values, expected_qf_bits)
 
 
-GAIN_MATCH_FIELDS = ("mcp_delta_v", "cem_a_delta_v", "cem_b_delta_v", "tof_v")
-
-
 class TestDeGainTestFilter:
     """Test suite for de_gain_test_filter function."""
 
@@ -471,15 +464,18 @@ class TestDeGainTestFilter:
 
     @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=False)
     def test_no_good_direct_events(self, mock_any_good_de):
-        """gain_match_* attrs are all NaN and dataset is otherwise unmodified."""
+        """HV delta attrs are all NaN and dataset is otherwise unmodified."""
         fake_de_ds = xr.Dataset(attrs={"some_attr": "unchanged"})
 
         result = de_gain_test_filter(fake_de_ds, xr.Dataset())
 
         assert result is fake_de_ds
         assert result.attrs["some_attr"] == "unchanged"
-        for field in GAIN_MATCH_FIELDS:
-            assert np.isnan(result.attrs[f"gain_match_{field}"])
+        actual_hv_deltas = {
+            field: result.attrs[field]
+            for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
+        }
+        assert all(np.isnan(value) for value in actual_hv_deltas.values())
 
     @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
     def test_no_hvsci_segments(self, mock_any_good_de):
@@ -497,8 +493,11 @@ class TestDeGainTestFilter:
         assert np.all(
             result["ccsds_qf"].values & np.uint8(ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE)
         )
-        for field in GAIN_MATCH_FIELDS:
-            assert np.isnan(result.attrs[f"gain_match_{field}"])
+        actual_hv_deltas = {
+            field: result.attrs[field]
+            for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
+        }
+        assert all(np.isnan(value) for value in actual_hv_deltas.values())
 
     @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
     def test_nominal_pointing_multiple_matching_segments(self, mock_any_good_de):
@@ -522,13 +521,14 @@ class TestDeGainTestFilter:
             result["ccsds_qf"].values & np.uint8(ImapHiL1bDeFlags.BAD_DETECTOR_VOLTAGE)
             == 0
         )
-        expected_gain_match = CalibrationProductConfig.compute_gain_match_values(
+        expected_hv_deltas = CalibrationProductConfig.compute_gain_match_values(
             NOMINAL_HV_VALUES
         )
-        for field in GAIN_MATCH_FIELDS:
-            assert result.attrs[f"gain_match_{field}"] == pytest.approx(
-                expected_gain_match[field]
-            )
+        actual_hv_deltas = {
+            field: result.attrs[field]
+            for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
+        }
+        assert actual_hv_deltas == pytest.approx(expected_hv_deltas)
 
     @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
     def test_mid_pointing_gain_test_excluded(self, mock_any_good_de):
@@ -577,15 +577,16 @@ class TestDeGainTestFilter:
         )
         np.testing.assert_array_equal(result["ccsds_qf"].values, expected_qf_bits)
 
-        # gain_match_* attrs reflect the pointing's reference (first segment),
+        # HV delta attrs reflect the pointing's reference (first segment),
         # which is unaffected by the excluded mid-pointing gain test segment.
-        expected_gain_match = CalibrationProductConfig.compute_gain_match_values(
+        expected_hv_deltas = CalibrationProductConfig.compute_gain_match_values(
             NOMINAL_HV_VALUES
         )
-        for field in GAIN_MATCH_FIELDS:
-            assert result.attrs[f"gain_match_{field}"] == pytest.approx(
-                expected_gain_match[field]
-            )
+        actual_hv_deltas = {
+            field: result.attrs[field]
+            for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
+        }
+        assert actual_hv_deltas == pytest.approx(expected_hv_deltas)
 
     @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
     def test_uses_esa_step_met_not_ccsds_met(self, mock_any_good_de):

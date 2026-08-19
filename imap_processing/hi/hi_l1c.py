@@ -127,9 +127,8 @@ def generate_pset_dataset(
     )
     pset_dataset.update(pset_geometry(pset_midpoint_et, logical_source_parts["sensor"]))
     # Look up the per-esa_energy_step geometric factor for this pointing's
-    # gain state, matched from the L1B DE product's gain_match_{field}
-    # global attributes against the cal-prod ancillary file's gain_config_id
-    # rows.
+    # gain state, matched from the L1B DE product's HV delta global
+    # attributes against the cal-prod ancillary file's gain_config_id rows.
     pset_dataset = add_pset_geometric_factor(pset_dataset, de_dataset, config_df)
     # Bin the counts into the spin-bins
     pset_dataset.update(
@@ -365,10 +364,10 @@ def add_pset_geometric_factor(
         The PSET dataset being built. Must have "esa_energy_step" and
         "calibration_prod" coordinates.
     l1b_de_dataset : xarray.Dataset
-        The L1B dataset for the pointing being processed. Must have
-        "gain_match_{field}" global attributes (see
-        CalibrationProductConfig.GAIN_MATCH_FIELDS) recording the pointing's
-        reference detector voltage deltas (see hi_l1b.de_gain_test_filter()).
+        The L1B dataset for the pointing being processed. Must have global
+        attributes set (one per CalibrationProductConfig.GAIN_MATCH_FIELDS,
+        named directly by field) recording the pointing's reference
+        detector voltage deltas (see hi_l1b.de_gain_test_filter()).
     config_df : pandas.DataFrame
         Calibration product configuration DataFrame (see
         CalibrationProductConfig.from_csv()), indexed by (gain_config_id,
@@ -399,7 +398,7 @@ def add_pset_geometric_factor(
         att_manager_lookup_str="hi_pset_{0}",
     )
     hv_deltas = {
-        field: l1b_de_dataset.attrs[f"gain_match_{field}"]
+        field: l1b_de_dataset.attrs[field]
         for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
     }
     gain_config_id = config_df.cal_prod_config.match_gain_config_id(hv_deltas)
