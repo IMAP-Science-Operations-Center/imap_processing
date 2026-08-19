@@ -461,8 +461,12 @@ def calculate_ena_intensity(
     # L2 does not yet combine PSETs from different gain states into a single
     # map (see hi_l1c.add_pset_geometric_factor()'s docstring), so use the
     # first (and, today, only) gain_config_id present in the ancillary file.
-    gain_config_id = cal_prod_df.index.get_level_values("gain_config_id")[0]
-    cal_prod_df = cal_prod_df.loc[gain_config_id]
+    gain_config_ids = cal_prod_df.index.get_level_values("gain_config_id").unique()
+    if len(gain_config_ids) != 1:
+        raise NotImplementedError(
+            "L2 processing does not yet support multiple gain_config_id values."
+        )
+    cal_prod_df = cal_prod_df.loc[gain_config_ids[0]]
     # reindex_like removes esa_energy_steps and calibration products not in the
     # map_ds esa_energy_step and calibration_product coordinates
     geometric_factor = cal_prod_df.to_xarray().reindex_like(map_ds)["geometric_factor"]
