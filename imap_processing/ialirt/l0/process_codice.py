@@ -477,10 +477,7 @@ def process_codice(
             l1a_lo = process_by_table_id(cod_lo_dataset, l1a_lut_path, l1a_lo_species)
             l1b_lo = cast(
                 xr.Dataset,
-                convert_to_rates(
-                    l1a_lo,
-                    "lo-ialirt",
-                ),
+                convert_to_rates(l1a_lo, "lo-ialirt"),
             )
             mid_measurement = int((l1b_lo["epoch"][0] + l1b_lo["epoch"][-1]) // 2)
             yyyymmdd = datetime.datetime.strptime(

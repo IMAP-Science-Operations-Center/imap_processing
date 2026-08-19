@@ -15,13 +15,11 @@ from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.utils import (
     BackgroundConfig,
     CalibrationProductConfig,
-    GainConfigLookupTable,
     HiConstants,
     create_dataset_variables,
     full_dataarray,
     iter_background_events_by_config,
     iter_qualified_events_by_config,
-    load_gain_configuration,
     parse_sensor_number,
 )
 from imap_processing.spice.geometry import (
@@ -49,7 +47,6 @@ def hi_l1c(
     calibration_prod_config_path: Path,
     goodtimes_ds: xr.Dataset,
     background_config_path: Path,
-    gain_config_anc: Path,
 ) -> list[xr.Dataset]:
     """
     High level IMAP-Hi l1c processing function.
@@ -64,8 +61,6 @@ def hi_l1c(
         Goodtimes dataset with cull_flags.
     background_config_path : pathlib.Path
         Background configuration file.
-    gain_config_anc : pathlib.Path
-        Location of the gain-configuration ancillary csv file.
 
     Returns
     -------
@@ -79,7 +74,6 @@ def hi_l1c(
         calibration_prod_config_path,
         goodtimes_ds,
         background_config_path,
-        gain_config_anc,
     )
 
     return [l1c_dataset]
@@ -90,7 +84,6 @@ def generate_pset_dataset(
     calibration_prod_config_path: Path,
     goodtimes_ds: xr.Dataset,
     background_config_path: Path,
-    gain_config_anc: Path,
 ) -> xr.Dataset:
     """
     Generate IMAP-Hi l1c pset xarray dataset from l1b product.
@@ -105,8 +98,6 @@ def generate_pset_dataset(
         Goodtimes dataset with cull_flags.
     background_config_path : pathlib.Path
         Background configuration file.
-    gain_config_anc : pathlib.Path
-        Location of the gain-configuration ancillary csv file.
 
     Returns
     -------
@@ -135,11 +126,8 @@ def generate_pset_dataset(
         pset_dataset.epoch.data[0] + pset_dataset.epoch_delta.data[0] / 2
     )
     pset_dataset.update(pset_geometry(pset_midpoint_et, logical_source_parts["sensor"]))
-    # Look up the per-esa_energy_step geometric factor for this pointing's
-    # gain configuration (classified at L1B)
-    pset_dataset.update(
-        pset_geometric_factor(pset_dataset.coords, de_dataset, gain_config_anc)
-    )
+    # Look up the per-esa_energy_step geometric factor for this pointing.
+    pset_dataset.update(pset_geometric_factor(pset_dataset.coords))
     # Bin the counts into the spin-bins
     pset_dataset.update(
         pset_counts(pset_dataset.coords, config_df, de_dataset, goodtimes_ds)
@@ -362,52 +350,34 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
 
 def pset_geometric_factor(
     pset_coords: dict[str, xr.DataArray],
-    l1b_de_dataset: xr.Dataset,
-    gain_config_anc: Path,
 ) -> dict[str, xr.DataArray]:
     """
-    Look up the per-esa_energy_step geometric factor for this pointing.
+    Return a placeholder per-esa_energy_step geometric factor for this pointing.
+
+    The previous gain-configuration ancillary file and config_id
+    classification mechanism has been retired (see #3391 / #3394) in favor
+    of gain-test filtering based on a pointing's own reference detector
+    voltages (see `hi_l1b.de_gain_test_filter`). A replacement geometric
+    factor lookup -- keyed on the pointing's detector gain state via an
+    extended cal-prod ancillary file -- is implemented in a follow-up (see
+    #3395). Until then, "geometric_factor" is left at FILLVAL.
 
     Parameters
     ----------
     pset_coords : dict[str, xarray.DataArray]
         The PSET coordinates from the xarray.Dataset.
-    l1b_de_dataset : xarray.Dataset
-        The L1B dataset for the pointing being processed. Must have a
-        "gain_configuration_id" global attribute.
-    gain_config_anc : pathlib.Path
-        Location of the gain-configuration ancillary csv file.
 
     Returns
     -------
     dict[str, xarray.DataArray]
-        Dictionary containing the "geometric_factor" DataArray, dims
-        (epoch, esa_energy_step).
-
-    Notes
-    -----
-    The gain configuration is constant for a pointing (see
-    `hi_l1b.classify_gain_configuration`), so the L1B DE product only records
-    the classified gain configuration id as a global attribute rather than
-    duplicating the geometric factor across every direct event. This looks
-    up the geometric factor for each esa_energy_step directly from the
-    gain-configuration ancillary file. Not yet consumed by L2 processing
-    (deferred to a follow-on ticket that handles combining PSETs from
-    different gain configurations into a single map).
+        Dictionary containing the "geometric_factor" DataArray (all
+        FILLVAL), dims (epoch, esa_energy_step).
     """
-    geometric_factor_var = create_dataset_variables(
+    return create_dataset_variables(
         ["geometric_factor"],
         coords=pset_coords,
         att_manager_lookup_str="hi_pset_{0}",
     )
-    config_id = l1b_de_dataset.attrs["gain_configuration_id"]
-    if config_id != GainConfigLookupTable.NO_MATCH:
-        gain_config_df = load_gain_configuration(gain_config_anc)
-        for i, step in enumerate(pset_coords["esa_energy_step"].data):
-            geometric_factor_var["geometric_factor"].values[0, i] = gain_config_df.loc[
-                (config_id, int(step)), "geometric_factor"
-            ]
-    return geometric_factor_var
 
 
 def pset_counts(

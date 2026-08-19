@@ -174,4 +174,4 @@ class ImapHiL1bDeFlags(FlagNameMixin):
     BADSPIN = ENAFlags.BADSPIN  # bit 2, packet contained events from an invalid spin
     BAD_DETECTOR_VOLTAGE = (
         2**3
-    )  # bit 3, detector HV didn't match the pointing's gain configuration
+    )  # bit 3, detector HV deviated from the pointing's reference voltages

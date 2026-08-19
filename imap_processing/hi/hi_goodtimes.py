@@ -968,10 +968,10 @@ def mark_bad_voltage(
     processing (see hi_l1b.get_esa_to_esa_energy_step_lut()) by matching
     measured inner/outer ESA voltages against the ESA energies lookup table,
     and matching measured detector high voltages (CEM/MCP/U-Can/deflector)
-    against the pointing's classified gain configuration. Both checks set
-    esa_energy_step=FILLVAL on mismatch; see the L1B DE ccsds_qf quality flag
-    (ImapHiL1bDeFlags.BAD_ESA_VOLTAGE / BAD_DETECTOR_VOLTAGE) to distinguish
-    which check failed.
+    against the pointing's own first-HVSCI-segment reference voltages (see
+    hi_l1b.de_gain_test_filter()). Both checks set esa_energy_step=FILLVAL on
+    mismatch; see the L1B DE ccsds_qf quality flag (ImapHiL1bDeFlags.
+    BAD_ESA_VOLTAGE / BAD_DETECTOR_VOLTAGE) to distinguish which check failed.
 
     Algorithm Document Reference:
         Section 2.2.4/2.3.2: Good times selection requiring valid ESA and
@@ -994,8 +994,8 @@ def mark_bad_voltage(
     Invalid ESA energy steps:
     - esa_energy_step = 0: Calibration mode (ESA stepping but not science data)
     - esa_energy_step = FILLVAL (255): ESA or detector voltage mismatch -
-      measured voltages didn't match any known energy step / gain
-      configuration
+      measured voltages didn't match any known energy step, or deviated
+      from the pointing's own reference voltages (likely a gain test)
     """
     logger.info("Running mark_bad_voltage culling")
 

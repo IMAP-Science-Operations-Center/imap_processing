@@ -449,7 +449,8 @@ hi_de_ccsds_qf:
     (contained 664 events). Bit 1 (value 2): ESA (inner/outer) voltage did not
     match any known esa_energy_step. Bit 2 (value 4): packet contained events
     from an invalid spin. Bit 3 (value 8): detector high voltage (CEM/MCP/U-Can/
-    deflector) did not match the pointing's classified gain configuration.
+    deflector) deviated from the pointing's own first-HVSCI-segment reference
+    voltages (likely a gain test interval).
 
 # ======= L1C PSET Section =======
 

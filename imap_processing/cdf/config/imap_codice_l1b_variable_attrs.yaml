@@ -1,0 +1,24 @@
+# <=== Useful Variables ===>
+real_fillval: &real_fillval -1.0E+31
+
+# <=== Coordinates ===>
+energy_per_charge:
+    CATDESC: Energy per charge
+    DEPEND_1: esa_step
+    FIELDNAM: Energy per charge
+    FILLVAL: *real_fillval
+    FORMAT: F12.6
+    LABLAXIS: E/q
+    SCALETYP: log
+    UNITS: keV/e
+    VALIDMAX: 81.216
+    VALIDMIN: 0.00288
+    VAR_TYPE: support_data
+
+# <=== LABL_PTR_i Attributes ===>
+energy_per_charge_label:
+    CATDESC: Energy per charge
+    DEPEND_1: esa_step
+    FIELDNAM: Energy per charge
+    FORMAT: A10
+    VAR_TYPE: metadata

@@ -22,7 +22,11 @@ from imap_processing.codice import constants
 logger = logging.getLogger(__name__)
 
 
-def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
+def convert_to_rates(
+    dataset: xr.Dataset,
+    descriptor: str,
+    cdf_attrs: ImapCdfAttributes | None = None,
+) -> np.ndarray:
     """
     Apply a conversion from counts to rates.
 
@@ -35,6 +39,10 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
         The L1b dataset containing the data to convert.
     descriptor : str
         The descriptor of the data product of interest.
+    cdf_attrs : ImapCdfAttributes
+        The CDF attributes manager, with L1b variable attributes loaded.
+        Callers that only need the intermediate values (e.g. I-ALiRT, which
+        discards them after computing ratios) can omit this.
 
     Returns
     -------
@@ -49,19 +57,35 @@ def convert_to_rates(dataset: xr.Dataset, descriptor: str) -> np.ndarray:
     )
     if descriptor.startswith("lo-"):
         # Calculate energy_per_charge using voltage_table and k_factor
-        energy_attrs = dataset["voltage_table"].attrs | {
-            "UNITS": "keV/e",
-            "LABLAXIS": "E/q",
-            "CATDESC": "Energy per charge",
-            "FIELDNAM": "Energy per charge",
-        }
         # 1e3 is to convert eV to keV
+        energy_per_charge = (
+            dataset["voltage_table"].values * dataset["k_factor"].values * 1e-3
+        )
         dataset["energy_per_charge"] = xr.DataArray(
-            dataset["voltage_table"].values * dataset["k_factor"].values * 1e-3,
+            energy_per_charge,
             dims=[
                 "esa_step",
             ],
-            attrs=energy_attrs,
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_per_charge", check_schema=False
+            )
+            if cdf_attrs is not None
+            else {},  # the codice ialirt pipeline calls this function but
+            # energy_per_charge is an intermediate variable so
+            # it doesn't need attributes
+        )
+        dataset["energy_per_charge_label"] = xr.DataArray(
+            np.array([f"{value:.3f}" for value in energy_per_charge]),
+            dims=[
+                "esa_step",
+            ],
+            attrs=cdf_attrs.get_variable_attributes(
+                "energy_per_charge_label", check_schema=False
+            )
+            if cdf_attrs is not None
+            else {},  # the codice ialirt pipeline calls this function but
+            # energy_per_charge_label is an intermediate variable so
+            # it does not need attributes
         )
 
     if descriptor in [
@@ -180,6 +204,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # Get the L1b CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
 
     # Use the L1a data product as a starting point for L1b
     l1b_dataset = l1a_dataset.copy(deep=True)
@@ -190,4 +215,5 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     return convert_to_rates(
         l1b_dataset,
         descriptor,
+        cdf_attrs,
     )

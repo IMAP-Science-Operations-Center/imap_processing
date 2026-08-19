@@ -66,14 +66,14 @@ lo-species-attrs:
     DELTA_MINUS_VAR: unc_{species}
     DELTA_PLUS_VAR: unc_{species}
     DEPEND_0: epoch
-    DEPEND_1: esa_step
+    DEPEND_1: energy_per_charge
     DEPEND_2: spin_sector
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
     DISPLAY_TYPE: spectrogram
     FIELDNAM: "Non-sunward - {species}"
     FILLVAL: *real_fillval
     FORMAT: F32.1
-    LABL_PTR_1: esa_step_label
+    LABL_PTR_1: energy_per_charge_label
     LABL_PTR_2: spin_sector_label
     SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
@@ -86,14 +86,14 @@ lo-pui-species-attrs:
     DELTA_MINUS_VAR: unc_{species}
     DELTA_PLUS_VAR: unc_{species}
     DEPEND_0: epoch
-    DEPEND_1: esa_step
+    DEPEND_1: energy_per_charge
     DEPEND_2: spin_sector
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
     DISPLAY_TYPE: spectrogram
     FIELDNAM: "Sunward - {species}"
     FILLVAL: *real_fillval
     FORMAT: F32.1
-    LABL_PTR_1: esa_step_label
+    LABL_PTR_1: energy_per_charge_label
     LABL_PTR_2: spin_sector_label
     SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
@@ -106,14 +106,14 @@ lo-sw-species-attrs:
   DELTA_MINUS_VAR: unc_{species}
   DELTA_PLUS_VAR: unc_{species}
   DEPEND_0: epoch
-  DEPEND_1: esa_step
+  DEPEND_1: energy_per_charge
   DEPEND_2: spin_sector
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
   DISPLAY_TYPE: spectrogram
   FIELDNAM: "Sunward Differential Intensity - {species_display}"
   FILLVAL: *real_fillval
   FORMAT: F32.1
-  LABL_PTR_1: esa_step_label
+  LABL_PTR_1: energy_per_charge_label
   LABL_PTR_2: spin_sector_label
   SCALETYP: log
   UNITS: "#/(cm^2-s-sr-keV/q)"
@@ -124,14 +124,14 @@ lo-sw-species-attrs:
 lo-species-unc-attrs:
     CATDESC: "{species} Non-sunward Species uncertainty"
     DEPEND_0: epoch
-    DEPEND_1: esa_step
+    DEPEND_1: energy_per_charge
     DEPEND_2: spin_sector
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
     DISPLAY_TYPE: spectrogram
     FIELDNAM: "Non-sunward - {species}"
     FILLVAL: *real_fillval
     FORMAT: F32.1
-    LABL_PTR_1: esa_step_label
+    LABL_PTR_1: energy_per_charge_label
     LABL_PTR_2: spin_sector_label
     SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
@@ -142,14 +142,14 @@ lo-species-unc-attrs:
 lo-pui-species-unc-attrs:
     CATDESC: "{species} Pickup Ion Sunward Species uncertainty"
     DEPEND_0: epoch
-    DEPEND_1: esa_step
+    DEPEND_1: energy_per_charge
     DEPEND_2: spin_sector
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
     DISPLAY_TYPE: spectrogram
     FIELDNAM: "Sunward - {species}"
     FILLVAL: *real_fillval
     FORMAT: F32.1
-    LABL_PTR_1: esa_step_label
+    LABL_PTR_1: energy_per_charge_label
     LABL_PTR_2: spin_sector_label
     SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
@@ -160,14 +160,14 @@ lo-pui-species-unc-attrs:
 lo-sw-species-unc-attrs:
     CATDESC: "Uncertainty in differential intensity from sunward-looking detectors measuring solar-wind {species_display}"
     DEPEND_0: epoch
-    DEPEND_1: esa_step
+    DEPEND_1: energy_per_charge
     DEPEND_2: spin_sector
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Uncertainty
     DISPLAY_TYPE: spectrogram
     FIELDNAM: "Sunward Uncertainty - {species_display}"
     FILLVAL: *real_fillval
     FORMAT: F32.1
-    LABL_PTR_1: esa_step_label
+    LABL_PTR_1: energy_per_charge_label
     LABL_PTR_2: spin_sector_label
     SCALETYP: log
     UNITS: "#/(cm^2-s-sr-keV/q)"
