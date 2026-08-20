@@ -55,9 +55,21 @@ def classify_event_flags(
 ) -> dict[str, int]:
     """Return mutually exclusive event-type flags and the Dust Hit flag.
 
-    Trigger classification follows the event-labeling logic used by the IDEX
-    quicklook. Dust detection is performed on the raw 10-bit TOF waveforms and
-    uses lower-gain waveforms only to measure saturated high-gain peaks.
+    The instrument state is assigned from the event trigger telemetry using
+    these conditions, in order:
+
+    * ``noise_capture_flag`` is set when no trigger channels are active, or
+      when a software/external trigger is present and the only active channel
+      is TOF High.
+    * ``pulser_flag`` is set when TOF High is the only active channel, the TOF
+      High trigger mode is ``1``, and its trigger threshold is 1000 DN.
+    * ``science_event_flag`` is set for all remaining events.
+
+    ``dust_hit_flag`` is set only for science events when the raw TOF waveform
+    contains at least two peaks that exceed seven baseline-noise standard
+    deviations and have a full width at half maximum of at least 20 ns. Dust
+    detection uses lower-gain waveforms only to measure saturated high-gain
+    peaks.
 
     Parameters
     ----------
