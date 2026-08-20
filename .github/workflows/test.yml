@@ -86,7 +86,7 @@ jobs:
         # The first Python version below is the oldest version with Pandas 3
         # support that is also supported by IMAP, while the second is the
         # newest Python version supported by IMAP.
-        python-version: ['3.11', '3.12']
+        python-version: ['3.11', '3.14']
     defaults:
       run:
         shell: bash
