@@ -73,11 +73,15 @@ IDEX_10_DAY_RANGES_PATH = f"{imap_module_directory}/idex/idex_10_day_CDF_names.c
 
 
 class ConversionFactors(float, Enum):
-    """Conversion factor values (DN to picocoulombs) for each of the six waveforms."""
+    """Conversion factors from DN to the engineering units for each waveform.
 
-    TOF_High = 2.89e-4
-    TOF_Low = 5.14e-1
-    TOF_Mid = 1.13e-2
+    TOF channels are reported in milliamperes (mA); target and ion-grid channels are
+    reported in picocoulombs (pC).
+    """
+
+    TOF_High = 7.50e-5
+    TOF_Low = 1.34e-1
+    TOF_Mid = 2.93e-3
     Target_Low = 1.58e1
     Target_High = 1.63e-1
     Ion_Grid = 7.46e-4

@@ -92,17 +92,14 @@ def test_idex_waveform_units(l1b_dataset: xr.Dataset):
         assert l1b_dataset[var_name].attrs["UNITS"] == row["unit"]
 
     # Check waveform units
-    waveform_var_names = [
-        "TOF_High",
-        "TOF_Low",
-        "TOF_Mid",
-        "Ion_Grid",
-        "Target_Low",
-        "Target_High",
-    ]
+    for var_name in ("TOF_High", "TOF_Low", "TOF_Mid"):
+        assert l1b_dataset[var_name].attrs["UNITS"] == "mA"
 
-    for var_name in waveform_var_names:
+    for var_name in ("Ion_Grid", "Target_Low", "Target_High"):
         assert l1b_dataset[var_name].attrs["UNITS"] == "pC"
+
+    for var_name in ("trigger_level_lg", "trigger_level_mg", "trigger_level_hg"):
+        assert l1b_dataset[var_name].attrs["UNITS"] == "mA"
 
 
 def test_unpack_instrument_settings():
@@ -169,9 +166,9 @@ def test_get_trigger_settings_success(decom_test_data_sci):
     expected_modes_mg[0] = "MGThreshold"
     expected_levels_lg = np.full(n_epochs, np.nan)
     expected_levels_hg = expected_levels_lg.copy()
-    expected_levels_hg[1:] = 0.16762
+    expected_levels_hg[1:] = 580.0 * 7.50e-5
     expected_levels_mg = expected_levels_lg.copy()
-    expected_levels_mg[0] = 1023.0 * 1.13e-2
+    expected_levels_mg[0] = 1023.0 * 2.93e-3
 
     var_names = ["trigger_mode_lg", "trigger_mode_mg", "trigger_mode_hg"]
     expected_modes = [expected_modes_lg, expected_modes_mg, expected_modes_hg]

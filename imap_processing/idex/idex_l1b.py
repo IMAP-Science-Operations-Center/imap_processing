@@ -335,7 +335,7 @@ def convert_waveforms(
     l1a_dataset: xr.Dataset, idex_attrs: ImapCdfAttributes
 ) -> dict[str, xr.DataArray]:
     """
-    Apply transformation from raw DN to picocoulombs (pC) for each of the six waveforms.
+    Apply the channel-specific transformation from raw DN to engineering units.
 
     Parameters
     ----------
@@ -348,17 +348,18 @@ def convert_waveforms(
     -------
     waveforms_converted : dict
         A dictionary where the keys are the waveform array names and the values are
-        xr.DataArrays representing the waveforms transformed into picocoulombs.
+        xr.DataArrays representing the converted waveforms. TOF channels are in mA;
+        target and ion-grid channels are in pC.
     """
-    waveforms_pc = {}
+    waveforms_converted = {}
 
     for var in ConversionFactors:
-        waveforms_pc[var.name] = l1a_dataset[var.name] * var.value
-        waveforms_pc[var.name].attrs = idex_attrs.get_variable_attributes(
+        waveforms_converted[var.name] = l1a_dataset[var.name] * var.value
+        waveforms_converted[var.name].attrs = idex_attrs.get_variable_attributes(
             var.name.lower()
         )
 
-    return waveforms_pc
+    return waveforms_converted
 
 
 def get_trigger_mode_and_level(

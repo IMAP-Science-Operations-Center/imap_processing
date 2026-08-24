@@ -36,6 +36,7 @@ l1b_tof_base: &l1b_tof_base
   <<: *l1b_data_base
   DEPEND_1: time_high_sample_rate_index
   LABL_PTR_1: time_high_sample_rate_label
+  UNITS: mA
 
 l1b_target_base: &l1b_target_base
   <<: *l1b_data_base
@@ -65,6 +66,7 @@ trigger_level_lg:
   <<: *trigger_base
   CATDESC: Low Gain Trigger Level threshold.
   FIELDNAM: Low Gain Trigger Level
+  UNITS: mA
 
 trigger_mode_mg:
   <<: *string_base
@@ -75,6 +77,7 @@ trigger_level_mg:
   <<: *trigger_base
   CATDESC: Mid Gain Trigger level threshold.
   FIELDNAM: Mid Gain Trigger Level
+  UNITS: mA
 
 
 trigger_mode_hg:
@@ -86,6 +89,7 @@ trigger_level_hg:
   <<: *trigger_base
   CATDESC: High Trigger Level threshold.
   FIELDNAM: High Trigger Level
+  UNITS: mA
 
 trigger_origin:
   <<: *string_base
