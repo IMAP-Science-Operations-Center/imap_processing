@@ -359,9 +359,7 @@ def test_validate_l1b_idex_data_variables(
                     ConversionFactors[cdf_var].value / legacy_tof_factors[var]
                 )
             if l1b_dataset[cdf_var].dtype == object:
-                assert (
-                    l1b_dataset[cdf_var].data == expected_data
-                ).all(), warning
+                assert (l1b_dataset[cdf_var].data == expected_data).all(), warning
 
             else:
                 np.testing.assert_array_almost_equal(
