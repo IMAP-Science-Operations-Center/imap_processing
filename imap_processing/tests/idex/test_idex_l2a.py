@@ -74,6 +74,27 @@ def test_saturated_waveform_derived_values_are_nan() -> None:
             )
 
 
+def test_saturated_derived_values_require_all_saturation_flags(caplog) -> None:
+    """Missing saturation metadata raises an informative error."""
+    dataset = xr.Dataset(
+        {
+            "target_low_impact_charge": xr.DataArray([1.0], dims="epoch"),
+            "target_low_velocity_estimate": xr.DataArray([1.0], dims="epoch"),
+            "target_low_dust_mass_estimate": xr.DataArray([1.0], dims="epoch"),
+            "target_low_saturation_flag": xr.DataArray([0], dims="epoch"),
+        },
+        coords={"epoch": [0]},
+    )
+
+    with (
+        caplog.at_level("ERROR"),
+        pytest.raises(KeyError, match="target_high_saturation_flag"),
+    ):
+        _mask_saturated_derived_estimates(dataset)
+
+    assert "Required L2A saturation flag is missing" in caplog.text
+
+
 def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
     """Function to mock signal noise (linear and sine wave) due to microphonics."""
     noise_frequency = idex_constants.TARGET_NOISE_FREQUENCY

@@ -376,6 +376,9 @@ def _mask_non_science_derived_estimates(l2a_dataset: xr.Dataset) -> None:
         L2A dataset containing the Science Event flag and derived estimates.
     """
     if "science_event_flag" not in l2a_dataset:
+        logger.debug(
+            "Science event flag is not present; skipping non-science estimate masking."
+        )
         return
 
     science_event = l2a_dataset["science_event_flag"] == 1
@@ -402,7 +405,9 @@ def _mask_saturated_derived_estimates(l2a_dataset: xr.Dataset) -> None:
     for waveform_name in ("target_low", "target_high", "ion_grid"):
         saturation_flag = f"{waveform_name}_saturation_flag"
         if saturation_flag not in l2a_dataset:
-            continue
+            message = f"Required L2A saturation flag is missing: {saturation_flag}"
+            logger.error(message)
+            raise KeyError(message)
         invalid = l2a_dataset[saturation_flag] == 1
         for estimate_name in (
             f"{waveform_name}_impact_charge",
