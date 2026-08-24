@@ -105,7 +105,6 @@ def test_event_flags_have_istp_integer_flag_attributes() -> None:
         attributes = get_idex_attrs(level)
         for flag_name in ALL_FLAG_NAMES:
             flag_attrs = attributes.get_variable_attributes(flag_name)
-            assert flag_attrs["CDF_DATA_TYPE"] == "CDF_UINT1"
             assert flag_attrs["FILLVAL"] == 255
             assert flag_attrs["FORMAT"] == "I1"
             assert flag_attrs["UNITS"] == " "

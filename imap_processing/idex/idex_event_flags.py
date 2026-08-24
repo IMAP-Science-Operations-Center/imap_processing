@@ -281,7 +281,7 @@ def _baseline_corrected(
     if not np.any(finite):
         return np.full(values.shape, np.nan), np.nan
     first_time = float(times[finite][0])
-    baseline_mask = finite & (times <= first_time + _BASELINE_WINDOW_US)
+    baseline_mask = finite & (times < first_time + _BASELINE_WINDOW_US)
     samples = values[baseline_mask]
     if samples.size == 0:
         samples = values[finite]
@@ -427,11 +427,11 @@ def _fwhm(corrected: np.ndarray, times: np.ndarray, peak_index: int) -> float:
     ):
         right += 1
     left_bracketed = (
-        left > 0
-        and np.isfinite(corrected[left - 1])
-        and corrected[left - 1] >= half_height
+        left < corrected.size - 1
         and np.isfinite(corrected[left])
         and corrected[left] < half_height
+        and np.isfinite(corrected[left + 1])
+        and corrected[left + 1] >= half_height
     )
     right_bracketed = (
         right < corrected.size - 1
