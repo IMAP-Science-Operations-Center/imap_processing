@@ -10,7 +10,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.idex.idex_constants import DT_BLOCK
+from imap_processing.idex.idex_constants import DT_BLOCK, ConversionFactors
 from imap_processing.idex.idex_l1b import (
     TRIGGER_LABELS,
     EventMessage,
@@ -332,6 +332,13 @@ def test_validate_l1b_idex_data_variables(
         event=np.arange(l1b_dataset.sizes["epoch"])
     )
     # Compare each corresponding variable
+    # The team validation file stores TOF waveforms using the legacy pC factors.
+    # Convert those reference arrays to the corrected L1B mA units before comparing.
+    legacy_tof_factors = {
+        "TOF L": 5.14e-1,
+        "TOF H": 2.89e-4,
+        "TOF M": 1.13e-2,
+    }
     for var in l1b_example_data.data_vars:
         if var not in arrays_to_skip:
             # Get the corresponding array name
@@ -346,15 +353,20 @@ def test_validate_l1b_idex_data_variables(
                 l1b_dataset[cdf_var]
             except KeyError:
                 continue
+            expected_data = np.squeeze(l1b_example_data[var])
+            if var in legacy_tof_factors:
+                expected_data = expected_data * (
+                    ConversionFactors[cdf_var].value / legacy_tof_factors[var]
+                )
             if l1b_dataset[cdf_var].dtype == object:
                 assert (
-                    l1b_dataset[cdf_var].data == np.squeeze(l1b_example_data[var])
+                    l1b_dataset[cdf_var].data == expected_data
                 ).all(), warning
 
             else:
                 np.testing.assert_array_almost_equal(
                     l1b_dataset[cdf_var].data,
-                    np.squeeze(l1b_example_data[var]),
+                    expected_data,
                     decimal=4,
                     err_msg=warning,
                 )
