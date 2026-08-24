@@ -1,13 +1,18 @@
 """Test IDEX event classification and Dust Hit flags."""
 
 import numpy as np
+import pytest
 
 from imap_processing.idex.idex_event_flags import (
+    ALL_FLAG_NAMES,
     EVENT_FLAG_NAMES,
     SATURATION_FLAG_NAMES,
+    _fwhm,
+    _saturation_aware_width,
     classify_event_flags,
     classify_saturation_flags,
 )
+from imap_processing.idex.idex_utils import get_idex_attrs
 
 
 def _waveforms(saturated: bool = False) -> tuple[np.ndarray, ...]:
@@ -94,6 +99,20 @@ def test_saturation_flags_use_channel_bit_depth_and_95_percent_limit() -> None:
     assert flags["ion_grid_saturation_flag"] == 0
 
 
+def test_event_flags_have_istp_integer_flag_attributes() -> None:
+    """All event and saturation flags use explicit ISTP-compatible metadata."""
+    for level in ("l1a", "l1b"):
+        attributes = get_idex_attrs(level)
+        for flag_name in ALL_FLAG_NAMES:
+            flag_attrs = attributes.get_variable_attributes(flag_name)
+            assert flag_attrs["CDF_DATA_TYPE"] == "CDF_UINT1"
+            assert flag_attrs["FILLVAL"] == 255
+            assert flag_attrs["FORMAT"] == "I1"
+            assert flag_attrs["UNITS"] == " "
+            assert flag_attrs["VALIDMIN"] == 0
+            assert flag_attrs["VALIDMAX"] == 1
+
+
 def test_dust_hit_requires_two_seven_sigma_peaks_and_is_saturation_aware() -> None:
     """Two qualifying peaks set Dust Hit, including saturated High fallback."""
     saturated_waveforms = _waveforms(saturated=True)
@@ -111,3 +130,44 @@ def test_dust_hit_is_not_set_for_non_science_events() -> None:
     )
     assert flags["pulser_flag"] == 1
     assert flags["dust_hit_flag"] == 0
+
+
+def test_saturation_aware_width_falls_through_invalid_mid_gain() -> None:
+    """A non-finite Mid sample falls through to a usable Low waveform."""
+    times = np.arange(9, dtype=float)
+    low = np.array([0.0, 0.0, 1.0, 3.0, 5.0, 3.0, 1.0, 0.0, 0.0])
+    high = low.copy()
+    high[4] = 1023.0
+    mid = low.copy()
+    mid[4] = np.nan
+
+    width = _saturation_aware_width(4, high, mid, low, times, high - high[0])
+
+    assert width == pytest.approx(2.5)
+
+
+def test_fwhm_rejects_truncated_boundary_peaks() -> None:
+    """A missing half-height crossing at either edge is not measurable."""
+    times = np.arange(4, dtype=float)
+    assert np.isnan(_fwhm(np.array([2.0, 2.0, 1.0, 0.0]), times, 1))
+    assert np.isnan(_fwhm(np.array([0.0, 1.0, 2.0, 2.0]), times, 2))
+
+
+def test_saturation_aware_width_rejects_invalid_peak_inputs() -> None:
+    """Invalid waveform lengths or times produce no measurable peak."""
+    values = np.ones(4)
+    assert np.isnan(
+        _saturation_aware_width(
+            1, values, values, values[:-1], np.arange(4, dtype=float), values
+        )
+    )
+    assert np.isnan(
+        _saturation_aware_width(
+            1,
+            values,
+            values,
+            values,
+            np.full(4, np.nan),
+            values,
+        )
+    )

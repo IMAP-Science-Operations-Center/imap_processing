@@ -73,7 +73,7 @@ IDEX_10_DAY_RANGES_PATH = f"{imap_module_directory}/idex/idex_10_day_CDF_names.c
 
 
 class ConversionFactors(float, Enum):
-    """Conversion factor values (DN to picocoulombs) for each of the six waveforms."""
+    """Conversion factor values (DN to picocoulombs) for each waveform."""
 
     TOF_High = 2.89e-4
     TOF_Low = 5.14e-1
@@ -81,6 +81,13 @@ class ConversionFactors(float, Enum):
     Target_Low = 1.58e1
     Target_High = 1.63e-1
     Ion_Grid = 7.46e-4
+
+
+# Constants for the ion-grid V(R) relation, where R is the ion-grid to target
+# charge ratio and velocity is returned in km/s.
+ION_GRID_VELOCITY_SCALE = 55.0
+ION_GRID_VELOCITY_EXPONENT = -3.2
+ION_GRID_VELOCITY_OFFSET = 1.5
 
 
 SPICE_ARRAYS = [

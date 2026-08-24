@@ -76,8 +76,10 @@ trigger_base: &trigger_base
 event_flag_base: &event_flag_base
   <<: *trigger_base
   CATDESC: "Boolean event classification flag."
-  FILLVAL: 0
+  CDF_DATA_TYPE: CDF_UINT1
+  FILLVAL: 255
   FORMAT: I1
+  UNITS: " "
   VALIDMAX: 1
   VALIDMIN: 0
 

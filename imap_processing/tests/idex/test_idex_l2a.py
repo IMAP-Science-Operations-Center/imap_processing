@@ -15,6 +15,7 @@ from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES
 from imap_processing.idex.idex_l2a import (
     BaselineNoiseTime,
     _mask_non_science_derived_estimates,
+    _mask_saturated_derived_estimates,
     analyze_peaks,
     butter_lowpass_filter,
     calculate_ion_grid_velocity_and_mass,
@@ -51,6 +52,26 @@ def test_non_science_derived_estimates_are_nan() -> None:
 
     for estimate in estimates:
         np.testing.assert_array_equal(dataset[estimate].values, [1.0, np.nan])
+
+
+def test_saturated_waveform_derived_values_are_nan() -> None:
+    """Saturation masks fitted charge, velocity, and mass estimates."""
+    data = {
+        f"{waveform}_{estimate}": xr.DataArray([1.0, 2.0], dims="epoch")
+        for waveform in ("target_low", "target_high", "ion_grid")
+        for estimate in ("impact_charge", "velocity_estimate", "dust_mass_estimate")
+    }
+    dataset = xr.Dataset(data, coords={"epoch": [0, 1]})
+    for waveform in ("target_low", "target_high", "ion_grid"):
+        dataset[f"{waveform}_saturation_flag"] = xr.DataArray([0, 1], dims="epoch")
+
+    _mask_saturated_derived_estimates(dataset)
+
+    for waveform in ("target_low", "target_high", "ion_grid"):
+        for estimate in ("impact_charge", "velocity_estimate", "dust_mass_estimate"):
+            np.testing.assert_array_equal(
+                dataset[f"{waveform}_{estimate}"].values, [1.0, np.nan]
+            )
 
 
 def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:

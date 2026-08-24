@@ -326,17 +326,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
         ),
     )
 
-    # Saturated channels retain their fits for diagnostics, but their derived
-    # velocity and mass products are not scientifically valid.
-    for waveform_name in ("target_low", "target_high", "ion_grid"):
-        saturation_flag = f"{waveform_name}_saturation_flag"
-        if saturation_flag in l2a_dataset:
-            invalid = l2a_dataset[saturation_flag] == 1
-            for estimate_name in (
-                f"{waveform_name}_velocity_estimate",
-                f"{waveform_name}_dust_mass_estimate",
-            ):
-                l2a_dataset[estimate_name] = l2a_dataset[estimate_name].where(~invalid)
+    _mask_saturated_derived_estimates(l2a_dataset)
 
     _mask_non_science_derived_estimates(l2a_dataset)
 
@@ -395,6 +385,31 @@ def _mask_non_science_derived_estimates(l2a_dataset: xr.Dataset) -> None:
             f"{waveform_name}_dust_mass_estimate",
         ):
             l2a_dataset[estimate_name] = l2a_dataset[estimate_name].where(science_event)
+
+
+def _mask_saturated_derived_estimates(l2a_dataset: xr.Dataset) -> None:
+    """Mask fitted charges and derived estimates for saturated waveforms.
+
+    Fit parameters remain available for diagnostics. Impact charge, velocity,
+    and mass estimates are not scientifically valid when their source waveform
+    is saturated.
+
+    Parameters
+    ----------
+    l2a_dataset : xarray.Dataset
+        L2A dataset containing waveform saturation flags and derived estimates.
+    """
+    for waveform_name in ("target_low", "target_high", "ion_grid"):
+        saturation_flag = f"{waveform_name}_saturation_flag"
+        if saturation_flag not in l2a_dataset:
+            continue
+        invalid = l2a_dataset[saturation_flag] == 1
+        for estimate_name in (
+            f"{waveform_name}_impact_charge",
+            f"{waveform_name}_velocity_estimate",
+            f"{waveform_name}_dust_mass_estimate",
+        ):
+            l2a_dataset[estimate_name] = l2a_dataset[estimate_name].where(~invalid)
 
 
 def calculate_velocity_and_mass(
@@ -481,10 +496,12 @@ def calculate_ion_grid_velocity_and_mass(
     if target_charge <= 0.0 or ion_grid_charge <= 0.0:
         return np.nan, np.nan
 
-    # SPECIAL NOTE: The constants for the V(R) equation may need to be moved
-    # to idex_constants.py once the calibration is finalized.
     charge_ratio = ion_grid_charge / target_charge
-    velocity_estimate = 55.0 * charge_ratio**-3.2 + 1.5
+    velocity_estimate = (
+        idex_constants.ION_GRID_VELOCITY_SCALE
+        * charge_ratio**idex_constants.ION_GRID_VELOCITY_EXPONENT
+        + idex_constants.ION_GRID_VELOCITY_OFFSET
+    )
     mass_estimate = calculate_mass_from_velocity(
         target_charge, velocity_estimate, yield_params
     )

@@ -92,8 +92,8 @@ def _select_target_values(
 
     Target high is preferred whenever it is not saturated. Target low is used
     only when target high is saturated. Events for which both target channels
-    are saturated receive NaN values; no additional validity filtering is
-    performed here.
+    are saturated receive NaN values. Finite-fit fallback selection is deferred
+    to a later L2B update.
 
     Parameters
     ----------

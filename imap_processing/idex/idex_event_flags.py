@@ -338,15 +338,35 @@ def _saturation_aware_width(
     float
         Full width at half maximum in microseconds, or NaN if unavailable.
     """
+    if (
+        high.size != mid.size
+        or high.size != low.size
+        or high.size != times.size
+        or high_corrected.size != high.size
+        or peak_index < 0
+        or peak_index >= high.size
+    ):
+        return np.nan
+
     peak_time = float(times[peak_index])
+    if not np.isfinite(peak_time):
+        return np.nan
     if not _is_saturated(float(high[peak_index])):
         return _fwhm(high_corrected, times, peak_index)
 
     for waveform in (mid, low):
-        index = int(np.nanargmin(np.abs(times - peak_time)))
+        finite_times = np.isfinite(times)
+        if not np.any(finite_times):
+            continue
+        distances = np.where(finite_times, np.abs(times - peak_time), np.inf)
+        index = int(np.argmin(distances))
+        sample = float(waveform[index])
+        if not np.isfinite(sample) or _is_saturated(sample):
+            continue
         corrected, _ = _baseline_corrected(waveform, times)
-        if not _is_saturated(float(waveform[index])):
-            return _fwhm(corrected, times, index)
+        width = _fwhm(corrected, times, index)
+        if np.isfinite(width):
+            return width
     return np.nan
 
 
@@ -383,6 +403,15 @@ def _fwhm(corrected: np.ndarray, times: np.ndarray, peak_index: int) -> float:
     float
         Full width at half maximum in microseconds, or NaN if unavailable.
     """
+    if (
+        corrected.ndim != 1
+        or times.ndim != 1
+        or corrected.size != times.size
+        or peak_index < 0
+        or peak_index >= corrected.size
+    ):
+        return np.nan
+
     peak_height = float(corrected[peak_index])
     if not np.isfinite(peak_height) or peak_height <= 0.0:
         return np.nan
@@ -397,7 +426,21 @@ def _fwhm(corrected: np.ndarray, times: np.ndarray, peak_index: int) -> float:
         and corrected[right] >= half_height
     ):
         right += 1
-    if peak_index in (left, right):
+    left_bracketed = (
+        left > 0
+        and np.isfinite(corrected[left - 1])
+        and corrected[left - 1] >= half_height
+        and np.isfinite(corrected[left])
+        and corrected[left] < half_height
+    )
+    right_bracketed = (
+        right < corrected.size - 1
+        and np.isfinite(corrected[right - 1])
+        and corrected[right - 1] >= half_height
+        and np.isfinite(corrected[right])
+        and corrected[right] < half_height
+    )
+    if not left_bracketed or not right_bracketed:
         return np.nan
     left_time = _crossing_time(corrected, times, left, left + 1, half_height)
     right_time = _crossing_time(corrected, times, right - 1, right, half_height)
