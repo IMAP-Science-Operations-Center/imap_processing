@@ -85,21 +85,22 @@ LAT_BINS_EDGES = SKY_GRID.el_bin_edges
 IDEX_INT_FILLVAL = np.iinfo(np.int64).min
 
 
-def idex_l2b(
-    l2a_datasets: list[xr.Dataset], msg_data_l1b: list[xr.Dataset]
-) -> list[xr.Dataset]:
+def idex_l2b(l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset) -> list[xr.Dataset]:
     """
     Will process IDEX l2a data to create l2b and l2c data products.
 
     IDEX L2B processing creates L2b and L2c at the same time because L2c needs no
     additional dependencies and is a natural extension of L2b processing.
 
+    L2A and L2B are both processed on the same IDEX 10-day cadence, so a single L2A
+    dataset (spanning one 10-day window) maps 1:1 to a single L2B/L2C output.
+
     Parameters
     ----------
-    l2a_datasets : list[xarray.Dataset]
-        IDEX L2a datasets to process.
-    msg_data_l1b : list[xarray.Dataset]
-        List of IDEX L1B event message datasets.
+    l2a_dataset : xarray.Dataset
+        IDEX L2a dataset to process, spanning a single 10-day window.
+    msg_data_l1b : xarray.Dataset
+        IDEX L1B event message dataset, spanning a single 10-day window.
 
     Returns
     -------
@@ -108,7 +109,7 @@ def idex_l2b(
         metadata.
     """
     logger.info(
-        "Running IDEX L2B and L2C processing on L2a datasets. NOTE: L2C datasets are "
+        "Running IDEX L2B and L2C processing on L2a dataset. NOTE: L2C datasets are "
         "processed at the same time as L2B datasets because L2C needs no additional "
         "dependencies."
     )
@@ -118,10 +119,6 @@ def idex_l2b(
     msg_ds = (
         xr.concat(msg_data_l1b, dim="epoch").sortby("epoch").drop_duplicates("epoch")
     )
-    # Concat all the l2a datasets together. All l2a datasets passed in are expected to
-    # belong to the same IDEX 10-day window, so counts and rates are aggregated across
-    # the entire window into a single record.
-    l2a_dataset = xr.concat(l2a_datasets, dim="epoch")
     (
         counts_by_charge,
         counts_by_mass,

@@ -48,9 +48,10 @@ def l2b_and_l2c_datasets(l2a_dataset: xr.Dataset, test_l1b_msg) -> list[xr.Datas
     )  # Add a second dataset with different epoch values for testing
     l1b_msg_dataset2["epoch"] = l1b_msg_dataset2["epoch"] + NANOSECONDS_IN_DAY
     l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + NANOSECONDS_IN_DAY
-    datasets = idex_l2b(
-        [l2a_dataset, l2a_dataset2], [test_l1b_msg.copy(), l1b_msg_dataset2]
-    )
+    # idex_l2b takes a single L2A dataset spanning one 10-day window. Concat the two
+    # simulated days together here to exercise a multi-day window.
+    combined_l2a_dataset = xr.concat([l2a_dataset, l2a_dataset2], dim="epoch")
+    datasets = idex_l2b(combined_l2a_dataset, [test_l1b_msg.copy(), l1b_msg_dataset2])
     return datasets
 
 
