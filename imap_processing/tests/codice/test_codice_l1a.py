@@ -455,9 +455,6 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
         )
     )
     val_data = load_cdf(val_path)
-    processed_data = processed_data.isel(epoch=slice(3, -1))
-    val_data = val_data.isel(epoch=slice(0, -1))
-    val_data = val_data.isel(record0=slice(0, -1))
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
             processed_data[variable].values,

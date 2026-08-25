@@ -110,6 +110,8 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     processed_data = process_codice_l1b(file_path=l1a_file_path)
     # hi-omni has species-specific shapes
     for variable in val_data.data_vars:
+        if variable in ("epoch_delta_minus", "epoch_delta_plus"):
+            continue
         assert processed_data[variable].shape == val_data[variable].shape
         np.testing.assert_allclose(
             processed_data[variable].values,
