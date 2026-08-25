@@ -405,9 +405,9 @@ def _mask_saturated_derived_estimates(l2a_dataset: xr.Dataset) -> None:
     for waveform_name in ("target_low", "target_high", "ion_grid"):
         saturation_flag = f"{waveform_name}_saturation_flag"
         if saturation_flag not in l2a_dataset:
-            message = f"Required L2A saturation flag is missing: {saturation_flag}"
-            logger.error(message)
-            raise KeyError(message)
+            raise KeyError(
+                f"Required L2A saturation flag is missing: {saturation_flag}"
+            )
         invalid = l2a_dataset[saturation_flag] == 1
         for estimate_name in (
             f"{waveform_name}_impact_charge",

@@ -74,7 +74,7 @@ def test_saturated_waveform_derived_values_are_nan() -> None:
             )
 
 
-def test_saturated_derived_values_require_all_saturation_flags(caplog) -> None:
+def test_saturated_derived_values_require_all_saturation_flags() -> None:
     """Missing saturation metadata raises an informative error."""
     dataset = xr.Dataset(
         {
@@ -86,13 +86,8 @@ def test_saturated_derived_values_require_all_saturation_flags(caplog) -> None:
         coords={"epoch": [0]},
     )
 
-    with (
-        caplog.at_level("ERROR"),
-        pytest.raises(KeyError, match="target_high_saturation_flag"),
-    ):
+    with pytest.raises(KeyError, match="target_high_saturation_flag"):
         _mask_saturated_derived_estimates(dataset)
-
-    assert "Required L2A saturation flag is missing" in caplog.text
 
 
 def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:

@@ -3,9 +3,11 @@ double_fillval: &double_fillval -1.0E+31
 
 event_flag_base: &event_flag_base
   CATDESC: Boolean event classification flag.
+  CDF_DATA_TYPE: CDF_UINT1
   DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:QualityFlag
-  FILLVAL: 0
+  DISPLAY_TYPE: time_series
+  FILLVAL: 255
   FORMAT: I1
   LABLAXIS: " "
   UNITS: " "
