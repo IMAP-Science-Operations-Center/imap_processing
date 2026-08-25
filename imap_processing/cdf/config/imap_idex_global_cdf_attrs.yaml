@@ -55,13 +55,13 @@ imap_idex_l2a_sci:
 imap_idex_l2b_sci:
   <<: *instrument_base
   Data_level: 2B
-  Data_type: L2B_SCI-1MO>Level-2B Science Monthly Data
-  Logical_source: imap_idex_l2b_sci-1mo
-  Logical_source_description: IMAP Mission IDEX Instrument Level-2B Monthly Data
+  Data_type: L2B_SCI-10DAYS>Level-2B Science 10-Day Data
+  Logical_source: imap_idex_l2b_sci-10days
+  Logical_source_description: IMAP Mission IDEX Instrument Level-2B 10-Day Data
 
 imap_idex_l2c_sci-rectangular:
   <<: *instrument_base
   Data_level: 2C
-  Data_type: L2C_RECTANGULAR-MAP-1MO>Level-2C Rectangular Map Monthly Data
-  Logical_source: imap_idex_l2c_rectangular-map-1mo
-  Logical_source_description: IMAP Mission IDEX Instrument Level-2C Rectangular Map Monthly Data
+  Data_type: L2C_RECTANGULAR-MAP-10DAYS>Level-2C Rectangular Map 10-Day Data
+  Logical_source: imap_idex_l2c_rectangular-map-10days
+  Logical_source_description: IMAP Mission IDEX Instrument Level-2C Rectangular Map 10-Day Data

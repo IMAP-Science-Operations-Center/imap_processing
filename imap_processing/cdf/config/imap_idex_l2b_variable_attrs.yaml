@@ -118,7 +118,7 @@ base_agnostic: &base_agnostic
 
 rate_by_charge:
     <<: *base_charge
-    CATDESC: Count rate in s^-1 by impact charge and spin phase.
+    CATDESC: Count rate by impact charge and spin phase over the 10-day window.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate by Charge
     FILLVAL: *double_fillval
@@ -126,7 +126,7 @@ rate_by_charge:
 
 rate_by_mass:
     <<: *base_mass
-    CATDESC: Count rate in s^-1 by mass and spin phase.
+    CATDESC: Count rate by mass and spin phase over the 10-day window.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate by Mass
     FILLVAL: *double_fillval
@@ -150,7 +150,7 @@ counts_by_mass:
 
 counts:
     <<: *base_agnostic
-    CATDESC: Count of dust impacts by spin phase.
+    CATDESC: Count of dust impacts by spin phase over the 10-day window.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
     FIELDNAM: Counts
     FORMAT: I8
@@ -158,25 +158,11 @@ counts:
 
 rate:
     <<: *base_agnostic
-    CATDESC: Dust impact count rate by spin phase.
+    CATDESC: Dust impact count rate by spin phase over the 10-day window.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate
     FILLVAL: *double_fillval
     UNITS: s^-1
-
-impact_day_of_year:
-    CATDESC: The unique day of the years when dust impacts occurred.
-    DEPEND_0: epoch
-    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
-    DISPLAY_TYPE: time_series
-    FIELDNAM: Impact Day of Year
-    FILLVAL: *int_fillval
-    FORMAT: I3
-    LABLAXIS: Impact DOY
-    UNITS: days
-    VALIDMAX: 366
-    VALIDMIN: 1
-    VAR_TYPE: data
 
 rate_calculation_quality_flags:
   CATDESC: Quality flag for rate calculation (1 = good, 0 = insufficient IDEX uptime data)
