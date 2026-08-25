@@ -35,6 +35,7 @@ from numpy._typing import NDArray
 from imap_processing.ena_maps.ena_maps import SkyTilingType
 from imap_processing.ena_maps.utils.spatial_utils import AzElSkyGrid
 from imap_processing.idex.idex_constants import (
+    FG_TO_KG,
     IDEX_EVENT_REFERENCE_FRAME,
     IDEX_SPACING_DEG,
     SECONDS_IN_DAY,
@@ -83,55 +84,6 @@ LON_BINS_EDGES = SKY_GRID.az_bin_edges
 LAT_BINS_EDGES = SKY_GRID.el_bin_edges
 
 IDEX_INT_FILLVAL = np.iinfo(np.int64).min
-
-
-def _select_target_values(
-    l2a_dataset: xr.Dataset, event_indices: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """Select target charge and mass from the highest-gain valid channel.
-
-    Target high is preferred whenever it is not saturated. Target low is used
-    only when target high is saturated. Events for which both target channels
-    are saturated receive NaN values. Finite-fit fallback selection is deferred
-    to a later L2B update.
-
-    Parameters
-    ----------
-    l2a_dataset : xarray.Dataset
-        IDEX L2A dataset containing target estimates and saturation flags.
-    event_indices : np.ndarray
-        Indices of events for which values should be selected.
-
-    Returns
-    -------
-    tuple[np.ndarray, np.ndarray]
-        Selected target mass and charge values.
-    """
-    target_high_saturated = (
-        l2a_dataset["target_high_saturation_flag"].data[event_indices] == 1
-    )
-    target_low_saturated = (
-        l2a_dataset["target_low_saturation_flag"].data[event_indices] == 1
-    )
-
-    use_target_high = ~target_high_saturated
-    use_target_low = target_high_saturated & ~target_low_saturated
-
-    mass_values = np.full(event_indices.size, np.nan)
-    charge_values = np.full(event_indices.size, np.nan)
-    mass_values[use_target_high] = l2a_dataset["target_high_dust_mass_estimate"].data[
-        event_indices[use_target_high]
-    ]
-    charge_values[use_target_high] = l2a_dataset["target_high_impact_charge"].data[
-        event_indices[use_target_high]
-    ]
-    mass_values[use_target_low] = l2a_dataset["target_low_dust_mass_estimate"].data[
-        event_indices[use_target_low]
-    ]
-    charge_values[use_target_low] = l2a_dataset["target_low_impact_charge"].data[
-        event_indices[use_target_low]
-    ]
-    return mass_values, charge_values
 
 
 def idex_l2b(
@@ -487,18 +439,16 @@ def compute_counts_by_charge_and_mass(
         ]
         # Set the epoch for the current day to be the mean epoch of the day.
         daily_epoch[i] = np.mean(l2a_dataset["epoch"].data[current_day_indices])
-        science_and_dust = (
-            l2a_dataset["science_event_flag"].data[current_day_indices] == 1
-        ) & (l2a_dataset["dust_hit_flag"].data[current_day_indices] == 1)
-        current_day_indices = current_day_indices[science_and_dust]
-        mass_vals, charge_vals = _select_target_values(l2a_dataset, current_day_indices)
+        mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[
+            current_day_indices
+        ]
+        charge_vals = l2a_dataset["target_low_impact_charge"].data[current_day_indices]
         spin_phase_angles = l2a_dataset["spin_phase"].data[current_day_indices]
         # Make sure longitude values are in the range [0, 360)
         longitude = np.mod(l2a_dataset["longitude"].data[current_day_indices], 360)
         latitude = l2a_dataset["latitude"].data[current_day_indices]
-        # L2A masses and the L2B bin edges are both in kg. L2A charges and the
-        # L2B bin edges are both in pC, so neither quantity needs conversion.
-        mass_vals = np.atleast_1d(mass_vals)
+        # Convert units
+        mass_vals = FG_TO_KG * np.atleast_1d(mass_vals)
         # Bin spin phases
         binned_spin_phase = bin_spin_phases(spin_phase_angles)
         # Clip arrays to ensure that the values are within the valid range of bins.

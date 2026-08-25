@@ -8,6 +8,7 @@ from numpy.testing import assert_array_equal
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_constants import (
+    FG_TO_KG,
     IDEX_SPACING_DEG,
     NANOSECONDS_IN_DAY,
     SECONDS_IN_DAY,
@@ -280,13 +281,7 @@ def test_compute_counts_by_charge_and_mass():
     l2a_dataset = xr.Dataset(
         {
             "epoch": epochs,
-            "science_event_flag": np.ones(6, dtype=np.uint8),
-            "dust_hit_flag": np.ones(6, dtype=np.uint8),
-            "target_high_saturation_flag": np.ones(6, dtype=np.uint8),
-            "target_low_saturation_flag": np.zeros(6, dtype=np.uint8),
-            "target_high_dust_mass_estimate": np.full(6, np.nan),
-            "target_high_impact_charge": np.full(6, np.nan),
-            "target_low_dust_mass_estimate": MASS_BIN_EDGES[:6] + 1e-21,
+            "target_low_dust_mass_estimate": ((MASS_BIN_EDGES / FG_TO_KG)[:6] + 1e-5),
             "target_low_impact_charge": CHARGE_BIN_EDGES[:6],
             "spin_phase": np.full((6,), 0),
             "longitude": np.full(6, 5),
@@ -352,15 +347,10 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
     l2a_dataset = xr.Dataset(
         {
             "epoch": epochs,
-            "science_event_flag": np.ones(2, dtype=np.uint8),
-            "dust_hit_flag": np.ones(2, dtype=np.uint8),
-            "target_high_saturation_flag": np.ones(2, dtype=np.uint8),
-            "target_low_saturation_flag": np.zeros(2, dtype=np.uint8),
-            "target_high_dust_mass_estimate": np.full(2, np.nan),
-            "target_high_impact_charge": np.full(2, np.nan),
             "target_low_dust_mass_estimate": np.array(
-                [MASS_BIN_EDGES[0] - 1e-21, MASS_BIN_EDGES[-1] + 1e-21]
-            ),
+                [MASS_BIN_EDGES[0] - 1e-05, MASS_BIN_EDGES[-1] + 1e-05]
+            )
+            / FG_TO_KG,
             "target_low_impact_charge": np.array(
                 [CHARGE_BIN_EDGES[0] - 1e-05, CHARGE_BIN_EDGES[-1] + 1e-05]
             ),
@@ -408,60 +398,6 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
     np.testing.assert_array_equal(counts_by_mass, expected_array)
     np.testing.assert_array_equal(charge_map, expected_map_array)
     np.testing.assert_array_equal(mass_map, expected_map_array)
-
-
-def test_compute_counts_masks_non_science_and_non_dust_events():
-    """Only science dust-hit events contribute to L2B/L2C counts."""
-    epochs = np.array([1, 1, 1]) * NANOSECONDS_IN_DAY
-    l2a_dataset = xr.Dataset(
-        {
-            "epoch": epochs,
-            "science_event_flag": [1, 0, 1],
-            "dust_hit_flag": [1, 1, 0],
-            "target_high_saturation_flag": [0, 0, 0],
-            "target_low_saturation_flag": [0, 0, 0],
-            "target_high_dust_mass_estimate": [MASS_BIN_EDGES[0], 0, 0],
-            "target_high_impact_charge": [CHARGE_BIN_EDGES[0], 0, 0],
-            "target_low_dust_mass_estimate": [0, 0, 0],
-            "target_low_impact_charge": [0, 0, 0],
-            "spin_phase": [0, 0, 0],
-            "longitude": [5, 5, 5],
-            "latitude": [0, 0, 0],
-        }
-    )
-    results = compute_counts_by_charge_and_mass(l2a_dataset, np.array([2]))
-
-    assert results[0].sum() == 1
-    assert results[1].sum() == 1
-    assert results[2].sum() == 1
-    assert results[3].sum() == 1
-
-
-def test_compute_counts_prefers_unsaturated_target_high():
-    """Target-high values are selected when target-low is also available."""
-    epochs = np.array([1, 1]) * NANOSECONDS_IN_DAY
-    l2a_dataset = xr.Dataset(
-        {
-            "epoch": epochs,
-            "science_event_flag": [1, 1],
-            "dust_hit_flag": [1, 1],
-            "target_high_saturation_flag": [0, 1],
-            "target_low_saturation_flag": [0, 0],
-            "target_high_dust_mass_estimate": [MASS_BIN_EDGES[0], 0],
-            "target_high_impact_charge": [CHARGE_BIN_EDGES[0], 0],
-            "target_low_dust_mass_estimate": [MASS_BIN_EDGES[-2], MASS_BIN_EDGES[1]],
-            "target_low_impact_charge": [CHARGE_BIN_EDGES[-2], CHARGE_BIN_EDGES[1]],
-            "spin_phase": [0, 0],
-            "longitude": [5, 5],
-            "latitude": [0, 0],
-        }
-    )
-    results = compute_counts_by_charge_and_mass(l2a_dataset, np.array([2]))
-
-    assert results[0].sum() == 2
-    assert results[1].sum() == 2
-    assert results[0][0, 0, 0] == 1
-    assert results[0][0, 1, 0] == 1
 
 
 def test_compute_rates_by_charge_and_mass():
