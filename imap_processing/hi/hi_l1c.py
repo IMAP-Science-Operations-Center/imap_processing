@@ -408,7 +408,8 @@ def add_pset_geometric_factor(
         geometric_factor_var["geometric_factor"].values[0] = gain_factor_da.transpose(
             "esa_energy_step", "calibration_prod"
         ).values
-    return pset_ds.update(geometric_factor_var)
+    pset_ds.update(geometric_factor_var)
+    return pset_ds
 
 
 def pset_counts(
