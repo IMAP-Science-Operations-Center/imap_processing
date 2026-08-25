@@ -74,14 +74,18 @@ trigger_base: &trigger_base
   VAR_TYPE: support_data
 
 event_flag_base: &event_flag_base
-  <<: *trigger_base
   CATDESC: "Boolean event classification flag."
   CDF_DATA_TYPE: CDF_UINT1
+  DEPEND_0: epoch
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ""
   FILLVAL: 255
   FORMAT: I1
+  LABLAXIS: ""
   UNITS: " "
   VALIDMAX: 1
   VALIDMIN: 0
+  VAR_TYPE: support_data
 
 # <=== LABL_PTR_i Attributes ===>
 time_high_sample_rate_label:

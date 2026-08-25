@@ -110,6 +110,9 @@ def test_event_flags_have_istp_integer_flag_attributes() -> None:
             assert flag_attrs["UNITS"] == " "
             assert flag_attrs["VALIDMIN"] == 0
             assert flag_attrs["VALIDMAX"] == 1
+            if level == "l1a":
+                assert flag_attrs["VAR_TYPE"] == "support_data"
+                assert flag_attrs["DISPLAY_TYPE"] == "no_plot"
 
 
 def test_dust_hit_requires_two_seven_sigma_peaks_and_is_saturation_aware() -> None:

@@ -1042,7 +1042,7 @@ class RawDustEvent:
         )
         for name in ALL_FLAG_NAMES:
             data_vars[name] = xr.DataArray(
-                data=[event_flags[name]],
+                data=np.asarray([event_flags[name]], dtype=np.uint8),
                 dims=("epoch"),
                 name=name,
                 attrs=idex_attrs.get_variable_attributes(name),
