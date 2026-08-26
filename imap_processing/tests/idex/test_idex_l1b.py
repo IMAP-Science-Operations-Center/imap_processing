@@ -10,7 +10,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.idex.idex_constants import DT_BLOCK
+from imap_processing.idex.idex_constants import DT_BLOCK, ConversionFactors
 from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES, EVENT_FLAG_NAMES
 from imap_processing.idex.idex_l1b import (
     TRIGGER_LABELS,
@@ -103,17 +103,14 @@ def test_idex_waveform_units(l1b_dataset: xr.Dataset):
         assert l1b_dataset[var_name].attrs["UNITS"] == row["unit"]
 
     # Check waveform units
-    waveform_var_names = [
-        "TOF_High",
-        "TOF_Low",
-        "TOF_Mid",
-        "Ion_Grid",
-        "Target_Low",
-        "Target_High",
-    ]
+    for var_name in ("TOF_High", "TOF_Low", "TOF_Mid"):
+        assert l1b_dataset[var_name].attrs["UNITS"] == "mA"
 
-    for var_name in waveform_var_names:
+    for var_name in ("Ion_Grid", "Target_Low", "Target_High"):
         assert l1b_dataset[var_name].attrs["UNITS"] == "pC"
+
+    for var_name in ("trigger_level_lg", "trigger_level_mg", "trigger_level_hg"):
+        assert l1b_dataset[var_name].attrs["UNITS"] == "mA"
 
 
 def test_unpack_instrument_settings():
@@ -180,9 +177,9 @@ def test_get_trigger_settings_success(decom_test_data_sci):
     expected_modes_mg[0] = "MGThreshold"
     expected_levels_lg = np.full(n_epochs, np.nan)
     expected_levels_hg = expected_levels_lg.copy()
-    expected_levels_hg[1:] = 0.16762
+    expected_levels_hg[1:] = 580.0 * 7.50e-5
     expected_levels_mg = expected_levels_lg.copy()
-    expected_levels_mg[0] = 1023.0 * 1.13e-2
+    expected_levels_mg[0] = 1023.0 * 2.93e-3
 
     var_names = ["trigger_mode_lg", "trigger_mode_mg", "trigger_mode_hg"]
     expected_modes = [expected_modes_lg, expected_modes_mg, expected_modes_hg]
@@ -346,6 +343,13 @@ def test_validate_l1b_idex_data_variables(
         event=np.arange(l1b_dataset.sizes["epoch"])
     )
     # Compare each corresponding variable
+    # The team validation file stores TOF waveforms using the legacy pC factors.
+    # Convert those reference arrays to the corrected L1B mA units before comparing.
+    legacy_tof_factors = {
+        "TOF L": 5.14e-1,
+        "TOF H": 2.89e-4,
+        "TOF M": 1.13e-2,
+    }
     for var in l1b_example_data.data_vars:
         if var not in arrays_to_skip:
             # Get the corresponding array name
@@ -360,15 +364,20 @@ def test_validate_l1b_idex_data_variables(
                 l1b_dataset[cdf_var]
             except KeyError:
                 continue
+            expected_data = np.squeeze(l1b_example_data[var])
+            if var in legacy_tof_factors:
+                expected_data = expected_data * (
+                    ConversionFactors[cdf_var].value / legacy_tof_factors[var]
+                )
             if l1b_dataset[cdf_var].dtype == object:
                 assert (
-                    l1b_dataset[cdf_var].data == np.squeeze(l1b_example_data[var])
+                    l1b_dataset[cdf_var].data == expected_data
                 ).all(), warning
 
             else:
                 np.testing.assert_array_almost_equal(
                     l1b_dataset[cdf_var].data,
-                    np.squeeze(l1b_example_data[var]),
+                    expected_data,
                     decimal=4,
                     err_msg=warning,
                 )
