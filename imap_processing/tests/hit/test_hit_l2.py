@@ -34,6 +34,7 @@ from imap_processing.hit.l2.hit_l2 import (
     process_standard_intensity,
     process_summed_intensity,
     reshape_for_sectored,
+    transform_to_10_minute_chunks,
 )
 
 EXPECTED_STANDARD_LABLAXIS = {
@@ -791,6 +792,76 @@ def test_process_macropixel_intensity(
         assert (
             f"{particle}_energy_delta_plus" in l2_sectored_intensity_dataset.data_vars
         )
+
+
+def test_transform_to_10_minute_chunks():
+    """Test that transform_to_10_minute_chunks correctly regroups one-minute
+    macropixel records into 10-minute chunks and re-centers the epoch."""
+    n_minutes = 20
+    minute_ns = 60_000_000_000
+    epochs = np.arange(n_minutes, dtype=np.int64) * minute_ns
+
+    # Each species/energy combination occupies one fixed minute slot within
+    # every 10-record group, in this order (mirrors the physical packet
+    # cadence handled by transform_to_10_minute_chunks).
+    species_energy = [
+        ("h", 3),
+        ("he4", 2),
+        ("cno", 2),
+        ("nemgsi", 2),
+        ("fe", 1),
+    ]
+
+    data_vars = {}
+    slot_for = {}
+    species_i = 0
+    for species, num_energy_levels in species_energy:
+        energy_dim = f"{species}_energy_mean"
+        values = np.array(
+            [[m * 100 + e for e in range(num_energy_levels)] for m in range(n_minutes)],
+            dtype=np.float32,
+        )
+        data_vars[f"{species}_macropixel_intensity"] = (("epoch", energy_dim), values)
+        for energy_i in range(num_energy_levels):
+            slot_for[(species, energy_i)] = species_i
+            species_i += 1
+
+    macropixel_dataset = xr.Dataset(data_vars, coords={"epoch": epochs})
+
+    result = transform_to_10_minute_chunks(macropixel_dataset)
+
+    n_chunks = n_minutes // 10
+    assert len(result["epoch"]) == n_chunks
+
+    # epoch_delta is always half of a 10-minute chunk.
+    expected_epoch_delta = np.full(
+        n_chunks, SECONDS_PER_10_MIN * 1_000_000_000 // 2, dtype=np.int64
+    )
+    np.testing.assert_array_equal(result["epoch_delta"].values, expected_epoch_delta)
+
+    # Each new epoch is centered on its 10-minute group, then shifted back by
+    # a full 10-minute chunk.
+    for chunk in range(n_chunks):
+        start = epochs[chunk * 10]
+        end = epochs[chunk * 10 + 9]
+        expected_epoch = start + (end - start) // 2 - SECONDS_PER_10_MIN * 1_000_000_000
+        assert result["epoch"].values[chunk] == expected_epoch
+
+    # Each species/energy variable should pull its value from the minute slot
+    # it physically occupies within every 10-record group.
+    for species, num_energy_levels in species_energy:
+        var = f"{species}_macropixel_intensity"
+        for energy_i in range(num_energy_levels):
+            slot = slot_for[(species, energy_i)]
+            expected = np.array(
+                [(chunk * 10 + slot) * 100 + energy_i for chunk in range(n_chunks)],
+                dtype=np.float32,
+            )
+            np.testing.assert_array_equal(
+                result[var].values[:, energy_i],
+                expected,
+                err_msg=f"Mismatch for {var} energy index {energy_i}",
+            )
 
 
 def test_process_summed_intensity(l1b_summed_rates_dataset, ancillary_dependencies):
