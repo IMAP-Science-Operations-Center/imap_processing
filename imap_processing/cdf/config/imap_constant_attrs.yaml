@@ -23,14 +23,11 @@ epoch:
 
 epoch_delta:
   CATDESC: Epoch delta
-  DATA_TYPE: CDF_INT8
   DEPEND_0: epoch
   FIELDNAM: Epoch Delta
   FILLVAL: -9223372036854775808
   FORMAT: I19
   LABLAXIS: Epoch delta
-  NAME: epoch_delta
-  RECORD_VARYING: RV
   SCALETYP: linear
   UNITS: ns
   VALIDMAX: 86000000000000
