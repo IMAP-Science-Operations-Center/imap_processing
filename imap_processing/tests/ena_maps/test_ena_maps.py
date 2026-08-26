@@ -192,8 +192,9 @@ class TestHiPointingSet:
         np.testing.assert_array_equal(hi_pset.az_el_points.shape, (3600, 2))
         # check that the midpoint_j2000_et property is equal to the expected value
         assert hi_pset.midpoint_j2000_et == ttj2000ns_to_et(hi_pset.epoch + delta / 2)
-        for var_name in ["exposure_factor", "bg_rate", "bg_rate_sys_err"]:
+        for var_name in ["exposure_factor", "bg_rate", "bg_rate_sys_err", "ena_count"]:
             assert var_name in hi_pset.data
+        assert "counts" not in hi_pset.data
 
     def test_from_cdf(self, hi_pset_cdf_path):
         """Test coverage for instantiating HiPointingSet from cdf."""
@@ -208,8 +209,8 @@ class TestHiPointingSet:
         rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=2, spice_frame=geometry.SpiceFrame.IMAP_HAE
         )
-        rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_factor"])
-        assert rect_map.data_1d["counts"].max() > 0
+        rect_map.project_pset_values_to_map(hi_pset, ["ena_count", "exposure_factor"])
+        assert rect_map.data_1d["ena_count"].max() > 0
 
 
 @pytest.fixture

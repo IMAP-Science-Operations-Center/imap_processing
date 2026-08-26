@@ -195,6 +195,7 @@ class MapDescriptor:
             "ena_intensity_sys_err": "Inten Sys. Err.",
             "ena_intensity_sys_err_minus": "Inten Sys. Err. Lower",
             "ena_intensity_sys_err_plus": "Inten Sys. Err. Upper",
+            "ena_intensity_calibration_sys_err": "Inten Calibration Sys. Err.",
             "ena_spectral_index": "Spectral Index",
             "ena_spectral_index_stat_uncert": "Spectral Stat. Unc.",
             "ena_spectral_scalar": "Spectral Scalar",

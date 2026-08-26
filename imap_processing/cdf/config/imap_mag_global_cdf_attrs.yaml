@@ -88,124 +88,124 @@ imap_mag_l1d_norm-rtn:
     <<: *default
     Data_type: L1D_norm-rtn>Level 1D normal rate data in RTN
     Logical_source: imap_mag_l1d_norm-rtn
-    Logical_source_description: IMAP Mission Normal Rate Instrument Level-1D Data in
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1D Data in
         Radial-Tangential-Normal Reference Frame.
 
 imap_mag_l1d_burst-rtn:
     <<: *default
     Data_type: L1D_burst-rtn>Level 1D burst rate data in RTN
     Logical_source: imap_mag_l1d_burst-rtn
-    Logical_source_description: IMAP Mission Burst Rate Instrument Level-1D Data in
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1D Data in
         Radial-Tangential-Normal Reference Frame.
 
 imap_mag_l1d_norm-gse:
     <<: *default
     Data_type: L1D_norm-gse>Level 1D normal rate data in GSE
     Logical_source: imap_mag_l1d_norm-gse
-    Logical_source_description: IMAP Mission Normal Rate Instrument Level-1D Data in
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1D Data in
         Geocentric Solar Ecliptic Reference Frame.
 
 imap_mag_l1d_burst-gse:
     <<: *default
     Data_type: L1D_burst-gse>Level 1D burst rate data in GSE
     Logical_source: imap_mag_l1d_burst-gse
-    Logical_source_description: IMAP Mission Burst Rate Instrument Level-1D Data in
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1D Data in
         Geocentric Solar Ecliptic Reference Frame.
 
 imap_mag_l1d_norm-srf:
     <<: *default
     Data_type: L1D_norm-srf>Level 1D normal rate data in SRF
     Logical_source: imap_mag_l1d_norm-srf
-    Logical_source_description: IMAP Mission Normal Rate Instrument Level-1D Data in
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1D Data in
         Spacecraft Reference Frame.
 
 imap_mag_l1d_burst-srf:
     <<: *default
     Data_type: L1D_burst-srf>Level 1D burst rate data in SRF
     Logical_source: imap_mag_l1d_burst-srf
-    Logical_source_description: IMAP Mission Burst Rate Instrument Level-1D Data in
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1D Data in
         Spacecraft Reference Frame.
 
 imap_mag_l1d_norm-dsrf:
     <<: *default
     Data_type: L1D_norm-dsrf>Level 1D normal rate data in DSRF
     Logical_source: imap_mag_l1d_norm-dsrf
-    Logical_source_description: IMAP Mission Normal Rate Instrument Level-1D Data in
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1D Data in
         Despun Spacecraft Reference Frame.
 
 imap_mag_l1d_burst-dsrf:
     <<: *default
     Data_type: L1D_burst-dsrf>Level 1D burst rate data in DSRF
     Logical_source: imap_mag_l1d_burst-dsrf
-    Logical_source_description: IMAP Mission Burst Rate Instrument Level-1D Data in
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1D Data in
         Despun Spacecraft Reference Frame.
 
 imap_mag_l2_norm-dsrf:
   <<: *default
   Data_type: L2_norm-dsrf>Level 2 normal rate data in DSRF
   Logical_source: imap_mag_l2_norm-dsrf
-  Logical_source_description: IMAP Mission Normal Rate Instrument Level-2 Data in
+  Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
     Despun Spacecraft Reference Frame.
 
 imap_mag_l2_burst-dsrf:
   <<: *default
   Data_type: L2_burst-dsrf>Level 2 burst rate data in DSRF
   Logical_source: imap_mag_l2_burst-dsrf
-  Logical_source_description: IMAP Mission Burst Rate Instrument Level-2 Data in
+  Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
     Despun Spacecraft Reference Frame.
 
 imap_mag_l2_norm-srf:
     <<: *default
     Data_type: L2_norm-srf>Level 2 normal rate data in SRF
     Logical_source: imap_mag_l2_norm-srf
-    Logical_source_description: IMAP Mission Normal Rate Instrument Level-2 Data in
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
         Spacecraft Reference Frame.
 
 imap_mag_l2_burst-srf:
     <<: *default
     Data_type: L2_burst-srf>Level 2 burst rate data in SRF
     Logical_source: imap_mag_l2_burst-srf
-    Logical_source_description: IMAP Mission Burst Rate Instrument Level-2 Data in
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
         Spacecraft Reference Frame.
 
 imap_mag_l2_norm-rtn:
     <<: *default
     Data_type: L2_norm-rtn>Level 2 normal rate data in RTN
     Logical_source: imap_mag_l2_norm-rtn
-    Logical_source_description: IMAP Mission Normal Rate Instrument Level-2 Data in
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
         Radial-Tangential-Normal Reference Frame.
 
 imap_mag_l2_burst-rtn:
     <<: *default
     Data_type: L2_burst-rtn>Level 2 burst rate data in RTN
     Logical_source: imap_mag_l2_burst-rtn
-    Logical_source_description: IMAP Mission Burst Rate Instrument Level-2 Data in
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
         Radial-Tangential-Normal Reference Frame.
 
 imap_mag_l2_norm-gse:
     <<: *default
     Data_type: L2_norm-gse>Level 2 normal rate data in GSE
     Logical_source: imap_mag_l2_norm-gse
-    Logical_source_description: IMAP Mission Normal Rate Instrument Level-2 Data in
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
         Geocentric Solar Ecliptic Reference Frame.
 
 imap_mag_l2_burst-gse:
     <<: *default
     Data_type: L2_burst-gse>Level 2 burst rate data in GSE
     Logical_source: imap_mag_l2_burst-gse
-    Logical_source_description: IMAP Mission Burst Rate Instrument Level-2 Data in
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
         Geocentric Solar Ecliptic Reference Frame.
 
 imap_mag_l2_norm-gsm:
     <<: *default
     Data_type: L2_norm-gsm>Level 2 normal rate data in GSM
     Logical_source: imap_mag_l2_norm-gsm
-    Logical_source_description: IMAP Mission Normal Rate Instrument Level-2 Data in
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
         Geocentric Solar Magnetospheric Reference Frame.
 
 imap_mag_l2_burst-gsm:
     <<: *default
     Data_type: L2_burst-gsm>Level 2 burst rate data in GSM
     Logical_source: imap_mag_l2_burst-gsm
-    Logical_source_description: IMAP Mission Burst Rate Instrument Level-2 Data in
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
         Geocentric Solar Magnetospheric Reference Frame.

@@ -74,7 +74,6 @@ IDEX_10_DAY_RANGES_PATH = f"{imap_module_directory}/idex/idex_10_day_CDF_names.c
 
 class ConversionFactors(float, Enum):
     """Conversion factor values (DN to picocoulombs) for each waveform."""
-
     TOF_High = 2.89e-4
     TOF_Low = 5.14e-1
     TOF_Mid = 1.13e-2

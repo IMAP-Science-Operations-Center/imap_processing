@@ -142,11 +142,12 @@ def test_write_cdf_extra_cdf_kwargs(test_dataset):
 
 
 def test_write_cdf_converts_extension_array(test_dataset):
-    """Convert extension arrays for cdflib without changing the input dataset."""
+    """Pass NumPy string data to cdflib without changing the input dataset."""
     test_dataset["labels"] = (
         "label",
         pd.array(["first", "second"], dtype="string"),
     )
+    original_data = test_dataset["labels"].data
 
     with mock.patch(
         "imap_processing.cdf.utils.xarray_to_cdf", autospec=True
@@ -156,7 +157,7 @@ def test_write_cdf_converts_extension_array(test_dataset):
     converted_dataset = xarray_to_cdf.call_args.args[0]
     assert isinstance(converted_dataset["labels"].data, np.ndarray)
     np.testing.assert_array_equal(converted_dataset["labels"], ["first", "second"])
-    assert isinstance(test_dataset["labels"].data, pd.api.extensions.ExtensionArray)
+    assert test_dataset["labels"].data is original_data
 
 
 @pytest.mark.parametrize(

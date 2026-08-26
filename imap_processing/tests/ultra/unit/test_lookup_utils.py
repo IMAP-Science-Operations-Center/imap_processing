@@ -80,7 +80,8 @@ def test_get_egy_norm(ancillary_files):
         np.array([2]), np.array([2]), ancillary_files
     )
 
-    assert int(norm_composite_energy) == egy_norm_df.iloc[2 * 4096 + 2]["NormEnergy"]
+    expected_energy = egy_norm_df.iloc[2 * 4096 + 2]["NormEnergy"]
+    np.testing.assert_array_equal(norm_composite_energy, [expected_energy])
 
 
 @pytest.mark.external_test_data
