@@ -134,6 +134,7 @@ def idex_l2b(
         counts_by_mass_map,
         daily_epoch,
     ) = compute_counts_by_charge_and_mass(l2a_dataset, epoch_doy_unique)
+    counts, counts_map = compute_counts_agnostic(l2a_dataset, epoch_doy_unique)
     # Filter the message dataset to only include science acquisition on/off events.
     # (ignore fill vals)
     science_on_msg_ds = msg_ds.isel(epoch=np.isin(msg_ds.science_on, [0, 1]))
@@ -155,6 +156,9 @@ def idex_l2b(
         counts_by_mass_map,
         epoch_doy_unique,
         daily_on_percentage,
+    )
+    rate, rate_map = compute_rates_agnostic(
+        counts, counts_map, epoch_doy_unique, daily_on_percentage
     )
     # Create l2b Dataset
     charge_bin_means = np.sqrt(CHARGE_BIN_EDGES[:-1] * CHARGE_BIN_EDGES[1:])
@@ -272,6 +276,18 @@ def idex_l2b(
             dims=("epoch", "mass", "spin_phase"),
             attrs=idex_l2b_attrs.get_variable_attributes("rate_by_mass"),
         ),
+        "counts": xr.DataArray(
+            name="counts",
+            data=counts.astype(np.int64),
+            dims=("epoch", "spin_phase"),
+            attrs=idex_l2b_attrs.get_variable_attributes("counts"),
+        ),
+        "rate": xr.DataArray(
+            name="rate",
+            data=rate,
+            dims=("epoch", "spin_phase"),
+            attrs=idex_l2b_attrs.get_variable_attributes("rate"),
+        ),
     }
     l2c_vars = common_vars | {
         "rectangular_lon_pixel_label": xr.DataArray(
@@ -349,6 +365,18 @@ def idex_l2b(
                 "rectangular_lat_pixel",
             ),
             attrs=idex_l2c_attrs.get_variable_attributes("rate_by_mass_map"),
+        ),
+        "counts_map": xr.DataArray(
+            name="counts_map",
+            data=counts_map.astype(np.int64),
+            dims=("epoch", "rectangular_lon_pixel", "rectangular_lat_pixel"),
+            attrs=idex_l2c_attrs.get_variable_attributes("counts_map"),
+        ),
+        "rate_map": xr.DataArray(
+            name="rate_map",
+            data=rate_map,
+            dims=("epoch", "rectangular_lon_pixel", "rectangular_lat_pixel"),
+            attrs=idex_l2c_attrs.get_variable_attributes("rate_map"),
         ),
     }
     l2b_dataset = xr.Dataset(
@@ -439,9 +467,13 @@ def compute_counts_by_charge_and_mass(
         ]
         # Set the epoch for the current day to be the mean epoch of the day.
         daily_epoch[i] = np.mean(l2a_dataset["epoch"].data[current_day_indices])
-        mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[
-            current_day_indices
-        ]
+        dust = (
+            np.asarray(l2a_dataset["dust_hit_flag"].data[current_day_indices]) == 1
+            if "dust_hit_flag" in l2a_dataset
+            else np.ones(len(current_day_indices), dtype=bool)
+        )
+        current_day_indices = current_day_indices[dust]
+        mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[current_day_indices]
         charge_vals = l2a_dataset["target_low_impact_charge"].data[current_day_indices]
         spin_phase_angles = l2a_dataset["spin_phase"].data[current_day_indices]
         # Make sure longitude values are in the range [0, 360)
@@ -491,6 +523,31 @@ def compute_counts_by_charge_and_mass(
     )
 
 
+def compute_counts_agnostic(
+    l2a_dataset: xr.Dataset, epoch_doy_unique: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute daily dust counts without mass or charge binning."""
+    counts = []
+    counts_map = []
+    for doy in epoch_doy_unique:
+        indices = np.where(epoch_to_doy(l2a_dataset["epoch"].data) == doy)[0]
+        if "dust_hit_flag" in l2a_dataset:
+            indices = indices[np.asarray(l2a_dataset["dust_hit_flag"].data[indices]) == 1]
+        spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
+        counts.append(np.histogram(spin, bins=np.arange(5))[0])
+        longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
+        latitude = l2a_dataset["latitude"].data[indices]
+        valid_geometry = np.isfinite(longitude) & np.isfinite(latitude)
+        counts_map.append(
+            np.histogram2d(
+                longitude[valid_geometry],
+                np.clip(latitude[valid_geometry], -90, 90),
+                bins=[LON_BINS_EDGES, LAT_BINS_EDGES],
+            )[0]
+        )
+    return np.asarray(counts, dtype=np.int64), np.asarray(counts_map, dtype=np.int64)
+
+
 def compute_rates(
     counts: np.ndarray, epoch_doy_percent_on: np.ndarray, non_zero_inds: np.ndarray
 ) -> np.ndarray:
@@ -517,6 +574,26 @@ def compute_rates(
     return counts[non_zero_inds] / (
         0.01 * epoch_doy_percent_on[non_zero_inds] * SECONDS_IN_DAY
     )
+
+
+def compute_rates_agnostic(
+    counts: np.ndarray,
+    counts_map: np.ndarray,
+    epoch_doy: np.ndarray,
+    daily_on_percentage: dict,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute daily count rates without mass or charge binning."""
+    epoch_doy_percent_on = np.array(
+        [daily_on_percentage.get(doy, -1) for doy in epoch_doy]
+    )
+    non_zero_inds = np.where(epoch_doy_percent_on > 0)[0]
+    rate = np.full(counts.shape, -1.0)
+    rate_map = np.full(counts_map.shape, -1.0)
+    rate[non_zero_inds] = compute_rates(counts, epoch_doy_percent_on, non_zero_inds)
+    rate_map[non_zero_inds] = compute_rates(
+        counts_map, epoch_doy_percent_on, non_zero_inds
+    )
+    return rate, rate_map
 
 
 def compute_rates_by_charge_and_mass(

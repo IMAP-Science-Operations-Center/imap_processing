@@ -103,6 +103,19 @@ base_mass: &base_mass
     VALIDMIN: 0.0
     VAR_TYPE: data
 
+base_agnostic: &base_agnostic
+    CATDESC: " "
+    DEPEND_0: epoch
+    DEPEND_1: spin_phase
+    DISPLAY_TYPE: time_series
+    FIELDNAM: " "
+    FILLVAL: *int_fillval
+    FORMAT: E10.3
+    LABL_PTR_1: spin_phase_labels
+    VALIDMAX: *int_maxval
+    VALIDMIN: 0
+    VAR_TYPE: data
+
 rate_by_charge:
     <<: *base_charge
     CATDESC: Count rate per day by impact charge and spin phase.
@@ -134,6 +147,22 @@ counts_by_mass:
     FIELDNAM: Counts by Mass
     FORMAT: I8
     UNITS: counts
+
+counts:
+    <<: *base_agnostic
+    CATDESC: Count of dust impacts by spin phase.
+    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
+    FIELDNAM: Counts
+    FORMAT: I8
+    UNITS: counts
+
+rate:
+    <<: *base_agnostic
+    CATDESC: Dust impact count rate by spin phase.
+    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
+    FIELDNAM: Rate
+    FILLVAL: *double_fillval
+    UNITS: day^-1
 
 impact_day_of_year:
     CATDESC: The unique day of the years when dust impacts occurred.

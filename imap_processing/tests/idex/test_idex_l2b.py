@@ -19,11 +19,13 @@ from imap_processing.idex.idex_l2b import (
     SKY_GRID,
     SPIN_PHASE_BIN_EDGES,
     bin_spin_phases,
+    compute_counts_agnostic,
     compute_counts_by_charge_and_mass,
     compute_rates_by_charge_and_mass,
     get_science_acquisition_on_percentage,
     idex_l2b,
 )
+from imap_processing.spice.time import epoch_to_doy
 
 INT_FILLVAL = np.iinfo(np.int64).min
 
@@ -168,6 +170,8 @@ def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
         "counts_by_mass",
         "rate_by_charge",
         "rate_by_mass",
+        "counts",
+        "rate",
     ]
     l2b_dataset = l2b_and_l2c_datasets[0]
     cdf_vars = l2b_dataset.variables
@@ -264,6 +268,18 @@ def test_get_science_acquisition_on_percentage_no_acquisition(caplog):
     on_percentages = get_science_acquisition_on_percentage(np.array([]), np.array([]))
     assert not on_percentages
     assert "No science acquisition events found" in caplog.text
+
+
+def test_compute_counts_agnostic_filters_non_dust(l2a_dataset: xr.Dataset):
+    """Agnostic products count only records classified as dust hits."""
+    dataset = l2a_dataset.isel(epoch=slice(0, 4)).copy(deep=True)
+    dataset["dust_hit_flag"] = xr.DataArray([1, 0, 1, 0], dims="epoch")
+    epoch_doy = np.array([epoch_to_doy(dataset["epoch"].data)[0]])
+
+    counts, counts_map = compute_counts_agnostic(dataset, epoch_doy)
+
+    assert counts.sum() == 2
+    assert counts_map.sum() == 2
 
 
 def test_compute_counts_by_charge_and_mass():

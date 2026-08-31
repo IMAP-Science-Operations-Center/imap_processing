@@ -47,6 +47,21 @@ base_mass_map: &base_mass_map
   LABL_PTR_2: rectangular_lon_pixel_label
   LABL_PTR_3: rectangular_lat_pixel_label
 
+base_agnostic_map: &base_agnostic_map
+  DEPEND_0: epoch
+  DEPEND_1: rectangular_lon_pixel
+  DEPEND_2: rectangular_lat_pixel
+  DISPLAY_TYPE: image
+  FIELDNAM: " "
+  FILLVAL: *int_fillval
+  FORMAT: E10.3
+  LABLAXIS: "Longitude / Latitude"
+  LABL_PTR_1: rectangular_lon_pixel_label
+  LABL_PTR_2: rectangular_lat_pixel_label
+  VALIDMAX: *int_maxval
+  VALIDMIN: 0
+  VAR_TYPE: data
+
 # Label attributes
 rectangular_lon_pixel_label:
   CATDESC: Longitude pixel index label for IDEX SkyMap.
@@ -116,6 +131,22 @@ rate_by_mass_map:
   CATDESC: Count rate per day by mass, longitude, and latitude.
   DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
   FIELDNAM: Rate by Mass Map
+  FILLVAL: *double_fillval
+  UNITS: day^-1
+
+counts_map:
+  <<: *base_agnostic_map
+  CATDESC: Count of dust impacts by longitude and latitude.
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
+  FIELDNAM: Counts Map
+  FORMAT: I8
+  UNITS: counts
+
+rate_map:
+  <<: *base_agnostic_map
+  CATDESC: Dust impact count rate by longitude and latitude.
+  DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+  FIELDNAM: Rate Map
   FILLVAL: *double_fillval
   UNITS: day^-1
 
