@@ -1098,7 +1098,7 @@ def reduce_geometric_factor_data(species: str, esa_mode: int) -> pd.DataFrame:
     return gf_data.loc[list(range(1, c.N_ESA_LEVELS + 1))]
 
 
-def _esa_calibration(species: str, esa_mode: int) -> xr.DataArray:
+def _esa_calibration(species: str, esa_mode: int) -> xr.Dataset:
     """
     Get the ESA level calibration one map is built from.
 
@@ -1118,7 +1118,7 @@ def _esa_calibration(species: str, esa_mode: int) -> xr.DataArray:
 
     Returns
     -------
-    xr.DataArray
+    xr.Dataset
         The energies, passband half-widths and geometric factors of every ESA
         level, in ascending level order.
     """
@@ -1371,7 +1371,7 @@ def _bootstrap_correct_intensity(
     # Its variance is approximated by that of the level it was extrapolated
     # from, which contributes little to the levels it is subtracted from.
     top_intensity = _extrapolate_top_intensity(
-        intensity, calibration.energy, grid_shape
+        intensity, calibration["energy"].values, grid_shape
     )
     extended = np.concatenate([intensity, top_intensity[:, np.newaxis]], axis=1)
     extended_variance = np.concatenate([variance, variance[:, -1:]], axis=1)
@@ -1403,10 +1403,10 @@ def _bootstrap_correct_intensity(
 
     # The systematic error spans the two scalings the correction is bracketed
     # by, each moved on by the geometric factor bound of the same direction.
-    geometric_factor = calibration.geometric_factor[:, np.newaxis]
-    gf_high = calibration.geometric_factor_high[:, np.newaxis]
+    geometric_factor = calibration["geometric_factor"].values[:, np.newaxis]
+    gf_high = calibration["geometric_factor_high"].values[:, np.newaxis]
     gf_low = np.where(
-        valid_gf_bounds, calibration.geometric_factor_low[:, np.newaxis], 1.0
+        valid_gf_bounds, calibration["geometric_factor_low"].values[:, np.newaxis], 1.0
     )
     lower = subtract(c.BOOTSTRAP_SCALE_INTENSITY_LOW) * geometric_factor / gf_high
     upper = subtract(c.BOOTSTRAP_SCALE_INTENSITY_HIGH) * geometric_factor / gf_low
@@ -1599,7 +1599,7 @@ def _compton_getting_correct_intensity(
         zero in the pixels the correction has nothing to say about.
     """
     # The kinematics are in eV; the map is binned in keV.
-    energy = calibration.energy * 1e3
+    energy = calibration["energy"].values * 1e3
 
     source, spectral_index = _source_intensity(intensity, energy, flux_corrector)
     energy_sc = _spacecraft_frame_energy(cos_alpha, energy)

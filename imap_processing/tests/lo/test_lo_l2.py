@@ -9,9 +9,10 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps.ena_maps import match_coords_to_indices
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 from imap_processing.ena_maps.utils.naming import MapDescriptor
-from imap_processing.lo.constants import EsaCalibration, LoConstants
+from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l2.lo_l2 import (
     ANCILLARY_DATA_DIR as PACKAGE_ANCILLARY_DIR,
 )
@@ -1006,7 +1007,7 @@ class TestBootstrapCorrection:
             calibration,
             coefficients,
             (2, 2),
-            calibration.geometric_factor_low[:, np.newaxis] > 0,
+            calibration["geometric_factor_low"].values[:, np.newaxis] > 0,
         )
 
         np.testing.assert_array_equal(corrected, np.zeros_like(corrected))
@@ -1235,13 +1236,19 @@ class TestComptonGettingMaths:
     def calibration(self):
         """A calibration carrying only the energies the correction reads."""
         ones = np.ones(N_ESA)
-        return EsaCalibration(
+        arrays = dict(
             energy=self.energy_kev,
             energy_delta_minus=np.zeros(N_ESA),
             energy_delta_plus=np.zeros(N_ESA),
             geometric_factor=ones,
             geometric_factor_low=ones,
             geometric_factor_high=ones,
+        )
+        return xr.Dataset(
+            {
+                name: xr.DataArray(array, dims=[CoordNames.ENERGY_L2.value])
+                for name, array in arrays.items()
+            }
         )
 
     @pytest.fixture
