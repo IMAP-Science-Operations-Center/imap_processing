@@ -183,6 +183,16 @@ ena_intensity_sys_err_plus:
   UNITS: cm -2 s -1 sr -1 keV -1
   VAR_TYPE: support_data
 
+ena_intensity_calibration_sys_err:
+  <<: *default_float32
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DISPLAY_TYPE: map_image
+  FIELDNAM: Intensity calibration systematic error
+  LABLAXIS: Calibration Systematic Error
+  UNITS: cm -2 s -1 sr -1 keV -1
+  VAR_TYPE: support_data
+
 ena_count_rate:
   <<: *default_float32
   DEPEND_0: epoch

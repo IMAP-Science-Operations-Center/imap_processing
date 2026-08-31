@@ -63,6 +63,13 @@ def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
     )
 
 
+def test_event_flags_use_uint8_data(decom_test_data_sci: xr.Dataset):
+    """L1A event and saturation flags use the declared unsigned byte type."""
+    for name in decom_test_data_sci.data_vars:
+        if name.endswith("_flag"):
+            assert decom_test_data_sci[name].dtype == np.uint8
+
+
 def test_bad_cdf_attributes(decom_test_data_sci: xr.Dataset):
     """Ensure an ``ISTPError`` is raised when using bad CDF attributes.
 

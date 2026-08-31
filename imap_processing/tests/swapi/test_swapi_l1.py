@@ -94,7 +94,10 @@ def test_find_sweep_starts():
     time = np.arange(26)
     sequence_number = time % 12
     ds = xr.Dataset(
-        {"seq_number": sequence_number, "shcoarse": np.arange(1, 27, 1)},
+        {
+            "seq_number": ("epoch", sequence_number),
+            "shcoarse": ("epoch", np.arange(1, 27, 1)),
+        },
         coords={"epoch": met_to_ttj2000ns(time)},
     )
 
@@ -107,7 +110,7 @@ def test_find_sweep_starts():
 
     # Creating test data that doesn't have start sequence.
     # Sequence number range is 0-11.
-    ds["seq_number"] = np.arange(3, 29)
+    ds["seq_number"] = ("epoch", np.arange(3, 29))
     start_indices = find_sweep_starts(ds)
     np.testing.assert_array_equal(start_indices, [])
 

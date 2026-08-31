@@ -4,6 +4,7 @@ from unittest import mock
 
 import imap_data_access
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -138,6 +139,25 @@ def test_write_cdf_extra_cdf_kwargs(test_dataset):
         assert xarray_to_cdf.call_args.kwargs["terminate_on_warning"] is True
         assert xarray_to_cdf.call_args.kwargs["istp"] is True
         assert xarray_to_cdf.call_args.kwargs["compression"] == 9
+
+
+def test_write_cdf_converts_extension_array(test_dataset):
+    """Pass NumPy string data to cdflib without changing the input dataset."""
+    test_dataset["labels"] = (
+        "label",
+        pd.array(["first", "second"], dtype="string"),
+    )
+    original_data = test_dataset["labels"].data
+
+    with mock.patch(
+        "imap_processing.cdf.utils.xarray_to_cdf", autospec=True
+    ) as xarray_to_cdf:
+        write_cdf(test_dataset)
+
+    converted_dataset = xarray_to_cdf.call_args.args[0]
+    assert isinstance(converted_dataset["labels"].data, np.ndarray)
+    np.testing.assert_array_equal(converted_dataset["labels"], ["first", "second"])
+    assert test_dataset["labels"].data is original_data
 
 
 @pytest.mark.parametrize(

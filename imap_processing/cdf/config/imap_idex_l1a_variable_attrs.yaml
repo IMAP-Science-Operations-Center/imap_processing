@@ -73,6 +73,20 @@ trigger_base: &trigger_base
   VALIDMIN: 0
   VAR_TYPE: support_data
 
+event_flag_base: &event_flag_base
+  CATDESC: "Boolean event classification flag."
+  CDF_DATA_TYPE: CDF_UINT1
+  DEPEND_0: epoch
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ""
+  FILLVAL: 255
+  FORMAT: I1
+  LABLAXIS: ""
+  UNITS: " "
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
 # <=== LABL_PTR_i Attributes ===>
 time_high_sample_rate_label:
   CATDESC: High sample rate time steps for a dust event.
@@ -91,6 +105,66 @@ time_low_sample_rate_label:
   VAR_TYPE: metadata
 
 # <=== Instrument Setting Attributes ===>
+science_event_flag:
+  <<: *event_flag_base
+  CATDESC: Science event classification flag.
+  FIELDNAM: Science Event Flag
+  LABLAXIS: Science Event
+
+noise_capture_flag:
+  <<: *event_flag_base
+  CATDESC: Noise capture event classification flag.
+  FIELDNAM: Noise Capture Flag
+  LABLAXIS: Noise Capture
+
+pulser_flag:
+  <<: *event_flag_base
+  CATDESC: Pulser event classification flag.
+  FIELDNAM: Pulser Flag
+  LABLAXIS: Pulser
+
+dust_hit_flag:
+  <<: *event_flag_base
+  CATDESC: Dust Hit waveform classification flag.
+  FIELDNAM: Dust Hit Flag
+  LABLAXIS: Dust Hit
+
+tof_high_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF High waveform saturation flag.
+  FIELDNAM: TOF High Saturation Flag
+  LABLAXIS: TOF HG Saturation
+
+tof_mid_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF Mid waveform saturation flag.
+  FIELDNAM: TOF Mid Saturation Flag
+  LABLAXIS: TOF MG Saturation
+
+tof_low_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF Low waveform saturation flag.
+  FIELDNAM: TOF Low Saturation Flag
+  LABLAXIS: TOF LG Saturation
+
+target_high_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Target High waveform saturation flag.
+  FIELDNAM: Target High Saturation Flag
+  LABLAXIS: Target HG Saturation
+
+target_low_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Target Low waveform saturation flag.
+  FIELDNAM: Target Low Saturation Flag
+  LABLAXIS: Target LG Saturation
+
+ion_grid_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Ion Grid waveform saturation flag.
+  FIELDNAM: Ion Grid Saturation Flag
+  LABLAXIS: Ion Grid Saturation
+
 low_sample_rate_attrs:
   <<:  *sample_rate_base
   CATDESC: Low sample rate time steps for a dust event.

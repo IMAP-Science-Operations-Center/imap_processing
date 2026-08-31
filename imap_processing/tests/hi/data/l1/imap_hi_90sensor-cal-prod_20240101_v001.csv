@@ -10,22 +10,44 @@
 # DEs with coincidence type contained in the `coincidence_type_list` and time-of-flight
 # values that are in the inclusive range specified by the low and high entries for each
 # energy step are included in the angular pset bins.
-calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
-0,1,0.00055,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-0,2,0.00085,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-0,3,0.00126,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-0,4,0.00170,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-0,5,0.00340,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-0,6,0.00523,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-0,7,0.00659,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-0,8,0.01301,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-0,9,0.01830,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
-1,1,0.00055,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
-1,2,0.00085,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
-1,3,0.00126,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
-1,4,0.00170,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
-1,5,0.00340,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
-1,6,0.00523,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
-1,7,0.00659,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
-1,8,0.01301,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
-1,9,0.01830,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+#
+# gain_config_id groups rows by the instrument's detector gain state (see
+# IMAP-Hi processing issue #3391). geometric_factor is defined per
+# (gain_config_id, calibration_prod, esa_energy_step), since a deliberate
+# gain change (anticipated ~August 2026) changes the geometric factor at a
+# given esa_energy_step. Only one gain state (gain_config_id=0) is
+# flight-relevant today.
+#
+# The final columns (mcp_delta_v/_tol, cem_a_delta_v/_tol, cem_b_delta_v/_tol,
+# tof_v/_tol) identify which gain_config_id a pointing is running: mcp_delta_v
+# is the nominal (mcp_b_v - mcp_f_v) detector voltage difference, cem_a_delta_v
+# is (cem_bk_a_v - cem_f_v), cem_b_delta_v is (cem_bk_b_v - cem_f_v) -- back
+# minus front, since front voltages are more negative than back voltages on
+# real flight hardware, giving a positive delta -- and tof_v is the nominal
+# U-Can voltage monitor value; the "_tol" columns give the allowed +/-
+# tolerance in volts for each. A pointing is matched to a gain_config_id if
+# its own reference detector voltages (see hi_l1b.de_gain_test_filter())
+# fall within every field's nominal +/- tolerance. These values are constant
+# across calibration_prod/esa_energy_step within a gain_config_id, so they
+# only need to be specified on the group's first row -- subsequent rows are
+# forward-filled. Values below are placeholders carried over from prior
+# calibration work and should be confirmed with the Hi instrument team.
+gain_config_id,calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,mcp_delta_v,mcp_delta_v_tol,cem_a_delta_v,cem_a_delta_v_tol,cem_b_delta_v,cem_b_delta_v_tol,tof_v,tof_v_tol
+0,0,1,0.00055,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,875.0,75.0,2150.0,150.0,2150.0,150.0,-8000.0,50.0
+0,0,2,0.00085,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,,,,,,,,
+0,0,3,0.00126,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,,,,,,,,
+0,0,4,0.00170,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,,,,,,,,
+0,0,5,0.00340,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,,,,,,,,
+0,0,6,0.00523,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,,,,,,,,
+0,0,7,0.00659,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,,,,,,,,
+0,0,8,0.01301,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,,,,,,,,
+0,0,9,0.01830,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,1,0.00055,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,2,0.00085,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,3,0.00126,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,4,0.00170,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,5,0.00340,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,6,0.00523,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,7,0.00659,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,8,0.01301,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,
+0,1,9,0.01830,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25,,,,,,,,

@@ -33,6 +33,7 @@ from imap_processing import imap_module_directory
 from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.evt_msg_decode_utils import render_event_template
 from imap_processing.idex.idex_constants import IDEXAPID
+from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES, classify_event_flags
 from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.idex.idex_utils import get_10_day_window_end_date, get_idex_attrs
 from imap_processing.spice.time import (
@@ -1029,6 +1030,23 @@ class RawDustEvent:
                 attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
             ),
         }
+        event_flags = classify_event_flags(
+            self.telemetry_items,
+            data_vars["TOF_High"].data[0],
+            data_vars["TOF_Mid"].data[0],
+            data_vars["TOF_Low"].data[0],
+            self._calc_high_sample_resolution(len(data_vars["TOF_High"].data[0])),
+            data_vars["Target_High"].data[0],
+            data_vars["Target_Low"].data[0],
+            data_vars["Ion_Grid"].data[0],
+        )
+        for name in ALL_FLAG_NAMES:
+            data_vars[name] = xr.DataArray(
+                data=np.asarray([event_flags[name]], dtype=np.uint8),
+                dims=("epoch"),
+                name=name,
+                attrs=idex_attrs.get_variable_attributes(name),
+            )
         # Determine coordinate variables
         coords = {
             "epoch": xr.DataArray(
@@ -1062,7 +1080,8 @@ class RawDustEvent:
             f"{name}_index": array.shape[1] for name, array in sampling_rates.items()
         }
         if any(
-            var.shape[1] != expected_shapes[var.dims[1]] for var in data_vars.values()
+            var.ndim > 1 and var.shape[1] != expected_shapes[var.dims[1]]
+            for var in data_vars.values()
         ):
             # The IDEX team requests that a warning be logged for incomplete events
             # (dropped packets) in the data, while still allowing the CDF to be created

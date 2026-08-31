@@ -359,10 +359,10 @@ def test_flag_low_voltage(test_data):
     n_spins = 20
     mock_status_dataset = xr.Dataset(
         data_vars={
-            "shcoarse": np.arange(n_spins),
+            "shcoarse": ("epoch", np.arange(n_spins)),
             # Set Voltage below threshold
-            "rightdeflection_v": np.full(n_spins, 0.5),
-            "leftdeflection_v": np.full(n_spins, 1.5),
+            "rightdeflection_v": ("epoch", np.full(n_spins, 0.5)),
+            "leftdeflection_v": ("epoch", np.full(n_spins, 1.5)),
         }
     )
     spins = np.arange(n_spins)
@@ -452,15 +452,15 @@ def test_get_energy_and_spin_dependent_rejection_mask():
     ]  # Example energy bin edges (4 edges = 3 bins)
     goodtimes_dataset = xr.Dataset(
         data_vars={
-            "spin_number": np.arange(n_spins),
-            "quality_low_voltage": np.full(n_spins, 0),
-            "quality_high_energy": np.full(n_spins, 0),
-            "quality_statistics": np.full(n_spins, 0),
-            "energy_range_flags": energy_range_flags,
-            "energy_range_edges": energy_range_edges,
-            "quality_upstream_ion_1": np.full(n_spins, 0),
-            "quality_upstream_ion_2": np.full(n_spins, 0),
-            "quality_spectral": np.full(n_spins, 0),
+            "spin_number": ("spin", np.arange(n_spins)),
+            "quality_low_voltage": ("spin", np.full(n_spins, 0)),
+            "quality_high_energy": ("spin", np.full(n_spins, 0)),
+            "quality_statistics": ("spin", np.full(n_spins, 0)),
+            "energy_range_flags": ("energy_bin", energy_range_flags),
+            "energy_range_edges": ("energy_edge", energy_range_edges),
+            "quality_upstream_ion_1": ("spin", np.full(n_spins, 0)),
+            "quality_upstream_ion_2": ("spin", np.full(n_spins, 0)),
+            "quality_spectral": ("spin", np.full(n_spins, 0)),
         }
     )
     # update quality flags to test that events get rejected

@@ -18,7 +18,6 @@ from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.lo import lo_ancillary
-from imap_processing.lo.constants import EsaCalibration
 from imap_processing.lo.constants import LoConstants as c  # noqa: N813
 from imap_processing.lo.l1c.lo_l1c import compute_pointing_directions
 from imap_processing.spice.geometry import (
@@ -810,7 +809,7 @@ class LoSpinAnglePointingSet(PointingSet):
 
 
 def _initialize_accumulators(
-    sky_map: RectangularSkyMap, energy: np.ndarray, names: tuple[str, ...]
+    sky_map: RectangularSkyMap, energy: xr.DataArray, names: tuple[str, ...]
 ) -> None:
     """
     Seed the map with the empty accumulators each pointing is added into.
@@ -824,7 +823,7 @@ def _initialize_accumulators(
     ----------
     sky_map : RectangularSkyMap
         The map being built, modified in place.
-    energy : np.ndarray
+    energy : xr.DataArray
         The energy [keV] of each ESA level.
     names : tuple[str, ...]
         The accumulators to seed.
@@ -847,7 +846,7 @@ def _accumulate_pointing(
     histrates: xr.Dataset,
     sky_map: RectangularSkyMap,
     map_descriptor: MapDescriptor,
-    energy: np.ndarray,
+    energy: xr.DataArray,
     sputter_source: str | None = None,
 ) -> None:
     """
@@ -867,7 +866,7 @@ def _accumulate_pointing(
         The map being built, modified in place.
     map_descriptor : MapDescriptor
         The parsed descriptor of the map being made.
-    energy : np.ndarray
+    energy : xr.DataArray
         The energy [keV] of each ESA level.
     sputter_source : str | None
         The species sputtering into the mapped species, whose counts are
@@ -1099,7 +1098,7 @@ def reduce_geometric_factor_data(species: str, esa_mode: int) -> pd.DataFrame:
     return gf_data.loc[list(range(1, c.N_ESA_LEVELS + 1))]
 
 
-def _esa_calibration(species: str, esa_mode: int) -> EsaCalibration:
+def _esa_calibration(species: str, esa_mode: int) -> xr.DataArray:
     """
     Get the ESA level calibration one map is built from.
 
@@ -1119,7 +1118,7 @@ def _esa_calibration(species: str, esa_mode: int) -> EsaCalibration:
 
     Returns
     -------
-    EsaCalibration
+    xr.DataArray
         The energies, passband half-widths and geometric factors of every ESA
         level, in ascending level order.
     """
@@ -1128,7 +1127,7 @@ def _esa_calibration(species: str, esa_mode: int) -> EsaCalibration:
     factor = f"GF_Trpl_{species.upper()}"
     geometric_factor = gf_data[factor].to_numpy()
 
-    return EsaCalibration(
+    arr_by_name = dict(
         energy=gf_data["Cntr_E"].to_numpy(),
         energy_delta_minus=gf_data["Cntr_E_delta_minus"].to_numpy(),
         energy_delta_plus=gf_data["Cntr_E_delta_plus"].to_numpy(),
@@ -1138,6 +1137,11 @@ def _esa_calibration(species: str, esa_mode: int) -> EsaCalibration:
         geometric_factor_high=geometric_factor
         + gf_data[f"{factor}_unc_minus"].to_numpy(),
     )
+    data_vars = {
+        name: xr.DataArray(arr, dims=[CoordNames.ENERGY_L2.value])
+        for name, arr in arr_by_name.items()
+    }
+    return xr.Dataset(data_vars)
 
 
 # =============================================================================
@@ -1325,7 +1329,7 @@ def _extrapolate_top_intensity(
 def _bootstrap_correct_intensity(
     intensity: np.ndarray,
     variance: np.ndarray,
-    calibration: EsaCalibration,
+    calibration: xr.Dataset,
     bootstrap_matrix: np.ndarray,
     grid_shape: tuple[int, ...],
     valid_gf_bounds: np.ndarray,
@@ -1342,7 +1346,7 @@ def _bootstrap_correct_intensity(
         The intensity of every ESA level, of shape (epoch, esa level, pixel).
     variance : np.ndarray
         The statistical variance of those intensities, same shape.
-    calibration : EsaCalibration
+    calibration : xr.Dataset
         The energy response the map is binned in, read for the energies the
         virtual level is extrapolated along and the geometric factor bounds the
         systematic error is taken from.
@@ -1560,7 +1564,7 @@ def _compton_getting_correct_intensity(
     intensity: np.ndarray,
     uncertainties: tuple[np.ndarray, ...],
     cos_alpha: np.ndarray,
-    calibration: EsaCalibration,
+    calibration: xr.Dataset,
     flux_corrector: PowerLawFluxCorrector,
 ) -> tuple[np.ndarray, tuple[np.ndarray, ...]]:
     """
@@ -1582,7 +1586,7 @@ def _compton_getting_correct_intensity(
     cos_alpha : np.ndarray
         The cosine of the angle between the look direction of each pixel and
         the spacecraft's velocity, same shape.
-    calibration : EsaCalibration
+    calibration : xr.Dataset
         The energy response the map is binned in, read for the energies the
         correction shifts between.
     flux_corrector : PowerLawFluxCorrector
@@ -1616,7 +1620,7 @@ def _compton_getting_correct_intensity(
 
 def _calculate_rates_and_intensities(
     sky_map: RectangularSkyMap,
-    calibration: EsaCalibration,
+    calibration: xr.Dataset,
     sputter_matrix: np.ndarray | None = None,
     bootstrap_matrix: np.ndarray | None = None,
     flux_corrector: PowerLawFluxCorrector | None = None,
@@ -1632,7 +1636,7 @@ def _calculate_rates_and_intensities(
     ----------
     sky_map : RectangularSkyMap
         The map the pointings were projected onto, read for its accumulators.
-    calibration : EsaCalibration
+    calibration : xr.Dataset
         The energy response the map is binned in, read for the energies and
         geometric factors the intensities are derived with.
     sputter_matrix : np.ndarray | None
@@ -1672,13 +1676,10 @@ def _calculate_rates_and_intensities(
         rate_counts = counts.copy(data=corrected_counts)
         rate_counts_var = counts.copy(data=corrected_variance)
 
-    # Naming the energy dimension lets xarray broadcast during division
-    # without the need to introduce new dimensions
-    energy_dim = CoordNames.ENERGY_L2.value
-    energy = xr.DataArray(calibration.energy, dims=[energy_dim])
-    geometric_factor = xr.DataArray(calibration.geometric_factor, dims=[energy_dim])
-    gf_low = xr.DataArray(calibration.geometric_factor_low, dims=[energy_dim])
-    gf_high = xr.DataArray(calibration.geometric_factor_high, dims=[energy_dim])
+    energy = calibration["energy"]
+    geometric_factor = calibration["geometric_factor"]
+    gf_low = calibration["geometric_factor_low"]
+    gf_high = calibration["geometric_factor_high"]
 
     exposed = exposure > 0
 
@@ -1848,7 +1849,7 @@ def _calculate_rates_and_intensities(
 def _build_map_dataset(
     sky_map: RectangularSkyMap,
     variables: dict[str, xr.DataArray],
-    calibration: EsaCalibration,
+    calibration: xr.Dataset,
 ) -> xr.Dataset:
     """
     Lay the map variables out on the map's sky grid.
@@ -1862,7 +1863,7 @@ def _build_map_dataset(
         The map being built.
     variables : dict[str, xr.DataArray]
         The map variables, each of shape (epoch, esa level, pixel).
-    calibration : EsaCalibration
+    calibration : xr.Dataset
         The energy response the map is binned in, read for the widths of the
         ESA energy passbands.
 
@@ -1882,11 +1883,7 @@ def _build_map_dataset(
 
     dataset = sky_map.to_dataset()
 
-    dataset["energy_delta_minus"] = xr.DataArray(
-        calibration.energy_delta_minus, dims=["energy"]
-    )
-    dataset["energy_delta_plus"] = xr.DataArray(
-        calibration.energy_delta_plus, dims=["energy"]
-    )
+    dataset["energy_delta_minus"] = calibration["energy_delta_minus"]
+    dataset["energy_delta_plus"] = calibration["energy_delta_plus"]
 
     return dataset

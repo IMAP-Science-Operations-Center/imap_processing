@@ -1,5 +1,19 @@
 int_fillval: &int_fillval -9223372036854775808
 double_fillval: &double_fillval -1.0E+31
+
+event_flag_base: &event_flag_base
+  CATDESC: Boolean event classification flag.
+  CDF_DATA_TYPE: CDF_UINT1
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:QualityFlag
+  DISPLAY_TYPE: time_series
+  FILLVAL: 255
+  FORMAT: I1
+  LABLAXIS: " "
+  UNITS: " "
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: data
 int_maxval: &int_maxval 9223372036854775807
 
 # <=== Base Attributes ===>
@@ -140,6 +154,56 @@ mass_index:
   VAR_TYPE: support_data
 
 # <=== Data Attributes ===>
+
+science_event_flag:
+  <<: *event_flag_base
+  CATDESC: Science event classification flag.
+  FIELDNAM: Science Event Flag
+
+noise_capture_flag:
+  <<: *event_flag_base
+  CATDESC: Noise capture event classification flag.
+  FIELDNAM: Noise Capture Flag
+
+pulser_flag:
+  <<: *event_flag_base
+  CATDESC: Pulser event classification flag.
+  FIELDNAM: Pulser Flag
+
+dust_hit_flag:
+  <<: *event_flag_base
+  CATDESC: Dust Hit waveform classification flag.
+  FIELDNAM: Dust Hit Flag
+
+tof_high_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF High waveform saturation flag.
+  FIELDNAM: TOF High Saturation Flag
+
+tof_mid_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF Mid waveform saturation flag.
+  FIELDNAM: TOF Mid Saturation Flag
+
+tof_low_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF Low waveform saturation flag.
+  FIELDNAM: TOF Low Saturation Flag
+
+target_high_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Target High waveform saturation flag.
+  FIELDNAM: Target High Saturation Flag
+
+target_low_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Target Low waveform saturation flag.
+  FIELDNAM: Target Low Saturation Flag
+
+ion_grid_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Ion Grid waveform saturation flag.
+  FIELDNAM: Ion Grid Saturation Flag
 
 tof_snr:
   CATDESC: Signal-to-noise ratio of the TOF High waveform.

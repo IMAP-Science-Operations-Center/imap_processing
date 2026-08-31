@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 # from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
@@ -50,3 +52,14 @@ def test_add_instrument_variable_attrs():
         == "Time, number of nanoseconds since J2000 with leap seconds included"
     )
     assert instrument2_instrument["UNITS"] == "ns"
+
+
+@pytest.mark.parametrize("level", ["l2-lo-direct-events", "l2-hi-direct-events"])
+def test_codice_direct_events_num_events_axis_label(level):
+    """Ensure the one-dimensional num_events spectrogram uses an axis label."""
+    attributes = ImapCdfAttributes()
+    attributes.add_instrument_variable_attrs("codice", level)
+
+    num_events_attrs = attributes.get_variable_attributes("num_events")
+
+    assert num_events_attrs["LABLAXIS"] == "Number of Events"

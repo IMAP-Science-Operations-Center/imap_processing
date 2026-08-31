@@ -11,11 +11,16 @@ from scipy.stats import exponnorm
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex import idex_constants
+from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES
 from imap_processing.idex.idex_l2a import (
     BaselineNoiseTime,
+    _mask_non_science_derived_estimates,
+    _mask_saturated_derived_estimates,
     analyze_peaks,
     butter_lowpass_filter,
+    calculate_ion_grid_velocity_and_mass,
     calculate_kappa,
+    calculate_mass_from_velocity,
     calculate_snr,
     calculate_velocity_and_mass,
     chi_square,
@@ -28,6 +33,61 @@ from imap_processing.idex.idex_l2a import (
     sine_fit,
     time_to_mass,
 )
+
+
+def test_non_science_derived_estimates_are_nan() -> None:
+    """Only Science Events retain derived velocity and mass estimates."""
+    estimates = {
+        f"{waveform}_{estimate}": xr.DataArray([1.0, 2.0], dims="epoch")
+        for waveform in ("target_low", "target_high", "ion_grid")
+        for estimate in ("velocity_estimate", "dust_mass_estimate")
+    }
+    dataset = xr.Dataset(
+        estimates,
+        coords={"epoch": [0, 1]},
+    )
+    dataset["science_event_flag"] = xr.DataArray([1, 0], dims="epoch")
+
+    _mask_non_science_derived_estimates(dataset)
+
+    for estimate in estimates:
+        np.testing.assert_array_equal(dataset[estimate].values, [1.0, np.nan])
+
+
+def test_saturated_waveform_derived_values_are_nan() -> None:
+    """Saturation masks fitted charge, velocity, and mass estimates."""
+    data = {
+        f"{waveform}_{estimate}": xr.DataArray([1.0, 2.0], dims="epoch")
+        for waveform in ("target_low", "target_high", "ion_grid")
+        for estimate in ("impact_charge", "velocity_estimate", "dust_mass_estimate")
+    }
+    dataset = xr.Dataset(data, coords={"epoch": [0, 1]})
+    for waveform in ("target_low", "target_high", "ion_grid"):
+        dataset[f"{waveform}_saturation_flag"] = xr.DataArray([0, 1], dims="epoch")
+
+    _mask_saturated_derived_estimates(dataset)
+
+    for waveform in ("target_low", "target_high", "ion_grid"):
+        for estimate in ("impact_charge", "velocity_estimate", "dust_mass_estimate"):
+            np.testing.assert_array_equal(
+                dataset[f"{waveform}_{estimate}"].values, [1.0, np.nan]
+            )
+
+
+def test_saturated_derived_values_require_all_saturation_flags() -> None:
+    """Missing saturation metadata raises an informative error."""
+    dataset = xr.Dataset(
+        {
+            "target_low_impact_charge": xr.DataArray([1.0], dims="epoch"),
+            "target_low_velocity_estimate": xr.DataArray([1.0], dims="epoch"),
+            "target_low_dust_mass_estimate": xr.DataArray([1.0], dims="epoch"),
+            "target_low_saturation_flag": xr.DataArray([0], dims="epoch"),
+        },
+        coords={"epoch": [0]},
+    )
+
+    with pytest.raises(KeyError, match="target_high_saturation_flag"):
+        _mask_saturated_derived_estimates(dataset)
 
 
 def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
@@ -85,6 +145,12 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset, l1b_dataset: xr.Dat
         np.testing.assert_array_equal(
             l2a_dataset[variable_name].values,
             l1b_dataset[variable_name].values,
+        )
+
+    for flag_name in ALL_FLAG_NAMES:
+        assert flag_name in l2a_dataset
+        np.testing.assert_array_equal(
+            l2a_dataset[flag_name].values, l1b_dataset[flag_name].values
         )
 
     with cdflib.CDF(file_name) as cdf_file:
@@ -181,8 +247,6 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset, l1b_dataset: xr.Dat
 
     # TODO: remove this NAN block when fitting logic is applied
     expected_nan_vars = [
-        "ion_grid_dust_mass_estimate",
-        "ion_grid_velocity_estimate",
         "tof_peak_area_under_fit",
         "tof_peak_chi_square",
         "tof_peak_fit_parameters",
@@ -441,6 +505,52 @@ def test_calculate_velocity_and_mass_at_10_km_s():
 
     assert velocity_estimate == pytest.approx(10.0, rel=1e-12)
     assert mass_estimate == pytest.approx(expected_mass_kg, rel=1e-12)
+
+
+def test_ion_grid_velocity_uses_unsaturated_high_target_first():
+    """Ion Grid velocity uses the highest-gain unsaturated target charge."""
+    yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
+    velocity, mass = calculate_ion_grid_velocity_and_mass(
+        2.0, 1.0, 0.5, 0, 0, 0, yield_params
+    )
+
+    assert velocity == pytest.approx(55.0 * 2.0**-3.2 + 1.5)
+    assert mass == pytest.approx(
+        calculate_mass_from_velocity(1.0, velocity, yield_params)
+    )
+
+
+def test_ion_grid_velocity_falls_back_to_low_target_when_high_saturates():
+    """Ion Grid velocity falls back to Target Low when Target High saturates."""
+    yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
+    velocity, _ = calculate_ion_grid_velocity_and_mass(
+        1.0, 1.0, 0.5, 1, 0, 0, yield_params
+    )
+
+    assert velocity == pytest.approx(55.0 * 2.0**-3.2 + 1.5)
+
+
+@pytest.mark.parametrize(
+    "target_high_saturated,target_low_saturated,ion_grid_saturated",
+    [(1, 1, 0), (0, 0, 1)],
+)
+def test_ion_grid_velocity_is_nan_when_required_channel_is_saturated(
+    target_high_saturated, target_low_saturated, ion_grid_saturated
+):
+    """Saturation prevents publishing Ion Grid velocity and mass."""
+    yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
+    velocity, mass = calculate_ion_grid_velocity_and_mass(
+        1.0,
+        1.0,
+        0.5,
+        target_high_saturated,
+        target_low_saturated,
+        ion_grid_saturated,
+        yield_params,
+    )
+
+    assert np.isnan(velocity)
+    assert np.isnan(mass)
 
 
 @pytest.mark.external_test_data

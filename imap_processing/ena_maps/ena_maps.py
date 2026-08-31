@@ -756,6 +756,7 @@ class HiPointingSet(LoHiBasePointingSet):
         "exposure_times": "exposure_factor",
         "background_rates": "bg_rate",
         "background_rates_uncertainty": "bg_rate_sys_err",
+        "counts": "ena_count",
     }
 
     def __init__(self, dataset: xr.Dataset | str | Path):

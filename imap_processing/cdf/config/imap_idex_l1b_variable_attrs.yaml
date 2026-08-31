@@ -36,6 +36,7 @@ l1b_tof_base: &l1b_tof_base
   <<: *l1b_data_base
   DEPEND_1: time_high_sample_rate_index
   LABL_PTR_1: time_high_sample_rate_label
+  UNITS: mA
 
 l1b_target_base: &l1b_target_base
   <<: *l1b_data_base
@@ -47,6 +48,16 @@ trigger_base: &trigger_base
   DISPLAY_TYPE: no_plot
   UNITS: " "
 
+event_flag_base: &event_flag_base
+  <<: *trigger_base
+  CATDESC: "Boolean event classification flag."
+  CDF_DATA_TYPE: CDF_UINT1
+  FILLVAL: 255
+  FORMAT: I1
+  UNITS: " "
+  VALIDMAX: 1
+  VALIDMIN: 0
+
 spice_base: &spice_base
   <<: *l1b_data_base
   DISPLAY_TYPE: time_series
@@ -56,6 +67,66 @@ spice_base: &spice_base
   VAR_TYPE: data
 
 # <=== Instrument Setting Attributes ===>
+science_event_flag:
+  <<: *event_flag_base
+  CATDESC: Science event classification flag.
+  FIELDNAM: Science Event Flag
+  LABLAXIS: Science Event
+
+noise_capture_flag:
+  <<: *event_flag_base
+  CATDESC: Noise capture event classification flag.
+  FIELDNAM: Noise Capture Flag
+  LABLAXIS: Noise Capture
+
+pulser_flag:
+  <<: *event_flag_base
+  CATDESC: Pulser event classification flag.
+  FIELDNAM: Pulser Flag
+  LABLAXIS: Pulser
+
+dust_hit_flag:
+  <<: *event_flag_base
+  CATDESC: Dust Hit waveform classification flag.
+  FIELDNAM: Dust Hit Flag
+  LABLAXIS: Dust Hit
+
+tof_high_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF High waveform saturation flag.
+  FIELDNAM: TOF High Saturation Flag
+  LABLAXIS: TOF HG Saturation
+
+tof_mid_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF Mid waveform saturation flag.
+  FIELDNAM: TOF Mid Saturation Flag
+  LABLAXIS: TOF MG Saturation
+
+tof_low_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: TOF Low waveform saturation flag.
+  FIELDNAM: TOF Low Saturation Flag
+  LABLAXIS: TOF LG Saturation
+
+target_high_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Target High waveform saturation flag.
+  FIELDNAM: Target High Saturation Flag
+  LABLAXIS: Target HG Saturation
+
+target_low_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Target Low waveform saturation flag.
+  FIELDNAM: Target Low Saturation Flag
+  LABLAXIS: Target LG Saturation
+
+ion_grid_saturation_flag:
+  <<: *event_flag_base
+  CATDESC: Ion Grid waveform saturation flag.
+  FIELDNAM: Ion Grid Saturation Flag
+  LABLAXIS: Ion Grid Saturation
+
 trigger_mode_lg:
   <<: *string_base
   CATDESC: Low Gain Trigger Mode.
@@ -65,6 +136,7 @@ trigger_level_lg:
   <<: *trigger_base
   CATDESC: Low Gain Trigger Level threshold.
   FIELDNAM: Low Gain Trigger Level
+  UNITS: mA
 
 trigger_mode_mg:
   <<: *string_base
@@ -75,6 +147,7 @@ trigger_level_mg:
   <<: *trigger_base
   CATDESC: Mid Gain Trigger level threshold.
   FIELDNAM: Mid Gain Trigger Level
+  UNITS: mA
 
 
 trigger_mode_hg:
@@ -86,6 +159,7 @@ trigger_level_hg:
   <<: *trigger_base
   CATDESC: High Trigger Level threshold.
   FIELDNAM: High Trigger Level
+  UNITS: mA
 
 trigger_origin:
   <<: *string_base

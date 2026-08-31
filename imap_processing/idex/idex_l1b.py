@@ -30,6 +30,7 @@ from imap_processing.idex.idex_constants import (
     IDEX_EVENT_REFERENCE_FRAME,
     ConversionFactors,
 )
+from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES
 from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 from imap_processing.spice.geometry import (
     SpiceBody,
@@ -258,6 +259,11 @@ def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
     trigger_origin = get_trigger_origin(
         l1a_dataset["idx__txhdrtrigid"].data, idex_attrs
     )
+    event_flags = {
+        name: l1a_dataset[name].copy() for name in ALL_FLAG_NAMES if name in l1a_dataset
+    }
+    for name, data_array in event_flags.items():
+        data_array.attrs = idex_attrs.get_variable_attributes(name)
     # Create l1b Dataset
     prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample", "aid"]
     data_vars = (
@@ -267,6 +273,7 @@ def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
         | trigger_settings
         | spice_data
         | trigger_origin
+        | event_flags
     )
     l1b_dataset = setup_dataset(l1a_dataset, prefixes, idex_attrs, data_vars)
     l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_sci")
@@ -335,7 +342,7 @@ def convert_waveforms(
     l1a_dataset: xr.Dataset, idex_attrs: ImapCdfAttributes
 ) -> dict[str, xr.DataArray]:
     """
-    Apply transformation from raw DN to picocoulombs (pC) for each of the six waveforms.
+    Apply the channel-specific transformation from raw DN to engineering units.
 
     Parameters
     ----------
@@ -348,17 +355,18 @@ def convert_waveforms(
     -------
     waveforms_converted : dict
         A dictionary where the keys are the waveform array names and the values are
-        xr.DataArrays representing the waveforms transformed into picocoulombs.
+        xr.DataArrays representing the converted waveforms. TOF channels are in mA;
+        target and ion-grid channels are in pC.
     """
-    waveforms_pc = {}
+    waveforms_converted = {}
 
     for var in ConversionFactors:
-        waveforms_pc[var.name] = l1a_dataset[var.name] * var.value
-        waveforms_pc[var.name].attrs = idex_attrs.get_variable_attributes(
+        waveforms_converted[var.name] = l1a_dataset[var.name] * var.value
+        waveforms_converted[var.name].attrs = idex_attrs.get_variable_attributes(
             var.name.lower()
         )
 
-    return waveforms_pc
+    return waveforms_converted
 
 
 def get_trigger_mode_and_level(
@@ -443,6 +451,13 @@ def get_trigger_mode_and_level(
             vectorize=True,
             output_dtypes=[object, float],
         )
+        # Allocate the object array explicitly.  Otherwise pandas 3 string
+        # inference converts the no-trigger None values to NaN.
+        mode_values = np.asarray(mode_array.data, dtype=object)
+        mode_values[pd.isna(mode_values)] = None
+        object_mode_array = xr.full_like(modes, None, dtype=object)
+        object_mode_array.data[:] = mode_values
+        mode_array = object_mode_array
         # There should be an array of modes and threshold levels for each channel.
         # write each of them out as separate variables because there may be
         # multiple channels that can trigger an event. The trigger origin variable

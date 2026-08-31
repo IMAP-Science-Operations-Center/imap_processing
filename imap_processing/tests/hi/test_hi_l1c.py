@@ -12,8 +12,27 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi import hi_l1c, utils
-from imap_processing.hi.utils import HIAPID, GainConfigLookupTable, HiConstants
+from imap_processing.hi.utils import HIAPID, HiConstants
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
+
+# HV deltas matching the test cal-prod config's gain_config_id=0 reference
+# values (within tolerance). See
+# imap_processing/tests/hi/data/l1/imap_hi_90sensor-cal-prod_20240101_v001.csv
+NOMINAL_HV_DELTAS = {
+    "mcp_delta_v": 875.0,
+    "cem_a_delta_v": 2150.0,
+    "cem_b_delta_v": 2150.0,
+    "tof_v": -8000.0,
+}
+
+
+def _select_gain_config_df(config_df, l1b_de_dataset):
+    """Mirror generate_pset_dataset()'s gain_config_df selection for tests."""
+    hv_deltas = {
+        field: l1b_de_dataset.attrs[field]
+        for field in utils.CalibrationProductConfig.GAIN_MATCH_FIELDS
+    }
+    return config_df.cal_prod_config.select_gain_config(hv_deltas)
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +56,6 @@ def test_hi_l1c(
     mock_generate_pset_dataset,
     hi_test_cal_prod_config_path,
     hi_test_background_config_path,
-    hi_test_gain_configuration_path,
 ):
     """Test coverage for hi_l1c function"""
     mock_generate_pset_dataset.return_value = xr.Dataset()
@@ -46,7 +64,6 @@ def test_hi_l1c(
         hi_test_cal_prod_config_path,
         xr.Dataset(),
         hi_test_background_config_path,
-        hi_test_gain_configuration_path,
     )[0]
     # Empty attributes, global values get added in post-processing
     assert pset.attrs == {}
@@ -59,7 +76,6 @@ def test_generate_pset_dataset(
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
     hi_test_background_config_path,
-    hi_test_gain_configuration_path,
     use_fake_spin_data_for_time,
     use_fake_repoint_data_for_time,
     imap_ena_sim_metakernel,
@@ -67,10 +83,10 @@ def test_generate_pset_dataset(
     """Test coverage for generate_pset_dataset function"""
     use_fake_spin_data_for_time(482372987.999)
     l1b_dataset = hi_l1b_de_dataset.copy()
-    # The real fixture CDF predates the gain_configuration_id L1B global
-    # attribute; add a placeholder so pset_geometric_factor() has something
-    # to look up.
-    l1b_dataset.attrs["gain_configuration_id"] = 0
+    # The real fixture CDF predates the HV delta L1B global attributes; add
+    # placeholders so add_pset_geometric_factor() and pset_counts() have
+    # something to look up.
+    l1b_dataset.attrs.update(NOMINAL_HV_DELTAS)
     l1b_met = l1b_dataset["ccsds_met"].values[0]
     # Set repoint start and end times.
     seconds_per_day = 24 * 60 * 60
@@ -85,7 +101,6 @@ def test_generate_pset_dataset(
         hi_test_cal_prod_config_path,
         goodtimes,
         hi_test_background_config_path,
-        hi_test_gain_configuration_path,
     )
 
     assert l1c_dataset.epoch.data[0] == l1b_dataset.epoch.data[0].astype(np.int64)
@@ -119,7 +134,6 @@ def test_generate_pset_dataset_uses_midpoint_time(
     mock_pset_backgrounds,
     hi_test_cal_prod_config_path,
     hi_test_background_config_path,
-    hi_test_gain_configuration_path,
 ):
     """Test that generate_pset_dataset uses midpoint ET for pset_geometry."""
     # Create a mock L1B dataset
@@ -141,7 +155,7 @@ def test_generate_pset_dataset_uses_midpoint_time(
         attrs={
             "Logical_file_id": "imap_hi_l1b_45sensor-de_20250415_v999",
             "Logical_source": "imap_hi_l1b_45sensor-de",
-            "gain_configuration_id": 0,
+            **NOMINAL_HV_DELTAS,
         },
     )
 
@@ -167,7 +181,6 @@ def test_generate_pset_dataset_uses_midpoint_time(
         hi_test_cal_prod_config_path,
         xr.Dataset(),
         hi_test_background_config_path,
-        hi_test_gain_configuration_path,
     )
 
     # Calculate expected midpoint ET
@@ -190,50 +203,117 @@ def test_generate_pset_dataset_uses_midpoint_time(
     assert actual_sensor_arg == "45sensor"
 
 
-@mock.patch("imap_processing.hi.hi_l1c.load_gain_configuration")
-def test_pset_geometric_factor_looks_up_by_config_id(mock_load_gain_config):
-    """Test coverage for pset_geometric_factor when the pointing was classified."""
-    gain_config_df = pd.DataFrame(
-        {"geometric_factor": [0.001, 0.002, 0.003]},
-        index=pd.MultiIndex.from_tuples(
-            [(0, 1), (0, 2), (0, 3)], names=["config_id", "esa_energy_step"]
-        ),
-    )
-    mock_load_gain_config.return_value = gain_config_df
+def _make_pset_ds_for_geometric_factor(esa_energy_steps, calibration_prods):
+    """Build a minimal pset dataset with a spin_angle_bin coordinate.
 
-    pset_coords = {
-        "epoch": xr.DataArray([0], dims=["epoch"]),
-        "esa_energy_step": xr.DataArray([1, 2, 3], dims=["esa_energy_step"]),
-    }
-    l1b_de_dataset = xr.Dataset(attrs={"gain_configuration_id": 0})
-
-    result = hi_l1c.pset_geometric_factor(
-        pset_coords, l1b_de_dataset, "Fake gain config path"
+    The spin_angle_bin coordinate is included (unused by geometric_factor)
+    to guard against it leaking into the geometric_factor variable's shape.
+    """
+    return xr.Dataset(
+        coords={
+            "epoch": xr.DataArray([0], dims=["epoch"]),
+            "esa_energy_step": xr.DataArray(esa_energy_steps, dims=["esa_energy_step"]),
+            "calibration_prod": xr.DataArray(
+                calibration_prods, dims=["calibration_prod"]
+            ),
+            "spin_angle_bin": xr.DataArray(np.arange(5), dims=["spin_angle_bin"]),
+        }
     )
 
+
+def test_add_pset_geometric_factor_matching_gain_state(hi_test_cal_prod_config_path):
+    """Test add_pset_geometric_factor for a pointing whose gain-match values
+    match the test cal-prod config's gain_config_id=0 reference values
+    (within tolerance). The resulting geometric_factor should record the
+    unique geometric_factor per esa_energy_step and calibration_prod, and
+    should not gain a spin_angle_bin dimension from the pset dataset's other
+    coordinates."""
+    config_df = utils.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+    pset_ds = _make_pset_ds_for_geometric_factor(np.arange(1, 10), [0, 1])
+    l1b_de_dataset = xr.Dataset(attrs=NOMINAL_HV_DELTAS)
+    gain_config_df = _select_gain_config_df(config_df, l1b_de_dataset)
+
+    result = hi_l1c.add_pset_geometric_factor(pset_ds, gain_config_df)
+
+    assert result is pset_ds
+    assert result["geometric_factor"].dims == (
+        "epoch",
+        "esa_energy_step",
+        "calibration_prod",
+    )
+
+    # geometric_factor per esa_energy_step (1-9) and calibration_prod (0, 1)
+    # for gain_config_id=0. calibration_prod 0 and 1 share identical
+    # geometric_factor values in the fixture. See
+    # imap_processing/tests/hi/data/l1/imap_hi_90sensor-cal-prod_20240101_v001.csv
+    per_step = np.array(
+        [
+            0.00055,
+            0.00085,
+            0.00126,
+            0.00170,
+            0.00340,
+            0.00523,
+            0.00659,
+            0.01301,
+            0.01830,
+        ]
+    )
+    expected = np.stack([per_step, per_step], axis=1)
     np.testing.assert_allclose(
-        result["geometric_factor"].values[0], [0.001, 0.002, 0.003], rtol=1e-6
+        result["geometric_factor"].values[0], expected, rtol=1e-6
     )
-    mock_load_gain_config.assert_called_once_with("Fake gain config path")
 
 
-def test_pset_geometric_factor_no_match_returns_fillval():
-    """Test coverage for pset_geometric_factor when the pointing was not classified."""
-    pset_coords = {
-        "epoch": xr.DataArray([0], dims=["epoch"]),
-        "esa_energy_step": xr.DataArray([1, 2, 3], dims=["esa_energy_step"]),
-    }
+def test_add_pset_geometric_factor_nan_gain_match_returns_fillval(
+    hi_test_cal_prod_config_path,
+):
+    """If L1B could not determine reference detector voltages for the
+    pointing (nan HV delta attrs), geometric_factor stays FILLVAL."""
+    config_df = utils.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+    pset_ds = _make_pset_ds_for_geometric_factor([1, 2, 3], [0, 1])
     l1b_de_dataset = xr.Dataset(
-        attrs={"gain_configuration_id": GainConfigLookupTable.NO_MATCH}
+        attrs={
+            "mcp_delta_v": float("nan"),
+            "cem_a_delta_v": 2150.0,
+            "cem_b_delta_v": 2150.0,
+            "tof_v": -8000.0,
+        }
     )
+    gain_config_df = _select_gain_config_df(config_df, l1b_de_dataset)
 
-    result = hi_l1c.pset_geometric_factor(
-        pset_coords, l1b_de_dataset, "Fake gain config path"
-    )
+    result = hi_l1c.add_pset_geometric_factor(pset_ds, gain_config_df)
 
     fillval = np.float32(result["geometric_factor"].attrs["FILLVAL"])
     np.testing.assert_array_equal(
-        result["geometric_factor"].values[0], [fillval, fillval, fillval]
+        result["geometric_factor"].values[0],
+        np.full((3, 2), fillval),
+    )
+
+
+def test_add_pset_geometric_factor_no_match_returns_fillval(
+    hi_test_cal_prod_config_path,
+):
+    """If the pointing's gain-match values don't fall within tolerance of any
+    gain_config_id in the cal-prod config, geometric_factor stays FILLVAL."""
+    config_df = utils.CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+    pset_ds = _make_pset_ds_for_geometric_factor([1, 2, 3], [0, 1])
+    l1b_de_dataset = xr.Dataset(
+        attrs={
+            "mcp_delta_v": 0.0,
+            "cem_a_delta_v": 0.0,
+            "cem_b_delta_v": 0.0,
+            "tof_v": 0.0,
+        }
+    )
+    gain_config_df = _select_gain_config_df(config_df, l1b_de_dataset)
+
+    result = hi_l1c.add_pset_geometric_factor(pset_ds, gain_config_df)
+
+    fillval = np.float32(result["geometric_factor"].attrs["FILLVAL"])
+    np.testing.assert_array_equal(
+        result["geometric_factor"].values[0],
+        np.full((3, 2), fillval),
     )
 
 
@@ -323,17 +403,23 @@ def test_pset_counts(
     hi_test_background_config_path,
 ):
     """Test coverage for pset_counts function."""
+    # The real fixture CDF predates the HV delta L1B global attributes; add
+    # placeholders matching the test cal-prod config's gain_config_id=0
+    # reference values so pset_counts() has a gain_config_id to match.
+    l1b_dataset = hi_l1b_de_dataset.copy()
+    l1b_dataset.attrs.update(NOMINAL_HV_DELTAS)
     cal_config_df = utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
     empty_pset = hi_l1c.empty_pset_dataset(
         100,
-        hi_l1b_de_dataset.esa_energy_step,
+        l1b_dataset.esa_energy_step,
         cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
+    gain_config_df = _select_gain_config_df(cal_config_df, l1b_dataset)
     counts_var = hi_l1c.pset_counts(
-        empty_pset.coords, cal_config_df, hi_l1b_de_dataset, hi_goodtimes_dataset
+        empty_pset.coords, gain_config_df, l1b_dataset, hi_goodtimes_dataset
     )
     assert "counts" in counts_var
 
@@ -352,6 +438,10 @@ def test_pset_counts_empty_l1b(
     # remove all but one event and set its trigger_id to zero
     l1b_dataset = hi_l1b_de_dataset.isel(event_met=[0]).copy(deep=True)
     l1b_dataset["trigger_id"].data[0] = 0
+    # The real fixture CDF predates the HV delta L1B global attributes; add
+    # placeholders matching the test cal-prod config's gain_config_id=0
+    # reference values so pset_counts() has a gain_config_id to match.
+    l1b_dataset.attrs.update(NOMINAL_HV_DELTAS)
     cal_config_df = utils.CalibrationProductConfig.from_csv(
         hi_test_cal_prod_config_path
     )
@@ -361,8 +451,9 @@ def test_pset_counts_empty_l1b(
         cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
+    gain_config_df = _select_gain_config_df(cal_config_df, l1b_dataset)
     counts_var = hi_l1c.pset_counts(
-        empty_pset.coords, cal_config_df, l1b_dataset, hi_goodtimes_dataset
+        empty_pset.coords, gain_config_df, l1b_dataset, hi_goodtimes_dataset
     )
     assert counts_var["counts"].data.sum() == 0
 
@@ -456,14 +547,20 @@ def test_pset_counts_arbitrary_cal_prod_numbers(
     """Test pset_counts with non-sequential calibration product numbers."""
     # Create a test calibration product config with non-sequential numbers
     csv_content = """\
-calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
-5,1,0.00055,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023
-5,2,0.00085,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023
-10,1,0.00055,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023
-10,2,0.00085,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023
+gain_config_id,calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,mcp_delta_v,mcp_delta_v_tol,cem_a_delta_v,cem_a_delta_v_tol,cem_b_delta_v,cem_b_delta_v_tol,tof_v,tof_v_tol
+0,5,1,0.00055,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,875.0,75.0,2150.0,150.0,2150.0,150.0,-8000.0,50.0
+0,5,2,0.00085,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+0,10,1,0.00055,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+0,10,2,0.00085,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
     """
 
     cal_config_df = utils.CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+    # The real fixture CDF predates the HV delta L1B global attributes; add
+    # placeholders matching this test's gain_config_id=0 reference values
+    # so pset_counts() has a gain_config_id to match.
+    l1b_dataset = hi_l1b_de_dataset.copy()
+    l1b_dataset.attrs.update(NOMINAL_HV_DELTAS)
 
     # Create PSET with non-sequential calibration product numbers
     l1b_met = 482373065
@@ -473,7 +570,7 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
 
     empty_pset = hi_l1c.empty_pset_dataset(
         l1b_met,
-        hi_l1b_de_dataset.esa_energy_step,
+        l1b_dataset.esa_energy_step,
         cal_config_df.cal_prod_config.calibration_product_numbers,
         HIAPID.H90_SCI_DE.sensor,
     )
@@ -481,12 +578,14 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
     # Verify the calibration_prod coordinate has non-sequential values
     np.testing.assert_array_equal(empty_pset.calibration_prod.data, np.array([5, 10]))
 
+    gain_config_df = _select_gain_config_df(cal_config_df, l1b_dataset)
+
     # Mock get_pointing_times to avoid SPICE kernel requirements
     with mock.patch(
         "imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200)
     ):
         counts_var = hi_l1c.pset_counts(
-            empty_pset.coords, cal_config_df, hi_l1b_de_dataset, hi_goodtimes_dataset
+            empty_pset.coords, gain_config_df, l1b_dataset, hi_goodtimes_dataset
         )
 
     # Verify counts array has correct shape based on coordinates
@@ -516,6 +615,131 @@ calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_l
         np.sum(counts_var["counts"].data[:, :, 1]),
         np.sum(coincidence_7_mask & esa_1_2_mask),
     )
+
+
+@pytest.mark.external_test_data
+def test_pset_counts_restricted_to_matched_gain_config_id(
+    hi_l1b_de_dataset, hi_goodtimes_dataset, use_fake_repoint_data_for_time
+):
+    """Test pset_counts only qualifies events against the pointing's own
+    matched gain_config_id.
+
+    Regression test: with two gain_config_id groups that have identical
+    calibration product definitions, pset_counts must not iterate both
+    groups' rows into the same (esa_energy_step, calibration_prod) counts
+    cell -- doing so would double every count once the ancillary file has
+    more than one gain_config_id.
+    """
+    # Two gain_config_id groups (0 and 1) with identical calibration
+    # product definitions but distinct HV delta reference values.
+    csv_content = """\
+gain_config_id,calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,mcp_delta_v,mcp_delta_v_tol,cem_a_delta_v,cem_a_delta_v_tol,cem_b_delta_v,cem_b_delta_v_tol,tof_v,tof_v_tol
+0,5,1,0.00055,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,875.0,75.0,2150.0,150.0,2150.0,150.0,-8000.0,50.0
+0,5,2,0.00085,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+0,10,1,0.00055,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+0,10,2,0.00085,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+1,5,1,0.00055,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,500.0,50.0,1000.0,100.0,1000.0,100.0,-4000.0,50.0
+1,5,2,0.00085,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+1,10,1,0.00055,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+1,10,2,0.00085,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+    """
+
+    cal_config_df = utils.CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+    # Match the pointing to gain_config_id=1's reference values.
+    l1b_dataset = hi_l1b_de_dataset.copy()
+    l1b_dataset.attrs.update(
+        {
+            "mcp_delta_v": 500.0,
+            "cem_a_delta_v": 1000.0,
+            "cem_b_delta_v": 1000.0,
+            "tof_v": -4000.0,
+        }
+    )
+
+    l1b_met = 482373065
+    use_fake_repoint_data_for_time(
+        np.asarray([l1b_met - 15 * 60, l1b_met + 24 * 60 * 60])
+    )
+
+    empty_pset = hi_l1c.empty_pset_dataset(
+        l1b_met,
+        l1b_dataset.esa_energy_step,
+        cal_config_df.cal_prod_config.calibration_product_numbers,
+        HIAPID.H90_SCI_DE.sensor,
+    )
+
+    gain_config_df = _select_gain_config_df(cal_config_df, l1b_dataset)
+
+    with mock.patch(
+        "imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200)
+    ):
+        counts_var = hi_l1c.pset_counts(
+            empty_pset.coords, gain_config_df, l1b_dataset, hi_goodtimes_dataset
+        )
+
+    # Expected totals match the single-gain_config_id case exercised by
+    # test_pset_counts_arbitrary_cal_prod_numbers. If pset_counts wrongly
+    # iterated both gain_config_id groups' identical definitions, these
+    # totals would be doubled.
+    esa_1_2_mask = (
+        hi_l1b_de_dataset["esa_step"][hi_l1b_de_dataset["ccsds_index"]] < 3
+    ).values
+    coincidence_15_mask = (hi_l1b_de_dataset["coincidence_type"] == 15).values
+    np.testing.assert_equal(
+        np.sum(counts_var["counts"].data[:, :, 0]),
+        np.sum(coincidence_15_mask & esa_1_2_mask),
+    )
+    coincidence_7_mask = (hi_l1b_de_dataset["coincidence_type"] == 7).values
+    np.testing.assert_equal(
+        np.sum(counts_var["counts"].data[:, :, 1]),
+        np.sum(coincidence_7_mask & esa_1_2_mask),
+    )
+
+
+@pytest.mark.external_test_data
+@mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
+def test_pset_counts_no_gain_match_returns_zero_counts(
+    mock_pointing_times,
+    hi_l1b_de_dataset,
+    hi_goodtimes_dataset,
+    hi_test_cal_prod_config_path,
+):
+    """Test pset_counts returns all-zero counts when the pointing's HV
+    deltas don't match any gain_config_id.
+
+    Without a unique gain_config_id match, the correct coincidence-type/TOF
+    window definitions for this pointing are unknown, so no events should
+    be counted (mirrors add_pset_geometric_factor() leaving
+    geometric_factor at FILLVAL in the same situation).
+    """
+    cal_config_df = utils.CalibrationProductConfig.from_csv(
+        hi_test_cal_prod_config_path
+    )
+    l1b_dataset = hi_l1b_de_dataset.copy()
+    l1b_dataset.attrs.update(
+        {
+            "mcp_delta_v": 0.0,
+            "cem_a_delta_v": 0.0,
+            "cem_b_delta_v": 0.0,
+            "tof_v": 0.0,
+        }
+    )
+    empty_pset = hi_l1c.empty_pset_dataset(
+        100,
+        l1b_dataset.esa_energy_step,
+        cal_config_df.cal_prod_config.calibration_product_numbers,
+        HIAPID.H90_SCI_DE.sensor,
+    )
+
+    gain_config_df = _select_gain_config_df(cal_config_df, l1b_dataset)
+    assert gain_config_df is None
+
+    counts_var = hi_l1c.pset_counts(
+        empty_pset.coords, gain_config_df, l1b_dataset, hi_goodtimes_dataset
+    )
+
+    assert counts_var["counts"].data.sum() == 0
 
 
 @mock.patch("imap_processing.hi.hi_l1c.get_pointing_times", return_value=(100, 200))
@@ -581,17 +805,17 @@ def test_pset_counts_goodtimes_filtering(
     mock_config_row = MagicMock()
     mock_config_row.Index = (0, 1)  # (calibration_prod, esa_energy_step)
 
-    def mock_iter(de_ds, config_df, esa_energy_steps):
+    def mock_iter(de_ds, gain_config_df, esa_energy_steps):
         n_remaining = len(de_ds["event_met"])
         yield 1, mock_config_row, np.ones(n_remaining, dtype=bool)
 
     mock_iter_qualified.side_effect = mock_iter
 
-    # Use MagicMock for cal_config since it's not used with our mock
-    mock_cal_config = MagicMock()
+    # Use MagicMock for gain_config_df since it's not used with our mock
+    mock_gain_config_df = MagicMock()
 
     counts_var = hi_l1c.pset_counts(
-        empty_pset.coords, mock_cal_config, l1b_dataset, goodtimes_ds
+        empty_pset.coords, mock_gain_config_df, l1b_dataset, goodtimes_ds
     )
 
     # Only 5 events (METs 100-104) should pass goodtimes filtering
