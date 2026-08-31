@@ -473,7 +473,9 @@ def compute_counts_by_charge_and_mass(
             else np.ones(len(current_day_indices), dtype=bool)
         )
         current_day_indices = current_day_indices[dust]
-        mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[current_day_indices]
+        mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[
+            current_day_indices
+        ]
         charge_vals = l2a_dataset["target_low_impact_charge"].data[current_day_indices]
         spin_phase_angles = l2a_dataset["spin_phase"].data[current_day_indices]
         # Make sure longitude values are in the range [0, 360)
@@ -526,13 +528,29 @@ def compute_counts_by_charge_and_mass(
 def compute_counts_agnostic(
     l2a_dataset: xr.Dataset, epoch_doy_unique: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Compute daily dust counts without mass or charge binning."""
+    """
+    Compute daily dust counts without mass or charge binning.
+
+    Parameters
+    ----------
+    l2a_dataset : xarray.Dataset
+        Combined IDEX L2A dataset.
+    epoch_doy_unique : np.ndarray
+        Unique days of year corresponding to the epochs in the dataset.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        Counts by spin phase and counts by longitude and latitude, respectively.
+    """
     counts = []
     counts_map = []
     for doy in epoch_doy_unique:
         indices = np.where(epoch_to_doy(l2a_dataset["epoch"].data) == doy)[0]
         if "dust_hit_flag" in l2a_dataset:
-            indices = indices[np.asarray(l2a_dataset["dust_hit_flag"].data[indices]) == 1]
+            indices = indices[
+                np.asarray(l2a_dataset["dust_hit_flag"].data[indices]) == 1
+            ]
         spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
         counts.append(np.histogram(spin, bins=np.arange(5))[0])
         longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
@@ -582,7 +600,26 @@ def compute_rates_agnostic(
     epoch_doy: np.ndarray,
     daily_on_percentage: dict,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Compute daily count rates without mass or charge binning."""
+    """
+    Compute daily count rates without mass or charge binning.
+
+    Parameters
+    ----------
+    counts : np.ndarray
+        Daily agnostic counts by spin phase.
+    counts_map : np.ndarray
+        Daily agnostic counts by longitude and latitude.
+    epoch_doy : np.ndarray
+        Unique days of year corresponding to the count records.
+    daily_on_percentage : dict
+        Percentage of time science acquisition was on for each day of year.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        Daily rates by spin phase and daily rates by longitude and latitude,
+        respectively.
+    """
     epoch_doy_percent_on = np.array(
         [daily_on_percentage.get(doy, -1) for doy in epoch_doy]
     )
