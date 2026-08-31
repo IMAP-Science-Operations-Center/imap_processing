@@ -25,7 +25,6 @@ from imap_processing.idex.idex_l2b import (
     get_science_acquisition_on_percentage,
     idex_l2b,
 )
-from imap_processing.spice.time import epoch_to_doy
 
 INT_FILLVAL = np.iinfo(np.int64).min
 
@@ -270,13 +269,19 @@ def test_get_science_acquisition_on_percentage_no_acquisition(caplog):
     assert "No science acquisition events found" in caplog.text
 
 
-def test_compute_counts_agnostic_filters_non_dust(l2a_dataset: xr.Dataset):
+def test_compute_counts_agnostic_filters_non_dust():
     """Agnostic products count only records classified as dust hits."""
-    dataset = l2a_dataset.isel(epoch=slice(0, 4)).copy(deep=True)
-    dataset["dust_hit_flag"] = xr.DataArray([1, 0, 1, 0], dims="epoch")
-    epoch_doy = np.array([epoch_to_doy(dataset["epoch"].data)[0]])
+    dataset = xr.Dataset(
+        {
+            "epoch": ("epoch", np.zeros(4, dtype=np.int64)),
+            "dust_hit_flag": ("epoch", [1, 0, 1, 0]),
+            "spin_phase": ("epoch", [0, 90, 180, 270]),
+            "longitude": ("epoch", [0.0, 1.0, 2.0, 3.0]),
+            "latitude": ("epoch", [0.0, 1.0, 2.0, 3.0]),
+        }
+    )
 
-    counts, counts_map = compute_counts_agnostic(dataset, epoch_doy)
+    counts, counts_map = compute_counts_agnostic(dataset, np.array([1]))
 
     assert counts.sum() == 2
     assert counts_map.sum() == 2
