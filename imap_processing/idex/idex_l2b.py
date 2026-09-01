@@ -116,9 +116,7 @@ def idex_l2b(l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset) -> list[xr.Datas
     # create the attribute manager for this data level
     idex_l2b_attrs = get_idex_attrs("l2b")
     idex_l2c_attrs = get_idex_attrs("l2c")
-    msg_ds = (
-        xr.concat(msg_data_l1b, dim="epoch").sortby("epoch").drop_duplicates("epoch")
-    )
+    msg_ds = msg_data_l1b.sortby("epoch").drop_duplicates("epoch")
     (
         counts_by_charge,
         counts_by_mass,
