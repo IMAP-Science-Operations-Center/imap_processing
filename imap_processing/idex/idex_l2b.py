@@ -554,9 +554,7 @@ def compute_counts_agnostic(
         else:
             indices = np.array([], dtype=int)
         spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
-        counts.append(
-            np.histogram(spin, bins=np.arange(SPIN_PHASE_BIN_EDGES.size))[0]
-        )
+        counts.append(np.histogram(spin, bins=np.arange(SPIN_PHASE_BIN_EDGES.size))[0])
         longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
         latitude = l2a_dataset["latitude"].data[indices]
         valid_geometry = np.isfinite(longitude) & np.isfinite(latitude)
