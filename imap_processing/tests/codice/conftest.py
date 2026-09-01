@@ -237,7 +237,7 @@ def codice_lut_path():
             ]
         elif descriptor == "l2-lo-efficiency":
             return [
-                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-gfactor_20251212_v003.csv"
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251212_v003.csv"
             ]
         elif descriptor == "l2-lo-gfactor":
             return [
