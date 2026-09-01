@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pytest
 
+from imap_processing import imap_module_directory
 from imap_processing.codice.utils import (
     calculate_acq_time_per_step,
     get_collapse_pattern_shape,
@@ -11,8 +12,18 @@ from imap_processing.codice.utils import (
 
 pytestmark = pytest.mark.external_test_data
 
+# These tests exercise the LUT-parsing utilities directly against a fixed,
+# known LUT rather than the conftest "l1a-sci-lut" fixture, since that
+# fixture now points at a newer LUT (used to match newer validation data
+# elsewhere) that doesn't contain the table_id these tests were written
+# against.
+SCI_LUT_PATH = (
+    imap_module_directory
+    / "tests/codice/data/l1a_lut/imap_codice_l1a-sci-lut_20251007_v005.json"
+)
 
-def test_codice_non_zero_patterns(codice_lut_path):
+
+def test_codice_non_zero_patterns():
     """Test L1A collapse Lo and Hi non-zero patterns.
 
     This is mainly checking for expected row indices of non-zero
@@ -21,10 +32,8 @@ def test_codice_non_zero_patterns(codice_lut_path):
     (row, column). This is different from collapse pattern shape
     which is tested in `test_get_collapse_pattern_shape`.
     """
-    sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
-
-    sci_lut = json.loads(sci_lut_path.read_text())
-    table_id = "3978152295"
+    sci_lut = json.loads(SCI_LUT_PATH.read_text())
+    table_id = "3952862729"
     assert table_id in sci_lut
 
     collapse_lo = sci_lut[table_id]["collapse_lo"]
@@ -90,16 +99,14 @@ def test_codice_non_zero_patterns(codice_lut_path):
         assert arr.shape == (24,)
 
 
-def test_get_collapse_pattern_shape(codice_lut_path):
+def test_get_collapse_pattern_shape():
     """Test collapse pattern shapes used to reshape data.
 
     Here, we expact the shape to be in this order:
         (num_spin_sectors, num_positions)
     """
-    sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
-
-    table_id = "3978152295"
-    sci_lut_data = json.loads(sci_lut_path.read_text()).get(table_id)
+    table_id = "3952862729"
+    sci_lut_data = json.loads(SCI_LUT_PATH.read_text()).get(table_id)
 
     # Lo instrument counts - singles
     column_collapsed_example = get_collapse_pattern_shape(
@@ -138,143 +145,144 @@ def test_get_collapse_pattern_shape(codice_lut_path):
     assert non_collapsed_example == (12, 5)
 
 
-def test_acquisition_time(codice_lut_path):
-    sci_lut_path = codice_lut_path(descriptor="l1a-sci-lut")[0]
-    sci_lut_data = json.loads(sci_lut_path.read_text())
-    table_id = "3978152295"
+def test_acquisition_time():
+    sci_lut_data = json.loads(SCI_LUT_PATH.read_text())
+    table_id = "3952862729"
     low_stepping_tab = sci_lut_data[table_id]["lo_stepping_tab"]
     acq_time_per_step = calculate_acq_time_per_step(low_stepping_tab)
-    expected_acq_times = np.array(
-        [
-            0.57870833,
-            0.57870833,
-            0.57870833,
-            0.57870833,
-            0.28935417,
-            0.28935417,
-            0.28935417,
-            0.28935417,
-            0.28935417,
-            0.28935417,
-            0.28935417,
-            0.28935417,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.14467708,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.11574167,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            0.19290278,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-            np.nan,
-        ]
+    expected_acq_times = (
+        np.array(
+            [
+                578.70833333,
+                578.70833333,
+                578.70833333,
+                578.70833333,
+                289.35416667,
+                289.35416667,
+                289.35416667,
+                289.35416667,
+                289.35416667,
+                289.35416667,
+                289.35416667,
+                289.35416667,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                192.90277778,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                144.67708333,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                115.74166667,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+                95.69438889,
+            ]
+        )
+        / 1e3
     )
-
     np.testing.assert_allclose(acq_time_per_step, expected_acq_times, rtol=1e-5)

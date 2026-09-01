@@ -139,24 +139,23 @@ def test_lo_counters_aggregated(mock_get_file_paths, codice_lut_path):
         # TODO: ask Joey to remove reserved variables from validation files
         if variable.startswith("reserved"):
             continue
-        # TODO: remove this try/except after non-active variables
-        # dimensions are fixed in Joey's validation files.
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except AssertionError:
-            # TODO: remove this try/except after non-active variables
-            # dimensions are fixed in Joey's validation files.
+        if processed_data[variable].shape != val_data[variable].shape:
+            # TODO: ask Joey to populate non-active variables in the
+            # validation files instead of leaving them empty (shape (0,)).
+            # Our processing fills non-active Lo counters with fillval
+            # placeholders at the full (epoch, esa_step, spin_sector_pairs)
+            # shape (see codice_l1a_lo_counters_aggregated.py), so these
+            # never match the validation file's shape.
             continue
+        assert_allclose_fillaware(
+            processed_data[variable],
+            val_data[variable],
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
 
     processed_data.attrs["Data_version"] = "001"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
-    # The l0 file contains packets from 20260203, so the output file should have that
-    # date in the name.
     assert (
         cdf_file.name
         == f"imap_codice_l1a_lo-counters-aggregated_{VALIDATION_FILE_DATE}_v001.cdf"
@@ -185,13 +184,9 @@ def test_lo_counters_singles(mock_get_file_paths, codice_lut_path):
     val_data = load_cdf(val_path)
 
     for variable in val_data.data_vars:
-        if variable == "apd_singles":
-            # TODO there is a mismatch in nso nan masking for apd_singles. Talk to
-            #   CoDICE team.
-            continue
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
+        assert_allclose_fillaware(
+            processed_data[variable],
+            val_data[variable],
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )
