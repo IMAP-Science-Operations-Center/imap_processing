@@ -287,6 +287,23 @@ def test_compute_counts_agnostic_filters_non_dust():
     assert counts_map.sum() == 2
 
 
+def test_compute_counts_agnostic_excludes_events_without_dust_flag():
+    """A missing dust-hit flag must not classify events as dust impacts."""
+    dataset = xr.Dataset(
+        {
+            "epoch": ("epoch", np.zeros(2, dtype=np.int64)),
+            "spin_phase": ("epoch", [0, 90]),
+            "longitude": ("epoch", [0.0, 1.0]),
+            "latitude": ("epoch", [0.0, 1.0]),
+        }
+    )
+
+    counts, counts_map = compute_counts_agnostic(dataset, np.array([1]))
+
+    assert counts.sum() == 0
+    assert counts_map.sum() == 0
+
+
 def test_compute_counts_by_charge_and_mass():
     """Test the compute_counts_by_charge_and_mass function."""
 
@@ -307,6 +324,7 @@ def test_compute_counts_by_charge_and_mass():
             "spin_phase": np.full((6,), 0),
             "longitude": np.full(6, 5),
             "latitude": np.full(6, 0),
+            "dust_hit_flag": np.ones(6, dtype=np.int8),
         }
     )
 
@@ -378,6 +396,7 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
             "spin_phase": np.full((6,), 0),
             "longitude": np.array([0, 365]),
             "latitude": np.array([-90, 90]),
+            "dust_hit_flag": np.ones(2, dtype=np.int8),
         }
     )
 

@@ -470,7 +470,7 @@ def compute_counts_by_charge_and_mass(
         dust = (
             np.asarray(l2a_dataset["dust_hit_flag"].data[current_day_indices]) == 1
             if "dust_hit_flag" in l2a_dataset
-            else np.ones(len(current_day_indices), dtype=bool)
+            else np.zeros(len(current_day_indices), dtype=bool)
         )
         current_day_indices = current_day_indices[dust]
         mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[
@@ -551,6 +551,8 @@ def compute_counts_agnostic(
             indices = indices[
                 np.asarray(l2a_dataset["dust_hit_flag"].data[indices]) == 1
             ]
+        else:
+            indices = np.array([], dtype=int)
         spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
         counts.append(np.histogram(spin, bins=np.arange(5))[0])
         longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
