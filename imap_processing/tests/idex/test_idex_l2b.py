@@ -201,6 +201,10 @@ def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
             f"Variable {var} should be fully NaN for the temporary L2B patch."
         )
 
+    # The agnostic products are independently computed and remain publishable.
+    assert l2b_dataset["counts"].data.sum() > 0
+    assert np.isfinite(l2b_dataset["rate"].data).any()
+
 
 def test_bin_spin_phases():
     """Tests that bin_spin_phases() produces expected results."""

@@ -397,9 +397,9 @@ def idex_l2b(
 
     l2c_dataset.attrs.update(map_attrs)
 
-    # We're inserting a placeholder block here for the 2026 June release while the
-    # IDEX science team works through validating the fitting routines and
-    # derived values.
+    # Keep the mass/charge computations above for validation and future work, but
+    # withhold those products from publication until the fitting routines and derived
+    # values are validated. The agnostic products are intentionally left untouched.
 
     # L2B Block
     l2b_dataset["counts_by_mass"].data = np.full(
