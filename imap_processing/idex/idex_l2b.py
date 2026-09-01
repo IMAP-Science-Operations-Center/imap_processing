@@ -494,13 +494,13 @@ def compute_counts_by_charge_and_mass(
         counts_by_mass.append(
             np.histogramdd(
                 np.column_stack([mass_vals, binned_spin_phase]),
-                bins=[MASS_BIN_EDGES, np.arange(5)],
+                bins=[MASS_BIN_EDGES, np.arange(SPIN_PHASE_BIN_EDGES.size)],
             )[0]
         )
         counts_by_charge.append(
             np.histogramdd(
                 np.column_stack([charge_vals, binned_spin_phase]),
-                bins=[CHARGE_BIN_EDGES, np.arange(5)],
+                bins=[CHARGE_BIN_EDGES, np.arange(SPIN_PHASE_BIN_EDGES.size)],
             )[0]
         )
         counts_by_mass_map.append(
@@ -554,7 +554,9 @@ def compute_counts_agnostic(
         else:
             indices = np.array([], dtype=int)
         spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
-        counts.append(np.histogram(spin, bins=np.arange(5))[0])
+        counts.append(
+            np.histogram(spin, bins=np.arange(SPIN_PHASE_BIN_EDGES.size))[0]
+        )
         longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
         latitude = l2a_dataset["latitude"].data[indices]
         valid_geometry = np.isfinite(longitude) & np.isfinite(latitude)
