@@ -118,19 +118,19 @@ base_agnostic: &base_agnostic
 
 rate_by_charge:
     <<: *base_charge
-    CATDESC: Count rate per day by impact charge and spin phase.
+    CATDESC: Count rate in s^-1 by impact charge and spin phase.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate by Charge
     FILLVAL: *double_fillval
-    UNITS: day^-1
+    UNITS: s^-1
 
 rate_by_mass:
     <<: *base_mass
-    CATDESC: Count rate per day by mass and spin phase.
+    CATDESC: Count rate in s^-1 by mass and spin phase.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate by Mass
     FILLVAL: *double_fillval
-    UNITS: day^-1
+    UNITS: s^-1
 
 counts_by_charge:
     <<: *base_charge
@@ -162,7 +162,7 @@ rate:
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate
     FILLVAL: *double_fillval
-    UNITS: day^-1
+    UNITS: s^-1
 
 impact_day_of_year:
     CATDESC: The unique day of the years when dust impacts occurred.
