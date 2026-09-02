@@ -462,20 +462,7 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
         [processed_l1b_file.as_posix()],
         codice_lut_path(descriptor="l2-lo-gfactor"),
-        # TODO: this validation CDF (v026/20260204) was generated with the
-        # 20251008 efficiency calibration, not the current 20251212 one used
-        # everywhere else (conftest's "l2-lo-efficiency" descriptor). Using
-        # the current LUT here produces species intensities off by a clean,
-        # esa-step-dependent multiplicative factor (~8.3x-8.9x) matching
-        # exactly the ratio between the two LUT versions' values - i.e. the
-        # code and current LUT are correct, but this validation file is
-        # stale relative to the 20251212 calibration update. Pin to the old
-        # LUT here to match the frozen validation data until CoDICE
-        # regenerates this validation CDF against the current calibration.
-        [
-            imap_module_directory
-            / "tests/codice/data/l2_lut/imap_codice_l2-lo-efficiency_20251008_v003.csv"
-        ],
+        codice_lut_path(descriptor="l2-lo-efficiency"),
     ]
     processed_2_ds = process_codice_l2("lo-sw-species", ProcessingInputCollection())
     l2_val_data = (

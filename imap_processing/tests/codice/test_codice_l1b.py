@@ -111,6 +111,14 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     # hi-omni has species-specific shapes
     for variable in val_data.data_vars:
         if variable in ("epoch_delta_minus", "epoch_delta_plus"):
+            # Slightly higher tolerance for these two variables because we still have
+            # timing differences
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=5e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
             continue
         assert processed_data[variable].shape == val_data[variable].shape
         np.testing.assert_allclose(

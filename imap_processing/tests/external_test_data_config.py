@@ -32,7 +32,7 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l0_hi-sectored_{VALIDATION_FILE_DATE}_v001.pkts", "codice/data/l1a_input/"),
     (f"imap_codice_l0_hi-priority_{VALIDATION_FILE_DATE}_v001.pkts", "codice/data/l1a_input/"),
     (f"imap_codice_l0_hi-direct-events_{VALIDATION_FILE_DATE}_v001.pkts", "codice/data/l1a_input/"),
-    ("imap_codice_l0_hskp_{VALIDATION_FILE_DATE}_v001.pkts", "codice/data/l1a_input/"),
+    (f"imap_codice_l0_hskp_{VALIDATION_FILE_DATE}_v001.pkts", "codice/data/l1a_input/"),
     ("imap_codice_l0_raw_20260130_v001.pkts", "codice/data/l1a_input/"),
 
     # L1A LUT
