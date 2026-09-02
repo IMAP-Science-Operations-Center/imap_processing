@@ -459,20 +459,16 @@ def compute_counts_by_charge_and_mass(
     counts_by_charge_map = []
     counts_by_mass_map = []
     daily_epoch: np.ndarray = np.zeros(len(epoch_doy_unique), dtype=np.float64)
+    epoch_doy = epoch_to_doy(l2a_dataset["epoch"].data)
     for i in range(len(epoch_doy_unique)):
         doy = epoch_doy_unique[i]
         # Get the indices for the current day
-        current_day_indices = np.where(epoch_to_doy(l2a_dataset["epoch"].data) == doy)[
-            0
-        ]
+        current_day_indices = np.flatnonzero(epoch_doy == doy)
         # Set the epoch for the current day to be the mean epoch of the day.
         daily_epoch[i] = np.mean(l2a_dataset["epoch"].data[current_day_indices])
-        dust = (
-            np.asarray(l2a_dataset["dust_hit_flag"].data[current_day_indices]) == 1
-            if "dust_hit_flag" in l2a_dataset
-            else np.zeros(len(current_day_indices), dtype=bool)
+        current_day_indices = _get_dust_hit_indices(
+            l2a_dataset, epoch_doy, doy
         )
-        current_day_indices = current_day_indices[dust]
         mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[
             current_day_indices
         ]
@@ -545,14 +541,9 @@ def compute_counts_agnostic(
     """
     counts = []
     counts_map = []
+    epoch_doy = epoch_to_doy(l2a_dataset["epoch"].data)
     for doy in epoch_doy_unique:
-        indices = np.where(epoch_to_doy(l2a_dataset["epoch"].data) == doy)[0]
-        if "dust_hit_flag" in l2a_dataset:
-            indices = indices[
-                np.asarray(l2a_dataset["dust_hit_flag"].data[indices]) == 1
-            ]
-        else:
-            indices = np.array([], dtype=int)
+        indices = _get_dust_hit_indices(l2a_dataset, epoch_doy, doy)
         spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
         counts.append(np.histogram(spin, bins=np.arange(SPIN_PHASE_BIN_EDGES.size))[0])
         longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
@@ -566,6 +557,20 @@ def compute_counts_agnostic(
             )[0]
         )
     return np.asarray(counts, dtype=np.int64), np.asarray(counts_map, dtype=np.int64)
+
+
+def _get_dust_hit_indices(
+    l2a_dataset: xr.Dataset, epoch_doy: np.ndarray, doy: int
+) -> np.ndarray:
+    """Return the indices of dust hits occurring on the requested day."""
+    current_day_indices = np.flatnonzero(epoch_doy == doy)
+    if "dust_hit_flag" not in l2a_dataset:
+        return np.array([], dtype=int)
+
+    dust_hit = np.asarray(
+        l2a_dataset["dust_hit_flag"].data[current_day_indices]
+    ) == 1
+    return current_day_indices[dust_hit]
 
 
 def compute_rates(
