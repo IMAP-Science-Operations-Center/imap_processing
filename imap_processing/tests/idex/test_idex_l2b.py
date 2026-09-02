@@ -48,10 +48,14 @@ def l2b_and_l2c_datasets(l2a_dataset: xr.Dataset, test_l1b_msg) -> list[xr.Datas
     )  # Add a second dataset with different epoch values for testing
     l1b_msg_dataset2["epoch"] = l1b_msg_dataset2["epoch"] + NANOSECONDS_IN_DAY
     l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + NANOSECONDS_IN_DAY
-    # idex_l2b takes a single L2A dataset spanning one 10-day window. Concat the two
-    # simulated days together here to exercise a multi-day window.
+    # idex_l2b takes a single L2A dataset and a single L1B msg dataset, each spanning
+    # one 10-day window. Concat the two simulated days together here to exercise a
+    # multi-day window.
     combined_l2a_dataset = xr.concat([l2a_dataset, l2a_dataset2], dim="epoch")
-    datasets = idex_l2b(combined_l2a_dataset, [test_l1b_msg.copy(), l1b_msg_dataset2])
+    combined_msg_dataset = xr.concat(
+        [test_l1b_msg.copy(), l1b_msg_dataset2], dim="epoch"
+    )
+    datasets = idex_l2b(combined_l2a_dataset, combined_msg_dataset)
     return datasets
 
 
@@ -375,8 +379,12 @@ def test_compute_counts_by_charge_and_mass():
     np.testing.assert_array_equal(charge_map, expected_map_array)
     np.testing.assert_array_equal(mass_map, expected_map_array)
 
-    # The window epoch is the mean of the input epochs.
-    np.testing.assert_allclose(window_epoch, [np.mean(l2a_dataset["epoch"].data)])
+    # The window epoch is the center of the accumulation period: the midpoint
+    # between the first and last input epochs.
+    epoch_data = l2a_dataset["epoch"].data
+    np.testing.assert_allclose(
+        window_epoch, [(epoch_data.min() + epoch_data.max()) / 2]
+    )
 
 
 def test_compute_counts_by_charge_and_mass_out_of_bounds():

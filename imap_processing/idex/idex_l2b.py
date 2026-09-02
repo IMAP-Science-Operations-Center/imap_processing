@@ -18,7 +18,7 @@ Examples
     l1b_data = idex_l1b(l1a_data, "sci-10days")
 
     l1a_data = idex_l2a(l1b_data)
-    l2b_and_l2c_datasets = idex_l2b(l2a_data, [msg_data_l1b])
+    l2b_and_l2c_datasets = idex_l2b(l2a_data, msg_data_l1b)
     write_cdf(l2b_and_l2c_datasets[0])
     write_cdf(l2b_and_l2c_datasets[1])
 """
@@ -438,7 +438,7 @@ def compute_counts_by_charge_and_mass(
     tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
         Two 3D arrays containing counts by charge or mass, and by spin phase, Two 4D
         arrays containing counts by charge or mass, and by lon and lat, and a 1D array
-        containing the mean epoch of the window.
+        containing the center epoch of the window.
     """
     dust_hit_indices = _get_dust_hit_indices(l2a_dataset)
     mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[dust_hit_indices]
@@ -473,8 +473,11 @@ def compute_counts_by_charge_and_mass(
         np.column_stack([charge_vals, longitude, latitude]),
         bins=[CHARGE_BIN_EDGES, LON_BINS_EDGES, LAT_BINS_EDGES],
     )[0]
-    # The epoch for the window record is the mean epoch of all events in the window.
-    window_epoch = np.array([np.mean(l2a_dataset["epoch"].data)])
+    # Per ISTP convention, the epoch for the window record is the center of the
+    # accumulation period: the midpoint between the first and last event epochs in the
+    # window.
+    epoch_data = l2a_dataset["epoch"].data
+    window_epoch = np.array([(epoch_data.min() + epoch_data.max()) / 2])
 
     return (
         counts_by_charge[np.newaxis, ...],
