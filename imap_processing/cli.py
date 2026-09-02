@@ -727,7 +727,7 @@ class Codice(ProcessInstrument):
             for i, ds in enumerate(datasets):
                 datasets[i] = filter_day_boundary_data(ds, self.start_date)
 
-        if self.data_level == "l1b":
+        elif self.data_level == "l1b":
             science_files = dependencies.get_file_paths(source="codice")
             if len(science_files) != 1:
                 raise ValueError(
@@ -737,8 +737,13 @@ class Codice(ProcessInstrument):
             # process data
             datasets = [codice_l1b.process_codice_l1b(science_files[0])]
 
-        if self.data_level == "l2":
+        elif self.data_level == "l2":
             datasets = [codice_l2.process_codice_l2(self.descriptor, dependencies)]
+
+        else:
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
+            )
 
         return datasets
 
@@ -774,7 +779,7 @@ class Glows(ProcessInstrument):
                 )
             datasets = glows_l1a(science_files[0])
 
-        if self.data_level == "l1b":
+        elif self.data_level == "l1b":
             science_files = dependencies.get_file_paths(source="glows", data_type="l1a")
             if len(science_files) != 1:
                 raise ValueError(
@@ -847,7 +852,7 @@ class Glows(ProcessInstrument):
                 # Direct events
                 datasets = [glows_l1b_de(input_dataset, conversion_table_dict)]
 
-        if self.data_level == "l2":
+        elif self.data_level == "l2":
             science_files = dependencies.get_file_paths(source="glows", data_type="l1b")
             if len(science_files) != 1:
                 raise ValueError(
@@ -876,6 +881,11 @@ class Glows(ProcessInstrument):
                 input_dataset,
                 pipeline_settings_combiner.combined_dataset,
                 calibration_combiner.combined_dataset,
+            )
+
+        else:
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
             )
 
         return datasets
@@ -1150,6 +1160,11 @@ class Hit(ProcessInstrument):
             # process data to L2 products
             datasets = [hit_l2(l1b_dataset, ancillary_files)]
 
+        else:
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
+            )
+
         return datasets
 
 
@@ -1243,6 +1258,10 @@ class Idex(ProcessInstrument):
             # sort housekeeping files by the first epoch value
             hk_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
             datasets = idex_l2b(sci_dependencies, hk_dependencies)
+        else:
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
+            )
         return datasets
 
 
@@ -1437,6 +1456,12 @@ class Lo(ProcessInstrument):
                     )
 
             datasets = lo_l2.lo_l2(sci_dependencies, anc_dependencies, self.descriptor)
+
+        else:
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
+            )
+
         return datasets
 
 
@@ -1487,7 +1512,7 @@ class Mag(ProcessInstrument):
 
             datasets = mag_l1a(science_files[0])
 
-        if self.data_level == "l1b":
+        elif self.data_level == "l1b":
             science_files = dependencies.get_file_paths(source="mag", data_type="l1a")
             if len(science_files) != 1:
                 raise ValueError(
@@ -1511,7 +1536,7 @@ class Mag(ProcessInstrument):
                 mag_l1b(input_data, current_day, combined_calibration.combined_dataset)
             ]
 
-        if self.data_level == "l1c":
+        elif self.data_level == "l1c":
             start_datetime = datetime.strptime(self.start_date, "%Y%m%d")
             science_files = dependencies.get_valid_inputs_for_start_date(
                 start_datetime
@@ -1552,7 +1577,7 @@ class Mag(ProcessInstrument):
                     f"Invalid current-day dependencies found for MAG L1C:"
                     f"{dependencies}. Expected one or two dependencies."
                 )
-        if self.data_level == "l1d":
+        elif self.data_level == "l1d":
             science_files = dependencies.get_file_paths(source="mag", data_type="l1c")
             science_files.extend(
                 dependencies.get_file_paths(source="mag", data_type="l1b")
@@ -1568,7 +1593,7 @@ class Mag(ProcessInstrument):
                 current_day,
             )
 
-        if self.data_level == "l2":
+        elif self.data_level == "l2":
             descriptor_no_frame = str.split(self.descriptor, "-")[0]
 
             # We expect either a norm or a burst input descriptor.
@@ -1642,6 +1667,10 @@ class Mag(ProcessInstrument):
             l2_parents.append(input_files[0].name)
             for dataset in datasets:
                 dataset.attrs["Parents"] = l2_parents
+        else:
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
+            )
 
         for ds in datasets:
             if "raw" not in ds.attrs["Logical_source"] and not np.all(
@@ -1842,6 +1871,10 @@ class Swapi(ProcessInstrument):
             lut_notes_df = read_swapi_lut_table(lut_notes_files[0])
             l1_dataset = load_cdf(science_files[0])
             datasets = [swapi_l2(l1_dataset, esa_table_df, lut_notes_df)]
+        else:
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
+            )
 
         return datasets
 
@@ -1925,6 +1958,9 @@ class Swe(ProcessInstrument):
             datasets = [swe_l2(l1b_datasets)]
         else:
             print("Did not recognize data level. No processing done.")
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
+            )
 
         return datasets
 
@@ -2017,6 +2053,10 @@ class Ultra(ProcessInstrument):
                 data_dict,
                 descriptor=self.descriptor,
                 energy_bin_edges_file=energy_bin_edges_file,
+            )
+        else:
+            raise NotImplementedError(
+                f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
             )
 
         return datasets
