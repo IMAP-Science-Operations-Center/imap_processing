@@ -682,12 +682,6 @@ def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
             # hardcoding 0, for groups dropped due to bad sequence flags
             # (as opposed to packets genuinely never received).
             continue
-        elif variable == "ssd_energy":
-            # TODO: This needs real investigation (possibly an updated
-            # l2-hi-energy-table LUT from the CoDICE team) rather than a
-            # one-line fix, so skipping for now instead of masking it as
-            # the num_events issue.
-            continue
         else:
             np.testing.assert_allclose(
                 processed_l2_ds[variable].values,

@@ -84,6 +84,7 @@ num_events:
   VALIDMAX: 10000
   VALIDMIN: 0
   VAR_TYPE: data
+  LABLAXIS: Number of Events
 
 data_quality:
   CATDESC: Data Quality Flag per Priority (0=good, 1=suspect)

@@ -213,12 +213,12 @@ def codice_lut_path():
                 / "l1a_lut"
                 / "imap_codice_l1a-sci-lut_20260129_v002.json"
             ]
-        # elif descriptor == "l1a-sci-lut-oct":
-        #     return [
-        #         TEST_DATA_PATH
-        #         / "l1a_lut"
-        #         / "imap_codice_l1a-sci-lut_20251007_v005.json"
-        #     ]
+        elif descriptor == "l1a-sci-lut-oct":
+            return [
+                TEST_DATA_PATH
+                / "l1a_lut"
+                / "imap_codice_l1a-sci-lut_20251007_v005.json"
+            ]
         elif descriptor == "l1a-sci-lut-jan":
             return [
                 TEST_DATA_PATH
@@ -237,7 +237,7 @@ def codice_lut_path():
             ]
         elif descriptor == "l2-lo-efficiency":
             return [
-                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251212_v003.csv"
+                TEST_DATA_PATH / "l2_lut/imap_codice_l2-lo-efficiency_20251008_v003.csv"
             ]
         elif descriptor == "l2-lo-gfactor":
             return [
@@ -261,7 +261,7 @@ def codice_lut_path():
         elif descriptor == "l2-hi-energy-table":
             return [
                 TEST_DATA_PATH
-                / "l2_lut/imap_codice_l2-hi-energy-table_20250101_v001.csv"
+                / "l2_lut/imap_codice_l2-hi-energy-table_20250101_v002.csv"
             ]
         elif descriptor == "l2-hi-tof-table":
             return [
