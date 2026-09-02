@@ -466,9 +466,7 @@ def compute_counts_by_charge_and_mass(
         current_day_indices = np.flatnonzero(epoch_doy == doy)
         # Set the epoch for the current day to be the mean epoch of the day.
         daily_epoch[i] = np.mean(l2a_dataset["epoch"].data[current_day_indices])
-        current_day_indices = _get_dust_hit_indices(
-            l2a_dataset, epoch_doy, doy
-        )
+        current_day_indices = _get_dust_hit_indices(l2a_dataset, epoch_doy, int(doy))
         mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[
             current_day_indices
         ]
@@ -543,7 +541,7 @@ def compute_counts_agnostic(
     counts_map = []
     epoch_doy = epoch_to_doy(l2a_dataset["epoch"].data)
     for doy in epoch_doy_unique:
-        indices = _get_dust_hit_indices(l2a_dataset, epoch_doy, doy)
+        indices = _get_dust_hit_indices(l2a_dataset, epoch_doy, int(doy))
         spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
         counts.append(np.histogram(spin, bins=np.arange(SPIN_PHASE_BIN_EDGES.size))[0])
         longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
@@ -562,14 +560,28 @@ def compute_counts_agnostic(
 def _get_dust_hit_indices(
     l2a_dataset: xr.Dataset, epoch_doy: np.ndarray, doy: int
 ) -> np.ndarray:
-    """Return the indices of dust hits occurring on the requested day."""
+    """
+    Return the indices of dust hits occurring on the requested day.
+
+    Parameters
+    ----------
+    l2a_dataset : xarray.Dataset
+        Combined IDEX L2A dataset.
+    epoch_doy : np.ndarray
+        Day of year corresponding to each epoch in ``l2a_dataset``.
+    doy : int
+        Day of year to select.
+
+    Returns
+    -------
+    np.ndarray
+        Indices of dust-hit events occurring on ``doy``.
+    """
     current_day_indices = np.flatnonzero(epoch_doy == doy)
     if "dust_hit_flag" not in l2a_dataset:
         return np.array([], dtype=int)
 
-    dust_hit = np.asarray(
-        l2a_dataset["dust_hit_flag"].data[current_day_indices]
-    ) == 1
+    dust_hit = np.asarray(l2a_dataset["dust_hit_flag"].data[current_day_indices]) == 1
     return current_day_indices[dust_hit]
 
 
