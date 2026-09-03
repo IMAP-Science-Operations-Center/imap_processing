@@ -21,6 +21,7 @@ from imap_processing.idex.idex_l2b import (
     bin_spin_phases,
     compute_counts_agnostic,
     compute_counts_by_charge_and_mass,
+    compute_rates_agnostic,
     compute_rates_by_charge_and_mass,
     get_science_acquisition_on_percentage,
     idex_l2b,
@@ -201,9 +202,10 @@ def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
             f"Variable {var} should be fully NaN for the temporary L2B patch."
         )
 
-    # The agnostic products are independently computed and remain publishable.
+    # The agnostic products are independently computed and remain publishable. Rates
+    # are fill values here because the fixture has no matching uptime percentages.
     assert l2b_dataset["counts"].data.sum() > 0
-    assert np.isfinite(l2b_dataset["rate"].data).any()
+    assert np.isnan(l2b_dataset["rate"].data).all()
 
 
 def test_bin_spin_phases():
@@ -488,8 +490,8 @@ def test_compute_rates_by_charge_and_mass():
     np.testing.assert_equal(charge_map.shape, expected_map_shape)
     np.testing.assert_equal(mass_map.shape, expected_map_shape)
 
-    # Assert all quality flags are 1.
-    np.testing.assert_array_equal(quality_flags, np.ones_like(quality_flags))
+    # Zero uptime makes the rate invalid.
+    np.testing.assert_array_equal(quality_flags, [1, 1, 1, 0])
     # assert day 1 rates are as expected
     np.testing.assert_equal(rate_by_charge[0], 1 / (SECONDS_IN_DAY / 2))
     np.testing.assert_equal(rate_by_mass[0], 1 / (SECONDS_IN_DAY / 2))
@@ -510,6 +512,22 @@ def test_compute_rates_by_charge_and_mass():
     np.testing.assert_equal(rate_by_mass[3], -1.0)
     np.testing.assert_equal(charge_map[3], -1.0)
     np.testing.assert_equal(mass_map[3], -1.0)
+
+
+def test_compute_rates_agnostic_uses_nan_for_invalid_uptime():
+    """Test that agnostic rates use NaN when uptime is missing or zero."""
+    counts = np.ones((2, 4))
+    counts_map = np.ones((2, 2, 2))
+    epoch_doy = np.array([1, 2])
+
+    rate, rate_map = compute_rates_agnostic(
+        counts, counts_map, epoch_doy, {1: 100.0, 2: 0.0}
+    )
+
+    np.testing.assert_array_equal(rate[0], counts[0] / SECONDS_IN_DAY)
+    np.testing.assert_array_equal(rate_map[0], counts_map[0] / SECONDS_IN_DAY)
+    assert np.all(np.isnan(rate[1]))
+    assert np.all(np.isnan(rate_map[1]))
 
 
 def test_compute_rates_by_charge_and_mass_missing_acquisition_time(caplog):

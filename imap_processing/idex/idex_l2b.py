@@ -643,8 +643,8 @@ def compute_rates_agnostic(
         [daily_on_percentage.get(doy, -1) for doy in epoch_doy]
     )
     non_zero_inds = np.where(epoch_doy_percent_on > 0)[0]
-    rate = np.full(counts.shape, -1.0)
-    rate_map = np.full(counts_map.shape, -1.0)
+    rate = np.full(counts.shape, np.nan)
+    rate_map = np.full(counts_map.shape, np.nan)
     rate[non_zero_inds] = compute_rates(counts, epoch_doy_percent_on, non_zero_inds)
     rate_map[non_zero_inds] = compute_rates(
         counts_map, epoch_doy_percent_on, non_zero_inds
@@ -699,9 +699,11 @@ def compute_rates_by_charge_and_mass(
         [daily_on_percentage.get(doy, -1) for doy in epoch_doy]
     )
 
+    invalid_uptime_inds = np.where(epoch_doy_percent_on <= 0)[0]
+    rate_quality_flags[invalid_uptime_inds] = 0
+
     missing_doy_uptimes_inds = np.where(epoch_doy_percent_on == -1)[0]
     if np.any(missing_doy_uptimes_inds):
-        rate_quality_flags[missing_doy_uptimes_inds] = 0
         logger.warning(
             f"Missing science acquisition uptime percentages for day(s) of"
             f" year: {epoch_doy[missing_doy_uptimes_inds]}."
