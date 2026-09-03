@@ -219,10 +219,11 @@ def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
             f"Variable {var} should be fully NaN for the temporary L2B patch."
         )
 
-    # The agnostic products are independently computed and remain publishable. Rates
-    # are fill values here because the fixture has no matching uptime percentages.
+    # The agnostic products are independently computed and remain publishable. The
+    # fixture has valid science acquisition uptime tracked over the window, so the
+    # rate is a real (non-NaN) value derived from the window's on_seconds.
     assert l2b_dataset["counts"].data.sum() > 0
-    assert np.isnan(l2b_dataset["rate"].data).all()
+    assert not np.isnan(l2b_dataset["rate"].data).any()
 
 
 def test_bin_spin_phases():
