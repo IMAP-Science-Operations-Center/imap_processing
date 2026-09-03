@@ -1831,7 +1831,7 @@ class Swapi(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         dependency_list = dependencies.processing_input
-        if self.data_level == "l1":
+        if self.data_level in ["l1", "l1a"]:
             # For science, we expect l0 raw file and L1 housekeeping file
             if self.descriptor == "sci" and len(dependency_list) != 3:
                 raise ValueError(
