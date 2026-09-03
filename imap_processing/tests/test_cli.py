@@ -29,7 +29,9 @@ from imap_processing.cli import (
     Idex,
     Lo,
     Mag,
+    ProcessInstrument,
     Spacecraft,
+    Swapi,
     Swe,
     Ultra,
     _parse_args,
@@ -1238,3 +1240,39 @@ def test_mag_l1c_without_previous_day(
     call_args, call_kwargs = mock_mag_l1c.call_args
     assert call_args[0] is norm_dataset
     assert call_kwargs["previous_day_dataset"] is None
+
+
+INSTRUMENT_CLASSES: list[type[ProcessInstrument]] = [
+    Codice,
+    Glows,
+    Hi,
+    Hit,
+    Idex,
+    Lo,
+    Mag,
+    Spacecraft,
+    Swapi,
+    Swe,
+    Ultra,
+]
+
+
+@pytest.mark.parametrize(
+    "instr_name,instr_cls", [(cls.__name__, cls) for cls in INSTRUMENT_CLASSES]
+)
+def test_unrecognized_data_levels_error(
+    instr_name: str, instr_cls: type[ProcessInstrument]
+):
+    kwargs = dict(
+        data_level="junk",
+        data_descriptor="junk",
+        dependency_str="{}",
+        start_date="20260101",
+        repointing=None,
+        version="latest",
+        upload_to_sdc=False,
+    )
+    deps = ProcessingInputCollection()
+
+    with pytest.raises(NotImplementedError):
+        instr_cls(**kwargs).do_processing(deps)
