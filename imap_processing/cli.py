@@ -550,6 +550,8 @@ class ProcessInstrument(ABC):
         self.post_processing(products, dependencies)
         self.cleanup()
         logger.info("Processing complete")
+        # Log version again for truncated or unusually large logs
+        logger.info(f"IMAP Processing Version: {imap_processing._version.__version__}")
 
     def pre_processing(self) -> ProcessingInputCollection:
         """
