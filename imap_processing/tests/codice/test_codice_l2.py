@@ -572,6 +572,7 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
                 l2_val_data[variable].values,
                 err_msg=f"Mismatch in variable '{variable}'",
             )
+        else:
             np.testing.assert_allclose(
                 processed_l2_ds[variable].values,
                 l2_val_data[variable].values,

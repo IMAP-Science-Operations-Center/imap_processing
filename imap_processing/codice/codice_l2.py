@@ -1249,6 +1249,10 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     # Get only valid TOF bits between 0 and 1023
     valid_mask = (tof_bits >= 0) & (tof_bits < 1024)
     tof_ns[valid_mask] = tof_bit_to_ns[tof_bits[valid_mask]]
+    # Negative TOF values are unphysical, so mirror Menlo's L3a handling by
+    # treating them as fill values starting at L2, where TOF is first converted
+    # to a physical unit.
+    tof_ns[tof_ns < 0] = np.nan
     # Reshape back to original shape
     l2_dataset["tof"].data = tof_ns.astype(np.float32).reshape(l2_dataset["tof"].shape)
 
