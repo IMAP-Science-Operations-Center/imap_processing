@@ -17,8 +17,10 @@ Examples
     msg_data_l1b = idex_l1b(msg_data_l1a, "msg-10days")
     l1b_data = idex_l1b(l1a_data, "sci-10days")
 
+    example_10_day_window_start_date = "20250101"
     l1a_data = idex_l2a(l1b_data)
-    l2b_and_l2c_datasets = idex_l2b(l2a_data, msg_data_l1b, "20231218")
+    l2b_and_l2c_datasets = idex_l2b(l2a_data,
+    msg_data_l1b, example_10_day_window_start_date)
     write_cdf(l2b_and_l2c_datasets[0])
     write_cdf(l2b_and_l2c_datasets[1])
 """
