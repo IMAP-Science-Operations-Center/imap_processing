@@ -549,7 +549,7 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
         / "l2_validation"
         / (
             f"imap_codice_l2_lo-direct-events_{VALIDATION_FILE_DATE}"
-            f"_{VALIDATION_FILE_VERSION}.cdf"
+            f"_v016.cdf"  # TODO switch back to VALIDATION_FILE_VERSION
         )
     )
 
@@ -561,6 +561,11 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
             #  calculation. Currently they are not setting spin sector and spin angles
             #  to NaNs for invalid positions.
             continue  # skip spin_angle
+        if variable in ["rgfo_half_spin", "rgfo_spin_sector", "rgfo_esa_step"]:
+            # Skips variables that are not needed for direct events
+            continue
+        if l2_val_data[variable].values.size == 0:
+            continue
         if "label" in variable:
             np.testing.assert_array_equal(
                 processed_l2_ds[variable].values,

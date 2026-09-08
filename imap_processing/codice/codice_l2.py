@@ -1176,12 +1176,12 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     pos_to_els = (
         LO_POSITION_TO_ELEVATION_ANGLE["sw"] | LO_POSITION_TO_ELEVATION_ANGLE["nsw"]
     )
-    elevation_angle_shape = l2_dataset["position"].shape
+    elevation_angle_shape = l2_dataset["apd_id"].shape
     elevation_angle = np.array(
-        [pos_to_els.get(pos, np.nan) for pos in l2_dataset["position"].values.flat]
+        [pos_to_els.get(pos, np.nan) for pos in l2_dataset["apd_id"].values.flat]
     ).reshape(elevation_angle_shape)
     l2_dataset["elevation_angle"] = (
-        l2_dataset["position"].dims,
+        l2_dataset["apd_id"].dims,
         elevation_angle.astype(np.float32),
     )
     spin_sector_attrs = cdf_attrs.get_variable_attributes(
@@ -1249,6 +1249,10 @@ def process_lo_direct_events(dependencies: ProcessingInputCollection) -> xr.Data
     # Get only valid TOF bits between 0 and 1023
     valid_mask = (tof_bits >= 0) & (tof_bits < 1024)
     tof_ns[valid_mask] = tof_bit_to_ns[tof_bits[valid_mask]]
+    # Negative TOF values are unphysical, so mirror Menlo's L3a handling by
+    # treating them as fill values starting at L2, where TOF is first converted
+    # to a physical unit.
+    tof_ns[tof_ns < 0] = np.nan
     # Reshape back to original shape
     l2_dataset["tof"].data = tof_ns.astype(np.float32).reshape(l2_dataset["tof"].shape)
 

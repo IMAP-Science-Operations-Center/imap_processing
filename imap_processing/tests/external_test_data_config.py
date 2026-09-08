@@ -85,7 +85,7 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
-    (f"imap_codice_l2_lo-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
+    (f"imap_codice_l2_lo-direct-events_{VALIDATION_FILE_DATE}_v016.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_hi-direct-events_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_hi-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
     (f"imap_codice_l2_lo-ialirt_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l2_validation/"),
