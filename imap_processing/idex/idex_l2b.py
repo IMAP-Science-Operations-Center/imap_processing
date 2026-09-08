@@ -129,7 +129,7 @@ def idex_l2b(
 
     # IDEX epoch is the nominal start of the window
     # (per the IDEX 10-day window schedule), epoch_delta_plus
-    # os the nominal window duration, and epoch_delta_minus is fixed
+    # is the nominal window duration, and epoch_delta_minus is fixed
     # at zero. See the epoch VAR_NOTES for the CDF-facing description of this choice.
     end_date = get_10_day_window_end_date(start_date)
     window_start = str_yyyymmdd_to_ttj2000ns(start_date)
@@ -757,8 +757,9 @@ def get_science_acquisition_on_time(
     """
     if len(msg_time) == 0:
         logger.warning(
-            "No science acquisition events found in event dataset. All rate "
-            "variables will be set to -1."
+            "No science acquisition events found in event dataset. The by-charge "
+            "and by-mass rate variables will be set to -1, and the agnostic rate "
+            "variables will be set to NaN."
         )
         return 0.0, 0.0
     # Convert event and window boundary times to datetime.
