@@ -1173,7 +1173,7 @@ class Hit(ProcessInstrument):
 class Idex(ProcessInstrument):
     """Process IDEX."""
 
-    def do_processing(
+    def do_processing(  # noqa: PLR0912
         self, dependencies: ProcessingInputCollection
     ) -> list[xr.Dataset]:
         """
